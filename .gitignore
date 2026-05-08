@@ -1,0 +1,15 @@
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# never commit local secrets if anyone ends up populating them
+.env
+.env.local
+.env.*.local
+
+# the kit doesn't run code, but if a contributor's experiment leaves artifacts
+node_modules/
+*.log

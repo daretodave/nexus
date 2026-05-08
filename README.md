@@ -1,5 +1,11 @@
 # nexus
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)](https://claude.com/claude-code)
+[![Status: stable](https://img.shields.io/badge/status-stable-success)](#)
+[![Methodology + templates](https://img.shields.io/badge/kind-methodology%20%2B%20templates-lightgrey)](#)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](./CONTRIBUTING.md)
+
 > A methodology + template kit for turning any repo into an
 > **autonomous beast** — a project that ships itself end-to-end
 > through a small set of slash commands, supervises its own
@@ -11,8 +17,28 @@ This kit is extracted from two real projects (tickpedia, thock)
 that operate this way. It is not theory; everything in here was
 shipped, broken, and refined in real codebases.
 
-<img width="1751" height="531" alt="image" src="https://github.com/user-attachments/assets/5bca54d6-17c0-4ff2-a374-2a4c667ee4c2" />
+## A single `/march` tick, at a glance
 
+```text
+$ /march
+
+  Triage:   0 unlabeled issues — humming on.
+  Critique: deferred (4 of 12 commits since last pass).
+  Dispatch: pending phase exists → /ship-a-phase, phase 8.
+
+      1   Read brief, canonical sibling
+      2   Build 7 components + 3 helpers
+      3   Tests:  12 unit, 2 e2e
+      4   pnpm verify   ·  typecheck · test · validate · build · e2e   ✓
+      5   Commit + push  (a3f1e2c)
+      6   pnpm deploy:check  ·  ready ✓  →  https://thock.netlify.app
+
+  Phase 8 shipped. Next tick picks phase 9.
+```
+
+Each tick: one decision, one slice of work, one verify, one
+commit, one push, one deploy confirmation. Repeat under `/loop`
+for hours or days.
 
 → [TL;DR — clone + delegate the adoption](#tldr--clone--delegate-the-adoption) (skip the playbook, hand it to your agent)
 
