@@ -11,6 +11,9 @@ This kit is extracted from two real projects (tickpedia, thock)
 that operate this way. It is not theory; everything in here was
 shipped, broken, and refined in real codebases.
 
+<img width="1751" height="531" alt="image" src="https://github.com/user-attachments/assets/5bca54d6-17c0-4ff2-a374-2a4c667ee4c2" />
+
+
 → [TL;DR — clone + delegate the adoption](#tldr--clone--delegate-the-adoption) (skip the playbook, hand it to your agent)
 
 ---
