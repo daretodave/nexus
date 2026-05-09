@@ -1,0 +1,175 @@
+name: march
+
+# Cloud half of the autonomous loop. One scheduled invocation =
+# one /march tick. State of truth is the repo on origin/<DEFAULT_BRANCH>;
+# every tick reads it fresh, no memory between runs.
+#
+# See .github/CLOUD_LOOP.md for setup, debugging, and the upgrade path
+# from bot-author to user-author.
+
+on:
+  schedule:
+    # Every 2h, off-peak UTC. Adjust to match your timezone — GH cron
+    # always runs in UTC. The example below = ~7 ticks/day, weighted
+    # toward 22:00-12:00 UTC (US East off-peak).
+    - cron: '0 1,3,5,7,9,11,23 * * *'
+  workflow_dispatch:
+
+concurrency:
+  # Serialize ticks. A long-running tick blocks the next scheduled
+  # firing rather than racing the working tree. Acceptable.
+  group: march
+  cancel-in-progress: false
+
+jobs:
+  march:
+    runs-on: ubuntu-latest
+    # 6h is the GH-Actions hard limit; 5h leaves headroom. Most ticks
+    # finish in under 15min; the long tail is /ship-a-phase doing a
+    # full prerendered build.
+    timeout-minutes: 300
+    permissions:
+      contents: write   # push back to <DEFAULT_BRANCH>
+      issues: write     # /triage labels + cloud-failed issue
+      id-token: write   # Claude Code Action's OIDC handshake
+    steps:
+      - name: Checkout (full history for /march dispatch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Default: GITHUB_TOKEN (commits as github-actions[bot]).
+          # To switch to user-author mode, mint a fine-grained PAT
+          # scoped to this repo with Contents:write + Issues:write,
+          # add it as ACTIONS_PAT secret, and uncomment the next line:
+          # token: ${{ secrets.ACTIONS_PAT }}
+
+      # ───────────────────────────────────────────────────────────
+      # Project-specific install. Adjust for your stack.
+      # ───────────────────────────────────────────────────────────
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # If you have a Playwright e2e leg, cache + install browsers.
+      # Drop this block entirely for projects without e2e.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/e2e/package.json', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers (chromium only)
+        run: pnpm --filter "<PROJECT_PKG_PREFIX>/e2e" e2e:install
+
+      # ───────────────────────────────────────────────────────────
+      # Cloud-loop control plane.
+      # ───────────────────────────────────────────────────────────
+
+      - name: Daily commit ceiling check
+        id: ceiling
+        run: |
+          # Cloud commits are identified by the `Cloud-Run:` trailer
+          # the agent appends to every commit message (the brief
+          # mandates it). The ceiling bounds *cloud volume* in 24h —
+          # local commits don't count toward it.
+          since="$(date -u -d '24 hours ago' '+%Y-%m-%d %H:%M:%S')"
+          count=$(git log --since="$since" --grep='Cloud-Run:' --oneline | wc -l | tr -d ' ')
+          echo "Cloud-shipped commits in last 24h: $count"
+          if [ "$count" -ge 12 ]; then
+            echo "Cloud ceiling reached (12 cloud-shipped commits / 24h). Exiting cleanly — no work this tick."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure git author for cloud commits
+        if: steps.ceiling.outputs.skip != 'true'
+        run: |
+          # Default: github-actions[bot]. To switch to user-author,
+          # replace the values below with your username + noreply
+          # email (`<id>+<username>@users.noreply.github.com`) and
+          # also uncomment the `token: ${{ secrets.ACTIONS_PAT }}`
+          # line under the checkout step above.
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run /march (cloud mode)
+        if: steps.ceiling.outputs.skip != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Default: OAuth token against your Claude Pro/Max
+          # subscription. $0 marginal cost; quota shared with local.
+          # Alternative: ANTHROPIC_API_KEY env var (pay-per-token).
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Sonnet for cheap-on-quota dispatch. Upgrade to
+          # claude-opus-4-7 once you've measured a week of weekly-cap
+          # consumption and confirmed headroom.
+          claude_args: |
+            {
+              "model": "claude-sonnet-4-6"
+            }
+          prompt: |
+            You are running <PROJECT>'s autonomous loop in CI (GitHub Actions).
+            Read agents.md first for the standing rules — they all apply.
+
+            Cloud-mode adjustments on top of agents.md:
+
+            1. Skip /oversight entirely. It is interactive and never runs in cloud.
+            2. Skip /critique. The reader sub-agent depends on a Chrome MCP that is not available on the runner. /critique stays a local-only ritual.
+            3. /expand may run; candidates land in plan/PHASE_CANDIDATES.md. Promotion happens only via local /oversight — do not promote candidates from cloud.
+            4. The verify gate (`pnpm verify`) and deploy gate (`pnpm deploy:check`) are non-negotiable. Same as local. NEVER --no-verify.
+            5. The git author identity is already configured by the workflow. Do not change it.
+            6. EVERY commit you ship in this tick MUST end with this exact trailer (a blank line before it, then the trailer as its own line):
+
+                  Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+               This is how the next tick's ceiling check distinguishes cloud-shipped commits from the user's local work. If a commit lacks this trailer it does not count toward the cloud ceiling, which would let the loop run away. Treat the trailer as non-negotiable, like the verify gate. agents.md's "no Co-Authored-By trailers, plain commit message bodies" rule has an explicit carve-out for this single trailer; nothing else.
+            7. If the tick cannot ship cleanly (red verify, red deploy, blocked phase, no work to do, anything else), do NOT half-commit. Either:
+               - exit cleanly with a one-line note in the action log explaining why no work shipped this tick, or
+               - if there is a real failure to surface, open a GitHub issue with `gh issue create --title "Cloud march failed: <iso-date>" --body "<context + run URL>"` and exit. Do not pass `--label` — the issue lands unlabeled and the next scheduled tick's /triage classifies and labels it appropriately.
+
+            The dispatch order is the standard /march order from skills/march.md: triage → critique (skipped) → ship-a-phase → ship-data → expand → iterate.
+
+            Begin. One tick. One commit-and-push (or no-op). Then exit.
+        env:
+          # Add any secrets your verify/deploy gates need. Examples:
+          # NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          # VERCEL_TOKEN:       ${{ secrets.VERCEL_TOKEN }}
+          # CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          #
+          # Default: GITHUB_TOKEN. To switch to user-PAT mode,
+          # replace with: GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Open cloud-failed issue if action crashed
+        # Safety net for the case where Claude Code itself crashed
+        # (auth error, runner OOM, etc.) before the agent could open
+        # the issue per its brief. Only fires on genuine non-zero exit.
+        if: failure() && steps.ceiling.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Dedupe by title prefix instead of label — labels need
+          # extra PAT scope (Issues:write at label-management level)
+          # which not every PAT grants. Issue creation only needs
+          # Issues:write at content level. The next /triage tick
+          # labels these naturally.
+          existing=$(gh issue list --search 'in:title "Cloud march tick crashed" state:open' --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create \
+              --title "Cloud march tick crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --body "Action exited non-zero before the agent could file its own issue. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            echo "An open 'Cloud march tick crashed' issue already exists — skipping dedupe."
+          fi

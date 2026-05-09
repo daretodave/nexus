@@ -17,6 +17,12 @@ This kit is extracted from two real projects (tickpedia, thock)
 that operate this way. It is not theory; everything in here was
 shipped, broken, and refined in real codebases.
 
+**Run it on your laptop, in the cloud, or both.** The base kit
+is local-only — `/loop /march` runs in your Claude Code session.
+An opt-in workflow (`playbooks/cloud-loop.md`) puts the same
+loop on GitHub Actions for unattended ticks while you're away.
+$0 marginal on Claude Pro/Max + a public repo.
+
 ## A single `/march` tick, at a glance
 
 ```text
@@ -260,6 +266,19 @@ This is the matrix: Netlify, Vercel, Fly.io, Cloudflare Pages,
 GitHub Pages, Render, self-hosted, and "no deploy yet". For each,
 how `pnpm deploy:check` is wired and what state file it polls.
 
+### → [`playbooks/cloud-loop.md`](./playbooks/cloud-loop.md) *(opt-in)*
+
+Once your local loop is happy, optionally put the same loop on
+GitHub Actions so it ticks while your laptop is closed. Three
+files, three secrets, one validation run. Defaults to
+`github-actions[bot]` author for zero-config setup; opt-in to
+your own GitHub identity if you want a uniform git log. **Free
+to operate** if your repo is public + you're on Claude Pro/Max.
+
+Don't reach for this until your verify gate is genuinely
+hermetic and the local loop has run cleanly for a few days —
+the cloud surfaces every flake.
+
 ---
 
 ## The intervention spectrum
@@ -330,6 +349,9 @@ nexus/
     │   ├── commands/                  # one terse pointer per skill
     │   └── agents/                    # generic sub-agent templates
     ├── data/                          # → repo's data/ (if using GitHub-as-DB)
+    ├── github/                        # → repo's .github/ (opt-in cloud loop)
+    │   ├── workflows/march.yml        # cron + Claude Code Action
+    │   └── CLOUD_LOOP.md              # operator's guide (lives in repo)
     ├── scripts/
     │   └── deploy-check.mjs           # multi-provider deploy gate
     └── env/

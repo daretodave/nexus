@@ -34,6 +34,9 @@ templates/
 │   ├── README.md
 │   ├── BACKLOG.md
 │   └── AUDIT.md
+├── .github/                           → repo's .github/ (opt-in; cloud loop)
+│   ├── workflows/march.yml
+│   └── CLOUD_LOOP.md
 ├── scripts/
 │   └── deploy-check.mjs               → repo's scripts/
 └── env/
