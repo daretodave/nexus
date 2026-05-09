@@ -189,6 +189,7 @@ A small family of slash commands the autonomous loop uses:
 | `/triage` | Read open GitHub issues, classify, label, route into the address loop. |
 | `/expand` | Plan-expansion pass — read signals (audit, critique, spec drift, design landings, data growth) and propose new phase candidates. Posture-gated: **bold** by default, **strict** to opt out. |
 | `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → phase → data → expand → iterate. |
+| `/jot` | **The user's quickfire.** Drop a free-text observation into `plan/CRITIQUE.md` and push, in seconds. The next `/iterate` tick scores it (with a `+0.5` user-source bump) against everything else and ships the fix. No questions back; same shape as `/ship-data add` — input via the slash arg. |
 | `/oversight` | **The only interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote phase candidates. |
 
 Plus one **opt-in** demand-pull skill for projects with
@@ -356,7 +357,8 @@ nexus/
     │   ├── critique.md
     │   ├── triage.md
     │   ├── march.md
-    │   └── oversight.md
+    │   ├── oversight.md
+    │   └── jot.md                      # user-input quickfire — append a row to plan/CRITIQUE.md
     ├── claude/                        # → repo's .claude/
     │   ├── commands/                  # one terse pointer per skill
     │   └── agents/                    # generic sub-agent templates

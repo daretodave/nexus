@@ -36,6 +36,20 @@ on already-shipped surfaces.
 Score every finding `0–10` for `impact × ease`. Bias toward
 shipping cheap wins.
 
+### User-source bump (from `/jot`)
+
+Findings with `source: user` (filed via `/jot`) get a flat
+**`+0.5`** on their final score, capped at `10`. Apply this
+**after** `impact × ease / 10` and **before** the user-set
+bias multiplier below.
+
+Rationale: when the user has spotted something with their own
+eyes, it's almost always more valid than what the audit
+auto-detected. The flat add (rather than a multiplier) means
+high-severity user jots don't blow past everything; they just
+edge ahead of comparable auto-detected findings at the same
+severity.
+
 ### User-set bias (from `/oversight`)
 
 Before scoring, check the top of `plan/AUDIT.md` for:
@@ -45,7 +59,9 @@ Before scoring, check the top of `plan/AUDIT.md` for:
 ```
 
 If present, **multiply scores in that category by 1.5**. Sticky
-until cleared via `/oversight reset`.
+until cleared via `/oversight reset`. Apply this **after** the
+user-source bump above (so the multiplier sees the bumped
+score, but the cap at `10` still holds).
 
 ### Audit categories
 
