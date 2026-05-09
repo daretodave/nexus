@@ -13,8 +13,6 @@
 > feedback. From "I drive every commit" to "leave it for 80
 > hours and come back to a working product."
 
-<img width="1280" height="686" alt="LOOP_A" src="https://github.com/user-attachments/assets/d5ce336a-5c7b-424f-b752-5df4d37c03e6" />
-
 This kit is extracted from two real projects (tickpedia, thock)
 that operate this way. It is not theory; everything in here was
 shipped, broken, and refined in real codebases.
@@ -24,6 +22,9 @@ is local-only — `/loop /march` runs in your Claude Code session.
 An opt-in workflow (`playbooks/cloud-loop.md`) puts the same
 loop on GitHub Actions for unattended ticks while you're away.
 $0 marginal on Claude Pro/Max + a public repo.
+
+<img width="1280" height="794" alt="WALK_AWAY" src="https://github.com/user-attachments/assets/9076088d-01ee-4720-aa10-b393b8dd4076" />
+
 
 ## A single `/march` tick, at a glance
 
@@ -292,6 +293,8 @@ hermetic and the local loop has run cleanly for a few days —
 the cloud surfaces every flake.
 
 ---
+
+<img width="1280" height="686" alt="LOOP_A" src="https://github.com/user-attachments/assets/d5ce336a-5c7b-424f-b752-5df4d37c03e6" />
 
 ## The intervention spectrum
 
