@@ -87,8 +87,8 @@ making a single change:
                                    — pick the one that applies
   5. ../nexus/playbooks/ci-providers.md  — for the deploy gate
   6. ../nexus/intervention-spectrum.md   — how the loop scales
-  7. ../nexus/customization/*.md   — verify gate + data layer
-                                     + sub-agents
+  7. ../nexus/customization/*.md   — verify gate + hermetic
+                                     e2e + data layer + sub-agents
 
 Then:
 
@@ -190,7 +190,7 @@ Plus specialist sub-agents the main agent delegates to: `scout`
 domain specialists you author for your project.
 
 Two awareness layers wrap every push:
-- **Verify gate** (pre-commit, hermetic): typecheck → unit → build → e2e
+- **Verify gate** (pre-commit, hermetic): typecheck → unit → build → e2e. The e2e leg is the load-bearing piece — see [`customization/hermetic-e2e.md`](./customization/hermetic-e2e.md).
 - **Deploy gate** (post-push, CI/CD-aware): polls your hosting provider until ready or error
 
 Two state files that capture intent across context loss:
@@ -303,6 +303,7 @@ nexus/
 │   └── skills-anatomy.md              # how to read/write a skill file
 ├── customization/
 │   ├── verify-gate.md                 # composing the right pre-commit checks
+│   ├── hermetic-e2e.md                # the e2e leg — patterns, alt-port DB seeding, smoke walker
 │   ├── data-layer.md                  # GitHub-as-DB vs DB vs none
 │   └── sub-agents.md                  # designing your specialists
 └── templates/
