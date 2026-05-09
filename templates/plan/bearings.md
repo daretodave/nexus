@@ -40,6 +40,37 @@ match reality and the skills behave correctly. If the value is
 missing, branding skills exit with `[needs-user-call]` rather
 than guessing.
 
+## Auth (for Surface: site / hybrid)
+
+**Auth:** `<none | test-user | session-cookie | bearer-token | shared-secret | preview-env | magic-link>`
+
+Tells `reader` (and therefore `/critique`) how to establish a
+session before walking the page set. Without this, critique
+runs anonymous against an authenticated app and every finding
+becomes "the home page is a login form."
+
+| Value | Pattern | When to pick |
+|---|---|---|
+| `none` | No auth wall (or pure marketing-site critique) | Default for public sites |
+| `test-user` | Real login flow, test user creds in `.env` | True E2E fidelity matters more than operational simplicity |
+| `session-cookie` | Pre-baked session cookie in `.env`; no login flow runs | **Recommended default** — works in both Chrome tools and WebFetch (cloud-loop friendly) |
+| `bearer-token` | Same as session-cookie but `Authorization: Bearer <token>` | Apps with a token-based auth instead of cookies |
+| `shared-secret` | Dev-mode impersonation header (`X-Critique-Bot: <secret>`) | Apps you control end-to-end; safest separation |
+| `preview-env` | Reader walks a preview URL with relaxed auth | Projects with a real preview pipeline |
+| `magic-link` | Mailbox poll for the magic link | Passwordless-only apps |
+
+Same gate posture as `Surface:` — unconditional, no
+`--force`, no silent default. If the value is missing,
+`reader` exits with `[needs-user-call]`. If the auth handshake
+fails at runtime, the pass exits loudly rather than falling
+back to anonymous.
+
+See `nexus/customization/auth-aware-critique.md` for the full
+design — patterns, env vars per pattern, hardening, failure
+modes, and the recommended starting point. For
+`Surface: service | library | cli`, set `Auth: none` or omit
+the field entirely (no critique surface to walk).
+
 ## Stack (locked — do not re-litigate)
 
 These were decided at project bootstrap. Revisit only if a

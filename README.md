@@ -334,7 +334,8 @@ nexus/
 │   ├── hermetic-e2e.md                # the e2e leg — patterns, alt-port DB seeding, smoke walker
 │   ├── data-layer.md                  # GitHub-as-DB vs DB vs none
 │   ├── sub-agents.md                  # designing your specialists
-│   └── branding.md                    # opt-in /ship-asset + brander agent (Surface-gated)
+│   ├── branding.md                    # opt-in /ship-asset + brander agent (Surface-gated)
+│   └── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
 └── templates/
     ├── README.md                      # how to apply the templates
     ├── agents.md                      # rule-book template (target: repo root)

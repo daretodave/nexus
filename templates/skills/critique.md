@@ -19,11 +19,30 @@ read well as a real reader would experience it.
 ## 2. Invocation
 
 ```
-/critique                    # full pass — visit ~6 representative URLs
+/critique                    # full pass — see auth handling below
 /critique <url>              # focused pass on one URL
 /critique mobile             # 375×800 only
 /critique desktop            # 1280×800 only
+/critique anonymous          # public/anonymous pass only (skip auth)
+/critique authenticated      # logged-in pass only (requires Auth: != none)
 ```
+
+**Auth handling.** Read `plan/bearings.md`'s `Auth:` line on
+entry:
+
+- `Auth: none` → single anonymous pass (the default for
+  public sites).
+- `Auth: <other>` → default `/critique` runs **two** passes
+  in sequence: an anonymous pass against the marketing-side
+  URLs, then an authenticated pass against the app-side
+  URLs. Each pass spawns its own `reader` invocation so the
+  bot's session doesn't pollute the anonymous walk.
+- Argument `anonymous` / `authenticated` runs only that
+  pass.
+- `Auth:` field missing → exit with `[needs-user-call]`. Do
+  not guess.
+- See `nexus/customization/auth-aware-critique.md` for
+  patterns and env vars.
 
 When invoked from `/march`, conditions are pre-checked.
 
@@ -32,13 +51,31 @@ When invoked from `/march`, conditions are pre-checked.
 Pick **representative**, not exhaustive. The smoke walker
 already covers every URL; critique is for *quality*.
 
+### Anonymous page set (always)
+
 | Page | Why critique it |
 |---|---|
 | `/` (home) | First impression. The fold matters. |
 | `/<canonical-detail>/<latest>` | Canonical reading experience. |
 | `/<pillar-or-category>` | Pillar voice + card cascade. |
-| `/<signature-feature>` | Project's most distinctive surface. |
+| `/<signature-feature>` | Project's most distinctive surface (when public). |
 | `/<list-or-index>` | Faceted browse path. |
+
+### Authenticated page set (only when `Auth: != none`)
+
+| Page | Why critique it |
+|---|---|
+| `/<post-login-landing>` (typically `/dashboard`, `/app`, or `/home`) | What the user actually sees first. |
+| `/<canonical-detail-in-app>/<latest>` | The in-app version of the reading/working experience. |
+| `/<settings>` | Where users diagnose problems. Reflects voice + clarity. |
+| `/<signature-feature>` (logged-in version) | The product's most distinctive surface for real users. |
+| `/<empty-or-onboarding-state>` | Often where the experience breaks down. |
+
+The bot user's data shape matters here — see
+`nexus/customization/auth-aware-critique.md` "What does your
+bot user look like?". Curate it once so the authenticated
+pass walks through representative state, not an empty
+account.
 
 Skip pages that don't exist yet. Note in pass log.
 
@@ -54,12 +91,22 @@ fresh-eyes observer. **Always delegate the visit.** Reasons:
 
 Pass it:
 - The URL list.
+- The **pass mode** (`anonymous` or `authenticated`).
 - Voice cue from `plan/bearings.md`.
 - Current `plan/CRITIQUE.md` Done section (so it doesn't
   re-surface addressed findings).
 - Focus areas from invocation argument.
 
-It returns a JSON array of findings.
+It returns a JSON array of findings, each carrying
+`auth_state`. When the default invocation runs both passes,
+spawn `reader` **twice** (once per mode) and concatenate
+results before §6 (self-assessment + filing).
+
+Findings tagged `auth_state: "auth-failed"` are filed as
+`[needs-user-call]` in `plan/CRITIQUE.md`'s Pending block —
+not scored as product bugs. The user resolves the auth
+config (refresh the session cookie, fix the login selectors,
+etc.) and the next pass re-runs.
 
 ## 5. The procedure
 

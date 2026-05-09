@@ -13,3 +13,7 @@ Thumbs.db
 # the kit doesn't run code, but if a contributor's experiment leaves artifacts
 node_modules/
 *.log
+
+# personal drafts (article work, scratch notes) — never published
+.article/
+.scratch/
