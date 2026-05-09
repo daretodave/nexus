@@ -191,9 +191,18 @@ A small family of slash commands the autonomous loop uses:
 | `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → phase → data → expand → iterate. |
 | `/oversight` | **The only interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote phase candidates. |
 
+Plus one **opt-in** demand-pull skill for projects with
+`Surface: site` / `hybrid` that need to render brand assets
+(see [`customization/branding.md`](./customization/branding.md)):
+
+| Opt-in command | Job |
+|---|---|
+| `/ship-asset` | Render and ship one brand asset (OG image, favicon, social card, SVG → PNG, wordmark variant). Demand-pull only — drains asset findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. Same shape as `/ship-data`: omit the file if not adopting. |
+
 Plus specialist sub-agents the main agent delegates to: `scout`
-(open-web research), `reader` (live-site observer), and one or two
-domain specialists you author for your project.
+(open-web research), `reader` (live-site observer), `brander`
+(asset rendering — only present when `/ship-asset` is adopted),
+and one or two domain specialists you author for your project.
 
 Two awareness layers wrap every push:
 - **Verify gate** (pre-commit, hermetic): typecheck → unit → build → e2e. The e2e leg is the load-bearing piece — see [`customization/hermetic-e2e.md`](./customization/hermetic-e2e.md).
@@ -324,7 +333,8 @@ nexus/
 │   ├── verify-gate.md                 # composing the right pre-commit checks
 │   ├── hermetic-e2e.md                # the e2e leg — patterns, alt-port DB seeding, smoke walker
 │   ├── data-layer.md                  # GitHub-as-DB vs DB vs none
-│   └── sub-agents.md                  # designing your specialists
+│   ├── sub-agents.md                  # designing your specialists
+│   └── branding.md                    # opt-in /ship-asset + brander agent (Surface-gated)
 └── templates/
     ├── README.md                      # how to apply the templates
     ├── agents.md                      # rule-book template (target: repo root)
@@ -338,7 +348,8 @@ nexus/
     │   └── CRITIQUE.md
     ├── skills/                        # → repo's skills/
     │   ├── ship-a-phase.md
-    │   ├── ship-data.md
+    │   ├── ship-data.md                # omit if no GitHub-as-DB
+    │   ├── ship-asset.md               # omit unless Surface: site / hybrid
     │   ├── plan-a-phase.md
     │   ├── iterate.md
     │   ├── critique.md

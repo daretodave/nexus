@@ -21,6 +21,7 @@ templates/
 ├── skills/                            → repo's skills/
 │   ├── ship-a-phase.md
 │   ├── ship-data.md                   (omit if no GitHub-as-DB)
+│   ├── ship-asset.md                  (omit unless Surface: site/hybrid AND branding in scope)
 │   ├── plan-a-phase.md
 │   ├── iterate.md
 │   ├── critique.md
@@ -81,7 +82,9 @@ PowerShell can replicate the loop if you prefer scripts.)
 A few files in templates intentionally have project-specific
 shape that you must fill in:
 
-- `plan/bearings.md` — needs your stack, URL contract, voice
+- `plan/bearings.md` — needs your stack, URL contract, voice,
+  and the `Surface:` declaration (gates the optional branding
+  capability).
 - `plan/steps/01_build_plan.md` — needs your phases (ours
   describes a generic content-site shape; replace)
 - `plan/phases/phase_1_bootstrap.md` — needs your stack's
@@ -91,6 +94,26 @@ shape that you must fill in:
 
 For these, the templates are **scaffolds** showing the shape;
 adapt content to your reality.
+
+## Adopt-by-need files
+
+A few files are part of the standard kit but only useful for
+projects that actually need them. Copy them only when adopting
+the corresponding capability:
+
+| File | Adopt when |
+|---|---|
+| `skills/ship-data.md` | The project has a structured data layer (GitHub-as-DB, external DB, SaaS data store). See `nexus/customization/data-layer.md`. |
+| `skills/ship-asset.md` + `claude/agents/brander.md` | `Surface: site` or `hybrid` AND you want the loop to render brand assets (OG images, favicons, social cards, SVG → PNG, wordmarks). Demand-pull only — drains findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. See `nexus/customization/branding.md`. |
+
+If your `bearings.md` declares `Surface: service / library /
+cli`, do not copy `ship-asset.md` / `brander.md` — the skill
+would no-op anyway and the presence is misleading.
+
+Branding does not get a second `AskUserQuestion`-allowed
+skill. When the project needs taste calls (mood, accent,
+wordmark treatment), the user runs `/oversight` — that's
+already the user-in-the-loop exception, and it's plenty.
 
 ## Reference implementations
 

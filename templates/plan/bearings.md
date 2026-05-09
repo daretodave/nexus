@@ -18,6 +18,28 @@ description of <PROJECT>. Read once at session start. The TL;DR:
 
 **Live at:** <HOSTING_URL>
 
+## Surface
+
+**Surface:** `<site | service | library | cli | hybrid>`
+
+This single line is the hard gate for the opt-in branding
+capability (`/ship-asset` + the `brander` sub-agent — see
+`nexus/customization/branding.md`).
+
+| Value | Meaning |
+|---|---|
+| `site` | Renders pages for humans (web app, blog, docs site). Asset capability available. |
+| `service` | API, daemon, worker, scheduled job. No human UI. Asset capability disabled. |
+| `library` | Code consumed by other code. Asset capability disabled. |
+| `cli` | Terminal-only program. Asset capability disabled. |
+| `hybrid` | Library/service that *also* has a docs/marketing site. Asset capability available, scoped to the site portion. |
+
+If you adopt the optional branding skills, this gate is
+unconditional. There is no override flag — set the surface to
+match reality and the skills behave correctly. If the value is
+missing, branding skills exit with `[needs-user-call]` rather
+than guessing.
+
 ## Stack (locked — do not re-litigate)
 
 These were decided at project bootstrap. Revisit only if a
