@@ -101,8 +101,9 @@ invoke a skill that does the right thing end-to-end.
 | `iterate` | `skills/iterate.md` | Audit + ship one improvement. |
 | `critique` | `skills/critique.md` | External-observer pass; writes to `CRITIQUE.md`. |
 | `triage` | `skills/triage.md` | Issue review; routes to backlogs. |
-| `march` | `skills/march.md` | Outer dispatcher: triage → critique → phase → data → iterate. |
-| `oversight` | `skills/oversight.md` | **User-in-the-loop.** The only skill that asks anything. |
+| `expand` | `skills/expand.md` | Plan-expansion pass; proposes phase candidates from accumulated signals. Posture-controlled (bold/strict/autonomous). |
+| `march` | `skills/march.md` | Outer dispatcher: triage → critique → phase → data → expand → iterate. |
+| `oversight` | `skills/oversight.md` | **User-in-the-loop.** The only skill that asks anything. Promotes phase candidates. |
 
 ### Invocation
 
@@ -113,6 +114,7 @@ invoke a skill that does the right thing end-to-end.
 /iterate                     # audit + ship one improvement
 /critique                    # external-observer pass
 /triage                      # review unlabeled issues
+/expand                      # propose new phase candidates
 /march                       # do the right thing
 /oversight                   # course-correct
 /loop 30m /march             # autonomous loop

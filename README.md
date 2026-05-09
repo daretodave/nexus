@@ -24,6 +24,7 @@ $ /march
 
   Triage:   0 unlabeled issues — humming on.
   Critique: deferred (4 of 12 commits since last pass).
+  Expand:   not due (12 of 20 commits; deliveries first).
   Dispatch: pending phase exists → /ship-a-phase, phase 8.
 
       1   Read brief, canonical sibling
@@ -180,8 +181,9 @@ A small family of slash commands the autonomous loop uses:
 | `/iterate` | Audit the project, ship one improvement. The post-build endgame. |
 | `/critique` | External-observer pass — visit the live site as a stranger, file fresh-eyes findings. |
 | `/triage` | Read open GitHub issues, classify, label, route into the address loop. |
-| `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → phase → data → iterate. |
-| `/oversight` | **The only interactive command.** Pause, brief, ask targeted questions, adjust the plan. |
+| `/expand` | Plan-expansion pass — read signals (audit, critique, spec drift, design landings, data growth) and propose new phase candidates. Posture-gated: **bold** by default, **strict** to opt out. |
+| `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → phase → data → expand → iterate. |
+| `/oversight` | **The only interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote phase candidates. |
 
 Plus specialist sub-agents the main agent delegates to: `scout`
 (open-web research), `reader` (live-site observer), and one or two

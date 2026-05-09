@@ -115,6 +115,25 @@ working defaults.>
 - **Spacing scale:** <base + ramp>
 - **Voice:** <tone in 1–2 sentences>
 
+## Plan expansion posture
+
+`/expand` reads accumulated signals (audit findings, critique
+findings, GH issues, spec drift, design landings, data growth)
+and proposes new phase candidates. The posture controls how
+aggressive it is.
+
+- **Mode: bold** (default) — `/expand` runs at standard cadence
+  and files candidates to `plan/PHASE_CANDIDATES.md`.
+  `/oversight` promotes them to the build plan.
+- **Mode: strict** — `/expand` is a no-op. Build plan grows
+  only via manual `/plan-a-phase` or `/oversight`. Use this if
+  you want the project to stay exactly true to its original
+  spec.
+- **Mode: autonomous** — `/expand` writes phase rows directly
+  to `plan/steps/01_build_plan.md`. No `/oversight` review.
+  Most aggressive; document in Hard Rules below if you choose
+  this.
+
 ## Decisions standing for the autonomous loop
 
 (These exist so the loop never asks the user. Add to this list

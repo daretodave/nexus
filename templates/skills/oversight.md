@@ -131,6 +131,18 @@ Generate 1–4 questions via `AskUserQuestion`. Rules:
 > - Roll forward — finish the tick.
 > - Roll back — `git checkout` and `git clean`; restart cleanly.
 
+**Phase candidates pending promotion**
+
+> `plan/PHASE_CANDIDATES.md` has <N> pending candidates. Top
+> score [<X.Y>]: "<one-line>". Promote any?
+>
+> - (recommended) Review one — show me the candidate's
+>   rationale + signals; I'll decide.
+> - Promote top — append as a new phase row in the build plan,
+>   move the candidate to `## Promoted`.
+> - Reject top — move to `## Rejected` with a one-line reason.
+> - Defer — leave them; next expand pass re-evaluates.
+
 **Free-form**
 
 > Anything else to adjust before I hand back to `/march`?
@@ -178,6 +190,14 @@ For each answer:
   question; only execute on explicit go.
 - **"Investigate deploy"** → fetch latest deploy log; summarize;
   no patch yet.
+- **"Promote candidate"** → move row from
+  `plan/PHASE_CANDIDATES.md` `## Pending` to `## Promoted` (with
+  promotion date + assigned phase number). Append a new phase
+  row in `plan/steps/01_build_plan.md` Status block. Optionally
+  invoke `/plan-a-phase phase <N>` flow inline to draft the
+  brief.
+- **"Reject candidate"** → move row from `## Pending` to
+  `## Rejected` with one-line reason.
 - **"Other" (free-form)** → interpret conservatively. If clear
   plan edit, apply. If ambiguous, write to `plan/AUDIT.md` as
   `[needs-user-call]` and tell the user.

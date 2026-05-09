@@ -212,8 +212,15 @@ Return cleanly. Loop's next tick re-audits.
    `/plan-a-phase`.
 5. **Finding requires user judgment.** Surface to AUDIT.md as
    `[needs-user-call]`, skip, ship next.
-6. **Three loop ticks in a row find no actionable work** (top
-   score < 3.0). Stop and report — site is well-iterated.
+6. **No actionable iterate work** (top score < 3.0). Read
+   `plan/bearings.md` "Plan expansion posture":
+   - **bold** or **autonomous** posture → dispatch to
+     `/expand` instead of stopping. "Make things brilliant
+     when delivery is not." Log "no actionable iterate work
+     — handing to expand" and execute `skills/expand.md`
+     procedure end-to-end.
+   - **strict** posture → stop and report. Site is
+     well-iterated.
 7. **`git pull` divergence.**
 
 ## 7. Hard rules

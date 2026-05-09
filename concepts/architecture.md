@@ -11,10 +11,12 @@ the top two enable unattended runs.
 ┌──────────────────────────────────────────────────────────┐
 │ Layer 5 — User-in-loop (oversight)                       │
 │  Pause autonomy. Brief. Ask. Adjust. Resume.             │
+│  Promotes phase candidates from /expand.                 │
 ├──────────────────────────────────────────────────────────┤
-│ Layer 4 — External signals (critique, triage)            │
-│  Live-site observer + GitHub issue inbox.                │
-│  Findings flow into the audit/backlog queues.            │
+│ Layer 4 — External signals (critique, triage, expand)    │
+│  Live-site observer + GitHub issue inbox + plan grower.  │
+│  Findings flow into AUDIT / BACKLOG / CRITIQUE /         │
+│  PHASE_CANDIDATES queues.                                │
 ├──────────────────────────────────────────────────────────┤
 │ Layer 3 — Awareness (verify gate, deploy gate)           │
 │  Pre-commit hermetic check + post-push CI/CD poll.       │
@@ -22,11 +24,11 @@ the top two enable unattended runs.
 ├──────────────────────────────────────────────────────────┤
 │ Layer 2 — Dispatcher (march)                             │
 │  Picks the right verb each tick:                         │
-│  triage → critique → ship-a-phase → ship-data → iterate  │
+│  triage → critique → phase → data → expand → iterate     │
 ├──────────────────────────────────────────────────────────┤
 │ Layer 1 — Skills + state files                           │
 │  ship-a-phase, ship-data, plan-a-phase, iterate,         │
-│  critique, triage, oversight + the plan/ tree            │
+│  critique, triage, expand, oversight + the plan/ tree    │
 └──────────────────────────────────────────────────────────┘
 ```
 

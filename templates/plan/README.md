@@ -10,9 +10,10 @@ the autonomous loop coherent.
 ```
 plan/
 ├── README.md                            # this file
-├── bearings.md                          # standing context: stack, contracts, defaults, sub-agents
+├── bearings.md                          # standing context: stack, contracts, defaults, sub-agents, posture
 ├── AUDIT.md                             # latest /iterate audit (rewritten on each pass)
 ├── CRITIQUE.md                          # external-observer findings (append-only via /critique)
+├── PHASE_CANDIDATES.md                  # phase candidates from /expand, gated by /oversight
 ├── steps/
 │   └── 01_build_plan.md                 # at-a-glance status block + per-phase scope
 └── phases/
@@ -82,6 +83,9 @@ these markers.
   `CRITIQUE.md`.
 - `skills/triage.md` — issue review; routes open issues into
   `AUDIT.md` / `BACKLOG.md` / build plan.
+- `skills/expand.md` — plan-expansion pass; reads signals,
+  proposes phase candidates to `PHASE_CANDIDATES.md`.
+  Posture-controlled (bold default; strict opt-out).
 - `skills/march.md` — outer dispatcher (used with `/loop`).
 - `skills/oversight.md` — user-in-the-loop adjustment (the only
-  skill that asks questions).
+  skill that asks questions). Promotes phase candidates.

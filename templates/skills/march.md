@@ -10,21 +10,31 @@
 right-thing-to-do every tick:
 
 ```
-unlabeled issues exist       →  /triage
-ELSE critique due (rate-lim) →  /critique
-ELSE pending phase           →  /ship-a-phase
-ELSE pending data            →  /ship-data
-ELSE                         →  /iterate
+unlabeled issues exist          →  /triage
+ELSE critique due (rate-lim)    →  /critique
+ELSE pending phase              →  /ship-a-phase
+ELSE pending data               →  /ship-data
+ELSE expand due + bold posture  →  /expand
+ELSE                            →  /iterate
 ```
+
+Deliveries first: pending phases / data ship before `/expand`
+ever fires. `/expand` only runs when there's no immediate
+delivery, OR when its rate-limit window opens (every ~20
+commits or ~48h) AND the bearings posture is **bold** or
+**autonomous**.
 
 This means: an overnight run can take <PROJECT> from
 "scaffolded" to "shipped, populated, iteratively polished,
-critiqued, addressed, and inbox-zero on issues" without a mode
-switch from the user.
+critiqued, addressed, inbox-zero on issues, and growing its
+own plan when reality outpaces the original spec" without a
+mode switch from the user.
 
 The triage check is **cheap when idle** (one API call to count
 unlabeled issues). The critique check is **rate-limited**
-(≥12 commits + ≥24h spacing, green-deploy required).
+(≥12 commits + ≥24h spacing, green-deploy required). The
+expand check is **rate-limited + posture-gated** (≥20 commits
++ ≥48h, posture ≠ strict).
 
 ## 2. Invocation
 
@@ -115,11 +125,50 @@ has a data layer):
 - Execute its procedure end-to-end.
 - Return.
 
-#### 3c. Else — iterate.
+#### 3c. Expand due (rate-limited, posture-gated)?
+
+Read `plan/bearings.md` "Plan expansion posture" section. If
+posture is **strict**, skip to 3d.
+
+Read metadata header at top of `plan/PHASE_CANDIDATES.md`:
+
+```
+> Last pass: <ISO-date> at commit <sha>
+> Pass count: <N>
+```
+
+Dispatch to `/expand` if **all four** hold:
+
+1. Posture is **bold** or **autonomous** (not strict).
+2. Current commit is at least **20 commits after** `Last pass`,
+   OR `Last pass` is more than **48 hours ago**, OR `Last pass`
+   is "never" and at least **3 phases have shipped**.
+3. There's at least one signal worth examining: `plan/AUDIT.md`
+   has Pending rows, OR `plan/CRITIQUE.md` has Pending rows,
+   OR `git log -p --since="<last pass>" -- spec.md design/`
+   shows changes, OR `data/` has substantial growth since the
+   plan was authored.
+4. No phase or data work is pending (Steps 3a/3b would have
+   matched first if there were).
+
+If all four hold:
+
+- Read `skills/expand.md`.
+- Execute its procedure end-to-end.
+- Return.
+
+If any condition fails, fall through to 3d.
+
+#### 3d. Else — iterate.
 
 - Read `skills/iterate.md`.
 - Execute its procedure end-to-end.
 - Return.
+
+(Note: when `/iterate`'s audit finds no actionable findings
+scoring ≥ 3.0 AND posture is bold, iterate dispatches to
+`/expand` itself rather than stopping. See `skills/iterate.md`
+§6 failure mode 6.)
 
 ### Step 4 — Done
 
@@ -161,5 +210,6 @@ skills/triage.md                     # Step 1 (cheapest)
 skills/critique.md                   # Step 2 (rate-limited)
 skills/ship-a-phase.md               # Step 3a
 skills/ship-data.md                  # Step 3b
-skills/iterate.md                    # Step 3c
+skills/expand.md                     # Step 3c (posture-gated)
+skills/iterate.md                    # Step 3d
 ```
