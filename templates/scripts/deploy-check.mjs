@@ -34,9 +34,14 @@ const TIMEOUT_MS = 10 * 60 * 1000   // 10 min default
 const POLL_MS = 5 * 1000
 
 const sha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim()
+const subject = execSync('git log -1 --pretty=%s', { encoding: 'utf-8' }).trim()
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-console.log(`Checking last deployment for commit ${sha.slice(0, 7)} on ${PROVIDER}...`)
+// Most providers create one deploy per push, keyed to the head commit.
+// If you pushed multiple commits at once, the deploy resolves to the
+// last of them — others ride along but aren't directly addressable.
+// We log HEAD's subject so the message reflects what shipped.
+console.log(`Checking deploy for HEAD ${sha.slice(0, 7)} ("${subject}") on ${PROVIDER}...`)
 
 // =====================================================================
 // PROVIDER: NETLIFY
@@ -68,7 +73,19 @@ if (PROVIDER === 'netlify') {
     const deploys = await res.json()
     const match = deploys.find((d) => d.commit_ref === sha)
     if (!match) return { state: 'pending' }
-    if (match.state === 'ready') return { state: 'ready', url: match.deploy_ssl_url ?? match.ssl_url }
+    if (match.state === 'ready') {
+      // Find the previous successful deploy so pollLoop can show the
+      // commit range that landed in this deploy. Skipped silently if
+      // unavailable (first deploy ever, shallow clone, etc).
+      const previousReady = deploys.find(
+        (d) => d.state === 'ready' && d.commit_ref && d.commit_ref !== sha,
+      )
+      return {
+        state: 'ready',
+        url: match.deploy_ssl_url ?? match.ssl_url,
+        previousReadySha: previousReady?.commit_ref,
+      }
+    }
     if (match.state === 'error' || match.state === 'failed') {
       return {
         state: 'error',
@@ -220,6 +237,26 @@ async function pollLoop(probe) {
     }
     if (result.state === 'ready') {
       console.log(`Deploy ready.`)
+      // Show the commit range this deploy contains, if the probe
+      // surfaced a previous-ready SHA. Useful when a push bundled
+      // multiple commits — the operator sees what actually landed
+      // in production, not just HEAD.
+      if (result.previousReadySha) {
+        try {
+          const range = execSync(
+            `git log ${result.previousReadySha}..${sha} --oneline --no-merges`,
+            { encoding: 'utf-8' },
+          ).trim()
+          if (range) {
+            const lines = range.split('\n')
+            console.log(`  Includes ${lines.length} commit${lines.length === 1 ? '' : 's'}:`)
+            for (const line of lines) console.log(`    ${line}`)
+          }
+        } catch {
+          // Previous-deploy SHA may not be in local history (shallow
+          // clone, squash-merged, etc.) — skip range silently.
+        }
+      }
       if (result.url) console.log(`  URL: ${result.url}`)
       process.exit(0)
     }
