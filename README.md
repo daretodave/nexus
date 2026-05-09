@@ -13,6 +13,8 @@
 > feedback. From "I drive every commit" to "leave it for 80
 > hours and come back to a working product."
 
+<img width="1280" height="686" alt="LOOP_A" src="https://github.com/user-attachments/assets/d5ce336a-5c7b-424f-b752-5df4d37c03e6" />
+
 This kit is extracted from two real projects (tickpedia, thock)
 that operate this way. It is not theory; everything in here was
 shipped, broken, and refined in real codebases.
