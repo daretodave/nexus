@@ -134,6 +134,55 @@ regardless of order. Skip rows marked `[skipped]` (set by
 `skills/plan-a-phase.md` §5 to generate (commit separately,
 then proceed).
 
+### Step 2.5 — Mirror the phase to GitHub
+
+Open (or reuse, or reopen) the phase mirror issue. The repo's
+Issues tab gets a public artifact for this phase the moment work
+begins; the same artifact closes when the shipping commit lands.
+The helper is **idempotent** — find-or-create-or-reopen keyed on
+the title prefix `Phase <N> — `, so re-runs of the same phase (or
+rapid-fire ticks) reuse the same number instead of spamming
+duplicates.
+
+```bash
+# 1. Build the body file from the brief's Outcome / Why section.
+#    Keep it user-readable: 1–2 lines goal summary, then a link
+#    back to the phase brief in this repo.
+cat > /tmp/phase-issue-body.md <<EOF
+**Goal:** <one-line outcome from the brief's "Outcome" section>
+
+<2–4 line summary of what shipping this phase delivers>
+
+**Brief:** [\`plan/phases/phase_<N>_<topic>.md\`](https://github.com/<REPO_SLUG>/blob/<DEFAULT_BRANCH>/plan/phases/phase_<N>_<topic>.md)
+
+---
+_Tracked by the autonomous loop. The phase commit will close this issue via a \`Closes #<this-issue>\` trailer; deploy URL is posted as a follow-up comment._
+EOF
+
+# 2. Open / reuse / reopen.
+PHASE_ISSUE=$(node scripts/loop-issue.mjs phase-open \
+    --phase "<N>" \
+    --title "Phase <N> — <topic>" \
+    --body-file /tmp/phase-issue-body.md)
+echo "phase mirror: #$PHASE_ISSUE"
+```
+
+`<N>` here is the phase identifier as it appears on the
+`01_build_plan.md` row (e.g. `15a`, not `15`). The title format
+**must** be `Phase <N> — <topic>` — the helper rejects mismatched
+titles to keep prefix-match reuse working.
+
+On **any failure** of `loop-issue.mjs phase-open` (auth, rate
+limit, network, repo unreachable):
+
+- Print stderr to the run log.
+- Continue with the build. The mirror is best-effort, not gating
+  (Hard rule §7 — phase mirror is non-gating).
+- The next ship-a-phase tick on the same phase will retry.
+
+If the open succeeded, capture `$PHASE_ISSUE` for use in Step 10
+(commit trailer) and Step 12.5 (close-comment).
+
 ### Step 3 — Read the design + canonical sibling
 
 ```bash
@@ -205,6 +254,11 @@ Stage explicitly. Conventional subject; body in 4–8 bullets
 describing what shipped + what the user can now do. Add
 "Decisions" section listing autonomous design calls.
 
+**If Step 2.5 captured a phase issue number** (`$PHASE_ISSUE`),
+add a `Closes #<N>` trailer to the commit body. GitHub auto-closes
+the phase mirror when the commit pushes to <DEFAULT_BRANCH>; that's
+the canonical ship signal on the public timeline.
+
 ```bash
 git add <explicit files>
 git commit -m "$(cat <<'EOF'
@@ -215,6 +269,8 @@ feat: <family> page family — phase <N>
 
 Decisions:
 - <design call 1 — picked X over Y because <reason>>
+
+Closes #<phase-issue-number>
 EOF
 )"
 git push origin <DEFAULT_BRANCH>
@@ -253,6 +309,21 @@ Outcomes:
 - **Exit 3 (config)** — `<PROVIDER_AUTH_TOKEN>` missing or
   unreachable. Stop per §10.
 
+### Step 12.5 — Phase mirror close-comment
+
+If Step 2.5 captured `$PHASE_ISSUE` and Step 12 was green:
+
+```bash
+node scripts/loop-issue.mjs phase-close \
+  --phase "<N>" \
+  --commit "<commit-sha>" \
+  --deploy-url <DEPLOY_URL>
+```
+
+The `Closes #<N>` trailer in Step 10's commit already auto-closed
+the issue on push; this comment confirms the deploy URL on the
+public timeline. Failures here are warnings, not blockers.
+
 ### Step 13 — Done
 
 Return cleanly. The loop's next tick picks up the next phase.
@@ -274,6 +345,11 @@ next in 2–3 lines.
 8. **Content stays in <CONTENT_LOCATION>.** Data stays in
    `<DATA_LOCATION>`. No hardcoded copy/records in components.
 9. <PROJECT-SPECIFIC RULES — e.g., site name lowercase>
+10. **Phase issue mirror is best-effort, not gating.** If
+    `loop-issue.mjs phase-open` fails, the phase still ships;
+    log the stderr and continue. The mirror is a public timeline,
+    not a verification step. Do not block phase delivery on
+    GitHub issue API hiccups.
 
 ## 8. Cross-link retrofit policy
 

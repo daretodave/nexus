@@ -134,6 +134,35 @@ EOF
 git push origin <DEFAULT_BRANCH>
 ```
 
+### Step 5.5 — Mirror the phase to GitHub (best-effort)
+
+Once the brief is committed, open (or reuse) the phase mirror
+issue so the public timeline reflects "next up" before shipping
+starts:
+
+```bash
+cat > /tmp/phase-issue-body.md <<EOF
+**Goal:** <one-line outcome from the brief's "Outcome" section>
+
+<2–4 line summary of what shipping this phase delivers>
+
+**Brief:** [\`plan/phases/phase_<N>_<topic>.md\`](https://github.com/<REPO_SLUG>/blob/<DEFAULT_BRANCH>/plan/phases/phase_<N>_<topic>.md)
+
+---
+_Tracked by the autonomous loop. The phase commit will close this issue via a \`Closes #<this-issue>\` trailer; deploy URL is posted as a follow-up comment._
+EOF
+
+node scripts/loop-issue.mjs phase-open \
+    --phase "<N>" \
+    --title "Phase <N> — <topic>" \
+    --body-file /tmp/phase-issue-body.md
+```
+
+The helper is **idempotent** — if `/ship-a-phase` already opened
+this phase's issue (or if a previous plan-a-phase tick did), the
+same number is reused. Failures here are warnings, not blockers
+(same contract as `/ship-a-phase` Step 2.5).
+
 ### Step 6 — Done
 
 Return 2-line summary: "phase <N> brief committed — <one-line>.

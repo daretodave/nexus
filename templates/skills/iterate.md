@@ -146,6 +146,84 @@ Run §4. Write to `plan/AUDIT.md`:
 
 Top scored. If `/iterate audit`, stop here.
 
+### Step 2.5 — Mirror to GitHub
+
+Open a public GitHub issue mirroring the picked finding **before**
+the work starts. The repo's Issues tab becomes a live timeline of
+"what the loop is shipping right now"; the issue opens when work
+starts and auto-closes on the fix commit's `Closes #N` trailer.
+
+Skip this step in two cases:
+
+1. The picked row already has an `- issue: #N` field (a previous
+   tick mirrored it but didn't ship the fix; reuse the same number).
+2. The picked row came from `/triage` routing (an `[user-issue
+   #N]`-prefixed AUDIT.md row, or a `(issue #N)` reference); the
+   issue already exists publicly. Reuse `#N`.
+
+Otherwise:
+
+```bash
+# 1. Build the body file from the finding row.
+cat > /tmp/loop-issue-body.md <<EOF
+**Source:** <pass description, e.g. "/critique pass 2 (reader sub-agent)" or "/jot <date>" or "/iterate audit <date>">
+**Severity:** <HIGH|MED|LOW> · **Category:** <category from row> · **URL:** <url-or-"general">
+
+## Observation
+<verbatim from row's "observation" field>
+
+## Evidence
+<verbatim from row's "evidence" field>
+
+## Suggested fix
+<verbatim from row's "suggested fix" field>
+
+---
+_Tracked by the autonomous loop. The fix lands as a commit with \`Closes #<this-issue>\` in the body; this issue auto-closes when the commit pushes to <DEFAULT_BRANCH>._
+EOF
+
+# 2. Map row severity → helper flag.
+#    [HIGH] → high · [MED] → med · [LOW] → low
+# 3. Map row "source" field → helper flag.
+#    user → user · browser/reader → reader · audit/iterate → audit · external → external
+# 4. Map row category → helper category.
+#    visual / voice / navigation / mobile / external-critique → enhancement
+#    content (article/data/copy gap) → content
+#    a11y → a11y · seo → seo · perf → perf
+#    bug-shaped (broken link, regression) → bug
+#    Otherwise → enhancement.
+
+# 5. Open the issue.
+N=$(node scripts/loop-issue.mjs open \
+    --severity <high|med|low> \
+    --category <see mapping above> \
+    --source <user|reader|audit|external> \
+    --title "<one-line summary, ≤ 70 chars>" \
+    --body-file /tmp/loop-issue-body.md)
+echo "loop-issue: opened #$N"
+```
+
+Capture `$N` (the helper echoes only the number on stdout). On
+**any failure** of `loop-issue.mjs open` (auth, rate limit,
+network):
+
+- Print stderr to the iterate run log.
+- Note the failure inline in the row as
+  `- issue: [mirror-failed: <ISO timestamp>]` so the next tick
+  retries.
+- Continue with the fix. **The mirror is best-effort, not gating**
+  (Hard rule §7.7).
+
+If the open succeeded, record the number on the row before
+shipping. The CRITIQUE.md/AUDIT.md row gains a new line:
+
+```markdown
+- issue: #<N>
+```
+
+This row update is committed in Step 6 (Tick the audit), not
+separately — keep tick churn low.
+
 ### Step 3 — Delegate or implement
 
 Default delegation:
@@ -179,17 +257,24 @@ Commit subject prefixes:
 
 Body lists audit finding ID/score, the fix, verify result.
 
-**If the fix addresses a triaged issue** (`[user-issue #N]`
-prefix or `(issue #N)` reference), close the loop on GitHub:
+**If the addressed finding has an `- issue: #N` field on its row**
+(populated either by Step 2.5 above, or carried in from `/triage`
+routing), close the loop on GitHub in the same flow:
 
 ```
 # Trailer in commit body — auto-links + auto-closes when merged
 - Closes #42
 ```
 
-After push + green deploy, post follow-up comment via `gh issue
-comment N --body "Shipped in <sha>. Live after deploy."` Load
-`GH_TOKEN` from `.env` first.
+The `- Closes #<N>` trailer is **mandatory** in the commit body
+when the row carries an issue number; it is the closing mechanism.
+Multiple issues can be closed in a single commit by listing one
+trailer line per issue.
+
+Load `GH_TOKEN` and `GH_REPO` from `.env` first if they aren't
+already in the env (see `skills/triage.md` §3). The
+`loop-issue.mjs` helper does this internally; manual `gh` calls
+outside the helper need to do it themselves.
 
 ```bash
 git add <explicit files>
@@ -214,6 +299,21 @@ git push origin <DEFAULT_BRANCH>
 ```bash
 pnpm deploy:check
 ```
+
+**Once deploy:check is green and the row carried an `- issue: #N`,
+post the close-comment** (the `Closes #N` commit trailer already
+auto-closed the issue; the comment confirms the deploy URL):
+
+```bash
+node scripts/loop-issue.mjs close-comment \
+  --number <N> \
+  --commit <commit-sha> \
+  --deploy-url <DEPLOY_URL>
+```
+
+Failures of `close-comment` are warnings, not blockers — the fix
+shipped, the issue is closed, the comment is just polish. Continue
+to Step 8.
 
 ### Step 8 — Done
 
@@ -251,6 +351,12 @@ Return cleanly. Loop's next tick re-audits.
    audit.
 6. **Never delete shipped content silently.** Archive +
    update routing.
+7. **Issue mirror is best-effort, not gating.** If
+   `loop-issue.mjs open` fails (auth, rate limit, network), note
+   `- issue: [mirror-failed: <ISO timestamp>]` on the row and ship
+   the fix anyway. Likewise, `close-comment` failures after a
+   green deploy are warnings, not blockers. The mirror is a
+   public timeline, not a verification step.
 
 ## 8. Quick reference
 
@@ -271,4 +377,10 @@ git add <explicit files>
 git commit -m "<category>: <subject>"
 git push origin <DEFAULT_BRANCH>
 pnpm deploy:check
+
+# Issue mirror
+node scripts/loop-issue.mjs open --severity ... --category ... \
+  --source ... --title "..." --body-file /tmp/loop-issue-body.md
+node scripts/loop-issue.mjs close-comment --number N --commit SHA \
+  --deploy-url <DEPLOY_URL>
 ```
