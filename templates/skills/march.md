@@ -64,7 +64,7 @@ export GH_REPO=$(awk -F= '/^GH_REPO=/ {sub(/^GH_REPO=/, ""); print; exit}' .env)
 GH_REPO=${GH_REPO:-<REPO_SLUG>}
 
 unlabeled=$(gh issue list --repo "$GH_REPO" --state open \
-  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed" \
+  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number --jq 'length' 2>/dev/null || echo 0)
 ```
 

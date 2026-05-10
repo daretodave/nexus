@@ -86,10 +86,16 @@ Load env, verify auth (§3). Exit 3 if missing.
 gh issue list \
   --repo "$GH_REPO" \
   --state open \
-  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed" \
+  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number,title,body,labels,author,createdAt,updatedAt,comments \
   --limit 50
 ```
+
+The `-label:loop:opened` clause excludes issues the loop opened on
+itself (per-finding mirror via `loop-issue.mjs open`, per-phase
+mirror via `phase-open` — phase issues carry both `loop:opened`
+and `loop:phase`, so this single exclusion catches both). Those
+have a known provenance and don't need triage labeling.
 
 If `[]`: print `"triage: 0 unlabeled open issues — humming
 on."` and exit 0 **without committing anything**.
@@ -238,7 +244,7 @@ check:
 
 ```bash
 gh issue list --repo "$GH_REPO" --state open \
-  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed" \
+  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number --jq 'length'
 ```
 
