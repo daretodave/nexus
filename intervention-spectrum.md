@@ -91,6 +91,17 @@ having watched every commit.
   configured and tested.
 - All operational secrets in `.env` (Netlify token, GitHub PAT
   — see your project's `agents.md` Operational secrets section).
+- **All external service dashboards configured per their
+  runbooks.** If your project depends on auth / DB / email /
+  AI APIs, every `setup/NN_<service>.md` runbook must be `OK`
+  or `PARTIAL` (with a clear note on what's deferred), and
+  the dashboard configuration must match the runbook checklist.
+  See [`customization/external-services.md`](./customization/external-services.md).
+- **If your project has user-generated content, moderation
+  must be loop-drainable or escalation-triggered.** A passive
+  "review by eyeball" mod queue is not Level 3 compatible —
+  the loop will pile up items and you'll come back to a
+  crater. See [`customization/moderation-loop.md`](./customization/moderation-loop.md).
 - A deliberate self-audit habit: run `/oversight` when you come
   back, **always**, even if nothing seems wrong. The brief is
   cheap; the surprise of finding something wrong without
@@ -185,8 +196,26 @@ weekend:
    unattended window.
 7. **Read `/oversight`'s output one more time.** If anything in
    the briefing surprises you, don't go.
+8. **Run every service's runbook checklist.** Read
+   `setup/00_files.md`. For each service touching the next 5
+   pending phases, confirm the row is `OK` (not `PARTIAL` /
+   `STUB`). Spot-check the runbook's verification checklist
+   passes (terminal curls / dashboard URLs at the bottom of
+   each runbook). Confirm every env var in every runbook's
+   Section H is present in every deploy environment
+   (Production, Preview, Development). This is the single
+   highest-leverage item for genuine 80h autonomy: the loop
+   cannot dashboard-click, so anything it will need across
+   the whole unattended window must be configured *now*.
+   See [`customization/external-services.md`](./customization/external-services.md).
+9. **If your project has UGC, confirm `/moderate` (or
+   `/iterate`'s mod-pass) drains the queue cleanly.** File a
+   test comment that triggers the AI pre-filter (use a
+   known-bad sample). Confirm `/march` picks it up next tick
+   and either auto-hides or files an audit finding. See
+   [`customization/moderation-loop.md`](./customization/moderation-loop.md).
 
-If all 7 pass: launch the loop. If any fails: fix it, then
+If all pass: launch the loop. If any fails: fix it, then
 re-check.
 
 ---

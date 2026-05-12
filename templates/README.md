@@ -9,6 +9,8 @@ Copy these into your target repo per the playbook
 ```
 templates/
 ├── agents.md                          → repo root
+├── design-prompt.md                   → optional, copy to <repo>/claude-design.prompt.md
+│                                        when commissioning a visual system
 ├── plan/                              → repo's plan/
 │   ├── README.md
 │   ├── bearings.md
@@ -20,7 +22,7 @@ templates/
 │       └── phase_canonical_sibling.md
 ├── skills/                            → repo's skills/
 │   ├── ship-a-phase.md
-│   ├── ship-data.md                   (omit if no GitHub-as-DB)
+│   ├── ship-data.md                   (omit if no structured data layer)
 │   ├── ship-asset.md                  (omit unless Surface: site/hybrid AND branding in scope)
 │   ├── plan-a-phase.md
 │   ├── iterate.md
@@ -31,10 +33,14 @@ templates/
 ├── claude/                            → repo's .claude/
 │   ├── commands/                      (one terse pointer per skill)
 │   └── agents/                        (sub-agent definitions)
-├── data/                              → repo's data/ (if using GitHub-as-DB)
+├── data/                              → repo's data/ (if using gh-as-db or hybrid)
 │   ├── README.md
 │   ├── BACKLOG.md
 │   └── AUDIT.md
+├── setup/                             → repo's setup/ (one runbook per external
+│   │                                    service; index in 00_files.md)
+│   ├── 00_files.md                    (the manifest template)
+│   └── NN_service.md                  (per-service runbook template)
 ├── .github/                           → repo's .github/ (opt-in; cloud loop)
 │   ├── workflows/march.yml
 │   └── CLOUD_LOOP.md
@@ -103,8 +109,10 @@ the corresponding capability:
 
 | File | Adopt when |
 |---|---|
-| `skills/ship-data.md` | The project has a structured data layer (GitHub-as-DB, external DB, SaaS data store). See `nexus/customization/data-layer.md`. |
+| `skills/ship-data.md` | The project has a structured data layer (`gh-as-db`, `hybrid-with-managed-postgres`, `pure-db`, `saas-cms`). See `nexus/customization/data-layer.md`. |
 | `skills/ship-asset.md` + `claude/agents/brander.md` | `Surface: site` or `hybrid` AND you want the loop to render brand assets (OG images, favicons, social cards, SVG → PNG, wordmarks). Demand-pull only — drains findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. See `nexus/customization/branding.md`. |
+| `setup/00_files.md` + `setup/NN_service.md` | The project depends on any external service beyond hosting (auth provider, managed DB, email service, AI API). See `nexus/customization/external-services.md`. |
+| `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 
 If your `bearings.md` declares `Surface: service / library /
 cli`, do not copy `ship-asset.md` / `brander.md` — the skill

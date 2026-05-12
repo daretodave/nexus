@@ -25,6 +25,10 @@
 - A `spec.md` describing what you're building. **One page is
   enough.** It needs: who the user is, what the product does,
   what's in scope for v1, what's deliberately out of scope.
+  - If you have a pitch but no spec, run
+    [`pre-spec.md`](./pre-spec.md) first — a 30-minute
+    interactive session that produces `spec.md` and a
+    `bearings.md` stub.
 - A hosting provider you've picked (Netlify, Vercel, Fly.io,
   etc.). See [`ci-providers.md`](./ci-providers.md).
 - Node 20+ installed. Whatever package manager you prefer (the
@@ -429,19 +433,51 @@ The progression is days, not minutes. Don't skip levels.
 
 ---
 
-## You're ready when
+## You're ready when (the Day 1 checklist)
 
-- [ ] `spec.md` is one page or more, scope is clear.
+This is the "you're about to invoke `/ship-a-phase` for the
+first time on a fresh adoption — here's what should be true"
+checklist. Distinct from the Level-4 pre-flight (see
+[`../intervention-spectrum.md`](../intervention-spectrum.md)),
+which assumes a working loop and is about leaving for 80 hours.
+
+- [ ] `spec.md` is one page or more, scope is clear, persona
+      named.
 - [ ] `plan/bearings.md` locks stack + URL contract + standing
-      decisions.
+      decisions + the `Surface:` line. If your project has
+      user accounts, also: identity tiers, anti-abuse posture,
+      moderation flow (see the optional sections in the
+      bearings template).
+- [ ] `plan/bearings.md` has an entry for `Auth provider` (or
+      "none, v1"). If `Auth provider` is pinned, the matching
+      `setup/NN_<auth>.md` runbook exists (even as a STUB).
+- [ ] If your project depends on external services beyond
+      hosting, `setup/00_files.md` index exists with one row
+      per service. See
+      [`../customization/external-services.md`](../customization/external-services.md).
 - [ ] `plan/steps/01_build_plan.md` has 10–20 phases.
 - [ ] Phase 1 brief is detailed enough to ship without asking.
 - [ ] Canonical sibling brief (usually phase 4 or 5) is detailed.
+- [ ] At least one design artifact (visual system, design
+      tokens, or a `claude-design.prompt.md` for commissioning
+      one) is either committed or has a written brief. See
+      [`../customization/visual-system.md`](../customization/visual-system.md).
 - [ ] `pnpm verify` runs (may fail; runs).
 - [ ] `pnpm deploy:check` runs and reads your provider's state.
-- [ ] `.env` has all secrets. `.env.example` documents what's
-      needed.
+- [ ] `.env` has all secrets. `.env.example` documents every
+      key, with a comment pointing back to the `setup/`
+      runbook section that emits it.
 - [ ] Sub-agents are in `.claude/agents/` and tested.
 - [ ] You've read `skills/ship-a-phase.md` end to end.
+- [ ] **Optional but high-leverage:** if during this adoption
+      you noticed nexus gaps (places where the playbook left
+      you to figure something out yourself, or templates you
+      wished existed), write a `NEXUS_LESSONS.md` in your
+      project root. A separate Claude session can run
+      `/lessons-pr <project-path>` against the nexus repo
+      later (see
+      [`../skills/lessons-pr.md`](../skills/lessons-pr.md)).
+      The methodology improves with every honest application.
 
-When all 10 pass: invoke `/ship-a-phase` for the first time.
+When all checks pass: invoke `/ship-a-phase` for the first
+time.

@@ -7,13 +7,33 @@
 
 ---
 
-## Five patterns
+## Five named variants
 
-Pick one (or combine) before adopting `/ship-data`. The skill
-template doesn't change; the bash commands, validation, and
-deploy semantics do.
+Pick one (or combine) before adopting `/ship-data`. Each
+variant has a short slug — `gh-as-db`, `hybrid-with-managed-postgres`,
+`pure-db`, `saas-cms`, `none` — that
+[`templates/plan/bearings.md`](../templates/plan/bearings.md)
+references in its "Structured data" row. Skills read the
+slug; the bash commands, validation, and deploy semantics
+follow from there.
 
-### Pattern A — GitHub-as-DB (in-repo JSON / YAML / MDX)
+| Slug | When to pick | Skills affected |
+|---|---|---|
+| `none` | Pure code, no records. CLI, library, renderer. | none — delete `/ship-data`. |
+| `gh-as-db` | Read-heavy, edit-light, ≤ ~50k records, every change reviewable. | `/ship-data` markdown shape. |
+| `hybrid-with-managed-postgres` | Static editorial in repo + managed Postgres for write-heavy dynamic (votes, comments, sessions, real-time). | `/ship-data` (static) + `/ship-migration` (DB schema). |
+| `pure-db` | Everything in DB; repo is code only. App-like. | `/ship-migration` only. |
+| `saas-cms` | Edited by non-technical humans through a CMS UI (Sanity, Contentful, Notion, Airtable). | `/ship-data` sync-log shape. |
+
+Pattern A (`gh-as-db`) is the recommended starting point for
+new editorial projects — easy to wrap your head around, no
+external credentials, the repo is the audit log. Pattern C
+(`hybrid-with-managed-postgres`) is the recommended starting
+point for projects with **any** real-time write surface
+(voting, comments, presence, sessions): it accommodates
+those without forcing every record into the DB.
+
+### Pattern A — `gh-as-db` (GitHub-as-DB)
 
 **When this fits:**
 - Slow-moving structured data the app reads at build time.
@@ -52,13 +72,25 @@ data/
 - Step 6 (Persist + commit): write JSON file, commit, push.
 - Step 7 (Confirm deploy): rebuild reflects new data.
 
-### Pattern B — External DB (Postgres / MySQL / SQLite / Mongo / DynamoDB / Firebase)
+### Pattern B — `pure-db` (everything in an external DB)
+
+> Slug: `pure-db`. The project's structured data lives
+> entirely in a database; the repo is code + migrations
+> only. Common shape for app-like projects without a
+> meaningful editorial layer.
+
+**Provider examples:** Managed Postgres (Supabase, Neon,
+Turso, PlanetScale, Render Postgres, Fly Postgres) — these
+are interchangeable. Also MySQL, SQLite, Mongo, DynamoDB,
+Firebase. The skill text references `$DB_PROVIDER` from
+bearings; the provider is configuration, not a pin.
 
 **When this fits:**
 - Real-time writes.
 - High volume (>50k records).
 - Multi-user concurrent writes.
 - App is server-side rendered or has a runtime API.
+- The product has no meaningful editorial / static layer.
 
 **Examples:**
 - A SaaS product with user accounts.
@@ -104,7 +136,7 @@ data/
 
 Encode this as a hard rule in `bearings.md`.
 
-### Pattern C — SaaS data store (Airtable / Notion / Sanity / Contentful / Supabase)
+### Pattern C — `saas-cms` (managed CMS / SaaS data store)
 
 **When this fits:**
 - You want a CMS / structured-data UI for non-technical users.
@@ -145,38 +177,202 @@ Encode this as a hard rule in `bearings.md`.
 - Pricing scales.
 - Loop needs auth.
 
-### Pattern D — Hybrid (some in-repo, some external)
+### Pattern D — `hybrid-with-managed-postgres` (static editorial + managed Postgres)
+
+> Slug: `hybrid-with-managed-postgres`. The project's most
+> natural shape for anything with a real-time write surface
+> (voting, comments, sessions, presence) on top of an
+> editorial spine. Most modern editorial sites with UGC end
+> up here.
+
+**Provider examples:** Supabase, Neon, Turso, PlanetScale,
+Render Postgres, Fly Postgres, AWS RDS, Cloudflare D1 — all
+interchangeable instances of "managed Postgres or
+Postgres-compatible." The skill text references
+`$DB_PROVIDER` from bearings; pick the one your team knows.
+The methodology pins none of them.
 
 **When this fits:**
-- Small slow-changing data (design tokens, vendor list, FAQ) is
-  natural in-repo.
-- High-volume data (user-submitted, transactional) needs DB.
-- You want the best of both.
+- Static editorial content is natural in-repo (articles,
+  schedules, vendor lists, design tokens, FAQ).
+- High-volume dynamic data needs real-time writes (votes,
+  comments, sessions, presence, telemetry).
+- You want hermetic local dev for the static side AND
+  managed ops for the dynamic side.
+- The product has both editorial cadence *and* user-state.
 
 **Examples:**
-- thock-like editorial: articles in MDX-in-repo, comments (if
-  added) in a DB.
-- A SaaS dashboard: tutorial content in MDX, customer data in
-  Postgres.
+- An editorial site with votes + comments — static articles
+  in MDX, votes in Postgres.
+- A SaaS dashboard — tutorial content in MDX, customer
+  records in Postgres.
+- An events site — event metadata in MDX, RSVPs / check-ins
+  in Postgres.
 
-**`/ship-data` shape:**
-- Per-entity routing. The skill checks the schema's `pattern`
-  marker and runs the matching flow.
+**Auth:**
+- Managed-Postgres connection string + service-role key in
+  `.env`.
+- Public anon key in `NEXT_PUBLIC_*` (or framework
+  equivalent) for client-side queries.
+- The auth provider (if separate from the DB provider) gets
+  its own runbook under `setup/`; see
+  [`./external-services.md`](./external-services.md).
 
+**Layout:**
 ```
-data/
-├── schemas/
-│   ├── <repo-entity>.schema.json    # pattern: A
-│   └── <db-entity>.schema.json      # pattern: B
-├── <repo-entity>/<slug>.json
-└── sync-log.md                       # for B-pattern entities
+<repo>/
+├── content/                          # static editorial (Pattern A shape)
+│   ├── articles/<slug>.mdx
+│   └── ...
+├── data/                             # static structured records (Pattern A shape)
+│   ├── schemas/
+│   └── <entity>/<slug>.json
+└── supabase/                         # OR neon/, turso/, etc.
+    ├── migrations/
+    │   ├── 0001_initial.sql
+    │   ├── 0002_votes_table.sql
+    │   └── 0003_rls_policies.sql
+    ├── seed.sql                       # local dev seed
+    └── tests/
+        └── rls.test.sql               # RLS policy tests
 ```
 
-**Pros:** flexibility.
-**Cons:** complexity. Document clearly in `bearings.md` which
-entities are which.
+**`/ship-data` shape (for the static side):**
+- Identical to Pattern A (`gh-as-db`). Static records ship
+  through markdown / JSON commits.
 
-### Pattern E — None
+**`/ship-migration` shape (for the dynamic side):**
+- New companion skill at `skills/ship-migration.md` —
+  same shape as `/ship-data`: one phase = one migration +
+  its RLS policies + its rollback note + its tests.
+- Per tick:
+  1. Read pending migration brief (from
+     `data/BACKLOG.md` or a phase brief).
+  2. Write `supabase/migrations/NNNN_<name>.sql`.
+  3. Write the matching RLS policies in the same file (or
+     a sibling `NNNN_<name>_rls.sql`).
+  4. Write the rollback as a comment block at the top.
+  5. Write the test that proves the RLS policy keeps the
+     wrong actors out (see "RLS testing" below).
+  6. Run `pnpm db:migrate:test` against a throwaway local
+     DB (Docker container or local Postgres) — verify the
+     migration applies cleanly and the RLS test passes.
+  7. Run `pnpm verify` — typecheck + unit + build + e2e
+     against the local DB.
+  8. Commit + push. The push triggers the deploy gate.
+  9. **Migration is applied to production by the
+     deploy provider, not by the loop.** The loop does
+     not hold production DB credentials by default. See
+     "Migration safety" below.
+
+**Sub-agent:**
+- A new `data-steward` sub-agent with Postgres expertise
+  (RLS policy design, index selection, anti-brigade vote-
+  weighting math). See
+  [`./sub-agents.md`](./sub-agents.md) §`data-steward`.
+  Spawned by `/ship-migration` for schema-design subtasks.
+
+**Bearings additions (see
+[`../templates/plan/bearings.md`](../templates/plan/bearings.md)):**
+- `Auth provider` — pinned at bootstrap.
+- `DB provider` — `<DB_PROVIDER>` (Supabase / Neon / …).
+- `RLS posture` — strict / permissive / per-table.
+- `Anti-abuse limits` — vote weight cap, comment
+  rate-limit per user/hour, IP-hash retention window.
+
+**`/critique` and `/iterate` extensions:**
+- Both skills must know to read **DB state**, not just
+  files. The default templates are file-only. For this
+  variant, the audit pass includes:
+  > **DB hygiene.** Connect read-only to the configured
+  > `$DATABASE_URL`. Count rows per table; flag tables
+  > growing > N rows/day. Spot-check RLS policies are
+  > present on every table. Walk the index list; flag any
+  > sequential-scan-prone query patterns the audit caught
+  > in the logs.
+- Pin the audit to read-only credentials. Loop never has
+  schema-mutation power outside `/ship-migration`.
+
+**Migration safety:**
+
+The autonomous loop ships migrations through commits, but
+**applying** migrations to production is gated by the
+deploy provider's migration pipeline (Supabase's
+migrations runner, a custom GitHub Action, Sqitch, or
+similar). The loop does not hold production DB credentials
+by default.
+
+- **Allowed** through the loop: additive migrations
+  (CREATE TABLE, ADD COLUMN as nullable, CREATE INDEX,
+  CREATE POLICY).
+- **Stop and ask via `/oversight`**: destructive
+  migrations (DROP, ALTER COLUMN narrowing, data type
+  changes, RLS posture downgrades).
+
+Encode this as a hard rule in `bearings.md`:
+
+> The autonomous loop applies additive migrations only.
+> Destructive migrations require `/oversight` approval
+> and a tested rollback plan before merge.
+
+**RLS testing — the load-bearing piece:**
+
+Row-Level Security policies are easy to write wrong and
+catastrophic when they're wrong. Test every policy:
+
+```sql
+-- supabase/tests/votes_rls.test.sql
+begin;
+select plan(3);
+
+-- as anon: can read public votes, cannot insert
+set role anon;
+select results_eq(
+  $$ select count(*) from votes where season_id = 'abc' $$,
+  $$ select 0::bigint $$,
+  'anon sees public votes (zero in seed)'
+);
+select throws_ok(
+  $$ insert into votes (user_id, season_id, weight)
+     values (null, 'abc', 1) $$,
+  '42501',
+  'anon cannot insert votes'
+);
+
+-- as authenticated: can insert own vote
+set role authenticated;
+set request.jwt.claim.sub = 'user-uuid-1';
+select lives_ok(
+  $$ insert into votes (user_id, season_id, weight)
+     values ('user-uuid-1', 'abc', 1) $$,
+  'authenticated user can vote'
+);
+
+select * from finish();
+rollback;
+```
+
+The RLS test runs in `pnpm verify` (db:test leg) and in
+CI before merge. A migration without an RLS test for every
+new policy is a `/ship-migration` failure.
+
+**Pros:**
+- Static side keeps editorial cadence + diffable history.
+- Dynamic side handles real-time + multi-user concurrent
+  writes.
+- Each entity lives in the storage that fits its access
+  pattern — no forcing.
+- Local dev stays hermetic for the static side (most of
+  the project); only the DB-touching subset needs DB
+  credentials.
+
+**Cons:**
+- Two storage models to operate. `bearings.md` must
+  clearly list which entities are which.
+- The verify gate gains a DB leg; CI gains a DB step.
+- Migration discipline matters — see "Migration safety."
+
+### Pattern E — `none`
 
 **When this fits:**
 - The project is a pure code library (npm package, Cargo crate).
@@ -216,9 +412,12 @@ Every record (regardless of pattern) carries a provenance block:
 }
 ```
 
-For Pattern B (DB), this is a column or sub-document. For
-Pattern C (SaaS), this is a field group. For Pattern A
-(in-repo), this is part of the JSON.
+For `pure-db` / the DB-side of
+`hybrid-with-managed-postgres`, this is a column (or JSONB
+sub-document). For `saas-cms`, this is a field group. For
+`gh-as-db` / the static side of
+`hybrid-with-managed-postgres`, this is part of the JSON
+file itself.
 
 ### Source taxonomy
 
@@ -331,8 +530,11 @@ export const SwitchSchema = z.object({
 })
 ```
 
-For Pattern B / C, this is enforced at the driver / API
-boundary; for Pattern A, by `pnpm data:validate`.
+For `pure-db` / `saas-cms`, this is enforced at the
+driver / API boundary; for `gh-as-db`, by
+`pnpm data:validate`; for `hybrid-with-managed-postgres`,
+both — at the driver for DB-side records, at
+`pnpm data:validate` for static records.
 
 ---
 
@@ -341,43 +543,82 @@ boundary; for Pattern A, by `pnpm data:validate`.
 ```mermaid
 flowchart TD
   start{What kind of data?}
-  start -->|"Slow, reviewable, < 50k records"| A[Pattern A — GitHub-as-DB]
-  start -->|"Real-time, high-volume"| B[Pattern B — External DB]
-  start -->|"Edited by non-technical humans"| C[Pattern C — SaaS]
-  start -->|"Mix"| D[Pattern D — Hybrid]
-  start -->|"Pure code, no records"| E[Pattern E — None, skip ship-data]
+  start -->|"No structured records (CLI / library / renderer)"| E[none — skip /ship-data]
+  start -->|"Pure code-product app, no editorial layer"| B[pure-db]
+  start -->|"Edited by non-technical humans through a CMS UI"| C[saas-cms]
+  start -->|"Static editorial only, < 50k records"| A[gh-as-db]
+  start -->|"Static editorial + real-time writes (votes, comments, sessions)"| D[hybrid-with-managed-postgres]
 ```
 
-If unsure: **start with Pattern A and see how far it goes.**
-The migration to Pattern B/C is straightforward when scale
-demands it; the reverse (DB → JSON-in-repo) is harder.
+If unsure between `gh-as-db` and
+`hybrid-with-managed-postgres`: pick
+`hybrid-with-managed-postgres` if the v1 spec mentions
+*any* real-time write surface (voting, comments, presence,
+sessions, telemetry). Otherwise pick `gh-as-db`.
+
+The migration from `gh-as-db` to
+`hybrid-with-managed-postgres` is straightforward when scale
+demands; the reverse (DB → JSON-in-repo) is harder. The
+migration from any pattern to `none` is destructive — only
+do it if you're shrinking scope dramatically.
 
 ---
 
-## Migrating between patterns
+## Migrating between variants
 
-### A → B (GitHub-as-DB to external DB)
+### `gh-as-db` → `hybrid-with-managed-postgres`
 
-Triggered when: repo growing >50k records, build times suffering,
-multi-user writes needed.
+Triggered when: a new write-heavy surface lands (voting,
+comments, sessions) and the in-repo shape can't accommodate
+real-time / multi-user.
 
-1. Define the DB schema mirroring the Zod schemas.
-2. Write a migration script that reads `data/<entity>/*.json`
-   and inserts into the DB.
-3. Update `<schema-package>` loaders to read from DB instead of
-   filesystem.
-4. Keep `data/` for one or two releases as the audit trail; then
-   `git mv data/ data-archive/`.
-5. Update `bearings.md` and `customization/data-layer.md` (this
-   file) to reflect Pattern B.
-6. Update `.env` with DB credentials.
-7. Update `skills/ship-data.md` Step 6 (commit captures
-   migration, not record file).
+1. Pick a managed Postgres provider (Supabase, Neon, Turso,
+   …). Write the `setup/NN_<db>.md` runbook per
+   [`./external-services.md`](./external-services.md)
+   *before* the first migration ships.
+2. Define the DB schema for the new dynamic entities only —
+   don't migrate the static side.
+3. Write the first migration + RLS policy + RLS test under
+   `supabase/migrations/` (or `<db>/migrations/`).
+4. Add `data-steward` sub-agent (see
+   [`./sub-agents.md`](./sub-agents.md)).
+5. Update `bearings.md`: change `Structured data` row from
+   `gh-as-db` to `hybrid-with-managed-postgres`. Add the new
+   bearings rows (`Auth provider`, `DB provider`, `RLS
+   posture`, `Anti-abuse limits`).
+6. Add a new `/ship-migration` skill — same shape as
+   `/ship-data`. Wire `/march` to dispatch on pending
+   migrations.
 
 This is a deliberate phase, not an iterate finding. Use
 `/plan-a-phase` to write the migration brief.
 
-### B → C (DB to SaaS)
+### `gh-as-db` → `pure-db`
+
+Triggered when: repo growing >50k records, build times
+suffering, every entity benefits from real-time writes.
+Rarer; consider `hybrid-with-managed-postgres` first.
+
+1. Define the DB schema mirroring the Zod schemas.
+2. Write a migration script that reads `data/<entity>/*.json`
+   and inserts into the DB.
+3. Update `<schema-package>` loaders to read from DB instead
+   of filesystem.
+4. Keep `data/` for one or two releases as the audit trail;
+   then `git mv data/ data-archive/`.
+5. Update `bearings.md` and this file's
+   `Structured data` row to `pure-db`.
+6. Update `.env` with DB credentials.
+7. Replace `/ship-data` with `/ship-migration`.
+
+### `hybrid-with-managed-postgres` → `pure-db`
+
+Rare. Triggered when: the static editorial layer has
+collapsed into the DB anyway (records-grew-faster-than-MDX).
+Same shape as the previous migration but the static side is
+the work.
+
+### `pure-db` → `saas-cms` (DB to SaaS-managed)
 
 Less common. Triggered when: editors want a UI, you want to
 shed ops burden.
@@ -390,7 +631,7 @@ shed ops burden.
 
 Same: deliberate phase via `/plan-a-phase`.
 
-### Any → A (consolidating to in-repo)
+### Any → `gh-as-db` (consolidating to in-repo)
 
 Less common; usually wrong direction. Only do this if you're
 shrinking scope dramatically.

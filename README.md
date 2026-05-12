@@ -1,5 +1,14 @@
 # nexus
 
+Nexus is a methodology + template kit that turns a repo into a
+project that ships itself. You write a spec; nexus gives you a
+small set of slash commands (`/ship-a-phase`, `/iterate`,
+`/critique`, `/triage`, `/march`) that read your spec, ship a
+slice, run the verify gate, push, watch the deploy, and
+iterate. Run it manually for an evening; let it loop for a
+weekend; come back to a working product. Stack-agnostic, AI
+client-agnostic, $0 marginal on Claude Pro/Max + a public repo.
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)](https://claude.com/claude-code)
 [![Status: stable](https://img.shields.io/badge/status-stable-success)](#)
@@ -51,10 +60,15 @@ commit, one push, one deploy confirmation. Repeat under `/loop`
 for hours or days.
 
 → [TL;DR — clone + delegate the adoption](#tldr--clone--delegate-the-adoption) (skip the playbook, hand it to your agent)
+→ [TL;DR — I have a pitch, no spec yet](#tldr--i-have-a-pitch-no-spec-yet) (pre-spec interview, then adoption)
 
 ---
 
 ## TL;DR — clone + delegate the adoption
+
+> Use this if you already have a `spec.md`. If you only have
+> a verbal pitch, jump down to
+> [TL;DR — I have a pitch, no spec yet](#tldr--i-have-a-pitch-no-spec-yet).
 
 If you'd rather have an agent do the adoption work for you,
 clone nexus next to your repo and paste the prompt below into
@@ -178,6 +192,77 @@ keystrokes." The playbooks are for everyone else.
 
 ---
 
+## TL;DR — I have a pitch, no spec yet
+
+> Use this if you have a working name and a one-paragraph
+> pitch, but no `spec.md` yet. This runs the pre-spec
+> interview, writes `spec.md`, and then hands off to the
+> adoption flow above. End-to-end in one paste.
+
+Paste this at your project's root (where `git init` has run
+but there's nothing else yet):
+
+```
+Run nexus's pitch-to-adopted flow.
+
+nexus is at ../nexus (or ./.nexus if submoduled). The plan
+is: pre-spec interview → write spec.md → adopt nexus.
+
+Phase A — pre-spec interview (30-45 minutes)
+
+Read ../nexus/playbooks/pre-spec.md end-to-end. Read
+../nexus/concepts/asking-well.md for question shape. Then
+run the three question batches (foundation, spine, surface)
+per the playbook. AskUserQuestion is allowed during this
+phase — it's pre-spec, not in-skill. Once spec.md is
+committed at the end of Phase A, that rule reverts.
+
+Here's my pitch in my own words:
+
+  <ONE-PARAGRAPH PITCH — what the product is, who it's for,
+  what makes it interesting. Don't polish.>
+
+Phase A deliverables (committed before Phase B starts):
+  - spec.md (at least one page, persona named, v1 scope)
+  - plan/bearings.md stub (Surface, Auth, Stack, hosting,
+    voice, hard rules)
+  - (optional) claude-design.prompt.md if Batch 3 Q2 landed
+    on "commission a visual system" (see
+    ../nexus/customization/visual-system.md)
+  - (optional) NEXUS_LESSONS.md scratch — capture nexus gaps
+    you hit during the interview, for a later /lessons-pr
+    pass back to the nexus repo
+
+Phase B — adoption
+
+Once Phase A's commits land, switch to the standard adoption
+prompt: read ../nexus/README.md from the TL;DR section
+downward, then follow ../nexus/playbooks/new-project.md.
+AskUserQuestion is no longer allowed (per nexus's standing
+rules — only /oversight may ask). Decide and document; don't
+ask.
+
+End-state:
+  - chore: adopt nexus methodology commit landed and pushed
+  - Day 1 checklist in new-project.md passes
+  - Ready for /ship-a-phase as the first conscious step.
+  - Do NOT invoke /ship-a-phase yourself; let the user do
+    that.
+
+Standing rules:
+  - Commit and push as a single atomic act per logical chunk.
+  - No Co-Authored-By trailers, no emojis.
+  - No --no-verify, no force-push.
+
+Estimated time: 60-90 minutes total. Begin with Phase A.
+```
+
+Pitch quality matters. If you can't describe the product in
+one paragraph in plain language, come back when you can. The
+agent will not invent product direction for you.
+
+---
+
 ## What you get
 
 A small family of slash commands the autonomous loop uses:
@@ -246,15 +331,27 @@ You **don't** want this when:
 
 ---
 
-## Two paths to start
+## Three paths to start
 
 ```mermaid
 flowchart LR
   spec{Have a spec.md?} -- yes --> green["playbooks/new-project.md"]
-  spec -- no --> brownfield{Existing repo?}
-  brownfield -- yes --> brown["playbooks/existing-project.md"]
-  brownfield -- no --> spec_first[Write a spec first.<br/>Then come back.]
+  spec -- "no, but I have a pitch" --> presp["playbooks/pre-spec.md (interactive)"]
+  spec -- nothing yet --> think[Come back when you have a pitch.]
+  presp --> green
+  green --> brown_check{Existing repo with code?}
+  brown_check -- yes --> brown["playbooks/existing-project.md"]
+  brown_check -- no --> ship[/ship-a-phase manually for the first time/]
 ```
+
+### → [`playbooks/pre-spec.md`](./playbooks/pre-spec.md)
+
+Have a pitch, no spec yet. A 30-minute interactive interview
+that produces `spec.md`, a `bearings.md` stub, and an optional
+visual-system commission prompt. The only nexus playbook
+where `AskUserQuestion` is allowed — see the carve-out at
+the top of the playbook. Output feeds straight into
+`new-project.md`.
 
 ### → [`playbooks/new-project.md`](./playbooks/new-project.md)
 
@@ -329,22 +426,31 @@ nexus/
 ├── README.md                          # this file
 ├── intervention-spectrum.md           # the levels in detail
 ├── playbooks/
+│   ├── pre-spec.md                    # pitch → spec.md (interactive)
 │   ├── new-project.md                 # greenfield setup
 │   ├── existing-project.md            # brownfield retrofit
-│   └── ci-providers.md                # deploy-gate variations
+│   ├── ci-providers.md                # deploy-gate variations
+│   └── cloud-loop.md                  # opt-in GitHub Actions loop
 ├── concepts/
 │   ├── architecture.md                # the whole system in one read
-│   └── skills-anatomy.md              # how to read/write a skill file
+│   ├── skills-anatomy.md              # how to read/write a skill file
+│   └── asking-well.md                 # the question-shape convention
 ├── customization/
 │   ├── verify-gate.md                 # composing the right pre-commit checks
 │   ├── hermetic-e2e.md                # the e2e leg — patterns, alt-port DB seeding, smoke walker
-│   ├── data-layer.md                  # GitHub-as-DB vs DB vs none
+│   ├── data-layer.md                  # gh-as-db / hybrid-with-managed-postgres / pure-db / saas-cms / none
 │   ├── sub-agents.md                  # designing your specialists
 │   ├── branding.md                    # opt-in /ship-asset + brander agent (Surface-gated)
+│   ├── visual-system.md               # design system layer (upstream of branding/assets)
+│   ├── moderation-loop.md             # mod queues + /oversight escalation (for UGC projects)
+│   ├── external-services.md           # the setup/ paradigm — pre-flight every dashboard
 │   └── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
+├── skills/                            # nexus-self meta-skills (not adopter skills)
+│   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
 └── templates/
     ├── README.md                      # how to apply the templates
     ├── agents.md                      # rule-book template (target: repo root)
+    ├── design-prompt.md               # paste into a fresh agent to commission a visual system
     ├── plan/                          # → repo's plan/
     │   ├── README.md
     │   ├── bearings.md
@@ -355,7 +461,7 @@ nexus/
     │   └── CRITIQUE.md
     ├── skills/                        # → repo's skills/
     │   ├── ship-a-phase.md
-    │   ├── ship-data.md                # omit if no GitHub-as-DB
+    │   ├── ship-data.md                # omit if no structured data layer
     │   ├── ship-asset.md               # omit unless Surface: site / hybrid
     │   ├── plan-a-phase.md
     │   ├── iterate.md
@@ -367,7 +473,10 @@ nexus/
     ├── claude/                        # → repo's .claude/
     │   ├── commands/                  # one terse pointer per skill
     │   └── agents/                    # generic sub-agent templates
-    ├── data/                          # → repo's data/ (if using GitHub-as-DB)
+    ├── data/                          # → repo's data/ (if using gh-as-db or hybrid)
+    ├── setup/                         # → repo's setup/ (per-external-service runbooks)
+    │   ├── 00_files.md                # the manifest / index template
+    │   └── NN_service.md              # per-service runbook template
     ├── github/                        # → repo's .github/ (opt-in cloud loop)
     │   ├── workflows/march.yml        # cron + Claude Code Action
     │   └── CLOUD_LOOP.md              # operator's guide (lives in repo)

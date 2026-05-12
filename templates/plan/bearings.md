@@ -84,13 +84,138 @@ then stop and ask.
 | Language | <e.g. TypeScript strict> | <reason> |
 | Styling | <e.g. Tailwind CSS> | <reason> |
 | Content | <e.g. MDX-in-repo, headless CMS, none> | <reason> |
-| Structured data | <pattern A/B/C/D/E from customization/data-layer.md> | <reason> |
+| Structured data | <slug from customization/data-layer.md: gh-as-db / hybrid-with-managed-postgres / pure-db / saas-cms / none> | <reason> |
 | Schemas | <e.g. Zod, generated to JSON Schema> | <reason> |
 | Test (unit) | <e.g. Vitest> | <reason> |
 | Test (e2e) | <e.g. Playwright> | <reason> |
 | Lint | <e.g. ESLint + Prettier> | <reason> |
 | Pkg mgr | <e.g. pnpm 9> | <reason> |
 | Hosting | <HOSTING_PROVIDER> with <plugin if any> | <reason> |
+
+<!-- optional: fill in if your project has external services
+     beyond hosting. See nexus/customization/external-services.md
+     for the convention. -->
+
+## External services (optional)
+
+For every external service the project depends on, write a
+`setup/NN_<service>.md` runbook *before* phase 1 ships. The
+runbook covers every dashboard click for every phase that
+will ever touch the service. The loop reads
+`setup/00_files.md` every `/oversight` tick and surfaces
+drift before it becomes a stall.
+
+| # | Service | Runbook | Status | Last verified | Dashboard |
+|---|---|---|---|---|---|
+| 01 | GitHub | `setup/01_github.md` | <OK/PARTIAL/STUB> | <ISO date> | <URL> |
+| 02 | <HOSTING_PROVIDER> | `setup/02_<hosting>.md` | <status> | <date> | <URL> |
+| 03 | <DB_PROVIDER> | `setup/03_<db>.md` | <status> | <date> | <URL> |
+| 04 | <AUTH_PROVIDER> | `setup/04_<auth>.md` | <status> | <date> | <URL> |
+| 05 | <EMAIL_PROVIDER> | `setup/05_<email>.md` | <status> | <date> | <URL> |
+| 06 | <AI_PROVIDER> | `setup/06_<ai>.md` | <status> | <date> | <URL> |
+
+Drop rows that don't apply. Add rows as the build plan
+grows. The minimum is GitHub + hosting; everything else is
+project-specific.
+
+See `nexus/customization/external-services.md` for the
+runbook shape and the loop's introspection contract.
+
+<!-- optional: fill in if your project has its own auth
+     beyond `/critique`'s reader-session. -->
+
+## Auth provider (optional)
+
+**Auth provider:** `<none | Auth0 | Clerk | Supabase Auth |
+next-auth | Lucia | Better Auth | Iron Session | custom>`
+
+Tells every auth-touching phase which integration to wire.
+Pin on day one to prevent re-litigation. If the provider
+needs dashboard configuration, every phase that touches it
+gets a section in `setup/NN_<auth>.md` per
+`nexus/customization/external-services.md`.
+
+<!-- optional: fill in if your project has user accounts. -->
+
+## Identity tiers (optional)
+
+What can anonymous users do? What can authenticated do?
+
+- **Anonymous:** `<can-read | can-read-and-write | cannot-access>`
+- **Authenticated:** `<base permissions, e.g. comment, vote,
+  flag>`
+- **Account age requirement for write:** `<none | 1h | 24h |
+  7d>`
+- **Email-verification requirement:** `<not required |
+  required for write | required for read>`
+- **Anonymous voting / commenting (if applicable):**
+  `<not allowed | rate-limited by IP | allowed with hidden
+  weight>`
+
+These are policy decisions and belong in bearings, not in
+skills. Every skill that gates by identity reads from here.
+
+<!-- optional: fill in if your project has user-generated
+     content (comments, votes, submissions, flags). -->
+
+## Anti-abuse posture (optional)
+
+- **Vote weighting:** `<flat | by-account-age | by-account-age-and-login-frequency>`
+- **Comment rate-limit:** `<N per user per hour, M per IP
+  per hour>`
+- **Submission rate-limit:** `<N per user per day>`
+- **IP-hash retention:** `<30d | 90d | 365d>`
+- **CAPTCHA threshold:** `<never | after N flagged actions
+  in window | always for new accounts>`
+- **Account-age gate before write:** `<none | 1h | 24h>`
+
+The loop respects these limits; every write-skill reads them.
+See `nexus/customization/moderation-loop.md` for how the
+mod queues that these limits produce get drained.
+
+<!-- optional: fill in if your project has UGC and a
+     moderation surface. -->
+
+## Moderation flow (optional)
+
+- **Mod flow:** `<ai-pre-filter | post-mod | pre-mod>`
+- **Mod queue location:** `<data/mod/*.md | DB columns on
+  the content table | setup/04_<auth>.md RBAC-gated>`
+- **AI pre-filter model:** `<openai:omni-moderation-latest
+  | anthropic:moderation | local-classifier | none>`
+- **`/oversight` escalation thresholds:**
+  - Flagged spike: `<N items in M hours>`
+  - New-account age: `<24h default>`
+  - Repeat-flag pattern: `<N flags on same user in M days>`
+- **Mod audit log:** `<plan/MOD_AUDIT.md | DB table>`
+- **Mod role membership:** `<role name + how granted>`
+
+The loop drains the queues and respects the thresholds.
+See `nexus/customization/moderation-loop.md`.
+
+<!-- optional: fill in if your project has AI-generated
+     content, AI-assisted moderation, AI-suggested ranking,
+     or any other AI-in-the-product surface beyond the build
+     loop itself. -->
+
+## AI usage map (optional)
+
+Which surfaces use AI, and how. Distinguishes the *product's*
+use of AI from the *build loop's* use (which is universal in
+nexus projects).
+
+| Surface | AI's role | Human gate | Model |
+|---|---|---|---|
+| <e.g. article summaries> | generated | post-edit by `/iterate` | <model> |
+| <e.g. comment moderation pre-filter> | filter (verdict in / out) | manual review on hold queue | <model> |
+| <e.g. tag suggestions> | suggest | author accepts/rejects | <model> |
+| <e.g. mod actions (remove, ban)> | none — human only | — | — |
+| <e.g. spec writing> | none — human only | — | — |
+
+Be explicit about what is *not* AI. The audit trail for
+content trustworthiness depends on this distinction. See
+`customization/data-layer.md` § Provenance for the
+record-level `source: ai-generated` rigor.
 
 ## URL / API / CLI contract (locked)
 
