@@ -279,6 +279,7 @@ A small family of slash commands the autonomous loop uses:
 | `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → phase → data → expand → iterate. |
 | `/jot` | **The user's quickfire.** Drop a free-text observation into `plan/CRITIQUE.md` and push, in seconds. The next `/iterate` tick scores it (with a `+0.5` user-source bump) against everything else and ships the fix. No questions back; same shape as `/ship-data add` — input via the slash arg. |
 | `/oversight` | **The only interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote phase candidates. |
+| `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets. State-aware, idempotent, never destructive. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
 
 Plus one **opt-in** demand-pull skill for projects with
 `Surface: site` / `hybrid` that need to render brand assets
@@ -444,6 +445,7 @@ nexus/
 │   ├── visual-system.md               # design system layer (upstream of branding/assets)
 │   ├── moderation-loop.md             # mod queues + /oversight escalation (for UGC projects)
 │   ├── external-services.md           # the setup/ paradigm — pre-flight every dashboard
+│   ├── bootstrap-automation.md        # the executor that drives provider CLIs end-to-end (paired with external-services.md)
 │   └── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
 ├── skills/                            # nexus-self meta-skills (not adopter skills)
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR

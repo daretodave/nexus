@@ -26,6 +26,22 @@ layout) or `.nexus/customization/external-services.md`
 
 ---
 
+## Bootstrap automation
+
+Most rows in this index are scriptable end-to-end by
+`/bootstrap` (see
+[`nexus/customization/bootstrap-automation.md`](../../customization/bootstrap-automation.md)).
+Each `NN_<service>.md` runbook lists which sections are
+`Automated by /bootstrap` near the top. Sections that
+require a human (DNS, OAuth approvals, billing) appear as
+handoffs during the bootstrap run and as `[needs-user-call]`
+rows in `plan/AUDIT.md` if deferred.
+
+`/bootstrap status` is the read-only diagnostic — safe to
+run any time, including inside `/oversight`.
+
+---
+
 ## Index
 
 | # | Service | Runbook | Status | Phases that touch it |

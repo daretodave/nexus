@@ -8,6 +8,14 @@
 > touch it. The loop reads the runbook index every
 > `/oversight` tick and surfaces drift before it becomes
 > a stall.
+
+> **Pair with [`bootstrap-automation.md`](./bootstrap-automation.md).**
+> Where this customization defines the *runbooks* (the
+> intent + audit trail), the bootstrap layer defines the
+> *executor* (the script that drives provider CLIs and
+> propagates secrets). Adopt both for the full path:
+> runbooks document what should be true; `/bootstrap`
+> makes it true.
 >
 > The framing: at Level 0–1 you click around dashboards as
 > you build. At Level 3–4 you can't — the loop has no
@@ -274,6 +282,9 @@ actually reachable.
 
 ## See also
 
+- [`./bootstrap-automation.md`](./bootstrap-automation.md)
+  — the executor layer that drives provider CLIs to make
+  the runbooks come true.
 - [`../templates/setup/00_files.md`](../templates/setup/00_files.md)
   — the manifest template.
 - [`../templates/setup/NN_service.md`](../templates/setup/NN_service.md)

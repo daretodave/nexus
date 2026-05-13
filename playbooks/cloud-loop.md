@@ -7,6 +7,14 @@
 > **Opt-in.** Most projects are fine with local-only loops;
 > this is for projects where unattended autonomy is the
 > point.
+>
+> **Streamlined path:** if you've adopted the
+> [`bootstrap-automation`](../customization/bootstrap-automation.md)
+> customization, run `/bootstrap cloud-loop` instead of
+> walking the steps below. The 10-step manual walkthrough
+> below is the source-of-truth that the `cloud-loop` slice
+> of `/bootstrap` implements — keep this doc as the
+> reference even if you use the script.
 
 ## When you want this
 

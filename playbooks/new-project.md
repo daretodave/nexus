@@ -51,8 +51,9 @@ section in brackets.
 6. Wire the verify gate [20 min]
 7. Wire the deploy gate [20 min]
 8. Author 2–4 sub-agents [15 min]
-9. Smoke-test by running `/ship-a-phase` once [15 min]
-10. Ratchet up the autonomy [variable]
+9. (Optional) Run `/bootstrap` to provision external services [10–20 min]
+10. Smoke-test by running `/ship-a-phase` once [15 min]
+11. Ratchet up the autonomy [variable]
 
 ---
 
@@ -363,7 +364,33 @@ correct frontmatter (name, description, tools).
 
 ---
 
-## 9. Smoke test
+## 9. (Optional) Run `/bootstrap` to provision external services
+
+If your project depends on a hosted database, hosting
+provider, auth provider, or other external services, you
+have two paths to wire them:
+
+- **Manual.** Walk each `setup/NN_<service>.md` runbook
+  yourself. Best when you want maximal control or you're
+  using providers without a stable CLI / API.
+- **Automated.** Run `/bootstrap` (see
+  [`../customization/bootstrap-automation.md`](../customization/bootstrap-automation.md)).
+  Takes tokens in, drives provider CLIs out, ends with a
+  green deploy + a ticking cloud loop. Handoffs (DNS,
+  OAuth approvals, App installs) pause for the user;
+  everything else is scripted.
+
+For the automated path: copy
+`templates/setup/bootstrap.example.json` to
+`setup/bootstrap.local.json`, fill in your project
+settings, then run `pnpm bootstrap:status` (read-only) to
+preview the plan, then `pnpm bootstrap` for the
+interactive walk.
+
+The bootstrap layer is opt-in and standalone — skipping it
+doesn't break anything; the rest of nexus works the same.
+
+## 10. Smoke test
 
 Run:
 
@@ -393,7 +420,7 @@ through a wonky phase 1.** It poisons every later phase.
 
 ---
 
-## 10. Ratchet up the autonomy
+## 11. Ratchet up the autonomy
 
 Once phase 1 ships green:
 

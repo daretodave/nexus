@@ -35,6 +35,34 @@ what was an intentional choice.
 
 ---
 
+## Automated by `/bootstrap`
+
+The bootstrap layer scripts these sections (filled in once
+the service's adapter is implemented in
+`scripts/bootstrap.mjs`):
+
+- Section A (project / account creation) — auto via CLI
+- Section B (application / project config) — auto via CLI
+- Section H (env-var propagation) — auto via CLI
+
+These sections require human action; the bootstrap pauses
+as handoffs:
+
+- Section D (custom domain / branding) — needs DNS or
+  dashboard upload
+- Section E (security / attack protection) — dashboard
+  toggles
+- Section G (webhooks) — dashboard secret rotation
+
+When `/bootstrap <service>` finishes, the per-section
+checkboxes below are ticked in place. Re-running is
+idempotent.
+
+See [`nexus/customization/bootstrap-automation.md`](../../customization/bootstrap-automation.md)
+for the contract.
+
+---
+
 ## Section A — Tenant / Account settings
 
 Path: `<dashboard path>`
