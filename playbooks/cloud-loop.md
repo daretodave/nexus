@@ -259,6 +259,54 @@ gh secret delete NETLIFY_AUTH_TOKEN  # if you added it for cloud only
 The local loop is unchanged. Nothing else needs to be
 reverted.
 
+## Failure mode: the post-result exit hang
+
+The one failure that wedges the loop instead of just blocking a
+tick. Symptom: the agent emits its final `{"type":"result",
+"subtype":"success"}`, then the run **never closes** — it sits
+`in_progress` for hours — and it stops shipping commits. It looks
+nefarious. It is not.
+
+**Mechanism.** The gate (`pnpm verify`) grew past a single
+foreground time budget. The agent reasonably moved it to
+`run_in_background: true` and parked, waiting for a completion
+notification. In an interactive session that notification is
+reliable, so it looks fine locally. In the non-interactive cloud
+SDK it is **not** reliable: the SDK ends the turn (emits the
+`result`) while the backgrounded gate is still alive, the resume
+notification often never arrives, so the agent never resumes (no
+commit) and the gate's child processes (dev server, headless
+browser, DB containers) keep the process tree alive so the CLI
+cannot exit. One root cause, two visible symptoms ("stopped
+committing" + "never closes").
+
+**The trap: do not add a watchdog.** A second job that cancels
+the run on a done-marker or a shipped commit only masks it — and
+it cannot fire in the exact case that matters (no commit, no
+marker, because the agent never resumed). It also adds enough
+complexity to make things worse. The fix is to make the CLI able
+to exit, not to kill it after it can't.
+
+**The fix.** Run the gate foreground (standing rule 3 in the
+agents.md template). If it has outgrown one foreground budget,
+shrink it: split into sequential foreground legs with their own
+bounded timeouts, and move O(content) breadth (per-record
+crawls) to a nightly `e2e-full`-style job that files an issue on
+failure. The per-commit step timeout reverts to a pure backstop
+(sized above the legit max), not the mechanism that keeps the
+loop moving.
+
+**Diagnosis technique (reusable).** Cloud action logs hide the
+SDK transcript by default (`Running Claude Code via SDK (full
+output hidden)`). When a hang is opaque, clone the workflow to a
+dispatch-only diagnostic copy with `show_full_output: true`,
+identical prompt+env, a short step cap, and no watchdog. One run
+shows the full turn-by-turn transcript and the
+`init → result → dead-air` timing exactly. Delete the clone once
+root-caused. (On a public repo, registered secrets are
+auto-masked; transformed secrets are not — keep the clone
+dispatch-only, never on a recurring trigger.)
+
 ## Reference implementation
 
 `thock` runs this exact pattern in production. See

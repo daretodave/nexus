@@ -39,6 +39,22 @@ Every check is a hard gate. **Hermetic e2e is part of the gate.**
 A red e2e is a blocked push. Never `--no-verify`. Fix the root
 cause.
 
+**Never run the gate in the background.** Run every leg as a
+foreground, blocking call and wait for it. `run_in_background:
+true` on the gate (or any leg) is forbidden — in a
+non-interactive run (cloud `/march`) the agent SDK ends the turn
+while the gate is still alive, the background-task resume
+notification is unreliable, and the process cannot exit because
+the gate's children (dev server, headless browser, DB
+containers) keep the tree alive. That is the cloud post-result
+exit hang. If the gate has outgrown a single foreground budget,
+**shrink the gate, do not background it** — split it into
+sequential foreground legs and move any O(content) breadth
+(per-record crawls) off the per-commit path onto a nightly job.
+A page template is not more correct for being rendered 2,700
+times instead of 30; prove archetypes per commit, prove the
+exhaustive set nightly.
+
 ### 4. The deploy gate runs **after** every push.
 
 `pnpm deploy:check` polls <HOSTING_PROVIDER> for the deploy

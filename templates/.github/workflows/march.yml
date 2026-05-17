@@ -128,7 +128,7 @@ jobs:
             1. Skip /oversight entirely. It is interactive and never runs in cloud.
             2. Skip /critique. The reader sub-agent depends on a Chrome MCP that is not available on the runner. /critique stays a local-only ritual.
             3. /expand may run; candidates land in plan/PHASE_CANDIDATES.md. Promotion happens only via local /oversight — do not promote candidates from cloud.
-            4. The verify gate (`pnpm verify`) and deploy gate (`pnpm deploy:check`) are non-negotiable. Same as local. NEVER --no-verify.
+            4. The verify gate (`pnpm verify`) and deploy gate (`pnpm deploy:check`) are non-negotiable. Same as local. NEVER --no-verify. Run the gate FOREGROUND and wait for it — never `run_in_background`. Backgrounding the gate is the one thing that wedges this loop: the SDK ends your turn while the gate is still alive, the resume notification is unreliable here, and the run hangs with no commit. If the gate is too slow for one foreground call, run it as sequential foreground legs (each its own blocking call); do not background it.
             5. The git author identity is already configured by the workflow. Do not change it.
             6. EVERY commit you ship in this tick MUST end with this exact trailer (a blank line before it, then the trailer as its own line):
 
