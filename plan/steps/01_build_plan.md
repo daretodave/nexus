@@ -24,9 +24,9 @@ unblocks). Tick in the same commit that ships the phase.
       lanes customization (commit fe75c78)
 - [x] Phase 5 — Self-adoption substrate: agents.md, plan/,
       skills/, .claude/ (this commit)
-- [ ] Phase 6 — Cloud loop: nexus marches on Actions,
-      Sonnet 5, 4 ticks/day (files staged in `.github/`;
-      ticks when the workflow commit lands)
+- [x] Phase 6 — Cloud loop: nexus marches on Actions,
+      Sonnet 5, 4 ticks/day (this commit; armed once the
+      `CLAUDE_CODE_OAUTH_TOKEN` repo secret exists)
 
 **Growth (the loop's food — briefs in `plan/phases/` where
 written):**
@@ -77,4 +77,5 @@ written):**
 - phase 2 — 84ea179 — verify gate; first run caught 5 defects
 - phase 3 — e593606 — enforcement templates + hardening
 - phase 4 — fe75c78 — hands-off, recovery, claude-code, lanes
-- phase 5 — (this commit) — the ouroboros substrate
+- phase 5 — df709e0 — the ouroboros substrate
+- phase 6 — (this commit) — cloud loop armed pending secret

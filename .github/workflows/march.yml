@@ -1,0 +1,122 @@
+name: march
+
+# The ouroboros: nexus's own autonomous loop. One scheduled
+# invocation = one /march tick on the kit that teaches /march.
+# State of truth is origin/main; every tick reads it fresh.
+#
+# See .github/CLOUD_LOOP.md for setup (one secret), pausing,
+# and debugging. The generic template this instantiates lives
+# at templates/.github/workflows/march.yml.
+
+on:
+  schedule:
+    # 4 ticks/day. A docs kit doesn't need product cadence;
+    # it needs steady, reviewable motion. GH cron is UTC.
+    - cron: '0 2,8,14,20 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: march
+  cancel-in-progress: false
+
+jobs:
+  march:
+    runs-on: ubuntu-latest
+    # Docs ticks are fast; an hour is generous headroom.
+    timeout-minutes: 60
+    permissions:
+      contents: write   # push to main
+      issues: write     # /triage labels + mirrors + crash issue
+      id-token: write   # Claude Code Action OIDC
+    steps:
+      - name: Checkout (full history for /march dispatch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # No install step: the kit is zero-dependency by design.
+      # The verify gate runs bare: node scripts/verify.mjs
+
+      - name: Daily commit ceiling check
+        id: ceiling
+        run: |
+          since="$(date -u -d '24 hours ago' '+%Y-%m-%d %H:%M:%S')"
+          count=$(git log --since="$since" --grep='Cloud-Run:' --oneline | wc -l | tr -d ' ')
+          echo "Cloud-shipped commits in last 24h: $count"
+          if [ "$count" -ge 8 ]; then
+            echo "Cloud ceiling reached (8/24h). Exiting cleanly — no work this tick."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure git author for cloud commits
+        if: steps.ceiling.outputs.skip != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run /march (cloud mode)
+        if: steps.ceiling.outputs.skip != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            {
+              "model": "claude-sonnet-5"
+            }
+          prompt: |
+            You are running nexus's autonomous loop in CI. This repo IS the
+            methodology kit — the loop you are executing is the loop the kit
+            teaches, applied to itself. Read agents.md first; its standing
+            rules all apply.
+
+            Cloud-mode adjustments on top of agents.md:
+
+            1. Skip interactive /oversight. END every tick — shipped, no-op,
+               or blocked — by running /oversight audit (read-only) and
+               printing its briefing into this log.
+            2. /critique MAY run when its gate opens: the dry-run adoption
+               needs only files and mktemp, both available here.
+            3. /expand may run; candidates land in plan/PHASE_CANDIDATES.md.
+               Never promote candidates from cloud.
+            4. The verify gate (node scripts/verify.mjs) is non-negotiable
+               and runs FOREGROUND — never run_in_background. There is no
+               deploy gate (agents.md rule 4): the push is the deploy.
+            5. The git author is already configured. Do not change it.
+            6. EVERY commit you ship this tick MUST end with this exact
+               trailer (blank line before it, trailer on its own line):
+
+                  Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+               This is how the ceiling counts cloud commits. agents.md rule 2
+               has an explicit carve-out for this single trailer.
+            7. If the tick cannot ship cleanly, do NOT half-commit: exit with
+               a one-line note in this log, or open an unlabeled issue via
+               gh issue create (the next /triage classifies it).
+
+            Dispatch order per skills/march.md: triage → critique →
+            ship-a-phase → expand → iterate.
+
+            Begin. One tick. One commit-and-push (or clean no-op). Then the
+            /oversight audit briefing. Then exit.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Open cloud-failed issue if action crashed
+        if: failure() && steps.ceiling.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh issue list --search 'in:title "Cloud march tick crashed" state:open' --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create \
+              --title "Cloud march tick crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --body "Action exited non-zero before the agent could file its own issue. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            echo "An open 'Cloud march tick crashed' issue already exists — skipping dedupe."
+          fi
