@@ -116,23 +116,26 @@ jobs:
           # claude-opus-4-8 once you've measured a week of weekly-cap
           # consumption and confirmed headroom.
           #
-          # permissionMode bypassPermissions is REQUIRED here: the
-          # runner has no human to approve permission prompts, and
-          # default mode silently starves the tick ("This command
-          # requires approval" - the loop reads everything, ships
-          # nothing). This is the disposable-container context that
-          # customization/claude-code.md sanctions for bypass: the
-          # runner is ephemeral, the GITHUB_TOKEN is repo-scoped,
+          # --permission-mode bypassPermissions is REQUIRED here:
+          # the runner has no human to approve permission prompts,
+          # and default mode silently starves the tick ("This
+          # command requires approval" - the loop reads everything,
+          # ships nothing). This is the disposable-container context
+          # that customization/claude-code.md sanctions for bypass:
+          # the runner is ephemeral, the GITHUB_TOKEN is repo-scoped,
           # and the guard hooks (.claude/hooks/guard.mjs) enforce
           # the hard rules in every permission mode, including this
           # one. Do NOT reuse this mode on a machine that holds
           # real secrets - locally, the settings.json allowlist is
           # the sanctioned path.
-          claude_args: |
-            {
-              "model": "claude-sonnet-5",
-              "permissionMode": "bypassPermissions"
-            }
+          #
+          # Keep claude_args in CLI-flag STRING form. A JSON object
+          # here looks like it works (model applies) while silently
+          # dropping other keys - permissionMode never reaches the
+          # SDK session. Flags are the action's documented contract.
+          claude_args: >-
+            --model claude-sonnet-5
+            --permission-mode bypassPermissions
           prompt: |
             You are running <PROJECT>'s autonomous loop in CI (GitHub Actions).
             Read agents.md first for the standing rules — they all apply.
