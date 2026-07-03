@@ -646,11 +646,6 @@ This methodology evolved across:
 - **semilayer** (~2026) — A database intelligence layer; the
   proto-nexus ancestor (numbered steps, checkbox roadmap,
   hermetic-e2e doctrine).
-- **kintilla** (~2026) — A shared-home planner running the
-  loop hot; contributed the lanes fan-out
-  ([`customization/lanes.md`](./customization/lanes.md)), the
-  plan-invariant gate pattern, and the evolved lessons layer
-  (phase 7 of this repo's own plan).
 
 If you're working with one of those repos, you'll see this kit's
 patterns there directly. If you're applying it to a fresh repo,
