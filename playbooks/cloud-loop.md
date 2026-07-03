@@ -15,6 +15,13 @@
 > below is the source-of-truth that the `cloud-loop` slice
 > of `/bootstrap` implements — keep this doc as the
 > reference even if you use the script.
+>
+> This doc wires the runtime. The *operational* rigging for a
+> genuinely unattended window — permissions, guard hooks, the
+> pager, secrets liveness, the dry run — is
+> [`hands-off.md`](./hands-off.md); read it before your first
+> walk-away window. Live reference: nexus itself runs this
+> loop (see the repo's `.github/`).
 
 ## When you want this
 
