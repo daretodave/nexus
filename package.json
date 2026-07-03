@@ -1,0 +1,13 @@
+{
+  "name": "nexus",
+  "private": true,
+  "type": "module",
+  "description": "Methodology + template kit for autonomous-loop projects. This package.json exists so the kit's own verify gate runs the same way an adopter's does.",
+  "scripts": {
+    "verify": "node scripts/verify.mjs",
+    "deploy:check": "node -e \"console.log('deploy:check · kit repo — push to GitHub IS the deploy; nothing to poll. ok.')\""
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
