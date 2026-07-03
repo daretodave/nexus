@@ -32,9 +32,8 @@ unblocks). Tick in the same commit that ships the phase.
 written):**
 - [x] Phase 7 — Lessons layer: reflexes + domain-keyed lessons
       with hard caps, extracted from kintilla (this commit)
-- [ ] Phase 8 — Polyrepo variant playbook: plan/ as its own
-      repo + sibling product repos
-      (brief: `phase_8_polyrepo.md`)
+- [x] Phase 8 — Polyrepo variant playbook: plan/ as its own
+      repo + sibling product repos (commit 4dc4840)
 - [ ] Phase 9 — Windows-first pass: dual-shell commands +
       hazards page (brief: `phase_9_windows_pass.md`)
 - [ ] Phase 10 — Ship `templates/skills/moderate.md` — the
@@ -92,3 +91,5 @@ written):**
   concierge + taxonomy
 - phase 7 — (this commit) — lessons layer: reflexes/lessons
   two-tier + staged-hardening lint pattern
+- phase 8 — 4dc4840 — polyrepo variant: plan/ as its own repo
+  + sibling product repos
