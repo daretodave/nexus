@@ -65,6 +65,11 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Always-on transcript: the operator manual's "read the
+          # closing /oversight audit block" is impossible without
+          # it, and a no-op tick must say why it no-op'd. Public
+          # docs repo; runner masks the tokens.
+          show_full_output: 'true'
           claude_args: |
             {
               "model": "claude-sonnet-5"

@@ -57,10 +57,12 @@ march on the awareness layer).
 
 Read the metadata header of `plan/CRITIQUE.md`
 (`> Last pass:` / `> Pass count:`). Dispatch to `/critique`
-iff **either** ≥12 commits since last pass **or** >72h since
-last pass (docs cadence is slower than product cadence), and
-no pending HIGH critique row is already queued. Then read
-`skills/critique.md`, execute, return.
+iff **any** of these holds — ≥12 commits since last pass, OR
+>72h since last pass, OR `Last pass` is **never** and at
+least one phase has shipped (docs cadence is slower than
+product cadence) — and no pending HIGH critique row is
+already queued. Then read `skills/critique.md`, execute,
+return.
 
 ### Step 3 — Dispatch (first match wins)
 
