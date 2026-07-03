@@ -33,6 +33,7 @@ templates/
 │   ├── march.md
 │   ├── oversight.md
 │   ├── jot.md
+│   ├── digest.md                      (the night shift; pairs with .github/workflows/night.yml)
 │   └── bootstrap.md                   (opt-in executor; see customization/bootstrap-automation.md)
 ├── claude/                            → repo's .claude/ (+ CLAUDE.md → repo root)
 │   ├── CLAUDE.md                      (two-line pointer at agents.md; copy to repo ROOT)
@@ -49,8 +50,10 @@ templates/
 │   ├── 00_files.md                    (the manifest template)
 │   ├── NN_service.md                  (per-service runbook template)
 │   └── bootstrap.example.json         (manifest for /bootstrap; copy to setup/bootstrap.local.json, gitignored)
-├── .github/                           → repo's .github/ (opt-in; cloud loop)
-│   ├── workflows/march.yml
+├── .github/                           → repo's .github/ (opt-in; cloud loops)
+│   ├── workflows/march.yml            (the dispatcher)
+│   ├── workflows/night.yml            (the night shift — /digest daily)
+│   ├── workflows/heartbeat.yml        (model-free watchdog for the other two)
 │   └── CLOUD_LOOP.md
 ├── scripts/                           → repo's scripts/
 │   ├── deploy-check.mjs               (the deploy gate)
@@ -124,6 +127,7 @@ the corresponding capability:
 | `skills/ship-asset.md` + `claude/agents/brander.md` | `Surface: site` or `hybrid` AND you want the loop to render brand assets (OG images, favicons, social cards, SVG → PNG, wordmarks). Demand-pull only — drains findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. See `nexus/customization/branding.md`. |
 | `setup/00_files.md` + `setup/NN_service.md` | The project depends on any external service beyond hosting (auth provider, managed DB, email service, AI API). See `nexus/customization/external-services.md`. |
 | `claude/settings.json` + `claude/hooks/guard.mjs` + `claude/CLAUDE.md` + `scripts/notify.mjs` | You run the loop on Claude Code and want unattended levels (3–4): pre-approved permissions, hook-enforced hard rules, and a pager. See `nexus/customization/claude-code.md` + `nexus/playbooks/hands-off.md`. |
+| `skills/digest.md` + `claude/commands/digest.md` + `.github/workflows/night.yml` + `.github/workflows/heartbeat.yml` | The cloud loop is live and you want the rest of the genus: a daily morning briefing (`plan/DIGEST.md`), nightly breadth checks, and a model-free watchdog. See `nexus/concepts/loop-shapes.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 
 If your `bearings.md` declares `Surface: service / library /

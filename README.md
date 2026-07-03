@@ -467,6 +467,7 @@ nexus/
 │   └── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
 ├── concepts/
 │   ├── architecture.md                # the whole system in one read
+│   ├── loop-shapes.md                 # the genus: dispatcher, night shift, heartbeat, concierge, pollinator, lanes, meta-loop
 │   ├── skills-anatomy.md              # how to read/write a skill file
 │   └── asking-well.md                 # the question-shape convention
 ├── customization/
@@ -509,9 +510,12 @@ nexus/
     │   ├── iterate.md
     │   ├── critique.md
     │   ├── triage.md
+    │   ├── expand.md
     │   ├── march.md
     │   ├── oversight.md
-    │   └── jot.md                      # user-input quickfire — append a row to plan/CRITIQUE.md
+    │   ├── jot.md                      # user-input quickfire — append a row to plan/CRITIQUE.md
+    │   ├── digest.md                   # the night shift — morning briefing + breadth checks
+    │   └── bootstrap.md                # opt-in executor (see customization/bootstrap-automation.md)
     ├── claude/                        # → repo's .claude/ (+ CLAUDE.md → repo root)
     │   ├── CLAUDE.md                  # two-line pointer at agents.md
     │   ├── settings.json              # permission allowlist + hook wiring
@@ -523,8 +527,10 @@ nexus/
     │   ├── 00_files.md                # the manifest / index template
     │   ├── NN_service.md              # per-service runbook template
     │   └── bootstrap.example.json     # /bootstrap manifest (copy → bootstrap.local.json)
-    ├── .github/                       # → repo's .github/ (opt-in cloud loop)
-    │   ├── workflows/march.yml        # cron + Claude Code Action
+    ├── .github/                       # → repo's .github/ (opt-in cloud loops)
+    │   ├── workflows/march.yml        # the dispatcher: cron + Claude Code Action
+    │   ├── workflows/night.yml        # the night shift: /digest + breadth checks
+    │   ├── workflows/heartbeat.yml    # the immune system: model-free watchdog
     │   └── CLOUD_LOOP.md              # operator's guide (lives in repo)
     ├── scripts/
     │   ├── deploy-check.mjs           # multi-provider deploy gate
@@ -598,10 +604,14 @@ project. The ouroboros, concretely:
   The best one is `/critique`: a **dry-run adoption** — a
   fresh-eyes agent follows this README's TL;DR into a scratch
   directory as a stranger and files every friction point.
-- **Its own cloud loop.** `.github/workflows/march.yml` ticks
-  four times a day on Sonnet, shipping pending phases and
-  draining queues, with the same ceiling, trailer, and
-  crash-issue conventions the kit teaches. Operator guide:
+- **Its own cloud loops — plural.** The dispatcher
+  (`march.yml`) ticks four times a day on Sonnet; the night
+  shift (`night.yml`) writes a daily morning briefing to
+  `plan/DIGEST.md`; a model-free heartbeat (`heartbeat.yml`)
+  watches them both. Label any issue `loop:do` and the next
+  tick treats it as a command. The full genus:
+  [`concepts/loop-shapes.md`](./concepts/loop-shapes.md);
+  operator guide:
   [`.github/CLOUD_LOOP.md`](./.github/CLOUD_LOOP.md).
 
 If you want to see the methodology run before adopting it,

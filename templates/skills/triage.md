@@ -100,6 +100,14 @@ have a known provenance and don't need triage labeling.
 If `[]`: print `"triage: 0 unlabeled open issues — humming
 on."` and exit 0 **without committing anything**.
 
+**The concierge lane:** additionally list open issues labeled
+`loop:do` — the user's "this one, now" flag. They are
+candidates even if already triaged. Route them per Step 2 at
+[HIGH] with `- priority: user-flagged (loop:do)` on the
+backlog row (worth +2 when `/iterate` scores it), comment that
+the issue jumped the queue, then **remove the `loop:do`
+label** — it is a signal, not a state.
+
 ### Step 2 — Classify each issue
 
 For each issue, decide:

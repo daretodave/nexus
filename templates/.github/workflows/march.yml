@@ -14,6 +14,13 @@ on:
     # toward 22:00-12:00 UTC (US East off-peak).
     - cron: '0 1,3,5,7,9,11,23 * * *'
   workflow_dispatch:
+    inputs:
+      verb:
+        description: 'Concierge lane: run this verb instead of dispatching'
+        required: false
+        type: choice
+        default: march
+        options: [march, critique, iterate, ship-a-phase, ship-data, expand, triage, digest]
 
 concurrency:
   # Serialize ticks. A long-running tick blocks the next scheduled
@@ -156,7 +163,9 @@ jobs:
                - exit cleanly with a one-line note in the action log explaining why no work shipped this tick, or
                - if there is a real failure to surface, open a GitHub issue with `gh issue create --title "Cloud march failed: <iso-date>" --body "<context + run URL>"` and exit. Do not pass `--label` — the issue lands unlabeled and the next scheduled tick's /triage classifies and labels it appropriately.
 
-            The dispatch order is the standard /march order from skills/march.md: triage → critique (skipped) → ship-a-phase → ship-data → expand → iterate.
+            The dispatch order is the standard /march order from skills/march.md: triage → critique (web-fetch engine) → ship-a-phase → ship-data → expand → iterate. Issues labeled loop:do jump the queue (the concierge lane - march step 1).
+
+            Requested verb: ${{ inputs.verb || 'march' }}. If it is not 'march', skip dispatch and execute skills/<verb>.md directly - the user asked for exactly that pass.
 
             Begin. One tick. One commit-and-push (or no-op). Then exit.
         env:

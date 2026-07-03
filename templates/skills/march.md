@@ -66,9 +66,14 @@ GH_REPO=${GH_REPO:-<REPO_SLUG>}
 unlabeled=$(gh issue list --repo "$GH_REPO" --state open \
   --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number --jq 'length' 2>/dev/null || echo 0)
+
+# Concierge lane — loop:do outranks everything, even labeled
+# issues; the user said "this one, now".
+urgent=$(gh issue list --repo "$GH_REPO" --state open \
+  --label loop:do --json number --jq 'length' 2>/dev/null || echo 0)
 ```
 
-If `unlabeled > 0`:
+If `urgent > 0` or `unlabeled > 0`:
 
 - Read `skills/triage.md`.
 - Execute its procedure end-to-end.

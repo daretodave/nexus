@@ -404,6 +404,9 @@ methodology applied to a different shape.
 
 ## Where to go next
 
+- [`loop-shapes.md`](./loop-shapes.md) — this doc describes
+  one tick; that one describes the genus of loops a project
+  can grow (night shift, heartbeat, concierge, and beyond).
 - [`skills-anatomy.md`](./skills-anatomy.md) — how to read or
   write a skill file in detail.
 - [`../playbooks/new-project.md`](../playbooks/new-project.md)

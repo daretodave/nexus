@@ -1,0 +1,90 @@
+name: night
+
+# The night shift (loop shape 2 - see nexus/concepts/loop-shapes.md):
+# one /digest tick a day. Writes plan/DIGEST.md - the morning
+# briefing - and runs the breadth checks (SMOKE_SAMPLE=full etc.)
+# that must never run on the per-commit path. Shares the march
+# concurrency group so cloud writers never race.
+
+on:
+  schedule:
+    - cron: '30 10 * * *'   # daily; GH cron is UTC - adjust to land your morning
+  workflow_dispatch:
+
+concurrency:
+  group: march              # one cloud writer at a time, ever
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60     # breadth legs are the long pole
+    permissions:
+      contents: write
+      issues: read
+      actions: read         # gh run list - the pulse
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ─────────────────────────────────────────────────────
+      # Project-specific install - mirror your march.yml
+      # (pnpm/node/Playwright). The breadth legs need the same
+      # toolchain the verify gate uses.
+      # ─────────────────────────────────────────────────────
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git author
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run /digest (night shift)
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: 'true'
+          # Synthesis is where a stronger model earns its keep;
+          # upgrade the night model before the day one.
+          claude_args: >-
+            --model claude-sonnet-5
+            --permission-mode bypassPermissions
+          prompt: |
+            You are <PROJECT>'s night shift. Read agents.md, then execute
+            skills/digest.md end to end - it is the single source of truth.
+
+            Cloud notes: every gate runs FOREGROUND; your one commit MUST
+            end with the trailer
+
+              Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            (blank line before it). Breadth failures become plan/AUDIT.md
+            findings, not fixes. Tuning proposals become
+            plan/PHASE_CANDIDATES.md candidates, never direct edits. One
+            commit (digest: <date>), push, exit.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # + whatever your breadth legs need (see march.yml's env)
+
+      - name: Open night-failed issue if action crashed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh issue list --search 'in:title "Night digest crashed" state:open' --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create \
+              --title "Night digest crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --body "The night shift exited non-zero. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
