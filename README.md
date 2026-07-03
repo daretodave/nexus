@@ -482,7 +482,8 @@ nexus/
 │   ├── moderation-loop.md             # mod queues + /oversight escalation (for UGC projects)
 │   ├── external-services.md           # the setup/ paradigm — pre-flight every dashboard
 │   ├── bootstrap-automation.md        # the executor that drives provider CLIs end-to-end (paired with external-services.md)
-│   └── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
+│   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
+│   └── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
 │   ├── march.md                       # + ship-a-phase, iterate, critique (dry-run adoption),
 │   │                                  #   triage, expand, oversight, jot
@@ -501,7 +502,9 @@ nexus/
     │   ├── phases/phase_1_bootstrap.md
     │   ├── phases/phase_canonical_sibling.md
     │   ├── AUDIT.md
-    │   └── CRITIQUE.md
+    │   ├── CRITIQUE.md
+    │   ├── reflexes.md                # ≤50-line always-read core (adopt-by-need)
+    │   └── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
     ├── skills/                        # → repo's skills/
     │   ├── ship-a-phase.md
     │   ├── ship-data.md                # omit if no structured data layer

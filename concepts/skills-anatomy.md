@@ -332,6 +332,13 @@ problem the skill didn't anticipate:
 Versioning is by commit history. There's no `skills-v2.md`; the
 file gets edited in place. Old behavior is captured in commits.
 
+For lessons that don't belong in a skill file yet — a
+recurring correction, a taste call, a "the loop should
+remember this" note that hasn't earned a procedure step —
+see [`../customization/lessons-layer.md`](../customization/lessons-layer.md).
+Its promotion path (lesson → reflex) and drain path (reflex →
+skill procedure edit) is the on-ramp that ends here.
+
 When a skill becomes stable (no patches in N weeks), consider
 it locked and resist the urge to "improve" it. Stable skills
 are the loop's foundation; churn there is more expensive than

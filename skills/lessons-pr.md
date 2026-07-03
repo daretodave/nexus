@@ -173,6 +173,18 @@ For every lesson the user confirmed:
 - Edits to existing files preserve the file's current voice
   and structure. Don't restructure unless the lesson
   explicitly asks for it.
+- **A lesson that's a small behavioral reminder, not a
+  structural gap** — no missing file, no undocumented step,
+  just "the loop should remember to X" — doesn't need a new
+  doc or playbook edit at all. Route it as a seed example
+  entry in
+  [`../templates/plan/lessons.md`](../templates/plan/lessons.md)
+  (or `reflexes.md` if the sibling reports it bit them
+  weekly) under the nearest `@domain:` anchor, so adopting
+  projects inherit the example instead of nexus growing an
+  ad-hoc doc per one-liner. See
+  [`../customization/lessons-layer.md`](../customization/lessons-layer.md)
+  for the two-tier model this routes into.
 
 ### Step 4 — Verify
 

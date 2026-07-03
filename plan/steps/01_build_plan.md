@@ -30,9 +30,8 @@ unblocks). Tick in the same commit that ships the phase.
 
 **Growth (the loop's food — briefs in `plan/phases/` where
 written):**
-- [ ] Phase 7 — Lessons layer: reflexes + domain-keyed lessons
-      with hard caps, extracted from kintilla
-      (brief: `phase_7_lessons_layer.md`)
+- [x] Phase 7 — Lessons layer: reflexes + domain-keyed lessons
+      with hard caps, extracted from kintilla (this commit)
 - [ ] Phase 8 — Polyrepo variant playbook: plan/ as its own
       repo + sibling product repos
       (brief: `phase_8_polyrepo.md`)
@@ -91,3 +90,5 @@ written):**
 - phase 16 — (this commit) — heartbeat
 - phase 18 — (this commit) — loop shapes: night shift +
   concierge + taxonomy
+- phase 7 — (this commit) — lessons layer: reflexes/lessons
+  two-tier + staged-hardening lint pattern

@@ -14,6 +14,8 @@ plan/
 ├── AUDIT.md                             # latest /iterate audit (rewritten on each pass)
 ├── CRITIQUE.md                          # external-observer findings (append-only via /critique)
 ├── PHASE_CANDIDATES.md                  # phase candidates from /expand, gated by /oversight
+├── reflexes.md                          # adopt-by-need: ≤50-line always-read core (see nexus/customization/lessons-layer.md)
+├── lessons.md                           # adopt-by-need: domain-keyed corpus, read by offset
 ├── steps/
 │   └── 01_build_plan.md                 # at-a-glance status block + per-phase scope
 └── phases/
@@ -63,6 +65,15 @@ addressed.
 A line `> Bias: <category> (set via oversight <date>)` at the
 top of `AUDIT.md` weights that category 1.5x in `/iterate`'s
 scoring. Set / cleared via `/oversight reset`.
+
+## Reflexes and lessons (adopt-by-need)
+
+`reflexes.md` + `lessons.md` are a two-tier lessons layer —
+copy them in once the project has accumulated real recurring
+lessons (not day-1 setup notes). See
+`nexus/customization/lessons-layer.md` for the caps, the
+promotion path (lesson → reflex), and the drain path (reflex
+→ skill procedure edit).
 
 ## Manually ticking phases
 

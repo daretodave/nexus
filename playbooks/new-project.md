@@ -496,6 +496,13 @@ which assumes a working loop and is about leaving for 80 hours.
       runbook section that emits it.
 - [ ] Sub-agents are in `.claude/agents/` and tested.
 - [ ] You've read `skills/ship-a-phase.md` end to end.
+- [ ] **Optional, pick up once the loop's been running a
+      while:** once the project accumulates real recurring
+      lessons (not day-1 setup), copy
+      `plan/reflexes.md` + `plan/lessons.md` in per
+      [`../customization/lessons-layer.md`](../customization/lessons-layer.md) —
+      a scratch `NEXUS_LESSONS.md` doesn't scale past a
+      handful of entries.
 - [ ] **Optional but high-leverage:** if during this adoption
       you noticed nexus gaps (places where the playbook left
       you to figure something out yourself, or templates you

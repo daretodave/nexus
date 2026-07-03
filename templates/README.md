@@ -17,6 +17,8 @@ templates/
 │   ├── AUDIT.md
 │   ├── CRITIQUE.md
 │   ├── PHASE_CANDIDATES.md
+│   ├── reflexes.md                    (omit unless the lessons layer is adopted; see below)
+│   ├── lessons.md                     (omit unless the lessons layer is adopted; see below)
 │   ├── steps/01_build_plan.md
 │   └── phases/
 │       ├── phase_1_bootstrap.md
@@ -129,6 +131,7 @@ the corresponding capability:
 | `claude/settings.json` + `claude/hooks/guard.mjs` + `claude/CLAUDE.md` + `scripts/notify.mjs` | You run the loop on Claude Code and want unattended levels (3–4): pre-approved permissions, hook-enforced hard rules, and a pager. See `nexus/customization/claude-code.md` + `nexus/playbooks/hands-off.md`. |
 | `skills/digest.md` + `claude/commands/digest.md` + `.github/workflows/night.yml` + `.github/workflows/heartbeat.yml` | The cloud loop is live and you want the rest of the genus: a daily morning briefing (`plan/DIGEST.md`), nightly breadth checks, and a model-free watchdog. See `nexus/concepts/loop-shapes.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
+| `plan/reflexes.md` + `plan/lessons.md` | The loop has run long enough to accumulate real recurring lessons and a single `NEXUS_LESSONS.md` scratch file no longer scales. See `nexus/customization/lessons-layer.md`. |
 
 If your `bearings.md` declares `Surface: service / library /
 cli`, do not copy `ship-asset.md` / `brander.md` — the skill
