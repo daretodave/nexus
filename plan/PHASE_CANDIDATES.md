@@ -10,16 +10,243 @@ kit + sibling surveys.
 
 ## Pending
 
+### [ ] [score 8.8] Workspace-of-repos as a first-class adoption path
+- proposed: 2026-07-03
+- source signals: kintilla AND semilayer independently converged
+  on the same topology — un-versioned workspace root,
+  org-per-project GitHub layout, `plan/` its own repo, sibling
+  product repos — which the kit only half-documents
+  (`playbooks/polyrepo.md` covers the plan split alone).
+- rationale: two real adoptions converging unprompted is the
+  strongest possible signal; every workspace adopter currently
+  re-improvises the root conventions.
+- proposed scope: `playbooks/workspace.md` (un-versioned-root
+  rule, org-per-project, what lives only at root, decision
+  matrix, ready-when checklist); `templates/workspace/` root
+  family (workspace CLAUDE.md + AGENTS.md mirror, scratch
+  README, repo-claude propagation template); a
+  topology-detection step in the adopt prompt with a
+  confirm-with-user stop; edits to `playbooks/polyrepo.md` +
+  `concepts/architecture.md` so single-repo -> polyrepo ->
+  workspace reads as one ladder.
+- estimated phases: 1-2
+- conflicts: extends polyrepo.md, never replaces it.
+
+### [ ] [score 8.6] prompts/ as canonical files + a five-line paste
+- proposed: 2026-07-03
+- source signals: the two ~60-line README paste-prompts are the
+  funnel's biggest wall; prompt fixes today mean "re-paste the
+  new blob".
+- rationale: `prompts/adopt.md` + `prompts/pitch.md` as
+  versioned, gate-linted files turn the paste into five lines
+  that self-clone (or one raw.githubusercontent fetch line),
+  client-agnostic by construction; every other doorway (npx,
+  plugin) later references the same canonical text.
+- proposed scope: `prompts/adopt.md`, `prompts/pitch.md`,
+  `prompts/README.md`; README TL;DR sections shrink ~120
+  lines; a verify leg keeping any README excerpt byte-synced
+  with prompts/; `skills/critique.md` dry-runs the new short
+  paste; agents.md notes prompts/ paths are public API.
+- estimated phases: 1
+- conflicts: pairs with the README conversion pass below —
+  promote together or sequence prompts/ first.
+
+### [ ] [score 8.5] Two-ring secrets topology (.env vs .env.workspace)
+- proposed: 2026-07-03
+- source signals: both mature adoptions run the same secrets
+  layering the kit says nothing about — per-repo `.env` for the
+  loop's own gate tokens, workspace-root `.env.workspace` for
+  cross-repo operational secrets, `.secrets/` for key FILES.
+- rationale: the safety property is structural, not procedural —
+  the workspace root is outside every repo, so `git add -A`
+  physically cannot leak Ring 2. Answers the scariest adopter
+  question ("where do secrets go?") with architecture.
+- proposed scope: `customization/workspace-secrets.md` (two
+  rings + key-file pointer rule + placement tiebreaker: consumed
+  by, or granting power over, more than one repo -> Ring 2);
+  `templates/env/env.workspace.example` (names never values;
+  per-key grammar: minted-by runbook, mirrored-to, expires);
+  header pointer in `templates/env/env.example`; see-also links
+  in polyrepo.md + external-services.md.
+- estimated phases: 1
+- conflicts: none — opens with "skip unless polyrepo/workspace".
+
+### [ ] [score 8.3] README above-the-fold conversion pass
+- proposed: 2026-07-03
+- source signals: conversion happens in the first screenful;
+  today the pitch is stated twice, the paste is 60 lines, and
+  the workspace shape has no front door. Full restructure
+  outline captured 2026-07-03 (ideation session).
+- rationale: hook -> proof -> qualify -> convert -> deepen ->
+  trust -> rules; target ~350 lines from ~690. The march.yml
+  badge whose green is produced by the loop it sells is proof
+  no competitor can hand-copy.
+- proposed scope: README-only editing session: kill the
+  blockquote echo, merge the three qualification sections into
+  one gate above the doors, collapse the two TL;DRs + mermaid
+  into a three-door section, replace eight playbook blurbs with
+  a router table (you have -> do this -> time), ouroboros proof
+  strip up top, date-stamped adoption-receipt diffstat in a
+  details block. Repoint the verify tree leg in the same commit.
+- estimated phases: 1
+- conflicts: depends on prompts/ landing first (the doors paste
+  five lines, not sixty).
+
+### [ ] [score 8.2] Versioned releases + plan/nexus.lock + upgrade story
+- proposed: 2026-07-03
+- source signals: adopters copy from a moving main and can never
+  diff what changed; every packaging doorway needs something
+  stable to pin against.
+- rationale: "copy once, drift forever" becomes "pin, then
+  upgrade deliberately" — dependency semantics with nothing but
+  git tags and one JSON lock (kitVersion, kitCommit, per-file
+  hashAtCopy). Three-way merge separates "stale, cleanly
+  bumped" from "customized, needs eyes".
+- proposed scope: KIT_VERSION + CHANGELOG.md keyed by template
+  path; `scripts/kit-manifest.mjs` (hermetic sha256 walk);
+  lock-writing step in prompts/adopt.md; `playbooks/upgrade.md`
+  (git merge-file three-way; [needs-user-call] AUDIT rows for
+  conflicted files; pre-lock fallback via re-hash against
+  historical tags); verify legs for version/CHANGELOG sync.
+- estimated phases: 2
+- conflicts: prompts/ should land first (the lock step lives
+  there); permanent CHANGELOG discipline cost — worth it.
+
+### [ ] [score 7.9] Handshake runbook profile for setup/
+- proposed: 2026-07-03
+- source signals: kintilla's runbooks follow a proven handshake
+  the kit's setup/ paradigm doesn't capture: "human dashboard
+  steps (~N min) -> drop these exact keys into the env file ->
+  say 'X is in' -> what the agent wires after the drop".
+- rationale: turns every external service into a
+  fill-in-the-blanks credential handoff; keys arrive in files,
+  not chat. The "THE STEP THAT CAN BREAK <X>" destructive-step
+  callout convention rides along.
+- proposed scope: `templates/setup/NN_service.handshake.md`
+  (four fixed sections; fenced env-block naming exact keys +
+  exact target file + resume signal); "two runbook profiles"
+  chooser in external-services.md (agent can do >80% via CLI
+  once it has a token -> handshake); profile column in
+  00_files.md legend.
+- estimated phases: 1
+- conflicts: none — second layer of the two-ring secrets story.
+
+### [ ] [score 7.6] Key custody map + hermetic keys lint
+- proposed: 2026-07-03
+- source signals: unattended windows die on "which file holds
+  this token, where is it mirrored, when does it expire" —
+  questions no kit file answers today.
+- rationale: one greppable names-only registry row per
+  credential (Key | Holder file | Minted by | Scopes | Mirrored
+  to | Expires | Rotate via), updated in the same commit as the
+  mint; a pure-string lint makes orphan/ghost/ambiguous keys a
+  gate failure while staying offline.
+- proposed scope: `templates/setup/00_keys.md`;
+  `templates/scripts/keys-audit.mjs` (opt-in leg); hands-off.md
+  pre-flight refuses a window that outlives any Expires cell;
+  /bootstrap rotate consumes Mirrored-to as its propagation
+  list.
+- estimated phases: 1
+- conflicts: builds on the two-ring topology + handshake rows.
+
 ### [ ] [score 7.5] Package nexus as a Claude Code plugin
-- proposed: 2026-07-02
+- proposed: 2026-07-02 (design deepened 2026-07-03)
 - source signals: adoption friction (clone + copy + replace is
   the whole TL;DR); Claude Code plugin/marketplace support.
 - rationale: `/plugin install nexus` collapses adoption Step 1;
-  the client-agnostic skills/ layout stays canonical.
-- proposed scope: plugin manifest + packaging doc + publish
-  flow; keep templates/ as the source of truth.
+  the client-agnostic skills/ layout stays canonical. Deepened:
+  the plugin ships adopt/upgrade/doctor commands ONLY — never
+  the skill family, protecting the adopted-skills doctrine; the
+  nexus repo is its own marketplace so push = publish survives.
+- proposed scope: `.claude-plugin/marketplace.json` at root;
+  plugin/ generated by `scripts/build-plugin.mjs` (version ==
+  KIT_VERSION, commands wrap the canonical prompts/, vendored
+  templates snapshot for offline determinism); one verify leg
+  regenerating in-memory and byte-diffing; `playbooks/plugin.md`.
 - estimated phases: 1
-- conflicts: none — additive doorway, same files.
+- conflicts: ship after prompts/ + releases/lock — the plugin
+  commands consume both.
+
+### [ ] [score 7.4] plan/ carries the workspace: resurrection files + doctor
+- proposed: 2026-07-03
+- source signals: the un-versioned root's obvious objection —
+  lose the machine, lose the topology. kintilla's plan repo
+  already half-plays this role.
+- rationale: make plan/ the versioned carrier: canonical copies
+  of the root files, a names-only keys manifest, a clone map,
+  and a zero-dependency offline doctor. New-machine flow: clone
+  org/plan, copy root files up, clone per repos.md, re-run each
+  runbook's human beat, doctor until green.
+- proposed scope: `templates/workspace/plan-workspace/`
+  (keys.md names-only manifest, repos.md clone map, root/
+  canonical copies); `templates/workspace/workspace-doctor.mjs`
+  (root-not-a-repo, repos exist, keys present by name, no
+  secret path inside any repo tree); Resurrection section in
+  playbooks/workspace.md; pointer in recovery.md.
+- estimated phases: 1
+- conflicts: rides the workspace playbook candidate.
+
+### [ ] [score 7.3] Workspace-aware /bootstrap + /oversight
+- proposed: 2026-07-03
+- source signals: kintilla's cloudflare runbook fans one
+  workspace token out to repo Actions secrets by hand.
+- rationale: teach the executor the two rings — env resolution
+  walks up (process env -> repo .env -> parent .env.workspace,
+  with stop conditions), secret fan-out walks down (gh secret
+  set per Mirrored-to target); a missing key's failure message
+  points at the runbook that mints it.
+- proposed scope: edits only — bootstrap-automation.md (env
+  resolution order + fan-out), external-services.md (/oversight
+  checks each key in its Holder file, names only), polyrepo.md
+  (custody map rides the plan repo).
+- estimated phases: 1
+- conflicts: depends on two-ring topology + custody map.
+
+### [ ] [score 7.1] npx nexus-adopt: the mechanical half as an initializer
+- proposed: 2026-07-03
+- source signals: clone + copy + placeholder-replace is
+  mechanical work no agent needs judgment for.
+- rationale: a zero-dependency initializer does the mechanical
+  half (infer placeholders from git remote/branch/dirname,
+  shallow-clone at the latest tag, copy per the templates
+  contract, write plan/nexus.lock) then prints exactly one
+  paste line handing the judgment half to ANY agent.
+- proposed scope: packaging/npx/ (bin + small test); release.yml
+  publishing on tag push (one NPM_TOKEN secret); README
+  one-command variant above the paste.
+- estimated phases: 1
+- conflicts: ship after prompts/ + releases; npm is a second
+  publish surface to keep in lockstep.
+
+### [ ] [score 7.0] ADOPTERS.md wall + badge + opt-in hatch beacon
+- proposed: 2026-07-03
+- source signals: the only zero-cost growth loop available under
+  the $0-marginal constraint.
+- rationale: registry rows are trivially mergeable community
+  PRs; the differentiated part is the beacon — an adopter's
+  first green tick (opt-in, off by default, loudly so) files a
+  "hatched" issue with verifiable first-tick evidence, and
+  /triage is the spam gate.
+- proposed scope: ADOPTERS.md seeded with the provenance
+  projects + paste-ready badge snippet; README "projects that
+  ship themselves" strip; NEXUS_HATCH_OPTIN= (empty default) in
+  env.example; one fires-once step in ship-a-phase.md; a
+  hatched route in triage.md.
+- estimated phases: 1
+- conflicts: beacon must stay opt-in or it reads as phone-home
+  telemetry in a kit whose brand is "you own everything".
+
+### [ ] [score 5.5] playbooks/outgrow.md — the split ceremony
+- proposed: 2026-07-03
+- source signals: judged premature — no second real migration to
+  validate the ceremony against yet.
+- rationale: the single-repo -> workspace split will eventually
+  need a numbered, safe ceremony; write it when the first real
+  split happens and can serve as its test case.
+- proposed scope: deferred; the workspace playbook's decision
+  matrix + polyrepo.md cover the ladder's endpoints until then.
+- estimated phases: 1
+- conflicts: none.
 
 ### [ ] [score 6.8] closeloop: thank the humans who file issues
 - proposed: 2026-07-02
