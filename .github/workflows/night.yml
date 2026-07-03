@@ -28,16 +28,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # PAT so the digest commit lands as the nexus author —
+          # same identity mode as march.yml.
+          token: ${{ secrets.ACTIONS_PAT }}
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Configure git author
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      # Author identity via env vars on the action step (see
+      # march.yml for why `git config` doesn't survive the action).
 
       - name: Run /digest (night shift)
         uses: anthropics/claude-code-action@v1
@@ -60,12 +61,16 @@ jobs:
             become plan/PHASE_CANDIDATES.md candidates, nothing else. One
             commit (digest: <date>), push, exit.
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
+          GIT_AUTHOR_NAME:     'nexus'
+          GIT_AUTHOR_EMAIL:    '7341502+daretodave@users.noreply.github.com'
+          GIT_COMMITTER_NAME:  'nexus'
+          GIT_COMMITTER_EMAIL: '7341502+daretodave@users.noreply.github.com'
 
       - name: Open night-failed issue if action crashed
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
         run: |
           existing=$(gh issue list --search 'in:title "Night digest crashed" state:open' --json number --jq 'length')
           if [ "$existing" -eq 0 ]; then

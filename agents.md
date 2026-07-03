@@ -121,10 +121,15 @@ verbs — a docs kit ships docs, not pages.
 ## Operational secrets
 
 - **`GH_TOKEN`** — optional locally (`gh auth login` works);
-  the cloud loop uses the Actions `GITHUB_TOKEN`. Used for
-  `/triage` and the issue mirror. `GH_REPO=daretodave/nexus`.
+  the cloud loop sets it from the `ACTIONS_PAT` secret. Used
+  for `/triage` and the issue mirror.
+  `GH_REPO=daretodave/nexus`.
 - **`CLAUDE_CODE_OAUTH_TOKEN`** — repo secret for the cloud
   loop only. Mint with `claude setup-token`.
+- **`ACTIONS_PAT`** — repo secret; fine-grained PAT (Contents +
+  Issues on this repo). Cloud commits author as `nexus`, not
+  `github-actions[bot]` — see `.github/CLOUD_LOOP.md` setup
+  step 3.
 - No other secrets. The kit's gate is hermetic and offline.
 
 ## Where to look

@@ -10,7 +10,7 @@
 > the walk-away rigging in
 > [`playbooks/hands-off.md`](../playbooks/hands-off.md).
 
-## Setup (one app install + one secret)
+## Setup (one app install + two secrets)
 
 1. **Install the Claude Code GitHub App** on this repo:
    https://github.com/apps/claude → Install → select
@@ -23,11 +23,20 @@
 2. `claude setup-token` → copy the OAuth token → Repo →
    Settings → Secrets and variables → Actions → new secret
    `CLAUDE_CODE_OAUTH_TOKEN`.
-3. Validate once by hand: `gh workflow run march`, watch the
+3. `ACTIONS_PAT` — a fine-grained PAT (Contents + Issues:
+   read/write on this repo). This repo runs **user-author
+   mode**: cloud commits author as `nexus` (the PAT account's
+   noreply email), never `github-actions[bot]`. Identity rides
+   `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars on the action
+   step — NOT `git config`, which the action's own internal
+   config step silently overrides.
+4. Validate once by hand: `gh workflow run march`, watch the
    run end green, read the closing `/oversight audit` block.
 
-That's all. `GITHUB_TOKEN` is automatic; the kit's gate needs
-no other secrets (zero dependencies, no deploy provider).
+That's all. The kit's gate needs no other secrets (zero
+dependencies, no deploy provider). If `ACTIONS_PAT` expires or
+is removed, checkout fails red on the next tick — re-mint and
+re-set, nothing else to repair.
 
 ## Daily operation
 

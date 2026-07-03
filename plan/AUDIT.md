@@ -11,6 +11,23 @@ iterate-shaped (one tick each); bigger items became phases in
 
 ## Pending
 
+### [ ] [6.6] template user-author mechanic teaches a config the action overrides
+- category: doc-drift
+- impact: 7
+- ease: 6
+- evidence: `templates/.github/CLOUD_LOOP.md` "Identity choice"
+  step 3 tells adopters to edit the `Configure git author` step
+  (`git config user.*`) — but the Claude Code action runs its
+  own internal `git config` after workflow steps, silently
+  overriding it. The reliable path is `GIT_AUTHOR_*` /
+  `GIT_COMMITTER_*` env vars on the action step (proven on a
+  sibling loop; adopted by this repo's own march.yml/night.yml
+  2026-07-03).
+- next: once this repo's next cloud tick lands authored as
+  `nexus` (validating the env-var mechanic on @v1), rewrite the
+  template's step 3 + `templates/.github/workflows/march.yml`
+  author step/comments to the env-var mechanic.
+
 ### [ ] [7.2] data-layer.md cites an invented model id
 - category: freshness
 - impact: 6

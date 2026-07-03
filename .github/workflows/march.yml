@@ -4,7 +4,7 @@ name: march
 # invocation = one /march tick on the kit that teaches /march.
 # State of truth is origin/main; every tick reads it fresh.
 #
-# See .github/CLOUD_LOOP.md for setup (one secret), pausing,
+# See .github/CLOUD_LOOP.md for setup (two secrets), pausing,
 # and debugging. The generic template this instantiates lives
 # at templates/.github/workflows/march.yml.
 
@@ -40,6 +40,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # PAT (not GITHUB_TOKEN) so pushes land as the nexus
+          # author, not github-actions[bot]. User-author mode per
+          # CLOUD_LOOP.md "Identity choice".
+          token: ${{ secrets.ACTIONS_PAT }}
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
@@ -61,11 +65,12 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Configure git author for cloud commits
-        if: steps.ceiling.outputs.skip != 'true'
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      # Git author identity is set via GIT_AUTHOR_* /
+      # GIT_COMMITTER_* env vars on the action step below, NOT via
+      # `git config`: the action runs its own internal git config
+      # after workflow steps, so repo-local config gets silently
+      # overridden. Env vars win at commit time (pattern proven on
+      # a sibling loop, ../shows).
 
       - name: Run /march (cloud mode)
         if: steps.ceiling.outputs.skip != 'true'
@@ -112,7 +117,9 @@ jobs:
             4. The verify gate (node scripts/verify.mjs) is non-negotiable
                and runs FOREGROUND — never run_in_background. There is no
                deploy gate (agents.md rule 4): the push is the deploy.
-            5. The git author is already configured. Do not change it.
+            5. The git author is already configured via GIT_AUTHOR_* /
+               GIT_COMMITTER_* env vars. Do not run git config user.* —
+               the env vars win at commit time anyway.
             6. EVERY commit you ship this tick MUST end with this exact
                trailer (blank line before it, trailer on its own line):
 
@@ -135,12 +142,22 @@ jobs:
             Begin. One tick. One commit-and-push (or clean no-op). Then the
             /oversight audit briefing. Then exit.
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ACTIONS_PAT (not GITHUB_TOKEN) so the agent's gh calls
+          # and pushes identify as the nexus author, not the bot.
+          GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
+          # Author identity: display name "nexus", attributed to the
+          # PAT's account via its noreply email. The Cloud-Run:
+          # trailer (not the author) is the ceiling discriminator,
+          # so uniform authorship stays safe.
+          GIT_AUTHOR_NAME:     'nexus'
+          GIT_AUTHOR_EMAIL:    '7341502+daretodave@users.noreply.github.com'
+          GIT_COMMITTER_NAME:  'nexus'
+          GIT_COMMITTER_EMAIL: '7341502+daretodave@users.noreply.github.com'
 
       - name: Open cloud-failed issue if action crashed
         if: failure() && steps.ceiling.outputs.skip != 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
         run: |
           existing=$(gh issue list --search 'in:title "Cloud march tick crashed" state:open' --json number --jq 'length')
           if [ "$existing" -eq 0 ]; then
