@@ -5,10 +5,11 @@
 
 ## Headline
 
-A productive day: phases 7 and 8 shipped, an ideation pass
-filed 12 phase candidates, and the cloud loop's author-identity
-fix landed and self-validated — 6 of 7 `march` ticks green, the
-one failure a self-resolved infra blip.
+A productive day already banked (phases 7 and 8 shipped, 12
+candidates filed, the cloud author-identity fix landed and
+self-validated) — this tick is the scheduled night run landing
+two minutes behind a manual `workflow_dispatch` of the same
+workflow, so the pulse is unchanged since the last digest.
 
 ## While you were out
 
@@ -21,8 +22,11 @@ one failure a self-resolved infra blip.
 | 01:57 | march | shipped — phase 7, lessons layer (commit `91b0266`) |
 | 03:06 | march | shipped — phase 8, polyrepo variant playbook (commits `4dc4840`, `40cfa74`) |
 | 09:05 | march | shipped — README provenance trim + 12 filed candidates + cloud author-identity fix (commits `d225ea6`, `63530d5`, `34bcac0`) |
+| 11:17 | night (manual dispatch) | shipped — digest for 2026-07-03 (commit `eafaacd`) |
+| 11:19 | night (scheduled) | this tick — no new commits, march runs, issues, or heartbeat activity since 11:17; queues unchanged |
 
-`heartbeat` ran once since the last digest, green.
+`heartbeat` ran once since yesterday's digest (07:23 UTC),
+green.
 
 ## Shipped
 
@@ -41,15 +45,18 @@ one failure a self-resolved infra blip.
   overridden `git config` mechanic. This same tick is the proof
   it works — the commit itself lands authored as `nexus`.
 
+Nothing new shipped between the 11:17 and 11:19 ticks — this
+digest is a re-confirmation, not a new pass.
+
 ## Queues now
 
 - **Build plan:** 8 open phases (9–15, 17), 0 blocked. Phases
   7 and 8 shipped today.
-- **AUDIT:** 9 pending rows, header dated 2026-07-02 — fresh
-  (last touched today), no refresh needed. One row (`[6.6]`
-  template author mechanic) has its "next" condition now met by
-  today's `34bcac0` — ripe for the next `/iterate` pass once
-  phases run dry.
+- **AUDIT:** 9 pending rows, header dated 2026-07-02 — content
+  fresh (a row was added today by `34bcac0`), no refresh needed.
+  One row (`[6.6]` template author mechanic) has its "next"
+  condition now met by today's `34bcac0` — ripe for the next
+  `/iterate` pass once phases run dry.
 - **CRITIQUE:** 6 pending (1 HIGH, 3 MED, 2 LOW), pass 1 from
   2026-07-03, unchanged today. Top: README's sibling-clone
   layout breaks `playbooks/new-project.md`'s bare `nexus/...`
@@ -59,8 +66,8 @@ one failure a self-resolved infra blip.
   (score 8.8) — two independent sibling adoptions converged on
   the same topology unprompted.
 - **Issues:** none open — `triage:needs-user` and `loop:do`
-  both empty; the one crash issue from 01:25 is filed and
-  closed.
+  both empty; the one crash issue from 01:25 and both phase
+  mirror issues (#2, #3) are closed.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not
   present in this environment — skipped.
 
@@ -81,12 +88,16 @@ model id** — `customization/data-layer.md`'s example uses
 
 ## Tuning proposals
 
-none — the day's only failure was a known transient (GitHub
-App token exchange), not a gate or cadence defect, and it
-cleared on the very next scheduled tick. AUDIT and CRITIQUE
-queues are static by design (phases run first per the build
-plan's own transition rule, `/iterate` only picks up once
-phase 9–15/17 run dry) — not evidence of a starved gate.
-PHASE_CANDIDATES growing to 16 pending with 0 promoted reflects
-`/oversight` being a deliberate, infrequent human review step,
-not an automated gate — no tuning proposal to file.
+none — today's only failure was a known transient (GitHub App
+token exchange), cleared on the very next scheduled tick.
+AUDIT and CRITIQUE queues are static by design (phases run
+first per the build plan's own transition rule; `/iterate`
+only picks up once phase 9–15/17 run dry) — not evidence of a
+starved gate. PHASE_CANDIDATES growing to 16 pending with 0
+promoted reflects `/oversight` being a deliberate, infrequent
+human review step, not an automated gate. The 11:17/11:19 near-
+simultaneous night runs are a manual `workflow_dispatch`
+landing two minutes ahead of the scheduled cron tick — ordinary
+GitHub Actions scheduling jitter serialized safely by the
+shared `march` concurrency group (`cancel-in-progress: false`),
+not a cadence defect — no tuning proposal to file.
