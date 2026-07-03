@@ -380,6 +380,15 @@ without breaking what works. This walks you through the
 non-destructive overlay — adding `skills/`, `plan/`, `.claude/`,
 and the gates without rewriting the existing app.
 
+### → [`playbooks/polyrepo.md`](./playbooks/polyrepo.md) *(variant)*
+
+Outgrown one repo? Once a project has multiple shippable units,
+a plan that should stay private while the product is public, or
+plan history that shouldn't share a log with product history,
+split `plan/` into its own repo with each product a sibling.
+Same skills, same state-file shapes — the tick's atomic act
+just spans two repos, pushed product-first.
+
 ### → [`playbooks/ci-providers.md`](./playbooks/ci-providers.md)
 
 The deploy gate is the only piece that varies a lot per project.
@@ -464,7 +473,8 @@ nexus/
 │   ├── ci-providers.md                # deploy-gate variations
 │   ├── cloud-loop.md                  # opt-in GitHub Actions loop
 │   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
-│   └── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
+│   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
+│   └── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos
 ├── concepts/
 │   ├── architecture.md                # the whole system in one read
 │   ├── loop-shapes.md                 # the genus: dispatcher, night shift, heartbeat, concierge, pollinator, lanes, meta-loop

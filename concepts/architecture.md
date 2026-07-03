@@ -402,6 +402,29 @@ methodology applied to a different shape.
 
 ---
 
+## Topology
+
+Everything above describes one repo: `plan/` and the product
+live together, one `git pull`, one commit-and-push per tick.
+This is the default, and it's right until a project outgrows
+one shippable unit.
+
+The **polyrepo variant** splits `plan/` into its own repo — a
+private ledger — with each shippable unit a sibling repo
+beside it. Two of the kit's own real-world ancestors run this
+shape: multiple products under one backlog, a plan that stays
+private while the products are public, or plan history that
+shouldn't share a log with product history. The skills and
+state-file shapes don't change; a tick's atomic act now spans
+two repos instead of one, pushed product-first so the ledger
+never references unpushed work.
+
+See [`../playbooks/polyrepo.md`](../playbooks/polyrepo.md) for
+the layout, the `additionalDirectories` bridge, and the
+push-order rule in full.
+
+---
+
 ## Where to go next
 
 - [`loop-shapes.md`](./loop-shapes.md) — this doc describes
