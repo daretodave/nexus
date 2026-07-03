@@ -24,7 +24,7 @@ unpushed between ticks. Don't leave the working tree dirty.
 ### 2. No `Co-Authored-By:` trailers. No emojis.
 
 Plain commit message bodies. **Never** add a `Co-Authored-By:`
-line, a "🤖 Generated with…" footer, or any emoji — in commits,
+line, a "Generated with…" footer, or any emoji — in commits,
 in code, in content, in design notes.
 
 ### 3. The verify gate is non-negotiable.
@@ -82,6 +82,14 @@ image. Etc.>
 
 No hardcoded copy in components. No hardcoded data records.
 
+### 8. Blocked is loud.
+
+Before stopping on any failure-mode condition, run
+`node scripts/notify.mjs --title "<skill>: stopped"
+--body "<reason>" --priority high` (best-effort — a failed
+notification never becomes its own stop). Applies to every
+skill; see `nexus/playbooks/hands-off.md`.
+
 ---
 
 ## Project
@@ -96,7 +104,8 @@ The product spec is `spec.md` at the repo root. Read it once.
 <your app paths>     <one-line per top-level group>
 plan/                Build plan, phase briefs, audit findings.
 skills/              Source-of-truth skill files invoked by slash commands.
-.claude/             Claude Code config — slash commands and sub-agent definitions.
+.claude/             Claude Code config — slash commands, sub-agents,
+                     settings.json (permission allowlist), hooks/ (guard).
 design/              Design exports.
 data/                Structured data, if applicable.
 ```
@@ -178,6 +187,12 @@ GH_REPO=<REPO_SLUG>
 ```
 
 Get one: https://github.com/settings/tokens
+
+### `NOTIFY_NTFY_TOPIC` / `NOTIFY_WEBHOOK_URL` — pager (optional)
+
+Used by `scripts/notify.mjs` (standing rule 8). Either works;
+ntfy is the zero-setup path. Optional at Level 0–2; required
+before an unattended window per the hands-off pre-flight.
 
 ### No other secrets
 

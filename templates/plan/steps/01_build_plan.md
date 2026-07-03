@@ -9,9 +9,12 @@
 ## Status (at-a-glance)
 
 `/march`, `/ship-a-phase`, and (transitively) `/loop` read this
-block to find the next phase. Format: `[ ]` pending → `[x]`
-shipped (with commit hash). Tick in this file in the same
-commit that ships the phase.
+block to find the next phase. Status vocabulary: `[ ]` pending
+→ `[x]` shipped (with commit hash); `[skipped]` (set only via
+`/oversight`); `[blocked: <reason> <date>]` (set by
+`ship-a-phase` on a phase-shaped failure — `/march` skips it,
+`/oversight` unblocks it); `[-]` partial-with-carry-overs.
+Tick in this file in the same commit that ships the phase.
 
 > **Replace this section with your project's actual phases.**
 > The structure below is one shape (substrate + page families

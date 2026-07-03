@@ -46,7 +46,7 @@
     "_comment": "Comment-out (remove) any block you're not adopting in v1. Adding later is `/bootstrap <service>`.",
     "anthropic": {
       "_purpose": "in-product prompt generation / summarization",
-      "model": "claude-sonnet-4-6"
+      "model": "claude-sonnet-5"
     },
     "openai": {
       "_purpose": "in-product moderation / fallback",

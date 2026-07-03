@@ -113,11 +113,11 @@ jobs:
           # Alternative: ANTHROPIC_API_KEY env var (pay-per-token).
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Sonnet for cheap-on-quota dispatch. Upgrade to
-          # claude-opus-4-7 once you've measured a week of weekly-cap
+          # claude-opus-4-8 once you've measured a week of weekly-cap
           # consumption and confirmed headroom.
           claude_args: |
             {
-              "model": "claude-sonnet-4-6"
+              "model": "claude-sonnet-5"
             }
           prompt: |
             You are running <PROJECT>'s autonomous loop in CI (GitHub Actions).
@@ -125,8 +125,8 @@ jobs:
 
             Cloud-mode adjustments on top of agents.md:
 
-            1. Skip /oversight entirely. It is interactive and never runs in cloud.
-            2. Skip /critique. The reader sub-agent depends on a Chrome MCP that is not available on the runner. /critique stays a local-only ritual.
+            1. Skip interactive /oversight (it asks; nobody is here). The read-only variant is mandatory instead: END every tick — shipped, no-op, or blocked — by running /oversight audit and printing its briefing into this log, so every run closes with a state-of-the-loop snapshot.
+            2. /critique MAY run when its /march gate opens, using the reader's WebFetch engine (Path B — the Chrome MCP is not available on the runner). Findings carry source: web-fetch. If bearings Auth is not "none" and no CRITIQUE_* secrets are configured in this workflow's env, run the anonymous pass only — never file auth-failed noise for a wall you knew about.
             3. /expand may run; candidates land in plan/PHASE_CANDIDATES.md. Promotion happens only via local /oversight — do not promote candidates from cloud.
             4. The verify gate (`pnpm verify`) and deploy gate (`pnpm deploy:check`) are non-negotiable. Same as local. NEVER --no-verify. Run the gate FOREGROUND and wait for it — never `run_in_background`. Backgrounding the gate is the one thing that wedges this loop: the SDK ends your turn while the gate is still alive, the resume notification is unreliable here, and the run hangs with no commit. If the gate is too slow for one foreground call, run it as sequential foreground legs (each its own blocking call); do not background it.
             5. The git author identity is already configured by the workflow. Do not change it.
@@ -147,6 +147,14 @@ jobs:
           # NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           # VERCEL_TOKEN:       ${{ secrets.VERCEL_TOKEN }}
           # CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          #
+          # Pager (playbooks/hands-off.md Step 2) — lets cloud
+          # stops page your phone like local ones:
+          # NOTIFY_NTFY_TOPIC: ${{ secrets.NOTIFY_NTFY_TOPIC }}
+          #
+          # Authenticated cloud critique (Path B), if adopted —
+          # see customization/auth-aware-critique.md:
+          # CRITIQUE_SESSION_COOKIE: ${{ secrets.CRITIQUE_SESSION_COOKIE }}
           #
           # Default: GITHUB_TOKEN. To switch to user-PAT mode,
           # replace with: GH_TOKEN: ${{ secrets.ACTIONS_PAT }}

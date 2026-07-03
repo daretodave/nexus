@@ -141,7 +141,8 @@ issue so the public timeline reflects "next up" before shipping
 starts:
 
 ```bash
-cat > /tmp/phase-issue-body.md <<EOF
+issue_body=$(mktemp)
+cat > "$issue_body" <<EOF
 **Goal:** <one-line outcome from the brief's "Outcome" section>
 
 <2–4 line summary of what shipping this phase delivers>
@@ -155,7 +156,7 @@ EOF
 node scripts/loop-issue.mjs phase-open \
     --phase "<N>" \
     --title "Phase <N> — <topic>" \
-    --body-file /tmp/phase-issue-body.md
+    --body-file "$issue_body"
 ```
 
 The helper is **idempotent** — if `/ship-a-phase` already opened
@@ -199,3 +200,22 @@ phase entirely:
    If can't clarify without user input, stop.
 2. **Design contradicts contract.** Surface; do not silently
    re-decide contract shape.
+
+## 9. Quick reference
+
+```bash
+# Reads (in this order)
+plan/steps/01_build_plan.md          # the phase row being refined
+spec.md                              # product truth
+plan/bearings.md                     # contracts, standing decisions
+design/                              # exports, if any landed
+plan/AUDIT.md                        # open findings that touch the phase
+
+# Writes
+plan/phases/phase_<N>_<topic>.md     # the brief (the only deliverable)
+plan/steps/01_build_plan.md          # only when adding a new phase row
+
+# Commands
+git pull --ff-only                   # Step 0
+git commit && git push               # docs-only commit; verify gate not required
+```

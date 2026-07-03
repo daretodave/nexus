@@ -110,7 +110,10 @@ Otherwise fall through to Step 3.
 #### 3a. Pending phase?
 
 Open `plan/steps/01_build_plan.md`. If any `[ ]` row in the
-"Status (at-a-glance)" block:
+"Status (at-a-glance)" block — skipping rows marked
+`[skipped]` or `[blocked: …]` (a blocked phase is a
+conversation waiting for `/oversight`, not work for this
+tick):
 
 - Read `skills/ship-a-phase.md`.
 - Execute its procedure end-to-end.

@@ -265,3 +265,26 @@ Conditions to dispatch:
 3. No pending HIGH critique already queued for iterate.
 
 If all three: `/march` calls `/critique` for that tick.
+
+## 10. Quick reference
+
+```bash
+# State files
+plan/CRITIQUE.md                     # findings queue + last-pass metadata
+plan/bearings.md                     # voice, URL contract, Auth: field
+
+# Sub-agent
+.claude/agents/reader.md             # the fresh-eyes observer persona
+
+# Commands
+git pull --ff-only                   # Step 0
+pnpm deploy:check                    # green-deploy precondition
+git commit && git push               # single critique: <summary> commit
+```
+
+If the site sits behind a login wall, the reader needs an auth
+path — see nexus's
+[`customization/auth-aware-critique.md`](../../customization/auth-aware-critique.md)
+for the five patterns (test-user, session-cookie, bearer-token,
+preview-env, magic-link). Never fall back to critiquing the
+logged-out shell silently.

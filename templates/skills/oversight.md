@@ -31,7 +31,16 @@ resume.
 /oversight content          # bias toward /iterate findings + content
 /oversight deploy           # bias toward Netlify / CI/CD signal
 /oversight reset            # bias toward scope reduction
+/oversight audit            # READ-ONLY: print the §4 briefing, ask
+                            # nothing, change nothing, commit nothing
 ```
+
+`audit` is the one mode that is safe in non-interactive
+contexts (cloud ticks end with it so every Actions log closes
+with a state-of-the-loop snapshot). It is an instrument panel,
+not oversight — it never asks, never applies, never commits.
+Every other mode requires a present user; under `/loop` they
+are a misconfiguration (§9).
 
 ## 3. What `oversight` reads (audit phase)
 

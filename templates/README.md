@@ -16,6 +16,7 @@ templates/
 │   ├── bearings.md
 │   ├── AUDIT.md
 │   ├── CRITIQUE.md
+│   ├── PHASE_CANDIDATES.md
 │   ├── steps/01_build_plan.md
 │   └── phases/
 │       ├── phase_1_bootstrap.md
@@ -28,9 +29,15 @@ templates/
 │   ├── iterate.md
 │   ├── critique.md
 │   ├── triage.md
+│   ├── expand.md
 │   ├── march.md
-│   └── oversight.md
-├── claude/                            → repo's .claude/
+│   ├── oversight.md
+│   ├── jot.md
+│   └── bootstrap.md                   (opt-in executor; see customization/bootstrap-automation.md)
+├── claude/                            → repo's .claude/ (+ CLAUDE.md → repo root)
+│   ├── CLAUDE.md                      (two-line pointer at agents.md; copy to repo ROOT)
+│   ├── settings.json                  (permission allowlist + hook wiring; see customization/claude-code.md)
+│   ├── hooks/guard.mjs                (mechanical hard rules: PreToolUse + Stop)
 │   ├── commands/                      (one terse pointer per skill)
 │   └── agents/                        (sub-agent definitions)
 ├── data/                              → repo's data/ (if using gh-as-db or hybrid)
@@ -40,12 +47,16 @@ templates/
 ├── setup/                             → repo's setup/ (one runbook per external
 │   │                                    service; index in 00_files.md)
 │   ├── 00_files.md                    (the manifest template)
-│   └── NN_service.md                  (per-service runbook template)
+│   ├── NN_service.md                  (per-service runbook template)
+│   └── bootstrap.example.json         (manifest for /bootstrap; copy to setup/bootstrap.local.json, gitignored)
 ├── .github/                           → repo's .github/ (opt-in; cloud loop)
 │   ├── workflows/march.yml
 │   └── CLOUD_LOOP.md
-├── scripts/
-│   └── deploy-check.mjs               → repo's scripts/
+├── scripts/                           → repo's scripts/
+│   ├── deploy-check.mjs               (the deploy gate)
+│   ├── loop-issue.mjs                 (GitHub issue mirror)
+│   ├── notify.mjs                     (the pager — blocked is loud)
+│   └── bootstrap.mjs                  (provider-CLI executor, opt-in)
 └── env/
     └── env.example                    → repo's .env.example
 ```
@@ -112,6 +123,7 @@ the corresponding capability:
 | `skills/ship-data.md` | The project has a structured data layer (`gh-as-db`, `hybrid-with-managed-postgres`, `pure-db`, `saas-cms`). See `nexus/customization/data-layer.md`. |
 | `skills/ship-asset.md` + `claude/agents/brander.md` | `Surface: site` or `hybrid` AND you want the loop to render brand assets (OG images, favicons, social cards, SVG → PNG, wordmarks). Demand-pull only — drains findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. See `nexus/customization/branding.md`. |
 | `setup/00_files.md` + `setup/NN_service.md` | The project depends on any external service beyond hosting (auth provider, managed DB, email service, AI API). See `nexus/customization/external-services.md`. |
+| `claude/settings.json` + `claude/hooks/guard.mjs` + `claude/CLAUDE.md` + `scripts/notify.mjs` | You run the loop on Claude Code and want unattended levels (3–4): pre-approved permissions, hook-enforced hard rules, and a pager. See `nexus/customization/claude-code.md` + `nexus/playbooks/hands-off.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 
 If your `bearings.md` declares `Surface: service / library /

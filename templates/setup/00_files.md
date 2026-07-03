@@ -58,6 +58,15 @@ run any time, including inside `/oversight`.
 > to keep dependency order. The minimum is GitHub + hosting;
 > everything else is project-specific.
 
+> **Token expiry is part of the row's status.** Any credential
+> with a lifetime (fine-grained PATs default to 90 days;
+> session cookies last days; some provider tokens rotate) gets
+> an explicit `expires: <YYYY-MM-DD>` note in its per-service
+> block below. The hands-off pre-flight
+> (`nexus/playbooks/hands-off.md` Step 5) refuses a window
+> that outlives any listed credential. "Probably fine" is not
+> a date.
+
 ---
 
 ## Per-service quick reference

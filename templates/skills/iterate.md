@@ -128,7 +128,18 @@ git pull --ff-only
 
 ### Step 1 — Audit (or read latest)
 
-Run §4. Write to `plan/AUDIT.md`:
+Run §4. Write to `plan/AUDIT.md`.
+
+**Durable rows survive the rewrite.** The audit section (`#
+Site audit — <date>` + Top 5) is yours to regenerate each
+pass. Everything else in the file is durable and must be
+preserved verbatim when you rewrite: the `> Bias:` line (only
+`/oversight reset` clears it), `[needs-user-call]` rows, and
+`[user-issue #N]` rows routed by `/triage` that you are not
+addressing this tick. Losing a queued user issue in an audit
+rewrite is a state-integrity failure, not tidying.
+
+Audit block shape:
 
 ```markdown
 # Site audit — <ISO date>
@@ -165,7 +176,8 @@ Otherwise:
 
 ```bash
 # 1. Build the body file from the finding row.
-cat > /tmp/loop-issue-body.md <<EOF
+issue_body=$(mktemp)
+cat > "$issue_body" <<EOF
 **Source:** <pass description, e.g. "/critique pass 2 (reader sub-agent)" or "/jot <date>" or "/iterate audit <date>">
 **Severity:** <HIGH|MED|LOW> · **Category:** <category from row> · **URL:** <url-or-"general">
 
@@ -199,7 +211,7 @@ N=$(node scripts/loop-issue.mjs open \
     --category <see mapping above> \
     --source <user|reader|audit|external> \
     --title "<one-line summary, ≤ 70 chars>" \
-    --body-file /tmp/loop-issue-body.md)
+    --body-file "$issue_body")
 echo "loop-issue: opened #$N"
 ```
 
@@ -380,7 +392,7 @@ pnpm deploy:check
 
 # Issue mirror
 node scripts/loop-issue.mjs open --severity ... --category ... \
-  --source ... --title "..." --body-file /tmp/loop-issue-body.md
+  --source ... --title "..." --body-file "$(mktemp)"
 node scripts/loop-issue.mjs close-comment --number N --commit SHA \
   --deploy-url <DEPLOY_URL>
 ```

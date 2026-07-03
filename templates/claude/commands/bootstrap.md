@@ -25,3 +25,5 @@ minimize prompts.
 
 Never invoke `/bootstrap` under `/loop` or `/march`. It runs on
 explicit user request only.
+
+Argument: $ARGUMENTS

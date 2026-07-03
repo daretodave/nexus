@@ -109,7 +109,7 @@ drainage logic doesn't need any new code:
 - category: <inferred-or-overridden>
 - observation: <the user's text, verbatim, single line>
 - evidence: user-spotted at <ISO timestamp>
-- suggested_fix: [user has not specified — iterate to determine]
+- suggested fix: [user has not specified — iterate to determine]
 - source: user
 ```
 

@@ -148,7 +148,8 @@ duplicates.
 # 1. Build the body file from the brief's Outcome / Why section.
 #    Keep it user-readable: 1–2 lines goal summary, then a link
 #    back to the phase brief in this repo.
-cat > /tmp/phase-issue-body.md <<EOF
+issue_body=$(mktemp)
+cat > "$issue_body" <<EOF
 **Goal:** <one-line outcome from the brief's "Outcome" section>
 
 <2–4 line summary of what shipping this phase delivers>
@@ -163,7 +164,7 @@ EOF
 PHASE_ISSUE=$(node scripts/loop-issue.mjs phase-open \
     --phase "<N>" \
     --title "Phase <N> — <topic>" \
-    --body-file /tmp/phase-issue-body.md)
+    --body-file "$issue_body")
 echo "phase mirror: #$PHASE_ISSUE"
 ```
 
@@ -371,24 +372,44 @@ committed separately from the code that follows.
 These are the only conditions that warrant stopping the loop
 and asking the user. Everything else: decide, ship, document.
 
+Before any stop: if `scripts/notify.mjs` exists, fire it with
+the stop reason (`--priority high`). Best-effort — a failed
+notification never becomes its own failure.
+
+Stops come in two shapes. **Repo-shaped** failures (the whole
+loop is unsafe to continue) end the tick entirely.
+**Phase-shaped** failures (this one phase can't ship; the rest
+of the plan is fine) additionally mark the phase row
+`[blocked: <short reason> <ISO-date>]` in
+`plan/steps/01_build_plan.md`, commit + push that state
+change, and return cleanly — the next `/march` tick dispatches
+past the blocked row into still-shippable work, and
+`/oversight` owns unblocking.
+
+Repo-shaped — stop the tick:
+
 1. **`pnpm verify` fails ≥3 times on the same root cause.**
 2. **`pnpm deploy:check` fails ≥3 times on the same root cause**
    after `pnpm verify` passes locally.
 3. **`<PROVIDER_AUTH_TOKEN>` missing or rejected**
    (deploy:check exit 3). Stop and ask the user to populate
    `.env`.
-4. **A required dependency would require a paid service or API
-   key.** Stop and report which env var is missing.
-5. **A `git pull` produces a divergence.** Don't `--rebase`
+4. **A `git pull` produces a divergence.** Don't `--rebase`
    blind; stop and report.
-6. **A deploy fails for an infrastructure reason** (env var
+5. **A deploy fails for an infrastructure reason** (env var
    missing, plugin incompatibility) and the fix isn't local
    code. Stop and report.
+
+Phase-shaped — mark `[blocked: …]`, notify, return:
+
+6. **The phase requires a paid service or API key that isn't
+   configured.** Note which env var / runbook is missing in
+   the blocked reason.
 7. **The design contradicts the URL / API / CLI contract** in a
    way you can't reconcile by trusting the contract.
 8. **Phase scope is genuinely ambiguous after reading step 01 +
    the brief + bearings + spec.md.** Generate a more decisive
-   brief and proceed; stop only if even that fails.
+   brief and proceed; block only if even that fails.
 
 For everything else: **decide, ship, document.**
 
