@@ -10,11 +10,19 @@
 > the walk-away rigging in
 > [`playbooks/hands-off.md`](../playbooks/hands-off.md).
 
-## Setup (one secret)
+## Setup (one app install + one secret)
 
-1. `claude setup-token` → copy the OAuth token.
-2. Repo → Settings → Secrets and variables → Actions → new
-   secret `CLAUDE_CODE_OAUTH_TOKEN`.
+1. **Install the Claude Code GitHub App** on this repo:
+   https://github.com/apps/claude → Install → select
+   `daretodave/nexus`. The action exchanges its OIDC token for
+   an app token; without the app the run dies at
+   `401 — Claude Code is not installed on this repository`
+   before Anthropic auth ever runs. (The kit knew this — see
+   the template's setup step 1 and the bootstrap handoff; this
+   manual learned it from crash issue #1.)
+2. `claude setup-token` → copy the OAuth token → Repo →
+   Settings → Secrets and variables → Actions → new secret
+   `CLAUDE_CODE_OAUTH_TOKEN`.
 3. Validate once by hand: `gh workflow run march`, watch the
    run end green, read the closing `/oversight audit` block.
 
@@ -54,6 +62,9 @@ cloud volume from local work. Nothing else — no
 
 ## When something breaks
 
+- **`401 — Claude Code is not installed on this repository`**
+  in the app-token exchange — the GitHub App isn't installed
+  (setup step 1). Install it, `gh run rerun`, done.
 - **`Cloud march tick crashed` issue appears** — read the run
   link. One-off infra flake → `gh run rerun`. Repeated →
   disable and debug locally per
