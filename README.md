@@ -298,6 +298,16 @@ Two awareness layers wrap every push:
 - **Verify gate** (pre-commit, hermetic): typecheck → unit → build → e2e. The e2e leg is the load-bearing piece — see [`customization/hermetic-e2e.md`](./customization/hermetic-e2e.md).
 - **Deploy gate** (post-push, CI/CD-aware): polls your hosting provider until ready or error
 
+One enforcement layer (opt-in, for Claude Code runners) turns
+the hard rules from promises into walls: a permission
+allowlist so unattended ticks never stall on a prompt, guard
+hooks that mechanically block `--no-verify` / force-pushes /
+backgrounded gates, and a pager so a stopped loop pages your
+phone instead of waiting to be discovered. See
+[`customization/claude-code.md`](./customization/claude-code.md)
+and the walk-away runbook,
+[`playbooks/hands-off.md`](./playbooks/hands-off.md).
+
 Two state files that capture intent across context loss:
 - `plan/steps/01_build_plan.md` — at-a-glance status of every phase
 - `plan/AUDIT.md` (+ `data/BACKLOG.md` + `plan/CRITIQUE.md`) — queues the loop drains
@@ -390,6 +400,23 @@ Don't reach for this until your verify gate is genuinely
 hermetic and the local loop has run cleanly for a few days —
 the cloud surfaces every flake.
 
+### → [`playbooks/hands-off.md`](./playbooks/hands-off.md)
+
+The walk-away runbook. "Unattended" and "hands-off" are
+different claims — this closes the seven silent-death modes
+between them: permission walls, silent stops, one bad phase
+freezing the beast, drift where nobody's looking, expiring
+secrets, budget surprises, and two loops racing one branch.
+Ends in a pre-flight checklist and a 24-hour dry run.
+
+### → [`playbooks/recovery.md`](./playbooks/recovery.md)
+
+The incident runbook, written to be read during the incident.
+Safe-stop first, one triage tree, then a numbered procedure
+per scenario — red deploys, wedged git, churn loops, drift,
+outages, expired secrets, corrupted state. Recovery never
+force-pushes and never bypasses a gate.
+
 ---
 
 <img width="1280" height="686" alt="LOOP_A" src="https://github.com/user-attachments/assets/d5ce336a-5c7b-424f-b752-5df4d37c03e6" />
@@ -426,12 +453,18 @@ hardest to reach — most projects get to level 3 and stay there.
 nexus/
 ├── README.md                          # this file
 ├── intervention-spectrum.md           # the levels in detail
+├── agents.md                          # nexus's OWN rule book (the kit runs on itself)
+├── package.json                       # the kit's own verify gate wiring
+├── scripts/
+│   └── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji
 ├── playbooks/
 │   ├── pre-spec.md                    # pitch → spec.md (interactive)
 │   ├── new-project.md                 # greenfield setup
 │   ├── existing-project.md            # brownfield retrofit
 │   ├── ci-providers.md                # deploy-gate variations
-│   └── cloud-loop.md                  # opt-in GitHub Actions loop
+│   ├── cloud-loop.md                  # opt-in GitHub Actions loop
+│   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
+│   └── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
 ├── concepts/
 │   ├── architecture.md                # the whole system in one read
 │   ├── skills-anatomy.md              # how to read/write a skill file
@@ -441,14 +474,21 @@ nexus/
 │   ├── hermetic-e2e.md                # the e2e leg — patterns, alt-port DB seeding, smoke walker
 │   ├── data-layer.md                  # gh-as-db / hybrid-with-managed-postgres / pure-db / saas-cms / none
 │   ├── sub-agents.md                  # designing your specialists
+│   ├── lanes.md                       # alpha/beta/gamma — three agents, one branch (attended fan-out)
+│   ├── claude-code.md                 # the Claude Code layer — permissions, guard hooks, pager, model routing
 │   ├── branding.md                    # opt-in /ship-asset + brander agent (Surface-gated)
 │   ├── visual-system.md               # design system layer (upstream of branding/assets)
 │   ├── moderation-loop.md             # mod queues + /oversight escalation (for UGC projects)
 │   ├── external-services.md           # the setup/ paradigm — pre-flight every dashboard
 │   ├── bootstrap-automation.md        # the executor that drives provider CLIs end-to-end (paired with external-services.md)
 │   └── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
-├── skills/                            # nexus-self meta-skills (not adopter skills)
+├── skills/                            # nexus's OWN skills — the loop that ships the kit
+│   ├── march.md                       # + ship-a-phase, iterate, critique (dry-run adoption),
+│   │                                  #   triage, expand, oversight, jot
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
+├── plan/                              # nexus's OWN state files (build plan, queues, briefs)
+├── .claude/                           # nexus's OWN commands + settings.json + guard hook
+├── .github/                           # nexus's OWN cloud loop (march.yml + CLOUD_LOOP.md)
 └── templates/
     ├── README.md                      # how to apply the templates
     ├── agents.md                      # rule-book template (target: repo root)
@@ -472,20 +512,27 @@ nexus/
     │   ├── march.md
     │   ├── oversight.md
     │   └── jot.md                      # user-input quickfire — append a row to plan/CRITIQUE.md
-    ├── claude/                        # → repo's .claude/
+    ├── claude/                        # → repo's .claude/ (+ CLAUDE.md → repo root)
+    │   ├── CLAUDE.md                  # two-line pointer at agents.md
+    │   ├── settings.json              # permission allowlist + hook wiring
+    │   ├── hooks/guard.mjs            # mechanical hard rules (PreToolUse + Stop)
     │   ├── commands/                  # one terse pointer per skill
     │   └── agents/                    # generic sub-agent templates
     ├── data/                          # → repo's data/ (if using gh-as-db or hybrid)
     ├── setup/                         # → repo's setup/ (per-external-service runbooks)
     │   ├── 00_files.md                # the manifest / index template
-    │   └── NN_service.md              # per-service runbook template
-    ├── github/                        # → repo's .github/ (opt-in cloud loop)
+    │   ├── NN_service.md              # per-service runbook template
+    │   └── bootstrap.example.json     # /bootstrap manifest (copy → bootstrap.local.json)
+    ├── .github/                       # → repo's .github/ (opt-in cloud loop)
     │   ├── workflows/march.yml        # cron + Claude Code Action
     │   └── CLOUD_LOOP.md              # operator's guide (lives in repo)
     ├── scripts/
-    │   └── deploy-check.mjs           # multi-provider deploy gate
+    │   ├── deploy-check.mjs           # multi-provider deploy gate
+    │   ├── loop-issue.mjs             # GitHub issue mirror (findings + phases)
+    │   ├── notify.mjs                 # the pager — blocked is loud
+    │   └── bootstrap.mjs              # provider-CLI executor (opt-in)
     └── env/
-        └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, etc.
+        └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
 ```
 
 The templates are the artifacts. Everything else explains how to
@@ -532,6 +579,37 @@ adapt them.
 
 ---
 
+## nexus runs on nexus
+
+This repo eats its own dogfood — it is an adopted nexus
+project. The ouroboros, concretely:
+
+- **Its own verify gate.** `node scripts/verify.mjs` — six
+  hermetic legs (every relative link resolves, the kit tree
+  matches disk, no orphaned doc, placeholder vocabulary
+  enforced, skill anatomy enforced, no emojis). On its first
+  ever run it caught five real defects in this repo. The gate
+  works.
+- **Its own plan.** `plan/steps/01_build_plan.md` carries the
+  kit's roadmap; `plan/AUDIT.md` and
+  `plan/PHASE_CANDIDATES.md` are seeded with real findings
+  from deep survey passes — the loop's food.
+- **Its own skills.** `skills/` holds the kit's adapted verbs.
+  The best one is `/critique`: a **dry-run adoption** — a
+  fresh-eyes agent follows this README's TL;DR into a scratch
+  directory as a stranger and files every friction point.
+- **Its own cloud loop.** `.github/workflows/march.yml` ticks
+  four times a day on Sonnet, shipping pending phases and
+  draining queues, with the same ceiling, trailer, and
+  crash-issue conventions the kit teaches. Operator guide:
+  [`.github/CLOUD_LOOP.md`](./.github/CLOUD_LOOP.md).
+
+If you want to see the methodology run before adopting it,
+watch this repo's commit log and Issues tab — every phase has
+a mirror issue, every cloud commit carries its run URL.
+
+---
+
 ## Provenance
 
 This methodology evolved across:
@@ -542,6 +620,14 @@ This methodology evolved across:
 - **thock** (~2026) — An editorial content hub. Added
   **`/ship-data`, `/critique`, `/triage`, `/oversight`,
   `/march`** — the full autonomous family.
+- **semilayer** (~2026) — A database intelligence layer; the
+  proto-nexus ancestor (numbered steps, checkbox roadmap,
+  hermetic-e2e doctrine).
+- **kintilla** (~2026) — A shared-home planner running the
+  loop hot; contributed the lanes fan-out
+  ([`customization/lanes.md`](./customization/lanes.md)), the
+  plan-invariant gate pattern, and the evolved lessons layer
+  (phase 7 of this repo's own plan).
 
 If you're working with one of those repos, you'll see this kit's
 patterns there directly. If you're applying it to a fresh repo,

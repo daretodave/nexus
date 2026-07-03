@@ -158,6 +158,19 @@ iterations.
 the loop ships red main + lies about it. With them, the loop
 either ships green or stops cleanly.
 
+### Enforcement (opt-in hardening)
+
+Both gates — and the hard rules around them — are prose until
+you mechanize them. Projects running on Claude Code can adopt
+a third piece of Layer 3: a permission allowlist that
+pre-approves exactly the commands the skills run (and
+pre-denies force-pushes and `--no-verify`), guard hooks that
+block the forbidden commands at the harness, and a pager so
+"stopped cleanly" also means "told the human". See
+[`../customization/claude-code.md`](../customization/claude-code.md);
+the walk-away assembly is
+[`../playbooks/hands-off.md`](../playbooks/hands-off.md).
+
 ---
 
 ## Layer 4: external signals (critique + triage)
@@ -245,6 +258,10 @@ The main agent should **delegate aggressively**. The split:
 
 - Main agent: wiring, code, architecture, decisions.
 - Sub-agents: research, prose, schema, observation.
+
+Sub-agents parallelize *inside* a session. For attended
+parallelism *across* sessions — three agents, one branch —
+see [`../customization/lanes.md`](../customization/lanes.md).
 
 ---
 
@@ -391,4 +408,6 @@ methodology applied to a different shape.
   write a skill file in detail.
 - [`../playbooks/new-project.md`](../playbooks/new-project.md)
   — concrete adoption steps for a fresh repo.
+- [`../playbooks/hands-off.md`](../playbooks/hands-off.md) —
+  rigging the layers for genuinely unattended windows.
 - [`../templates/`](../templates/) — copy-paste artifacts.

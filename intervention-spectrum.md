@@ -91,6 +91,14 @@ having watched every commit.
   configured and tested.
 - All operational secrets in `.env` (Netlify token, GitHub PAT
   — see your project's `agents.md` Operational secrets section).
+- **Harness enforcement + a pager, if you run on Claude Code.**
+  A permission allowlist (`.claude/settings.json`) so no tick
+  ever stalls on a prompt, guard hooks so the hard rules are
+  walls rather than promises, and `scripts/notify.mjs` wired
+  so a stopped loop pages your phone. This is the difference
+  between "unattended" and "hands-off" — see
+  [`playbooks/hands-off.md`](./playbooks/hands-off.md) and
+  [`customization/claude-code.md`](./customization/claude-code.md).
 - **All external service dashboards configured per their
   runbooks.** If your project depends on auth / DB / email /
   AI APIs, every `setup/NN_<service>.md` runbook must be `OK`
@@ -215,8 +223,19 @@ weekend:
    and either auto-hides or files an audit finding. See
    [`customization/moderation-loop.md`](./customization/moderation-loop.md).
 
+10. **Run the hands-off pre-flight.** The checklist in
+    [`playbooks/hands-off.md`](./playbooks/hands-off.md)
+    supersets this one with the mechanical items: guard
+    self-test green, zero permission prompts across three
+    attended ticks, pager tested to your phone, no credential
+    expiring inside the window, one writer armed. Then its
+    24-hour dry run. Walking away is a promotion the loop
+    earns, not a switch you flip.
+
 If all pass: launch the loop. If any fails: fix it, then
-re-check.
+re-check. If the loop stops anyway while you're gone,
+[`playbooks/recovery.md`](./playbooks/recovery.md) is the
+incident runbook — safe-stop first, then the triage tree.
 
 ---
 
