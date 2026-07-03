@@ -88,6 +88,31 @@ cloud volume from local work. Nothing else — no
   after 60 days without repo activity (push anything or re-run
   manually to revive).
 
+## The other shapes
+
+The dispatcher is one of three loops on this repo (the full
+genus: [`concepts/loop-shapes.md`](../concepts/loop-shapes.md)):
+
+- **`night.yml` — the night shift.** Daily at 10:30 UTC, one
+  `/digest` tick writes
+  [`plan/DIGEST.md`](../plan/DIGEST.md) — the morning
+  briefing: what shipped (including no-op ticks), queues,
+  what needs you, today's intent, and any gate-tuning
+  proposals (filed as candidates, never applied). Read it
+  with coffee instead of reading run logs.
+- **`heartbeat.yml` — the immune system.** Every 6h, no
+  model: cancels runs wedged past 2h (unblocking the shared
+  concurrency group) and opens a deduped issue if march
+  hasn't completed a tick in 14h. It never writes to the
+  repo; it only tells on the others.
+- **The concierge lane.** Two remote controls: label any
+  issue `loop:do` and the next tick triages it straight to
+  the top with a priority bump; or run a specific verb from
+  anywhere — `gh workflow run march -f verb=critique`.
+
+All writers share one concurrency group; the heartbeat is the
+only loop allowed to run beside them.
+
 ## Reviewing the loop's work
 
 The commit log is the deliverable. Cloud commits carry the

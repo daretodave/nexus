@@ -1,0 +1,75 @@
+name: night
+
+# The night shift (loop shape 2): one /digest tick a day.
+# Writes plan/DIGEST.md - the morning briefing - and does the
+# breadth work the per-commit path must not. Shares the march
+# concurrency group so writers never race.
+
+on:
+  schedule:
+    - cron: '30 10 * * *'   # daily, ~06:30 US East
+  workflow_dispatch:
+
+concurrency:
+  group: march              # one cloud writer at a time, ever
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: read
+      actions: read         # gh run list - the pulse
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Configure git author
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run /digest (night shift)
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: 'true'
+          claude_args: >-
+            --model claude-sonnet-5
+            --permission-mode bypassPermissions
+          prompt: |
+            You are nexus's night shift. Read agents.md, then execute
+            skills/digest.md end to end - it is the single source of truth.
+
+            Cloud notes: the verify gate (node scripts/verify.mjs) runs
+            FOREGROUND; your one commit MUST end with the trailer
+
+              Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            (blank line before it). Proposals never actions: gate tunings
+            become plan/PHASE_CANDIDATES.md candidates, nothing else. One
+            commit (digest: <date>), push, exit.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Open night-failed issue if action crashed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh issue list --search 'in:title "Night digest crashed" state:open' --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create \
+              --title "Night digest crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --body "The night shift exited non-zero. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi

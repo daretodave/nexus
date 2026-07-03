@@ -109,6 +109,7 @@ verbs — a docs kit ships docs, not pages.
 | `expand` | `skills/expand.md` | Propose new phases from accumulated signals. |
 | `oversight` | `skills/oversight.md` | **User-in-the-loop.** The only skill that asks. |
 | `jot` | `skills/jot.md` | User quickfire → `plan/CRITIQUE.md`. |
+| `digest` | `skills/digest.md` | **The night shift.** Daily morning briefing → `plan/DIGEST.md`; tuning proposals as candidates. Own workflow, never dispatched by march. |
 | `lessons-pr` | `skills/lessons-pr.md` | Fold a sibling project's lessons into the kit. |
 
 ```

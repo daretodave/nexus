@@ -51,11 +51,17 @@ written):**
       key extraction (the Ember lessons list)
 - [ ] Phase 15 — Brownfield kit: templates/plan/CURRENT-STATE.md
       + preview-branch deploy-gate pattern
-- [ ] Phase 16 — Heartbeat watchdog: workflow template that
-      detects cron death / stale in_progress runs and notifies
+- [x] Phase 16 — Heartbeat watchdog: model-free workflow that
+      cancels wedged runs and alarms on flatline — nexus +
+      template (this commit)
 - [ ] Phase 17 — Budget-aware ceiling: read
       bootstrap.local.json cloud_loop.daily_ceiling; weight
       phase commits vs churn commits
+- [x] Phase 18 — Loop shapes: the genus taxonomy
+      (`concepts/loop-shapes.md`), the night shift (`/digest`
+      + `night.yml` + `plan/DIGEST.md`), and the concierge
+      lane (`loop:do` + verb dispatch) — kit + ouroboros
+      (this commit)
 
 > **After the pending phases run dry:** `/march` transitions
 > to `/iterate` — the audit dimensions (drift, completeness,
@@ -78,4 +84,10 @@ written):**
 - phase 3 — e593606 — enforcement templates + hardening
 - phase 4 — fe75c78 — hands-off, recovery, claude-code, lanes
 - phase 5 — df709e0 — the ouroboros substrate
-- phase 6 — (this commit) — cloud loop armed pending secret
+- phase 6 — b4d40ef — cloud loop armed; went live after four
+  live-fire fixes (app install 914299c, observability +
+  critique-never-clause ce66263, permission wall 5dcbf37,
+  claude_args flag form 803c940); first shipped tick 62a3875
+- phase 16 — (this commit) — heartbeat
+- phase 18 — (this commit) — loop shapes: night shift +
+  concierge + taxonomy

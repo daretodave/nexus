@@ -41,17 +41,24 @@ git pull --ff-only
 
 Divergence → stop per §5.
 
-### Step 1 — Triage gate (cheapest)
+### Step 1 — Triage gate (cheapest; concierge first)
 
 ```bash
+# The concierge lane: loop:do outranks everything.
+urgent=$(gh issue list --repo daretodave/nexus --state open \
+  --label loop:do --json number --jq 'length' 2>/dev/null || echo 0)
+
 unlabeled=$(gh issue list --repo daretodave/nexus --state open \
   --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number --jq 'length' 2>/dev/null || echo 0)
 ```
 
-`> 0` → read `skills/triage.md`, execute, return. `gh`
-missing/unauthed → warn and fall through (never fail the
-march on the awareness layer).
+`urgent > 0` OR `unlabeled > 0` → read `skills/triage.md`,
+execute, return. (`loop:do` issues are re-triaged even if
+already labeled — the label is the user saying "this one,
+now"; triage §4 handles the bump.) `gh` missing/unauthed →
+warn and fall through (never fail the march on the awareness
+layer).
 
 ### Step 2 — Critique gate (rate-limited)
 

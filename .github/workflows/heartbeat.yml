@@ -1,0 +1,66 @@
+name: heartbeat
+
+# The immune system (loop shape 3): no model, no writes - pure
+# shell watching the other loops. Cancels wedged runs so the
+# shared concurrency group unblocks (the next cron firing
+# resumes naturally), and turns "silently dead since Tuesday"
+# into a deduped issue. Watchers must be dumber than the thing
+# they watch.
+
+on:
+  schedule:
+    - cron: '15 */6 * * *'  # every 6h, offset from march's firings
+  workflow_dispatch:
+
+permissions:
+  actions: write            # gh run cancel
+  issues: write             # the alarm
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Cancel wedged runs (in_progress > 2h)
+        run: |
+          now=$(date -u +%s)
+          for wf in march night; do
+            gh run list --workflow "$wf" --status in_progress \
+              --json databaseId,createdAt \
+              --jq '.[] | [.databaseId, .createdAt] | @tsv' |
+            while IFS=$'\t' read -r id created; do
+              started=$(date -u -d "$created" +%s)
+              age=$(( (now - started) / 60 ))
+              if [ "$age" -gt 120 ]; then
+                echo "Cancelling wedged $wf run $id (${age}m old)"
+                gh run cancel "$id"
+                gh issue list --search "in:title \"Heartbeat: cancelled wedged run\" state:open" --json number --jq 'length' | grep -q '^0$' &&
+                gh issue create \
+                  --title "Heartbeat: cancelled wedged run ($wf, $(date -u +%Y-%m-%dT%H:%MZ))" \
+                  --body "Run $id sat in_progress for ${age}m (honest ticks finish well inside 60m). Cancelled so the concurrency group unblocks; the next cron firing resumes. If the log stalls right after a green gate, that is the post-result exit hang - see playbooks/cloud-loop.md."
+              fi
+            done
+          done
+
+      - name: Alarm if march has not completed a tick in 14h
+        run: |
+          last=$(gh run list --workflow march --status completed -L 1 \
+            --json updatedAt --jq '.[0].updatedAt // empty')
+          if [ -z "$last" ]; then
+            echo "No completed march runs yet - nothing to measure."
+            exit 0
+          fi
+          now=$(date -u +%s); then_s=$(date -u -d "$last" +%s)
+          hours=$(( (now - then_s) / 3600 ))
+          echo "Last completed march tick: ${hours}h ago"
+          if [ "$hours" -ge 14 ]; then
+            existing=$(gh issue list --search 'in:title "Heartbeat: march has flatlined" state:open' --json number --jq 'length')
+            if [ "$existing" -eq 0 ]; then
+              gh issue create \
+                --title "Heartbeat: march has flatlined ($(date -u +%Y-%m-%d))" \
+                --body "No completed march tick in ${hours}h (cadence is 6h). Likely causes: workflow disabled and forgotten, cron auto-paused, or auth expiry. Check: gh workflow list; gh run list --workflow march -L 5."
+            fi
+          fi

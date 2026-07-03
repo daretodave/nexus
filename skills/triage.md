@@ -30,6 +30,12 @@ Triage classifies and routes them so `/iterate` and
    kit taught wrong or missed — the highest-value class
    (bearings standing decision 3).
 4. **Route:**
+   - **`loop:do` (the concierge lane)** — the user flagged
+     "this one, now": route as below but file the AUDIT row
+     at [HIGH] with `- priority: user-flagged (loop:do)`
+     (worth +2 when `/iterate` scores it), comment that it
+     jumped the queue, then **remove the `loop:do` label**
+     (it is a signal, not a state).
    - docs/bug → `plan/AUDIT.md` row
      `### [user-issue #<N>] [SEV] <title>` + `category:
      external-issue`; label `triage:loop-queued`.
