@@ -70,9 +70,18 @@ jobs:
           # it, and a no-op tick must say why it no-op'd. Public
           # docs repo; runner masks the tokens.
           show_full_output: 'true'
+          # permissionMode bypassPermissions: there is no human on
+          # this runner to approve prompts, and default mode turned
+          # ticks 1-2 into read-only sightseeing ("This command
+          # requires approval" x many). The runner is a disposable,
+          # repo-scoped container - the kit's sanctioned bypass
+          # context. The hard rules stay mechanically enforced:
+          # .claude/hooks/guard.mjs runs in EVERY permission mode,
+          # and the GITHUB_TOKEN's blast radius is this repo.
           claude_args: |
             {
-              "model": "claude-sonnet-5"
+              "model": "claude-sonnet-5",
+              "permissionMode": "bypassPermissions"
             }
           prompt: |
             You are running nexus's autonomous loop in CI. This repo IS the

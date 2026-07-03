@@ -126,6 +126,29 @@ Rules that matter:
    (commit it — it IS methodology). Per-machine overrides go
    in `.claude/settings.local.json` (gitignored by Claude Code
    automatically).
+6. **The compound-command gotcha.** Every operation in a
+   pipe / `&&` / `||` chain needs its own allow rule. The
+   skills' canonical snippet `gh issue list … || echo 0`
+   prompts even with `gh issue list:*` allowed, unless
+   `echo:*` is allowed too — the harness reports "this
+   command contains multiple operations." The template
+   allowlist carries the utility set (`echo`, `cat`, `wc`,
+   `mktemp`, …) for exactly this reason; when a prompt
+   surprises you on an allowlisted command, look for the
+   un-allowed half of the chain.
+
+**The cloud posture is different.** On a CI runner there is
+no human to approve, so default mode doesn't degrade to
+prompts — it degrades to a silently starved tick that reads
+everything and ships nothing (nexus's own first two cloud
+ticks did exactly this). The workflow template therefore runs
+`permissionMode: bypassPermissions`: the runner is the
+disposable, repo-scoped container that hard rule 2 carves
+out, the `GITHUB_TOKEN` bounds the blast radius, and the
+guard hooks run in **every** permission mode — the hard rules
+stay walls even with permissions bypassed. Never copy that
+mode back to a machine that holds real secrets; locally, the
+allowlist is the sanctioned path.
 
 Expect to grow the allowlist during Level 0–2 (the attended
 levels): each time a prompt interrupts you for a command the

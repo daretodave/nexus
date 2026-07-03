@@ -27,7 +27,21 @@
       "Bash(gh label create:*)",
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
-      "Bash(mktemp:*)"
+      "Bash(git fetch:*)",
+      "Bash(mktemp:*)",
+      "Bash(echo:*)",
+      "Bash(printenv:*)",
+      "Bash(env)",
+      "Bash(date:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(cp:*)",
+      "Bash(mkdir:*)",
+      "Bash(sed:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

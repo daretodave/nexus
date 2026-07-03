@@ -48,10 +48,16 @@ The short version:
 
 Then burn down the prompt list: run `/march` attended and note
 every permission prompt that fires. Each one is either a
-missing narrow `allow` rule (add it) or the agent doing
-something the skills don't call for (fix the skill or the
-brief). **Zero prompts across three consecutive attended ticks
-is the bar.** A prompt during an unattended window is a wall.
+missing narrow `allow` rule (add it), a compound command whose
+other half isn't allowed (`… || echo 0` — see the gotcha in
+the customization doc), or the agent doing something the
+skills don't call for (fix the skill or the brief). **Zero
+prompts across three consecutive attended ticks is the bar.**
+A prompt during an unattended window is a wall — and in the
+cloud, where nobody can answer, the workflow template runs
+`permissionMode: bypassPermissions` instead (disposable
+runner + guard hooks; see the claude-code doc's cloud-posture
+section). The burn-down is for local windows.
 
 Non-Claude-Code runners: enforce the same rules at the git and
 provider level instead — commit-msg hook, branch protection

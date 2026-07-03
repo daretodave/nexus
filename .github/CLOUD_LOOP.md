@@ -65,6 +65,14 @@ cloud volume from local work. Nothing else — no
 - **`401 — Claude Code is not installed on this repository`**
   in the app-token exchange — the GitHub App isn't installed
   (setup step 1). Install it, `gh run rerun`, done.
+- **Green run, no commit, transcript full of `This command
+  requires approval`** — the permission wall: the action ran
+  without `permissionMode: bypassPermissions` (or a workflow
+  edit dropped it) and starved. See the `claude_args` comment
+  in `workflows/march.yml` and
+  [`customization/claude-code.md`](../customization/claude-code.md)
+  for why bypass-on-a-disposable-runner is the sanctioned
+  posture (guard hooks enforce the hard rules in every mode).
 - **`Cloud march tick crashed` issue appears** — read the run
   link. One-off infra flake → `gh run rerun`. Repeated →
   disable and debug locally per
