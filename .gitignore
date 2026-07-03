@@ -17,3 +17,5 @@ node_modules/
 # personal drafts (article work, scratch notes) — never published
 .article/
 .scratch/
+
+.token
