@@ -26,6 +26,7 @@ templates/
 ├── skills/                            → repo's skills/
 │   ├── ship-a-phase.md
 │   ├── ship-data.md                   (omit if no structured data layer)
+│   ├── ship-migration.md              (omit unless Structured data: pure-db / hybrid-with-managed-postgres)
 │   ├── ship-asset.md                  (omit unless Surface: site/hybrid AND branding in scope)
 │   ├── moderate.md                    (omit unless the project has UGC; see customization/moderation-loop.md)
 │   ├── plan-a-phase.md
@@ -62,7 +63,8 @@ templates/
 │   ├── deploy-check.mjs               (the deploy gate)
 │   ├── loop-issue.mjs                 (GitHub issue mirror)
 │   ├── notify.mjs                     (the pager — blocked is loud)
-│   └── bootstrap.mjs                  (provider-CLI executor, opt-in)
+│   ├── bootstrap.mjs                  (provider-CLI executor, opt-in)
+│   └── lint-migration.mjs             (additive-migration linter, pairs with ship-migration.md)
 └── env/
     └── env.example                    → repo's .env.example
 ```
@@ -127,6 +129,7 @@ the corresponding capability:
 | File | Adopt when |
 |---|---|
 | `skills/ship-data.md` | The project has a structured data layer (`gh-as-db`, `hybrid-with-managed-postgres`, `pure-db`, `saas-cms`). See `nexus/customization/data-layer.md`. |
+| `skills/ship-migration.md` + `scripts/lint-migration.mjs` | `Structured data` is `pure-db` or `hybrid-with-managed-postgres` — the project has a managed-Postgres (or compatible) DB. See `nexus/customization/data-layer.md` Patterns B and D. |
 | `skills/ship-asset.md` + `claude/agents/brander.md` | `Surface: site` or `hybrid` AND you want the loop to render brand assets (OG images, favicons, social cards, SVG → PNG, wordmarks). Demand-pull only — drains findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. See `nexus/customization/branding.md`. |
 | `skills/moderate.md` | The project has UGC (comments, submissions, votes, flags) and needs a dedicated queue-drain skill (Option A). See `nexus/customization/moderation-loop.md`. |
 | `setup/00_files.md` + `setup/NN_service.md` | The project depends on any external service beyond hosting (auth provider, managed DB, email service, AI API). See `nexus/customization/external-services.md`. |

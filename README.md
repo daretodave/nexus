@@ -271,6 +271,7 @@ A small family of slash commands the autonomous loop uses:
 |---|---|
 | `/ship-a-phase` | Ship one slice of the build plan end-to-end (code, tests, commit, push). |
 | `/ship-data` | Add or repair one record in the GitHub-as-DB (optional — only for projects with structured data). |
+| `/ship-migration` | Ship one database migration — additive only, enforced by a linter; destructive changes escalate to `/oversight` (optional — only for `pure-db` / `hybrid-with-managed-postgres` projects). |
 | `/plan-a-phase` | Refine the next phase brief without shipping code. |
 | `/iterate` | Audit the project, ship one improvement. The post-build endgame. |
 | `/critique` | External-observer pass — visit the live site as a stranger, file fresh-eyes findings. |
@@ -519,6 +520,7 @@ nexus/
     ├── skills/                        # → repo's skills/
     │   ├── ship-a-phase.md
     │   ├── ship-data.md                # omit if no structured data layer
+    │   ├── ship-migration.md           # omit unless Structured data: pure-db / hybrid-with-managed-postgres
     │   ├── ship-asset.md               # omit unless Surface: site / hybrid
     │   ├── moderate.md                 # omit unless UGC (see customization/moderation-loop.md)
     │   ├── plan-a-phase.md
@@ -551,7 +553,8 @@ nexus/
     │   ├── deploy-check.mjs           # multi-provider deploy gate
     │   ├── loop-issue.mjs             # GitHub issue mirror (findings + phases)
     │   ├── notify.mjs                 # the pager — blocked is loud
-    │   └── bootstrap.mjs              # provider-CLI executor (opt-in)
+    │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
+    │   └── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
     └── env/
         └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
 ```

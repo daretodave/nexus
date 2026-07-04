@@ -39,8 +39,9 @@ written):**
 - [x] Phase 10 — Ship `templates/skills/moderate.md` — the
       moderation Option A that moderation-loop.md promises
       (this commit)
-- [ ] Phase 11 — Ship `templates/skills/ship-migration.md` +
+- [x] Phase 11 — Ship `templates/skills/ship-migration.md` +
       additive-migration linter — data-layer Pattern D promise
+      (this commit)
 - [ ] Phase 12 — Critique-session refresher script + secret
       liveness probes — auth-aware-critique promise
 - [ ] Phase 13 — Nightly full-smoke workflow template +

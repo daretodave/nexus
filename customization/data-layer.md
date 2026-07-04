@@ -134,7 +134,12 @@ bearings; the provider is configuration, not a pin.
 - **Stop and ask**: destructive (DROP, ALTER COLUMN narrowing,
   data type changes).
 
-Encode this as a hard rule in `bearings.md`.
+Encode this as a hard rule in `bearings.md`. Ship migrations
+through
+[`templates/skills/ship-migration.md`](../templates/skills/ship-migration.md);
+[`templates/scripts/lint-migration.mjs`](../templates/scripts/lint-migration.mjs)
+enforces the additive-only half mechanically — see "Migration
+safety" under Pattern D below.
 
 ### Pattern C — `saas-cms` (managed CMS / SaaS data store)
 
@@ -242,7 +247,8 @@ The methodology pins none of them.
   through markdown / JSON commits.
 
 **`/ship-migration` shape (for the dynamic side):**
-- New companion skill at `skills/ship-migration.md` —
+- Companion skill:
+  [`templates/skills/ship-migration.md`](../templates/skills/ship-migration.md) —
   same shape as `/ship-data`: one phase = one migration +
   its RLS policies + its rollback note + its tests.
 - Per tick:
@@ -308,6 +314,12 @@ by default.
 - **Stop and ask via `/oversight`**: destructive
   migrations (DROP, ALTER COLUMN narrowing, data type
   changes, RLS posture downgrades).
+
+[`templates/scripts/lint-migration.mjs`](../templates/scripts/lint-migration.mjs)
+is the mechanical enforcement: `/ship-migration` Step 6 runs it
+against every migration file and blocks the commit on a
+destructive finding, rather than trusting the loop to remember
+the rule.
 
 Encode this as a hard rule in `bearings.md`:
 
