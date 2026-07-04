@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-02
+# Kit audit — 2026-07-04
 
 > Bias: none
 
@@ -7,7 +7,12 @@ customization + templates) and a survey of the sibling
 adopters (`../semilayer`, `../kintilla`). Rows here are
 iterate-shaped (one tick each); bigger items became phases in
 `plan/steps/01_build_plan.md` or candidates in
-`plan/PHASE_CANDIDATES.md`.
+`plan/PHASE_CANDIDATES.md`. Refreshed by `/digest` (48h+
+stale header) — each pending row spot-checked against current
+tree; `[4.2]` confirmed fixed by phase 9 and moved to Done, the
+rest confirmed still open. No new dimension sweep this pass
+(phases 9/10's own diffs checked clean); next full re-survey
+belongs to `/iterate` once the build plan's phases run dry.
 
 ## Pending
 
@@ -61,16 +66,6 @@ iterate-shaped (one tick each); bigger items became phases in
   variance rule ("data:validate iff data layer; lint optional
   leg"), align all three in one commit.
 
-### [ ] [4.2] existing-project audit snippet is crude
-- category: adopter-friction
-- impact: 4
-- ease: 8
-- evidence: `playbooks/existing-project.md` measures repo
-  history with `git log | grep -c '^Author:'` and assumes
-  pnpm+pytest+go simultaneously.
-- next: replace with `git rev-list --count HEAD` + per-stack
-  detection blocks.
-
 ### [ ] [3.8] generic-specialist template omits the model: lever
 - category: completeness
 - impact: 4
@@ -101,6 +96,11 @@ iterate-shaped (one tick each); bigger items became phases in
   once, note in bearings voice rules.
 
 ## Done
+
+### [x] [4.2] existing-project audit snippet is crude — commit 1cfab4b
+- fix: phase 9 rebuilt the snippet on `git rev-list --count
+  HEAD` / `git rev-list --count --since=... HEAD` (cross-shell
+  git primitives) instead of `git log | grep -c '^Author:'`.
 
 ### [x] [5.4] bootstrap.mjs mixes findstr (Windows) and awk (POSIX) — this commit
 - fix: `handoff()`'s `verify` is now `{ describe, check }`;
