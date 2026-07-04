@@ -36,8 +36,9 @@ written):**
       repo + sibling product repos (commit 4dc4840)
 - [x] Phase 9 — Windows-first pass: dual-shell commands +
       hazards page (this commit)
-- [ ] Phase 10 — Ship `templates/skills/moderate.md` — the
+- [x] Phase 10 — Ship `templates/skills/moderate.md` — the
       moderation Option A that moderation-loop.md promises
+      (this commit)
 - [ ] Phase 11 — Ship `templates/skills/ship-migration.md` +
       additive-migration linter — data-layer Pattern D promise
 - [ ] Phase 12 — Critique-session refresher script + secret

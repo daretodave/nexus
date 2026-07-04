@@ -110,7 +110,9 @@ cheaper to adopt.
 
 ### Option A — dedicated `/moderate` skill
 
-A new skill at `skills/moderate.md` with the same shape as
+A new skill at `skills/moderate.md` — ship
+[`templates/skills/moderate.md`](../templates/skills/moderate.md),
+same shape as
 [`templates/skills/ship-data.md`](../templates/skills/ship-data.md):
 one tick = one queue item drained.
 
@@ -307,6 +309,8 @@ shape (one block, not scattered). Add this block to the
 
 ## See also
 
+- [`../templates/skills/moderate.md`](../templates/skills/moderate.md) —
+  the shipped Option A skill.
 - [`./data-layer.md`](./data-layer.md) — queue storage
   follows the data-layer variant.
 - [`../intervention-spectrum.md`](../intervention-spectrum.md)

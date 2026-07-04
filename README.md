@@ -520,6 +520,7 @@ nexus/
     │   ├── ship-a-phase.md
     │   ├── ship-data.md                # omit if no structured data layer
     │   ├── ship-asset.md               # omit unless Surface: site / hybrid
+    │   ├── moderate.md                 # omit unless UGC (see customization/moderation-loop.md)
     │   ├── plan-a-phase.md
     │   ├── iterate.md
     │   ├── critique.md
