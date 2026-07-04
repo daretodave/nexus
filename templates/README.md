@@ -64,7 +64,9 @@ templates/
 │   ├── loop-issue.mjs                 (GitHub issue mirror)
 │   ├── notify.mjs                     (the pager — blocked is loud)
 │   ├── bootstrap.mjs                  (provider-CLI executor, opt-in)
-│   └── lint-migration.mjs             (additive-migration linter, pairs with ship-migration.md)
+│   ├── lint-migration.mjs             (additive-migration linter, pairs with ship-migration.md)
+│   ├── refresh-critique-session.mjs   (Pattern B session refresh, omit unless Auth: is set)
+│   └── check-secrets-liveness.mjs     (GH_TOKEN + CRITIQUE_* liveness probe, omit unless Auth: is set)
 └── env/
     └── env.example                    → repo's .env.example
 ```
@@ -134,6 +136,7 @@ the corresponding capability:
 | `skills/moderate.md` | The project has UGC (comments, submissions, votes, flags) and needs a dedicated queue-drain skill (Option A). See `nexus/customization/moderation-loop.md`. |
 | `setup/00_files.md` + `setup/NN_service.md` | The project depends on any external service beyond hosting (auth provider, managed DB, email service, AI API). See `nexus/customization/external-services.md`. |
 | `claude/settings.json` + `claude/hooks/guard.mjs` + `claude/CLAUDE.md` + `scripts/notify.mjs` | You run the loop on Claude Code and want unattended levels (3–4): pre-approved permissions, hook-enforced hard rules, and a pager. See `nexus/customization/claude-code.md` + `nexus/playbooks/hands-off.md`. |
+| `scripts/refresh-critique-session.mjs` + `scripts/check-secrets-liveness.mjs` | `bearings.md`'s `Auth:` is anything other than `none` — Pattern B session refresh + the GH_TOKEN/`CRITIQUE_*` liveness probe for hands-off pre-flight. See `nexus/customization/auth-aware-critique.md`. |
 | `skills/digest.md` + `claude/commands/digest.md` + `.github/workflows/night.yml` + `.github/workflows/heartbeat.yml` | The cloud loop is live and you want the rest of the genus: a daily morning briefing (`plan/DIGEST.md`), nightly breadth checks, and a model-free watchdog. See `nexus/concepts/loop-shapes.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 | `plan/reflexes.md` + `plan/lessons.md` | The loop has run long enough to accumulate real recurring lessons and a single `NEXUS_LESSONS.md` scratch file no longer scales. See `nexus/customization/lessons-layer.md`. |

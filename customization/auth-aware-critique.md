@@ -111,9 +111,14 @@ How it works:
    every request — both Chrome tools (`document.cookie =` or
    the `Cookie` request header) and WebFetch (the header
    parameter). No login flow runs.
-4. Add a `scripts/refresh-critique-session.mjs` that prompts
-   you to log in once and captures the new cookie. Run it
-   when the gate fails with 401/redirect-to-login.
+4. Run [`nexus/templates/scripts/refresh-critique-session.mjs`](../templates/scripts/refresh-critique-session.mjs)
+   after logging in once by hand — it prompts for the new
+   cookie/token and writes it back to `.env`. Run it when the
+   gate fails with 401/redirect-to-login.
+   [`check-secrets-liveness.mjs`](../templates/scripts/check-secrets-liveness.mjs)
+   catches a stale `CRITIQUE_BEARER_TOKEN` (JWT `exp` decode)
+   before that happens — wire it into pre-flight per
+   `playbooks/hands-off.md` Step 5.
 
 **Strengths:** Works in both browser and WebFetch paths. No
 login-flow flake. Cloud loop friendly.
@@ -289,6 +294,15 @@ When you adopt this customization:
 5. **`templates/env/env.example`** carries placeholder rows
    for each pattern (commented out). Adopt the section
    matching your `Auth:` value; leave the rest as docs.
+
+6. **Two scripts ship alongside the customization**:
+   `scripts/refresh-critique-session.mjs` (Pattern B session
+   refresh — interactive, writes `.env` in place) and
+   `scripts/check-secrets-liveness.mjs` (the mechanical
+   liveness check for `CRITIQUE_*` — decodes a
+   `CRITIQUE_BEARER_TOKEN`'s `exp` claim, presence-checks the
+   rest). Neither runs unless `Auth:` is something other than
+   `none`.
 
 ## Hard rules carried by the capability
 

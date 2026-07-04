@@ -42,8 +42,9 @@ written):**
 - [x] Phase 11 — Ship `templates/skills/ship-migration.md` +
       additive-migration linter — data-layer Pattern D promise
       (this commit)
-- [ ] Phase 12 — Critique-session refresher script + secret
-      liveness probes — auth-aware-critique promise
+- [x] Phase 12 — Critique-session refresher script + secret
+      liveness probes — auth-aware-critique promise (this
+      commit)
 - [ ] Phase 13 — Nightly full-smoke workflow template +
       stack:up/down scripts — hermetic-e2e promise
 - [ ] Phase 14 — Bootstrap v2: de-stub cloud-loop verbs,
@@ -95,3 +96,5 @@ written):**
   two-tier + staged-hardening lint pattern
 - phase 8 — 4dc4840 — polyrepo variant: plan/ as its own repo
   + sibling product repos
+- phase 12 — (this commit) — refresh-critique-session.mjs +
+  check-secrets-liveness.mjs, closing the Pattern B promise

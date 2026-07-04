@@ -184,8 +184,11 @@ credential. Before every long window:
 2. **Probe liveness in pre-flight.** Every runbook's
    verification checklist ends with terminal curls; run the
    auth-touching ones the day you leave, not the week before.
-   `gh auth status`, `pnpm deploy:check`, one `reader` pass if
-   critique-auth matters.
+   `gh auth status`, `pnpm deploy:check`,
+   `node scripts/check-secrets-liveness.mjs` (GH_TOKEN +
+   `CRITIQUE_*`, the two classes that go stale silently
+   between pushes), one `reader` pass if critique-auth
+   matters.
 3. **Rotate anything that expires inside the window before
    you go** — `/bootstrap rotate <service>` does the
    propagation for bootstrap-managed services.

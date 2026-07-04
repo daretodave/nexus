@@ -554,7 +554,9 @@ nexus/
     │   ├── loop-issue.mjs             # GitHub issue mirror (findings + phases)
     │   ├── notify.mjs                 # the pager — blocked is loud
     │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
-    │   └── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
+    │   ├── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
+    │   ├── refresh-critique-session.mjs # Pattern B session refresh (omit unless Auth: is set)
+    │   └── check-secrets-liveness.mjs # GH_TOKEN + CRITIQUE_* liveness probe (omit unless Auth: is set)
     └── env/
         └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
 ```
