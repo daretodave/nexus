@@ -193,17 +193,12 @@ Commit the build plan.
 
 ## 4. Copy the rest of the templates
 
-Run from your repo root:
+Run from your repo root. This is one `node` command (Node
+≥18, already a prerequisite) so it runs identically in
+bash/zsh, PowerShell, or `cmd.exe` — no shell twin needed:
 
 ```bash
-cp -r nexus/templates/skills/ ./skills/
-cp -r nexus/templates/claude/ ./.claude/
-cp -r nexus/templates/scripts/ ./scripts/
-cp nexus/templates/agents.md ./agents.md
-cp nexus/templates/env/env.example ./.env.example
-cp nexus/templates/plan/AUDIT.md ./plan/AUDIT.md
-cp nexus/templates/plan/CRITIQUE.md ./plan/CRITIQUE.md
-cp nexus/templates/plan/README.md ./plan/README.md
+node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/README.md','plan/README.md']]) fs.cpSync('nexus/'+s,d,{recursive:true})"
 ```
 
 (If using GitHub-as-DB, also copy `nexus/templates/data/` to
@@ -221,15 +216,40 @@ Now do a global search-and-replace across the copied files:
 | `<REPO_SLUG>` | `your-org/your-repo` |
 | `<DEFAULT_BRANCH>` | usually `main` |
 
-A one-liner that handles most of it on Linux/WSL/macOS:
+A one-liner that replaces all six, bash/zsh/WSL/macOS:
 
 ```bash
-grep -rl '<PROJECT>' ./skills ./.claude ./plan ./agents.md \
-  | xargs sed -i 's/<PROJECT>/thock/g'
+grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>' \
+    ./skills ./.claude ./plan ./agents.md \
+  | xargs sed -i \
+      -e 's/<PROJECT_LOWER>/thock/g' \
+      -e 's/<PROJECT>/thock/g' \
+      -e 's/<HOSTING_URL>/https:\/\/thock.netlify.app/g' \
+      -e 's/<HOSTING_PROVIDER>/Netlify/g' \
+      -e 's/<REPO_SLUG>/you\/thock/g' \
+      -e 's/<DEFAULT_BRANCH>/main/g'
 ```
 
-(Adjust per platform — on Windows native, use a PowerShell
-loop or just edit by hand; the surface is small.)
+The PowerShell twin, Windows native (see
+[`windows-notes.md`](./windows-notes.md) for the hazards page
+this pairs with):
+
+```powershell
+$repl = @{
+  '<PROJECT>'          = 'thock'
+  '<PROJECT_LOWER>'    = 'thock'
+  '<HOSTING_URL>'      = 'https://thock.netlify.app'
+  '<HOSTING_PROVIDER>' = 'Netlify'
+  '<REPO_SLUG>'        = 'you/thock'
+  '<DEFAULT_BRANCH>'   = 'main'
+}
+Get-ChildItem -Recurse -File .\skills, .\.claude, .\plan, .\agents.md |
+  ForEach-Object {
+    $text = Get-Content $_.FullName -Raw
+    foreach ($k in $repl.Keys) { $text = $text -replace [regex]::Escape($k), $repl[$k] }
+    Set-Content $_.FullName $text -NoNewline
+  }
+```
 
 Commit the templates as a single commit: `chore: nexus
 templates copied`.

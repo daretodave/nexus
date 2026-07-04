@@ -470,6 +470,7 @@ nexus/
 │   ├── pre-spec.md                    # pitch → spec.md (interactive)
 │   ├── new-project.md                 # greenfield setup
 │   ├── existing-project.md            # brownfield retrofit
+│   ├── windows-notes.md               # PowerShell twins + Windows hazards page
 │   ├── ci-providers.md                # deploy-gate variations
 │   ├── cloud-loop.md                  # opt-in GitHub Actions loop
 │   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes

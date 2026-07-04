@@ -34,8 +34,8 @@ written):**
       with hard caps, extracted from kintilla (this commit)
 - [x] Phase 8 — Polyrepo variant playbook: plan/ as its own
       repo + sibling product repos (commit 4dc4840)
-- [ ] Phase 9 — Windows-first pass: dual-shell commands +
-      hazards page (brief: `phase_9_windows_pass.md`)
+- [x] Phase 9 — Windows-first pass: dual-shell commands +
+      hazards page (this commit)
 - [ ] Phase 10 — Ship `templates/skills/moderate.md` — the
       moderation Option A that moderation-loop.md promises
 - [ ] Phase 11 — Ship `templates/skills/ship-migration.md` +

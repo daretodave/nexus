@@ -196,6 +196,11 @@ function rlClose() {
 // ─────────────────────────────────────────────────────────────
 // Handoff pattern
 // ─────────────────────────────────────────────────────────────
+// `verify` is `{ describe, check }`: `describe` is shown to
+// the human, `check()` runs the confirmation and returns a
+// boolean. Node-internal string checks only — no `grep`/`awk`/
+// `findstr` shelled out, so a handoff verifies the same way on
+// every OS (see AUDIT [5.4]).
 async function handoff({ title, why, steps, verify, manifest }) {
   log.hr()
   log.info(`─── HANDOFF ─────────────────────────────────────────────`)
@@ -203,26 +208,25 @@ async function handoff({ title, why, steps, verify, manifest }) {
   log.info(`Why:            ${why}`)
   log.info(`Do this:`)
   steps.forEach((s, i) => log.info(`                ${i + 1}. ${s}`))
-  log.info(`Verify with:    ${verify}`)
+  log.info(`Verify with:    ${verify.describe}`)
   log.info(`─────────────────────────────────────────────────────────`)
   let attempts = 0
   while (attempts < 3) {
     const ready = await ask("Press Enter when done (or type 'skip' to defer)")
     if (ready.toLowerCase() === 'skip') {
-      appendNeedsUserCall({ title, steps, verify })
+      appendNeedsUserCall({ title, steps, verify: verify.describe })
       log.warn(`handoff deferred; logged to ${AUDIT_PATH}`)
       return false
     }
-    const r = sh(verify, { quiet: true })
-    if (r.code === 0) {
+    if (verify.check()) {
       log.ok(`verified: ${title}`)
       return true
     }
     attempts++
-    log.warn(`verify failed (attempt ${attempts}/3): ${r.stderr || r.stdout || 'no output'}`)
+    log.warn(`verify failed (attempt ${attempts}/3)`)
   }
   log.warn('3 verify attempts failed; deferring handoff')
-  appendNeedsUserCall({ title, steps, verify })
+  appendNeedsUserCall({ title, steps, verify: verify.describe })
   return false
 }
 
@@ -507,7 +511,13 @@ async function execGithub(a, state, manifest) {
         `select "Only select repositories" → ${slug}`,
         'click Install',
       ],
-      verify: `gh api /repos/${slug}/installation -H "Accept: application/vnd.github+json" 2>&1 | findstr /C:"app_slug"`,
+      verify: {
+        describe: `gh api /repos/${slug}/installation reports app_slug`,
+        check: () => {
+          const r = sh(`gh api /repos/${slug}/installation -H "Accept: application/vnd.github+json"`, { quiet: true })
+          return r.code === 0 && r.stdout.includes('app_slug')
+        },
+      },
     })
     return
   }
@@ -587,7 +597,7 @@ async function execSupabase(a, state, manifest) {
         'copy the service_role key → SUPABASE_SERVICE_ROLE_KEY',
         'add both to .env',
       ],
-      verify: 'cat .env | grep -E "SUPABASE_(SERVICE_ROLE|PUBLISHABLE)_KEY="',
+      verify: 'open .env and confirm both SUPABASE_SERVICE_ROLE_KEY= and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= are present',
     })
     return
   }

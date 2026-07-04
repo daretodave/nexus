@@ -48,25 +48,33 @@ The expensive parts (versus greenfield):
 Before adding anything, document the current state. This becomes
 the baseline you write the build plan against.
 
+These are `git`/`node`-native — no POSIX text tools (`wc`,
+`grep -c`, `tail`) — so the block runs unchanged in bash/zsh
+or PowerShell (see [`windows-notes.md`](./windows-notes.md)
+if a command still doesn't resolve on your setup):
+
 ```bash
 # Code health
-git log --oneline | wc -l                # commit count
-git log --since="3 months ago" | grep -c '^Author:'    # recent activity
-ls **/package.json **/Cargo.toml **/pyproject.toml 2>/dev/null    # multi-stack?
+git rev-list --count HEAD                          # commit count
+git rev-list --count --since="3 months ago" HEAD    # recent activity
+git ls-files -- '*/package.json' '*/Cargo.toml' '*/pyproject.toml'  # multi-stack?
 
 # Test coverage (whatever applies)
-pnpm test --coverage 2>&1 | tail -5
-pytest --cov 2>&1 | tail -5
-go test ./... -cover 2>&1 | tail -5
+pnpm test --coverage
+pytest --cov
+go test ./... -cover
 
 # Build health
-pnpm build 2>&1 | tail -10
-pnpm typecheck 2>&1 | tail -10
-pnpm lint 2>&1 | tail -10
+pnpm build
+pnpm typecheck
+pnpm lint
 
 # Deploy state
 # (provider-specific — check the dashboard or CLI)
 ```
+
+(Long output? Pipe through `tail -20`/`Select-Object -Last
+20` per shell — that part's cosmetic, not load-bearing.)
 
 Write a one-page **current-state assessment** in `plan/CURRENT-STATE.md`:
 
@@ -134,35 +142,24 @@ Commit `spec.md` and `plan/CURRENT-STATE.md`.
 Now add the methodology files. **None of these should touch
 existing source code.**
 
-```bash
-# From your repo root, with nexus/ accessible at ../nexus or wherever
-cp -r ../nexus/templates/skills/ ./skills/
-cp -r ../nexus/templates/claude/ ./.claude/
-mkdir -p ./scripts && cp ../nexus/templates/scripts/deploy-check.mjs ./scripts/
-cp ../nexus/templates/agents.md ./agents.md
-cp ../nexus/templates/env/env.example ./.env.example
+One `node` command (Node ≥18), from your repo root, with
+`nexus/` accessible at `../nexus` or wherever — runs
+identically in bash/zsh, PowerShell, or `cmd.exe`, and appends
+the `.env` gitignore lines in the same pass (see
+[`windows-notes.md`](./windows-notes.md) for the hazards this
+overlay step can trip on Windows):
 
-mkdir -p ./plan/steps ./plan/phases
-cp ../nexus/templates/plan/README.md ./plan/README.md
-cp ../nexus/templates/plan/bearings.md ./plan/bearings.md
-cp ../nexus/templates/plan/AUDIT.md ./plan/AUDIT.md
-cp ../nexus/templates/plan/CRITIQUE.md ./plan/CRITIQUE.md
+```bash
+node -e "const fs=require('fs');fs.mkdirSync('scripts',{recursive:true});fs.mkdirSync('plan/steps',{recursive:true});fs.mkdirSync('plan/phases',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/scripts/deploy-check.mjs','scripts/deploy-check.mjs'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
 ```
 
 (If using GitHub-as-DB:
 `mkdir -p ./data && cp -r ../nexus/templates/data/* ./data/`.)
 
-Then:
-
-```bash
-# .env should be gitignored
-echo ".env" >> .gitignore
-echo ".env.local" >> .gitignore
-echo ".env.*.local" >> .gitignore
-```
-
 Search-and-replace placeholders (see
-[`new-project.md`](./new-project.md) §4 for the mapping table).
+[`new-project.md`](./new-project.md) §4 for the mapping table
+— bash and PowerShell forms, both exhaustive over all six
+placeholders).
 
 Pay special attention in `bearings.md`:
 

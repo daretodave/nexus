@@ -49,16 +49,6 @@ iterate-shaped (one tick each); bigger items became phases in
 - next: implement the three missing adapters in the template
   (each ~40 lines, same exit-code contract).
 
-### [ ] [5.4] bootstrap.mjs mixes findstr (Windows) and awk (POSIX)
-- category: adopter-friction
-- impact: 5
-- ease: 7
-- evidence: `execGithub`'s install-claude-app verify shells
-  `findstr`; every skill doc uses `awk`/`grep`. Either seam
-  breaks on the other OS.
-- next: normalize on node-internal string checks (no shell
-  text tools) inside bootstrap.mjs.
-
 ### [ ] [4.9] verify-gate composition drifts across three docs
 - category: doc-drift
 - impact: 7
@@ -112,4 +102,9 @@ iterate-shaped (one tick each); bigger items became phases in
 
 ## Done
 
-(empty — the loop moves rows here with `[x]` + commit hash)
+### [x] [5.4] bootstrap.mjs mixes findstr (Windows) and awk (POSIX) — this commit
+- fix: `handoff()`'s `verify` is now `{ describe, check }`;
+  `check()` runs `gh api` and tests `stdout.includes(...)` in
+  JS instead of piping through `findstr`/`grep`. Same fix
+  applied to the Supabase-keys handoff's doc-only verify
+  string (no shell pipe at all now).
