@@ -45,8 +45,9 @@ written):**
 - [x] Phase 12 — Critique-session refresher script + secret
       liveness probes — auth-aware-critique promise (this
       commit)
-- [ ] Phase 13 — Nightly full-smoke workflow template +
-      stack:up/down scripts — hermetic-e2e promise
+- [x] Phase 13 — Nightly full-smoke workflow template +
+      stack:up/down scripts — hermetic-e2e promise (this
+      commit)
 - [ ] Phase 14 — Bootstrap v2: de-stub cloud-loop verbs,
       runbook status write-back, vercel --sensitive, Supabase
       key extraction (the Ember lessons list)

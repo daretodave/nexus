@@ -1,0 +1,58 @@
+name: nightly-smoke
+
+# The nightly breadth leg for hermetic e2e (loop shape 3 rules
+# apply: no model, no writes - pure CI running the project's own
+# suite). See nexus/customization/hermetic-e2e.md "Sampling
+# parametric routes": per-commit verify walks a small sample of
+# each URL kind; this workflow walks every one, nightly.
+#
+# Adopt this OR wire SMOKE_SAMPLE=full into night.yml's /digest
+# step (concepts/loop-shapes.md shape 2) - never both. Running
+# both races the same full walk on two cadences for no benefit.
+# Skip this file entirely if you've adopted the night shift.
+
+on:
+  schedule:
+    - cron: '0 11 * * *'   # daily, off-peak; GH cron is UTC - adjust to land after your traffic trough
+  workflow_dispatch:
+
+permissions:
+  issues: write            # the alarm
+
+jobs:
+  nightly-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60    # the full walk is the long pole
+    env:
+      SMOKE_SAMPLE: full
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ─────────────────────────────────────────────────────
+      # Project-specific install - mirror march.yml's toolchain
+      # (pnpm/node/Playwright, whatever your e2e leg needs).
+      # ─────────────────────────────────────────────────────
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Full smoke walk (SMOKE_SAMPLE=full)
+        run: pnpm e2e
+
+      - name: Open issue on failure
+        if: failure()
+        run: |
+          existing=$(gh issue list --search 'in:title "Nightly smoke failed" state:open' --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create \
+              --title "Nightly smoke failed: $(date -u +%Y-%m-%dT%H:%MZ)" \
+              --body "The SMOKE_SAMPLE=full walk failed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Per-commit verify only samples a few URLs per kind - this is the check that walks every one."
+          fi

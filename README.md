@@ -548,6 +548,7 @@ nexus/
     │   ├── workflows/march.yml        # the dispatcher: cron + Claude Code Action
     │   ├── workflows/night.yml        # the night shift: /digest + breadth checks
     │   ├── workflows/heartbeat.yml    # the immune system: model-free watchdog
+    │   ├── workflows/nightly-smoke.yml # model-free SMOKE_SAMPLE=full walk (omit if night.yml owns breadth)
     │   └── CLOUD_LOOP.md              # operator's guide (lives in repo)
     ├── scripts/
     │   ├── deploy-check.mjs           # multi-provider deploy gate
@@ -556,7 +557,8 @@ nexus/
     │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
     │   ├── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
     │   ├── refresh-critique-session.mjs # Pattern B session refresh (omit unless Auth: is set)
-    │   └── check-secrets-liveness.mjs # GH_TOKEN + CRITIQUE_* liveness probe (omit unless Auth: is set)
+    │   ├── check-secrets-liveness.mjs # GH_TOKEN + CRITIQUE_* liveness probe (omit unless Auth: is set)
+    │   └── stack-lifecycle.mjs        # Pattern B port/health/state helpers (omit unless hermetic e2e is Pattern B)
     └── env/
         └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
 ```

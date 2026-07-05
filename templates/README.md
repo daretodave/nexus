@@ -58,6 +58,7 @@ templates/
 │   ├── workflows/march.yml            (the dispatcher)
 │   ├── workflows/night.yml            (the night shift — /digest daily)
 │   ├── workflows/heartbeat.yml        (model-free watchdog for the other two)
+│   ├── workflows/nightly-smoke.yml    (model-free SMOKE_SAMPLE=full walk; omit if night.yml owns breadth checks)
 │   └── CLOUD_LOOP.md
 ├── scripts/                           → repo's scripts/
 │   ├── deploy-check.mjs               (the deploy gate)
@@ -66,7 +67,8 @@ templates/
 │   ├── bootstrap.mjs                  (provider-CLI executor, opt-in)
 │   ├── lint-migration.mjs             (additive-migration linter, pairs with ship-migration.md)
 │   ├── refresh-critique-session.mjs   (Pattern B session refresh, omit unless Auth: is set)
-│   └── check-secrets-liveness.mjs     (GH_TOKEN + CRITIQUE_* liveness probe, omit unless Auth: is set)
+│   ├── check-secrets-liveness.mjs     (GH_TOKEN + CRITIQUE_* liveness probe, omit unless Auth: is set)
+│   └── stack-lifecycle.mjs            (Pattern B port/health/state helpers, omit unless hermetic e2e is Pattern B)
 └── env/
     └── env.example                    → repo's .env.example
 ```

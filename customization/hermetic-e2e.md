@@ -240,6 +240,15 @@ async function main() {
 }
 ```
 
+`isPortInUse`, `waitForHealth`, `readState`, and `writeState`
+above are the generic half — they don't know your spawn command
+or your ports, only the mechanics (probe a port, poll a health
+URL, read/write a JSON state file). That half ships as
+`templates/scripts/stack-lifecycle.mjs`; import it instead of
+reimplementing it per project. `up.ts` stays yours because the
+spawn command, ports, and DB seeding are inherently
+product-specific.
+
 The matching env module makes the port offset honest:
 
 ```ts
@@ -348,7 +357,11 @@ The fix is built into the canonical-urls loader: a `sample`
 parameter that returns *all static URLs + N parametric URLs per
 kind*. Default to a small sample (3–5) for the loop's verify
 gate. CI can run a `SMOKE_SAMPLE=full` job nightly that walks
-every URL.
+every URL — `templates/.github/workflows/nightly-smoke.yml`
+ships that job model-free. If you've already adopted the night
+shift (`night.yml` — see `concepts/loop-shapes.md` shape 2),
+wire `SMOKE_SAMPLE=full pnpm e2e` into `/digest`'s breadth step
+instead; run one or the other, never both.
 
 ```ts
 const urls = await listCanonicalUrls({
