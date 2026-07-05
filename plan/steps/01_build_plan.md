@@ -48,9 +48,9 @@ written):**
 - [x] Phase 13 — Nightly full-smoke workflow template +
       stack:up/down scripts — hermetic-e2e promise (this
       commit)
-- [ ] Phase 14 — Bootstrap v2: de-stub cloud-loop verbs,
+- [x] Phase 14 — Bootstrap v2: de-stub cloud-loop verbs,
       runbook status write-back, vercel --sensitive, Supabase
-      key extraction (the Ember lessons list)
+      key extraction (the Ember lessons list) (this commit)
 - [ ] Phase 15 — Brownfield kit: templates/plan/CURRENT-STATE.md
       + preview-branch deploy-gate pattern
 - [x] Phase 16 — Heartbeat watchdog: model-free workflow that
@@ -99,3 +99,7 @@ written):**
   + sibling product repos
 - phase 12 — (this commit) — refresh-critique-session.mjs +
   check-secrets-liveness.mjs, closing the Pattern B promise
+- phase 14 — (this commit) — bootstrap v2: Supabase key
+  extraction, loose JSON parsing, vercel push-env with
+  --sensitive, decorated-march identity edit, runbook
+  write-back

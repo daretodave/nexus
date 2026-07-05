@@ -87,6 +87,21 @@ function which(cmd) {
   return sh(probe, { quiet: true }).code === 0
 }
 
+// Some provider CLIs mix warning text into stdout ahead of the
+// JSON payload (observed: `supabase` when the local dir isn't
+// linked). Parse from the first `[`/`{` instead of the raw
+// string so that noise doesn't silently empty the result.
+function parseJsonLoose(text) {
+  if (!text) return null
+  const starts = [text.indexOf('['), text.indexOf('{')].filter((i) => i !== -1)
+  if (!starts.length) return null
+  try {
+    return JSON.parse(text.slice(Math.min(...starts)))
+  } catch {
+    return null
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // File helpers
 // ─────────────────────────────────────────────────────────────
@@ -127,6 +142,82 @@ function appendNeedsUserCall(handoff) {
   const row = `\n- [needs-user-call] ${stamp}: ${handoff.title}\n  ${handoff.steps.join('\n  ')}\n  Verify: \`${handoff.verify}\`\n`
   fs.appendFileSync(AUDIT_PATH, row)
   log.ok(`logged [needs-user-call] in ${AUDIT_PATH}`)
+}
+
+// ─────────────────────────────────────────────────────────────
+// Runbook write-back — setup/00_files.md + setup/NN_<service>.md
+// ─────────────────────────────────────────────────────────────
+// `templates/skills/bootstrap.md` §9 already documents these two
+// files as things this skill writes. Best-effort throughout: a
+// missing index or runbook is a no-op, never a thrown error.
+function runbookIndexRow(serviceKeyword) {
+  if (!fs.existsSync(RUNBOOK_INDEX)) return null
+  const lines = fs.readFileSync(RUNBOOK_INDEX, 'utf-8').split(/\r?\n/)
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].trim().startsWith('|')) continue
+    const cells = lines[i].split('|')
+    if (cells.length < 5) continue
+    if (!new RegExp(serviceKeyword, 'i').test(cells[2] ?? '')) continue
+    return { lineIndex: i, cells }
+  }
+  return null
+}
+
+function runbookPathFor(serviceKeyword) {
+  const row = runbookIndexRow(serviceKeyword)
+  const m = row?.cells[3].match(/`([^`]+)`/)
+  return m ? path.join('setup', m[1]) : null
+}
+
+// Flips `- [ ]` to `- [x]` under the named `## Section <letter>`
+// headings — a blunt "whole section done" pass, matching the
+// runbook's own "auto via CLI" framing for those sections.
+function markRunbookSectionsDone(runbookPath, sectionLetters) {
+  if (!runbookPath || !fs.existsSync(runbookPath)) return false
+  const lines = fs.readFileSync(runbookPath, 'utf-8').split(/\r?\n/)
+  let active = false
+  let changed = false
+  for (let i = 0; i < lines.length; i++) {
+    const heading = lines[i].match(/^##\s+Section\s+([A-Z])\b/)
+    if (heading) {
+      active = sectionLetters.includes(heading[1])
+      continue
+    }
+    if (lines[i].startsWith('## ') || lines[i].startsWith('---')) active = false
+    if (active && /^\s*-\s*\[ \]/.test(lines[i])) {
+      lines[i] = lines[i].replace(/\[ \]/, '[x]')
+      changed = true
+    }
+  }
+  if (changed) fs.writeFileSync(runbookPath, lines.join('\n'))
+  return changed
+}
+
+// Bumps a `STUB`/`—` index row to `PARTIAL`. Never downgrades an
+// existing `OK`/`PARTIAL` — Sections D/E/G stay human handoffs,
+// so a script-only pass can only ever earn `PARTIAL`.
+function bumpRunbookIndexStatus(serviceKeyword) {
+  const row = runbookIndexRow(serviceKeyword)
+  if (!row) return false
+  const current = row.cells[4] ?? ''
+  if (!/`STUB`|`—`|^\s*—?\s*$/.test(current.trim())) return false
+  row.cells[4] = ' `PARTIAL` '
+  const lines = fs.readFileSync(RUNBOOK_INDEX, 'utf-8').split(/\r?\n/)
+  lines[row.lineIndex] = row.cells.join('|')
+  fs.writeFileSync(RUNBOOK_INDEX, lines.join('\n'))
+  return true
+}
+
+function writeBackRunbook(serviceKeyword, sectionLetters) {
+  try {
+    const rb = runbookPathFor(serviceKeyword)
+    if (!rb) return
+    const ticked = markRunbookSectionsDone(rb, sectionLetters)
+    const bumped = bumpRunbookIndexStatus(serviceKeyword)
+    if (ticked || bumped) log.ok(`runbook write-back: ${rb} (Section ${sectionLetters.join('/')})`)
+  } catch (e) {
+    log.warn(`runbook write-back skipped: ${e.message}`)
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -302,11 +393,7 @@ function discoverSupabase() {
   const list = sh('supabase projects list --output json', { quiet: true })
   out.authed = list.code === 0
   if (!out.authed) return out
-  try {
-    out.projects = JSON.parse(list.stdout)
-  } catch {
-    out.projects = []
-  }
+  out.projects = parseJsonLoose(list.stdout) ?? []
   out.linked = fs.existsSync('supabase/config.toml')
   return out
 }
@@ -400,8 +487,13 @@ function composePlan(state, manifest, scope) {
       actions.push({ provider: 'vercel', verb: 'install-cli', blocking: true, desc: 'install vercel CLI (`npm i -g vercel`)' })
     } else if (!state.vercel.authed) {
       actions.push({ provider: 'vercel', verb: 'login', blocking: true, desc: 'vercel login' })
-    } else if (!state.vercel.linked) {
-      actions.push({ provider: 'vercel', verb: 'link-project', desc: `link Vercel project ${manifest.project.name}` })
+    } else {
+      if (!state.vercel.linked) {
+        actions.push({ provider: 'vercel', verb: 'link-project', desc: `link Vercel project ${manifest.project.name}` })
+      }
+      if (Object.keys(state.env ?? {}).length) {
+        actions.push({ provider: 'vercel', verb: 'push-env', desc: 'push .env vars to Vercel (production)' })
+      }
     }
   }
 
@@ -495,10 +587,12 @@ async function execGithub(a, state, manifest) {
       shOk(`gh repo edit ${slug} --description ${JSON.stringify(manifest.project.tagline)}`)
     }
     log.ok(`created ${slug}`)
+    writeBackRunbook('github', ['A'])
     return
   }
   if (a.verb === 'link-remote') {
     shOk(`git remote add origin https://github.com/${slug}.git`)
+    writeBackRunbook('github', ['A'])
     return
   }
   if (a.verb === 'install-claude-app') {
@@ -523,6 +617,23 @@ async function execGithub(a, state, manifest) {
   }
 }
 
+// NEXT_PUBLIC_* is deliberately public; everything else that
+// looks secret-shaped gets Vercel's `--sensitive` flag (hidden
+// from the dashboard, can't be unmasked after set).
+function isSensitiveEnvKey(key) {
+  if (key.startsWith('NEXT_PUBLIC_')) return false
+  return /(_SECRET|_PASSWORD|_TOKEN|_SERVICE_ROLE_KEY)$/i.test(key)
+}
+
+function vercelEnvNames(target) {
+  const r = sh(`vercel env ls ${target}`, { quiet: true })
+  if (r.code !== 0) return []
+  return r.stdout
+    .split('\n')
+    .map((l) => l.trim().split(/\s+/)[0])
+    .filter((n) => /^[A-Z][A-Z0-9_]*$/.test(n ?? ''))
+}
+
 async function execVercel(a, state, manifest) {
   if (a.verb === 'link-project') {
     const team = manifest.providers?.vercel?.team
@@ -538,12 +649,73 @@ async function execVercel(a, state, manifest) {
     // Region pin
     const region = manifest.providers?.vercel?.region
     if (region) {
-      const projectId = JSON.parse(fs.readFileSync('.vercel/project.json', 'utf-8')).projectId
       // Vercel CLI doesn't have a region-set command yet; use the API
       log.info(`  region preference: ${region} — set in Vercel dashboard Settings → Functions if not default`)
     }
+    writeBackRunbook('vercel', ['A', 'B'])
     return
   }
+  if (a.verb === 'push-env') {
+    const env = readEnv()
+    const keys = Object.keys(env)
+    if (!keys.length) {
+      log.ok('.env is empty; nothing to push')
+      return
+    }
+    const existing = new Set(vercelEnvNames('production'))
+    for (const key of keys) {
+      if (existing.has(key)) {
+        log.ok(`${key} already set on Vercel; not overwriting`)
+        continue
+      }
+      const sensitive = isSensitiveEnvKey(key)
+      const cmd = `printf "%s" ${JSON.stringify(env[key])} | vercel env add ${key} production${sensitive ? ' --sensitive' : ''}`
+      const r = sh(cmd)
+      if (r.code !== 0) {
+        log.warn(`failed to push ${key}: ${r.stderr || r.stdout}`)
+        continue
+      }
+      log.ok(`pushed ${key} to Vercel (production)${sensitive ? ' [sensitive]' : ''}`)
+    }
+    writeBackRunbook('vercel', ['H'])
+    return
+  }
+}
+
+// The new-format `sb_secret_*` key is masked after creation;
+// the legacy JWT pair (`anon` + `service_role`) is the one
+// `projects api-keys` returns in full, so that's what v1 stores.
+function extractSupabaseApiKeys(projectRef) {
+  const r = sh(`supabase projects api-keys --project-ref ${projectRef} --output json`, { quiet: true })
+  if (r.code !== 0) return null
+  const keys = parseJsonLoose(r.stdout)
+  if (!Array.isArray(keys)) return null
+  const anon = keys.find((k) => k.name === 'anon')?.api_key
+  const serviceRole = keys.find((k) => k.name === 'service_role')?.api_key
+  return anon && serviceRole ? { anon, serviceRole } : null
+}
+
+function storeSupabaseApiKeys(projectRef) {
+  const keys = extractSupabaseApiKeys(projectRef)
+  if (keys) {
+    appendEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', keys.anon)
+    appendEnv('SUPABASE_SERVICE_ROLE_KEY', keys.serviceRole)
+    log.ok('extracted Supabase API keys via CLI')
+    writeBackRunbook('supabase', ['H'])
+    return true
+  }
+  log.warn('could not auto-extract Supabase API keys; grab them from the dashboard')
+  appendNeedsUserCall({
+    title: 'Add Supabase API keys to .env',
+    steps: [
+      `open https://supabase.com/dashboard/project/${projectRef}/settings/api`,
+      'copy the publishable / anon key → NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+      'copy the service_role key → SUPABASE_SERVICE_ROLE_KEY',
+      'add both to .env',
+    ],
+    verify: 'open .env and confirm both SUPABASE_SERVICE_ROLE_KEY= and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= are present',
+  })
+  return false
 }
 
 async function execSupabase(a, state, manifest) {
@@ -553,6 +725,10 @@ async function execSupabase(a, state, manifest) {
     if (existing) {
       log.ok(`Supabase project ${name} exists; linking`)
       shOk(`supabase link --project-ref ${existing.id}`)
+      appendEnv('SUPABASE_PROJECT_ID', existing.id)
+      appendEnv('NEXT_PUBLIC_SUPABASE_URL', `https://${existing.id}.supabase.co`)
+      storeSupabaseApiKeys(existing.id)
+      writeBackRunbook('supabase', ['A'])
       return
     }
     // Need org + db password
@@ -578,7 +754,7 @@ async function execSupabase(a, state, manifest) {
     shOk(`supabase projects create ${name} --org-id ${org} --db-password ${JSON.stringify(dbPassword)} --region ${region}`)
     appendEnv('SUPABASE_DB_PASSWORD', dbPassword, 'generated by bootstrap; rotate via supabase dashboard')
     // Re-list to find new project id
-    const listed = JSON.parse(sh('supabase projects list --output json', { quiet: true }).stdout)
+    const listed = parseJsonLoose(sh('supabase projects list --output json', { quiet: true }).stdout) ?? []
     const created = listed.find((p) => p.name === name)
     if (created) {
       shOk(`supabase link --project-ref ${created.id}`)
@@ -586,21 +762,46 @@ async function execSupabase(a, state, manifest) {
       appendEnv('SUPABASE_REGION', region)
       // URL + keys: derive from the project ref
       appendEnv('NEXT_PUBLIC_SUPABASE_URL', `https://${created.id}.supabase.co`)
+      storeSupabaseApiKeys(created.id)
     }
-    log.warn('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY + SUPABASE_SERVICE_ROLE_KEY are not in the CLI output')
-    log.warn('grab them from Project Settings → API and add to .env manually')
-    appendNeedsUserCall({
-      title: 'Add Supabase API keys to .env',
-      steps: [
-        `open https://supabase.com/dashboard/project/${created?.id ?? '<id>'}/settings/api`,
-        'copy the publishable / anon key → NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
-        'copy the service_role key → SUPABASE_SERVICE_ROLE_KEY',
-        'add both to .env',
-      ],
-      verify: 'open .env and confirm both SUPABASE_SERVICE_ROLE_KEY= and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= are present',
-    })
+    writeBackRunbook('supabase', ['A'])
     return
   }
+}
+
+// "The decorated march" — customization/bootstrap-automation.md's
+// user-author identity pattern. Cloud-shipped commits attribute to
+// the human, not github-actions[bot]: activate the PAT-based
+// checkout, and give the Claude Code Action step's GH_TOKEN +
+// GIT_AUTHOR_*/GIT_COMMITTER_* env vars, which take precedence
+// over the action's own internal `git config user.*` step.
+async function applyDecoratedMarch(yml, manifest) {
+  let name = manifest.cloud_loop?.git_author_name
+  let email = manifest.cloud_loop?.git_author_email
+  if (!name) name = await ask('Git author name for cloud-shipped commits')
+  if (!email) email = await ask('Git author email (must be a verified GitHub address)')
+
+  const checkoutToken = '          # token: ${{ secrets.ACTIONS_PAT }}'
+  if (yml.includes(checkoutToken)) {
+    yml = yml.replace(checkoutToken, '          token: ${{ secrets.ACTIONS_PAT }}')
+  } else {
+    log.warn('decorated march: checkout token comment not found; workflow template may have drifted')
+  }
+
+  const ghTokenLine = '          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}'
+  const decorated = [
+    '          GH_TOKEN: ${{ secrets.ACTIONS_PAT }}',
+    `          GIT_AUTHOR_NAME: ${JSON.stringify(name)}`,
+    `          GIT_AUTHOR_EMAIL: ${JSON.stringify(email)}`,
+    `          GIT_COMMITTER_NAME: ${JSON.stringify(name)}`,
+    `          GIT_COMMITTER_EMAIL: ${JSON.stringify(email)}`,
+  ].join('\n')
+  if (yml.includes(ghTokenLine)) {
+    yml = yml.replace(ghTokenLine, decorated)
+  } else {
+    log.warn('decorated march: GH_TOKEN line not found; workflow template may have drifted')
+  }
+  return yml
 }
 
 async function execCloudLoop(a, state, manifest) {
@@ -622,6 +823,9 @@ async function execCloudLoop(a, state, manifest) {
       .replaceAll('<PROJECT>', manifest.project.name)
       .replaceAll('<DEFAULT_BRANCH>', manifest.project.default_branch ?? 'main')
       .replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`)
+    if (manifest.cloud_loop?.identity === 'user') {
+      yml = await applyDecoratedMarch(yml, manifest)
+    }
     fs.writeFileSync(WORKFLOW_PATH, yml)
     log.ok(`wrote ${WORKFLOW_PATH}`)
     return

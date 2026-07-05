@@ -769,7 +769,9 @@ ACTIONS_PAT.
 
 ### Script gaps observed during Ember bootstrap
 
-These are TODOs for v2 of `scripts/bootstrap.mjs`:
+These were TODOs for v2 of `scripts/bootstrap.mjs`, written
+after the first live run. Kept as history — each bullet still
+names the exact quirk that cost a tick:
 
 - The script's `discoverSupabase` parses `supabase projects
   list --output json` but doesn't tolerate the stderr
@@ -793,6 +795,18 @@ These are TODOs for v2 of `scripts/bootstrap.mjs`:
   resolve placeholders, prompt for CLAUDE_CODE_OAUTH_TOKEN
   + ACTIONS_PAT, set the secrets, optionally edit the
   workflow for user-author identity.
+
+**Status: all five closed in phase 14.** `discoverSupabase`
+and the new key-extraction call both parse from the first
+`[`/`{` in stdout; `create-or-link` auto-extracts the legacy
+JWT pair via `projects api-keys` (manual handoff is now the
+fallback, not the default); runbook write-back ticks Section
+A/H checkboxes and bumps `STUB`/`—` index rows to `PARTIAL`;
+a new `push-env` verb pushes `.env` to Vercel Production with
+`--sensitive` on secret-shaped keys; and `install-workflow`
+applies the decorated march (checkout token + GIT_AUTHOR_*/
+GIT_COMMITTER_*/GH_TOKEN) whenever `cloud_loop.identity:
+user` is set.
 
 ---
 
