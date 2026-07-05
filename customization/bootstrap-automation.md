@@ -739,6 +739,13 @@ auth's accessible resources.
   `<PROJECT>`, `<PROJECT_PKG_PREFIX>`, `<DEFAULT_BRANCH>`,
   `<HOSTING_PROVIDER>`, `<HOSTING_URL>`, `<REPO_SLUG>`. The
   script must resolve every one before committing.
+- **`cloud_loop.daily_ceiling` is not a bracket-token
+  placeholder** — it's a literal `ceiling=12` line in the
+  ceiling-check step,
+  same category as the cron line. `install-workflow` finds and
+  overwrites that line from the manifest (`applyDailyCeiling`);
+  it's a no-op (warn + leave the default) if the field is unset
+  or the anchor line has drifted.
 
 ### The "decorated march" (user-author cloud loop)
 

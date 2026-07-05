@@ -209,10 +209,12 @@ credential. Before every long window:
    ceiling. The cost table in
    [`cloud-loop.md`](./cloud-loop.md) has current numbers.
 2. **The commit ceiling is your volume brake** — default 12
-   cloud commits/24h in `march.yml`. It bounds runaway
-   shipping, not spend. On API-key billing, set a hard spend
-   cap at the provider console too — the loop cannot check
-   your invoice.
+   weighted-budget points/24h in `march.yml` (a phase-shipping
+   commit costs 3, a churn commit costs 1; see
+   `.github/CLOUD_LOOP.md` "The daily ceiling"). It bounds
+   runaway shipping, not spend. On API-key billing, set a hard
+   spend cap at the provider console too — the loop cannot
+   check your invoice.
 3. **Measure one week before raising anything.** Run the
    default cadence (~7 ticks/day) for a week, read your usage
    page, then decide. Raising the model and the cadence in the

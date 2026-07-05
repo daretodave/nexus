@@ -56,9 +56,9 @@ written):**
 - [x] Phase 16 — Heartbeat watchdog: model-free workflow that
       cancels wedged runs and alarms on flatline — nexus +
       template (this commit)
-- [ ] Phase 17 — Budget-aware ceiling: read
+- [x] Phase 17 — Budget-aware ceiling: read
       bootstrap.local.json cloud_loop.daily_ceiling; weight
-      phase commits vs churn commits
+      phase commits vs churn commits (this commit)
 - [x] Phase 18 — Loop shapes: the genus taxonomy
       (`concepts/loop-shapes.md`), the night shift (`/digest`
       + `night.yml` + `plan/DIGEST.md`), and the concierge
@@ -72,12 +72,18 @@ written):**
 
 ## Carry-overs / known gaps
 
-- `plan/AUDIT.md` is seeded with 8 iterate-sized findings from
+- `plan/AUDIT.md` is seeded with 9 iterate-sized findings from
   the survey passes — they compete with phases via `/march`
   order (phases first).
 - `plan/PHASE_CANDIDATES.md` holds 4 candidates awaiting
   `/oversight` promotion (plugin packaging, closeloop,
   critique-household, staged hardening).
+- Issue #12: `.github/workflows/march.yml` (nexus's own) still
+  needs phase 17's weighted-ceiling step applied by hand — the
+  cloud loop cannot push `.github/workflows/*.yml` itself
+  (`ACTIONS_PAT` has no `workflows` scope, by design). The
+  template + bootstrap.mjs half of phase 17 shipped; this is
+  the self-hosting instance's manual sync step.
 
 ## Phase log
 

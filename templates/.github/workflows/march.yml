@@ -90,11 +90,33 @@ jobs:
           # the agent appends to every commit message (the brief
           # mandates it). The ceiling bounds *cloud volume* in 24h —
           # local commits don't count toward it.
+          #
+          # The count is weighted, not flat: a phase-shipping commit
+          # (ship-a-phase — new docs, templates, a gate leg) costs more
+          # runway than a churn commit (iterate/critique/triage/digest
+          # — one finding, one file). Discriminator: does the commit
+          # tick a `[ ]` -> `[x]` row in the build plan? That's the one
+          # thing only ship-a-phase Step 8 does.
+          #
+          # `ceiling=12` below is the literal default; `/bootstrap
+          # cloud-loop` (templates/scripts/bootstrap.mjs install-
+          # workflow) overwrites this line with your manifest's
+          # cloud_loop.daily_ceiling when it installs this file. Hand-
+          # editing it (like the cron line above) works too.
           since="$(date -u -d '24 hours ago' '+%Y-%m-%d %H:%M:%S')"
-          count=$(git log --since="$since" --grep='Cloud-Run:' --oneline | wc -l | tr -d ' ')
-          echo "Cloud-shipped commits in last 24h: $count"
-          if [ "$count" -ge 12 ]; then
-            echo "Cloud ceiling reached (12 cloud-shipped commits / 24h). Exiting cleanly — no work this tick."
+          ceiling=12
+          budget=0
+          for sha in $(git log --since="$since" --grep='Cloud-Run:' --format='%H'); do
+            if git diff-tree --no-commit-id --name-only -r "$sha" | grep -qx 'plan/steps/01_build_plan.md' \
+               && git show "$sha" -- plan/steps/01_build_plan.md | grep -q '^+.*\[x\]'; then
+              budget=$((budget + 3))   # phase-shipping commit
+            else
+              budget=$((budget + 1))   # churn commit
+            fi
+          done
+          echo "Cloud-shipped weighted budget in last 24h: $budget / $ceiling (phase=3, churn=1)"
+          if [ "$budget" -ge "$ceiling" ]; then
+            echo "Cloud ceiling reached ($ceiling weighted budget/24h). Exiting cleanly — no work this tick."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"

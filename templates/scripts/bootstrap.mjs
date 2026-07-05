@@ -769,6 +769,22 @@ async function execSupabase(a, state, manifest) {
   }
 }
 
+// The manifest's cloud_loop.daily_ceiling field has existed since
+// v1 but nothing wired it up — the workflow always shipped with the
+// literal default. Bake it into the ceiling step's `ceiling=` line,
+// same anchor-and-warn pattern as applyDecoratedMarch below.
+function applyDailyCeiling(yml, manifest) {
+  const ceiling = manifest.cloud_loop?.daily_ceiling
+  if (!ceiling) return yml
+  const anchor = /\n {10}ceiling=\d+\n/
+  if (anchor.test(yml)) {
+    yml = yml.replace(anchor, `\n          ceiling=${ceiling}\n`)
+  } else {
+    log.warn('daily ceiling: `ceiling=<N>` line not found; workflow template may have drifted')
+  }
+  return yml
+}
+
 // "The decorated march" — customization/bootstrap-automation.md's
 // user-author identity pattern. Cloud-shipped commits attribute to
 // the human, not github-actions[bot]: activate the PAT-based
@@ -823,6 +839,7 @@ async function execCloudLoop(a, state, manifest) {
       .replaceAll('<PROJECT>', manifest.project.name)
       .replaceAll('<DEFAULT_BRANCH>', manifest.project.default_branch ?? 'main')
       .replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`)
+    yml = applyDailyCeiling(yml, manifest)
     if (manifest.cloud_loop?.identity === 'user') {
       yml = await applyDecoratedMarch(yml, manifest)
     }

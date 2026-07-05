@@ -66,6 +66,21 @@ belongs to `/iterate` once the build plan's phases run dry.
   variance rule ("data:validate iff data layer; lint optional
   leg"), align all three in one commit.
 
+### [ ] [4.8] cloud_loop.schedule_cron field is inert, same gap daily_ceiling had
+- category: completeness
+- impact: 6
+- ease: 8
+- evidence: `bootstrap.example.json`'s `cloud_loop.schedule_cron`
+  has existed since v1; `install-workflow`
+  (`templates/scripts/bootstrap.mjs`) never applies it — the
+  installed `march.yml` always ships with the template's
+  literal cron line. Phase 17 closed the identical gap for
+  `daily_ceiling` (`applyDailyCeiling`); scoped that field out
+  to keep the phase to one knob.
+- next: add an `applyScheduleCron` following the same anchor-
+  and-warn pattern, replacing the `- cron: '...'` line in the
+  copied `march.yml`.
+
 ### [ ] [3.8] generic-specialist template omits the model: lever
 - category: completeness
 - impact: 4

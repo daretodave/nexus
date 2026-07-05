@@ -34,7 +34,8 @@ roughly:
 - Sonnet 4.6: ~$0.40–0.60/tick → ~$3–5/day at 7 ticks
 - Opus 4.7:   ~$2.00–3.00/tick → ~$15–20/day at 7 ticks
 
-The 12-commit/24h ceiling caps the worst case either way.
+The 12-point/24h weighted ceiling caps the worst case either
+way (see "The daily ceiling" below).
 
 ## Identity choice — bot or you
 
@@ -164,6 +165,21 @@ cloud ceiling.
 The cloud-mode brief in the workflow makes the trailer
 mandatory. If a cloud commit lacks one, that's a bug to report.
 
+## The daily ceiling
+
+The ceiling step in `march.yml` doesn't count cloud-shipped
+commits flatly — it weighs them. A **phase-shipping** commit
+(one that ticks a `[ ]` to `[x]` in `plan/steps/
+01_build_plan.md` — the one thing only `/ship-a-phase` does)
+costs **3** against the budget; a **churn** commit
+(`/iterate`, `/critique`, `/triage`, `/digest` — one finding,
+one file) costs **1**. The tick exits with no work once the
+24h total meets `cloud_loop.daily_ceiling` from your manifest
+(`/bootstrap cloud-loop` bakes it into the workflow's
+`ceiling=` line; hand-edit that line directly if you didn't
+bootstrap). Default is 12 — four phase ships, or a dozen
+churn ticks, or any mix between.
+
 ## Operating it
 
 ### Pausing the cloud loop
@@ -188,7 +204,8 @@ cloud to pick it up before the next scheduled firing.
 ```
 gh run list --workflow march.yml --limit 10
 
-# Cloud-shipped commits in the last 24h:
+# Cloud-shipped commits in the last 24h (raw count, not the
+# weighted budget the ceiling step actually checks):
 git log --since='24 hours ago' --grep='Cloud-Run:' --oneline
 
 # Local commits only (everything sans cloud trailer):

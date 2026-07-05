@@ -130,8 +130,10 @@ Conservative starting cadences:
 - **Weekdays off-peak only** — `0 */2 * * 1-5` (Mon-Fri).
 
 Don't go below every 2h on the first run. The ceiling
-defaults to 12 cloud commits / 24h; cadence above that
-just wastes invocations.
+defaults to 12 weighted-budget points / 24h (a phase-shipping
+commit costs 3, a churn commit costs 1 — see
+`.github/CLOUD_LOOP.md` "The daily ceiling"); cadence above
+what the ceiling can spend just wastes invocations.
 
 ## Step 4 — choose identity (bot or you)
 

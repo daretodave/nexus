@@ -36,18 +36,32 @@
   since v1 too, and `install-workflow` doesn't apply it either
   — but that's a separate gap (cadence, not budget). Filed as
   an AUDIT row instead of folded in here.
-- **A `<CLOUD_LOOP_DAILY_CEILING>` placeholder token.** The
+- **A new bracket-token placeholder for the ceiling.** The
   cron line already sets precedent: cadence/ceiling knobs in
   `march.yml` are literal values adopters hand-edit or bootstrap
-  bakes in, not `<PLACEHOLDER>` tokens resolved by the
-  documented sed one-liner (that scope is `./skills ./.claude
-  ./plan ./agents.md` — `.github` was never in it). Matching the
-  existing pattern beats inventing a second mechanism for the
-  same job.
+  bakes in, not tokens resolved by the documented sed one-liner
+  (that scope is `./skills ./.claude ./plan ./agents.md` —
+  `.github` was never in it). Matching the existing pattern
+  beats inventing a second mechanism for the same job.
 - **Configurable weights.** 3-for-phase / 1-for-churn is a
   judgment call, not a manifest field. If it needs tuning later,
   that's a `/critique` or `/iterate` finding against real data,
   not a day-one knob.
+
+## Discovered mid-ship
+
+`.github/workflows/march.yml` (nexus's own) could not be pushed
+from the cloud tick: GitHub refuses any push touching
+`.github/workflows/*.yml` from a token without the `workflows`
+scope, and `ACTIONS_PAT` here is deliberately Contents + Issues
+only (`agents.md` "Operational secrets"). This isn't specific
+to this phase — it's a standing constraint on every future phase
+that touches a workflow file. Shipped the template + bootstrap.mjs
++ docs (the actual product); filed issue #12 with the exact patch
+for a human to apply to nexus's own workflow by hand, and left
+`.github/CLOUD_LOOP.md`'s ceiling description unchanged (matching
+what the live workflow does today) rather than document a
+mechanism nexus's own loop doesn't run yet.
 
 ## Decisions
 
