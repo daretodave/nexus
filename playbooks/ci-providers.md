@@ -300,13 +300,32 @@ To poll staging:
 ```bash
 NETLIFY_SITE_NAME=your-site-staging     # different site
 # or
-VERCEL_TARGET=preview                   # filter on target
+VERCEL_TARGET=preview                   # filter deployments by target
 ```
 
-For PR previews specifically, most providers expose a
-deployment URL on the PR; the loop usually doesn't run on PRs
-(it ships to `main` directly per the methodology), so this is
-rarely needed.
+### Preview-branch deploy gate (PR-gated teams)
+
+See [`existing-project.md`](./existing-project.md) §5 Option A:
+teams whose CI requires PR review push loop work to
+`loop/<phase-N>` instead of `main`. The gate still targets it
+by commit SHA, no code change needed for that part — Netlify's
+`/deploys` and Vercel's `/v6/deployments` both return deploys
+across every branch, and `deploy-check.mjs` already matches on
+`git rev-parse HEAD`'s SHA regardless of which branch that SHA
+lives on. Set `VERCEL_TARGET=preview` (or leave
+`NETLIFY_SITE_NAME` alone — Netlify branch deploys live on the
+same site) so a stray production poll never masks a preview
+failure.
+
+What genuinely changes: the loop can't tell "PR merged" from
+"PR still open" just by looking at `main`, so it can't safely
+mark the phase `[x]` there yet. `ship-a-phase` marks the
+build-plan row `[blocked: awaiting PR #<n> merge <date>]`
+instead (existing status vocabulary — no new state); `/march`
+already skips `[blocked: …]` rows, so it won't re-ship the same
+phase next tick. A human merging the PR (or the next
+`/oversight` pass, once it has) flips the row to
+`[x] (commit <hash>)`.
 
 ---
 

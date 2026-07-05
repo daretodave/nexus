@@ -51,8 +51,8 @@ written):**
 - [x] Phase 14 — Bootstrap v2: de-stub cloud-loop verbs,
       runbook status write-back, vercel --sensitive, Supabase
       key extraction (the Ember lessons list) (this commit)
-- [ ] Phase 15 — Brownfield kit: templates/plan/CURRENT-STATE.md
-      + preview-branch deploy-gate pattern
+- [x] Phase 15 — Brownfield kit: templates/plan/CURRENT-STATE.md
+      + preview-branch deploy-gate pattern (this commit)
 - [x] Phase 16 — Heartbeat watchdog: model-free workflow that
       cancels wedged runs and alarms on flatline — nexus +
       template (this commit)

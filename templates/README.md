@@ -19,6 +19,7 @@ templates/
 │   ├── PHASE_CANDIDATES.md
 │   ├── reflexes.md                    (omit unless the lessons layer is adopted; see below)
 │   ├── lessons.md                     (omit unless the lessons layer is adopted; see below)
+│   ├── CURRENT-STATE.md               (brownfield retrofit only; see existing-project.md)
 │   ├── steps/01_build_plan.md
 │   └── phases/
 │       ├── phase_1_bootstrap.md
@@ -136,6 +137,7 @@ the corresponding capability:
 | `skills/ship-migration.md` + `scripts/lint-migration.mjs` | `Structured data` is `pure-db` or `hybrid-with-managed-postgres` — the project has a managed-Postgres (or compatible) DB. See `nexus/customization/data-layer.md` Patterns B and D. |
 | `skills/ship-asset.md` + `claude/agents/brander.md` | `Surface: site` or `hybrid` AND you want the loop to render brand assets (OG images, favicons, social cards, SVG → PNG, wordmarks). Demand-pull only — drains findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. See `nexus/customization/branding.md`. |
 | `skills/moderate.md` | The project has UGC (comments, submissions, votes, flags) and needs a dedicated queue-drain skill (Option A). See `nexus/customization/moderation-loop.md`. |
+| `plan/CURRENT-STATE.md` | This is a brownfield retrofit, not a greenfield start. See `nexus/playbooks/existing-project.md` §1. |
 | `setup/00_files.md` + `setup/NN_service.md` | The project depends on any external service beyond hosting (auth provider, managed DB, email service, AI API). See `nexus/customization/external-services.md`. |
 | `claude/settings.json` + `claude/hooks/guard.mjs` + `claude/CLAUDE.md` + `scripts/notify.mjs` | You run the loop on Claude Code and want unattended levels (3–4): pre-approved permissions, hook-enforced hard rules, and a pager. See `nexus/customization/claude-code.md` + `nexus/playbooks/hands-off.md`. |
 | `scripts/refresh-critique-session.mjs` + `scripts/check-secrets-liveness.mjs` | `bearings.md`'s `Auth:` is anything other than `none` — Pattern B session refresh + the GH_TOKEN/`CRITIQUE_*` liveness probe for hands-off pre-flight. See `nexus/customization/auth-aware-critique.md`. |

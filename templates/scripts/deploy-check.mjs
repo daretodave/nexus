@@ -106,14 +106,16 @@ else if (PROVIDER === 'vercel') {
   const TOKEN = process.env.VERCEL_TOKEN
   const PROJECT = process.env.VERCEL_PROJECT_ID
   const TEAM = process.env.VERCEL_TEAM_ID
+  const TARGET = process.env.VERCEL_TARGET  // 'production' | 'preview' — unset polls either
   if (!TOKEN) configFail('VERCEL_TOKEN', 'https://vercel.com/account/tokens')
   if (!PROJECT) configFail('VERCEL_PROJECT_ID', 'project settings')
 
   const auth = { Authorization: `Bearer ${TOKEN}` }
   const teamParam = TEAM ? `&teamId=${TEAM}` : ''
+  const targetParam = TARGET ? `&target=${TARGET}` : ''
 
   await pollLoop(async () => {
-    const url = `https://api.vercel.com/v6/deployments?projectId=${PROJECT}${teamParam}&limit=20`
+    const url = `https://api.vercel.com/v6/deployments?projectId=${PROJECT}${teamParam}${targetParam}&limit=20`
     const res = await fetch(url, { headers: auth })
     if (!res.ok) return null
     const data = await res.json()

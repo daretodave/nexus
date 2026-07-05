@@ -76,36 +76,11 @@ pnpm lint
 (Long output? Pipe through `tail -20`/`Select-Object -Last
 20` per shell — that part's cosmetic, not load-bearing.)
 
-Write a one-page **current-state assessment** in `plan/CURRENT-STATE.md`:
-
-```markdown
-# Current state — <date>
-
-## What's there
-- Tech stack: <framework, language, etc.>
-- LOC: ~<n>k
-- Test coverage: <n>%, last green: <ci link or "unknown">
-- Build: <green / red / not wired>
-- Deploy: <provider, last green deploy>
-
-## What works
-- <feature 1>
-- <feature 2>
-- ...
-
-## Known broken / decayed
-- <bug list>
-
-## What's missing for v1
-- <feature gap 1>
-- <feature gap 2>
-
-## Conventions worth keeping
-- <coding style, structure pattern, etc.>
-
-## Conventions worth breaking
-- <legacy patterns we can drop>
-```
+Copy `nexus/templates/plan/CURRENT-STATE.md` to
+`plan/CURRENT-STATE.md` and fill in its one-page **current-state
+assessment** — what's there, what works, what's known broken,
+what's missing for v1, conventions worth keeping vs. breaking —
+from what step 1's commands above just showed you.
 
 This is the baseline. The build plan in step 6 starts from here.
 
@@ -150,7 +125,7 @@ the `.env` gitignore lines in the same pass (see
 overlay step can trip on Windows):
 
 ```bash
-node -e "const fs=require('fs');fs.mkdirSync('scripts',{recursive:true});fs.mkdirSync('plan/steps',{recursive:true});fs.mkdirSync('plan/phases',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/scripts/deploy-check.mjs','scripts/deploy-check.mjs'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
+node -e "const fs=require('fs');fs.mkdirSync('scripts',{recursive:true});fs.mkdirSync('plan/steps',{recursive:true});fs.mkdirSync('plan/phases',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/scripts/deploy-check.mjs','scripts/deploy-check.mjs'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/CURRENT-STATE.md','plan/CURRENT-STATE.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
 ```
 
 (If using GitHub-as-DB:
@@ -236,6 +211,25 @@ team requires PRs, the loop cannot ship to main. Two options:
 > Loop pushes to `loop/<phase-N>` not `main`. The user
 > reviews and merges manually. Deploy gate polls preview
 > deploys (Vercel/Netlify) instead of production.
+
+Two mechanics make this concrete (see
+[`ci-providers.md`](./ci-providers.md) "Preview-branch deploy
+gate" for the full version):
+
+1. **Targeting the preview build.** No script change needed —
+   `deploy-check.mjs` already matches by commit SHA regardless
+   of branch. Set `VERCEL_TARGET=preview` so a stray production
+   poll never masks a preview failure; Netlify branch deploys
+   already live on the same site, so `NETLIFY_SITE_NAME` is
+   unchanged.
+2. **Not re-shipping the same phase next tick.** With `main`
+   untouched until merge, the build plan's `[ ]` row for that
+   phase would look pending forever. `ship-a-phase` marks it
+   `[blocked: awaiting PR #<n> merge <date>]` instead (existing
+   status vocabulary) in the same commit that ships the phase
+   to the branch — `/march` already skips `[blocked: …]` rows.
+   A human merging the PR (or the next `/oversight` pass, once
+   merged) flips it to `[x] (commit <hash>)`.
 
 **B. Use trunk-based development for loop work.** Allow the
 loop direct push to `main`; reserve PRs for human-driven work.
