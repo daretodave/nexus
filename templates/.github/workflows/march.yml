@@ -122,16 +122,14 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Configure git author for cloud commits
-        if: steps.ceiling.outputs.skip != 'true'
-        run: |
-          # Default: github-actions[bot]. To switch to user-author,
-          # replace the values below with your username + noreply
-          # email (`<id>+<username>@users.noreply.github.com`) and
-          # also uncomment the `token: ${{ secrets.ACTIONS_PAT }}`
-          # line under the checkout step above.
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      # Git author identity is set via GIT_AUTHOR_* /
+      # GIT_COMMITTER_* env vars on the action step below, NOT via
+      # `git config`: the action runs its own internal git config
+      # after workflow steps, so repo-local config gets silently
+      # overridden. Env vars win at commit time. Leave them unset
+      # for bot-author mode (the action's own default); set them
+      # to switch to user-author mode — see CLOUD_LOOP.md
+      # "Identity choice".
 
       - name: Run /march (cloud mode)
         if: steps.ceiling.outputs.skip != 'true'
@@ -175,7 +173,7 @@ jobs:
             2. /critique MAY run when its /march gate opens, using the reader's WebFetch engine (Path B — the Chrome MCP is not available on the runner). Findings carry source: web-fetch. If bearings Auth is not "none" and no CRITIQUE_* secrets are configured in this workflow's env, run the anonymous pass only — never file auth-failed noise for a wall you knew about.
             3. /expand may run; candidates land in plan/PHASE_CANDIDATES.md. Promotion happens only via local /oversight — do not promote candidates from cloud.
             4. The verify gate (`pnpm verify`) and deploy gate (`pnpm deploy:check`) are non-negotiable. Same as local. NEVER --no-verify. Run the gate FOREGROUND and wait for it — never `run_in_background`. Backgrounding the gate is the one thing that wedges this loop: the SDK ends your turn while the gate is still alive, the resume notification is unreliable here, and the run hangs with no commit. If the gate is too slow for one foreground call, run it as sequential foreground legs (each its own blocking call); do not background it.
-            5. The git author identity is already configured by the workflow. Do not change it.
+            5. The git author identity is already configured by the workflow via GIT_AUTHOR_*/GIT_COMMITTER_* env vars (or the action's own default if unset). Do not run git config user.* — the workflow's env vars win at commit time anyway.
             6. EVERY commit you ship in this tick MUST end with this exact trailer (a blank line before it, then the trailer as its own line):
 
                   Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -207,6 +205,15 @@ jobs:
           # Default: GITHUB_TOKEN. To switch to user-PAT mode,
           # replace with: GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #
+          # Default (commented): bot-author mode, the action's own
+          # identity. To switch to user-author mode, uncomment and
+          # set to your username + noreply email (find your id at
+          # `https://api.github.com/users/<username>`):
+          # GIT_AUTHOR_NAME:     '<username>'
+          # GIT_AUTHOR_EMAIL:    '<id>+<username>@users.noreply.github.com'
+          # GIT_COMMITTER_NAME:  '<username>'
+          # GIT_COMMITTER_EMAIL: '<id>+<username>@users.noreply.github.com'
 
       - name: Open cloud-failed issue if action crashed
         # Safety net for the case where Claude Code itself crashed

@@ -67,16 +67,21 @@ To upgrade from bot to user mode:
    **Issues: read+write**. (Add **Pull requests: read+write**
    if you want the agent to open PRs in the future.)
 2. Add the secret: `gh secret set ACTIONS_PAT`.
-3. In `.github/workflows/march.yml`:
-   - Uncomment `token: ${{ secrets.ACTIONS_PAT }}` under the
-     checkout step.
-   - In `Configure git author`, replace `github-actions[bot]`
-     and the bot email with your username + noreply email
-     (`<id>+<username>@users.noreply.github.com` — find your
-     id at `https://api.github.com/users/<username>`).
-   - In the `Run /march` step's env, replace
-     `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` with
+3. In `.github/workflows/march.yml`, under the `Run /march`
+   step's `env:`:
+   - Replace `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` with
      `GH_TOKEN: ${{ secrets.ACTIONS_PAT }}`.
+   - Uncomment the four `GIT_AUTHOR_*`/`GIT_COMMITTER_*` lines
+     and replace `<username>`/`<id>` with your GitHub username
+     + user id (`<id>+<username>@users.noreply.github.com` —
+     find your id at `https://api.github.com/users/<username>`).
+   - Also uncomment `token: ${{ secrets.ACTIONS_PAT }}` under
+     the checkout step.
+
+   Set these as env vars on the action step, not `git config` —
+   the action runs its own internal `git config` after workflow
+   steps and silently overrides repo-local config; the env vars
+   are the mechanic that actually wins at commit time.
 4. Push. The next tick will commit as you.
 
 ## Setup (one-time)

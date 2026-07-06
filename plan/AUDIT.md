@@ -9,35 +9,15 @@ iterate-shaped (one tick each); bigger items became phases in
 `plan/steps/01_build_plan.md` or candidates in
 `plan/PHASE_CANDIDATES.md`. Refreshed by `/digest` (48h+
 stale header) — all 7 pending rows spot-checked against
-current tree and confirmed still open, including `[6.6]` (this
-repo's own march.yml/night.yml now commit authored as `nexus`
-via the env-var mechanic, so the row's trigger condition has
-fired, but the template still teaches the superseded `git
-config user.*` mechanic) and `[4.8]` (phase 17 shipped
-`applyDailyCeiling` only, deliberately leaving
-`applyScheduleCron` for a future tick). Phases 15/17's own
-diffs checked clean, no new rows from them. No new dimension
-sweep this pass; next full re-survey belongs to `/iterate`
+current tree and confirmed still open, including `[4.8]`
+(phase 17 shipped `applyDailyCeiling` only, deliberately
+leaving `applyScheduleCron` for a future tick); `[6.6]` has
+since shipped (this commit). Phases 15/17's own diffs checked
+clean, no new rows from them. No new dimension sweep this
+pass; next full re-survey belongs to `/iterate`
 once the build plan's phases run dry.
 
 ## Pending
-
-### [ ] [6.6] template user-author mechanic teaches a config the action overrides
-- category: doc-drift
-- impact: 7
-- ease: 6
-- evidence: `templates/.github/CLOUD_LOOP.md` "Identity choice"
-  step 3 tells adopters to edit the `Configure git author` step
-  (`git config user.*`) — but the Claude Code action runs its
-  own internal `git config` after workflow steps, silently
-  overriding it. The reliable path is `GIT_AUTHOR_*` /
-  `GIT_COMMITTER_*` env vars on the action step (proven on a
-  sibling loop; adopted by this repo's own march.yml/night.yml
-  2026-07-03).
-- next: once this repo's next cloud tick lands authored as
-  `nexus` (validating the env-var mechanic on @v1), rewrite the
-  template's step 3 + `templates/.github/workflows/march.yml`
-  author step/comments to the env-var mechanic.
 
 ### [ ] [6.3] deploy-check.mjs covers 4 of 8 documented providers
 - category: doc-drift
@@ -132,6 +112,15 @@ once the build plan's phases run dry.
   section.
 
 ## Done
+
+### [x] [6.6] template user-author mechanic teaches a config the action overrides — this commit (closes #14)
+- fix: this repo's next few cloud ticks landed authored as
+  `nexus` (multiple commits since 2026-07-03), validating the
+  env-var mechanic on @v1. `templates/.github/CLOUD_LOOP.md`
+  step 3 and `templates/.github/workflows/march.yml` (the
+  `Configure git author` step, the `Run /march` env block, and
+  prompt item 5) now teach `GIT_AUTHOR_*`/`GIT_COMMITTER_*` env
+  vars instead of `git config user.*`.
 
 ### [x] [4.2] existing-project audit snippet is crude — commit 1cfab4b
 - fix: phase 9 rebuilt the snippet on `git rev-list --count
