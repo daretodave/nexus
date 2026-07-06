@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-04
+# Kit audit — 2026-07-06
 
 > Bias: none
 
@@ -8,11 +8,17 @@ adopters (`../semilayer`, `../kintilla`). Rows here are
 iterate-shaped (one tick each); bigger items became phases in
 `plan/steps/01_build_plan.md` or candidates in
 `plan/PHASE_CANDIDATES.md`. Refreshed by `/digest` (48h+
-stale header) — each pending row spot-checked against current
-tree; `[4.2]` confirmed fixed by phase 9 and moved to Done, the
-rest confirmed still open. No new dimension sweep this pass
-(phases 9/10's own diffs checked clean); next full re-survey
-belongs to `/iterate` once the build plan's phases run dry.
+stale header) — all 7 pending rows spot-checked against
+current tree and confirmed still open, including `[6.6]` (this
+repo's own march.yml/night.yml now commit authored as `nexus`
+via the env-var mechanic, so the row's trigger condition has
+fired, but the template still teaches the superseded `git
+config user.*` mechanic) and `[4.8]` (phase 17 shipped
+`applyDailyCeiling` only, deliberately leaving
+`applyScheduleCron` for a future tick). Phases 15/17's own
+diffs checked clean, no new rows from them. No new dimension
+sweep this pass; next full re-survey belongs to `/iterate`
+once the build plan's phases run dry.
 
 ## Pending
 

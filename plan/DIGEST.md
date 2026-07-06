@@ -1,98 +1,110 @@
-# Digest — 2026-07-05
+# Digest — 2026-07-06
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Four march ticks since yesterday's digest, four shipped — no
-no-op ticks this window: phase 11 (ship-migration skill),
-phase 12 (critique-session refresher + secret liveness), phase
-13 (nightly full-smoke workflow + stack lifecycle), phase 14
-(bootstrap v2). Build plan down to 2 open phases (15, 17); the
-AUDIT header is a day old (not yet 48h stale) so this tick
-skips the refresh.
+Four march ticks since yesterday's digest, four shipped, zero
+no-ops: phase 15 (brownfield kit), phase 17 (budget-aware
+ceiling), a triage pass (issue #12 routed), an expand pass (1
+candidate filed). The build plan is fully drained for the
+first time — 18/18 phases shipped, 0 pending — so the next
+march tick is `/iterate` territory. AUDIT's header was 48h+
+stale; refreshed this pass, all 8 pending rows confirmed still
+open.
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-04 14:32 | march | shipped — phase 11, `ship-migration.md` + additive-migration linter (commit `fc54023`) |
-| 07-04 20:21 | march | shipped — phase 12, critique-session refresher + secret liveness probe (commit `5cee3e6`) |
-| 07-05 03:07 | march | shipped — phase 13, nightly full-smoke workflow + stack:up/down scripts (commit `fbeaa40`) |
-| 07-05 09:03 | march | shipped — phase 14, bootstrap v2 / Ember lessons list (commit `c2724f5`) |
-| 07-05 11:10 | night (scheduled) | this tick |
+| 07-05 14:33 | march | shipped — phase 15, brownfield kit: `templates/plan/CURRENT-STATE.md` + preview-branch deploy-gate pattern (commit `7cd7836`) |
+| 07-05 20:25 | march | shipped — phase 17, budget-aware ceiling: weighted phase-vs-churn commits (commit `1f3818c`); could not push the matching patch to this repo's own `march.yml` (token scope), filed issue #12 |
+| 07-06 03:09 | march | triage — issue #12 classified, routed into `plan/AUDIT.md` as `[user-issue #12]`, labeled `triage:loop-queued` (commit `ac0be6e`) |
+| 07-06 09:24 | march | expand — 1 phase candidate filed, clustering 4 CRITIQUE rows (1 HIGH + 3 MED, all tracing to `playbooks/new-project.md` step 4) into one rewrite (commit `615e4eb`) |
+| 07-06 11:51 | night (this tick) | this tick |
 
-`heartbeat` ran 4 times since yesterday's digest (07-04 12:40,
-18:35, 07-05 01:05, 07:24 UTC), all green.
+`heartbeat` ran 4 times since yesterday's digest (07-05 12:43,
+18:38, 07-06 01:05, 07:51 UTC), all green.
 
 ## Shipped
 
-- `fc54023` — phase 11: `templates/skills/ship-migration.md` +
-  `templates/scripts/lint-migration.mjs` — the data-layer
-  Pattern B/D promise (companion skill + additive-only
-  migration lint) the kit had described in prose but never
-  shipped. Wired into both READMEs and `data-layer.md`.
-- `5cee3e6` — phase 12: `templates/scripts/refresh-critique-
-  session.mjs` + `templates/scripts/check-secrets-liveness.mjs`
-  — auth-aware-critique Pattern B's promised session refresher,
-  plus GH_TOKEN / CRITIQUE_* liveness checks for hands-off.md
-  Step 5.2's pre-flight.
-- `fbeaa40` — phase 13: `templates/scripts/stack-lifecycle.mjs`
-  + `templates/.github/workflows/nightly-smoke.yml` — hermetic-
-  e2e's Pattern B up/down mechanics and the nightly
-  `SMOKE_SAMPLE=full` job for projects without the night shift.
-- `c2724f5` — phase 14: bootstrap v2 — closes five
-  `bootstrap.mjs` TODOs (Supabase JSON parsing + key
-  extraction, `vercel push-env --sensitive`, the decorated-
-  march install path, runbook checkbox write-back). Closes #9.
+- `7cd7836` — phase 15: `templates/plan/CURRENT-STATE.md`
+  (promoted from an inline block adopters had to hand-type) +
+  a working `VERCEL_TARGET` filter in `deploy-check.mjs` +
+  the preview-branch deploy-gate pattern spelled out in
+  `existing-project.md` / `ci-providers.md`. Closes #10.
+- `1f3818c` — phase 17: the template ceiling step now sums a
+  weighted budget (3 for a phase-shipping commit, 1 for churn)
+  instead of counting every `Cloud-Run:` commit as one unit;
+  `bootstrap.mjs` gained `applyDailyCeiling` to bake
+  `manifest.cloud_loop.daily_ceiling` into the copied workflow.
+  Closes #11. Could not self-apply to this repo's own
+  `.github/workflows/march.yml` — `ACTIONS_PAT` has no
+  `workflows` scope by design — so filed issue #12 with the
+  exact manual patch instead.
+- `ac0be6e` — triage: issue #12 routed to AUDIT, four
+  `triage:*` labels created idempotently.
+- `615e4eb` — expand: filed the `playbooks/new-project.md`
+  step-4 rewrite candidate (score 7.8) rather than four
+  separate `/iterate` ticks on the same block.
 
 ## Queues now
 
-- **Build plan:** 2 open phases (15 — brownfield kit /
-  CURRENT-STATE.md + preview-branch deploy-gate; 17 —
-  budget-aware ceiling), 0 blocked. Four phases shipped since
-  yesterday (11–14).
-- **AUDIT:** header dated 2026-07-04 (refreshed by yesterday's
-  digest tick) — under the 48h staleness bar, so no recompute
-  this pass. 7 pending rows unchanged: `[6.6]`, `[7.2]`,
-  `[6.3]`, `[4.9]`, `[3.8]`, `[3.5]`, `[3.2]`.
+- **Build plan:** 0 open phases, 18 shipped, 0 blocked — fully
+  drained for the first time. Per the build plan's own note,
+  the next march tick transitions to `/iterate` (audit
+  dimensions always have food) rather than `/ship-a-phase`.
+- **AUDIT:** header refreshed this pass (was 2026-07-04, 48h+
+  stale). 8 pending rows, all spot-checked and confirmed still
+  open: `[6.6]`, `[7.2]`, `[6.3]`, `[4.9]`, `[4.8]` (new since
+  yesterday — phase 17 scoped `applyScheduleCron` out and filed
+  it), `[3.8]`, `[3.5]`, `[3.2]`; plus `[user-issue #12]`.
+  `[6.6]`'s trigger condition has now fired (this repo's own
+  commits are authored as `nexus` via the env-var mechanic) but
+  the template rewrite itself is still unshipped.
 - **CRITIQUE:** 6 pending (1 HIGH, 3 MED, 2 LOW), pass 1 from
-  2026-07-03, unchanged. Top: README's sibling-clone layout
-  breaks `playbooks/new-project.md`'s bare `nexus/...` copy
-  paths.
-- **PHASE_CANDIDATES:** 16 pending, 0 promoted, 0 rejected,
-  unchanged since 2026-07-03. Top: workspace-of-repos as a
-  first-class adoption path (score 8.8).
-- **Issues:** none open — `triage:needs-user` and `loop:do`
-  both empty, and no open issues at all.
+  2026-07-03, unchanged — all 4 non-LOW rows now bundled into
+  today's phase candidate rather than addressed individually.
+- **PHASE_CANDIDATES:** 17 pending (was 16), 0 promoted, 0
+  rejected — pass count 1, last pass 2026-07-06 (today's expand
+  tick). Top: workspace-of-repos as a first-class adoption path
+  (score 8.8), unchanged.
+- **Issues:** 1 open (#12, `triage:loop-queued`) — see Needs
+  you below. No `triage:needs-user` or `loop:do` labels open.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not
   present in this environment — skipped.
 
 ## Needs you
 
-None — no blocked build-plan rows, no needs-user issues, no
-`[needs-user-call]`s.
+Issue #12 needs a human hand: phase 17's weighted-ceiling patch
+is shipped in `templates/.github/workflows/march.yml` but the
+cloud loop cannot push the matching edit to this repo's own
+`.github/workflows/march.yml` — GitHub rejects workflow-file
+pushes from a token without the `workflows` scope, and
+`ACTIONS_PAT` is deliberately scoped to Contents + Issues only.
+Apply the patch in the issue body by hand (or via a
+workflow-scoped personal token), then align
+`.github/CLOUD_LOOP.md`'s ceiling wording to match. No blocked
+build-plan rows, no `needs-user` issues, no
+`[needs-user-call]`s otherwise.
 
 ## Today's intent
 
-Next build-plan row: **Phase 15 — Brownfield kit:
-`templates/plan/CURRENT-STATE.md` + preview-branch deploy-gate
-pattern**.
+The build plan has no next phase — it's fully drained. The
+next march tick runs `/iterate` against the audit queue.
 
 Top audit finding: **`[7.2]` data-layer.md cites an invented
 model id** — `customization/data-layer.md`'s example still uses
 `"claude-opus-4.7"`, not a real id (impact 6, ease 9, score
-5.4 — highest of the 7 pending rows, unchanged from yesterday).
+5.4 — highest of the 8 pending rows, unchanged from yesterday).
 
 ## Tuning proposals
 
-none — this window is the most productive since digest started
-tracking it (4/4 march ticks shipped a phase, zero no-ops,
-zero failures), the opposite of a starved dispatcher. CRITIQUE
-and PHASE_CANDIDATES sitting unchanged since 2026-07-03 is the
-same deliberate-human-review shape flagged in the prior two
-digests, not a gate defect — `/oversight` promotion and a fresh
-`/critique` pass are infrequent by design. No blocked rows, no
-stale needs-user issues, no duplicate-tick collisions in the
-pulse — nothing to retune this tick.
+none — this window shipped 4/4 march ticks (2 phases, a triage
+pass, an expand pass), zero no-ops, zero failures; the build
+plan draining to 0 is the loop working as designed (the plan's
+own carry-over note anticipates the `/iterate` handoff), not a
+starved queue. Issue #12's workflow-scope gap is a standing,
+already-documented constraint (`AUDIT.md` `[user-issue #12]`),
+not a new gate defect to retune. Nothing to propose this tick.
