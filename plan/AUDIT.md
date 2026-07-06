@@ -110,6 +110,31 @@ belongs to `/iterate` once the build plan's phases run dry.
 - next: keep or convert to the decision-table idiom — decide
   once, note in bearings voice rules.
 
+### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
+- category: external-issue
+- impact: 5
+- ease: 8
+- evidence: phase 17 shipped the weighted-ceiling mechanism to
+  `templates/.github/workflows/march.yml` (the product) plus
+  `bootstrap.mjs`'s `applyDailyCeiling`, but could not push the
+  matching edit to this repo's own
+  `.github/workflows/march.yml` — GitHub rejects pushes that
+  touch `.github/workflows/` from a token without the
+  `workflows` scope, and `ACTIONS_PAT` is deliberately scoped
+  to Contents + Issues only (`agents.md` "Operational
+  secrets"). Standing constraint for any future phase that
+  touches `.github/workflows/*.yml`, not a one-off glitch.
+- next: a human (or a locally-run `/iterate` using a
+  workflow-scoped personal token) replaces the `Daily commit
+  ceiling check` step in `.github/workflows/march.yml` with the
+  weighted version already shipped in
+  `templates/.github/workflows/march.yml` (same step, minus the
+  bootstrap.local.json comment block — nexus has none), keeping
+  `ceiling=8`. Then align `.github/CLOUD_LOOP.md` "Daily
+  operation" -> Ceiling wording with
+  `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
+  section.
+
 ## Done
 
 ### [x] [4.2] existing-project audit snippet is crude — commit 1cfab4b
