@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: never
-> Pass count: 0
+> Last pass: 2026-07-06
+> Pass count: 1
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -130,6 +130,33 @@ kit + sibling surveys.
   00_files.md legend.
 - estimated phases: 1
 - conflicts: none — second layer of the two-ring secrets story.
+
+### [ ] [score 7.8] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
+- proposed: 2026-07-06
+- source signals: four independent dry-run findings this cycle
+  (plan/CRITIQUE.md one HIGH + three MED rows) all trace to the
+  same step-4 block in playbooks/new-project.md — sibling-clone
+  copy paths that don't resolve, a blanket `skills/` copy that
+  contradicts the adopt-by-need contract, a promised-but-never-
+  copied `PHASE_CANDIDATES.md`, and a placeholder-replace grep
+  scope that misses directories the same step populates.
+- rationale: patching these as four separate `/iterate` ticks
+  risks four more one-off edits to the same block instead of one
+  internally-consistent rewrite; a single fresh-eyes dry-run hit
+  all four in one walkthrough, which means today's adopters hit
+  them too — signal B's cluster pattern (repeated friction in one
+  playbook area), not four unrelated bugs.
+- proposed scope: rewrite playbooks/new-project.md's step 4 (copy)
+  and its placeholder-replace step so paths match the README's
+  recommended sibling-clone layout, add the missing
+  `PHASE_CANDIDATES.md` copy line, widen the grep scope to every
+  directory step 4 populates (`./scripts`, `./.env.example`), and
+  add an explicit adopt-by-need prune sub-step right after the
+  bulk copy; carries the four CRITIQUE rows to Done in the same
+  commit.
+- estimated phases: 1
+- conflicts: none — tightens an existing playbook, no template
+  API change.
 
 ### [ ] [score 7.6] Key custody map + hermetic keys lint
 - proposed: 2026-07-03
