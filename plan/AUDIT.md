@@ -39,16 +39,6 @@ once the build plan's phases run dry.
   template's step 3 + `templates/.github/workflows/march.yml`
   author step/comments to the env-var mechanic.
 
-### [ ] [7.2] data-layer.md cites an invented model id
-- category: freshness
-- impact: 6
-- ease: 9
-- evidence: `customization/data-layer.md` example uses
-  `"claude-opus-4.7"` (not a real id; real ids look like
-  `claude-opus-4-8`). Adopters copy examples verbatim.
-- next: make the example provider-generic or use a real
-  current id with the "ids age — check /model" caveat.
-
 ### [ ] [6.3] deploy-check.mjs covers 4 of 8 documented providers
 - category: doc-drift
 - impact: 7
@@ -154,3 +144,9 @@ once the build plan's phases run dry.
   JS instead of piping through `findstr`/`grep`. Same fix
   applied to the Supabase-keys handoff's doc-only verify
   string (no shell pipe at all now).
+
+### [x] [7.2] data-layer.md cites an invented model id — this commit
+- fix: `customization/data-layer.md`'s provenance schema
+  comment now reads a real id (`claude-opus-4-8`) with the
+  kit's standing "ids age — check /model" caveat, matching
+  `.github/CLOUD_LOOP.md` and `customization/claude-code.md`.

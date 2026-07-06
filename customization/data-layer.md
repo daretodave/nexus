@@ -522,7 +522,7 @@ export const ProvenanceSchema = z.object({
   citations: z.array(z.string().url()),
   // optional metadata fields
   submitter_role: z.enum(['author', 'editor', 'vendor', 'reader']).optional(),
-  ai_model: z.string().optional(),                        // e.g. "claude-opus-4.7"
+  ai_model: z.string().optional(),                        // e.g. "claude-opus-4-8" (ids age — check /model)
   generated_at: z.string().datetime().optional(),
 }).refine(
   (p) => p.source !== 'ai-generated' || p.citations.length >= 1,
