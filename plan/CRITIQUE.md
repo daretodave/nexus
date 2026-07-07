@@ -11,29 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [HIGH] playbooks/new-project.md — step 4's bulk copy never lands CLAUDE.md at the repo root
-- category: instruction-drift
-- observation: templates/README.md documents `claude/` copying
-  to the repo's `.claude/` "(+ CLAUDE.md → repo root)" and
-  labels `claude/CLAUDE.md` explicitly "copy to repo ROOT" —
-  but the one-liner `node -e` command in step 4 only does
-  `fs.cpSync('../nexus/templates/claude','.claude',{recursive:true})`,
-  which deposits it at `.claude/CLAUDE.md` and nowhere else.
-  Verified by running the exact command in a scratch repo:
-  `find . -maxdepth 2` shows `./.claude/CLAUDE.md` but no
-  `./CLAUDE.md`. Claude Code auto-loads `CLAUDE.md` from the
-  project root, not from `.claude/`, so the pointer file's
-  entire purpose (being auto-read) never fires in a fresh
-  adoption.
-- evidence: `templates/README.md:43-44` (copy contract) vs.
-  `playbooks/new-project.md:199` (copy command omits a root
-  copy).
-- suggested fix: add an explicit
-  `cp ../nexus/templates/claude/CLAUDE.md ./CLAUDE.md` (or a
-  second `fs.cpSync` line) to the step-4 command block in both
-  `new-project.md` and `existing-project.md`.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md — step 7 re-copies deploy-check.mjs already placed by step 4
 - category: ordering
 - observation: step 7 says "Copy
@@ -134,6 +111,16 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] playbooks/new-project.md — step 4's bulk copy never lands CLAUDE.md at the repo root (this commit)
+- fix: added a second `fs.cpSync` entry
+  (`['templates/claude/CLAUDE.md','CLAUDE.md']`) to the step-4
+  copy block in both `new-project.md` and `existing-project.md`,
+  plus a one-line note explaining the entry isn't redundant
+  with the `.claude` copy above it — Claude Code only
+  auto-loads `CLAUDE.md` from the repo root. Verified by
+  running the updated command in a scratch dir: both
+  `./CLAUDE.md` and `./.claude/CLAUDE.md` now land.
 
 ### [x] [HIGH] README.md + playbooks/new-project.md — sibling clone layout breaks the playbook's bare `nexus/...` copy paths (this commit)
 - fix: rewrote every bare `nexus/templates/...` reference in

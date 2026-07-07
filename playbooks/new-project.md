@@ -203,8 +203,13 @@ Run from your repo root. This is one `node` command (Node
 bash/zsh, PowerShell, or `cmd.exe` — no shell twin needed:
 
 ```bash
-node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/README.md','plan/README.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
+node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/README.md','plan/README.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
 ```
+
+(The `CLAUDE.md` line is deliberate, not redundant with the
+`.claude` copy above it: Claude Code auto-loads `CLAUDE.md`
+from the repo root, not from `.claude/`, so the pointer file
+needs both copies to actually fire.)
 
 (If using GitHub-as-DB, also copy `../nexus/templates/data/` to
 `./data/`. See [`customization/data-layer.md`](../customization/data-layer.md)
