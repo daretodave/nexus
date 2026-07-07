@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-07-03
-> Pass count: 1
+> Last pass: 2026-07-07
+> Pass count: 2
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,44 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [HIGH] playbooks/new-project.md — step 4's bulk copy never lands CLAUDE.md at the repo root
+- category: instruction-drift
+- observation: templates/README.md documents `claude/` copying
+  to the repo's `.claude/` "(+ CLAUDE.md → repo root)" and
+  labels `claude/CLAUDE.md` explicitly "copy to repo ROOT" —
+  but the one-liner `node -e` command in step 4 only does
+  `fs.cpSync('../nexus/templates/claude','.claude',{recursive:true})`,
+  which deposits it at `.claude/CLAUDE.md` and nowhere else.
+  Verified by running the exact command in a scratch repo:
+  `find . -maxdepth 2` shows `./.claude/CLAUDE.md` but no
+  `./CLAUDE.md`. Claude Code auto-loads `CLAUDE.md` from the
+  project root, not from `.claude/`, so the pointer file's
+  entire purpose (being auto-read) never fires in a fresh
+  adoption.
+- evidence: `templates/README.md:43-44` (copy contract) vs.
+  `playbooks/new-project.md:199` (copy command omits a root
+  copy).
+- suggested fix: add an explicit
+  `cp ../nexus/templates/claude/CLAUDE.md ./CLAUDE.md` (or a
+  second `fs.cpSync` line) to the step-4 command block in both
+  `new-project.md` and `existing-project.md`.
+- source: dry-run
+
+### [LOW] playbooks/new-project.md — step 7 re-copies deploy-check.mjs already placed by step 4
+- category: ordering
+- observation: step 7 says "Copy
+  `../nexus/templates/scripts/deploy-check.mjs` to
+  `./scripts/deploy-check.mjs`" as if introducing the file for
+  the first time, but step 4's bulk copy already recursively
+  copies `templates/scripts` → `scripts`, which includes
+  `deploy-check.mjs`. A literal follower re-runs a no-op copy
+  and may wonder why `./scripts/` already exists.
+- evidence: `playbooks/new-project.md:199` (bulk `scripts`
+  copy) vs. `:338-339` (redundant single-file copy).
+- suggested fix: reword step 7 to "already present from step
+  4" and skip straight to wiring it into `package.json`.
+- source: dry-run
 
 ### [MED] playbooks/new-project.md — blanket `skills/` copy contradicts templates/README.md's adopt-by-need contract
 - category: instruction-drift
