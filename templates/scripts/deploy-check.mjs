@@ -166,6 +166,110 @@ else if (PROVIDER === 'github-actions') {
 }
 
 // =====================================================================
+// PROVIDER: CLOUDFLARE PAGES
+// =====================================================================
+else if (PROVIDER === 'cloudflare-pages') {
+  const TOKEN = process.env.CF_API_TOKEN
+  const ACCOUNT = process.env.CF_ACCOUNT_ID
+  const PROJECT = process.env.CF_PAGES_PROJECT
+  if (!TOKEN) configFail('CF_API_TOKEN', 'https://dash.cloudflare.com/profile/api-tokens')
+  if (!ACCOUNT) configFail('CF_ACCOUNT_ID', 'Cloudflare dashboard sidebar')
+  if (!PROJECT) configFail('CF_PAGES_PROJECT', 'Pages project settings')
+
+  const auth = { Authorization: `Bearer ${TOKEN}` }
+
+  await pollLoop(async () => {
+    const url = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT}/pages/projects/${PROJECT}/deployments`
+    const res = await fetch(url, { headers: auth })
+    if (!res.ok) return null
+    const data = await res.json()
+    const match = data.result?.find((d) => d.deployment_trigger?.metadata?.commit_hash === sha)
+    if (!match) return { state: 'pending' }
+    const status = match.latest_stage?.status
+    if (status === 'success') return { state: 'ready', url: match.url }
+    if (status === 'failure') {
+      return {
+        state: 'error',
+        message: match.latest_stage?.name ? `stage "${match.latest_stage.name}" failed` : undefined,
+        admin: `https://dash.cloudflare.com/${ACCOUNT}/pages/view/${PROJECT}/${match.id}`,
+      }
+    }
+    return { state: status ?? 'pending', id: match.id?.slice(0, 8) }
+  })
+}
+
+// =====================================================================
+// PROVIDER: RENDER
+// =====================================================================
+else if (PROVIDER === 'render') {
+  const API_KEY = process.env.RENDER_API_KEY
+  const SERVICE = process.env.RENDER_SERVICE_ID
+  if (!API_KEY) configFail('RENDER_API_KEY', 'https://dashboard.render.com/u/settings')
+  if (!SERVICE) configFail('RENDER_SERVICE_ID', 'service settings')
+
+  const auth = { Authorization: `Bearer ${API_KEY}` }
+
+  await pollLoop(async () => {
+    const url = `https://api.render.com/v1/services/${SERVICE}/deploys?limit=20`
+    const res = await fetch(url, { headers: auth })
+    if (!res.ok) return null
+    const deploys = (await res.json()).map((d) => d.deploy ?? d)
+    const match = deploys.find((d) => d.commit?.id === sha)
+    if (!match) return { state: 'pending' }
+    if (match.status === 'live') return { state: 'ready' }
+    if (match.status === 'build_failed' || match.status === 'update_failed') {
+      return {
+        state: 'error',
+        message: `deploy status: ${match.status}`,
+        admin: `https://dashboard.render.com/web/${SERVICE}/deploys/${match.id}`,
+      }
+    }
+    return { state: match.status, id: match.id?.slice(0, 8) }
+  })
+}
+
+// =====================================================================
+// PROVIDER: FLY.IO
+// =====================================================================
+else if (PROVIDER === 'fly') {
+  const TOKEN = process.env.FLY_API_TOKEN
+  const APP = process.env.FLY_APP_NAME
+  if (!TOKEN) configFail('FLY_API_TOKEN', 'flyctl auth token')
+  if (!APP) configFail('FLY_APP_NAME', 'fly.toml or `fly apps list`')
+
+  // Fly has no per-commit deploy API; flyctl is the supported client.
+  // We poll `fly status --json` until the current release is stable —
+  // this confirms the app is healthy, not that this exact SHA shipped
+  // (see nexus/playbooks/ci-providers.md Fly.io section).
+  await pollLoop(async () => {
+    let out
+    try {
+      out = execSync(`fly status --app ${APP} --json`, {
+        encoding: 'utf-8',
+        env: { ...process.env, FLY_API_TOKEN: TOKEN },
+      })
+    } catch (err) {
+      console.error(`flyctl error: ${err.message.split('\n')[0]}`)
+      return null
+    }
+    const status = JSON.parse(out)
+    const allocs = status.Allocations ?? []
+    if (allocs.length === 0) return { state: 'pending' }
+    if (allocs.some((a) => a.Status === 'failed' || a.Status === 'crashed')) {
+      return {
+        state: 'error',
+        message: 'one or more allocations failed or crashed',
+        admin: `https://fly.io/apps/${APP}`,
+      }
+    }
+    if (allocs.every((a) => a.Status === 'running' && a.Healthy !== false)) {
+      return { state: 'ready' }
+    }
+    return { state: 'deploying' }
+  })
+}
+
+// =====================================================================
 // PROVIDER: HEALTH CHECK (self-hosted, fallback)
 // =====================================================================
 else if (PROVIDER === 'health-check') {
@@ -203,7 +307,7 @@ else if (PROVIDER === 'none') {
 
 else {
   console.error(`Unknown DEPLOY_PROVIDER: "${PROVIDER}".`)
-  console.error(`Supported: netlify | vercel | github-actions | health-check | none`)
+  console.error(`Supported: netlify | vercel | github-actions | cloudflare-pages | render | fly | health-check | none`)
   console.error(`See nexus/playbooks/ci-providers.md for full details.`)
   process.exit(3)
 }

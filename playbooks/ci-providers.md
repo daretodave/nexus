@@ -49,8 +49,9 @@ iterations; then stop per the skill's failure modes.
 ## Wiring per provider
 
 The template script `nexus/templates/scripts/deploy-check.mjs`
-handles **Netlify, Vercel, GitHub Actions, and GitHub Pages**
-out of the box. Comment in the block matching your provider.
+handles **Netlify, Vercel, GitHub Actions, Cloudflare Pages,
+Render, and Fly.io** out of the box. Set `DEPLOY_PROVIDER` to
+the matching name; no code edits needed.
 
 For other providers, follow the patterns below.
 
@@ -106,6 +107,7 @@ CF_PAGES_PROJECT=your-project-name
 ```
 
 ```javascript
+// In deploy-check.mjs (cloudflare-pages block)
 const url = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT}/pages/projects/${PROJECT}/deployments`
 const res = await fetch(url, {
   headers: { Authorization: `Bearer ${TOKEN}` },
@@ -113,10 +115,11 @@ const res = await fetch(url, {
 const data = await res.json()
 const match = data.result.find(d => d.deployment_trigger?.metadata?.commit_hash === sha)
 // match.latest_stage.status: success | failure | active | idle
+// ... see template for full implementation
 ```
 
-Token needs Pages:Edit. Get one:
-https://dash.cloudflare.com/profile/api-tokens
+Set `DEPLOY_PROVIDER=cloudflare-pages`. Token needs Pages:Edit.
+Get one: https://dash.cloudflare.com/profile/api-tokens
 
 ### Render
 
@@ -127,6 +130,7 @@ RENDER_SERVICE_ID=srv-...
 ```
 
 ```javascript
+// In deploy-check.mjs (render block)
 const url = `https://api.render.com/v1/services/${SERVICE}/deploys?limit=20`
 const res = await fetch(url, {
   headers: { Authorization: `Bearer ${API_KEY}` },
@@ -134,14 +138,18 @@ const res = await fetch(url, {
 const deploys = (await res.json()).map(d => d.deploy)
 const match = deploys.find(d => d.commit?.id === sha)
 // match.status: live | build_failed | update_failed | deactivated | created | building | updating
+// ... see template for full implementation
 ```
 
-Get a key: https://dashboard.render.com/u/settings (API Keys section).
+Set `DEPLOY_PROVIDER=render`. Get a key:
+https://dashboard.render.com/u/settings (API Keys section).
 
 ### Fly.io
 
-Fly's API is not as friendly to direct polling. Use flyctl CLI
-in a child process:
+Fly's API is not as friendly to direct polling as Netlify's or
+Vercel's — there's no per-commit deploy record, so the
+template's `fly` block shells out to flyctl and polls
+allocation health instead of matching a SHA:
 
 ```bash
 # .env
@@ -150,20 +158,25 @@ FLY_APP_NAME=your-app-name
 ```
 
 ```javascript
-// Use child_process.execSync
+// In deploy-check.mjs (fly block)
 import { execSync } from 'node:child_process'
 const out = execSync(`fly status --app ${APP_NAME} --json`, {
   env: { ...process.env, FLY_API_TOKEN: TOKEN },
 }).toString()
 const status = JSON.parse(out)
-// Match by latest deploy version + commit SHA
-// fly status doesn't give per-commit detail; you may need to
-// poll the release log instead.
+// Ready when every allocation is Status: running, Healthy: true.
+// Not a per-commit match — see "Honestly" below.
+// ... see template for full implementation
 ```
 
-Honestly: Fly's deploy gate is harder than Netlify's. If your
-loop's hot path is Fly, consider using GitHub Actions to wrap
-the deploy and polling Actions instead (next section).
+Set `DEPLOY_PROVIDER=fly`.
+
+Honestly: Fly's deploy gate is weaker than Netlify's or
+Vercel's — it confirms the app is healthy, not that this exact
+commit is what's running (a stuck release could show a stale
+but healthy allocation). If your loop's hot path is Fly and you
+need a true per-commit signal, wrap the deploy in GitHub Actions
+and poll Actions instead (next section).
 
 ### GitHub Actions (any provider)
 

@@ -19,17 +19,6 @@ once the build plan's phases run dry.
 
 ## Pending
 
-### [ ] [6.3] deploy-check.mjs covers 4 of 8 documented providers
-- category: doc-drift
-- impact: 7
-- ease: 4
-- evidence: `playbooks/ci-providers.md` walks 8 providers;
-  `templates/scripts/deploy-check.mjs` implements netlify,
-  vercel, github-actions, health-check. Cloudflare Pages,
-  Render, Fly are "follow the patterns" prose.
-- next: implement the three missing adapters in the template
-  (each ~40 lines, same exit-code contract).
-
 ### [ ] [4.9] verify-gate composition drifts across three docs
 - category: doc-drift
 - impact: 7
@@ -112,6 +101,15 @@ once the build plan's phases run dry.
   section.
 
 ## Done
+
+### [x] [6.3] deploy-check.mjs covers 4 of 8 documented providers — this commit (closes #15)
+- fix: added `cloudflare-pages`, `render`, and `fly` blocks to
+  `templates/scripts/deploy-check.mjs`, porting the patterns
+  already documented in `playbooks/ci-providers.md` into the
+  same `pollLoop`/`configFail`/`apiFail` contract the other
+  providers use. Updated the script's "Supported:" list and the
+  playbook's intro line + per-provider snippets to point at the
+  template instead of prose-only patterns.
 
 ### [x] [6.6] template user-author mechanic teaches a config the action overrides — this commit (closes #14)
 - fix: this repo's next few cloud ticks landed authored as
