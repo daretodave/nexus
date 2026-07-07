@@ -77,7 +77,12 @@ Edit the spec until those four pass. Commit it.
 
 ## 2. Stack + bearings
 
-Copy `nexus/templates/plan/bearings.md` to your repo's
+Every `nexus/...` path below assumes the README's recommended
+sibling clone (`../nexus`, next to your project root) —
+adjust if you put your checkout somewhere else (e.g. `./.nexus`
+if submoduled).
+
+Copy `../nexus/templates/plan/bearings.md` to your repo's
 `plan/bearings.md`.
 
 Replace these placeholders:
@@ -139,7 +144,7 @@ question twice during the build.
 
 ### Hard rules
 
-Carry over from `nexus/templates/agents.md` Standing Rules. These
+Carry over from `../nexus/templates/agents.md` Standing Rules. These
 are universal:
 
 1. Commit and push as a single atomic act.
@@ -158,8 +163,8 @@ loop after the build plan.
 
 ## 3. Phases + build plan
 
-Copy `nexus/templates/plan/steps/01_build_plan.md` to your repo's
-`plan/steps/01_build_plan.md`.
+Copy `../nexus/templates/plan/steps/01_build_plan.md` to your
+repo's `plan/steps/01_build_plan.md`.
 
 The "Status (at-a-glance)" block at the top is what the loop
 reads. Each row is one phase. Phases group into:
@@ -198,10 +203,10 @@ Run from your repo root. This is one `node` command (Node
 bash/zsh, PowerShell, or `cmd.exe` — no shell twin needed:
 
 ```bash
-node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/README.md','plan/README.md']]) fs.cpSync('nexus/'+s,d,{recursive:true})"
+node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/README.md','plan/README.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
 ```
 
-(If using GitHub-as-DB, also copy `nexus/templates/data/` to
+(If using GitHub-as-DB, also copy `../nexus/templates/data/` to
 `./data/`. See [`customization/data-layer.md`](../customization/data-layer.md)
 to decide.)
 
@@ -261,7 +266,7 @@ templates copied`.
 `plan/phases/phase_1_bootstrap.md` is the first thing the loop
 ships. It needs to be **detailed**.
 
-Use `nexus/templates/plan/phases/phase_1_bootstrap.md` as the
+Use `../nexus/templates/plan/phases/phase_1_bootstrap.md` as the
 starting point. Edit it to match your stack:
 
 - **Outputs section:** list every file phase 1 should produce.
@@ -330,7 +335,7 @@ for stack-specific compositions.
 The deploy gate is `pnpm deploy:check`. It runs **after every
 push** and polls your hosting provider until ready or error.
 
-Copy `nexus/templates/scripts/deploy-check.mjs` to
+Copy `../nexus/templates/scripts/deploy-check.mjs` to
 `./scripts/deploy-check.mjs`.
 
 Add to `package.json`:
@@ -369,10 +374,10 @@ Commit `package.json` + `scripts/deploy-check.mjs` + `.env.example`.
 Most projects need 2–4 specialist sub-agents. Decide which apply:
 
 - **`scout`** — open-web research. Almost every project needs
-  this. Copy from `nexus/templates/claude/agents/scout.md`.
+  this. Copy from `../nexus/templates/claude/agents/scout.md`.
 - **`reader`** — fresh-eyes site observer (used by `/critique`).
   If your project produces a website. Copy from
-  `nexus/templates/claude/agents/reader.md`.
+  `../nexus/templates/claude/agents/reader.md`.
 - **One or two domain specialists** — your project's "what does
   the agent need to be expert at?" If editorial: a copy editor.
   If data-heavy: a schema steward. If API: an OpenAPI checker.
@@ -401,7 +406,7 @@ have two paths to wire them:
   everything else is scripted.
 
 For the automated path: copy
-`templates/setup/bootstrap.example.json` to
+`../nexus/templates/setup/bootstrap.example.json` to
 `setup/bootstrap.local.json`, fill in your project
 settings, then run `pnpm bootstrap:status` (read-only) to
 preview the plan, then `pnpm bootstrap` for the

@@ -11,26 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [HIGH] README.md + playbooks/new-project.md — sibling clone layout breaks the playbook's bare `nexus/...` copy paths
-- category: instruction-drift
-- observation: README's recommended layout is a sibling clone
-  (`cd <parent-of-your-project>; git clone ... nexus`, giving
-  `my-project/` and `nexus/` side by side), but the playbook it
-  hands off to copies with bare `nexus/templates/...` paths,
-  which only resolve if nexus is cloned *inside* the project
-  root. An agent that follows README's own recommended layout
-  hits a broken `cp` on the first command of template-copying.
-- evidence: `README.md:78-90` (sibling clone, `cd
-  <parent-of-your-project>`) vs. `playbooks/new-project.md:199-206`
-  (`cp -r nexus/templates/skills/ ./skills/` etc.) — running
-  the literal command from the sibling layout gives `cp: cannot
-  stat 'nexus/templates/skills/': No such file or directory`.
-- suggested fix: either rewrite the playbook's copy paths to
-  `../nexus/templates/...` to match the recommended sibling
-  layout, or change the README's recommended clone step to put
-  nexus inside the project root — make the two agree.
-- source: dry-run
-
 ### [MED] playbooks/new-project.md — blanket `skills/` copy contradicts templates/README.md's adopt-by-need contract
 - category: instruction-drift
 - observation: the playbook's copy command lands the whole
@@ -117,4 +97,13 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Done
 
-(empty)
+### [x] [HIGH] README.md + playbooks/new-project.md — sibling clone layout breaks the playbook's bare `nexus/...` copy paths (this commit)
+- fix: rewrote every bare `nexus/templates/...` reference in
+  `playbooks/new-project.md` (bearings, build plan, the
+  templates-copy `node -e` one-liner, phase 1 brief,
+  deploy-check, sub-agent copies, bootstrap.local.json) to
+  `../nexus/templates/...`, matching README's recommended
+  sibling clone and the convention `playbooks/existing-project.md`
+  already used. Added a one-line note at first use pointing
+  back to the README layout for readers who put their checkout
+  somewhere else.
