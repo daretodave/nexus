@@ -43,24 +43,6 @@ path, comprehension stumble. See `skills/critique.md`.
   made in `bearings.md`.
 - source: dry-run
 
-### [MED] playbooks/new-project.md — plan/PHASE_CANDIDATES.md is listed as copied but the playbook never copies it
-- category: missing-file
-- observation: templates/README.md's copy contract lists
-  `PHASE_CANDIDATES.md` under `plan/`, but the playbook's full
-  step-4 copy block never mentions it — yet the skills that
-  step 4 *does* copy (`expand.md`, `triage.md`, `march.md`,
-  `oversight.md`) all read/write that file. A literal walk
-  ships skills that depend on a file the playbook never
-  creates.
-- evidence: `templates/README.md:19` (lists
-  `PHASE_CANDIDATES.md`) vs. `playbooks/new-project.md:199-206`
-  (copy block omits it); referenced by `skills/expand.md:13,51,77`,
-  `skills/triage.md:37,73`, `skills/march.md:74,106`,
-  `skills/oversight.md:35,82`.
-- suggested fix: add `cp nexus/templates/plan/PHASE_CANDIDATES.md
-  ./plan/PHASE_CANDIDATES.md` to the step-4 command block.
-- source: dry-run
-
 ### [MED] templates/README.md / playbooks/new-project.md — documented sed one-liner's scope misses files the same step copies
 - category: placeholder
 - observation: the documented search-replace scope is `./skills
@@ -111,6 +93,13 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md — plan/PHASE_CANDIDATES.md is listed as copied but the playbook never copies it (this commit)
+- fix: added `['templates/plan/PHASE_CANDIDATES.md',
+  'plan/PHASE_CANDIDATES.md']` to the step-4 `fs.cpSync` array in
+  both `new-project.md` and `existing-project.md` — the gap
+  existed in both playbooks' copy blocks, not just the one the
+  finding cited.
 
 ### [x] [HIGH] playbooks/new-project.md — step 4's bulk copy never lands CLAUDE.md at the repo root (this commit)
 - fix: added a second `fs.cpSync` entry

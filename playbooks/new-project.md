@@ -203,7 +203,7 @@ Run from your repo root. This is one `node` command (Node
 bash/zsh, PowerShell, or `cmd.exe` — no shell twin needed:
 
 ```bash
-node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/README.md','plan/README.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
+node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/README.md','plan/README.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
 ```
 
 (The `CLAUDE.md` line is deliberate, not redundant with the
