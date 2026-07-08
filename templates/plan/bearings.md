@@ -364,8 +364,10 @@ pnpm e2e            # hermetic e2e against the production build on a separate po
 ```
 
 Each leg is a hard gate. **Hermetic e2e** is critical — it
-catches "tests pass but built site is broken." See
-`customization/verify-gate.md` for stack-specific compositions.
+catches "tests pass but built site is broken." `lint` is an
+optional leg, wired into `verify` or left standalone, per
+stack. See `nexus/customization/verify-gate.md` for
+stack-specific compositions.
 
 ### Post-push: `pnpm deploy:check`
 

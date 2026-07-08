@@ -17,6 +17,13 @@ exists to prevent.
 Aim for verify ⊇ CI's required checks. Then CI either passes
 or fails fast.
 
+The canonical composition (`agents.md` rule 3) is `typecheck →
+test:run → data:validate → build → e2e`, with two variance
+rules: `data:validate` runs iff the project has a data layer —
+drop the leg otherwise; `lint` is optional — wire it into
+`verify` or leave it standalone, per stack. The examples below
+apply both rules per stack's actual shape.
+
 ## Composition by stack
 
 ### Web (Next.js / SvelteKit / Astro / Remix)
@@ -33,6 +40,11 @@ or fails fast.
   }
 }
 ```
+
+No data layer in this example, so `data:validate` is dropped
+entirely (add it back if you're using GitHub-as-DB or
+migrations). `lint` is defined but left out of `verify` —
+standalone, run on save or pre-commit hook instead.
 
 The hermetic e2e is the load-bearing piece. Playwright with
 `webServer` config that boots `next start` on a separate port:

@@ -35,6 +35,13 @@ in code, in content, in design notes.
 typecheck → test:run → data:validate → build → e2e
 ```
 
+The canonical composition, with two variance rules: `data:validate`
+runs iff the project has a data layer (GitHub-as-DB, DB
+migrations, etc.) — drop the leg otherwise; `lint` is an
+optional leg, wired into `verify` or left as a standalone
+script, per stack. See `nexus/customization/verify-gate.md` for
+stack-specific compositions.
+
 Every check is a hard gate. **Hermetic e2e is part of the gate.**
 A red e2e is a blocked push. Never `--no-verify`. Fix the root
 cause.

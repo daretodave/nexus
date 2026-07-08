@@ -19,18 +19,6 @@ once the build plan's phases run dry.
 
 ## Pending
 
-### [ ] [4.9] verify-gate composition drifts across three docs
-- category: doc-drift
-- impact: 7
-- ease: 5
-- evidence: `templates/agents.md` says `typecheck → test:run →
-  data:validate → build → e2e`; `customization/verify-gate.md`
-  web example omits `data:validate`, adds `lint`;
-  `templates/plan/bearings.md` echoes agents.md.
-- next: declare one canonical composition + one documented
-  variance rule ("data:validate iff data layer; lint optional
-  leg"), align all three in one commit.
-
 ### [ ] [4.8] cloud_loop.schedule_cron field is inert, same gap daily_ceiling had
 - category: completeness
 - impact: 6
@@ -101,6 +89,15 @@ once the build plan's phases run dry.
   section.
 
 ## Done
+
+### [x] [4.9] verify-gate composition drifts across three docs — this commit (closes #16)
+- fix: declared the canonical composition + two variance rules
+  ("data:validate iff data layer; lint optional leg") once in
+  `templates/agents.md`, echoed the lint rule in
+  `templates/plan/bearings.md` (also fixing a bare
+  `customization/...` path to `nexus/customization/...`), and
+  applied both rules explicitly in `customization/verify-gate.md`'s
+  web-stack example (data:validate dropped, lint left standalone).
 
 ### [x] [6.3] deploy-check.mjs covers 4 of 8 documented providers — this commit (closes #15)
 - fix: added `cloudflare-pages`, `render`, and `fly` blocks to
