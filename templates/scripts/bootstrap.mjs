@@ -785,6 +785,21 @@ function applyDailyCeiling(yml, manifest) {
   return yml
 }
 
+// The manifest's cloud_loop.schedule_cron field has existed since
+// v1 but nothing wired it up either — same gap as daily_ceiling,
+// same anchor-and-warn pattern, different anchor.
+function applyScheduleCron(yml, manifest) {
+  const cron = manifest.cloud_loop?.schedule_cron
+  if (!cron) return yml
+  const anchor = /\n {4}- cron: '[^']*'\n/
+  if (anchor.test(yml)) {
+    yml = yml.replace(anchor, `\n    - cron: '${cron}'\n`)
+  } else {
+    log.warn('schedule cron: `- cron: \'...\'` line not found; workflow template may have drifted')
+  }
+  return yml
+}
+
 // "The decorated march" — customization/bootstrap-automation.md's
 // user-author identity pattern. Cloud-shipped commits attribute to
 // the human, not github-actions[bot]: activate the PAT-based
@@ -840,6 +855,7 @@ async function execCloudLoop(a, state, manifest) {
       .replaceAll('<DEFAULT_BRANCH>', manifest.project.default_branch ?? 'main')
       .replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`)
     yml = applyDailyCeiling(yml, manifest)
+    yml = applyScheduleCron(yml, manifest)
     if (manifest.cloud_loop?.identity === 'user') {
       yml = await applyDecoratedMarch(yml, manifest)
     }

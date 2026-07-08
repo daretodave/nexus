@@ -9,30 +9,15 @@ iterate-shaped (one tick each); bigger items became phases in
 `plan/steps/01_build_plan.md` or candidates in
 `plan/PHASE_CANDIDATES.md`. Refreshed by `/digest` (48h+
 stale header) — all 7 pending rows spot-checked against
-current tree and confirmed still open, including `[4.8]`
-(phase 17 shipped `applyDailyCeiling` only, deliberately
-leaving `applyScheduleCron` for a future tick); `[6.6]` has
-since shipped (this commit). Phases 15/17's own diffs checked
-clean, no new rows from them. No new dimension sweep this
-pass; next full re-survey belongs to `/iterate`
-once the build plan's phases run dry.
+current tree and confirmed still open at that pass. `[6.6]`
+and `[4.8]` (`applyScheduleCron`, the gap phase 17 deliberately
+left for a future tick) have since shipped (this commit).
+Phases 15/17's own diffs checked clean, no new rows from them.
+No new dimension sweep this pass; next full re-survey belongs
+to `/iterate` once the build plan's phases run dry (now true —
+phase 18 was the last pending row).
 
 ## Pending
-
-### [ ] [4.8] cloud_loop.schedule_cron field is inert, same gap daily_ceiling had
-- category: completeness
-- impact: 6
-- ease: 8
-- evidence: `bootstrap.example.json`'s `cloud_loop.schedule_cron`
-  has existed since v1; `install-workflow`
-  (`templates/scripts/bootstrap.mjs`) never applies it — the
-  installed `march.yml` always ships with the template's
-  literal cron line. Phase 17 closed the identical gap for
-  `daily_ceiling` (`applyDailyCeiling`); scoped that field out
-  to keep the phase to one knob.
-- next: add an `applyScheduleCron` following the same anchor-
-  and-warn pattern, replacing the `- cron: '...'` line in the
-  copied `march.yml`.
 
 ### [ ] [3.8] generic-specialist template omits the model: lever
 - category: completeness
@@ -89,6 +74,16 @@ once the build plan's phases run dry.
   section.
 
 ## Done
+
+### [x] [4.8] cloud_loop.schedule_cron field is inert, same gap daily_ceiling had — this commit
+- fix: added `applyScheduleCron` to
+  `templates/scripts/bootstrap.mjs`, same anchor-and-warn
+  pattern as `applyDailyCeiling`, wired into `install-workflow`
+  right after it. Updated
+  `customization/bootstrap-automation.md`'s "GitHub Actions
+  workflow quirks" note to describe both fields as wired
+  instead of citing the cron line as the still-literal
+  precedent.
 
 ### [x] [4.9] verify-gate composition drifts across three docs — this commit (closes #16)
 - fix: declared the canonical composition + two variance rules
