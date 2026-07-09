@@ -2,6 +2,11 @@
 name: <SPECIALIST_NAME>
 description: <When to spawn this agent. One sentence on what it does, one on what it does NOT do.>
 tools: <comma-separated list — subset of main agent's tools>
+# model: claude-haiku-4-5   — optional, id ages, check /model.
+#   Downshift mechanical specialists (formatting-only,
+#   single-purpose); leave unset to inherit the session default
+#   for anything where observation quality is the product. See
+#   customization/claude-code.md §5 "Model routing".
 ---
 
 # <SPECIALIST_NAME>

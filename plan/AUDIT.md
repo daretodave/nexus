@@ -19,15 +19,6 @@ phase 18 was the last pending row).
 
 ## Pending
 
-### [ ] [3.8] generic-specialist template omits the model: lever
-- category: completeness
-- impact: 4
-- ease: 9
-- evidence: `customization/claude-code.md` §5 documents
-  per-agent `model:` frontmatter; no agent template shows it.
-- next: add a commented `model:` line + one sentence to
-  `templates/claude/agents/generic-specialist.md`.
-
 ### [ ] [3.5] cloud-loop reference implementation is an external link
 - category: freshness
 - impact: 3
@@ -74,6 +65,16 @@ phase 18 was the last pending row).
   section.
 
 ## Done
+
+### [x] [3.8] generic-specialist template omits the model: lever — this commit
+- fix: added a commented `model:` frontmatter line + a one-line
+  guidance comment to
+  `templates/claude/agents/generic-specialist.md`, matching the
+  per-agent routing lever `customization/claude-code.md` §5
+  documents. Used a concrete example id
+  (`claude-haiku-4-5`, with the standing "ids age — check
+  /model" caveat) instead of a new bracket token, keeping the
+  placeholder vocabulary unchanged.
 
 ### [x] [4.8] cloud_loop.schedule_cron field is inert, same gap daily_ceiling had — this commit
 - fix: added `applyScheduleCron` to
