@@ -61,6 +61,6 @@ jobs:
             if [ "$existing" -eq 0 ]; then
               gh issue create \
                 --title "Heartbeat: march has flatlined ($(date -u +%Y-%m-%d))" \
-                --body "No completed march tick in ${hours}h (cadence is 6h). Likely causes: workflow disabled and forgotten, cron auto-paused, or auth expiry. Check: gh workflow list; gh run list --workflow march -L 5."
+                --body "No completed march tick in ${hours}h (alarm threshold 14h — check your march cron schedule). Likely causes: workflow disabled and forgotten, cron auto-paused, or auth expiry. Check: gh workflow list; gh run list --workflow march -L 5."
             fi
           fi

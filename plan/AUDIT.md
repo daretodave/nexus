@@ -18,29 +18,6 @@ skips `#anchor` fragments) — zero broken anchors found.
 
 ## Pending
 
-### [ ] [4.8] heartbeat.yml's alarm text hardcodes a cadence that doesn't match the template's default march.yml cron
-- category: doc-drift (A)
-- impact: 6
-- ease: 8
-- evidence: `templates/.github/workflows/heartbeat.yml:64`
-  fires "No completed march tick in ${hours}h (cadence is
-  6h)"; the template's own default cron in
-  `templates/.github/workflows/march.yml:15`
-  (`0 1,3,5,7,9,11,23 * * *`) is mostly 2h-spaced with one 12h
-  gap, not 6h. That "6h" was copied from nexus's own instance
-  cron (`.github/workflows/march.yml:15`,
-  `0 2,8,14,20 * * *` — genuinely 6h, so nexus's own copy of
-  the alarm text is correct and needs no change). Misleads any
-  adopter using the shipped default cadence when debugging a
-  page.
-- next: in `templates/.github/workflows/heartbeat.yml:64`
-  only, drop the hardcoded number; reword cadence-agnostic,
-  e.g. "No completed march tick in ${hours}h (alarm threshold
-  14h — check your march cron schedule)". Do not touch this
-  repo's own `.github/workflows/heartbeat.yml` (accurate as-is,
-  and `ACTIONS_PAT` cannot push `.github/workflows/*.yml`
-  anyway — same constraint as user-issue #12 below).
-
 ### [ ] [4.2] three onboarding docs claim "six placeholders," templates/README.md's canonical table has eight
 - category: doc-drift + completeness + adopter friction (A/B/E)
 - impact: 7
@@ -134,6 +111,17 @@ skips `#anchor` fragments) — zero broken anchors found.
   section.
 
 ## Done
+
+### [x] [4.8] heartbeat.yml's alarm text hardcodes a cadence that doesn't match the template's default march.yml cron — this commit
+- fix: `templates/.github/workflows/heartbeat.yml:64` no longer
+  hardcodes "cadence is 6h" (only true of nexus's own instance
+  cron, not the template's mostly-2h default in
+  `templates/.github/workflows/march.yml:15`); reworded
+  cadence-agnostic: "alarm threshold 14h — check your march cron
+  schedule". This repo's own `.github/workflows/heartbeat.yml`
+  left untouched (accurate as-is; `ACTIONS_PAT` also cannot push
+  `.github/workflows/*.yml` here anyway — same constraint as
+  user-issue #12).
 
 ### [x] [4.8] templates/README.md's Adopt-by-need table omits two conditional files its own tree comments call out — this commit
 - fix: added rows for `.github/workflows/nightly-smoke.yml`
