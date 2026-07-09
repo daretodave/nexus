@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-06
+# Kit audit — 2026-07-09
 
 > Bias: none
 
@@ -7,17 +7,86 @@ customization + templates) and a survey of the sibling
 adopters (`../semilayer`, `../kintilla`). Rows here are
 iterate-shaped (one tick each); bigger items became phases in
 `plan/steps/01_build_plan.md` or candidates in
-`plan/PHASE_CANDIDATES.md`. Refreshed by `/digest` (48h+
-stale header) — all 7 pending rows spot-checked against
-current tree and confirmed still open at that pass. `[6.6]`
-and `[4.8]` (`applyScheduleCron`, the gap phase 17 deliberately
-left for a future tick) have since shipped (this commit).
-Phases 15/17's own diffs checked clean, no new rows from them.
-No new dimension sweep this pass; next full re-survey belongs
-to `/iterate` once the build plan's phases run dry (now true —
-phase 18 was the last pending row).
+`plan/PHASE_CANDIDATES.md`. First full dimension sweep (A-G)
+since the build plan's phases ran dry (phase 18) — templates/
+vs. docs diffed for drift, phase log cross-checked against
+`git log`, onboarding placeholder path walked end to end.
+Sibling lessons files (`../kintilla`, `../semilayer`) not
+present in this checkout — dimension G came up empty, not
+skipped. Anchor accuracy spot-checked (verify.mjs's `links` leg
+skips `#anchor` fragments) — zero broken anchors found.
 
 ## Pending
+
+### [ ] [4.8] heartbeat.yml's alarm text hardcodes a cadence that doesn't match the template's default march.yml cron
+- category: doc-drift (A)
+- impact: 6
+- ease: 8
+- evidence: `templates/.github/workflows/heartbeat.yml:64`
+  fires "No completed march tick in ${hours}h (cadence is
+  6h)"; the template's own default cron in
+  `templates/.github/workflows/march.yml:15`
+  (`0 1,3,5,7,9,11,23 * * *`) is mostly 2h-spaced with one 12h
+  gap, not 6h. That "6h" was copied from nexus's own instance
+  cron (`.github/workflows/march.yml:15`,
+  `0 2,8,14,20 * * *` — genuinely 6h, so nexus's own copy of
+  the alarm text is correct and needs no change). Misleads any
+  adopter using the shipped default cadence when debugging a
+  page.
+- next: in `templates/.github/workflows/heartbeat.yml:64`
+  only, drop the hardcoded number; reword cadence-agnostic,
+  e.g. "No completed march tick in ${hours}h (alarm threshold
+  14h — check your march cron schedule)". Do not touch this
+  repo's own `.github/workflows/heartbeat.yml` (accurate as-is,
+  and `ACTIONS_PAT` cannot push `.github/workflows/*.yml`
+  anyway — same constraint as user-issue #12 below).
+
+### [ ] [4.2] three onboarding docs claim "six placeholders," templates/README.md's canonical table has eight
+- category: doc-drift + completeness + adopter friction (A/B/E)
+- impact: 7
+- ease: 6
+- evidence: `README.md:99-102` (TL;DR agent prompt),
+  `playbooks/new-project.md:217-224` (table) + `:226` ("all
+  six") + `:236-260` (bash/PowerShell one-liners), and
+  `playbooks/windows-notes.md:30-34` ("all six") all omit
+  `<PROJECT_TAGLINE>` and `<PROJECT_PKG_PREFIX>` from
+  `templates/README.md`'s 8-row placeholder table.
+  `<PROJECT_PKG_PREFIX>` is a real, consumed token
+  (`templates/.github/workflows/march.yml`,
+  `templates/data/README.md`, `templates/scripts/bootstrap.mjs`,
+  `templates/skills/ship-a-phase.md`) — a day-1 gap since
+  `b27d21f`. Overlaps in root cause with the `plan/CRITIQUE.md`
+  pending LOW row on `templates/README.md`'s worked example;
+  fix together.
+- next: add both tokens to `new-project.md`'s table and both
+  one-liners (bash `grep -rl` pattern + `sed -i` flags,
+  PowerShell `$repl` hashtable), update "all six" → "all eight"
+  in both `new-project.md:226` and `windows-notes.md:31`, and
+  add both tokens to `README.md`'s TL;DR prompt list.
+
+### [ ] [3.6] plan/steps/01_build_plan.md's Phase log is missing 6 of 18 phases
+- category: completeness, kit-internal (B)
+- impact: 4
+- ease: 9
+- evidence: `plan/steps/01_build_plan.md:88-111` lists phases
+  1,2,3,4,5,6,16,18,7,8,12,14 but omits 9,10,11,13,15,17,
+  despite each having a real commit: phase 9 `1cfab4b`, phase
+  10 `e318b64`, phase 11 `fc54023`, phase 13 `fbeaa40`, phase
+  15 `7cd7836`, phase 17 `1f3818c`.
+- next: append those six lines to the Phase log in commit
+  order, same one-line style as existing entries.
+
+### [ ] [1.8] templates/scripts/__tests__/loop-issue.test.mjs isn't in templates/README.md's layout tree
+- category: doc-drift + completeness, minor (A/B)
+- impact: 2
+- ease: 9
+- evidence: file exists at
+  `templates/scripts/__tests__/loop-issue.test.mjs`;
+  `templates/README.md`'s `scripts/` tree block (lines 64-72)
+  lists 8 files, no `__tests__/`. Silently copied by every bulk
+  `scripts/` copy in `new-project.md`/`existing-project.md`.
+- next: add `│   └── __tests__/loop-issue.test.mjs      (unit
+  tests, node:test, no devDeps)` to the tree block.
 
 ### [ ] [3.5] cloud-loop reference implementation is an external link
 - category: freshness
@@ -65,6 +134,14 @@ phase 18 was the last pending row).
   section.
 
 ## Done
+
+### [x] [4.8] templates/README.md's Adopt-by-need table omits two conditional files its own tree comments call out — this commit
+- fix: added rows for `.github/workflows/nightly-smoke.yml`
+  (adopt when hermetic e2e is in use and `night.yml` doesn't
+  already run `SMOKE_SAMPLE=full`) and `scripts/stack-lifecycle.mjs`
+  (adopt when hermetic e2e uses Pattern B) to the "Adopt-by-need
+  files" table in `templates/README.md`, matching the tree
+  comments at lines 62 and 72.
 
 ### [x] [3.8] generic-specialist template omits the model: lever — this commit
 - fix: added a commented `model:` frontmatter line + a one-line
