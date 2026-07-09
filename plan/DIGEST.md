@@ -1,100 +1,95 @@
-# Digest — 2026-07-08
+# Digest — 2026-07-09
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Four march ticks since yesterday's digest, four shipped, zero
-no-ops: a critique pass (2 new findings: 1 HIGH, 1 LOW) and
-three iterate ticks that closed the HIGH CRITIQUE row, AUDIT
-`[4.9]` (closes #16), and a CRITIQUE MED row. Net effect:
-AUDIT 6 -> 5 pending; CRITIQUE churned (+2 filed, -2 fixed)
-but held at 5 pending. Build plan stays fully drained (18/18,
-0 pending).
+Four march ticks since yesterday's digest, three shipped, one
+no-op: all three routed to `/iterate` (build plan stays dry,
+critique and expand gates both under threshold) and each closed
+an AUDIT row — the `[4.8]` `cloud_loop.schedule_cron` fix that
+yesterday's digest flagged as top intent, the generic-specialist
+`model:` lever gap, and the adopt-by-need table's missing rows.
+AUDIT also got its first full A-G dimension sweep since phase
+18 drained the build plan, landing at 7 pending (6 scored + the
+standing `user-issue #12`).
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-07 15:07 | march | critique — pass 2, 2 new findings (1 HIGH: CLAUDE.md never reaches repo root; 1 LOW: step 7 re-copies deploy-check.mjs); 4 other findings reproduced but not re-filed, already pending since pass 1 (commit `6a2c767`) |
-| 07-07 20:39 | march | iterate — closed the new CRITIQUE HIGH row, added a second `fs.cpSync` entry so `templates/claude/CLAUDE.md` lands at repo root in both playbooks' step 4 (commit `1d38b3a`) |
-| 07-08 03:09 | march | iterate — shipped AUDIT `[4.9]`, declared the verify-gate variance rules once in `templates/agents.md` and aligned `bearings.md` + `verify-gate.md` (commit `56b2e41`, closes #16) |
-| 07-08 08:56 | march | iterate — closed a pending CRITIQUE MED row, added the missing `plan/PHASE_CANDIDATES.md` copy to both playbooks' step-4 overlay (commit `5992bc4`) |
-| 07-08 11:xx | night (this tick) | this digest |
+| 07-08 14:49 | march | iterate — shipped AUDIT `[4.8]`, wired `cloud_loop.schedule_cron` into `bootstrap.mjs` following the `applyDailyCeiling` anchor-and-warn pattern (commit `bd6f048`) |
+| 07-08 20:29 | march | no-op — no commit produced this tick |
+| 07-09 03:07 | march | iterate — shipped AUDIT `[3.8]`, added the `model:` lever to the generic-specialist template (commit `fd1e41c`) |
+| 07-09 09:08 | march | iterate — shipped AUDIT `[4.8]`, added the nightly-smoke/stack-lifecycle rows templates/README.md's tree already called out but the adopt-by-need table omitted (commit `8f0f185`) |
+| 07-09 (this tick) | night (this tick) | this digest |
 
-`heartbeat` ran 4 times since yesterday's digest (07-07 13:03,
-18:55, 07-08 00:53, 07:06 UTC), all green.
+`heartbeat` ran 5/5 green over its last-5 sample; no red runs
+in the window.
 
 ## Shipped
 
-- `6a2c767` — critique pass 2: filed 1 HIGH (CLAUDE.md root
-  landing) + 1 LOW (step 7 redundant copy); findings-only, no
-  fix in this commit.
-- `1d38b3a` — `playbooks/new-project.md` +
-  `existing-project.md` step 4 only copied `templates/claude`
-  to `.claude/`, so the root `CLAUDE.md` pointer Claude Code
-  auto-loads never landed; added the missing copy entry to
-  both playbooks.
-- `56b2e41` — `templates/agents.md`'s canonical verify-gate
-  composition had no documented variance rule, so
-  `customization/verify-gate.md` and `templates/plan/bearings.md`
-  drifted from it independently; declared the two variance
-  rules once and aligned all three docs.
-- `5992bc4` — `templates/README.md`'s copy contract lists
-  `plan/PHASE_CANDIDATES.md` as mandatory, but neither
-  playbook's step-4 copy block actually copied it; fixed both.
+- `bd6f048` — `cloud_loop.schedule_cron` was declared in the
+  install-workflow schema but never applied; wired the same
+  anchor-and-warn mechanism phase 17 used for `daily_ceiling`.
+- `fd1e41c` — the generic-specialist template had no `model:`
+  lever, unlike its siblings; added it.
+- `8f0f185` — `templates/README.md`'s own tree comments call
+  out nightly-smoke and stack-lifecycle as conditional files,
+  but the adopt-by-need table never listed them; added both
+  rows.
 
 ## Queues now
 
-- **Build plan:** 0 pending (18/18 phases shipped).
-- **AUDIT:** 5 pending (was 6) — `[4.8]`, `[3.8]`, `[3.5]`,
-  `[3.2]`, `[user-issue #12]`. Header still reads 2026-07-06
-  (last full Top-5 recompute); ~47h old at this tick, just
-  under the 48h staleness threshold — no recompute this pass,
-  but the four scored rows plus issue #12 were spot-checked
-  against the current tree and all confirmed still open (will
-  need a full refresh next tick if the header goes untouched).
-- **CRITIQUE:** 5 pending (net unchanged; 2 filed + 2 fixed
-  this window), last pass 2026-07-07 (pass 2) — now
-  rate-limited again until ≥12 commits or >72h.
-- **PHASE_CANDIDATES:** 17 pending, unchanged, last pass
-  2026-07-06, posture bold.
-- **Issues:** 1 open (#12). #16 closed this window by
-  `56b2e41`. No `triage:needs-user` or `loop:do` labels open.
+- **Build plan:** 0 pending (18/18 phases shipped, unchanged).
+- **AUDIT:** 7 pending (6 scored `[ ]` rows + `[user-issue
+  #12]`) — `[4.8]` heartbeat.yml alarm-text cadence mismatch,
+  `[4.2]` placeholder-count doc drift (six vs. eight), `[3.6]`
+  phase-log missing 6/18 entries, `[3.5]` cloud-loop reference
+  is an external link, `[3.2]` data-layer mermaid style
+  outlier, `[1.8]` a test file missing from the layout tree.
+  Header dated 2026-07-09 (today) — first full A-G sweep since
+  phase 18 drained the build plan; not stale.
+- **CRITIQUE:** 5 pending, unchanged, last pass 2026-07-07
+  (pass 2). 8 commits / ~44h since last pass — under both
+  rate-limit thresholds (≥12 commits or >72h), correctly quiet.
+- **PHASE_CANDIDATES:** 15 pending, unchanged, last pass
+  2026-07-06 (pass 1), posture bold. 14 commits / 3 days since
+  last pass — under both expand thresholds (≥20 commits or >7
+  days), correctly quiet.
+- **Issues:** 1 open (`#12`, labeled `triage:loop-queued`). No
+  `triage:needs-user` or `loop:do` labels open.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not
   present in this environment — skipped.
 
 ## Needs you
 
 - **Issue #12** — nexus's own `.github/workflows/march.yml`
-  still needs phase 17's weighted-ceiling step applied by hand.
+  still needs phase 17's weighted-ceiling step applied by hand;
   `ACTIONS_PAT` is deliberately scoped to Contents + Issues
   only, so the cloud loop can never push to
-  `.github/workflows/*.yml` itself — needs a human, or a
+  `.github/workflows/*.yml` itself. Needs a human, or a
   locally-run `/iterate` with a personal workflow-scoped `gh`
   token. Tracked as AUDIT `[user-issue #12]`.
 - No `[needs-user-call]` rows, no blocked build-plan rows.
 
 ## Today's intent
 
-Build plan has no pending phase (18/18). Critique just ran
-(pass 2, 07-07 15:07) so it's rate-limited again; expand isn't
-due (last pass 2026-07-06, needs ≥20 commits or >7 days) — the
-next several march ticks route to `/iterate`. Top AUDIT
-finding: `[4.8]` `cloud_loop.schedule_cron` is inert, same gap
-`daily_ceiling` had before phase 17 (impact 6, ease 8) — add an
-`applyScheduleCron` following the same anchor-and-warn pattern
-in `bootstrap.mjs`. Note it will compete against CRITIQUE's two
-pending MED rows (blanket `skills/` copy, sed grep scope gap),
-which likely outscore it on the same 0-10 scale.
+Build plan still has no pending phase (18/18). Critique and
+expand both sit under their rate-limit thresholds, so the next
+several march ticks route to `/iterate`. Top AUDIT finding:
+`[4.8]` heartbeat.yml's alarm text hardcodes a cadence that
+doesn't match the template's default `march.yml` cron — align
+the alarm copy with whatever cron the template actually ships,
+or derive it instead of hardcoding.
 
 ## Tuning proposals
 
-None. The pulse shows both rate-limit gates working as
-designed this window: critique fired once after clearing the
->72h-since-last-pass threshold, then correctly rate-limited
-itself again on the very next tick; expand stayed quiet because
-neither of its thresholds (≥20 commits / >7 days) has cleared.
-Four ticks, four ships, zero no-ops — no starved queue, no
-mistuned gate.
+None. The pulse shows every rail working as designed this
+window: critique and expand both stayed quiet under their own
+thresholds, the build-plan-dry path correctly fell through to
+`/iterate` three times running, and each of those ticks closed
+a real AUDIT row (including the exact item yesterday's digest
+flagged as top intent). One no-op tick out of four is normal
+loop noise, not a starved queue.
