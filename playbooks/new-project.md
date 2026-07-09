@@ -221,23 +221,27 @@ Now do a global search-and-replace across the copied files:
 |---|---|
 | `<PROJECT>` | your project name (e.g. `thock`) |
 | `<PROJECT_LOWER>` | lowercase variant if different |
+| `<PROJECT_TAGLINE>` | one-line description |
 | `<HOSTING_URL>` | `https://your-site.netlify.app` |
 | `<HOSTING_PROVIDER>` | `Netlify` / `Vercel` / etc. |
 | `<REPO_SLUG>` | `your-org/your-repo` |
 | `<DEFAULT_BRANCH>` | usually `main` |
+| `<PROJECT_PKG_PREFIX>` | workspace package prefix, e.g. `@thock` (empty if not a monorepo) |
 
-A one-liner that replaces all six, bash/zsh/WSL/macOS:
+A one-liner that replaces all eight, bash/zsh/WSL/macOS:
 
 ```bash
-grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>' \
+grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>\|<PROJECT_PKG_PREFIX>' \
     ./skills ./.claude ./plan ./agents.md \
   | xargs sed -i \
       -e 's/<PROJECT_LOWER>/thock/g' \
       -e 's/<PROJECT>/thock/g' \
+      -e 's/<PROJECT_TAGLINE>/keyboards, deeply./g' \
       -e 's/<HOSTING_URL>/https:\/\/thock.netlify.app/g' \
       -e 's/<HOSTING_PROVIDER>/Netlify/g' \
       -e 's/<REPO_SLUG>/you\/thock/g' \
-      -e 's/<DEFAULT_BRANCH>/main/g'
+      -e 's/<DEFAULT_BRANCH>/main/g' \
+      -e 's/<PROJECT_PKG_PREFIX>/@thock/g'
 ```
 
 The PowerShell twin, Windows native (see
@@ -246,12 +250,14 @@ this pairs with):
 
 ```powershell
 $repl = @{
-  '<PROJECT>'          = 'thock'
-  '<PROJECT_LOWER>'    = 'thock'
-  '<HOSTING_URL>'      = 'https://thock.netlify.app'
-  '<HOSTING_PROVIDER>' = 'Netlify'
-  '<REPO_SLUG>'        = 'you/thock'
-  '<DEFAULT_BRANCH>'   = 'main'
+  '<PROJECT>'             = 'thock'
+  '<PROJECT_LOWER>'       = 'thock'
+  '<PROJECT_TAGLINE>'     = 'keyboards, deeply.'
+  '<HOSTING_URL>'         = 'https://thock.netlify.app'
+  '<HOSTING_PROVIDER>'    = 'Netlify'
+  '<REPO_SLUG>'           = 'you/thock'
+  '<DEFAULT_BRANCH>'      = 'main'
+  '<PROJECT_PKG_PREFIX>'  = '@thock'
 }
 Get-ChildItem -Recurse -File .\skills, .\.claude, .\plan, .\agents.md |
   ForEach-Object {

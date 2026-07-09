@@ -28,9 +28,10 @@ maintaining.
 ## The placeholder one-liner
 
 [`new-project.md`](./new-project.md) §4 has the canonical
-bash + PowerShell pair that replaces all six placeholders
-(`<PROJECT>`, `<PROJECT_LOWER>`, `<HOSTING_URL>`,
-`<HOSTING_PROVIDER>`, `<REPO_SLUG>`, `<DEFAULT_BRANCH>`)
+bash + PowerShell pair that replaces all eight placeholders
+(`<PROJECT>`, `<PROJECT_LOWER>`, `<PROJECT_TAGLINE>`,
+`<HOSTING_URL>`, `<HOSTING_PROVIDER>`, `<REPO_SLUG>`,
+`<DEFAULT_BRANCH>`, `<PROJECT_PKG_PREFIX>`)
 across the copied templates in one pass. Don't hand-edit files
 one at a time — the one-liner is exhaustive; a placeholder
 left behind is a bug the verify gate's `placeholders` leg

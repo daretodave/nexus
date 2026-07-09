@@ -18,29 +18,6 @@ skips `#anchor` fragments) — zero broken anchors found.
 
 ## Pending
 
-### [ ] [4.2] three onboarding docs claim "six placeholders," templates/README.md's canonical table has eight
-- category: doc-drift + completeness + adopter friction (A/B/E)
-- impact: 7
-- ease: 6
-- evidence: `README.md:99-102` (TL;DR agent prompt),
-  `playbooks/new-project.md:217-224` (table) + `:226` ("all
-  six") + `:236-260` (bash/PowerShell one-liners), and
-  `playbooks/windows-notes.md:30-34` ("all six") all omit
-  `<PROJECT_TAGLINE>` and `<PROJECT_PKG_PREFIX>` from
-  `templates/README.md`'s 8-row placeholder table.
-  `<PROJECT_PKG_PREFIX>` is a real, consumed token
-  (`templates/.github/workflows/march.yml`,
-  `templates/data/README.md`, `templates/scripts/bootstrap.mjs`,
-  `templates/skills/ship-a-phase.md`) — a day-1 gap since
-  `b27d21f`. Overlaps in root cause with the `plan/CRITIQUE.md`
-  pending LOW row on `templates/README.md`'s worked example;
-  fix together.
-- next: add both tokens to `new-project.md`'s table and both
-  one-liners (bash `grep -rl` pattern + `sed -i` flags,
-  PowerShell `$repl` hashtable), update "all six" → "all eight"
-  in both `new-project.md:226` and `windows-notes.md:31`, and
-  add both tokens to `README.md`'s TL;DR prompt list.
-
 ### [ ] [3.6] plan/steps/01_build_plan.md's Phase log is missing 6 of 18 phases
 - category: completeness, kit-internal (B)
 - impact: 4
@@ -111,6 +88,16 @@ skips `#anchor` fragments) — zero broken anchors found.
   section.
 
 ## Done
+
+### [x] [4.2] three onboarding docs claim "six placeholders," templates/README.md's canonical table has eight — this commit
+- fix: added `<PROJECT_TAGLINE>` and `<PROJECT_PKG_PREFIX>` to
+  `README.md`'s TL;DR placeholder list, `new-project.md`'s §4
+  mapping table, both one-liners (bash `grep -rl`/`sed -i` and
+  the PowerShell `$repl` hashtable), relabeled "all six" → "all
+  eight" in `new-project.md` and `windows-notes.md`, and fixed
+  the same stale "all six" in `existing-project.md`'s §3 (same
+  root cause, outside the original three-doc citation but
+  caught while fixing the others).
 
 ### [x] [4.8] heartbeat.yml's alarm text hardcodes a cadence that doesn't match the template's default march.yml cron — this commit
 - fix: `templates/.github/workflows/heartbeat.yml:64` no longer

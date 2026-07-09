@@ -121,11 +121,12 @@ Then:
   - Follow the matching playbook end-to-end. Do not skip steps.
   - Copy templates from ../nexus/templates/ into this repo.
   - Replace placeholders (<PROJECT>, <PROJECT_LOWER>,
-    <HOSTING_URL>, <HOSTING_PROVIDER>, <REPO_SLUG>,
-    <DEFAULT_BRANCH>) with values you derive from the existing
-    repo state. If a value is genuinely unknowable, surface it
-    in plan/AUDIT.md as a [needs-user-call] row and continue
-    with a defensible default.
+    <PROJECT_TAGLINE>, <HOSTING_URL>, <HOSTING_PROVIDER>,
+    <REPO_SLUG>, <DEFAULT_BRANCH>, <PROJECT_PKG_PREFIX>) with
+    values you derive from the existing repo state. If a value
+    is genuinely unknowable, surface it in plan/AUDIT.md as a
+    [needs-user-call] row and continue with a defensible
+    default.
   - Ask the user ONLY for: (a) the hosting provider name and
     auth token if not visibly configured, (b) the project's
     canonical name + tagline if no spec exists, (c) the

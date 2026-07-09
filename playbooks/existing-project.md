@@ -138,7 +138,7 @@ needs both copies to actually fire.)
 
 Search-and-replace placeholders (see
 [`new-project.md`](./new-project.md) §4 for the mapping table
-— bash and PowerShell forms, both exhaustive over all six
+— bash and PowerShell forms, both exhaustive over all eight
 placeholders).
 
 Pay special attention in `bearings.md`:
