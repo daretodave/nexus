@@ -109,3 +109,15 @@ written):**
   extraction, loose JSON parsing, vercel push-env with
   --sensitive, decorated-march identity edit, runbook
   write-back
+- phase 9 — 1cfab4b — Windows-first pass: dual-shell commands
+  + hazards page
+- phase 10 — e318b64 — ship `templates/skills/moderate.md`,
+  the moderation Option A promise
+- phase 11 — fc54023 — ship-migration skill + additive-
+  migration linter
+- phase 13 — fbeaa40 — nightly full-smoke workflow +
+  stack:up/down scripts
+- phase 15 — 7cd7836 — brownfield kit: CURRENT-STATE.md +
+  preview-branch deploy-gate pattern
+- phase 17 — 1f3818c — budget-aware ceiling: weighted phase
+  vs. churn commits

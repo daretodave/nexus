@@ -18,18 +18,6 @@ skips `#anchor` fragments) — zero broken anchors found.
 
 ## Pending
 
-### [ ] [3.6] plan/steps/01_build_plan.md's Phase log is missing 6 of 18 phases
-- category: completeness, kit-internal (B)
-- impact: 4
-- ease: 9
-- evidence: `plan/steps/01_build_plan.md:88-111` lists phases
-  1,2,3,4,5,6,16,18,7,8,12,14 but omits 9,10,11,13,15,17,
-  despite each having a real commit: phase 9 `1cfab4b`, phase
-  10 `e318b64`, phase 11 `fc54023`, phase 13 `fbeaa40`, phase
-  15 `7cd7836`, phase 17 `1f3818c`.
-- next: append those six lines to the Phase log in commit
-  order, same one-line style as existing entries.
-
 ### [ ] [1.8] templates/scripts/__tests__/loop-issue.test.mjs isn't in templates/README.md's layout tree
 - category: doc-drift + completeness, minor (A/B)
 - impact: 2
@@ -88,6 +76,12 @@ skips `#anchor` fragments) — zero broken anchors found.
   section.
 
 ## Done
+
+### [x] [3.6] plan/steps/01_build_plan.md's Phase log is missing 6 of 18 phases — this commit
+- fix: appended phases 9, 10, 11, 13, 15, 17 to the Phase log
+  in `plan/steps/01_build_plan.md`, commit order, matching the
+  existing one-line style — closing the gap against the 18
+  phases the Status block already marks `[x]`.
 
 ### [x] [4.2] three onboarding docs claim "six placeholders," templates/README.md's canonical table has eight — this commit
 - fix: added `<PROJECT_TAGLINE>` and `<PROJECT_PKG_PREFIX>` to
