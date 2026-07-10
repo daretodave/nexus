@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-07-06
-> Pass count: 1
+> Last pass: 2026-07-10
+> Pass count: 2
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -131,29 +131,50 @@ kit + sibling surveys.
 - estimated phases: 1
 - conflicts: none — second layer of the two-ring secrets story.
 
-### [ ] [score 7.8] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
-- proposed: 2026-07-06
-- source signals: four independent dry-run findings this cycle
-  (plan/CRITIQUE.md one HIGH + three MED rows) all trace to the
-  same step-4 block in playbooks/new-project.md — sibling-clone
-  copy paths that don't resolve, a blanket `skills/` copy that
-  contradicts the adopt-by-need contract, a promised-but-never-
-  copied `PHASE_CANDIDATES.md`, and a placeholder-replace grep
-  scope that misses directories the same step populates.
-- rationale: patching these as four separate `/iterate` ticks
-  risks four more one-off edits to the same block instead of one
-  internally-consistent rewrite; a single fresh-eyes dry-run hit
-  all four in one walkthrough, which means today's adopters hit
-  them too — signal B's cluster pattern (repeated friction in one
-  playbook area), not four unrelated bugs.
+### [ ] [score 9.0] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
+- proposed: 2026-07-06; re-evidenced 2026-07-10
+- source signals: this is the second critique cycle in a row to
+  land findings in the same step-4/7 block of
+  playbooks/new-project.md. The four findings that originally
+  motivated this candidate (sibling-clone copy paths,
+  `PHASE_CANDIDATES.md` never copied, CLAUDE.md never landed at
+  root, and their combined ordering) are now all fixed
+  individually (see `plan/CRITIQUE.md` Done log) — and critique
+  pass 3 (2026-07-10) immediately found six more in the identical
+  region: `templates/plan/phases/` also never lands in step 4's
+  copy array despite step 5 depending on it (HIGH — literal
+  placeholder tokens ship in phase 1's brief); the placeholder
+  grep scope still misses `./scripts` and `./.env.example` (MED,
+  confirmed unresolved `<PROJECT_LOWER>`/`<REPO_SLUG>` tokens);
+  the blanket `skills/` copy still contradicts the adopt-by-need
+  contract (MED); step 7 redundantly re-copies
+  `deploy-check.mjs` already placed by step 4's bulk copy (LOW);
+  step 6 edits a `package.json` that doesn't exist at that point
+  in the walk (LOW); the pnpm sed caveat has no worked example
+  (MED, see the new sibling candidate below).
+- rationale: tick-by-tick `/iterate` fixes keep patching this
+  block and it keeps re-breaking on the next fresh-eyes pass —
+  the strongest possible evidence that the block's *structure*
+  (copy array + placeholder sweep + prune, spread loosely across
+  steps 4-7) is the defect, not any single line in it. Signal B's
+  cluster pattern, now doubled.
 - proposed scope: rewrite playbooks/new-project.md's step 4 (copy)
   and its placeholder-replace step so paths match the README's
-  recommended sibling-clone layout, add the missing
-  `PHASE_CANDIDATES.md` copy line, widen the grep scope to every
-  directory step 4 populates (`./scripts`, `./.env.example`), and
-  add an explicit adopt-by-need prune sub-step right after the
-  bulk copy; carries the four CRITIQUE rows to Done in the same
-  commit.
+  recommended sibling-clone layout; add the missing
+  `templates/plan/phases/` copy line (and re-sweep placeholders
+  over it); widen the grep scope to every directory step 4
+  populates (`./scripts`, `./.env.example`); add an explicit
+  adopt-by-need prune sub-step right after the bulk copy; fold
+  step 7's now-redundant deploy-check.mjs copy into step 4's
+  bulk copy and reword step 7 to "wire the file already present";
+  clarify step 6 describes the target shape for phase 1's brief
+  to produce, not something to run against an empty repo. Carries
+  all six current CRITIQUE rows in this cluster to Done in the
+  same commit (leaves the pnpm/settings.json row to the sibling
+  candidate below, and the two single-instance LOW rows —
+  README's CLAUDE.md checklist line, `<PROJECT_PKG_PREFIX>`'s
+  worked example — as plain `/iterate` ticks; they don't share
+  this cluster's root cause).
 - estimated phases: 1
 - conflicts: none — tightens an existing playbook, no template
   API change.
@@ -228,6 +249,38 @@ kit + sibling surveys.
   (custody map rides the plan repo).
 - estimated phases: 1
 - conflicts: depends on two-ring topology + custody map.
+
+### [ ] [score 7.2] Package-manager pluggability: the pnpm-only settings.json allowlist silently stalls npm/yarn/bun adopters
+- proposed: 2026-07-10
+- source signals: critique pass 3 (2026-07-10) —
+  `playbooks/new-project.md:35`'s "sed-replace if you use
+  npm/yarn/bun" caveat has no worked example and a naive
+  `s/pnpm/npm/g` breaks command syntax (`npm typecheck` needs
+  `run`); separately, and more seriously,
+  `templates/claude/settings.json`'s permission allowlist is
+  hardcoded to `Bash(pnpm verify:*)` / `Bash(pnpm test:*)` etc.
+  with no equivalent for other package managers.
+- rationale: an npm/yarn/bun adopter's verify-gate commands never
+  match the allowlist, so every unattended cloud tick silently
+  stalls on a permission prompt nobody is present to answer —
+  this directly defeats `README.md`'s "leave it for 80 hours"
+  pitch, the kit's core promise, for any adopter who isn't on
+  pnpm. Adopter-facing and severe out of proportion to how small
+  the fix is.
+- proposed scope: either (a) generate
+  `templates/claude/settings.json`'s allowlist entries from the
+  package-manager choice already captured during onboarding
+  (bootstrap.mjs already prompts/knows this), so npm/yarn/bun
+  land with matching `Bash(<pm> ...)` entries in the same commit
+  the placeholders resolve; or (b), if (a) is out of scope for one
+  phase, state plainly in `new-project.md` and `README.md` that
+  pnpm is a hard prerequisite until (a) ships, and give a real
+  worked sed example for the interim manual path. Either way,
+  fixes the allowlist/caveat mismatch `plan/CRITIQUE.md` flagged.
+- estimated phases: 1
+- conflicts: none — settings.json's allowlist shape is internal
+  to the template, not public API (agents.md rule 7 covers
+  paths + placeholder vocabulary, not allowlist contents).
 
 ### [ ] [score 7.1] npx nexus-adopt: the mechanical half as an initializer
 - proposed: 2026-07-03
