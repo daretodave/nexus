@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-07-07
-> Pass count: 2
+> Last pass: 2026-07-10
+> Pass count: 3
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,68 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [HIGH] playbooks/new-project.md — step 4's bulk copy never lands plan/phases/, so step 5's briefs ship with unresolved placeholders
+- category: missing-file
+- observation: step 4's `fs.cpSync` array (the bulk template
+  copy) does not include `templates/plan/phases/`. Step 5 says
+  "Use `../nexus/templates/plan/phases/phase_1_bootstrap.md` as
+  the starting point. Edit it to match your stack" and later
+  "Commit both briefs" — but never gives a copy command, and by
+  this point step 4's placeholder sed (scoped to `./skills
+  ./.claude ./plan ./agents.md`) has already run and finished.
+  Verified live in a scratch dir: after running step 4's exact
+  command, `plan/phases/` does not exist; if an adopter then
+  copies `phase_1_bootstrap.md` in directly at step 5, its
+  `<DEFAULT_BRANCH>` / `<PROJECT>` tokens (present at multiple
+  lines in the template) never get swept, so phase 1's brief —
+  the first file `/ship-a-phase` reads — ships with literal
+  placeholder text.
+- evidence: `playbooks/new-project.md:206` (step 4 copy array
+  omits `templates/plan/phases/`) vs. `:280-302` (step 5
+  references the directory with no copy command); confirmed via
+  dry-run scratch adoption.
+- suggested fix: add an explicit `cp -r
+  ../nexus/templates/plan/phases ./plan/phases` at the top of
+  step 5, then re-run (or extend) the placeholder sweep to cover
+  `./plan/phases` afterward.
+- source: dry-run
+
+### [MED] playbooks/new-project.md:35 — "sed-replace if you use npm/yarn/bun" has no worked example and conflicts with settings.json's pnpm-only allowlist
+- category: instruction-drift
+- observation: the line "templates assume pnpm; sed-replace if
+  you use npm/yarn/bun" gives no worked replacement, unlike the
+  fully worked placeholder example later in the same playbook.
+  A naive `s/pnpm/npm/g` also breaks command syntax for custom
+  scripts (`npm typecheck` is invalid; npm needs `run`). Separately,
+  `templates/claude/settings.json`'s permission allowlist is
+  hardcoded to `Bash(pnpm verify:*)`, `Bash(pnpm test:*)`, etc. —
+  an npm/yarn/bun adopter's equivalent commands never match, so
+  every unattended tick silently stalls on a permission prompt,
+  which defeats the walk-away promise in `README.md`'s "leave it
+  for 80 hours" pitch.
+- evidence: `playbooks/new-project.md:35` (unworked pnpm caveat)
+  vs. `templates/claude/settings.json:15-20` (pnpm-only
+  allowlist entries).
+- suggested fix: give a real worked npm/yarn/bun sed example
+  mirrored against `settings.json`'s allowlist (or generate the
+  allowlist from the same package-manager choice), or state
+  plainly that pnpm is a hard prerequisite until that's wired up.
+- source: dry-run
+
+### [LOW] README.md:167-168 — "Files added" checklist omits CLAUDE.md after it was patched into step 4's copy
+- category: instruction-drift
+- observation: `plan/CRITIQUE.md`'s Done log records that
+  `playbooks/new-project.md` was already fixed to copy
+  `CLAUDE.md` to the repo root (load-bearing: Claude Code only
+  auto-loads it from root, not from `.claude/`). `README.md`'s
+  own "Review what landed" checklist was never updated to match
+  — it still lists only `agents.md`, `plan/`, `skills/`,
+  `.claude/`, `scripts/deploy-check.mjs`, `.env.example`.
+- evidence: `README.md:167-168` vs. `plan/CRITIQUE.md`'s Done
+  entry for the CLAUDE.md-at-root fix.
+- suggested fix: add `CLAUDE.md` to the "Files added" list.
+- source: dry-run
 
 ### [LOW] playbooks/new-project.md — step 7 re-copies deploy-check.mjs already placed by step 4
 - category: ordering
