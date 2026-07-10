@@ -318,7 +318,9 @@ dispatch-only, never on a recurring trigger.)
 
 ## Reference implementation
 
-`thock` runs this exact pattern in production. See
-https://github.com/daretodave/thock/tree/main/.github
-for the live workflow + operator's guide as it currently
-exists on a working autonomous-loop repo.
+nexus runs this exact pattern on itself — the ouroboros. See
+this repo's own `.github/` (`workflows/march.yml` +
+`CLOUD_LOOP.md`) for the live workflow + operator's guide as
+it currently exists on a working autonomous-loop repo. Secondary
+reference: `thock` runs the same pattern in production, see
+https://github.com/daretodave/thock/tree/main/.github.

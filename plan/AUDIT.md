@@ -30,16 +30,6 @@ skips `#anchor` fragments) — zero broken anchors found.
 - next: add `│   └── __tests__/loop-issue.test.mjs      (unit
   tests, node:test, no devDeps)` to the tree block.
 
-### [ ] [3.5] cloud-loop reference implementation is an external link
-- category: freshness
-- impact: 3
-- ease: 6
-- evidence: `playbooks/cloud-loop.md` points at a live repo
-  for the reference run; link-rot risk, and this repo now runs
-  its own loop.
-- next: point the reference at nexus's own `.github/` loop
-  (the ouroboros) with the external repo as secondary.
-
 ### [ ] [3.2] data-layer mermaid diagram is a style outlier
 - category: voice
 - impact: 2
@@ -76,6 +66,12 @@ skips `#anchor` fragments) — zero broken anchors found.
   section.
 
 ## Done
+
+### [x] [3.5] cloud-loop reference implementation is an external link — this commit
+- fix: `playbooks/cloud-loop.md`'s "Reference implementation"
+  section now points primarily at this repo's own `.github/`
+  (the ouroboros — nexus runs the loop on itself), keeping
+  `thock` as the secondary reference instead of the sole link.
 
 ### [x] [3.6] plan/steps/01_build_plan.md's Phase log is missing 6 of 18 phases — this commit
 - fix: appended phases 9, 10, 11, 13, 15, 17 to the Phase log
