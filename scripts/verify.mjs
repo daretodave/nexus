@@ -95,24 +95,40 @@ function legLinks(files) {
 }
 
 // --- leg: tree ----------------------------------------------------------
-// Parses the fenced tree in README.md whose first line is `nexus/`
-// and asserts every entry exists on disk. Entries containing `<`
-// (placeholders) are skipped.
+// Parses the fenced kit tree in README.md (rooted at `nexus/`, which IS
+// disk root) AND the fenced layout tree in templates/README.md (rooted
+// at `templates/`, a real subdirectory) and asserts every entry exists
+// on disk. Entries containing `<` (placeholders) are skipped. The two
+// trees use different comment styles — README.md trails `#`, often
+// after a single space; templates/README.md trails `→`/`(...)` after
+// two-or-more spaces — so the name/comment split cuts at whichever
+// comes first: a bare `#`, or a run of 2+ spaces.
 
-function legTree() {
-  const failures = []
-  const lines = read('README.md').split(/\r?\n/)
+function stripTreeComment(raw) {
+  const hashIdx = raw.indexOf('#')
+  const spaceMatch = raw.match(/\s{2,}/)
+  const spaceIdx = spaceMatch ? spaceMatch.index : -1
+  let cut = raw.length
+  if (hashIdx !== -1) cut = Math.min(cut, hashIdx)
+  if (spaceIdx !== -1) cut = Math.min(cut, spaceIdx)
+  return raw.slice(0, cut).trim()
+}
+
+// prefix: '' for a root that IS disk root (nexus/); a real subdirectory
+// name (e.g. 'templates') for a root that maps under ROOT.
+function parseTreeBlock(text, rootLabel, prefix) {
+  const lines = text.split(/\r?\n/)
   let inTree = false
   let sawRoot = false
-  const stack = [] // path segments by depth
-  let checked = 0
+  const stack = []
+  const entries = []
   for (const raw of lines) {
     if (!inTree) {
       if (/^```/.test(raw)) inTree = 'candidate'
       continue
     }
     if (inTree === 'candidate') {
-      if (raw.trim() === 'nexus/') { inTree = true; sawRoot = true; continue }
+      if (raw.trim() === rootLabel) { inTree = true; sawRoot = true; continue }
       inTree = false
       continue
     }
@@ -121,18 +137,72 @@ function legTree() {
     const m = raw.match(/^((?:[│ ]   )*)(?:├── |└── )(.+)$/)
     if (!m) continue
     const depth = m[1].length / 4
-    let name = m[2].split('#')[0].trim()
+    const name = stripTreeComment(m[2])
     if (!name || name.includes('<')) continue
     stack.length = depth
     stack[depth] = name.replace(/\/$/, '')
-    const rel = stack.slice(0, depth + 1).join('/')
-    checked++
-    if (!fs.existsSync(path.join(ROOT, rel))) {
-      failures.push(`README.md tree: ${rel} does not exist on disk`)
+    const rel = (prefix ? [prefix] : []).concat(stack.slice(0, depth + 1)).join('/')
+    entries.push(rel)
+  }
+  return { entries, sawRoot }
+}
+
+function walkFiles(dirAbs) {
+  let out = []
+  for (const entry of fs.readdirSync(dirAbs, { withFileTypes: true })) {
+    const abs = path.join(dirAbs, entry.name)
+    out = entry.isDirectory() ? out.concat(walkFiles(abs)) : out.concat([abs])
+  }
+  return out
+}
+
+// The dirs adopters bulk-copy whole. When a tree diagram enumerates a
+// dir's children (vs. leaving it as one collapsed entry, e.g.
+// `claude/commands/` — "one terse pointer per skill" — deliberately
+// isn't expanded), a real file missing from every diagram's entry set
+// is exactly the failure mode that shipped __tests__/loop-issue.test.mjs
+// silently: catch it here instead.
+const REVERSE_CHECK_DIRS = [
+  'templates/scripts', 'templates/skills',
+  'templates/claude/commands', 'templates/claude/agents',
+]
+
+function legTree() {
+  const failures = []
+  const trees = [
+    { file: 'README.md', ...parseTreeBlock(read('README.md'), 'nexus/', '') },
+    { file: 'templates/README.md', ...parseTreeBlock(read('templates/README.md'), 'templates/', 'templates') },
+  ]
+  const allEntries = new Set()
+  let checked = 0
+  for (const t of trees) {
+    if (!t.sawRoot) {
+      failures.push(`${t.file}: could not find its fenced tree block`)
+      continue
+    }
+    for (const rel of t.entries) {
+      checked++
+      allEntries.add(rel)
+      if (!fs.existsSync(path.join(ROOT, rel))) {
+        failures.push(`${t.file} tree: ${rel} does not exist on disk`)
+      }
     }
   }
-  if (!sawRoot) failures.push('README.md: could not find the `nexus/` kit tree block')
-  return { failures, note: `${checked} tree entries` }
+  let reverseChecked = 0
+  for (const dirRel of REVERSE_CHECK_DIRS) {
+    const isExpanded = [...allEntries].some((e) => e !== dirRel && e.startsWith(`${dirRel}/`))
+    if (!isExpanded) continue // collapsed to one entry in every diagram by design — nothing to reverse-check
+    const dirAbs = path.join(ROOT, dirRel)
+    if (!fs.existsSync(dirAbs)) continue
+    for (const abs of walkFiles(dirAbs)) {
+      const rel = normalize(path.relative(ROOT, abs))
+      reverseChecked++
+      if (!allEntries.has(rel)) {
+        failures.push(`${rel}: on disk under ${dirRel}/ but missing from both README.md's and templates/README.md's tree diagrams`)
+      }
+    }
+  }
+  return { failures, note: `${checked} tree entries, ${reverseChecked} files reverse-checked` }
 }
 
 // --- leg: discover (no orphan docs) --------------------------------------

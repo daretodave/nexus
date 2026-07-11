@@ -14,31 +14,6 @@ still correctly 8 entries.
 
 ## Pending
 
-### [ ] [5.6] verify.mjs's tree leg never parses templates/README.md — the structural reason doc-drift like the __tests__/ gap ships silently
-- category: link + tree hygiene (C)
-- impact: 8
-- ease: 7
-- evidence: `scripts/verify.mjs`'s `legTree()` (lines 102-136)
-  only ever reads `README.md`'s `nexus/`-rooted fence; it never
-  parses `templates/README.md`'s separate `templates/`-rooted
-  fence. It's also one-directional (tree→disk only), so it
-  structurally cannot catch a file that exists on disk but is
-  missing from a tree diagram — exactly the failure mode that
-  produced the now-fixed `__tests__/loop-issue.test.mjs` gap.
-  Note `templates/README.md` uses `→`/`(...)` trailing comments
-  where `README.md` uses `#` — a shared parser needs to strip
-  both, not just `#`.
-- next: generalize `legTree()` to take `(file, rootMarker)` and
-  call it twice (`README.md`/`nexus/` and
-  `templates/README.md`/`templates/`), teaching the comment
-  stripper to cut at the first run of 2+ spaces instead of only
-  at `#`. Then add a reverse (disk→tree) check at least for
-  `templates/scripts/`, `templates/skills/`,
-  `templates/claude/{commands,agents}` — the four dirs adopters
-  bulk-copy — so an untracked new file trips the gate instead of
-  shipping silently. Sized for its own tick: touches the
-  non-negotiable gate, needs care over a quick audit fix.
-
 ### [ ] [2.1] templates/README.md's sample placeholder one-liner uses variable names that don't match its own 8-entry table
 - category: adopter friction (E)
 - impact: 3
@@ -90,6 +65,28 @@ still correctly 8 entries.
   section.
 
 ## Done
+
+### [x] [5.6] verify.mjs's tree leg never parses templates/README.md — this commit
+- fix: generalized `legTree()`'s fence parser into
+  `parseTreeBlock(text, rootLabel, prefix)`, called once for
+  `README.md`/`nexus/` (prefix `''`, root IS disk root) and once
+  for `templates/README.md`/`templates/` (prefix `'templates'`,
+  a real subdirectory). The comment stripper (`stripTreeComment`)
+  now cuts at whichever comes first, a bare `#` or a run of 2+
+  spaces — needed because `README.md` mixes both single-space-
+  before-`#` and double-space-before-`#` styles while
+  `templates/README.md` uses `→`/`(...)` after 2+ spaces only.
+  Added a reverse disk→tree check (`REVERSE_CHECK_DIRS`:
+  `templates/scripts`, `templates/skills`,
+  `templates/claude/commands`, `templates/claude/agents`) that
+  walks each dir's real files and fails if one is missing from
+  both diagrams' entry sets — but only for dirs a diagram
+  actually expands per-file; `claude/commands/` and
+  `claude/agents/` stay intentionally collapsed to one entry in
+  both docs, so they're correctly skipped rather than false-
+  flagged. Verified both directions catch induced gaps (an
+  untracked probe file under `templates/scripts/`, and a renamed
+  tree entry) before reverting the probes.
 
 ### [x] [1.8] templates/scripts/__tests__/loop-issue.test.mjs isn't in either layout tree — this commit
 - fix: added `│   └── __tests__/loop-issue.test.mjs` to
