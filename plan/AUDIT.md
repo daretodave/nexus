@@ -1,34 +1,58 @@
-# Kit audit — 2026-07-09
+# Kit audit — 2026-07-11
 
 > Bias: none
 
-Seeded from two deep survey passes over the kit (playbooks +
-customization + templates) and a survey of the sibling
-adopters (`../semilayer`, `../kintilla`). Rows here are
-iterate-shaped (one tick each); bigger items became phases in
-`plan/steps/01_build_plan.md` or candidates in
-`plan/PHASE_CANDIDATES.md`. First full dimension sweep (A-G)
-since the build plan's phases ran dry (phase 18) — templates/
-vs. docs diffed for drift, phase log cross-checked against
-`git log`, onboarding placeholder path walked end to end.
-Sibling lessons files (`../kintilla`, `../semilayer`) not
+Second full dimension sweep (A-G) since phase 18 ended the
+build plan. Re-verified the two rows still pending from the
+2026-07-09 pass (both confirmed real) and swept fresh for new
+drift: templates/ vs. both tree diagrams, verify.mjs's own leg
+coverage, model-id freshness, and placeholder-sample accuracy.
+Sibling lessons files (`../kintilla`, `../semilayer`) still not
 present in this checkout — dimension G came up empty, not
-skipped. Anchor accuracy spot-checked (verify.mjs's `links` leg
-skips `#anchor` fragments) — zero broken anchors found.
+skipped. No stale/invented model ids found; placeholder table
+still correctly 8 entries.
 
 ## Pending
 
-### [ ] [1.8] templates/scripts/__tests__/loop-issue.test.mjs isn't in templates/README.md's layout tree
-- category: doc-drift + completeness, minor (A/B)
-- impact: 2
-- ease: 9
-- evidence: file exists at
-  `templates/scripts/__tests__/loop-issue.test.mjs`;
-  `templates/README.md`'s `scripts/` tree block (lines 64-72)
-  lists 8 files, no `__tests__/`. Silently copied by every bulk
-  `scripts/` copy in `new-project.md`/`existing-project.md`.
-- next: add `│   └── __tests__/loop-issue.test.mjs      (unit
-  tests, node:test, no devDeps)` to the tree block.
+### [ ] [5.6] verify.mjs's tree leg never parses templates/README.md — the structural reason doc-drift like the __tests__/ gap ships silently
+- category: link + tree hygiene (C)
+- impact: 8
+- ease: 7
+- evidence: `scripts/verify.mjs`'s `legTree()` (lines 102-136)
+  only ever reads `README.md`'s `nexus/`-rooted fence; it never
+  parses `templates/README.md`'s separate `templates/`-rooted
+  fence. It's also one-directional (tree→disk only), so it
+  structurally cannot catch a file that exists on disk but is
+  missing from a tree diagram — exactly the failure mode that
+  produced the now-fixed `__tests__/loop-issue.test.mjs` gap.
+  Note `templates/README.md` uses `→`/`(...)` trailing comments
+  where `README.md` uses `#` — a shared parser needs to strip
+  both, not just `#`.
+- next: generalize `legTree()` to take `(file, rootMarker)` and
+  call it twice (`README.md`/`nexus/` and
+  `templates/README.md`/`templates/`), teaching the comment
+  stripper to cut at the first run of 2+ spaces instead of only
+  at `#`. Then add a reverse (disk→tree) check at least for
+  `templates/scripts/`, `templates/skills/`,
+  `templates/claude/{commands,agents}` — the four dirs adopters
+  bulk-copy — so an untracked new file trips the gate instead of
+  shipping silently. Sized for its own tick: touches the
+  non-negotiable gate, needs care over a quick audit fix.
+
+### [ ] [2.1] templates/README.md's sample placeholder one-liner uses variable names that don't match its own 8-entry table
+- category: adopter friction (E)
+- impact: 3
+- ease: 7
+- evidence: `templates/README.md:93-105`'s abbreviated bash
+  sample uses `PROVIDER`/`REPO`, but the placeholder table two
+  sections up (and the exhaustive, correct scripts in
+  `playbooks/new-project.md:236-267`) use `HOSTING_PROVIDER`/
+  `REPO_SLUG`. Copy-pasting the abbreviated sample as a starting
+  point produces mismatched var names.
+- next: rename the sample's vars to `HOSTING_PROVIDER`/
+  `REPO_SLUG` to match the table, or delete the abbreviated
+  sample and point straight at `playbooks/new-project.md` §4's
+  exhaustive block.
 
 ### [ ] [3.2] data-layer mermaid diagram is a style outlier
 - category: voice
@@ -66,6 +90,14 @@ skips `#anchor` fragments) — zero broken anchors found.
   section.
 
 ## Done
+
+### [x] [1.8] templates/scripts/__tests__/loop-issue.test.mjs isn't in either layout tree — this commit
+- fix: added `│   └── __tests__/loop-issue.test.mjs` to
+  `templates/README.md`'s `scripts/` tree block, and the
+  equivalent leaf to `README.md`'s own kit tree (a second,
+  previously-unreported instance of the identical gap found
+  during the 2026-07-11 re-sweep) — both now list the file every
+  bulk `scripts/` copy already silently includes.
 
 ### [x] [3.5] cloud-loop reference implementation is an external link — this commit
 - fix: `playbooks/cloud-loop.md`'s "Reference implementation"
