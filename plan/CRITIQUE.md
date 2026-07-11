@@ -59,20 +59,6 @@ path, comprehension stumble. See `skills/critique.md`.
   plainly that pnpm is a hard prerequisite until that's wired up.
 - source: dry-run
 
-### [LOW] README.md:167-168 — "Files added" checklist omits CLAUDE.md after it was patched into step 4's copy
-- category: instruction-drift
-- observation: `plan/CRITIQUE.md`'s Done log records that
-  `playbooks/new-project.md` was already fixed to copy
-  `CLAUDE.md` to the repo root (load-bearing: Claude Code only
-  auto-loads it from root, not from `.claude/`). `README.md`'s
-  own "Review what landed" checklist was never updated to match
-  — it still lists only `agents.md`, `plan/`, `skills/`,
-  `.claude/`, `scripts/deploy-check.mjs`, `.env.example`.
-- evidence: `README.md:167-168` vs. `plan/CRITIQUE.md`'s Done
-  entry for the CLAUDE.md-at-root fix.
-- suggested fix: add `CLAUDE.md` to the "Files added" list.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md — step 7 re-copies deploy-check.mjs already placed by step 4
 - category: ordering
 - observation: step 7 says "Copy
@@ -155,6 +141,13 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] README.md:167-168 — "Files added" checklist omits CLAUDE.md after it was patched into step 4's copy (this commit)
+- fix: added `CLAUDE.md` to the "Files added" line in
+  README.md's "Review what landed" checklist, matching
+  `playbooks/new-project.md`'s step 4, which already copies it
+  to the repo root (load-bearing: Claude Code only auto-loads
+  `CLAUDE.md` from root, not from `.claude/`).
 
 ### [x] [MED] playbooks/new-project.md — plan/PHASE_CANDIDATES.md is listed as copied but the playbook never copies it (this commit)
 - fix: added `['templates/plan/PHASE_CANDIDATES.md',
