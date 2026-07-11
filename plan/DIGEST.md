@@ -1,4 +1,4 @@
-# Digest — 2026-07-10
+# Digest — 2026-07-11
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
@@ -6,66 +6,63 @@
 ## Headline
 
 Four march ticks since yesterday's digest, all four shipped
-(zero no-ops this window): every tick routed to `/iterate` and
-closed an AUDIT row — `[4.8]` heartbeat.yml's hardcoded cadence,
-`[4.2]` the six-vs-eight placeholder drift, `[3.6]` the build
-plan's missing Phase-log entries, `[3.5]` the cloud-loop
-reference link — draining AUDIT from 7 pending to 3. Bigger
-signal: commits-since-last-pass for `/critique` just crossed the
-≥12 rate-limit threshold for the first time since pass 2 (12
-commits / ~68h); the next eligible march tick should route to
-`/critique` before falling through to `/iterate` again.
+(zero no-ops): critique pass 3 (3 findings: 1 high, 1 med, 1
+low), expand pass 2 (1 candidate), then two `/iterate` ticks
+closing AUDIT `[1.8]` and `[5.6]` — the latter a gap in
+`verify.mjs`'s own tree leg, found by the same resweep that
+produced the AUDIT header dated today. Six of critique pass 3's
+findings landed in the identical `playbooks/new-project.md`
+step-4/7 region flagged by the standing score-9.0 phase
+candidate — third cycle running there, reinforcing that
+candidate rather than raising new signal. Gate is green.
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-09 15:03 | march | iterate — shipped AUDIT `[4.8]`, reworded heartbeat.yml's alarm text cadence-agnostic (commit `d0dd6a2`) |
-| 07-09 20:35 | march | iterate — shipped AUDIT `[4.2]`, taught onboarding docs eight placeholders instead of six (commit `d956fa7`) |
-| 07-10 03:07 | march | iterate — shipped AUDIT `[3.6]`, completed the build plan's Phase log with 6 missing entries (commit `1cbfb27`) |
-| 07-10 09:07 | march | iterate — shipped AUDIT `[3.5]`, pointed cloud-loop's reference implementation at nexus itself (commit `603aa56`) |
-| 07-10 (this tick) | night (this tick) | this digest |
+| 07-10 15:03 | march | critique — pass 3, 3 findings (1 high, 1 med, 1 low) (commit `62b4548`) |
+| 07-10 20:35 | march | expand — pass 2, 1 candidate (score 7.2, package-manager pluggability) (commit `4951545`) |
+| 07-11 03:10 | march | iterate — shipped AUDIT `[1.8]`, added the missing `__tests__/loop-issue.test.mjs` leaf to both kit tree diagrams (commit `f40d53a`) |
+| 07-11 08:42 | march | iterate — shipped AUDIT `[5.6]`, generalized `verify.mjs`'s tree-leg parser to cover `templates/README.md` plus a reverse disk→tree check (commit `b3b6da3`) |
+| 07-11 (this tick) | night | this digest |
 
 `heartbeat` ran 5/5 green over its last-5 sample; no red runs
 in the window.
 
 ## Shipped
 
-- `d0dd6a2` — `templates/.github/workflows/heartbeat.yml`
-  hardcoded "cadence is 6h" (only true of nexus's own cron);
-  reworded to a threshold-only, cadence-agnostic alarm line.
-- `d956fa7` — three onboarding docs said "six placeholders"
-  while `templates/README.md`'s canonical table has eight;
-  added the two missing placeholders to every citing doc and
-  both replacement one-liners (bash + PowerShell).
-- `1cbfb27` — the build plan's Phase log was missing 6 of 18
-  phases; appended phases 9, 10, 11, 13, 15, 17 in commit
-  order, matching the existing one-line style.
-- `603aa56` — `playbooks/cloud-loop.md`'s "Reference
-  implementation" section pointed only at an external repo
-  (`thock`); now points primarily at this repo's own `.github/`
-  (the ouroboros), keeping `thock` as the secondary reference.
+- `62b4548` — critique pass 3: filed 3 new findings (1 high —
+  `plan/phases/` never lands in step 4's copy array; 1 med —
+  pnpm-only settings.json allowlist stalls other package
+  managers; 1 low — `<PROJECT_PKG_PREFIX>` has no worked
+  example), plus re-evidenced the standing new-project.md
+  cluster.
+- `4951545` — expand pass 2: filed 1 candidate (score 7.2,
+  package-manager pluggability — generate the settings.json
+  allowlist from the onboarding package-manager choice).
+- `f40d53a` — AUDIT `[1.8]`: `templates/scripts/__tests__/
+  loop-issue.test.mjs` was missing from both `README.md`'s kit
+  tree and `templates/README.md`'s tree; added to both.
+- `b3b6da3` — AUDIT `[5.6]`: `verify.mjs`'s tree leg never
+  parsed `templates/README.md`; generalized the fence parser
+  into `parseTreeBlock`, ran it for both trees, and added a
+  reverse disk→tree check for four template subdirectories.
 
 ## Queues now
 
 - **Build plan:** 0 pending (18/18 phases shipped, unchanged).
-- **AUDIT:** 3 pending (2 scored `[ ]` rows + `[user-issue
-  #12]`), down from 7 — `[3.2]` data-layer mermaid style
-  outlier, `[1.8]` a test file missing from the layout tree,
-  and the standing `[user-issue #12]`. Header dated 2026-07-09
-  (~26h old); not stale.
-- **CRITIQUE:** 5 pending, unchanged, last pass 2026-07-07
-  (pass 2). ~12 commits / ~68h since last pass — the ≥12-commit
-  rate-limit threshold is now met (no pending HIGH row is
-  blocking it), so `/critique` is due on the next march tick,
-  ahead of both `/ship-a-phase` (nothing pending) and
-  `/iterate` in dispatch order.
-- **PHASE_CANDIDATES:** 17 pending, unchanged, last pass
-  2026-07-06 (pass 1), posture bold. 21 commits / 4 days since
-  last pass — also over the ≥20-commit expand threshold, but
-  march's critique gate is checked before the expand check, so
-  `/critique` will run first.
-- **Issues:** 1 open (`#12`, labeled `triage:loop-queued`). No
+- **AUDIT:** 3 pending — `[2.1]` (fresh: templates/README.md's
+  sample placeholder vars don't match its own table), `[3.2]`
+  (data-layer mermaid style outlier, carried), `[user-issue
+  #12]` (standing). Header dated 2026-07-11 (this window's
+  resweep) — fresh, not stale.
+- **CRITIQUE:** 8 pending, last pass 2026-07-10 (pass 3, up
+  from 5 pending at pass 2). Only 3 commits since — well under
+  the ≥12-commit threshold, not due next tick.
+- **PHASE_CANDIDATES:** 18 pending, last pass 2026-07-10 (pass
+  2), posture bold. Only 2 commits since — well under the
+  ≥20-commit / >7-day threshold, not due next tick.
+- **Issues:** 1 open (`#12`, `triage:loop-queued`). No
   `triage:needs-user` or `loop:do` labels open.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` and
   `../semilayer/plan/lessons.md` not present in this
@@ -84,22 +81,20 @@ in the window.
 
 ## Today's intent
 
-Build plan still has no pending phase (18/18). The next march
-tick should route to `/critique` — its rate-limit threshold
-just crossed (≥12 commits since pass 2) and no HIGH row is
-queued to block it. After that clears, `/iterate`'s top AUDIT
-finding is `[3.2]`: the data-layer mermaid diagram is the kit's
-only diagram in an otherwise prose+tables doc set — decide
-whether to keep it as a deliberate exception or convert it to
-the decision-table idiom, and note the call in bearings voice
-rules either way.
+Build plan still has no pending phase (18/18). Neither
+critique nor expand is due next tick (both well under
+threshold), so the next march tick should route to `/iterate`.
+Its top AUDIT finding is now `[2.1]`: `templates/README.md`'s
+abbreviated placeholder sample uses `PROVIDER`/`REPO` while its
+own 8-entry table (and `playbooks/new-project.md`'s exhaustive
+script) use `HOSTING_PROVIDER`/`REPO_SLUG` — a copy-paste trap
+for anyone starting from the short sample.
 
 ## Tuning proposals
 
-None. Every rail behaved as designed this window: four
-consecutive `/iterate` ticks, zero no-ops, each closing a real
-AUDIT row (including the exact item flagged as top intent two
-digests ago). The critique and expand gates both crossed their
-commit thresholds this window for the first time in a while —
-that is the rate limiter working on schedule, not a starved or
-stuck queue; no candidate filed.
+None. Zero no-op ticks this window; both rate-limited gates
+(critique, expand) fired on schedule last window and are
+correctly quiet now with commit counts well under their
+thresholds. Daily ceiling (8) isn't being approached — 2-3
+shipping commits per day. No starved queue, no mistuned gate
+observed.
