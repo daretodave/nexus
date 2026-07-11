@@ -29,16 +29,6 @@ still correctly 8 entries.
   sample and point straight at `playbooks/new-project.md` §4's
   exhaustive block.
 
-### [ ] [3.2] data-layer mermaid diagram is a style outlier
-- category: voice
-- impact: 2
-- ease: 8
-- evidence: the kit's docs are prose+tables; one mermaid
-  flowchart in `customization/data-layer.md` (README's is the
-  only other).
-- next: keep or convert to the decision-table idiom — decide
-  once, note in bearings voice rules.
-
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
 - category: external-issue
 - impact: 5
@@ -65,6 +55,15 @@ still correctly 8 entries.
   section.
 
 ## Done
+
+### [x] [3.2] data-layer mermaid diagram is a style outlier — this commit
+- fix: both mermaid flowcharts in the kit (README's playbook
+  picker, `customization/data-layer.md`'s variant picker) are
+  the same shape — a branching decision tree — used
+  consistently, not two unrelated one-offs. Kept both as-is and
+  formalized the pattern as voice rule 8 in `plan/bearings.md`:
+  mermaid `flowchart` is the accepted idiom for decision-routing
+  only, prose/tables stay default for everything else.
 
 ### [x] [5.6] verify.mjs's tree leg never parses templates/README.md — this commit
 - fix: generalized `legTree()`'s fence parser into
