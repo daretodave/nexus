@@ -11,32 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [HIGH] playbooks/new-project.md — step 4's bulk copy never lands plan/phases/, so step 5's briefs ship with unresolved placeholders
-- category: missing-file
-- observation: step 4's `fs.cpSync` array (the bulk template
-  copy) does not include `templates/plan/phases/`. Step 5 says
-  "Use `../nexus/templates/plan/phases/phase_1_bootstrap.md` as
-  the starting point. Edit it to match your stack" and later
-  "Commit both briefs" — but never gives a copy command, and by
-  this point step 4's placeholder sed (scoped to `./skills
-  ./.claude ./plan ./agents.md`) has already run and finished.
-  Verified live in a scratch dir: after running step 4's exact
-  command, `plan/phases/` does not exist; if an adopter then
-  copies `phase_1_bootstrap.md` in directly at step 5, its
-  `<DEFAULT_BRANCH>` / `<PROJECT>` tokens (present at multiple
-  lines in the template) never get swept, so phase 1's brief —
-  the first file `/ship-a-phase` reads — ships with literal
-  placeholder text.
-- evidence: `playbooks/new-project.md:206` (step 4 copy array
-  omits `templates/plan/phases/`) vs. `:280-302` (step 5
-  references the directory with no copy command); confirmed via
-  dry-run scratch adoption.
-- suggested fix: add an explicit `cp -r
-  ../nexus/templates/plan/phases ./plan/phases` at the top of
-  step 5, then re-run (or extend) the placeholder sweep to cover
-  `./plan/phases` afterward.
-- source: dry-run
-
 ### [MED] playbooks/new-project.md:35 — "sed-replace if you use npm/yarn/bun" has no worked example and conflicts with settings.json's pnpm-only allowlist
 - category: instruction-drift
 - observation: the line "templates assume pnpm; sed-replace if
@@ -141,6 +115,19 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] playbooks/new-project.md — step 4's bulk copy never lands plan/phases/, so step 5's briefs ship with unresolved placeholders (this commit)
+- fix: added `['templates/plan/phases', 'plan/phases']` to step
+  4's `fs.cpSync` array in `new-project.md`, so `plan/phases/`
+  lands before step 4's placeholder sed runs — and since `./plan`
+  was already in the sed's scope, both `phase_1_bootstrap.md` and
+  `phase_canonical_sibling.md` now get swept for free. Reworded
+  step 5 to point at the already-copied, already-swept local
+  files instead of the `../nexus/templates/...` source path.
+  `existing-project.md` doesn't reference these phase templates
+  in its own step 5, so no matching change needed there. Verified
+  in a scratch dir: after the updated step 4 command + sed sweep,
+  `plan/phases/*.md` has zero leftover placeholder tokens.
 
 ### [x] [LOW] README.md:167-168 — "Files added" checklist omits CLAUDE.md after it was patched into step 4's copy (this commit)
 - fix: added `CLAUDE.md` to the "Files added" line in

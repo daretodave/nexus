@@ -203,7 +203,7 @@ Run from your repo root. This is one `node` command (Node
 bash/zsh, PowerShell, or `cmd.exe` — no shell twin needed:
 
 ```bash
-node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/README.md','plan/README.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
+node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/README.md','plan/README.md'],['templates/plan/phases','plan/phases']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
 ```
 
 (The `CLAUDE.md` line is deliberate, not redundant with the
@@ -277,8 +277,12 @@ templates copied`.
 `plan/phases/phase_1_bootstrap.md` is the first thing the loop
 ships. It needs to be **detailed**.
 
-Use `../nexus/templates/plan/phases/phase_1_bootstrap.md` as the
-starting point. Edit it to match your stack:
+Step 4's bulk copy already landed
+`plan/phases/phase_1_bootstrap.md` and
+`plan/phases/phase_canonical_sibling.md` locally, placeholders
+already swept (both sit under `./plan`, in the sweep's scope).
+Edit `plan/phases/phase_1_bootstrap.md` in place to match your
+stack:
 
 - **Outputs section:** list every file phase 1 should produce.
   For a Next.js project: `package.json`, `next.config.mjs`,
@@ -294,10 +298,11 @@ The bar for this brief is: **a competent agent could ship it
 without asking you a question**. If you find yourself thinking
 "the agent will figure that out" — write it down instead.
 
-Same for `plan/phases/phase_canonical_sibling.md` (renamed to
-match your phase number — usually phase 4 or 5). This is the
-**template** every later page-family / feature-surface phase
-mirrors. Time spent here amortizes across the whole build.
+Same for `plan/phases/phase_canonical_sibling.md` — rename it
+to match your phase number (usually phase 4 or 5) as you edit
+it. This is the **template** every later page-family /
+feature-surface phase mirrors. Time spent here amortizes across
+the whole build.
 
 Commit both briefs.
 
