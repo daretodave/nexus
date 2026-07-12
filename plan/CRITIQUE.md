@@ -48,23 +48,6 @@ path, comprehension stumble. See `skills/critique.md`.
   4" and skip straight to wiring it into `package.json`.
 - source: dry-run
 
-### [MED] playbooks/new-project.md — blanket `skills/` copy contradicts templates/README.md's adopt-by-need contract
-- category: instruction-drift
-- observation: the playbook's copy command lands the whole
-  `skills/` directory unconditionally, including
-  `ship-asset.md`, `ship-data.md`, `bootstrap.md`, but
-  templates/README.md says those should be copied "only when
-  adopting the corresponding capability" and calls leaving
-  `ship-asset.md` present for a non-surface project
-  "misleading." The playbook never tells the adopter to prune.
-- evidence: `playbooks/new-project.md:199` (`cp -r
-  nexus/templates/skills/ ./skills/`) vs.
-  `templates/README.md:119-131` (adopt-by-need files).
-- suggested fix: add a prune step right after the bulk copy in
-  `new-project.md`, keyed off the Surface/data-layer decisions
-  made in `bearings.md`.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md — step 6 edits a package.json that doesn't exist yet at that point in the walk
 - category: ordering
 - observation: step 6 ("wire the verify gate") instructs
@@ -97,6 +80,18 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md — blanket `skills/` copy contradicts templates/README.md's adopt-by-need contract — this commit
+- fix: added a "Prune adopt-by-need files" subsection right
+  after step 4's placeholder replace in `new-project.md`,
+  mapping each adopt-by-need file (`ship-data.md`,
+  `ship-migration.md` + `lint-migration.mjs`, `ship-asset.md` +
+  `brander.md`, `moderate.md`) to the `Surface` / `Structured
+  data` / UGC decision that keeps or drops it, plus a worked
+  `rm` / `Remove-Item` example for the common case where none
+  apply. `existing-project.md`'s overlay section (§3) got a
+  pointer to the same worked commands, placed right after its
+  own bearings-fill-in step where those decisions land.
 
 ### [x] [MED] templates/README.md / playbooks/new-project.md — documented sed one-liner's scope misses files the same step copies — this commit
 - fix: widened `playbooks/new-project.md`'s bash grep/sed scope

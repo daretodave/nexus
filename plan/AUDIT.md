@@ -16,6 +16,12 @@ MED "sed one-liner's scope misses files" row (queue rows
 compete with AUDIT rows on the same scale, per `skills/iterate.md`
 §3). AUDIT block otherwise unchanged; still <24h old.
 
+Cloud tick 2026-07-12 (third): #12 still the sole AUDIT row,
+still blocked (no `workflows`-scoped token in this environment).
+Shipped `plan/CRITIQUE.md`'s remaining MED row — the blanket
+`skills/` copy contradicting the adopt-by-need contract. AUDIT
+block otherwise unchanged; still <24h old.
+
 Second full dimension sweep (A-G) since phase 18 ended the
 build plan. Re-verified the two rows still pending from the
 2026-07-09 pass (both confirmed real) and swept fresh for new

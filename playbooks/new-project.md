@@ -267,6 +267,40 @@ Get-ChildItem -Recurse -File .\skills, .\.claude, .\plan, .\agents.md, .\scripts
   }
 ```
 
+### Prune adopt-by-need files
+
+The bulk copy above lands every skill unconditionally,
+including ones only useful for capabilities you may not have
+adopted. Cross-check against
+[`templates/README.md`](../templates/README.md)'s "Adopt-by-need
+files" table using the `Surface` / `Structured data` / UGC
+decisions you locked in step 2, and remove what doesn't apply —
+leaving them present is misleading, per that table:
+
+- `skills/ship-data.md` — remove unless `Structured data` is
+  `gh-as-db` / `hybrid-with-managed-postgres` / `pure-db` /
+  `saas-cms`.
+- `skills/ship-migration.md` + `scripts/lint-migration.mjs` —
+  remove unless `Structured data` is `pure-db` or
+  `hybrid-with-managed-postgres`.
+- `skills/ship-asset.md` + `.claude/agents/brander.md` — remove
+  unless `Surface` is `site` or `hybrid` AND branding is in
+  scope.
+- `skills/moderate.md` — remove unless the project has UGC.
+
+Example for a `Surface: service` project with `Structured data:
+none` and no UGC — none of the four apply, so remove them all:
+
+```bash
+rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
+      skills/ship-asset.md .claude/agents/brander.md skills/moderate.md
+```
+
+```powershell
+Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migration.md, `
+  scripts\lint-migration.mjs, skills\ship-asset.md, .claude\agents\brander.md, skills\moderate.md
+```
+
 Commit the templates as a single commit: `chore: nexus
 templates copied`.
 

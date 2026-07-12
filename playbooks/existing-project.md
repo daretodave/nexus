@@ -152,6 +152,12 @@ Pay special attention in `bearings.md`:
 - **Standing decisions** — code-style conventions, naming, etc.
   Read 5–10 existing files; encode the patterns.
 
+Now that `Surface` / `Structured data` / UGC are locked, prune
+the skill files the bulk copy landed but your project doesn't
+need — see [`new-project.md`](./new-project.md) §4 "Prune
+adopt-by-need files" for the mapping and worked `rm` /
+`Remove-Item` commands.
+
 Commit the overlay as one commit: `chore: nexus methodology
 overlay (no source changes)`.
 
