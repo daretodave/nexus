@@ -2,6 +2,13 @@
 
 > Bias: none
 
+Cloud tick 2026-07-12: picked [2.1] over the higher-scoring
+[user-issue #12] because #12's fix touches
+`.github/workflows/march.yml`, which `ACTIONS_PAT` cannot push
+(no `workflows` scope, by design — see its own evidence). Left
+#12 pending for a human or locally-run `/iterate` with a
+workflow-scoped token, per its `next`.
+
 Second full dimension sweep (A-G) since phase 18 ended the
 build plan. Re-verified the two rows still pending from the
 2026-07-09 pass (both confirmed real) and swept fresh for new
@@ -13,21 +20,6 @@ skipped. No stale/invented model ids found; placeholder table
 still correctly 8 entries.
 
 ## Pending
-
-### [ ] [2.1] templates/README.md's sample placeholder one-liner uses variable names that don't match its own 8-entry table
-- category: adopter friction (E)
-- impact: 3
-- ease: 7
-- evidence: `templates/README.md:93-105`'s abbreviated bash
-  sample uses `PROVIDER`/`REPO`, but the placeholder table two
-  sections up (and the exhaustive, correct scripts in
-  `playbooks/new-project.md:236-267`) use `HOSTING_PROVIDER`/
-  `REPO_SLUG`. Copy-pasting the abbreviated sample as a starting
-  point produces mismatched var names.
-- next: rename the sample's vars to `HOSTING_PROVIDER`/
-  `REPO_SLUG` to match the table, or delete the abbreviated
-  sample and point straight at `playbooks/new-project.md` §4's
-  exhaustive block.
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
 - category: external-issue
@@ -55,6 +47,16 @@ still correctly 8 entries.
   section.
 
 ## Done
+
+### [x] [2.1] templates/README.md's sample placeholder one-liner uses variable names that don't match its own 8-entry table — this commit
+- fix: deleted the abbreviated, partially-wrong bash sample
+  (declared `PROVIDER`/`REPO` vars but the table uses
+  `HOSTING_PROVIDER`/`REPO_SLUG`, and it only covered 2 of 8
+  placeholders behind an `# ...etc` comment) and pointed
+  `templates/README.md` straight at
+  `playbooks/new-project.md` §4's exhaustive, correct bash +
+  PowerShell one-liners instead of maintaining two copies that
+  can drift.
 
 ### [x] [3.2] data-layer mermaid diagram is a style outlier — this commit
 - fix: both mermaid flowcharts in the kit (README's playbook

@@ -90,23 +90,11 @@ After copying, search-and-replace across the new files:
 | `<DEFAULT_BRANCH>` | Default branch | `main` |
 | `<PROJECT_PKG_PREFIX>` | Workspace package prefix | `@thock` (or empty if not a monorepo) |
 
-POSIX one-liner for the bulk of it (run from your repo root):
-
-```bash
-PROJECT=thock
-HOSTING_URL=https://thock.netlify.app
-PROVIDER=Netlify
-REPO=daretodave/thock
-
-grep -rl '<PROJECT>' ./skills ./.claude ./plan ./agents.md \
-  | xargs sed -i "s|<PROJECT>|${PROJECT}|g"
-grep -rl '<HOSTING_URL>' ./skills ./.claude ./plan ./agents.md \
-  | xargs sed -i "s|<HOSTING_URL>|${HOSTING_URL}|g"
-# ...etc per the table above
-```
-
-(On Windows native, edit by hand — the surface is small.
-PowerShell can replicate the loop if you prefer scripts.)
+For the full bash and PowerShell one-liners that replace all
+eight in one pass, see
+[`playbooks/new-project.md`](../playbooks/new-project.md) §4 —
+copy-paste from there rather than hand-rolling a partial
+version here.
 
 ## Don't copy these as-is
 
