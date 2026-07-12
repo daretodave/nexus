@@ -2,12 +2,19 @@
 
 > Bias: none
 
-Cloud tick 2026-07-12: picked [2.1] over the higher-scoring
-[user-issue #12] because #12's fix touches
+Cloud tick 2026-07-12 (first): picked [2.1] over the
+higher-scoring [user-issue #12] because #12's fix touches
 `.github/workflows/march.yml`, which `ACTIONS_PAT` cannot push
 (no `workflows` scope, by design — see its own evidence). Left
 #12 pending for a human or locally-run `/iterate` with a
 workflow-scoped token, per its `next`.
+
+Cloud tick 2026-07-12 (second): #12 still the only AUDIT row
+and still blocked for the same reason, so this tick shipped the
+next highest-scoring queue item instead — `plan/CRITIQUE.md`'s
+MED "sed one-liner's scope misses files" row (queue rows
+compete with AUDIT rows on the same scale, per `skills/iterate.md`
+§3). AUDIT block otherwise unchanged; still <24h old.
 
 Second full dimension sweep (A-G) since phase 18 ended the
 build plan. Re-verified the two rows still pending from the

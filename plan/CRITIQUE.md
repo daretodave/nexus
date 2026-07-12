@@ -65,24 +65,6 @@ path, comprehension stumble. See `skills/critique.md`.
   made in `bearings.md`.
 - source: dry-run
 
-### [MED] templates/README.md / playbooks/new-project.md — documented sed one-liner's scope misses files the same step copies
-- category: placeholder
-- observation: the documented search-replace scope is `./skills
-  ./.claude ./plan ./agents.md`, but step 4 also copies into
-  `./scripts` and `./.env.example`, which sit outside that
-  scope. Literal placeholder tokens are confirmed left behind
-  post-replacement.
-- evidence: `README.md:87-91` / `templates/README.md:82-91` /
-  `playbooks/new-project.md:227-228` (grep scope excludes
-  `./scripts`, `./.env.example`); confirmed unresolved tokens
-  at `templates/scripts/deploy-check.mjs:51`
-  (`'<PROJECT_LOWER>'`) and `:139` (`'<REPO_SLUG>'`).
-- suggested fix: widen the documented grep scope to include
-  `./scripts` and `./.env.example`, or move the
-  placeholder-replacement step to after all copies and scope it
-  to the whole repo diff.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md — step 6 edits a package.json that doesn't exist yet at that point in the walk
 - category: ordering
 - observation: step 6 ("wire the verify gate") instructs
@@ -115,6 +97,16 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] templates/README.md / playbooks/new-project.md — documented sed one-liner's scope misses files the same step copies — this commit
+- fix: widened `playbooks/new-project.md`'s bash grep/sed scope
+  and PowerShell `Get-ChildItem` scope from `./skills ./.claude
+  ./plan ./agents.md` to also include `./scripts` and
+  `./.env.example` — the two paths step 4's bulk copy lands but
+  the documented replace step skipped. Confirmed the fix now
+  covers the cited unresolved tokens
+  (`templates/scripts/deploy-check.mjs:51,141` and
+  `templates/env/env.example:31,67`).
 
 ### [x] [HIGH] playbooks/new-project.md — step 4's bulk copy never lands plan/phases/, so step 5's briefs ship with unresolved placeholders (this commit)
 - fix: added `['templates/plan/phases', 'plan/phases']` to step
