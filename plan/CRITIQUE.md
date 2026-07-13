@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-07-10
-> Pass count: 3
+> Last pass: 2026-07-13
+> Pass count: 4
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -77,6 +77,135 @@ path, comprehension stumble. See `skills/critique.md`.
 - suggested fix: add `<PROJECT_PKG_PREFIX>` to the worked
   one-liner example, or state explicitly it's optional/monorepo-only
   so an adopter knows it's safe to skip.
+- source: dry-run
+
+### [MED] README.md:159,258 vs playbooks/new-project.md:4 — delegated-agent time estimate contradicts the playbook's own estimate by 2-4x
+- category: instruction-drift
+- observation: README's "clone + delegate" prompt tells the agent
+  to read ~10 docs (README, architecture.md, skills-anatomy.md,
+  both playbooks, ci-providers.md, intervention-spectrum.md, all
+  of customization/) and then "follow the matching playbook
+  end-to-end. Do not skip steps," capping the whole thing at
+  "Estimated time: 30-90 minutes." But `new-project.md`'s own
+  header says "Estimated time: 2-3 hours," roughly 3+ hours before
+  even reading the extra docs the README prompt lists. The
+  pitch-first prompt is worse: "Estimated time: 60-90 minutes
+  total" for Phase A (pre-spec.md's own header: 30-45 min) + Phase
+  B (new-project.md's 2-3 hrs) — the components alone exceed the
+  total claimed.
+- evidence: `README.md:159` ("Estimated time: 30-90 minutes"),
+  `README.md:258` ("Estimated time: 60-90 minutes total"), vs
+  `playbooks/new-project.md:4` ("Estimated time: **2-3 hours**")
+  and `playbooks/pre-spec.md:9` ("Estimated time: **30-45
+  minutes**").
+- suggested fix: either lower new-project.md's own time budget to
+  match what an agent (not a human) actually needs, or raise the
+  README prompts' estimates to match the playbook's stated budget;
+  state explicitly if the discrepancy is "agent time" vs "human
+  time."
+- source: dry-run
+
+### [MED] playbooks/new-project.md:270-302 — the "Prune adopt-by-need files" fix only covers 4 of templates/README.md's ~12 adopt-by-need rows
+- category: instruction-drift
+- observation: step 4's prune subsection only gives worked removal
+  instructions for `ship-data.md`, `ship-migration.md`+
+  `lint-migration.mjs`, `ship-asset.md`+`brander.md`,
+  `moderate.md`. But the bulk `fs.cpSync` in the same step also
+  unconditionally lands `skills/digest.md`, `skills/bootstrap.md`,
+  `scripts/refresh-critique-session.mjs`,
+  `scripts/check-secrets-liveness.mjs`, and
+  `scripts/stack-lifecycle.mjs` — all listed in
+  `templates/README.md`'s adopt-by-need table as conditional (on
+  cloud-loop adoption, `/bootstrap` adoption, `Auth:` being set,
+  and hermetic-e2e Pattern B, respectively). A literal follower
+  with `Auth: none` and no cloud loop ends up with 5
+  conditionally-scoped files present with no prompt to remove
+  them — the exact "presence is misleading" problem
+  `templates/README.md:139-141` warns about, just for a different
+  file set than the one already fixed.
+- evidence: ran the step-4 copy + prune in a scratch halcyon repo;
+  `scripts/check-secrets-liveness.mjs`,
+  `scripts/refresh-critique-session.mjs`,
+  `scripts/stack-lifecycle.mjs`, `skills/digest.md`,
+  `skills/bootstrap.md` all remained. `grep -n -i
+  'digest\|check-secrets-liveness\|refresh-critique-session\|stack-lifecycle'
+  playbooks/new-project.md` → no matches in the prune subsection
+  or anywhere else in the file.
+- suggested fix: extend the prune subsection's table/worked
+  example to cover all adopt-by-need rows from
+  `templates/README.md`, not just the four Surface/Structured-data/
+  UGC-gated ones.
+- source: dry-run
+
+### [MED] playbooks/new-project.md:458-463 — step 9's bootstrap manifest copy leaves standard-vocabulary placeholders unresolved with no replace instruction
+- category: placeholder
+- observation: step 9 says to copy
+  `../nexus/templates/setup/bootstrap.example.json` to
+  `setup/bootstrap.local.json` and "fill in your project
+  settings" — but the source file contains the standard
+  `<PROJECT>` and `<PROJECT_LOWER>` tokens (the same vocabulary
+  swept everywhere else by step 4's sed). Step 9 runs after step
+  4's placeholder sweep, and its scope (`./skills ./.claude
+  ./plan ./agents.md ./scripts ./.env.example`) doesn't include
+  `./setup` (which doesn't exist until step 9). Nothing tells the
+  adopter these are the same tokens needing the same treatment, so
+  a literal follower who already did the "big sed pass" once may
+  not think to sed this file too, leaving a live-looking config
+  with literal `<PROJECT>` / `<PROJECT_LOWER>` strings that `pnpm
+  bootstrap` / `pnpm bootstrap:status` would then read as-is.
+- evidence: `grep -n '<[A-Z_]*>'
+  templates/setup/bootstrap.example.json` →
+  `10:"name": "<PROJECT>"`, `13:"github_repo": "<PROJECT_LOWER>"`.
+  Confirmed by copying it into a scratch repo after running step
+  4's full sed pass — the tokens remained untouched.
+- suggested fix: add a one-line note in step 9 pointing back to
+  the step-4 placeholder table/sed command (or a scoped variant
+  covering `./setup`) so the manifest gets the same replace pass.
+- source: dry-run
+
+### [LOW] playbooks/new-project.md:13 — "Six skill files in skills/" is a stale count
+- category: comprehension
+- observation: the playbook's opening "by the end you'll have"
+  bullet list promises "Six skill files in `skills/`." Even in the
+  minimal-adoption case (no `ship-data`/`ship-migration`/
+  `ship-asset`/`moderate`), step 4's bulk copy plus the prune step
+  still leaves 11 skill files (`ship-a-phase`, `plan-a-phase`,
+  `iterate`, `critique`, `triage`, `expand`, `march`, `oversight`,
+  `jot`, `digest`, `bootstrap`); a fuller adoption keeps all 15. A
+  stranger following the intro literally would expect to count six
+  and be confused finding nearly double that.
+- evidence: `ls templates/skills/*.md | wc -l` → 15; after
+  removing the four adopt-by-need files named in step 4's own
+  worked example → 11. `playbooks/new-project.md:13` still says
+  "Six."
+- suggested fix: update the count (or drop the specific number and
+  just say "the skill set") — it looks like a leftover from an
+  earlier, smaller skill roster.
+- source: dry-run
+
+### [LOW] playbooks/new-project.md:88-96 — step 2's bearings.md placeholder list replaces a token that isn't there and omits one that is
+- category: placeholder
+- observation: step 2 instructs replacing five placeholders in the
+  freshly-copied `bearings.md`, including `<REPO_SLUG>` — but the
+  template `bearings.md` contains no `<REPO_SLUG>` token anywhere,
+  so that instruction is a silent no-op. Meanwhile `bearings.md`
+  does contain `<DEFAULT_BRANCH>` (in the "Post-push: `pnpm
+  deploy:check`" section), which step 2's list never mentions.
+  Since step 2 ends with "Commit `bearings.md` separately" —
+  before step 4's later, broader sed pass — a literal follower
+  commits `bearings.md` with a literal `<DEFAULT_BRANCH>` still in
+  it at that point (self-healed only later, incidentally, when
+  step 4's sed sweeps `./plan`).
+- evidence: `grep -n 'REPO_SLUG' templates/plan/bearings.md` → no
+  match; `grep -n 'DEFAULT_BRANCH' templates/plan/bearings.md` →
+  line 374 (`git push origin <DEFAULT_BRANCH>`). Reproduced in a
+  scratch repo: after step 2's exact five-item replace,
+  `<DEFAULT_BRANCH>` remained; the first `bearings.md` commit
+  still had it.
+- suggested fix: drop `<REPO_SLUG>` from step 2's bearings-specific
+  list (it belongs to the later step-4 table, not this file) and
+  add `<DEFAULT_BRANCH>` in its place, or just tell the reader
+  bearings.md's remaining tokens get swept in step 4's later pass.
 - source: dry-run
 
 ## Done
