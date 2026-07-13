@@ -2,7 +2,12 @@
 
 > Adopt the autonomous-loop methodology in a fresh repo with a
 > spec but little or no code. Estimated time: **2–3 hours** of
-> setup before your first `/ship-a-phase` invocation.
+> setup before your first `/ship-a-phase` invocation, worked
+> manually, section by section, at human reading pace. An
+> autonomous agent delegated the whole playbook in one paste
+> (README's TL;DR) has no read-and-decide pauses and typically
+> finishes in well under an hour — that's the faster figure
+> quoted there.
 >
 > By the end, you'll have:
 > - A `spec.md` everyone trusts

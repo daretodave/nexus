@@ -22,6 +22,16 @@ Shipped `plan/CRITIQUE.md`'s remaining MED row — the blanket
 `skills/` copy contradicting the adopt-by-need contract. AUDIT
 block otherwise unchanged; still <24h old.
 
+Cloud tick 2026-07-13: #12 still the only AUDIT row, still
+blocked (no `workflows`-scoped token in this environment).
+Re-scored `plan/CRITIQUE.md`'s pending queue (five MED, four
+LOW rows) and shipped the highest-scoring one — the README /
+playbook estimated-time contradiction (agent-paced vs
+human-paced figures reading as flatly incompatible) — over the
+prune-table-coverage and bootstrap-manifest-placeholder MED
+rows, both larger edits for a similar score. Not a fresh A-G
+sweep; last full sweep still 2026-07-11 (below).
+
 Second full dimension sweep (A-G) since phase 18 ended the
 build plan. Re-verified the two rows still pending from the
 2026-07-09 pass (both confirmed real) and swept fresh for new

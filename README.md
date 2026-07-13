@@ -156,7 +156,10 @@ Standing rules carried from agents.md:
   - When in doubt: decide, document the call in the commit body,
     proceed.
 
-Estimated time: 30–90 minutes. Begin.
+Estimated time: 30–90 minutes, agent-paced (no read-and-decide
+pauses). new-project.md's own header quotes 2–3 hours for a
+human working the same playbook manually — see its note on
+the difference. Begin.
 ```
 
 ### 3. Review what landed
@@ -255,7 +258,11 @@ Standing rules:
   - No Co-Authored-By trailers, no emojis.
   - No --no-verify, no force-push.
 
-Estimated time: 60-90 minutes total. Begin with Phase A.
+Estimated time: 60-90 minutes total, agent-paced for Phase B
+(Phase A is genuinely interactive, per pre-spec.md's own
+30-45 minute estimate; Phase B's 2-3 hour playbook estimate
+is the human-paced figure — see new-project.md's note).
+Begin with Phase A.
 ```
 
 Pitch quality matters. If you can't describe the product in

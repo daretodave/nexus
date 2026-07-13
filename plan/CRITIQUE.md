@@ -79,32 +79,6 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [MED] README.md:159,258 vs playbooks/new-project.md:4 — delegated-agent time estimate contradicts the playbook's own estimate by 2-4x
-- category: instruction-drift
-- observation: README's "clone + delegate" prompt tells the agent
-  to read ~10 docs (README, architecture.md, skills-anatomy.md,
-  both playbooks, ci-providers.md, intervention-spectrum.md, all
-  of customization/) and then "follow the matching playbook
-  end-to-end. Do not skip steps," capping the whole thing at
-  "Estimated time: 30-90 minutes." But `new-project.md`'s own
-  header says "Estimated time: 2-3 hours," roughly 3+ hours before
-  even reading the extra docs the README prompt lists. The
-  pitch-first prompt is worse: "Estimated time: 60-90 minutes
-  total" for Phase A (pre-spec.md's own header: 30-45 min) + Phase
-  B (new-project.md's 2-3 hrs) — the components alone exceed the
-  total claimed.
-- evidence: `README.md:159` ("Estimated time: 30-90 minutes"),
-  `README.md:258` ("Estimated time: 60-90 minutes total"), vs
-  `playbooks/new-project.md:4` ("Estimated time: **2-3 hours**")
-  and `playbooks/pre-spec.md:9` ("Estimated time: **30-45
-  minutes**").
-- suggested fix: either lower new-project.md's own time budget to
-  match what an agent (not a human) actually needs, or raise the
-  README prompts' estimates to match the playbook's stated budget;
-  state explicitly if the discrepancy is "agent time" vs "human
-  time."
-- source: dry-run
-
 ### [MED] playbooks/new-project.md:270-302 — the "Prune adopt-by-need files" fix only covers 4 of templates/README.md's ~12 adopt-by-need rows
 - category: instruction-drift
 - observation: step 4's prune subsection only gives worked removal
@@ -209,6 +183,18 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] README.md:159,258 vs playbooks/new-project.md:4 — delegated-agent time estimate contradicts the playbook's own estimate by 2-4x — this commit
+- fix: kept both figures (agent-paced in README, human-paced in
+  the playbooks) but made the split explicit instead of silent.
+  `new-project.md`'s header now says its 2-3 hour estimate is
+  for manual, section-by-section work, and that a fully
+  delegated agent run (README's TL;DR) finishes well under an
+  hour since it skips the read-and-decide pauses. Both README
+  prompts now say "agent-paced" next to their own estimates and
+  point back at that note; the pitch-flow prompt additionally
+  calls out that Phase A (pre-spec.md) stays genuinely
+  interactive while Phase B is the delegated, faster leg.
 
 ### [x] [MED] playbooks/new-project.md — blanket `skills/` copy contradicts templates/README.md's adopt-by-need contract — this commit
 - fix: added a "Prune adopt-by-need files" subsection right
