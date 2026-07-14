@@ -111,32 +111,6 @@ path, comprehension stumble. See `skills/critique.md`.
   UGC-gated ones.
 - source: dry-run
 
-### [MED] playbooks/new-project.md:458-463 — step 9's bootstrap manifest copy leaves standard-vocabulary placeholders unresolved with no replace instruction
-- category: placeholder
-- observation: step 9 says to copy
-  `../nexus/templates/setup/bootstrap.example.json` to
-  `setup/bootstrap.local.json` and "fill in your project
-  settings" — but the source file contains the standard
-  `<PROJECT>` and `<PROJECT_LOWER>` tokens (the same vocabulary
-  swept everywhere else by step 4's sed). Step 9 runs after step
-  4's placeholder sweep, and its scope (`./skills ./.claude
-  ./plan ./agents.md ./scripts ./.env.example`) doesn't include
-  `./setup` (which doesn't exist until step 9). Nothing tells the
-  adopter these are the same tokens needing the same treatment, so
-  a literal follower who already did the "big sed pass" once may
-  not think to sed this file too, leaving a live-looking config
-  with literal `<PROJECT>` / `<PROJECT_LOWER>` strings that `pnpm
-  bootstrap` / `pnpm bootstrap:status` would then read as-is.
-- evidence: `grep -n '<[A-Z_]*>'
-  templates/setup/bootstrap.example.json` →
-  `10:"name": "<PROJECT>"`, `13:"github_repo": "<PROJECT_LOWER>"`.
-  Confirmed by copying it into a scratch repo after running step
-  4's full sed pass — the tokens remained untouched.
-- suggested fix: add a one-line note in step 9 pointing back to
-  the step-4 placeholder table/sed command (or a scoped variant
-  covering `./setup`) so the manifest gets the same replace pass.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md:13 — "Six skill files in skills/" is a stale count
 - category: comprehension
 - observation: the playbook's opening "by the end you'll have"
@@ -183,6 +157,13 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:458-463 — step 9's bootstrap manifest copy leaves standard-vocabulary placeholders unresolved with no replace instruction — this commit
+- fix: added a note right after step 9's manifest copy
+  explaining `./setup` didn't exist during step 4's sweep so
+  its `<PROJECT>`/`<PROJECT_LOWER>` tokens were never touched,
+  plus a scoped one-liner (`sed -i ... setup/bootstrap.local.json`)
+  to run before `pnpm bootstrap`.
 
 ### [x] [MED] README.md:159,258 vs playbooks/new-project.md:4 — delegated-agent time estimate contradicts the playbook's own estimate by 2-4x — this commit
 - fix: kept both figures (agent-paced in README, human-paced in

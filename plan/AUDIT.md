@@ -32,6 +32,15 @@ prune-table-coverage and bootstrap-manifest-placeholder MED
 rows, both larger edits for a similar score. Not a fresh A-G
 sweep; last full sweep still 2026-07-11 (below).
 
+Cloud tick 2026-07-14: #12 still the only AUDIT row, still
+blocked for the same reason. Re-scored `plan/CRITIQUE.md`'s
+remaining queue (three MED, four LOW) and shipped the
+bootstrap-manifest-placeholder MED row — cheapest fix of the
+three MEDs (a one-line note + scoped sed, vs. the prune-table
+row's five new worked examples and the npm/yarn/bun row's
+settings.json-allowlist redesign). Not a fresh A-G sweep; last
+full sweep still 2026-07-11.
+
 Second full dimension sweep (A-G) since phase 18 ended the
 build plan. Re-verified the two rows still pending from the
 2026-07-09 pass (both confirmed real) and swept fresh for new
