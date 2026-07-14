@@ -125,7 +125,7 @@ the `.env` gitignore lines in the same pass (see
 overlay step can trip on Windows):
 
 ```bash
-node -e "const fs=require('fs');fs.mkdirSync('scripts',{recursive:true});fs.mkdirSync('plan/steps',{recursive:true});fs.mkdirSync('plan/phases',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts/deploy-check.mjs','scripts/deploy-check.mjs'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/CURRENT-STATE.md','plan/CURRENT-STATE.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
+node -e "const fs=require('fs');fs.mkdirSync('scripts',{recursive:true});fs.mkdirSync('plan/steps',{recursive:true});fs.mkdirSync('plan/phases',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts/deploy-check.mjs','scripts/deploy-check.mjs'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/CURRENT-STATE.md','plan/CURRENT-STATE.md'],['templates/plan/steps/01_build_plan.md','plan/steps/01_build_plan.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
 ```
 
 (The `CLAUDE.md` line is deliberate, not redundant with the
@@ -252,7 +252,8 @@ the loop. The methodology supports both; pick one and document.
 
 ## 6. Build plan from current state
 
-Open `plan/steps/01_build_plan.md` (the template).
+Open `plan/steps/01_build_plan.md` — the overlay step already
+copied it in from the template.
 
 The build plan describes what's *next*, not what's *done*.
 Write it as a list of phases that take the project from here

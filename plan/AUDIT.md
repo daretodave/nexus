@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-11
+# Kit audit — 2026-07-14
 
 > Bias: none
 
@@ -51,6 +51,14 @@ present in this checkout — dimension G came up empty, not
 skipped. No stale/invented model ids found; placeholder table
 still correctly 8 entries.
 
+Third full dimension sweep (A-G), cloud tick 2026-07-14 — first
+full A-G sweep since 2026-07-11 (the intervening four ticks
+only re-scored `plan/CRITIQUE.md`'s pending queue, per their own
+log lines above). Dimension G still empty (no sibling lessons
+files present). Top finding shipped this tick (below); four more
+queued to Pending, ranked below `[user-issue #12]` which stays
+the oldest row but remains blocked on a workflows-scoped token.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -78,7 +86,67 @@ still correctly 8 entries.
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
 
+### [C, 4.8] `https://thock.netlify.app` 404s — the site moved to `thock.xyz`
+- category: link rot
+- impact: 6, ease: 8
+- evidence: the flagship worked-example `<HOSTING_URL>` used in
+  five places (`README.md:53`, `templates/README.md:87`,
+  `playbooks/new-project.md:98,245,261`) 404s; `thock.xyz` loads
+  the live site instead.
+- next: replace all five occurrences with `https://thock.xyz`
+  (or swap to a clearly-fictional placeholder).
+
+### [A, 4.2] README's command table omits `/digest`, `/lessons-pr`, `/moderate`
+- category: completeness / doc-drift
+- impact: 6, ease: 7
+- evidence: `README.md:278-296`'s command table has 12 rows +
+  the opt-in `/ship-asset` row, but never lists `/digest`
+  (only appears as a workflow-file comment at `README.md:557`),
+  `/lessons-pr` (only an oblique forward-reference at
+  `README.md:237`), or `/moderate` (opt-in/UGC-gated, parallel
+  to `/ship-asset` which does get a row).
+- next: add a `/digest` row to the main table, a `/lessons-pr`
+  row (or expand its forward-reference into a real mention),
+  and a `/moderate` row in the opt-in table alongside
+  `/ship-asset`.
+
+### [A, 3.2] README.md:381 repeats the stale "six skill files" count
+- category: doc-drift (same root cause as a queued CRITIQUE row)
+- impact: 4, ease: 8
+- evidence: `README.md:381` says `new-project.md` ends with "the
+  six skill files" — same stale figure as
+  `plan/CRITIQUE.md`'s pending LOW row on
+  `playbooks/new-project.md:13`, whose own evidence shows 11-15
+  files land depending on scope. Second, previously-unreported
+  location of the same bug.
+- next: fix together with the queued CRITIQUE row — reword to
+  "the skill set" or update the count.
+
+### [A/E, 2.7] README's "Files added" checklist undersells `scripts/`
+- category: doc-drift
+- impact: 3, ease: 9
+- evidence: `README.md:170-171` lists `scripts/deploy-check.mjs`
+  as if it's the only file landing under `scripts/`, but step
+  4's bulk copy (`['templates/scripts','scripts']`) lands all 8
+  scripts.
+- next: change `scripts/deploy-check.mjs` to `scripts/` in that
+  checklist line, matching how `plan/` and `skills/` are already
+  collapsed.
+
 ## Done
+
+### [x] [A/B, 7.2] existing-project.md's overlay never copies plan/steps/01_build_plan.md, but §6 tells the reader to open it — this commit
+- fix: added
+  `['templates/plan/steps/01_build_plan.md', 'plan/steps/01_build_plan.md']`
+  to the overlay's `cpSync` array in
+  `playbooks/existing-project.md`'s §3 command (the
+  `mkdirSync('plan/steps')` call next to it only ever made an
+  empty directory), and reworded §6's "Open
+  `plan/steps/01_build_plan.md` (the template)" to say the
+  overlay step already copied it in — same bug class as the
+  already-fixed `plan/phases/`/`CLAUDE.md` gaps in
+  `new-project.md`, just never mirrored to this brownfield
+  playbook.
 
 ### [x] [2.1] templates/README.md's sample placeholder one-liner uses variable names that don't match its own 8-entry table — this commit
 - fix: deleted the abbreviated, partially-wrong bash sample
