@@ -50,7 +50,7 @@ $ /march
       3   Tests:  12 unit, 2 e2e
       4   pnpm verify   ·  typecheck · test · validate · build · e2e   ✓
       5   Commit + push  (a3f1e2c)
-      6   pnpm deploy:check  ·  ready ✓  →  https://thock.netlify.app
+      6   pnpm deploy:check  ·  ready ✓  →  https://thock.xyz
 
   Phase 8 shipped. Next tick picks phase 9.
 ```

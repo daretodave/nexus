@@ -84,7 +84,7 @@ After copying, search-and-replace across the new files:
 | `<PROJECT>` | Your product name | `thock` |
 | `<PROJECT_LOWER>` | Lowercase variant | `thock` |
 | `<PROJECT_TAGLINE>` | One-line description | `keyboards, deeply.` |
-| `<HOSTING_URL>` | Live site URL | `https://thock.netlify.app` |
+| `<HOSTING_URL>` | Live site URL | `https://thock.xyz` |
 | `<HOSTING_PROVIDER>` | Hosting provider | `Netlify` |
 | `<REPO_SLUG>` | GitHub repo slug | `daretodave/thock` |
 | `<DEFAULT_BRANCH>` | Default branch | `main` |

@@ -59,6 +59,12 @@ files present). Top finding shipped this tick (below); four more
 queued to Pending, ranked below `[user-issue #12]` which stays
 the oldest row but remains blocked on a workflows-scoped token.
 
+Cloud tick 2026-07-14 (second): #12 still the only blocked row.
+Verified and shipped the next-highest scorer — the
+`thock.netlify.app` link rot (score 4.8) — over the two
+remaining A-class rows (4.2, 3.2) which score lower. Not a fresh
+A-G sweep; last full sweep still today's third sweep above.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -85,16 +91,6 @@ the oldest row but remains blocked on a workflows-scoped token.
   operation" -> Ceiling wording with
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
-
-### [C, 4.8] `https://thock.netlify.app` 404s — the site moved to `thock.xyz`
-- category: link rot
-- impact: 6, ease: 8
-- evidence: the flagship worked-example `<HOSTING_URL>` used in
-  five places (`README.md:53`, `templates/README.md:87`,
-  `playbooks/new-project.md:98,245,261`) 404s; `thock.xyz` loads
-  the live site instead.
-- next: replace all five occurrences with `https://thock.xyz`
-  (or swap to a clearly-fictional placeholder).
 
 ### [A, 4.2] README's command table omits `/digest`, `/lessons-pr`, `/moderate`
 - category: completeness / doc-drift
@@ -134,6 +130,13 @@ the oldest row but remains blocked on a workflows-scoped token.
   collapsed.
 
 ## Done
+
+### [x] [C, 4.8] `https://thock.netlify.app` 404s — this commit
+- fix: replaced all five occurrences of
+  `https://thock.netlify.app` with `https://thock.xyz` in
+  `README.md:53`, `templates/README.md:87`, and
+  `playbooks/new-project.md:98,245,261` — confirmed live via
+  curl (netlify domain 404s, `.xyz` returns 200) before editing.
 
 ### [x] [A/B, 7.2] existing-project.md's overlay never copies plan/steps/01_build_plan.md, but §6 tells the reader to open it — this commit
 - fix: added

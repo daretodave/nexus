@@ -95,7 +95,7 @@ Replace these placeholders:
 - `<PROJECT>` → your product name (lowercase if applicable, e.g.
   `thock`)
 - `<PROJECT_TAGLINE>` → one-line description
-- `<HOSTING_URL>` → e.g. `https://thock.netlify.app`
+- `<HOSTING_URL>` → e.g. `https://thock.xyz`
 - `<HOSTING_PROVIDER>` → Netlify / Vercel / etc.
 - `<REPO_SLUG>` → e.g. `daretodave/thock`
 
@@ -242,7 +242,7 @@ grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING
       -e 's/<PROJECT_LOWER>/thock/g' \
       -e 's/<PROJECT>/thock/g' \
       -e 's/<PROJECT_TAGLINE>/keyboards, deeply./g' \
-      -e 's/<HOSTING_URL>/https:\/\/thock.netlify.app/g' \
+      -e 's/<HOSTING_URL>/https:\/\/thock.xyz/g' \
       -e 's/<HOSTING_PROVIDER>/Netlify/g' \
       -e 's/<REPO_SLUG>/you\/thock/g' \
       -e 's/<DEFAULT_BRANCH>/main/g' \
@@ -258,7 +258,7 @@ $repl = @{
   '<PROJECT>'             = 'thock'
   '<PROJECT_LOWER>'       = 'thock'
   '<PROJECT_TAGLINE>'     = 'keyboards, deeply.'
-  '<HOSTING_URL>'         = 'https://thock.netlify.app'
+  '<HOSTING_URL>'         = 'https://thock.xyz'
   '<HOSTING_PROVIDER>'    = 'Netlify'
   '<REPO_SLUG>'           = 'you/thock'
   '<DEFAULT_BRANCH>'      = 'main'
