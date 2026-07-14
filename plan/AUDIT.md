@@ -65,6 +65,19 @@ Verified and shipped the next-highest scorer — the
 remaining A-class rows (4.2, 3.2) which score lower. Not a fresh
 A-G sweep; last full sweep still today's third sweep above.
 
+Cloud tick 2026-07-14 (third): #12 still the only blocked row.
+Shipped the next-highest scorer — the README command-table
+completeness row (score 4.2) — but narrowed its scope: added
+`/digest` (main table) and `/moderate` (opt-in table), skipped
+`/lessons-pr`. `skills/lessons-pr.md` documents itself as a
+nexus-self meta-skill adopters never copy (confirmed: no
+`templates/skills/lessons-pr.md` exists), so listing it beside
+adopter-facing commands in "What you get" would misrepresent it
+as something adopters run in their own repo. The existing
+forward-reference at README.md:237 (capture lessons during
+adoption, land them via a later `/lessons-pr` pass *against the
+nexus repo*) already covers it accurately.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -92,20 +105,6 @@ A-G sweep; last full sweep still today's third sweep above.
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
 
-### [A, 4.2] README's command table omits `/digest`, `/lessons-pr`, `/moderate`
-- category: completeness / doc-drift
-- impact: 6, ease: 7
-- evidence: `README.md:278-296`'s command table has 12 rows +
-  the opt-in `/ship-asset` row, but never lists `/digest`
-  (only appears as a workflow-file comment at `README.md:557`),
-  `/lessons-pr` (only an oblique forward-reference at
-  `README.md:237`), or `/moderate` (opt-in/UGC-gated, parallel
-  to `/ship-asset` which does get a row).
-- next: add a `/digest` row to the main table, a `/lessons-pr`
-  row (or expand its forward-reference into a real mention),
-  and a `/moderate` row in the opt-in table alongside
-  `/ship-asset`.
-
 ### [A, 3.2] README.md:381 repeats the stale "six skill files" count
 - category: doc-drift (same root cause as a queued CRITIQUE row)
 - impact: 4, ease: 8
@@ -130,6 +129,16 @@ A-G sweep; last full sweep still today's third sweep above.
   collapsed.
 
 ## Done
+
+### [x] [A, 4.2] README's command table omits `/digest`, `/lessons-pr`, `/moderate` — this commit
+- fix: added a `/digest` row to the main command table
+  (`README.md`'s "What you get" section) and a `/moderate` row
+  to the opt-in table alongside `/ship-asset`. Deliberately
+  skipped `/lessons-pr` — it's a nexus-self meta-skill with no
+  `templates/skills/` counterpart, never copied to adopter
+  repos, so it doesn't belong beside commands adopters actually
+  run; the existing forward-reference at `README.md:237` already
+  covers it correctly.
 
 ### [x] [C, 4.8] `https://thock.netlify.app` 404s — this commit
 - fix: replaced all five occurrences of
