@@ -78,6 +78,13 @@ forward-reference at README.md:237 (capture lessons during
 adoption, land them via a later `/lessons-pr` pass *against the
 nexus repo*) already covers it accurately.
 
+Cloud tick 2026-07-15: #12 still the only blocked row (same
+`ACTIONS_PAT` scope constraint). Shipped the next-highest
+scorer — the "six skill files" stale count (score 3.2, [A,
+3.2] below) — over the `scripts/` checklist row (2.7). Not a
+fresh A-G sweep; last full sweep still cloud tick 2026-07-14
+(third).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -105,18 +112,6 @@ nexus repo*) already covers it accurately.
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
 
-### [A, 3.2] README.md:381 repeats the stale "six skill files" count
-- category: doc-drift (same root cause as a queued CRITIQUE row)
-- impact: 4, ease: 8
-- evidence: `README.md:381` says `new-project.md` ends with "the
-  six skill files" — same stale figure as
-  `plan/CRITIQUE.md`'s pending LOW row on
-  `playbooks/new-project.md:13`, whose own evidence shows 11-15
-  files land depending on scope. Second, previously-unreported
-  location of the same bug.
-- next: fix together with the queued CRITIQUE row — reword to
-  "the skill set" or update the count.
-
 ### [A/E, 2.7] README's "Files added" checklist undersells `scripts/`
 - category: doc-drift
 - impact: 3, ease: 9
@@ -129,6 +124,14 @@ nexus repo*) already covers it accurately.
   collapsed.
 
 ## Done
+
+### [x] [A, 3.2] README.md:381 repeats the stale "six skill files" count — this commit
+- fix: reworded both stale occurrences — `README.md:381`-383
+  ("the six skill files" → "the skill set") and
+  `playbooks/new-project.md:18` ("Six skill files in
+  `skills/`" → "The skill set in `skills/` (count varies with
+  which adopt-by-need files you keep)"). Closes the matching
+  `plan/CRITIQUE.md` LOW row on the same root cause.
 
 ### [x] [A, 4.2] README's command table omits `/digest`, `/lessons-pr`, `/moderate` — this commit
 - fix: added a `/digest` row to the main command table

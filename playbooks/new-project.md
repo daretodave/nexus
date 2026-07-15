@@ -15,7 +15,8 @@
 > - A `plan/steps/01_build_plan.md` with 10–20 phases
 > - Two phase briefs ready to ship (phase 1 + the canonical
 >   sibling)
-> - Six skill files in `skills/`
+> - The skill set in `skills/` (count varies with which
+>   adopt-by-need files you keep)
 > - Slash-command pointers in `.claude/commands/`
 > - 2–4 sub-agent definitions
 > - A working verify gate (locally)

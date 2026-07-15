@@ -380,7 +380,7 @@ the top of the playbook. Output feeds straight into
 Greenfield. You have a `spec.md` and an empty (or near-empty)
 repo. This walks you through the substrate — bearings, build
 plan with placeholder phases, design exports landing pad, the
-six skill files — and ends with you running `/ship-a-phase` for
+skill set — and ends with you running `/ship-a-phase` for
 the first time.
 
 ### → [`playbooks/existing-project.md`](./playbooks/existing-project.md)

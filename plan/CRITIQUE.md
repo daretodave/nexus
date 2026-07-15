@@ -111,26 +111,6 @@ path, comprehension stumble. See `skills/critique.md`.
   UGC-gated ones.
 - source: dry-run
 
-### [LOW] playbooks/new-project.md:13 — "Six skill files in skills/" is a stale count
-- category: comprehension
-- observation: the playbook's opening "by the end you'll have"
-  bullet list promises "Six skill files in `skills/`." Even in the
-  minimal-adoption case (no `ship-data`/`ship-migration`/
-  `ship-asset`/`moderate`), step 4's bulk copy plus the prune step
-  still leaves 11 skill files (`ship-a-phase`, `plan-a-phase`,
-  `iterate`, `critique`, `triage`, `expand`, `march`, `oversight`,
-  `jot`, `digest`, `bootstrap`); a fuller adoption keeps all 15. A
-  stranger following the intro literally would expect to count six
-  and be confused finding nearly double that.
-- evidence: `ls templates/skills/*.md | wc -l` → 15; after
-  removing the four adopt-by-need files named in step 4's own
-  worked example → 11. `playbooks/new-project.md:13` still says
-  "Six."
-- suggested fix: update the count (or drop the specific number and
-  just say "the skill set") — it looks like a leftover from an
-  earlier, smaller skill roster.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md:88-96 — step 2's bearings.md placeholder list replaces a token that isn't there and omits one that is
 - category: placeholder
 - observation: step 2 instructs replacing five placeholders in the
@@ -157,6 +137,13 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] playbooks/new-project.md:13 — "Six skill files in skills/" is a stale count — this commit
+- fix: reworded to "The skill set in `skills/` (count varies
+  with which adopt-by-need files you keep)" in
+  `playbooks/new-project.md:18`, and fixed the same stale figure
+  at `README.md:381`-383 (second, previously-unreported
+  location, found via `plan/AUDIT.md`'s `[A, 3.2]` row).
 
 ### [x] [MED] playbooks/new-project.md:458-463 — step 9's bootstrap manifest copy leaves standard-vocabulary placeholders unresolved with no replace instruction — this commit
 - fix: added a note right after step 9's manifest copy
