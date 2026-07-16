@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-07-13
-> Pass count: 4
+> Last pass: 2026-07-16
+> Pass count: 5
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -134,6 +134,95 @@ path, comprehension stumble. See `skills/critique.md`.
   list (it belongs to the later step-4 table, not this file) and
   add `<DEFAULT_BRANCH>` in its place, or just tell the reader
   bearings.md's remaining tokens get swept in step 4's later pass.
+- source: dry-run
+
+### [MED] templates/README.md:125-128 vs :133 — adopt-by-need table omits `.claude/commands/*.md` pointers for 4 of 5 prunable skills, and the prune instructions never clean them up
+- category: instruction-drift
+- observation: the adopt-by-need table's `digest.md` row
+  explicitly pairs the skill with its command pointer
+  (`skills/digest.md` + `claude/commands/digest.md`), but the
+  `ship-data.md`, `ship-migration.md`, `ship-asset.md`, and
+  `moderate.md` rows list only the skill (and in one case an
+  agent) — never the matching `claude/commands/*.md` file.
+  `playbooks/new-project.md`'s "Prune adopt-by-need files"
+  subsection mirrors that gap: its worked `rm -f
+  skills/ship-data.md skills/ship-migration.md
+  scripts/lint-migration.mjs skills/ship-asset.md
+  .claude/agents/brander.md skills/moderate.md` never touches
+  `.claude/commands/`. Following the playbook literally for a
+  `Structured data: none`, `Surface: service`, no-UGC project
+  (exactly the pruning example given) leaves
+  `.claude/commands/ship-data.md`, `ship-migration.md`,
+  `ship-asset.md`, and `moderate.md` in place, each of which
+  opens with "Read `skills/ship-data.md` end to end before
+  touching anything else" — a file that no longer exists.
+- evidence: reproduced in a scratch halcyon repo — after
+  running `playbooks/new-project.md`'s step-4 bulk copy then
+  its literal prune `rm -f` command, `.claude/commands/ship-data.md`
+  still existed and still read (verbatim) "Read
+  `skills/ship-data.md` end to end before touching anything
+  else." `templates/claude/commands/` confirmed to ship
+  `ship-data.md`, `ship-migration.md`, `ship-asset.md`,
+  `moderate.md` alongside `digest.md`; `templates/README.md:125-128`
+  vs `:133` — only the digest row pairs a skill with its
+  command file.
+- suggested fix: add the matching `claude/commands/<name>.md`
+  file to each of the four adopt-by-need table rows (matching
+  the digest row's pattern), and extend `new-project.md`'s
+  prune `rm -f`/`Remove-Item` examples to also remove
+  `.claude/commands/ship-data.md`, `ship-migration.md`,
+  `ship-asset.md`, `moderate.md`.
+- source: dry-run
+
+### [LOW] README.md:67 vs :582 — "How to use this kit" restates the TL;DR flow 500+ lines later with no cross-reference
+- category: comprehension
+- observation: `README.md` opens with a fully-worked
+  delegate-to-an-agent flow ("TL;DR — clone + delegate the
+  adoption", line 67) that a reader is told is sufficient on
+  its own ("skip the playbook, hand it to your agent"). Roughly
+  500 lines later, "How to use this kit" (line 582) presents an
+  unrelated-looking 8-step generic checklist covering much of
+  the same ground (read playbook, copy templates, replace
+  placeholders, wire CI, first `/ship-a-phase`) with zero
+  pointer back to the TL;DR section or note that it's the
+  manual-path restatement of the same journey. A stranger
+  reading top-to-bottom is left to guess whether this second
+  list is a redundant summary, a stricter/updated version, or
+  an alternate path they also need to complete.
+- evidence: `README.md:67` (`## TL;DR — clone + delegate the
+  adoption`) and `README.md:582` (`## How to use this kit`) —
+  no link between the two sections anywhere in the file.
+- suggested fix: add a one-line note at the top of "How to use
+  this kit" ("This is the manual-path equivalent of the TL;DR
+  above — skip it if you delegated adoption to an agent
+  already") so the two sections read as one system rather than
+  two competing checklists.
+- source: dry-run
+
+### [LOW] playbooks/new-project.md §8 — sub-agent "copy" instruction re-introduces files step 4 already placed
+- category: ordering
+- observation: step 8 ("Sub-agents") says to copy `scout.md`
+  and `reader.md` "from
+  `../nexus/templates/claude/agents/scout.md`" as though
+  introducing them for the first time, but step 4's bulk
+  `fs.cpSync` of `templates/claude` → `.claude` already
+  recursively lands the entire `.claude/agents/` directory
+  (`scout.md`, `reader.md`, `generic-specialist.md`,
+  `brander.md`) earlier in the same walk. This is the same
+  class of issue as the already-pending step-7
+  `deploy-check.mjs` re-copy finding above, just at a different
+  location, so a literal follower hits a second no-op "copy"
+  and may wonder if `.claude/agents/` is supposed to be empty
+  before this step.
+- evidence: in the scratch walk, `ls .claude/agents/` after
+  step 4 (before reaching step 8) already showed `scout.md`,
+  `reader.md`, `generic-specialist.md`, `brander.md` present;
+  `playbooks/new-project.md:212` (bulk copy) vs `:428-436`
+  (step 8's re-copy instructions).
+- suggested fix: reword step 8 to "already present from step 4
+  — review and adapt scout.md / reader.md, author 1-2 domain
+  specialists" rather than "copy from
+  `../nexus/templates/claude/agents/...`".
 - source: dry-run
 
 ## Done
