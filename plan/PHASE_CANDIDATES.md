@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-07-10
-> Pass count: 2
+> Last pass: 2026-07-16
+> Pass count: 3
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -132,7 +132,7 @@ kit + sibling surveys.
 - conflicts: none — second layer of the two-ring secrets story.
 
 ### [ ] [score 9.0] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
-- proposed: 2026-07-06; re-evidenced 2026-07-10
+- proposed: 2026-07-06; re-evidenced 2026-07-10, 2026-07-13
 - source signals: this is the second critique cycle in a row to
   land findings in the same step-4/7 block of
   playbooks/new-project.md. The four findings that originally
@@ -151,30 +151,42 @@ kit + sibling surveys.
   `deploy-check.mjs` already placed by step 4's bulk copy (LOW);
   step 6 edits a `package.json` that doesn't exist at that point
   in the walk (LOW); the pnpm sed caveat has no worked example
-  (MED, see the new sibling candidate below).
+  (MED, see the sibling candidate below). Critique pass 4
+  (2026-07-13) sharpened the adopt-by-need prune finding still
+  further: the "Prune adopt-by-need files" fix only gives worked
+  removal steps for 4 of `templates/README.md`'s ~12 adopt-by-need
+  rows, leaving `skills/digest.md`, `skills/bootstrap.md`,
+  `scripts/refresh-critique-session.mjs`,
+  `scripts/check-secrets-liveness.mjs`, and
+  `scripts/stack-lifecycle.mjs` unconditionally landed with no
+  prompt to remove them for adopters who don't need them —
+  confirmed in a scratch repro. Third cycle in a row landing in
+  this same block.
 - rationale: tick-by-tick `/iterate` fixes keep patching this
   block and it keeps re-breaking on the next fresh-eyes pass —
   the strongest possible evidence that the block's *structure*
   (copy array + placeholder sweep + prune, spread loosely across
   steps 4-7) is the defect, not any single line in it. Signal B's
-  cluster pattern, now doubled.
+  cluster pattern, now tripled.
 - proposed scope: rewrite playbooks/new-project.md's step 4 (copy)
   and its placeholder-replace step so paths match the README's
   recommended sibling-clone layout; add the missing
   `templates/plan/phases/` copy line (and re-sweep placeholders
   over it); widen the grep scope to every directory step 4
   populates (`./scripts`, `./.env.example`); add an explicit
-  adopt-by-need prune sub-step right after the bulk copy; fold
-  step 7's now-redundant deploy-check.mjs copy into step 4's
-  bulk copy and reword step 7 to "wire the file already present";
-  clarify step 6 describes the target shape for phase 1's brief
-  to produce, not something to run against an empty repo. Carries
-  all six current CRITIQUE rows in this cluster to Done in the
-  same commit (leaves the pnpm/settings.json row to the sibling
-  candidate below, and the two single-instance LOW rows —
-  README's CLAUDE.md checklist line, `<PROJECT_PKG_PREFIX>`'s
-  worked example — as plain `/iterate` ticks; they don't share
-  this cluster's root cause).
+  adopt-by-need prune sub-step right after the bulk copy that
+  covers all ~12 of `templates/README.md`'s adopt-by-need rows,
+  not just the 4 already worked (Surface/Structured-data/
+  UGC-gated); fold step 7's now-redundant deploy-check.mjs copy
+  into step 4's bulk copy and reword step 7 to "wire the file
+  already present"; clarify step 6 describes the target shape for
+  phase 1's brief to produce, not something to run against an
+  empty repo. Carries all current CRITIQUE rows in this cluster to
+  Done in the same commit (leaves the pnpm/settings.json row to
+  the sibling candidate below, and the two single-instance LOW
+  rows — step 2's bearings.md placeholder mismatch,
+  `<PROJECT_PKG_PREFIX>`'s worked example — as plain `/iterate`
+  ticks; they don't share this cluster's root cause).
 - estimated phases: 1
 - conflicts: none — tightens an existing playbook, no template
   API change.
