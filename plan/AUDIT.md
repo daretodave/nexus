@@ -100,6 +100,16 @@ adopt-by-need prune instructions (MED, reproduced and
 confirmed real) — over the remaining MED (pnpm/npm allowlist
 conflict, larger redesign-shaped fix) and six LOW rows.
 
+Cloud tick 2026-07-17 (second): #12 still the only blocked AUDIT
+row. Re-scored `plan/CRITIQUE.md`'s remaining queue (one MED, six
+LOW) and shipped the MED — the npm/yarn/bun sed-replace row —
+over the AUDIT block's own `[A/E, 2.7]` row (lower score) and the
+prune-coverage MED (larger edit, similar impact). Took the
+suggested fix's cheaper option: state pnpm as a hard prerequisite
+for the unattended path instead of building an unmaintained
+worked npm/yarn/bun example. Not a fresh A-G sweep; last full
+sweep still today's first tick (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

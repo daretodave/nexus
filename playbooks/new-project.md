@@ -37,8 +37,17 @@
     `bearings.md` stub.
 - A hosting provider you've picked (Netlify, Vercel, Fly.io,
   etc.). See [`ci-providers.md`](./ci-providers.md).
-- Node 20+ installed. Whatever package manager you prefer (the
-  templates assume pnpm; sed-replace if you use npm/yarn/bun).
+- Node 20+ installed, plus **pnpm**. The templates aren't just
+  a naming convention: `templates/claude/settings.json`'s
+  permission allowlist hardcodes `Bash(pnpm verify:*)`,
+  `Bash(pnpm test:*)`, etc., so an unattended loop running
+  npm/yarn/bun scripts stalls on a permission prompt every tick
+  — the opposite of the walk-away pitch. If you must use a
+  different package manager, sed-replace `pnpm` throughout the
+  copied templates (mind `npm` needing `run` where `pnpm`
+  doesn't) **and** add matching `Bash(<manager> <script>:*)`
+  entries to `settings.json`'s `allow` list before your first
+  unattended tick.
 - A GitHub repo (or GitLab/equivalent) — push to `main`
   triggers deploy.
 

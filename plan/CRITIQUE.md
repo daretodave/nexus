@@ -11,28 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md:35 — "sed-replace if you use npm/yarn/bun" has no worked example and conflicts with settings.json's pnpm-only allowlist
-- category: instruction-drift
-- observation: the line "templates assume pnpm; sed-replace if
-  you use npm/yarn/bun" gives no worked replacement, unlike the
-  fully worked placeholder example later in the same playbook.
-  A naive `s/pnpm/npm/g` also breaks command syntax for custom
-  scripts (`npm typecheck` is invalid; npm needs `run`). Separately,
-  `templates/claude/settings.json`'s permission allowlist is
-  hardcoded to `Bash(pnpm verify:*)`, `Bash(pnpm test:*)`, etc. —
-  an npm/yarn/bun adopter's equivalent commands never match, so
-  every unattended tick silently stalls on a permission prompt,
-  which defeats the walk-away promise in `README.md`'s "leave it
-  for 80 hours" pitch.
-- evidence: `playbooks/new-project.md:35` (unworked pnpm caveat)
-  vs. `templates/claude/settings.json:15-20` (pnpm-only
-  allowlist entries).
-- suggested fix: give a real worked npm/yarn/bun sed example
-  mirrored against `settings.json`'s allowlist (or generate the
-  allowlist from the same package-manager choice), or state
-  plainly that pnpm is a hard prerequisite until that's wired up.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md — step 7 re-copies deploy-check.mjs already placed by step 4
 - category: ordering
 - observation: step 7 says "Copy
@@ -188,6 +166,18 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:35 — "sed-replace if you use npm/yarn/bun" has no worked example and conflicts with settings.json's pnpm-only allowlist — this commit
+- fix: took the suggested_fix's second option (state the
+  constraint plainly) rather than the worked-example option —
+  cheaper and more honest given `templates/claude/settings.json`
+  isn't generated per package-manager choice. Reworded the
+  prerequisites bullet in `playbooks/new-project.md` to name
+  pnpm as a hard prerequisite for the unattended-loop path,
+  cite the exact coupling (`settings.json`'s `Bash(pnpm
+  ...:*)` allowlist entries), and tell an adopter who insists on
+  switching that they must edit both the templates *and*
+  `settings.json`'s allow list, not just sed the scripts.
 
 ### [x] [MED] templates/README.md:125-128 vs :133 — adopt-by-need table omits `.claude/commands/*.md` pointers for 4 of 5 prunable skills, and the prune instructions never clean them up — this commit
 - fix: added the matching `claude/commands/<name>.md` file to
