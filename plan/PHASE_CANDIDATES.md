@@ -380,6 +380,41 @@ kit + sibling surveys.
 - estimated phases: 1
 - conflicts: none.
 
+### [ ] [score 7.5] Cloud march ticks must not dispatch background/async agents
+- proposed: 2026-07-17 (digest)
+- source signals: the 2026-07-17 03:04 UTC cloud tick (run
+  `29551508864`) reached `/iterate`'s audit-refresh step, found
+  `plan/AUDIT.md` >24h stale, and launched an async background
+  subagent to run the A-G sweep instead of running it inline.
+  The log shows it explicitly deciding to "wait for the audit
+  agent to finish," then the GitHub Actions job's own
+  `terminal_reason` flips to `completed` ~4 seconds later — no
+  commit, no verify run, no trace of the subagent's output ever
+  landing. The very next tick (07-17 08:45, run `29567537795`)
+  hit the identical stale-audit branch but ran the sweep inline
+  and shipped cleanly in ~6 minutes (commit `4ca0c36`), proving
+  the sweep itself isn't the bottleneck — the async dispatch
+  pattern is. 1 of 4 ticks in that 26h window was silently lost
+  this way (full pulse in `plan/DIGEST.md` 2026-07-17).
+- rationale: a GitHub Actions job is a single-shot process —
+  once the step (and the job) exits there is nothing left
+  running to deliver a background agent's completion
+  notification, so dispatching `Agent(..., run_in_background:
+  true)`-style work inside a cloud march tick is a guaranteed
+  no-op, not a performance win. `templates/.github/workflows/march.yml`
+  runs the identical one-shot pattern, so every adopter's cloud
+  loop carries the same latent trap.
+- proposed scope: add an explicit "cloud ticks run
+  synchronously — never dispatch an agent in background mode;
+  always await inline" line to the cloud-mode prompt block in
+  `.github/workflows/march.yml` and its `templates/` mirror,
+  plus a matching failure-mode entry in `.github/CLOUD_LOOP.md`
+  ("a tick logs launching a background/async audit agent then
+  exits clean with no commit" -> this root cause) and a note on
+  `skills/iterate.md`'s audit-delegation step.
+- estimated phases: 1 (doc/prompt-only, no template API change)
+- conflicts: none.
+
 ## Promoted
 
 (moves to the build plan via /oversight)

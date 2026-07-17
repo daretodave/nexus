@@ -1,51 +1,54 @@
-# Digest — 2026-07-15
+# Digest — 2026-07-17
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Three productive ticks and one clean no-op since yesterday's
-digest: two `/iterate` doc-drift fixes (link rot, a missing
-README command-table row), one full A-G `/iterate` sweep
-(stale "six skill files" count), and `/expand` fired on its
-bold-posture + signal gate but filed zero candidates — the
-fresh CRITIQUE findings were single-file fixes, not
-phase-worthy clusters. Build plan stays empty (18/18); ceiling
-4/8; heartbeat 5/5 green.
+Two productive ticks, one clean triage no-op, and one silently
+wasted tick since yesterday's digest: `/critique` pass 5 filed
+3 findings, the next `/iterate` tick closed the MED one at the
+source and folded in a fresh audit sweep — but the tick between
+them reached iterate's audit-refresh step, launched a
+background subagent for the sweep, and the cloud job exited
+before that agent could ever return. No commit, no crash, just
+a lost tick — filed below as a tuning proposal. Build plan
+stays empty (18/18); ceiling 2/8; heartbeat 5/5 green.
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-14 14:35 | march → iterate | AUDIT `[C, 4.8]`: `thock.netlify.app` 404s across five call sites; confirmed dead via curl, replaced all five with `thock.xyz` (commit `e1d4607`) |
-| 07-14 20:26 | march → iterate | AUDIT `[A, 4.2]`: README's "What you get" command tables never listed `/digest` or `/moderate`; added both, deliberately skipped `/lessons-pr` (nexus-self meta-skill, no `templates/skills/` counterpart) (commit `abf2cdb`) |
-| 07-15 03:04 | march → expand | rate-limit gate opened (bold posture + signals present) but filed nothing — the two fresh CRITIQUE findings since the last pass were single-file doc fixes, not a phase-worthy cluster; clean no-op, no commit |
-| 07-15 08:48 | march → iterate | AUDIT `[A, 3.2]`: `README.md`/`new-project.md` both promised a fixed "six skill files" count against a 15-file (11-15 pruned) reality; reworded to "the skill set" (commit `8802058`) |
-| 07-15 (this tick) | night | this digest |
+| 07-16 14:41 | march → triage | two unlabeled issues (#22, #23), both the same transient `oauth_org_not_allowed` infra flake as the closest prior failure (07-16 08:48); root-caused, commented, closed `triage:closed` (matching #21 precedent). Clean no-op, no commit |
+| 07-16 20:20 | march → critique | pass 5: dry-run adoption walk (halcyon/netlify/main) into a scratch dir; 3 findings (0 high, 1 med, 2 low) — MED dead `.claude/commands/*.md` pointers left behind by the adopt-by-need prune; two LOW doc-redundancy findings (commit `0d120c1`) |
+| 07-17 03:04 | march → iterate | reached the audit-refresh step, found `plan/AUDIT.md` >24h stale, and launched an async background subagent to run the A-G sweep instead of running it inline — the log shows it deciding to "wait for the audit agent to finish," then the job's own `terminal_reason` flips to `completed` ~4 seconds later with no commit, no verify run, and no trace of the subagent's output. Silent no-op tick (run `29551508864`) |
+| 07-17 08:45 | march → iterate | closed the same `.claude/commands/*.md` dead-pointer gap CRITIQUE pass 5 found (score 5.2 by impact×ease/10, top of the re-sweep): extended `templates/README.md`'s adopt-by-need table + `playbooks/new-project.md`'s prune examples to the other 4 prunable skills (ship-data, ship-migration, ship-asset, moderate); ran the A/C/F/G audit sweep inline in the same tick — no async agent this time, ~6 minutes wall-clock (commit `4ca0c36`, closes #24) |
+| 07-17 (this tick) | night | this digest |
 
 `heartbeat` ran 5/5 green over its last-5 sample; no red runs
-in the window.
+in the window. One `march` failure just outside the strict 26h
+window (07-16 08:48, run `29484794188`) was the same
+`oauth_org_not_allowed` flake the 14:41 triage tick already
+closed out via #22/#23 — no separate action needed.
 
 ## Shipped
 
-- `e1d4607` — AUDIT `[C, 4.8]`: replaced all five
-  `thock.netlify.app` occurrences (`README.md:53`,
-  `templates/README.md:87`, `playbooks/new-project.md:98,245,261`)
-  with `thock.xyz` after confirming the Netlify domain 404s and
-  the `.xyz` one returns 200.
-- `abf2cdb` — AUDIT `[A, 4.2]`: added `/digest` to the main
-  command table and `/moderate` to the opt-in table in
-  README.md's "What you get" section. Scoped down from the
-  finding's original suggestion by skipping `/lessons-pr` — it's
-  a nexus-self meta-skill adopters never copy, so the existing
-  forward-reference at `README.md:237` already covers it more
-  accurately than a table row would.
-- `8802058` — AUDIT `[A, 3.2]` + matching CRITIQUE LOW row:
-  reworded `README.md:381` and `playbooks/new-project.md:18`'s
-  stale "six skill files" claim to "the skill set", since
-  `templates/skills/` ships 15 files and adopt-by-need pruning
-  leaves 11-15 depending on scope.
+- `0d120c1` — CRITIQUE pass 5: filed 1 MED + 2 LOW findings
+  from a fresh dry-run adoption walk plus a stranger-read of
+  `README.md`. The MED row (adopt-by-need prune leaves dead
+  `.claude/commands/*.md` pointers for 4 of 5 prunable skills)
+  became the top-scoring queue item for the next tick.
+- `4ca0c36` — AUDIT + CRITIQUE MED, closes #24: added the
+  missing `.claude/commands/*.md` table pointers for
+  ship-data/ship-migration/ship-asset/moderate in
+  `templates/README.md`'s adopt-by-need table, and extended
+  `playbooks/new-project.md`'s worked `rm -f` /
+  `Remove-Item` prune examples to match. Also ran a fresh C/F/G
+  audit re-sweep in the same tick (link rot: none beyond the
+  already-fixed `thock.netlify.app`, now confined to historical
+  log prose; model ids: all three current; sibling lessons:
+  still absent locally) and refreshed `plan/AUDIT.md`'s header
+  to 2026-07-17.
 
 ## Queues now
 
@@ -54,25 +57,25 @@ in the window.
 - **AUDIT:** 2 pending — `[user-issue #12]` (standing, blocked
   on `ACTIONS_PAT` lacking `workflows` scope, unchanged since
   2026-07-12) and `[A/E, 2.7]` README's "Files added" checklist
-  undersells `scripts/` (lists only `deploy-check.mjs`, not the
-  full bulk-copied set). Header dated 2026-07-14 — under the
-  48h staleness threshold, no refresh needed.
-- **CRITIQUE:** 6 pending, pass 4 (2026-07-13 15:09), unchanged
-  this window — no new dry-run pass due yet.
-- **PHASE_CANDIDATES:** 18 pending, last pass 2 (2026-07-10
-  20:36), posture bold. 19 commits since that pass (threshold
-  ≥20) — `/expand` dispatched this window on the bold-posture +
-  signal check and correctly filed nothing rather than pad the
-  queue; one more shipping commit likely crosses the raw
-  20-commit mark, but with no fresh phase-worthy cluster behind
-  it that alone won't force new candidates.
+  undersells `scripts/`. Header dated 2026-07-17 (this window's
+  08:45 tick) — fresh, no refresh needed.
+- **CRITIQUE:** 8 pending, pass 5 (2026-07-16 20:27). One MED
+  row closed this window (`4ca0c36`); the remaining MED (the
+  unworked npm/yarn/bun sed example vs. `settings.json`'s
+  pnpm-only allowlist) and 7 LOW rows are unchanged. Not due
+  for a fresh pass (2 commits, <24h since pass 5 — threshold is
+  ≥12 commits or >72h).
+- **PHASE_CANDIDATES:** 18 pending + 1 filed by this digest
+  (below) = 19, last pass 3 (2026-07-16), posture bold. Only 2
+  commits since that pass — nowhere near the ≥20-commit or
+  >7-day `/expand` gate.
 - **Issues:** 1 open (`#12`, `triage:loop-queued`) — same row
   as AUDIT's blocked entry. No `triage:needs-user` or `loop:do`
-  labels open.
+  labels open. #22/#23/#24 all closed this window.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not present
   in this environment — skipped (cloud).
-- **Ceiling:** 4/8 Cloud-Run-tagged commits in the trailing 24h
-  (before this digest's own commit lands as the 5th).
+- **Ceiling:** 2/8 Cloud-Run-tagged commits in the trailing 24h
+  (before this digest's own commit lands as the 3rd).
 
 ## Needs you
 
@@ -88,28 +91,30 @@ in the window.
 
 ## Today's intent
 
-Build plan still has no pending phase (18/18) — the kit is
-fully built; every tick routes to `/critique`, `/expand`, or
-`/iterate`. With CRITIQUE's queue unchanged (6 pending, pass 4
-still ~2 days old) and PHASE_CANDIDATES sitting just under its
-commit threshold with nothing fresh to add, the next tick or
-two will most likely be another `/iterate` pass, picking off
-AUDIT's remaining unblocked row (`[A/E, 2.7]`, the
-`scripts/` checklist undersell) or one of CRITIQUE's pending
-MED rows (the unworked npm/yarn/bun sed example vs.
-`settings.json`'s pnpm-only allowlist; the prune-table
-subsection covering only 4 of ~12 adopt-by-need rows).
+Build plan still has no pending phase (18/18). CRITIQUE and
+PHASE_CANDIDATES are both freshly-passed and far from their
+rate-limit thresholds, so the next tick or two will most likely
+be another `/iterate` pass, picking off AUDIT's remaining
+unblocked row (`[A/E, 2.7]`, the `scripts/` checklist undersell)
+or one of CRITIQUE's 8 pending rows (the pnpm/npm sed-example
+MED is the highest-scoring unblocked queue item right now).
+Worth a human glance at whether the 03:04 async-agent no-op
+(see below) is a one-off or will recur on the next stale-audit
+tick — the fix is filed as a candidate, not yet applied.
 
 ## Tuning proposals
 
-None. This window ran as designed: `/expand`'s gate opened
-right on its posture-and-signal check and correctly produced a
-clean no-op rather than filing weak candidates just to fill the
-cap — that's the rate limit working, not starving. AUDIT and
-CRITIQUE both drained normally (one row each closed this
-window) with no flakes or unexplained no-ops, and the ceiling
-(4/8) is nowhere near saturation. Worth another look once
-PHASE_CANDIDATES' pass-2 backlog (18, unpromoted since
-2026-07-02/03 seeding) gets an `/oversight` pass — that queue's
-only drain is interactive and it's been five days quiet, but
-that's a human-cadence question, not a gate to tune.
+Filed one candidate to `plan/PHASE_CANDIDATES.md`: cloud march
+ticks must not dispatch background/async agents — a GitHub
+Actions job is single-shot, so there is nothing left running to
+deliver a background agent's completion notification once the
+step (and the job) exits. The 07-17 03:04 tick (run
+`29551508864`) proved this concretely — it hit the same
+"AUDIT.md >24h stale" branch the very next tick (07-17 08:45,
+run `29567537795`) also hit, but that tick ran the sweep inline
+and shipped cleanly in ~6 minutes. Same input, two different
+dispatch strategies, one silent loss — 1 of 4 ticks in this
+window burned for nothing. Not self-tuned per the meta-loop
+rail: proposal only, `/oversight` decides whether and how to
+wire an explicit "run synchronously" instruction into the
+cloud-mode prompt block.
