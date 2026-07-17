@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-14
+# Kit audit — 2026-07-17
 
 > Bias: none
 
@@ -84,6 +84,21 @@ scorer — the "six skill files" stale count (score 3.2, [A,
 3.2] below) — over the `scripts/` checklist row (2.7). Not a
 fresh A-G sweep; last full sweep still cloud tick 2026-07-14
 (third).
+
+Cloud tick 2026-07-17: fresh sweep of C (link rot — no new dead
+links beyond the already-fixed `thock.netlify.app`, which now
+only appears in historical AUDIT/DIGEST log prose, not live
+docs), F (model-id freshness — `claude-sonnet-5`,
+`claude-haiku-4-5`, `claude-opus-4-8` all current, none stale),
+and G (sibling lessons — `../kintilla/plan/lessons.md` and any
+`NEXUS_LESSONS.md` still absent from this checkout, dimension
+empty). A/B/D leaned on `verify.mjs`'s green tree and emoji
+legs rather than a manual re-derive. #12 still the only blocked
+AUDIT row. Shipped `plan/CRITIQUE.md`'s top-scoring pending row
+— the `.claude/commands/*.md` dead-pointer gap in the
+adopt-by-need prune instructions (MED, reproduced and
+confirmed real) — over the remaining MED (pnpm/npm allowlist
+conflict, larger redesign-shaped fix) and six LOW rows.
 
 ## Pending
 

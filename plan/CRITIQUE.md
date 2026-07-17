@@ -136,44 +136,6 @@ path, comprehension stumble. See `skills/critique.md`.
   bearings.md's remaining tokens get swept in step 4's later pass.
 - source: dry-run
 
-### [MED] templates/README.md:125-128 vs :133 — adopt-by-need table omits `.claude/commands/*.md` pointers for 4 of 5 prunable skills, and the prune instructions never clean them up
-- category: instruction-drift
-- observation: the adopt-by-need table's `digest.md` row
-  explicitly pairs the skill with its command pointer
-  (`skills/digest.md` + `claude/commands/digest.md`), but the
-  `ship-data.md`, `ship-migration.md`, `ship-asset.md`, and
-  `moderate.md` rows list only the skill (and in one case an
-  agent) — never the matching `claude/commands/*.md` file.
-  `playbooks/new-project.md`'s "Prune adopt-by-need files"
-  subsection mirrors that gap: its worked `rm -f
-  skills/ship-data.md skills/ship-migration.md
-  scripts/lint-migration.mjs skills/ship-asset.md
-  .claude/agents/brander.md skills/moderate.md` never touches
-  `.claude/commands/`. Following the playbook literally for a
-  `Structured data: none`, `Surface: service`, no-UGC project
-  (exactly the pruning example given) leaves
-  `.claude/commands/ship-data.md`, `ship-migration.md`,
-  `ship-asset.md`, and `moderate.md` in place, each of which
-  opens with "Read `skills/ship-data.md` end to end before
-  touching anything else" — a file that no longer exists.
-- evidence: reproduced in a scratch halcyon repo — after
-  running `playbooks/new-project.md`'s step-4 bulk copy then
-  its literal prune `rm -f` command, `.claude/commands/ship-data.md`
-  still existed and still read (verbatim) "Read
-  `skills/ship-data.md` end to end before touching anything
-  else." `templates/claude/commands/` confirmed to ship
-  `ship-data.md`, `ship-migration.md`, `ship-asset.md`,
-  `moderate.md` alongside `digest.md`; `templates/README.md:125-128`
-  vs `:133` — only the digest row pairs a skill with its
-  command file.
-- suggested fix: add the matching `claude/commands/<name>.md`
-  file to each of the four adopt-by-need table rows (matching
-  the digest row's pattern), and extend `new-project.md`'s
-  prune `rm -f`/`Remove-Item` examples to also remove
-  `.claude/commands/ship-data.md`, `ship-migration.md`,
-  `ship-asset.md`, `moderate.md`.
-- source: dry-run
-
 ### [LOW] README.md:67 vs :582 — "How to use this kit" restates the TL;DR flow 500+ lines later with no cross-reference
 - category: comprehension
 - observation: `README.md` opens with a fully-worked
@@ -226,6 +188,22 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] templates/README.md:125-128 vs :133 — adopt-by-need table omits `.claude/commands/*.md` pointers for 4 of 5 prunable skills, and the prune instructions never clean them up — this commit
+- fix: added the matching `claude/commands/<name>.md` file to
+  each of the four adopt-by-need table rows in
+  `templates/README.md` (`ship-data.md`, `ship-migration.md`,
+  `ship-asset.md`, `moderate.md`), matching the existing
+  `digest.md` row's pattern. Extended
+  `playbooks/new-project.md`'s "Prune adopt-by-need files"
+  subsection — both the bullet list and the worked
+  `rm -f`/`Remove-Item` examples — to also remove the four
+  `.claude/commands/*.md` files, plus a one-line note
+  explaining why: each command file opens with "Read
+  `skills/<name>.md` end to end" and becomes a dead pointer
+  once its skill is pruned. `existing-project.md` only
+  cross-references this same section, so no duplicate fix
+  needed there.
 
 ### [x] [LOW] playbooks/new-project.md:13 — "Six skill files in skills/" is a stale count — this commit
 - fix: reworded to "The skill set in `skills/` (count varies

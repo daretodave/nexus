@@ -122,10 +122,10 @@ the corresponding capability:
 
 | File | Adopt when |
 |---|---|
-| `skills/ship-data.md` | The project has a structured data layer (`gh-as-db`, `hybrid-with-managed-postgres`, `pure-db`, `saas-cms`). See `nexus/customization/data-layer.md`. |
-| `skills/ship-migration.md` + `scripts/lint-migration.mjs` | `Structured data` is `pure-db` or `hybrid-with-managed-postgres` — the project has a managed-Postgres (or compatible) DB. See `nexus/customization/data-layer.md` Patterns B and D. |
-| `skills/ship-asset.md` + `claude/agents/brander.md` | `Surface: site` or `hybrid` AND you want the loop to render brand assets (OG images, favicons, social cards, SVG → PNG, wordmarks). Demand-pull only — drains findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. See `nexus/customization/branding.md`. |
-| `skills/moderate.md` | The project has UGC (comments, submissions, votes, flags) and needs a dedicated queue-drain skill (Option A). See `nexus/customization/moderation-loop.md`. |
+| `skills/ship-data.md` + `claude/commands/ship-data.md` | The project has a structured data layer (`gh-as-db`, `hybrid-with-managed-postgres`, `pure-db`, `saas-cms`). See `nexus/customization/data-layer.md`. |
+| `skills/ship-migration.md` + `claude/commands/ship-migration.md` + `scripts/lint-migration.mjs` | `Structured data` is `pure-db` or `hybrid-with-managed-postgres` — the project has a managed-Postgres (or compatible) DB. See `nexus/customization/data-layer.md` Patterns B and D. |
+| `skills/ship-asset.md` + `claude/commands/ship-asset.md` + `claude/agents/brander.md` | `Surface: site` or `hybrid` AND you want the loop to render brand assets (OG images, favicons, social cards, SVG → PNG, wordmarks). Demand-pull only — drains findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. See `nexus/customization/branding.md`. |
+| `skills/moderate.md` + `claude/commands/moderate.md` | The project has UGC (comments, submissions, votes, flags) and needs a dedicated queue-drain skill (Option A). See `nexus/customization/moderation-loop.md`. |
 | `plan/CURRENT-STATE.md` | This is a brownfield retrofit, not a greenfield start. See `nexus/playbooks/existing-project.md` §1. |
 | `setup/00_files.md` + `setup/NN_service.md` | The project depends on any external service beyond hosting (auth provider, managed DB, email service, AI API). See `nexus/customization/external-services.md`. |
 | `claude/settings.json` + `claude/hooks/guard.mjs` + `claude/CLAUDE.md` + `scripts/notify.mjs` | You run the loop on Claude Code and want unattended levels (3–4): pre-approved permissions, hook-enforced hard rules, and a pager. See `nexus/customization/claude-code.md` + `nexus/playbooks/hands-off.md`. |

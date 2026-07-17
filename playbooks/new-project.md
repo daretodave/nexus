@@ -283,28 +283,38 @@ files" table using the `Surface` / `Structured data` / UGC
 decisions you locked in step 2, and remove what doesn't apply —
 leaving them present is misleading, per that table:
 
-- `skills/ship-data.md` — remove unless `Structured data` is
-  `gh-as-db` / `hybrid-with-managed-postgres` / `pure-db` /
-  `saas-cms`.
-- `skills/ship-migration.md` + `scripts/lint-migration.mjs` —
-  remove unless `Structured data` is `pure-db` or
-  `hybrid-with-managed-postgres`.
-- `skills/ship-asset.md` + `.claude/agents/brander.md` — remove
-  unless `Surface` is `site` or `hybrid` AND branding is in
-  scope.
-- `skills/moderate.md` — remove unless the project has UGC.
+- `skills/ship-data.md` + `.claude/commands/ship-data.md` —
+  remove unless `Structured data` is `gh-as-db` /
+  `hybrid-with-managed-postgres` / `pure-db` / `saas-cms`.
+- `skills/ship-migration.md` + `.claude/commands/ship-migration.md`
+  + `scripts/lint-migration.mjs` — remove unless
+  `Structured data` is `pure-db` or `hybrid-with-managed-postgres`.
+- `skills/ship-asset.md` + `.claude/commands/ship-asset.md` +
+  `.claude/agents/brander.md` — remove unless `Surface` is
+  `site` or `hybrid` AND branding is in scope.
+- `skills/moderate.md` + `.claude/commands/moderate.md` —
+  remove unless the project has UGC.
+
+Each command file opens with "Read `skills/<name>.md` end to
+end before touching anything else" — leaving it behind after
+removing its skill leaves a dead pointer, the same
+presence-is-misleading problem as leaving the skill itself.
 
 Example for a `Surface: service` project with `Structured data:
 none` and no UGC — none of the four apply, so remove them all:
 
 ```bash
 rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
-      skills/ship-asset.md .claude/agents/brander.md skills/moderate.md
+      skills/ship-asset.md .claude/agents/brander.md skills/moderate.md \
+      .claude/commands/ship-data.md .claude/commands/ship-migration.md \
+      .claude/commands/ship-asset.md .claude/commands/moderate.md
 ```
 
 ```powershell
 Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migration.md, `
-  scripts\lint-migration.mjs, skills\ship-asset.md, .claude\agents\brander.md, skills\moderate.md
+  scripts\lint-migration.mjs, skills\ship-asset.md, .claude\agents\brander.md, skills\moderate.md, `
+  .claude\commands\ship-data.md, .claude\commands\ship-migration.md, `
+  .claude\commands\ship-asset.md, .claude\commands\moderate.md
 ```
 
 Commit the templates as a single commit: `chore: nexus
