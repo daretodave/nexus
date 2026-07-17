@@ -57,38 +57,6 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [MED] playbooks/new-project.md:270-302 — the "Prune adopt-by-need files" fix only covers 4 of templates/README.md's ~12 adopt-by-need rows
-- category: instruction-drift
-- observation: step 4's prune subsection only gives worked removal
-  instructions for `ship-data.md`, `ship-migration.md`+
-  `lint-migration.mjs`, `ship-asset.md`+`brander.md`,
-  `moderate.md`. But the bulk `fs.cpSync` in the same step also
-  unconditionally lands `skills/digest.md`, `skills/bootstrap.md`,
-  `scripts/refresh-critique-session.mjs`,
-  `scripts/check-secrets-liveness.mjs`, and
-  `scripts/stack-lifecycle.mjs` — all listed in
-  `templates/README.md`'s adopt-by-need table as conditional (on
-  cloud-loop adoption, `/bootstrap` adoption, `Auth:` being set,
-  and hermetic-e2e Pattern B, respectively). A literal follower
-  with `Auth: none` and no cloud loop ends up with 5
-  conditionally-scoped files present with no prompt to remove
-  them — the exact "presence is misleading" problem
-  `templates/README.md:139-141` warns about, just for a different
-  file set than the one already fixed.
-- evidence: ran the step-4 copy + prune in a scratch halcyon repo;
-  `scripts/check-secrets-liveness.mjs`,
-  `scripts/refresh-critique-session.mjs`,
-  `scripts/stack-lifecycle.mjs`, `skills/digest.md`,
-  `skills/bootstrap.md` all remained. `grep -n -i
-  'digest\|check-secrets-liveness\|refresh-critique-session\|stack-lifecycle'
-  playbooks/new-project.md` → no matches in the prune subsection
-  or anywhere else in the file.
-- suggested fix: extend the prune subsection's table/worked
-  example to cover all adopt-by-need rows from
-  `templates/README.md`, not just the four Surface/Structured-data/
-  UGC-gated ones.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md:88-96 — step 2's bearings.md placeholder list replaces a token that isn't there and omits one that is
 - category: placeholder
 - observation: step 2 instructs replacing five placeholders in the
@@ -166,6 +134,22 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:270-302 — the "Prune adopt-by-need files" fix only covers 4 of templates/README.md's ~12 adopt-by-need rows — this commit
+- fix: extended the prune subsection's bullet list + both worked
+  `rm -f`/`Remove-Item` examples in `playbooks/new-project.md` to
+  cover `skills/digest.md`, `skills/bootstrap.md`,
+  `scripts/refresh-critique-session.mjs`,
+  `scripts/check-secrets-liveness.mjs`, and
+  `scripts/stack-lifecycle.mjs` — the five files the finding
+  reproduced as surviving prune. Also added the missing
+  `skills/bootstrap.md` + `claude/commands/bootstrap.md` row to
+  `templates/README.md`'s adopt-by-need table itself (it had none
+  before this commit, so the prune subsection's "cross-check
+  against the table" instruction couldn't have worked for it).
+  `.github/workflows/*` files (night.yml, heartbeat.yml,
+  nightly-smoke.yml) stayed out of scope — step 4's bulk copy
+  never lands `.github/`, so they were never part of this gap.
 
 ### [x] [MED] playbooks/new-project.md:35 — "sed-replace if you use npm/yarn/bun" has no worked example and conflicts with settings.json's pnpm-only allowlist — this commit
 - fix: took the suggested_fix's second option (state the

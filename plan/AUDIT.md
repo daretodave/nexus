@@ -110,6 +110,21 @@ for the unattended path instead of building an unmaintained
 worked npm/yarn/bun example. Not a fresh A-G sweep; last full
 sweep still today's first tick (above).
 
+Cloud tick 2026-07-17 (third): #12 still the only blocked AUDIT
+row. Shipped the last remaining MED in `plan/CRITIQUE.md`'s
+queue — the prune-coverage row deferred by the previous tick —
+over the AUDIT block's own `[A/E, 2.7]` row (lower score) and six
+remaining LOW rows. Extended `playbooks/new-project.md`'s prune
+subsection to the five files the finding reproduced as surviving
+(`skills/digest.md`, `skills/bootstrap.md`,
+`scripts/refresh-critique-session.mjs`,
+`scripts/check-secrets-liveness.mjs`, `scripts/stack-lifecycle.mjs`)
+and closed a related gap surfaced while fixing it: `templates/README.md`'s
+adopt-by-need table never had a row for `skills/bootstrap.md` in
+the first place. `plan/CRITIQUE.md`'s pending queue is now six
+LOW rows only. Not a fresh A-G sweep; last full sweep still
+today's first tick (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

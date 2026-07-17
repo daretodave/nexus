@@ -288,9 +288,11 @@ The bulk copy above lands every skill unconditionally,
 including ones only useful for capabilities you may not have
 adopted. Cross-check against
 [`templates/README.md`](../templates/README.md)'s "Adopt-by-need
-files" table using the `Surface` / `Structured data` / UGC
-decisions you locked in step 2, and remove what doesn't apply —
-leaving them present is misleading, per that table:
+files" table using the `Surface` / `Structured data` / `Auth` /
+hermetic-e2e decisions you locked in step 2, plus whether UGC,
+the cloud loop, and `/bootstrap` are in scope, and remove what
+doesn't apply — leaving them present is misleading, per that
+table:
 
 - `skills/ship-data.md` + `.claude/commands/ship-data.md` —
   remove unless `Structured data` is `gh-as-db` /
@@ -303,6 +305,20 @@ leaving them present is misleading, per that table:
   `site` or `hybrid` AND branding is in scope.
 - `skills/moderate.md` + `.claude/commands/moderate.md` —
   remove unless the project has UGC.
+- `skills/digest.md` + `.claude/commands/digest.md` — remove
+  unless the cloud loop is live and you want the daily
+  morning-briefing genus (`.github/workflows/night.yml` +
+  `heartbeat.yml` ship separately; step 4 never copies
+  `.github/`, so only the skill + command file are at stake
+  here).
+- `skills/bootstrap.md` + `.claude/commands/bootstrap.md` —
+  remove unless you plan to run `/bootstrap` as the setup
+  executor.
+- `scripts/refresh-critique-session.mjs` +
+  `scripts/check-secrets-liveness.mjs` — remove unless
+  `bearings.md`'s `Auth:` is anything other than `none`.
+- `scripts/stack-lifecycle.mjs` — remove unless hermetic e2e
+  uses Pattern B.
 
 Each command file opens with "Read `skills/<name>.md` end to
 end before touching anything else" — leaving it behind after
@@ -310,20 +326,29 @@ removing its skill leaves a dead pointer, the same
 presence-is-misleading problem as leaving the skill itself.
 
 Example for a `Surface: service` project with `Structured data:
-none` and no UGC — none of the four apply, so remove them all:
+none`, no UGC, no cloud loop, no `/bootstrap`, `Auth: none`, and
+no hermetic e2e — none of the eight apply, so remove them all:
 
 ```bash
 rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
       skills/ship-asset.md .claude/agents/brander.md skills/moderate.md \
+      skills/digest.md skills/bootstrap.md \
+      scripts/refresh-critique-session.mjs scripts/check-secrets-liveness.mjs \
+      scripts/stack-lifecycle.mjs \
       .claude/commands/ship-data.md .claude/commands/ship-migration.md \
-      .claude/commands/ship-asset.md .claude/commands/moderate.md
+      .claude/commands/ship-asset.md .claude/commands/moderate.md \
+      .claude/commands/digest.md .claude/commands/bootstrap.md
 ```
 
 ```powershell
 Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migration.md, `
   scripts\lint-migration.mjs, skills\ship-asset.md, .claude\agents\brander.md, skills\moderate.md, `
+  skills\digest.md, skills\bootstrap.md, `
+  scripts\refresh-critique-session.mjs, scripts\check-secrets-liveness.mjs, `
+  scripts\stack-lifecycle.mjs, `
   .claude\commands\ship-data.md, .claude\commands\ship-migration.md, `
-  .claude\commands\ship-asset.md, .claude\commands\moderate.md
+  .claude\commands\ship-asset.md, .claude\commands\moderate.md, `
+  .claude\commands\digest.md, .claude\commands\bootstrap.md
 ```
 
 Commit the templates as a single commit: `chore: nexus
