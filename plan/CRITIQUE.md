@@ -57,31 +57,6 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [LOW] README.md:67 vs :582 — "How to use this kit" restates the TL;DR flow 500+ lines later with no cross-reference
-- category: comprehension
-- observation: `README.md` opens with a fully-worked
-  delegate-to-an-agent flow ("TL;DR — clone + delegate the
-  adoption", line 67) that a reader is told is sufficient on
-  its own ("skip the playbook, hand it to your agent"). Roughly
-  500 lines later, "How to use this kit" (line 582) presents an
-  unrelated-looking 8-step generic checklist covering much of
-  the same ground (read playbook, copy templates, replace
-  placeholders, wire CI, first `/ship-a-phase`) with zero
-  pointer back to the TL;DR section or note that it's the
-  manual-path restatement of the same journey. A stranger
-  reading top-to-bottom is left to guess whether this second
-  list is a redundant summary, a stricter/updated version, or
-  an alternate path they also need to complete.
-- evidence: `README.md:67` (`## TL;DR — clone + delegate the
-  adoption`) and `README.md:582` (`## How to use this kit`) —
-  no link between the two sections anywhere in the file.
-- suggested fix: add a one-line note at the top of "How to use
-  this kit" ("This is the manual-path equivalent of the TL;DR
-  above — skip it if you delegated adoption to an agent
-  already") so the two sections read as one system rather than
-  two competing checklists.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md §8 — sub-agent "copy" instruction re-introduces files step 4 already placed
 - category: ordering
 - observation: step 8 ("Sub-agents") says to copy `scout.md`
@@ -109,6 +84,13 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] README.md:67 vs :582 — "How to use this kit" restates the TL;DR flow 500+ lines later with no cross-reference — this commit
+- fix: added a one-line note at the top of "How to use this
+  kit" (`README.md:582`) marking it as the manual-path
+  equivalent of the TL;DR sections above and pointing readers
+  who already delegated adoption to an agent to skip it — the
+  suggested fix as filed, no scope changes.
 
 ### [x] [LOW] playbooks/new-project.md:88-96 — step 2's bearings.md placeholder list replaces a token that isn't there and omits one that is — this commit
 - fix: swapped `<REPO_SLUG>` for `<DEFAULT_BRANCH>` in step 2's

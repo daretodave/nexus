@@ -139,6 +139,14 @@ for every adopter — fixed alongside the originally-reported
 `<REPO_SLUG>`/`<DEFAULT_BRANCH>` swap. Not a fresh A-G sweep; last
 full sweep still 2026-07-17 (above).
 
+Cloud tick 2026-07-18 (second): #12 still the only blocked AUDIT
+row. Re-scored `plan/CRITIQUE.md`'s remaining queue (five LOW
+rows) and shipped the highest scorer — the README TL;DR vs "How
+to use this kit" missing cross-reference (score ~3.6) — over the
+AUDIT block's own `[A/E, 2.7]` row and the four remaining LOW
+rows (2.4 and under). Not a fresh A-G sweep; last full sweep
+still 2026-07-17 (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

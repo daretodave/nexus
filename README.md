@@ -581,6 +581,10 @@ adapt them.
 
 ## How to use this kit
 
+> This is the manual-path equivalent of the TL;DR sections
+> above — skip it if you already delegated adoption to an
+> agent.
+
 1. **Read this README.** (You're here.)
 2. **Read [`concepts/architecture.md`](./concepts/architecture.md)**
    for the one-page mental model.
