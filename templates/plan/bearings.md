@@ -10,7 +10,7 @@
 `spec.md` at the repo root is the product spec — the canonical
 description of <PROJECT>. Read once at session start. The TL;DR:
 
-> <ONE-LINE PRODUCT DESCRIPTION>
+> <PROJECT_TAGLINE>
 
 <2–4 SENTENCE PRODUCT SUMMARY — audience, core feature, voice>
 

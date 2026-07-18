@@ -125,6 +125,20 @@ the first place. `plan/CRITIQUE.md`'s pending queue is now six
 LOW rows only. Not a fresh A-G sweep; last full sweep still
 today's first tick (above).
 
+Cloud tick 2026-07-18: #12 still the only blocked AUDIT row.
+Re-scored `plan/CRITIQUE.md`'s remaining queue (all six LOW rows)
+and shipped the highest scorer — the step-2 `bearings.md`
+placeholder-list mismatch (score ~3.2) — over the AUDIT block's
+own `[A/E, 2.7]` row and the other five LOW rows (2.4 and under).
+Reproducing the finding surfaced a second, deeper bug in the same
+root cause: `<PROJECT_TAGLINE>` was never an actual literal token
+in `templates/plan/bearings.md` either (it used a freeform
+`<ONE-LINE PRODUCT DESCRIPTION>` placeholder instead), so the
+canonical 8-placeholder contract silently no-opped on the tagline
+for every adopter — fixed alongside the originally-reported
+`<REPO_SLUG>`/`<DEFAULT_BRANCH>` swap. Not a fresh A-G sweep; last
+full sweep still 2026-07-17 (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

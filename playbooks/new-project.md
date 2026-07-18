@@ -107,7 +107,7 @@ Replace these placeholders:
 - `<PROJECT_TAGLINE>` → one-line description
 - `<HOSTING_URL>` → e.g. `https://thock.xyz`
 - `<HOSTING_PROVIDER>` → Netlify / Vercel / etc.
-- `<REPO_SLUG>` → e.g. `daretodave/thock`
+- `<DEFAULT_BRANCH>` → usually `main`
 
 Then fill in these sections:
 

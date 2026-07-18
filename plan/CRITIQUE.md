@@ -57,31 +57,6 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [LOW] playbooks/new-project.md:88-96 — step 2's bearings.md placeholder list replaces a token that isn't there and omits one that is
-- category: placeholder
-- observation: step 2 instructs replacing five placeholders in the
-  freshly-copied `bearings.md`, including `<REPO_SLUG>` — but the
-  template `bearings.md` contains no `<REPO_SLUG>` token anywhere,
-  so that instruction is a silent no-op. Meanwhile `bearings.md`
-  does contain `<DEFAULT_BRANCH>` (in the "Post-push: `pnpm
-  deploy:check`" section), which step 2's list never mentions.
-  Since step 2 ends with "Commit `bearings.md` separately" —
-  before step 4's later, broader sed pass — a literal follower
-  commits `bearings.md` with a literal `<DEFAULT_BRANCH>` still in
-  it at that point (self-healed only later, incidentally, when
-  step 4's sed sweeps `./plan`).
-- evidence: `grep -n 'REPO_SLUG' templates/plan/bearings.md` → no
-  match; `grep -n 'DEFAULT_BRANCH' templates/plan/bearings.md` →
-  line 374 (`git push origin <DEFAULT_BRANCH>`). Reproduced in a
-  scratch repo: after step 2's exact five-item replace,
-  `<DEFAULT_BRANCH>` remained; the first `bearings.md` commit
-  still had it.
-- suggested fix: drop `<REPO_SLUG>` from step 2's bearings-specific
-  list (it belongs to the later step-4 table, not this file) and
-  add `<DEFAULT_BRANCH>` in its place, or just tell the reader
-  bearings.md's remaining tokens get swept in step 4's later pass.
-- source: dry-run
-
 ### [LOW] README.md:67 vs :582 — "How to use this kit" restates the TL;DR flow 500+ lines later with no cross-reference
 - category: comprehension
 - observation: `README.md` opens with a fully-worked
@@ -134,6 +109,24 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] playbooks/new-project.md:88-96 — step 2's bearings.md placeholder list replaces a token that isn't there and omits one that is — this commit
+- fix: swapped `<REPO_SLUG>` for `<DEFAULT_BRANCH>` in step 2's
+  placeholder list (`playbooks/new-project.md`) — `<REPO_SLUG>`
+  never appears anywhere in `templates/plan/bearings.md`, while
+  `<DEFAULT_BRANCH>` does (3 occurrences). Also fixed a second,
+  deeper mismatch found while reproducing the finding:
+  `<PROJECT_TAGLINE>` was likewise never a literal token in
+  `bearings.md` — its TL;DR line used a differently-named
+  freeform placeholder (`<ONE-LINE PRODUCT DESCRIPTION>`) that no
+  exact-string search-and-replace could ever match, silently
+  dropping the tagline from the "8 canonical placeholders"
+  contract for every adopter who followed step 2 literally.
+  Renamed that line's token to the canonical `<PROJECT_TAGLINE>`
+  in `templates/plan/bearings.md` so it now matches the 8-token
+  table (`templates/README.md`) and gets swept by step 4's bulk
+  sed even if a reader skips the manual step-2 pass — the same
+  self-healing property `<DEFAULT_BRANCH>` already had.
 
 ### [x] [MED] playbooks/new-project.md:270-302 — the "Prune adopt-by-need files" fix only covers 4 of templates/README.md's ~12 adopt-by-need rows — this commit
 - fix: extended the prune subsection's bullet list + both worked
