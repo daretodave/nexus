@@ -435,10 +435,9 @@ for stack-specific compositions.
 The deploy gate is `pnpm deploy:check`. It runs **after every
 push** and polls your hosting provider until ready or error.
 
-Copy `../nexus/templates/scripts/deploy-check.mjs` to
-`./scripts/deploy-check.mjs`.
-
-Add to `package.json`:
+`./scripts/deploy-check.mjs` is already present — step 4's
+bulk copy landed it with the rest of `scripts/`. Wire it into
+`package.json`:
 
 ```json
 {

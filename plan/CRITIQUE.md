@@ -11,21 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] playbooks/new-project.md — step 7 re-copies deploy-check.mjs already placed by step 4
-- category: ordering
-- observation: step 7 says "Copy
-  `../nexus/templates/scripts/deploy-check.mjs` to
-  `./scripts/deploy-check.mjs`" as if introducing the file for
-  the first time, but step 4's bulk copy already recursively
-  copies `templates/scripts` → `scripts`, which includes
-  `deploy-check.mjs`. A literal follower re-runs a no-op copy
-  and may wonder why `./scripts/` already exists.
-- evidence: `playbooks/new-project.md:199` (bulk `scripts`
-  copy) vs. `:338-339` (redundant single-file copy).
-- suggested fix: reword step 7 to "already present from step
-  4" and skip straight to wiring it into `package.json`.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md — step 6 edits a package.json that doesn't exist yet at that point in the walk
 - category: ordering
 - observation: step 6 ("wire the verify gate") instructs
@@ -84,6 +69,13 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] playbooks/new-project.md — step 7 re-copies deploy-check.mjs already placed by step 4 — this commit
+- fix: reworded step 7's opening line from "Copy
+  `../nexus/templates/scripts/deploy-check.mjs` to
+  `./scripts/deploy-check.mjs`" to note it's already present
+  from step 4's bulk copy, then goes straight to wiring it into
+  `package.json` — the suggested fix as filed, no scope changes.
 
 ### [x] [LOW] README.md:67 vs :582 — "How to use this kit" restates the TL;DR flow 500+ lines later with no cross-reference — this commit
 - fix: added a one-line note at the top of "How to use this

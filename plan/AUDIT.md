@@ -147,6 +147,15 @@ AUDIT block's own `[A/E, 2.7]` row and the four remaining LOW
 rows (2.4 and under). Not a fresh A-G sweep; last full sweep
 still 2026-07-17 (above).
 
+Cloud tick 2026-07-18 (third): #12 still the only blocked AUDIT
+row. Re-scored `plan/CRITIQUE.md`'s remaining queue (four LOW
+rows) against the AUDIT block's own `[A/E, 2.7]` row (tied
+score) and shipped the CRITIQUE row — the step-7
+`deploy-check.mjs` redundant-copy instruction (score ~2.7,
+oldest pending queue row, dry-run-sourced) — as the cheaper,
+more confidently-scoped single-line reword. Not a fresh A-G
+sweep; last full sweep still 2026-07-17 (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
