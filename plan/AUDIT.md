@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-17
+# Kit audit — 2026-07-19
 
 > Bias: none
 
@@ -180,6 +180,27 @@ score, same ordering-bug class as the already-fixed step-6/
 step-7 rows, cheaper single-section edit. Not a fresh A-G sweep;
 last full sweep still 2026-07-17 (above).
 
+Digest tick 2026-07-19: fresh A-G sweep (header was 50h old,
+past the digest's 48h threshold). A/B (doc-drift,
+completeness), C (link + tree hygiene beyond the gate), D
+(voice), E (adopter friction), and F (model-id freshness) all
+manually re-derived rather than leaning on a <24h-old block.
+G stays empty (no sibling lessons files present in this
+checkout). #12 still the only blocked AUDIT row. Confirmed
+`[A/E, 2.7]` (README's "Files added" checklist undersells
+`scripts/`) still reproduces unchanged at `README.md:170-171`.
+Found two new rows: README's own kit-tree omits
+`PHASE_CANDIDATES.md` and `CURRENT-STATE.md` under
+`templates/plan/` (both exist on disk and both are correctly
+listed in `templates/README.md`'s own tree — `scripts/verify.mjs`'s
+tree-reverse-check doesn't cover `templates/plan`, so the gap is
+invisible to the gate), and a fictional example URL in
+`templates/skills/bootstrap.md:217` now resolving to an
+unrelated live site (plain text in a code block, not a
+hyperlink, so the gate's links leg correctly skips it — low
+severity). Audit only; digest ships nothing — see
+`skills/digest.md` rule 2.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -217,6 +238,46 @@ last full sweep still 2026-07-17 (above).
 - next: change `scripts/deploy-check.mjs` to `scripts/` in that
   checklist line, matching how `plan/` and `skills/` are already
   collapsed.
+
+### [A/C, 3.2] README's kit-tree omits two real files under `templates/plan/`
+- category: doc-drift + tree hygiene beyond the gate
+- impact: 4, ease: 8
+- evidence: `README.md`'s "What's in this kit" tree (the
+  `templates/plan/` block, ~line 520-529) lists `README.md,
+  bearings.md, steps/01_build_plan.md, phases/*, AUDIT.md,
+  CRITIQUE.md, reflexes.md, lessons.md` but omits
+  `PHASE_CANDIDATES.md` and `CURRENT-STATE.md`, both present on
+  disk and both correctly listed in `templates/README.md`'s own
+  layout tree (lines 19, 22) and its "Adopt-by-need files"
+  table. `scripts/verify.mjs`'s tree leg reverse-checks disk-vs-
+  diagram only for `REVERSE_CHECK_DIRS` (`templates/scripts`,
+  `templates/skills`, `templates/claude/commands`,
+  `templates/claude/agents` — `scripts/verify.mjs:165-168`),
+  which excludes `templates/plan`, so this asymmetry is
+  invisible to the gate.
+- next: add `PHASE_CANDIDATES.md` and `CURRENT-STATE.md` (with
+  its existing "(brownfield retrofit only)" annotation) to
+  README.md's `templates/plan/` tree block so it matches
+  `templates/README.md`'s tree and actual disk contents;
+  consider adding `templates/plan` to `REVERSE_CHECK_DIRS` in
+  `scripts/verify.mjs` to catch this class of gap mechanically.
+
+### [C/F, 1.6] Fictional example deploy URL in `templates/skills/bootstrap.md` now resolves to an unrelated site
+- category: link hygiene (low severity — not a live hyperlink)
+- impact: 2, ease: 8
+- evidence: `templates/skills/bootstrap.md:217`'s sample
+  terminal-output block shows `First deploy:
+  https://ember.vercel.app  ✓ ready` as illustrative fictional
+  output; the domain now serves an unrelated live site. Plain
+  text inside a fenced code block, not a markdown link, so
+  `verify.mjs`'s links leg correctly skips it and an adopter is
+  very unlikely to click it — a small credibility ding in a
+  worked example, not a functional break.
+- next: swap the example hostname for one that will never
+  resolve to real content (e.g. `https://your-app.vercel.app`
+  or `https://example-app.vercel.app`), matching the placeholder
+  style already used elsewhere (`https://your-site.netlify.app`
+  in `playbooks/new-project.md:240`).
 
 ## Done
 
