@@ -201,6 +201,13 @@ hyperlink, so the gate's links leg correctly skips it — low
 severity). Audit only; digest ships nothing — see
 `skills/digest.md` rule 2.
 
+Cloud tick 2026-07-19 (third): #12 still the only blocked AUDIT
+row. Shipped the next-highest scorer — the digest-sourced
+`[A/C, 3.2]` row (README's kit-tree omitting `PHASE_CANDIDATES.md`
+and `CURRENT-STATE.md`) — over the `[A/E, 2.7]` and `[C/F, 1.6]`
+rows, both lower-scoring. Not a fresh A-G sweep; last full sweep
+still today's digest tick (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -239,29 +246,6 @@ severity). Audit only; digest ships nothing — see
   checklist line, matching how `plan/` and `skills/` are already
   collapsed.
 
-### [A/C, 3.2] README's kit-tree omits two real files under `templates/plan/`
-- category: doc-drift + tree hygiene beyond the gate
-- impact: 4, ease: 8
-- evidence: `README.md`'s "What's in this kit" tree (the
-  `templates/plan/` block, ~line 520-529) lists `README.md,
-  bearings.md, steps/01_build_plan.md, phases/*, AUDIT.md,
-  CRITIQUE.md, reflexes.md, lessons.md` but omits
-  `PHASE_CANDIDATES.md` and `CURRENT-STATE.md`, both present on
-  disk and both correctly listed in `templates/README.md`'s own
-  layout tree (lines 19, 22) and its "Adopt-by-need files"
-  table. `scripts/verify.mjs`'s tree leg reverse-checks disk-vs-
-  diagram only for `REVERSE_CHECK_DIRS` (`templates/scripts`,
-  `templates/skills`, `templates/claude/commands`,
-  `templates/claude/agents` — `scripts/verify.mjs:165-168`),
-  which excludes `templates/plan`, so this asymmetry is
-  invisible to the gate.
-- next: add `PHASE_CANDIDATES.md` and `CURRENT-STATE.md` (with
-  its existing "(brownfield retrofit only)" annotation) to
-  README.md's `templates/plan/` tree block so it matches
-  `templates/README.md`'s tree and actual disk contents;
-  consider adding `templates/plan` to `REVERSE_CHECK_DIRS` in
-  `scripts/verify.mjs` to catch this class of gap mechanically.
-
 ### [C/F, 1.6] Fictional example deploy URL in `templates/skills/bootstrap.md` now resolves to an unrelated site
 - category: link hygiene (low severity — not a live hyperlink)
 - impact: 2, ease: 8
@@ -280,6 +264,18 @@ severity). Audit only; digest ships nothing — see
   in `playbooks/new-project.md:240`).
 
 ## Done
+
+### [x] [A/C, 3.2] README's kit-tree omits two real files under `templates/plan/` — this commit
+- fix: added `PHASE_CANDIDATES.md` and `CURRENT-STATE.md` (with
+  a matching one-line annotation each) to README.md's
+  `templates/plan/` tree block, closing the gap against
+  `templates/README.md`'s own tree (lines 19, 22) and actual
+  disk contents. Left `scripts/verify.mjs`'s
+  `REVERSE_CHECK_DIRS` untouched — the suggested mechanical
+  catch is a separate, larger change (would need to teach the
+  reverse-checker `templates/plan`'s adopt-by-need annotations,
+  which its current dirs don't have) and this tick is scoped to
+  the one finding.
 
 ### [x] [A, 3.2] README.md:381 repeats the stale "six skill files" count — this commit
 - fix: reworded both stale occurrences — `README.md:381`-383

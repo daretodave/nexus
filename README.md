@@ -525,8 +525,10 @@ nexus/
     │   ├── phases/phase_canonical_sibling.md
     │   ├── AUDIT.md
     │   ├── CRITIQUE.md
+    │   ├── PHASE_CANDIDATES.md         # /expand output, /oversight promotes
     │   ├── reflexes.md                # ≤50-line always-read core (adopt-by-need)
-    │   └── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
+    │   ├── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
+    │   └── CURRENT-STATE.md           # brownfield retrofit only (adopt-by-need)
     ├── skills/                        # → repo's skills/
     │   ├── ship-a-phase.md
     │   ├── ship-data.md                # omit if no structured data layer
