@@ -156,6 +156,15 @@ oldest pending queue row, dry-run-sourced) — as the cheaper,
 more confidently-scoped single-line reword. Not a fresh A-G
 sweep; last full sweep still 2026-07-17 (above).
 
+Cloud tick 2026-07-19: #12 still the only blocked AUDIT row.
+Re-scored `plan/CRITIQUE.md`'s remaining queue (three LOW rows)
+against the AUDIT block's own `[A/E, 2.7]` row (tied score) and
+shipped the CRITIQUE row — the step-6 package.json-doesn't-
+exist-yet ordering row, oldest pending queue row — over the two
+other LOW rows and the tied AUDIT row, continuing the pattern of
+favoring the queue on ties (cheaper, single-section edit). Not a
+fresh A-G sweep; last full sweep still 2026-07-17 (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

@@ -11,21 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] playbooks/new-project.md — step 6 edits a package.json that doesn't exist yet at that point in the walk
-- category: ordering
-- observation: step 6 ("wire the verify gate") instructs
-  editing a root `package.json`, but no template ships one —
-  it's only generated later when the phase-1 bootstrap brief
-  (step 5) actually scaffolds the stack. A literal top-to-bottom
-  follower hits a missing file at step 6.
-- evidence: `playbooks/new-project.md:270-287` (package.json
-  edit); `find templates -iname package.json` → no results.
-- suggested fix: note in step 6 that it describes the target
-  shape for the phase-1 brief to produce (not something to run
-  immediately in an empty repo), or fold it into step 5's
-  guidance.
-- source: dry-run
-
 ### [LOW] templates/README.md — `<PROJECT_PKG_PREFIX>` has no worked replacement example
 - category: placeholder
 - observation: the placeholder table lists
@@ -69,6 +54,18 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] playbooks/new-project.md — step 6 edits a package.json that doesn't exist yet at that point in the walk — this commit
+- fix: step 6 now opens by naming the gap directly — no
+  `package.json` exists yet at that point in the walk, phase 1
+  (the brief from step 5) is what scaffolds one — and reframes
+  the shown JSON as the **target shape** for that brief to
+  produce rather than something to edit immediately. Reworded
+  the follow-on "Test it" line to "once phase 1 has scaffolded
+  the file, test it" so the two paragraphs no longer contradict
+  each other (the suggested fix's first option, folding into
+  step 5, would have duplicated the scripts block there instead
+  of once).
 
 ### [x] [LOW] playbooks/new-project.md — step 7 re-copies deploy-check.mjs already placed by step 4 — this commit
 - fix: reworded step 7's opening line from "Copy

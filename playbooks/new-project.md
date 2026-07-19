@@ -397,7 +397,10 @@ Commit both briefs.
 The verify gate is `pnpm verify` (or your equivalent). It runs
 **before every commit** and gates the push.
 
-In your repo's root `package.json`:
+No `package.json` exists yet at this point in the walk — phase
+1 (the brief you just wrote in step 5) is what scaffolds one.
+This section describes the **target shape** for that brief to
+produce, not something to run against an empty repo right now:
 
 ```json
 {
@@ -411,14 +414,15 @@ In your repo's root `package.json`:
 }
 ```
 
-Test it:
+Once phase 1 has scaffolded the file, test it:
 
 ```bash
 pnpm verify
 ```
 
-It will fail at first — that's fine; phase 1 is what makes it
-green. But the script itself should be in place and runnable.
+It will fail at first — that's fine; the rest of phase 1 is
+what makes it green. But the script itself should be in place
+and runnable as soon as phase 1 lands.
 
 If your project doesn't ship a build (e.g., a CLI), drop
 `pnpm build`. If no e2e yet, drop `pnpm e2e` until phase 4
