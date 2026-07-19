@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-07-16
-> Pass count: 5
+> Last pass: 2026-07-19
+> Pass count: 6
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -25,6 +25,93 @@ path, comprehension stumble. See `skills/critique.md`.
 - suggested fix: add `<PROJECT_PKG_PREFIX>` to the worked
   one-liner example, or state explicitly it's optional/monorepo-only
   so an adopter knows it's safe to skip.
+- source: dry-run
+
+### [HIGH] templates/skills/ship-a-phase.md:206-207 — documented `<PROJECT_PKG_PREFIX>` replacement corrupts package-import lines into `@@<name>/...`
+- category: placeholder
+- observation: `templates/README.md`'s placeholder table and
+  `playbooks/new-project.md`'s worked sed one-liner both replace
+  `<PROJECT_PKG_PREFIX>` with a value that already includes the
+  `@` sigil (e.g. `@thock`), but `ship-a-phase.md:206-207` writes
+  the token with a literal `@` already prepended
+  (`` `@<PROJECT_PKG_PREFIX>/content` ``). Running the documented
+  sed verbatim turns it into `` `@@halcyon/content` `` — a broken
+  package specifier, not a valid workspace import.
+- evidence: reproduced in a scratch dry-run — after
+  `sed -i ... -e 's/<PROJECT_PKG_PREFIX>/@halcyon/g'` (the exact
+  one-liner at `playbooks/new-project.md:259`),
+  `skills/ship-a-phase.md:206-207` reads "Reads via shared
+  loaders (`@@halcyon/content`, `@@halcyon/data` ...)". Same
+  double-`@` pattern also present at
+  `customization/verify-gate.md:56`
+  (`pnpm --filter @<PROJECT_PKG_PREFIX>/web start`), though that
+  file isn't copied so isn't corrupted by the sed itself.
+- suggested fix: drop the literal `@` from `ship-a-phase.md:206-207`
+  (and `verify-gate.md:56`) so the token reads
+  `<PROJECT_PKG_PREFIX>/content`, matching the convention that the
+  replacement value already carries the `@`.
+- source: dry-run
+
+### [HIGH] playbooks/new-project.md:515-516 — step 9's `pnpm bootstrap:status` / `pnpm bootstrap` commands don't exist anywhere in the kit
+- category: instruction-drift
+- observation: step 9 tells the adopter to run `pnpm
+  bootstrap:status` then `pnpm bootstrap`, but no template ever
+  defines a `bootstrap` or `bootstrap:status` script in
+  `package.json`. `customization/bootstrap-automation.md`
+  documents the real invocation surface as the Claude Code slash
+  command `/bootstrap status` / `/bootstrap` (a skill, not a
+  shell script) — see its command table at
+  `customization/bootstrap-automation.md:143-149`.
+- evidence: `grep -rn '"bootstrap' --include='*.json'` across the
+  repo returns nothing; `grep -rn "bootstrap:status"` matches only
+  `playbooks/new-project.md:515` itself. Literally running `pnpm
+  bootstrap:status` in an adopted repo fails with "missing
+  script."
+- suggested fix: change step 9's wording from `pnpm
+  bootstrap:status` / `pnpm bootstrap` to `/bootstrap status` /
+  `/bootstrap`, matching `customization/bootstrap-automation.md`'s
+  documented command table.
+- source: dry-run
+
+### [MED] playbooks/new-project.md:512-514 — step 9's manifest copy target directory doesn't exist yet
+- category: missing-file
+- observation: step 9 says to copy
+  `../nexus/templates/setup/bootstrap.example.json` to
+  `setup/bootstrap.local.json`, but `setup/` is never created
+  earlier in the walk — step 4's bulk copy doesn't touch
+  `templates/setup/`, and step 9 itself has no `mkdir -p setup`
+  before the `cp`.
+- evidence: reproduced in a scratch dry-run:
+  `cp ../nexus/templates/setup/bootstrap.example.json
+  setup/bootstrap.local.json` → "cp: cannot create regular file
+  'setup/bootstrap.local.json': No such file or directory" (exit
+  1).
+- suggested fix: prefix the copy instruction with `mkdir -p
+  setup &&`, or note that `setup/00_files.md` (adopt-by-need, see
+  `templates/README.md`'s table) should be copied first when
+  external services are in scope.
+- source: dry-run
+
+### [MED] playbooks/new-project.md:455-456 — "uncomment the matching block in the script" no longer matches deploy-check.mjs's actual mechanism
+- category: instruction-drift
+- observation: step 7 and the script's own header comment
+  (`templates/scripts/deploy-check.mjs:14`) both tell the adopter
+  to "uncomment the matching block" for their provider. The
+  script no longer has commented-out blocks — every provider
+  (`netlify`, `vercel`, `github-actions`, `cloudflare-pages`,
+  `render`, `fly`, `health-check`, `none`) is a live `if
+  (PROVIDER === '...')` / `else if` branch selected at runtime by
+  `DEPLOY_PROVIDER` (defaulting to `'netlify'`,
+  `templates/scripts/deploy-check.mjs:32`). An adopter searching
+  for a `/* ... */` block to uncomment will find none.
+- evidence: `grep -n '^if (PROVIDER\|^} else if (PROVIDER'
+  templates/scripts/deploy-check.mjs` lists 8 live branches, zero
+  commented blocks; the header comment at line 14 still says
+  "uncomment the matching block."
+- suggested fix: reword both the script's header comment and
+  `playbooks/new-project.md:455-456` to "set `DEPLOY_PROVIDER` in
+  `.env` (defaults to `netlify`)" instead of "uncomment the
+  matching block."
 - source: dry-run
 
 ## Done
