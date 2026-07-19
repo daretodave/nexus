@@ -477,10 +477,11 @@ Commit `package.json` + `scripts/deploy-check.mjs` + `.env.example`.
 Most projects need 2–4 specialist sub-agents. Decide which apply:
 
 - **`scout`** — open-web research. Almost every project needs
-  this. Copy from `../nexus/templates/claude/agents/scout.md`.
+  this. Already present from step 4's bulk copy
+  (`.claude/agents/scout.md`) — review and adapt.
 - **`reader`** — fresh-eyes site observer (used by `/critique`).
-  If your project produces a website. Copy from
-  `../nexus/templates/claude/agents/reader.md`.
+  If your project produces a website. Already present from
+  step 4 (`.claude/agents/reader.md`) — review and adapt.
 - **One or two domain specialists** — your project's "what does
   the agent need to be expert at?" If editorial: a copy editor.
   If data-heavy: a schema steward. If API: an OpenAPI checker.

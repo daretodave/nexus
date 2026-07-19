@@ -165,6 +165,21 @@ other LOW rows and the tied AUDIT row, continuing the pattern of
 favoring the queue on ties (cheaper, single-section edit). Not a
 fresh A-G sweep; last full sweep still 2026-07-17 (above).
 
+Cloud tick 2026-07-19 (second): #12 still the only blocked AUDIT
+row. Re-scored `plan/CRITIQUE.md`'s remaining queue (two LOW
+rows) against the AUDIT block's own `[A/E, 2.7]` row (tied
+score). Reproducing the `PROJECT_PKG_PREFIX` row found it
+already resolved — an earlier commit (`[x] [2.1]` above) had
+already replaced `templates/README.md`'s truncated worked
+example with a pointer to `playbooks/new-project.md` §4, whose
+one-liners fully cover the placeholder; left it in Pending
+rather than closing without a `/critique` pass re-confirming
+(this skill doesn't author CRITIQUE rows, per iterate.md §5.4).
+Shipped the step-8 sub-agent redundant-copy row instead — tied
+score, same ordering-bug class as the already-fixed step-6/
+step-7 rows, cheaper single-section edit. Not a fresh A-G sweep;
+last full sweep still 2026-07-17 (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

@@ -27,33 +27,15 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [LOW] playbooks/new-project.md §8 — sub-agent "copy" instruction re-introduces files step 4 already placed
-- category: ordering
-- observation: step 8 ("Sub-agents") says to copy `scout.md`
-  and `reader.md` "from
-  `../nexus/templates/claude/agents/scout.md`" as though
-  introducing them for the first time, but step 4's bulk
-  `fs.cpSync` of `templates/claude` → `.claude` already
-  recursively lands the entire `.claude/agents/` directory
-  (`scout.md`, `reader.md`, `generic-specialist.md`,
-  `brander.md`) earlier in the same walk. This is the same
-  class of issue as the already-pending step-7
-  `deploy-check.mjs` re-copy finding above, just at a different
-  location, so a literal follower hits a second no-op "copy"
-  and may wonder if `.claude/agents/` is supposed to be empty
-  before this step.
-- evidence: in the scratch walk, `ls .claude/agents/` after
-  step 4 (before reaching step 8) already showed `scout.md`,
-  `reader.md`, `generic-specialist.md`, `brander.md` present;
-  `playbooks/new-project.md:212` (bulk copy) vs `:428-436`
-  (step 8's re-copy instructions).
-- suggested fix: reword step 8 to "already present from step 4
-  — review and adapt scout.md / reader.md, author 1-2 domain
-  specialists" rather than "copy from
-  `../nexus/templates/claude/agents/...`".
-- source: dry-run
-
 ## Done
+
+### [x] [LOW] playbooks/new-project.md §8 — sub-agent "copy" instruction re-introduces files step 4 already placed — this commit
+- fix: reworded step 8's `scout`/`reader` bullets from "Copy
+  from `../nexus/templates/claude/agents/...`" to "Already
+  present from step 4's bulk copy
+  (`.claude/agents/scout.md`/`reader.md`) — review and adapt",
+  matching the already-fixed step-6/step-7 ordering findings'
+  pattern.
 
 ### [x] [LOW] playbooks/new-project.md — step 6 edits a package.json that doesn't exist yet at that point in the walk — this commit
 - fix: step 6 now opens by naming the gap directly — no
