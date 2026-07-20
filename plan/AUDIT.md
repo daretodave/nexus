@@ -251,6 +251,18 @@ paragraph. Both outscored the AUDIT block's own `[A/E, 2.7]`
 and `[C/F, 1.6]` rows. Not a fresh A-G sweep; last full sweep
 still the 2026-07-19 digest tick (above).
 
+Cloud tick 2026-07-20 (fourth): #12 still the only blocked
+AUDIT row. Shipped the remaining `plan/CRITIQUE.md` MED row —
+`playbooks/new-project.md:455-456`'s stale "uncomment the
+matching block" instruction, which no longer matches
+`deploy-check.mjs`'s live `if (PROVIDER === ...)` branches
+selected via `DEPLOY_PROVIDER` — scoring higher (impact 6,
+ease 8) than the AUDIT block's own `[A/E, 2.7]` and `[C/F, 1.6]`
+rows. The remaining CRITIQUE row (`<PROJECT_PKG_PREFIX>` worked
+example, LOW) reproduced as already resolved in a prior tick;
+left in Pending per iterate.md §5.4. Not a fresh A-G sweep;
+last full sweep still the 2026-07-19 digest tick (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

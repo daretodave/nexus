@@ -27,29 +27,14 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [MED] playbooks/new-project.md:455-456 — "uncomment the matching block in the script" no longer matches deploy-check.mjs's actual mechanism
-- category: instruction-drift
-- observation: step 7 and the script's own header comment
-  (`templates/scripts/deploy-check.mjs:14`) both tell the adopter
-  to "uncomment the matching block" for their provider. The
-  script no longer has commented-out blocks — every provider
-  (`netlify`, `vercel`, `github-actions`, `cloudflare-pages`,
-  `render`, `fly`, `health-check`, `none`) is a live `if
-  (PROVIDER === '...')` / `else if` branch selected at runtime by
-  `DEPLOY_PROVIDER` (defaulting to `'netlify'`,
-  `templates/scripts/deploy-check.mjs:32`). An adopter searching
-  for a `/* ... */` block to uncomment will find none.
-- evidence: `grep -n '^if (PROVIDER\|^} else if (PROVIDER'
-  templates/scripts/deploy-check.mjs` lists 8 live branches, zero
-  commented blocks; the header comment at line 14 still says
-  "uncomment the matching block."
-- suggested fix: reword both the script's header comment and
-  `playbooks/new-project.md:455-456` to "set `DEPLOY_PROVIDER` in
-  `.env` (defaults to `netlify`)" instead of "uncomment the
-  matching block."
-- source: dry-run
-
 ## Done
+
+### [x] [MED] playbooks/new-project.md:455-456 — "uncomment the matching block in the script" no longer matches deploy-check.mjs's actual mechanism — this commit
+- fix: reworded `templates/scripts/deploy-check.mjs:14`'s header
+  comment and `playbooks/new-project.md`'s step 7 to "set
+  `DEPLOY_PROVIDER` in `.env` (defaults to `netlify`)" instead of
+  "uncomment the matching block" — the suggested fix as filed,
+  no scope changes.
 
 ### [x] [MED] playbooks/new-project.md:512-514 — step 9's manifest copy target directory doesn't exist yet — this commit
 - fix: replaced the prose copy instruction with a literal

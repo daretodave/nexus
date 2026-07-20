@@ -452,9 +452,9 @@ bulk copy landed it with the rest of `scripts/`. Wire it into
 ```
 
 Choose your provider per
-[`ci-providers.md`](./ci-providers.md) and uncomment the
-matching block in the script. Set the env var (e.g.
-`NETLIFY_AUTH_TOKEN`) in your local `.env`.
+[`ci-providers.md`](./ci-providers.md) and set `DEPLOY_PROVIDER`
+in your local `.env` (defaults to `netlify`), plus that
+provider's auth env var (e.g. `NETLIFY_AUTH_TOKEN`).
 
 Test it:
 

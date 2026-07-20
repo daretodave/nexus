@@ -11,8 +11,8 @@
 //   exit 2  →  timeout
 //   exit 3  →  config / auth failure
 //
-// Pick your provider below; uncomment the matching block.
-// Configure auth in .env.
+// Set DEPLOY_PROVIDER in .env to pick your provider (defaults
+// to 'netlify'); configure that provider's auth in .env too.
 //
 // See nexus/playbooks/ci-providers.md for full details.
 
