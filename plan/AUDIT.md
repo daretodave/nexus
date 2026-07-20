@@ -224,6 +224,16 @@ impact/ease numerically, higher true cost from harder detection.
 Not a fresh A-G sweep; last full sweep still the 2026-07-19
 digest tick (above).
 
+Cloud tick 2026-07-20 (second): #12 still the only blocked
+AUDIT row. Shipped the remaining `plan/CRITIQUE.md` HIGH row —
+`playbooks/new-project.md:515-516`'s nonexistent `pnpm
+bootstrap:status`/`pnpm bootstrap` commands, deferred by the
+previous tick in favor of the `<PROJECT_PKG_PREFIX>` double-`@`
+fix — over the AUDIT block's own `[A/E, 2.7]` and `[C/F, 1.6]`
+rows, both lower-scoring. `plan/CRITIQUE.md`'s pending queue is
+now three LOW/MED rows, no HIGH. Not a fresh A-G sweep; last
+full sweep still the 2026-07-19 digest tick (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

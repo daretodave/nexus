@@ -27,27 +27,6 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [HIGH] playbooks/new-project.md:515-516 — step 9's `pnpm bootstrap:status` / `pnpm bootstrap` commands don't exist anywhere in the kit
-- category: instruction-drift
-- observation: step 9 tells the adopter to run `pnpm
-  bootstrap:status` then `pnpm bootstrap`, but no template ever
-  defines a `bootstrap` or `bootstrap:status` script in
-  `package.json`. `customization/bootstrap-automation.md`
-  documents the real invocation surface as the Claude Code slash
-  command `/bootstrap status` / `/bootstrap` (a skill, not a
-  shell script) — see its command table at
-  `customization/bootstrap-automation.md:143-149`.
-- evidence: `grep -rn '"bootstrap' --include='*.json'` across the
-  repo returns nothing; `grep -rn "bootstrap:status"` matches only
-  `playbooks/new-project.md:515` itself. Literally running `pnpm
-  bootstrap:status` in an adopted repo fails with "missing
-  script."
-- suggested fix: change step 9's wording from `pnpm
-  bootstrap:status` / `pnpm bootstrap` to `/bootstrap status` /
-  `/bootstrap`, matching `customization/bootstrap-automation.md`'s
-  documented command table.
-- source: dry-run
-
 ### [MED] playbooks/new-project.md:512-514 — step 9's manifest copy target directory doesn't exist yet
 - category: missing-file
 - observation: step 9 says to copy
@@ -90,6 +69,13 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] playbooks/new-project.md:515-516 — step 9's `pnpm bootstrap:status` / `pnpm bootstrap` commands don't exist anywhere in the kit — this commit
+- fix: reworded step 9's two invocations from `pnpm
+  bootstrap:status` / `pnpm bootstrap` to `/bootstrap status` /
+  `/bootstrap`, matching the documented command table at
+  `customization/bootstrap-automation.md:143-149` — no template
+  ever defined those as package.json scripts.
 
 ### [x] [HIGH] templates/skills/ship-a-phase.md:206-207 — documented `<PROJECT_PKG_PREFIX>` replacement corrupts package-import lines into `@@<name>/...` — this commit
 - fix: dropped the literal `@` from the token in

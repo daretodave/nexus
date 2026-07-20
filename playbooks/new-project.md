@@ -512,15 +512,15 @@ have two paths to wire them:
 For the automated path: copy
 `../nexus/templates/setup/bootstrap.example.json` to
 `setup/bootstrap.local.json`, fill in your project
-settings, then run `pnpm bootstrap:status` (read-only) to
-preview the plan, then `pnpm bootstrap` for the
-interactive walk.
+settings, then run `/bootstrap status` (read-only) to
+preview the plan, then `/bootstrap` for the interactive
+walk.
 
 The manifest ships with the same `<PROJECT>` /
 `<PROJECT_LOWER>` tokens step 4's placeholder table covers
 — but `./setup` doesn't exist until now, so step 4's sed
 never touched it. Sweep it the same way before running
-`pnpm bootstrap`:
+`/bootstrap`:
 
 ```bash
 sed -i -e 's/<PROJECT_LOWER>/thock/g' -e 's/<PROJECT>/thock/g' \
