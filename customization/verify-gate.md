@@ -53,7 +53,7 @@ The hermetic e2e is the load-bearing piece. Playwright with
 // playwright.config.ts
 export default {
   webServer: {
-    command: 'pnpm --filter @<PROJECT_PKG_PREFIX>/web start -p 4173',
+    command: 'pnpm --filter <PROJECT_PKG_PREFIX>/web start -p 4173',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

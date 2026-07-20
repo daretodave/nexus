@@ -203,8 +203,8 @@ Decisions.
 ### Step 4 — Build
 
 Mirror the canonical sibling's structure into the new family.
-Reads via shared loaders (`@<PROJECT_PKG_PREFIX>/content`,
-`@<PROJECT_PKG_PREFIX>/data` if applicable); never reach into
+Reads via shared loaders (`<PROJECT_PKG_PREFIX>/content`,
+`<PROJECT_PKG_PREFIX>/data` if applicable); never reach into
 the filesystem from a leaf component.
 
 For each new content / data read pattern, add a helper to the

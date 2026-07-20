@@ -208,6 +208,22 @@ and `CURRENT-STATE.md`) — over the `[A/E, 2.7]` and `[C/F, 1.6]`
 rows, both lower-scoring. Not a fresh A-G sweep; last full sweep
 still today's digest tick (above).
 
+Cloud tick 2026-07-20: #12 still the only blocked AUDIT row.
+`/critique` pass 6 (previous tick) landed two fresh HIGH rows in
+`plan/CRITIQUE.md`, both outscoring this block's own `[A/E, 2.7]`
+and `[C/F, 1.6]` rows on the shared scale. Shipped the
+higher-impact of the two — the `<PROJECT_PKG_PREFIX>` double-`@`
+corruption (`templates/skills/ship-a-phase.md:206-207`,
+`customization/verify-gate.md:56`) — over the sibling HIGH row
+(`playbooks/new-project.md:515-516`'s nonexistent `pnpm
+bootstrap:status` command), reasoning the double-`@` bug fails
+silently (a plausible-looking but wrong package specifier lands
+in an adopter's docs) where the sibling row fails loud ("missing
+script", immediately visible and easy to recover from) — same
+impact/ease numerically, higher true cost from harder detection.
+Not a fresh A-G sweep; last full sweep still the 2026-07-19
+digest tick (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

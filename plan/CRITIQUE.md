@@ -27,31 +27,6 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [HIGH] templates/skills/ship-a-phase.md:206-207 — documented `<PROJECT_PKG_PREFIX>` replacement corrupts package-import lines into `@@<name>/...`
-- category: placeholder
-- observation: `templates/README.md`'s placeholder table and
-  `playbooks/new-project.md`'s worked sed one-liner both replace
-  `<PROJECT_PKG_PREFIX>` with a value that already includes the
-  `@` sigil (e.g. `@thock`), but `ship-a-phase.md:206-207` writes
-  the token with a literal `@` already prepended
-  (`` `@<PROJECT_PKG_PREFIX>/content` ``). Running the documented
-  sed verbatim turns it into `` `@@halcyon/content` `` — a broken
-  package specifier, not a valid workspace import.
-- evidence: reproduced in a scratch dry-run — after
-  `sed -i ... -e 's/<PROJECT_PKG_PREFIX>/@halcyon/g'` (the exact
-  one-liner at `playbooks/new-project.md:259`),
-  `skills/ship-a-phase.md:206-207` reads "Reads via shared
-  loaders (`@@halcyon/content`, `@@halcyon/data` ...)". Same
-  double-`@` pattern also present at
-  `customization/verify-gate.md:56`
-  (`pnpm --filter @<PROJECT_PKG_PREFIX>/web start`), though that
-  file isn't copied so isn't corrupted by the sed itself.
-- suggested fix: drop the literal `@` from `ship-a-phase.md:206-207`
-  (and `verify-gate.md:56`) so the token reads
-  `<PROJECT_PKG_PREFIX>/content`, matching the convention that the
-  replacement value already carries the `@`.
-- source: dry-run
-
 ### [HIGH] playbooks/new-project.md:515-516 — step 9's `pnpm bootstrap:status` / `pnpm bootstrap` commands don't exist anywhere in the kit
 - category: instruction-drift
 - observation: step 9 tells the adopter to run `pnpm
@@ -115,6 +90,17 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] templates/skills/ship-a-phase.md:206-207 — documented `<PROJECT_PKG_PREFIX>` replacement corrupts package-import lines into `@@<name>/...` — this commit
+- fix: dropped the literal `@` from the token in
+  `templates/skills/ship-a-phase.md:206-207` and
+  `customization/verify-gate.md:56`, so both now read
+  `<PROJECT_PKG_PREFIX>/content` / `<PROJECT_PKG_PREFIX>/web` —
+  matching the convention (confirmed against
+  `templates/README.md:91` and `playbooks/new-project.md:244`)
+  that the replacement value already carries the `@` sigil (e.g.
+  `@thock`). Verified no other `@<PROJECT_PKG_PREFIX>` occurrences
+  remain in the kit.
 
 ### [x] [LOW] playbooks/new-project.md §8 — sub-agent "copy" instruction re-introduces files step 4 already placed — this commit
 - fix: reworded step 8's `scout`/`reader` bullets from "Copy
