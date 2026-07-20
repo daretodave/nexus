@@ -415,6 +415,40 @@ kit + sibling surveys.
 - estimated phases: 1 (doc/prompt-only, no template API change)
 - conflicts: none.
 
+### [ ] [score 6.5] Mechanically verify the Cloud-Run trailer on cloud ticks
+- proposed: 2026-07-20 (digest)
+- source signals: of the 4 cloud commits shipped in the trailing
+  24h window (2026-07-19 14:31 to 2026-07-20 09:07 UTC — all
+  4 `march` runs green, no failures), 1 — `a74f7b6` ("critique:
+  pass 6 — 4 findings (2 high, 2 med)", from the 2026-07-19
+  20:18 UTC tick) — landed with no `Cloud-Run:` trailer at all,
+  breaking agents.md rule 2's carve-out. The workflow's own
+  ceiling check (`march.yml`'s "Daily commit ceiling check"
+  step) counts cloud volume by `git log --grep='Cloud-Run:'`,
+  so this commit silently doesn't count toward the 8/24h
+  ceiling either — the miss is invisible from both the rule
+  side and the counting side. `scripts/verify.mjs` runs
+  foreground on every tick but has no leg that inspects the
+  commit trailer, since it can't distinguish a cloud commit
+  from a local one at gate time.
+- rationale: the trailer is the sole mechanism the ceiling
+  trusts; a tick that forgets it both violates the standing
+  rule silently and erodes the ceiling's accuracy in the
+  direction that's hardest to notice (undercounting, not
+  overcounting). One miss in 4 ticks this window is a real
+  rate, not a one-off.
+- proposed scope: a post-agent step in `march.yml` (and its
+  `templates/` mirror) that diffs `HEAD` against the pre-run
+  SHA when the ceiling didn't skip, and — if new commits landed
+  without the trailer on all of them — opens an unlabeled
+  issue naming the offending SHA (the loud-not-silent pattern
+  agents.md rule 6 already prescribes elsewhere). Gate-side
+  enforcement isn't possible (verify.mjs can't tell cloud from
+  local commits), so this has to live in the workflow, not the
+  gate.
+- estimated phases: 1 (workflow-only, no template API change)
+- conflicts: none.
+
 ## Promoted
 
 (moves to the build plan via /oversight)
