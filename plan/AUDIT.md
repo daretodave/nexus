@@ -234,6 +234,23 @@ rows, both lower-scoring. `plan/CRITIQUE.md`'s pending queue is
 now three LOW/MED rows, no HIGH. Not a fresh A-G sweep; last
 full sweep still the 2026-07-19 digest tick (above).
 
+Cloud tick 2026-07-20 (third): #12 still the only blocked
+AUDIT row. Re-scored `plan/CRITIQUE.md`'s remaining queue (one
+LOW, two MED). The LOW row (`<PROJECT_PKG_PREFIX>` worked
+example) reproduced as already resolved (prior tick pointed
+`templates/README.md` at `playbooks/new-project.md` §4, which
+covers the token) — left in Pending per iterate.md §5.4 (this
+skill doesn't author CRITIQUE rows; a `/critique` pass
+re-confirms and closes it). Of the two MED rows, both scored
+about even; shipped the step-9 `setup/` missing-directory row
+over the step-7 "uncomment the matching block" row — its
+evidence showed a literal reproduced command failure (`cp:
+... No such file or directory`, exit 1) versus step 7's softer
+stale-guidance drift, and the fix was a single self-contained
+paragraph. Both outscored the AUDIT block's own `[A/E, 2.7]`
+and `[C/F, 1.6]` rows. Not a fresh A-G sweep; last full sweep
+still the 2026-07-19 digest tick (above).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

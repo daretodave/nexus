@@ -27,25 +27,6 @@ path, comprehension stumble. See `skills/critique.md`.
   so an adopter knows it's safe to skip.
 - source: dry-run
 
-### [MED] playbooks/new-project.md:512-514 — step 9's manifest copy target directory doesn't exist yet
-- category: missing-file
-- observation: step 9 says to copy
-  `../nexus/templates/setup/bootstrap.example.json` to
-  `setup/bootstrap.local.json`, but `setup/` is never created
-  earlier in the walk — step 4's bulk copy doesn't touch
-  `templates/setup/`, and step 9 itself has no `mkdir -p setup`
-  before the `cp`.
-- evidence: reproduced in a scratch dry-run:
-  `cp ../nexus/templates/setup/bootstrap.example.json
-  setup/bootstrap.local.json` → "cp: cannot create regular file
-  'setup/bootstrap.local.json': No such file or directory" (exit
-  1).
-- suggested fix: prefix the copy instruction with `mkdir -p
-  setup &&`, or note that `setup/00_files.md` (adopt-by-need, see
-  `templates/README.md`'s table) should be copied first when
-  external services are in scope.
-- source: dry-run
-
 ### [MED] playbooks/new-project.md:455-456 — "uncomment the matching block in the script" no longer matches deploy-check.mjs's actual mechanism
 - category: instruction-drift
 - observation: step 7 and the script's own header comment
@@ -69,6 +50,13 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:512-514 — step 9's manifest copy target directory doesn't exist yet — this commit
+- fix: replaced the prose copy instruction with a literal
+  `mkdir -p setup && cp ...` command block, and noted why —
+  step 4's bulk copy never lands `templates/setup/`. Trimmed
+  the following paragraph's duplicate explanation of the same
+  gap.
 
 ### [x] [HIGH] playbooks/new-project.md:515-516 — step 9's `pnpm bootstrap:status` / `pnpm bootstrap` commands don't exist anywhere in the kit — this commit
 - fix: reworded step 9's two invocations from `pnpm

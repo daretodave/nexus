@@ -509,17 +509,24 @@ have two paths to wire them:
   OAuth approvals, App installs) pause for the user;
   everything else is scripted.
 
-For the automated path: copy
-`../nexus/templates/setup/bootstrap.example.json` to
-`setup/bootstrap.local.json`, fill in your project
-settings, then run `/bootstrap status` (read-only) to
-preview the plan, then `/bootstrap` for the interactive
-walk.
+For the automated path, `./setup` doesn't exist yet — step
+4's bulk copy never lands `templates/setup/` — so create it
+before copying the manifest in:
+
+```bash
+mkdir -p setup
+cp ../nexus/templates/setup/bootstrap.example.json \
+  setup/bootstrap.local.json
+```
+
+Fill in your project settings, then run `/bootstrap status`
+(read-only) to preview the plan, then `/bootstrap` for the
+interactive walk.
 
 The manifest ships with the same `<PROJECT>` /
-`<PROJECT_LOWER>` tokens step 4's placeholder table covers
-— but `./setup` doesn't exist until now, so step 4's sed
-never touched it. Sweep it the same way before running
+`<PROJECT_LOWER>` tokens step 4's placeholder table covers,
+but step 4's sed ran before `./setup` existed, so it never
+touched this file. Sweep it the same way before running
 `/bootstrap`:
 
 ```bash
