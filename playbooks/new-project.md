@@ -228,7 +228,9 @@ needs both copies to actually fire.)
 
 (If using GitHub-as-DB, also copy `../nexus/templates/data/` to
 `./data/`. See [`customization/data-layer.md`](../customization/data-layer.md)
-to decide.)
+to decide. If you copy it, add `./data` to the search-and-replace
+scope below — both one-liners already include it, so nothing
+else to change.)
 
 Now do a global search-and-replace across the copied files:
 
@@ -247,7 +249,7 @@ A one-liner that replaces all eight, bash/zsh/WSL/macOS:
 
 ```bash
 grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>\|<PROJECT_PKG_PREFIX>' \
-    ./skills ./.claude ./plan ./agents.md ./scripts ./.env.example \
+    ./skills ./.claude ./plan ./agents.md ./scripts ./.env.example ./data \
   | xargs sed -i \
       -e 's/<PROJECT_LOWER>/thock/g' \
       -e 's/<PROJECT>/thock/g' \
@@ -274,7 +276,7 @@ $repl = @{
   '<DEFAULT_BRANCH>'      = 'main'
   '<PROJECT_PKG_PREFIX>'  = '@thock'
 }
-Get-ChildItem -Recurse -File .\skills, .\.claude, .\plan, .\agents.md, .\scripts, .\.env.example |
+Get-ChildItem -Recurse -File .\skills, .\.claude, .\plan, .\agents.md, .\scripts, .\.env.example, .\data -ErrorAction SilentlyContinue |
   ForEach-Object {
     $text = Get-Content $_.FullName -Raw
     foreach ($k in $repl.Keys) { $text = $text -replace [regex]::Escape($k), $repl[$k] }

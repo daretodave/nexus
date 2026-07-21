@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-19
+# Kit audit — 2026-07-21
 
 > Bias: none
 
@@ -263,6 +263,29 @@ example, LOW) reproduced as already resolved in a prior tick;
 left in Pending per iterate.md §5.4. Not a fresh A-G sweep;
 last full sweep still the 2026-07-19 digest tick (above).
 
+Cloud tick 2026-07-21: fresh A-G sweep (header 2 days old, past
+iterate.md's 24h threshold). F (model-id freshness) and G
+(sibling lessons) re-confirmed clean without a manual re-derive
+— ids current, no `../kintilla`/`../semilayer`/`NEXUS_LESSONS.md`
+in this checkout. A/B/C/D/E swept fresh: reproduced the
+documented copy + placeholder-sweep flow in a scratch repo and
+found the sweep's grep/`Get-ChildItem` scope (both one-liners,
+`playbooks/new-project.md` §4) omits `./data` even though the
+same section's preceding paragraph documents copying
+`templates/data/` there for GitHub-as-DB adopters —
+`templates/data/README.md` carries live `<PROJECT>`/
+`<PROJECT_PKG_PREFIX>` tokens that survive the sweep as written.
+Same bug class as two already-fixed CRITIQUE.md rows (`./scripts`,
+`./.env.example` scope gaps). Also found `plan/CRITIQUE.md`'s one
+pending row (`<PROJECT_PKG_PREFIX>` worked example) already
+resolved by a prior tick — left in Pending per iterate.md §5.4.
+Shipped the `./data` scope fix (below) over the AUDIT block's own
+`[A/E, 2.7]` and `[C/F, 1.6]` rows (both scored lower) and three
+new lower-scoring rows found this sweep, now queued to Pending:
+`playbooks/existing-project.md`'s empty `plan/phases/` overlay
+gap, `README.md:309`'s two unwrapped bullets, and
+`playbooks/cloud-loop.md:66`'s stale "three new files" count.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -318,7 +341,59 @@ last full sweep still the 2026-07-19 digest tick (above).
   style already used elsewhere (`https://your-site.netlify.app`
   in `playbooks/new-project.md:240`).
 
+### [B, 4.5] existing-project.md's overlay creates an empty `plan/phases/` with no brief inside it
+- category: completeness
+- impact: 5, ease: 9
+- evidence: `playbooks/existing-project.md:128`'s overlay
+  command runs `fs.mkdirSync('plan/phases',{recursive:true})`
+  but never copies a phase-brief template into it or points the
+  reader at `new-project.md` §5's brief format (Scope/Outputs/
+  Stack pins/Tests/Decisions), even though §6 of the same
+  playbook assumes a first phase brief already exists to commit.
+- next: add a line right after the overlay command pointing to
+  `new-project.md` §5's brief format (or copy
+  `templates/plan/phases/phase_1_bootstrap.md` in as a starting
+  point), matching how the overlay already cross-references
+  `new-project.md` §4 for the placeholder table instead of
+  duplicating it.
+
+### [D, 1.8] README.md:309 has two unwrapped bullets breaking the locked wrap rule
+- category: voice
+- impact: 2, ease: 9
+- evidence: `README.md:309` carries two bullets (185 and 92
+  chars) sitting unwrapped between paragraphs wrapped to
+  `plan/bearings.md`'s standing ~62-64 col rule.
+- next: hard-wrap both bullets to ~62-64 cols, matching the
+  surrounding prose.
+
+### [A, 1.35] cloud-loop.md's "three new files" header lists only two
+- category: doc-drift
+- impact: 3, ease: 4.5
+- evidence: `playbooks/cloud-loop.md:66`'s "Three new files
+  relative to the standard nexus overlay" header sits directly
+  above a tree diagram listing only `march.yml` and
+  `CLOUD_LOOP.md` — two entries, not three.
+- next: either correct the count to "two" or identify and add
+  the third file the header originally counted (check git blame
+  for the section's last accurate revision).
+
 ## Done
+
+### [x] [A/E, 4.5] playbooks/new-project.md's placeholder-sweep one-liners omit `./data`, leaving GitHub-as-DB adopters' tokens unresolved — this commit
+- fix: added `./data` to both the bash `grep -rl` scope and the
+  PowerShell `Get-ChildItem -Recurse` scope in
+  `playbooks/new-project.md` §4 (the latter also gets
+  `-ErrorAction SilentlyContinue` since `./data` only exists for
+  adopters who opted into GitHub-as-DB), and a one-line note in
+  the preceding GitHub-as-DB copy paragraph confirming both
+  one-liners already cover it. Reproduced in a scratch repo
+  before fixing: `templates/data/README.md`'s `<PROJECT>`/
+  `<PROJECT_PKG_PREFIX>` tokens survived the documented sweep as
+  written. Same bug class as the already-fixed `./scripts`/
+  `./.env.example` scope gaps (`plan/CRITIQUE.md` Done log).
+  `existing-project.md` doesn't carry its own copy of this
+  one-liner — it points to `new-project.md` §4 — so no duplicate
+  fix needed there.
 
 ### [x] [A/C, 3.2] README's kit-tree omits two real files under `templates/plan/` — this commit
 - fix: added `PHASE_CANDIDATES.md` and `CURRENT-STATE.md` (with
