@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-07-16
-> Pass count: 3
+> Last pass: 2026-07-22
+> Pass count: 4
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -132,7 +132,8 @@ kit + sibling surveys.
 - conflicts: none — second layer of the two-ring secrets story.
 
 ### [ ] [score 9.0] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
-- proposed: 2026-07-06; re-evidenced 2026-07-10, 2026-07-13
+- proposed: 2026-07-06; re-evidenced 2026-07-10, 2026-07-13,
+  2026-07-21
 - source signals: this is the second critique cycle in a row to
   land findings in the same step-4/7 block of
   playbooks/new-project.md. The four findings that originally
@@ -161,19 +162,29 @@ kit + sibling surveys.
   `scripts/stack-lifecycle.mjs` unconditionally landed with no
   prompt to remove them for adopters who don't need them —
   confirmed in a scratch repro. Third cycle in a row landing in
-  this same block.
+  this same block. A fresh A-G AUDIT sweep (2026-07-21, not a
+  critique pass) found a fourth instance of the identical
+  grep-scope bug: the same one-liners also omit `./data`, so
+  `templates/data/README.md`'s `<PROJECT>`/`<PROJECT_PKG_PREFIX>`
+  tokens survive the sweep unresolved for GitHub-as-DB adopters —
+  fixed same-commit (`ced0304`), the third distinct scope gap
+  found this way after `./scripts` and `./.env.example`. The bug
+  class now reproduces from both signal A (audit) and signal B
+  (critique), always in the same one-liners.
 - rationale: tick-by-tick `/iterate` fixes keep patching this
   block and it keeps re-breaking on the next fresh-eyes pass —
   the strongest possible evidence that the block's *structure*
   (copy array + placeholder sweep + prune, spread loosely across
   steps 4-7) is the defect, not any single line in it. Signal B's
-  cluster pattern, now tripled.
+  cluster pattern, now quadrupled, and no longer critique-only.
 - proposed scope: rewrite playbooks/new-project.md's step 4 (copy)
   and its placeholder-replace step so paths match the README's
   recommended sibling-clone layout; add the missing
   `templates/plan/phases/` copy line (and re-sweep placeholders
   over it); widen the grep scope to every directory step 4
-  populates (`./scripts`, `./.env.example`); add an explicit
+  populates (`./scripts`, `./.env.example`, `./data`) once,
+  structurally, instead of patching one omitted directory per
+  sweep; add an explicit
   adopt-by-need prune sub-step right after the bulk copy that
   covers all ~12 of `templates/README.md`'s adopt-by-need rows,
   not just the 4 already worked (Surface/Structured-data/
