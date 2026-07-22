@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-21
+# Kit audit — 2026-07-22
 
 > Bias: none
 
@@ -286,6 +286,21 @@ new lower-scoring rows found this sweep, now queued to Pending:
 gap, `README.md:309`'s two unwrapped bullets, and
 `playbooks/cloud-loop.md:66`'s stale "three new files" count.
 
+Cloud tick 2026-07-22: fresh A-G sweep (header 1 day old, past
+iterate.md's 24h threshold). F and G re-confirmed clean (model
+ids current across the repo bar one exception below; no sibling
+lessons files in this checkout). Found two new rows, both
+scoring below this tick's pick: `playbooks/cloud-loop.md:62`
+citing "Sonnet 4.6" where every other model-id reference in the
+repo (`march.yml`, `customization/claude-code.md`) says
+`claude-sonnet-5`, and `templates/skills/triage.md:137`
+hardcoding `blob/main` in a GitHub link instead of
+`blob/<DEFAULT_BRANCH>` like its sibling skill templates use.
+#12 still the sole blocked row. Shipped the highest-scoring
+open row — `[B, 4.5]` `existing-project.md`'s empty
+`plan/phases/` gap — over both new rows (4.0 and 3.6) and the
+three carried-over LOW/lower-MED rows.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -341,21 +356,37 @@ gap, `README.md:309`'s two unwrapped bullets, and
   style already used elsewhere (`https://your-site.netlify.app`
   in `playbooks/new-project.md:240`).
 
-### [B, 4.5] existing-project.md's overlay creates an empty `plan/phases/` with no brief inside it
-- category: completeness
-- impact: 5, ease: 9
-- evidence: `playbooks/existing-project.md:128`'s overlay
-  command runs `fs.mkdirSync('plan/phases',{recursive:true})`
-  but never copies a phase-brief template into it or points the
-  reader at `new-project.md` §5's brief format (Scope/Outputs/
-  Stack pins/Tests/Decisions), even though §6 of the same
-  playbook assumes a first phase brief already exists to commit.
-- next: add a line right after the overlay command pointing to
-  `new-project.md` §5's brief format (or copy
-  `templates/plan/phases/phase_1_bootstrap.md` in as a starting
-  point), matching how the overlay already cross-references
-  `new-project.md` §4 for the placeholder table instead of
-  duplicating it.
+### [A/E, 4.0] templates/skills/triage.md hardcodes `blob/main` instead of `<DEFAULT_BRANCH>`
+- category: doc-drift / adopter friction
+- impact: 5, ease: 8
+- evidence: `templates/skills/triage.md:137` —
+  `[plan/AUDIT.md](https://github.com/<REPO_SLUG>/blob/main/plan/AUDIT.md)`
+  — while sibling templates
+  (`templates/skills/plan-a-phase.md:150`,
+  `templates/skills/ship-a-phase.md:157,260`) correctly use
+  `<REPO_SLUG>/blob/<DEFAULT_BRANCH>/...`, and
+  `playbooks/new-project.md` documents `<DEFAULT_BRANCH>` as a
+  required placeholder-sweep token. An adopter on `master`/
+  `trunk` gets a permanently wrong link; `scripts/verify.mjs`'s
+  link leg skips `https:` targets, so this never gets caught
+  mechanically.
+- next: replace `blob/main` with `blob/<DEFAULT_BRANCH>` at
+  `templates/skills/triage.md:137`, matching the other two
+  skill templates.
+
+### [F/A, 3.6] playbooks/cloud-loop.md:62 cites a stale model name "Sonnet 4.6"
+- category: freshness / doc-drift
+- impact: 4, ease: 9
+- evidence: `playbooks/cloud-loop.md:62` says "OAuth-token +
+  public repo + Sonnet 4.6 → genuinely $0 marginal," but
+  `.github/workflows/march.yml:100` and
+  `templates/.github/workflows/march.yml:164` both pin
+  `--model claude-sonnet-5`, and `customization/claude-code.md:310`
+  documents the template default as `claude-sonnet-5`. "Sonnet
+  4.6" appears nowhere else in the repo.
+- next: change "Sonnet 4.6" to "Sonnet 5" at
+  `playbooks/cloud-loop.md:62`, matching the kit's standing
+  "ids age — check /model" caveat used elsewhere.
 
 ### [D, 1.8] README.md:309 has two unwrapped bullets breaking the locked wrap rule
 - category: voice
@@ -378,6 +409,16 @@ gap, `README.md:309`'s two unwrapped bullets, and
   for the section's last accurate revision).
 
 ## Done
+
+### [x] [B, 4.5] existing-project.md's overlay creates an empty `plan/phases/` with no brief inside it — this commit
+- fix: added a paragraph right after the overlay's GitHub-as-DB
+  note in `playbooks/existing-project.md` explaining that
+  `plan/phases/` lands empty (unlike `new-project.md`'s bulk
+  `templates/plan` → `plan` copy) and pointing the reader at
+  `new-project.md` §5's brief format, or copying
+  `templates/plan/phases/phase_1_bootstrap.md` in as a starting
+  point — before §6's "commit the build plan and the first
+  phase brief" step assumes one exists.
 
 ### [x] [A/E, 4.5] playbooks/new-project.md's placeholder-sweep one-liners omit `./data`, leaving GitHub-as-DB adopters' tokens unresolved — this commit
 - fix: added `./data` to both the bash `grep -rl` scope and the

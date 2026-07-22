@@ -136,6 +136,16 @@ needs both copies to actually fire.)
 (If using GitHub-as-DB:
 `mkdir -p ./data && cp -r ../nexus/templates/data/* ./data/`.)
 
+`plan/phases/` is created empty here — unlike
+`new-project.md`'s bulk `templates/plan` → `plan` copy, this
+overlay copies individual files and doesn't land a starting
+brief. Before committing §6's build plan below, add
+`plan/phases/phase_1_bootstrap.md` following
+[`new-project.md`](./new-project.md) §5's brief format (Scope /
+Outputs / Stack pins / Tests / Decisions) — or copy
+`../nexus/templates/plan/phases/phase_1_bootstrap.md` in as a
+starting point and edit it to match.
+
 Search-and-replace placeholders (see
 [`new-project.md`](./new-project.md) §4 for the mapping table
 — bash and PowerShell forms, both exhaustive over all eight
