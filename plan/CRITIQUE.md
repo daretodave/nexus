@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-07-19
-> Pass count: 6
+> Last pass: 2026-07-22
+> Pass count: 7
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -11,23 +11,99 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] templates/README.md — `<PROJECT_PKG_PREFIX>` has no worked replacement example
-- category: placeholder
-- observation: the placeholder table lists
-  `<PROJECT_PKG_PREFIX>`, but the worked sed example only
-  demonstrates `<PROJECT>` and `<HOSTING_URL>` then truncates
-  with "# ...etc per the table above." Copy-pasting the shown
-  commands verbatim leaves it unresolved.
-- evidence: `templates/README.md:77` (table entry) vs. `:82-91`
-  (worked example omits it); confirmed unresolved occurrences at
-  `templates/skills/ship-a-phase.md:206-207` and
-  `templates/scripts/bootstrap.mjs:614`.
-- suggested fix: add `<PROJECT_PKG_PREFIX>` to the worked
-  one-liner example, or state explicitly it's optional/monorepo-only
-  so an adopter knows it's safe to skip.
+### [MED] playbooks/new-project.md:248-261 — bash placeholder one-liner uses `sed -i` without a backup-extension arg, which breaks on stock macOS
+- category: instruction-drift
+- observation: the block is introduced as "bash/zsh/WSL/macOS"
+  (`playbooks/new-project.md:248`) and `playbooks/windows-notes.md:16-18`
+  repeats the claim ("Every playbook code block works as
+  written" for macOS/Linux/WSL). BSD `sed` (stock on macOS,
+  no Homebrew coreutils/gnu-sed) requires an explicit backup
+  suffix immediately after `-i` — even an empty one
+  (`sed -i '' -e ...`). As written, `sed -i -e 's/.../.../ g'`
+  makes BSD sed consume the first `-e` as the backup
+  extension and errors out (`sed: 1: "...": undefined label`),
+  leaving every placeholder unresolved on a machine the doc
+  explicitly claims support for.
+- evidence: `playbooks/new-project.md:253` (`| xargs sed -i \`
+  with no `''` before the first `-e`); claim of macOS support
+  at `:248` and `playbooks/windows-notes.md:16-18`. GNU sed
+  (Linux, this dry-run's runner) accepts the same invocation
+  fine, which is why the gap is easy to miss from a Linux
+  checkout.
+- suggested fix: either add a portable backup-suffix guard
+  (`sed -i.bak -e ... && find . -name '*.bak' -delete`, or
+  detect `sed --version` and branch), or narrow the "macOS"
+  claim to "macOS with GNU sed (`brew install gnu-sed`, use as
+  `gsed`)".
+- source: dry-run
+
+### [LOW] playbooks/new-project.md:251-262 — bash one-liner's `./data` scope errors on stdout when the adopter isn't using GitHub-as-DB
+- category: instruction-drift
+- observation: `./data` is unconditionally in the bash
+  `grep -rl` scope so GitHub-as-DB adopters' `templates/data/`
+  placeholders get swept (this was a deliberate earlier fix).
+  But for the common case — no structured data layer, so
+  `./data` was never copied — plain `grep` errors loudly
+  (`grep: ./data: No such file or directory`, exit 2) on every
+  run of the documented command. The PowerShell twin already
+  guards this exact case with `-ErrorAction SilentlyContinue`;
+  the bash version has no equivalent, so it's the one shell
+  pairing left unguarded.
+- evidence: reproduced directly — `grep -rl 'X' ./skills
+  ./.claude ./plan ./agents.md ./scripts ./.env.example ./data`
+  against a scratch repo without `./data` prints `grep: ./data:
+  No such file or directory` (real GNU grep, confirmed via
+  `command grep` to bypass this sandbox's own grep wrapper).
+  Compare `playbooks/new-project.md:252` (bare `./data`, no
+  guard) with `:279` (`-ErrorAction SilentlyContinue` on the
+  same list). The sed replace itself still succeeds (xargs
+  gets the files that were found before the error), so this is
+  cosmetic, not blocking — but it reads as a fresh error to a
+  first-time adopter following the doc literally.
+- suggested fix: mirror the PowerShell twin's guard, e.g.
+  `2>/dev/null` on the grep, or `[ -d ./data ] &&` prefix.
+- source: dry-run
+
+### [LOW] templates/README.md:131 vs playbooks/new-project.md §4's prune list — the `.claude/` bundle is documented as adopt-by-need but never offered for removal
+- category: instruction-drift
+- observation: `templates/README.md`'s adopt-by-need table
+  lists `claude/settings.json` + `claude/hooks/guard.mjs` +
+  `claude/CLAUDE.md` + `scripts/notify.mjs` as conditional on
+  "You run the loop on Claude Code" — implying a non-Claude-Code
+  adopter (README's own TL;DR prompt says "Claude Code (or
+  Cursor, or any capable agent)") can skip it. But
+  `playbooks/new-project.md` step 4's bulk-copy always lands
+  `templates/claude` → `.claude` unconditionally, and its
+  "Prune adopt-by-need files" section enumerates eight other
+  adopt-by-need categories to `rm -f` but never mentions this
+  one. A Cursor-only adopter following the playbook literally
+  ends up with an inert, Claude-Code-specific permission
+  allowlist and hook wired into their repo with no documented
+  way to know it's safe to drop.
+- evidence: `templates/README.md:131` (the adopt-by-need row)
+  vs. `playbooks/new-project.md:221` (unconditional copy) and
+  `:287-354` (the prune section, which omits this row).
+- suggested fix: add a ninth bullet to the prune list — "remove
+  `.claude/` + root `CLAUDE.md` + `scripts/notify.mjs` unless
+  you're running the loop on Claude Code" — or note explicitly
+  in step 4 that non-Claude-Code adopters should skip the
+  `.claude` copy pair.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] templates/README.md — `<PROJECT_PKG_PREFIX>` has no worked replacement example — re-confirmed resolved, closing
+- fix: re-walked the dry-run adoption end to end.
+  `templates/README.md:93-97` no longer carries a truncated
+  worked example — it now points at
+  `playbooks/new-project.md` §4 "rather than hand-rolling a
+  partial version here," and that section's bash (`:261`) and
+  PowerShell (`:277`) one-liners both resolve
+  `<PROJECT_PKG_PREFIX>` (`@thock`). Confirmed zero unresolved
+  occurrences after running both documented commands against a
+  scratch copy. AUDIT.md's 2026-07-20 tick flagged this as
+  already-resolved and left it pending for a `/critique` pass
+  to close per `iterate.md` §5.4 — this is that pass.
 
 ### [x] [MED] playbooks/new-project.md:455-456 — "uncomment the matching block in the script" no longer matches deploy-check.mjs's actual mechanism — this commit
 - fix: reworded `templates/scripts/deploy-check.mjs:14`'s header
