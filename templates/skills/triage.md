@@ -134,7 +134,7 @@ gh issue edit "$NUM" --repo "$GH_REPO" --add-label "triage:loop-queued,bug"
 
 gh issue comment "$NUM" --repo "$GH_REPO" --body "$(cat <<'EOF'
 Triaged → bug. The loop will address this; tracked in
-[plan/AUDIT.md](https://github.com/<REPO_SLUG>/blob/main/plan/AUDIT.md)
+[plan/AUDIT.md](https://github.com/<REPO_SLUG>/blob/<DEFAULT_BRANCH>/plan/AUDIT.md)
 under external-issue category. A future /iterate tick will ship
 the fix and reference this issue's number in the commit body.
 EOF

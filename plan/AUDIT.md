@@ -314,6 +314,12 @@ versus a cosmetic wrong-link edge case. Shipped that CRITIQUE
 row instead; this block's rows are unchanged and still
 Pending.
 
+Cloud tick 2026-07-23 (second): #12 still the only blocked
+AUDIT row, unchanged. Header still <24h old, so re-scored:
+`[A/E, 4.0]` (triage.md's `blob/main`) is now this block's own
+top scorer with no competing CRITIQUE HIGH/MED row pending
+(both remaining CRITIQUE rows are LOW). Shipped it.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -369,24 +375,6 @@ Pending.
   style already used elsewhere (`https://your-site.netlify.app`
   in `playbooks/new-project.md:240`).
 
-### [A/E, 4.0] templates/skills/triage.md hardcodes `blob/main` instead of `<DEFAULT_BRANCH>`
-- category: doc-drift / adopter friction
-- impact: 5, ease: 8
-- evidence: `templates/skills/triage.md:137` —
-  `[plan/AUDIT.md](https://github.com/<REPO_SLUG>/blob/main/plan/AUDIT.md)`
-  — while sibling templates
-  (`templates/skills/plan-a-phase.md:150`,
-  `templates/skills/ship-a-phase.md:157,260`) correctly use
-  `<REPO_SLUG>/blob/<DEFAULT_BRANCH>/...`, and
-  `playbooks/new-project.md` documents `<DEFAULT_BRANCH>` as a
-  required placeholder-sweep token. An adopter on `master`/
-  `trunk` gets a permanently wrong link; `scripts/verify.mjs`'s
-  link leg skips `https:` targets, so this never gets caught
-  mechanically.
-- next: replace `blob/main` with `blob/<DEFAULT_BRANCH>` at
-  `templates/skills/triage.md:137`, matching the other two
-  skill templates.
-
 ### [F/A, 3.6] playbooks/cloud-loop.md:62 cites a stale model name "Sonnet 4.6"
 - category: freshness / doc-drift
 - impact: 4, ease: 9
@@ -422,6 +410,15 @@ Pending.
   for the section's last accurate revision).
 
 ## Done
+
+### [x] [A/E, 4.0] templates/skills/triage.md hardcodes `blob/main` instead of `<DEFAULT_BRANCH>` — this commit
+- fix: replaced `blob/main` with `blob/<DEFAULT_BRANCH>` at
+  `templates/skills/triage.md:137`, matching the placeholder
+  already used by `templates/skills/plan-a-phase.md:150` and
+  `templates/skills/ship-a-phase.md:157,260`. An adopter on a
+  non-`main` default branch now gets the same self-healing
+  placeholder sweep as those two templates instead of a
+  permanently wrong link.
 
 ### [x] [B, 4.5] existing-project.md's overlay creates an empty `plan/phases/` with no brief inside it — this commit
 - fix: added a paragraph right after the overlay's GitHub-as-DB
