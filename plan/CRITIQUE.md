@@ -11,32 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md:248-261 — bash placeholder one-liner uses `sed -i` without a backup-extension arg, which breaks on stock macOS
-- category: instruction-drift
-- observation: the block is introduced as "bash/zsh/WSL/macOS"
-  (`playbooks/new-project.md:248`) and `playbooks/windows-notes.md:16-18`
-  repeats the claim ("Every playbook code block works as
-  written" for macOS/Linux/WSL). BSD `sed` (stock on macOS,
-  no Homebrew coreutils/gnu-sed) requires an explicit backup
-  suffix immediately after `-i` — even an empty one
-  (`sed -i '' -e ...`). As written, `sed -i -e 's/.../.../ g'`
-  makes BSD sed consume the first `-e` as the backup
-  extension and errors out (`sed: 1: "...": undefined label`),
-  leaving every placeholder unresolved on a machine the doc
-  explicitly claims support for.
-- evidence: `playbooks/new-project.md:253` (`| xargs sed -i \`
-  with no `''` before the first `-e`); claim of macOS support
-  at `:248` and `playbooks/windows-notes.md:16-18`. GNU sed
-  (Linux, this dry-run's runner) accepts the same invocation
-  fine, which is why the gap is easy to miss from a Linux
-  checkout.
-- suggested fix: either add a portable backup-suffix guard
-  (`sed -i.bak -e ... && find . -name '*.bak' -delete`, or
-  detect `sed --version` and branch), or narrow the "macOS"
-  claim to "macOS with GNU sed (`brew install gnu-sed`, use as
-  `gsed`)".
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md:251-262 — bash one-liner's `./data` scope errors on stdout when the adopter isn't using GitHub-as-DB
 - category: instruction-drift
 - observation: `./data` is unconditionally in the bash
@@ -91,6 +65,26 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:248-261 — bash placeholder one-liner uses `sed -i` without a backup-extension arg, which breaks on stock macOS — this commit
+- fix: reproduced the failure mode's root cause in a scratch
+  dir (GNU sed accepts bare `-i` fine, which is why it hid on
+  Linux) and took the suggested fix's portable-guard option:
+  `playbooks/new-project.md`'s bash one-liner now runs
+  `xargs sed -i.bak -e ... && find . -name '*.bak' -delete`
+  instead of bare `sed -i`. `-i.bak` (suffix attached, no
+  space) is the one spelling both BSD sed (stock macOS) and
+  GNU sed parse identically — BSD sed no longer misreads the
+  following `-e` as its required backup-suffix argument, and
+  the trailing `find` deletes the backups the suffix now
+  forces. Verified the updated one-liner still resolves all
+  eight placeholders and leaves no `.bak` files behind under
+  GNU sed. Added a short note above the code block explaining
+  why, matching `playbooks/windows-notes.md:16-18`'s standing
+  "every playbook code block works as written" claim for
+  macOS/Linux/WSL. Left the "narrow the macOS claim" fix
+  option unused — it would have downgraded a claimed-supported
+  platform instead of fixing the actual bug.
 
 ### [x] [LOW] templates/README.md — `<PROJECT_PKG_PREFIX>` has no worked replacement example — re-confirmed resolved, closing
 - fix: re-walked the dry-run adoption end to end.

@@ -245,12 +245,18 @@ Now do a global search-and-replace across the copied files:
 | `<DEFAULT_BRANCH>` | usually `main` |
 | `<PROJECT_PKG_PREFIX>` | workspace package prefix, e.g. `@thock` (empty if not a monorepo) |
 
-A one-liner that replaces all eight, bash/zsh/WSL/macOS:
+A one-liner that replaces all eight, bash/zsh/WSL/macOS.
+Uses `-i.bak` (suffix attached, no space) rather than bare
+`-i` — stock macOS `sed` is BSD sed, which requires a backup
+suffix argument and otherwise misparses the following `-e` as
+that argument and errors out; `-i.bak` is the one spelling
+both BSD and GNU sed accept identically, so the trailing
+`find` just cleans up the backups it forces:
 
 ```bash
 grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>\|<PROJECT_PKG_PREFIX>' \
     ./skills ./.claude ./plan ./agents.md ./scripts ./.env.example ./data \
-  | xargs sed -i \
+  | xargs sed -i.bak \
       -e 's/<PROJECT_LOWER>/thock/g' \
       -e 's/<PROJECT>/thock/g' \
       -e 's/<PROJECT_TAGLINE>/keyboards, deeply./g' \
@@ -258,7 +264,8 @@ grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING
       -e 's/<HOSTING_PROVIDER>/Netlify/g' \
       -e 's/<REPO_SLUG>/you\/thock/g' \
       -e 's/<DEFAULT_BRANCH>/main/g' \
-      -e 's/<PROJECT_PKG_PREFIX>/@thock/g'
+      -e 's/<PROJECT_PKG_PREFIX>/@thock/g' \
+  && find . -name '*.bak' -delete
 ```
 
 The PowerShell twin, Windows native (see

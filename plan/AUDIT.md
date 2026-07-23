@@ -301,6 +301,19 @@ open row — `[B, 4.5]` `existing-project.md`'s empty
 `plan/phases/` gap — over both new rows (4.0 and 3.6) and the
 three carried-over LOW/lower-MED rows.
 
+Cloud tick 2026-07-23: #12 still the only blocked AUDIT row
+(same `ACTIONS_PAT` scope constraint). Header still <24h old
+(last full sweep 2026-07-22), so re-scored rather than
+re-swept: this block's own highest scorer,
+`[A/E, 4.0]` (triage.md's `blob/main`), tied `[F/A, 3.6]` and
+the AUDIT block's other rows, but scored below
+`plan/CRITIQUE.md`'s MED sed-backup-suffix row once ease was
+weighed in (impact 6, ease 8 -> 4.8) — a reproduced, loud
+breaking bug on a claimed-supported platform (stock macOS)
+versus a cosmetic wrong-link edge case. Shipped that CRITIQUE
+row instead; this block's rows are unchanged and still
+Pending.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
