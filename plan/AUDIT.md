@@ -329,6 +329,17 @@ impact than a wrong model-id reference on the kit's headline
 $0-cost pitch) and the AUDIT block's other rows (2.7, 1.8,
 1.6, 1.35). Shipped it.
 
+Cloud tick 2026-07-23 (fourth): #12 still the only blocked AUDIT
+row, unchanged. Header still <24h old, so re-scored rather than
+re-swept: `plan/CRITIQUE.md`'s `./data`-scope LOW row tied this
+block's own `[A/E, 2.7]` (README's "Files added" checklist).
+Followed the established tie-break (favoring the queue — see
+the 2026-07-19 (second) log line above) and shipped the
+`./data` row: a reproduced loud shell error (`grep: ./data: No
+such file or directory`, exit 2) on the documented one-liner
+for the common no-data-layer case, versus a purely cosmetic doc
+undercount. This block's rows are unchanged and still Pending.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

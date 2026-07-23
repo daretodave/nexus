@@ -11,33 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] playbooks/new-project.md:251-262 — bash one-liner's `./data` scope errors on stdout when the adopter isn't using GitHub-as-DB
-- category: instruction-drift
-- observation: `./data` is unconditionally in the bash
-  `grep -rl` scope so GitHub-as-DB adopters' `templates/data/`
-  placeholders get swept (this was a deliberate earlier fix).
-  But for the common case — no structured data layer, so
-  `./data` was never copied — plain `grep` errors loudly
-  (`grep: ./data: No such file or directory`, exit 2) on every
-  run of the documented command. The PowerShell twin already
-  guards this exact case with `-ErrorAction SilentlyContinue`;
-  the bash version has no equivalent, so it's the one shell
-  pairing left unguarded.
-- evidence: reproduced directly — `grep -rl 'X' ./skills
-  ./.claude ./plan ./agents.md ./scripts ./.env.example ./data`
-  against a scratch repo without `./data` prints `grep: ./data:
-  No such file or directory` (real GNU grep, confirmed via
-  `command grep` to bypass this sandbox's own grep wrapper).
-  Compare `playbooks/new-project.md:252` (bare `./data`, no
-  guard) with `:279` (`-ErrorAction SilentlyContinue` on the
-  same list). The sed replace itself still succeeds (xargs
-  gets the files that were found before the error), so this is
-  cosmetic, not blocking — but it reads as a fresh error to a
-  first-time adopter following the doc literally.
-- suggested fix: mirror the PowerShell twin's guard, e.g.
-  `2>/dev/null` on the grep, or `[ -d ./data ] &&` prefix.
-- source: dry-run
-
 ### [LOW] templates/README.md:131 vs playbooks/new-project.md §4's prune list — the `.claude/` bundle is documented as adopt-by-need but never offered for removal
 - category: instruction-drift
 - observation: `templates/README.md`'s adopt-by-need table
@@ -65,6 +38,16 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] playbooks/new-project.md:251-262 — bash one-liner's `./data` scope errors on stdout when the adopter isn't using GitHub-as-DB — this commit
+- fix: added `2>/dev/null` before the `| xargs` pipe in the
+  bash one-liner's `grep -rl`, mirroring the PowerShell twin's
+  existing `-ErrorAction SilentlyContinue` guard on the same
+  `./data` entry. Reproduced first in a scratch dir (bare
+  `grep -rl ... ./data` errors `grep: ./data: No such file or
+  directory`, exit 2, when `./data` doesn't exist) then
+  confirmed the guarded version exits 0 and still performs the
+  replace on the files that do exist.
 
 ### [x] [MED] playbooks/new-project.md:248-261 — bash placeholder one-liner uses `sed -i` without a backup-extension arg, which breaks on stock macOS — this commit
 - fix: reproduced the failure mode's root cause in a scratch

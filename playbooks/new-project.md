@@ -256,7 +256,7 @@ both BSD and GNU sed accept identically, so the trailing
 ```bash
 grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>\|<PROJECT_PKG_PREFIX>' \
     ./skills ./.claude ./plan ./agents.md ./scripts ./.env.example ./data \
-  | xargs sed -i.bak \
+  2>/dev/null | xargs sed -i.bak \
       -e 's/<PROJECT_LOWER>/thock/g' \
       -e 's/<PROJECT>/thock/g' \
       -e 's/<PROJECT_TAGLINE>/keyboards, deeply./g' \
