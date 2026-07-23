@@ -59,7 +59,8 @@ is here when you want it.
 | Private repo (any path) | + ~5–15 min/tick against your Actions cap | Free tier: 2,000 min/mo on Pro. |
 
 The recommended setup for a personal project is OAuth-token
-+ public repo + Sonnet 4.6 → genuinely $0 marginal.
++ public repo + Sonnet 5 → genuinely $0 marginal (model ids
+age — check `/model`).
 
 ## The shape of the kit
 

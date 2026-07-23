@@ -320,6 +320,15 @@ AUDIT row, unchanged. Header still <24h old, so re-scored:
 top scorer with no competing CRITIQUE HIGH/MED row pending
 (both remaining CRITIQUE rows are LOW). Shipped it.
 
+Cloud tick 2026-07-23 (third): #12 still the only blocked AUDIT
+row, unchanged. Re-scored: `[F/A, 3.6]` (cloud-loop.md's stale
+"Sonnet 4.6") is now this block's own top scorer, beating
+`plan/CRITIQUE.md`'s two remaining LOW rows (~2.4 and ~2.1,
+both cosmetic instruction-drift with cheap fixes but lower
+impact than a wrong model-id reference on the kit's headline
+$0-cost pitch) and the AUDIT block's other rows (2.7, 1.8,
+1.6, 1.35). Shipped it.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -375,20 +384,6 @@ top scorer with no competing CRITIQUE HIGH/MED row pending
   style already used elsewhere (`https://your-site.netlify.app`
   in `playbooks/new-project.md:240`).
 
-### [F/A, 3.6] playbooks/cloud-loop.md:62 cites a stale model name "Sonnet 4.6"
-- category: freshness / doc-drift
-- impact: 4, ease: 9
-- evidence: `playbooks/cloud-loop.md:62` says "OAuth-token +
-  public repo + Sonnet 4.6 → genuinely $0 marginal," but
-  `.github/workflows/march.yml:100` and
-  `templates/.github/workflows/march.yml:164` both pin
-  `--model claude-sonnet-5`, and `customization/claude-code.md:310`
-  documents the template default as `claude-sonnet-5`. "Sonnet
-  4.6" appears nowhere else in the repo.
-- next: change "Sonnet 4.6" to "Sonnet 5" at
-  `playbooks/cloud-loop.md:62`, matching the kit's standing
-  "ids age — check /model" caveat used elsewhere.
-
 ### [D, 1.8] README.md:309 has two unwrapped bullets breaking the locked wrap rule
 - category: voice
 - impact: 2, ease: 9
@@ -410,6 +405,13 @@ top scorer with no competing CRITIQUE HIGH/MED row pending
   for the section's last accurate revision).
 
 ## Done
+
+### [x] [F/A, 3.6] playbooks/cloud-loop.md:62 cites a stale model name "Sonnet 4.6" — this commit
+- fix: changed "Sonnet 4.6" to "Sonnet 5" at
+  `playbooks/cloud-loop.md:62`, matching the model id pinned in
+  `.github/workflows/march.yml`, `templates/.github/workflows/march.yml`,
+  and `customization/claude-code.md`, and added the kit's
+  standing "ids age — check `/model`" caveat inline.
 
 ### [x] [A/E, 4.0] templates/skills/triage.md hardcodes `blob/main` instead of `<DEFAULT_BRANCH>` — this commit
 - fix: replaced `blob/main` with `blob/<DEFAULT_BRANCH>` at
