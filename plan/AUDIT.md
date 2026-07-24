@@ -358,6 +358,21 @@ template, not internal docs) at similar ease (four line edits).
 Not a full A-G sweep; A/B/C/D/E leaned on prior sweeps and
 `verify.mjs`'s green tree/link/emoji legs.
 
+Cloud tick 2026-07-24 (second): #12 still the only blocked AUDIT
+row. Header 2 days old (last full sweep 2026-07-22); ran a
+targeted fresh check instead of a full re-derive: F (grepped the
+whole tree for stale model-id patterns — the only hits left are
+historical prose in `plan/AUDIT.md`/`plan/DIGEST.md`, no live
+docs) and G (sibling lessons dirs still absent from this
+checkout) both confirmed clean/empty. `plan/CRITIQUE.md`'s sole
+remaining LOW row (`.claude/` prune-list gap) tied this block's
+own `[A/E, 2.7]` row exactly (impact 3, ease 9). Followed the
+established tie-break (favor the queue — see the 2026-07-19
+(second) and 2026-07-23 (fourth) log lines above) and shipped
+the CRITIQUE row. `plan/CRITIQUE.md`'s pending queue is now
+empty. Not a full A-G sweep; A/B/C/D leaned on prior sweeps and
+`verify.mjs`'s green tree.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

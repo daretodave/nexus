@@ -11,33 +11,21 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] templates/README.md:131 vs playbooks/new-project.md §4's prune list — the `.claude/` bundle is documented as adopt-by-need but never offered for removal
-- category: instruction-drift
-- observation: `templates/README.md`'s adopt-by-need table
-  lists `claude/settings.json` + `claude/hooks/guard.mjs` +
-  `claude/CLAUDE.md` + `scripts/notify.mjs` as conditional on
-  "You run the loop on Claude Code" — implying a non-Claude-Code
-  adopter (README's own TL;DR prompt says "Claude Code (or
-  Cursor, or any capable agent)") can skip it. But
-  `playbooks/new-project.md` step 4's bulk-copy always lands
-  `templates/claude` → `.claude` unconditionally, and its
-  "Prune adopt-by-need files" section enumerates eight other
-  adopt-by-need categories to `rm -f` but never mentions this
-  one. A Cursor-only adopter following the playbook literally
-  ends up with an inert, Claude-Code-specific permission
-  allowlist and hook wired into their repo with no documented
-  way to know it's safe to drop.
-- evidence: `templates/README.md:131` (the adopt-by-need row)
-  vs. `playbooks/new-project.md:221` (unconditional copy) and
-  `:287-354` (the prune section, which omits this row).
-- suggested fix: add a ninth bullet to the prune list — "remove
-  `.claude/` + root `CLAUDE.md` + `scripts/notify.mjs` unless
-  you're running the loop on Claude Code" — or note explicitly
-  in step 4 that non-Claude-Code adopters should skip the
-  `.claude` copy pair.
-- source: dry-run
+(none)
 
 ## Done
+
+### [x] [LOW] templates/README.md:131 vs playbooks/new-project.md §4's prune list — the `.claude/` bundle is documented as adopt-by-need but never offered for removal — this commit
+- fix: added a ninth bullet to the prune list in
+  `playbooks/new-project.md` — `.claude/settings.json` +
+  `.claude/hooks/guard.mjs` + `.claude/CLAUDE.md` +
+  `scripts/notify.mjs`, removed unless the adopter runs the loop
+  on Claude Code — matching `templates/README.md:131`'s
+  adopt-by-need row exactly. Root `CLAUDE.md` stays either way
+  (noted inline) since Claude Code only auto-loads it from the
+  repo root, not `.claude/`. Extended the worked example's
+  preamble and both `rm -f`/`Remove-Item` commands to cover the
+  new ninth condition (not running the loop on Claude Code).
 
 ### [x] [LOW] playbooks/new-project.md:251-262 — bash one-liner's `./data` scope errors on stdout when the adopter isn't using GitHub-as-DB — this commit
 - fix: added `2>/dev/null` before the `| xargs` pipe in the
