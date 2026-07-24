@@ -31,8 +31,9 @@ your monthly cap (2000 min on Pro, 3000 on Pro+).
 
 If you authenticate via `ANTHROPIC_API_KEY` instead, expect
 roughly:
-- Sonnet 4.6: ~$0.40–0.60/tick → ~$3–5/day at 7 ticks
-- Opus 4.7:   ~$2.00–3.00/tick → ~$15–20/day at 7 ticks
+- Sonnet 5: ~$0.40–0.60/tick → ~$3–5/day at 7 ticks
+  (ids age — check `/model`)
+- Opus 4.8: ~$2.00–3.00/tick → ~$15–20/day at 7 ticks
 
 The 12-point/24h weighted ceiling caps the worst case either
 way (see "The daily ceiling" below).
@@ -221,8 +222,9 @@ git log --invert-grep --grep='Cloud-Run:' --oneline
 
 ## Upgrading the model
 
-Default is Sonnet 4.6 because it's cheap-on-quota and fast
-enough for `/march`'s decision logic. To upgrade to Opus 4.7:
+Default is Sonnet 5 because it's cheap-on-quota and fast
+enough for `/march`'s decision logic (ids age — check
+`/model`). To upgrade to Opus 4.8:
 
 1. Watch your local `/cost` indicator for a week. Opus is
    roughly 2x Sonnet's weight against the Max weekly cap.

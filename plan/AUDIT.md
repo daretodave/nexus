@@ -340,6 +340,24 @@ such file or directory`, exit 2) on the documented one-liner
 for the common no-data-layer case, versus a purely cosmetic doc
 undercount. This block's rows are unchanged and still Pending.
 
+Cloud tick 2026-07-24: header 2 days old, past the 24h
+threshold, so ran a targeted fresh check rather than a full
+manual A-G re-derive: F (model-id freshness, grepped the whole
+tree for stale patterns) and G (sibling lessons — still absent)
+confirmed clean/empty except one new hit. Found `templates/.github/CLOUD_LOOP.md`
+still citing "Sonnet 4.6"/"Opus 4.7" in two sections (the cost
+table and "Upgrading the model") — the exact bug class fixed in
+`playbooks/cloud-loop.md:62` two ticks ago (2026-07-23 third),
+but that fix only touched the internal playbook copy and missed
+this template counterpart, which is the one adopters actually
+receive (`agents.md` rule 7: templates are the product).
+Shipped it over `plan/CRITIQUE.md`'s sole remaining LOW row
+(`.claude/` prune-list gap) and this block's own carried-over
+rows (2.7, 1.8, 1.6, 1.35) — higher impact (adopter-facing
+template, not internal docs) at similar ease (four line edits).
+Not a full A-G sweep; A/B/C/D/E leaned on prior sweeps and
+`verify.mjs`'s green tree/link/emoji legs.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -416,6 +434,17 @@ undercount. This block's rows are unchanged and still Pending.
   for the section's last accurate revision).
 
 ## Done
+
+### [x] [F, 4.5] templates/.github/CLOUD_LOOP.md cites stale model names "Sonnet 4.6"/"Opus 4.7" — this commit
+- fix: changed "Sonnet 4.6" -> "Sonnet 5" and "Opus 4.7" ->
+  "Opus 4.8" in both the cost-estimate table and "Upgrading the
+  model" section of `templates/.github/CLOUD_LOOP.md`, matching
+  the id pinned in `templates/.github/workflows/march.yml:164`
+  (`claude-sonnet-5`) and the standing "ids age — check
+  `/model`" caveat used elsewhere in the kit. This is the
+  template counterpart of the `playbooks/cloud-loop.md:62` fix
+  two ticks ago — that fix touched only the internal doc; this
+  one is the file adopters actually copy.
 
 ### [x] [F/A, 3.6] playbooks/cloud-loop.md:62 cites a stale model name "Sonnet 4.6" — this commit
 - fix: changed "Sonnet 4.6" to "Sonnet 5" at
