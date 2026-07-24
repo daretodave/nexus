@@ -433,25 +433,6 @@ shipped nothing, per digest.md rule 2.
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
 
-### [A, 4.8] customization/claude-code.md teaches the exact claude_args JSON form march.yml documents as broken
-- category: doc-drift
-- impact: 6, ease: 8
-- evidence: `customization/claude-code.md:310`'s "Model routing"
-  table reads `` claude_args: {"model": "..."} `` as the
-  Cloud-loop lever. But `.github/workflows/march.yml:85-101`
-  (and its `templates/.github/workflows/march.yml` mirror)
-  documents, from a real production incident, that this JSON
-  form silently drops the `permissionMode` key on the way to
-  the SDK session (model survives; permission mode stays
-  `default`) — the working form is the CLI-flag string
-  (`claude_args: >-` / `--model <id>` / `--permission-mode
-  bypassPermissions`). An adopter following the customization
-  doc's table literally reintroduces the exact silently-broken
-  config the kit already paid to discover.
-- next: change `customization/claude-code.md:310`'s lever cell
-  to the CLI-flag string form, citing the same lesson
-  `march.yml`'s own comment does.
-
 ### [A/E, 2.7] README's "Files added" checklist undersells `scripts/`
 - category: doc-drift
 - impact: 3, ease: 9
@@ -531,6 +512,15 @@ shipped nothing, per digest.md rule 2.
   lost third file to restore.
 
 ## Done
+
+### [x] [A, 4.8] customization/claude-code.md teaches the exact claude_args JSON form march.yml documents as broken — this commit (closes #26)
+- fix: changed `customization/claude-code.md:310`'s Model
+  routing lever cell from `` claude_args: {"model": "..."} ``
+  to the CLI-flag string form, and added a guidance bullet
+  citing the production incident where the JSON form silently
+  dropped `permissionMode` (model applied; permission mode
+  stayed `default`), pointing at `.github/workflows/march.yml`'s
+  working `claude_args: >-` block.
 
 ### [x] [F, 4.5] templates/.github/CLOUD_LOOP.md cites stale model names "Sonnet 4.6"/"Opus 4.7" — this commit
 - fix: changed "Sonnet 4.6" -> "Sonnet 5" and "Opus 4.7" ->

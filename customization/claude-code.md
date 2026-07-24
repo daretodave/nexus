@@ -307,7 +307,7 @@ Routing levers, in order of usefulness:
 
 | Where | Lever | Use for |
 |---|---|---|
-| Cloud loop | `claude_args: {"model": "..."}` in `march.yml` | The whole cloud tick. Default in the template: `claude-sonnet-5` — strong enough to ship phases, cheap enough to tick 7x/day. |
+| Cloud loop | `claude_args: --model <id>` (CLI-flag string, not JSON) in `march.yml` | The whole cloud tick. Default in the template: `claude-sonnet-5` — strong enough to ship phases, cheap enough to tick 7x/day. |
 | Local session | `/model` | Whatever you're driving by hand. |
 | Sub-agents | `model:` frontmatter in `.claude/agents/<name>.md` | Downshift mechanical specialists (a formatting-only `copy-editor` runs fine on a small model); keep `scout`/`reader` on the session default — observation quality is the product. |
 
@@ -325,6 +325,12 @@ Guidance, not law:
 - Model ids age. Check `/model` (or the provider docs) rather
   than trusting any id you find hardcoded in a doc — including
   this one.
+- **Never write `claude_args` as a JSON object.** A real
+  incident on this repo's own cloud loop found the JSON form
+  (`{"model": "..."}`) silently drops `permissionMode` on the
+  way to the SDK session — the model applies, the permission
+  mode stays `default`. Use the CLI-flag string form instead
+  (see `.github/workflows/march.yml`'s `claude_args: >-` block).
 
 ---
 
