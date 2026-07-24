@@ -1,77 +1,92 @@
-# Digest — 2026-07-23
+# Digest — 2026-07-24
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Busy window: all 4 march ticks shipped, zero no-ops — an AUDIT
-fix (empty `plan/phases/` overlay, closes #25), a critique pass
-7 (3 new findings, 1 stale row closed), a same-night fix for
-critique's own MED finding (`sed -i` backup-suffix bug), and
-AUDIT's top row (triage.md's hardcoded `blob/main` link). Build
-plan stays empty (18/18); candidate backlog unchanged at 20,
-still zero promoted since the queue opened 2026-07-02.
+Quiet-but-clean window: all 4 march ticks shipped, zero no-ops
+— two stale "Sonnet 4.6" model-name fixes, a `./data` grep-scope
+guard, and the `.claude/` prune-list gap that emptied CRITIQUE's
+queue. AUDIT's header had drifted 2 days past digest's own 48h
+staleness threshold, so this pass ran a full A-G sweep: 3 new
+findings (headlined by a real adopter-facing `claude_args`
+doc-vs-gate mismatch, score 4.8) plus a corrected `next` on two
+carried-over rows. One tuning proposal filed — a cheap AUDIT row
+has been tying and losing the same tie-break for a week straight.
+Build plan stays empty (18/18); candidate backlog now 21, still
+zero promoted since the queue opened 2026-07-02.
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-22 14:41 | march → iterate | shipped AUDIT `[B, 4.5]` — `existing-project.md`'s overlay left `plan/phases/` empty with no brief pointer (closes #25); AUDIT refreshed in the same commit, header bumped to 07-22 and a new `[F/A, 3.6]` stale-model row added |
-| 07-22 20:25 | march → critique (pass 7) | 3 new findings (0 high, 1 med, 2 low): MED `sed -i` backup-suffix bug, LOW `./data` grep-scope error, LOW `.claude/` bundle never offered for pruning; 1 stale row (`<PROJECT_PKG_PREFIX>` worked example) re-confirmed resolved and closed |
-| 07-23 03:05 | march → iterate | shipped CRITIQUE's fresh MED row — `sed -i` without a backup suffix broke the placeholder one-liner on stock macOS; scored above AUDIT's top row once ease was weighed in |
-| 07-23 08:55 | march → iterate | shipped AUDIT's top row — `triage.md`'s `AUDIT.md` link hardcoded `blob/main` instead of `<DEFAULT_BRANCH>` |
+| 07-23 14:46 | march → iterate | shipped AUDIT `[F/A, 3.6]` — `cloud-loop.md:62`'s stale "Sonnet 4.6" model name |
+| 07-23 20:24 | march → iterate | shipped CRITIQUE's LOW `./data` grep-scope row (bare `grep -rl` errored when `./data` didn't exist); tied AUDIT `[A/E, 2.7]` on score, tie-break favored the queue |
+| 07-24 03:04 | march → iterate | shipped AUDIT row — `templates/.github/CLOUD_LOOP.md` still cited "Sonnet 4.6"/"Opus 4.7" (found via a targeted F/G check since the header was already past 24h) |
+| 07-24 08:53 | march → iterate | shipped CRITIQUE's last remaining LOW row — `.claude/` Claude-Code bundle never offered for pruning; drained CRITIQUE's queue to empty |
 
 `heartbeat` ran 5/5 green over its last-5 sample — no wedged
 runs, no flatline alarm.
 
 ## Shipped
 
-- `5c755b8` — `existing-project.md`'s overlay now points at
-  `new-project.md` §5's brief format right after the
-  GitHub-as-DB note, closing #25; AUDIT.md refreshed alongside
-  (header → 07-22, one row closed, `[F/A, 3.6]` stale-model row
-  added).
-- `22a357a` — `/critique` pass 7: filed the `sed -i` MED and two
-  LOW findings above; closed the `<PROJECT_PKG_PREFIX>` LOW row
-  after re-walking the dry-run and confirming it already
-  resolved.
-- `70c8b6c` — `playbooks/new-project.md`'s bash placeholder
-  one-liner switched to `sed -i.bak -e ... && find … -delete`,
-  the one spelling both BSD and GNU sed parse identically.
-- `57dc874` — `templates/skills/triage.md`'s AUDIT.md link now
-  uses `<DEFAULT_BRANCH>`, matching its sibling skill templates.
+- `4de7268` — `playbooks/cloud-loop.md:62` "Sonnet 4.6" →
+  "Sonnet 5", plus the standing "ids age — check `/model`"
+  caveat. Closed AUDIT `[F/A, 3.6]`.
+- `fe46a28` — bash placeholder one-liner's `grep -rl` scope
+  gained `2>/dev/null` before the `xargs` pipe, matching the
+  PowerShell twin's existing `-ErrorAction SilentlyContinue`
+  guard on `./data`.
+- `8062841` — `templates/.github/CLOUD_LOOP.md` (the copy
+  adopters actually receive) "Sonnet 4.6"/"Opus 4.7" → "Sonnet
+  5"/"Opus 4.8" in the cost table and "Upgrading the model"
+  section — the template counterpart an earlier tick's fix to
+  the internal playbook copy had missed.
+- `9d404ce` — `playbooks/new-project.md`'s "Prune adopt-by-need
+  files" section gained a ninth bullet covering the
+  `.claude/settings.json` + `guard.mjs` + `.claude/CLAUDE.md` +
+  `scripts/notify.mjs` bundle for non-Claude-Code adopters,
+  matching `templates/README.md:131`'s adopt-by-need row.
+  `plan/CRITIQUE.md`'s pending queue is now empty.
 
 ## Queues now
 
 - **Build plan:** 0 pending (18/18 phases shipped, unchanged).
   Every tick still routes to `/critique`/`/expand`/`/iterate`.
-- **AUDIT:** 6 pending, header 2026-07-22 (~20-24h old, under
-  the 48h staleness threshold — no refresh due). Rows: standing
-  `[user-issue #12]` (blocked, unchanged since 2026-07-12);
+- **AUDIT:** header was 2026-07-22 — 2 days old, past
+  `skills/digest.md` §3's 48h threshold — so this pass ran a
+  full A-G sweep and refreshed it to 2026-07-24. 8 rows now
+  Pending (was 5): standing `[user-issue #12]` (blocked,
+  unchanged since 2026-07-12); new `[A, 4.8]` —
+  `customization/claude-code.md:310` teaches the `claude_args`
+  JSON form `march.yml` documents as silently dropping
+  `permissionMode` (highest-scoring open, non-blocked row);
   `[A/E, 2.7]` README's "Files added" checklist undersells
-  `scripts/`; `[C/F, 1.6]` fictional example deploy URL in
-  `templates/skills/bootstrap.md:217`; `[F/A, 3.6]`
-  `cloud-loop.md:62` cites stale model name "Sonnet 4.6"
-  (highest-scoring open, non-blocked row); `[D, 1.8]` two
-  unwrapped bullets at `README.md:309`; `[A, 1.35]`
-  `cloud-loop.md`'s "three new files" header lists only two.
-- **CRITIQUE:** 2 pending (both LOW: `./data` grep-scope error
-  on non-GitHub-as-DB adopters, `.claude/` bundle never offered
-  for pruning in the non-Claude-Code path), last pass 2026-07-22
-  (pass 7).
-- **PHASE_CANDIDATES:** 20 pending, last `/expand` pass still 4
-  (2026-07-22) — only 5 commits landed since, well under the
-  ≥20-commit rate limit, so `/expand` wasn't eligible this
-  window. Posture bold. None promoted or rejected.
+  `scripts/` (unchanged, still real); new `[A, 2.4]` — README's
+  own `skills/` tree omits `digest.md`; `[D, 1.8]` two unwrapped
+  bullets at `README.md:309`, widened to include a third at
+  `:324`; new `[A, 1.6]` — `plan/steps/01_build_plan.md`'s
+  carry-overs cite stale queue counts; `[C/F, 1.6]` fictional
+  `ember.vercel.app` URL, now confirmed (via `curl`) to resolve
+  to a real unrelated site; `[A, 1.35]` `cloud-loop.md`'s
+  "three new files" header, `next` now settled by `git log
+  --follow` (correct the count, no file was ever lost).
+- **CRITIQUE:** 0 pending — drained this window. Last pass
+  2026-07-22 (pass 7).
+- **PHASE_CANDIDATES:** 21 pending (this digest added one — see
+  Tuning proposals), last `/expand` pass still 4 (2026-07-22).
+  Only 9 commits landed since, well under the ≥20-commit rate
+  limit, so `/expand` wasn't eligible this window. Posture bold.
+  None promoted or rejected.
 - **Issues:** 1 open (`#12`, `triage:loop-queued`) — same row as
   AUDIT's blocked entry. No `triage:needs-user` or `loop:do`
   labels open.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not present
   in this environment — skipped (cloud).
-- **Ceiling:** 3 `Cloud-Run:`-tagged commits in the trailing
-  24h (`5c755b8`, `70c8b6c`, `57dc874`), well under the 8/24h
-  ceiling; all carry the trailer correctly.
+- **Ceiling:** 4 `Cloud-Run:`-tagged commits in the trailing
+  ~24h (`4de7268`, `fe46a28`, `8062841`, `9d404ce`), well under
+  the 8/24h ceiling; all carry the trailer correctly.
 
 ## Needs you
 
@@ -83,33 +98,44 @@ runs, no flatline alarm.
   locally-run `/iterate` with a personal workflow-scoped `gh`
   token. Tracked as AUDIT `[user-issue #12]`, still the only
   blocked row.
-- **Candidate backlog** — 20 pending in `plan/PHASE_CANDIDATES.md`,
-  zero promoted since the queue opened 2026-07-02 (three weeks
-  running). The `[score 9.0]` `new-project.md` step-4/7 rewrite
-  is now re-evidenced across four separate cycles (2026-07-06,
-  -10, -13, -21) and is the clearest promote-first candidate;
-  worth an `/oversight` pass. The two prior meta-loop candidates
-  (`[score 7.5]` background-agent dispatch, `[score 6.5]`
-  Cloud-Run trailer verification) remain unpromoted too.
+- **Candidate backlog** — 21 pending in
+  `plan/PHASE_CANDIDATES.md`, zero promoted since the queue
+  opened 2026-07-02 (three weeks running). The `[score 9.0]`
+  `new-project.md` step-4/7 rewrite is still re-evidenced across
+  four separate cycles (2026-07-06, -10, -13, -21) and remains
+  the clearest promote-first candidate; worth an `/oversight`
+  pass. Two prior meta-loop candidates (`[score 7.5]`
+  background-agent dispatch, `[score 6.5]` Cloud-Run trailer
+  verification) and this pass's new `[score 6.0]` tie-break row
+  also remain unpromoted.
 - No `[needs-user-call]` rows, no blocked build-plan rows.
 
 ## Today's intent
 
 Build plan still has no pending phase (18/18). With CRITIQUE
-down to two LOW rows, AUDIT's `[F/A, 3.6]` (stale "Sonnet 4.6"
-model name in `playbooks/cloud-loop.md:62`) is now the
-highest-scoring open item excluding the blocked `#12`, and the
-most likely next `/iterate` pick. `/expand`'s rate-limit window
-stays closed until ≥15 more commits land (5 of 20 elapsed since
-pass 4), so upcoming ticks should keep routing to
-`/critique`/`/iterate` fixes.
+empty, AUDIT's new `[A, 4.8]` row — the `claude_args`
+doc-vs-gate mismatch in `customization/claude-code.md:310` — is
+now the clear highest-scoring open item excluding the blocked
+`#12`, and the most likely next `/iterate` pick; it's also the
+most adopter-facing finding this sweep produced (reintroduces a
+bug the kit already paid to discover). `/expand`'s rate-limit
+window stays closed until ≥11 more commits land (9 of 20 elapsed
+since pass 4), so upcoming ticks should keep routing to
+`/iterate` (CRITIQUE has nothing pending until the next
+`/critique` pass).
 
 ## Tuning proposals
 
-None this pass — the pulse showed no mistuned gate: all four
-ticks found actionable work and shipped correctly (no
-incorrect no-ops, no missed queue items), the MED critique
-finding was picked up and fixed same-night, and heartbeat ran
-5/5 green. The candidate backlog's zero-promotions streak is a
-standing `/oversight` gap, not a gate mistuning, and is already
-flagged above rather than re-filed as a new candidate.
+Filed one this pass: `plan/PHASE_CANDIDATES.md`'s new `[score
+6.0]` row — AUDIT's `[A/E, 2.7]` row has sat Pending since
+around 2026-07-17 and has been cited as tied-or-outscored by a
+CRITIQUE row in at least ten separate tick log-lines since, a
+textbook starved-queue pattern per `skills/digest.md` §4. The
+"favor the queue on ties" convention that keeps beating it was
+never written into `skills/iterate.md` §3 as an actual rule —
+it exists only as repeated log narrative — so the proposal asks
+for it to be made explicit and paired with a small aging nudge.
+Filed as a candidate, not applied — the meta-loop does not vote
+on its own constraints. Otherwise no mistuned gate this pass:
+all four ticks found and shipped real work, heartbeat ran 5/5
+green, and the ceiling sat well clear of its cap.

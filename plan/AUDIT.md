@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-22
+# Kit audit — 2026-07-24
 
 > Bias: none
 
@@ -373,6 +373,39 @@ the CRITIQUE row. `plan/CRITIQUE.md`'s pending queue is now
 empty. Not a full A-G sweep; A/B/C/D leaned on prior sweeps and
 `verify.mjs`'s green tree.
 
+Digest tick 2026-07-24: header was 2 days old, past
+`skills/digest.md` §3's 48h staleness threshold, so ran a full
+A-G sweep (dispatched to a dedicated audit agent; verify.mjs's
+green links/tree/emoji legs covered the mechanical half).
+Spot-checked all 4 non-durable Pending rows below — all still
+reproduce. Sharpened two: `[C/F, 1.6]` now cites a live `curl`
+200 confirming the fictional URL resolves to a real unrelated
+site, not just a parked domain; `[A, 1.35]` now has a settled
+`next` — `git log --follow -p` on `cloud-loop.md` shows the
+"Three new files" header and its 2-entry tree have coexisted
+since the doc's first commit, so the fix is correcting the
+count to "Two," not restoring a lost file. Widened `[D, 1.8]`'s
+evidence to include a third unwrapped bullet at `README.md:324`
+found during the same pass. Added three new findings: `[A,
+4.8]` (highest score this sweep) — `customization/claude-code.md:310`
+teaches the `claude_args: {"model": "..."}` JSON form as the
+Cloud-loop model-routing lever, but `.github/workflows/march.yml`
+(both nexus's own and the `templates/` mirror) documents from a
+real incident that this JSON form silently drops
+`permissionMode`, and ships the CLI-flag string form instead —
+an adopter following the customization doc's table literally
+reintroduces the exact bug the kit already paid to discover;
+`[A, 2.4]` — README's own collapsed `skills/` tree
+(`README.md:510-511`) omits `skills/digest.md`, even though it
+exists on disk and `templates/README.md:41` lists its templated
+twin correctly; `[A, 1.6]` — `plan/steps/01_build_plan.md`'s
+"Carry-overs" section cites stale queue counts (AUDIT "seeded
+with 9" vs. today's 5 Pending rows; PHASE_CANDIDATES.md "holds
+4 candidates" vs. today's 20). C (external links, beyond
+verify.mjs's relative-link leg), F (model ids), and G (sibling
+lessons, still absent) swept clean otherwise. Audit only —
+shipped nothing, per digest.md rule 2.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -400,6 +433,25 @@ empty. Not a full A-G sweep; A/B/C/D leaned on prior sweeps and
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
 
+### [A, 4.8] customization/claude-code.md teaches the exact claude_args JSON form march.yml documents as broken
+- category: doc-drift
+- impact: 6, ease: 8
+- evidence: `customization/claude-code.md:310`'s "Model routing"
+  table reads `` claude_args: {"model": "..."} `` as the
+  Cloud-loop lever. But `.github/workflows/march.yml:85-101`
+  (and its `templates/.github/workflows/march.yml` mirror)
+  documents, from a real production incident, that this JSON
+  form silently drops the `permissionMode` key on the way to
+  the SDK session (model survives; permission mode stays
+  `default`) — the working form is the CLI-flag string
+  (`claude_args: >-` / `--model <id>` / `--permission-mode
+  bypassPermissions`). An adopter following the customization
+  doc's table literally reintroduces the exact silently-broken
+  config the kit already paid to discover.
+- next: change `customization/claude-code.md:310`'s lever cell
+  to the CLI-flag string form, citing the same lesson
+  `march.yml`'s own comment does.
+
 ### [A/E, 2.7] README's "Files added" checklist undersells `scripts/`
 - category: doc-drift
 - impact: 3, ease: 9
@@ -411,31 +463,59 @@ empty. Not a full A-G sweep; A/B/C/D leaned on prior sweeps and
   checklist line, matching how `plan/` and `skills/` are already
   collapsed.
 
+### [A, 2.4] README's own kit tree omits `skills/digest.md` from the collapsed `skills/` enumeration
+- category: doc-drift
+- impact: 3, ease: 8
+- evidence: `README.md:510-511` collapses nexus's own `skills/`
+  to two leaf lines — `march.md` (with a parenthetical "+
+  ship-a-phase, iterate, critique, triage, expand, oversight,
+  jot") and `lessons-pr.md` — but `skills/digest.md` and
+  `.claude/commands/digest.md` both exist on disk and are absent
+  from every part of that block, while
+  `templates/README.md:41` correctly lists the templated twin.
+- next: add `digest.md` to the parenthetical list at
+  `README.md:510-511`, or give it its own leaf line paired with
+  `.github/workflows/night.yml`.
+
+### [D, 1.8] README.md:309, 324 has unwrapped bullets breaking the locked wrap rule
+- category: voice
+- impact: 2, ease: 9
+- evidence: `README.md:309` carries two bullets (185 and 92
+  chars) sitting unwrapped between paragraphs wrapped to
+  `plan/bearings.md`'s standing ~62-64 col rule; the same block
+  has a third at `README.md:324` (85 chars, the
+  `plan/AUDIT.md` state-files bullet).
+- next: hard-wrap all three bullets to ~62-64 cols, matching the
+  surrounding prose.
+
+### [A, 1.6] plan/steps/01_build_plan.md's "Carry-overs" section cites stale queue counts
+- category: doc-drift
+- impact: 2, ease: 8
+- evidence: `plan/steps/01_build_plan.md:75-81` says
+  `plan/AUDIT.md` is "seeded with 9 iterate-sized findings"
+  (today's Pending count is 5, this recompute included) and
+  `plan/PHASE_CANDIDATES.md` "holds 4 candidates" (today's file
+  holds 20; the 4 named topics still exist among them).
+- next: reword both bullets to point at the live files instead
+  of hardcoded counts, so this can't go stale again.
+
 ### [C/F, 1.6] Fictional example deploy URL in `templates/skills/bootstrap.md` now resolves to an unrelated site
 - category: link hygiene (low severity — not a live hyperlink)
 - impact: 2, ease: 8
 - evidence: `templates/skills/bootstrap.md:217`'s sample
   terminal-output block shows `First deploy:
   https://ember.vercel.app  ✓ ready` as illustrative fictional
-  output; the domain now serves an unrelated live site. Plain
-  text inside a fenced code block, not a markdown link, so
-  `verify.mjs`'s links leg correctly skips it and an adopter is
-  very unlikely to click it — a small credibility ding in a
-  worked example, not a functional break.
+  output; `curl` confirms the domain now serves a real,
+  unrelated live Next.js app (HTTP 200), not a parked/404
+  domain. Plain text inside a fenced code block, not a markdown
+  link, so `verify.mjs`'s links leg correctly skips it and an
+  adopter is very unlikely to click it — a small credibility
+  ding in a worked example, not a functional break.
 - next: swap the example hostname for one that will never
   resolve to real content (e.g. `https://your-app.vercel.app`
   or `https://example-app.vercel.app`), matching the placeholder
   style already used elsewhere (`https://your-site.netlify.app`
   in `playbooks/new-project.md:240`).
-
-### [D, 1.8] README.md:309 has two unwrapped bullets breaking the locked wrap rule
-- category: voice
-- impact: 2, ease: 9
-- evidence: `README.md:309` carries two bullets (185 and 92
-  chars) sitting unwrapped between paragraphs wrapped to
-  `plan/bearings.md`'s standing ~62-64 col rule.
-- next: hard-wrap both bullets to ~62-64 cols, matching the
-  surrounding prose.
 
 ### [A, 1.35] cloud-loop.md's "three new files" header lists only two
 - category: doc-drift
@@ -443,10 +523,12 @@ empty. Not a full A-G sweep; A/B/C/D leaned on prior sweeps and
 - evidence: `playbooks/cloud-loop.md:66`'s "Three new files
   relative to the standard nexus overlay" header sits directly
   above a tree diagram listing only `march.yml` and
-  `CLOUD_LOOP.md` — two entries, not three.
-- next: either correct the count to "two" or identify and add
-  the third file the header originally counted (check git blame
-  for the section's last accurate revision).
+  `CLOUD_LOOP.md` — two entries, not three. `git log --follow
+  -p` on the file shows the header and the 2-entry tree have
+  coexisted since the doc's first commit — no third file was
+  ever dropped later.
+- next: correct the header to "Two new files" — there is no
+  lost third file to restore.
 
 ## Done
 

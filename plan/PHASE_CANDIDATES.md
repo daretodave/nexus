@@ -460,6 +460,33 @@ kit + sibling surveys.
 - estimated phases: 1 (workflow-only, no template API change)
 - conflicts: none.
 
+### [ ] [score 6.0] AUDIT's unwritten "favor the queue" tie-break is starving a cheap, real AUDIT-native row
+- proposed: 2026-07-24 (digest)
+- source signals: `plan/AUDIT.md`'s `[A/E, 2.7]` row (README's
+  "Files added" checklist undersells `scripts/` — impact 3,
+  ease 9, one of the cheapest fixes in the file) first appeared
+  around cloud tick 2026-07-17 and has since been cited as tied
+  or narrowly outscored by a `plan/CRITIQUE.md` row in at least
+  ten separate tick log-lines through 2026-07-24, every single
+  time it was in contention. The tie-break that keeps beating it
+  ("favor the queue") is a real, consistently-applied
+  convention, but it exists only as repeated log narrative in
+  `plan/AUDIT.md` — it was never written into `skills/iterate.md`
+  §3 as an actual rule, so nobody can inspect or challenge it as
+  policy, and it has no aging counter-pressure.
+- rationale: a one-line, ease-9 fix sitting seven-plus days
+  unshipped purely because of an unwritten scoring convention is
+  exactly the "starved queue" pattern `skills/digest.md` §4 names
+  as a tuning trigger — not because the fix is hard, risky, or
+  actually low-value.
+- proposed scope: write the "favor the queue on ties" convention
+  explicitly into `skills/iterate.md` §3 as an inspectable rule,
+  paired with a small aging nudge (e.g. `+0.1` per tick an AUDIT
+  row is passed over on a tie, capped) so a persistently-tied
+  cheap row eventually wins instead of losing indefinitely.
+- estimated phases: 1 (doc/rule-only, no template API change)
+- conflicts: none.
+
 ## Promoted
 
 (moves to the build plan via /oversight)
