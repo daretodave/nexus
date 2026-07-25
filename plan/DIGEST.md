@@ -1,92 +1,83 @@
-# Digest — 2026-07-24
+# Digest — 2026-07-25
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Quiet-but-clean window: all 4 march ticks shipped, zero no-ops
-— two stale "Sonnet 4.6" model-name fixes, a `./data` grep-scope
-guard, and the `.claude/` prune-list gap that emptied CRITIQUE's
-queue. AUDIT's header had drifted 2 days past digest's own 48h
-staleness threshold, so this pass ran a full A-G sweep: 3 new
-findings (headlined by a real adopter-facing `claude_args`
-doc-vs-gate mismatch, score 4.8) plus a corrected `next` on two
-carried-over rows. One tuning proposal filed — a cheap AUDIT row
-has been tying and losing the same tie-break for a week straight.
-Build plan stays empty (18/18); candidate backlog now 21, still
-zero promoted since the queue opened 2026-07-02.
+Clean 26h window: 4 of 5 `march` ticks shipped, one legitimate
+no-op (no candidate cleared threshold, not ceiling-starved).
+Both of AUDIT's two highest scorers from yesterday's sweep
+shipped — `[A/E, 2.7]` (README "Files added" undersells
+`scripts/`) and `[A, 2.4]` (README kit tree omits
+`skills/digest.md`) — which also confirms yesterday's
+starved-queue tuning candidate: its target row is no longer
+stuck. Build plan stays empty (18/18); candidate backlog holds
+flat at 21, still zero promotions since 2026-07-02.
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-23 14:46 | march → iterate | shipped AUDIT `[F/A, 3.6]` — `cloud-loop.md:62`'s stale "Sonnet 4.6" model name |
-| 07-23 20:24 | march → iterate | shipped CRITIQUE's LOW `./data` grep-scope row (bare `grep -rl` errored when `./data` didn't exist); tied AUDIT `[A/E, 2.7]` on score, tie-break favored the queue |
-| 07-24 03:04 | march → iterate | shipped AUDIT row — `templates/.github/CLOUD_LOOP.md` still cited "Sonnet 4.6"/"Opus 4.7" (found via a targeted F/G check since the header was already past 24h) |
-| 07-24 08:53 | march → iterate | shipped CRITIQUE's last remaining LOW row — `.claude/` Claude-Code bundle never offered for pruning; drained CRITIQUE's queue to empty |
+| 07-24 08:53 | march → iterate | shipped CRITIQUE's last LOW row — `.claude/` bundle never offered for pruning; drained CRITIQUE to empty (`9d404ce`) |
+| 07-24 11:09 | night → digest | wrote 07-24's `plan/DIGEST.md`, filed tuning candidate `[score 6.0]` (`86a9e5a`) |
+| 07-24 14:35 | march → iterate | shipped AUDIT `[A, 4.8]` — `claude-code.md` taught the `claude_args` JSON form `march.yml` documents as broken (`a2a966a`) |
+| 07-24 20:31 | march → iterate → expand | clean no-op — 21 candidates confirmed, no signal cleared threshold, tree stayed clean |
+| 07-25 03:04 | march → iterate | shipped AUDIT `[A/E, 2.7]` — README "Files added" checklist undersells `scripts/` (`df2bb47`) |
+| 07-25 08:42 | march → iterate | shipped AUDIT `[A, 2.4]` — README kit tree omits `skills/digest.md` from the `skills/` enumeration (`70028ff`) |
+| 07-25 10:54 | night → digest | this tick |
 
 `heartbeat` ran 5/5 green over its last-5 sample — no wedged
 runs, no flatline alarm.
 
 ## Shipped
 
-- `4de7268` — `playbooks/cloud-loop.md:62` "Sonnet 4.6" →
-  "Sonnet 5", plus the standing "ids age — check `/model`"
-  caveat. Closed AUDIT `[F/A, 3.6]`.
-- `fe46a28` — bash placeholder one-liner's `grep -rl` scope
-  gained `2>/dev/null` before the `xargs` pipe, matching the
-  PowerShell twin's existing `-ErrorAction SilentlyContinue`
-  guard on `./data`.
-- `8062841` — `templates/.github/CLOUD_LOOP.md` (the copy
-  adopters actually receive) "Sonnet 4.6"/"Opus 4.7" → "Sonnet
-  5"/"Opus 4.8" in the cost table and "Upgrading the model"
-  section — the template counterpart an earlier tick's fix to
-  the internal playbook copy had missed.
 - `9d404ce` — `playbooks/new-project.md`'s "Prune adopt-by-need
   files" section gained a ninth bullet covering the
   `.claude/settings.json` + `guard.mjs` + `.claude/CLAUDE.md` +
-  `scripts/notify.mjs` bundle for non-Claude-Code adopters,
-  matching `templates/README.md:131`'s adopt-by-need row.
-  `plan/CRITIQUE.md`'s pending queue is now empty.
+  `scripts/notify.mjs` bundle for adopters not running the loop
+  on Claude Code, matching `templates/README.md:131`. Emptied
+  `plan/CRITIQUE.md`'s Pending queue.
+- `a2a966a` — `customization/claude-code.md:310` no longer
+  teaches the `claude_args: {"model": "..."}` JSON form as the
+  cloud-loop model-routing lever; `.github/workflows/march.yml`
+  ships the CLI-flag string form instead after a real incident
+  showed the JSON form silently drops `permissionMode`. Closed
+  AUDIT `[A, 4.8]`, this sweep's highest-scoring finding.
+- `df2bb47` — README's "Files added" checklist now lists
+  `scripts/` alongside the other bulk-copied directories. Closed
+  AUDIT `[A/E, 2.7]`.
+- `70028ff` — README's collapsed `skills/` tree gained a
+  `skills/digest.md` leaf ("never dispatched by march"),
+  matching `templates/README.md:41`'s templated twin. Closed
+  AUDIT `[A, 2.4]`.
 
 ## Queues now
 
 - **Build plan:** 0 pending (18/18 phases shipped, unchanged).
   Every tick still routes to `/critique`/`/expand`/`/iterate`.
-- **AUDIT:** header was 2026-07-22 — 2 days old, past
-  `skills/digest.md` §3's 48h threshold — so this pass ran a
-  full A-G sweep and refreshed it to 2026-07-24. 8 rows now
-  Pending (was 5): standing `[user-issue #12]` (blocked,
-  unchanged since 2026-07-12); new `[A, 4.8]` —
-  `customization/claude-code.md:310` teaches the `claude_args`
-  JSON form `march.yml` documents as silently dropping
-  `permissionMode` (highest-scoring open, non-blocked row);
-  `[A/E, 2.7]` README's "Files added" checklist undersells
-  `scripts/` (unchanged, still real); new `[A, 2.4]` — README's
-  own `skills/` tree omits `digest.md`; `[D, 1.8]` two unwrapped
-  bullets at `README.md:309`, widened to include a third at
-  `:324`; new `[A, 1.6]` — `plan/steps/01_build_plan.md`'s
-  carry-overs cite stale queue counts; `[C/F, 1.6]` fictional
-  `ember.vercel.app` URL, now confirmed (via `curl`) to resolve
-  to a real unrelated site; `[A, 1.35]` `cloud-loop.md`'s
-  "three new files" header, `next` now settled by `git log
-  --follow` (correct the count, no file was ever lost).
-- **CRITIQUE:** 0 pending — drained this window. Last pass
-  2026-07-22 (pass 7).
-- **PHASE_CANDIDATES:** 21 pending (this digest added one — see
-  Tuning proposals), last `/expand` pass still 4 (2026-07-22).
-  Only 9 commits landed since, well under the ≥20-commit rate
-  limit, so `/expand` wasn't eligible this window. Posture bold.
-  None promoted or rejected.
+- **AUDIT:** header `2026-07-24` — <48h old, no refresh due.
+  5 Pending rows (was 5, net unchanged: two shipped, two
+  carried, none new): standing `[user-issue #12]` (blocked,
+  unchanged since 2026-07-12); new top scorer `[D, 1.8]` —
+  `README.md:309, 324` unwrapped bullets; `[A, 1.6]` — build
+  plan's stale carry-over counts; `[C/F, 1.6]` — fictional
+  `ember.vercel.app` URL now resolving to a real site; `[A,
+  1.35]` — `cloud-loop.md`'s "three new files" header lists two.
+- **CRITIQUE:** 0 pending, unchanged. Last pass 2026-07-22
+  (pass 7).
+- **PHASE_CANDIDATES:** 21 pending, flat since yesterday. Last
+  `/expand` pass still 4 (2026-07-22); posture bold. None
+  promoted or rejected — zero promotions since the queue opened
+  2026-07-02 (now three weeks running).
 - **Issues:** 1 open (`#12`, `triage:loop-queued`) — same row as
   AUDIT's blocked entry. No `triage:needs-user` or `loop:do`
   labels open.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not present
   in this environment — skipped (cloud).
-- **Ceiling:** 4 `Cloud-Run:`-tagged commits in the trailing
-  ~24h (`4de7268`, `fe46a28`, `8062841`, `9d404ce`), well under
-  the 8/24h ceiling; all carry the trailer correctly.
+- **Ceiling:** 4 `Cloud-Run:`-tagged commits in the trailing 24h
+  (`86a9e5a`, `a2a966a`, `df2bb47`, `70028ff`), well under the
+  8/24h ceiling; all carry the trailer correctly.
 
 ## Needs you
 
@@ -99,43 +90,30 @@ runs, no flatline alarm.
   token. Tracked as AUDIT `[user-issue #12]`, still the only
   blocked row.
 - **Candidate backlog** — 21 pending in
-  `plan/PHASE_CANDIDATES.md`, zero promoted since the queue
-  opened 2026-07-02 (three weeks running). The `[score 9.0]`
-  `new-project.md` step-4/7 rewrite is still re-evidenced across
-  four separate cycles (2026-07-06, -10, -13, -21) and remains
-  the clearest promote-first candidate; worth an `/oversight`
-  pass. Two prior meta-loop candidates (`[score 7.5]`
-  background-agent dispatch, `[score 6.5]` Cloud-Run trailer
-  verification) and this pass's new `[score 6.0]` tie-break row
-  also remain unpromoted.
+  `plan/PHASE_CANDIDATES.md`, zero promoted in three weeks. The
+  `[score 9.0]` `new-project.md` step-4/7 rewrite is still
+  re-evidenced across four cycles (2026-07-06, -10, -13, -21)
+  and remains the clearest promote-first candidate; worth an
+  `/oversight` pass. Unchanged from yesterday's digest.
 - No `[needs-user-call]` rows, no blocked build-plan rows.
 
 ## Today's intent
 
 Build plan still has no pending phase (18/18). With CRITIQUE
-empty, AUDIT's new `[A, 4.8]` row — the `claude_args`
-doc-vs-gate mismatch in `customization/claude-code.md:310` — is
-now the clear highest-scoring open item excluding the blocked
-`#12`, and the most likely next `/iterate` pick; it's also the
-most adopter-facing finding this sweep produced (reintroduces a
-bug the kit already paid to discover). `/expand`'s rate-limit
-window stays closed until ≥11 more commits land (9 of 20 elapsed
-since pass 4), so upcoming ticks should keep routing to
-`/iterate` (CRITIQUE has nothing pending until the next
-`/critique` pass).
+empty, AUDIT's `[D, 1.8]` row — two (now three) unwrapped
+bullets at `README.md:309, 324` breaking the locked ~62-64 col
+wrap rule — is the clear highest-scoring open item excluding
+the blocked `#12`, and the most likely next `/iterate` pick:
+cheap (ease 9), mechanical, no design judgment needed.
 
 ## Tuning proposals
 
-Filed one this pass: `plan/PHASE_CANDIDATES.md`'s new `[score
-6.0]` row — AUDIT's `[A/E, 2.7]` row has sat Pending since
-around 2026-07-17 and has been cited as tied-or-outscored by a
-CRITIQUE row in at least ten separate tick log-lines since, a
-textbook starved-queue pattern per `skills/digest.md` §4. The
-"favor the queue on ties" convention that keeps beating it was
-never written into `skills/iterate.md` §3 as an actual rule —
-it exists only as repeated log narrative — so the proposal asks
-for it to be made explicit and paired with a small aging nudge.
-Filed as a candidate, not applied — the meta-loop does not vote
-on its own constraints. Otherwise no mistuned gate this pass:
-all four ticks found and shipped real work, heartbeat ran 5/5
-green, and the ceiling sat well clear of its cap.
+None this pass. Yesterday's `[score 6.0]` starved-queue
+candidate (`plan/PHASE_CANDIDATES.md`) named `[A/E, 2.7]` as
+the row losing ties for a week straight — that row shipped this
+window (`df2bb47`), so the underlying symptom is resolved
+without needing the tie-break rule written yet; the candidate
+itself stays open for `/oversight` to judge on its own merits.
+The one no-op tick this window was a legitimate "nothing cleared
+threshold" outcome, not a starved or mistuned gate — no new
+proposal filed.
