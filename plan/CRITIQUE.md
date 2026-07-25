@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-07-22
-> Pass count: 7
+> Last pass: 2026-07-25
+> Pass count: 8
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -11,7 +11,57 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-(none)
+### [MED] templates/README.md:134 + playbooks/new-project.md:323-325 — `scripts/bootstrap.mjs` (1009 lines) is never offered for removal when `/bootstrap` isn't adopted
+- category: instruction-drift
+- observation: the adopt-by-need table's `/bootstrap` row only
+  lists `skills/bootstrap.md` + `claude/commands/bootstrap.md`
+  as the files to drop when not running `/bootstrap`; it omits
+  `scripts/bootstrap.mjs`, the 1009-line provider-CLI executor
+  that is the actual bulk of the capability. The playbook's
+  prune bullet and both worked `rm -f` / `Remove-Item` examples
+  repeat the same two-file list, so following them literally
+  leaves `scripts/bootstrap.mjs` sitting in a fresh repo with no
+  command that ever invokes it.
+- evidence: reproduced in a scratch dir — ran step 4's bulk copy,
+  then the playbook's own worked prune example verbatim for a
+  "Surface: service, no `/bootstrap`" project:
+  `rm -f skills/ship-data.md skills/ship-migration.md ... skills/bootstrap.md ... .claude/commands/bootstrap.md`
+  (the exact command block at `playbooks/new-project.md:350-359`).
+  Exit 0. `find . -type f` afterward still shows
+  `./scripts/bootstrap.mjs` present. `templates/README.md:134`'s
+  row text: "`skills/bootstrap.md` + `claude/commands/bootstrap.md`
+  | You plan to run `/bootstrap` as the setup executor" — no
+  `scripts/bootstrap.mjs` mentioned anywhere in that row, nor in
+  `customization/bootstrap-automation.md`'s discussion of the
+  same file.
+- suggested fix: add `scripts/bootstrap.mjs` to the `/bootstrap`
+  row in `templates/README.md`'s adopt-by-need table and to the
+  matching bullet + both worked `rm`/`Remove-Item` examples in
+  `playbooks/new-project.md`.
+- source: dry-run
+
+### [LOW] README.md:281 — "GitHub-as-DB" is used with no explanation or link, unlike sibling rows in the same table
+- category: comprehension
+- observation: the `/ship-data` row ("Add or repair one record
+  in the GitHub-as-DB") is the first and only place the README
+  ever uses the term "GitHub-as-DB", and it carries no inline
+  gloss and no cross-reference — unlike the `/ship-asset`,
+  `/moderate`, and `/bootstrap` rows in the same table, which
+  all link out to a `customization/*.md` doc at first use. A
+  stranger reading top to bottom has to reach
+  `customization/data-layer.md` (never linked from this row) on
+  their own to learn what the term means.
+- evidence: `README.md:281`: "`/ship-data` | Add or repair one
+  record in the GitHub-as-DB (optional — only for projects with
+  structured data). |" — no link, vs. `README.md:292`'s
+  `/bootstrap` row which ends "See
+  `customization/bootstrap-automation.md`." and the
+  `/ship-asset` / `/moderate` opt-in table which link
+  `customization/branding.md` / `customization/moderation-loop.md`
+  right in the surrounding prose.
+- suggested fix: add "(see `customization/data-layer.md`)" to the
+  `/ship-data` row, matching the sibling rows' pattern.
+- source: dry-run
 
 ## Done
 
