@@ -168,7 +168,7 @@ When the agent returns, expect:
 
 - A new commit titled `chore: adopt nexus methodology`.
 - Files added: `agents.md`, `CLAUDE.md`, `plan/`, `skills/`,
-  `.claude/`, `scripts/deploy-check.mjs`, `.env.example`.
+  `.claude/`, `scripts/`, `.env.example`.
 - Existing source code: **untouched** (per the playbooks).
 - A list of `[needs-user-call]` rows in `plan/AUDIT.md` if the
   agent had to defer any decisions to you.

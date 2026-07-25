@@ -406,6 +406,14 @@ verify.mjs's relative-link leg), F (model ids), and G (sibling
 lessons, still absent) swept clean otherwise. Audit only —
 shipped nothing, per digest.md rule 2.
 
+Cloud tick 2026-07-25: #12 still the only blocked AUDIT row.
+Header <24h old (last full sweep 2026-07-24 digest tick), so
+re-scored rather than re-swept: `plan/CRITIQUE.md`'s Pending
+queue is empty (no competing row), so shipped this block's own
+top scorer — `[A/E, 2.7]` (README's "Files added" checklist
+undersells `scripts/`) — over the four remaining lower-scoring
+rows (2.4, 1.8, 1.6, 1.6, 1.35).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -432,17 +440,6 @@ shipped nothing, per digest.md rule 2.
   operation" -> Ceiling wording with
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
-
-### [A/E, 2.7] README's "Files added" checklist undersells `scripts/`
-- category: doc-drift
-- impact: 3, ease: 9
-- evidence: `README.md:170-171` lists `scripts/deploy-check.mjs`
-  as if it's the only file landing under `scripts/`, but step
-  4's bulk copy (`['templates/scripts','scripts']`) lands all 8
-  scripts.
-- next: change `scripts/deploy-check.mjs` to `scripts/` in that
-  checklist line, matching how `plan/` and `skills/` are already
-  collapsed.
 
 ### [A, 2.4] README's own kit tree omits `skills/digest.md` from the collapsed `skills/` enumeration
 - category: doc-drift
@@ -512,6 +509,13 @@ shipped nothing, per digest.md rule 2.
   lost third file to restore.
 
 ## Done
+
+### [x] [A/E, 2.7] README's "Files added" checklist undersells `scripts/` — this commit (closes #27)
+- fix: changed `README.md:170-171`'s "Files added" checklist
+  entry from `scripts/deploy-check.mjs` to `scripts/`, matching
+  how `plan/` and `skills/` are already collapsed — step 4's
+  bulk copy (`['templates/scripts','scripts']`) lands all 8
+  scripts, not just `deploy-check.mjs`.
 
 ### [x] [A, 4.8] customization/claude-code.md teaches the exact claude_args JSON form march.yml documents as broken — this commit (closes #26)
 - fix: changed `customization/claude-code.md:310`'s Model
