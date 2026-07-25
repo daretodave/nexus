@@ -414,6 +414,13 @@ top scorer — `[A/E, 2.7]` (README's "Files added" checklist
 undersells `scripts/`) — over the four remaining lower-scoring
 rows (2.4, 1.8, 1.6, 1.6, 1.35).
 
+Cloud tick 2026-07-25 (second): #12 still the only blocked
+AUDIT row (same `workflows`-scope constraint). `[A/E, 2.7]`
+now shipped, so this tick took the new top scorer —
+`[A, 2.4]` (README's collapsed `skills/` tree omits
+`skills/digest.md`) — over the three remaining rows (1.8, 1.6,
+1.6, 1.35).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -440,20 +447,6 @@ rows (2.4, 1.8, 1.6, 1.6, 1.35).
   operation" -> Ceiling wording with
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
-
-### [A, 2.4] README's own kit tree omits `skills/digest.md` from the collapsed `skills/` enumeration
-- category: doc-drift
-- impact: 3, ease: 8
-- evidence: `README.md:510-511` collapses nexus's own `skills/`
-  to two leaf lines — `march.md` (with a parenthetical "+
-  ship-a-phase, iterate, critique, triage, expand, oversight,
-  jot") and `lessons-pr.md` — but `skills/digest.md` and
-  `.claude/commands/digest.md` both exist on disk and are absent
-  from every part of that block, while
-  `templates/README.md:41` correctly lists the templated twin.
-- next: add `digest.md` to the parenthetical list at
-  `README.md:510-511`, or give it its own leaf line paired with
-  `.github/workflows/night.yml`.
 
 ### [D, 1.8] README.md:309, 324 has unwrapped bullets breaking the locked wrap rule
 - category: voice
@@ -509,6 +502,13 @@ rows (2.4, 1.8, 1.6, 1.6, 1.35).
   lost third file to restore.
 
 ## Done
+
+### [x] [A, 2.4] README's own kit tree omits `skills/digest.md` from the collapsed `skills/` enumeration — this commit
+- fix: added `skills/digest.md` as its own leaf line in
+  `README.md:509-512`'s collapsed `skills/` tree, noting
+  "never dispatched by march" (matching `agents.md`'s skill
+  table), instead of folding it into the `march.md`
+  parenthetical it isn't actually part of.
 
 ### [x] [A/E, 2.7] README's "Files added" checklist undersells `scripts/` — this commit (closes #27)
 - fix: changed `README.md:170-171`'s "Files added" checklist

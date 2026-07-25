@@ -509,6 +509,7 @@ nexus/
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
 │   ├── march.md                       # + ship-a-phase, iterate, critique (dry-run adoption),
 │   │                                  #   triage, expand, oversight, jot
+│   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
 ├── plan/                              # nexus's OWN state files (build plan, queues, briefs)
 ├── .claude/                           # nexus's OWN commands + settings.json + guard hook
