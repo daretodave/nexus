@@ -306,8 +306,11 @@ Plus specialist sub-agents the main agent delegates to: `scout`
 and one or two domain specialists you author for your project.
 
 Two awareness layers wrap every push:
-- **Verify gate** (pre-commit, hermetic): typecheck → unit → build → e2e. The e2e leg is the load-bearing piece — see [`customization/hermetic-e2e.md`](./customization/hermetic-e2e.md).
-- **Deploy gate** (post-push, CI/CD-aware): polls your hosting provider until ready or error
+- **Verify gate** (pre-commit, hermetic): typecheck → unit →
+  build → e2e. The e2e leg is the load-bearing piece — see
+  [`customization/hermetic-e2e.md`](./customization/hermetic-e2e.md).
+- **Deploy gate** (post-push, CI/CD-aware): polls your hosting
+  provider until ready or error
 
 One enforcement layer (opt-in, for Claude Code runners) turns
 the hard rules from promises into walls: a permission
@@ -320,8 +323,10 @@ and the walk-away runbook,
 [`playbooks/hands-off.md`](./playbooks/hands-off.md).
 
 Two state files that capture intent across context loss:
-- `plan/steps/01_build_plan.md` — at-a-glance status of every phase
-- `plan/AUDIT.md` (+ `data/BACKLOG.md` + `plan/CRITIQUE.md`) — queues the loop drains
+- `plan/steps/01_build_plan.md` — at-a-glance status of every
+  phase
+- `plan/AUDIT.md` (+ `data/BACKLOG.md` + `plan/CRITIQUE.md`) —
+  queues the loop drains
 
 ---
 

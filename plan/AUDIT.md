@@ -421,6 +421,21 @@ now shipped, so this tick took the new top scorer —
 `skills/digest.md`) — over the three remaining rows (1.8, 1.6,
 1.6, 1.35).
 
+Cloud tick 2026-07-25 (third): #12 still the only blocked AUDIT
+row. Header was 27h old (past the 24h threshold), so ran a
+targeted fresh check instead of a full manual re-derive: F
+(grepped the whole tree for stale model-id patterns — only
+historical prose hits in this file and `plan/DIGEST.md`, no
+live docs) and G (sibling lessons dirs still absent from this
+checkout) both confirmed clean/empty; verify.mjs green
+(links/tree/discover/placeholders/anatomy/emoji). Reproduced all
+four non-durable Pending rows below — all still current, none
+resolved. Shipped this block's own top scorer, `[D, 1.8]`
+(README.md's three unwrapped bullets) — `plan/CRITIQUE.md`'s
+queue is empty, so no competing row. Not a full A-G sweep; A/B/C/E
+leaned on the reproduction pass above and verify.mjs's green
+tree.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -447,17 +462,6 @@ now shipped, so this tick took the new top scorer —
   operation" -> Ceiling wording with
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
-
-### [D, 1.8] README.md:309, 324 has unwrapped bullets breaking the locked wrap rule
-- category: voice
-- impact: 2, ease: 9
-- evidence: `README.md:309` carries two bullets (185 and 92
-  chars) sitting unwrapped between paragraphs wrapped to
-  `plan/bearings.md`'s standing ~62-64 col rule; the same block
-  has a third at `README.md:324` (85 chars, the
-  `plan/AUDIT.md` state-files bullet).
-- next: hard-wrap all three bullets to ~62-64 cols, matching the
-  surrounding prose.
 
 ### [A, 1.6] plan/steps/01_build_plan.md's "Carry-overs" section cites stale queue counts
 - category: doc-drift
@@ -502,6 +506,13 @@ now shipped, so this tick took the new top scorer —
   lost third file to restore.
 
 ## Done
+
+### [x] [D, 1.8] README.md:309, 310, 324 has unwrapped bullets breaking the locked wrap rule — this commit (closes #28)
+- fix: hard-wrapped the Verify-gate/Deploy-gate bullets
+  (`README.md:309-313`) and the `plan/AUDIT.md` state-files
+  bullet (`README.md:323-324`) to ~62-64 cols, matching the
+  multi-line bullet continuation style already used at
+  `README.md:613-624` (2-space-indented continuation lines).
 
 ### [x] [A, 2.4] README's own kit tree omits `skills/digest.md` from the collapsed `skills/` enumeration — this commit
 - fix: added `skills/digest.md` as its own leaf line in
