@@ -427,7 +427,7 @@ kit + sibling surveys.
 - conflicts: none.
 
 ### [ ] [score 6.5] Mechanically verify the Cloud-Run trailer on cloud ticks
-- proposed: 2026-07-20 (digest)
+- proposed: 2026-07-20 (digest); re-evidenced 2026-07-26 (digest)
 - source signals: of the 4 cloud commits shipped in the trailing
   24h window (2026-07-19 14:31 to 2026-07-20 09:07 UTC — all
   4 `march` runs green, no failures), 1 — `a74f7b6` ("critique:
@@ -441,13 +441,25 @@ kit + sibling surveys.
   side and the counting side. `scripts/verify.mjs` runs
   foreground on every tick but has no leg that inspects the
   commit trailer, since it can't distinguish a cloud commit
-  from a local one at gate time.
+  from a local one at gate time. Second instance found
+  2026-07-26 (digest): `427eb91` ("critique: pass 8 — 2 findings
+  (0 high, 1 med, 1 low)", from the 2026-07-25 20:20 UTC tick)
+  repeats the identical gap — confirmed via
+  `gh run view 30173383094 --log`, whose prompt block quotes the
+  exact trailer text verbatim, yet the shipped commit has no
+  body at all. Both observed misses are `/critique` verb commits
+  specifically (`a74f7b6`, `427eb91`), never an `/iterate` or
+  `/expand` commit in the ~60 cloud ticks sampled by digest
+  passes to date — narrows the likely root cause from "any
+  cloud commit can drop the trailer" to "the critique skill's
+  own commit step doesn't append it," which changes where the
+  eventual fix should look first.
 - rationale: the trailer is the sole mechanism the ceiling
   trusts; a tick that forgets it both violates the standing
   rule silently and erodes the ceiling's accuracy in the
   direction that's hardest to notice (undercounting, not
-  overcounting). One miss in 4 ticks this window is a real
-  rate, not a one-off.
+  overcounting). Two misses now observed, both on the same verb,
+  is a pattern, not a one-off.
 - proposed scope: a post-agent step in `march.yml` (and its
   `templates/` mirror) that diffs `HEAD` against the pre-run
   SHA when the ceiling didn't skip, and — if new commits landed
