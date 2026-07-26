@@ -278,7 +278,7 @@ A small family of slash commands the autonomous loop uses:
 | Command | Job |
 |---|---|
 | `/ship-a-phase` | Ship one slice of the build plan end-to-end (code, tests, commit, push). |
-| `/ship-data` | Add or repair one record in the GitHub-as-DB (optional — only for projects with structured data). |
+| `/ship-data` | Add or repair one record in the GitHub-as-DB (optional — only for projects with structured data; see [`customization/data-layer.md`](./customization/data-layer.md)). |
 | `/ship-migration` | Ship one database migration — additive only, enforced by a linter; destructive changes escalate to `/oversight` (optional — only for `pure-db` / `hybrid-with-managed-postgres` projects). |
 | `/plan-a-phase` | Refine the next phase brief without shipping code. |
 | `/iterate` | Audit the project, ship one improvement. The post-build endgame. |

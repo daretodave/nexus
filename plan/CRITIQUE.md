@@ -11,30 +11,14 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] README.md:281 — "GitHub-as-DB" is used with no explanation or link, unlike sibling rows in the same table
-- category: comprehension
-- observation: the `/ship-data` row ("Add or repair one record
-  in the GitHub-as-DB") is the first and only place the README
-  ever uses the term "GitHub-as-DB", and it carries no inline
-  gloss and no cross-reference — unlike the `/ship-asset`,
-  `/moderate`, and `/bootstrap` rows in the same table, which
-  all link out to a `customization/*.md` doc at first use. A
-  stranger reading top to bottom has to reach
-  `customization/data-layer.md` (never linked from this row) on
-  their own to learn what the term means.
-- evidence: `README.md:281`: "`/ship-data` | Add or repair one
-  record in the GitHub-as-DB (optional — only for projects with
-  structured data). |" — no link, vs. `README.md:292`'s
-  `/bootstrap` row which ends "See
-  `customization/bootstrap-automation.md`." and the
-  `/ship-asset` / `/moderate` opt-in table which link
-  `customization/branding.md` / `customization/moderation-loop.md`
-  right in the surrounding prose.
-- suggested fix: add "(see `customization/data-layer.md`)" to the
-  `/ship-data` row, matching the sibling rows' pattern.
-- source: dry-run
-
 ## Done
+
+### [x] [LOW] README.md:281 — "GitHub-as-DB" is used with no explanation or link, unlike sibling rows in the same table — this commit
+- fix: appended a link to `customization/data-layer.md` inside
+  the `/ship-data` row's parenthetical in `README.md:281`,
+  matching the `/ship-asset` / `/moderate` / `/bootstrap` rows'
+  existing pattern of linking their `customization/*.md` doc at
+  first use.
 
 ### [x] [MED] templates/README.md:134 + playbooks/new-project.md:323-325 — `scripts/bootstrap.mjs` (1009 lines) is never offered for removal when `/bootstrap` isn't adopted — this commit
 - fix: added `scripts/bootstrap.mjs` to the `/bootstrap` row in

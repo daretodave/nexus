@@ -436,6 +436,17 @@ queue is empty, so no competing row. Not a full A-G sweep; A/B/C/E
 leaned on the reproduction pass above and verify.mjs's green
 tree.
 
+Cloud tick 2026-07-26: header 2 days old; ran a targeted fresh
+check rather than a full manual re-derive: F (grepped the whole
+tree for stale model-id patterns — none live), G (sibling
+lessons dirs still absent from this checkout) both confirmed
+clean/empty; verify.mjs green. Reproduced all three non-blocked
+Pending rows below — all still current. `plan/CRITIQUE.md`'s
+sole Pending row (LOW, "GitHub-as-DB" unglossed in README's
+`/ship-data` row) scored ~2.7 (impact 3, ease 9 — a one-clause
+addition), beating this block's own top row (`[A, 1.6]` at 1.6).
+Shipped the CRITIQUE row instead.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
