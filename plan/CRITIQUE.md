@@ -11,35 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] templates/README.md:134 + playbooks/new-project.md:323-325 — `scripts/bootstrap.mjs` (1009 lines) is never offered for removal when `/bootstrap` isn't adopted
-- category: instruction-drift
-- observation: the adopt-by-need table's `/bootstrap` row only
-  lists `skills/bootstrap.md` + `claude/commands/bootstrap.md`
-  as the files to drop when not running `/bootstrap`; it omits
-  `scripts/bootstrap.mjs`, the 1009-line provider-CLI executor
-  that is the actual bulk of the capability. The playbook's
-  prune bullet and both worked `rm -f` / `Remove-Item` examples
-  repeat the same two-file list, so following them literally
-  leaves `scripts/bootstrap.mjs` sitting in a fresh repo with no
-  command that ever invokes it.
-- evidence: reproduced in a scratch dir — ran step 4's bulk copy,
-  then the playbook's own worked prune example verbatim for a
-  "Surface: service, no `/bootstrap`" project:
-  `rm -f skills/ship-data.md skills/ship-migration.md ... skills/bootstrap.md ... .claude/commands/bootstrap.md`
-  (the exact command block at `playbooks/new-project.md:350-359`).
-  Exit 0. `find . -type f` afterward still shows
-  `./scripts/bootstrap.mjs` present. `templates/README.md:134`'s
-  row text: "`skills/bootstrap.md` + `claude/commands/bootstrap.md`
-  | You plan to run `/bootstrap` as the setup executor" — no
-  `scripts/bootstrap.mjs` mentioned anywhere in that row, nor in
-  `customization/bootstrap-automation.md`'s discussion of the
-  same file.
-- suggested fix: add `scripts/bootstrap.mjs` to the `/bootstrap`
-  row in `templates/README.md`'s adopt-by-need table and to the
-  matching bullet + both worked `rm`/`Remove-Item` examples in
-  `playbooks/new-project.md`.
-- source: dry-run
-
 ### [LOW] README.md:281 — "GitHub-as-DB" is used with no explanation or link, unlike sibling rows in the same table
 - category: comprehension
 - observation: the `/ship-data` row ("Add or repair one record
@@ -64,6 +35,14 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] templates/README.md:134 + playbooks/new-project.md:323-325 — `scripts/bootstrap.mjs` (1009 lines) is never offered for removal when `/bootstrap` isn't adopted — this commit
+- fix: added `scripts/bootstrap.mjs` to the `/bootstrap` row in
+  `templates/README.md`'s adopt-by-need table, to the matching
+  prune bullet in `playbooks/new-project.md`, and to both worked
+  `rm -f`/`Remove-Item` examples — the 1009-line executor no
+  longer survives a by-the-book prune when `/bootstrap` isn't
+  adopted.
 
 ### [x] [LOW] templates/README.md:131 vs playbooks/new-project.md §4's prune list — the `.claude/` bundle is documented as adopt-by-need but never offered for removal — this commit
 - fix: added a ninth bullet to the prune list in

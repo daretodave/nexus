@@ -320,9 +320,9 @@ table:
   `heartbeat.yml` ship separately; step 4 never copies
   `.github/`, so only the skill + command file are at stake
   here).
-- `skills/bootstrap.md` + `.claude/commands/bootstrap.md` —
-  remove unless you plan to run `/bootstrap` as the setup
-  executor.
+- `skills/bootstrap.md` + `.claude/commands/bootstrap.md` +
+  `scripts/bootstrap.mjs` — remove unless you plan to run
+  `/bootstrap` as the setup executor.
 - `scripts/refresh-critique-session.mjs` +
   `scripts/check-secrets-liveness.mjs` — remove unless
   `bearings.md`'s `Auth:` is anything other than `none`.
@@ -349,7 +349,7 @@ the nine apply, so remove them all:
 ```bash
 rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
       skills/ship-asset.md .claude/agents/brander.md skills/moderate.md \
-      skills/digest.md skills/bootstrap.md \
+      skills/digest.md skills/bootstrap.md scripts/bootstrap.mjs \
       scripts/refresh-critique-session.mjs scripts/check-secrets-liveness.mjs \
       scripts/stack-lifecycle.mjs \
       .claude/settings.json .claude/hooks/guard.mjs .claude/CLAUDE.md \
@@ -362,7 +362,7 @@ rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
 ```powershell
 Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migration.md, `
   scripts\lint-migration.mjs, skills\ship-asset.md, .claude\agents\brander.md, skills\moderate.md, `
-  skills\digest.md, skills\bootstrap.md, `
+  skills\digest.md, skills\bootstrap.md, scripts\bootstrap.mjs, `
   scripts\refresh-critique-session.mjs, scripts\check-secrets-liveness.mjs, `
   scripts\stack-lifecycle.mjs, `
   .claude\settings.json, .claude\hooks\guard.mjs, .claude\CLAUDE.md, `
