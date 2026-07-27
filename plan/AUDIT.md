@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-24
+# Kit audit — 2026-07-27
 
 > Bias: none
 
@@ -447,6 +447,56 @@ sole Pending row (LOW, "GitHub-as-DB" unglossed in README's
 addition), beating this block's own top row (`[A, 1.6]` at 1.6).
 Shipped the CRITIQUE row instead.
 
+Digest tick 2026-07-27: header was 3 days old (last full sweep
+the 2026-07-24 digest tick), past `skills/digest.md`'s 48h
+threshold, so ran a full A-G sweep. Reproduced all three
+non-blocked Pending rows below byte-for-byte: `[C/F, 1.6]`
+(`ember.vercel.app`) and `[A, 1.35]` ("three new files") are
+unchanged; `[A, 1.6]`'s own cited counts had gone stale a
+second time since it was last written (it said "5 Pending" /
+"20 candidates" — yesterday's digest already flagged this drift
+in prose but never edited the row — today's actuals are 4
+Pending and 21 candidates), evidence sharpened below.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty (all rows
+closed as of `34fe6d1`). F: grepped the whole tree for stale
+model-id patterns — none live, every hit is
+`claude-sonnet-5`/`claude-opus-4-8`/`claude-haiku-4-5`. G:
+`../kintilla`, `../semilayer`, and any `NEXUS_LESSONS.md` still
+absent from this checkout — dimension checked, not skipped, per
+this task's instructions. C: curled every non-vendor external
+URL in the tree (`thock.xyz`, `github.com/daretodave/thock`
+both 200; `ember.vercel.app` 200, already tracked as `[C/F,
+1.6]`; `thock.netlify.app` only survives in this file's own
+historical log prose, not live docs) — no new rot. D: leaned on
+verify.mjs's green emoji leg plus a manual heading-case and
+title-case spot-check across README/playbooks/customization —
+no new hits. E: reconfirmed README's command table lists all 15
+`templates/claude/commands/` files with correct rows,
+`/lessons-pr` correctly excluded (no template counterpart, per
+the 2026-07-19 (third) log line above). B: no new
+promised-but-missing files found. Found one new row: `[C, 3.6]`
+— `scripts/verify.mjs`'s `REVERSE_CHECK_DIRS` array omits
+`templates/plan`, the exact directory whose disk/doc mismatch
+(`PHASE_CANDIDATES.md` + `CURRENT-STATE.md` missing from
+README's kit tree) an earlier tick had to catch by hand
+(2026-07-19 digest, `[A/C, 3.2]` in Done below) because the gate
+had no reverse-check there. Tested locally: adding
+`'templates/plan'` to the array and re-running
+`node scripts/verify.mjs` passes clean (35 files
+reverse-checked, up from 24, zero new failures) — the
+"adopt-by-need annotations would need new handling" concern
+noted when that Done-row gap was first spotted no longer holds;
+`templates/README.md`'s `plan/` tree block already uses the same
+`(omit unless ...)` comment style the other four reverse-checked
+dirs use, which the parser already handles. Reverted the local
+probe edit before writing this file (verified `git diff
+scripts/verify.mjs` clean). Scores above this block's three
+carried-over rows (3.6 vs. 1.6 / 1.6 / 1.35); `#12` stays the
+durable top row of Pending, still blocked on the same
+`workflows`-scope constraint (`ACTIONS_PAT` has no `workflows`
+scope). Audit only — shipped nothing, per `skills/digest.md`
+rule 2.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -474,14 +524,41 @@ Shipped the CRITIQUE row instead.
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
 
+### [C, 3.6] scripts/verify.mjs's REVERSE_CHECK_DIRS omits templates/plan
+- category: link + tree hygiene (gate blind spot)
+- impact: 4, ease: 9
+- evidence: `scripts/verify.mjs:165-168`'s `REVERSE_CHECK_DIRS`
+  array covers `templates/scripts`, `templates/skills`,
+  `templates/claude/commands`, `templates/claude/agents` but not
+  `templates/plan` — the exact directory whose disk/doc mismatch
+  (`PHASE_CANDIDATES.md` + `CURRENT-STATE.md` missing from
+  README's kit tree) an earlier tick had to catch by hand
+  (2026-07-19 digest tick, `[A/C, 3.2]` in Done below), because
+  the gate had no reverse-check there to catch it
+  automatically. Locally added `'templates/plan'` to the array
+  and re-ran `node scripts/verify.mjs`: passes green, 35 files
+  reverse-checked (up from 24), no new failures — the
+  "adopt-by-need annotations would need new handling" concern
+  noted when that gap was first spotted doesn't hold;
+  `templates/README.md`'s `plan/` tree block already uses the
+  same `(omit unless ...)` comment style the other four
+  reverse-checked dirs use, which `stripTreeComment` already
+  parses. Reverted the probe edit before filing this row.
+- next: add `'templates/plan'` to `REVERSE_CHECK_DIRS` in
+  `scripts/verify.mjs:165-168`, run the gate to confirm still
+  green, commit.
+
 ### [A, 1.6] plan/steps/01_build_plan.md's "Carry-overs" section cites stale queue counts
 - category: doc-drift
 - impact: 2, ease: 8
 - evidence: `plan/steps/01_build_plan.md:75-81` says
   `plan/AUDIT.md` is "seeded with 9 iterate-sized findings"
-  (today's Pending count is 5, this recompute included) and
+  (today's Pending count is 4, this recompute included — down
+  from the 5 last cited in this row two ticks ago) and
   `plan/PHASE_CANDIDATES.md` "holds 4 candidates" (today's file
-  holds 20; the 4 named topics still exist among them).
+  holds 21, up from the 20 last cited in this row; the 4 named
+  topics still exist among them). The count keeps drifting
+  between audit passes, which is this row's own point.
 - next: reword both bullets to point at the live files instead
   of hardcoded counts, so this can't go stale again.
 
