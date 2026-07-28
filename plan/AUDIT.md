@@ -506,6 +506,25 @@ Shipped this block's own top scorer, `[C, 3.6]`
 `templates/plan`) — over the three remaining lower-scoring
 rows (1.6, 1.6, 1.35).
 
+Cloud tick 2026-07-28 (second): header now 27h old (past the
+24h threshold), so ran a targeted fresh check rather than a
+full manual re-derive: F (grepped the whole tree for stale
+model-id patterns — none live) and G (sibling lessons dirs
+still absent from this checkout) both confirmed clean/empty;
+verify.mjs green (links/tree/discover/placeholders/anatomy/
+emoji, 35 files reverse-checked). `plan/CRITIQUE.md`'s Pending
+queue confirmed empty. Reproduced all three non-blocked
+Pending rows below — all still current, including `[A, 1.6]`'s
+own point: its cited counts ("9"/"4") have drifted again since
+last written (today's actuals are 4 AUDIT Pending rows, 21
+PHASE_CANDIDATES Pending rows). `[A, 1.6]` and `[C/F, 1.6]`
+tied on score; shipped `[A, 1.6]` over `[C/F, 1.6]` and
+`[A, 1.35]` — its fix removes the hardcoded counts entirely
+(points at the live files instead), so this exact row can't
+recur, where `[C/F, 1.6]`'s fix only swaps one string that
+could drift again the same way. Not a full A-G sweep; A/B/D/E
+leaned on verify.mjs's green tree and prior sweeps.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -532,20 +551,6 @@ rows (1.6, 1.6, 1.35).
   operation" -> Ceiling wording with
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
-
-### [A, 1.6] plan/steps/01_build_plan.md's "Carry-overs" section cites stale queue counts
-- category: doc-drift
-- impact: 2, ease: 8
-- evidence: `plan/steps/01_build_plan.md:75-81` says
-  `plan/AUDIT.md` is "seeded with 9 iterate-sized findings"
-  (today's Pending count is 4, this recompute included — down
-  from the 5 last cited in this row two ticks ago) and
-  `plan/PHASE_CANDIDATES.md` "holds 4 candidates" (today's file
-  holds 21, up from the 20 last cited in this row; the 4 named
-  topics still exist among them). The count keeps drifting
-  between audit passes, which is this row's own point.
-- next: reword both bullets to point at the live files instead
-  of hardcoded counts, so this can't go stale again.
 
 ### [C/F, 1.6] Fictional example deploy URL in `templates/skills/bootstrap.md` now resolves to an unrelated site
 - category: link hygiene (low severity — not a live hyperlink)
@@ -579,6 +584,14 @@ rows (1.6, 1.6, 1.35).
   lost third file to restore.
 
 ## Done
+
+### [x] [A, 1.6] plan/steps/01_build_plan.md's "Carry-overs" section cites stale queue counts — this commit
+- fix: reworded both `plan/steps/01_build_plan.md` Carry-overs
+  bullets (`plan/AUDIT.md`, `plan/PHASE_CANDIDATES.md`) to point
+  at each file's live Pending section instead of a hardcoded
+  count, so the two numbers can't go stale between audit passes
+  again — the recurring failure mode this row itself kept
+  re-triggering.
 
 ### [x] [C, 3.6] scripts/verify.mjs's REVERSE_CHECK_DIRS omits templates/plan — this commit
 - fix: added `'templates/plan'` to `REVERSE_CHECK_DIRS` in

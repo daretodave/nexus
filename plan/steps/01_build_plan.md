@@ -72,12 +72,15 @@ written):**
 
 ## Carry-overs / known gaps
 
-- `plan/AUDIT.md` is seeded with 9 iterate-sized findings from
-  the survey passes — they compete with phases via `/march`
-  order (phases first).
-- `plan/PHASE_CANDIDATES.md` holds 4 candidates awaiting
-  `/oversight` promotion (plugin packaging, closeloop,
-  critique-household, staged hardening).
+- `plan/AUDIT.md`'s Pending section holds iterate-sized
+  findings from the survey passes — they compete with phases
+  via `/march` order (phases first). Count drifts every pass;
+  read the file for the live total, not this bullet.
+- `plan/PHASE_CANDIDATES.md`'s Pending section holds candidates
+  awaiting `/oversight` promotion, including plugin packaging,
+  closeloop, critique-household, and staged hardening among
+  others added since. Count drifts every pass; read the file
+  for the live total, not this bullet.
 - Issue #12: `.github/workflows/march.yml` (nexus's own) still
   needs phase 17's weighted-ceiling step applied by hand — the
   cloud loop cannot push `.github/workflows/*.yml` itself
