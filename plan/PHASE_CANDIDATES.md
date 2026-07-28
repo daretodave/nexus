@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-07-22
-> Pass count: 4
+> Last pass: 2026-07-28
+> Pass count: 5
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -133,7 +133,7 @@ kit + sibling surveys.
 
 ### [ ] [score 9.0] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
 - proposed: 2026-07-06; re-evidenced 2026-07-10, 2026-07-13,
-  2026-07-21
+  2026-07-21, 2026-07-23 (x2), 2026-07-24, 2026-07-26
 - source signals: this is the second critique cycle in a row to
   land findings in the same step-4/7 block of
   playbooks/new-project.md. The four findings that originally
@@ -170,13 +170,33 @@ kit + sibling surveys.
   fixed same-commit (`ced0304`), the third distinct scope gap
   found this way after `./scripts` and `./.env.example`. The bug
   class now reproduces from both signal A (audit) and signal B
-  (critique), always in the same one-liners.
+  (critique), always in the same one-liners. Since pass 4
+  (2026-07-22), four more instances landed in the identical
+  block, two per sub-mechanism the proposed scope already names:
+  the placeholder one-liner broke again twice more — bare
+  `sed -i` misparsed by stock macOS/BSD sed (2026-07-23, commit
+  `70c8b6c`) and an unguarded `./data` grep erroring loudly when
+  the directory is absent (2026-07-23, commit `fe46a28`) — and
+  the "Prune adopt-by-need files" sub-step missed two more of the
+  ~12 adopt-by-need rows exactly as this candidate's proposed
+  scope predicted: the `.claude/` Claude-Code-only bundle
+  (2026-07-24, commit `9d404ce`) and `scripts/bootstrap.mjs`, the
+  1009-line executor behind `/bootstrap` (2026-07-26, commit
+  `0f19039`). Both prune misses are the identical failure this
+  candidate already called out by name ("only gives worked
+  removal steps for 4 of ~12 adopt-by-need rows") — the fix
+  pattern is not finding new bug classes, it is re-confirming the
+  one this candidate proposes to close structurally.
 - rationale: tick-by-tick `/iterate` fixes keep patching this
   block and it keeps re-breaking on the next fresh-eyes pass —
   the strongest possible evidence that the block's *structure*
   (copy array + placeholder sweep + prune, spread loosely across
   steps 4-7) is the defect, not any single line in it. Signal B's
-  cluster pattern, now quadrupled, and no longer critique-only.
+  cluster pattern, now sextupled across six re-evidencing dates,
+  and no longer critique-only. Six ticks have each shipped a
+  correct, narrow fix for one row/directory/mechanism at a time
+  — none has shipped the structural rewrite that would stop the
+  next instance before it's found by hand.
 - proposed scope: rewrite playbooks/new-project.md's step 4 (copy)
   and its placeholder-replace step so paths match the README's
   recommended sibling-clone layout; add the missing
@@ -187,8 +207,9 @@ kit + sibling surveys.
   sweep; add an explicit
   adopt-by-need prune sub-step right after the bulk copy that
   covers all ~12 of `templates/README.md`'s adopt-by-need rows,
-  not just the 4 already worked (Surface/Structured-data/
-  UGC-gated); fold step 7's now-redundant deploy-check.mjs copy
+  not just the 6 already worked one at a time (Surface/
+  Structured-data/UGC-gated/`.claude/`/`scripts/bootstrap.mjs`);
+  fold step 7's now-redundant deploy-check.mjs copy
   into step 4's bulk copy and reword step 7 to "wire the file
   already present"; clarify step 6 describes the target shape for
   phase 1's brief to produce, not something to run against an
