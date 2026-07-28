@@ -165,6 +165,7 @@ function walkFiles(dirAbs) {
 const REVERSE_CHECK_DIRS = [
   'templates/scripts', 'templates/skills',
   'templates/claude/commands', 'templates/claude/agents',
+  'templates/plan',
 ]
 
 function legTree() {

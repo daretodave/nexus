@@ -497,6 +497,15 @@ durable top row of Pending, still blocked on the same
 scope). Audit only — shipped nothing, per `skills/digest.md`
 rule 2.
 
+Cloud tick 2026-07-28: header <24h old (last full sweep the
+2026-07-27 digest tick), so re-scored rather than re-swept:
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. #12 stays
+the durable blocked row (same `workflows`-scope constraint).
+Shipped this block's own top scorer, `[C, 3.6]`
+(`scripts/verify.mjs`'s `REVERSE_CHECK_DIRS` omitting
+`templates/plan`) — over the three remaining lower-scoring
+rows (1.6, 1.6, 1.35).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -523,30 +532,6 @@ rule 2.
   operation" -> Ceiling wording with
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
-
-### [C, 3.6] scripts/verify.mjs's REVERSE_CHECK_DIRS omits templates/plan
-- category: link + tree hygiene (gate blind spot)
-- impact: 4, ease: 9
-- evidence: `scripts/verify.mjs:165-168`'s `REVERSE_CHECK_DIRS`
-  array covers `templates/scripts`, `templates/skills`,
-  `templates/claude/commands`, `templates/claude/agents` but not
-  `templates/plan` — the exact directory whose disk/doc mismatch
-  (`PHASE_CANDIDATES.md` + `CURRENT-STATE.md` missing from
-  README's kit tree) an earlier tick had to catch by hand
-  (2026-07-19 digest tick, `[A/C, 3.2]` in Done below), because
-  the gate had no reverse-check there to catch it
-  automatically. Locally added `'templates/plan'` to the array
-  and re-ran `node scripts/verify.mjs`: passes green, 35 files
-  reverse-checked (up from 24), no new failures — the
-  "adopt-by-need annotations would need new handling" concern
-  noted when that gap was first spotted doesn't hold;
-  `templates/README.md`'s `plan/` tree block already uses the
-  same `(omit unless ...)` comment style the other four
-  reverse-checked dirs use, which `stripTreeComment` already
-  parses. Reverted the probe edit before filing this row.
-- next: add `'templates/plan'` to `REVERSE_CHECK_DIRS` in
-  `scripts/verify.mjs:165-168`, run the gate to confirm still
-  green, commit.
 
 ### [A, 1.6] plan/steps/01_build_plan.md's "Carry-overs" section cites stale queue counts
 - category: doc-drift
@@ -594,6 +579,14 @@ rule 2.
   lost third file to restore.
 
 ## Done
+
+### [x] [C, 3.6] scripts/verify.mjs's REVERSE_CHECK_DIRS omits templates/plan — this commit
+- fix: added `'templates/plan'` to `REVERSE_CHECK_DIRS` in
+  `scripts/verify.mjs:165-168`. Re-ran the gate: green, 35 files
+  reverse-checked (up from 24), no new failures — closes the
+  blind spot that let the `PHASE_CANDIDATES.md`/`CURRENT-STATE.md`
+  gap (2026-07-19 digest tick, `[A/C, 3.2]` below) go uncaught by
+  the mechanical gate.
 
 ### [x] [D, 1.8] README.md:309, 310, 324 has unwrapped bullets breaking the locked wrap rule — this commit (closes #28)
 - fix: hard-wrapped the Verify-gate/Deploy-gate bullets
