@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-27
+# Kit audit — 2026-07-29
 
 > Bias: none
 
@@ -525,6 +525,28 @@ recur, where `[C/F, 1.6]`'s fix only swaps one string that
 could drift again the same way. Not a full A-G sweep; A/B/D/E
 leaned on verify.mjs's green tree and prior sweeps.
 
+Cloud tick 2026-07-29: header now >24h old, ran a fresh A-G
+sweep (delegated the read-only pass to an agent to protect
+context, then verified its top candidate by hand before
+shipping). B/C/D/E/F re-confirmed clean (templates/ vs. both
+tree diagrams match exactly disk-for-disk both directions;
+skills/*.md path references all resolve; voice/wrap sampling
+on recently-touched docs clean; model ids all carry the
+standing caveat, none stale). G still empty — no sibling
+lessons dirs present in this checkout. New A finding: README's
+own "What's in this kit" tree lists `agents.md` then jumps
+straight to `package.json`, skipping root `CLAUDE.md` — a real
+file (`ls` confirms) that's load-bearing (Claude Code only
+auto-loads `CLAUDE.md` from repo root, not `.claude/`) and
+already named explicitly in this same doc's "Files added"
+line 170. `templates/README.md`'s own tree already lists the
+templated twin (`claude/CLAUDE.md`) — this was the one root
+substrate file the kit's own tree of itself omitted. Scored
+[A, 4.5] (impact 5, ease 9) — beats all three standing Pending
+rows below, so shipped it this tick instead. Re-verified the
+three standing Pending rows are all still current (still
+blocked / still accurate); not re-derived from scratch.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -584,6 +606,15 @@ leaned on verify.mjs's green tree and prior sweeps.
   lost third file to restore.
 
 ## Done
+
+### [x] [A, 4.5] README's own kit tree omits root `CLAUDE.md` — this commit
+- fix: added `├── CLAUDE.md` (with a one-line comment on why it
+  matters — Claude Code only auto-loads it from repo root) to
+  README.md's "What's in this kit" tree, between `agents.md`
+  and `package.json` — the one root substrate file the tree
+  omitted despite the doc's own "Files added" list (line 170)
+  and `templates/README.md`'s tree both already treating it as
+  real.
 
 ### [x] [A, 1.6] plan/steps/01_build_plan.md's "Carry-overs" section cites stale queue counts — this commit
 - fix: reworded both `plan/steps/01_build_plan.md` Carry-overs

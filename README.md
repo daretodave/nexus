@@ -479,6 +479,7 @@ nexus/
 ├── README.md                          # this file
 ├── intervention-spectrum.md           # the levels in detail
 ├── agents.md                          # nexus's OWN rule book (the kit runs on itself)
+├── CLAUDE.md                          # pointer at agents.md (Claude Code only auto-loads CLAUDE.md from repo root)
 ├── package.json                       # the kit's own verify gate wiring
 ├── scripts/
 │   └── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji
