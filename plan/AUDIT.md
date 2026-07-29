@@ -547,6 +547,18 @@ rows below, so shipped it this tick instead. Re-verified the
 three standing Pending rows are all still current (still
 blocked / still accurate); not re-derived from scratch.
 
+Cloud tick 2026-07-29 (second): header <24h old (last full sweep
+this same day's first tick, above), so no re-sweep. Neither of
+this block's own two Pending rows (`[C/F, 1.6]`, `[A, 1.35]`)
+outscored `plan/CRITIQUE.md`'s pending queue, which had one LOW
+row not yet re-scored by this file's log:
+`concepts/skills-anatomy.md:121`'s "canonical 12 steps" undercount
+(impact 3, ease 9 -> 2.7, cheapest and clearest of the three —
+reproduced, one-word fix). Mirrored as issue #29 and shipped;
+`plan/CRITIQUE.md`'s Pending queue is now empty again. #12 stays
+the durable blocked row. This block's own two rows are unchanged
+and still Pending.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand

@@ -118,7 +118,7 @@ Step-by-step. Each step is a numbered subsection (Step 0 — Sync,
 Step 1 — Pick the work, etc.). Steps include literal bash
 commands the agent runs.
 
-For shipping skills, the canonical 12 steps:
+For shipping skills, the canonical 14 steps:
 - Step 0: Re-sync (`git pull --ff-only`)
 - Step 1: Pick the work
 - Step 2: Read the brief / target

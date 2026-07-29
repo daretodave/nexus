@@ -11,23 +11,17 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] concepts/skills-anatomy.md:121 — "canonical 12 steps" undercounts its own enumerated list
+## Done
+
+### [x] [LOW] concepts/skills-anatomy.md:121 — "canonical 12 steps" undercounts its own enumerated list — this commit (closes #29)
 - category: instruction-drift
 - observation: the prose says "the canonical 12 steps" but the
   list immediately below it enumerates Step 0 through Step 13
   (14 entries), matching `templates/skills/ship-a-phase.md`'s
   actual 14 numbered steps (0-13, plus 2.5 and 12.5).
-- evidence: `concepts/skills-anatomy.md:121` "For shipping
-  skills, the canonical 12 steps:" followed by a list running
-  Step 0 (line 122) through Step 13 (line 135);
-  `grep -n "^### Step" templates/skills/ship-a-phase.md` returns
-  Step 0..13.
-- suggested fix: change "the canonical 12 steps" to "the
-  canonical 14 steps" (or "Steps 0-13") on
-  `concepts/skills-anatomy.md:121`.
+- fix: changed "the canonical 12 steps" to "the canonical 14
+  steps" at `concepts/skills-anatomy.md:121`.
 - source: dry-run
-
-## Done
 
 ### [x] [LOW] README.md:281 — "GitHub-as-DB" is used with no explanation or link, unlike sibling rows in the same table — this commit
 - fix: appended a link to `customization/data-layer.md` inside
