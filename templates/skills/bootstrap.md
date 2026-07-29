@@ -214,7 +214,7 @@ Bootstrap complete.
 Actions run:      7
 Handoffs resolved: 3
 Time:             4m 12s
-First deploy:     https://ember.vercel.app  ✓ ready
+First deploy:     https://your-app.vercel.app  ✓ ready
 Cloud loop:       scheduled (next: 2026-05-13T20:00Z)
 
 Next: invoke /ship-a-phase to ship phase 1.

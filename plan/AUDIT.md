@@ -559,6 +559,14 @@ reproduced, one-word fix). Mirrored as issue #29 and shipped;
 the durable blocked row. This block's own two rows are unchanged
 and still Pending.
 
+Cloud tick 2026-07-29 (third): header still <24h old (last full
+sweep this same day's first tick, above), so no re-sweep.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. Reproduced
+this block's own top scorer, `[C/F, 1.6]` — `curl` unnecessary,
+the domain match at `templates/skills/bootstrap.md:217` still
+reads `https://ember.vercel.app` — and shipped it over `[A, 1.35]`
+(lower score). #12 stays the durable blocked row.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -586,24 +594,6 @@ and still Pending.
   `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
   section.
 
-### [C/F, 1.6] Fictional example deploy URL in `templates/skills/bootstrap.md` now resolves to an unrelated site
-- category: link hygiene (low severity — not a live hyperlink)
-- impact: 2, ease: 8
-- evidence: `templates/skills/bootstrap.md:217`'s sample
-  terminal-output block shows `First deploy:
-  https://ember.vercel.app  ✓ ready` as illustrative fictional
-  output; `curl` confirms the domain now serves a real,
-  unrelated live Next.js app (HTTP 200), not a parked/404
-  domain. Plain text inside a fenced code block, not a markdown
-  link, so `verify.mjs`'s links leg correctly skips it and an
-  adopter is very unlikely to click it — a small credibility
-  ding in a worked example, not a functional break.
-- next: swap the example hostname for one that will never
-  resolve to real content (e.g. `https://your-app.vercel.app`
-  or `https://example-app.vercel.app`), matching the placeholder
-  style already used elsewhere (`https://your-site.netlify.app`
-  in `playbooks/new-project.md:240`).
-
 ### [A, 1.35] cloud-loop.md's "three new files" header lists only two
 - category: doc-drift
 - impact: 3, ease: 4.5
@@ -618,6 +608,14 @@ and still Pending.
   lost third file to restore.
 
 ## Done
+
+### [x] [C/F, 1.6] Fictional example deploy URL in `templates/skills/bootstrap.md` now resolves to an unrelated site — this commit
+- fix: swapped the sample terminal-output block's example
+  hostname at `templates/skills/bootstrap.md:217` from
+  `https://ember.vercel.app` (now a real, unrelated live site)
+  to `https://your-app.vercel.app`, matching the placeholder
+  style already used elsewhere (`https://your-site.netlify.app`
+  in `playbooks/new-project.md:242`).
 
 ### [x] [A, 4.5] README's own kit tree omits root `CLAUDE.md` — this commit
 - fix: added `├── CLAUDE.md` (with a one-line comment on why it
