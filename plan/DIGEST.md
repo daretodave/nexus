@@ -1,81 +1,82 @@
-# Digest — 2026-07-28
+# Digest — 2026-07-29
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Quiet-then-productive ~23.5h window: of 4 `march` ticks, 2 were
-clean `/expand` no-ops, then `/expand` landed a real pass (pass
-5 — 0 new candidates, 1 re-evidenced), then `/iterate` shipped
-exactly yesterday's flagged pick — `[C, 3.6]` adding
-`'templates/plan'` to `scripts/verify.mjs`'s `REVERSE_CHECK_DIRS`
-(`1b1e211`), closing the gate blind spot the prior digest
-surfaced. AUDIT header stays `2026-07-27` (re-scored, not
-re-swept — still under the 48h threshold) with 3 non-blocked
-Pending rows left, all low-scoring (1.6/1.6/1.35). Candidate
-backlog flat at 21 pending despite the new pass; zero
-promotions since 2026-07-02, now 26 days running.
+Active ~24h window, 4/4 `march` ticks shipped: `/iterate`
+closed the build plan's own self-referencing stale-count bug
+(`ee20265`), `/critique` pass 9 filed one low finding, and the
+next two `/iterate` ticks shipped a fresh AUDIT row (root
+`CLAUDE.md` missing from the README tree, `7547248`) then that
+same critique finding (`concepts/skills-anatomy.md`'s step
+count, closing #29, `0ea69c0`). AUDIT re-swept fresh this
+morning (header now `2026-07-29`) and is down to 2 non-blocked
+Pending rows, both low-scoring; CRITIQUE is empty again;
+candidate backlog flat at 21 pending, now 27 days since the
+last promotion; ceiling sits at 5/8 trailing-24h with no
+trailer gaps.
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-27 15:01 | march → expand | clean no-op — no candidate cleared the bar |
-| 07-27 20:31 | march → expand | clean no-op — no candidate cleared the bar |
-| 07-28 03:04 | march → expand | shipped pass 5 (`545367a`) — 0 new candidates, 1 re-evidenced (the score-9.0 step-4 rewrite candidate, now sextupled), `Cloud-Run:` trailer present |
-| 07-28 08:57 | march → iterate | shipped AUDIT's top scorer, `[C, 3.6]` (`1b1e211`) — `verify.mjs`'s `REVERSE_CHECK_DIRS` gains `templates/plan`, 35 files reverse-checked (up from 24), `Cloud-Run:` trailer present |
-| 07-28 11:15 | night → digest | this tick |
+| 07-28 14:50 | march → iterate | shipped `[A, 1.6]` — build_plan's Carry-overs bullets hardcoded stale queue counts a second time; reworded to point at each file's live Pending section (`ee20265`) |
+| 07-28 20:27 | march → critique | pass 9 — 1 finding filed (0 high, 0 med, 1 low): `concepts/skills-anatomy.md:121`'s step count undercounts its own list (`76956ae`) |
+| 07-29 03:04 | march → iterate | shipped AUDIT `[A, 4.5]` — README's kit tree skipped root `CLAUDE.md`, beat all 3 standing Pending rows on score (`7547248`) |
+| 07-29 08:59 | march → iterate | shipped pass 9's finding — "canonical 12 steps" → "14 steps", closes #29 (`0ea69c0`) |
+| 07-29 11:17 | night → digest | this tick |
 
 `heartbeat` ran 5/5 green over its last-5 sample — no wedged
 runs, no flatline alarm.
 
 ## Shipped
 
-- `545367a` — `/expand` pass 5: no fresh candidate cluster since
-  pass 4 (2026-07-22), but four more instances landed in the
-  already-tracked `[score 9.0]` step-4 rewrite candidate (two
-  more placeholder-sweep breaks, two more missed adopt-by-need
-  prune rows) — sixth re-evidencing cycle, folded into that
-  candidate's evidence trail rather than filed separately.
-- `1b1e211` — closed AUDIT's `[C, 3.6]` row: added
-  `'templates/plan'` to `scripts/verify.mjs`'s
-  `REVERSE_CHECK_DIRS` array, the exact blind spot that let a
-  previously-fixed `templates/plan` disk/doc mismatch
-  (2026-07-19's `[A/C, 3.2]`) go uncaught by the gate itself.
-  Confirmed green post-fix: 35 files reverse-checked, up from 24.
+- `ee20265` — closed AUDIT `[A, 1.6]`: `plan/steps/01_build_plan.md`'s
+  Carry-overs bullets cited hardcoded "9 findings"/"4 candidates"
+  counts that had already drifted twice; reworded to point at
+  each file's live Pending section instead.
+- `76956ae` — `/critique` pass 9: full dry-run adoption walk
+  (bulk copy, placeholder sweep, referenced paths) came back
+  clean; only friction found was the skills-anatomy step-count
+  drift, filed as issue #29.
+- `7547248` — closed AUDIT `[A, 4.5]`: README's "What's in this
+  kit" tree jumped from `agents.md` to `package.json`, skipping
+  root `CLAUDE.md` — a load-bearing file already named elsewhere
+  in the same doc. Added it to the tree.
+- `0ea69c0` — closed the critique-9 finding and #29:
+  `concepts/skills-anatomy.md:121`'s "canonical 12 steps" now
+  reads "14 steps", matching the list's actual Step 0–13 span.
 
 ## Queues now
 
 - **Build plan:** 0 pending (18/18 phases shipped, unchanged).
   Every tick still routes to `/critique`/`/expand`/`/iterate`.
-- **AUDIT:** header still `2026-07-27` — this window's `/iterate`
-  tick (08:57) re-scored rather than re-swept (well under the
-  48h digest threshold, and under `skills/iterate.md`'s own 24h
-  threshold too), so no fresh A-G sweep ran today. 3 Pending rows
-  now (was 4 before `1b1e211`): `[A, 1.6]` (build plan's
-  carry-over counts, itself stale again — worth a fresh look
-  next pass) and `[C/F, 1.6]` (fictional `ember.vercel.app` URL)
-  tied at top; `[A, 1.35]` (`cloud-loop.md`'s "three new files"
-  header) trails. Standing `[user-issue #12]` (blocked, unchanged
-  since 2026-07-12) preserved verbatim as the durable top row.
-- **CRITIQUE:** 0 pending, unchanged. Last pass 2026-07-25
-  (pass 8).
-- **PHASE_CANDIDATES:** 21 pending, flat in count despite a real
-  pass landing — pass 5 (2026-07-28) only re-evidenced an
-  existing candidate rather than adding or promoting one. Posture
-  still bold. Zero promotions since the queue opened 2026-07-02,
-  now 26 days running.
+- **AUDIT:** header refreshed to `2026-07-29` this morning (the
+  03:04 tick's sweep). 2 non-blocked Pending rows left, both
+  low and roughly tied: `[C/F, 1.6]` (fictional
+  `ember.vercel.app` example URL in `bootstrap.md` now resolves
+  to a real unrelated site) and `[A, 1.35]` (`cloud-loop.md`'s
+  "three new files" header lists only two). Standing
+  `[user-issue #12]` preserved verbatim as the durable blocked
+  top row, unchanged since 2026-07-12 (17 days).
+- **CRITIQUE:** 0 pending again — pass 9's lone finding shipped
+  in this same window. Last pass 2026-07-28 (pass 9).
+- **PHASE_CANDIDATES:** 21 pending, flat — no `/expand` tick ran
+  this window (dispatcher favored critique/iterate work over
+  expand, per priority order). Posture still bold. Zero
+  promotions since the queue opened 2026-07-02, now 27 days
+  running.
 - **Issues:** 1 open (`#12`, `triage:loop-queued`) — same row as
-  AUDIT's blocked entry. No `triage:needs-user` or `loop:do`
-  labels open.
+  AUDIT's blocked entry. Issue #29 opened and closed within this
+  window. No `triage:needs-user` or `loop:do` labels open.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not present
   in this environment — skipped (cloud).
-- **Ceiling:** 3 `Cloud-Run:`-tagged commits in the trailing 24h
-  (`feb2364`, `545367a`, `1b1e211`, plus this tick's own digest
-  commit once it lands — 4 total), well under the 8/24h ceiling.
-  No trailer-gap recurrence — both non-digest commits this window
-  shipped with the trailer intact.
+- **Ceiling:** 5 `Cloud-Run:`-tagged commits in the trailing 24h
+  (`ff4c6e3`, `ee20265`, `76956ae`, `7547248`, `0ea69c0`), well
+  under the 8/24h ceiling. No trailer-gap recurrence — all 4
+  non-digest commits this window shipped with the trailer intact.
 
 ## Needs you
 
@@ -87,38 +88,32 @@ runs, no flatline alarm.
   personal workflow-scoped `gh` token. Tracked as AUDIT
   `[user-issue #12]`, still the only blocked row.
 - **Candidate backlog** — 21 pending in
-  `plan/PHASE_CANDIDATES.md`, zero promoted in 26 days. The
-  `[score 9.0]` `new-project.md` step-4/7 rewrite is now
-  re-evidenced across six cycles (2026-07-06, -10, -13, -21, and
-  four more instances folded in at this window's pass 5) and
-  remains the clearest promote-first candidate; worth an
-  `/oversight` pass. Unchanged in substance from yesterday's
-  digest, just further evidenced.
+  `plan/PHASE_CANDIDATES.md`, zero promoted in 27 days. The
+  `[score 9.0]` `new-project.md` step-4/7 rewrite remains the
+  clearest promote-first candidate (six re-evidencing cycles to
+  date); worth an `/oversight` pass. Unchanged in substance from
+  prior digests, no new evidence this window.
 - No `[needs-user-call]` rows, no blocked build-plan rows.
 
 ## Today's intent
 
 Build plan still has no pending phase (18/18). CRITIQUE is
-empty; AUDIT's highest open scorers excluding the blocked `#12`
-are now the tied `[A, 1.6]` (build plan's own carry-over counts,
-drifted a third time) and `[C/F, 1.6]` (swap the fictional
-`ember.vercel.app` example URL for one that can't resolve) — a
-clean next `/iterate` pick either way, both cheap and
-well-evidenced.
+empty; AUDIT's highest open scorer excluding the blocked `#12`
+is `[C/F, 1.6]` — swap `bootstrap.md`'s fictional
+`ember.vercel.app` example URL for one that can't resolve to
+real content. Cheap, well-evidenced, clean next `/iterate` pick.
 
 ## Tuning proposals
 
-None new this tick. `plan/PHASE_CANDIDATES.md`'s open
-`[score 6.5]` candidate ("Mechanically verify the Cloud-Run
-trailer on cloud ticks") saw no new instance this window — both
-non-digest commits (`545367a`, `1b1e211`) shipped with the
-trailer intact — so it stays as-is, not re-evidenced. The two
-clean `/expand` no-ops this window match posture bold's own
-no-signal path (each ran, found nothing, exited clean), and the
-third `/expand` dispatch did land a real (if re-evidencing-only)
-pass, so the queue isn't starved — no mistuned-gate signal to
-file. The 26-day promotion drought is a standing observation
-(see "Needs you" above), not a gate defect: `/oversight` is the
-only skill that promotes, and it's user-in-the-loop by design,
-so its cadence isn't this loop's tuning to propose. Per
-`skills/digest.md` §4, gate tunings remain proposals only.
+None new this tick. The loop looks healthy on every axis this
+digest tracks: 4/4 `march` ticks shipped (no no-ops, no
+starvation), `/critique` opened and produced a real finding
+(pass 9), the ceiling sits at 5/8 trailing-24h with room to
+spare, and all 4 non-digest commits carried the `Cloud-Run:`
+trailer — no new instance of the open `[score 6.5]` trailer-gap
+candidate. The 27-day promotion drought is a standing
+observation (see "Needs you" above), not a gate defect:
+`/oversight` is the only skill that promotes, and it's
+user-in-the-loop by design, so its cadence isn't this loop's
+tuning to propose. Per `skills/digest.md` §4, gate tunings
+remain proposals only.
