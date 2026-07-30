@@ -371,7 +371,7 @@ Examples of "skills" that probably don't earn their place:
 - `commit-staged-changes` — too small.
 - `update-dependency` — varies too much per dep.
 
-When in doubt: don't add a skill. The seven (or eight) in the
+When in doubt: don't add a skill. The skills already in the
 nexus templates cover most projects. Add a new one only when
 you've manually performed the verb 3+ times and felt the friction.
 

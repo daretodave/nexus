@@ -599,6 +599,15 @@ as its old, shorter form), `[C, 2.4]` (two docs cite
 and `[A, 2.4]` (`templates/plan/README.md`'s layout tree omits
 `CURRENT-STATE.md`).
 
+Cloud tick 2026-07-30 (second): header <24h old (last full sweep
+this same day's first tick, above), so no re-sweep.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. Reproduced
+this block's own top scorer, `[A, 5.4]` — `concepts/skills-anatomy.md:374`
+still reads "seven (or eight)" against 15 files actually shipped
+in `templates/skills/` — and shipped it over the five remaining
+lower-scoring rows (4.0, 3.6, 2.7, 2.4, 2.4). #12 stays the
+durable blocked row.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -638,19 +647,6 @@ and `[A, 2.4]` (`templates/plan/README.md`'s layout tree omits
   ever dropped later.
 - next: correct the header to "Two new files" — there is no
   lost third file to restore.
-
-### [A, 5.4] concepts/skills-anatomy.md's "seven (or eight) skills" count is stale ~2x
-- category: doc-drift
-- impact: 6, ease: 9
-- evidence: `concepts/skills-anatomy.md:374` reads "The seven (or
-  eight) in the nexus templates cover most projects" but
-  `templates/skills/` ships 15 files (bootstrap, critique,
-  digest, expand, iterate, jot, march, moderate, oversight,
-  plan-a-phase, ship-a-phase, ship-asset, ship-data,
-  ship-migration, triage).
-- next: reword to avoid a hardcoded number that keeps drifting,
-  e.g. "The skills already in the nexus templates cover most
-  projects."
 
 ### [C, 4.0] templates/skills/iterate.md cites the wrong ship-data.md section
 - category: link-hygiene
@@ -714,6 +710,14 @@ and `[A, 2.4]` (`templates/plan/README.md`'s layout tree omits
   "(adopt-by-need: brownfield retrofit only)" annotation.
 
 ## Done
+
+### [x] [A, 5.4] concepts/skills-anatomy.md's "seven (or eight) skills" count is stale ~2x — this commit
+- fix: reworded `concepts/skills-anatomy.md:374` from "The seven
+  (or eight) in the nexus templates cover most projects" to "The
+  skills already in the nexus templates cover most projects" —
+  drops the hardcoded number (currently 15 files in
+  `templates/skills/`) that kept drifting instead of trying to
+  keep a second count in sync.
 
 ### [x] [B/E, 6.3] existing-project.md's overlay copies only `deploy-check.mjs` from `templates/scripts/`, not the whole directory — this commit
 - fix: changed the overlay's `fs.cpSync` array entry in
