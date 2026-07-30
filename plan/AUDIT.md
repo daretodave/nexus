@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-29
+# Kit audit — 2026-07-30
 
 > Bias: none
 
@@ -567,6 +567,38 @@ the domain match at `templates/skills/bootstrap.md:217` still
 reads `https://ember.vercel.app` — and shipped it over `[A, 1.35]`
 (lower score). #12 stays the durable blocked row.
 
+Cloud tick 2026-07-30: header was ~24h old (last edit
+2026-07-29T14:49Z), at the staleness threshold, so ran a fresh
+A-G sweep (delegated the read-only pass to an agent to protect
+context, then verified the top candidate by hand before
+shipping). `node scripts/verify.mjs` green throughout. F (model
+ids — only `claude-sonnet-5`/`claude-opus-4-8`/`claude-haiku-4-5`
+appear, all correctly captioned) and G (sibling lessons — still
+absent from this checkout) both clean/empty. Re-verified `[A,
+1.35]` (cloud-loop.md's "three new files" header) still
+reproduces unchanged. Found seven new rows, ranked below;
+top scorer `[B/E, 6.3]` shipped this tick (below) — a real
+functional gap, not cosmetic: `playbooks/existing-project.md`'s
+brownfield overlay copied only `templates/scripts/deploy-check.mjs`
+where `playbooks/new-project.md` copies the whole `templates/scripts/`
+directory, so brownfield adopters silently missed
+`loop-issue.mjs`, `notify.mjs`, `bootstrap.mjs`,
+`lint-migration.mjs`, `stack-lifecycle.mjs`,
+`refresh-critique-session.mjs`, and `check-secrets-liveness.mjs`
+— scripts the bulk-copied `templates/skills/` and
+`templates/claude/settings.json` (Bash allowlist) already assume
+exist. Reproduced in a scratch dir before fixing. The remaining
+six new rows are queued to Pending, all lower-scoring:
+`[A, 5.4]` (skills-anatomy.md's stale "seven (or eight) skills"
+count vs. 15 shipped), `[C, 4.0]` (iterate.md's `ship-data.md §6`
+citation should be `§7`), `[D, 3.6]` (three docs' H1s missing
+their sibling family's `# Playbook:`/`# Customization:` prefix),
+`[A, 2.7]` (three docs describe/quote `templates/claude/CLAUDE.md`
+as its old, shorter form), `[C, 2.4]` (two docs cite
+`skills/digest.md §4` for content that's actually in `§3` item 4),
+and `[A, 2.4]` (`templates/plan/README.md`'s layout tree omits
+`CURRENT-STATE.md`).
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -607,7 +639,98 @@ reads `https://ember.vercel.app` — and shipped it over `[A, 1.35]`
 - next: correct the header to "Two new files" — there is no
   lost third file to restore.
 
+### [A, 5.4] concepts/skills-anatomy.md's "seven (or eight) skills" count is stale ~2x
+- category: doc-drift
+- impact: 6, ease: 9
+- evidence: `concepts/skills-anatomy.md:374` reads "The seven (or
+  eight) in the nexus templates cover most projects" but
+  `templates/skills/` ships 15 files (bootstrap, critique,
+  digest, expand, iterate, jot, march, moderate, oversight,
+  plan-a-phase, ship-a-phase, ship-asset, ship-data,
+  ship-migration, triage).
+- next: reword to avoid a hardcoded number that keeps drifting,
+  e.g. "The skills already in the nexus templates cover most
+  projects."
+
+### [C, 4.0] templates/skills/iterate.md cites the wrong ship-data.md section
+- category: link-hygiene
+- impact: 4, ease: 10
+- evidence: `templates/skills/iterate.md:85` says "Run
+  `skills/ship-data.md` §6 audit inline. Stale time-bound
+  entries. Coverage gaps from cross-grep." but `ship-data.md`'s
+  `## 6. The procedure` is the commit workflow — "Stale
+  time-bound entries" / "Coverage gaps" are actually items 3 and
+  4 under `## 7. Audit pass`.
+- next: change `§6` to `§7` at that citation.
+
+### [D, 3.6] three doc H1s are missing their sibling family's prefix
+- category: voice
+- impact: 4, ease: 9
+- evidence: 8/9 playbooks use `# Playbook: <name>` but
+  `playbooks/cloud-loop.md:1` reads `# Cloud loop (opt-in) — run
+  /march on GitHub Actions`. 11/13 customization docs use
+  `# Customization: <name>` but `customization/auth-aware-critique.md:1`
+  reads `# Auth-aware critique` and `customization/branding.md:1`
+  reads `# Branding & assets — the demand-pull capability`.
+- next: prepend the sibling prefix to each H1, keeping the rest
+  of the title.
+
+### [A, 2.7] three docs describe/quote the old, shorter templates/claude/CLAUDE.md
+- category: doc-drift
+- impact: 3, ease: 9
+- evidence: `templates/claude/CLAUDE.md` grew to 7 content
+  lines / 2 paragraphs (build-plan pointer + "pointer not rule
+  book" self-description) but `README.md:556` and
+  `templates/README.md:44` both still label it a "two-line
+  pointer" in a tree comment, and
+  `customization/claude-code.md:287-294` quotes a 3-line block
+  missing the `plan/steps/01_build_plan.md` line and the entire
+  second paragraph.
+- next: reword the two tree-comment labels to "short pointer"
+  (non-numeric), and refresh `customization/claude-code.md`'s
+  quoted block to match `templates/claude/CLAUDE.md` verbatim.
+
+### [C, 2.4] two docs cite skills/digest.md §4 for content that's in §3
+- category: link-hygiene
+- impact: 3, ease: 8
+- evidence: `plan/DIGEST.md:106` and `plan/PHASE_CANDIDATES.md:512`
+  both cite `skills/digest.md §4` for "mistuned gate / starved
+  queue / tuning trigger" language, but `digest.md`'s
+  `## 4. Hard rules` heading doesn't contain that content — it's
+  item 4 inside `## 3. The procedure`.
+- next: reword both citations to "§3 step 4" or add an explicit
+  sub-heading in `digest.md`.
+
+### [A, 2.4] templates/plan/README.md's layout tree omits CURRENT-STATE.md
+- category: completeness
+- impact: 3, ease: 8
+- evidence: `templates/plan/README.md`'s Layout tree (lines
+  10-25) has no `CURRENT-STATE.md` row, even though
+  `templates/plan/CURRENT-STATE.md` exists on disk and
+  `templates/README.md:22,129` plus
+  `playbooks/existing-project.md:79-128,429` all treat it as a
+  real, adopt-by-need (brownfield-only) file.
+- next: add a `CURRENT-STATE.md` row with a matching
+  "(adopt-by-need: brownfield retrofit only)" annotation.
+
 ## Done
+
+### [x] [B/E, 6.3] existing-project.md's overlay copies only `deploy-check.mjs` from `templates/scripts/`, not the whole directory — this commit
+- fix: changed the overlay's `fs.cpSync` array entry in
+  `playbooks/existing-project.md` §3 from
+  `['templates/scripts/deploy-check.mjs','scripts/deploy-check.mjs']`
+  to `['templates/scripts','scripts']`, matching
+  `new-project.md`'s bulk copy, and dropped the now-redundant
+  `fs.mkdirSync('scripts', ...)` call (`cpSync` creates it).
+  Brownfield adopters now get `loop-issue.mjs`, `notify.mjs`,
+  `bootstrap.mjs`, `lint-migration.mjs`, `stack-lifecycle.mjs`,
+  `refresh-critique-session.mjs`, and
+  `check-secrets-liveness.mjs` alongside the bulk-copied
+  `templates/skills/` and `.claude/settings.json` that already
+  assume they exist. `new-project.md`'s existing "Prune
+  adopt-by-need files" section (already pointed to by
+  `existing-project.md`) already covers pruning the unneeded
+  ones, so no new pruning instructions needed.
 
 ### [x] [C/F, 1.6] Fictional example deploy URL in `templates/skills/bootstrap.md` now resolves to an unrelated site — this commit
 - fix: swapped the sample terminal-output block's example
