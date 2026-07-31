@@ -616,6 +616,20 @@ wrong `ship-data.md` section citation) — over the four
 remaining lower-scoring rows (3.6, 2.7, 2.4, 2.4). #12 stays
 the durable blocked row.
 
+Cloud tick 2026-07-31 (second): header still <24h old (last full
+sweep 2026-07-30's first tick, above — now ~24h old but under
+the threshold), so no re-sweep. `plan/CRITIQUE.md`'s Pending
+queue confirmed empty. Reproduced this block's own top scorer,
+`[A, 2.7]` (three docs describe/quote the old, shorter
+`templates/claude/CLAUDE.md`) — confirmed the file is 8 lines/2
+paragraphs while `README.md:556` and `templates/README.md:44`
+both still said "two-line pointer," and
+`customization/claude-code.md:287-294` quoted a stale 3-line
+block missing the build-plan-pointer line and the second
+paragraph — and shipped it over the two remaining rows
+(`[C, 2.4]`, `[A, 2.4]`, both lower-scoring) and `[A, 1.35]`.
+#12 stays the durable blocked row.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -656,21 +670,6 @@ the durable blocked row.
 - next: correct the header to "Two new files" — there is no
   lost third file to restore.
 
-### [A, 2.7] three docs describe/quote the old, shorter templates/claude/CLAUDE.md
-- category: doc-drift
-- impact: 3, ease: 9
-- evidence: `templates/claude/CLAUDE.md` grew to 7 content
-  lines / 2 paragraphs (build-plan pointer + "pointer not rule
-  book" self-description) but `README.md:556` and
-  `templates/README.md:44` both still label it a "two-line
-  pointer" in a tree comment, and
-  `customization/claude-code.md:287-294` quotes a 3-line block
-  missing the `plan/steps/01_build_plan.md` line and the entire
-  second paragraph.
-- next: reword the two tree-comment labels to "short pointer"
-  (non-numeric), and refresh `customization/claude-code.md`'s
-  quoted block to match `templates/claude/CLAUDE.md` verbatim.
-
 ### [C, 2.4] two docs cite skills/digest.md §4 for content that's in §3
 - category: link-hygiene
 - impact: 3, ease: 8
@@ -695,6 +694,15 @@ the durable blocked row.
   "(adopt-by-need: brownfield retrofit only)" annotation.
 
 ## Done
+
+### [x] [A, 2.7] three docs describe/quote the old, shorter templates/claude/CLAUDE.md — this commit
+- fix: reworded the tree-comment labels in `README.md:556` and
+  `templates/README.md:44` from "two-line pointer" to "short
+  pointer" (non-numeric, can't drift again), and refreshed
+  `customization/claude-code.md`'s quoted block to match
+  `templates/claude/CLAUDE.md` verbatim — added the missing
+  build-plan-pointer line and the second "pointer, not a rule
+  book" paragraph.
 
 ### [x] [D, 3.6] three doc H1s are missing their sibling family's prefix — this commit
 - fix: `playbooks/cloud-loop.md:1` now reads `# Playbook: cloud

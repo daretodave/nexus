@@ -41,7 +41,7 @@ templates/
 │   ├── digest.md                      (the night shift; pairs with .github/workflows/night.yml)
 │   └── bootstrap.md                   (opt-in executor; see customization/bootstrap-automation.md)
 ├── claude/                            → repo's .claude/ (+ CLAUDE.md → repo root)
-│   ├── CLAUDE.md                      (two-line pointer at agents.md; copy to repo ROOT)
+│   ├── CLAUDE.md                      (short pointer at agents.md; copy to repo ROOT)
 │   ├── settings.json                  (permission allowlist + hook wiring; see customization/claude-code.md)
 │   ├── hooks/guard.mjs                (mechanical hard rules: PreToolUse + Stop)
 │   ├── commands/                      (one terse pointer per skill)

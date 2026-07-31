@@ -284,13 +284,18 @@ Where it fires:
 Claude Code auto-loads `CLAUDE.md` into context. It does not
 auto-load `agents.md` — the kit's rule book — which means a
 fresh session only finds the standing rules if something tells
-it to look. Ship the two-line pointer
+it to look. Ship the short pointer
 ([`templates/claude/CLAUDE.md`](../templates/claude/CLAUDE.md)):
 
 ```markdown
 Read `agents.md` before anything else — it is the rule book
 for this repo and its standing rules are non-negotiable.
-Skills live in `skills/`; state lives in `plan/`.
+Skills live in `skills/`; state lives in `plan/`; the next
+pending work is the first `[ ]` row in
+`plan/steps/01_build_plan.md`.
+
+This file is a pointer, not a rule book. Rules live in
+`agents.md` only — do not duplicate them here.
 ```
 
 Keep `agents.md` canonical (client-agnostic); keep `CLAUDE.md`

@@ -553,7 +553,7 @@ nexus/
     │   ├── digest.md                   # the night shift — morning briefing + breadth checks
     │   └── bootstrap.md                # opt-in executor (see customization/bootstrap-automation.md)
     ├── claude/                        # → repo's .claude/ (+ CLAUDE.md → repo root)
-    │   ├── CLAUDE.md                  # two-line pointer at agents.md
+    │   ├── CLAUDE.md                  # short pointer at agents.md
     │   ├── settings.json              # permission allowlist + hook wiring
     │   ├── hooks/guard.mjs            # mechanical hard rules (PreToolUse + Stop)
     │   ├── commands/                  # one terse pointer per skill
