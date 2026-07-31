@@ -14,6 +14,7 @@ plan/
 ├── AUDIT.md                             # latest /iterate audit (rewritten on each pass)
 ├── CRITIQUE.md                          # external-observer findings (append-only via /critique)
 ├── PHASE_CANDIDATES.md                  # phase candidates from /expand, gated by /oversight
+├── CURRENT-STATE.md                     # adopt-by-need: brownfield retrofit only (see nexus/playbooks/existing-project.md §1)
 ├── reflexes.md                          # adopt-by-need: ≤50-line always-read core (see nexus/customization/lessons-layer.md)
 ├── lessons.md                           # adopt-by-need: domain-keyed corpus, read by offset
 ├── steps/

@@ -630,6 +630,17 @@ paragraph — and shipped it over the two remaining rows
 (`[C, 2.4]`, `[A, 2.4]`, both lower-scoring) and `[A, 1.35]`.
 #12 stays the durable blocked row.
 
+Cloud tick 2026-07-31 (third): header still <24h old (last full
+sweep 2026-07-30's first tick, above), so no re-sweep.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. Two rows
+tied at the top, `[C, 2.4]` and `[A, 2.4]`; picked the
+adopter-facing one per `bearings.md` decision 1 —
+`templates/plan/README.md` ships to every adopter, `plan/DIGEST.md`
+/ `plan/PHASE_CANDIDATES.md` are kit-internal — and shipped
+`[A, 2.4]` (`templates/plan/README.md`'s layout tree omits
+`CURRENT-STATE.md`) over `[C, 2.4]` and `[A, 1.35]`. #12 stays
+the durable blocked row.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -681,19 +692,13 @@ paragraph — and shipped it over the two remaining rows
 - next: reword both citations to "§3 step 4" or add an explicit
   sub-heading in `digest.md`.
 
-### [A, 2.4] templates/plan/README.md's layout tree omits CURRENT-STATE.md
-- category: completeness
-- impact: 3, ease: 8
-- evidence: `templates/plan/README.md`'s Layout tree (lines
-  10-25) has no `CURRENT-STATE.md` row, even though
-  `templates/plan/CURRENT-STATE.md` exists on disk and
-  `templates/README.md:22,129` plus
-  `playbooks/existing-project.md:79-128,429` all treat it as a
-  real, adopt-by-need (brownfield-only) file.
-- next: add a `CURRENT-STATE.md` row with a matching
-  "(adopt-by-need: brownfield retrofit only)" annotation.
-
 ## Done
+
+### [x] [A, 2.4] templates/plan/README.md's layout tree omits CURRENT-STATE.md — this commit
+- fix: added a `CURRENT-STATE.md` row to the Layout tree in
+  `templates/plan/README.md`, annotated "adopt-by-need:
+  brownfield retrofit only" to match how `templates/README.md`
+  and `playbooks/existing-project.md` already describe it.
 
 ### [x] [A, 2.7] three docs describe/quote the old, shorter templates/claude/CLAUDE.md — this commit
 - fix: reworded the tree-comment labels in `README.md:556` and
