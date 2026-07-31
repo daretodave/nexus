@@ -82,7 +82,7 @@ in CRITIQUE.md with `[x]` + commit hash.
 
 #### B. Data gaps
 
-Run `skills/ship-data.md` §6 audit inline. Stale time-bound
+Run `skills/ship-data.md` §7 audit inline. Stale time-bound
 entries. Coverage gaps from cross-grep.
 
 #### C. SEO / discoverability

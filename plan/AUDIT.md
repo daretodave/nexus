@@ -608,6 +608,14 @@ in `templates/skills/` — and shipped it over the five remaining
 lower-scoring rows (4.0, 3.6, 2.7, 2.4, 2.4). #12 stays the
 durable blocked row.
 
+Cloud tick 2026-07-31: header <24h old (last full sweep
+2026-07-30's first tick, above), so no re-sweep.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. Shipped
+this block's own top scorer, `[C, 4.0]` (`templates/skills/iterate.md`'s
+wrong `ship-data.md` section citation) — over the four
+remaining lower-scoring rows (3.6, 2.7, 2.4, 2.4). #12 stays
+the durable blocked row.
+
 ## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
@@ -647,17 +655,6 @@ durable blocked row.
   ever dropped later.
 - next: correct the header to "Two new files" — there is no
   lost third file to restore.
-
-### [C, 4.0] templates/skills/iterate.md cites the wrong ship-data.md section
-- category: link-hygiene
-- impact: 4, ease: 10
-- evidence: `templates/skills/iterate.md:85` says "Run
-  `skills/ship-data.md` §6 audit inline. Stale time-bound
-  entries. Coverage gaps from cross-grep." but `ship-data.md`'s
-  `## 6. The procedure` is the commit workflow — "Stale
-  time-bound entries" / "Coverage gaps" are actually items 3 and
-  4 under `## 7. Audit pass`.
-- next: change `§6` to `§7` at that citation.
 
 ### [D, 3.6] three doc H1s are missing their sibling family's prefix
 - category: voice
@@ -710,6 +707,13 @@ durable blocked row.
   "(adopt-by-need: brownfield retrofit only)" annotation.
 
 ## Done
+
+### [x] [C, 4.0] templates/skills/iterate.md cites the wrong ship-data.md section — this commit
+- fix: changed `templates/skills/iterate.md:85` from "Run
+  `skills/ship-data.md` §6 audit inline" to "§7" — `ship-data.md`'s
+  `## 6. The procedure` is the commit workflow; "Stale time-bound
+  entries" / "Coverage gaps" are actually items 3 and 4 under
+  `## 7. Audit pass`.
 
 ### [x] [A, 5.4] concepts/skills-anatomy.md's "seven (or eight) skills" count is stale ~2x — this commit
 - fix: reworded `concepts/skills-anatomy.md:374` from "The seven
