@@ -1,4 +1,4 @@
-# Branding & assets — the demand-pull capability
+# Customization: branding & assets — the demand-pull capability
 
 > **Adopt-by-need capability** (same pattern as
 > `customization/data-layer.md` — projects that don't need it

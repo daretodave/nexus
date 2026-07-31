@@ -1,4 +1,4 @@
-# Cloud loop (opt-in) — run /march on GitHub Actions
+# Playbook: cloud loop (opt-in) — run /march on GitHub Actions
 
 > Run the autonomous loop on a cron, in the cloud, without
 > your laptop being open. Picks up where local `/loop /march`

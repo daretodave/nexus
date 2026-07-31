@@ -656,18 +656,6 @@ the durable blocked row.
 - next: correct the header to "Two new files" — there is no
   lost third file to restore.
 
-### [D, 3.6] three doc H1s are missing their sibling family's prefix
-- category: voice
-- impact: 4, ease: 9
-- evidence: 8/9 playbooks use `# Playbook: <name>` but
-  `playbooks/cloud-loop.md:1` reads `# Cloud loop (opt-in) — run
-  /march on GitHub Actions`. 11/13 customization docs use
-  `# Customization: <name>` but `customization/auth-aware-critique.md:1`
-  reads `# Auth-aware critique` and `customization/branding.md:1`
-  reads `# Branding & assets — the demand-pull capability`.
-- next: prepend the sibling prefix to each H1, keeping the rest
-  of the title.
-
 ### [A, 2.7] three docs describe/quote the old, shorter templates/claude/CLAUDE.md
 - category: doc-drift
 - impact: 3, ease: 9
@@ -707,6 +695,16 @@ the durable blocked row.
   "(adopt-by-need: brownfield retrofit only)" annotation.
 
 ## Done
+
+### [x] [D, 3.6] three doc H1s are missing their sibling family's prefix — this commit
+- fix: `playbooks/cloud-loop.md:1` now reads `# Playbook: cloud
+  loop (opt-in) — run /march on GitHub Actions`;
+  `customization/auth-aware-critique.md:1` now reads
+  `# Customization: auth-aware critique`;
+  `customization/branding.md:1` now reads `# Customization:
+  branding & assets — the demand-pull capability`. No anchor
+  links or title-quoting cross-refs found pointing at the old
+  H1 text, so no other doc needed a matching edit.
 
 ### [x] [C, 4.0] templates/skills/iterate.md cites the wrong ship-data.md section — this commit
 - fix: changed `templates/skills/iterate.md:85` from "Run

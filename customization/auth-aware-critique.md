@@ -1,4 +1,4 @@
-# Auth-aware critique
+# Customization: auth-aware critique
 
 > **The problem.** `/critique`'s `reader` sub-agent visits the
 > live site as a stranger. For a logged-in app, every URL
