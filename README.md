@@ -156,10 +156,11 @@ Standing rules carried from agents.md:
   - When in doubt: decide, document the call in the commit body,
     proceed.
 
-Estimated time: 30–90 minutes, agent-paced (no read-and-decide
-pauses). new-project.md's own header quotes 2–3 hours for a
-human working the same playbook manually — see its note on
-the difference. Begin.
+Estimated time: well under an hour, agent-paced (no
+read-and-decide pauses) — new-project.md's own header quotes
+2–3 hours for a human working the same playbook manually and
+notes the delegated-agent case finishes faster; see its note
+on the difference. Begin.
 ```
 
 ### 3. Review what landed

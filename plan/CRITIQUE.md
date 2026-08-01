@@ -11,31 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] README.md:159 vs playbooks/new-project.md:8-9 — agent-paced time estimate range still doesn't match the playbook's reconciled figure
-- category: instruction-drift
-- observation: README.md:159 quotes the delegated-agent estimate
-  as "30–90 minutes" and cites new-project.md's header as the
-  source of "the faster figure quoted there." But
-  playbooks/new-project.md:8-9 actually says the delegated run
-  "typically finishes in well under an hour" — a figure that
-  contradicts README's own 90-minute upper bound (90 minutes is
-  not "well under an hour"). A prior critique pass (this file,
-  "[MED] README.md:159,258 vs playbooks/new-project.md:4")
-  reconciled these two numbers once already; this is a
-  regression/incompleteness in that fix — the two docs still
-  don't agree on the actual figure.
-- evidence: README.md:159 "Estimated time: 30–90 minutes,
-  agent-paced ... new-project.md's own header quotes 2–3 hours
-  for a human working the same playbook manually — see its note
-  on the difference." vs playbooks/new-project.md:8-9 "typically
-  finishes in well under an hour — that's the faster figure
-  quoted there."
-- suggested fix: pick one number for the delegated-agent case
-  (e.g. "well under an hour") and use it in both places, or
-  narrow README's range so its upper bound doesn't exceed what
-  new-project.md actually claims.
-- source: dry-run
-
 ### [LOW] README.md:603-605 — "How to use this kit" step 5 names only 2 of the 8 documented placeholders
 - category: placeholder
 - observation: step 5 of the manual "How to use this kit" walk
@@ -74,6 +49,14 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] README.md:159 vs playbooks/new-project.md:8-9 — agent-paced time estimate range still doesn't match the playbook's reconciled figure — this commit
+- fix: dropped the numeric "30–90 minutes" range from
+  README.md:159 entirely and replaced it with "well under an
+  hour" — the exact phrase playbooks/new-project.md:8-9 already
+  uses for the delegated-agent case — so the two docs quote the
+  same words instead of two independently-maintained numbers
+  that can drift apart again.
 
 ### [x] [LOW] concepts/skills-anatomy.md:121 — "canonical 12 steps" undercounts its own enumerated list — this commit (closes #29)
 - category: instruction-drift
