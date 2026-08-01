@@ -643,6 +643,30 @@ the durable blocked row.
 
 ## Pending
 
+### [user-issue #33] [MED] guard.mjs's no-verify regex false-positives across unrelated multi-line bash text
+- category: external-issue
+- impact: 5
+- ease: 7
+- evidence: `.claude/hooks/guard.mjs`'s `no-verify` rule
+  (`RULES[0].test`) is `/\bgit\b[^|;&]*\bcommit\b[^|;&]*(\s--no-verify\b|\s-n\b)/`.
+  The negated character classes `[^|;&]` match newlines (JS
+  regex classes only exclude `\n` when using `.` outside `s`
+  flag, not `[^...]`), so the pattern spans logical command
+  boundaries separated by newlines rather than `|`/`;`/`&`. A
+  multi-line Bash tool-call string containing `git log` on one
+  line, an unrelated `echo` containing the word "commit" on a
+  later line, and an unrelated short flag matching `-n` on a
+  further line — with no `git commit --no-verify` anywhere —
+  reproduces the false block. Confirmed by inspection: the same
+  `[^|;&]*` construction is reused by the `force-push` and
+  `destructive-reset` rules, so they carry the identical
+  cross-line false-positive risk.
+- next: change `[^|;&]*` to `[^|;&\n]*` in all four rules (or
+  split `cmd` on `/[|;&\n]/` into logical segments and test each
+  segment independently), then add a multi-line false-positive
+  case to `selfTest()`'s cases array so this can't regress
+  silently.
+
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
 - category: external-issue
 - impact: 5
