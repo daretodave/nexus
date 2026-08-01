@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-07-28
-> Pass count: 9
+> Last pass: 2026-08-01
+> Pass count: 10
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,68 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [MED] README.md:159 vs playbooks/new-project.md:8-9 — agent-paced time estimate range still doesn't match the playbook's reconciled figure
+- category: instruction-drift
+- observation: README.md:159 quotes the delegated-agent estimate
+  as "30–90 minutes" and cites new-project.md's header as the
+  source of "the faster figure quoted there." But
+  playbooks/new-project.md:8-9 actually says the delegated run
+  "typically finishes in well under an hour" — a figure that
+  contradicts README's own 90-minute upper bound (90 minutes is
+  not "well under an hour"). A prior critique pass (this file,
+  "[MED] README.md:159,258 vs playbooks/new-project.md:4")
+  reconciled these two numbers once already; this is a
+  regression/incompleteness in that fix — the two docs still
+  don't agree on the actual figure.
+- evidence: README.md:159 "Estimated time: 30–90 minutes,
+  agent-paced ... new-project.md's own header quotes 2–3 hours
+  for a human working the same playbook manually — see its note
+  on the difference." vs playbooks/new-project.md:8-9 "typically
+  finishes in well under an hour — that's the faster figure
+  quoted there."
+- suggested fix: pick one number for the delegated-agent case
+  (e.g. "well under an hour") and use it in both places, or
+  narrow README's range so its upper bound doesn't exceed what
+  new-project.md actually claims.
+- source: dry-run
+
+### [LOW] README.md:603-605 — "How to use this kit" step 5 names only 2 of the 8 documented placeholders
+- category: placeholder
+- observation: step 5 of the manual "How to use this kit" walk
+  says "Replace `<PROJECT>` and `<PROJECT_LOWER>` placeholders,"
+  naming only 2 of the 8 tokens `templates/README.md:82-91` and
+  `playbooks/new-project.md` §4 document
+  (`<PROJECT_TAGLINE>`, `<HOSTING_URL>`, `<HOSTING_PROVIDER>`,
+  `<REPO_SLUG>`, `<DEFAULT_BRANCH>`, `<PROJECT_PKG_PREFIX>` are
+  omitted). The step does say "per the playbook" first, so it's
+  not strictly wrong, but singling out 2 of 8 by name reads as a
+  complete list to a reader who doesn't open the playbook.
+- evidence: README.md:603-605 vs templates/README.md:82-91 (the
+  8-row placeholder table).
+- suggested fix: either drop the two named placeholders from
+  step 5 (leave "per the playbook" to carry the instruction) or
+  say "all 8 placeholders (see `templates/README.md`)" instead
+  of naming two.
+- source: dry-run
+
+### [LOW] README.md:287 — "Posture-gated" used once with no definition or link
+- category: comprehension
+- observation: the `/expand` row says "Posture-gated: **bold**
+  by default, **strict** to opt out" — the only place
+  "posture"/"Posture-gated" appears in README.md. The concept
+  (and the values `bold`/`strict`) are only explained in
+  `templates/plan/bearings.md` ("Plan expansion posture") and
+  `templates/skills/expand.md`, neither linked from this row.
+- evidence: `grep -n Posture-gated README.md` → one hit, line
+  287; `grep -n posture templates/plan/bearings.md` → defined at
+  line 296-300, not linked from README.
+- suggested fix: link "Posture-gated" to
+  `templates/plan/bearings.md`'s "Plan expansion posture"
+  section, matching the pattern used elsewhere in this same
+  table (e.g. the `/ship-data` row links
+  `customization/data-layer.md`).
+- source: dry-run
 
 ## Done
 
