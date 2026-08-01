@@ -1,73 +1,71 @@
-# Digest — 2026-07-31
+# Digest — 2026-08-01
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Four clean back-to-back march ticks, four shipped fixes, zero
-no-ops and zero crashes — the cleanest 24h window logged yet —
-closing two auto-filed issues (#31, #32) along the way; queues
-otherwise steady (AUDIT down to 4 open rows plus the durable
-blocked one, CRITIQUE empty and not yet due, candidates flat at
-21 with a 29-day promotion drought).
+Four clean march ticks — the two AUDIT rows this digest called
+as tomorrow's picks both shipped exactly as predicted (the
+CLAUDE.md pointer wording, the CURRENT-STATE.md tree gap), a
+fresh critique pass filed three low-severity findings, and one
+new issue (#33) got triaged straight into the queue; zero
+no-ops, zero crashes, and the trailer-gap candidate picked up
+its first counter-evidence in three samples.
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-30 14:47 | march → iterate | fresh A-G sweep (header ~24h old); shipped `[B/E, 6.3]` — `existing-project.md`'s brownfield overlay copied only `deploy-check.mjs` from `templates/scripts/`, missing seven other scripts the bulk-copied skills/settings already assume exist (`0245df6`, closes #31); six lower-scoring findings queued to AUDIT Pending |
-| 07-30 20:27 | march → iterate | shipped AUDIT `[A, 5.4]` — `skills-anatomy.md`'s "seven (or eight) skills" count reworded to drop the hardcoded, drift-prone number (`019970b`) |
-| 07-31 03:05 | march → iterate | shipped AUDIT `[C, 4.0]` — `iterate.md`'s `ship-data.md` audit-pass citation was §6, corrected to §7 (`8bb0f73`, closes #32) |
-| 07-31 09:02 | march → iterate | shipped AUDIT `[D, 3.6]` — three doc H1s (`cloud-loop.md`, `auth-aware-critique.md`, `branding.md`) missing their sibling family's prefix (`1c34db1`) |
-| 07-31 11:16 | night → digest | this tick |
+| 07-31 09:02 | night → digest | previous digest (`c2a9733`) |
+| 07-31 14:49 | march → iterate | shipped AUDIT `[A, 2.7]` — `templates/claude/CLAUDE.md` grew to 8 lines but README.md, templates/README.md and customization/claude-code.md still called/quoted it as the old 2-3 line pointer; reworded tree labels to "short pointer" and refreshed the quoted block (`aca30e5`) |
+| 07-31 20:29 | march → iterate | shipped AUDIT `[A, 2.4]` — `templates/plan/README.md`'s layout tree omitted `CURRENT-STATE.md`, a real adopt-by-need file both `templates/README.md` and `existing-project.md` already treat as such (`2226240`) |
+| 08-01 03:04 | march → critique | pass 10 — 3 findings (0 high, 1 med, 2 low): README's 30-90min agent-paced estimate still disagrees with new-project.md's "well under an hour" (a regression of a prior fix); "How to use this kit" step 5 names only 2 of 8 placeholders; "Posture-gated" used once with no link. No HIGH blockers; the copy+replace+prune walk itself ran clean (`d12b8f7`) |
+| 08-01 08:47 | march → triage | routed #33 (`guard.mjs`'s no-verify regex matches across newlines, a cross-line false-positive affecting all four forbidden-command rules, not just no-verify) into AUDIT as `[user-issue #33]` (`808c398`) |
+| 08-01 11:01 | night → digest | this tick |
 
 `heartbeat` ran 5/5 green over its last-5 sample — no wedged
 runs, no flatline alarm.
 
 ## Shipped
 
-- `0245df6` — closed AUDIT `[B/E, 6.3]`: brownfield overlay now
-  bulk-copies all of `templates/scripts/`, matching
-  `new-project.md`. Reproduced the gap in a scratch dir first.
-- `019970b` — closed AUDIT `[A, 5.4]`: dropped the stale "seven
-  (or eight) skills" hardcoded count in `skills-anatomy.md`.
-- `8bb0f73` — closed AUDIT `[C, 4.0]`: `iterate.md`'s
-  `ship-data.md` section citation corrected §6 → §7.
-- `1c34db1` — closed AUDIT `[D, 3.6]`: three doc H1s now carry
-  their sibling family's `# Playbook:`/`# Customization:` prefix.
+- `aca30e5` — closed AUDIT `[A, 2.7]`: CLAUDE.md pointer
+  description reconciled across three docs to match the real
+  8-line template.
+- `2226240` — closed AUDIT `[A, 2.4]`: `templates/plan/README.md`'s
+  layout tree now lists `CURRENT-STATE.md`.
 
 ## Queues now
 
 - **Build plan:** 0 pending (18/18 phases shipped, unchanged).
   Every tick still routes to `/critique`/`/expand`/`/iterate`.
-- **AUDIT:** header `2026-07-30` (~20h old this tick, under the
-  48h refresh threshold — no re-sweep needed). 4 non-blocked
-  Pending rows left, all `impact 3` cosmetic drift: `[A, 2.7]`
-  (three docs still describe/quote the old, shorter
-  `templates/claude/CLAUDE.md`), `[C, 2.4]` (two docs cite
+- **AUDIT:** header `2026-07-30` (~44h old this tick, still under
+  the 48h refresh threshold — no re-sweep needed). 3 scored
+  Pending rows plus the durable blocked one: `[user-issue #33]`
+  (impact 5, ease 7, score 3.5 — now the top open row, freshly
+  filed this window), `[C, 2.4]` (two docs cite
   `skills/digest.md §4` for content actually in §3 item 4),
-  `[A, 2.4]` (`templates/plan/README.md`'s layout tree omits
-  `CURRENT-STATE.md`), `[A, 1.35]` (`cloud-loop.md`'s "three new
-  files" header lists only two). Standing `[user-issue #12]`
-  unchanged since 2026-07-12 (19 days), still the durable
-  blocked top row.
-- **CRITIQUE:** 0 pending. Last pass 2026-07-28 (pass 9). Not yet
-  due — 9 commits / ~63h since, approaching but still below both
-  the 12-commit and 72h triggers.
+  `[A, 1.35]` (`cloud-loop.md`'s "three new files" header lists
+  only two). `[user-issue #12]` unchanged since 2026-07-12
+  (20 days), still the durable blocked top row.
+- **CRITIQUE:** 3 pending (pass 10, 2026-08-01 — see pulse table
+  above for the findings). Fresh; not due again this window.
 - **PHASE_CANDIDATES:** 21 pending, flat — no `/expand` tick ran
   this window. Posture still bold. Zero promotions since the
-  queue opened 2026-07-02, now 29 days running.
-- **Issues:** 1 open (`#12`, `triage:loop-queued`) — same row as
-  AUDIT's blocked entry. #31 and #32 both auto-filed and closed
-  within this window by the ticks that fixed them. No
-  `triage:needs-user` or `loop:do` labels open.
+  queue opened 2026-07-02, now 30 days running.
+- **Issues:** 2 open — `#12` (`triage:loop-queued`, durable
+  blocked) and `#33` (`triage:loop-queued`, freshly routed this
+  window). No `triage:needs-user` or `loop:do` labels open.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not present
   in this environment — skipped (cloud).
-- **Ceiling:** 4 `Cloud-Run:`-tagged commits in the trailing
-  24h, all four carrying the trailer correctly (no recurrence of
-  the trailer-gap candidate below) — well under the 8/24h
-  ceiling.
+- **Ceiling:** 5 `Cloud-Run:`-tagged commits in the trailing 24h
+  (4 march ticks + 1 digest), all five carrying the trailer
+  correctly — well under the 8/24h ceiling. Notably `d12b8f7`
+  (a `/critique` commit) carried it correctly too: the standing
+  "critique commits sometimes drop the trailer" candidate has
+  now seen its trailer present on the most recent sample after
+  two prior misses (`a74f7b6` 07-19, `427eb91` 07-25) — first
+  counter-evidence, not yet enough to retire the candidate.
 
 ## Needs you
 
@@ -79,33 +77,34 @@ runs, no flatline alarm.
   personal workflow-scoped `gh` token. Tracked as AUDIT
   `[user-issue #12]`, still the only blocked row.
 - **Candidate backlog** — 21 pending in `plan/PHASE_CANDIDATES.md`,
-  zero promoted in 29 days. The `[score 9.0]`
-  `new-project.md` step-4/7 rewrite remains the clearest
-  promote-first candidate (six re-evidencing cycles to date);
-  worth an `/oversight` pass. Unchanged in substance from prior
-  digests, no new evidence this window.
+  zero promoted in 30 days. The `[score 9.0]` `new-project.md`
+  step-4/7 rewrite remains the clearest promote-first candidate
+  (six re-evidencing cycles to date); worth an `/oversight` pass.
+  Unchanged in substance from prior digests, no new evidence this
+  window.
 - No `[needs-user-call]` rows, no blocked build-plan rows.
 
 ## Today's intent
 
-Build plan still has no pending phase (18/18). CRITIQUE is close
-to its due threshold but not there yet. AUDIT's own top-scoring
-open row, `[A, 2.7]` (the stale "old CLAUDE.md" description
-across three docs), is the clean next `/iterate` pick over the
-three remaining `2.4`/`1.35` rows.
+Build plan still has no pending phase (18/18). CRITIQUE just
+refreshed and isn't due again. AUDIT's own top-scoring open row
+is now `[user-issue #33]` (score 3.5, impact 5/ease 7) — the
+`guard.mjs` regex fix has a concrete next step (add `\n` to the
+four negated character classes, plus a multi-line `selfTest()`
+case) and clearly outranks the remaining `2.4`/`1.35` cosmetic
+rows.
 
 ## Tuning proposals
 
-None new this tick. This window is the cleanest sampled to date
-— four march ticks, four green runs, four shipped commits, zero
-no-ops, zero crashes — which argues against, not for, a gate
-retune. All four commits carried the `Cloud-Run:` trailer
-correctly, continuing to hold against the trailer-gap candidate
-already filed in `plan/PHASE_CANDIDATES.md` (no fresh evidence
-either way, since no `/critique` commit landed this window — that
-gap has only ever been observed on critique-verb commits). The
-29-day candidate-promotion drought is a standing observation (see
-"Needs you" above), not a gate defect: `/oversight` is the only
-skill that promotes, and it's user-in-the-loop by design, so its
-cadence isn't this loop's tuning to propose. Per `skills/digest.md`
-§4, gate tunings remain proposals only.
+None new this tick. Four march ticks, four green runs, zero
+no-ops, zero crashes — a repeat of last window's clean pattern,
+which argues against a gate retune. The one piece of fresh
+signal — `d12b8f7` carrying its `Cloud-Run:` trailer correctly —
+is counter-evidence against the existing trailer-gap candidate
+in `plan/PHASE_CANDIDATES.md`, not grounds for a new one; noted
+above under Ceiling for whoever next reviews that candidate. The
+30-day candidate-promotion drought remains a standing
+observation (see "Needs you"), not a gate defect: `/oversight` is
+the only skill that promotes, and its cadence isn't this loop's
+tuning to propose. Per `skills/digest.md` §4, gate tunings remain
+proposals only.
