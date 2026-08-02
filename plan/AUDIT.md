@@ -1,4 +1,4 @@
-# Kit audit — 2026-07-30
+# Kit audit — 2026-08-02
 
 > Bias: none
 
@@ -641,31 +641,32 @@ adopter-facing one per `bearings.md` decision 1 —
 `CURRENT-STATE.md`) over `[C, 2.4]` and `[A, 1.35]`. #12 stays
 the durable blocked row.
 
-## Pending
+Cloud tick 2026-08-02: header 3 days old (last full sweep
+2026-07-30's first tick, above), past the ~24-72h threshold this
+log has used elsewhere, so ran a fresh A-G sweep (delegated the
+read-only pass to an agent to protect context). `/march` routed
+here via `/iterate` (no pending build-plan phase, critique gate
+not due, expand gate already ran this same tick's earlier pass).
+Top of queue was `[user-issue #12]` (4.0) but it stays blocked —
+`ACTIONS_PAT` still lacks `workflows` scope, confirmed durable
+per its own row. Picked the next-highest actionable row instead:
+`[user-issue #33]` (3.5) — verified `.claude/hooks/guard.mjs`'s
+four `RULES` entries all used `[^|;&]*`, a JS regex negated
+class that (unlike `.`) matches newlines, letting the pattern
+span logical Bash command boundaries; reproduced live (a
+multi-line test command false-blocked as `no-verify` while I was
+composing the reproduction case for this very row) before
+shipping the fix. F (model ids — only `sonnet-5`/`opus-4-8`/
+`haiku-4-5`, all hedged "ids age — check `/model`") and G
+(sibling lessons — still absent from this checkout) both
+clean/empty. Re-verified `[A, 1.35]` and `[C, 2.4]` still
+reproduce unchanged. Found one new row, queued to Pending below
+the existing two: `[C, 2.4]` (`templates/skills/triage.md`'s
+follow-up-comment citation half-points at `ship-data.md` §6,
+which has zero matching content). #12 stays the durable blocked
+row.
 
-### [user-issue #33] [MED] guard.mjs's no-verify regex false-positives across unrelated multi-line bash text
-- category: external-issue
-- impact: 5
-- ease: 7
-- evidence: `.claude/hooks/guard.mjs`'s `no-verify` rule
-  (`RULES[0].test`) is `/\bgit\b[^|;&]*\bcommit\b[^|;&]*(\s--no-verify\b|\s-n\b)/`.
-  The negated character classes `[^|;&]` match newlines (JS
-  regex classes only exclude `\n` when using `.` outside `s`
-  flag, not `[^...]`), so the pattern spans logical command
-  boundaries separated by newlines rather than `|`/`;`/`&`. A
-  multi-line Bash tool-call string containing `git log` on one
-  line, an unrelated `echo` containing the word "commit" on a
-  later line, and an unrelated short flag matching `-n` on a
-  further line — with no `git commit --no-verify` anywhere —
-  reproduces the false block. Confirmed by inspection: the same
-  `[^|;&]*` construction is reused by the `force-push` and
-  `destructive-reset` rules, so they carry the identical
-  cross-line false-positive risk.
-- next: change `[^|;&]*` to `[^|;&\n]*` in all four rules (or
-  split `cmd` on `/[|;&\n]/` into logical segments and test each
-  segment independently), then add a multi-line false-positive
-  case to `selfTest()`'s cases array so this can't regress
-  silently.
+## Pending
 
 ### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
 - category: external-issue
@@ -716,7 +717,40 @@ the durable blocked row.
 - next: reword both citations to "§3 step 4" or add an explicit
   sub-heading in `digest.md`.
 
+### [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content
+- category: link-hygiene
+- impact: 3, ease: 8
+- evidence: `templates/skills/triage.md:217-218` says the
+  `gh issue comment`/`gh issue close` follow-up procedure "is
+  documented in `skills/iterate.md` §5 and `skills/ship-data.md`
+  §6." Verified `iterate.md` §5 (Step 5-7) does cover the
+  `Closes #N` trailer and close-comment flow, but
+  `templates/skills/ship-data.md` §6 ("The procedure") is a
+  generic data-entity CRUD walkthrough — grepped the whole file
+  for "trailer", "Closes", "commit body", "issue": zero hits.
+  The citation doesn't just point at the wrong section, it points
+  at a file with no matching content anywhere.
+- next: drop the `skills/ship-data.md §6` half of the citation in
+  `triage.md:217-218` (or repoint it if the convention is
+  documented somewhere in that file under a different heading —
+  confirmed it currently is not).
+
 ## Done
+
+### [x] [user-issue #33] [MED] guard.mjs's no-verify regex false-positives across unrelated multi-line bash text — this commit (closes #33)
+- fix: all four `RULES` entries in `.claude/hooks/guard.mjs`
+  used `[^|;&]*`, a negated character class that (unlike `.`)
+  matches newlines in JS regex, letting the pattern span
+  logical command boundaries in a multi-line Bash string.
+  Reproduced live: a command with `git log` on one line, an
+  unrelated `echo "...commit..."` on a second, and an unrelated
+  `-n` flag on a third false-blocked as `no-verify` with no
+  actual `git commit --no-verify` anywhere — this happened
+  organically while verifying the finding. Changed `[^|;&]*` to
+  `[^|;&\n]*` (`\\n` inside the one template-literal rule) across
+  all 8 occurrences in the 4 rules, and added the reproducing
+  case to `selfTest()`'s cases array so it can't regress
+  silently. `node .claude/hooks/guard.mjs self-test` green.
 
 ### [x] [A, 2.4] templates/plan/README.md's layout tree omits CURRENT-STATE.md — this commit
 - fix: added a `CURRENT-STATE.md` row to the Layout tree in
