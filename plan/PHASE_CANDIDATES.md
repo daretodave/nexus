@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-07-28
-> Pass count: 5
+> Last pass: 2026-08-02
+> Pass count: 6
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -412,8 +412,9 @@ kit + sibling surveys.
 - estimated phases: 1
 - conflicts: none.
 
-### [ ] [score 7.5] Cloud march ticks must not dispatch background/async agents
-- proposed: 2026-07-17 (digest)
+### [ ] [score 8.5] Cloud march ticks must not dispatch background/async agents
+- proposed: 2026-07-17 (digest); re-evidenced 2026-08-02
+  (expand pass 6)
 - source signals: the 2026-07-17 03:04 UTC cloud tick (run
   `29551508864`) reached `/iterate`'s audit-refresh step, found
   `plan/AUDIT.md` >24h stale, and launched an async background
@@ -427,7 +428,20 @@ kit + sibling surveys.
   and shipped cleanly in ~6 minutes (commit `4ca0c36`), proving
   the sweep itself isn't the bottleneck — the async dispatch
   pattern is. 1 of 4 ticks in that 26h window was silently lost
-  this way (full pulse in `plan/DIGEST.md` 2026-07-17).
+  this way (full pulse in `plan/DIGEST.md` 2026-07-17). Signal E
+  (platform drift), 2026-08-02: Claude Code's own Agent tool
+  description, current as of this pass (confirmed both via the
+  in-session tool schema and `code.claude.com/docs/en/whats-new`
+  Week 27, June 29 - July 3 2026: "subagents run in the
+  background by default so Claude keeps working while they
+  run"), now states "Agents run in the background by default...
+  Pass run_in_background: false to run an agent in the
+  foreground." That changed the failure mode this candidate was
+  written against: the original evidence was one tick explicitly
+  requesting background mode, but the platform default has since
+  flipped, so *any* `Agent(...)` call in a cloud tick that omits
+  `run_in_background` now backgrounds itself — not just calls
+  that opt in.
 - rationale: a GitHub Actions job is a single-shot process —
   once the step (and the job) exits there is nothing left
   running to deliver a background agent's completion
@@ -435,10 +449,17 @@ kit + sibling surveys.
   true)`-style work inside a cloud march tick is a guaranteed
   no-op, not a performance win. `templates/.github/workflows/march.yml`
   runs the identical one-shot pattern, so every adopter's cloud
-  loop carries the same latent trap.
+  loop carries the same latent trap. With backgrounding now the
+  platform default rather than an opt-in, the omission case (no
+  `run_in_background` param at all) is at least as likely to
+  bite an unattended cloud tick as the explicit-`true` case this
+  candidate was originally scored against — raising both
+  likelihood and adopter-facing severity.
 - proposed scope: add an explicit "cloud ticks run
-  synchronously — never dispatch an agent in background mode;
-  always await inline" line to the cloud-mode prompt block in
+  synchronously — every Agent call must pass
+  `run_in_background: false` explicitly; the platform default is
+  background as of mid-2026, so omitting the param is itself a
+  background dispatch" line to the cloud-mode prompt block in
   `.github/workflows/march.yml` and its `templates/` mirror,
   plus a matching failure-mode entry in `.github/CLOUD_LOOP.md`
   ("a tick logs launching a background/async audit agent then
