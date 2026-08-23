@@ -127,7 +127,11 @@ verbs — a docs kit ships docs, not pages.
 - **`CLAUDE_CODE_OAUTH_TOKEN`** — repo secret for the cloud
   loop only. Mint with `claude setup-token`.
 - **`ACTIONS_PAT`** — repo secret; fine-grained PAT (Contents +
-  Issues on this repo). Cloud commits author as `nexus`, not
+  Issues + Workflows on this repo; Workflows added 2026-08-23
+  so cloud ticks can push `.github/workflows/` edits
+  themselves — a deliberate trade, and nothing broader: this
+  token is what a prompt-injected tick would run with, so no
+  Secrets/Webhooks/etc). Cloud commits author as `nexus`, not
   `github-actions[bot]` — see `.github/CLOUD_LOOP.md` setup
   step 3.
 - No other secrets. The kit's gate is hermetic and offline.

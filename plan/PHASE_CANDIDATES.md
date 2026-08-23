@@ -570,8 +570,9 @@ kit + sibling surveys.
 - proposed scope: an `if: failure()` step in `march.yml` and
   `night.yml` (nexus + `templates/` mirrors) that files a
   deduped "cloud tick failing" issue via `GITHUB_TOKEN`, naming
-  the failed step and linking the run. [workflows-scope: nexus's
-  own halves may need a local session — same wall as #12.]
+  the failed step and linking the run. (Both halves shippable
+  by the loop since the 2026-08-23 PAT re-scope added
+  Workflows read/write.)
 - estimated phases: 1
 - conflicts: complements the heartbeat fix and the Cloud-Run
   trailer candidate (6.5); overlaps neither.
@@ -736,8 +737,8 @@ kit + sibling surveys.
   check to `night`; alarm via the existing deduped-issue
   pattern; document the 60-day rule in
   `playbooks/cloud-loop.md` + `templates/.github/CLOUD_LOOP.md`.
-  [workflows-scope: nexus's own half may need a local
-  session.]
+  (Both halves shippable by the loop since the 2026-08-23 PAT
+  re-scope added Workflows read/write.)
 - estimated phases: 1
 - conflicts: rides the heartbeat fix landed this session.
 

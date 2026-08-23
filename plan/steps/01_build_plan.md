@@ -80,8 +80,7 @@ Pending section for their evidence trails):**
 - [ ] Phase 22 — Workspace-of-repos adoption path (score 8.8;
       its brief allows a split into two phases)
 - [ ] Phase 23 — Cloud tick failure auto-alarm via
-      `GITHUB_TOKEN` deduped issue [workflows-scope: nexus's
-      own half may need a local session]
+      `GITHUB_TOKEN` deduped issue
 - [ ] Phase 24 — `scripts/pulse.mjs` offline instrument panel
 - [ ] Phase 25 — `scripts/adopt-dryrun.mjs` mechanized dry-run
       adoption check (opt-in verify leg; sequence after 19)
@@ -93,8 +92,7 @@ Pending section for their evidence trails):**
 - [ ] Phase 31 — `scripts/install-hooks.mjs` opt-in pre-commit
       gate
 - [ ] Phase 32 — Scheduled-workflow auto-disable watch in
-      heartbeat [workflows-scope: nexus's own half may need a
-      local session]
+      heartbeat
 
 > **After the pending phases run dry:** `/march` transitions
 > to `/iterate` — the audit dimensions (drift, completeness,
@@ -112,11 +110,13 @@ Pending section for their evidence trails):**
   closeloop, critique-household, and staged hardening among
   others added since. Count drifts every pass; read the file
   for the live total, not this bullet.
-- The cloud loop cannot push `.github/workflows/*.yml` itself
-  (`ACTIONS_PAT` has no `workflows` scope, by design) — any
-  phase touching those files ships the `templates/` half and
-  leaves nexus's own copy to a local session (issue #12, the
-  first instance, was applied locally 2026-08-23).
+- Workflows-scope history: until 2026-08-23 `ACTIONS_PAT` had
+  no `workflows` scope, so phases touching
+  `.github/workflows/*.yml` shipped only the `templates/` half
+  (issue #12 waited 7 weeks for a local session this way). The
+  re-minted PAT grants Workflows read/write, so cloud ticks
+  now push those files themselves — see `agents.md`
+  "Operational secrets" for the scope rationale.
 
 ## Phase log
 

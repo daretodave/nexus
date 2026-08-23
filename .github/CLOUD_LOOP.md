@@ -23,8 +23,12 @@
 2. `claude setup-token` → copy the OAuth token → Repo →
    Settings → Secrets and variables → Actions → new secret
    `CLAUDE_CODE_OAUTH_TOKEN`.
-3. `ACTIONS_PAT` — a fine-grained PAT (Contents + Issues:
-   read/write on this repo). This repo runs **user-author
+3. `ACTIONS_PAT` — a fine-grained PAT (Contents + Issues +
+   Workflows: read/write on this repo). Workflows was added
+   2026-08-23 so cloud ticks can ship `.github/workflows/`
+   edits themselves; grant nothing beyond these three — this
+   token is what a prompt-injected tick runs with, so no
+   Secrets/Webhooks/Variables. This repo runs **user-author
    mode**: cloud commits author as `nexus` (the PAT account's
    noreply email), never `github-actions[bot]`. Identity rides
    `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars on the action

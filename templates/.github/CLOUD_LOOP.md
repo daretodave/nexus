@@ -66,7 +66,12 @@ To upgrade from bot to user mode:
    https://github.com/settings/tokens?type=beta scoped to this
    repo only, with **Contents: read+write** and
    **Issues: read+write**. (Add **Pull requests: read+write**
-   if you want the agent to open PRs in the future.)
+   if you want the agent to open PRs in the future. Add
+   **Workflows: read+write** only if you want the loop to
+   maintain its own `.github/workflows/` files — a deliberate
+   trade: the loop can then also rewrite the workflow that
+   runs it, so grant nothing beyond what you'd hand a
+   prompt-injected tick. Never Secrets/Webhooks/Variables.)
 2. Add the secret: `gh secret set ACTIONS_PAT`.
 3. In `.github/workflows/march.yml`, under the `Run /march`
    step's `env:`:
