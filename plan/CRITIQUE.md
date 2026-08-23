@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-08-01
-> Pass count: 10
+> Last pass: 2026-08-23
+> Pass count: 11
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,52 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [LOW] README.md:341 — "2–4 hours of setup" doesn't match the reconciled "2–3 hours" figure used everywhere else
+- category: instruction-drift
+- observation: the "When this is the right tool" section says
+  "You're willing to invest **2–4 hours of setup**," but every
+  other setup-time mention in the repo was already reconciled to
+  **2–3 hours**: README.md:161 ("2–3 hours for a human working
+  the same playbook manually") and
+  `playbooks/new-project.md:4` ("Estimated time: **2–3
+  hours**"). This reads as a third, independently-drifted
+  number in a repo whose CRITIQUE.md history shows two prior
+  passes (both filed MED) specifically fixing this exact class
+  of drift at other lines — this occurrence was missed by both.
+- evidence: `grep -n "hours" README.md` → line 161 says "2–3
+  hours", line 341 says "2–4 hours"; `playbooks/new-project.md:4`
+  says "2–3 hours".
+- suggested fix: change README.md:341 to "2–3 hours of setup" to
+  match the reconciled figure, or if 2–4 hours is intentionally a
+  wider "could run over" framing, say so explicitly (e.g. "2–3
+  hours, sometimes 4") rather than presenting a bare second
+  number.
+- source: dry-run
+
+### [LOW] README.md:48 — "canonical sibling" used in the very first sample output with no definition anywhere in the file
+- category: comprehension
+- observation: the "single `/march` tick, at a glance" sample
+  (the second thing a stranger reads, right after the opening
+  pitch) includes the line "Read brief, canonical sibling" — but
+  "canonical sibling" is never defined in README.md. Its only
+  other README appearance is as a bare filename,
+  `phases/phase_canonical_sibling.md`, in the "What's in this
+  kit" tree (line 533), also without prose. The actual
+  definition ("phase 4 or 5... the template every later
+  page-family phase mirrors") lives only in
+  `playbooks/new-project.md` §5, which a reader hasn't reached
+  yet at line 48.
+- evidence: `grep -n -i sibling README.md` → only lines 48
+  (unexplained use), 405/496 (unrelated polyrepo sense), and 533
+  (bare filename); the concept definition is absent from
+  README.md entirely.
+- suggested fix: either drop "canonical sibling" from the sample
+  output (say "Read brief, phase 8" or similar) or add a short
+  parenthetical at first use, e.g. "canonical sibling (the
+  template phase every later page family mirrors — see
+  `playbooks/new-project.md` §5)".
+- source: dry-run
 
 ### [LOW] README.md:603-605 — "How to use this kit" step 5 names only 2 of the 8 documented placeholders
 - category: placeholder
