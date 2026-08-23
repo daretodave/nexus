@@ -10,7 +10,7 @@ kit + sibling surveys.
 
 ## Pending
 
-### [ ] [score 8.8] Workspace-of-repos as a first-class adoption path
+### [promoted 2026-08-23 → phase 22] [score 8.8] Workspace-of-repos as a first-class adoption path
 - proposed: 2026-07-03
 - source signals: kintilla AND semilayer independently converged
   on the same topology — un-versioned workspace root,
@@ -32,7 +32,7 @@ kit + sibling surveys.
 - estimated phases: 1-2
 - conflicts: extends polyrepo.md, never replaces it.
 
-### [ ] [score 8.6] prompts/ as canonical files + a five-line paste
+### [promoted 2026-08-23 → phase 21] [score 8.6] prompts/ as canonical files + a five-line paste
 - proposed: 2026-07-03
 - source signals: the two ~60-line README paste-prompts are the
   funnel's biggest wall; prompt fixes today mean "re-paste the
@@ -131,7 +131,7 @@ kit + sibling surveys.
 - estimated phases: 1
 - conflicts: none — second layer of the two-ring secrets story.
 
-### [ ] [score 9.0] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
+### [promoted 2026-08-23 → phase 19] [score 9.0] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
 - proposed: 2026-07-06; re-evidenced 2026-07-10, 2026-07-13,
   2026-07-21, 2026-07-23 (x2), 2026-07-24, 2026-07-26
 - source signals: this is the second critique cycle in a row to
@@ -412,7 +412,7 @@ kit + sibling surveys.
 - estimated phases: 1
 - conflicts: none.
 
-### [ ] [score 8.5] Cloud march ticks must not dispatch background/async agents
+### [promoted 2026-08-23 → phase 20] [score 8.5] Cloud march ticks must not dispatch background/async agents
 - proposed: 2026-07-17 (digest); re-evidenced 2026-08-02
   (expand pass 6)
 - source signals: the 2026-07-17 03:04 UTC cloud tick (run
@@ -544,6 +544,202 @@ kit + sibling surveys.
 ## Promoted
 
 (moves to the build plan via /oversight)
+
+> 2026-08-23 (/oversight): four standing candidates promoted —
+> step-4 rewrite (9.0 → phase 19), cloud sync-agents rule
+> (8.5 → phase 20), prompts/ (8.6 → phase 21), workspace path
+> (8.8 → phase 22). Their full briefs stay in place under
+> Pending above with relabeled `[promoted …]` headers, so their
+> evidence trails survive intact. The ten candidates below were
+> authored in the same session at the user's direction
+> ("come up with 10 more lightweight candidates that will add
+> some awesome DX and/or automation, and promote these for
+> draining") and promoted on arrival as phases 23–32.
+
+### [promoted 2026-08-23 → phase 23] [score 7.8] Cloud tick failure auto-alarm
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: the 2026-08-02 → 2026-08-23 outage — every
+  scheduled march/night tick for 21 days (~84 runs) failed at
+  checkout on an expired `ACTIONS_PAT` (401), and nothing filed
+  an issue. The heartbeat's flatline alarm was blind to it
+  (`--status completed` counts failed runs — fixed this same
+  session) and no other watcher exists for failure streaks.
+- rationale: agents.md rule 6 (blocked is loud) must apply to
+  the loop's own infrastructure. The default `GITHUB_TOKEN`
+  survives PAT death and can still file issues.
+- proposed scope: an `if: failure()` step in `march.yml` and
+  `night.yml` (nexus + `templates/` mirrors) that files a
+  deduped "cloud tick failing" issue via `GITHUB_TOKEN`, naming
+  the failed step and linking the run. [workflows-scope: nexus's
+  own halves may need a local session — same wall as #12.]
+- estimated phases: 1
+- conflicts: complements the heartbeat fix and the Cloud-Run
+  trailer candidate (6.5); overlaps neither.
+
+### [promoted 2026-08-23 → phase 24] [score 7.5] scripts/pulse.mjs — the offline instrument panel
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: this oversight session hand-assembled the
+  same panel (queue counts, last-tick age, blocked rows,
+  candidate silt) from six files and two `gh` calls; `/digest`
+  re-derives it nightly in prose; `/oversight audit` re-derives
+  it again.
+- rationale: one hermetic script, three consumers — digest,
+  oversight, and a human at a terminal — and the numbers stop
+  drifting between hand-counts.
+- proposed scope: `scripts/pulse.mjs` (zero-dependency: queue
+  Pending counts, last-commit age, build-plan pending/blocked
+  rows, candidate count + oldest-pending age; reads git
+  locally, never the network); `/digest` and `/oversight` cite
+  it; `templates/scripts/` twin with the same contract.
+- estimated phases: 1
+- conflicts: none.
+
+### [promoted 2026-08-23 → phase 25] [score 7.7] scripts/adopt-dryrun.mjs — mechanize the dry-run adoption walk
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: the step-4 cluster (the 9.0 candidate, now
+  phase 19) re-broke across eight re-evidencing dates because
+  only fresh-eyes critique passes ever exercise the documented
+  copy + placeholder-sweep path — the gate never does.
+- rationale: turn the recurring critique cluster into a
+  mechanical check: if the documented adoption commands break,
+  a script fails before a stranger ever hits it.
+- proposed scope: `scripts/adopt-dryrun.mjs` — executes the
+  playbook's step-4 copy array + placeholder sweep into a temp
+  dir, asserts zero unresolved `<...>` tokens and the expected
+  file manifest, cleans up; opt-in verify leg (env-gated so the
+  default gate stays fast); `skills/critique.md` points its
+  mechanical half at the script and spends its passes on
+  comprehension findings instead.
+- estimated phases: 1
+- conflicts: lands best after phase 19 settles the block it
+  verifies; sequence 19 first.
+
+### [promoted 2026-08-23 → phase 26] [score 7.0] Issue templates keyed to triage routes
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: `/triage` classifies unlabeled issues into a
+  fixed routing vocabulary, but reporters get a blank textarea
+  — every route is re-derived from freeform prose.
+- rationale: structured forms make triage's classification
+  step cheaper and dedupe obvious (a form names its route);
+  reporters get DX, the loop gets cleaner input.
+- proposed scope: `.github/ISSUE_TEMPLATE/*.yml` forms mapped
+  to triage's routes (bug/friction/idea/needs-user), a
+  config.yml disabling blank issues softly, `templates/`
+  mirror, and a note in `skills/triage.md` + its template twin
+  that pre-labeled forms short-circuit classification.
+- estimated phases: 1
+- conflicts: none.
+
+### [promoted 2026-08-23 → phase 27] [score 6.8] scripts/new-skill.mjs — skill scaffolder
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: `concepts/skills-anatomy.md` documents the
+  canonical skill shape, but every new skill file (15 shipped
+  in `templates/skills/` so far) is hand-copied from a sibling
+  and hand-renamed — the anatomy drift the gate's anatomy leg
+  keeps catching starts here.
+- rationale: scaffold from the anatomy, and new skills are
+  born gate-green instead of converging on it.
+- proposed scope: `scripts/new-skill.mjs <name> "<purpose>"` —
+  emits `skills/<name>.md` (or `templates/skills/` with a
+  flag) pre-filled with the canonical sections + a matching
+  `.claude/commands/<name>.md` pointer stub; refuses names
+  that collide; `templates/scripts/` twin.
+- estimated phases: 1
+- conflicts: none.
+
+### [promoted 2026-08-23 → phase 28] [score 7.2] Commit-verb vocabulary lint in the guard hook
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: the repo's whole history uses a stable verb
+  vocabulary (`docs:`, `fix:`, `critique:`, `digest:`,
+  `expand:`, `triage:`, `oversight:`, `phase N:` …) and the
+  weighted ceiling (phase 17) *counts* by verb — but nothing
+  enforces the prefix, so one misspelled verb silently
+  miscounts the ceiling and pollutes the velocity read.
+- rationale: the vocabulary is load-bearing (ceiling weights,
+  digest pulse, oversight verb-mix) — make it mechanical.
+- proposed scope: a `RULES` entry in `.claude/hooks/guard.mjs`
+  (which already inspects `git commit` commands) rejecting
+  commit messages whose first token isn't in the documented
+  verb set; the set itself documented in `plan/bearings.md`;
+  self-test cases; `templates/claude/hooks/` twin.
+- estimated phases: 1
+- conflicts: none.
+
+### [promoted 2026-08-23 → phase 29] [score 7.4] Dual-shell parity lint leg for playbooks
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: `playbooks/windows-notes.md` promises every
+  playbook code block works as written on both shells, yet
+  three separate bash-only scope/portability bugs shipped
+  (`sed -i` on BSD, unguarded `./data` grep, PowerShell twin
+  drifting from its bash sibling) and were each caught by
+  hand, one critique pass at a time.
+- rationale: the promise is checkable: every bash fence in a
+  playbook either has an adjacent PowerShell twin or carries
+  an explicit posix-only marker.
+- proposed scope: a `dualshell` leg in `scripts/verify.mjs`
+  walking `playbooks/*.md` code fences, pairing bash blocks
+  with their PowerShell siblings, failing on unpaired blocks
+  unless annotated; annotate the legitimate posix-only blocks
+  in the same commit (the gate-teaching rule).
+- estimated phases: 1
+- conflicts: none.
+
+### [promoted 2026-08-23 → phase 30] [score 6.9] Candidate-aging silt guard in digest/expand
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: 20 candidates accumulated over 7 weeks with
+  zero promotions; the top scorer (9.0) was re-evidenced eight
+  times while waiting. Nothing surfaces "the queue is silting"
+  until a human happens to run `/oversight`.
+- rationale: `skills/digest.md` already names "starved queue"
+  as a tuning trigger — give it the number that trips it.
+- proposed scope: `/digest`'s pulse gains a standing line
+  (count of candidates pending >21 days + the oldest's age)
+  and flags "oversight needed: candidate queue silting" past a
+  threshold; `/expand` stamps a `last re-evidenced` date it
+  already tracks informally; doc-only edits to
+  `skills/digest.md`, `skills/expand.md`, and their template
+  twins.
+- estimated phases: 1
+- conflicts: none.
+
+### [promoted 2026-08-23 → phase 31] [score 6.7] scripts/install-hooks.mjs — opt-in pre-commit gate
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: the verify gate binds the *loop* (skills run
+  it foreground before commit), but a human editing outside
+  the loop — exactly this oversight session's fix commits —
+  relies on remembering to run it.
+- rationale: one command arms the same gate for hand commits;
+  opt-in keeps clone-and-read adopters unaffected.
+- proposed scope: `scripts/install-hooks.mjs` writing a
+  `.git/hooks/pre-commit` that runs `node scripts/verify.mjs`
+  (and nothing else — no network, no formatting); an
+  uninstall flag; a one-line mention in README's "Files
+  added" + `templates/scripts/` twin wired to the adopter's
+  gate command.
+- estimated phases: 1
+- conflicts: none.
+
+### [promoted 2026-08-23 → phase 32] [score 7.1] Scheduled-workflow auto-disable watch in heartbeat
+- proposed: 2026-08-23 (oversight, user-directed)
+- source signals: GitHub silently disables cron workflows
+  after 60 days without repo activity — a hazard the Aug 2–23
+  outage walked toward (21 days of zero commits) and the kit
+  never mentions. The heartbeat also only measures `march`:
+  `night.yml` failed for the same 21 days with no watcher at
+  all, and a schedule that GitHub has *disabled* produces no
+  runs for the flatline check to even measure.
+- rationale: the watchdog should watch armed-ness, not just
+  run recency, and should cover every scheduled workflow.
+- proposed scope: heartbeat gains a leg that checks
+  `gh workflow list` for `disabled_inactivity`/manually
+  disabled march/night/heartbeat and widens the flatline
+  check to `night`; alarm via the existing deduped-issue
+  pattern; document the 60-day rule in
+  `playbooks/cloud-loop.md` + `templates/.github/CLOUD_LOOP.md`.
+  [workflows-scope: nexus's own half may need a local
+  session.]
+- estimated phases: 1
+- conflicts: rides the heartbeat fix landed this session.
 
 ## Rejected
 

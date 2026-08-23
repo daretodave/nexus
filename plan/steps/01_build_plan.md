@@ -65,6 +65,37 @@ written):**
       lane (`loop:do` + verb dispatch) — kit + ouroboros
       (this commit)
 
+**Drain (promoted 2026-08-23 via `/oversight` — full briefs in
+`plan/PHASE_CANDIDATES.md` → Promoted, which also carries the
+four relabeled `[promoted …]` entries still sitting under its
+Pending section for their evidence trails):**
+- [ ] Phase 19 — Step-4 structural rewrite:
+      `playbooks/new-project.md`'s copy + placeholder + prune
+      block as one verified sequence (score 9.0)
+- [ ] Phase 20 — Cloud ticks run synchronously: no background
+      agent dispatch in march ticks — prompt + doc rule
+      (score 8.5)
+- [ ] Phase 21 — prompts/ as canonical files + a five-line
+      paste (score 8.6)
+- [ ] Phase 22 — Workspace-of-repos adoption path (score 8.8;
+      its brief allows a split into two phases)
+- [ ] Phase 23 — Cloud tick failure auto-alarm via
+      `GITHUB_TOKEN` deduped issue [workflows-scope: nexus's
+      own half may need a local session]
+- [ ] Phase 24 — `scripts/pulse.mjs` offline instrument panel
+- [ ] Phase 25 — `scripts/adopt-dryrun.mjs` mechanized dry-run
+      adoption check (opt-in verify leg; sequence after 19)
+- [ ] Phase 26 — Issue templates keyed to triage routes
+- [ ] Phase 27 — `scripts/new-skill.mjs` skill scaffolder
+- [ ] Phase 28 — Commit-verb vocabulary lint in the guard hook
+- [ ] Phase 29 — Dual-shell parity lint leg for playbooks
+- [ ] Phase 30 — Candidate-aging silt guard in digest/expand
+- [ ] Phase 31 — `scripts/install-hooks.mjs` opt-in pre-commit
+      gate
+- [ ] Phase 32 — Scheduled-workflow auto-disable watch in
+      heartbeat [workflows-scope: nexus's own half may need a
+      local session]
+
 > **After the pending phases run dry:** `/march` transitions
 > to `/iterate` — the audit dimensions (drift, completeness,
 > voice, friction, freshness, lessons) always have food, and
