@@ -213,6 +213,14 @@ Commit the build plan.
 
 ## 4. Copy the rest of the templates
 
+One sequence, three sub-steps, run in order: copy, then sweep
+placeholders over what you just copied, then prune what your
+project doesn't need. Running them out of order is the one
+reliable way to leave stale tokens or dead files behind —
+sweep before prune, prune after sweep, never the reverse.
+
+### Copy
+
 Run from your repo root. This is one `node` command (Node
 ≥18, already a prerequisite) so it runs identically in
 bash/zsh, PowerShell, or `cmd.exe` — no shell twin needed:
@@ -231,6 +239,8 @@ needs both copies to actually fire.)
 to decide. If you copy it, add `./data` to the search-and-replace
 scope below — both one-liners already include it, so nothing
 else to change.)
+
+### Replace placeholders
 
 Now do a global search-and-replace across the copied files:
 

@@ -69,9 +69,9 @@ written):**
 `plan/PHASE_CANDIDATES.md` → Promoted, which also carries the
 four relabeled `[promoted …]` entries still sitting under its
 Pending section for their evidence trails):**
-- [ ] Phase 19 — Step-4 structural rewrite:
+- [x] Phase 19 — Step-4 structural rewrite:
       `playbooks/new-project.md`'s copy + placeholder + prune
-      block as one verified sequence (score 9.0)
+      block as one verified sequence (score 9.0) (this commit)
 - [ ] Phase 20 — Cloud ticks run synchronously: no background
       agent dispatch in march ticks — prompt + doc rule
       (score 8.5)
@@ -154,3 +154,6 @@ Pending section for their evidence trails):**
   preview-branch deploy-gate pattern
 - phase 17 — 1f3818c — budget-aware ceiling: weighted phase
   vs. churn commits
+- phase 19 — (this commit) — step-4 rewrite: explicit copy /
+  sweep / prune sequence; verified the rest of the cluster
+  already closed by prior ticks
