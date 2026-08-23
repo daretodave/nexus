@@ -42,8 +42,12 @@ re-set, nothing else to repair.
 
 - **Cadence:** 02:00 / 08:00 / 14:00 / 20:00 UTC, plus manual
   `gh workflow run march` whenever curious.
-- **Ceiling:** 8 cloud-shipped commits per 24h, counted by the
-  `Cloud-Run:` trailer. Local commits don't count.
+- **Ceiling:** 8 weighted points per 24h, counted by the
+  `Cloud-Run:` trailer. The count is weighted, not flat: a
+  phase-shipping commit (one that ticks a `[ ]` to `[x]` in
+  `plan/steps/01_build_plan.md`) costs 3, a churn commit
+  (`/iterate`, `/critique`, `/triage`, `/digest`) costs 1.
+  Local commits don't count.
 - **Model:** `claude-sonnet-5` (set in the workflow; ids age —
   verify against current ids before changing).
 - **Pause / resume:** `gh workflow disable march` /

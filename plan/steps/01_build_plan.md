@@ -112,12 +112,11 @@ Pending section for their evidence trails):**
   closeloop, critique-household, and staged hardening among
   others added since. Count drifts every pass; read the file
   for the live total, not this bullet.
-- Issue #12: `.github/workflows/march.yml` (nexus's own) still
-  needs phase 17's weighted-ceiling step applied by hand — the
-  cloud loop cannot push `.github/workflows/*.yml` itself
-  (`ACTIONS_PAT` has no `workflows` scope, by design). The
-  template + bootstrap.mjs half of phase 17 shipped; this is
-  the self-hosting instance's manual sync step.
+- The cloud loop cannot push `.github/workflows/*.yml` itself
+  (`ACTIONS_PAT` has no `workflows` scope, by design) — any
+  phase touching those files ships the `templates/` half and
+  leaves nexus's own copy to a local session (issue #12, the
+  first instance, was applied locally 2026-08-23).
 
 ## Phase log
 

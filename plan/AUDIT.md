@@ -668,31 +668,6 @@ row.
 
 ## Pending
 
-### [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand
-- category: external-issue
-- impact: 5
-- ease: 8
-- evidence: phase 17 shipped the weighted-ceiling mechanism to
-  `templates/.github/workflows/march.yml` (the product) plus
-  `bootstrap.mjs`'s `applyDailyCeiling`, but could not push the
-  matching edit to this repo's own
-  `.github/workflows/march.yml` — GitHub rejects pushes that
-  touch `.github/workflows/` from a token without the
-  `workflows` scope, and `ACTIONS_PAT` is deliberately scoped
-  to Contents + Issues only (`agents.md` "Operational
-  secrets"). Standing constraint for any future phase that
-  touches `.github/workflows/*.yml`, not a one-off glitch.
-- next: a human (or a locally-run `/iterate` using a
-  workflow-scoped personal token) replaces the `Daily commit
-  ceiling check` step in `.github/workflows/march.yml` with the
-  weighted version already shipped in
-  `templates/.github/workflows/march.yml` (same step, minus the
-  bootstrap.local.json comment block — nexus has none), keeping
-  `ceiling=8`. Then align `.github/CLOUD_LOOP.md` "Daily
-  operation" -> Ceiling wording with
-  `templates/.github/CLOUD_LOOP.md`'s "The daily ceiling"
-  section.
-
 ### [A, 1.35] cloud-loop.md's "three new files" header lists only two
 - category: doc-drift
 - impact: 3, ease: 4.5
@@ -736,6 +711,20 @@ row.
   confirmed it currently is not).
 
 ## Done
+
+### [x] [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand — this commit (closes #12)
+- fix: applied exactly as the row's `next` prescribed, from the
+  2026-08-23 local `/oversight` session (Q2 authorized it —
+  this was the human-credentialed session the row waited 7
+  weeks for; the session's own pushes to `.github/workflows/`
+  confirmed the local credential clears the `workflows`-scope
+  wall `ACTIONS_PAT` cannot). Replaced the flat `Daily commit
+  ceiling check` step in `.github/workflows/march.yml` with the
+  weighted version from `templates/.github/workflows/march.yml`
+  (phase=3 / churn=1, minus the bootstrap.local.json comment
+  block — nexus has none), keeping `ceiling=8`, and aligned
+  `.github/CLOUD_LOOP.md`'s "Daily operation" -> Ceiling bullet
+  with the template's "The daily ceiling" section.
 
 ### [x] [user-issue #33] [MED] guard.mjs's no-verify regex false-positives across unrelated multi-line bash text — this commit (closes #33)
 - fix: all four `RULES` entries in `.claude/hooks/guard.mjs`
