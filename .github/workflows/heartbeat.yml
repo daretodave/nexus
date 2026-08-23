@@ -45,22 +45,25 @@ jobs:
             done
           done
 
-      - name: Alarm if march has not completed a tick in 14h
+      - name: Alarm if march has not succeeded a tick in 14h
         run: |
-          last=$(gh run list --workflow march --status completed -L 1 \
+          # --status success, not completed: a failed run still
+          # counts as "completed", so a loop failing every tick
+          # (e.g. expired auth) would reset this timer forever.
+          last=$(gh run list --workflow march --status success -L 1 \
             --json updatedAt --jq '.[0].updatedAt // empty')
           if [ -z "$last" ]; then
-            echo "No completed march runs yet - nothing to measure."
+            echo "No successful march runs yet - nothing to measure."
             exit 0
           fi
           now=$(date -u +%s); then_s=$(date -u -d "$last" +%s)
           hours=$(( (now - then_s) / 3600 ))
-          echo "Last completed march tick: ${hours}h ago"
+          echo "Last successful march tick: ${hours}h ago"
           if [ "$hours" -ge 14 ]; then
             existing=$(gh issue list --search 'in:title "Heartbeat: march has flatlined" state:open' --json number --jq 'length')
             if [ "$existing" -eq 0 ]; then
               gh issue create \
                 --title "Heartbeat: march has flatlined ($(date -u +%Y-%m-%d))" \
-                --body "No completed march tick in ${hours}h (cadence is 6h). Likely causes: workflow disabled and forgotten, cron auto-paused, or auth expiry. Check: gh workflow list; gh run list --workflow march -L 5."
+                --body "No successful march tick in ${hours}h (cadence is 6h). Likely causes: every tick failing (check the newest run's log), workflow disabled and forgotten, cron auto-paused, or auth expiry. Check: gh workflow list; gh run list --workflow march -L 5."
             fi
           fi
