@@ -72,9 +72,10 @@ Pending section for their evidence trails):**
 - [x] Phase 19 — Step-4 structural rewrite:
       `playbooks/new-project.md`'s copy + placeholder + prune
       block as one verified sequence (score 9.0) (this commit)
-- [ ] Phase 20 — Cloud ticks run synchronously: no background
+- [blocked: cloud push token lacks workflows scope 2026-08-23]
+      Phase 20 — Cloud ticks run synchronously: no background
       agent dispatch in march ticks — prompt + doc rule
-      (score 8.5)
+      (score 8.5) — needs a local `/ship-a-phase` (see #35)
 - [ ] Phase 21 — prompts/ as canonical files + a five-line
       paste (score 8.6)
 - [ ] Phase 22 — Workspace-of-repos adoption path (score 8.8;
