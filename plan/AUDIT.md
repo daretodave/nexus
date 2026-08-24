@@ -668,6 +668,37 @@ row.
 
 ## Pending
 
+### [user-issue #35] [MED] cloud push token still lacks workflows scope despite the 2026-08-23 re-mint
+- category: external-issue
+- impact: 4, ease: 2
+- evidence: phase 20's cloud ship attempt (run 32663251226,
+  2026-08-23) built and verified all three deliverables, then
+  `git push` was rejected: "refusing to allow a GitHub App to
+  create or update workflow `.github/workflows/march.yml`
+  without `workflows` permission." `gh auth status` in that run
+  reported `claude[bot]` (the Claude Code Action's own GitHub
+  App installation token), not the `ACTIONS_PAT` secret — even
+  though `march.yml`'s `Run /march` step sets
+  `GH_TOKEN: ${{ secrets.ACTIONS_PAT }}` explicitly and the
+  checkout step sets `token: ${{ secrets.ACTIONS_PAT }}`.
+  Non-workflow-file pushes on the same run (this issue's mirror,
+  #34, and the phase-20-blocked commit itself) succeeded fine,
+  isolating the gap to `.github/workflows/*.yml` writes only —
+  consistent with either (a) the Claude Code Action overwriting
+  the checkout-configured git credentials with its own App
+  token before the agent's turn starts, or (b) `ACTIONS_PAT`
+  not actually carrying `workflows` scope despite the re-mint
+  note in `agents.md`.
+- next: needs a local session to inspect the actual `ACTIONS_PAT`
+  scope grants in GitHub's token settings UI and to test whether
+  a plain `git push` (bypassing `gh`/the Action's credential
+  helper) succeeds against `.github/workflows/*.yml` with that
+  token. Same class of environment constraint that blocked
+  #12 pre-rescope — cannot be root-caused further from inside a
+  cloud tick, since any cloud tick reproduces the same
+  credential wiring. Phase 20 stays `[blocked: cloud push token
+  lacks workflows scope 2026-08-23]` until this resolves.
+
 ### [A, 1.35] cloud-loop.md's "three new files" header lists only two
 - category: doc-drift
 - impact: 3, ease: 4.5
