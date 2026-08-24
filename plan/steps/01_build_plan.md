@@ -76,8 +76,8 @@ Pending section for their evidence trails):**
       Phase 20 — Cloud ticks run synchronously: no background
       agent dispatch in march ticks — prompt + doc rule
       (score 8.5) — needs a local `/ship-a-phase` (see #35)
-- [ ] Phase 21 — prompts/ as canonical files + a five-line
-      paste (score 8.6)
+- [x] Phase 21 — prompts/ as canonical files + a five-line
+      paste (score 8.6) (this commit)
 - [ ] Phase 22 — Workspace-of-repos adoption path (score 8.8;
       its brief allows a split into two phases)
 - [ ] Phase 23 — Cloud tick failure auto-alarm via
@@ -158,3 +158,6 @@ Pending section for their evidence trails):**
 - phase 19 — (this commit) — step-4 rewrite: explicit copy /
   sweep / prune sequence; verified the rest of the cluster
   already closed by prior ticks
+- phase 21 — (this commit) — prompts/ as canonical files:
+  adopt.md + pitch.md + README.md, README's TL;DR sections
+  shrink to a short paste

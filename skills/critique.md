@@ -34,12 +34,13 @@ pass). Runs fine in the cloud — it needs only files and
    hosting: netlify; branch: main).
 3. **Walk the TL;DR literally.** From `README.md` "clone +
    delegate" downward, executing what an adopter's agent
-   would: copy the files `templates/README.md` says to copy,
-   run the placeholder replacements the README shows, check
-   every file the playbooks reference exists at the stated
-   path, follow `playbooks/new-project.md` step numbers in
-   order. Delegate the walk to a fresh sub-agent when
-   available — its ignorance is the instrument.
+   would: read whichever `prompts/*.md` file the paste points
+   to, copy the files `templates/README.md` says to copy, run
+   the placeholder replacements the README shows, check every
+   file the playbooks reference exists at the stated path,
+   follow `playbooks/new-project.md` step numbers in order.
+   Delegate the walk to a fresh sub-agent when available — its
+   ignorance is the instrument.
 4. **Stranger-read.** Read `README.md` top to bottom as
    someone who has never seen the kit: where does
    comprehension stumble? What promise is unclear? What order

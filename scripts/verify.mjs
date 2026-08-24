@@ -14,8 +14,8 @@
 // Legs:
 //   links         every relative markdown link resolves to a file
 //   tree          README's "What's in this kit" tree matches disk
-//   discover      every playbook/concept/customization doc is
-//                 linked from at least one other doc (no orphans)
+//   discover      every playbook/concept/customization/prompt doc
+//                 is linked from at least one other doc (no orphans)
 //   placeholders  every <UPPER_SNAKE> token is in the documented
 //                 vocabulary (catches <PROJECT_NAME>-style typos)
 //   anatomy       skill files carry the canonical sections; command
@@ -211,7 +211,7 @@ function legTree() {
 function legDiscover(files) {
   const failures = []
   const discoverable = files.filter((f) =>
-    /^(playbooks|concepts|customization)\//.test(normalize(f)),
+    /^(playbooks|concepts|customization|prompts)\//.test(normalize(f)),
   )
   // Collect every relative link target across the repo.
   const linked = new Set()

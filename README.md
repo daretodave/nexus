@@ -91,77 +91,20 @@ nexus root throughout.)
 
 ### 2. Hand it to your agent
 
-Paste this prompt at your project's root (where `git status`
-shows your repo):
+Paste this at your project's root (where `git status` shows
+your repo):
 
 ```
-Adopt nexus.
-
-nexus is at ../nexus (or ./.nexus if submoduled). It is a
-methodology + template kit for turning this repo into an
-autonomous-loop project. Read the following, in order, before
-making a single change:
-
-  1. ../nexus/README.md            — entry point
-  2. ../nexus/concepts/architecture.md  — the whole system
-  3. ../nexus/concepts/skills-anatomy.md — how skills work
-  4. ../nexus/playbooks/new-project.md   AND
-     ../nexus/playbooks/existing-project.md
-                                   — pick the one that applies
-  5. ../nexus/playbooks/ci-providers.md  — for the deploy gate
-  6. ../nexus/intervention-spectrum.md   — how the loop scales
-  7. ../nexus/customization/*.md   — verify gate + hermetic
-                                     e2e + data layer + sub-agents
-
-Then:
-
-  - Decide whether this is greenfield or brownfield by reading
-    `git log --oneline | wc -l`, looking at the file tree, and
-    checking for an existing spec.md.
-  - Follow the matching playbook end-to-end. Do not skip steps.
-  - Copy templates from ../nexus/templates/ into this repo.
-  - Replace placeholders (<PROJECT>, <PROJECT_LOWER>,
-    <PROJECT_TAGLINE>, <HOSTING_URL>, <HOSTING_PROVIDER>,
-    <REPO_SLUG>, <DEFAULT_BRANCH>, <PROJECT_PKG_PREFIX>) with
-    values you derive from the existing repo state. If a value
-    is genuinely unknowable, surface it in plan/AUDIT.md as a
-    [needs-user-call] row and continue with a defensible
-    default.
-  - Ask the user ONLY for: (a) the hosting provider name and
-    auth token if not visibly configured, (b) the project's
-    canonical name + tagline if no spec exists, (c) the
-    URL/API/CLI contract if it cannot be inferred. For
-    everything else, decide.
-  - Adapt bearings.md to reflect the actual stack present in
-    this repo. Do not assume Next.js, Tailwind, or any
-    specific framework — read package.json / Cargo.toml /
-    pyproject.toml / go.mod and adapt.
-  - Write a build plan with 10–20 phases drawn from the spec
-    (or from CURRENT-STATE.md for brownfield). Phase 1 ships
-    the nexus overlay itself; phase 2+ are real product work.
-  - Wire the verify gate against this repo's actual test
-    setup. Wire the deploy gate against the chosen provider.
-  - At the end: produce a single commit titled
-    "chore: adopt nexus methodology" with a body listing every
-    file added/modified, every placeholder you resolved, and
-    every [needs-user-call] you logged. Push.
-  - Then stop. Do not invoke /ship-a-phase yourself; let the
-    user do that as the first conscious step.
-
-Standing rules carried from agents.md:
-  - Commit and push as a single atomic act.
-  - No Co-Authored-By trailers, no emojis.
-  - No --no-verify, no force-push, no destructive resets.
-  - Tests alongside code.
-  - When in doubt: decide, document the call in the commit body,
-    proceed.
-
-Estimated time: well under an hour, agent-paced (no
-read-and-decide pauses) — new-project.md's own header quotes
-2–3 hours for a human working the same playbook manually and
-notes the delegated-agent case finishes faster; see its note
-on the difference. Begin.
+Clone https://github.com/<your-fork-or-mirror>/nexus.git to
+../nexus (or use ./.nexus if submoduled) if you haven't
+already, then read and follow ../nexus/prompts/adopt.md
+exactly, in order. Do not skip steps or invent scope beyond
+what it says.
 ```
+
+The full instruction set your agent follows lives in
+[`prompts/adopt.md`](./prompts/adopt.md) — read it yourself
+first if you want to know exactly what you're authorizing.
 
 ### 3. Review what landed
 
@@ -208,67 +151,23 @@ Paste this at your project's root (where `git init` has run
 but there's nothing else yet):
 
 ```
-Run nexus's pitch-to-adopted flow.
-
-nexus is at ../nexus (or ./.nexus if submoduled). The plan
-is: pre-spec interview → write spec.md → adopt nexus.
-
-Phase A — pre-spec interview (30-45 minutes)
-
-Read ../nexus/playbooks/pre-spec.md end-to-end. Read
-../nexus/concepts/asking-well.md for question shape. Then
-run the three question batches (foundation, spine, surface)
-per the playbook. AskUserQuestion is allowed during this
-phase — it's pre-spec, not in-skill. Once spec.md is
-committed at the end of Phase A, that rule reverts.
+Clone https://github.com/<your-fork-or-mirror>/nexus.git to
+../nexus (or use ./.nexus if submoduled) if you haven't
+already, then read and follow ../nexus/prompts/pitch.md
+exactly, in order.
 
 Here's my pitch in my own words:
 
   <ONE-PARAGRAPH PITCH — what the product is, who it's for,
   what makes it interesting. Don't polish.>
-
-Phase A deliverables (committed before Phase B starts):
-  - spec.md (at least one page, persona named, v1 scope)
-  - plan/bearings.md stub (Surface, Auth, Stack, hosting,
-    voice, hard rules)
-  - (optional) claude-design.prompt.md if Batch 3 Q2 landed
-    on "commission a visual system" (see
-    ../nexus/customization/visual-system.md)
-  - (optional) NEXUS_LESSONS.md scratch — capture nexus gaps
-    you hit during the interview, for a later /lessons-pr
-    pass back to the nexus repo
-
-Phase B — adoption
-
-Once Phase A's commits land, switch to the standard adoption
-prompt: read ../nexus/README.md from the TL;DR section
-downward, then follow ../nexus/playbooks/new-project.md.
-AskUserQuestion is no longer allowed (per nexus's standing
-rules — only /oversight may ask). Decide and document; don't
-ask.
-
-End-state:
-  - chore: adopt nexus methodology commit landed and pushed
-  - Day 1 checklist in new-project.md passes
-  - Ready for /ship-a-phase as the first conscious step.
-  - Do NOT invoke /ship-a-phase yourself; let the user do
-    that.
-
-Standing rules:
-  - Commit and push as a single atomic act per logical chunk.
-  - No Co-Authored-By trailers, no emojis.
-  - No --no-verify, no force-push.
-
-Estimated time: 60-90 minutes total, agent-paced for Phase B
-(Phase A is genuinely interactive, per pre-spec.md's own
-30-45 minute estimate; Phase B's 2-3 hour playbook estimate
-is the human-paced figure — see new-project.md's note).
-Begin with Phase A.
 ```
 
-Pitch quality matters. If you can't describe the product in
-one paragraph in plain language, come back when you can. The
-agent will not invent product direction for you.
+The full instruction set — pre-spec interview, then handoff
+to the adoption flow above — lives in
+[`prompts/pitch.md`](./prompts/pitch.md). Pitch quality
+matters: if you can't describe the product in one paragraph in
+plain language, come back when you can. The agent will not
+invent product direction for you.
 
 ---
 
@@ -481,6 +380,10 @@ nexus/
 ├── intervention-spectrum.md           # the levels in detail
 ├── agents.md                          # nexus's OWN rule book (the kit runs on itself)
 ├── CLAUDE.md                          # pointer at agents.md (Claude Code only auto-loads CLAUDE.md from repo root)
+├── prompts/                           # canonical paste-prompts — versioned, public API
+│   ├── README.md                      # what these are, how the short paste uses them
+│   ├── adopt.md                       # the full "Adopt nexus" agent prompt
+│   └── pitch.md                       # the full pitch-to-adopted agent prompt
 ├── package.json                       # the kit's own verify gate wiring
 ├── scripts/
 │   └── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji

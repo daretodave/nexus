@@ -66,6 +66,13 @@ update `templates/README.md`, the root `README.md` tree, and
 never references kit-internal paths except as documented
 `nexus/...` pointers.
 
+`prompts/` carries the same contract for a narrower surface:
+adopters paste its file paths directly into agents, and future
+doorways (npx installer, plugin manifest) will reference the
+same canonical text. Renames need the same discipline as a
+`templates/` rename, even though nothing under `prompts/` is
+ever copied into an adopter repo.
+
 ---
 
 ## Project
@@ -81,6 +88,7 @@ https://github.com/daretodave/nexus. The product spec is
 
 ```
 README.md            The spec + entry point.
+prompts/             Canonical paste-prompts — versioned, public API.
 concepts/            The mental model (architecture, skills, asking).
 playbooks/           Adoption + operations runbooks.
 customization/       Opt-in layers per project shape.
