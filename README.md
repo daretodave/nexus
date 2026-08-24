@@ -105,6 +105,8 @@ what it says.
 The full instruction set your agent follows lives in
 [`prompts/adopt.md`](./prompts/adopt.md) — read it yourself
 first if you want to know exactly what you're authorizing.
+(See [`prompts/README.md`](./prompts/README.md) for what lives
+in that directory and why.)
 
 ### 3. Review what landed
 
