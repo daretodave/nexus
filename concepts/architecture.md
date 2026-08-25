@@ -423,6 +423,11 @@ See [`../playbooks/polyrepo.md`](../playbooks/polyrepo.md) for
 the layout, the `additionalDirectories` bridge, and the
 push-order rule in full.
 
+Past two repos, the same shape generalizes to a **workspace**:
+an un-versioned local root — never its own git repo — holding
+`plan/` and every product as peers under one GitHub org. See
+[`../playbooks/workspace.md`](../playbooks/workspace.md).
+
 ---
 
 ## Where to go next

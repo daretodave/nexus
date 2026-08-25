@@ -307,6 +307,13 @@ split `plan/` into its own repo with each product a sibling.
 Same skills, same state-file shapes — the tick's atomic act
 just spans two repos, pushed product-first.
 
+### → [`playbooks/workspace.md`](./playbooks/workspace.md) *(variant)*
+
+Outgrown polyrepo's two repos? Past `plan/` + one product, the
+same split generalizes to a workspace: an un-versioned local
+root — never its own git repo — holding `plan/` and every
+product as peers under one GitHub org.
+
 ### → [`playbooks/ci-providers.md`](./playbooks/ci-providers.md)
 
 The deploy gate is the only piece that varies a lot per project.
@@ -398,7 +405,8 @@ nexus/
 │   ├── cloud-loop.md                  # opt-in GitHub Actions loop
 │   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
 │   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
-│   └── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos
+│   ├── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos
+│   └── workspace.md                   # variant: un-versioned root + org-per-project, past two repos
 ├── concepts/
 │   ├── architecture.md                # the whole system in one read
 │   ├── loop-shapes.md                 # the genus: dispatcher, night shift, heartbeat, concierge, pollinator, lanes, meta-loop

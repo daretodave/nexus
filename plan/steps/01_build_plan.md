@@ -78,8 +78,9 @@ Pending section for their evidence trails):**
       (score 8.5) — needs a local `/ship-a-phase` (see #35)
 - [x] Phase 21 — prompts/ as canonical files + a five-line
       paste (score 8.6) (this commit)
-- [ ] Phase 22 — Workspace-of-repos adoption path (score 8.8;
-      its brief allows a split into two phases)
+- [x] Phase 22 — Workspace playbook: the un-versioned root +
+      org-per-project layout, generalizing polyrepo.md past two
+      repos (score 8.8) (this commit)
 - [ ] Phase 23 — Cloud tick failure auto-alarm via
       `GITHUB_TOKEN` deduped issue
 - [ ] Phase 24 — `scripts/pulse.mjs` offline instrument panel
@@ -94,6 +95,10 @@ Pending section for their evidence trails):**
       gate
 - [ ] Phase 32 — Scheduled-workflow auto-disable watch in
       heartbeat
+- [ ] Phase 33 — Workspace templates: `templates/workspace/`
+      root pointer-file family + adopt-prompt topology-detection
+      step (score 8.8; phase 22's deferred half — see
+      `plan/phases/phase_22_workspace_playbook.md` non-goals)
 
 > **After the pending phases run dry:** `/march` transitions
 > to `/iterate` — the audit dimensions (drift, completeness,
@@ -161,3 +166,6 @@ Pending section for their evidence trails):**
 - phase 21 — (this commit) — prompts/ as canonical files:
   adopt.md + pitch.md + README.md, README's TL;DR sections
   shrink to a short paste
+- phase 22 — (this commit) — workspace playbook: un-versioned
+  root + org-per-project layout, generalizing polyrepo.md past
+  two repos; templates/workspace/ deferred to phase 33

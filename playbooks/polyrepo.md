@@ -172,3 +172,6 @@ bridged per above, works today with no changes.
   single-repo playbooks this variant sits on top of.
 - [`cloud-loop.md`](./cloud-loop.md) — the Actions runtime;
   see the limitation above before arming it under polyrepo.
+- [`workspace.md`](./workspace.md) — outgrown two repos? this
+  is the next rung: the un-versioned root and org-per-project
+  layout for three-plus sibling repos.
