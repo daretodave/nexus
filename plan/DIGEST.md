@@ -1,110 +1,116 @@
-# Digest — 2026-08-01
+# Digest — 2026-08-25
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Four clean march ticks — the two AUDIT rows this digest called
-as tomorrow's picks both shipped exactly as predicted (the
-CLAUDE.md pointer wording, the CURRENT-STATE.md tree gap), a
-fresh critique pass filed three low-severity findings, and one
-new issue (#33) got triaged straight into the queue; zero
-no-ops, zero crashes, and the trailer-gap candidate picked up
-its first counter-evidence in three samples.
+The loop is back: a ~3-week silent outage (`ACTIONS_PAT` auth
+broke checkout/push and a heartbeat bug let failing march ticks
+reset their own flatline timer, so no alarm ever fired) was
+fixed 2026-08-23, march has run 9/9 green since, and this is
+the first clean night tick since `38e8ab0` on 2026-08-01 — a
+24-day digest gap now closed. In the last 26h: a RED-gate
+self-inflicted block got found and fixed same-day, critique
+filed a HIGH finding, and phase 22 (workspace playbook)
+shipped; today's audit refresh (23 days stale) turned up one
+new freshness gap and reconfirmed three open rows.
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 07-31 09:02 | night → digest | previous digest (`c2a9733`) |
-| 07-31 14:49 | march → iterate | shipped AUDIT `[A, 2.7]` — `templates/claude/CLAUDE.md` grew to 8 lines but README.md, templates/README.md and customization/claude-code.md still called/quoted it as the old 2-3 line pointer; reworded tree labels to "short pointer" and refreshed the quoted block (`aca30e5`) |
-| 07-31 20:29 | march → iterate | shipped AUDIT `[A, 2.4]` — `templates/plan/README.md`'s layout tree omitted `CURRENT-STATE.md`, a real adopt-by-need file both `templates/README.md` and `existing-project.md` already treat as such (`2226240`) |
-| 08-01 03:04 | march → critique | pass 10 — 3 findings (0 high, 1 med, 2 low): README's 30-90min agent-paced estimate still disagrees with new-project.md's "well under an hour" (a regression of a prior fix); "How to use this kit" step 5 names only 2 of 8 placeholders; "Posture-gated" used once with no link. No HIGH blockers; the copy+replace+prune walk itself ran clean (`d12b8f7`) |
-| 08-01 08:47 | march → triage | routed #33 (`guard.mjs`'s no-verify regex matches across newlines, a cross-line false-positive affecting all four forbidden-command rules, not just no-verify) into AUDIT as `[user-issue #33]` (`808c398`) |
-| 08-01 11:01 | night → digest | this tick |
+| 08-24 08:15 | march → ship-a-phase | shipped phase 21 — `prompts/` as canonical files (`ad8ae3c`); widened the `discover` gate leg to cover `prompts/`, but `prompts/README.md` itself was never linked with a real markdown link — left the gate RED from this commit forward |
+| 08-24 10:41 | night → digest | **blocked, no commit** — gate RED (see above); filed issue #36 loud per rule 6 instead of shipping a briefing that couldn't land; queue pulse gathered that tick was discarded as stale |
+| 08-24 14:15 | march → iterate | shipped `fa31773` — added the missing link, gate green again, closed #36 |
+| 08-24 20:07 | march → critique | **no-op** — dispatched a background dry-run adoption agent and returned without committing ("I'll wait for its completion notification"); the container ends when the run ends, so the background agent's work was lost. Live reproduction of the exact failure mode phase 20 exists to close (`[blocked: cloud push token lacks workflows scope 2026-08-23]`, tracked as issue #35) |
+| 08-25 02:26 | march → critique | shipped `b7be77a` — pass 12, 1 finding (1 HIGH, 0 MED, 0 LOW): `README.md:614`'s "AskUserQuestion only in `/oversight`" hard rule is directly contradicted by `templates/skills/bootstrap.md`'s own bolded carve-out |
+| 08-25 08:15 | march → ship-a-phase | shipped `ec77ec1` + `5d2d16c` — phase 22, `playbooks/workspace.md` (the un-versioned workspace root + org-per-project layout, generalizing polyrepo.md; closes #37) |
+| 08-25 10:41 | night → digest | this tick — refreshed `plan/AUDIT.md` (23 days stale), wrote this briefing |
 
-`heartbeat` ran 5/5 green over its last-5 sample — no wedged
-runs, no flatline alarm.
+`heartbeat` ran green every ~6h throughout (60/60 sampled back
+to 08-10); its own flatline-detection bug (see Headline) is
+already fixed (`d28175d`, 2026-08-23) and is not itself a
+finding this tick.
 
 ## Shipped
 
-- `aca30e5` — closed AUDIT `[A, 2.7]`: CLAUDE.md pointer
-  description reconciled across three docs to match the real
-  8-line template.
-- `2226240` — closed AUDIT `[A, 2.4]`: `templates/plan/README.md`'s
-  layout tree now lists `CURRENT-STATE.md`.
+- `fa31773` — closed the self-inflicted RED gate: linked
+  `prompts/README.md` from `README.md` (closes #36).
+- `b7be77a` — critique pass 12: 1 HIGH finding filed to
+  `plan/CRITIQUE.md`.
+- `ec77ec1` + `5d2d16c` — phase 22: `playbooks/workspace.md`
+  ships (closes #37); phase 22's deferred template half filed
+  forward as phase 33.
 
 ## Queues now
 
-- **Build plan:** 0 pending (18/18 phases shipped, unchanged).
-  Every tick still routes to `/critique`/`/expand`/`/iterate`.
-- **AUDIT:** header `2026-07-30` (~44h old this tick, still under
-  the 48h refresh threshold — no re-sweep needed). 3 scored
-  Pending rows plus the durable blocked one: `[user-issue #33]`
-  (impact 5, ease 7, score 3.5 — now the top open row, freshly
-  filed this window), `[C, 2.4]` (two docs cite
-  `skills/digest.md §4` for content actually in §3 item 4),
-  `[A, 1.35]` (`cloud-loop.md`'s "three new files" header lists
-  only two). `[user-issue #12]` unchanged since 2026-07-12
-  (20 days), still the durable blocked top row.
-- **CRITIQUE:** 3 pending (pass 10, 2026-08-01 — see pulse table
-  above for the findings). Fresh; not due again this window.
-- **PHASE_CANDIDATES:** 21 pending, flat — no `/expand` tick ran
-  this window. Posture still bold. Zero promotions since the
-  queue opened 2026-07-02, now 30 days running.
-- **Issues:** 2 open — `#12` (`triage:loop-queued`, durable
-  blocked) and `#33` (`triage:loop-queued`, freshly routed this
-  window). No `triage:needs-user` or `loop:do` labels open.
+- **Build plan:** 21/33 shipped, 11 pending, 1 blocked (phase
+  20, cloud push token lacks `workflows` scope — tracked as
+  `[user-issue #35]`, unchanged since 2026-08-23). Next `[ ]` is
+  phase 23.
+- **AUDIT:** refreshed this tick — header was `2026-08-02` (23
+  days stale, far past the 48h threshold). Fresh A-G sweep
+  (delegated to an agent): durable `[user-issue #35]` unchanged;
+  the three rows from the last sweep (`[A, 1.35]` cloud-loop.md
+  "three new files", two `[C, 2.4]` dead-section citations) all
+  still reproduce, only line numbers drifted. One new row:
+  `[F, 3.6]` — `templates/.github/CLOUD_LOOP.md` hedges "Sonnet
+  5" mentions with "(ids age — check `/model`)" in two spots but
+  leaves the adjacent "Opus 4.8" mentions in the same two spots
+  unhedged. Phases 21/22 (newest surfaces) checked clean.
+- **CRITIQUE:** 5 pending (1 HIGH, 4 LOW) — pass 12 landed this
+  window (see Shipped). Not due again this window.
+- **PHASE_CANDIDATES:** 17 pending, 14 promoted. Header
+  `2026-08-02` (pass 6) — `/expand`'s to refresh, not digest's;
+  last pass predates the outage. Posture still bold.
+- **Issues:** 2 open — `#34` (phase-20 mirror, open until phase
+  20 ships) and `#35` (the blocking cloud-token issue, same
+  root cause). No `triage:needs-user` or `loop:do` labels open.
 - **Sibling lessons:** `../kintilla/plan/lessons.md` not present
   in this environment — skipped (cloud).
-- **Ceiling:** 5 `Cloud-Run:`-tagged commits in the trailing 24h
-  (4 march ticks + 1 digest), all five carrying the trailer
-  correctly — well under the 8/24h ceiling. Notably `d12b8f7`
-  (a `/critique` commit) carried it correctly too: the standing
-  "critique commits sometimes drop the trailer" candidate has
-  now seen its trailer present on the most recent sample after
-  two prior misses (`a74f7b6` 07-19, `427eb91` 07-25) — first
-  counter-evidence, not yet enough to retire the candidate.
+- **Ceiling:** 3 `Cloud-Run:`-tagged commits in the trailing 26h
+  (`ad8ae3c` just outside the window, `fa31773`, `ec77ec1`/
+  `5d2d16c` sharing one run's trailer), well under the 8/24h
+  ceiling — no signal of a hibernating or overheating gate.
 
 ## Needs you
 
-- **Issue #12** — nexus's own `.github/workflows/march.yml` still
-  needs phase 17's weighted-ceiling step applied by hand;
-  `ACTIONS_PAT` is deliberately scoped to Contents + Issues only,
-  so the cloud loop can never push to `.github/workflows/*.yml`
-  itself. Needs a human, or a locally-run `/iterate` with a
-  personal workflow-scoped `gh` token. Tracked as AUDIT
-  `[user-issue #12]`, still the only blocked row.
-- **Candidate backlog** — 21 pending in `plan/PHASE_CANDIDATES.md`,
-  zero promoted in 30 days. The `[score 9.0]` `new-project.md`
-  step-4/7 rewrite remains the clearest promote-first candidate
-  (six re-evidencing cycles to date); worth an `/oversight` pass.
-  Unchanged in substance from prior digests, no new evidence this
-  window.
-- No `[needs-user-call]` rows, no blocked build-plan rows.
+- **Issue #35 / Phase 20** — nexus's own cloud push token still
+  can't write `.github/workflows/*.yml`, despite the
+  2026-08-23 re-mint note in `agents.md`. Needs a local session
+  to inspect the actual `ACTIONS_PAT` scope grants and test a
+  plain `git push` against a workflow file with that token.
+  Fresh evidence this window: the 08-24 20:07 tick reproduced
+  the exact failure mode phase 20 would close (a background
+  agent dispatched and lost mid-tick) — this is not a new
+  finding, just a live instance of the tracked one.
+- No `[needs-user-call]` rows.
 
 ## Today's intent
 
-Build plan still has no pending phase (18/18). CRITIQUE just
-refreshed and isn't due again. AUDIT's own top-scoring open row
-is now `[user-issue #33]` (score 3.5, impact 5/ease 7) — the
-`guard.mjs` regex fix has a concrete next step (add `\n` to the
-four negated character classes, plus a multi-line `selfTest()`
-case) and clearly outranks the remaining `2.4`/`1.35` cosmetic
-rows.
+Phase 23 — cloud tick failure auto-alarm via a `GITHUB_TOKEN`-
+authenticated deduped issue — is next in the build plan, and
+this window supplies a concrete worked example for why it
+matters: `night.yml`'s own crash-alarm step
+(`Open night-failed issue if action crashed`) authenticates
+with `ACTIONS_PAT`, the same secret whose failure caused the
+3-week outage this digest opens with — so the alarm meant to
+catch that exact failure was itself silenced by it. Phase 23's
+`GITHUB_TOKEN` design (matching `heartbeat.yml`'s already-
+independent watcher) closes that single point of failure.
+Runner-up: AUDIT's fresh top row, `[F, 3.6]` (CLOUD_LOOP.md's
+inconsistent id-hedging).
 
 ## Tuning proposals
 
-None new this tick. Four march ticks, four green runs, zero
-no-ops, zero crashes — a repeat of last window's clean pattern,
-which argues against a gate retune. The one piece of fresh
-signal — `d12b8f7` carrying its `Cloud-Run:` trailer correctly —
-is counter-evidence against the existing trailer-gap candidate
-in `plan/PHASE_CANDIDATES.md`, not grounds for a new one; noted
-above under Ceiling for whoever next reviews that candidate. The
-30-day candidate-promotion drought remains a standing
-observation (see "Needs you"), not a gate defect: `/oversight` is
-the only skill that promotes, and its cadence isn't this loop's
-tuning to propose. Per `skills/digest.md` §4, gate tunings remain
-proposals only.
+None new this tick. The two structural gaps visible in this
+window's pulse — heartbeat counting failed runs as ticks, and
+the cloud-push-token scope wall — are both already tracked
+(the former fixed 2026-08-23 via `d28175d`; the latter is
+`[user-issue #35]`, blocking phase 20, with phase 23 queued
+right behind it to close the adjacent alarm-sharing-a-token
+gap). Filing either as a new `plan/PHASE_CANDIDATES.md` entry
+would duplicate existing rows, so per `skills/digest.md` §3
+step 4 this window's pulse is evidence for existing rows, not
+grounds for a new one.

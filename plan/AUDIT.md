@@ -1,4 +1,4 @@
-# Kit audit — 2026-08-02
+# Kit audit — 2026-08-25
 
 > Bias: none
 
@@ -666,6 +666,33 @@ follow-up-comment citation half-points at `ship-data.md` §6,
 which has zero matching content). #12 stays the durable blocked
 row.
 
+Digest tick 2026-08-25: header was 23 days old (last full sweep
+2026-08-02, above) — far past the 48h refresh threshold
+`skills/digest.md` §3 step 5 sets, so ran a fresh A-G sweep
+(delegated the read-only pass to an agent to protect context;
+`/digest` never ships, so audit-only). `[user-issue #35]` (opened
+2026-08-23, cloud push token still lacks `workflows` scope)
+confirmed still the durable blocked row — unchanged, untouched.
+Re-verified the three open rows from the 2026-08-02 sweep: all
+three still reproduce unchanged in substance (only line numbers
+drifted, from intervening phases 21-22 growing the cited files) —
+`[A, 1.35]` (`playbooks/cloud-loop.md` "three new files" header,
+now line 67), `[C, 2.4]` (digest.md §4 mis-citation, now
+`plan/DIGEST.md:109` / `plan/PHASE_CANDIDATES.md:533`), `[C, 2.4]`
+(triage.md's dead `ship-data.md §6` citation, unchanged at
+`templates/skills/triage.md:217-218`). F swept clean except one
+new row below; G still empty (no sibling lessons file in this
+checkout). Phases 21 (`prompts/`) and 22
+(`playbooks/workspace.md`) — the two newest, least-audited
+surfaces — checked clean: placeholder table, time estimates,
+cross-links, and external links all verified. New row queued:
+`[F, 3.6]` — `templates/.github/CLOUD_LOOP.md` hedges "Sonnet 5"
+mentions with "(ids age — check `/model`)" but leaves the
+adjacent "Opus 4.8" mentions in the same two spots unhedged,
+same bug class as two prior Done rows in this file. Per digest's
+own rail (`skills/digest.md` §4.2): audit refreshed, nothing
+shipped — this is a proposal-and-record tick only.
+
 ## Pending
 
 ### [user-issue #35] [MED] cloud push token still lacks workflows scope despite the 2026-08-23 re-mint
@@ -699,27 +726,34 @@ row.
   credential wiring. Phase 20 stays `[blocked: cloud push token
   lacks workflows scope 2026-08-23]` until this resolves.
 
-### [A, 1.35] cloud-loop.md's "three new files" header lists only two
-- category: doc-drift
-- impact: 3, ease: 4.5
-- evidence: `playbooks/cloud-loop.md:66`'s "Three new files
-  relative to the standard nexus overlay" header sits directly
-  above a tree diagram listing only `march.yml` and
-  `CLOUD_LOOP.md` — two entries, not three. `git log --follow
-  -p` on the file shows the header and the 2-entry tree have
-  coexisted since the doc's first commit — no third file was
-  ever dropped later.
-- next: correct the header to "Two new files" — there is no
-  lost third file to restore.
+### [F, 3.6] CLOUD_LOOP.md hedges "Sonnet 5" mentions but not the adjacent "Opus 4.8" ones
+- category: freshness
+- impact: 4, ease: 9
+- evidence: `templates/.github/CLOUD_LOOP.md` pairs a Sonnet-5
+  line with the standing "(ids age — check `/model`)" hedge in
+  two spots but leaves the very next Opus-4.8 line unhedged in
+  both: the cost table at lines 34-36 (line 35 hedges Sonnet 5,
+  line 36's Opus 4.8 row does not), and the "Upgrading the
+  model" section at lines 230-232 (the hedge is grammatically
+  attached only to "Sonnet 5"; "To upgrade to Opus 4.8:" on the
+  next line is bare). The ids are currently correct — this is
+  the hedging convention applied inconsistently within the same
+  doc, same bug class as this file's two prior Done rows for
+  stale "Sonnet 4.6"/"Opus 4.7" strings.
+- next: add "(ids age — check `/model`)" to the Opus-4.8 line in
+  the cost table (line 36) and to the "Opus 4.8" reference in
+  "Upgrading the model" (line 232).
 
 ### [C, 2.4] two docs cite skills/digest.md §4 for content that's in §3
 - category: link-hygiene
 - impact: 3, ease: 8
-- evidence: `plan/DIGEST.md:106` and `plan/PHASE_CANDIDATES.md:512`
+- evidence: `plan/DIGEST.md:109` and `plan/PHASE_CANDIDATES.md:533`
   both cite `skills/digest.md §4` for "mistuned gate / starved
   queue / tuning trigger" language, but `digest.md`'s
   `## 4. Hard rules` heading doesn't contain that content — it's
-  item 4 inside `## 3. The procedure`.
+  item 4 inside `## 3. The procedure`. (Line numbers drifted from
+  the row's original :106/:512 as both files grew; content
+  unchanged.)
 - next: reword both citations to "§3 step 4" or add an explicit
   sub-heading in `digest.md`.
 
@@ -740,6 +774,20 @@ row.
   `triage.md:217-218` (or repoint it if the convention is
   documented somewhere in that file under a different heading —
   confirmed it currently is not).
+
+### [A, 1.35] cloud-loop.md's "three new files" header lists only two
+- category: doc-drift
+- impact: 3, ease: 4.5
+- evidence: `playbooks/cloud-loop.md:67`'s "Three new files
+  relative to the standard nexus overlay" header sits directly
+  above a tree diagram listing only `march.yml` and
+  `CLOUD_LOOP.md` — two entries, not three. `git log --follow
+  -p` on the file shows the header and the 2-entry tree have
+  coexisted since the doc's first commit — no third file was
+  ever dropped later. (Line drifted from the row's original :66
+  as phase 21 inserted a line above; content unchanged.)
+- next: correct the header to "Two new files" — there is no
+  lost third file to restore.
 
 ## Done
 
