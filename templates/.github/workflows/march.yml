@@ -41,6 +41,7 @@ jobs:
       id-token: write   # Claude Code Action's OIDC handshake
     steps:
       - name: Checkout (full history for /march dispatch)
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -132,6 +133,7 @@ jobs:
       # "Identity choice".
 
       - name: Run /march (cloud mode)
+        id: run_march
         if: steps.ceiling.outputs.skip != 'true'
         uses: anthropics/claude-code-action@v1
         with:
@@ -228,11 +230,15 @@ jobs:
           # which not every PAT grants. Issue creation only needs
           # Issues:write at content level. The next /triage tick
           # labels these naturally.
+          failed_step="unknown step (see run log)"
+          if [ "${{ steps.checkout.outcome }}" = "failure" ]; then failed_step="Checkout (full history for /march dispatch)"; fi
+          if [ "${{ steps.ceiling.outcome }}" = "failure" ]; then failed_step="Daily commit ceiling check"; fi
+          if [ "${{ steps.run_march.outcome }}" = "failure" ]; then failed_step="Run /march (cloud mode)"; fi
           existing=$(gh issue list --search 'in:title "Cloud march tick crashed" state:open' --json number --jq 'length')
           if [ "$existing" -eq 0 ]; then
             gh issue create \
               --title "Cloud march tick crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              --body "Action exited non-zero before the agent could file its own issue. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              --body "Failed step: $failed_step. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
             echo "An open 'Cloud march tick crashed' issue already exists — skipping dedupe."
           fi

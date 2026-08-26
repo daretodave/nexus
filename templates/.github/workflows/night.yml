@@ -21,11 +21,12 @@ jobs:
     timeout-minutes: 60     # breadth legs are the long pole
     permissions:
       contents: write
-      issues: read
+      issues: write         # crash-alarm issue (GITHUB_TOKEN)
       actions: read         # gh run list - the pulse
       id-token: write
     steps:
       - name: Checkout
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -51,6 +52,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Run /digest (night shift)
+        id: run_digest
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -82,9 +84,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          failed_step="unknown step (see run log)"
+          if [ "${{ steps.checkout.outcome }}" = "failure" ]; then failed_step="Checkout"; fi
+          if [ "${{ steps.run_digest.outcome }}" = "failure" ]; then failed_step="Run /digest (night shift)"; fi
           existing=$(gh issue list --search 'in:title "Night digest crashed" state:open' --json number --jq 'length')
           if [ "$existing" -eq 0 ]; then
             gh issue create \
               --title "Night digest crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              --body "The night shift exited non-zero. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              --body "Failed step: $failed_step. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
