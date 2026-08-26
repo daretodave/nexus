@@ -65,6 +65,7 @@ templates/
 │   ├── deploy-check.mjs               (the deploy gate)
 │   ├── loop-issue.mjs                 (GitHub issue mirror)
 │   ├── notify.mjs                     (the pager — blocked is loud)
+│   ├── pulse.mjs                      (offline instrument panel: queue/build-plan/candidate counts, no network)
 │   ├── bootstrap.mjs                  (provider-CLI executor, opt-in)
 │   ├── lint-migration.mjs             (additive-migration linter, pairs with ship-migration.md)
 │   ├── refresh-critique-session.mjs   (Pattern B session refresh, omit unless Auth: is set)

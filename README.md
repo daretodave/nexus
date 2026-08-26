@@ -395,7 +395,8 @@ nexus/
 │   └── pitch.md                       # the full pitch-to-adopted agent prompt
 ├── package.json                       # the kit's own verify gate wiring
 ├── scripts/
-│   └── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji
+│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji
+│   └── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
 ├── playbooks/
 │   ├── pre-spec.md                    # pitch → spec.md (interactive)
 │   ├── new-project.md                 # greenfield setup
@@ -487,6 +488,7 @@ nexus/
     │   ├── deploy-check.mjs           # multi-provider deploy gate
     │   ├── loop-issue.mjs             # GitHub issue mirror (findings + phases)
     │   ├── notify.mjs                 # the pager — blocked is loud
+    │   ├── pulse.mjs                  # offline instrument panel: queue/build-plan/candidate counts, no network
     │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
     │   ├── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
     │   ├── refresh-critique-session.mjs # Pattern B session refresh (omit unless Auth: is set)

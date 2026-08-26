@@ -33,11 +33,14 @@ Never dispatched by `/march` — it is its own loop shape (see
    gh run list --workflow march -L 20 \
      --json displayTitle,conclusion,createdAt,updatedAt
    gh run list --workflow heartbeat -L 5 --json conclusion
+   node scripts/pulse.mjs
    ```
 
-   Plus queue states: build-plan `[ ]`/`[blocked:]` counts,
-   AUDIT pending, CRITIQUE pending + last pass, candidates
-   pending, open `triage:needs-user` / `loop:do` issues, and
+   `pulse.mjs` gives the local numbers in one shot: build-plan
+   `[ ]`/`[blocked:]` counts, AUDIT pending, CRITIQUE pending +
+   last pass age, candidates pending + oldest-pending age.
+   Plus (still hand-fetched — pulse.mjs never touches the
+   network): open `triage:needs-user` / `loop:do` issues, and
    sibling lessons growth (`../kintilla/plan/lessons.md`
    size, when present locally; skip silently in cloud).
 3. **Write `plan/DIGEST.md`** — overwrite entirely; it is a
@@ -88,6 +91,7 @@ plan/DIGEST.md                       # the deliverable (overwrite)
 plan/AUDIT.md                        # staleness check + durable rows
 plan/PHASE_CANDIDATES.md             # tuning proposals land here
 gh run list --workflow march -L 20   # the invisible no-ops
+node scripts/pulse.mjs               # local queue/build-plan numbers
 node scripts/verify.mjs
 git commit -m "digest: <YYYY-MM-DD>" && git push origin main
 ```

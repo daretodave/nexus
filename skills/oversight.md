@@ -27,6 +27,12 @@ misconfiguration (§6).
 
 ## 3. What it reads (parallel where independent)
 
+0. `node scripts/pulse.mjs` — the fast aggregate: build-plan
+   pending/blocked, AUDIT pending, CRITIQUE pending + last
+   pass age, candidates pending + oldest-pending age. Items
+   3–6 below still get read in full — the briefing needs row
+   *content* (blocked reasons, durable rows, bias) that an
+   aggregate count can't carry.
 1. `git log --oneline -20` — velocity + verb mix.
 2. `git status --short` — uncommitted anything.
 3. Build plan status block — pending / `[blocked:]` rows.
@@ -77,6 +83,7 @@ stale critique, gate additions). Plain text, no questions yet.
 ## 8. Quick reference
 
 ```bash
+node scripts/pulse.mjs               # the fast aggregate
 plan/steps/01_build_plan.md          # promote/unblock/skip targets
 plan/AUDIT.md                        # bias line + durable rows
 plan/PHASE_CANDIDATES.md             # promotion source

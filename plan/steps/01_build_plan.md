@@ -83,7 +83,8 @@ Pending section for their evidence trails):**
       repos (score 8.8) (this commit)
 - [x] Phase 23 — Cloud tick failure auto-alarm via
       `GITHUB_TOKEN` deduped issue (score 7.8) (this commit)
-- [ ] Phase 24 — `scripts/pulse.mjs` offline instrument panel
+- [x] Phase 24 — `scripts/pulse.mjs` offline instrument panel
+      (score 7.5) (this commit)
 - [ ] Phase 25 — `scripts/adopt-dryrun.mjs` mechanized dry-run
       adoption check (opt-in verify leg; sequence after 19)
 - [ ] Phase 26 — Issue templates keyed to triage routes
