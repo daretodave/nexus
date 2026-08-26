@@ -695,6 +695,33 @@ shipped — this is a proposal-and-record tick only.
 
 ## Pending
 
+### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
+- category: external-issue
+- impact: 4, ease: 2
+- evidence: a phase-23 cloud tick landed the durable-alarm fix
+  (GITHUB_TOKEN instead of ACTIONS_PAT for the crash-alarm step,
+  plus named failed-step reporting) in
+  `templates/.github/workflows/march.yml` and `night.yml`
+  (commit `8dc2080`) but could not apply the identical patch to
+  this repo's own `.github/workflows/march.yml` / `night.yml`:
+  the push was rejected because that tick's git credential was
+  the Claude Code Action's own GitHub App installation token, not
+  `ACTIONS_PAT`, and GitHub refuses non-`workflows`-scoped tokens
+  touching top-level `.github/workflows/*.yml`. This directly
+  confirms root-cause (a) in `[user-issue #35]`'s evidence below
+  (the Action overwrites the checkout-configured credential with
+  its own App token before the agent's turn starts) — same
+  blocked class, not yet root-caused to a fix, just newly
+  evidenced. The issue body carries a ready-to-apply unified diff
+  for both files plus a matching `.github/CLOUD_LOOP.md` doc
+  update.
+- next: same resolution pattern as the now-closed
+  `[user-issue #12]` — apply from a local/human `/oversight`
+  session (`git apply` the diff in issue #40, or hand-edit to
+  match), run `node scripts/verify.mjs`, then push directly (a
+  human push carries normal repo-write permissions, not the App
+  token's workflow restriction). Closes #40 when done.
+
 ### [user-issue #35] [MED] cloud push token still lacks workflows scope despite the 2026-08-23 re-mint
 - category: external-issue
 - impact: 4, ease: 2
