@@ -1,4 +1,4 @@
-# Kit audit — 2026-08-25
+# Kit audit — 2026-08-27
 
 > Bias: none
 
@@ -693,6 +693,38 @@ same bug class as two prior Done rows in this file. Per digest's
 own rail (`skills/digest.md` §4.2): audit refreshed, nothing
 shipped — this is a proposal-and-record tick only.
 
+Digest tick 2026-08-27: header was 51h old (last full sweep the
+2026-08-25 digest tick, above), past the 48h threshold, so ran a
+fresh A-G sweep (delegated the read-only pass to an agent to
+protect context; `/digest` never ships, so audit-only). Both
+durable rows confirmed still open and blocked via `gh issue
+view`: `[user-issue #40]` and `[user-issue #35]`, unchanged.
+Reproduced all four non-durable Pending rows: three unchanged —
+`[F, 3.6]` (CLOUD_LOOP.md's Opus-4.8 hedge gap, same lines
+34-36/230-232), `[C, 2.4]` (triage.md's dead `ship-data.md §6`
+citation, unchanged at lines 217-218), `[A, 1.35]`
+(cloud-loop.md's "three new files" header, unchanged at line
+67) — and one half-resolved: `plan/DIGEST.md:107`'s half of the
+`skills/digest.md §4` mis-citation was already fixed by an
+intervening tick (now correctly reads "§3 step 4"), narrowing
+the row to `plan/PHASE_CANDIDATES.md:533` alone and re-scoring
+it `[C, 2.7]` (impact 3, ease 9 — a single-line reword, cheaper
+than the two-file fix it replaces). A-F swept fresh: verify.mjs
+green throughout (including `adopt-dryrun.mjs`'s mechanized
+check, 56 files swept, 0 unresolved tokens); every non-vendor
+external URL in the tree curled 200; README's 15-row command
+table cross-checked 1:1 against `templates/claude/commands/`;
+both bash/PowerShell placeholder-sweep scopes in
+`playbooks/new-project.md` identical (8 tokens × 8 paths each);
+whole-repo model-id grep clean bar the standing CLOUD_LOOP hedge
+gap above; phases 24-25's newest surfaces
+(`scripts/pulse.mjs`, `scripts/adopt-dryrun.mjs`) checked clean
+on doc/tree/wiring cross-references. G still empty — no sibling
+lessons files (`../kintilla`, `NEXUS_LESSONS.md`) present in
+this checkout. No new findings beyond the four rows above — a
+genuine clean sweep, not an incomplete pass. Audit only —
+shipped nothing, per `skills/digest.md` rule 2.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -771,18 +803,18 @@ shipped — this is a proposal-and-record tick only.
   the cost table (line 36) and to the "Opus 4.8" reference in
   "Upgrading the model" (line 232).
 
-### [C, 2.4] two docs cite skills/digest.md §4 for content that's in §3
+### [C, 2.7] plan/PHASE_CANDIDATES.md still cites skills/digest.md §4 for content that's in §3
 - category: link-hygiene
-- impact: 3, ease: 8
-- evidence: `plan/DIGEST.md:109` and `plan/PHASE_CANDIDATES.md:533`
-  both cite `skills/digest.md §4` for "mistuned gate / starved
-  queue / tuning trigger" language, but `digest.md`'s
-  `## 4. Hard rules` heading doesn't contain that content — it's
-  item 4 inside `## 3. The procedure`. (Line numbers drifted from
-  the row's original :106/:512 as both files grew; content
-  unchanged.)
-- next: reword both citations to "§3 step 4" or add an explicit
-  sub-heading in `digest.md`.
+- impact: 3, ease: 9
+- evidence: `plan/PHASE_CANDIDATES.md:533` cites `skills/digest.md
+  §4` for "mistuned gate / starved queue / tuning trigger"
+  language, but `digest.md`'s `## 4. Hard rules` heading doesn't
+  contain that content — it's item 4 inside `## 3. The
+  procedure`. `plan/DIGEST.md:107` carried the identical bug
+  until an intervening tick fixed it (now correctly reads "§3
+  step 4"), narrowing this row to the one remaining file.
+- next: reword `plan/PHASE_CANDIDATES.md:533` to "§3 step 4",
+  matching `plan/DIGEST.md:107`'s already-fixed phrasing.
 
 ### [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content
 - category: link-hygiene
