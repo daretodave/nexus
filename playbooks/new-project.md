@@ -385,6 +385,9 @@ Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migra
 Commit the templates as a single commit: `chore: nexus
 templates copied`.
 
+(nexus checks this walkthrough mechanically, on itself, with
+`node scripts/adopt-dryrun.mjs` — see `skills/critique.md`.)
+
 ---
 
 ## 5. Phase 1 brief

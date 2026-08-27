@@ -396,7 +396,8 @@ nexus/
 ├── package.json                       # the kit's own verify gate wiring
 ├── scripts/
 │   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji
-│   └── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
+│   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
+│   └── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep step
 ├── playbooks/
 │   ├── pre-spec.md                    # pitch → spec.md (interactive)
 │   ├── new-project.md                 # greenfield setup

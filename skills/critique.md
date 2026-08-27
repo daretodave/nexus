@@ -40,7 +40,11 @@ pass). Runs fine in the cloud — it needs only files and
    file the playbooks reference exists at the stated path,
    follow `playbooks/new-project.md` step numbers in order.
    Delegate the walk to a fresh sub-agent when available — its
-   ignorance is the instrument.
+   ignorance is the instrument. Step 4's copy + placeholder-sweep
+   mechanics are already covered mechanically by
+   `node scripts/adopt-dryrun.mjs` — trust it for that part and
+   spend this pass's budget on comprehension, ordering, and voice
+   instead of re-deriving what it already checks.
 4. **Stranger-read.** Read `README.md` top to bottom as
    someone who has never seen the kit: where does
    comprehension stumble? What promise is unclear? What order

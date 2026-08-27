@@ -23,9 +23,16 @@
 //                 and command pointers pair 1:1
 //   emoji         no pictographic emoji anywhere in tracked docs
 //                 (✓ and ❌ dingbats are fine; 🤖 is not)
+//   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
+//                 copy + placeholder-sweep block. Skipped by the
+//                 default no-argument run; opt in with
+//                 `node scripts/verify.mjs adopt-dryrun` or
+//                 `NEXUS_VERIFY_ADOPT_DRYRUN=1 node scripts/verify.mjs`
 //
 // Exit 0 = green. Exit 1 = at least one leg red. No dependencies,
-// no network — hermetic by construction.
+// no network — hermetic by construction (adopt-dryrun forks a
+// child process and touches a scratch dir, which is exactly why
+// it's opt-in rather than part of the default fast path).
 
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -368,6 +375,21 @@ function legEmoji(files) {
   return { failures, note: `${files.length} files scanned` }
 }
 
+// --- leg: adopt-dryrun ------------------------------------------------------
+// Opt-in — see the file header. Shells out to the standalone
+// script rather than duplicating its logic here.
+
+function legAdoptDryrun() {
+  try {
+    const out = execSync('node scripts/adopt-dryrun.mjs', { cwd: ROOT, encoding: 'utf-8' })
+    const match = out.match(/\(([^)]*)\)/)
+    return { failures: [], note: match ? match[1] : out.trim() }
+  } catch (err) {
+    const output = `${err.stdout || ''}${err.stderr || ''}`.trim() || err.message
+    return { failures: output.split('\n'), note: 'see failures' }
+  }
+}
+
 // --- runner ------------------------------------------------------------------
 
 const LEGS = {
@@ -377,7 +399,13 @@ const LEGS = {
   placeholders: (files) => legPlaceholders(files),
   anatomy: () => legAnatomy(),
   emoji: (files) => legEmoji(files),
+  'adopt-dryrun': () => legAdoptDryrun(),
 }
+
+// Opt-in legs run only when named explicitly or env-gated on —
+// excluded from the default no-argument pass so the gate stays
+// fast (agents.md rule 3: foreground, every commit).
+const OPT_IN_LEGS = new Set(['adopt-dryrun'])
 
 function main() {
   const only = process.argv[2]
@@ -389,6 +417,7 @@ function main() {
   let red = false
   for (const [name, run] of Object.entries(LEGS)) {
     if (only && name !== only) continue
+    if (!only && OPT_IN_LEGS.has(name) && process.env.NEXUS_VERIFY_ADOPT_DRYRUN !== '1') continue
     const { failures, note } = run(files)
     if (failures.length === 0) {
       process.stdout.write(`  ${name.padEnd(13)} ok    (${note})\n`)

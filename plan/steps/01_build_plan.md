@@ -85,8 +85,9 @@ Pending section for their evidence trails):**
       `GITHUB_TOKEN` deduped issue (score 7.8) (this commit)
 - [x] Phase 24 — `scripts/pulse.mjs` offline instrument panel
       (score 7.5) (this commit)
-- [ ] Phase 25 — `scripts/adopt-dryrun.mjs` mechanized dry-run
+- [x] Phase 25 — `scripts/adopt-dryrun.mjs` mechanized dry-run
       adoption check (opt-in verify leg; sequence after 19)
+      (score 7.7) (this commit)
 - [ ] Phase 26 — Issue templates keyed to triage routes
 - [ ] Phase 27 — `scripts/new-skill.mjs` skill scaffolder
 - [ ] Phase 28 — Commit-verb vocabulary lint in the guard hook
