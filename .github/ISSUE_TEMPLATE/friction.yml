@@ -1,0 +1,19 @@
+name: Friction / lesson
+description: The kit taught you something wrong, or adoption stumbled somewhere.
+title: "[friction] "
+labels: ["lesson"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Where did the kit's instructions diverge from reality, or where did you get stuck?
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Doc or step
+      description: The playbook, skill, or step where this happened.
+    validations:
+      required: false

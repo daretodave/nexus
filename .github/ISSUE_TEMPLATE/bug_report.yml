@@ -1,0 +1,19 @@
+name: Bug report
+description: Something in the kit is broken — a script fails, a link 404s, the gate is wrong.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-broke
+    attributes:
+      label: What broke
+      description: What did you run, what did you expect, what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: File or command
+      description: The doc, script, or skill involved (path or command line).
+    validations:
+      required: false

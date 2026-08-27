@@ -1,0 +1,19 @@
+name: Bug report
+description: Something is broken — a page errors, a build fails, a check is wrong.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-broke
+    attributes:
+      label: What broke
+      description: What did you do, what did you expect, what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Page or command
+      description: The URL, file, or command involved.
+    validations:
+      required: false

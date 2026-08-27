@@ -88,7 +88,8 @@ Pending section for their evidence trails):**
 - [x] Phase 25 — `scripts/adopt-dryrun.mjs` mechanized dry-run
       adoption check (opt-in verify leg; sequence after 19)
       (score 7.7) (this commit)
-- [ ] Phase 26 — Issue templates keyed to triage routes
+- [x] Phase 26 — Issue templates keyed to triage routes
+      (score 7.0) (this commit)
 - [ ] Phase 27 — `scripts/new-skill.mjs` skill scaffolder
 - [ ] Phase 28 — Commit-verb vocabulary lint in the guard hook
 - [ ] Phase 29 — Dual-shell parity lint leg for playbooks

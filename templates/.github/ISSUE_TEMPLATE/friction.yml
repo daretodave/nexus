@@ -1,0 +1,19 @@
+name: Friction
+description: Something confusing, wrong, or missing in the docs.
+title: "[friction] "
+labels: ["docs"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Where did the docs diverge from reality, or where did you get stuck?
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Page or doc
+      description: The doc or step where this happened.
+    validations:
+      required: false

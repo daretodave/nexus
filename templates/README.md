@@ -60,6 +60,11 @@ templates/
 │   ├── workflows/night.yml            (the night shift — /digest daily)
 │   ├── workflows/heartbeat.yml        (model-free watchdog for the other two)
 │   ├── workflows/nightly-smoke.yml    (model-free SMOKE_SAMPLE=full walk; omit if night.yml owns breadth checks)
+│   ├── ISSUE_TEMPLATE/bug_report.yml  (form: something's broken)
+│   ├── ISSUE_TEMPLATE/friction.yml    (form: docs confused or misled)
+│   ├── ISSUE_TEMPLATE/idea.yml        (form: propose a feature)
+│   ├── ISSUE_TEMPLATE/needs_user.yml  (form: needs a human decision)
+│   ├── ISSUE_TEMPLATE/config.yml      (blank issues off; routes to friction)
 │   └── CLOUD_LOOP.md
 ├── scripts/                           → repo's scripts/
 │   ├── deploy-check.mjs               (the deploy gate)

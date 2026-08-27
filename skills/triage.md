@@ -28,7 +28,10 @@ Triage classifies and routes them so `/iterate` and
 3. **Classify** each: `docs | bug | enhancement | lesson |
    question`. `lesson` = an adopter reporting something the
    kit taught wrong or missed — the highest-value class
-   (bearings standing decision 3).
+   (bearings standing decision 3). Opened via
+   `.github/ISSUE_TEMPLATE/*.yml`? The form's label (`bug`,
+   `lesson`, `enhancement`, or `triage:needs-user` direct) IS
+   the classification — skip re-deriving it from prose.
 4. **Route:**
    - **`loop:do` (the concierge lane)** — the user flagged
      "this one, now": route as below but file the AUDIT row

@@ -110,6 +110,11 @@ label** — it is a signal, not a state.
 
 ### Step 2 — Classify each issue
 
+Opened via `.github/ISSUE_TEMPLATE/*.yml`? The form's label
+already carries the category (`bug`, `docs`, `enhancement`) or
+routes straight to `triage:needs-user` — skip step 1 below and
+go straight to routing.
+
 For each issue, decide:
 
 1. **Category**: `bug` | `enhancement` | `content` | `data` |
