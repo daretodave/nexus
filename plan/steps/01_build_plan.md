@@ -92,7 +92,8 @@ Pending section for their evidence trails):**
       (score 7.0) (this commit)
 - [x] Phase 27 — `scripts/new-skill.mjs` skill scaffolder
       (score 6.8) (this commit)
-- [ ] Phase 28 — Commit-verb vocabulary lint in the guard hook
+- [x] Phase 28 — Commit-verb vocabulary lint in the guard hook
+      (score 7.2) (this commit)
 - [ ] Phase 29 — Dual-shell parity lint leg for playbooks
 - [ ] Phase 30 — Candidate-aging silt guard in digest/expand
 - [ ] Phase 31 — `scripts/install-hooks.mjs` opt-in pre-commit

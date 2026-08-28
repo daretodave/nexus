@@ -848,6 +848,26 @@ shipped nothing, per `skills/digest.md` rule 2.
 - next: correct the header to "Two new files" — there is no
   lost third file to restore.
 
+### [A, 2.4] `templates/claude/hooks/guard.mjs` drifted from `.claude/hooks/guard.mjs`'s own hardening
+- category: doc-drift
+- impact: 3, ease: 8
+- evidence: phase 28 (this commit's sibling) found the two
+  files' `RULES` regexes differ: the kit's own copy uses
+  `[^|;&\n]*` (excludes newlines from the "rest of command"
+  character class, so a rule can't false-match across a
+  multi-line Bash call), the template twin still uses
+  `[^|;&]*` (no `\n` exclusion). The kit's `self-test` also
+  carries a regression case for exactly this
+  (`git log --oneline -5\necho "we will commit this later"\nls
+  -n` → `null`) that the template's `self-test` doesn't have.
+  Unclear which commit introduced the gap; both files otherwise
+  stayed in lockstep through this phase's edits.
+- next: port the `\n`-exclusion to all four regex-bearing rules
+  in `templates/claude/hooks/guard.mjs` (`no-verify`,
+  `force-push`, `destructive-reset`, `trailer-or-emoji-in-commit`)
+  and add the matching multi-line self-test case; run both
+  files' `self-test` after to confirm parity.
+
 ## Done
 
 ### [x] [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand — this commit (closes #12)

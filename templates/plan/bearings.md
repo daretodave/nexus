@@ -326,6 +326,32 @@ any time you encounter a recurring class of ambiguity.)
 - **Comments / community / login:** <decision — usually "out of scope">
 - <PROJECT-SPECIFIC DECISIONS>
 
+## Commit verb vocabulary (locked)
+
+Every commit's first line is `<verb>: <subject>` (or
+`<verb>(<scope>): <subject>` — the parenthetical scope is
+stripped before matching). `.claude/hooks/guard.mjs`'s
+`commit-verb` rule blocks anything else at commit time.
+
+| Verb | Fires from |
+|---|---|
+| `digest` | `/digest` |
+| `expand` | `/expand` |
+| `jot` | `/jot` |
+| `oversight` | `/oversight` |
+| `triage` | `/triage` |
+| `plan` | plan-state-only changes |
+| `feat` | new capability |
+| `fix` | correcting a prior mistake |
+| `docs` | doc-only edit |
+| `chore` | tooling/config, no product change |
+| `<YOUR SHIP-SKILL VERB>` | `/ship-<x>`, e.g. `asset`, `data`, `migration`, `mod` |
+
+Add a row here (and the matching entry in `VERBS` inside
+`.claude/hooks/guard.mjs`, plus its `self-test` cases) the same
+commit you adopt a new `/ship-<x>` skill or a new commit
+category.
+
 ## Hard rules
 
 (Mirrors `agents.md` Standing Rules. Update there first; this

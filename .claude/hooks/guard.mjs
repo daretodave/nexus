@@ -31,6 +31,42 @@ import path from 'node:path'
 
 const DEFAULT_BRANCH = 'main'
 
+// The commit-verb vocabulary — see plan/bearings.md "Commit
+// verb vocabulary (locked)". New verb → add it there and here
+// in the same commit (the gate-teaching rule, agents.md rule 3).
+const VERBS = [
+  'critique', 'digest', 'expand', 'jot', 'oversight', 'triage',
+  'feat', 'fix', 'docs', 'templates', 'playbook', 'phases',
+  'plan', 'ci', 'cloud',
+]
+
+// Pulls the first `-m`/`--message` string out of a `git commit`
+// invocation. Two shapes: a plain quoted string, or the
+// heredoc-body pattern this repo's skills use for multi-line
+// messages (`-m "$(cat <<'EOF' ... EOF)"`) — for that shape the
+// heredoc's own first line is the subject. Returns null when
+// neither matches (fails open — backstop, not primary enforcement).
+function extractCommitMessage(cmd) {
+  if (!/\bgit\b[^|;&\n]*\bcommit\b/.test(cmd)) return null
+  const heredoc = cmd.match(
+    /(?:-m|--message)\s+"\$\(cat\s*<<-?\s*['"]?(\w+)['"]?\s*\n([^\n]*)/,
+  )
+  if (heredoc) return heredoc[2]
+  const m =
+    cmd.match(/(?:-m|--message)[ \t]*=?[ \t]*"((?:[^"\\]|\\.)*)"/) ||
+    cmd.match(/(?:-m|--message)[ \t]*=?[ \t]*'((?:[^'\\]|\\.)*)'/)
+  return m ? m[1] : null
+}
+
+// Verb is the text before the first `:` on the message's first
+// line, with a trailing `(scope)` stripped (`fix(cloud):` → `fix`).
+function commitVerb(message) {
+  const firstLine = message.split('\n')[0].trim()
+  const idx = firstLine.indexOf(':')
+  if (idx === -1) return null
+  return firstLine.slice(0, idx).trim().replace(/\([^)]*\)$/, '')
+}
+
 // --- forbidden-command rules ------------------------------------------
 
 // Each rule: name, test(command) → true = block, message for the
@@ -78,6 +114,21 @@ const RULES = [
       'guard: commit bodies are plain (agents.md standing rule 2) — ' +
       'no Co-Authored-By trailers, no emojis. The only sanctioned ' +
       'trailer is Cloud-Run: (cloud ticks only). Rewrite the message.',
+  },
+  {
+    name: 'commit-verb',
+    test: (cmd) => {
+      const msg = extractCommitMessage(cmd)
+      if (msg === null) return false
+      const verb = commitVerb(msg)
+      return verb === null || !VERBS.includes(verb)
+    },
+    message:
+      'guard: commit message verb isn\'t in the documented ' +
+      'vocabulary (plan/bearings.md "Commit verb vocabulary"). ' +
+      `Use "<verb>: <subject>" with verb in: ${VERBS.join(', ')}. ` +
+      'New verb → add it to bearings.md and VERBS in this file, ' +
+      'same commit.',
   },
 ]
 
@@ -227,10 +278,23 @@ function selfTest() {
     // coincidentally contains a trigger token — regex classes must
     // not span logical command boundaries via a bare newline
     ['git log --oneline -5\necho "we will commit this later"\nls -n', null],
+    // commit-verb: bad/missing verb blocked, scoped + documented
+    // verbs allowed, the phases/phase-N drift that motivated the
+    // rule is exactly what it now catches
+    ['git commit -m "nonsense: not a real verb"', 'commit-verb'],
+    ['git commit -m "Update README.md"', 'commit-verb'],
+    ['git commit -m "phase 28: brief for phase 28"', 'commit-verb'],
+    ['git commit -m "fix(cloud): user-author mode"', null],
+    ['git commit -m "phases: brief for phase 28"', null],
+    // heredoc-body commit messages (this skill set's convention
+    // for multi-line bodies) — the verb rule reads the heredoc's
+    // own first line, not the "$(cat <<'EOF'" wrapper
+    ['git commit -m "$(cat <<\'EOF\'\nfeat: ship phase 28\n\nbody line\nEOF\n)"', null],
+    ['git commit -m "$(cat <<\'EOF\'\nnonsense: bad verb\n\nbody line\nEOF\n)"', 'commit-verb'],
     // allowed commands — must NOT match any rule
     ['git push origin main', null],
     ['git commit -m "feat: ship phase 8"', null],
-    ['git commit -m "cloud tick\n\nCloud-Run: https://x"', null],
+    ['git commit -m "cloud: tick\n\nCloud-Run: https://x"', null],
     ['git reset HEAD~1', null],
     ['gh issue list -n 5', null],
     ['git log -n 5', null],

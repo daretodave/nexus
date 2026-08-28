@@ -29,10 +29,12 @@ velocity read.
   invocation; takes the text before the first `:` on the first
   line as the verb, stripping a trailing `(scope)` (conventional
   -commit style — `fix(cloud):` matches as `fix`); blocks if no
-  colon is present or the verb isn't in `VERBS`. Can't extract
-  the message (heredoc-style `-m "$(cat <<EOF …)"`) → allow
-  (fail open — backstop, not primary enforcement, matches this
-  hook's existing posture).
+  colon is present or the verb isn't in `VERBS`. The
+  heredoc-body shape this skill set uses for multi-line messages
+  (`-m "$(cat <<'EOF' …)"`) reads the heredoc's own first line
+  as the subject; anything else unparseable → allow (fail open —
+  backstop, not primary enforcement, matches this hook's
+  existing posture).
 - `self-test` cases: a bad verb, a missing colon, a scoped verb
   (allowed), the `phases:`/`phase N:` pair (the drift that
   motivated this), and the existing `Cloud-Run:` trailer case
@@ -71,10 +73,14 @@ velocity read.
 
 ## Decisions
 
-1. Fail open on unparseable messages (heredoc `-m`) — the
-   hook's own header already states it's "a backstop, not the
-   primary enforcement." A false block on a legitimate heredoc
-   commit is worse than an occasional missed lint.
+1. Parse the heredoc-body shape (`-m "$(cat <<'EOF' ...)"`) by
+   reading the heredoc's own first line as the subject, rather
+   than fail-open on it — this is the dominant shape for
+   multi-line commit bodies across the dispatched skills, so
+   fail-open would blind the rule to most real commits. Anything
+   still unparseable (no quoted `-m`/`--message` at all) fails
+   open, matching the hook's "backstop, not primary enforcement"
+   posture.
 2. Strip `(scope)` before matching rather than requiring exact
    `verb:` — the repo already has four real `feat(cloud):` /
    `fix(cloud):` / `fix(triage,march):` commits; rejecting that
