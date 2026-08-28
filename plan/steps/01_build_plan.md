@@ -90,7 +90,8 @@ Pending section for their evidence trails):**
       (score 7.7) (this commit)
 - [x] Phase 26 — Issue templates keyed to triage routes
       (score 7.0) (this commit)
-- [ ] Phase 27 — `scripts/new-skill.mjs` skill scaffolder
+- [x] Phase 27 — `scripts/new-skill.mjs` skill scaffolder
+      (score 6.8) (this commit)
 - [ ] Phase 28 — Commit-verb vocabulary lint in the guard hook
 - [ ] Phase 29 — Dual-shell parity lint leg for playbooks
 - [ ] Phase 30 — Candidate-aging silt guard in digest/expand

@@ -397,7 +397,8 @@ nexus/
 ├── scripts/
 │   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
-│   └── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep step
+│   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep step
+│   └── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
 ├── playbooks/
 │   ├── pre-spec.md                    # pitch → spec.md (interactive)
 │   ├── new-project.md                 # greenfield setup
@@ -495,6 +496,7 @@ nexus/
     │   ├── refresh-critique-session.mjs # Pattern B session refresh (omit unless Auth: is set)
     │   ├── check-secrets-liveness.mjs # GH_TOKEN + CRITIQUE_* liveness probe (omit unless Auth: is set)
     │   ├── stack-lifecycle.mjs        # Pattern B port/health/state helpers (omit unless hermetic e2e is Pattern B)
+    │   ├── new-skill.mjs              # skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md
     │   └── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     └── env/
         └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.

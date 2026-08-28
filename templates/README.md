@@ -76,6 +76,7 @@ templates/
 │   ├── refresh-critique-session.mjs   (Pattern B session refresh, omit unless Auth: is set)
 │   ├── check-secrets-liveness.mjs     (GH_TOKEN + CRITIQUE_* liveness probe, omit unless Auth: is set)
 │   ├── stack-lifecycle.mjs            (Pattern B port/health/state helpers, omit unless hermetic e2e is Pattern B)
+│   ├── new-skill.mjs                  (skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md)
 │   └── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
 └── env/
     └── env.example                    → repo's .env.example

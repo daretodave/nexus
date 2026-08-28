@@ -35,6 +35,10 @@ Why split:
 - Tools that don't have slash-command infrastructure (Cursor,
   Aider, the Anthropic SDK directly) can read the skill file.
 
+`scripts/new-skill.mjs <name> "<purpose>"` scaffolds both files
+pre-filled with the canonical sections below — start there
+instead of hand-copying a sibling and renaming it.
+
 ---
 
 ## Slash command template
@@ -374,6 +378,11 @@ Examples of "skills" that probably don't earn their place:
 When in doubt: don't add a skill. The skills already in the
 nexus templates cover most projects. Add a new one only when
 you've manually performed the verb 3+ times and felt the friction.
+
+Once justified, run `node scripts/new-skill.mjs <name> "<purpose>"`
+(`--template` if it's shipping to adopters, not just this repo)
+rather than copying the nearest sibling by hand — the scaffold
+starts from the anatomy above instead of converging on it later.
 
 ---
 
