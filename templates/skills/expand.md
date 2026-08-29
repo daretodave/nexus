@@ -190,9 +190,15 @@ For each signal cluster, draft a candidate:
 - proposed scope: <1-phase | N-phase mini-plan>
 - estimated phases: <N>
 - conflicts: <with spec / contract / existing plan; or "none">
+- last re-evidenced: <ISO date> (optional — omit until a later
+  pass re-affirms this candidate)
 ```
 
-Score per §5. Sort. Take top 3.
+Score per §5. Sort. Take top 3. If a signal reinforces a
+candidate already sitting in `## Pending` rather than
+describing something new, don't file a duplicate — update that
+row's `last re-evidenced` date (today) and append the new
+signal to its `source signals` list instead.
 
 ### Step 3 — Self-assess
 

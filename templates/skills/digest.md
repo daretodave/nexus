@@ -39,7 +39,9 @@ its own cadence.
    Plus queue states: build-plan `[ ]` / `[blocked:]` counts,
    `plan/AUDIT.md` pending, `plan/CRITIQUE.md` pending + last
    pass age, `data/BACKLOG.md` pending (if a data layer
-   exists), `plan/PHASE_CANDIDATES.md` pending, open
+   exists), `plan/PHASE_CANDIDATES.md` pending + oldest-pending
+   age + how many `## Pending` rows carry a `- proposed:` date
+   more than 21 days old (hand-count from the same rows), open
    `triage:needs-user` / `loop:do` issues, deploy state
    (`pnpm deploy:check`).
 3. **Breadth checks** (the night-only legs — adapt per
@@ -54,9 +56,15 @@ its own cadence.
 4. **Write `plan/DIGEST.md`** — overwrite entirely; it is a
    snapshot, not a ledger. Sections, in order: `Headline`,
    `While you were out` (pulse table: tick, verb, outcome —
-   no-ops included), `Shipped`, `Queues now`, `Needs you`
-   (blocked rows, needs-user issues, `[needs-user-call]`s),
-   `Today's intent` (next `[ ]` phase + top finding),
+   no-ops included), `Shipped`, `Queues now` (the candidates
+   line grows the >21-day count alongside the existing
+   pending-count and oldest-age numbers, e.g. "9 pending (3
+   >21d), oldest 30d"), `Needs you` (blocked rows, needs-user
+   issues, `[needs-user-call]`s, plus — when either ≥5
+   candidates are pending >21 days or the oldest pending
+   candidate exceeds 45 days — a line reading "oversight
+   needed: candidate queue silting (N pending >21d, oldest
+   Xd)"), `Today's intent` (next `[ ]` phase + top finding),
    `Tuning proposals` (step 5, or "none").
 5. **Meta-loop, within rails:** if the pulse shows a mistuned
    gate (critique never firing, the ceiling hibernating

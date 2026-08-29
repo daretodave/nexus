@@ -96,7 +96,8 @@ Pending section for their evidence trails):**
       (score 7.2) (this commit)
 - [x] Phase 29 — Dual-shell parity lint leg for playbooks
       (score 7.4) (this commit)
-- [ ] Phase 30 — Candidate-aging silt guard in digest/expand
+- [x] Phase 30 — Candidate-aging silt guard in digest/expand
+      (this commit)
 - [ ] Phase 31 — `scripts/install-hooks.mjs` opt-in pre-commit
       gate
 - [ ] Phase 32 — Scheduled-workflow auto-disable watch in

@@ -40,17 +40,27 @@ Never dispatched by `/march` — it is its own loop shape (see
    `[ ]`/`[blocked:]` counts, AUDIT pending, CRITIQUE pending +
    last pass age, candidates pending + oldest-pending age.
    Plus (still hand-fetched — pulse.mjs never touches the
-   network): open `triage:needs-user` / `loop:do` issues, and
+   network): open `triage:needs-user` / `loop:do` issues,
    sibling lessons growth (`../kintilla/plan/lessons.md`
-   size, when present locally; skip silently in cloud).
+   size, when present locally; skip silently in cloud), and
+   how many `## Pending` candidates in
+   `plan/PHASE_CANDIDATES.md` carry a `- proposed:` date more
+   than 21 days old (hand-count from the same rows pulse.mjs
+   already reads for the oldest-pending age — no script
+   change).
 3. **Write `plan/DIGEST.md`** — overwrite entirely; it is a
    snapshot, not a ledger. Sections, in order: `Headline`
    (one sentence), `While you were out` (pulse table: tick,
-   verb, outcome — no-ops included), `Shipped`, `Queues now`,
-   `Needs you` (blocked rows, needs-user issues,
-   `[needs-user-call]`s), `Today's intent` (next `[ ]` phase
-   + top audit finding), `Tuning proposals` (see step 4, or
-   "none").
+   verb, outcome — no-ops included), `Shipped`, `Queues now`
+   (the candidates line grows the >21-day count alongside the
+   existing pending-count and oldest-age numbers, e.g. "17
+   pending (6 >21d), oldest 58d"), `Needs you` (blocked rows,
+   needs-user issues, `[needs-user-call]`s, plus — when either
+   ≥5 candidates are pending >21 days or the oldest pending
+   candidate exceeds 45 days — a line reading "oversight
+   needed: candidate queue silting (N pending >21d, oldest
+   Xd)"), `Today's intent` (next `[ ]` phase + top audit
+   finding), `Tuning proposals` (see step 4, or "none").
 4. **Meta-loop, within rails:** if the pulse shows a mistuned
    gate (critique gate never opening, ceiling hibernating
    productive days, a starved queue), file the tuning as a

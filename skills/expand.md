@@ -49,10 +49,17 @@ still >3). **Cap 3 candidates per pass.**
    "expand: strict posture — skipping", exit 0).
 2. Read signals A–E since the `Last pass` header of
    `plan/PHASE_CANDIDATES.md`.
-3. Synthesize + score; self-assess down to ≤3.
+3. Synthesize + score; self-assess down to ≤3. If a signal
+   reinforces a candidate already sitting in `## Pending`
+   rather than describing something new, don't file a
+   duplicate — update that row's `last re-evidenced` date
+   (today) and append the new signal to its `source signals`
+   list.
 4. File to `## Pending` (standard candidate schema: proposed /
    source signals / rationale / proposed scope / estimated
-   phases / conflicts). Update the metadata header.
+   phases / conflicts / `last re-evidenced` — optional, absent
+   until a later pass re-affirms the candidate). Update the
+   metadata header.
 5. `node scripts/verify.mjs` → commit + push:
    `expand: pass <N> — <K> candidates`.
 
