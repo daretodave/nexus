@@ -101,6 +101,14 @@ cp ../nexus/templates/.github/workflows/march.yml .github/workflows/march.yml
 cp ../nexus/templates/.github/CLOUD_LOOP.md       .github/CLOUD_LOOP.md
 ```
 
+The PowerShell twin, Windows native:
+
+```powershell
+New-Item -ItemType Directory -Force .github\workflows | Out-Null
+Copy-Item ..\nexus\templates\.github\workflows\march.yml .github\workflows\march.yml
+Copy-Item ..\nexus\templates\.github\CLOUD_LOOP.md       .github\CLOUD_LOOP.md
+```
+
 ## Step 2 — fill placeholders
 
 In `.github/workflows/march.yml`, replace:

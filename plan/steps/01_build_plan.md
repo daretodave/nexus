@@ -94,7 +94,8 @@ Pending section for their evidence trails):**
       (score 6.8) (this commit)
 - [x] Phase 28 — Commit-verb vocabulary lint in the guard hook
       (score 7.2) (this commit)
-- [ ] Phase 29 — Dual-shell parity lint leg for playbooks
+- [x] Phase 29 — Dual-shell parity lint leg for playbooks
+      (score 7.4) (this commit)
 - [ ] Phase 30 — Candidate-aging silt guard in digest/expand
 - [ ] Phase 31 — `scripts/install-hooks.mjs` opt-in pre-commit
       gate

@@ -553,6 +553,14 @@ cp ../nexus/templates/setup/bootstrap.example.json \
   setup/bootstrap.local.json
 ```
 
+The PowerShell twin, Windows native:
+
+```powershell
+New-Item -ItemType Directory -Force setup | Out-Null
+Copy-Item ..\nexus\templates\setup\bootstrap.example.json `
+  setup\bootstrap.local.json
+```
+
 Fill in your project settings, then run `/bootstrap status`
 (read-only) to preview the plan, then `/bootstrap` for the
 interactive walk.
@@ -566,6 +574,14 @@ touched this file. Sweep it the same way before running
 ```bash
 sed -i -e 's/<PROJECT_LOWER>/thock/g' -e 's/<PROJECT>/thock/g' \
   setup/bootstrap.local.json
+```
+
+The PowerShell twin:
+
+```powershell
+(Get-Content setup\bootstrap.local.json -Raw) `
+  -replace '<PROJECT_LOWER>', 'thock' -replace '<PROJECT>', 'thock' |
+  Set-Content setup\bootstrap.local.json -NoNewline
 ```
 
 The bootstrap layer is opt-in and standalone — skipping it

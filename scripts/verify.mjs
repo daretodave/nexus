@@ -23,6 +23,10 @@
 //                 and command pointers pair 1:1
 //   emoji         no pictographic emoji anywhere in tracked docs
 //                 (✓ and ❌ dingbats are fine; 🤖 is not)
+//   dualshell     every playbooks/*.md ```bash fence that leans on a
+//                 POSIX-only tool (sed, grep, xargs, mkdir, cp, rm, …)
+//                 has an adjacent ```powershell twin, or an explicit
+//                 <!-- dualshell:posix-only --> annotation
 //   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
 //                 copy + placeholder-sweep block. Skipped by the
 //                 default no-argument run; opt in with
@@ -375,6 +379,61 @@ function legEmoji(files) {
   return { failures, note: `${files.length} files scanned` }
 }
 
+// --- leg: dualshell ----------------------------------------------------------
+// windows-notes.md promises every playbook code block works on both
+// shells. Mechanize the promise: a ```bash fence that leans on a
+// POSIX-only tool must have an adjacent ```powershell twin (the next
+// or previous fenced block in the file), or an explicit marker on the
+// line right before it for the rare case no Windows equivalent exists.
+
+const POSIX_ONLY_TOOLS = new Set([
+  'sed', 'awk', 'grep', 'wc', 'xargs', 'tail', 'head', 'cut', 'tr',
+  'mkdir', 'cp', 'rm', 'chmod', 'ln', 'find', 'mv', 'rsync', 'touch',
+])
+const DUALSHELL_MARKER = '<!-- dualshell:posix-only -->'
+
+function parseFences(text) {
+  const lines = text.split(/\r?\n/)
+  const fences = []
+  let open = null
+  lines.forEach((line, i) => {
+    if (!/^```/.test(line)) return
+    if (!open) {
+      open = { lang: line.slice(3).trim(), start: i + 1, contentStart: i + 1, precedingLine: (lines[i - 1] || '').trim() }
+    } else {
+      fences.push({ ...open, content: lines.slice(open.contentStart, i) })
+      open = null
+    }
+  })
+  return fences
+}
+
+function needsShellTwin(content) {
+  return content.some((line) => POSIX_ONLY_TOOLS.has(line.trim().split(/\s+/)[0]))
+}
+
+function legDualshell(files) {
+  const failures = []
+  const playbooks = files.filter((f) => /^playbooks\//.test(normalize(f)))
+  let checked = 0
+  for (const file of playbooks) {
+    const fences = parseFences(read(file))
+    fences.forEach((fence, i) => {
+      if (fence.lang !== 'bash' || !needsShellTwin(fence.content)) return
+      checked++
+      if (fence.precedingLine === DUALSHELL_MARKER) return
+      const twinLangs = new Set(['powershell', 'pwsh'])
+      const prev = fences[i - 1]
+      const next = fences[i + 1]
+      if ((prev && twinLangs.has(prev.lang)) || (next && twinLangs.has(next.lang))) return
+      failures.push(
+        `${file}:${fence.start}: bash block relies on a POSIX-only tool with no PowerShell twin — add one, or precede the fence with ${DUALSHELL_MARKER} if none applies`,
+      )
+    })
+  }
+  return { failures, note: `${checked} posix-leaning bash blocks checked` }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -399,6 +458,7 @@ const LEGS = {
   placeholders: (files) => legPlaceholders(files),
   anatomy: () => legAnatomy(),
   emoji: (files) => legEmoji(files),
+  dualshell: (files) => legDualshell(files),
   'adopt-dryrun': () => legAdoptDryrun(),
 }
 
