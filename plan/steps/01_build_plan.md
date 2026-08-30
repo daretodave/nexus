@@ -98,8 +98,8 @@ Pending section for their evidence trails):**
       (score 7.4) (this commit)
 - [x] Phase 30 — Candidate-aging silt guard in digest/expand
       (this commit)
-- [ ] Phase 31 — `scripts/install-hooks.mjs` opt-in pre-commit
-      gate
+- [x] Phase 31 — `scripts/install-hooks.mjs` opt-in pre-commit
+      gate (this commit)
 - [ ] Phase 32 — Scheduled-workflow auto-disable watch in
       heartbeat
 - [ ] Phase 33 — Workspace templates: `templates/workspace/`

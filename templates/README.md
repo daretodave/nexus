@@ -77,6 +77,7 @@ templates/
 │   ├── check-secrets-liveness.mjs     (GH_TOKEN + CRITIQUE_* liveness probe, omit unless Auth: is set)
 │   ├── stack-lifecycle.mjs            (Pattern B port/health/state helpers, omit unless hermetic e2e is Pattern B)
 │   ├── new-skill.mjs                  (skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md)
+│   ├── install-hooks.mjs              (opt-in: arms pnpm verify as a pre-commit hook)
 │   └── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
 └── env/
     └── env.example                    → repo's .env.example
@@ -142,6 +143,7 @@ the corresponding capability:
 | `.github/workflows/nightly-smoke.yml` | Hermetic e2e is adopted and `night.yml` doesn't already run `SMOKE_SAMPLE=full` as its breadth step — run one or the other, never both. See `nexus/customization/hermetic-e2e.md` + `nexus/concepts/loop-shapes.md`. |
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
+| `scripts/install-hooks.mjs` | You want `pnpm verify` to run automatically on hand commits made outside the loop. Opt-in — run it once (`node scripts/install-hooks.mjs`) to arm a `.git/hooks/pre-commit`; `--uninstall` removes it. See `nexus/customization/verify-gate.md`. |
 | `plan/reflexes.md` + `plan/lessons.md` | The loop has run long enough to accumulate real recurring lessons and a single `NEXUS_LESSONS.md` scratch file no longer scales. See `nexus/customization/lessons-layer.md`. |
 
 If your `bearings.md` declares `Surface: service / library /

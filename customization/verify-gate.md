@@ -17,6 +17,15 @@ exists to prevent.
 Aim for verify ⊇ CI's required checks. Then CI either passes
 or fails fast.
 
+"Runs before every commit" binds the loop automatically — every
+skill runs verify foreground before it commits. A human editing
+outside the loop has to remember. The template at
+[`templates/scripts/install-hooks.mjs`](../templates/scripts/install-hooks.mjs)
+arms the same rule locally: `node scripts/install-hooks.mjs`
+writes a `.git/hooks/pre-commit` that runs `pnpm verify`
+(`--uninstall` removes it). Opt-in — nothing runs it for you
+until you do.
+
 The canonical composition (`agents.md` rule 3) is `typecheck →
 test:run → data:validate → build → e2e`, with two variance
 rules: `data:validate` runs iff the project has a data layer —
