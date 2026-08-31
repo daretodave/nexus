@@ -103,10 +103,11 @@ Pending section for their evidence trails):**
 - [blocked: cloud push token lacks workflows scope 2026-08-30]
       Phase 32 — Scheduled-workflow auto-disable watch in
       heartbeat — needs a local `/ship-a-phase` (see #49)
-- [ ] Phase 33 — Workspace templates: `templates/workspace/`
+- [x] Phase 33 — Workspace templates: `templates/workspace/`
       root pointer-file family + adopt-prompt topology-detection
       step (score 8.8; phase 22's deferred half — see
       `plan/phases/phase_22_workspace_playbook.md` non-goals)
+      (this commit)
 
 > **After the pending phases run dry:** `/march` transitions
 > to `/iterate` — the audit dimensions (drift, completeness,

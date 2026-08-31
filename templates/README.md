@@ -79,8 +79,13 @@ templates/
 │   ├── new-skill.mjs                  (skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md)
 │   ├── install-hooks.mjs              (opt-in: arms pnpm verify as a pre-commit hook)
 │   └── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
-└── env/
-    └── env.example                    → repo's .env.example
+├── env/
+│   └── env.example                    → repo's .env.example
+└── workspace/                          → workspace ROOT, not any repo (adopt-by-need; see below)
+    ├── CLAUDE.md                       (agent-facing root pointer)
+    ├── AGENTS.md                       (same content, non-Claude-Code agents)
+    ├── README.md                       (human-facing root orientation)
+    └── REPOS.md                        (sibling-repo clone manifest)
 ```
 
 ## Placeholders
@@ -141,6 +146,7 @@ the corresponding capability:
 | `skills/digest.md` + `claude/commands/digest.md` + `.github/workflows/night.yml` + `.github/workflows/heartbeat.yml` | The cloud loop is live and you want the rest of the genus: a daily morning briefing (`plan/DIGEST.md`), nightly breadth checks, and a model-free watchdog. See `nexus/concepts/loop-shapes.md`. |
 | `skills/bootstrap.md` + `claude/commands/bootstrap.md` + `scripts/bootstrap.mjs` | You plan to run `/bootstrap` as the setup executor (tokens-in to deployed app + ticking cloud loop). See `nexus/customization/bootstrap-automation.md`. |
 | `.github/workflows/nightly-smoke.yml` | Hermetic e2e is adopted and `night.yml` doesn't already run `SMOKE_SAMPLE=full` as its breadth step — run one or the other, never both. See `nexus/customization/hermetic-e2e.md` + `nexus/concepts/loop-shapes.md`. |
+| `workspace/CLAUDE.md` + `workspace/AGENTS.md` + `workspace/README.md` + `workspace/REPOS.md` | You've outgrown polyrepo into a 3+-repo workspace (an un-versioned local root holding `plan/` and every product as siblings). Copy all four to the workspace root, not into any single repo. See `nexus/playbooks/workspace.md`. |
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 | `scripts/install-hooks.mjs` | You want `pnpm verify` to run automatically on hand commits made outside the loop. Opt-in — run it once (`node scripts/install-hooks.mjs`) to arm a `.git/hooks/pre-commit`; `--uninstall` removes it. See `nexus/customization/verify-gate.md`. |

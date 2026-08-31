@@ -176,7 +176,7 @@ function walkFiles(dirAbs) {
 const REVERSE_CHECK_DIRS = [
   'templates/scripts', 'templates/skills',
   'templates/claude/commands', 'templates/claude/agents',
-  'templates/plan',
+  'templates/plan', 'templates/workspace',
 ]
 
 function legTree() {
@@ -265,7 +265,7 @@ const PLACEHOLDER_VOCABULARY = new Set([
   '<PROVIDER_AUTH_TOKEN>', '<DEPLOY_URL>', '<CUSTOM_DOMAIN>', '<PORT>',
   // project structure
   '<PROJECT_PKG_PREFIX>', '<PROJECT_TAGLINE>', '<CONTENT_LOCATION>',
-  '<DATA_LOCATION>',
+  '<DATA_LOCATION>', '<WORKSPACE_ORG>',
   // external services
   '<SERVICE>', '<SERVICE_URL>', '<AUTH_PROVIDER>', '<DB_PROVIDER>',
   '<EMAIL_PROVIDER>', '<AI_PROVIDER>', '<TOKEN_ENDPOINT>',

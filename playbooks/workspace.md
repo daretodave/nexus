@@ -119,10 +119,15 @@ CLAUDE.md, verify gate, and git history. Nothing at this level
 is tracked or shipped.
 ```
 
-This is an inline snippet, not a shipped template — hand-write
-it per workspace today. (A copyable `templates/workspace/`
-family and an adopt-prompt step that detects this topology are
-tracked as follow-up work; see the build plan.)
+This snippet now has a copyable counterpart:
+[`templates/workspace/`](../templates/workspace/) ships
+`CLAUDE.md` + `AGENTS.md` (the pair above, with placeholders),
+a human-facing `README.md`, and `REPOS.md` — a clone manifest
+for rebuilding the workspace on a new machine. Copy the
+*content* into the root, not the files' git history — the root
+itself still never becomes a repo. `prompts/adopt.md` also asks
+a fresh adopter to confirm this topology before proceeding,
+rather than guessing silently.
 
 ---
 
@@ -141,9 +146,10 @@ tracked as follow-up work; see the build plan.)
 - [ ] Anything you were tempted to put at root either has a
       home in one repo (usually `plan/`) or is genuinely
       personal/local scratch — nothing sits at root "for now."
-- [ ] A root pointer file (CLAUDE.md/AGENTS.md, per the snippet
-      above) exists so a cold agent session at the root can
-      orient without guessing.
+- [ ] A root pointer file (CLAUDE.md/AGENTS.md, copied from
+      `templates/workspace/`) exists so a cold agent session at
+      the root can orient without guessing, and `REPOS.md`
+      lists every sibling repo's clone command.
 
 ---
 

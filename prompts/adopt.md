@@ -28,6 +28,10 @@ making a single change:
   4. ../nexus/playbooks/new-project.md   AND
      ../nexus/playbooks/existing-project.md
                                    — pick the one that applies
+  4a. ../nexus/playbooks/polyrepo.md AND/OR
+      ../nexus/playbooks/workspace.md
+                                   — only if the topology check
+                                     below lands on either
   5. ../nexus/playbooks/ci-providers.md  — for the deploy gate
   6. ../nexus/intervention-spectrum.md   — how the loop scales
   7. ../nexus/customization/*.md   — verify gate + hermetic
@@ -38,6 +42,12 @@ Then:
   - Decide whether this is greenfield or brownfield by reading
     `git log --oneline | wc -l`, looking at the file tree, and
     checking for an existing spec.md.
+  - Check the topology: is there already a sibling `plan/`
+    directory next to this repo, or multiple sibling repos
+    under one un-versioned root? Infer a default from that
+    (single-repo if neither), but always confirm it with the
+    user before proceeding — see the ask list below. Getting
+    this wrong reshapes file locations from phase 1 onward.
   - Follow the matching playbook end-to-end. Do not skip steps.
   - Copy templates from ../nexus/templates/ into this repo.
   - Replace placeholders (<PROJECT>, <PROJECT_LOWER>,
@@ -50,7 +60,10 @@ Then:
   - Ask the user ONLY for: (a) the hosting provider name and
     auth token if not visibly configured, (b) the project's
     canonical name + tagline if no spec exists, (c) the
-    URL/API/CLI contract if it cannot be inferred. For
+    URL/API/CLI contract if it cannot be inferred, (d)
+    confirmation of the topology guess above — single-repo,
+    polyrepo (`plan/` split into a sibling repo), or workspace
+    (3+ sibling repos under one un-versioned root). For
     everything else, decide.
   - Adapt bearings.md to reflect the actual stack present in
     this repo. Do not assume Next.js, Tailwind, or any
