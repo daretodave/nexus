@@ -785,6 +785,29 @@ shipped nothing, per `skills/digest.md` rule 2.
   credential wiring. Phase 20 stays `[blocked: cloud push token
   lacks workflows scope 2026-08-23]` until this resolves.
 
+### [user-issue #49] [MED] phase 32 blocked — same cloud push token workflows-scope gap as #35/#40
+- category: external-issue
+- impact: 4, ease: 2
+- evidence: phase 32's cloud ship attempt (2026-08-30) built and
+  verified `.github/workflows/heartbeat.yml` and
+  `templates/.github/workflows/heartbeat.yml` changes in full,
+  then `git push` was rejected for the same reason as #35/#40:
+  "refusing to allow a GitHub App to create or update workflow
+  `.github/workflows/heartbeat.yml` without `workflows`
+  permission." `git remote -v` in that run showed the GitHub App
+  installation token (`ghs_...`) authenticating git push, not
+  `ACTIONS_PAT` — third confirmed occurrence of the same root
+  cause (phase 20, #40, now phase 32). The diff was built and
+  verified green then discarded per agents.md rule 1 (no dirty
+  tree at turn end) rather than left half-committed; full brief
+  at `plan/phases/phase_32_scheduled_workflow_disable_watch.md`.
+- next: same resolution as #35/#40 — a local/human session runs
+  `/ship-a-phase` (or hand-applies the brief) for phase 32,
+  pushing with normal repo-write credentials instead of the
+  cloud tick's App token. Closes #49 when done; also flips phase
+  32 from `[blocked: ...]` to `[x]` in
+  `plan/steps/01_build_plan.md`.
+
 ### [F, 3.6] CLOUD_LOOP.md hedges "Sonnet 5" mentions but not the adjacent "Opus 4.8" ones
 - category: freshness
 - impact: 4, ease: 9
