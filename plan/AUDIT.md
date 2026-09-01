@@ -1,4 +1,4 @@
-# Kit audit — 2026-08-27
+# Kit audit — 2026-09-01
 
 > Bias: none
 
@@ -740,6 +740,43 @@ Done section. AUDIT block otherwise unchanged; four Pending
 rows below not re-verified this tick (queue row took priority
 per `skills/iterate.md` §3's shared scoring scale).
 
+Digest tick 2026-09-01: header was 5 days old (last full sweep
+the 2026-08-27 digest tick, above), well past the 48h
+threshold, so ran a fresh A-G sweep (delegated the read-only
+pass to a foreground agent to protect context — `run_in_background:
+false` explicitly, since this is a cloud tick and a backgrounded
+agent's result would never land before the job exits; see the
+`[promoted → phase 20]` candidate in `plan/PHASE_CANDIDATES.md`
+this exact trap is scored against). All three durable rows
+(`[user-issue #40]`, `[user-issue #35]`, `[user-issue #49]`) still
+open — same cloud-push-token workflows-scope gap, unchanged.
+Reproduced all five non-durable Pending rows: unchanged in
+substance, two with line drift from intervening commits —
+`[F, 3.6]` (CLOUD_LOOP.md's Opus-4.8 hedge gap, still lines
+33-36/228-232), `[C, 2.7]` (PHASE_CANDIDATES.md's digest.md §4
+mis-citation, now line 591), `[C, 2.4]` (triage.md's dead
+`ship-data.md §6` citation, now lines 222-223), `[A, 2.4]`
+(guard.mjs template drift, unchanged). One new row found and
+queued: `[A, 3.2]` — README.md's "What's in this kit" templates
+tree (lines 441-501) never picked up `templates/workspace/`,
+the 4-file adopt-by-need family phase 33 shipped the same day;
+`templates/README.md`'s own tree and README's playbooks section
+both already list it correctly, only the templates-tree mirror
+missed it — same bug class as this file's prior
+PHASE_CANDIDATES/CURRENT-STATE Done row. Six non-durable
+candidates now compete for five Top-5 slots; `[A, 1.35]`
+(cloud-loop.md's "three new files" header) is still genuinely
+valid but the lowest scorer, so it drops from the tracked Top 5
+this rewrite — re-discoverable on a future sweep if it's still
+open then. A-F otherwise swept clean: verify.mjs green across
+all seven legs; no stale model-id strings anywhere in the tree;
+external links all resolved; README's placeholder table and
+command table both checked 1:1 against disk. G still empty — no
+sibling lessons files present in this checkout. `plan/CRITIQUE.md`'s
+Pending queue holds 4 LOW dry-run rows not folded into this
+file (separate queue, same scoring scale, left for whoever ships
+next). Audit only — shipped nothing, per `skills/digest.md` rule 2.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -841,50 +878,58 @@ per `skills/iterate.md` §3's shared scoring scale).
   the cost table (line 36) and to the "Opus 4.8" reference in
   "Upgrading the model" (line 232).
 
+### [A, 3.2] README.md's kit tree omits templates/workspace/
+- category: doc-drift
+- impact: 4, ease: 8
+- evidence: README.md's "What's in this kit" templates block
+  (lines 441-501) has zero mentions of `workspace` — `grep -n
+  workspace README.md` confirms — despite phase 33 shipping the
+  4-file `templates/workspace/` adopt-by-need family (`CLAUDE.md`,
+  `AGENTS.md`, `README.md`, `REPOS.md`) the same day.
+  `templates/README.md`'s own tree already lists it correctly
+  (collapsed, line 84), and README's playbooks section already
+  lists `workspace.md` — only the templates-tree mirror missed
+  it. `scripts/verify.mjs`'s tree leg stays green because both
+  diagrams collapse the directory rather than expanding it
+  per-file, so the gate can't catch a missing top-level line.
+  Same bug class as this file's prior PHASE_CANDIDATES/
+  CURRENT-STATE Done row (a new top-level family lands without
+  its README mirror).
+- next: add one collapsed tree line for `templates/workspace/`
+  to README.md's kit-tree block, matching
+  `templates/README.md:84`'s phrasing.
+
 ### [C, 2.7] plan/PHASE_CANDIDATES.md still cites skills/digest.md §4 for content that's in §3
 - category: link-hygiene
 - impact: 3, ease: 9
-- evidence: `plan/PHASE_CANDIDATES.md:533` cites `skills/digest.md
+- evidence: `plan/PHASE_CANDIDATES.md:591` (drifted from :533 as
+  intervening candidates were appended) cites `skills/digest.md
   §4` for "mistuned gate / starved queue / tuning trigger"
   language, but `digest.md`'s `## 4. Hard rules` heading doesn't
   contain that content — it's item 4 inside `## 3. The
   procedure`. `plan/DIGEST.md:107` carried the identical bug
   until an intervening tick fixed it (now correctly reads "§3
   step 4"), narrowing this row to the one remaining file.
-- next: reword `plan/PHASE_CANDIDATES.md:533` to "§3 step 4",
+- next: reword `plan/PHASE_CANDIDATES.md:591` to "§3 step 4",
   matching `plan/DIGEST.md:107`'s already-fixed phrasing.
 
 ### [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content
 - category: link-hygiene
 - impact: 3, ease: 8
-- evidence: `templates/skills/triage.md:217-218` says the
-  `gh issue comment`/`gh issue close` follow-up procedure "is
-  documented in `skills/iterate.md` §5 and `skills/ship-data.md`
-  §6." Verified `iterate.md` §5 (Step 5-7) does cover the
-  `Closes #N` trailer and close-comment flow, but
-  `templates/skills/ship-data.md` §6 ("The procedure") is a
-  generic data-entity CRUD walkthrough — grepped the whole file
-  for "trailer", "Closes", "commit body", "issue": zero hits.
-  The citation doesn't just point at the wrong section, it points
-  at a file with no matching content anywhere.
+- evidence: `templates/skills/triage.md:222-223` (drifted from
+  217-218) says the `gh issue comment`/`gh issue close`
+  follow-up procedure "is documented in `skills/iterate.md` §5
+  and `skills/ship-data.md` §6." Verified `iterate.md` §5 (Step
+  5-7) does cover the `Closes #N` trailer and close-comment
+  flow, but `templates/skills/ship-data.md` §6 ("The procedure")
+  is a generic data-entity CRUD walkthrough — grepped the whole
+  file for "trailer", "Closes", "commit body", "issue": zero
+  hits. The citation doesn't just point at the wrong section, it
+  points at a file with no matching content anywhere.
 - next: drop the `skills/ship-data.md §6` half of the citation in
-  `triage.md:217-218` (or repoint it if the convention is
+  `triage.md:222-223` (or repoint it if the convention is
   documented somewhere in that file under a different heading —
   confirmed it currently is not).
-
-### [A, 1.35] cloud-loop.md's "three new files" header lists only two
-- category: doc-drift
-- impact: 3, ease: 4.5
-- evidence: `playbooks/cloud-loop.md:67`'s "Three new files
-  relative to the standard nexus overlay" header sits directly
-  above a tree diagram listing only `march.yml` and
-  `CLOUD_LOOP.md` — two entries, not three. `git log --follow
-  -p` on the file shows the header and the 2-entry tree have
-  coexisted since the doc's first commit — no third file was
-  ever dropped later. (Line drifted from the row's original :66
-  as phase 21 inserted a line above; content unchanged.)
-- next: correct the header to "Two new files" — there is no
-  lost third file to restore.
 
 ### [A, 2.4] `templates/claude/hooks/guard.mjs` drifted from `.claude/hooks/guard.mjs`'s own hardening
 - category: doc-drift
