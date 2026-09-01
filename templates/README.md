@@ -156,10 +156,11 @@ If your `bearings.md` declares `Surface: service / library /
 cli`, do not copy `ship-asset.md` / `brander.md` — the skill
 would no-op anyway and the presence is misleading.
 
-Branding does not get a second `AskUserQuestion`-allowed
+Branding does not get its own `AskUserQuestion`-allowed
 skill. When the project needs taste calls (mood, accent,
 wordmark treatment), the user runs `/oversight` — that's
-already the user-in-the-loop exception, and it's plenty.
+already the user-in-the-loop exception (`/bootstrap` carries
+the only other one, for provisioning), and it's plenty.
 
 ## Reference implementations
 

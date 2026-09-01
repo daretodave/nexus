@@ -135,7 +135,7 @@ invoke a skill that does the right thing end-to-end.
 | `triage` | `skills/triage.md` | Issue review; routes to backlogs. |
 | `expand` | `skills/expand.md` | Plan-expansion pass; proposes phase candidates from accumulated signals. Posture-controlled (bold/strict/autonomous). |
 | `march` | `skills/march.md` | Outer dispatcher: triage → critique → phase → data → expand → iterate. |
-| `oversight` | `skills/oversight.md` | **User-in-the-loop.** The only skill that asks anything. Promotes phase candidates. |
+| `oversight` | `skills/oversight.md` | **User-in-the-loop.** The general-purpose skill that asks anything (`bootstrap` carries the one narrow provisioning exception). Promotes phase candidates. |
 
 ### Invocation
 

@@ -203,8 +203,10 @@ and ship the actual fixes.
 
 ## Layer 5: user-in-loop (oversight)
 
-`oversight` is the **only skill that asks the user anything**.
-It's the user's interface to the autonomous loop.
+`oversight` is the **primary skill that asks the user
+anything** — `bootstrap` carries the one narrow, documented
+exception (see rule 6 below). `oversight` is the user's
+interface to the autonomous loop.
 
 The procedure:
 
@@ -335,12 +337,15 @@ deploy state for HEAD and reports it. It doesn't trigger
 deploys (the push does that) or judge the deploy beyond
 ready/error. This makes it cheap to add to any project.
 
-### 6. AskUserQuestion only in oversight.
+### 6. AskUserQuestion only in oversight (plus bootstrap's carve-out).
 
-Every other skill is autonomous. If you find yourself wanting
-to ask the user mid-skill, **you're using the wrong skill**.
-The right move is to surface the question in oversight (write
-to AUDIT.md as `[needs-user-call]`) and continue.
+Every other skill is autonomous. `bootstrap` is the one named
+exception — it collects tokens and confirms destructive-feeling
+provisioning actions, documented in its own file. If you find
+yourself wanting to ask the user mid-skill anywhere else,
+**you're using the wrong skill**. The right move is to surface
+the question in oversight (write to AUDIT.md as
+`[needs-user-call]`) and continue.
 
 ### 7. Bias the loop, don't paper-over it.
 

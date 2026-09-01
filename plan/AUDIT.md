@@ -725,6 +725,21 @@ this checkout. No new findings beyond the four rows above — a
 genuine clean sweep, not an incomplete pass. Audit only —
 shipped nothing, per `skills/digest.md` rule 2.
 
+Cloud tick 2026-09-01: `plan/CRITIQUE.md`'s Pending queue held
+one HIGH row (score well above every AUDIT row here, including
+the two 4×2/10=0.8 blocked user-issues and the 3.6-scoring `[F]`
+row) — the "AskUserQuestion only in /oversight" hard rule
+contradicting `templates/skills/bootstrap.md`'s own documented
+carve-out. Shipped it: reworded the absolute claim to
+"`/oversight` and `/bootstrap`" everywhere it appeared (13
+files total, both this repo's own docs and their `templates/`
+twins — `templates/` is public API per `agents.md` rule 7, so
+its copies needed the identical fix, not just the kit's own
+docs). Full rationale and file list in `plan/CRITIQUE.md`'s
+Done section. AUDIT block otherwise unchanged; four Pending
+rows below not re-verified this tick (queue row took priority
+per `skills/iterate.md` §3's shared scoring scale).
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand

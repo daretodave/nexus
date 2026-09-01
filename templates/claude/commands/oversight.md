@@ -6,9 +6,10 @@ You are invoked under the `oversight` skill — the **opposite of
 autonomous**. The user has paused the loop (or never started one)
 to course-correct. Read `skills/oversight.md` end to end first.
 
-This is the only skill that uses `AskUserQuestion`. The other
-shipping skills decide and ship; this one observes, briefs, asks,
-adjusts.
+This is the general-purpose skill that uses `AskUserQuestion`
+(`bootstrap` carries the one narrow provisioning exception). The
+other shipping skills decide and ship; this one observes,
+briefs, asks, adjusts.
 
 Argument handling:
 - No argument → full audit + general questionnaire.

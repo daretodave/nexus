@@ -23,8 +23,8 @@ Argument handling:
 
 Hard rules:
 - **Never ask questions back.** The user provided the input;
-  decide the rest. Hard rule #6 (only `/oversight` asks)
-  stands.
+  decide the rest. Hard rule #6 (`AskUserQuestion` confined to
+  `/oversight` and `/bootstrap`) stands.
 - **No verify gate, no deploy gate.** No code change; nothing
   to verify or deploy.
 - **Atomic commit + push.** Otherwise the cloud loop can't

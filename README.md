@@ -190,8 +190,8 @@ A small family of slash commands the autonomous loop uses:
 | `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → phase → data → expand → iterate. |
 | `/digest` | **The night shift.** Daily tick: writes the morning briefing to `plan/DIGEST.md`, runs breadth checks too slow for the per-commit path, proposes gate tunings as candidates (never applies them). Own workflow (`night.yml`), never dispatched by `/march`. |
 | `/jot` | **The user's quickfire.** Drop a free-text observation into `plan/CRITIQUE.md` and push, in seconds. The next `/iterate` tick scores it (with a `+0.5` user-source bump) against everything else and ships the fix. No questions back; same shape as `/ship-data add` — input via the slash arg. |
-| `/oversight` | **The only interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote phase candidates. |
-| `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets. State-aware, idempotent, never destructive. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
+| `/oversight` | **The general-purpose interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote phase candidates. |
+| `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets. State-aware, idempotent, never destructive. Carries its own narrow `AskUserQuestion` exception for token collection and destructive-action confirmation. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
 
 Plus one **opt-in** demand-pull skill for projects with
 `Surface: site` / `hybrid` that need to render brand assets
@@ -625,8 +625,10 @@ upfront:
 4. **Tests alongside code** — never "add tests later".
 5. **The deploy gate runs after every push.** A red deploy is a
    blocked tick.
-6. **`AskUserQuestion` is allowed only in `/oversight`.** Every
-   other skill decides and ships.
+6. **`AskUserQuestion` is allowed only in `/oversight` and
+   `/bootstrap`** (bootstrap's narrow, documented carve-out for
+   token collection and destructive-action confirmation).
+   Every other skill decides and ships.
 
 ---
 

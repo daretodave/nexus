@@ -268,8 +268,9 @@ at a time on subsequent ticks.
 
 This keeps the brand brief in durable repo state, ships
 assets through the same demand-pull path as every other
-improvement, and preserves the rule that `/oversight` is the
-**only** skill allowed to use `AskUserQuestion`.
+improvement, and preserves the rule that `AskUserQuestion`
+stays confined to `/oversight` (and `/bootstrap`'s own narrow
+carve-out).
 
 ## 11. Quick reference
 

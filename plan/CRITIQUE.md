@@ -11,57 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [HIGH] README.md:614 — "AskUserQuestion is allowed only in /oversight" is a Hard Rule the kit's own bootstrap skill directly contradicts
-- category: instruction-drift
-- observation: README's "Hard rules carried across every
-  project" section states, in bold, as rule 6: "`AskUserQuestion`
-  is allowed only in `/oversight`. Every other skill decides and
-  ships." `concepts/architecture.md:337-338` — required reading
-  per `prompts/adopt.md` step 2 ("the whole system in one read")
-  — repeats the same absolute claim: "AskUserQuestion only in
-  oversight... Every other skill is autonomous. If you find
-  yourself wanting to ask the user mid-skill, you're using the
-  wrong skill." `customization/branding.md:283` cites it as "Hard
-  rule #6 (only `/oversight` asks questions)" and explicitly
-  refuses a second exception. But `templates/skills/bootstrap.md`
-  — a real, adopted skill (opt-in, documented in
-  `templates/README.md`'s adopt-by-need table and walked in
-  `playbooks/new-project.md` step 9) — opens with its own bolded
-  carve-out: "**AskUserQuestion IS allowed in this skill.**
-  Bootstrap is one of two skills that may pause for user input
-  mid-run (the other being `/oversight`)." Git history shows the
-  drift's shape: `concepts/architecture.md`'s "only in oversight"
-  line predates `templates/skills/bootstrap.md`'s carve-out
-  (bootstrap-automation landed 2026-07-29 per `git log --
-  templates/skills/bootstrap.md`), and neither README nor
-  architecture.md was updated when bootstrap's exception was
-  added. There's no mechanical enforcement either —
-  `templates/claude/hooks/guard.mjs` has zero references to
-  `AskUserQuestion` or `oversight`, so nothing catches the drift
-  at runtime; it's purely a documentation promise the kit breaks
-  against itself.
-- evidence: `grep -n -i askuserquestion README.md
-  concepts/architecture.md templates/skills/bootstrap.md
-  templates/skills/oversight.md templates/skills/ship-asset.md` →
-  README.md:614 and concepts/architecture.md:337-338 claim
-  "only /oversight"; templates/skills/oversight.md:258 and
-  templates/skills/ship-asset.md:272 repeat "only" /oversight;
-  templates/skills/bootstrap.md:11-15 claims a second, named
-  exception ("one of two skills"). `grep -n
-  askuserquestion templates/claude/hooks/guard.mjs` → no output
-  (no mechanical gate).
-- suggested fix: pick one truth and make every doc say it. Either
-  (a) reword README.md:614, concepts/architecture.md:337-338,
-  templates/skills/oversight.md:258/289,
-  templates/skills/ship-asset.md:272, and
-  customization/branding.md:283 to "only `/oversight` and
-  `/bootstrap`" (matching bootstrap.md's actual carve-out), or
-  (b) if bootstrap's exception was a mistake, drop the
-  `AskUserQuestion` carve-out from `templates/skills/bootstrap.md`
-  and route its token/confirmation pauses through `/oversight`
-  instead, keeping "only `/oversight`" true everywhere.
-- source: dry-run
-
 ### [LOW] README.md:341 — "2–4 hours of setup" doesn't match the reconciled "2–3 hours" figure used everywhere else
 - category: instruction-drift
 - observation: the "When this is the right tool" section says
@@ -146,6 +95,29 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] README.md:614 — "AskUserQuestion is allowed only in /oversight" is a Hard Rule the kit's own bootstrap skill directly contradicts — this commit
+- fix: applied option (a) from the row's own suggested fix
+  (bootstrap's carve-out is real and load-bearing — it collects
+  tokens and confirms destructive-feeling provisioning actions
+  — so option (b), stripping it, would break bootstrap, not
+  the docs). Reworded rule 6 to "allowed only in `/oversight`
+  and `/bootstrap`" everywhere the absolute claim appeared:
+  `README.md:628` (hard rule + the command-table `/oversight`
+  and `/bootstrap` rows), `concepts/architecture.md:206,338`,
+  `concepts/asking-well.md`'s header + "where this is used
+  today" list, `templates/agents.md:138`,
+  `templates/README.md:159`, `templates/skills/oversight.md:258,289`,
+  `templates/claude/commands/oversight.md:9`,
+  `templates/skills/ship-asset.md:272`,
+  `templates/claude/commands/jot.md:26`,
+  `templates/skills/jot.md:12`, and all three instances in
+  `customization/branding.md` (18, 258-259, 286-288) — the last
+  of which had argued "once a rule has two exceptions, it has
+  three" while already unaware bootstrap was exception one;
+  reworded to "no third" instead of "no second." `node
+  scripts/verify.mjs` green.
+- source: dry-run
 
 ### [x] [MED] README.md:159 vs playbooks/new-project.md:8-9 — agent-paced time estimate range still doesn't match the playbook's reconciled figure — this commit
 - fix: dropped the numeric "30–90 minutes" range from

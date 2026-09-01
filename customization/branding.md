@@ -14,8 +14,9 @@
 > already the user-in-the-loop exception. `/oversight`
 > captures the brief into `bearings.md` and appends concrete
 > asset-render rows to `plan/AUDIT.md`; `/ship-asset` drains
-> from there. There is no second interactive skill; hard rule
-> #6 (only `/oversight` asks questions) stands.
+> from there. There is no second interactive skill for
+> branding; hard rule #6 (`AskUserQuestion` confined to
+> `/oversight` and `/bootstrap`) stands.
 >
 > Together the demand-pull skill + the `/oversight`-driven
 > brief keep a cron-job project from drifting into "let's
@@ -254,14 +255,16 @@ brief, ask targeted questions, adjust the plan). The flow:
 
 This way the brand brief lives in durable repo state
 (bearings + audit), assets ship through the same demand-pull
-path as every other improvement, and the "only `/oversight`
-asks questions" rule stands without exception.
+path as every other improvement, and the "`AskUserQuestion`
+confined to `/oversight` and `/bootstrap`" rule stands without
+a further exception.
 
-**No second interactive skill.** An earlier draft of this
+**No third interactive skill.** An earlier draft of this
 customization proposed a `/brand-me` skill with its own
-`AskUserQuestion` exception. It was dropped — once a rule has
-two exceptions, it has three, and `/oversight` already
-covers the use case cleanly.
+`AskUserQuestion` exception. It was dropped — `/bootstrap`
+already carries the one narrow exception this rule tolerates
+beyond `/oversight`, and `/oversight` covers the branding use
+case cleanly without a third.
 
 ## Hard rules carried by the capability
 
@@ -280,9 +283,9 @@ covers the use case cleanly.
    image-hosting SaaS). Assets ship in the repo, served by the
    same host as the rest of the project. Anything else needs
    a new customization doc.
-6. **No second `AskUserQuestion` exception.** If you need a
-   taste call, run `/oversight`. Hard rule #6 (only
-   `/oversight` asks questions) stands.
+6. **No further `AskUserQuestion` exception.** If you need a
+   taste call, run `/oversight`. Hard rule #6 (`AskUserQuestion`
+   confined to `/oversight` and `/bootstrap`) stands.
 
 ## Failure modes
 

@@ -255,8 +255,8 @@ oversight complete. <N> adjustments applied.
 3. **Single commit captures the adjustment set.**
 4. **Don't loop the questionnaire.** Ask once.
 5. **No emojis. No `Co-Authored-By:`.**
-6. **`AskUserQuestion` is allowed here and only here** among
-   shipping skills.
+6. **`AskUserQuestion` is allowed here and in `/bootstrap`**
+   among shipping skills — nowhere else.
 
 ## 8. When `oversight` is NOT the right tool
 
@@ -286,7 +286,7 @@ plan/phases/                       # last 3 modified
 design/                            # for newer-than-sibling check
 
 # Tools
-AskUserQuestion                    # only place this is allowed
+AskUserQuestion                    # allowed here and in /bootstrap only
 
 # Adjustment files
 plan/steps/01_build_plan.md

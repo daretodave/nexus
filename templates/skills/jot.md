@@ -9,9 +9,10 @@
 > `iterate.md` §Scoring).
 >
 > **Decide-and-ship.** No questions back. No `AskUserQuestion`.
-> Hard rule #6 (only `/oversight` asks the user anything)
-> stands intact — `/jot` consumes user input via the
-> slash-command argument, same shape as `/ship-data add ...`.
+> Hard rule #6 (`AskUserQuestion` confined to `/oversight` and
+> `/bootstrap`) stands intact — `/jot` consumes user input via
+> the slash-command argument, same shape as
+> `/ship-data add ...`.
 
 ## 1. Purpose
 
