@@ -345,6 +345,9 @@ table:
   rules, a pager). Root `CLAUDE.md` stays either way — Claude
   Code only auto-loads it from the repo root, not `.claude/`,
   and it doubles as plain project docs for any other agent.
+- `scripts/install-hooks.mjs` — remove unless you want `pnpm
+  verify` auto-armed as a pre-commit hook for hand commits made
+  outside the loop.
 
 Each command file opens with "Read `skills/<name>.md` end to
 end before touching anything else" — leaving it behind after
@@ -353,8 +356,9 @@ presence-is-misleading problem as leaving the skill itself.
 
 Example for a `Surface: service` project with `Structured data:
 none`, no UGC, no cloud loop, no `/bootstrap`, `Auth: none`, no
-hermetic e2e, and not running the loop on Claude Code — none of
-the nine apply, so remove them all:
+hermetic e2e, not running the loop on Claude Code, and no
+outside-the-loop pre-commit hook wanted — none of the ten apply,
+so remove them all:
 
 ```bash
 rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
@@ -363,7 +367,7 @@ rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
       scripts/refresh-critique-session.mjs scripts/check-secrets-liveness.mjs \
       scripts/stack-lifecycle.mjs \
       .claude/settings.json .claude/hooks/guard.mjs .claude/CLAUDE.md \
-      scripts/notify.mjs \
+      scripts/notify.mjs scripts/install-hooks.mjs \
       .claude/commands/ship-data.md .claude/commands/ship-migration.md \
       .claude/commands/ship-asset.md .claude/commands/moderate.md \
       .claude/commands/digest.md .claude/commands/bootstrap.md
@@ -376,7 +380,7 @@ Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migra
   scripts\refresh-critique-session.mjs, scripts\check-secrets-liveness.mjs, `
   scripts\stack-lifecycle.mjs, `
   .claude\settings.json, .claude\hooks\guard.mjs, .claude\CLAUDE.md, `
-  scripts\notify.mjs, `
+  scripts\notify.mjs, scripts\install-hooks.mjs, `
   .claude\commands\ship-data.md, .claude\commands\ship-migration.md, `
   .claude\commands\ship-asset.md, .claude\commands\moderate.md, `
   .claude\commands\digest.md, .claude\commands\bootstrap.md

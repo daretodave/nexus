@@ -142,30 +142,17 @@ path, comprehension stumble. See `skills/critique.md`.
   workspace-root pointer family — see templates/README.md".
 - source: dry-run
 
-### [MED] playbooks/new-project.md — "Prune adopt-by-need files" list omits `scripts/install-hooks.mjs`
-- category: instruction-drift
-- observation: step 4's bulk copy
-  (`['templates/scripts','scripts']`, recursive) lands
-  `templates/scripts/install-hooks.mjs` (added in phase 31,
-  commit `6762cc9`, 2026-08-30) in every adopter's repo
-  unconditionally. `templates/README.md:152` documents it as
-  adopt-by-need ("Opt-in — run it once... to arm a
-  `.git/hooks/pre-commit`"). But the Prune subsection's
-  cross-check list and both worked `rm -f` / `Remove-Item`
-  examples never mention it — the same bug class this file's own
-  Done log shows fixed twice before for other files, now
-  reopened by an unaccompanied newer commit.
-- evidence: `grep -n install-hooks playbooks/new-project.md` →
-  zero matches; `grep -n install-hooks templates/README.md` →
-  line 80 (layout) and line 152 (adopt-by-need row).
-- suggested fix: add a prune bullet
-  ("`scripts/install-hooks.mjs` — remove unless you want `pnpm
-  verify` auto-armed as a pre-commit hook for hand commits made
-  outside the loop") and add it to both worked rm/Remove-Item
-  examples.
-- source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md — "Prune adopt-by-need files" list omits `scripts/install-hooks.mjs` — this commit (closes #51)
+- fix: added a `scripts/install-hooks.mjs` prune bullet to
+  playbooks/new-project.md's "Prune adopt-by-need files" list
+  and to both worked `rm -f` / `Remove-Item` examples (relabeling
+  "nine" to "ten" and widening the example scenario's closing
+  clause to cover the new file), matching the phrasing already
+  used for the other opt-in files in that list.
+- source: dry-run
 
 ### [x] [HIGH] README.md:614 — "AskUserQuestion is allowed only in /oversight" is a Hard Rule the kit's own bootstrap skill directly contradicts — this commit
 - fix: applied option (a) from the row's own suggested fix
