@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-08-25
-> Pass count: 12
+> Last pass: 2026-09-01
+> Pass count: 13
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -92,6 +92,77 @@ path, comprehension stumble. See `skills/critique.md`.
   section, matching the pattern used elsewhere in this same
   table (e.g. the `/ship-data` row links
   `customization/data-layer.md`).
+- source: dry-run
+
+### [MED] playbooks/workspace.md — `templates/workspace/` ships `<WORKSPACE_ORG>` with no replace instruction anywhere
+- category: placeholder
+- observation: `templates/workspace/CLAUDE.md`, `AGENTS.md`, and
+  `REPOS.md` contain literal `<WORKSPACE_ORG>` (and reuse
+  `<PROJECT>`) tokens. `playbooks/workspace.md`'s only
+  instruction for this family ("Copy the *content* into the
+  root... not the files' git history") gives no
+  search-and-replace step. `templates/README.md`'s Placeholders
+  table lists only the original 8 tokens; `<WORKSPACE_ORG>`
+  appears nowhere in it. Contrast with
+  `playbooks/new-project.md` step 9, which explicitly flags and
+  fixes the same class of gap for `bootstrap.local.json`.
+- evidence: `grep -rn WORKSPACE_ORG` → hits only in
+  `templates/workspace/{CLAUDE.md,AGENTS.md,REPOS.md}`,
+  `plan/phases/phase_33_workspace_templates.md`, and
+  `scripts/verify.mjs`'s placeholder vocabulary (which guards
+  nexus's own repo, not an adopter's copy); zero hits in
+  `playbooks/workspace.md` for any replace/sed instruction.
+- suggested fix: add `<WORKSPACE_ORG>` to `templates/README.md`'s
+  Placeholders table (or a workspace-specific mini-table), and
+  add a sed/PowerShell one-liner to `playbooks/workspace.md`'s
+  "Org-per-project GitHub layout" section, mirroring step 9's
+  `bootstrap.local.json` pattern.
+- source: dry-run
+
+### [LOW] README.md — "What's in this kit" tree omits `templates/workspace/`, added in the immediately-preceding commit
+- category: instruction-drift
+- observation: commit `0d45e8d` (2026-08-31) added
+  `templates/workspace/{CLAUDE,AGENTS,README,REPOS}.md` and
+  updated `templates/README.md`'s own Layout tree and
+  adopt-by-need table to describe it, but left `README.md`'s
+  top-level "What's in this kit" tree untouched. A reader
+  following only the README never learns `templates/workspace/`
+  exists. `scripts/verify.mjs`'s tree leg unions entries from
+  both README.md and templates/README.md before reverse-checking
+  disk files, so satisfying the requirement in
+  `templates/README.md` alone keeps the gate green — this gap is
+  gate-invisible.
+- evidence: `grep -n -i workspace README.md` → only the
+  `playbooks/workspace.md` link and a bare filename in the
+  `playbooks/` sub-list; no `workspace/` entry under the
+  `templates/` block (compare `templates/README.md`'s Layout
+  tree, which does list it).
+- suggested fix: add a `workspace/` block to README.md's
+  templates/ tree, e.g. "├── workspace/  # adopt-by-need
+  workspace-root pointer family — see templates/README.md".
+- source: dry-run
+
+### [MED] playbooks/new-project.md — "Prune adopt-by-need files" list omits `scripts/install-hooks.mjs`
+- category: instruction-drift
+- observation: step 4's bulk copy
+  (`['templates/scripts','scripts']`, recursive) lands
+  `templates/scripts/install-hooks.mjs` (added in phase 31,
+  commit `6762cc9`, 2026-08-30) in every adopter's repo
+  unconditionally. `templates/README.md:152` documents it as
+  adopt-by-need ("Opt-in — run it once... to arm a
+  `.git/hooks/pre-commit`"). But the Prune subsection's
+  cross-check list and both worked `rm -f` / `Remove-Item`
+  examples never mention it — the same bug class this file's own
+  Done log shows fixed twice before for other files, now
+  reopened by an unaccompanied newer commit.
+- evidence: `grep -n install-hooks playbooks/new-project.md` →
+  zero matches; `grep -n install-hooks templates/README.md` →
+  line 80 (layout) and line 152 (adopt-by-need row).
+- suggested fix: add a prune bullet
+  ("`scripts/install-hooks.mjs` — remove unless you want `pnpm
+  verify` auto-armed as a pre-commit hook for hand commits made
+  outside the loop") and add it to both worked rm/Remove-Item
+  examples.
 - source: dry-run
 
 ## Done
