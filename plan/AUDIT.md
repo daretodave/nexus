@@ -777,6 +777,19 @@ Pending queue holds 4 LOW dry-run rows not folded into this
 file (separate queue, same scoring scale, left for whoever ships
 next). Audit only — shipped nothing, per `skills/digest.md` rule 2.
 
+Cloud tick 2026-09-02: header was 26h old (last full sweep the
+2026-09-01 digest tick, above), past the 24h threshold, so ran a
+targeted fresh check rather than a full manual re-derive:
+reproduced `templates/.github/CLOUD_LOOP.md`'s Opus-4.8 hedge
+gap (`[F, 3.6]`, below) unchanged at lines 34-36/230-232 — the
+top scorer, beating this block's own `[A, 3.2]` (workspace tree
+gap, which duplicates `plan/CRITIQUE.md`'s open LOW row of the
+same name — left that CRITIQUE row untouched per iterate.md
+§5.4, since this skill doesn't author CRITIQUE rows and a
+`/critique` pass should confirm+close it) and the three durable
+blocked user-issues (#40/#35/#49, same workflows-scope gap,
+unchanged). Shipped `[F, 3.6]`. Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -860,24 +873,6 @@ next). Audit only — shipped nothing, per `skills/digest.md` rule 2.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
-### [F, 3.6] CLOUD_LOOP.md hedges "Sonnet 5" mentions but not the adjacent "Opus 4.8" ones
-- category: freshness
-- impact: 4, ease: 9
-- evidence: `templates/.github/CLOUD_LOOP.md` pairs a Sonnet-5
-  line with the standing "(ids age — check `/model`)" hedge in
-  two spots but leaves the very next Opus-4.8 line unhedged in
-  both: the cost table at lines 34-36 (line 35 hedges Sonnet 5,
-  line 36's Opus 4.8 row does not), and the "Upgrading the
-  model" section at lines 230-232 (the hedge is grammatically
-  attached only to "Sonnet 5"; "To upgrade to Opus 4.8:" on the
-  next line is bare). The ids are currently correct — this is
-  the hedging convention applied inconsistently within the same
-  doc, same bug class as this file's two prior Done rows for
-  stale "Sonnet 4.6"/"Opus 4.7" strings.
-- next: add "(ids age — check `/model`)" to the Opus-4.8 line in
-  the cost table (line 36) and to the "Opus 4.8" reference in
-  "Upgrading the model" (line 232).
-
 ### [A, 3.2] README.md's kit tree omits templates/workspace/
 - category: doc-drift
 - impact: 4, ease: 8
@@ -952,6 +947,18 @@ next). Audit only — shipped nothing, per `skills/digest.md` rule 2.
   files' `self-test` after to confirm parity.
 
 ## Done
+
+### [x] [F, 3.6] CLOUD_LOOP.md hedges "Sonnet 5" mentions but not the adjacent "Opus 4.8" ones — this commit
+- category: freshness
+- fix: added "(ids age — check `/model`)" as its own line after
+  the Opus 4.8 row in the cost table
+  (`templates/.github/CLOUD_LOOP.md:34-37`) and folded the same
+  hedge into the "Upgrading the model" section's "To upgrade to
+  Opus 4.8" sentence (line 232, "same hedge applies") — matching
+  the existing Sonnet-5 hedge already present in both spots.
+  Confirmed no matching gap in the root `.github/CLOUD_LOOP.md`
+  (nexus's own copy, not the template) — it only mentions
+  `claude-sonnet-5` once, no paired Opus line.
 
 ### [x] [user-issue #12] [MED] nexus's own march.yml needs phase 17's weighted-ceiling patch applied by hand — this commit (closes #12)
 - fix: applied exactly as the row's `next` prescribed, from the
