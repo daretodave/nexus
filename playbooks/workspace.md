@@ -129,6 +129,23 @@ itself still never becomes a repo. `prompts/adopt.md` also asks
 a fresh adopter to confirm this topology before proceeding,
 rather than guessing silently.
 
+After copying, sweep `<WORKSPACE_ORG>` (and `<PROJECT>` per
+sibling repo) across the four files:
+
+```bash
+sed -i -e 's/<WORKSPACE_ORG>/your-org/g' \
+  CLAUDE.md AGENTS.md README.md REPOS.md
+```
+
+The PowerShell twin:
+
+```powershell
+Get-ChildItem CLAUDE.md,AGENTS.md,README.md,REPOS.md | ForEach-Object {
+  (Get-Content $_ -Raw) -replace '<WORKSPACE_ORG>', 'your-org' |
+    Set-Content $_ -NoNewline
+}
+```
+
 ---
 
 ## Ready when

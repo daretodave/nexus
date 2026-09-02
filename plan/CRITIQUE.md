@@ -94,31 +94,6 @@ path, comprehension stumble. See `skills/critique.md`.
   `customization/data-layer.md`).
 - source: dry-run
 
-### [MED] playbooks/workspace.md — `templates/workspace/` ships `<WORKSPACE_ORG>` with no replace instruction anywhere
-- category: placeholder
-- observation: `templates/workspace/CLAUDE.md`, `AGENTS.md`, and
-  `REPOS.md` contain literal `<WORKSPACE_ORG>` (and reuse
-  `<PROJECT>`) tokens. `playbooks/workspace.md`'s only
-  instruction for this family ("Copy the *content* into the
-  root... not the files' git history") gives no
-  search-and-replace step. `templates/README.md`'s Placeholders
-  table lists only the original 8 tokens; `<WORKSPACE_ORG>`
-  appears nowhere in it. Contrast with
-  `playbooks/new-project.md` step 9, which explicitly flags and
-  fixes the same class of gap for `bootstrap.local.json`.
-- evidence: `grep -rn WORKSPACE_ORG` → hits only in
-  `templates/workspace/{CLAUDE.md,AGENTS.md,REPOS.md}`,
-  `plan/phases/phase_33_workspace_templates.md`, and
-  `scripts/verify.mjs`'s placeholder vocabulary (which guards
-  nexus's own repo, not an adopter's copy); zero hits in
-  `playbooks/workspace.md` for any replace/sed instruction.
-- suggested fix: add `<WORKSPACE_ORG>` to `templates/README.md`'s
-  Placeholders table (or a workspace-specific mini-table), and
-  add a sed/PowerShell one-liner to `playbooks/workspace.md`'s
-  "Org-per-project GitHub layout" section, mirroring step 9's
-  `bootstrap.local.json` pattern.
-- source: dry-run
-
 ### [LOW] README.md — "What's in this kit" tree omits `templates/workspace/`, added in the immediately-preceding commit
 - category: instruction-drift
 - observation: commit `0d45e8d` (2026-08-31) added
@@ -144,6 +119,31 @@ path, comprehension stumble. See `skills/critique.md`.
 
 
 ## Done
+
+### [x] [MED] playbooks/workspace.md — `templates/workspace/` ships `<WORKSPACE_ORG>` with no replace instruction anywhere — this commit
+- category: placeholder
+- observation: `templates/workspace/CLAUDE.md`, `AGENTS.md`, and
+  `REPOS.md` contain literal `<WORKSPACE_ORG>` (and reuse
+  `<PROJECT>`) tokens. `playbooks/workspace.md`'s only
+  instruction for this family ("Copy the *content* into the
+  root... not the files' git history") gives no
+  search-and-replace step. `templates/README.md`'s Placeholders
+  table lists only the original 8 tokens; `<WORKSPACE_ORG>`
+  appears nowhere in it. Contrast with
+  `playbooks/new-project.md` step 9, which explicitly flags and
+  fixes the same class of gap for `bootstrap.local.json`.
+- evidence: `grep -rn WORKSPACE_ORG` → hits only in
+  `templates/workspace/{CLAUDE.md,AGENTS.md,REPOS.md}`,
+  `plan/phases/phase_33_workspace_templates.md`, and
+  `scripts/verify.mjs`'s placeholder vocabulary (which guards
+  nexus's own repo, not an adopter's copy); zero hits in
+  `playbooks/workspace.md` for any replace/sed instruction.
+- suggested fix: add `<WORKSPACE_ORG>` to `templates/README.md`'s
+  Placeholders table (or a workspace-specific mini-table), and
+  add a sed/PowerShell one-liner to `playbooks/workspace.md`'s
+  "Org-per-project GitHub layout" section, mirroring step 9's
+  `bootstrap.local.json` pattern.
+- source: dry-run
 
 ### [x] [MED] playbooks/new-project.md — "Prune adopt-by-need files" list omits `scripts/install-hooks.mjs` — this commit (closes #51)
 - fix: added a `scripts/install-hooks.mjs` prune bullet to

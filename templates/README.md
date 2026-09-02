@@ -109,6 +109,16 @@ eight in one pass, see
 copy-paste from there rather than hand-rolling a partial
 version here.
 
+### Workspace placeholders (adopt-by-need)
+
+`workspace/` is copied separately from the eight above — see
+[`playbooks/workspace.md`](../playbooks/workspace.md) for the
+replace step.
+
+| Placeholder | Replace with | Example |
+|---|---|---|
+| `<WORKSPACE_ORG>` | GitHub org holding every sibling repo | `daretodave` |
+
 ## Don't copy these as-is
 
 A few files in templates intentionally have project-specific
