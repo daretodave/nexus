@@ -802,6 +802,23 @@ phrasing. This is the same finding `plan/CRITIQUE.md`'s open LOW
 row describes, so that row also moves Pending to Done this tick
 per iterate.md §8. Not a full A-G sweep.
 
+Cloud tick 2026-09-02 (third): header still the 2026-09-01
+sweep; no re-derive. `plan/CRITIQUE.md`'s Pending queue held four
+LOW rows; the highest-scoring, `[LOW, 2.7]` (README.md:242's
+"2-4 hours of setup" vs. the reconciled "2-3 hours" figure at
+`playbooks/new-project.md:4`), tied this block's own top scorer
+`[C, 2.7]` (PHASE_CANDIDATES.md's `digest.md §4` mis-citation).
+Followed the established tie-break (favor the queue — see the
+2026-07-19 (second), 2026-07-23 (fourth), and 2026-07-24 (second)
+log lines above) and shipped the CRITIQUE row. Verified the
+comparison point still held even though the row's originally-cited
+README.md:161 line had since been reworded away by an intervening
+fix (README's line numbers had also drifted 341 -> 242).
+`plan/CRITIQUE.md`'s Pending queue is now three LOW rows. This
+block's own rows (`[C, 2.7]`, `[C, 2.4]`, `[A, 2.4]`) and the
+three durable blocked user-issues are unchanged and still Pending.
+Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand

@@ -239,7 +239,7 @@ You want this when:
 - You have a **definite product** in mind, captured in some form
   of `spec.md`. The methodology assumes you know roughly what
   you're building.
-- You're willing to invest **2–4 hours of setup** to get hours
+- You're willing to invest **2–3 hours of setup** to get hours
   to days of unattended autonomous build time.
 - You can let `main` deploy automatically — the loop assumes
   push = deploy, and gates around that contract.

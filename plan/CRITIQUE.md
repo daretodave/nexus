@@ -11,28 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] README.md:341 — "2–4 hours of setup" doesn't match the reconciled "2–3 hours" figure used everywhere else
-- category: instruction-drift
-- observation: the "When this is the right tool" section says
-  "You're willing to invest **2–4 hours of setup**," but every
-  other setup-time mention in the repo was already reconciled to
-  **2–3 hours**: README.md:161 ("2–3 hours for a human working
-  the same playbook manually") and
-  `playbooks/new-project.md:4` ("Estimated time: **2–3
-  hours**"). This reads as a third, independently-drifted
-  number in a repo whose CRITIQUE.md history shows two prior
-  passes (both filed MED) specifically fixing this exact class
-  of drift at other lines — this occurrence was missed by both.
-- evidence: `grep -n "hours" README.md` → line 161 says "2–3
-  hours", line 341 says "2–4 hours"; `playbooks/new-project.md:4`
-  says "2–3 hours".
-- suggested fix: change README.md:341 to "2–3 hours of setup" to
-  match the reconciled figure, or if 2–4 hours is intentionally a
-  wider "could run over" framing, say so explicitly (e.g. "2–3
-  hours, sometimes 4") rather than presenting a bare second
-  number.
-- source: dry-run
-
 ### [LOW] README.md:48 — "canonical sibling" used in the very first sample output with no definition anywhere in the file
 - category: comprehension
 - observation: the "single `/march` tick, at a glance" sample
@@ -96,6 +74,16 @@ path, comprehension stumble. See `skills/critique.md`.
 
 
 ## Done
+
+### [x] [LOW] README.md:242 — "2–4 hours of setup" doesn't match the reconciled "2–3 hours" figure used everywhere else — this commit
+- fix: changed README.md:242's "2–4 hours of setup" to "2–3
+  hours of setup", matching `playbooks/new-project.md:4`'s
+  "Estimated time: **2–3 hours**" — the reconciled figure the
+  row's original comparison line (README's old :161) no longer
+  states verbatim (reworded away by an intervening fix to
+  "well under an hour" for the delegated-agent case), but the
+  underlying drift this row flags — a second, larger number for
+  the same manual-setup concept — still held.
 
 ### [x] [LOW] README.md — "What's in this kit" tree omits `templates/workspace/` — this commit
 - fix: added a collapsed `workspace/` tree entry to README.md's
