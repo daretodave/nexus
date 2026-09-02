@@ -790,6 +790,18 @@ same name — left that CRITIQUE row untouched per iterate.md
 blocked user-issues (#40/#35/#49, same workflows-scope gap,
 unchanged). Shipped `[F, 3.6]`. Not a full A-G sweep.
 
+Cloud tick 2026-09-02 (second): header still the 2026-09-01
+sweep; re-read the Pending block rather than re-deriving. Top
+non-blocked scorer was `[A, 3.2]` (workspace tree gap) — the
+three user-issue rows (#40/#35/#49) score impact 4 x ease 2 / 10
+= 0.8, well below it, and stay blocked on the same
+workflows-scope gap a cloud tick can't fix. Shipped `[A, 3.2]`:
+added a collapsed `workspace/` tree entry to README.md's "What's
+in this kit" templates block, matching `templates/README.md:84`'s
+phrasing. This is the same finding `plan/CRITIQUE.md`'s open LOW
+row describes, so that row also moves Pending to Done this tick
+per iterate.md §8. Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -873,27 +885,6 @@ unchanged). Shipped `[F, 3.6]`. Not a full A-G sweep.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
-### [A, 3.2] README.md's kit tree omits templates/workspace/
-- category: doc-drift
-- impact: 4, ease: 8
-- evidence: README.md's "What's in this kit" templates block
-  (lines 441-501) has zero mentions of `workspace` — `grep -n
-  workspace README.md` confirms — despite phase 33 shipping the
-  4-file `templates/workspace/` adopt-by-need family (`CLAUDE.md`,
-  `AGENTS.md`, `README.md`, `REPOS.md`) the same day.
-  `templates/README.md`'s own tree already lists it correctly
-  (collapsed, line 84), and README's playbooks section already
-  lists `workspace.md` — only the templates-tree mirror missed
-  it. `scripts/verify.mjs`'s tree leg stays green because both
-  diagrams collapse the directory rather than expanding it
-  per-file, so the gate can't catch a missing top-level line.
-  Same bug class as this file's prior PHASE_CANDIDATES/
-  CURRENT-STATE Done row (a new top-level family lands without
-  its README mirror).
-- next: add one collapsed tree line for `templates/workspace/`
-  to README.md's kit-tree block, matching
-  `templates/README.md:84`'s phrasing.
-
 ### [C, 2.7] plan/PHASE_CANDIDATES.md still cites skills/digest.md §4 for content that's in §3
 - category: link-hygiene
 - impact: 3, ease: 9
@@ -947,6 +938,14 @@ unchanged). Shipped `[F, 3.6]`. Not a full A-G sweep.
   files' `self-test` after to confirm parity.
 
 ## Done
+
+### [x] [A, 3.2] README.md's kit tree omits templates/workspace/ — this commit
+- category: doc-drift
+- fix: added a collapsed `workspace/` tree entry (4 files:
+  `CLAUDE.md`, `AGENTS.md`, `README.md`, `REPOS.md`) to
+  README.md's "What's in this kit" templates block, matching
+  `templates/README.md:84`'s phrasing. Also closes
+  `plan/CRITIQUE.md`'s open LOW row describing the same gap.
 
 ### [x] [F, 3.6] CLOUD_LOOP.md hedges "Sonnet 5" mentions but not the adjacent "Opus 4.8" ones — this commit
 - category: freshness

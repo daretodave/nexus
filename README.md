@@ -499,8 +499,13 @@ nexus/
     │   ├── stack-lifecycle.mjs        # Pattern B port/health/state helpers (omit unless hermetic e2e is Pattern B)
     │   ├── new-skill.mjs              # skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md
     │   └── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
-    └── env/
-        └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
+    ├── env/
+    │   └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
+    └── workspace/                      # → workspace root, not any repo (adopt-by-need)
+        ├── CLAUDE.md
+        ├── AGENTS.md
+        ├── README.md
+        └── REPOS.md
 ```
 
 The templates are the artifacts. Everything else explains how to

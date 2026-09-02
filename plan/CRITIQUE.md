@@ -94,31 +94,15 @@ path, comprehension stumble. See `skills/critique.md`.
   `customization/data-layer.md`).
 - source: dry-run
 
-### [LOW] README.md — "What's in this kit" tree omits `templates/workspace/`, added in the immediately-preceding commit
-- category: instruction-drift
-- observation: commit `0d45e8d` (2026-08-31) added
-  `templates/workspace/{CLAUDE,AGENTS,README,REPOS}.md` and
-  updated `templates/README.md`'s own Layout tree and
-  adopt-by-need table to describe it, but left `README.md`'s
-  top-level "What's in this kit" tree untouched. A reader
-  following only the README never learns `templates/workspace/`
-  exists. `scripts/verify.mjs`'s tree leg unions entries from
-  both README.md and templates/README.md before reverse-checking
-  disk files, so satisfying the requirement in
-  `templates/README.md` alone keeps the gate green — this gap is
-  gate-invisible.
-- evidence: `grep -n -i workspace README.md` → only the
-  `playbooks/workspace.md` link and a bare filename in the
-  `playbooks/` sub-list; no `workspace/` entry under the
-  `templates/` block (compare `templates/README.md`'s Layout
-  tree, which does list it).
-- suggested fix: add a `workspace/` block to README.md's
-  templates/ tree, e.g. "├── workspace/  # adopt-by-need
-  workspace-root pointer family — see templates/README.md".
-- source: dry-run
-
 
 ## Done
+
+### [x] [LOW] README.md — "What's in this kit" tree omits `templates/workspace/` — this commit
+- fix: added a collapsed `workspace/` tree entry to README.md's
+  "What's in this kit" templates block, matching
+  `templates/README.md:84`'s phrasing. Shipped via
+  `plan/AUDIT.md`'s `[A, 3.2]` row, same finding.
+- source: dry-run
 
 ### [x] [MED] playbooks/workspace.md — `templates/workspace/` ships `<WORKSPACE_ORG>` with no replace instruction anywhere — this commit
 - category: placeholder
