@@ -588,8 +588,8 @@ kit + sibling surveys.
   policy, and it has no aging counter-pressure.
 - rationale: a one-line, ease-9 fix sitting seven-plus days
   unshipped purely because of an unwritten scoring convention is
-  exactly the "starved queue" pattern `skills/digest.md` §4 names
-  as a tuning trigger — not because the fix is hard, risky, or
+  exactly the "starved queue" pattern `skills/digest.md` §3 step 4
+  names as a tuning trigger — not because the fix is hard, risky, or
   actually low-value.
 - proposed scope: write the "favor the queue on ties" convention
   explicitly into `skills/iterate.md` §3 as an inspectable rule,

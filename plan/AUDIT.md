@@ -838,6 +838,21 @@ block's own rows (`[C, 2.7]`, `[C, 2.4]`, `[A, 2.4]`) and the
 three durable blocked user-issues (#40, #35, #49) were not
 re-verified this tick — not a full A-G sweep.
 
+Cloud tick 2026-09-03 (second): header still the 2026-09-01
+sweep; no re-derive. `plan/CRITIQUE.md`'s remaining Pending
+queue holds two LOW rows (`README.md:48`'s undefined "canonical
+sibling" and `README.md:603-605`'s 2-of-8 placeholder list),
+both scoring ~2.4 (impact 3, ease 8) — below this block's own
+top scorer, `[C, 2.7]` (`plan/PHASE_CANDIDATES.md:591`'s stale
+`digest.md §4` citation). Reproduced: the "starved queue"
+language the row describes lives in `skills/digest.md` at line
+66, inside step 4 of `## 3. The procedure` (the numbered list
+runs lines 28-76), not under `## 4. Hard rules` (lines 77-96,
+confirmed empty of that phrase). Shipped the fix. This block's
+remaining rows (`[C, 2.4]`, `[A, 2.4]`) and the three durable
+blocked user-issues (#40, #35, #49) unchanged and still Pending.
+Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -921,20 +936,6 @@ re-verified this tick — not a full A-G sweep.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
-### [C, 2.7] plan/PHASE_CANDIDATES.md still cites skills/digest.md §4 for content that's in §3
-- category: link-hygiene
-- impact: 3, ease: 9
-- evidence: `plan/PHASE_CANDIDATES.md:591` (drifted from :533 as
-  intervening candidates were appended) cites `skills/digest.md
-  §4` for "mistuned gate / starved queue / tuning trigger"
-  language, but `digest.md`'s `## 4. Hard rules` heading doesn't
-  contain that content — it's item 4 inside `## 3. The
-  procedure`. `plan/DIGEST.md:107` carried the identical bug
-  until an intervening tick fixed it (now correctly reads "§3
-  step 4"), narrowing this row to the one remaining file.
-- next: reword `plan/PHASE_CANDIDATES.md:591` to "§3 step 4",
-  matching `plan/DIGEST.md:107`'s already-fixed phrasing.
-
 ### [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content
 - category: link-hygiene
 - impact: 3, ease: 8
@@ -974,6 +975,15 @@ re-verified this tick — not a full A-G sweep.
   files' `self-test` after to confirm parity.
 
 ## Done
+
+### [x] [C, 2.7] plan/PHASE_CANDIDATES.md still cites skills/digest.md §4 for content that's in §3 — this commit
+- category: link-hygiene
+- fix: reworded `plan/PHASE_CANDIDATES.md:591` from
+  `` `skills/digest.md` §4 `` to `` `skills/digest.md` §3 step 4 ``,
+  matching `plan/DIGEST.md:107`'s already-fixed phrasing —
+  confirmed the cited "starved queue" language lives at
+  `skills/digest.md:66`, inside step 4 of `## 3. The procedure`,
+  not `## 4. Hard rules`.
 
 ### [x] [A, 3.2] README.md's kit tree omits templates/workspace/ — this commit
 - category: doc-drift
