@@ -819,6 +819,25 @@ block's own rows (`[C, 2.7]`, `[C, 2.4]`, `[A, 2.4]`) and the
 three durable blocked user-issues are unchanged and still Pending.
 Not a full A-G sweep.
 
+Cloud tick 2026-09-03: header still the 2026-09-01 sweep (now
+~2 days old); no re-derive. `plan/CRITIQUE.md`'s remaining
+Pending queue held three LOW rows; the highest-scoring,
+`[LOW, 2.7]` (README.md:189's "Posture-gated" used with no
+definition or link), tied this block's own top scorer
+`[C, 2.7]` (PHASE_CANDIDATES.md's `digest.md §4`
+mis-citation). Followed the established tie-break (favor the
+queue — see the 2026-07-19 (second), 2026-07-23 (fourth),
+2026-07-24 (second), and 2026-09-02 (third) log lines above)
+and shipped the CRITIQUE row: linked "Posture-gated" in
+README.md's `/expand` command-table row to
+`templates/plan/bearings.md#plan-expansion-posture`, matching
+the same table's existing `/ship-data` →
+`customization/data-layer.md` link pattern.
+`plan/CRITIQUE.md`'s Pending queue is now two LOW rows. This
+block's own rows (`[C, 2.7]`, `[C, 2.4]`, `[A, 2.4]`) and the
+three durable blocked user-issues (#40, #35, #49) were not
+re-verified this tick — not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand

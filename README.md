@@ -186,7 +186,7 @@ A small family of slash commands the autonomous loop uses:
 | `/iterate` | Audit the project, ship one improvement. The post-build endgame. |
 | `/critique` | External-observer pass — visit the live site as a stranger, file fresh-eyes findings. |
 | `/triage` | Read open GitHub issues, classify, label, route into the address loop. |
-| `/expand` | Plan-expansion pass — read signals (audit, critique, spec drift, design landings, data growth) and propose new phase candidates. Posture-gated: **bold** by default, **strict** to opt out. |
+| `/expand` | Plan-expansion pass — read signals (audit, critique, spec drift, design landings, data growth) and propose new phase candidates. [Posture-gated](./templates/plan/bearings.md#plan-expansion-posture): **bold** by default, **strict** to opt out. |
 | `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → phase → data → expand → iterate. |
 | `/digest` | **The night shift.** Daily tick: writes the morning briefing to `plan/DIGEST.md`, runs breadth checks too slow for the per-commit path, proposes gate tunings as candidates (never applies them). Own workflow (`night.yml`), never dispatched by `/march`. |
 | `/jot` | **The user's quickfire.** Drop a free-text observation into `plan/CRITIQUE.md` and push, in seconds. The next `/iterate` tick scores it (with a `+0.5` user-source bump) against everything else and ships the fix. No questions back; same shape as `/ship-data add` — input via the slash arg. |

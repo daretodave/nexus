@@ -54,26 +54,13 @@ path, comprehension stumble. See `skills/critique.md`.
   of naming two.
 - source: dry-run
 
-### [LOW] README.md:287 — "Posture-gated" used once with no definition or link
-- category: comprehension
-- observation: the `/expand` row says "Posture-gated: **bold**
-  by default, **strict** to opt out" — the only place
-  "posture"/"Posture-gated" appears in README.md. The concept
-  (and the values `bold`/`strict`) are only explained in
-  `templates/plan/bearings.md` ("Plan expansion posture") and
-  `templates/skills/expand.md`, neither linked from this row.
-- evidence: `grep -n Posture-gated README.md` → one hit, line
-  287; `grep -n posture templates/plan/bearings.md` → defined at
-  line 296-300, not linked from README.
-- suggested fix: link "Posture-gated" to
-  `templates/plan/bearings.md`'s "Plan expansion posture"
-  section, matching the pattern used elsewhere in this same
-  table (e.g. the `/ship-data` row links
-  `customization/data-layer.md`).
-- source: dry-run
-
-
 ## Done
+
+### [x] [LOW] README.md:189 — "Posture-gated" used once with no definition or link — this commit
+- fix: linked "Posture-gated" in the `/expand` command-table row
+  to `templates/plan/bearings.md#plan-expansion-posture`,
+  matching the pattern the same table already uses for
+  `/ship-data` → `customization/data-layer.md`.
 
 ### [x] [LOW] README.md:242 — "2–4 hours of setup" doesn't match the reconciled "2–3 hours" figure used everywhere else — this commit
 - fix: changed README.md:242's "2–4 hours of setup" to "2–3
