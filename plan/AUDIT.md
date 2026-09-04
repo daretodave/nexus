@@ -879,6 +879,21 @@ block's own two rows (`[C, 2.4]`, `[A, 2.4]`) and the three
 durable blocked user-issues (#40, #35, #49) unchanged and still
 Pending. Not a full A-G sweep.
 
+Cloud tick 2026-09-04 (second): header still the 2026-09-01
+sweep (now ~3 days old); no re-derive. `plan/CRITIQUE.md`'s
+last remaining LOW row (step 5's 2-of-8 placeholder undercount,
+score ~2.4) tied this block's own two rows (`[C, 2.4]` triage.md
+citation, `[A, 2.4]` guard.mjs template drift). Followed the
+established tie-break (favor the queue — see the 2026-07-19
+(second), 2026-07-23 (fourth), 2026-07-24 (second), and
+2026-09-02 (third) log lines above) and shipped the CRITIQUE
+row: reworded README.md step 5 to "Replace all 8 placeholders
+(see `templates/README.md`)" instead of naming 2 of 8.
+`plan/CRITIQUE.md`'s Pending queue is now empty. This block's
+own two rows (`[C, 2.4]`, `[A, 2.4]`) and the three durable
+blocked user-issues (#40, #35, #49) unchanged and still Pending.
+Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand

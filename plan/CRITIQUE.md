@@ -11,26 +11,17 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] README.md:603-605 — "How to use this kit" step 5 names only 2 of the 8 documented placeholders
-- category: placeholder
-- observation: step 5 of the manual "How to use this kit" walk
-  says "Replace `<PROJECT>` and `<PROJECT_LOWER>` placeholders,"
-  naming only 2 of the 8 tokens `templates/README.md:82-91` and
-  `playbooks/new-project.md` §4 document
-  (`<PROJECT_TAGLINE>`, `<HOSTING_URL>`, `<HOSTING_PROVIDER>`,
-  `<REPO_SLUG>`, `<DEFAULT_BRANCH>`, `<PROJECT_PKG_PREFIX>` are
-  omitted). The step does say "per the playbook" first, so it's
-  not strictly wrong, but singling out 2 of 8 by name reads as a
-  complete list to a reader who doesn't open the playbook.
-- evidence: README.md:603-605 vs templates/README.md:82-91 (the
-  8-row placeholder table).
-- suggested fix: either drop the two named placeholders from
-  step 5 (leave "per the playbook" to carry the instruction) or
-  say "all 8 placeholders (see `templates/README.md`)" instead
-  of naming two.
-- source: dry-run
+(none)
 
 ## Done
+
+### [x] [LOW] README.md:528-530 — "How to use this kit" step 5 names only 2 of the 8 documented placeholders — this commit
+- fix: changed step 5 from naming `<PROJECT>` and
+  `<PROJECT_LOWER>` by name (2 of 8 tokens) to "Replace all 8
+  placeholders (see `templates/README.md`)", linked to the
+  Placeholders table anchor, so the step no longer reads as a
+  complete list to a reader who doesn't open the playbook.
+- source: dry-run
 
 ### [x] [LOW] README.md:48 — "canonical sibling" used in the very first sample output with no definition anywhere in the file — this commit
 - fix: changed the sample transcript's "Read brief, canonical

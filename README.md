@@ -526,8 +526,9 @@ adapt them.
 4. **Read your playbook end-to-end before starting.** It's ~10
    minutes; you'll save hours.
 5. **Copy templates into your repo** per the playbook. Replace
-   `<PROJECT>` and `<PROJECT_LOWER>` placeholders. Adapt the
-   build plan to your real phases.
+   all 8 placeholders (see
+   [`templates/README.md`](./templates/README.md#placeholders)).
+   Adapt the build plan to your real phases.
 6. **Wire your CI/CD provider** per
    [`playbooks/ci-providers.md`](./playbooks/ci-providers.md).
 7. **Customize** per the docs in `customization/` — pick which
