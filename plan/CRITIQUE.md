@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-09-01
-> Pass count: 13
+> Last pass: 2026-09-04
+> Pass count: 14
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -11,7 +11,26 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-(none)
+### [MED] playbooks/new-project.md:693 — Day-1 checklist gates on `pnpm verify` running, but the playbook's own step 6 says `package.json` doesn't exist yet at this point
+- category: instruction-drift
+- observation: Step 6 ("Wire the verify gate") explicitly states "No `package.json` exists yet at this point in the walk — phase 1 ... is what scaffolds one" and that the `pnpm verify` snippet there "describes the target shape ... not something to run against an empty repo right now." Step 7 only wires `deploy:check` into `package.json` (its json snippet omits the `verify` script from step 6). The Day-1 checklist — the final gate before the *first* `/ship-a-phase` invocation, i.e. before phase 1 has shipped and scaffolded `package.json` — requires `- [ ] \`pnpm verify\` runs (may fail; runs).` An adopter following the steps in order has no `verify` script wired into any `package.json` at checklist time, so the item can't be satisfied without inventing an off-playbook step.
+- evidence: playbooks/new-project.md:438-441 ("No `package.json` exists yet at this point in the walk ... not something to run against an empty repo right now") vs. playbooks/new-project.md:693 ("`pnpm verify` runs (may fail; runs).") immediately gating playbooks/new-project.md:717 ("invoke `/ship-a-phase` for the first time").
+- suggested fix: Either have step 7 also stub the `verify` script into `package.json` (not just `deploy:check`), or reword the checklist item to something satisfiable pre-phase-1, e.g. "verify command is specified in the phase 1 brief's Outputs section."
+- source: dry-run
+
+### [LOW] README.md:121 — "Review what landed" promises "A working `pnpm verify`" right after the adoption commit, before phase 1 (which scaffolds `package.json`) has shipped
+- category: comprehension
+- observation: This bullet describes what to expect from the `chore: adopt nexus methodology` commit alone — before the reader has run `/ship-a-phase` even once. At that point, per playbooks/new-project.md:438-441, no `package.json` exists, so there is no "working" `pnpm verify` yet, only a documented target shape in the phase 1 brief. "Working" overstates it and can mislead an adopter into thinking the command should already succeed (or even run) right after the delegated adoption step.
+- evidence: README.md:121-122: "- A working `pnpm verify` (or stack-equivalent) and `pnpm deploy:check`."
+- suggested fix: Soften to "verify/deploy scripts specified and ready to wire once phase 1 lands" to match the playbook's own weaker claim (playbooks/new-project.md:693's "may fail; runs").
+- source: dry-run
+
+### [LOW] README.md:43-53 — the first concrete example (`/march` tick transcript) uses shorthand terms (`Triage`, `Critique`, `Expand`, `Dispatch`) roughly 130 lines before the "What you get" table defines the commands behind them
+- category: comprehension
+- observation: A first-time reader hits the tick transcript immediately after the opening paragraph. The one-line gloss right after it ("Each tick: one decision, one slice of work, one verify, one commit, one push, one deploy confirmation") explains the *shape* but not what `Triage`/`Critique`/`Expand`/`Dispatch` each individually mean — that mapping only appears in the `/triage`, `/critique`, `/expand` rows of the "What you get" table at README.md:187-190, well after the two TL;DR walkthroughs. Mild friction, not blocking (terms are guessable from English), but a stranger reading top-to-bottom has an unresolved reference for a while.
+- evidence: README.md:43 "Triage:   0 unlabeled issues — humming on." (etc.) vs. the defining table row at README.md:188 ("`/triage` | Read open GitHub issues, classify, label, route into the address loop.").
+- suggested fix: Add a one-line pointer right after the transcript, e.g. "(each stage is one of the slash commands in `What you get`, below)."
+- source: dry-run
 
 ## Done
 
