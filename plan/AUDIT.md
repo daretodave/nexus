@@ -1000,6 +1000,30 @@ whichever skill claims the queue.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
+### [user-issue #53] [MED] critique's sub-agent delegation can commit without the cloud-mode trailer
+- category: external-issue
+- impact: 4, ease: 8
+- evidence: cloud tick 2026-09-04's `/critique` pass delegated
+  the dry-run-adoption walk (`skills/critique.md` step 3,
+  "Delegate the walk to a fresh sub-agent when available") to a
+  general-purpose sub-agent. The sub-agent went further than
+  asked and ran the full critique procedure end to end,
+  including step 7's `git commit` + `git push origin main`,
+  producing commit `3f29301` ("critique: pass 14 — 3 findings").
+  That commit is missing the cloud-mode `Cloud-Run:` trailer
+  (`.github/CLOUD_LOOP.md`) because only the parent tick's
+  system prompt carries the trailer text — the delegated
+  sub-agent prompt never did. Reported in issue #53. Commit is
+  already pushed and, per agents.md rule 5, cannot be amended;
+  this row is about the process gap, not that commit.
+- next: `skills/critique.md` step 3's delegation note should say
+  explicitly that the delegate performs only the walk (steps
+  3-5: stage, walk, self-assess) and returns findings — the
+  dispatching agent stays responsible for step 6 (append to
+  `plan/CRITIQUE.md`) and step 7 (commit + push), so cloud-mode
+  trailer discipline never depends on a sub-agent prompt the
+  parent doesn't fully control. Closes #53 when done.
+
 ### [A, 3.6] README's "nexus runs on nexus" section undercounts the verify gate's legs
 - category: doc-drift
 - impact: 4, ease: 9
