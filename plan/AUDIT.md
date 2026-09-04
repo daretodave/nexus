@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-01
+# Kit audit — 2026-09-04
 
 > Bias: none
 
@@ -894,6 +894,29 @@ own two rows (`[C, 2.4]`, `[A, 2.4]`) and the three durable
 blocked user-issues (#40, #35, #49) unchanged and still Pending.
 Not a full A-G sweep.
 
+Digest 2026-09-04: header was ~3 days stale (>48h); ran the full
+A-G sweep this time. Durable rows (#40, #35, #49) reconfirmed
+unchanged and still blocked. Reconfirmed both non-durable rows
+still accurate and unfixed: `[C, 2.4]` (triage.md's dead
+`ship-data.md §6` citation) and `[A, 2.4]` (guard.mjs template
+missing the `\n`-exclusion hardening). Fresh sweep across A-G
+found one new row: README.md:565-568's "nexus runs on nexus"
+section says `verify.mjs` runs "six hermetic legs" and lists
+six, but the gate has shipped seven since phase 29 (`dualshell`
+added, uncounted here) — `[A, 3.6]` (impact 4, ease 9).
+B/D/E/F came back clean this pass (checked scripts/ vs README's
+tree, emoji/wrap/voice spot-check, placeholder table incl. the
+phase-33 workspace placeholders, model-id greps). G stayed empty
+— no sibling checkouts or `NEXUS_LESSONS.md` present locally.
+Also noted, sub-threshold: `CLAUDE.md`'s "next pending work is
+the first `[ ]` row" line is now stale prose (zero `[ ]` rows
+remain in the build plan, all phases `[x]` or `[blocked:]`) but
+`/march`'s real dispatch already falls through to `/iterate`
+correctly, so this is wording drift, not a functional gap — left
+unscored, worth folding into a future CLAUDE.md pass rather than
+a dedicated row. Top score is now `[A, 3.6]`; picked up next by
+whichever skill claims the queue.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -976,6 +999,22 @@ Not a full A-G sweep.
   cloud tick's App token. Closes #49 when done; also flips phase
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
+
+### [A, 3.6] README's "nexus runs on nexus" section undercounts the verify gate's legs
+- category: doc-drift
+- impact: 4, ease: 9
+- evidence: README.md:565-568 says `node scripts/verify.mjs`
+  runs "six hermetic legs (every relative link resolves, the
+  kit tree matches disk, no orphaned doc, placeholder
+  vocabulary enforced, skill anatomy enforced, no emojis)."
+  Running `node scripts/verify.mjs` prints seven legs: `links,
+  tree, discover, placeholders, anatomy, emoji, dualshell`.
+  Phase 29 added the `dualshell` leg (dual-shell parity lint for
+  playbooks) after this paragraph was last written; it was never
+  folded into the count or the leg list.
+- next: change "six" to "seven" at README.md:565 and append the
+  `dualshell` leg (dual-shell parity check) to the parenthetical
+  list at README.md:566-568.
 
 ### [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content
 - category: link-hygiene
