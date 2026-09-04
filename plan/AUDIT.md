@@ -853,6 +853,32 @@ remaining rows (`[C, 2.4]`, `[A, 2.4]`) and the three durable
 blocked user-issues (#40, #35, #49) unchanged and still Pending.
 Not a full A-G sweep.
 
+Cloud tick 2026-09-04: header still the 2026-09-01 sweep (now ~3
+days old); ran a targeted fresh check rather than a full manual
+re-derive: reproduced all four non-durable Pending rows —
+`[C, 2.4]` (triage.md's dead `ship-data.md §6` citation, still
+lines 222-223) and `[A, 2.4]` (guard.mjs template drift, still
+missing the `\n` exclusion in all four `RULES` regexes) both
+unchanged; `plan/CRITIQUE.md`'s two LOW rows also both unchanged
+(only line drift: "canonical sibling" now at README.md:48,
+placeholder-undercount row now at README.md:529-530). All four
+non-durable candidates tied at ~2.4 (impact 3, ease 8). Followed
+the established tie-break (favor the queue — see the 2026-07-19
+(second), 2026-07-23 (fourth), 2026-07-24 (second), and
+2026-09-02 (third) log lines above) and, between the two tied
+CRITIQUE rows, picked "canonical sibling" over the placeholder
+row: it sits earlier in the reader's path (the second thing a
+stranger reads, right after the opening pitch, versus a step-5
+instruction that already hedges "per the playbook"), and the fix
+is self-consistent with the same sample transcript's own "phase
+8" references rather than introducing new prose. Shipped:
+changed README.md's sample `/march` transcript from "Read brief,
+canonical sibling" to "Read brief, phase 8".
+`plan/CRITIQUE.md`'s Pending queue is now one LOW row. This
+block's own two rows (`[C, 2.4]`, `[A, 2.4]`) and the three
+durable blocked user-issues (#40, #35, #49) unchanged and still
+Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand

@@ -11,30 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] README.md:48 — "canonical sibling" used in the very first sample output with no definition anywhere in the file
-- category: comprehension
-- observation: the "single `/march` tick, at a glance" sample
-  (the second thing a stranger reads, right after the opening
-  pitch) includes the line "Read brief, canonical sibling" — but
-  "canonical sibling" is never defined in README.md. Its only
-  other README appearance is as a bare filename,
-  `phases/phase_canonical_sibling.md`, in the "What's in this
-  kit" tree (line 533), also without prose. The actual
-  definition ("phase 4 or 5... the template every later
-  page-family phase mirrors") lives only in
-  `playbooks/new-project.md` §5, which a reader hasn't reached
-  yet at line 48.
-- evidence: `grep -n -i sibling README.md` → only lines 48
-  (unexplained use), 405/496 (unrelated polyrepo sense), and 533
-  (bare filename); the concept definition is absent from
-  README.md entirely.
-- suggested fix: either drop "canonical sibling" from the sample
-  output (say "Read brief, phase 8" or similar) or add a short
-  parenthetical at first use, e.g. "canonical sibling (the
-  template phase every later page family mirrors — see
-  `playbooks/new-project.md` §5)".
-- source: dry-run
-
 ### [LOW] README.md:603-605 — "How to use this kit" step 5 names only 2 of the 8 documented placeholders
 - category: placeholder
 - observation: step 5 of the manual "How to use this kit" walk
@@ -55,6 +31,14 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] README.md:48 — "canonical sibling" used in the very first sample output with no definition anywhere in the file — this commit
+- fix: changed the sample transcript's "Read brief, canonical
+  sibling" to "Read brief, phase 8", matching the same sample's
+  own "Dispatch: ... phase 8" and "Phase 8 shipped" lines
+  instead of introducing an undefined term nowhere else
+  explained in README.md.
+- source: dry-run
 
 ### [x] [LOW] README.md:189 — "Posture-gated" used once with no definition or link — this commit
 - fix: linked "Posture-gated" in the `/expand` command-table row

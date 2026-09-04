@@ -45,7 +45,7 @@ $ /march
   Expand:   not due (12 of 20 commits; deliveries first).
   Dispatch: pending phase exists → /ship-a-phase, phase 8.
 
-      1   Read brief, canonical sibling
+      1   Read brief, phase 8
       2   Build 7 components + 3 helpers
       3   Tests:  12 unit, 2 e2e
       4   pnpm verify   ·  typecheck · test · validate · build · e2e   ✓
