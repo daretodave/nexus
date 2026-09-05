@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-08-31
-> Pass count: 7
+> Last pass: 2026-09-05
+> Pass count: 8
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -593,8 +593,9 @@ kit + sibling surveys.
 - estimated phases: 1 (workflow-only, no template API change)
 - conflicts: none.
 
-### [ ] [score 6.0] AUDIT's unwritten "favor the queue" tie-break is starving a cheap, real AUDIT-native row
-- proposed: 2026-07-24 (digest)
+### [ ] [score 6.3] AUDIT's unwritten "favor the queue" tie-break is starving a cheap, real AUDIT-native row
+- proposed: 2026-07-24 (digest); re-evidenced 2026-09-05 (expand
+  pass 8)
 - source signals: `plan/AUDIT.md`'s `[A/E, 2.7]` row (README's
   "Files added" checklist undersells `scripts/` — impact 3,
   ease 9, one of the cheapest fixes in the file) first appeared
@@ -606,12 +607,27 @@ kit + sibling surveys.
   convention, but it exists only as repeated log narrative in
   `plan/AUDIT.md` — it was never written into `skills/iterate.md`
   §3 as an actual rule, so nobody can inspect or challenge it as
-  policy, and it has no aging counter-pressure.
+  policy, and it has no aging counter-pressure. Signal A (fresh
+  instance), 2026-09-05: two more AUDIT-native rows are now
+  living examples of the same starvation, older than the
+  original evidence — `[C, 2.4]` (`triage.md`'s dead
+  `ship-data.md §6` citation) first appeared 2026-08-02 and
+  `[A, 2.4]` (`templates/claude/hooks/guard.mjs` drifted from
+  the kit's own hardening) first appeared ~2026-08-24; both have
+  been reproduced unchanged and left Pending across at least
+  seven intervening ticks (2026-08-25 through 2026-09-04) each
+  time a `plan/CRITIQUE.md` row was in contention, per
+  `plan/AUDIT.md`'s own tie-break log lines — 34 and 12 days
+  unshipped respectively, longer than the original `[A/E, 2.7]`
+  row ever waited before this candidate was first filed.
 - rationale: a one-line, ease-9 fix sitting seven-plus days
   unshipped purely because of an unwritten scoring convention is
   exactly the "starved queue" pattern `skills/digest.md` §3 step 4
   names as a tuning trigger — not because the fix is hard, risky, or
-  actually low-value.
+  actually low-value. That two independent rows have now each
+  waited over a week (one over a month) confirms this isn't a
+  one-off tie but a standing structural bias in favor of the
+  CRITIQUE queue.
 - proposed scope: write the "favor the queue on ties" convention
   explicitly into `skills/iterate.md` §3 as an inspectable rule,
   paired with a small aging nudge (e.g. `+0.1` per tick an AUDIT
