@@ -937,6 +937,19 @@ block's own three rows (`[A, 3.6]`, `[C, 2.4]`, `[A, 2.4]`) and
 the four durable blocked/process user-issues (#40, #35, #49,
 #53) unchanged and still Pending. Not a full A-G sweep.
 
+Cloud tick 2026-09-05 (second): header still <24h old (last full
+sweep the 2026-09-04 digest tick, above), so no re-sweep. An
+intervening tick shipped one of `plan/CRITIQUE.md`'s two LOW
+rows (the "working `pnpm verify`" pre-phase-1 claim), leaving one
+LOW (~2.7, README's shorthand-terms forward reference) — below
+this block's own top scorer, `[A, 3.6]` (README's verify-gate leg
+undercount) and `[user-issue #53]` (3.2), so shipped `[A, 3.6]`:
+reproduced via `node scripts/verify.mjs` (prints seven legs,
+README said six) and fixed the count + leg list. This block's
+remaining two rows (`[C, 2.4]`, `[A, 2.4]`) and the four durable
+blocked/process user-issues (#40, #35, #49, #53) unchanged and
+still Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -1044,22 +1057,6 @@ the four durable blocked/process user-issues (#40, #35, #49,
   trailer discipline never depends on a sub-agent prompt the
   parent doesn't fully control. Closes #53 when done.
 
-### [A, 3.6] README's "nexus runs on nexus" section undercounts the verify gate's legs
-- category: doc-drift
-- impact: 4, ease: 9
-- evidence: README.md:565-568 says `node scripts/verify.mjs`
-  runs "six hermetic legs (every relative link resolves, the
-  kit tree matches disk, no orphaned doc, placeholder
-  vocabulary enforced, skill anatomy enforced, no emojis)."
-  Running `node scripts/verify.mjs` prints seven legs: `links,
-  tree, discover, placeholders, anatomy, emoji, dualshell`.
-  Phase 29 added the `dualshell` leg (dual-shell parity lint for
-  playbooks) after this paragraph was last written; it was never
-  folded into the count or the leg list.
-- next: change "six" to "seven" at README.md:565 and append the
-  `dualshell` leg (dual-shell parity check) to the parenthetical
-  list at README.md:566-568.
-
 ### [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content
 - category: link-hygiene
 - impact: 3, ease: 8
@@ -1099,6 +1096,15 @@ the four durable blocked/process user-issues (#40, #35, #49,
   files' `self-test` after to confirm parity.
 
 ## Done
+
+### [x] [A, 3.6] README's "nexus runs on nexus" section undercounts the verify gate's legs — this commit
+- category: doc-drift
+- fix: changed README.md:566's "six hermetic legs" to "seven",
+  and appended "dual-shell parity checked" to the parenthetical
+  leg list — phase 29's `dualshell` leg had never been folded
+  into this paragraph's count. Confirmed via `node
+  scripts/verify.mjs`: seven legs print (`links, tree, discover,
+  placeholders, anatomy, emoji, dualshell`).
 
 ### [x] [C, 2.7] plan/PHASE_CANDIDATES.md still cites skills/digest.md §4 for content that's in §3 — this commit
 - category: link-hygiene

@@ -563,12 +563,12 @@ adapt them.
 This repo eats its own dogfood — it is an adopted nexus
 project. The ouroboros, concretely:
 
-- **Its own verify gate.** `node scripts/verify.mjs` — six
+- **Its own verify gate.** `node scripts/verify.mjs` — seven
   hermetic legs (every relative link resolves, the kit tree
   matches disk, no orphaned doc, placeholder vocabulary
-  enforced, skill anatomy enforced, no emojis). On its first
-  ever run it caught five real defects in this repo. The gate
-  works.
+  enforced, skill anatomy enforced, no emojis, dual-shell
+  parity checked). On its first ever run it caught five real
+  defects in this repo. The gate works.
 - **Its own plan.** `plan/steps/01_build_plan.md` carries the
   kit's roadmap; `plan/AUDIT.md` and
   `plan/PHASE_CANDIDATES.md` are seeded with real findings
