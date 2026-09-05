@@ -118,8 +118,9 @@ When the agent returns, expect:
 - Existing source code: **untouched** (per the playbooks).
 - A list of `[needs-user-call]` rows in `plan/AUDIT.md` if the
   agent had to defer any decisions to you.
-- A working `pnpm verify` (or stack-equivalent) and
-  `pnpm deploy:check`.
+- `pnpm verify` (or stack-equivalent) and `pnpm deploy:check`
+  specified and ready to wire once phase 1 lands — not
+  necessarily passing yet.
 
 Read the diff. Resolve the `[needs-user-call]` rows by editing
 the relevant files (or running `/oversight`). Populate `.env`

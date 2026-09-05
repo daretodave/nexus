@@ -11,13 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] README.md:121 — "Review what landed" promises "A working `pnpm verify`" right after the adoption commit, before phase 1 (which scaffolds `package.json`) has shipped
-- category: comprehension
-- observation: This bullet describes what to expect from the `chore: adopt nexus methodology` commit alone — before the reader has run `/ship-a-phase` even once. At that point, per playbooks/new-project.md:438-441, no `package.json` exists, so there is no "working" `pnpm verify` yet, only a documented target shape in the phase 1 brief. "Working" overstates it and can mislead an adopter into thinking the command should already succeed (or even run) right after the delegated adoption step.
-- evidence: README.md:121-122: "- A working `pnpm verify` (or stack-equivalent) and `pnpm deploy:check`."
-- suggested fix: Soften to "verify/deploy scripts specified and ready to wire once phase 1 lands" to match the playbook's own weaker claim (playbooks/new-project.md:693's "may fail; runs").
-- source: dry-run
-
 ### [LOW] README.md:43-53 — the first concrete example (`/march` tick transcript) uses shorthand terms (`Triage`, `Critique`, `Expand`, `Dispatch`) roughly 130 lines before the "What you get" table defines the commands behind them
 - category: comprehension
 - observation: A first-time reader hits the tick transcript immediately after the opening paragraph. The one-line gloss right after it ("Each tick: one decision, one slice of work, one verify, one commit, one push, one deploy confirmation") explains the *shape* but not what `Triage`/`Critique`/`Expand`/`Dispatch` each individually mean — that mapping only appears in the `/triage`, `/critique`, `/expand` rows of the "What you get" table at README.md:187-190, well after the two TL;DR walkthroughs. Mild friction, not blocking (terms are guessable from English), but a stranger reading top-to-bottom has an unresolved reference for a while.
@@ -26,6 +19,14 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] README.md:121 — "Review what landed" promises "A working `pnpm verify`" right after the adoption commit, before phase 1 (which scaffolds `package.json`) has shipped — this commit
+- fix: softened README.md:121-122 to "`pnpm verify` (or
+  stack-equivalent) and `pnpm deploy:check` specified and ready
+  to wire once phase 1 lands — not necessarily passing yet",
+  matching playbooks/new-project.md:693's own weaker claim
+  ("may fail; runs") instead of promising a "working" gate
+  before phase 1 has scaffolded `package.json`.
 
 ### [x] [MED] playbooks/new-project.md:693 — Day-1 checklist gates on `pnpm verify` running, but the playbook's own step 6 says `package.json` doesn't exist yet at this point — this commit
 - fix: step 7 now wires the step-6 verify-gate scripts
