@@ -1,120 +1,133 @@
-# Digest — 2026-09-04
+# Digest — 2026-09-05
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-A quiet, clean window: one transient crash (issue #52, upstream
-API 500, already triage-closed) followed by a no-op tick and
-three straight `/iterate` ships that drained CRITIQUE's queue
-to empty; AUDIT's header was 3 days stale so this pass ran the
-full A-G sweep by hand, reconfirming both surviving rows and
-turning up one new one — README undercounts the verify gate's
-leg count (six claimed, seven shipped since phase 29). The
-candidate queue keeps silting: 21 of 22 pending are now >21
-days old, oldest 65 days, no promotions since 2026-08-23.
+A clean, fully-shipped window: a `/critique` pass found 3 fresh
+findings, two straight `/iterate` ticks fixed the MED and one of
+the two LOWs, and a `/triage` tick caught the pass's own
+`Cloud-Run:` trailer miss and routed it into `plan/AUDIT.md` as
+`[user-issue #53]` — a third instance of a known bug, now
+root-caused: sub-agent delegation strips the trailer, not a
+missing line in `skills/critique.md`. Re-evidenced the standing
+6.5 candidate with that root cause. The candidate queue keeps
+silting: still 21 of 22 pending are >21 days old, oldest now 66
+days, no promotions since 2026-08-23 (13 days).
 
 ## While you were out
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 09-03 12:35 | march → (crashed) | no commit — Claude API returned a transient 500 mid-turn; action exited non-zero, self-filed issue #52 |
-| 09-03 17:30 | march | no-op — clean run, nothing shipped |
-| 09-03 22:15 | march → iterate | shipped `91a9c83` — fixed `plan/PHASE_CANDIDATES.md`'s citation pointing at the wrong section of `digest.md` |
-| 09-04 06:55 | march → iterate | shipped `94e5f88` — closed CRITIQUE's LOW row (README's undefined "canonical sibling") on a queue-favoring tie-break |
-| 09-04 12:29 | march → iterate | shipped `e9c7513` — closed CRITIQUE's last LOW row (step 5 named only 2 of 8 placeholders) |
+| 09-04 17:21 | march → critique | shipped `3f29301` — pass 14, 3 findings (1 MED, 2 LOW); commit itself missing the `Cloud-Run:` trailer (see Shipped) |
+| 09-04 22:05 | march → triage | shipped `8499870` — routed the trailer miss into `plan/AUDIT.md` as `[user-issue #53]` |
+| 09-05 06:39 | march → iterate | shipped `fb3254c` — closed CRITIQUE's MED row (Day-1 checklist gated on an unwired `pnpm verify`) |
+| 09-05 11:37 | march → iterate | shipped `b7bd527` — closed CRITIQUE's "working pnpm verify" LOW row |
 
-`heartbeat` ran green throughout (5/5 sampled). Issue #52 has
-since been triaged closed (transient, non-actionable).
+`heartbeat` ran green throughout (5/5 sampled). No crashed or
+no-op ticks this window — all four ran shipped something.
 
 ## Shipped
 
-- `91a9c83` — repointed `plan/PHASE_CANDIDATES.md:591`'s citation
-  of `skills/digest.md`'s "starved queue" tuning-trigger language
-  from "4. Hard rules" to its real location, step 4 of "3. The
-  procedure" — matching a sibling fix `plan/DIGEST.md` had
-  already picked up.
-- `94e5f88` — changed README's sample `/march` transcript from
-  "Read brief, canonical sibling" (an undefined term at line 48)
-  to "Read brief, phase 8", matching the same sample's own
-  "phase 8" references.
-- `e9c7513` — reworded "How to use this kit" step 5 from naming
-  2 of 8 placeholders by name to pointing at all 8 via
-  `templates/README.md`'s table, closing CRITIQUE's last pending
-  row.
+- `3f29301` — critique pass 14: filed a MED (Day-1 checklist
+  gates on `pnpm verify` running, but step 6 says no
+  `package.json` exists yet) and two LOWs (README's "working
+  `pnpm verify`" overclaim; README's tick transcript uses
+  `Triage`/`Critique`/`Expand`/`Dispatch` before the table that
+  defines them). This commit itself landed with no `Cloud-Run:`
+  trailer — the pass had been delegated to a sub-agent that ran
+  the walk *and* the commit/push itself, using a prompt that
+  never carried the trailer text.
+- `8499870` — triage routed the above gap into `plan/AUDIT.md`
+  as `[user-issue #53]` (score 3.7 — top of the AUDIT queue),
+  naming the exact mechanism: delegation, not a skill-file typo.
+- `fb3254c` — had `playbooks/new-project.md` step 7 wire the
+  step-6 verify-gate scripts (`typecheck`/`test:run`/`build`/
+  `e2e`/`verify`) into `package.json` alongside `deploy:check`,
+  and repointed step 6's forward reference at step 7 instead of
+  phase 1 — closes CRITIQUE's MED row.
+- `b7bd527` — softened README's "Review what landed" bullet from
+  "a working `pnpm verify`" to "specified and ready to wire once
+  phase 1 lands," matching `playbooks/new-project.md:693`'s own
+  weaker claim — closes one of CRITIQUE's two LOW rows.
+
+Also re-evidenced `plan/PHASE_CANDIDATES.md`'s standing 6.5
+candidate ("Mechanically verify the Cloud-Run trailer") with
+this tick's root-cause finding — see Tuning proposals.
 
 ## Queues now
 
 - **Build plan:** 31/33 shipped, 0 pending, 2 blocked — phase 20
-  (`workflows`-scope gap, `[user-issue #35]`) and phase 32 (same
-  gap, `[user-issue #49]`), unchanged since 2026-08-23 and
-  2026-08-30 respectively. No next `[ ]` row exists.
-- **AUDIT:** header was 3 days stale (last full sweep
-  2026-09-01) — ran the fresh A-G sweep this tick per
-  `skills/digest.md` step 5. Durable rows (`[user-issue #40]`,
-  `#35`, `#49`) reconfirmed unchanged, still blocked. Both
-  surviving non-durable rows reconfirmed still accurate:
-  `[C, 2.4]` triage.md's dead `ship-data.md §6` citation,
-  `[A, 2.4]` guard.mjs template drift (missing `\n`-exclusion).
-  One new row: `[A, 3.6]` — README.md:565-568 says the verify
-  gate runs "six hermetic legs" and lists six, but it has shipped
-  seven since phase 29 added `dualshell`. Now 6 pending (up from
-  5); header dated 2026-09-04. B/D/E/F came back clean; G stayed
-  empty (no sibling checkouts or `NEXUS_LESSONS.md` present in
-  this cloud environment).
-- **CRITIQUE:** 0 pending (drained from 2), last pass 2026-09-01
-  (pass 13, ~4d ago). Both remaining LOW rows shipped this
-  window.
+  and phase 32, both on the same `workflows`-scope gap
+  (`[user-issue #35]`/`#49`), unchanged since 2026-08-23 and
+  2026-08-30. No next `[ ]` row exists.
+- **AUDIT:** header dated 2026-09-04, ~23h since the last full
+  sweep — inside the 48h freshness window, no resweep needed
+  this pass. 7 pending (up
+  from 6): the three durable `workflows`-scope rows (`#40`,
+  `#35`, `#49`), the new `[user-issue #53]` trailer-delegation
+  row (score 3.7, current top), `[A, 3.6]` README's verify-leg
+  undercount, and two unchanged LOWs (`[C, 2.4]` triage.md's dead
+  citation, `[A, 2.4]` guard.mjs template drift).
+- **CRITIQUE:** 1 pending (drained from 3), pass 14, ~37h ago.
+  Remaining row: `[LOW]` README's tick transcript uses undefined
+  shorthand terms before the table that defines them.
 - **PHASE_CANDIDATES:** 22 pending mechanically per `pulse.mjs`,
-  oldest 65 days (proposed 2026-07-02). Hand-count per phase
+  oldest 66 days (proposed 2026-07-02). Hand-count per phase
   30's rule: **21 of 22** pending rows carry a `- proposed:` date
   more than 21 days old — only the newest (score 7.8, proposed
   2026-08-31) is inside the window. Header still 2026-08-31
   (pass 7). Posture still bold.
-- **Issues:** 5 open — `#49` (phase 32 blocked mirror), `#48`
-  (phase 32 loop mirror), `#40` (phase 23 follow-up, blocked),
-  `#35` (blocking cloud-token issue, phase 20), `#34` (phase 20
-  mirror). `#52` (crash report) triaged closed this window. No
-  `triage:needs-user` or `loop:do` labels open.
+- **Issues:** 6 open — `#53` (new trailer-delegation mirror),
+  `#49`/`#48` (phase 32 blocked + loop mirror), `#40` (phase 23
+  follow-up, blocked), `#35`/`#34` (phase 20 blocking token issue
+  + loop mirror). No `triage:needs-user` or `loop:do` labels
+  open.
 - **Sibling lessons:** not checked — no local sibling checkout in
   this cloud environment; skipped per digest's own carve-out.
 
 ## Needs you
 
 - **oversight needed: candidate queue silting (21 pending >21d,
-  oldest 65d).** Both trigger conditions are met, same as the
-  last several digests — no promotions since 2026-08-23 (12
-  days now). Worth an `/oversight` pass to triage the 22 pending
-  rows.
+  oldest 66d).** Both trigger conditions remain met, same as the
+  last several digests — no promotions since 2026-08-23 (13 days
+  now). Worth an `/oversight` pass to triage the 22 pending rows.
 - **Issues #35 / #40 / #49 (phases 20/32 blocked)** — all three
   trace to the identical cloud-push-token `workflows`-scope gap.
   A structural-fix candidate (score 7.8, proposed 2026-08-31) is
-  already queued and would resolve all three durable AUDIT rows
-  at once if promoted alongside the silting pass above.
+  already queued and would resolve all three at once if promoted.
+- **Issue #53 (new)** — `/critique`'s sub-agent delegation can
+  commit + push on the parent tick's behalf without the
+  cloud-mode trailer. AUDIT's `next` field already names the
+  fix: narrow `skills/critique.md` step 3 so a delegate only
+  performs the walk (steps 3-5) and never step 6/7. Currently
+  AUDIT's top-scored row (3.7).
 - No `[needs-user-call]` rows.
 
 ## Today's intent
 
 No next `[ ]` build-plan phase — fully drained bar the two
-blocked rows. CRITIQUE's queue is empty, so `/march` won't
-dispatch there until a fresh `/critique` pass finds something.
-The next `/march` tick should dispatch to `/iterate`: top of the
-queue is AUDIT's freshly-found `[A, 3.6]` (README's six-vs-seven
-verify-leg undercount) — a one-line-plus-list fix, highest score
-in the block by a clear margin, no tie to break this time. Beyond
-the loop's own dispatch, the queue-silting line above is the
-thing most worth a human's attention today — it's now been true
-for eleven consecutive digests.
+blocked rows. CRITIQUE has one LOW row left, competing with
+AUDIT by score. AUDIT's current top is `[user-issue #53]`
+(score 3.7, ease 8) — narrowing `skills/critique.md`'s
+delegation note is a small, high-ease fix that also closes the
+open issue. The next `/march` tick should dispatch there.
+Beyond the loop's own dispatch, the queue-silting line above is
+the thing most worth a human's attention today — it's now been
+true for twelve consecutive digests.
 
 ## Tuning proposals
 
-None new this tick. The crashed tick (#52) was a transient
-upstream API error, not a gate mistuning — no candidate
-warranted. The systemic `workflows`-scope blocking pattern
-already has a top-scored candidate (7.8, filed 2026-08-31)
-proposing exactly the fix this digest would otherwise suggest —
-filing a second would be duplicate noise. Candidate-queue
-silting is already surfaced mechanically by phase 30's own
-guard, working as designed; the fix is an `/oversight` pass, not
-a new gate tuning.
+Re-evidenced (not new): `plan/PHASE_CANDIDATES.md`'s standing
+6.5 candidate ("Mechanically verify the Cloud-Run trailer on
+cloud ticks") now carries a third instance (`3f29301`,
+2026-09-04) plus the root cause this tick's `/triage` surfaced —
+delegation-shaped, not a missing line in the critique skill's
+commit step. Filed as an evidence-trail update, not a new
+candidate, since the existing row already proposes the right
+mechanical safety net; `[user-issue #53]`'s own AUDIT fix
+targets the specific delegation gap and the two are noted as
+complementary rather than overlapping. No other gate mistuning
+found this pass — the workflows-scope blocking pattern already
+has its top-scored candidate (7.8) queued.

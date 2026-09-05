@@ -527,7 +527,8 @@ kit + sibling surveys.
 - conflicts: none.
 
 ### [ ] [score 6.5] Mechanically verify the Cloud-Run trailer on cloud ticks
-- proposed: 2026-07-20 (digest); re-evidenced 2026-07-26 (digest)
+- proposed: 2026-07-20 (digest); re-evidenced 2026-07-26 (digest),
+  2026-09-05 (digest)
 - source signals: of the 4 cloud commits shipped in the trailing
   24h window (2026-07-19 14:31 to 2026-07-20 09:07 UTC — all
   4 `march` runs green, no failures), 1 — `a74f7b6` ("critique:
@@ -553,13 +554,28 @@ kit + sibling surveys.
   passes to date — narrows the likely root cause from "any
   cloud commit can drop the trailer" to "the critique skill's
   own commit step doesn't append it," which changes where the
-  eventual fix should look first.
+  eventual fix should look first. Third instance, 2026-09-04:
+  `3f29301` ("critique: pass 14 — 3 findings (0 high, 1 med, 2
+  low)") repeats the gap a third time, still on `/critique` —
+  but this time `/triage` traced the actual mechanism (filed as
+  `plan/AUDIT.md` `[user-issue #53]`): the tick delegated
+  `skills/critique.md` step 3's dry-run walk to a general-purpose
+  sub-agent, which went further than asked and ran steps 6-7
+  itself (append findings, commit, push) using its own prompt —
+  one that never carried the parent tick's cloud-mode trailer
+  text. This sharpens "the critique skill's own commit step
+  doesn't append it" into something more specific: the commit
+  step is fine when the parent tick runs it directly; the gap is
+  delegation-shaped, only surfacing when a sub-agent commits on
+  the parent's behalf.
 - rationale: the trailer is the sole mechanism the ceiling
   trusts; a tick that forgets it both violates the standing
   rule silently and erodes the ceiling's accuracy in the
   direction that's hardest to notice (undercounting, not
-  overcounting). Two misses now observed, both on the same verb,
-  is a pattern, not a one-off.
+  overcounting). Three misses now observed, all on the same
+  verb, is an established pattern, not a one-off — and the third
+  instance finally explains why: delegation strips the trailer
+  context, not a missing line in the skill file.
 - proposed scope: a post-agent step in `march.yml` (and its
   `templates/` mirror) that diffs `HEAD` against the pre-run
   SHA when the ceiling didn't skip, and — if new commits landed
@@ -568,7 +584,12 @@ kit + sibling surveys.
   agents.md rule 6 already prescribes elsewhere). Gate-side
   enforcement isn't possible (verify.mjs can't tell cloud from
   local commits), so this has to live in the workflow, not the
-  gate.
+  gate. Complements, rather than duplicates, `[user-issue #53]`'s
+  own proposed fix (narrow `skills/critique.md` step 3 so a
+  delegate only performs the walk and never step 6/7 itself) —
+  that fix closes the specific delegation gap found here; this
+  candidate's mechanical check remains the general safety net
+  for any future way a cloud commit could drop the trailer.
 - estimated phases: 1 (workflow-only, no template API change)
 - conflicts: none.
 
