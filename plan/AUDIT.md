@@ -917,6 +917,26 @@ unscored, worth folding into a future CLAUDE.md pass rather than
 a dedicated row. Top score is now `[A, 3.6]`; picked up next by
 whichever skill claims the queue.
 
+Cloud tick 2026-09-05: header <24h old (last full sweep the
+2026-09-04 digest tick, above), so no re-sweep. `plan/CRITIQUE.md`'s
+Pending queue held one MED row (score ~5.4, impact 6 x ease 9 —
+a single self-contained playbook fix) beating this block's own
+top scorer `[A, 3.6]` and `[user-issue #53]` (impact 4, ease 8 ->
+3.2), so shipped the CRITIQUE row: `playbooks/new-project.md`
+step 6 claimed `package.json` doesn't exist until phase 1
+scaffolds it, but step 7 already creates one (wiring
+`deploy:check`) before phase 1 ships — so the Day-1 checklist's
+`pnpm verify` runs (may fail; runs)` item had nothing to run
+against. Reproduced: step 7's json snippet indeed omitted the
+`verify` script step 6 describes. Fixed by having step 7 wire
+both the step-6 verify-gate scripts and `deploy:check` into the
+same `package.json` edit, and repointed step 6's forward
+reference from "phase 1 scaffolds it" to "step 7 creates it".
+`plan/CRITIQUE.md`'s Pending queue is now two LOW rows. This
+block's own three rows (`[A, 3.6]`, `[C, 2.4]`, `[A, 2.4]`) and
+the four durable blocked/process user-issues (#40, #35, #49,
+#53) unchanged and still Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand

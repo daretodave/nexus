@@ -11,13 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md:693 — Day-1 checklist gates on `pnpm verify` running, but the playbook's own step 6 says `package.json` doesn't exist yet at this point
-- category: instruction-drift
-- observation: Step 6 ("Wire the verify gate") explicitly states "No `package.json` exists yet at this point in the walk — phase 1 ... is what scaffolds one" and that the `pnpm verify` snippet there "describes the target shape ... not something to run against an empty repo right now." Step 7 only wires `deploy:check` into `package.json` (its json snippet omits the `verify` script from step 6). The Day-1 checklist — the final gate before the *first* `/ship-a-phase` invocation, i.e. before phase 1 has shipped and scaffolded `package.json` — requires `- [ ] \`pnpm verify\` runs (may fail; runs).` An adopter following the steps in order has no `verify` script wired into any `package.json` at checklist time, so the item can't be satisfied without inventing an off-playbook step.
-- evidence: playbooks/new-project.md:438-441 ("No `package.json` exists yet at this point in the walk ... not something to run against an empty repo right now") vs. playbooks/new-project.md:693 ("`pnpm verify` runs (may fail; runs).") immediately gating playbooks/new-project.md:717 ("invoke `/ship-a-phase` for the first time").
-- suggested fix: Either have step 7 also stub the `verify` script into `package.json` (not just `deploy:check`), or reword the checklist item to something satisfiable pre-phase-1, e.g. "verify command is specified in the phase 1 brief's Outputs section."
-- source: dry-run
-
 ### [LOW] README.md:121 — "Review what landed" promises "A working `pnpm verify`" right after the adoption commit, before phase 1 (which scaffolds `package.json`) has shipped
 - category: comprehension
 - observation: This bullet describes what to expect from the `chore: adopt nexus methodology` commit alone — before the reader has run `/ship-a-phase` even once. At that point, per playbooks/new-project.md:438-441, no `package.json` exists, so there is no "working" `pnpm verify` yet, only a documented target shape in the phase 1 brief. "Working" overstates it and can mislead an adopter into thinking the command should already succeed (or even run) right after the delegated adoption step.
@@ -33,6 +26,18 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:693 — Day-1 checklist gates on `pnpm verify` running, but the playbook's own step 6 says `package.json` doesn't exist yet at this point — this commit
+- fix: step 7 now wires the step-6 verify-gate scripts
+  (`typecheck`/`test:run`/`build`/`e2e`/`verify`) into
+  `package.json` alongside `deploy:check`, in the same edit —
+  package.json is created there regardless, so both gates land
+  together instead of only `deploy:check`. Step 6 now points
+  forward to step 7 as the place the shape gets wired, instead
+  of claiming phase 1 scaffolds it. By Day-1-checklist time,
+  `pnpm verify` runs (and fails, as the checklist already
+  hedges) instead of not existing at all.
+- source: dry-run
 
 ### [x] [LOW] README.md:528-530 — "How to use this kit" step 5 names only 2 of the 8 documented placeholders — this commit
 - fix: changed step 5 from naming `<PROJECT>` and

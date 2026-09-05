@@ -435,10 +435,9 @@ Commit both briefs.
 The verify gate is `pnpm verify` (or your equivalent). It runs
 **before every commit** and gates the push.
 
-No `package.json` exists yet at this point in the walk — phase
-1 (the brief you just wrote in step 5) is what scaffolds one.
-This section describes the **target shape** for that brief to
-produce, not something to run against an empty repo right now:
+No `package.json` exists yet at this point in the walk — step 7
+creates one (alongside the deploy gate). This section describes
+the **target shape** step 7 wires in:
 
 ```json
 {
@@ -452,15 +451,9 @@ produce, not something to run against an empty repo right now:
 }
 ```
 
-Once phase 1 has scaffolded the file, test it:
-
-```bash
-pnpm verify
-```
-
 It will fail at first — that's fine; the rest of phase 1 is
-what makes it green. But the script itself should be in place
-and runnable as soon as phase 1 lands.
+what makes it green. But the script itself is in place and
+runnable as soon as step 7 lands, well before phase 1 ships.
 
 If your project doesn't ship a build (e.g., a CLI), drop
 `pnpm build`. If no e2e yet, drop `pnpm e2e` until phase 4
@@ -479,11 +472,16 @@ push** and polls your hosting provider until ready or error.
 
 `./scripts/deploy-check.mjs` is already present — step 4's
 bulk copy landed it with the rest of `scripts/`. Wire it into
-`package.json`:
+`package.json` alongside the verify gate from step 6:
 
 ```json
 {
   "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:run": "vitest run",
+    "build": "your-build-cmd",
+    "e2e": "playwright test",
+    "verify": "pnpm typecheck && pnpm test:run && pnpm build && pnpm e2e",
     "deploy:check": "node scripts/deploy-check.mjs"
   }
 }
@@ -494,15 +492,17 @@ Choose your provider per
 in your local `.env` (defaults to `netlify`), plus that
 provider's auth env var (e.g. `NETLIFY_AUTH_TOKEN`).
 
-Test it:
+Test both:
 
 ```bash
+pnpm verify
 pnpm deploy:check
 ```
 
-It should report the current deploy state. If you haven't pushed
-anything yet, it'll say "no deploy for this commit" — that's
-fine; the contract is post-push.
+`pnpm verify` will fail — expected pre-phase-1 (see step 6).
+`pnpm deploy:check` should report the current deploy state. If
+you haven't pushed anything yet, it'll say "no deploy for this
+commit" — that's fine; the contract is post-push.
 
 Commit `package.json` + `scripts/deploy-check.mjs` + `.env.example`.
 
