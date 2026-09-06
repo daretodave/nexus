@@ -48,7 +48,7 @@ const VERBS = [
 // heredoc's own first line is the subject. Returns null when
 // neither matches (fails open — backstop, not primary enforcement).
 function extractCommitMessage(cmd) {
-  if (!/\bgit\b[^|;&]*\bcommit\b/.test(cmd)) return null
+  if (!/\bgit\b[^|;&\n]*\bcommit\b/.test(cmd)) return null
   const heredoc = cmd.match(
     /(?:-m|--message)\s+"\$\(cat\s*<<-?\s*['"]?(\w+)['"]?\s*\n([^\n]*)/,
   )
@@ -76,7 +76,7 @@ function commitVerb(message) {
 const RULES = [
   {
     name: 'no-verify',
-    test: (cmd) => /\bgit\b[^|;&]*\bcommit\b[^|;&]*(\s--no-verify\b|\s-n\b)/.test(cmd),
+    test: (cmd) => /\bgit\b[^|;&\n]*\bcommit\b[^|;&\n]*(\s--no-verify\b|\s-n\b)/.test(cmd),
     message:
       'guard: --no-verify is forbidden (agents.md standing rule 3). ' +
       'The verify gate is non-negotiable — fix the root cause of the ' +
@@ -85,8 +85,8 @@ const RULES = [
   {
     name: 'force-push',
     test: (cmd) =>
-      /\bgit\b[^|;&]*\bpush\b[^|;&]*(\s--force(-with-lease)?\b|\s-f\b)/.test(cmd) ||
-      /\bgit\b[^|;&]*\bpush\b[^|;&]*\s\+\S/.test(cmd),
+      /\bgit\b[^|;&\n]*\bpush\b[^|;&\n]*(\s--force(-with-lease)?\b|\s-f\b)/.test(cmd) ||
+      /\bgit\b[^|;&\n]*\bpush\b[^|;&\n]*\s\+\S/.test(cmd),
     message:
       'guard: force-push is forbidden (agents.md standing rule 5). ' +
       'If the push was rejected, run git pull --ff-only and re-apply. ' +
@@ -96,10 +96,10 @@ const RULES = [
   {
     name: 'destructive-reset',
     test: (cmd) =>
-      /\bgit\b[^|;&]*\breset\b[^|;&]*\s--hard\b/.test(cmd) ||
-      /\bgit\b[^|;&]*\bclean\b[^|;&]*\s-[a-zA-Z]*f/.test(cmd) ||
-      /\bgit\b[^|;&]*\bcheckout\b\s+(--\s+)?\.(\s|$)/.test(cmd) ||
-      new RegExp(`\\bgit\\b[^|;&]*\\bbranch\\b[^|;&]*\\s-D\\s+${DEFAULT_BRANCH}\\b`).test(cmd),
+      /\bgit\b[^|;&\n]*\breset\b[^|;&\n]*\s--hard\b/.test(cmd) ||
+      /\bgit\b[^|;&\n]*\bclean\b[^|;&\n]*\s-[a-zA-Z]*f/.test(cmd) ||
+      /\bgit\b[^|;&\n]*\bcheckout\b\s+(--\s+)?\.(\s|$)/.test(cmd) ||
+      new RegExp(`\\bgit\\b[^|;&\n]*\\bbranch\\b[^|;&\n]*\\s-D\\s+${DEFAULT_BRANCH}\\b`).test(cmd),
     message:
       'guard: destructive resets are forbidden (agents.md standing ' +
       'rule 5). Uncommitted work is either shipped (commit it) or a ' +
@@ -108,7 +108,7 @@ const RULES = [
   {
     name: 'trailer-or-emoji-in-commit',
     test: (cmd) =>
-      /\bgit\b[^|;&]*\bcommit\b/.test(cmd) &&
+      /\bgit\b[^|;&\n]*\bcommit\b/.test(cmd) &&
       (/Co-Authored-By/i.test(cmd) ||
         /[\u{1F000}-\u{1FAFF}\u{2705}\u{2728}\u{FE0F}]/u.test(cmd)),
     message:
@@ -275,6 +275,10 @@ function selfTest() {
     ['git clean -fd', 'destructive-reset'],
     ['git checkout -- .', 'destructive-reset'],
     ['git commit -m "feat: x\n\nCo-Authored-By: bot"', 'trailer-or-emoji-in-commit'],
+    // multi-line commands where an unrelated later line only
+    // coincidentally contains a trigger token — regex classes must
+    // not span logical command boundaries via a bare newline
+    ['git log --oneline -5\necho "we will commit this later"\nls -n', null],
     // commit-verb: bad/missing verb blocked, scoped verbs allowed
     ['git commit -m "nonsense: not a real verb"', 'commit-verb'],
     ['git commit -m "Update README.md"', 'commit-verb'],

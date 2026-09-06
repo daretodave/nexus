@@ -999,6 +999,28 @@ remaining rows (`[C, 2.4]`, `[A, 2.4]`) and the three durable
 blocked user-issues (#40, #35, #49) unchanged and still
 Pending. Not a full A-G sweep.
 
+Cloud tick 2026-09-06 (fourth): header still <24h old (last full
+sweep this same day's second tick, above), so no re-sweep.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty (previous
+tick drained it). This block's own two remaining rows,
+`[C, 2.4]` (triage.md's dead `ship-data.md §6` citation) and
+`[A, 2.4]` (guard.mjs template drift), tied on score. Reproduced
+both before picking: `[A, 2.4]` is a functional bug, not just a
+doc mismatch — `templates/claude/hooks/guard.mjs`'s `RULES`
+regexes still lacked the `\n`-exclusion that the kit's own
+`.claude/hooks/guard.mjs` gained fixing `[user-issue #33]`
+(2026-08-02), so adopters using the templated guard hook could
+hit the exact same false-positive (a multi-line Bash command
+false-blocked as `no-verify`/`force-push`/etc. via a coincidental
+later line) already fixed and self-tested here. Ranked that above
+the triage.md citation's cosmetic wrong-link impact and shipped
+it: ported the `\n`-exclusion to all nine `[^|;&]*` occurrences in
+`templates/claude/hooks/guard.mjs` and added the matching
+multi-line self-test case; both files' `self-test` green
+afterward. `[C, 2.4]` and the three durable blocked user-issues
+(#40, #35, #49) unchanged and still Pending. Not a full A-G
+sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -1100,27 +1122,20 @@ Pending. Not a full A-G sweep.
   documented somewhere in that file under a different heading —
   confirmed it currently is not).
 
-### [A, 2.4] `templates/claude/hooks/guard.mjs` drifted from `.claude/hooks/guard.mjs`'s own hardening
-- category: doc-drift
-- impact: 3, ease: 8
-- evidence: phase 28 (this commit's sibling) found the two
-  files' `RULES` regexes differ: the kit's own copy uses
-  `[^|;&\n]*` (excludes newlines from the "rest of command"
-  character class, so a rule can't false-match across a
-  multi-line Bash call), the template twin still uses
-  `[^|;&]*` (no `\n` exclusion). The kit's `self-test` also
-  carries a regression case for exactly this
-  (`git log --oneline -5\necho "we will commit this later"\nls
-  -n` → `null`) that the template's `self-test` doesn't have.
-  Unclear which commit introduced the gap; both files otherwise
-  stayed in lockstep through this phase's edits.
-- next: port the `\n`-exclusion to all four regex-bearing rules
-  in `templates/claude/hooks/guard.mjs` (`no-verify`,
-  `force-push`, `destructive-reset`, `trailer-or-emoji-in-commit`)
-  and add the matching multi-line self-test case; run both
-  files' `self-test` after to confirm parity.
-
 ## Done
+
+### [x] [A, 2.4] `templates/claude/hooks/guard.mjs` drifted from `.claude/hooks/guard.mjs`'s own hardening — this commit
+- category: doc-drift
+- fix: ported the `\n`-exclusion to all nine `[^|;&]*`
+  occurrences across `templates/claude/hooks/guard.mjs`'s
+  `extractCommitMessage` helper and the four `RULES` entries
+  (`no-verify`, `force-push`, `destructive-reset`,
+  `trailer-or-emoji-in-commit`), and added the matching
+  multi-line regression case to its `self-test` cases array.
+  Both files' `self-test` now green with identical coverage for
+  this bug class (the template's `VERBS`/commit-verb self-test
+  cases still differ from the kit's own — that's separate drift,
+  not part of this finding's scope).
 
 ### [x] [A, 3.6] CLAUDE.md's "next pending work is the first `[ ]` row" line is stale now the build plan has zero — this commit
 - category: doc-drift
