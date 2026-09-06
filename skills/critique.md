@@ -44,7 +44,12 @@ pass). Runs fine in the cloud — it needs only files and
    mechanics are already covered mechanically by
    `node scripts/adopt-dryrun.mjs` — trust it for that part and
    spend this pass's budget on comprehension, ordering, and voice
-   instead of re-deriving what it already checks.
+   instead of re-deriving what it already checks. Scope the
+   delegate's task to steps 3-5 only (stage, walk, self-assess) —
+   it returns findings, nothing more. The dispatching agent stays
+   responsible for step 6 (append to `plan/CRITIQUE.md`) and step
+   7 (commit + push), so cloud-mode trailer discipline never
+   depends on a sub-agent prompt the parent doesn't fully control.
 4. **Stranger-read.** Read `README.md` top to bottom as
    someone who has never seen the kit: where does
    comprehension stumble? What promise is unclear? What order

@@ -950,6 +950,18 @@ remaining two rows (`[C, 2.4]`, `[A, 2.4]`) and the four durable
 blocked/process user-issues (#40, #35, #49, #53) unchanged and
 still Pending. Not a full A-G sweep.
 
+Cloud tick 2026-09-06: header now ~2 days old (last full sweep
+the 2026-09-04 digest tick) but no re-sweep this tick either —
+`plan/CRITIQUE.md`'s one remaining LOW row (~2.7, README's
+shorthand-terms forward reference) and this block's two
+remaining scored rows (`[C, 2.4]`, `[A, 2.4]`) all sit below
+`[user-issue #53]` (impact 4, ease 8 -> 3.2), the top scorer now
+that `[A, 3.6]` shipped last tick. Shipped `[user-issue #53]`:
+added the scope sentence to `skills/critique.md` step 3 per its
+own `next` field. `[user-issue #40]`, `#35`, `#49` (0.8 each,
+same cloud-push-token-workflows-scope root cause, still blocked
+pending a human/local session) unchanged and still Pending.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -1033,30 +1045,6 @@ still Pending. Not a full A-G sweep.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
-### [user-issue #53] [MED] critique's sub-agent delegation can commit without the cloud-mode trailer
-- category: external-issue
-- impact: 4, ease: 8
-- evidence: cloud tick 2026-09-04's `/critique` pass delegated
-  the dry-run-adoption walk (`skills/critique.md` step 3,
-  "Delegate the walk to a fresh sub-agent when available") to a
-  general-purpose sub-agent. The sub-agent went further than
-  asked and ran the full critique procedure end to end,
-  including step 7's `git commit` + `git push origin main`,
-  producing commit `3f29301` ("critique: pass 14 — 3 findings").
-  That commit is missing the cloud-mode `Cloud-Run:` trailer
-  (`.github/CLOUD_LOOP.md`) because only the parent tick's
-  system prompt carries the trailer text — the delegated
-  sub-agent prompt never did. Reported in issue #53. Commit is
-  already pushed and, per agents.md rule 5, cannot be amended;
-  this row is about the process gap, not that commit.
-- next: `skills/critique.md` step 3's delegation note should say
-  explicitly that the delegate performs only the walk (steps
-  3-5: stage, walk, self-assess) and returns findings — the
-  dispatching agent stays responsible for step 6 (append to
-  `plan/CRITIQUE.md`) and step 7 (commit + push), so cloud-mode
-  trailer discipline never depends on a sub-agent prompt the
-  parent doesn't fully control. Closes #53 when done.
-
 ### [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content
 - category: link-hygiene
 - impact: 3, ease: 8
@@ -1096,6 +1084,16 @@ still Pending. Not a full A-G sweep.
   files' `self-test` after to confirm parity.
 
 ## Done
+
+### [x] [user-issue #53] [MED] critique's sub-agent delegation can commit without the cloud-mode trailer — this commit (closes #53)
+- category: external-issue
+- fix: `skills/critique.md` step 3's delegation note now says
+  explicitly that a delegated sub-agent's scope is steps 3-5
+  only (stage, walk, self-assess) and it returns findings,
+  nothing more — the dispatching agent stays responsible for
+  step 6 (append to `plan/CRITIQUE.md`) and step 7 (commit +
+  push), so cloud-mode trailer discipline never depends on a
+  sub-agent prompt the parent doesn't fully control.
 
 ### [x] [A, 3.6] README's "nexus runs on nexus" section undercounts the verify gate's legs — this commit
 - category: doc-drift
