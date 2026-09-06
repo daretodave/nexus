@@ -11,14 +11,14 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] README.md:43-53 — the first concrete example (`/march` tick transcript) uses shorthand terms (`Triage`, `Critique`, `Expand`, `Dispatch`) roughly 130 lines before the "What you get" table defines the commands behind them
-- category: comprehension
-- observation: A first-time reader hits the tick transcript immediately after the opening paragraph. The one-line gloss right after it ("Each tick: one decision, one slice of work, one verify, one commit, one push, one deploy confirmation") explains the *shape* but not what `Triage`/`Critique`/`Expand`/`Dispatch` each individually mean — that mapping only appears in the `/triage`, `/critique`, `/expand` rows of the "What you get" table at README.md:187-190, well after the two TL;DR walkthroughs. Mild friction, not blocking (terms are guessable from English), but a stranger reading top-to-bottom has an unresolved reference for a while.
-- evidence: README.md:43 "Triage:   0 unlabeled issues — humming on." (etc.) vs. the defining table row at README.md:188 ("`/triage` | Read open GitHub issues, classify, label, route into the address loop.").
-- suggested fix: Add a one-line pointer right after the transcript, e.g. "(each stage is one of the slash commands in `What you get`, below)."
-- source: dry-run
-
 ## Done
+
+### [x] [LOW] README.md:43-53 — the first concrete example (`/march` tick transcript) uses shorthand terms (`Triage`, `Critique`, `Expand`, `Dispatch`) roughly 130 lines before the "What you get" table defines the commands behind them — this commit
+- fix: added a one-line pointer right after the transcript
+  ("(Triage/Critique/Expand/Dispatch are the slash commands in
+  [What you get](#what-you-get), below.)"), matching the
+  suggested fix as filed.
+- source: dry-run
 
 ### [x] [LOW] README.md:121 — "Review what landed" promises "A working `pnpm verify`" right after the adoption commit, before phase 1 (which scaffolds `package.json`) has shipped — this commit
 - fix: softened README.md:121-122 to "`pnpm verify` (or

@@ -55,6 +55,9 @@ $ /march
   Phase 8 shipped. Next tick picks phase 9.
 ```
 
+(Triage/Critique/Expand/Dispatch are the slash commands in
+[What you get](#what-you-get), below.)
+
 Each tick: one decision, one slice of work, one verify, one
 commit, one push, one deploy confirmation. Repeat under `/loop`
 for hours or days.

@@ -982,6 +982,23 @@ audit queue as the fallback once `[ ]` rows run out, citing
 and `[A, 2.4]` unchanged and still Pending; the three blocked
 user-issues (#40, #35, #49) unchanged.
 
+Cloud tick 2026-09-06 (third): header still <24h old (last full
+sweep this same day's second tick, above), so no re-sweep.
+`plan/CRITIQUE.md`'s one remaining LOW row (~2.7, README's
+shorthand-terms forward reference at README.md:43-53) beat
+this block's own two remaining scored rows (`[C, 2.4]`
+triage.md citation, `[A, 2.4]` guard.mjs template drift) and
+the three durable blocked user-issues (#40, #35, #49, 0.8
+each). Shipped the CRITIQUE row: added a one-line pointer right
+after the `/march` tick transcript naming `Triage`/`Critique`/
+`Expand`/`Dispatch` as the slash commands defined in "What you
+get," below — reproduced the gap first (the table lives at
+README.md:187-190, well after the transcript at :43-53).
+`plan/CRITIQUE.md`'s Pending queue is now empty. This block's
+remaining rows (`[C, 2.4]`, `[A, 2.4]`) and the three durable
+blocked user-issues (#40, #35, #49) unchanged and still
+Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
