@@ -3,7 +3,8 @@ for this repo and its standing rules are non-negotiable. This
 repo is nexus, the methodology kit, and it runs on itself:
 skills live in `skills/`, state lives in `plan/`, the next
 pending work is the first `[ ]` row in
-`plan/steps/01_build_plan.md`. The verify gate is
+`plan/steps/01_build_plan.md`, or `/iterate`'s audit queue once
+no `[ ]` rows remain (`skills/march.md` §3). The verify gate is
 `node scripts/verify.mjs` — foreground, before every commit.
 
 This file is a pointer, not a rule book. Rules live in

@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-04
+# Kit audit — 2026-09-06
 
 > Bias: none
 
@@ -962,6 +962,26 @@ own `next` field. `[user-issue #40]`, `#35`, `#49` (0.8 each,
 same cloud-push-token-workflows-scope root cause, still blocked
 pending a human/local session) unchanged and still Pending.
 
+Cloud tick 2026-09-06 (second, header >24h old — fresh A-G
+sweep): freshness (F) checked for stale model ids across `*.md`
+— none found. B/D/E came back clean (no new unshipped promises,
+no fresh wrap/voice/emoji spot-check hits, placeholder table
+still 8 entries). G stayed empty — no sibling checkouts present.
+Promoted the sub-threshold note from the 2026-09-04 sweep
+(above): `CLAUDE.md`'s "next pending work is the first `[ ]`
+row" line has read as stale prose since the build plan drained
+to zero `[ ]` rows, and two prior sweeps left it unscored
+hoping a bigger CLAUDE.md pass would absorb it — it never came,
+so scored it properly this time: `[A, 3.6]` (impact 4 — a cold
+agent's very first pointer file gives a dead instruction; ease
+9 — one-line edit), beating both this block's remaining rows
+(`[C, 2.4]`, `[A, 2.4]`) and `plan/CRITIQUE.md`'s sole pending
+LOW row (~2.7). Shipped: reworded the line to name `/iterate`'s
+audit queue as the fallback once `[ ]` rows run out, citing
+`skills/march.md` §3 for the real dispatch logic. `[C, 2.4]`
+and `[A, 2.4]` unchanged and still Pending; the three blocked
+user-issues (#40, #35, #49) unchanged.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -1084,6 +1104,13 @@ pending a human/local session) unchanged and still Pending.
   files' `self-test` after to confirm parity.
 
 ## Done
+
+### [x] [A, 3.6] CLAUDE.md's "next pending work is the first `[ ]` row" line is stale now the build plan has zero — this commit
+- category: doc-drift
+- fix: `CLAUDE.md`'s pointer line now names `/iterate`'s audit
+  queue as the fallback once no `[ ]` rows remain, citing
+  `skills/march.md` §3 for the real dispatch logic, instead of
+  implying a `[ ]` row always exists.
 
 ### [x] [user-issue #53] [MED] critique's sub-agent delegation can commit without the cloud-mode trailer — this commit (closes #53)
 - category: external-issue
