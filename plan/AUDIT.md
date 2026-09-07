@@ -1040,6 +1040,31 @@ Pending queue is now three durable blocked user-issues only.
 
 ## Pending
 
+### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect
+- category: external-issue
+- impact: 2, ease: 2
+- evidence: run 34130300338 (2026-09-07T13:57:41Z) failed inside
+  the Claude Code Action's own `Install Bun` step —
+  `oven-sh/setup-bun` hit `Unexpected HTTP response: 504`
+  downloading `bun-linux-x64.zip` from GitHub's release CDN,
+  retried twice more (18s/12s backoff, the action's own built-in
+  retry), then gave up and failed the job before the agent turn
+  ever started. The job's crash-alarm step then correctly filed
+  this issue per `.github/workflows/march.yml`'s own
+  dead-man's-switch. No nexus code or workflow config is
+  implicated — this is a third-party CDN transient, not a repo
+  defect. Confirmed self-healed: the very next scheduled run
+  (34152492907, this tick) started and progressed normally with
+  no retry or config change needed.
+- next: no code fix available from inside this repo — the
+  failure point is `oven-sh/setup-bun`'s own retry loop hitting a
+  transient GitHub release-asset 504, outside `march.yml`'s
+  control. Close if it doesn't recur; if this class of crash
+  starts repeating, that would be a signal worth a
+  `plan/PHASE_CANDIDATES.md` entry (e.g. pinning a Bun version
+  known to be cached, or widening the action's retry window), but
+  a single occurrence isn't evidence of a pattern yet.
+
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
 - category: external-issue
 - impact: 4, ease: 2
