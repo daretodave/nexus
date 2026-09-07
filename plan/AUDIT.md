@@ -1021,6 +1021,23 @@ afterward. `[C, 2.4]` and the three durable blocked user-issues
 (#40, #35, #49) unchanged and still Pending. Not a full A-G
 sweep.
 
+Cloud tick 2026-09-07: header ~19h old (last full sweep
+2026-09-06's second tick, above), under the 24h threshold, so no
+re-sweep. `plan/CRITIQUE.md`'s Pending queue confirmed empty.
+This block's own sole remaining scored row, `[C, 2.4]`
+(triage.md's dead `ship-data.md §6` citation), was the only
+actionable candidate — the three durable blocked user-issues
+(#40, #35, #49) score 0.8 each and stay blocked on the same
+cloud-push-token workflows-scope gap a cloud tick can't fix.
+Reproduced: `templates/skills/triage.md:222-223` still cited
+`skills/ship-data.md §6`; grepped that file's §6 for
+"trailer"/"Closes"/"commit body"/"issue" — zero hits, confirming
+the citation points at content that doesn't exist there.
+Confirmed the kit's own `skills/triage.md` never had this line
+(template-only drift). Shipped: dropped the dead half of the
+citation, leaving `skills/iterate.md §5` alone. `plan/AUDIT.md`'s
+Pending queue is now three durable blocked user-issues only.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -1104,25 +1121,15 @@ sweep.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
-### [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content
-- category: link-hygiene
-- impact: 3, ease: 8
-- evidence: `templates/skills/triage.md:222-223` (drifted from
-  217-218) says the `gh issue comment`/`gh issue close`
-  follow-up procedure "is documented in `skills/iterate.md` §5
-  and `skills/ship-data.md` §6." Verified `iterate.md` §5 (Step
-  5-7) does cover the `Closes #N` trailer and close-comment
-  flow, but `templates/skills/ship-data.md` §6 ("The procedure")
-  is a generic data-entity CRUD walkthrough — grepped the whole
-  file for "trailer", "Closes", "commit body", "issue": zero
-  hits. The citation doesn't just point at the wrong section, it
-  points at a file with no matching content anywhere.
-- next: drop the `skills/ship-data.md §6` half of the citation in
-  `triage.md:222-223` (or repoint it if the convention is
-  documented somewhere in that file under a different heading —
-  confirmed it currently is not).
-
 ## Done
+
+### [x] [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content — this commit
+- category: link-hygiene
+- fix: dropped the dead `skills/ship-data.md §6` half of
+  `templates/skills/triage.md`'s citation — `ship-data.md` §6 is
+  a generic data-entity CRUD walkthrough with zero matching
+  content on trailers/Closes/comment flow — leaving
+  `skills/iterate.md §5` alone, which does cover the flow.
 
 ### [x] [A, 2.4] `templates/claude/hooks/guard.mjs` drifted from `.claude/hooks/guard.mjs`'s own hardening — this commit
 - category: doc-drift

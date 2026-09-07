@@ -219,8 +219,7 @@ gh issue comment <N> --repo "$GH_REPO" --body "Shipped in <commit>. Live after d
 gh issue close <N> --repo "$GH_REPO"   # if not already auto-closed by Closes #N trailer
 ```
 
-This is documented in `skills/iterate.md` §5 and
-`skills/ship-data.md` §6.
+This is documented in `skills/iterate.md` §5.
 
 ## 7. Hard rules
 
