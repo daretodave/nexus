@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-06
+# Kit audit — 2026-09-08
 
 > Bias: none
 
@@ -1038,7 +1038,49 @@ Confirmed the kit's own `skills/triage.md` never had this line
 citation, leaving `skills/iterate.md §5` alone. `plan/AUDIT.md`'s
 Pending queue is now three durable blocked user-issues only.
 
+Digest tick 2026-09-08: header was ~51h old (last full sweep
+2026-09-06's second tick, above), past `skills/digest.md` §3's
+48h threshold, so ran a fresh A-G sweep (delegated the
+read-only pass to a foreground agent to protect context;
+`node scripts/verify.mjs` confirmed green throughout, all seven
+legs). A/B/C/D/E/F all swept clean: README's kit tree and
+15-row command table both cross-checked 1:1 against disk;
+`CLAUDE.md`'s build-plan pointer and `<WORKSPACE_ORG>`'s
+replace-step (both prior AUDIT fixes) confirmed holding; no
+dead external links beyond historical log prose; no heading-case
+or wrap outliers on recently-touched files; no stale model-id
+strings anywhere live. G still empty — no `../kintilla`,
+`../semilayer`, or `NEXUS_LESSONS.md` in this checkout. One
+finding re-surfaced: `playbooks/cloud-loop.md:66`'s "Three new
+files" header still sits atop a 2-entry tree (`march.yml`,
+`CLOUD_LOOP.md`) — first found 2026-07-19/scored `[A, 1.35]`,
+reproduced clean through 2026-08-27, then dropped off the
+tracked Top 5 in the 2026-09-01 digest tick for scoring lowest
+among six competing candidates (never fixed, just deprioritized).
+Re-scored `[A, 1.8]` (impact 2, ease 9 — a one-word "Three" ->
+"Two" edit) and re-added below. All four durable rows
+(`#54`, `#40`, `#35`, `#49`) reconfirmed open and unchanged via
+`gh issue view`. `plan/CRITIQUE.md` holds two fresh Pending rows
+from today's `/critique` pass 15 (one HIGH, one MED) that will
+compete with this block on the shared scale next tick — not
+duplicated here, per `skills/iterate.md` §3. Audit only —
+shipped nothing, per `skills/digest.md` rule 2.
+
 ## Pending
+
+### [A, 1.8] playbooks/cloud-loop.md:66 — "Three new files" header sits atop a 2-entry tree
+- category: doc-drift
+- impact: 2, ease: 9
+- evidence: line 66 reads "Three new files relative to the
+  standard nexus overlay:" but the fenced tree immediately below
+  (lines 67-71) lists only two entries, `march.yml` and
+  `CLOUD_LOOP.md`. First found 2026-07-19 (scored `[A, 1.35]`),
+  reproduced clean through 2026-08-27, dropped off the tracked
+  Top 5 in the 2026-09-01 digest tick for scoring lowest among
+  six competing candidates that day — never fixed, just
+  deprioritized off the list. Confirmed still unchanged today.
+- next: change "Three" to "Two" at line 66. Single-word fix, no
+  other prose depends on the count.
 
 ### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect
 - category: external-issue
