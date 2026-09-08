@@ -11,13 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [HIGH] playbooks/existing-project.md:79 — brownfield playbook's first copy instruction fails as written (bad path + missing dir)
-- category: instruction-drift
-- observation: "Copy `nexus/templates/plan/CURRENT-STATE.md` to `plan/CURRENT-STATE.md`" uses a bare `nexus/...` path, not `../nexus/...`. README's recommended sibling-clone layout (and every other copy instruction in `new-project.md`, per a prior fix logged below: "sibling clone layout breaks the playbook's bare `nexus/...` copy paths") requires `../nexus/...` from the adopter's repo root. `existing-project.md` was apparently missed by that earlier fix. Additionally, `plan/` doesn't exist yet at this point in the walk (this copy is step 1, "Audit what's there," before step 3's overlay creates `plan/`), so even a corrected path would still fail on a plain `cp`.
-- evidence: reproduced literally — `cp nexus/templates/plan/CURRENT-STATE.md plan/CURRENT-STATE.md` → `cp: cannot stat 'nexus/templates/plan/CURRENT-STATE.md': No such file or directory` (exit 1), run from a scratch dir with `../nexus` symlinked per README's layout. `node scripts/verify.mjs`'s link-checker doesn't catch this because the path lives in prose/inline-code, not a markdown link.
-- suggested fix: change `playbooks/existing-project.md:79` to `../nexus/templates/plan/CURRENT-STATE.md`, and either add `mkdir -p plan &&` before the `cp`, or move this instruction after step 3's overlay (which already creates `plan/`).
-- source: dry-run
-
 ### [MED] playbooks/new-project.md:100,181 — step 2 and step 3's prose "Copy X to Y" instructions fail on a fresh repo (target dir doesn't exist yet)
 - category: instruction-drift
 - observation: Step 2 says "Copy `../nexus/templates/plan/bearings.md` to your repo's `plan/bearings.md`," and step 3 says "Copy `../nexus/templates/plan/steps/01_build_plan.md` to your repo's `plan/steps/01_build_plan.md`." At this point in a fresh greenfield repo (only `spec.md` committed from step 1), neither `plan/` nor `plan/steps/` exists yet, so a literal `cp` fails. Step 4's later bulk copy uses `fs.cpSync` (which auto-creates parent dirs) and is the only copy step immune to this; steps 2–3 have no equivalent shell command, just prose.
@@ -26,6 +19,29 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] playbooks/existing-project.md:79 — brownfield playbook's first copy instruction fails as written (bad path + missing dir) — this commit
+- category: instruction-drift
+- fix: fixed the path to `../nexus/templates/plan/CURRENT-STATE.md`
+  and prefixed the copy with `mkdir -p plan &&`, matching this
+  file's existing inline-code style rather than introducing a
+  fenced ```bash``` block (which would have tripped
+  `scripts/verify.mjs`'s `dualshell` leg on the POSIX-only
+  `mkdir`/`cp`). Went beyond the suggested fix's two options after
+  finding a deeper bug while reproducing: step 3's bulk `fs.cpSync`
+  overlay (line 128) already lists
+  `['templates/plan/CURRENT-STATE.md','plan/CURRENT-STATE.md']`,
+  and `fs.cpSync` overwrites existing files by default — so if
+  step 1's copy had simply been moved after step 3 as the second
+  suggested option proposed, step 3 would silently clobber the
+  user's step-1-filled-in `plan/CURRENT-STATE.md` with the blank
+  template. Removed that duplicate entry from step 3's list
+  instead, leaving `plan/CURRENT-STATE.md` exclusively step 1's
+  responsibility, consistent with `templates/plan/README.md:17`'s
+  own annotation citing `existing-project.md` §1 (not §3) as the
+  file's source. `node scripts/verify.mjs` green (dualshell leg
+  unaffected — no new fenced POSIX block introduced).
+- source: dry-run
 
 ### [x] [LOW] README.md:43-53 — the first concrete example (`/march` tick transcript) uses shorthand terms (`Triage`, `Critique`, `Expand`, `Dispatch`) roughly 130 lines before the "What you get" table defines the commands behind them — this commit
 - fix: added a one-line pointer right after the transcript

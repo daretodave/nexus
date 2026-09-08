@@ -1066,6 +1066,19 @@ compete with this block on the shared scale next tick — not
 duplicated here, per `skills/iterate.md` §3. Audit only —
 shipped nothing, per `skills/digest.md` rule 2.
 
+Cloud tick 2026-09-08 (second): header still <24h old (last full
+sweep today's digest tick, above), so no re-sweep.
+`plan/CRITIQUE.md`'s Pending queue held one fresh HIGH row from
+today's `/critique` pass 15 (score ~7.2, impact 9 x ease 8 —
+`playbooks/existing-project.md:79`'s bad path + missing dir),
+beating this block's own top scorer `[A, 1.8]` (cloud-loop.md's
+"Three new files" header) and all four durable blocked/process
+rows (`#54` at 0.4, `#40`/`#35`/`#49` at 0.8 each). Shipped the
+CRITIQUE row; full rationale in `plan/CRITIQUE.md`'s Done
+section. `plan/CRITIQUE.md`'s Pending queue is now one MED row.
+This block's own row (`[A, 1.8]`) and the four durable rows
+unchanged and still Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [A, 1.8] playbooks/cloud-loop.md:66 — "Three new files" header sits atop a 2-entry tree

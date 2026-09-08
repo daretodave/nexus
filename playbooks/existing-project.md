@@ -76,11 +76,13 @@ pnpm lint
 (Long output? Pipe through `tail -20`/`Select-Object -Last
 20` per shell — that part's cosmetic, not load-bearing.)
 
-Copy `nexus/templates/plan/CURRENT-STATE.md` to
-`plan/CURRENT-STATE.md` and fill in its one-page **current-state
-assessment** — what's there, what works, what's known broken,
-what's missing for v1, conventions worth keeping vs. breaking —
-from what step 1's commands above just showed you.
+Create `plan/` and copy `../nexus/templates/plan/CURRENT-STATE.md`
+to `plan/CURRENT-STATE.md`
+(`mkdir -p plan && cp ../nexus/templates/plan/CURRENT-STATE.md plan/CURRENT-STATE.md`),
+then fill in its one-page **current-state assessment** — what's
+there, what works, what's known broken, what's missing for v1,
+conventions worth keeping vs. breaking — from what step 1's
+commands above just showed you.
 
 This is the baseline. The build plan in step 6 starts from here.
 
@@ -125,7 +127,7 @@ the `.env` gitignore lines in the same pass (see
 overlay step can trip on Windows):
 
 ```bash
-node -e "const fs=require('fs');fs.mkdirSync('plan/steps',{recursive:true});fs.mkdirSync('plan/phases',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/CURRENT-STATE.md','plan/CURRENT-STATE.md'],['templates/plan/steps/01_build_plan.md','plan/steps/01_build_plan.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
+node -e "const fs=require('fs');fs.mkdirSync('plan/steps',{recursive:true});fs.mkdirSync('plan/phases',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/steps/01_build_plan.md','plan/steps/01_build_plan.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
 ```
 
 (The `CLAUDE.md` line is deliberate, not redundant with the
