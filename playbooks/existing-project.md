@@ -76,10 +76,22 @@ pnpm lint
 (Long output? Pipe through `tail -20`/`Select-Object -Last
 20` per shell — that part's cosmetic, not load-bearing.)
 
-Create `plan/` and copy `../nexus/templates/plan/CURRENT-STATE.md`
-to `plan/CURRENT-STATE.md`
-(`mkdir -p plan && cp ../nexus/templates/plan/CURRENT-STATE.md plan/CURRENT-STATE.md`),
-then fill in its one-page **current-state assessment** — what's
+`plan/` doesn't exist yet at this point, so create it before
+copying `CURRENT-STATE.md` in:
+
+```bash
+mkdir -p plan
+cp ../nexus/templates/plan/CURRENT-STATE.md plan/CURRENT-STATE.md
+```
+
+The PowerShell twin, Windows native:
+
+```powershell
+New-Item -ItemType Directory -Force plan | Out-Null
+Copy-Item ..\nexus\templates\plan\CURRENT-STATE.md plan\CURRENT-STATE.md
+```
+
+Then fill in its one-page **current-state assessment** — what's
 there, what works, what's known broken, what's missing for v1,
 conventions worth keeping vs. breaking — from what step 1's
 commands above just showed you.

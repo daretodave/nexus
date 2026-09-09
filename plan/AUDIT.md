@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-08
+# Kit audit — 2026-09-09
 
 > Bias: none
 
@@ -1106,6 +1106,38 @@ cloud tick can't fix. Reproduced: line 66 unchanged. Shipped it:
 "Three" -> "Two". Mirrored as issue #55. `plan/AUDIT.md`'s
 Pending queue is now the four durable blocked/process rows only.
 
+Cloud tick 2026-09-09 (third): header was ~31h old (last full
+sweep the 2026-09-08 digest tick, above), past the 24h threshold,
+so ran a fresh A-G sweep (delegated the read-only pass to a
+foreground agent to protect context; `node scripts/verify.mjs`
+confirmed green throughout, all seven legs). B/C/D swept clean:
+README-vs-`templates/` tree cross-check matched disk-for-disk
+both directions (verify's `tree` leg already mechanizes this); no
+dead external links beyond historical log prose; no heading-case/
+wrap/emoji outliers on recently-touched files. F (freshness)
+checked, not skipped — no stale model-id strings anywhere live;
+separately confirmed the Aug-14 Claude Code auto-mode permission
+gap is already tracked as `plan/PHASE_CANDIDATES.md:639` (score
+6.5, awaiting `/oversight` promotion), not a new finding. G
+stayed empty — no `../kintilla`, `../semilayer`, or
+`NEXUS_LESSONS.md` anywhere on disk. The four durable rows (`#54`,
+`#40`, `#35`, `#49`) reconfirmed unchanged, all still below the
+3.0 actionability threshold (0.4/0.8 each). One new finding:
+`[E, 4.0]` — `playbooks/existing-project.md`'s step-1
+`CURRENT-STATE.md` copy (`mkdir -p plan && cp ...`, kept as inline
+code by the 2026-09-08 fix specifically to dodge the `dualshell`
+leg) had zero PowerShell twin, unlike the identical "target dir
+doesn't exist yet" bug class in `new-project.md` steps 2/3 fixed
+one commit earlier today (`64bf2e9`) — that fix instead used
+fenced bash+PowerShell twin blocks, the newer and now-established
+pattern for this bug class. Reproduced the gap (no Windows-native
+guidance anywhere in this file or `windows-notes.md`'s "See also"
+list, which only covers §3's overlay step, not §1's copy) and
+shipped the fix (below), converting the inline dodge to the same
+fenced-twin pattern. `node scripts/verify.mjs` green after
+(`dualshell` leg now checks 9 blocks, up from 8). This block's
+Pending queue unchanged — four durable blocked/process rows only.
+
 ## Pending
 
 ### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect
@@ -1215,6 +1247,17 @@ Pending queue is now the four durable blocked/process rows only.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [E, 4.0] playbooks/existing-project.md's step-1 CURRENT-STATE.md copy has no PowerShell twin — this commit
+- category: adopter-friction
+- fix: converted the inline `mkdir -p plan && cp ...` one-liner
+  (kept inline by the 2026-09-08 fix specifically to dodge the
+  `dualshell` leg) to a fenced `bash` block with an adjacent
+  `powershell` twin, matching the pattern
+  `playbooks/new-project.md` steps 2/3 established one commit
+  earlier today (`64bf2e9`) for the same "target dir doesn't
+  exist yet" bug class. `node scripts/verify.mjs` green after
+  (`dualshell` leg now checks 9 blocks, up from 8).
 
 ### [x] [A, 1.8] playbooks/cloud-loop.md:66 — "Three new files" header sits atop a 2-entry tree — this commit (closes #55)
 - category: doc-drift
