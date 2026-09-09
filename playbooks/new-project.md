@@ -97,8 +97,20 @@ sibling clone (`../nexus`, next to your project root) —
 adjust if you put your checkout somewhere else (e.g. `./.nexus`
 if submoduled).
 
-Copy `../nexus/templates/plan/bearings.md` to your repo's
-`plan/bearings.md`.
+`plan/` doesn't exist yet at this point, so create it before
+copying `bearings.md` in:
+
+```bash
+mkdir -p plan
+cp ../nexus/templates/plan/bearings.md plan/bearings.md
+```
+
+The PowerShell twin, Windows native:
+
+```powershell
+New-Item -ItemType Directory -Force plan | Out-Null
+Copy-Item ..\nexus\templates\plan\bearings.md plan\bearings.md
+```
 
 Replace these placeholders:
 
@@ -178,8 +190,22 @@ loop after the build plan.
 
 ## 3. Phases + build plan
 
-Copy `../nexus/templates/plan/steps/01_build_plan.md` to your
-repo's `plan/steps/01_build_plan.md`.
+`plan/steps/` doesn't exist yet either, so create it before
+copying the build plan in:
+
+```bash
+mkdir -p plan/steps
+cp ../nexus/templates/plan/steps/01_build_plan.md \
+  plan/steps/01_build_plan.md
+```
+
+The PowerShell twin, Windows native:
+
+```powershell
+New-Item -ItemType Directory -Force plan\steps | Out-Null
+Copy-Item ..\nexus\templates\plan\steps\01_build_plan.md `
+  plan\steps\01_build_plan.md
+```
 
 The "Status (at-a-glance)" block at the top is what the loop
 reads. Each row is one phase. Phases group into:

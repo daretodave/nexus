@@ -11,14 +11,14 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md:100,181 — step 2 and step 3's prose "Copy X to Y" instructions fail on a fresh repo (target dir doesn't exist yet)
-- category: instruction-drift
-- observation: Step 2 says "Copy `../nexus/templates/plan/bearings.md` to your repo's `plan/bearings.md`," and step 3 says "Copy `../nexus/templates/plan/steps/01_build_plan.md` to your repo's `plan/steps/01_build_plan.md`." At this point in a fresh greenfield repo (only `spec.md` committed from step 1), neither `plan/` nor `plan/steps/` exists yet, so a literal `cp` fails. Step 4's later bulk copy uses `fs.cpSync` (which auto-creates parent dirs) and is the only copy step immune to this; steps 2–3 have no equivalent shell command, just prose.
-- evidence: reproduced literally in a fresh scratch repo (spec.md only) — `cp ../nexus/templates/plan/bearings.md plan/bearings.md` → `cp: cannot create regular file 'plan/bearings.md': No such file or directory` (exit 1). Same failure mode for `plan/steps/01_build_plan.md`.
-- suggested fix: prefix both instructions with `mkdir -p plan` / `mkdir -p plan/steps`, matching the pattern already used to fix the analogous `setup/bootstrap.local.json` gap in step 9.
-- source: dry-run
-
 ## Done
+
+### [x] [MED] playbooks/new-project.md:100,181 — step 2 and step 3's prose "Copy X to Y" instructions fail on a fresh repo (target dir doesn't exist yet) — this commit
+- category: instruction-drift
+- fix: replaced both prose "Copy X to Y" lines with fenced
+  `mkdir -p` + `cp` bash blocks (plus PowerShell twins), matching
+  the pattern already used for the analogous
+  `setup/bootstrap.local.json` gap in step 9.
 
 ### [x] [HIGH] playbooks/existing-project.md:79 — brownfield playbook's first copy instruction fails as written (bad path + missing dir) — this commit
 - category: instruction-drift

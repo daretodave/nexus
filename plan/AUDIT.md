@@ -1079,6 +1079,21 @@ section. `plan/CRITIQUE.md`'s Pending queue is now one MED row.
 This block's own row (`[A, 1.8]`) and the four durable rows
 unchanged and still Pending. Not a full A-G sweep.
 
+Cloud tick 2026-09-09: header still <24h old (~13h since the
+2026-09-08 digest sweep), so no re-sweep. `plan/CRITIQUE.md`'s
+one remaining Pending row (MED, `playbooks/new-project.md`
+steps 2/3's prose "Copy X to Y" instructions failing on a
+fresh repo — no `plan/`/`plan/steps/` yet) scored ~5.4 (impact
+6 x ease 9 — a two-line prose-to-fenced-command swap, same
+pattern already used for step 9's `setup/` gap), beating this
+block's own `[A, 1.8]` row and the four durable blocked
+user-issue rows (`#54` at 0.4, `#40`/`#35`/`#49` at 0.8 each,
+all still needing a local/human session per their own `next`).
+Shipped the CRITIQUE row; full rationale in `plan/CRITIQUE.md`'s
+Done section. `plan/CRITIQUE.md`'s Pending queue is now empty.
+This block's own row (`[A, 1.8]`) and the four durable rows
+unchanged and still Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [A, 1.8] playbooks/cloud-loop.md:66 — "Three new files" header sits atop a 2-entry tree
