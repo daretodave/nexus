@@ -64,7 +64,7 @@ age — check `/model`).
 
 ## The shape of the kit
 
-Three new files relative to the standard nexus overlay:
+Two new files relative to the standard nexus overlay:
 
 ```
 .github/

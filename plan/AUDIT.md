@@ -1094,21 +1094,19 @@ Done section. `plan/CRITIQUE.md`'s Pending queue is now empty.
 This block's own row (`[A, 1.8]`) and the four durable rows
 unchanged and still Pending. Not a full A-G sweep.
 
-## Pending
+Cloud tick 2026-09-09 (second): header ~22h old (last full sweep
+the 2026-09-08 digest tick, above), under the 24h threshold, so
+no re-sweep. `plan/CRITIQUE.md`'s Pending queue confirmed empty.
+This block's own sole scored row, `[A, 1.8]`
+(`playbooks/cloud-loop.md:66`'s "Three new files" header sitting
+atop a 2-entry tree), was the only actionable candidate — the
+four durable rows (`#54` at 0.4, `#40`/`#35`/`#49` at 0.8 each)
+stay blocked on the same cloud-push-token workflows-scope gap a
+cloud tick can't fix. Reproduced: line 66 unchanged. Shipped it:
+"Three" -> "Two". Mirrored as issue #55. `plan/AUDIT.md`'s
+Pending queue is now the four durable blocked/process rows only.
 
-### [A, 1.8] playbooks/cloud-loop.md:66 — "Three new files" header sits atop a 2-entry tree
-- category: doc-drift
-- impact: 2, ease: 9
-- evidence: line 66 reads "Three new files relative to the
-  standard nexus overlay:" but the fenced tree immediately below
-  (lines 67-71) lists only two entries, `march.yml` and
-  `CLOUD_LOOP.md`. First found 2026-07-19 (scored `[A, 1.35]`),
-  reproduced clean through 2026-08-27, dropped off the tracked
-  Top 5 in the 2026-09-01 digest tick for scoring lowest among
-  six competing candidates that day — never fixed, just
-  deprioritized off the list. Confirmed still unchanged today.
-- next: change "Three" to "Two" at line 66. Single-word fix, no
-  other prose depends on the count.
+## Pending
 
 ### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect
 - category: external-issue
@@ -1217,6 +1215,12 @@ unchanged and still Pending. Not a full A-G sweep.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 1.8] playbooks/cloud-loop.md:66 — "Three new files" header sits atop a 2-entry tree — this commit (closes #55)
+- category: doc-drift
+- fix: changed "Three new files" to "Two new files" at line 66 —
+  the fenced tree immediately below has always listed only
+  `march.yml` and `CLOUD_LOOP.md`. Mirrored as issue #55.
 
 ### [x] [C, 2.4] triage.md's follow-up-comment citation points half at unrelated content — this commit
 - category: link-hygiene
