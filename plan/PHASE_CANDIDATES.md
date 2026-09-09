@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-09-05
-> Pass count: 8
+> Last pass: 2026-09-09
+> Pass count: 9
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -635,6 +635,53 @@ kit + sibling surveys.
   cheap row eventually wins instead of losing indefinitely.
 - estimated phases: 1 (doc/rule-only, no template API change)
 - conflicts: none.
+
+### [ ] [score 6.5] Auto mode: Claude Code's new default permission model isn't in the kit's playbooks
+- proposed: 2026-09-09 (expand pass 9)
+- source signals: Claude Code's own "What's new" changelog
+  (Week 32, Aug 3-7 2026) — "auto mode becomes the default
+  permission mode for new sessions on Pro, Max, and Team
+  plans starting August 14" — a classifier now handles
+  permission prompts (approve safe actions, block risky ones)
+  instead of asking every time. Confirmed via a fresh doc
+  fetch this pass; no reference to "auto mode" exists anywhere
+  in this repo's history (`git log --all -i --grep`, zero
+  hits) or in `customization/claude-code.md` /
+  `playbooks/hands-off.md`, the two docs that own the kit's
+  entire permission story.
+- rationale: `playbooks/hands-off.md` Step 1's whole premise —
+  "burn down the prompt list... zero prompts across three
+  attended ticks is the bar" — was written for a world where
+  every local session defaults to asking. On Pro/Max/Team, new
+  sessions now default to auto mode instead: the classifier may
+  already be silently approving or blocking some of what Step
+  1's manual burn-down expects a human to see and adjudicate by
+  hand, which could shorten the burn-down (fewer real prompts to
+  work through) or hide it (a classifier-blocked action fails
+  differently than a prompt — no `allow` rule to add, just a
+  denial with no burn-down entry point). The cloud posture
+  (`bypassPermissions` on a disposable runner) is separately
+  reasoned and evidenced by a real incident, so it's out of
+  scope here — this candidate is about the local, attended path
+  auto mode now touches by default.
+- proposed scope: a short "auto mode" subsection in
+  `customization/claude-code.md`'s permission-mode discussion,
+  naming it as the new local default on Pro/Max/Team and
+  clarifying it complements (doesn't replace) the
+  settings.json allowlist + guard-hook layer; a note in
+  `playbooks/hands-off.md` Step 1 that a fresh session may
+  already be in auto mode, so the burn-down should first
+  confirm which mode is active before assuming every silence
+  means a fully pre-approved allowlist. Investigate, don't
+  assume: verify auto mode's actual interaction with
+  `.claude/settings.json`'s `allow`/`deny` rules and the guard
+  hook before writing the note, since the mechanism (a
+  classifier, not a rule match) may not compose with the
+  existing allowlist the way a first read suggests.
+- estimated phases: 1
+- conflicts: none — additive documentation, no template API
+  change; the guard-hook hard-rule enforcement (agents.md
+  rule 5) stays authoritative under any permission mode.
 
 ## Promoted
 
