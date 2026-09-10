@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-09-09
-> Pass count: 9
+> Last pass: 2026-09-10
+> Pass count: 10
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -682,6 +682,42 @@ kit + sibling surveys.
 - conflicts: none — additive documentation, no template API
   change; the guard-hook hard-rule enforcement (agents.md
   rule 5) stays authoritative under any permission mode.
+
+### [ ] [score 5.8] `/skill-doctor` isn't in the kit's skill-maintenance story
+- proposed: 2026-09-10 (expand pass 10)
+- source signals: Claude Code v2.1.267 (2026-09-09, per the
+  official changelog) shipped `/skill-doctor` — "shows which
+  loaded skills go unused and what they cost in context, so
+  you can prune them." Confirmed via fresh search this pass;
+  zero hits for "skill-doctor" or "skill doctor" anywhere in
+  this repo's history or docs. `customization/claude-code.md`
+  §7 ("Native skills packaging") and the adopt-by-need
+  contract (`templates/README.md`'s prune table,
+  `plan/bearings.md`'s "keep skills lean ~100-200 lines"
+  decision) are exactly the load-bearing docs this command
+  speaks to, and none mention it.
+- rationale: nexus's whole model is skills adopted by need —
+  every template repo accumulates `skills/*.md` files an
+  agent's context pays for whether or not they're ever
+  invoked. A first-party command that measures that cost
+  directly is on-mission for a kit whose own bearings already
+  encode "keep skills lean" as a standing decision; today an
+  adopter (or this repo's own maintainers) would have no
+  first-party way to notice a skill has gone stale/unused
+  short of memory or grep.
+- proposed scope: a short subsection in
+  `customization/claude-code.md` (new §10 or folded into §7)
+  naming `/skill-doctor`, when to run it (after adopt-by-need
+  pruning, or periodically once a repo's skills/ has grown),
+  and how its output maps to the prune table; one line in
+  `playbooks/new-project.md`'s adopt-by-need prune step
+  pointing at it as a follow-up check. Investigate, don't
+  assume: confirm the command's actual output format before
+  writing the mapping, since a first read of a changelog blurb
+  may not match the real CLI surface.
+- estimated phases: 1
+- conflicts: none — additive documentation, no template API
+  change.
 
 ## Promoted
 
