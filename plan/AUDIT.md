@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-09
+# Kit audit — 2026-09-10
 
 > Bias: none
 
@@ -1138,6 +1138,40 @@ fenced-twin pattern. `node scripts/verify.mjs` green after
 (`dualshell` leg now checks 9 blocks, up from 8). This block's
 Pending queue unchanged — four durable blocked/process rows only.
 
+Cloud tick 2026-09-10: header was ~24h old (last full sweep the
+above 2026-09-09 third tick), so ran a fresh A-G sweep (delegated
+the read-only pass to a foreground agent to protect context).
+`node scripts/verify.mjs` confirmed green throughout (all seven
+legs). `plan/CRITIQUE.md` Pending confirmed empty. G stayed empty
+(no sibling lessons files reachable). F clean (no stale model
+ids). C clean (every live external URL curled 200). The four
+durable rows (`#54`, `#40`, `#35`, `#49`) reconfirmed unchanged,
+not re-verified in depth. One new finding scored above threshold:
+`[A/B, 7.2]` — `templates/claude/hooks/guard.mjs`'s commit-verb
+`VERBS` allowlist was missing `critique` and `phases`, the commit
+verbs `templates/skills/critique.md` and
+`templates/skills/plan-a-phase.md` (both core, unconditionally-
+shipped per `templates/README.md`'s tree, no `(omit unless...)`
+annotation) document and use. An adopter installing the guard
+hook (the recommended default) and running either skill exactly
+as documented would have every such commit blocked by the hook's
+own rule — confirmed by reading both skill files' commit-message
+lines and the `VERBS` array; `scripts/verify.mjs` never inspects
+`guard.mjs`, so nothing mechanical caught it. Same drift class as
+a prior Done row that flagged the kit's own `.claude/hooks/
+guard.mjs` vs. the template's diverging, but explicitly scoped
+that finding away from this exact gap. Shipped the fix (below):
+added both verbs plus matching self-test cases to
+`templates/claude/hooks/guard.mjs` (mirroring the kit's own
+`.claude/hooks/guard.mjs`, which already carried both), and added
+the two rows to `templates/plan/bearings.md`'s commit-verb table.
+`node templates/claude/hooks/guard.mjs self-test` green after.
+Mirrored as issue #56. A second, lower-confidence `E`-dimension
+finding (`playbooks/hands-off.md` Step 1 phrasing re-copying
+already-adopted files) was left unshipped — one finding per tick.
+This block's Pending queue unchanged — four durable blocked rows
+only.
+
 ## Pending
 
 ### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect
@@ -1747,3 +1781,11 @@ Pending queue unchanged — four durable blocked/process rows only.
   comment now reads a real id (`claude-opus-4-8`) with the
   kit's standing "ids age — check /model" caveat, matching
   `.github/CLOUD_LOOP.md` and `customization/claude-code.md`.
+
+### [x] [7.2] guard.mjs's commit-verb allowlist blocks critique/plan-a-phase's own documented verbs — this commit (closes #56)
+- fix: added `critique` and `phases` to
+  `templates/claude/hooks/guard.mjs`'s `VERBS` array plus two
+  matching `self-test` cases, and added the corresponding rows
+  to `templates/plan/bearings.md`'s commit-verb table —
+  bringing the template in line with the kit's own
+  `.claude/hooks/guard.mjs`, which already carried both verbs.

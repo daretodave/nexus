@@ -37,8 +37,8 @@ const DEFAULT_BRANCH = '<DEFAULT_BRANCH>'
 // conventional-commit verbs. New verb (a `/ship-<x>` skill, a
 // new category) → add it there and here in the same commit.
 const VERBS = [
-  'digest', 'expand', 'jot', 'oversight', 'triage', 'plan',
-  'feat', 'fix', 'docs', 'chore',
+  'critique', 'digest', 'expand', 'jot', 'oversight', 'triage',
+  'phases', 'plan', 'feat', 'fix', 'docs', 'chore',
 ]
 
 // Pulls the first `-m`/`--message` string out of a `git commit`
@@ -283,6 +283,8 @@ function selfTest() {
     ['git commit -m "nonsense: not a real verb"', 'commit-verb'],
     ['git commit -m "Update README.md"', 'commit-verb'],
     ['git commit -m "fix(cloud): user-author mode"', null],
+    ['git commit -m "critique: pass 3 — 2 findings (1 high, 1 low)"', null],
+    ['git commit -m "phases: brief for phase 5 — topic"', null],
     // heredoc-body commit messages — the verb rule reads the
     // heredoc's own first line, not the "$(cat <<'EOF'" wrapper
     ['git commit -m "$(cat <<\'EOF\'\nfeat: ship phase 1\n\nbody line\nEOF\n)"', null],

@@ -335,11 +335,13 @@ stripped before matching). `.claude/hooks/guard.mjs`'s
 
 | Verb | Fires from |
 |---|---|
+| `critique` | `/critique` |
 | `digest` | `/digest` |
 | `expand` | `/expand` |
 | `jot` | `/jot` |
 | `oversight` | `/oversight` |
 | `triage` | `/triage` |
+| `phases` | `/plan-a-phase` |
 | `plan` | plan-state-only changes |
 | `feat` | new capability |
 | `fix` | correcting a prior mistake |
