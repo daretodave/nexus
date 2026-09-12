@@ -1,69 +1,60 @@
-# Digest — 2026-09-11
+# Digest — 2026-09-12
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-A near-silent night: one tick shipped an audit-sourced
-`guard.mjs` fix (closing #56), the other three were clean,
-self-verified no-ops that each produced a read-only
-oversight-style briefing instead of a normal march summary —
-and the critique gate's `>72h since last pass` leg has now
-quietly tripped for the first time since pass 15, so the next
-tick should dispatch to `/critique` rather than fall through to
-`/iterate`/`/expand` again.
+An active night: critique pass 16 landed two low-stakes
+findings and the next two ticks each shipped one (both closed
+within a day), so `plan/CRITIQUE.md`'s Pending queue is empty
+again — the candidate queue is still the thing silting
+(21 of 24 pending rows >21 days old, oldest 73 days).
 
 ## While you were out
 
-Window: since the last digest commit (2026-09-10 14:36 UTC).
+Window: since the last digest commit (2026-09-11 14:34 UTC).
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 09-10 17:28 | march → (triage clear → critique not due → no pending phase → iterate below floor → expand: nothing new) | **no-op** — clean, read-only; self-reported as an oversight-style audit briefing, queues unchanged |
-| 09-10 22:14 | march → iterate | shipped `56ce624` — fresh A-G sweep found `templates/claude/hooks/guard.mjs`'s commit-verb allowlist missing `critique`/`phases`, the verbs `templates/skills/critique.md` and `templates/skills/plan-a-phase.md` document and use; an adopter with the guard hook installed would have every such commit blocked. Fixed + self-tested (`self-test` green), mirrored as and closed `#56` |
-| 09-11 06:59 | march → (same fallthrough) | **no-op** — clean, read-only briefing; no new signal since expand pass 10 |
-| 09-11 12:35 | march → (same fallthrough) | **no-op** — clean, read-only briefing; no new signal |
+| 09-11 17:29 | march → (triage clear → critique not yet due → no pending phase → fallthrough) | **no-op** — clean, read-only briefing; no new signal |
+| 09-11 22:14 | march → critique | shipped `bd340bf` — pass 16: 2 findings (0 high, 1 med, 1 low) |
+| 09-12 06:50 | march → (critique-sourced fix) | shipped `22fe783` — README's three `<your-fork-or-mirror>` occurrences gained an inline swap instruction (closes pass 16's MED row) |
+| 09-12 11:57 | march → (critique-sourced fix) | shipped `1a1e2e4` — `bearings.md` gained a defining parenthetical at its real first use (closes pass 16's LOW row) |
 
-`heartbeat` ran green throughout (5/5 sampled). One of four
-ticks shipped a commit; the other three were genuine,
-self-verified no-ops, not faults.
+`heartbeat` ran green throughout (5/5 sampled). Three of four
+ticks shipped a commit; the fourth was a genuine, self-verified
+no-op.
 
 ## Shipped
 
-- `56ce624` — `templates/claude/hooks/guard.mjs`'s commit-verb
-  `VERBS` allowlist gains `critique` and `phases` (plus
-  self-test cases and matching `templates/plan/bearings.md`
-  rows), closing the gap where an adopter running `/critique`
-  or `/plan-a-phase` with the guard hook installed would have
-  every such commit rejected. Closes `#56`.
+- `bd340bf` — critique pass 16: 2 findings logged to
+  `plan/CRITIQUE.md` (0 high, 1 med, 1 low).
+- `22fe783` — README.md's three `<your-fork-or-mirror>`
+  placeholders (clone step, adopt-prompt paste, pitch-prompt
+  paste) each gain a one-line note telling the reader to swap
+  the token before pasting. Closes pass 16's MED row.
+- `1a1e2e4` — README.md:288's `bearings.md` stub mention gains
+  a defining parenthetical ("the file that locks your stack,
+  conventions, and standing decisions"), so the two later uses
+  in the same file aren't the reader's introduction to the
+  term. Closes pass 16's LOW row.
 
 ## Queues now
 
-- **Build plan:** 31/33 shipped, 0 pending, 2 blocked — phase
-  20 (`#35`) and phase 32 (`#49`), unchanged since 2026-08-23
-  and 2026-08-30.
-- **AUDIT:** header 2026-09-10 (~16h old, under both the
-  24h/48h thresholds), no re-sweep needed. Pending is the same
-  four durable rows as yesterday — `[user-issue #54]` LOW
-  (self-healed transient), `#40`/`#35`/`#49` MED (all blocked
-  on the identical cloud-push-token workflows-scope gap). No
-  row above score 0.8 — still well under the 3.0 ship floor.
-- **CRITIQUE:** 0 pending. Last pass 15 (2026-09-08, header
-  date) — 10 commits and ~74h have now elapsed, past the
-  `>72h since last pass` leg of the rate-limit gate (the
-  `≥12 commits` leg hasn't tripped, but the OR makes either
-  sufficient) — the next `/march` tick should dispatch to
-  `/critique` for pass 16 instead of repeating the last three
-  ticks' fallthrough to `/iterate`/`/expand`.
-- **PHASE_CANDIDATES:** 24 pending mechanically per
-  `pulse.mjs` (unchanged from yesterday — no expand pass ran
-  this window), oldest 72 days (proposed 2026-07-02). Hand-count
-  per phase 30's rule: **21 of 24** pending rows carry a
-  `- proposed:` date more than 21 days old — only the three
-  newest (scores 7.8/6.5/5.8, proposed 2026-08-31, 2026-09-09,
-  2026-09-10) are inside the window. Header still 2026-09-10
-  (pass 10). Posture still bold.
+- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`) and
+  phase 32 (`#49`), unchanged since 2026-08-23 and 2026-08-30.
+- **AUDIT:** header 2026-09-12 (fresh, well under the 48h
+  threshold), no re-sweep needed. Pending is the same four
+  durable rows as before — `[user-issue #54]` LOW (self-healed
+  transient), `#40`/`#35`/`#49` MED (all blocked on the
+  identical cloud-push-token workflows-scope gap).
+- **CRITIQUE:** 0 pending. Last pass 16 (2026-09-11, header
+  date) — 38h since, well under the rate-limit gate's `>72h`
+  leg.
+- **PHASE_CANDIDATES:** 24 pending (21 >21d), oldest 73d
+  (proposed 2026-07-02) — unchanged from the last several
+  digests; no expand pass ran this window.
 - **Issues:** 6 open, unchanged — `#54` (self-healed
   transient), `#49`/`#48` (phase 32 blocked + loop mirror),
   `#40` (phase 23 follow-up, blocked), `#35`/`#34` (phase 20
@@ -75,39 +66,35 @@ self-verified no-ops, not faults.
 ## Needs you
 
 - **oversight needed: candidate queue silting (21 pending
-  >21d, oldest 72d).** Both trigger conditions remain met, same
-  as the last several digests — no promotions since 2026-08-23
-  (19 days now). Worth an `/oversight` pass to triage the 24
-  pending rows.
-- **Issues #35 / #40 / #49** — still tied at score 0.8, all
-  blocked on the identical cloud-push-token `workflows`-scope
-  gap. A structural-fix candidate (score 7.8, proposed
-  2026-08-31) is already queued and would resolve all three at
-  once if promoted.
+  >21d, oldest 73d).** Both trigger conditions remain met —
+  no promotions since 2026-08-23 (20 days now). Worth an
+  `/oversight` pass to triage the 24 pending rows.
+- **Issues #35 / #40 / #49** — all blocked on the identical
+  cloud-push-token `workflows`-scope gap. A structural-fix
+  candidate (score 7.8, proposed 2026-08-31, top of the
+  pending queue) already covers all three and would resolve
+  them at once if promoted.
 - **Issue #54** — root-caused as a transient third-party CDN
   504, self-healed; no action needed unless the class recurs.
 
 ## Today's intent
 
-No unlabeled issues remain, so the next `/march` tick clears
-the triage gate immediately. The critique rate-limit gate is
-now due: pass 15 landed 2026-09-08, and wall-clock time since
-(~74h by the commit timestamp, ~86h by the header's date-only
-reading) has crossed the `>72h` leg for the first time since
-pass 15 shipped, even though the `≥12 commits` leg (10 so far)
-hasn't tripped on its own. Expect the next tick to dispatch to
-`/critique` for pass 16 rather than falling through to
-`/iterate`/`/expand` as the last three ticks did. Beyond the
-loop's own dispatch, the queue-silting line above is still the
-thing most worth a human's attention today — eighteen
-consecutive digests now.
+Build plan has 0 pending `[ ]` rows, so per `agents.md` the
+next work is `/iterate`'s audit queue. All four AUDIT rows are
+`external-issue` category, tied at score 0.8 (impact 4 x ease
+2 / 10, or impact 2 x ease 2 for `#54`) — all blocked on the
+same cloud-token gap, none shippable from inside a cloud tick.
+The top of that cluster is `#40` (apply phase 23's crash-alarm
+patch to this repo's own `march.yml`/`night.yml` by hand).
+Beyond the loop's own dispatch, the candidate-queue-silting
+line above is still the thing most worth a human's attention.
 
 ## Tuning proposals
 
-None new this pass. The critique gate's `>72h` leg tripping
-today is the gate working as designed, not a mistuning — no
-proposal warranted from it. The standing candidate-queue
-silting is already captured structurally by phase 30's
-threshold (the Needs You line above does the flagging), and
-the workflow-scope-blocked lane candidate (score 7.8) already
-covers the recurring #35/#40/#49 cluster.
+None new this pass. The candidate-queue silting is already
+captured structurally by phase 30's threshold (the Needs You
+line above does the flagging), and the workflow-scope-blocked
+lane candidate (score 7.8) already covers the recurring
+`#35`/`#40`/`#49` cluster. Critique's rate-limit gate opened
+and closed cleanly this window (pass 16 due, ran, queue now
+empty) — no mistuning to report.
