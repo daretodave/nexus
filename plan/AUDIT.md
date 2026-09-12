@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-10
+# Kit audit — 2026-09-12
 
 > Bias: none
 
@@ -1171,6 +1171,26 @@ finding (`playbooks/hands-off.md` Step 1 phrasing re-copying
 already-adopted files) was left unshipped — one finding per tick.
 This block's Pending queue unchanged — four durable blocked rows
 only.
+
+Cloud tick 2026-09-12: header was >24h old (last full sweep the
+2026-09-10 tick above), so re-checked freshness (F) and
+placeholder/link spot-checks rather than a full re-delegated
+sweep. F: `templates/.github/CLOUD_LOOP.md`'s "Opus 4.8" /
+"Sonnet 5" cost-table and upgrade-path mentions are both already
+hedged inline ("ids age — check `/model`"), so left as-is rather
+than chasing a moving id string a second time in the same tick.
+The four durable AUDIT rows (`#54`, `#40`, `#35`, `#49`) all
+still blocked on the same cloud-token `workflows`-scope gap, none
+actionable from this tick. `plan/CRITIQUE.md` Pending held one
+actionable MED row — README.md's `<your-fork-or-mirror>`
+adopt-prompt placeholder with no inline replace instruction —
+scoring above the durable rows' ~0.4-0.8 (all blocked regardless
+of score). Shipped it: added a one-line callout above each of
+the three occurrences (step-1 clone block, adopt-prompt paste
+block, pitch-prompt paste block) telling the reader to swap the
+token for their own fork/mirror URL. `node scripts/verify.mjs`
+green (all seven legs). One LOW CRITIQUE row (`bearings.md` used
+before defined) left unshipped — one finding per tick.
 
 ## Pending
 

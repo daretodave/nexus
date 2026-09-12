@@ -11,13 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] README.md:86,101,160 — the adopt-prompt's clone URL is a never-resolved placeholder with no canonical URL given anywhere in the file
-- category: placeholder
-- observation: All three occurrences of the git-clone URL in README.md (`### 1. Clone` at line 86, the "clone + delegate" paste-prompt at line 101, and the pitch paste-prompt at line 160) use the literal token `<your-fork-or-mirror>`. Nowhere in README.md is nexus's own canonical/real GitHub URL given as a worked example (unlike the `<PROJECT>`-style placeholders, which templates/README.md documents in a table with example values). A stranger who follows the TL;DR's own numbering loosely — e.g., skips the manual `### 1. Clone` step and jumps straight to the "paste this" block in `### 2. Hand it to your agent` (a very plausible move given the section is literally titled "TL;DR: skip the playbook, hand it to your agent") — will paste an agent prompt containing a literal `<your-fork-or-mirror>` token, causing the agent's first action (`git clone https://github.com/<your-fork-or-mirror>/nexus.git ../nexus`) to fail against an invalid URL. Following the doc strictly in order (step 1 then step 2) avoids this because `../nexus` already exists by step 2 and the prompt's "if you haven't already" clause skips the clone — but the doc invites skipping ahead by its own "TL;DR" framing, and there's no inline callout anywhere saying "replace this before you paste."
-- evidence: `grep -n "your-fork-or-mirror" README.md prompts/*.md playbooks/*.md` → only 3 hits, all in README.md (lines 86, 101, 160); zero occurrences of a real/example nexus repo URL anywhere in README.md.
-- suggested fix: Add one explicit line right above the "paste this" block(s), e.g. "Replace `<your-fork-or-mirror>` with the URL you cloned in step 1 before pasting," or give a concrete placeholder-in-context example the way templates/README.md's placeholder table does.
-- source: dry-run
-
 ### [LOW] README.md:193,283,292 — `bearings.md` is used repeatedly before it is ever plain-language defined
 - category: comprehension
 - observation: Reading README.md top to bottom as a stranger, `bearings.md` first appears at line 193 (an `/expand` table cell linking to `./templates/plan/bearings.md#plan-expansion-posture`), then at line 283 ("a `bearings.md` stub") and line 292 ("This walks you through the substrate — bearings, build plan…") — all three uses assume the reader already knows what bearings.md is. The "What's in this kit" tree (line 451) lists `bearings.md` with no inline comment either (unlike `steps/01_build_plan.md`, `AUDIT.md`, etc., which get one-line annotations elsewhere in the doc). The actual definition ("locks the stack and conventions," "the most-read file in the loop after the build plan") only shows up once the reader reaches playbooks/new-project.md §2 — a different file, reached only via a link, well after `bearings.md` has already been used three times in README.md.
@@ -26,6 +19,16 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] README.md:86,101,160 — the adopt-prompt's clone URL is a never-resolved placeholder with no canonical URL given anywhere in the file — this commit
+- category: placeholder
+- fix: added a one-line callout right above each of the three
+  `<your-fork-or-mirror>` occurrences (README.md's step 1 clone
+  block, the adopt-prompt paste block, and the pitch-prompt
+  paste block) telling the reader to swap the token for the URL
+  they forked/cloned — the suggested fix as filed, no scope
+  changes.
+- source: dry-run
 
 ### [x] [MED] playbooks/new-project.md:100,181 — step 2 and step 3's prose "Copy X to Y" instructions fail on a fresh repo (target dir doesn't exist yet) — this commit
 - category: instruction-drift

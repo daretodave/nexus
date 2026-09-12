@@ -80,6 +80,9 @@ root.
 
 ### 1. Clone
 
+Replace `<your-fork-or-mirror>` below with wherever you forked
+or mirrored nexus (e.g. `github.com/you/nexus`):
+
 ```bash
 # Sibling layout — recommended
 cd <parent-of-your-project>
@@ -95,7 +98,8 @@ nexus root throughout.)
 ### 2. Hand it to your agent
 
 Paste this at your project's root (where `git status` shows
-your repo):
+your repo) — swap `<your-fork-or-mirror>` for the URL you
+cloned in step 1:
 
 ```
 Clone https://github.com/<your-fork-or-mirror>/nexus.git to
@@ -154,7 +158,8 @@ keystrokes." The playbooks are for everyone else.
 > adoption flow above. End-to-end in one paste.
 
 Paste this at your project's root (where `git init` has run
-but there's nothing else yet):
+but there's nothing else yet) — swap `<your-fork-or-mirror>`
+for wherever you forked or mirrored nexus:
 
 ```
 Clone https://github.com/<your-fork-or-mirror>/nexus.git to
