@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-09-10
-> Pass count: 10
+> Last pass: 2026-09-12
+> Pass count: 11
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -718,6 +718,48 @@ kit + sibling surveys.
 - estimated phases: 1
 - conflicts: none — additive documentation, no template API
   change.
+
+### [ ] [score 6.0] Claude Code v2.1.269 fixes the attribution-reminder/CLAUDE.md conflict agents.md rule 2 depends on
+- proposed: 2026-09-12 (expand pass 11)
+- source signals: Claude Code changelog v2.1.269 (2026-09-11) —
+  "Fixed the attribution reminder overriding a CLAUDE.md or
+  memory rule against commit and pull request attribution;
+  lines set by managed settings still apply." Confirmed via a
+  fresh changelog fetch this pass (versions 2.1.268/2.1.269,
+  dated 2026-09-10/11, are the only entries newer than the
+  v2.1.267 changelog state expand pass 10 already read on
+  2026-09-09). `agents.md` rule 2 ("No `Co-Authored-By:`
+  trailers. No emojis.") and its ~25 mirrors across
+  skills/templates/playbooks depend entirely on the harness
+  respecting a project's own CLAUDE.md-level rule over its own
+  built-in attribution reminder — exactly the conflict this
+  version fixes. No repo commit has ever actually carried a
+  stray trailer (`git log --all --grep="Co-Authored-By"` finds
+  none), so this isn't closing an active incident; it's the
+  platform formalizing a guarantee the kit's core no-trailer
+  contract already assumed informally, on an Action pin
+  (`anthropics/claude-code-action@v1`) that floats to newer
+  CLI builds over time.
+- rationale: the "no Co-Authored-By" rule is one of two hard,
+  headline standing rules in agents.md (rule 2); before this
+  fix, an older Claude Code build could in principle have let
+  its own attribution reminder win over agents.md's
+  instruction, silently violating the rule on any tick with no
+  local signal it had happened. Worth a small, cheap doc note
+  now that the platform mechanically guarantees the ordering
+  the kit already relies on, plus a version-floor callout for
+  adopters pinning an older CLI.
+- proposed scope: one paragraph in
+  `customization/claude-code.md`'s hard-rules or failure-modes
+  section noting CLI >= v2.1.269 (2026-09-11) is required for
+  the "attribution reminder never overrides agents.md rule 2"
+  guarantee to hold mechanically (older builds relied on it
+  working by convention only, unconfirmed either way); a
+  one-line pointer from `.github/CLOUD_LOOP.md`'s
+  trailer-carve-out section since the cloud loop is the
+  everyday enforcement point.
+- estimated phases: 1 (doc-only, no template API change)
+- conflicts: none.
 
 ## Promoted
 
