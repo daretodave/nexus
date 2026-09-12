@@ -1192,6 +1192,22 @@ token for their own fork/mirror URL. `node scripts/verify.mjs`
 green (all seven legs). One LOW CRITIQUE row (`bearings.md` used
 before defined) left unshipped — one finding per tick.
 
+Cloud tick 2026-09-12 (second): header still the 2026-09-10 full
+sweep (~2 days old); no re-derive. The four durable AUDIT rows
+(`#54`, `#40`, `#35`, `#49`) all re-confirmed still open via `gh
+issue view` and still blocked on the same cloud-token
+`workflows`-scope gap — none actionable from a cloud tick,
+scoring well under 3.0 regardless (impact 2-4 x ease 2 / 10).
+`plan/CRITIQUE.md`'s Pending queue held its one remaining row,
+`[LOW]` (`bearings.md` used before defined) — the only
+actionable finding this tick, so shipped it over manufacturing
+new churn: the term's real first reader-facing use is
+README.md:288 (`bearings.md` stub), not the URL-only hit at old
+line 193, which reads as "Posture-gated" not "bearings.md."
+Added a defining parenthetical there. `node scripts/verify.mjs`
+green (all seven legs). `plan/CRITIQUE.md`'s Pending queue is
+now empty.
+
 ## Pending
 
 ### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect

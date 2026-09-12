@@ -11,14 +11,20 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] README.md:193,283,292 — `bearings.md` is used repeatedly before it is ever plain-language defined
-- category: comprehension
-- observation: Reading README.md top to bottom as a stranger, `bearings.md` first appears at line 193 (an `/expand` table cell linking to `./templates/plan/bearings.md#plan-expansion-posture`), then at line 283 ("a `bearings.md` stub") and line 292 ("This walks you through the substrate — bearings, build plan…") — all three uses assume the reader already knows what bearings.md is. The "What's in this kit" tree (line 451) lists `bearings.md` with no inline comment either (unlike `steps/01_build_plan.md`, `AUDIT.md`, etc., which get one-line annotations elsewhere in the doc). The actual definition ("locks the stack and conventions," "the most-read file in the loop after the build plan") only shows up once the reader reaches playbooks/new-project.md §2 — a different file, reached only via a link, well after `bearings.md` has already been used three times in README.md.
-- evidence: `grep -n "bearings" README.md` → lines 193, 283, 292, 435, 451, 554 — none of them is a defining sentence.
-- suggested fix: Add a short parenthetical at first use (line 193 or in "What you get"), e.g. "`bearings.md` — the file that locks your stack, conventions, and standing decisions," so the term is anchored before it's used as a given.
-- source: dry-run
-
 ## Done
+
+### [x] [LOW] README.md:193,283,292 — `bearings.md` is used repeatedly before it is ever plain-language defined — this commit
+- category: comprehension
+- fix: the literal string "bearings.md" first appears as
+  visible reader-facing text at README.md:288 ("a `bearings.md`
+  stub") — the earlier hit at old line 193 is inside a URL
+  fragment (`./templates/plan/bearings.md#...`) behind link text
+  that reads "Posture-gated," not "bearings.md," so it was never
+  actually a first *reading* of the term. Added a parenthetical
+  there: "a `bearings.md` stub (the file that locks your stack,
+  conventions, and standing decisions)," anchoring the term
+  before its two subsequent uses in the same file.
+- source: dry-run
 
 ### [x] [MED] README.md:86,101,160 — the adopt-prompt's clone URL is a never-resolved placeholder with no canonical URL given anywhere in the file — this commit
 - category: placeholder

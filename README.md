@@ -285,8 +285,9 @@ flowchart LR
 ### → [`playbooks/pre-spec.md`](./playbooks/pre-spec.md)
 
 Have a pitch, no spec yet. A 30-minute interactive interview
-that produces `spec.md`, a `bearings.md` stub, and an optional
-visual-system commission prompt. The only nexus playbook
+that produces `spec.md`, a `bearings.md` stub (the file that
+locks your stack, conventions, and standing decisions), and an
+optional visual-system commission prompt. The only nexus playbook
 where `AskUserQuestion` is allowed — see the carve-out at
 the top of the playbook. Output feeds straight into
 `new-project.md`.
