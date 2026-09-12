@@ -1208,7 +1208,57 @@ Added a defining parenthetical there. `node scripts/verify.mjs`
 green (all seven legs). `plan/CRITIQUE.md`'s Pending queue is
 now empty.
 
+Cloud tick 2026-09-12 (third): header was 2 days past the last
+full sweep (2026-09-10) and `plan/CRITIQUE.md`'s queue is empty,
+so ran a fresh A-G sweep via delegated sub-agent rather than
+another freshness-only spot-check. Found three new, non-
+duplicate findings (all score 3.6), cross-checked against the
+four durable Pending rows (`#54`/`#40`/`#35`/`#49`, all still
+blocked, unchanged) and the Done log to rule out re-flagging
+recent fixes. Shipped the cleanest: `CONTRIBUTING.md`'s
+new-playbook step cited "Two paths to start," a README heading
+renamed to "Three paths to start" when the `pre-spec.md` path
+was added — no ambiguity, no counter-context. Left two for a
+future tick (below): `intervention-spectrum.md`'s dispatcher
+verb list undercounts to five, and a `customization/
+claude-code.md` model-id table cell initially flagged as
+missing the "ids age" hedge — re-checked and downgraded: the
+same doc already carries a doc-wide hedge ("including this
+one") 15 lines below the table, so it's weaker evidence than
+the other two and likely not worth a tick on its own merit.
+
 ## Pending
+
+### [A, 3.6] intervention-spectrum.md:38 undercounts /march's dispatcher verbs, omitting "expand"
+- category: doc-drift
+- impact: 4, ease: 9
+- evidence: `intervention-spectrum.md:38` reads "(triage /
+  critique / phase / data / iterate)" — five verbs. README's
+  canonical adopter-facing dispatcher description
+  (`README.md:199`) lists six: "triage → critique → phase →
+  data → expand → iterate." `intervention-spectrum.md` is the
+  generic methodology doc (not nexus-self, which correctly
+  omits `data`), so it should match README's six-verb list.
+- next: in `intervention-spectrum.md:38`, change
+  "(triage / critique / phase / data / iterate)" to
+  "(triage / critique / phase / data / expand / iterate)".
+
+### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
+- category: freshness
+- impact: 4, ease: 5 (weaker than the raw score suggests — see
+  evidence)
+- evidence: the `claude-sonnet-5` mention in the Model routing
+  table (`customization/claude-code.md:315`) has no inline
+  caveat, unlike `templates/.github/CLOUD_LOOP.md`'s matching
+  cells. But the same doc already states, 15 lines below the
+  table (`customization/claude-code.md:330`), "Model ids age.
+  Check `/model` ... rather than trusting any id you find
+  hardcoded in a doc — including this one" — an explicit,
+  doc-wide catch-all that already covers the table cell.
+  Downgraded on discovery; may not be worth a tick at all.
+- next: low priority — only act if a future sweep finds the
+  doc-wide hedge itself removed or weakened; otherwise this row
+  can be dropped rather than shipped.
 
 ### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect
 - category: external-issue
@@ -1317,6 +1367,14 @@ now empty.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 3.6] CONTRIBUTING.md's new-playbook step cites a renamed README heading — this commit
+- category: doc-drift
+- fix: `CONTRIBUTING.md:71` said to add a section under "Two
+  paths to start" — stale since README's start-paths heading
+  became "Three paths to start" (README.md:272) when the
+  `pre-spec.md` path was added. Changed the quoted heading name
+  to match.
 
 ### [x] [E, 4.0] playbooks/existing-project.md's step-1 CURRENT-STATE.md copy has no PowerShell twin — this commit
 - category: adopter-friction

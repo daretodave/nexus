@@ -68,7 +68,7 @@ Just open a PR. No issue needed.
    what was different from the existing playbooks).
 2. Write the playbook at `playbooks/<context>.md`. Mirror the
    structure of `new-project.md` or `existing-project.md`.
-3. Add a section to the README under "Two paths to start" (or
+3. Add a section to the README under "Three paths to start" (or
    wherever fits).
 4. PR.
 
