@@ -1,26 +1,27 @@
-# Digest — 2026-09-12
+# Digest — 2026-09-13
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-An active night: critique pass 16 landed two low-stakes
-findings and the next two ticks each shipped one (both closed
-within a day), so `plan/CRITIQUE.md`'s Pending queue is empty
-again — the candidate queue is still the thing silting
-(21 of 24 pending rows >21 days old, oldest 73 days).
+A quiet-ish night: one tick fell through to `/expand` (nothing
+in the audit/critique queues scored >=3.0), two ticks shipped
+small doc fixes, and one was a genuine no-op — the candidate
+queue is still the thing silting (21 of 25 pending rows >21
+days old, oldest 74 days, 21 days since the last `/oversight`
+promotion pass).
 
 ## While you were out
 
-Window: since the last digest commit (2026-09-11 14:34 UTC).
+Window: since the last digest commit (2026-09-12 13:42 UTC).
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 09-11 17:29 | march → (triage clear → critique not yet due → no pending phase → fallthrough) | **no-op** — clean, read-only briefing; no new signal |
-| 09-11 22:14 | march → critique | shipped `bd340bf` — pass 16: 2 findings (0 high, 1 med, 1 low) |
-| 09-12 06:50 | march → (critique-sourced fix) | shipped `22fe783` — README's three `<your-fork-or-mirror>` occurrences gained an inline swap instruction (closes pass 16's MED row) |
-| 09-12 11:57 | march → (critique-sourced fix) | shipped `1a1e2e4` — `bearings.md` gained a defining parenthetical at its real first use (closes pass 16's LOW row) |
+| 09-12 16:43 | march → iterate → expand (posture-bold escape hatch: nothing scored >=3.0) | shipped `6aae3a8` — expand pass 11: 1 candidate |
+| 09-12 21:55 | march → (audit-sourced fix) | shipped `f6ea559` — CONTRIBUTING.md's stale README-heading citation; same tick's fresh A-G sweep filed a new AUDIT row |
+| 09-13 07:09 | march → (audit-sourced fix) | shipped `5f5de03` — intervention-spectrum.md's dispatcher-verb undercount |
+| 09-13 13:05 | march → (triage clear → critique not due → no pending phase → audit queue thin) | **no-op** — clean, read-only briefing; no new signal |
 
 `heartbeat` ran green throughout (5/5 sampled). Three of four
 ticks shipped a commit; the fourth was a genuine, self-verified
@@ -28,33 +29,40 @@ no-op.
 
 ## Shipped
 
-- `bd340bf` — critique pass 16: 2 findings logged to
-  `plan/CRITIQUE.md` (0 high, 1 med, 1 low).
-- `22fe783` — README.md's three `<your-fork-or-mirror>`
-  placeholders (clone step, adopt-prompt paste, pitch-prompt
-  paste) each gain a one-line note telling the reader to swap
-  the token before pasting. Closes pass 16's MED row.
-- `1a1e2e4` — README.md:288's `bearings.md` stub mention gains
-  a defining parenthetical ("the file that locks your stack,
-  conventions, and standing decisions"), so the two later uses
-  in the same file aren't the reader's introduction to the
-  term. Closes pass 16's LOW row.
+- `6aae3a8` — expand pass 11: filed one new candidate (score
+  6.0) — Claude Code v2.1.269 fixes the attribution-reminder/
+  CLAUDE.md conflict `agents.md` rule 2 depends on. No repo
+  commit has ever actually carried a stray trailer; this
+  formalizes a guarantee rather than closing an incident.
+- `f6ea559` — CONTRIBUTING.md:71 pointed at README's "Two paths
+  to start" heading, renamed to "Three paths to start" when the
+  pre-spec.md path was added. Same tick's fresh A-G sweep also
+  filed two lower-confidence findings to `plan/AUDIT.md`
+  (one downgraded on discovery — see Queues now).
+- `5f5de03` — intervention-spectrum.md:38 listed five
+  dispatcher verbs, missing "expand" that README.md's canonical
+  six-verb description carries.
 
 ## Queues now
 
 - **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`) and
   phase 32 (`#49`), unchanged since 2026-08-23 and 2026-08-30.
-- **AUDIT:** header 2026-09-12 (fresh, well under the 48h
-  threshold), no re-sweep needed. Pending is the same four
-  durable rows as before — `[user-issue #54]` LOW (self-healed
-  transient), `#40`/`#35`/`#49` MED (all blocked on the
-  identical cloud-push-token workflows-scope gap).
+- **AUDIT:** header touched today (fresh, well under the 48h
+  threshold), 5 pending rows. New this window: `[F, ~2]`
+  (`customization/claude-code.md:315`'s model-id cell lacks an
+  inline "ids age" hedge) — downgraded on discovery, since the
+  same doc already carries a doc-wide hedge covering it; the
+  row itself says it "may not be worth a tick at all." The
+  other four are the same durable rows as before — `#54` LOW
+  (self-healed transient), `#40`/`#35`/`#49` MED (all blocked
+  on the identical cloud-push-token workflows-scope gap).
 - **CRITIQUE:** 0 pending. Last pass 16 (2026-09-11, header
-  date) — 38h since, well under the rate-limit gate's `>72h`
+  date) — ~48h since, still under the rate-limit gate's `>72h`
   leg.
-- **PHASE_CANDIDATES:** 24 pending (21 >21d), oldest 73d
-  (proposed 2026-07-02) — unchanged from the last several
-  digests; no expand pass ran this window.
+- **PHASE_CANDIDATES:** 25 pending (21 >21d), oldest 74d
+  (proposed 2026-07-02) — grew by one this window (expand pass
+  11's new candidate, proposed 2026-09-12, too fresh to count
+  toward the >21d figure).
 - **Issues:** 6 open, unchanged — `#54` (self-healed
   transient), `#49`/`#48` (phase 32 blocked + loop mirror),
   `#40` (phase 23 follow-up, blocked), `#35`/`#34` (phase 20
@@ -66,9 +74,9 @@ no-op.
 ## Needs you
 
 - **oversight needed: candidate queue silting (21 pending
-  >21d, oldest 73d).** Both trigger conditions remain met —
-  no promotions since 2026-08-23 (20 days now). Worth an
-  `/oversight` pass to triage the 24 pending rows.
+  >21d, oldest 74d).** Both trigger conditions remain met —
+  21 days since the last promotion pass (2026-08-23). Worth an
+  `/oversight` pass to triage the 25 pending rows.
 - **Issues #35 / #40 / #49** — all blocked on the identical
   cloud-push-token `workflows`-scope gap. A structural-fix
   candidate (score 7.8, proposed 2026-08-31, top of the
@@ -80,14 +88,16 @@ no-op.
 ## Today's intent
 
 Build plan has 0 pending `[ ]` rows, so per `agents.md` the
-next work is `/iterate`'s audit queue. All four AUDIT rows are
-`external-issue` category, tied at score 0.8 (impact 4 x ease
-2 / 10, or impact 2 x ease 2 for `#54`) — all blocked on the
-same cloud-token gap, none shippable from inside a cloud tick.
-The top of that cluster is `#40` (apply phase 23's crash-alarm
-patch to this repo's own `march.yml`/`night.yml` by hand).
-Beyond the loop's own dispatch, the candidate-queue-silting
-line above is still the thing most worth a human's attention.
+next work is `/iterate`'s audit queue — but tonight's queue is
+thin: the only non-blocked row (`[F, ~2]`, the model-id hedge
+gap) scores below `/iterate`'s 3.0 bar and is itself flagged as
+possibly not worth shipping, and the three blocked MED rows
+(`#40`/`#35`/`#49`) can't ship from inside a cloud tick. Expect
+`/march` to keep falling through to `/expand` (as it did this
+window) until `/critique`'s rate-limit gate reopens (~24h more)
+or a fresh signal arrives. Beyond the loop's own dispatch, the
+candidate-queue-silting line above is still the thing most
+worth a human's attention.
 
 ## Tuning proposals
 
@@ -95,6 +105,7 @@ None new this pass. The candidate-queue silting is already
 captured structurally by phase 30's threshold (the Needs You
 line above does the flagging), and the workflow-scope-blocked
 lane candidate (score 7.8) already covers the recurring
-`#35`/`#40`/`#49` cluster. Critique's rate-limit gate opened
-and closed cleanly this window (pass 16 due, ran, queue now
-empty) — no mistuning to report.
+`#35`/`#40`/`#49` cluster. No mistuned gate observed this
+window — the one fallthrough to `/expand` was iterate's own
+documented posture-bold escape hatch working as designed, not
+drift.
