@@ -1229,20 +1229,6 @@ the other two and likely not worth a tick on its own merit.
 
 ## Pending
 
-### [A, 3.6] intervention-spectrum.md:38 undercounts /march's dispatcher verbs, omitting "expand"
-- category: doc-drift
-- impact: 4, ease: 9
-- evidence: `intervention-spectrum.md:38` reads "(triage /
-  critique / phase / data / iterate)" — five verbs. README's
-  canonical adopter-facing dispatcher description
-  (`README.md:199`) lists six: "triage → critique → phase →
-  data → expand → iterate." `intervention-spectrum.md` is the
-  generic methodology doc (not nexus-self, which correctly
-  omits `data`), so it should match README's six-verb list.
-- next: in `intervention-spectrum.md:38`, change
-  "(triage / critique / phase / data / iterate)" to
-  "(triage / critique / phase / data / expand / iterate)".
-
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
 - impact: 4, ease: 5 (weaker than the raw score suggests — see
@@ -1367,6 +1353,16 @@ the other two and likely not worth a tick on its own merit.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 3.6] intervention-spectrum.md:38 undercounts /march's dispatcher verbs, omitting "expand" — this commit
+- category: doc-drift
+- fix: `intervention-spectrum.md:38` read "(triage / critique /
+  phase / data / iterate)" — five verbs. README's canonical
+  adopter-facing dispatcher description (`README.md:199`) lists
+  six: "triage → critique → phase → data → expand → iterate."
+  `intervention-spectrum.md` is the generic methodology doc
+  (not nexus-self, which correctly omits `data`), so added
+  "expand" to match README's six-verb list.
 
 ### [x] [A, 3.6] CONTRIBUTING.md's new-playbook step cites a renamed README heading — this commit
 - category: doc-drift

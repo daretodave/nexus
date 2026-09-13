@@ -35,8 +35,8 @@ the agent's patterns before delegating.
 stay at the keyboard but stop running individual commands.
 
 **The loop does:** One tick at a time, but it picks the right
-verb (triage / critique / phase / data / iterate). You're
-checking the dispatcher's choices.
+verb (triage / critique / phase / data / expand /
+iterate). You're checking the dispatcher's choices.
 
 **When to use:** Once the first 2–3 phases shipped via Level 0
 and you trust the patterns. Useful for the middle of a build —
