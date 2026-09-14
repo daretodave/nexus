@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-09-11
-> Pass count: 16
+> Last pass: 2026-09-14
+> Pass count: 17
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,34 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [MED] templates/env/env.example:26 — `.env.example`'s provider matrix and blocks cover 5 of the 8 `DEPLOY_PROVIDER` values the script and docs support
+- category: instruction-drift
+- observation: `templates/env/env.example:26` reads
+  `# Supported: netlify | vercel | github-actions | health-check | none`
+  (5 values) and only has commented `.env` blocks for those four
+  providers plus health-check. But `templates/scripts/deploy-check.mjs`
+  implements 8 providers (its own "Unknown DEPLOY_PROVIDER" error
+  lists all 8), and `playbooks/ci-providers.md` documents worked
+  `.env` blocks for the three missing ones — Cloudflare Pages
+  (`CF_API_TOKEN`/`CF_ACCOUNT_ID`/`CF_PAGES_PROJECT`), Render
+  (`RENDER_API_KEY`/`RENDER_SERVICE_ID`), and Fly.io
+  (`FLY_API_TOKEN`/`FLY_APP_NAME`). An adopter who follows
+  `playbooks/new-project.md` step 7 ("choose your provider per
+  `ci-providers.md`") and picks one of these three copies
+  `.env.example` to `.env` and finds no scaffold for it, despite
+  the exact var names living two clicks away in `ci-providers.md`.
+- evidence: `templates/env/env.example:26` (stale "Supported:" line
+  and missing blocks) vs `templates/scripts/deploy-check.mjs` lines
+  171-238 (`cloudflare-pages` / `render` / `fly` branches) and line
+  309 (8-value error string) vs `playbooks/ci-providers.md` lines
+  104-157 (the three missing `.env` blocks already written out).
+- suggested fix: update the "Supported:" comment at
+  `env.example:26` to list all 8 values, and add three more
+  commented blocks (`--- CLOUDFLARE PAGES ---` / `--- RENDER ---` /
+  `--- FLY.IO ---`) mirroring the existing block style, using the
+  var names `ci-providers.md` already documents.
+- source: dry-run
 
 ## Done
 
