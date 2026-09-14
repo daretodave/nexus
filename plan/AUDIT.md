@@ -1227,6 +1227,30 @@ same doc already carries a doc-wide hedge ("including this
 one") 15 lines below the table, so it's weaker evidence than
 the other two and likely not worth a tick on its own merit.
 
+Cloud tick 2026-09-14: header was 2 days old (last full sweep
+2026-09-12 (third), above), past the 24h threshold, so ran a
+fresh A-G sweep (delegated to a foreground sub-agent to protect
+context). Confirmed clean: model ids consistent throughout
+(`claude-sonnet-5`/`claude-opus-4-8`/`claude-haiku-4-5`, no
+stale hits); README/`templates/README.md` tree diagrams match
+disk exactly both ways; `guard.mjs`/`settings.json`/the
+commit-verb table's nexus-vs-generic split is the intentional
+self-vs-template divergence, not drift; every local anchor link
+resolves; every external URL curled 200 except a Cloudflare
+dashboard link that 403s behind its own login wall (not link
+rot — a signed-in user reaches it fine); no new wrap violations
+beyond the long-standing single-unbreakable-token overflows
+`plan/bearings.md`'s wrap rule already exempts.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. The five
+standing Pending rows below (`[F, ~2]`, `#54`, `#40`, `#35`,
+`#49`) all reproduce unchanged; none scores >= 3.0 (the three
+durable blocked issues sit at impact 4 x ease 2 / 10 = 0.8,
+`#54` at 0.4, `[F, ~2]` already downgraded to marginal). Per
+`skills/iterate.md` §6 failure mode 1 (no finding >= 3.0,
+posture bold), dispatched to `skills/expand.md` instead of
+manufacturing churn — see `plan/PHASE_CANDIDATES.md`'s pass 12
+entry for what that pass found.
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
