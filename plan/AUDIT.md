@@ -1251,6 +1251,27 @@ posture bold), dispatched to `skills/expand.md` instead of
 manufacturing churn — see `plan/PHASE_CANDIDATES.md`'s pass 12
 entry for what that pass found.
 
+Cloud tick 2026-09-15: header still the 2026-09-14 full sweep
+(<24h old relative to that sweep's own findings), and
+`/critique` pass 17 (2026-09-14 23:01, after the sweep) filed
+exactly one new Pending row in `plan/CRITIQUE.md` — a MED
+instruction-drift finding: `templates/env/env.example`'s
+`DEPLOY_PROVIDER` "Supported:" comment and commented `.env`
+blocks covered 5 of the 8 providers `deploy-check.mjs`
+implements, missing Cloudflare Pages/Render/Fly.io despite
+`playbooks/ci-providers.md` already documenting their exact var
+names. The five standing AUDIT rows below (`[F, ~2]`, `#54`,
+`#40`, `#35`, `#49`) all re-confirmed unchanged and still score
+under 1 (three durable issues blocked on the same cloud-token
+workflows-scope gap, `#54` a closeable non-recurrence note,
+`[F, ~2]` already downgraded) — none actionable or competitive
+against the new MED. Shipped the CRITIQUE row: widened the
+"Supported:" line to all 8 values and added three new commented
+blocks matching the existing dash-header style, using
+`ci-providers.md`'s var names and get-token URLs verbatim.
+`node scripts/verify.mjs` green (all seven legs).
+`plan/CRITIQUE.md`'s Pending queue is empty again.
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
