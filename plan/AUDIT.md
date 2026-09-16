@@ -1272,6 +1272,29 @@ blocks matching the existing dash-header style, using
 `node scripts/verify.mjs` green (all seven legs).
 `plan/CRITIQUE.md`'s Pending queue is empty again.
 
+Cloud tick 2026-09-16: header was 2 days old (last full sweep
+2026-09-14, above), past the 24h threshold, so ran a fresh A-G
+sweep (delegated to a foreground sub-agent to protect context).
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. The five
+standing Pending rows below (`[F, ~2]`, `#54`, `#40`, `#35`,
+`#49`) all re-confirmed unchanged, still under 1. Found one new
+finding: `templates/agents.md`'s Skills table and Invocation
+list — the file this repo's own `agents.md` calls "the entry
+point for any AI agent landing in this repo cold" — omitted 6
+of the 15 skills `templates/skills/` ships, including `jot`,
+which carries no "(omit unless...)" annotation in
+`templates/README.md`'s tree (i.e. every adopter gets it
+unconditionally) yet was entirely missing from its own
+rulebook. The other five (`ship-migration`, `ship-asset`,
+`moderate`, `digest`, `bootstrap`) are conditional, but
+`ship-data` — equally conditional ("omit if no structured data
+layer") — was already listed, so the omission was an
+inconsistency, not an intentional opt-in gate. Shipped: added
+all six rows to both the Skills table and the Invocation block
+in `templates/agents.md`, each annotated with its adoption
+condition to match `ship-data`'s existing style.
+`node scripts/verify.mjs` green (all seven legs).
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
@@ -1398,6 +1421,26 @@ blocks matching the existing dash-header style, using
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [4.5] templates/agents.md's Skills table omits 6 of the 15 shipped skills, including the unconditional `jot` — this commit
+- category: doc-drift / completeness
+- impact: 5, ease: 9
+- evidence: `templates/agents.md`'s Skills table and Invocation
+  block listed only 9 of the 15 skills under
+  `templates/skills/`. `jot.md` carries no "(omit unless...)"
+  annotation in `templates/README.md`'s tree — every adopter
+  gets it — yet it was absent from the doc `agents.md` itself
+  bills as the cold-start entry point. `ship-migration`,
+  `ship-asset`, `moderate`, `digest`, `bootstrap` are
+  conditional, same tier as the already-listed `ship-data`
+  ("omit if no structured data layer"), so their omission read
+  as an inconsistency rather than a deliberate opt-in gate.
+- fix: added all six rows to both the Skills table and the
+  Invocation block, each annotated with its adoption condition
+  matching `ship-data`'s existing style (`ship-migration`,
+  `ship-asset` gated on `plan/bearings.md` fields; `moderate` on
+  UGC; `digest` on cloud-loop adoption; `bootstrap` opt-in per
+  `customization/bootstrap-automation.md`).
 
 ### [x] [A, 3.6] intervention-spectrum.md:38 undercounts /march's dispatcher verbs, omitting "expand" — this commit
 - category: doc-drift
