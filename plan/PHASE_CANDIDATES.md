@@ -771,6 +771,42 @@ kit + sibling surveys.
 - estimated phases: 1 (doc-only, no template API change)
 - conflicts: none.
 
+### [ ] [score 4.2] AUDIT.md's H1 header date isn't mechanically bumped after a full sweep, so every tick hand-parses the log for real staleness
+- proposed: 2026-09-16 (digest)
+- source signals: `plan/AUDIT.md`'s H1 still reads "2026-09-12"
+  while its own log shows full A-G sweeps landing 2026-09-14 and
+  again 2026-09-16 (this morning, `b45b807`'s tick, ~8h before
+  this digest ran) — the field is stale by the literal 48h rule
+  in both `skills/digest.md` §3 step 5 and `skills/iterate.md`
+  §4 step 2, yet neither sweep bumped it. Every tick since at
+  least the 2026-09-04 digest has coped by hand-deriving the
+  true last-sweep date from the log's own "Cloud tick <date>:
+  ... ran a fresh A-G sweep" prose instead of trusting the H1
+  ("header still the 2026-09-14 full sweep" — 2026-09-15 digest;
+  "same gap flagged in the last digest, still not bumped" —
+  same entry). This tick nearly repeated the 2026-09-16 sweep a
+  second time from scratch — reading the literal header as
+  ground truth before the log narrative caught that a fresh
+  sweep had already shipped 8 hours earlier — costing a spawned
+  sub-agent before the duplicate was caught and stopped.
+- rationale: a staleness signal that every consumer has learned
+  to distrust and manually re-derive isn't doing its job; the
+  workaround is easy to skip under time pressure (as this tick
+  almost did), risking either wasted duplicate sweeps or, worse,
+  a rewrite that clobbers durable rows if the hand-parse is
+  wrong. Cheap to fix, and every future digest/iterate tick pays
+  the parsing tax until it is.
+- proposed scope: either (a) require the full-sweep step in
+  `skills/digest.md` §3.5 and `skills/iterate.md` §4.2 to
+  rewrite AUDIT.md's H1 to today's date in the same commit, or
+  (b) teach `scripts/pulse.mjs` to parse the log's own dated
+  "ran a fresh A-G sweep" lines for the true last-sweep date and
+  print an explicit staleness verdict instead of leaving callers
+  to eyeball the H1. (b) is more robust — it does not depend on
+  every future tick remembering the bump.
+- estimated phases: 1
+- conflicts: none.
+
 ## Promoted
 
 (moves to the build plan via /oversight)
