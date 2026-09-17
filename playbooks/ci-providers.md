@@ -249,7 +249,7 @@ private use cases.
 ```bash
 # .env
 HEALTH_CHECK_URL=https://yoursite.example.com/healthz
-HEALTH_CHECK_EXPECT=200                 # or a sentinel string
+HEALTH_CHECK_EXPECT=ready               # sentinel substring in body, not an HTTP status
 DEPLOY_WAIT_BUFFER_S=120                # seconds to wait before health-checking
 ```
 

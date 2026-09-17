@@ -1375,29 +1375,20 @@ lessons — still absent from this checkout, dimension checked not
 skipped) all swept clean otherwise. Audit only — shipped
 nothing, per `skills/digest.md` rule 2.
 
-## Pending
+Cloud tick 2026-09-17 (second): header still today's digest
+sweep (above), so no re-derive. `plan/CRITIQUE.md`'s Pending
+queue confirmed empty. No pending build-plan phase (`plan/steps/01_build_plan.md`
+has zero `[ ]` rows, only the two durable `[blocked: ...]` ones),
+critique gate not due (7 commits / ~67h since pass 17), and
+expand gate not due (9 commits / ~3.5 days since candidates pass
+12, both under threshold), so `/march` routed here via
+`/iterate`. Shipped this block's own top scorer, `[A, 4.0]`
+(`templates/env/env.example:58`'s misleading
+`HEALTH_CHECK_EXPECT=200` example) — over `[A/E, 3.0]`,
+`[F, ~2]`, and the four durable/low-value user-issue rows, all
+lower-scoring. Not a full A-G sweep.
 
-### [A, 4.0] templates/env/env.example:58 carries the same misleading `HEALTH_CHECK_EXPECT` example as the ci-providers.md row below
-- category: doc-drift / adopter friction
-- impact: 8, ease: 5
-- evidence: `templates/env/env.example:57-58` reads
-  `HEALTH_CHECK_URL=...` /
-  `HEALTH_CHECK_EXPECT=200  # or a sentinel string` — this is the
-  file adopters actually copy and fill in (not just prose), so
-  the misleading comment here outranks the playbook copy below:
-  an adopter setting `HEALTH_CHECK_EXPECT=200` literally would
-  have `deploy-check.mjs` search the response body for the
-  substring "200" rather than check an HTTP status, per
-  `templates/scripts/deploy-check.mjs:275-294`'s real semantics
-  (status 200 is checked separately; `EXPECT` matches body text).
-  A prior fix (commit `3a14e48`) already widened this same file's
-  `DEPLOY_PROVIDER` matrix to all 8 providers but left this
-  adjacent comment untouched.
-- next: reword to
-  `HEALTH_CHECK_EXPECT=ready  # optional: body-text substring to
-  match (not an HTTP status)` in both `templates/env/env.example:58`
-  and the matching example in `playbooks/ci-providers.md:252`
-  (same root cause, one pass fixes both).
+## Pending
 
 ### [A/E, 3.0] playbooks/ci-providers.md's self-hosted section never says to set `DEPLOY_PROVIDER=health-check`
 - category: doc-drift / adopter friction
@@ -1548,6 +1539,27 @@ nothing, per `skills/digest.md` rule 2.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 4.0] templates/env/env.example:58 carries the same misleading `HEALTH_CHECK_EXPECT` example as the ci-providers.md row below — this commit
+- category: doc-drift / adopter friction
+- impact: 8, ease: 5
+- evidence: `templates/env/env.example:57-58` read
+  `HEALTH_CHECK_URL=...` /
+  `HEALTH_CHECK_EXPECT=200  # or a sentinel string` — the file
+  adopters actually copy and fill in (not just prose), so the
+  misleading comment there outranked the playbook copy: an
+  adopter setting `HEALTH_CHECK_EXPECT=200` literally would have
+  had `deploy-check.mjs` search the response body for the
+  substring "200" rather than check an HTTP status, per
+  `templates/scripts/deploy-check.mjs:275-294`'s real semantics
+  (status 200 is checked separately; `EXPECT` matches body
+  text). A prior fix (commit `3a14e48`) had already widened this
+  same file's `DEPLOY_PROVIDER` matrix to all 8 providers but
+  left this adjacent comment untouched.
+- fix: reworded both `templates/env/env.example:58` and the
+  matching example in `playbooks/ci-providers.md:252` to
+  `HEALTH_CHECK_EXPECT=ready  # sentinel substring in body, not
+  an HTTP status`.
 
 ### [x] [A/B, 4.5] templates/agents.md's Sub-agents table omits the shipped `brander` agent — this commit
 - category: doc-drift / completeness
