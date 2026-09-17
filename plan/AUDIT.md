@@ -1334,25 +1334,20 @@ sub-agent's report (anchor links, external links, model-id
 hedges, and dimension G — still no sibling lessons files — all
 checked clean).
 
-## Pending
+Cloud tick 2026-09-17: header 5 days old (last full sweep
+2026-09-12, above); neither the critique gate (62h/7 commits
+since last pass) nor the expand gate (~3 days/7 commits since
+last pass) was due, so `/march` routed here via `/iterate`.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty — no
+competing row. Reproduced this block's own top scorer,
+`[A/B, 4.5]` (`templates/agents.md`'s Sub-agents table omitting
+the shipped `brander` agent) — still missing, confirmed against
+`templates/claude/agents/` (4 files on disk) and README.md's
+correct phrasing — and shipped it over the remaining three
+lower-scoring rows (`[A/E, 3.0]`, `[F, ~2]`, plus the durable
+blocked/low-value user-issue rows). Not a full A-G sweep.
 
-### [A/B, 4.5] templates/agents.md's Sub-agents table omits the shipped `brander` agent
-- category: doc-drift / completeness
-- impact: 5, ease: 9
-- evidence: `templates/agents.md`'s Sub-agents table (around
-  lines 167-175) lists only `scout`, `reader`, and
-  `<DOMAIN_SPECIALIST>` — but `templates/claude/agents/` ships a
-  fourth real agent, `brander.md` (asset rendering, spawned by
-  `/ship-asset`), referenced in 11 other files including
-  `templates/README.md`'s adopt-by-need table and
-  `templates/skills/ship-asset.md`. `README.md:181` already
-  documents it correctly ("brander (asset rendering — only
-  present when `/ship-asset` is adopted)") — `templates/agents.md`
-  just never got the matching row. Same bug shape as the
-  already-shipped Skills-table fix (commit b45b807).
-- next: add a `brander` row to the Sub-agents table, annotated
-  with its adoption condition ("present when `/ship-asset` is
-  adopted"), matching the existing conditional-row style.
+## Pending
 
 ### [A/E, 3.0] playbooks/ci-providers.md's self-hosted section never says to set `DEPLOY_PROVIDER=health-check`
 - category: doc-drift / adopter friction
@@ -1499,6 +1494,24 @@ checked clean).
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A/B, 4.5] templates/agents.md's Sub-agents table omits the shipped `brander` agent — this commit
+- category: doc-drift / completeness
+- impact: 5, ease: 9
+- evidence: `templates/agents.md`'s Sub-agents table listed only
+  `scout`, `reader`, and `<DOMAIN_SPECIALIST>` — but
+  `templates/claude/agents/` ships a fourth real agent,
+  `brander.md` (asset rendering, spawned by `/ship-asset`),
+  referenced in 11 other files including `templates/README.md`'s
+  adopt-by-need table and `templates/skills/ship-asset.md`.
+  `README.md:216` already documents it correctly ("brander (asset
+  rendering — only present when `/ship-asset` is adopted)") —
+  `templates/agents.md` just never got the matching row. Same bug
+  shape as the already-shipped Skills-table fix (commit b45b807).
+- fix: added a `brander` row to the Sub-agents table, annotated
+  with its adoption condition, matching README.md's existing
+  phrasing.
+- source: audit sweep
 
 ### [x] [4.8] templates/claude/commands/march.md duplicated its skill's dispatch chain inline and drifted, missing `/expand` — this commit
 - category: doc-drift

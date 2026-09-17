@@ -170,6 +170,7 @@ invoke a skill that does the right thing end-to-end.
 |---|---|
 | `scout` | Open-web research with citations. |
 | `reader` | Fresh-eyes site observer. |
+| `brander` | Asset rendering — only present when `/ship-asset` is adopted. |
 | <DOMAIN_SPECIALIST> | <when> |
 
 The main agent writes wiring, code, decisions. Spawn sub-agents
