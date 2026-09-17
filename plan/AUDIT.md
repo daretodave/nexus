@@ -1295,7 +1295,85 @@ in `templates/agents.md`, each annotated with its adoption
 condition to match `ship-data`'s existing style.
 `node scripts/verify.mjs` green (all seven legs).
 
+Cloud tick 2026-09-17: header was 3 days old (last full sweep
+2026-09-14; the 2026-09-16 tick above ran fresh but shipped a
+CRITIQUE-sourced row, not this block's own), past the 24h
+threshold, so ran a fresh A-G sweep (delegated to a foreground
+sub-agent to protect context). `plan/CRITIQUE.md`'s Pending
+queue confirmed empty. The four standing blocked/low-value rows
+below (`[F, ~2]`, `#54`, `#40`, `#35`, `#49`) not re-verified
+this tick — none scored competitively against the sweep's fresh
+finds. Verify gate green throughout (all seven legs, plus
+`adopt-dryrun` clean). Found three new rows; top scorer shipped
+this tick: `[A, 4.8]` — `templates/claude/commands/march.md`
+was the sole command file in `templates/claude/commands/` that
+duplicates its skill's dispatch chain inline instead of pointing
+to it (every sibling command file — `iterate.md`, `expand.md`,
+`critique.md`, `ship-a-phase.md` — uses a "Procedure: §N of
+skill" pointer). That duplication is exactly why it silently
+missed the `/expand` step: `templates/skills/march.md` gained
+step 3c on 2026-07-02, but the command file's frontmatter
+description and five-step inline list were never updated,
+still reading "triage → critique → phase → data → iterate" two
+months later. Confirmed via `git log` the command file hasn't
+changed since its original scaffold. Fixed by replacing the
+duplicated list with the same pointer pattern every sibling
+command file already uses (matching this kit's own
+`.claude/commands/march.md`, which already does this correctly
+and already lists expand) — this closes the finding and removes
+the class of bug, not just this one instance. Two more rows
+queued to Pending below, both lower-scoring: `[A/B, 4.5]`
+(`templates/agents.md`'s Sub-agents table omits the shipped
+`brander` agent) and `[A/E, 3.0]` (`playbooks/ci-providers.md`'s
+self-hosted health-check section never tells the reader to set
+`DEPLOY_PROVIDER=health-check`, plus a misleading
+`HEALTH_CHECK_EXPECT=200` example — it's matched as a body-text
+substring, not a status code). Not a full re-verification of the
+standing blocked rows; A-G otherwise swept fresh per the
+sub-agent's report (anchor links, external links, model-id
+hedges, and dimension G — still no sibling lessons files — all
+checked clean).
+
 ## Pending
+
+### [A/B, 4.5] templates/agents.md's Sub-agents table omits the shipped `brander` agent
+- category: doc-drift / completeness
+- impact: 5, ease: 9
+- evidence: `templates/agents.md`'s Sub-agents table (around
+  lines 167-175) lists only `scout`, `reader`, and
+  `<DOMAIN_SPECIALIST>` — but `templates/claude/agents/` ships a
+  fourth real agent, `brander.md` (asset rendering, spawned by
+  `/ship-asset`), referenced in 11 other files including
+  `templates/README.md`'s adopt-by-need table and
+  `templates/skills/ship-asset.md`. `README.md:181` already
+  documents it correctly ("brander (asset rendering — only
+  present when `/ship-asset` is adopted)") — `templates/agents.md`
+  just never got the matching row. Same bug shape as the
+  already-shipped Skills-table fix (commit b45b807).
+- next: add a `brander` row to the Sub-agents table, annotated
+  with its adoption condition ("present when `/ship-asset` is
+  adopted"), matching the existing conditional-row style.
+
+### [A/E, 3.0] playbooks/ci-providers.md's self-hosted section never says to set `DEPLOY_PROVIDER=health-check`
+- category: doc-drift / adopter friction
+- impact: 5, ease: 6
+- evidence: line 53's "out of the box" list undercounts —
+  `deploy-check.mjs` implements 8 providers including
+  `health-check` and `none`. Worse, the "Self-hosted → B.
+  Health-check the live URL" section (around line 247) shows the
+  matching env vars (`HEALTH_CHECK_URL`, `HEALTH_CHECK_EXPECT`,
+  `DEPLOY_WAIT_BUFFER_S`) but never tells the reader to set
+  `DEPLOY_PROVIDER=health-check`, unlike every other provider
+  section in the same doc. The example
+  `HEALTH_CHECK_EXPECT=200 # or a sentinel string` is also
+  misleading: 200 is checked as a hardcoded HTTP status
+  separately; `HEALTH_CHECK_EXPECT` is matched as a body-text
+  substring, so `=200` would search the response body for the
+  literal string "200".
+- next: add "Set `DEPLOY_PROVIDER=health-check`" to the
+  self-hosted section (matching every sibling section), widen
+  the intro list to all 8 providers, and swap the misleading
+  `HEALTH_CHECK_EXPECT` example for a real sentinel string.
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -1421,6 +1499,28 @@ condition to match `ship-data`'s existing style.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [4.8] templates/claude/commands/march.md duplicated its skill's dispatch chain inline and drifted, missing `/expand` — this commit
+- category: doc-drift
+- impact: 6, ease: 8
+- evidence: every sibling command file in
+  `templates/claude/commands/` (`iterate.md`, `expand.md`,
+  `critique.md`, `ship-a-phase.md`) points to its skill file
+  with a "Procedure: §N of skill" line rather than duplicating
+  the procedure. `march.md` was the one exception — it inlined
+  a five-step numbered list ("triage → critique → phase → data
+  → iterate") that never picked up `/expand` when
+  `templates/skills/march.md` gained that step on 2026-07-02.
+  `git log` confirms the command file untouched since its
+  original scaffold. This kit's own `.claude/commands/march.md`
+  already uses the pointer pattern and already lists expand
+  correctly, confirming which side had drifted.
+- fix: replaced the duplicated frontmatter description and
+  inline procedure list with a pointer to `skills/march.md` §3
+  (procedure), §4 (hand-off honesty), §5 (failure modes) —
+  removing the duplication that caused the drift, not just
+  patching this one instance.
+- source: audit sweep
 
 ### [x] [4.5] templates/agents.md's Skills table omits 6 of the 15 shipped skills, including the unconditional `jot` — this commit
 - category: doc-drift / completeness
