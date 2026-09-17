@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-12
+# Kit audit — 2026-09-17
 
 > Bias: none
 
@@ -1347,28 +1347,81 @@ correct phrasing — and shipped it over the remaining three
 lower-scoring rows (`[A/E, 3.0]`, `[F, ~2]`, plus the durable
 blocked/low-value user-issue rows). Not a full A-G sweep.
 
+Digest tick 2026-09-17: header was 5 days old (last full sweep
+2026-09-12, above), past `skills/digest.md`'s 48h threshold, so
+ran a fresh A-G sweep (delegated the read-only pass to an agent
+to protect context; `/digest` never ships, so audit-only).
+`node scripts/verify.mjs` green throughout (links 281 ok, tree
+196 entries/42 reverse-checked, discover 30 docs, placeholders
+543 tokens, anatomy 25 skills/25 command pointers, emoji 146
+files, dualshell 9 blocks). Re-verified both non-durable Pending
+rows: `[A/E, 3.0]` (ci-providers.md health-check gap) and
+`[F, ~2]` (claude-code.md hedge gap) both still reproduce
+unchanged, only minor line drift on the former. Recently-shipped
+fixes (brander agent table, march.md dispatch list, Skills
+table) confirmed fully propagated everywhere they're
+cross-referenced — no fresh drift found there. Found one new
+row, now this block's top scorer: `[A, 4.0]`
+(`templates/env/env.example:58` carries the identical misleading
+`HEALTH_CHECK_EXPECT=200` example as the ci-providers row, but in
+the file adopters actually copy and fill in, so higher-impact).
+All four durable rows (`[user-issue #54]`, `[user-issue #40]`,
+`[user-issue #35]`, `[user-issue #49]`) confirmed still open via
+`gh issue view`, unchanged. C (external links — curled every
+non-vendor URL in the tree, all 200 or expectedly bot-blocked), D
+(voice — doc-family H1 prefixes all consistent), F (model ids —
+no stale patterns beyond the two tracked rows), and G (sibling
+lessons — still absent from this checkout, dimension checked not
+skipped) all swept clean otherwise. Audit only — shipped
+nothing, per `skills/digest.md` rule 2.
+
 ## Pending
+
+### [A, 4.0] templates/env/env.example:58 carries the same misleading `HEALTH_CHECK_EXPECT` example as the ci-providers.md row below
+- category: doc-drift / adopter friction
+- impact: 8, ease: 5
+- evidence: `templates/env/env.example:57-58` reads
+  `HEALTH_CHECK_URL=...` /
+  `HEALTH_CHECK_EXPECT=200  # or a sentinel string` — this is the
+  file adopters actually copy and fill in (not just prose), so
+  the misleading comment here outranks the playbook copy below:
+  an adopter setting `HEALTH_CHECK_EXPECT=200` literally would
+  have `deploy-check.mjs` search the response body for the
+  substring "200" rather than check an HTTP status, per
+  `templates/scripts/deploy-check.mjs:275-294`'s real semantics
+  (status 200 is checked separately; `EXPECT` matches body text).
+  A prior fix (commit `3a14e48`) already widened this same file's
+  `DEPLOY_PROVIDER` matrix to all 8 providers but left this
+  adjacent comment untouched.
+- next: reword to
+  `HEALTH_CHECK_EXPECT=ready  # optional: body-text substring to
+  match (not an HTTP status)` in both `templates/env/env.example:58`
+  and the matching example in `playbooks/ci-providers.md:252`
+  (same root cause, one pass fixes both).
 
 ### [A/E, 3.0] playbooks/ci-providers.md's self-hosted section never says to set `DEPLOY_PROVIDER=health-check`
 - category: doc-drift / adopter friction
 - impact: 5, ease: 6
-- evidence: line 53's "out of the box" list undercounts —
+- evidence: intro list at line 53 still undercounts —
   `deploy-check.mjs` implements 8 providers including
   `health-check` and `none`. Worse, the "Self-hosted → B.
-  Health-check the live URL" section (around line 247) shows the
-  matching env vars (`HEALTH_CHECK_URL`, `HEALTH_CHECK_EXPECT`,
+  Health-check the live URL" section (now lines 246-252) shows
+  the matching env vars (`HEALTH_CHECK_URL`, `HEALTH_CHECK_EXPECT`,
   `DEPLOY_WAIT_BUFFER_S`) but never tells the reader to set
   `DEPLOY_PROVIDER=health-check`, unlike every other provider
   section in the same doc. The example
-  `HEALTH_CHECK_EXPECT=200 # or a sentinel string` is also
-  misleading: 200 is checked as a hardcoded HTTP status
-  separately; `HEALTH_CHECK_EXPECT` is matched as a body-text
-  substring, so `=200` would search the response body for the
-  literal string "200".
+  `HEALTH_CHECK_EXPECT=200 # or a sentinel string` (line 252) is
+  also misleading, same bug class as the row above: 200 is
+  checked as a hardcoded HTTP status separately;
+  `HEALTH_CHECK_EXPECT` is matched as a body-text substring, so
+  `=200` would search the response body for the literal string
+  "200". Reproduced unchanged this sweep (2026-09-17), only line
+  drift (247 -> 246-252).
 - next: add "Set `DEPLOY_PROVIDER=health-check`" to the
   self-hosted section (matching every sibling section), widen
   the intro list to all 8 providers, and swap the misleading
-  `HEALTH_CHECK_EXPECT` example for a real sentinel string.
+  `HEALTH_CHECK_EXPECT` example for a real sentinel string —
+  same pass as the row above.
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -1383,6 +1436,7 @@ blocked/low-value user-issue rows). Not a full A-G sweep.
   hardcoded in a doc — including this one" — an explicit,
   doc-wide catch-all that already covers the table cell.
   Downgraded on discovery; may not be worth a tick at all.
+  Reproduced unchanged this sweep (2026-09-17), no line drift.
 - next: low priority — only act if a future sweep finds the
   doc-wide hedge itself removed or weakened; otherwise this row
   can be dropped rather than shipped.
