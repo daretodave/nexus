@@ -50,8 +50,8 @@ iterations; then stop per the skill's failure modes.
 
 The template script `nexus/templates/scripts/deploy-check.mjs`
 handles **Netlify, Vercel, GitHub Actions, Cloudflare Pages,
-Render, and Fly.io** out of the box. Set `DEPLOY_PROVIDER` to
-the matching name; no code edits needed.
+Render, Fly.io, and health-check** out of the box. Set
+`DEPLOY_PROVIDER` to the matching name; no code edits needed.
 
 For other providers, follow the patterns below.
 
@@ -262,6 +262,8 @@ const text = await res.text()
 if (EXPECT && !text.includes(EXPECT)) process.exit(1)
 process.exit(0)
 ```
+
+Set `DEPLOY_PROVIDER=health-check`.
 
 Trade-off: you lose deploy-failure detail (you only know "site
 unhealthy"). Pair with logs from your deploy server for

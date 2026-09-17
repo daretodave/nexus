@@ -1388,31 +1388,23 @@ expand gate not due (9 commits / ~3.5 days since candidates pass
 `[F, ~2]`, and the four durable/low-value user-issue rows, all
 lower-scoring. Not a full A-G sweep.
 
-## Pending
+Cloud tick 2026-09-17 (third): header still today's digest sweep
+(above), so no re-derive. `plan/CRITIQUE.md`'s Pending queue
+confirmed empty. No pending build-plan phase, critique gate not
+due (8 commits / ~71h47m since pass 17, both under threshold),
+and expand gate not due (10 commits / ~3.6 days since candidates
+pass 12, both under threshold), so `/march` routed here via
+`/iterate`. Shipped this block's own new top scorer, `[A/E, 3.0]`
+(ci-providers.md's self-hosted section never saying to set
+`DEPLOY_PROVIDER=health-check`) — over `[F, ~2]` and the four
+durable/low-value user-issue rows, all lower-scoring. Reproducing
+it found the row's other cited bug (misleading
+`HEALTH_CHECK_EXPECT=200` example) already fixed by the prior
+tick's commit (`b2c2fec`), so this tick's diff covered only the
+remaining gap: the missing `Set DEPLOY_PROVIDER=health-check`
+line and the intro list's undercount. Not a full A-G sweep.
 
-### [A/E, 3.0] playbooks/ci-providers.md's self-hosted section never says to set `DEPLOY_PROVIDER=health-check`
-- category: doc-drift / adopter friction
-- impact: 5, ease: 6
-- evidence: intro list at line 53 still undercounts —
-  `deploy-check.mjs` implements 8 providers including
-  `health-check` and `none`. Worse, the "Self-hosted → B.
-  Health-check the live URL" section (now lines 246-252) shows
-  the matching env vars (`HEALTH_CHECK_URL`, `HEALTH_CHECK_EXPECT`,
-  `DEPLOY_WAIT_BUFFER_S`) but never tells the reader to set
-  `DEPLOY_PROVIDER=health-check`, unlike every other provider
-  section in the same doc. The example
-  `HEALTH_CHECK_EXPECT=200 # or a sentinel string` (line 252) is
-  also misleading, same bug class as the row above: 200 is
-  checked as a hardcoded HTTP status separately;
-  `HEALTH_CHECK_EXPECT` is matched as a body-text substring, so
-  `=200` would search the response body for the literal string
-  "200". Reproduced unchanged this sweep (2026-09-17), only line
-  drift (247 -> 246-252).
-- next: add "Set `DEPLOY_PROVIDER=health-check`" to the
-  self-hosted section (matching every sibling section), widen
-  the intro list to all 8 providers, and swap the misleading
-  `HEALTH_CHECK_EXPECT` example for a real sentinel string —
-  same pass as the row above.
+## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -1539,6 +1531,30 @@ lower-scoring. Not a full A-G sweep.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A/E, 3.0] playbooks/ci-providers.md's self-hosted section never says to set `DEPLOY_PROVIDER=health-check` — this commit
+- category: doc-drift / adopter friction
+- impact: 5, ease: 6
+- evidence: the "Self-hosted → B. Health-check the live URL"
+  section showed the matching env vars (`HEALTH_CHECK_URL`,
+  `HEALTH_CHECK_EXPECT`, `DEPLOY_WAIT_BUFFER_S`) but never told
+  the reader to set `DEPLOY_PROVIDER=health-check`, unlike the
+  Cloudflare Pages/Render/Fly.io sections in the same doc. The
+  intro's "handles X out of the box" list also undercounted —
+  `deploy-check.mjs` implements `health-check` as a full provider
+  branch (not just a doc afterthought), but the intro line never
+  named it. The row's other cited bug — a misleading
+  `HEALTH_CHECK_EXPECT=200` example — had already been fixed by
+  the prior tick (commit `b2c2fec`); this tick's diff confirmed
+  that half already resolved and shipped only the remaining gap.
+- fix: added "Set `DEPLOY_PROVIDER=health-check`." to the
+  self-hosted section, matching the sibling sections' pattern,
+  and widened the intro list from 6 to 7 named providers
+  (`..., Render, Fly.io, and health-check`). Left `none` out of
+  the intro list on purpose — it's a no-op fallback ("no deploy
+  gate configured, skipping"), not a wired integration like the
+  other 7, so calling it "handled out of the box" would misstate
+  what it does. `node scripts/verify.mjs` green.
 
 ### [x] [A, 4.0] templates/env/env.example:58 carries the same misleading `HEALTH_CHECK_EXPECT` example as the ci-providers.md row below — this commit
 - category: doc-drift / adopter friction
