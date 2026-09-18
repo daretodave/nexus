@@ -1404,6 +1404,21 @@ tick's commit (`b2c2fec`), so this tick's diff covered only the
 remaining gap: the missing `Set DEPLOY_PROVIDER=health-check`
 line and the intro list's undercount. Not a full A-G sweep.
 
+Cloud tick 2026-09-18: `/critique` pass 18 (previous tick) landed
+two fresh `plan/CRITIQUE.md` rows. The MED one — step 7 of
+`playbooks/new-project.md` describes `package.json` as created
+"step 7 creates one" per step 6, but step 7's body only shows the
+target JSON under "wire it into" language, with no `pnpm init`/
+`cat > package.json` anywhere — outscored this block's own
+`[F, ~2]` row and the four blocked/external-issue durable rows
+(all impact 2-4 x ease 2-5 / 10, well under 2). Reproduced: a
+literal read confirms no creation command exists between step 6's
+promise and step 7's "Test both: `pnpm verify`." Shipped: added
+`pnpm init -y` before the "wire it into `package.json`" JSON
+block. Mirrored as issue #58 and closed via commit trailer. This
+block's own rows unchanged and still Pending. Not a full A-G
+sweep.
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge

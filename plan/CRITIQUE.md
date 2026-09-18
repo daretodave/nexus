@@ -11,31 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md:464,494-533 — package.json is never actually created, only "wired into"
-- category: instruction-drift
-- observation: Step 6 states "No `package.json` exists yet at
-  this point in the walk — step 7 creates one." Step 7 only
-  shows the target JSON contents under "Wire it into
-  `package.json` alongside the verify gate from step 6" and
-  ends with "Commit `package.json` + `scripts/deploy-check.mjs`
-  + `.env.example`" — no `pnpm init`/`npm init` command and no
-  `cat > package.json <<EOF` anywhere. A stranger following the
-  playbook literally reaches "Test both: `pnpm verify`" with no
-  `package.json` on disk and hits pnpm's own "no package.json
-  found" error instead of the individual-script failures the
-  text implies.
-- evidence: `playbooks/new-project.md:464` ("step 7 creates
-  one") vs. `playbooks/new-project.md:494-533` (step 7 body has
-  no create command); `find templates -iname "package.json*"`
-  → no results; `grep -rn "pnpm init\|npm init" playbooks/
-  customization/verify-gate.md` → no results.
-- suggested fix: add an explicit creation command to step 7
-  (e.g. `pnpm init -y` or a literal `cat > package.json
-  <<'EOF' ... EOF` with the target JSON) before the "wire it
-  in" language, and add `package.json` to README's "Files
-  added" review list.
-- source: dry-run
-
 ### [LOW] README.md:272,526 — "Three paths to start" and "How to use this kit" are two separate onboarding checklists ~250 lines apart with no cross-link
 - category: ordering
 - observation: `## Three paths to start` (line 272) already
@@ -57,6 +32,20 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:464,494-533 — package.json is never actually created, only "wired into" — this commit (closes #58)
+- category: instruction-drift
+- fix: step 7 showed the target `package.json` `scripts`
+  contents under "Wire it into `package.json` alongside the
+  verify gate from step 6" but never actually created the file
+  — no `pnpm init`/`npm init` and no `cat > package.json
+  <<EOF` anywhere, even though step 6 explicitly says "step 7
+  creates one." A stranger following the playbook literally hit
+  pnpm's own "no package.json found" error at "Test both: `pnpm
+  verify`" instead of the individual-script failures the text
+  implies. Added an explicit `pnpm init -y` creation command
+  before the "wire it in" language.
+- source: dry-run
 
 ### [x] [MED] templates/env/env.example:26 — `.env.example`'s provider matrix and blocks cover 5 of the 8 `DEPLOY_PROVIDER` values the script and docs support — this commit
 - category: instruction-drift

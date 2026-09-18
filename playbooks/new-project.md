@@ -497,8 +497,15 @@ The deploy gate is `pnpm deploy:check`. It runs **after every
 push** and polls your hosting provider until ready or error.
 
 `./scripts/deploy-check.mjs` is already present — step 4's
-bulk copy landed it with the rest of `scripts/`. Wire it into
-`package.json` alongside the verify gate from step 6:
+bulk copy landed it with the rest of `scripts/`. If
+`package.json` doesn't exist yet, create it first:
+
+```bash
+pnpm init -y
+```
+
+Then wire the deploy gate into it, alongside the verify gate
+from step 6:
 
 ```json
 {
