@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-17
+# Kit audit — 2026-09-18
 
 > Bias: none
 
@@ -1444,6 +1444,28 @@ sections above" blockquote into an explicit backlink. `node
 scripts/verify.mjs` green (all seven legs). This block's own
 rows unchanged and still Pending. Not a full A-G sweep.
 
+Cloud tick 2026-09-18 (third): last full sweep (the 2026-09-17
+digest tick) now ~31h old, past the 24h threshold, so dispatched
+a fresh A-G sweep to an agent to protect context (verified its
+top candidate by hand before shipping). This block's five
+durable rows (`[F, ~2]`, `#54`, `#40`, `#35`, `#49`) all
+confirmed unchanged and out of scope for a cloud tick (same
+workflows-scope gap / already-downgraded). `plan/CRITIQUE.md`'s
+Pending queue confirmed empty. G still empty (no
+`../kintilla/plan/lessons.md` or `NEXUS_LESSONS.md` in this
+checkout). F, external links, and model ids all swept clean.
+One new row found and verified: `[C/A, 3.2]` — `README.md`'s
+"What's in this kit" tree independently re-lists
+`templates/scripts/` (lines 503-514) and omits
+`install-hooks.mjs`, even though the file exists on disk and is
+correctly documented in `templates/README.md:80,162` (which is
+why `scripts/verify.mjs`'s tree leg stayed green — the
+reverse-check only needs the entry in the union of both fenced
+trees, and `templates/README.md` already supplied it). Shipped
+the one-line addition to README.md's tree, matching
+`templates/README.md:80`'s phrasing. `node scripts/verify.mjs`
+green (197 tree entries, up from 196).
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
@@ -1571,6 +1593,25 @@ rows unchanged and still Pending. Not a full A-G sweep.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [C/A, 3.2] README.md's "What's in this kit" tree omits `templates/scripts/install-hooks.mjs` — this commit
+- category: link + tree hygiene / doc-drift
+- impact: 4, ease: 8
+- evidence: `README.md`'s "What's in this kit" tree independently
+  re-expands `templates/scripts/` (lines 503-514) and lists 10
+  `.mjs` files plus `__tests__/`, but `install-hooks.mjs` — which
+  exists on disk (`templates/scripts/install-hooks.mjs`) and is
+  correctly documented in `templates/README.md:80,162` — is
+  missing from this specific enumeration. `node scripts/verify.mjs`'s
+  tree leg stayed green throughout because its reverse-check only
+  requires an entry in the union of both fenced trees, and
+  `templates/README.md` already supplied it — so this drift was
+  invisible to the gate. Found via a fresh A-G sweep (last full
+  sweep was 31h old, past the 24h threshold).
+- fix: added `├── install-hooks.mjs          # opt-in: arms pnpm
+  verify as a pre-commit hook` to README.md's `templates/scripts/`
+  block, matching `templates/README.md:80`'s phrasing. `node
+  scripts/verify.mjs` green (197 tree entries, up from 196).
 
 ### [x] [A/E, 3.0] playbooks/ci-providers.md's self-hosted section never says to set `DEPLOY_PROVIDER=health-check` — this commit
 - category: doc-drift / adopter friction

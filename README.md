@@ -511,6 +511,7 @@ nexus/
     │   ├── check-secrets-liveness.mjs # GH_TOKEN + CRITIQUE_* liveness probe (omit unless Auth: is set)
     │   ├── stack-lifecycle.mjs        # Pattern B port/health/state helpers (omit unless hermetic e2e is Pattern B)
     │   ├── new-skill.mjs              # skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md
+    │   ├── install-hooks.mjs          # opt-in: arms pnpm verify as a pre-commit hook
     │   └── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     ├── env/
     │   └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
