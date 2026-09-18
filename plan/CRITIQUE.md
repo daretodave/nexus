@@ -11,27 +11,22 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] README.md:272,526 — "Three paths to start" and "How to use this kit" are two separate onboarding checklists ~250 lines apart with no cross-link
-- category: ordering
-- observation: `## Three paths to start` (line 272) already
-  points a manual adopter to the right playbook. `## How to
-  use this kit` (line 526) is a second, numbered "how do I
-  start" sequence restating similar guidance, separated by
-  ~120 lines of file-tree reference (`## What's in this kit`,
-  lines 394-525). Neither section links to the other, so a
-  top-to-bottom reader gets the "how to start" answer twice
-  with a large reference dump in between.
-- evidence: `README.md` headings — `Three paths to start` at
-  line 272, `What's in this kit` (tree) at lines 394-525, `How
-  to use this kit` at line 526; no cross-reference between the
-  two "how to start" sections.
-- suggested fix: merge "How to use this kit" into "Three paths
-  to start" as its numbered detail, or move it to immediately
-  follow "Three paths to start" (before the file-tree section)
-  with a one-line cross-reference.
-- source: dry-run
-
 ## Done
+
+### [x] [LOW] README.md:272,526 — "Three paths to start" and "How to use this kit" are two separate onboarding checklists ~250 lines apart with no cross-link — this commit
+- category: ordering
+- fix: `## Three paths to start` (line 272) and `## How to use
+  this kit` (line 526) each read as a standalone "how do I
+  start" sequence with no link between them, ~120 lines of
+  file-tree reference apart. Rather than merging or relocating
+  either section (a larger structural edit, and one of two
+  options the row itself only tentatively suggested), added a
+  one-line cross-reference at the end of "Three paths to
+  start" pointing forward to "How to use this kit", and turned
+  the existing "manual-path equivalent of the TL;DR sections
+  above" blockquote in "How to use this kit" into an explicit
+  link back to "Three paths to start".
+- source: dry-run
 
 ### [x] [MED] playbooks/new-project.md:464,494-533 — package.json is never actually created, only "wired into" — this commit (closes #58)
 - category: instruction-drift

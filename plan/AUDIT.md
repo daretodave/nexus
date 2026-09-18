@@ -1419,6 +1419,31 @@ block. Mirrored as issue #58 and closed via commit trailer. This
 block's own rows unchanged and still Pending. Not a full A-G
 sweep.
 
+Cloud tick 2026-09-18 (second): header still the 2026-09-17
+digest sweep (<24h old relative to that sweep — last updated
+2026-09-18T12:43:39Z by the prior tick's commit, ~4h47m ago),
+so no re-derive. No pending build-plan phase, critique gate not
+due (2 commits since pass 18, same day), and expand gate not
+due (13 commits / ~4 days since candidates pass 12, both under
+threshold), so `/march` routed here via `/iterate`. This
+block's five durable rows (`[F, ~2]`, `#54`, `#40`, `#35`,
+`#49`) all reproduce unchanged and score under 1 except the
+already-downgraded `[F, ~2]` (~2) — none actionable, matching
+the 2026-09-14 tick's exact state. Unlike that tick, though,
+`plan/CRITIQUE.md`'s Pending queue was not empty: one fresh LOW
+row from pass 18 (README's "Three paths to start" / "How to use
+this kit" cross-link gap), the only actionable finding in
+either queue, so shipped it rather than dispatching to
+`skills/expand.md` — `skills/iterate.md` §6 failure mode 1's
+expand-fallback is for when nothing is left to ship, not merely
+for scores under 3.0 (see the 2026-09-12 and 2026-09-15 ticks,
+which likewise shipped sub-3.0 CRITIQUE rows over invoking
+expand). Added a forward one-liner at the end of "Three paths
+to start" and turned "How to use this kit"'s existing "TL;DR
+sections above" blockquote into an explicit backlink. `node
+scripts/verify.mjs` green (all seven legs). This block's own
+rows unchanged and still Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge

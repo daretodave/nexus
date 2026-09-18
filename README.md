@@ -361,6 +361,9 @@ per scenario — red deploys, wedged git, churn loops, drift,
 outages, expired secrets, corrupted state. Recovery never
 force-pushes and never bypasses a gate.
 
+Prefer a numbered checklist over picking a playbook? Jump to
+[How to use this kit](#how-to-use-this-kit) below.
+
 ---
 
 <img width="1280" height="686" alt="LOOP_A" src="https://github.com/user-attachments/assets/d5ce336a-5c7b-424f-b752-5df4d37c03e6" />
@@ -525,9 +528,9 @@ adapt them.
 
 ## How to use this kit
 
-> This is the manual-path equivalent of the TL;DR sections
-> above — skip it if you already delegated adoption to an
-> agent.
+> This is the manual-path equivalent of
+> [Three paths to start](#three-paths-to-start) above — skip
+> it if you already delegated adoption to an agent.
 
 1. **Read this README.** (You're here.)
 2. **Read [`concepts/architecture.md`](./concepts/architecture.md)**
