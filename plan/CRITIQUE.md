@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-09-14
-> Pass count: 17
+> Last pass: 2026-09-18
+> Pass count: 18
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,51 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [MED] playbooks/new-project.md:464,494-533 — package.json is never actually created, only "wired into"
+- category: instruction-drift
+- observation: Step 6 states "No `package.json` exists yet at
+  this point in the walk — step 7 creates one." Step 7 only
+  shows the target JSON contents under "Wire it into
+  `package.json` alongside the verify gate from step 6" and
+  ends with "Commit `package.json` + `scripts/deploy-check.mjs`
+  + `.env.example`" — no `pnpm init`/`npm init` command and no
+  `cat > package.json <<EOF` anywhere. A stranger following the
+  playbook literally reaches "Test both: `pnpm verify`" with no
+  `package.json` on disk and hits pnpm's own "no package.json
+  found" error instead of the individual-script failures the
+  text implies.
+- evidence: `playbooks/new-project.md:464` ("step 7 creates
+  one") vs. `playbooks/new-project.md:494-533` (step 7 body has
+  no create command); `find templates -iname "package.json*"`
+  → no results; `grep -rn "pnpm init\|npm init" playbooks/
+  customization/verify-gate.md` → no results.
+- suggested fix: add an explicit creation command to step 7
+  (e.g. `pnpm init -y` or a literal `cat > package.json
+  <<'EOF' ... EOF` with the target JSON) before the "wire it
+  in" language, and add `package.json` to README's "Files
+  added" review list.
+- source: dry-run
+
+### [LOW] README.md:272,526 — "Three paths to start" and "How to use this kit" are two separate onboarding checklists ~250 lines apart with no cross-link
+- category: ordering
+- observation: `## Three paths to start` (line 272) already
+  points a manual adopter to the right playbook. `## How to
+  use this kit` (line 526) is a second, numbered "how do I
+  start" sequence restating similar guidance, separated by
+  ~120 lines of file-tree reference (`## What's in this kit`,
+  lines 394-525). Neither section links to the other, so a
+  top-to-bottom reader gets the "how to start" answer twice
+  with a large reference dump in between.
+- evidence: `README.md` headings — `Three paths to start` at
+  line 272, `What's in this kit` (tree) at lines 394-525, `How
+  to use this kit` at line 526; no cross-reference between the
+  two "how to start" sections.
+- suggested fix: merge "How to use this kit" into "Three paths
+  to start" as its numbered detail, or move it to immediately
+  follow "Three paths to start" (before the file-tree section)
+  with a one-line cross-reference.
+- source: dry-run
 
 ## Done
 
