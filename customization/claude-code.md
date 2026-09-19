@@ -281,10 +281,14 @@ Where it fires:
 
 ## 4. The `CLAUDE.md` pointer
 
-Claude Code auto-loads `CLAUDE.md` into context. It does not
-auto-load `agents.md` — the kit's rule book — which means a
-fresh session only finds the standing rules if something tells
-it to look. Ship the short pointer
+Claude Code auto-loads `CLAUDE.md` into context. As of CLI
+v2.1.277 it also falls back to `AGENTS.md` — but only in a
+project with **no** `CLAUDE.md` at all. Nexus always ships the
+pointer below, so that fallback never triggers; the kit's own
+`agents.md` — lowercase, client-agnostic, read by every AI tool
+this kit targets, not just Claude Code — is a separate
+convention from the platform's native fallback file and still
+needs a session to be told to look. Ship the short pointer
 ([`templates/claude/CLAUDE.md`](../templates/claude/CLAUDE.md)):
 
 ```markdown

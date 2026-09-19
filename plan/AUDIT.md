@@ -1466,6 +1466,45 @@ the one-line addition to README.md's tree, matching
 `templates/README.md:80`'s phrasing. `node scripts/verify.mjs`
 green (197 tree entries, up from 196).
 
+Cloud tick 2026-09-19: header (this sweep) ~14h old, under the
+24h threshold, so no re-derive. `plan/CRITIQUE.md`'s Pending
+queue confirmed empty. No pending build-plan phase, critique
+gate not due (4 commits / ~14h since pass 18), and expand gate
+not due (17 commits / ~5 days since candidates pass 12, both
+under threshold), so `/march` routed here via `/iterate`. This
+block's five durable rows (`[F, ~2]`, `#54`, `#40`, `#35`,
+`#49`) all reproduced unchanged, none scoring >= 3.0, and
+`plan/CRITIQUE.md` had nothing pending either — the same
+"nothing actionable" shape as 2026-09-14 and 2026-09-18
+(second), which per `skills/iterate.md` §6 failure mode 1 would
+normally route to `skills/expand.md`. Before dispatching there,
+ran a fresh dimension-F check against the live Claude Code
+changelog (`raw.githubusercontent.com/anthropics/claude-code/
+main/CHANGELOG.md`) as expand's own signal E would — found
+v2.1.277 shipped "Added AGENTS.md support: in a project with no
+CLAUDE.md, Claude Code reads AGENTS.md instead", newer than the
+v2.1.269 changelog state pass 11/12 already read. This directly
+contradicts `customization/claude-code.md:284-285`'s blanket
+claim "It does not auto-load `agents.md`" — true for nexus in
+practice (the kit always ships a `CLAUDE.md` pointer, so the
+fallback never triggers) but no longer an accurate general
+statement about the platform, and worth correcting before a
+future reader without this changelog context takes the old
+sentence at face value. Scored `[F, 4.0]` (impact 5 — corrects
+the stated rationale for a hard rule adopters read to decide
+whether they need the pointer file — x ease 8 — one paragraph)
+— clears the >= 3.0 bar the five durable rows can't, so shipped
+this instead of an expand candidate. Corrected the paragraph to
+state the CLAUDE.md-presence-gated fallback accurately and kept
+the pointer's rationale intact (nexus's own `agents.md` is a
+separate, lowercase, client-agnostic convention from the
+platform's native `AGENTS.md` fallback file). Reproduced: grepped
+the repo for the same claim elsewhere (`auto-load`/`auto-loads`)
+— every other hit is about root-vs-`.claude/` load location, a
+different and still-accurate claim; this was the only stale one.
+`node scripts/verify.mjs` green. This block's own five rows
+unchanged and still Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
@@ -1593,6 +1632,34 @@ green (197 tree entries, up from 196).
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [F, 4.0] customization/claude-code.md's CLAUDE.md-pointer rationale claims Claude Code "does not auto-load agents.md" — no longer true in general — this commit
+- category: freshness
+- impact: 5, ease: 8
+- evidence: `customization/claude-code.md:284-285` stated
+  flatly "Claude Code auto-loads `CLAUDE.md` into context. It
+  does not auto-load `agents.md`" as the justification for
+  shipping a `CLAUDE.md` pointer. A live changelog fetch
+  (`raw.githubusercontent.com/anthropics/claude-code/main/
+  CHANGELOG.md`) found v2.1.277 — newer than the v2.1.269 state
+  expand pass 11/12 last read — shipped "Added AGENTS.md
+  support: in a project with no CLAUDE.md, Claude Code reads
+  AGENTS.md instead." The blanket "does not auto-load" claim is
+  now false as a general platform statement; it happens to
+  still hold for nexus specifically only because the kit always
+  ships a `CLAUDE.md` pointer, so the new conditional fallback
+  never has an empty-`CLAUDE.md` project to trigger on.
+- fix: rewrote the paragraph to state the CLAUDE.md-presence-
+  gated fallback accurately (cites v2.1.277), explains why
+  nexus's pointer is still needed despite it (the fallback never
+  triggers when `CLAUDE.md` is present, which nexus guarantees),
+  and distinguishes the kit's own lowercase, client-agnostic
+  `agents.md` convention from the platform's native `AGENTS.md`
+  fallback file — two similarly-named but distinct things.
+  Grepped the repo for the same claim elsewhere; every other
+  `auto-load`/`auto-loads` hit is the unrelated, still-accurate
+  root-vs-`.claude/` load-location claim. `node scripts/verify.mjs`
+  green.
 
 ### [x] [C/A, 3.2] README.md's "What's in this kit" tree omits `templates/scripts/install-hooks.mjs` — this commit
 - category: link + tree hygiene / doc-drift
