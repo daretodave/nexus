@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-09-14
-> Pass count: 12
+> Last pass: 2026-09-19
+> Pass count: 13
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -647,7 +647,8 @@ kit + sibling surveys.
 - conflicts: none.
 
 ### [ ] [score 6.5] Auto mode: Claude Code's new default permission model isn't in the kit's playbooks
-- proposed: 2026-09-09 (expand pass 9)
+- proposed: 2026-09-09 (expand pass 9); re-evidenced 2026-09-19
+  (expand pass 13)
 - source signals: Claude Code's own "What's new" changelog
   (Week 32, Aug 3-7 2026) — "auto mode becomes the default
   permission mode for new sessions on Pro, Max, and Team
@@ -658,7 +659,25 @@ kit + sibling surveys.
   in this repo's history (`git log --all -i --grep`, zero
   hits) or in `customization/claude-code.md` /
   `playbooks/hands-off.md`, the two docs that own the kit's
-  entire permission story.
+  entire permission story. Signal E (platform drift), 2026-09-19:
+  the CHANGELOG's `main` branch now runs through v2.1.278 (this
+  pass's fresh fetch — versions 2.1.270 through 2.1.278, none
+  read by pass 11's 2026-09-12 check), and auto mode kept
+  evolving across that span rather than settling: v2.1.278
+  "Modified auto mode defaults to use server-side classifier for
+  Claude API and Enterprise users on Bedrock, Vertex, Foundry,
+  and gateways" plus "Added status row showing whether auto mode
+  classifier runs on the server"; v2.1.271-2.1.274 each shipped
+  auto-mode-adjacent fixes (per-command `allowed_domains` for
+  Bash/PowerShell/Monitor in auto mode, an "Auto mode
+  disappearance in model picker" fix, "Improved auto mode denial
+  clarity", "Changed auto mode classifier default"). This
+  confirms auto mode is still an actively-changing surface eight
+  weeks after this candidate was first filed, not a one-time
+  platform shift the kit missed and can catch up on once — the
+  proposed scope's "investigate, don't assume" caveat is now more
+  load-bearing, since a doc written against today's classifier
+  behavior risks going stale again on the next release.
 - rationale: `playbooks/hands-off.md` Step 1's whole premise —
   "burn down the prompt list... zero prompts across three
   attended ticks is the bar" — was written for a world where
