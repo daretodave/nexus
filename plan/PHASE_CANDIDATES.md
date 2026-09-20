@@ -790,6 +790,49 @@ kit + sibling surveys.
 - estimated phases: 1 (doc-only, no template API change)
 - conflicts: none.
 
+### [ ] [score 4.5] Crash-alarm dedupe matches by generic title only, masking distinct failure causes behind one long-open issue
+- proposed: 2026-09-20 (digest)
+- source signals: today's march tick (run `35511786013`,
+  2026-09-20T12:50 UTC) crashed with a genuinely new cause — the
+  Claude Code Action returned `api_error_status: 403`,
+  `api_error_code: oauth_not_allowed_for_organization`
+  ("Your organization has disabled Claude subscription access
+  for Claude Code"). `.github/workflows/march.yml`'s crash-alarm
+  step (lines 182-189) searches only
+  `in:title "Cloud march tick crashed" state:open`, found `#54`
+  (filed 2026-09-07 for an unrelated cause — `oven-sh/setup-bun`
+  hitting a transient 504 downloading its release asset) still
+  open, and skipped filing: "An open 'Cloud march tick crashed'
+  issue already exists — skipping dedupe." No issue anywhere
+  names today's actual failure; it exists only in the raw Action
+  run log. `templates/.github/workflows/march.yml` and
+  `night.yml` carry the identical step and would repeat the same
+  gap for any adopter.
+- rationale: agents.md rule 6 ("blocked is loud") assumes a
+  filed issue accurately describes what's blocking the loop.
+  Title-only dedupe conflates any two crashes as long as one is
+  already open, so the alarm degrades to "at most one open crash
+  issue, ever" instead of one per distinct cause. `#54` has sat
+  open 13 days — not itself a bug (its own `next` field says
+  close if it doesn't recur, and nobody's watching to close it) —
+  and is now inadvertently suppressing visibility into a new,
+  still-unexplained org-level access failure that could recur and
+  block every future march/night tick with no alarm firing.
+- proposed scope: key the dedupe off something cause-specific
+  instead of the shared generic title — e.g. fold the
+  `api_error_code` or failed-step name into the issue title
+  (`Cloud march tick crashed: <code> <date>`) and search on that
+  substring, or append a comment to the existing issue (rather
+  than silently no-op) when the new run's cause differs from what
+  the open issue records. Same fix needed in
+  `templates/.github/workflows/march.yml` + `night.yml` (agents.md
+  rule 7's `templates/` discipline).
+- estimated phases: 1
+- conflicts: none; complements phase 23's crash-alarm (score 7.8,
+  already shipped to `templates/` but still blocked applying to
+  nexus's own workflows per `[user-issue #40]`) rather than
+  overlapping it.
+
 ### [ ] [score 4.2] AUDIT.md's H1 header date isn't mechanically bumped after a full sweep, so every tick hand-parses the log for real staleness
 - proposed: 2026-09-16 (digest)
 - source signals: `plan/AUDIT.md`'s H1 still reads "2026-09-12"
