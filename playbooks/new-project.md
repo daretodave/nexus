@@ -353,9 +353,10 @@ table:
 - `skills/digest.md` + `.claude/commands/digest.md` — remove
   unless the cloud loop is live and you want the daily
   morning-briefing genus (`.github/workflows/night.yml` +
-  `heartbeat.yml` ship separately; step 4 never copies
-  `.github/`, so only the skill + command file are at stake
-  here).
+  `heartbeat.yml` ship separately, per
+  [`playbooks/cloud-loop.md`](./cloud-loop.md)'s "Optional: the
+  other shapes"; step 4 never copies `.github/`, so only the
+  skill + command file are at stake here).
 - `skills/bootstrap.md` + `.claude/commands/bootstrap.md` +
   `scripts/bootstrap.mjs` — remove unless you plan to run
   `/bootstrap` as the setup executor.

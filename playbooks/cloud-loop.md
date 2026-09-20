@@ -245,6 +245,53 @@ Once cloud has been ticking cleanly for ~48 hours:
 - **Tighten cadence** if you feel quota pressure. Drop to
   every 4h.
 
+## Optional: the other shapes
+
+Step 1 only copies the minimum for the dispatcher loop
+(`march.yml` + `CLOUD_LOOP.md`). The rest of the genus — the
+night shift, the heartbeat, the smoke-test breadth check, and
+the issue forms — ship separately, on demand:
+
+```bash
+cp ../nexus/templates/.github/workflows/night.yml         .github/workflows/night.yml
+cp ../nexus/templates/.github/workflows/heartbeat.yml     .github/workflows/heartbeat.yml
+cp ../nexus/templates/.github/workflows/nightly-smoke.yml .github/workflows/nightly-smoke.yml
+mkdir -p .github/ISSUE_TEMPLATE
+cp ../nexus/templates/.github/ISSUE_TEMPLATE/*.yml        .github/ISSUE_TEMPLATE/
+```
+
+The PowerShell twin, Windows native:
+
+```powershell
+Copy-Item ..\nexus\templates\.github\workflows\night.yml         .github\workflows\night.yml
+Copy-Item ..\nexus\templates\.github\workflows\heartbeat.yml     .github\workflows\heartbeat.yml
+Copy-Item ..\nexus\templates\.github\workflows\nightly-smoke.yml .github\workflows\nightly-smoke.yml
+New-Item -ItemType Directory -Force .github\ISSUE_TEMPLATE | Out-Null
+Copy-Item ..\nexus\templates\.github\ISSUE_TEMPLATE\*.yml .github\ISSUE_TEMPLATE\
+```
+
+Each piece is independently opt-in:
+
+- **`night.yml`** — needs `skills/digest.md` +
+  `.claude/commands/digest.md` (see `templates/README.md`'s
+  adopt-by-need table). Fill its `<PROJECT>` placeholder the
+  same way you filled `march.yml`'s.
+- **`heartbeat.yml`** — no skill dependency, no placeholders;
+  copy it alongside `night.yml` any time you want the
+  model-free watchdog described in `.github/CLOUD_LOOP.md`
+  "The other shapes".
+- **`nightly-smoke.yml`** — only if hermetic e2e is adopted
+  and `night.yml` isn't already running its own
+  `SMOKE_SAMPLE=full` breadth step (see
+  [`customization/hermetic-e2e.md`](../customization/hermetic-e2e.md))
+  — running both is redundant.
+- **`ISSUE_TEMPLATE/*.yml`** — five issue forms that route
+  straight into `/triage`'s labels. No skill dependency; fill
+  `config.yml`'s `<REPO_SLUG>` placeholder.
+
+See [`concepts/loop-shapes.md`](../concepts/loop-shapes.md)
+for what each shape actually does once it's running.
+
 ## What changes in your local workflow
 
 Almost nothing. Local `/loop /march` still works exactly

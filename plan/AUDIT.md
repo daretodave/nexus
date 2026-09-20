@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-18
+# Kit audit — 2026-09-20
 
 > Bias: none
 
@@ -1505,7 +1505,59 @@ different and still-accurate claim; this was the only stale one.
 `node scripts/verify.mjs` green. This block's own five rows
 unchanged and still Pending. Not a full A-G sweep.
 
+Cloud tick 2026-09-20: header (the 2026-09-18 sweep) now ~2
+days old, past the 24h threshold, so dispatched a fresh A-G
+sweep to an agent to protect context (verified its top
+candidates by hand before shipping). This block's five durable
+rows (`[F, ~2]`, `#54`, `#40`, `#35`, `#49`) all confirmed
+unchanged and out of scope for a cloud tick (same
+workflows-scope gap / already-downgraded). `plan/CRITIQUE.md`'s
+Pending queue confirmed empty. G still empty (no sibling
+lessons files in this checkout). F swept clean through the live
+Claude Code changelog (v2.1.278 — nothing new past the
+already-fixed AGENTS.md item). Two new rows found and verified
+by hand: `[A/B, 4.2]` — `playbooks/cloud-loop.md`'s Step 1 copy
+command never lands `night.yml`, `heartbeat.yml`,
+`nightly-smoke.yml`, or `ISSUE_TEMPLATE/*.yml`, even though
+`playbooks/new-project.md` explicitly defers adopters to this
+playbook for them ("ship separately") — no doc anywhere
+actually gave the copy command, confirmed by grepping both
+`playbooks/cloud-loop.md` and `templates/.github/CLOUD_LOOP.md`
+for "night"/"heartbeat"/"ISSUE_TEMPLATE" (zero hits in either);
+and `[C/A, 3.2]` — README.md's "What's in this kit" tree omits
+`templates/.github/ISSUE_TEMPLATE/` (5 files, on disk since
+2026-08-27, already correctly listed in
+`templates/README.md:63-67`), invisible to the mechanical gate
+because `templates/.github` isn't in `scripts/verify.mjs`'s
+`REVERSE_CHECK_DIRS`. Shipped the higher scorer: added a new
+"Optional: the other shapes" section to `playbooks/cloud-loop.md`
+(bash + PowerShell copy commands for the four deferred
+files/dirs, plus per-file adoption notes and placeholder calls),
+and updated `new-project.md`'s "ship separately" aside to point
+at it. `node scripts/verify.mjs` green (seven legs). Left the
+ISSUE_TEMPLATE tree-omission row queued below for the next tick.
+
 ## Pending
+
+### [C/A, 3.2] README.md's "What's in this kit" tree omits `templates/.github/ISSUE_TEMPLATE/`
+- category: link + tree hygiene / doc-drift
+- impact: 4, ease: 8
+- evidence: `README.md:453-502`'s "What's in this kit" tree
+  independently re-expands `templates/.github/` (workflows +
+  `CLOUD_LOOP.md`) but never lists `ISSUE_TEMPLATE/` (5 files:
+  `bug_report.yml`, `friction.yml`, `idea.yml`,
+  `needs_user.yml`, `config.yml`), even though the files exist
+  on disk (added 2026-08-27, `feat: .github/ISSUE_TEMPLATE`)
+  and `templates/README.md:63-67` already lists all five
+  correctly. Same bug shape as the just-shipped
+  `install-hooks.mjs` tree gap (commit `ec5cedc`) — invisible to
+  `node scripts/verify.mjs`'s tree leg because its reverse-check
+  only requires an entry in the union of both fenced trees, and
+  `templates/README.md` already supplies it; `templates/.github`
+  is also absent from `REVERSE_CHECK_DIRS`.
+- next: add an `ISSUE_TEMPLATE/` entry (collapsed or per-file,
+  matching the existing `.github/` tree block's granularity) to
+  README.md's `templates/.github/` block.
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -1632,6 +1684,33 @@ unchanged and still Pending. Not a full A-G sweep.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A/B, 4.2] playbooks/cloud-loop.md's Step 1 never lands night.yml/heartbeat.yml/nightly-smoke.yml/ISSUE_TEMPLATE/*.yml — this commit
+- category: doc-drift / completeness
+- impact: 7, ease: 6
+- evidence: `playbooks/new-project.md`'s adopt-by-need table
+  defers `night.yml`/`heartbeat.yml` to
+  `playbooks/cloud-loop.md` ("ship separately"), but that
+  playbook's Step 1 only copies `march.yml` + `CLOUD_LOOP.md`;
+  `nightly-smoke.yml` and `ISSUE_TEMPLATE/*.yml` weren't
+  mentioned anywhere in the playbook either. `templates/.github/CLOUD_LOOP.md`
+  (the operator guide adopters actually receive) has no
+  matching "other shapes" section, unlike this repo's own
+  `.github/CLOUD_LOOP.md:108-130`. An adopter following the
+  documented path end-to-end never learns how to get the night
+  shift or heartbeat, despite README.md:593-601 marketing them
+  as core capabilities ("its own cloud loops — plural").
+- fix: added a new "Optional: the other shapes" section to
+  `playbooks/cloud-loop.md` (between Step 10 and "What changes
+  in your local workflow") with bash + PowerShell copy commands
+  for `night.yml`, `heartbeat.yml`, `nightly-smoke.yml`, and
+  `ISSUE_TEMPLATE/*.yml`, plus a per-file note on its skill
+  dependency, placeholder, and mutual-exclusivity conditions
+  (matching `templates/README.md`'s adopt-by-need table),
+  pointing to `concepts/loop-shapes.md` for what each shape
+  does. Updated `playbooks/new-project.md`'s "ship separately"
+  aside to link the new section instead of leaving the reader to
+  find it. `node scripts/verify.mjs` green.
 
 ### [x] [F, 4.0] customization/claude-code.md's CLAUDE.md-pointer rationale claims Claude Code "does not auto-load agents.md" — no longer true in general — this commit
 - category: freshness
