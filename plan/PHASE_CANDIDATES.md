@@ -791,7 +791,7 @@ kit + sibling surveys.
 - conflicts: none.
 
 ### [ ] [score 4.5] Crash-alarm dedupe matches by generic title only, masking distinct failure causes behind one long-open issue
-- proposed: 2026-09-20 (digest)
+- proposed: 2026-09-20 (digest); re-evidenced 2026-09-21 (digest)
 - source signals: today's march tick (run `35511786013`,
   2026-09-20T12:50 UTC) crashed with a genuinely new cause — the
   Claude Code Action returned `api_error_status: 403`,
@@ -807,7 +807,26 @@ kit + sibling surveys.
   names today's actual failure; it exists only in the raw Action
   run log. `templates/.github/workflows/march.yml` and
   `night.yml` carry the identical step and would repeat the same
-  gap for any adopter.
+  gap for any adopter. Re-evidenced 2026-09-21 (digest): the same
+  window's remaining two march ticks that day (runs
+  `35525362773`, 17:16 UTC, and `35540854118`, 22:10 UTC) also
+  crashed — both `api_error_status: 429` (`error: rate_limit`,
+  `terminal_reason: api_error`), a third distinct cause from the
+  same day — and both hit the identical dedupe skip against `#54`
+  (confirmed via each run's own log: "An open 'Cloud march tick
+  crashed' issue already exists — skipping dedupe"). So in one
+  24h window the alarm masked three separate causes (one 403
+  org-access, two 429 rate-limits) behind a single 2-week-old
+  issue about an unrelated Bun-download 504 — the failure mode
+  this candidate describes isn't hypothetical or a one-off, it
+  recurred twice more the same day it was first filed. Separately,
+  the next morning's tick (07:36 UTC, run `35573760398`) triaged
+  and closed an unrelated heartbeat alarm (`#60`, "march has
+  flatlined") that it root-caused to these same transient 429s,
+  confirming the rate-limit crashes were real and self-healing —
+  but that triage pass closed the flatline symptom, not the
+  crash-alarm's dedupe gap this candidate targets, which remains
+  open and would mask the next distinct cause the same way.
 - rationale: agents.md rule 6 ("blocked is loud") assumes a
   filed issue accurately describes what's blocking the loop.
   Title-only dedupe conflates any two crashes as long as one is
@@ -817,7 +836,12 @@ kit + sibling surveys.
   close if it doesn't recur, and nobody's watching to close it) —
   and is now inadvertently suppressing visibility into a new,
   still-unexplained org-level access failure that could recur and
-  block every future march/night tick with no alarm firing.
+  block every future march/night tick with no alarm firing. The
+  next day's re-evidencing raises this from "could recur" to
+  "recurred twice within hours, plus a third distinct cause the
+  same day" — three masked causes in 24h is a materially stronger
+  case for fixing this than the single-occurrence evidence this
+  candidate was first filed against.
 - proposed scope: key the dedupe off something cause-specific
   instead of the shared generic title — e.g. fold the
   `api_error_code` or failed-step name into the issue title

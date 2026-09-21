@@ -1,117 +1,108 @@
-# Digest — 2026-09-20
+# Digest — 2026-09-21
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-A quiet window — one clean doc ship and one honest expand
-no-op — but the window's third tick crashed on an org-level
-Claude-access toggle, and the crash-alarm's title-only dedupe
-silently buried it behind a two-week-old, unrelated open issue
-instead of surfacing it.
+The crash-alarm dedupe gap flagged in yesterday's digest recurred
+twice more the same day — two more distinct causes silently
+buried behind the same two-week-old issue — while the loop
+otherwise self-healed a rate-limit-driven heartbeat alarm and
+shipped one clean critique pass.
 
 ## While you were out
 
-Window: since the last digest commit (2026-09-19 14:01 UTC).
+Window: since the last digest commit (2026-09-20 14:21 UTC).
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 09-19 22:06 | march → iterate → expand | shipped `777f942` — expand pass 13: 0 new candidates; re-evidenced the standing "Auto mode" candidate (score 6.5) with a fresh CHANGELOG sweep (v2.1.270-278) rather than filing a duplicate |
-| 09-20 07:25 | march → iterate | shipped `3a7b0da` — `cloud-loop.md` never gave a copy command for `night.yml`/`heartbeat.yml`/`nightly-smoke.yml`/`ISSUE_TEMPLATE/*.yml` despite README marketing them as core; added an "Optional: the other shapes" section with bash + PowerShell copy commands (closes #59). This tick's own fresh AUDIT sweep queued a smaller, related ISSUE_TEMPLATE-tree-omission row for later. |
-| 09-20 12:50 | march | **crashed**, no commit — the Claude Code Action returned `api_error_status: 403`, `api_error_code: oauth_not_allowed_for_organization` ("Your organization has disabled Claude subscription access for Claude Code"). The workflow's crash-alarm step fired, searched for an open issue titled "Cloud march tick crashed," found `#54` (filed 2026-09-07 for an unrelated `setup-bun` 504) already open, and skipped filing a new one — so today's actual cause is recorded nowhere but the raw run log. See Tuning proposals. |
+| 09-20 17:16 | march | **crashed**, no commit — `api_error_status: 429` (`rate_limit`). Crash-alarm found `#54` still open and skipped filing, per its title-only dedupe. |
+| 09-20 22:10 | march | **crashed**, no commit — `api_error_status: 429` (`rate_limit`) again. Same dedupe skip against `#54`. |
+| 09-21 07:36 | march → triage | clean no-op on the git side — triaged and closed `#60` ("Heartbeat: march has flatlined"), root-caused to the two 429s above (transient session-limit pressure, self-healed by this tick's own success); ran the mandatory read-only oversight audit per cloud-mode rule 1, flagging the candidate backlog and a token-scope discrepancy (see Needs you). |
+| 09-21 14:49 | march → critique | shipped `438657f` — critique pass 19: 1 MED finding (`prompts/adopt.md`'s step 4a forward-references a "topology check below" the numbered reading list can't resolve in order). |
 
-`heartbeat` ran green throughout (5/5 sampled). Two of three
-march ticks shipped a commit; the third crashed before reaching
-the agent turn — a first occurrence of this specific failure
-mode.
+`heartbeat` ran green throughout (5/5 sampled) — its own alarm on
+`#60` was the one thing it caught, and it self-resolved by the
+next successful march tick, as designed. Two of four march ticks
+crashed before reaching the agent turn; both were rate-limit
+transients, not code or workflow defects.
 
 ## Shipped
 
-- `777f942` — expand pass 13. Swept signals A-E since pass 12;
-  found no new AUDIT/CRITIQUE clusters, no new triage patterns,
-  no sibling-lessons material. A fresh CHANGELOG fetch (v2.1.270
-  through v2.1.278) found auto-mode continuing to change across
-  multiple releases — reinforced the existing "Auto mode"
-  candidate's source signals rather than filing a duplicate.
-- `3a7b0da` — `playbooks/new-project.md` deferred adopters to
-  `playbooks/cloud-loop.md` for `night.yml`/`heartbeat.yml`
-  ("ship separately"), but that playbook's Step 1 only ever
-  copied `march.yml` + `CLOUD_LOOP.md`. No doc anywhere gave a
-  copy command for those two files, `nightly-smoke.yml`, or
-  `.github/ISSUE_TEMPLATE/*.yml`. Closes #59.
+- `438657f` — critique pass 19. Filed one MED finding to
+  `plan/CRITIQUE.md`: `prompts/adopt.md`'s step 4a points at "the
+  topology check below," but that check lives in a `Then:` block
+  textually after the entire 7-item numbered reading list the
+  prompt tells the agent to follow strictly in order — unresolvable
+  on a literal first read.
 
 ## Queues now
 
-- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 28
-  days blocked) and phase 32 (`#49`, 21 days blocked), both on
-  the same cloud-push-token workflows-scope gap, unchanged since
-  2026-08-23 and 2026-08-30.
-- **AUDIT:** 6 pending rows, up from 5 (this window's fresh
-  sweep during the 07:25 tick added `[C/A, 3.2]` — README's kit
-  tree omits `templates/.github/ISSUE_TEMPLATE/` — same bug
-  shape as the just-fixed `install-hooks.mjs` gap). Header reads
-  2026-09-20 (<48h old, no refresh needed this tick). The five
-  carried-over rows (`[F, ~2]`, `#54`, `#40`, `#35`, `#49`) are
-  unchanged.
-- **CRITIQUE:** 0 pending, last pass 18 (2026-09-18), unchanged.
-- **PHASE_CANDIDATES:** 26 pending (21 >21d), oldest 81d
-  (proposed 2026-07-02) — both counts grew by exactly the day's
-  passage, nothing newly silted or drained. Last expand pass (13)
-  was 2026-09-19; not due again until its own 20-commit/7-day
-  threshold.
-- **Issues:** 6 open, unchanged — `#54` (now the dedupe-masking
-  issue described above, not just a self-healed transient),
-  `#49`/`#48` (phase 32 blocked + loop mirror), `#40` (phase 23
-  follow-up, blocked), `#35`/`#34` (phase 20 blocking token issue
-  + loop mirror). No `triage:needs-user` or `loop:do` labels
-  open.
+- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 29 days
+  blocked) and phase 32 (`#49`, 22 days blocked), both still on
+  the same cloud-push-token workflows-scope gap, unchanged.
+- **AUDIT:** 6 pending rows, unchanged (`[C/A, 3.2]`, `[F, ~2]`,
+  `#54`, `#40`, `#35`, `#49`). Header reads 2026-09-20, ~26-33h
+  old — under the 48h refresh threshold, no re-sweep this tick.
+- **CRITIQUE:** 1 pending (MED, this tick's own finding above),
+  last pass 19 (2026-09-21, ~1.5h before this digest).
+- **PHASE_CANDIDATES:** 27 pending (21 >21d), oldest 82d
+  (proposed 2026-07-02) — count unchanged from yesterday; today's
+  edit re-evidenced the standing crash-alarm-dedupe candidate
+  in place rather than adding a new row.
+- **Issues:** 6 open, unchanged (`#54`, `#49`/`#48`, `#40`,
+  `#35`/`#34`). `#60` opened and closed within the same tick
+  (self-resolved heartbeat alarm). No `triage:needs-user` or
+  `loop:do` labels open.
 - **Sibling lessons:** not checked — no local sibling checkout in
   this cloud environment; skipped per digest's own carve-out.
 
 ## Needs you
 
 - **oversight needed: candidate queue silting (21 pending >21d,
-  oldest 81d).** Both trigger conditions remain met. Worth an
-  `/oversight` pass to drain or explicitly defer the backlog.
+  oldest 82d).** Both trigger conditions remain met, now for a
+  second day running. Worth an `/oversight` pass to drain or
+  explicitly defer the backlog.
 - Two blocked build-plan rows still waiting on a local/human
   session with normal (non-App-token) push credentials: phase 20
-  (`#35`, 28 days) and phase 32 (`#49`, 21 days).
-- New this tick: the 12:50 march crash's actual cause
-  (`oauth_not_allowed_for_organization` — an org-level Claude
-  access toggle, not a nexus code or workflow defect) is only
-  visible in the raw Action run log, not in any GitHub issue,
-  because the crash-alarm's title-only dedupe matched it against
-  `#54` (a different, already-resolved failure class from
-  2026-09-07). If this recurs, nothing currently guarantees the
-  next occurrence gets its own issue either. Filed as a tuning
-  proposal below rather than fixed directly.
+  (`#35`, 29 days) and phase 32 (`#49`, 22 days).
+- The crash-alarm dedupe gap (score 4.5 candidate, filed
+  yesterday) is no longer single-occurrence evidence: the same
+  24h window produced two more crashes (both `429` rate-limit)
+  masked behind `#54` the identical way as yesterday's `403`. Three
+  distinct causes in one day, one visible issue. Re-evidenced in
+  place in `plan/PHASE_CANDIDATES.md` rather than filed as new.
+- New this tick: the 07:36 oversight audit flagged that
+  `agents.md` records `ACTIONS_PAT` getting `workflows` scope
+  added on 2026-08-23 — the exact same day phase 20 first blocked
+  for lacking that scope. Worth a human check of the token's actual
+  scope grants in GitHub's settings UI; AUDIT rows `#35`/`#49`
+  already track the underlying discrepancy as pending.
 - The standing `[score 4.2]` tuning proposal — "AUDIT.md's H1
-  header date isn't mechanically bumped after a full sweep" —
-  is still pending; no new evidence this tick.
+  header date isn't mechanically bumped after a full sweep" — is
+  still pending; no new evidence this tick (today's header happens
+  to read the correct date because the last full sweep landed
+  2026-09-20, not because the bump became mechanical).
 
 ## Today's intent
 
-No `[ ]` build-plan phase pending. `plan/CRITIQUE.md` is empty,
-so the next `/iterate` pick is AUDIT's own top row —
-`[C/A, 3.2]` (README's kit tree omitting
-`templates/.github/ISSUE_TEMPLATE/`) — unless a fresh CRITIQUE
-row lands first. `/expand` isn't due until its own commit/day
-threshold clears (pass 13 ran yesterday).
+No `[ ]` build-plan phase pending. `plan/CRITIQUE.md` holds one
+pending MED row (this tick's `prompts/adopt.md` finding), which
+will compete against AUDIT's own top row (`[C/A, 3.2]`, README's
+kit tree omitting `templates/.github/ISSUE_TEMPLATE/`) for the
+next `/iterate` pick. `/expand` isn't due yet (pass 13 ran
+2026-09-19; its commit/day threshold hasn't cleared).
 
 ## Tuning proposals
 
-Filed one candidate in `plan/PHASE_CANDIDATES.md`: the
-crash-alarm step in `.github/workflows/march.yml` (and its
-`templates/` mirror) dedupes by matching the literal issue title
-"Cloud march tick crashed" against any open issue, regardless of
-cause. `#54` has sat open for 13 days on a since-self-healed
-`setup-bun` 504; today's tick crashed for a completely different
-reason (`oauth_not_allowed_for_organization`) and got silently
-folded into the same dedupe check, so no issue exists describing
-it. Proposed scope: key the search (or the title) off something
-cause-specific — the `api_error_code`/failed-step name — so
-distinct failure classes each get their own visible issue, per
-agents.md rule 6 ("blocked is loud"). Citing today's pulse: one
-crashed tick (run `35511786013`), one masked cause, zero new
-issues filed.
+Re-evidenced the existing `plan/PHASE_CANDIDATES.md` candidate
+(score 4.5, "Crash-alarm dedupe matches by generic title only")
+rather than filing a new one: today's window produced two more
+march crashes (runs `35525362773` and `35540854118`, both
+`api_error_status: 429`) that hit the identical dedupe skip
+against `#54` as yesterday's `403` crash. Three distinct causes
+masked behind one two-week-old issue in a single 24h window is
+materially stronger evidence than the single occurrence the
+candidate was first filed against — still a proposal only, no
+gate or workflow edited directly.
