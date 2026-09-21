@@ -31,7 +31,9 @@ making a single change:
   4a. ../nexus/playbooks/polyrepo.md AND/OR
       ../nexus/playbooks/workspace.md
                                    — only if the topology check
-                                     below lands on either
+                                     under "Then:" below (in
+                                     this same prompt) lands on
+                                     either
   5. ../nexus/playbooks/ci-providers.md  — for the deploy gate
   6. ../nexus/intervention-spectrum.md   — how the loop scales
   7. ../nexus/customization/*.md   — verify gate + hermetic

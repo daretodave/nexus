@@ -11,27 +11,21 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] prompts/adopt.md:20-38 — step 4a's "topology check below" is a forward reference the numbered reading list can't resolve in order
-- category: ordering
-- observation: the prompt tells the agent to read items 1-7 "in
-  order, before making a single change," but item 4a's
-  condition ("only if the topology check below lands on
-  either") points at the topology-check bullet in the `Then:`
-  block, which appears textually after the entire numbered
-  list in the same file. A literal in-order reader hits 4a with
-  no way yet to resolve what "the topology check below" means.
-- evidence: prompts/adopt.md:20-38 (the "Read the following, in
-  order" list, items 1-7) vs. prompts/adopt.md:40-50 (the
-  `Then:` block containing the topology check, which is what 4a
-  refers to).
-- suggested fix: either move the topology-check bullet above
-  the numbered list so 4a's condition is already resolved when
-  reached, or reword 4a to explicitly say "see the topology
-  check under `Then:` below in this same prompt" so the forward
-  reference is unambiguous instead of implied.
-- source: dry-run
-
 ## Done
+
+### [x] [MED] prompts/adopt.md:20-38 — step 4a's "topology check below" is a forward reference the numbered reading list can't resolve in order — this commit
+- category: ordering
+- fix: the prompt told the agent to read items 1-7 "in order,
+  before making a single change," but item 4a's condition
+  ("only if the topology check below lands on either") pointed
+  at the topology-check bullet in the `Then:` block, which
+  appears textually after the entire numbered list in the same
+  file. A literal in-order reader hit 4a with no way yet to
+  resolve what "the topology check below" meant. Reworded 4a to
+  say "under 'Then:' below (in this same prompt)" instead of the
+  bare "below," per the row's own second suggested fix (cheaper
+  than reordering the numbered list).
+- source: dry-run
 
 ### [x] [LOW] README.md:272,526 — "Three paths to start" and "How to use this kit" are two separate onboarding checklists ~250 lines apart with no cross-link — this commit
 - category: ordering
