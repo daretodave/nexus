@@ -185,24 +185,44 @@ include a "Runbook to write before this phase ships:
 
 When the project decides to adopt a new service:
 
-1. **Add the row** to `setup/00_files.md` with status
+1. **Create the index, if it doesn't exist yet.** No other
+   documented step creates `setup/00_files.md` — copy it in
+   once, the first time this customization is adopted:
+
+   ```bash
+   mkdir -p setup
+   cp ../nexus/templates/setup/00_files.md setup/00_files.md
+   sed -i 's/<PROJECT>/thock/g' setup/00_files.md
+   ```
+
+   The PowerShell twin:
+
+   ```powershell
+   New-Item -ItemType Directory -Force setup | Out-Null
+   Copy-Item ..\nexus\templates\setup\00_files.md setup\00_files.md
+   (Get-Content setup\00_files.md -Raw) `
+     -replace '<PROJECT>', 'thock' |
+     Set-Content setup\00_files.md -NoNewline
+   ```
+
+2. **Add the row** to `setup/00_files.md` with status
    `STUB`. Commit.
-2. **Copy** `templates/setup/NN_service.md` to
+3. **Copy** `templates/setup/NN_service.md` to
    `setup/NN_<service>.md`. Renumber as needed (keep
    dependency order).
-3. **Walk the dashboard yourself.** Click through every
+4. **Walk the dashboard yourself.** Click through every
    section the project will need across the *whole* build
    plan — not just today's phase. Check off each item as
    you go. The runbook is the audit trail.
-4. **Wire env vars to `.env.example`.** Every env var the
+5. **Wire env vars to `.env.example`.** Every env var the
    runbook produces lands in `.env.example` with a comment
    pointing back to the runbook section that emits it.
-5. **Propagate to deploy environments.** Section H of the
+6. **Propagate to deploy environments.** Section H of the
    runbook covers Production, Preview, Development. Walk
    each.
-6. **Update status** in `setup/00_files.md` to `OK` (or
+7. **Update status** in `setup/00_files.md` to `OK` (or
    `PARTIAL` if you deliberately deferred parts).
-7. **Add to bearings.** The `External services` table in
+8. **Add to bearings.** The `External services` table in
    `plan/bearings.md` gets one row per service with the
    runbook path and a "last verified" date.
 

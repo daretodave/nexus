@@ -1581,6 +1581,17 @@ already existing by two docs but no documented step ever copies
 it), and a tree-hygiene row (README.md's kit tree omits the root
 `CONTRIBUTING.md`).
 
+Cloud tick 2026-09-22 (third): the two remaining unblocked A/B
+rows tied at score 4.2 (durable rows `#54`, `#40`, `#35`, `#49`
+all still out of cloud-tick scope, same reasons as above).
+Shipped the completeness row (`setup/00_files.md`, ease 7) over
+the doc-drift row (`bootstrap-automation.md`'s "Provider
+adapters" section, ease 6) — equal score, cheaper fix wins on a
+tie. Not a fresh A-G sweep; last full sweep still today's
+second tick (above). Two rows left in Pending below: the
+adapter-drift row and the `CONTRIBUTING.md` tree-omission row
+(3.2).
+
 ## Pending
 
 ### [A, 4.2] customization/bootstrap-automation.md's "Provider adapters" section describes an architecture the shipped bootstrap.mjs doesn't have
@@ -1609,33 +1620,6 @@ it), and a tree-hygiene row (README.md's kit tree omits the root
   functions inline in `templates/scripts/bootstrap.mjs`,
   register the provider in `composePlan`'s action list — rather
   than the modular adapter file that was never built.
-
-### [B, 4.2] setup/00_files.md is never actually created by any documented step
-- category: completeness
-- impact: 6, ease: 7
-- evidence: `customization/external-services.md:184-193`'s
-  "Per-service runbook authoring" workflow opens with "1. Add
-  the row to `setup/00_files.md`" as though the file already
-  exists, and `playbooks/new-project.md:715-718`'s Day-1
-  checklist likewise assumes "`setup/00_files.md` index exists".
-  But `playbooks/new-project.md` §4's bulk copy (line ~256)
-  never copies `templates/setup/`; the only documented `setup/`
-  bootstrap is the `/bootstrap`-specific `mkdir -p setup && cp
-  .../bootstrap.example.json setup/bootstrap.local.json` at
-  line ~590, which never touches `00_files.md`.
-  `templates/scripts/bootstrap.mjs`'s own `runbookIndexRow()`
-  (line 154) does `if (!fs.existsSync(RUNBOOK_INDEX)) return
-  null` — confirming the script is a best-effort no-op if the
-  index is missing, not a creator of it. No path in the kit ever
-  gets an adopter from zero to a first `setup/00_files.md`.
-- next: add an explicit copy step — e.g. in
-  `customization/external-services.md`'s workflow (before step
-  1) or as a one-liner in `playbooks/new-project.md` §9 alongside
-  the existing `setup/bootstrap.local.json` bootstrap — `cp
-  ../nexus/templates/setup/00_files.md setup/00_files.md`
-  (PowerShell twin too), with the same "replace
-  `<PROJECT>`/`<HOSTING_PROVIDER>` tokens" note the
-  bootstrap-manifest fix already sets a precedent for.
 
 ### [C/A, 3.2] README.md's "What's in this kit" tree omits the root CONTRIBUTING.md
 - category: link + tree hygiene / doc-drift
@@ -1779,6 +1763,29 @@ it), and a tree-hygiene row (README.md's kit tree omits the root
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [B, 4.2] setup/00_files.md is never actually created by any documented step — this commit
+- category: completeness
+- impact: 6, ease: 7
+- evidence: `customization/external-services.md:184-193`'s
+  "Per-service runbook authoring" workflow opened with "1. Add
+  the row to `setup/00_files.md`" as though the file already
+  existed, and `playbooks/new-project.md:715-718`'s Day-1
+  checklist likewise assumed "`setup/00_files.md` index exists".
+  But `playbooks/new-project.md` §4's bulk copy never copies
+  `templates/setup/`; the only documented `setup/` bootstrap was
+  the `/bootstrap`-specific `mkdir -p setup && cp
+  .../bootstrap.example.json setup/bootstrap.local.json`, which
+  never touched `00_files.md`. No path in the kit ever got an
+  adopter from zero to a first `setup/00_files.md`.
+- fix: added a new step 1 to
+  `customization/external-services.md`'s "Per-service runbook
+  authoring" workflow — copy `templates/setup/00_files.md` to
+  `setup/00_files.md` and sweep the `<PROJECT>` token, bash +
+  PowerShell twins, same precedent as the bootstrap-manifest
+  placeholder fix. Renumbered the rest of the list (1-7 → 2-8);
+  no other doc referenced the old numbers.
+- source: audit sweep
 
 ### [x] [C, 4.8] scripts/verify.mjs's REVERSE_CHECK_DIRS misses four dirs that ARE expanded per-file in both trees — this commit
 - category: link + tree hygiene
