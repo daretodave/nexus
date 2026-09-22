@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-20
+# Kit audit — 2026-09-22
 
 > Bias: none
 
@@ -1552,7 +1552,107 @@ durable blocked user-issue rows (`#54`, `#40`, `#35`, `#49`, all
 still out of cloud-tick scope: same workflows-scope gap or
 transient-crash low score). Not a full A-G sweep.
 
+Cloud tick 2026-09-22 (second): header (the 2026-09-20 sweep)
+past the 24h threshold, so dispatched a fresh A-G sweep to an
+agent to protect context (verified its top candidate by hand
+before shipping). This block's five durable rows (`[F, ~2]`,
+`#54`, `#40`, `#35`, `#49`) all confirmed unchanged and out of
+cloud-tick scope. `plan/CRITIQUE.md`'s Pending queue confirmed
+empty. G still empty (no sibling lessons files in this
+checkout). F swept clean (model ids current; Claude Code
+changelog drift belongs to `/expand`, not `/iterate`). D turned
+up nothing above score 2.0. Four new C/A/B rows found; shipped
+the top scorer (below) — `scripts/verify.mjs`'s
+`REVERSE_CHECK_DIRS` missed four dirs (`templates/.github`,
+`templates/data`, `templates/setup`, `templates/env`) that are
+expanded per-file in `templates/README.md`'s tree, the exact
+structural blind spot that let the ISSUE_TEMPLATE gap (shipped
+the prior tick, commit `3eaf61d`) go undetected by the gate
+itself rather than just fixing that one instance. Verified: all
+four dirs' files confirmed on disk and already correctly listed
+in `templates/README.md`; `node scripts/verify.mjs` green after
+the change (198 tree entries, 59 files reverse-checked, up from
+50). Three more rows left queued below for future ticks: a
+doc-drift row (`customization/bootstrap-automation.md`'s
+"Provider adapters" section describes a modular adapter-file
+architecture `templates/scripts/bootstrap.mjs` doesn't actually
+have), a completeness row (`setup/00_files.md` is referenced as
+already existing by two docs but no documented step ever copies
+it), and a tree-hygiene row (README.md's kit tree omits the root
+`CONTRIBUTING.md`).
+
 ## Pending
+
+### [A, 4.2] customization/bootstrap-automation.md's "Provider adapters" section describes an architecture the shipped bootstrap.mjs doesn't have
+- category: doc-drift
+- impact: 7, ease: 6
+- evidence: `customization/bootstrap-automation.md:463-493`
+  ("Provider adapters") documents a modular design — "Each
+  adapter exports three functions: `discover(ctx)`,
+  `plan(state, manifest, ctx)`, `execute(actions, ctx)`" — and
+  tells a contributor adding a new provider to add "an entry in
+  `scripts/bootstrap/adapters.mjs`". But
+  `templates/scripts/bootstrap.mjs` is a single 1009-line
+  monolith with no `bootstrap/` subdirectory and no such file;
+  providers are inline functions with a different
+  naming/signature convention entirely (`discoverGithub(git)`,
+  `execGithub(a, state, manifest)`, `discoverVercel`,
+  `execVercel`, `discoverSupabase`, `execSupabase`, dispatched
+  from a shared `execAction`/`composePlan`).
+  `templates/skills/bootstrap.md` doesn't reconcile the two
+  either. A contributor following CONTRIBUTING.md's explicit
+  invitation ("a deploy-check provider block for a host nexus
+  doesn't cover yet" is in-scope) would look for a file and
+  export contract that don't exist.
+- next: rewrite `customization/bootstrap-automation.md:478-493`
+  to describe the real pattern — add `discoverX`/`execX`
+  functions inline in `templates/scripts/bootstrap.mjs`,
+  register the provider in `composePlan`'s action list — rather
+  than the modular adapter file that was never built.
+
+### [B, 4.2] setup/00_files.md is never actually created by any documented step
+- category: completeness
+- impact: 6, ease: 7
+- evidence: `customization/external-services.md:184-193`'s
+  "Per-service runbook authoring" workflow opens with "1. Add
+  the row to `setup/00_files.md`" as though the file already
+  exists, and `playbooks/new-project.md:715-718`'s Day-1
+  checklist likewise assumes "`setup/00_files.md` index exists".
+  But `playbooks/new-project.md` §4's bulk copy (line ~256)
+  never copies `templates/setup/`; the only documented `setup/`
+  bootstrap is the `/bootstrap`-specific `mkdir -p setup && cp
+  .../bootstrap.example.json setup/bootstrap.local.json` at
+  line ~590, which never touches `00_files.md`.
+  `templates/scripts/bootstrap.mjs`'s own `runbookIndexRow()`
+  (line 154) does `if (!fs.existsSync(RUNBOOK_INDEX)) return
+  null` — confirming the script is a best-effort no-op if the
+  index is missing, not a creator of it. No path in the kit ever
+  gets an adopter from zero to a first `setup/00_files.md`.
+- next: add an explicit copy step — e.g. in
+  `customization/external-services.md`'s workflow (before step
+  1) or as a one-liner in `playbooks/new-project.md` §9 alongside
+  the existing `setup/bootstrap.local.json` bootstrap — `cp
+  ../nexus/templates/setup/00_files.md setup/00_files.md`
+  (PowerShell twin too), with the same "replace
+  `<PROJECT>`/`<HOSTING_PROVIDER>` tokens" note the
+  bootstrap-manifest fix already sets a precedent for.
+
+### [C/A, 3.2] README.md's "What's in this kit" tree omits the root CONTRIBUTING.md
+- category: link + tree hygiene / doc-drift
+- impact: 4, ease: 8
+- evidence: `README.md:400-524`'s tree lists `README.md`,
+  `intervention-spectrum.md`, `agents.md`, `CLAUDE.md`,
+  `package.json` as root files but never `CONTRIBUTING.md`, even
+  though it's a real 182-line root file that predates this
+  repo's first commit (`b27d21f`) and is directly linked from
+  the README's own "PRs welcome" badge (`README.md:16`).
+  Invisible to `verify.mjs`'s tree leg because the gate only
+  forward-checks entries that appear in a tree and reverse-checks
+  specific `templates/` subdirs — it never asserts a root file
+  must appear in the tree at all.
+- next: add a `├── CONTRIBUTING.md  # how to contribute` row to
+  `README.md`'s tree, near the other root files (before or after
+  `agents.md`/`CLAUDE.md`).
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -1679,6 +1779,32 @@ transient-crash low score). Not a full A-G sweep.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [C, 4.8] scripts/verify.mjs's REVERSE_CHECK_DIRS misses four dirs that ARE expanded per-file in both trees — this commit
+- category: link + tree hygiene
+- impact: 6, ease: 8
+- evidence: `scripts/verify.mjs:176-180`'s `REVERSE_CHECK_DIRS`
+  listed only `templates/scripts`, `templates/skills`,
+  `templates/claude/commands`, `templates/claude/agents`,
+  `templates/plan`, `templates/workspace`. But
+  `templates/README.md` expands `templates/.github/` (5
+  ISSUE_TEMPLATE files + 4 workflows + CLOUD_LOOP.md),
+  `templates/data/` (3 files), `templates/setup/` (3 files), and
+  `templates/env/` (1 file) fully per-file — none of these four
+  dirs were in the reverse-check array, so a file silently added
+  to (or removed from) any of them would never trip the gate.
+  This was exactly the blind spot that let the just-fixed
+  `templates/.github/ISSUE_TEMPLATE/` gap (commit `3eaf61d`,
+  README.md's tree) go undetected — and that fix touched only
+  `README.md`, not `scripts/verify.mjs`, leaving the structural
+  gap it exposed still open.
+- fix: added `'templates/.github', 'templates/data',
+  'templates/setup', 'templates/env'` to `REVERSE_CHECK_DIRS`.
+  Confirmed all four dirs' files are already correctly listed in
+  `templates/README.md`, so this closes the blind spot without
+  fixing any current drift. `node scripts/verify.mjs` green (198
+  tree entries, 59 files reverse-checked, up from 50).
+- source: audit sweep
 
 ### [x] [C/A, 3.2] README.md's "What's in this kit" tree omits `templates/.github/ISSUE_TEMPLATE/` — this commit
 - category: link + tree hygiene / doc-drift

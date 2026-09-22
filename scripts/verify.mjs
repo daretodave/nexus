@@ -177,6 +177,8 @@ const REVERSE_CHECK_DIRS = [
   'templates/scripts', 'templates/skills',
   'templates/claude/commands', 'templates/claude/agents',
   'templates/plan', 'templates/workspace',
+  'templates/.github', 'templates/data',
+  'templates/setup', 'templates/env',
 ]
 
 function legTree() {
