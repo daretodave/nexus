@@ -1537,27 +1537,22 @@ and updated `new-project.md`'s "ship separately" aside to point
 at it. `node scripts/verify.mjs` green (seven legs). Left the
 ISSUE_TEMPLATE tree-omission row queued below for the next tick.
 
-## Pending
+Cloud tick 2026-09-22: header (the 2026-09-20 sweep) ~2 days
+old, past the 24h threshold, but `plan/CRITIQUE.md`'s Pending
+queue confirmed empty and only 2 commits landed since the last
+critique pass (2026-09-21), so ran a targeted fresh check rather
+than a full manual re-derive: reproduced this block's own top
+scorer, `[C/A, 3.2]` (README.md's "What's in this kit" tree
+still omitting `templates/.github/ISSUE_TEMPLATE/`, confirmed
+the 5 files still on disk and still absent from
+`README.md:497-502` while `templates/README.md:63-67` lists them
+correctly) — unchanged from the prior tick's sweep. Shipped it
+over `[F, ~2]` (already-downgraded, low priority) and the four
+durable blocked user-issue rows (`#54`, `#40`, `#35`, `#49`, all
+still out of cloud-tick scope: same workflows-scope gap or
+transient-crash low score). Not a full A-G sweep.
 
-### [C/A, 3.2] README.md's "What's in this kit" tree omits `templates/.github/ISSUE_TEMPLATE/`
-- category: link + tree hygiene / doc-drift
-- impact: 4, ease: 8
-- evidence: `README.md:453-502`'s "What's in this kit" tree
-  independently re-expands `templates/.github/` (workflows +
-  `CLOUD_LOOP.md`) but never lists `ISSUE_TEMPLATE/` (5 files:
-  `bug_report.yml`, `friction.yml`, `idea.yml`,
-  `needs_user.yml`, `config.yml`), even though the files exist
-  on disk (added 2026-08-27, `feat: .github/ISSUE_TEMPLATE`)
-  and `templates/README.md:63-67` already lists all five
-  correctly. Same bug shape as the just-shipped
-  `install-hooks.mjs` tree gap (commit `ec5cedc`) — invisible to
-  `node scripts/verify.mjs`'s tree leg because its reverse-check
-  only requires an entry in the union of both fenced trees, and
-  `templates/README.md` already supplies it; `templates/.github`
-  is also absent from `REVERSE_CHECK_DIRS`.
-- next: add an `ISSUE_TEMPLATE/` entry (collapsed or per-file,
-  matching the existing `.github/` tree block's granularity) to
-  README.md's `templates/.github/` block.
+## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -1684,6 +1679,30 @@ ISSUE_TEMPLATE tree-omission row queued below for the next tick.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [C/A, 3.2] README.md's "What's in this kit" tree omits `templates/.github/ISSUE_TEMPLATE/` — this commit
+- category: link + tree hygiene / doc-drift
+- impact: 4, ease: 8
+- evidence: `README.md:453-502`'s "What's in this kit" tree
+  independently re-expands `templates/.github/` (workflows +
+  `CLOUD_LOOP.md`) but never lists `ISSUE_TEMPLATE/` (5 files:
+  `bug_report.yml`, `friction.yml`, `idea.yml`,
+  `needs_user.yml`, `config.yml`), even though the files exist
+  on disk (added 2026-08-27, `feat: .github/ISSUE_TEMPLATE`)
+  and `templates/README.md:63-67` already lists all five
+  correctly. Same bug shape as the just-shipped
+  `install-hooks.mjs` tree gap (commit `ec5cedc`) — invisible to
+  `node scripts/verify.mjs`'s tree leg because its reverse-check
+  only requires an entry in the union of both fenced trees, and
+  `templates/README.md` already supplies it; `templates/.github`
+  is also absent from `REVERSE_CHECK_DIRS`.
+- fix: added an `ISSUE_TEMPLATE/` collapsed entry to README.md's
+  `templates/.github/` tree block, between the `nightly-smoke.yml`
+  row and `CLOUD_LOOP.md`, matching the block's existing
+  collapsed-vs-per-file granularity (other entries in this same
+  block are per-file for workflows but this repo's own `.github/`
+  tree three lines up already collapses `ISSUE_TEMPLATE/` the same
+  way).
 
 ### [x] [A/B, 4.2] playbooks/cloud-loop.md's Step 1 never lands night.yml/heartbeat.yml/nightly-smoke.yml/ISSUE_TEMPLATE/*.yml — this commit
 - category: doc-drift / completeness

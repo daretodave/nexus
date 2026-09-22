@@ -499,6 +499,7 @@ nexus/
     │   ├── workflows/night.yml        # the night shift: /digest + breadth checks
     │   ├── workflows/heartbeat.yml    # the immune system: model-free watchdog
     │   ├── workflows/nightly-smoke.yml # model-free SMOKE_SAMPLE=full walk (omit if night.yml owns breadth)
+    │   ├── ISSUE_TEMPLATE/             # bug_report, friction, idea, needs_user, config
     │   └── CLOUD_LOOP.md              # operator's guide (lives in repo)
     ├── scripts/
     │   ├── deploy-check.mjs           # multi-provider deploy gate
