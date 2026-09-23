@@ -402,6 +402,7 @@ nexus/
 ├── intervention-spectrum.md           # the levels in detail
 ├── agents.md                          # nexus's OWN rule book (the kit runs on itself)
 ├── CLAUDE.md                          # pointer at agents.md (Claude Code only auto-loads CLAUDE.md from repo root)
+├── CONTRIBUTING.md                    # how to contribute
 ├── prompts/                           # canonical paste-prompts — versioned, public API
 │   ├── README.md                      # what these are, how the short paste uses them
 │   ├── adopt.md                       # the full "Adopt nexus" agent prompt

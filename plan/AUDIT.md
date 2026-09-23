@@ -1592,24 +1592,21 @@ second tick (above). Two rows left in Pending below: the
 adapter-drift row and the `CONTRIBUTING.md` tree-omission row
 (3.2).
 
-## Pending
+Cloud tick 2026-09-23: header 6h old (last full sweep the
+2026-09-22 second tick, above), well under the 24h threshold, so
+re-scored rather than re-swept. The prior tick's other carried-over
+row (`bootstrap-automation.md`'s "Provider adapters" drift) had
+already been shipped by an intervening tick before this one
+started (`72c0aad`, confirmed via `git log`), leaving this block's
+own top scorer as `[C/A, 3.2]` (README's tree omitting
+`CONTRIBUTING.md`) — durable rows `#54`, `#40`, `#35`, `#49` all
+still out of cloud-tick scope (same `workflows`-scope gap), and
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. Shipped it.
+Pending now holds only the low-priority `[F, ~2]` row (explicitly
+flagged as possibly not worth a tick) and the four durable
+blocked/low-actionability rows.
 
-### [C/A, 3.2] README.md's "What's in this kit" tree omits the root CONTRIBUTING.md
-- category: link + tree hygiene / doc-drift
-- impact: 4, ease: 8
-- evidence: `README.md:400-524`'s tree lists `README.md`,
-  `intervention-spectrum.md`, `agents.md`, `CLAUDE.md`,
-  `package.json` as root files but never `CONTRIBUTING.md`, even
-  though it's a real 182-line root file that predates this
-  repo's first commit (`b27d21f`) and is directly linked from
-  the README's own "PRs welcome" badge (`README.md:16`).
-  Invisible to `verify.mjs`'s tree leg because the gate only
-  forward-checks entries that appear in a tree and reverse-checks
-  specific `templates/` subdirs — it never asserts a root file
-  must appear in the tree at all.
-- next: add a `├── CONTRIBUTING.md  # how to contribute` row to
-  `README.md`'s tree, near the other root files (before or after
-  `agents.md`/`CLAUDE.md`).
+## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -1736,6 +1733,22 @@ adapter-drift row and the `CONTRIBUTING.md` tree-omission row
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [C/A, 3.2] README.md's "What's in this kit" tree omits the root CONTRIBUTING.md — this commit
+- category: link + tree hygiene / doc-drift
+- impact: 4, ease: 8
+- evidence: `README.md:400-524`'s tree lists `README.md`,
+  `intervention-spectrum.md`, `agents.md`, `CLAUDE.md`,
+  `package.json` as root files but never `CONTRIBUTING.md`, even
+  though it's a real 182-line root file that predates this
+  repo's first commit (`b27d21f`) and is directly linked from
+  the README's own "PRs welcome" badge (`README.md:16`).
+  Invisible to `verify.mjs`'s tree leg because the gate only
+  forward-checks entries that appear in a tree and reverse-checks
+  specific `templates/` subdirs — it never asserts a root file
+  must appear in the tree at all.
+- fix: added a `├── CONTRIBUTING.md  # how to contribute` row to
+  README.md's tree, right after `CLAUDE.md`.
 
 ### [x] [A, 4.2] customization/bootstrap-automation.md's "Provider adapters" section describes an architecture the shipped bootstrap.mjs doesn't have — this commit
 - category: doc-drift
