@@ -1594,33 +1594,6 @@ adapter-drift row and the `CONTRIBUTING.md` tree-omission row
 
 ## Pending
 
-### [A, 4.2] customization/bootstrap-automation.md's "Provider adapters" section describes an architecture the shipped bootstrap.mjs doesn't have
-- category: doc-drift
-- impact: 7, ease: 6
-- evidence: `customization/bootstrap-automation.md:463-493`
-  ("Provider adapters") documents a modular design — "Each
-  adapter exports three functions: `discover(ctx)`,
-  `plan(state, manifest, ctx)`, `execute(actions, ctx)`" — and
-  tells a contributor adding a new provider to add "an entry in
-  `scripts/bootstrap/adapters.mjs`". But
-  `templates/scripts/bootstrap.mjs` is a single 1009-line
-  monolith with no `bootstrap/` subdirectory and no such file;
-  providers are inline functions with a different
-  naming/signature convention entirely (`discoverGithub(git)`,
-  `execGithub(a, state, manifest)`, `discoverVercel`,
-  `execVercel`, `discoverSupabase`, `execSupabase`, dispatched
-  from a shared `execAction`/`composePlan`).
-  `templates/skills/bootstrap.md` doesn't reconcile the two
-  either. A contributor following CONTRIBUTING.md's explicit
-  invitation ("a deploy-check provider block for a host nexus
-  doesn't cover yet" is in-scope) would look for a file and
-  export contract that don't exist.
-- next: rewrite `customization/bootstrap-automation.md:478-493`
-  to describe the real pattern — add `discoverX`/`execX`
-  functions inline in `templates/scripts/bootstrap.mjs`,
-  register the provider in `composePlan`'s action list — rather
-  than the modular adapter file that was never built.
-
 ### [C/A, 3.2] README.md's "What's in this kit" tree omits the root CONTRIBUTING.md
 - category: link + tree hygiene / doc-drift
 - impact: 4, ease: 8
@@ -1763,6 +1736,29 @@ adapter-drift row and the `CONTRIBUTING.md` tree-omission row
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 4.2] customization/bootstrap-automation.md's "Provider adapters" section describes an architecture the shipped bootstrap.mjs doesn't have — this commit
+- category: doc-drift
+- impact: 7, ease: 6
+- evidence: `customization/bootstrap-automation.md:463-493`
+  ("Provider adapters") documented a modular design — "Each
+  adapter exports three functions: `discover(ctx)`,
+  `plan(state, manifest, ctx)`, `execute(actions, ctx)`" — and
+  told a contributor adding a new provider to add "an entry in
+  `scripts/bootstrap/adapters.mjs`". But
+  `templates/scripts/bootstrap.mjs` is a single 1009-line
+  monolith with no `bootstrap/` subdirectory and no such file;
+  providers are inline functions with a different
+  naming/signature convention entirely (`discoverGithub(git)`,
+  `execGithub(a, state, manifest)`, `discoverVercel`,
+  `execVercel`, `discoverSupabase`, `execSupabase`, dispatched
+  from a shared `execAction`/`composePlan`).
+- fix: rewrote the section (now "Provider handlers") to
+  describe the real pattern — inline `discoverX`/`execX`
+  function pairs, `composePlan` building `{ provider, verb,
+  blocking?, handoff?, desc }` action objects, `execAction`
+  dispatching by `a.provider`; also fixed the matching "See
+  also" line's stale "orchestrator + adapters" wording.
 
 ### [x] [B, 4.2] setup/00_files.md is never actually created by any documented step — this commit
 - category: completeness

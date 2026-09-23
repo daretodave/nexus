@@ -460,9 +460,9 @@ exist.
 
 ---
 
-## Provider adapters
+## Provider handlers
 
-Bundled adapters in v1, each implemented as a thin wrapper
+Bundled providers in v1, each implemented as a thin wrapper
 around the provider's CLI plus a few REST calls for things
 the CLI doesn't cover:
 
@@ -475,22 +475,32 @@ the CLI doesn't cover:
 | OpenAI | none — `.env` only | n/a — paste required |
 | Cloud loop | composed of GitHub + Anthropic | n/a |
 
-Each adapter exports three functions:
+There's no per-provider adapter file — `scripts/bootstrap.mjs`
+is a single script, and each provider is an inline
+`discoverX`/`execX` function pair (`discoverGithub`/
+`execGithub`, `discoverVercel`/`execVercel`,
+`discoverSupabase`/`execSupabase`,
+`discoverCloudLoop`/`execCloudLoop`):
 
 ```js
-export async function discover(ctx) { /* returns state slice */ }
-export async function plan(state, manifest, ctx) { /* returns actions[] */ }
-export async function execute(actions, ctx) { /* writes; returns summary */ }
+function discoverGithub(git) { /* returns state slice */ }
+function composePlan(state, manifest, scope) { /* returns actions[] */ }
+async function execGithub(a, state, manifest) { /* writes; returns summary */ }
 ```
 
-The top-level `scripts/bootstrap.mjs` orchestrates: load
-manifest + env, call `discover()` on each adapter, compose
-plans, walk execute in dependency order (github → vercel →
-supabase → cloud-loop).
+`discoverAll()` calls every `discoverX()` and merges the
+slices into one state object. `composePlan(state, manifest,
+scope)` reads that state and pushes `{ provider, verb,
+blocking?, handoff?, desc }` action objects per provider, in
+dependency order (github → vercel → supabase → cloud-loop).
+`execAction(a, state, manifest)` dispatches each action to its
+provider's `execX` function by `a.provider`, which then
+switches on `a.verb`.
 
-Adding a new adapter (Netlify, Cloudflare Pages, Fly.io,
-Resend, Stripe) is ~150 lines and an entry in
-`scripts/bootstrap/adapters.mjs`.
+Adding a new provider (Netlify, Cloudflare Pages, Fly.io,
+Resend, Stripe) is a `discoverX`/`execX` pair plus a branch
+in `composePlan` — no separate adapter file, all inline in
+`scripts/bootstrap.mjs`.
 
 ---
 
@@ -822,7 +832,7 @@ user` is set.
 - [`../templates/skills/bootstrap.md`](../templates/skills/bootstrap.md)
   — the skill file the agent reads.
 - [`../templates/scripts/bootstrap.mjs`](../templates/scripts/bootstrap.mjs)
-  — the orchestrator + adapters.
+  — the orchestrator + provider handlers.
 - [`../templates/setup/bootstrap.example.json`](../templates/setup/bootstrap.example.json)
   — the manifest schema, copy to `bootstrap.local.json`.
 - [`./external-services.md`](./external-services.md) — the
