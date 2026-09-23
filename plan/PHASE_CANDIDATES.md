@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-09-19
-> Pass count: 13
+> Last pass: 2026-09-23
+> Pass count: 14
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -9,6 +9,69 @@ into `plan/steps/01_build_plan.md`. Seeded 2026-07-02 from the
 kit + sibling surveys.
 
 ## Pending
+
+### [ ] [score 6.6] Derive verify.mjs's tree reverse-check from the tree diagrams themselves, not a hand-maintained dir list
+- proposed: 2026-09-23 (iterate, dispatched to expand — no
+  finding scored ≥3.0 this tick)
+- source signals: the exact same bug class — README.md's and/or
+  templates/README.md's "What's in this kit" tree diagram
+  drifting out of sync with what's actually on disk — has been
+  found and fixed at least eight separate times since
+  2026-07-19: `PHASE_CANDIDATES.md`/`CURRENT-STATE.md` under
+  `templates/plan/` (2026-07-19, `plan/AUDIT.md:192-209`), root
+  `CLAUDE.md` (2026-07-29, `plan/AUDIT.md:537-544`),
+  `skills/digest.md` in the collapsed `skills/` enumeration
+  (2026-07-25, `plan/AUDIT.md:398,420`), a second
+  `templates/plan/` pair (2026-08-27ish, `plan/AUDIT.md:599,640`),
+  `templates/workspace/` (2026-09-01→02,
+  `plan/AUDIT.md:760-767,2119`), `templates/scripts/install-hooks.mjs`
+  (this week, `plan/AUDIT.md:1904`), `templates/.github/ISSUE_TEMPLATE/`
+  (this week, `plan/AUDIT.md:1825`), and root `CONTRIBUTING.md`
+  (today, `plan/AUDIT.md:1737`). A ninth, structural instance
+  shipped this week too (commit `e7b4172`): `scripts/verify.mjs`'s
+  own `REVERSE_CHECK_DIRS` array — the gate's reverse-check
+  allowlist — had itself silently missed four directories
+  (`templates/.github`, `templates/data`, `templates/setup`,
+  `templates/env`) that are expanded per-file in
+  `templates/README.md`'s tree, so the gate couldn't catch drift
+  inside them either. Root cause, confirmed by reading
+  `scripts/verify.mjs:176-219`: `REVERSE_CHECK_DIRS` is a second,
+  independently hand-maintained list of directories, separate from
+  the tree diagrams it's meant to police — every time a new
+  top-level dir gets expanded in a tree, a human or tick has to
+  remember to also add it here, which is precisely the same
+  maintenance-drift failure mode as the tree diagrams themselves.
+  Root-level files (like `CONTRIBUTING.md`, `CLAUDE.md`) aren't
+  covered by the reverse-check at all — only files under a listed
+  directory are walked, so a root-level omission is invisible to
+  the gate by construction, not just by a missing list entry.
+- rationale: this is the single most-repeated bug class in the
+  kit's entire audit history (nine confirmed occurrences, roughly
+  one every 1-2 weeks), always low-severity individually (a docs
+  cosmetic gap, never a broken command) but collectively the
+  single biggest recurring tax on `/iterate` ticks — each
+  occurrence costs a full finding-and-fix cycle for something a
+  slightly smarter gate leg would catch for free, permanently.
+  Adopter-facing (both `README.md` and `templates/README.md`,
+  the two docs every adopter reads first) and cheap: the fix is
+  confined to `scripts/verify.mjs`'s existing `legTree()`
+  function, no template API change.
+- proposed scope: replace the hardcoded `REVERSE_CHECK_DIRS`
+  array with a derived list — every top-level directory (and the
+  repo root itself, for direct files only, non-recursive) that
+  actually appears as an entry in either parsed tree diagram
+  becomes reverse-checked automatically, with a small, explicit
+  exclusion list (kit-internal-only dirs like `plan/`, `.git/`,
+  `node_modules/`, that intentionally never appear in an
+  adopter-facing product tree) instead of an opt-in allowlist.
+  Root-level files get the same non-recursive walk-and-compare
+  treatment `legTree()` already does for subdirectories. This
+  closes both the "new subdir needs a list entry" gap and the
+  root-level-file blind spot in one pass.
+- estimated phases: 1 (verify.mjs only, no template API change —
+  agents.md rule 7 doesn't apply since REVERSE_CHECK_DIRS isn't
+  documented public API)
+- conflicts: none.
 
 ### [ ] [score 7.8] Workflow-scope-blocked lane: stop re-discovering the App-token-overrides-PAT gap per phase
 - proposed: 2026-08-31

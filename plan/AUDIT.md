@@ -1606,6 +1606,26 @@ Pending now holds only the low-priority `[F, ~2]` row (explicitly
 flagged as possibly not worth a tick) and the four durable
 blocked/low-actionability rows.
 
+Cloud tick 2026-09-23 (second): header (the 2026-09-22 second
+tick) just past the 24h threshold, so dispatched a fresh A-G
+sweep to an agent to protect context. `node scripts/verify.mjs`
+green (all 7 legs); whole-tree model-id grep clean; sibling
+lessons files still absent (`../kintilla`, any `NEXUS_LESSONS.md`);
+external links all live except the already-fixed `thock.netlify.app`
+(only survives in this file's own historical prose); anchor
+links manually resolved, all correct; spot-checked
+`concepts/architecture.md`, `concepts/asking-well.md`,
+`customization/sub-agents.md`, `customization/visual-system.md`,
+`customization/lanes.md`, `playbooks/pre-spec.md`,
+`playbooks/polyrepo.md`, `playbooks/workspace.md`,
+`playbooks/windows-notes.md` — no drift. `plan/CRITIQUE.md`
+Pending confirmed empty. Nothing scored ≥3.0 — this block's own
+five rows (`[F, ~2]` and the four durable blocked/low-actionability
+rows) remain the only tracked items. Per `skills/iterate.md` §6
+failure mode 1 (posture `bold`), dispatched to `skills/expand.md`
+instead of manufacturing churn — see `plan/PHASE_CANDIDATES.md`
+pass 14 for the result. This block is otherwise unchanged.
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
