@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-09-21
-> Pass count: 19
+> Last pass: 2026-09-24
+> Pass count: 20
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,60 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [MED] prompts/pitch.md:52-56 vs prompts/adopt.md:62-69 — Phase B tells the agent not to ask, then points at a prompt that explicitly asks
+- category: instruction-drift
+- observation: pitch.md's Phase B says, in the same breath:
+  "switch to the standard adoption prompt: read and follow
+  `../nexus/prompts/adopt.md` exactly... AskUserQuestion is no
+  longer allowed (per nexus's standing rules — only /oversight
+  may ask). Decide and document; don't ask." But adopt.md — the
+  very file it says to follow exactly — contains its own
+  explicit instruction: "Ask the user ONLY for: (a) the hosting
+  provider name and auth token..., (b) the project's canonical
+  name + tagline..., (c) the URL/API/CLI contract..., (d)
+  confirmation of the topology guess..." README.md:650-652
+  names only /oversight and /bootstrap as AskUserQuestion
+  carve-outs; adopt.md's own "Standing rules carried from
+  agents.md" list (adopt.md:86-92) silently omits the
+  AskUserQuestion restriction rather than stating an exception.
+  A literal-following agent hits a direct contradiction between
+  two adjacent sentences in pitch.md and the doc it references.
+- evidence: prompts/pitch.md:53-56 ("AskUserQuestion is no
+  longer allowed... Decide and document; don't ask.")
+  immediately preceding a pointer to prompts/adopt.md:62-69
+  ("Ask the user ONLY for: (a)...(d)").
+- suggested fix: add one clause to pitch.md's Phase B (or to
+  adopt.md's own text) explicitly carving adopt.md's four-item
+  ask-list out of the "don't ask" rule, the same way README.md
+  carves out /oversight and /bootstrap.
+- source: dry-run
+
+### [LOW] prompts/adopt.md:39-40 — reading-list item undercounts what its own glob covers
+- category: comprehension
+- observation: item 7 of the "read in order" list says
+  "../nexus/customization/*.md — verify gate + hermetic e2e +
+  data layer + sub-agents". The glob customization/*.md
+  literally matches all 13 files in that directory, but the
+  parenthetical names only 4. A literal-following agent has to
+  guess whether to read all 13 (cutting against the "well under
+  an hour" estimate quoted two paragraphs later) or just the 4
+  named (missing e.g. claude-code.md, bootstrap-automation.md,
+  moderation-loop.md at the point they're actually needed —
+  workaroundable since the playbook re-links each one locally
+  at its point of use).
+- evidence: prompts/adopt.md:39-40 vs `ls customization/*.md` →
+  13 files (auth-aware-critique.md, bootstrap-automation.md,
+  branding.md, claude-code.md, data-layer.md,
+  external-services.md, hermetic-e2e.md, lanes.md,
+  lessons-layer.md, moderation-loop.md, sub-agents.md,
+  verify-gate.md, visual-system.md).
+- suggested fix: either list all four as "e.g." explicitly
+  ("e.g. verify gate, hermetic e2e, data layer, sub-agents —
+  skim the rest as needed") or narrow the glob to just the 4
+  named files and let the playbook's inline links pull in the
+  rest on demand.
+- source: dry-run
 
 ## Done
 
