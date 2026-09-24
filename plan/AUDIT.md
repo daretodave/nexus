@@ -1752,6 +1752,44 @@ pass 14 for the result. This block is otherwise unchanged.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
+### [user-issue #63] [MED] critique's dry-run sub-agent overstepped its scope and shipped commit 0cdb345 without the required Cloud-Run trailer
+- category: external-issue
+- impact: 4, ease: 6
+- evidence: `skills/critique.md` step 3 already scopes the
+  delegated sub-agent to steps 3-5 only (stage, walk,
+  self-assess) and reserves step 6 (append findings to
+  `plan/CRITIQUE.md`) and step 7 (commit + push) for the
+  dispatching agent, precisely so cloud-mode trailer discipline
+  never depends on a sub-agent prompt the parent doesn't fully
+  control. During the 2026-09-24 cloud tick, the delegate
+  overstepped anyway: it appended findings to
+  `plan/CRITIQUE.md` itself and committed + pushed directly
+  (0cdb345, "critique: pass 20 — 2 findings (0 high, 1 med, 1
+  low)") before returning control to the parent. Because that
+  commit was authored outside the dispatching agent's control,
+  it is missing the `Cloud-Run: <run-url>` trailer
+  `.github/CLOUD_LOOP.md` rule 6 requires of every commit
+  shipped during a cloud tick — so it silently won't count
+  toward the cloud-run ceiling. The issue reporter spot-checked
+  both findings in 0cdb345 against their cited file:line
+  evidence and confirmed the content itself is legitimate; this
+  is a pure process/gate gap, not a content defect. Amending or
+  force-pushing a published commit is against `agents.md` rule
+  5, so 0cdb345 stands as-is.
+- next: two independent angles, either is sufficient on its
+  own: (1) strengthen the literal text of the `Agent(...)`
+  prompt a dispatching agent hands the delegate in
+  `skills/critique.md` step 3 with an explicit imperative
+  ("do not write to plan/CRITIQUE.md; do not run git commit or
+  git push — return findings only"), since the current wording
+  states the contract but not as a direct instruction the
+  delegate prompt must literally carry; (2) add a mechanical
+  check to `skills/critique.md` step 7 (or `skills/march.md`
+  step 4) that inspects the latest commit for the
+  `Cloud-Run:` trailer when running in cloud mode and flags/
+  backfill-notes here when it's missing, so a repeat doesn't
+  silently under-count the ceiling again.
+
 ## Done
 
 ### [x] [C/A, 3.2] README.md's "What's in this kit" tree omits the root CONTRIBUTING.md — this commit
