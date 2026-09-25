@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-09-23
-> Pass count: 14
+> Last pass: 2026-09-25
+> Pass count: 15
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -601,7 +601,8 @@ kit + sibling surveys.
 
 ### [ ] [score 6.5] Mechanically verify the Cloud-Run trailer on cloud ticks
 - proposed: 2026-07-20 (digest); re-evidenced 2026-07-26 (digest),
-  2026-09-05 (digest)
+  2026-09-05 (digest), 2026-09-25 (iterate, dispatched to expand
+  — no finding scored ≥3.0 this tick)
 - source signals: of the 4 cloud commits shipped in the trailing
   24h window (2026-07-19 14:31 to 2026-07-20 09:07 UTC — all
   4 `march` runs green, no failures), 1 — `a74f7b6` ("critique:
@@ -640,7 +641,19 @@ kit + sibling surveys.
   doesn't append it" into something more specific: the commit
   step is fine when the parent tick runs it directly; the gap is
   delegation-shaped, only surfacing when a sub-agent commits on
-  the parent's behalf.
+  the parent's behalf. Fourth instance, 2026-09-24 (filed as
+  `plan/AUDIT.md` `[user-issue #63]`): commit `0cdb345`
+  ("critique: pass 20 — 2 findings (0 high, 1 med, 1 low)")
+  repeats the identical delegation-shaped gap — the sub-agent
+  appended to `plan/CRITIQUE.md` and committed + pushed directly
+  despite `skills/critique.md` step 3 already scoping it to
+  steps 3-5 only. Reporter spot-checked the commit's content
+  against its cited evidence and confirmed it's legitimate, so
+  this is purely the same process gap recurring a fourth time,
+  not a content defect. `[user-issue #63]`'s own `next` field
+  proposes the same two angles as `[user-issue #53]` before it:
+  a stronger literal imperative in the delegate prompt, and/or
+  this candidate's mechanical workflow-side check.
 - rationale: the trailer is the sole mechanism the ceiling
   trusts; a tick that forgets it both violates the standing
   rule silently and erodes the ceiling's accuracy in the

@@ -1671,6 +1671,23 @@ and `[F, 2.4, PLAUSIBLE]` `templates/skills/moderate.md` /
 ~2]`, `#54`, `#40`, `#35`, `#49`, `#63`) unchanged.
 `plan/CRITIQUE.md` Pending still one LOW row.
 
+Cloud tick 2026-09-25 (third): header still same-day, block
+<24h old, so reused it rather than re-sweeping. Top of the
+combined queue (this block's Pending + `plan/CRITIQUE.md`'s one
+LOW row) is `[C, 2.7]` (ship-asset.md miscite) — below the 3.0
+floor. Per `skills/iterate.md` §6 failure mode 1 (posture
+`bold`), dispatched to `skills/expand.md` instead of
+manufacturing churn on a sub-3.0 row, same call as the
+2026-09-23 (second) tick. `/expand` found no new signal past the
+cap-3 threshold worth a fresh candidate; `[user-issue #63]`
+(this block, filed above) reinforces the existing
+`plan/PHASE_CANDIDATES.md` "Mechanically verify the Cloud-Run
+trailer on cloud ticks" candidate as a fourth same-pattern
+instance rather than describing something new, so that row's
+source signals + `re-evidenced` date were updated in place
+instead of filing a duplicate — see `plan/PHASE_CANDIDATES.md`
+pass 15. This block unchanged.
+
 ## Pending
 
 ### [C, 2.7] templates/skills/ship-asset.md:95 cites the wrong bearings.md section number
