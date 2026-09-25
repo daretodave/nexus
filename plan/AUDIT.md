@@ -1626,6 +1626,23 @@ failure mode 1 (posture `bold`), dispatched to `skills/expand.md`
 instead of manufacturing churn — see `plan/PHASE_CANDIDATES.md`
 pass 14 for the result. This block is otherwise unchanged.
 
+Cloud tick 2026-09-25: header 3 days old (last full sweep the
+2026-09-23 second tick, above), past the 24h threshold, but
+`/critique` pass 20 (2026-09-24, commit `0cdb345`) had just
+landed a MED row in `plan/CRITIQUE.md` scoring well above
+anything in this block's own Pending (a real instruction
+contradiction, cheap fix — impact ~6, ease ~8), so re-scored
+the combined queue rather than dispatching a fresh A-G sweep
+for a lower-value tick. Shipped the CRITIQUE MED row:
+`prompts/pitch.md`'s Phase B said "AskUserQuestion is no
+longer allowed... don't ask" immediately before pointing at
+`prompts/adopt.md`, which itself asks a four-item list —
+pitch.md now names that list as its own explicit carve-out.
+This block's own rows unchanged: `[F, ~2]` and the four
+durable blocked/low-actionability rows (`#54`, `#40`, `#35`,
+`#49`) all still out of cloud-tick scope. `plan/CRITIQUE.md`
+Pending now holds one LOW row (reading-list undercount).
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge

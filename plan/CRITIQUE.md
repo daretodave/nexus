@@ -11,34 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] prompts/pitch.md:52-56 vs prompts/adopt.md:62-69 — Phase B tells the agent not to ask, then points at a prompt that explicitly asks
-- category: instruction-drift
-- observation: pitch.md's Phase B says, in the same breath:
-  "switch to the standard adoption prompt: read and follow
-  `../nexus/prompts/adopt.md` exactly... AskUserQuestion is no
-  longer allowed (per nexus's standing rules — only /oversight
-  may ask). Decide and document; don't ask." But adopt.md — the
-  very file it says to follow exactly — contains its own
-  explicit instruction: "Ask the user ONLY for: (a) the hosting
-  provider name and auth token..., (b) the project's canonical
-  name + tagline..., (c) the URL/API/CLI contract..., (d)
-  confirmation of the topology guess..." README.md:650-652
-  names only /oversight and /bootstrap as AskUserQuestion
-  carve-outs; adopt.md's own "Standing rules carried from
-  agents.md" list (adopt.md:86-92) silently omits the
-  AskUserQuestion restriction rather than stating an exception.
-  A literal-following agent hits a direct contradiction between
-  two adjacent sentences in pitch.md and the doc it references.
-- evidence: prompts/pitch.md:53-56 ("AskUserQuestion is no
-  longer allowed... Decide and document; don't ask.")
-  immediately preceding a pointer to prompts/adopt.md:62-69
-  ("Ask the user ONLY for: (a)...(d)").
-- suggested fix: add one clause to pitch.md's Phase B (or to
-  adopt.md's own text) explicitly carving adopt.md's four-item
-  ask-list out of the "don't ask" rule, the same way README.md
-  carves out /oversight and /bootstrap.
-- source: dry-run
-
 ### [LOW] prompts/adopt.md:39-40 — reading-list item undercounts what its own glob covers
 - category: comprehension
 - observation: item 7 of the "read in order" list says
@@ -66,6 +38,26 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] prompts/pitch.md:52-56 vs prompts/adopt.md:62-69 — Phase B tells the agent not to ask, then points at a prompt that explicitly asks — this commit
+- category: instruction-drift
+- observation: pitch.md's Phase B said, in the same breath:
+  "switch to the standard adoption prompt: read and follow
+  `../nexus/prompts/adopt.md` exactly... AskUserQuestion is no
+  longer allowed (per nexus's standing rules — only /oversight
+  may ask). Decide and document; don't ask." But adopt.md — the
+  very file it says to follow exactly — contains its own
+  explicit instruction: "Ask the user ONLY for: (a) the hosting
+  provider name and auth token..., (b) the project's canonical
+  name + tagline..., (c) the URL/API/CLI contract..., (d)
+  confirmation of the topology guess..." A literal-following
+  agent hit a direct contradiction between two adjacent
+  sentences in pitch.md and the doc it references.
+- fix: pitch.md's Phase B now names adopt.md's four-item ask
+  list explicitly as its own carve-out (the same class as
+  /oversight's), and scopes the "don't ask" instruction to
+  everything beyond those four items.
+- source: dry-run
 
 ### [x] [MED] prompts/adopt.md:20-38 — step 4a's "topology check below" is a forward reference the numbered reading list can't resolve in order — this commit
 - category: ordering

@@ -50,10 +50,13 @@ Phase A deliverables (committed before Phase B starts):
 Phase B — adoption
 
 Once Phase A's commits land, switch to the standard adoption
-prompt: read and follow ../nexus/prompts/adopt.md exactly.
-AskUserQuestion is no longer allowed (per nexus's standing
-rules — only /oversight may ask). Decide and document; don't
-ask.
+prompt: read and follow ../nexus/prompts/adopt.md exactly,
+including its own narrow four-item ask list (hosting
+provider/token, project name/tagline, URL/API/CLI contract,
+topology confirmation) — that list is adopt.md's own
+carve-out, the same class as /oversight's. Beyond those four
+items, AskUserQuestion is not allowed. Decide and document;
+don't ask.
 
 End-state:
   - chore: adopt nexus methodology commit landed and pushed
