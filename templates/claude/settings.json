@@ -19,6 +19,7 @@
       "Bash(pnpm typecheck:*)",
       "Bash(pnpm build:*)",
       "Bash(node scripts/loop-issue.mjs:*)",
+      "Bash(node scripts/pulse.mjs:*)",
       "Bash(node scripts/deploy-check.mjs:*)",
       "Bash(node scripts/notify.mjs:*)",
       "Bash(gh auth status:*)",

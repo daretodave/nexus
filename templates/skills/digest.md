@@ -34,16 +34,20 @@ its own cadence.
    git log --since="26 hours ago" --oneline
    gh run list --workflow march -L 20 \
      --json displayTitle,conclusion,createdAt,updatedAt
+   node scripts/pulse.mjs
    ```
 
-   Plus queue states: build-plan `[ ]` / `[blocked:]` counts,
-   `plan/AUDIT.md` pending, `plan/CRITIQUE.md` pending + last
-   pass age, `data/BACKLOG.md` pending (if a data layer
-   exists), `plan/PHASE_CANDIDATES.md` pending + oldest-pending
-   age + how many `## Pending` rows carry a `- proposed:` date
-   more than 21 days old (hand-count from the same rows), open
-   `triage:needs-user` / `loop:do` issues, deploy state
-   (`pnpm deploy:check`).
+   `pulse.mjs` gives the local numbers in one shot: build-plan
+   `[ ]`/`[blocked:]` counts, AUDIT pending, CRITIQUE pending +
+   last pass age, candidates pending + oldest-pending age.
+   Plus (still hand-fetched — pulse.mjs never touches the
+   network or the data layer): `data/BACKLOG.md` pending (if a
+   data layer exists), open `triage:needs-user` / `loop:do`
+   issues, deploy state (`pnpm deploy:check`), and how many
+   `## Pending` rows in `plan/PHASE_CANDIDATES.md` carry a
+   `- proposed:` date more than 21 days old (hand-count from
+   the same rows pulse.mjs already reads for the
+   oldest-pending age — no script change).
 3. **Breadth checks** (the night-only legs — adapt per
    project; see `nexus/customization/hermetic-e2e.md`):
 
@@ -106,6 +110,7 @@ its own cadence.
 plan/DIGEST.md                       # the deliverable (overwrite)
 plan/AUDIT.md                        # breadth failures land here
 plan/PHASE_CANDIDATES.md             # tuning proposals land here
+node scripts/pulse.mjs               # local queue/build-plan numbers
 gh run list --workflow march -L 20   # the invisible no-ops
 SMOKE_SAMPLE=full pnpm e2e           # the nightly breadth leg
 pnpm verify

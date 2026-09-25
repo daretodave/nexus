@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-22
+# Kit audit — 2026-09-25
 
 > Bias: none
 
@@ -2625,3 +2625,35 @@ Pending now holds one LOW row (reading-list undercount).
   to `templates/plan/bearings.md`'s commit-verb table —
   bringing the template in line with the kit's own
   `.claude/hooks/guard.mjs`, which already carried both verbs.
+
+### [x] [5.6] phase 24's pulse.mjs fix landed for nexus-self, never ported to the adopter templates — this commit
+- fix: `templates/scripts/pulse.mjs`'s own header comment says
+  it exists so `/oversight`, `/oversight audit`, and `/digest`
+  stop hand-deriving the same numbers — but only `skills/*.md`
+  (this repo's own copies) were ever wired to call it;
+  `templates/skills/oversight.md` and `templates/skills/
+  digest.md` (what adopters actually get) still hand-counted
+  build-plan/AUDIT/CRITIQUE/candidate rows. Ported `skills/
+  oversight.md`'s item-0 read and `skills/digest.md`'s
+  pulse.mjs bullet into their `templates/` counterparts
+  (§3 item 0 and the quick-reference in oversight.md; the
+  "Gather the pulse" step and quick-reference in digest.md),
+  and added `Bash(node scripts/pulse.mjs:*)` to both
+  `.claude/settings.json` and `templates/claude/settings.json`
+  allowlists — it was missing from both, so even a manual
+  invocation tripped an avoidable permission prompt.
+- other findings this sweep, left unshipped (below threshold
+  vs. the one above, or lower-value cleanups for a future
+  tick): bare `sed -i` recurrence in `playbooks/new-project.md:613`,
+  `playbooks/workspace.md:136`, `customization/external-services.md:195`
+  (BSD/macOS sed swallows the next token as backup suffix,
+  same bug already fixed once elsewhere — score 5.4);
+  `templates/skills/ship-asset.md:95` cites a `bearings.md`
+  "§3" that's actually §2 (score 2.7); Title Case leaking into
+  four sentence-case sub-headings in
+  `templates/setup/NN_service.md` +
+  `customization/external-services.md` (score 1.6); possibly
+  invented "Anthropic moderation API" product name in
+  `templates/skills/moderate.md:52` +
+  `customization/moderation-loop.md:123`, unverified against
+  current offerings (score 2.4, PLAUSIBLE not CONFIRMED).

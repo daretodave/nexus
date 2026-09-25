@@ -46,6 +46,12 @@ are a misconfiguration (§9).
 
 In parallel where independent:
 
+0. `node scripts/pulse.mjs` — the fast aggregate: build-plan
+   pending/blocked, AUDIT pending, CRITIQUE pending + last
+   pass age, candidates pending + oldest-pending age. Items
+   4–7 below still get read in full — the briefing needs row
+   *content* (blocked reasons, durable rows, bias) that an
+   aggregate count can't carry.
 1. `git log --oneline -20` — recent shipping velocity.
 2. `git status --short` — uncommitted changes.
 3. `pnpm deploy:check` — current deploy state.
@@ -276,6 +282,7 @@ oversight complete. <N> adjustments applied.
 
 ```bash
 # Read (parallel where possible)
+node scripts/pulse.mjs             # the fast aggregate
 git log --oneline -20
 git status --short
 plan/steps/01_build_plan.md

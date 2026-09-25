@@ -13,6 +13,7 @@
       "Bash(git rev-list:*)",
       "Bash(git ls-files:*)",
       "Bash(node scripts/verify.mjs:*)",
+      "Bash(node scripts/pulse.mjs:*)",
       "Bash(node templates/scripts/loop-issue.mjs:*)",
       "Bash(node .claude/hooks/guard.mjs self-test)",
       "Bash(npm run verify:*)",
