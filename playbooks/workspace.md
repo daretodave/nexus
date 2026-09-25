@@ -133,8 +133,9 @@ After copying, sweep `<WORKSPACE_ORG>` (and `<PROJECT>` per
 sibling repo) across the four files:
 
 ```bash
-sed -i -e 's/<WORKSPACE_ORG>/your-org/g' \
-  CLAUDE.md AGENTS.md README.md REPOS.md
+sed -i.bak -e 's/<WORKSPACE_ORG>/your-org/g' \
+  CLAUDE.md AGENTS.md README.md REPOS.md \
+  && rm -f CLAUDE.md.bak AGENTS.md.bak README.md.bak REPOS.md.bak
 ```
 
 The PowerShell twin:

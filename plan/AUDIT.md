@@ -1643,7 +1643,70 @@ durable blocked/low-actionability rows (`#54`, `#40`, `#35`,
 `#49`) all still out of cloud-tick scope. `plan/CRITIQUE.md`
 Pending now holds one LOW row (reading-list undercount).
 
+Cloud tick 2026-09-25 (second): header 3 days old again (last
+full sweep still the 2026-09-23 second tick), past the 24h
+threshold, so dispatched a fresh A-G sweep to an agent to
+protect context. `node scripts/verify.mjs` green (all 7 legs);
+model-id grep clean (`claude-sonnet-5`/`claude-opus-4-8`/
+`claude-haiku-4-5` used consistently); README's kit-tree
+matched disk exactly across root/templates/skills/playbooks/
+concepts/customization; anchor-link sweep found zero breaks;
+backtick-path sweep for promised-but-missing files found only
+expected non-issues; sibling lessons files still absent.
+Top new finding shipped this tick: `[E, 4.8]` three doc
+one-liners (`playbooks/workspace.md`, `customization/
+external-services.md`, `playbooks/new-project.md`'s
+`bootstrap.local.json` sweep) used bare `sed -i`, the exact
+BSD-sed breakage `playbooks/new-project.md`'s own main
+placeholder one-liner had already been fixed for (a
+`plan/CRITIQUE.md` Done row) but the fix never propagated to
+these three siblings. All three now use `-i.bak` + a cleanup
+`rm`/`find`, matching the established pattern. Two lower
+scorers queued to Pending below rather than shipped this tick
+(one-fix-per-tick, `skills/iterate.md` §5.1): `[C, 2.7]`
+`templates/skills/ship-asset.md:95` section-number miscite,
+and `[F, 2.4, PLAUSIBLE]` `templates/skills/moderate.md` /
+`customization/moderation-loop.md` naming a nonexistent
+"Anthropic moderation API". This block's durable rows (`[F,
+~2]`, `#54`, `#40`, `#35`, `#49`, `#63`) unchanged.
+`plan/CRITIQUE.md` Pending still one LOW row.
+
 ## Pending
+
+### [C, 2.7] templates/skills/ship-asset.md:95 cites the wrong bearings.md section number
+- category: link + tree hygiene
+- impact: 3, ease: 9
+- evidence: `templates/skills/ship-asset.md:95` reads "read
+  `plan/bearings.md`'s `Surface:` line per §3", but
+  `templates/plan/bearings.md`'s headings run `## What we're
+  building` (§1), `## Surface` (§2), `## Auth` (§3) — Surface
+  is §2, not §3. Found during the 2026-09-25 (second) fresh
+  A-G sweep.
+- next: change "§3" to "§2" in ship-asset.md:95.
+
+### [F, 2.4, PLAUSIBLE] templates/skills/moderate.md and customization/moderation-loop.md name a nonexistent "Anthropic moderation API"
+- category: freshness
+- impact: 4, ease: 6
+- evidence: `templates/skills/moderate.md:51-52` and
+  `customization/moderation-loop.md:123` both list AI
+  pre-filter options as "OpenAI moderation endpoint, Anthropic
+  moderation API, or a local classifier" — and
+  `moderation-loop.md:285-286`'s placeholder token spells it
+  `anthropic:moderation` as if it were a real, distinct
+  endpoint. OpenAI's moderation endpoint is a real, specifically
+  named product; Anthropic has no equivalent standalone
+  moderation API as of this repo's knowledge — moderation via
+  Claude is a prompted classification call on the standard
+  Messages API, not a dedicated endpoint. Found during the
+  2026-09-25 (second) fresh A-G sweep; marked PLAUSIBLE rather
+  than CONFIRMED since Anthropic's product surface could add
+  one before this row is next reviewed — reverify before
+  shipping.
+- next: reword both docs' three-way list (and the
+  moderation-loop.md placeholder token) to something like "a
+  prompted Claude classification call" instead of implying a
+  dedicated Anthropic product, unless a real one has since
+  shipped.
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -2657,3 +2720,27 @@ Pending now holds one LOW row (reading-list undercount).
   `templates/skills/moderate.md:52` +
   `customization/moderation-loop.md:123`, unverified against
   current offerings (score 2.4, PLAUSIBLE not CONFIRMED).
+
+### [x] [E, 4.8] bare `sed -i` recurrence in three doc one-liners — this commit
+- category: adopter friction
+- impact: 6, ease: 8
+- evidence: `playbooks/new-project.md`'s main placeholder
+  one-liner already carries a documented BSD-sed fix (stock
+  macOS `sed` requires a backup-suffix argument or misparses
+  the next token and errors out) using `-i.bak` + a cleanup
+  `find`. Three sibling one-liners never got the same fix:
+  `playbooks/workspace.md:136` (`<WORKSPACE_ORG>` sweep),
+  `customization/external-services.md:195` (`setup/00_files.md`
+  copy-and-sweep), and `playbooks/new-project.md:613`
+  (`setup/bootstrap.local.json` sweep) — flagged once before
+  (previous tick's Done note, above) and left for a future
+  tick; this is that tick.
+- fix: all three now use `sed -i.bak ... && rm -f <file>.bak`
+  (or the existing `find . -name '*.bak' -delete` idiom where
+  multiple files are swept), matching the established pattern.
+- other findings this sweep, left unshipped (one-fix-per-tick):
+  `templates/skills/ship-asset.md:95`'s `bearings.md` "§3"
+  miscite (actually §2, score 2.7) and the possibly-invented
+  "Anthropic moderation API" naming in `templates/skills/
+  moderate.md` + `customization/moderation-loop.md` (score 2.4,
+  PLAUSIBLE) — both moved to Pending above for a future tick.

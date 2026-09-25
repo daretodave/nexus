@@ -610,8 +610,8 @@ touched this file. Sweep it the same way before running
 `/bootstrap`:
 
 ```bash
-sed -i -e 's/<PROJECT_LOWER>/thock/g' -e 's/<PROJECT>/thock/g' \
-  setup/bootstrap.local.json
+sed -i.bak -e 's/<PROJECT_LOWER>/thock/g' -e 's/<PROJECT>/thock/g' \
+  setup/bootstrap.local.json && rm -f setup/bootstrap.local.json.bak
 ```
 
 The PowerShell twin:

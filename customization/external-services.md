@@ -192,7 +192,7 @@ When the project decides to adopt a new service:
    ```bash
    mkdir -p setup
    cp ../nexus/templates/setup/00_files.md setup/00_files.md
-   sed -i 's/<PROJECT>/thock/g' setup/00_files.md
+   sed -i.bak 's/<PROJECT>/thock/g' setup/00_files.md && rm -f setup/00_files.md.bak
    ```
 
    The PowerShell twin:
