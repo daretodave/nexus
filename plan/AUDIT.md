@@ -1838,7 +1838,9 @@ pass 15. This block unchanged.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
-### [user-issue #63] [MED] critique's dry-run sub-agent overstepped its scope and shipped commit 0cdb345 without the required Cloud-Run trailer
+## Done
+
+### [x] [user-issue #63] [MED] critique's dry-run sub-agent overstepped its scope and shipped commit 0cdb345 without the required Cloud-Run trailer — this commit (closes #63)
 - category: external-issue
 - impact: 4, ease: 6
 - evidence: `skills/critique.md` step 3 already scopes the
@@ -1862,21 +1864,14 @@ pass 15. This block unchanged.
   is a pure process/gate gap, not a content defect. Amending or
   force-pushing a published commit is against `agents.md` rule
   5, so 0cdb345 stands as-is.
-- next: two independent angles, either is sufficient on its
-  own: (1) strengthen the literal text of the `Agent(...)`
-  prompt a dispatching agent hands the delegate in
-  `skills/critique.md` step 3 with an explicit imperative
-  ("do not write to plan/CRITIQUE.md; do not run git commit or
-  git push — return findings only"), since the current wording
-  states the contract but not as a direct instruction the
-  delegate prompt must literally carry; (2) add a mechanical
-  check to `skills/critique.md` step 7 (or `skills/march.md`
-  step 4) that inspects the latest commit for the
-  `Cloud-Run:` trailer when running in cloud mode and flags/
-  backfill-notes here when it's missing, so a repeat doesn't
-  silently under-count the ceiling again.
-
-## Done
+- fix: `skills/critique.md` step 3 now spells out the literal
+  sentence the dispatching agent's `Agent(...)` prompt must
+  carry verbatim — "Do not write to plan/CRITIQUE.md. Do not
+  run git commit or git push. Return findings only; the
+  dispatching agent handles steps 6 and 7." — closing angle (1)
+  of the two independent fixes this row proposed. Angle (2) (a
+  mechanical Cloud-Run trailer check) remains available as a
+  follow-up if this recurs.
 
 ### [x] [C/A, 3.2] README.md's "What's in this kit" tree omits the root CONTRIBUTING.md — this commit
 - category: link + tree hygiene / doc-drift

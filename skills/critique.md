@@ -45,8 +45,12 @@ pass). Runs fine in the cloud — it needs only files and
    `node scripts/adopt-dryrun.mjs` — trust it for that part and
    spend this pass's budget on comprehension, ordering, and voice
    instead of re-deriving what it already checks. Scope the
-   delegate's task to steps 3-5 only (stage, walk, self-assess) —
-   it returns findings, nothing more. The dispatching agent stays
+   delegate's task to steps 3-5 only (stage, walk, self-assess):
+   the delegate's prompt must carry this as a literal, direct
+   instruction, not just an implied scope — "Do not write to
+   plan/CRITIQUE.md. Do not run git commit or git push. Return
+   findings only; the dispatching agent handles steps 6 and 7."
+   It returns findings, nothing more. The dispatching agent stays
    responsible for step 6 (append to `plan/CRITIQUE.md`) and step
    7 (commit + push), so cloud-mode trailer discipline never
    depends on a sub-agent prompt the parent doesn't fully control.
