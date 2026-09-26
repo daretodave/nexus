@@ -120,8 +120,8 @@ one tick = one queue item drained.
 1. Read the four queues. Pick the highest-priority item by
    `(queue priority × age × score)`.
 2. Apply the AI pre-filter if not yet applied (cheap models
-   only; OpenAI moderation endpoint, Anthropic moderation
-   API, or a local classifier).
+   only; OpenAI moderation endpoint, a prompted Claude
+   classification call, or a local classifier).
 3. **Decide** (the autonomy contract): approve, hide,
    delete, or escalate.
 4. Update the queue status + write a row to
@@ -283,7 +283,7 @@ shape (one block, not scattered). Add this block to the
   (N in M hrs), new-account age (24h default), repeat
   flag pattern (3 in 7d).
 - **AI pre-filter model:** `<openai:omni-moderation-latest
-  | anthropic:moderation | local-classifier>`
+  | claude:prompted-classifier | local-classifier>`
 - **Mod audit log:** `plan/MOD_AUDIT.md` (append-only).
 ```
 

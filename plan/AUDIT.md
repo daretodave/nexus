@@ -1688,31 +1688,18 @@ source signals + `re-evidenced` date were updated in place
 instead of filing a duplicate — see `plan/PHASE_CANDIDATES.md`
 pass 15. This block unchanged.
 
-## Pending
+Cloud tick 2026-09-26: header 1 day old, under the 24h
+threshold, so re-scored rather than re-swept. `plan/CRITIQUE.md`'s
+Pending queue empty; no pending build-plan phase; expand gate not
+due (3 commits / <7 days since `plan/PHASE_CANDIDATES.md` pass
+15). Top of this block's own queue was `[F, 2.4, PLAUSIBLE]`
+(the "Anthropic moderation API" naming) — reproduced unchanged,
+reverified CONFIRMED, and shipped over `[F, ~2]` and the four
+blocked user-issue rows (`#54`, `#40`, `#35`, `#49`, all needing a
+local/human session per their own `next` fields). Mirrored as
+issue #64. This block's remaining rows unchanged.
 
-### [F, 2.4, PLAUSIBLE] templates/skills/moderate.md and customization/moderation-loop.md name a nonexistent "Anthropic moderation API"
-- category: freshness
-- impact: 4, ease: 6
-- evidence: `templates/skills/moderate.md:51-52` and
-  `customization/moderation-loop.md:123` both list AI
-  pre-filter options as "OpenAI moderation endpoint, Anthropic
-  moderation API, or a local classifier" — and
-  `moderation-loop.md:285-286`'s placeholder token spells it
-  `anthropic:moderation` as if it were a real, distinct
-  endpoint. OpenAI's moderation endpoint is a real, specifically
-  named product; Anthropic has no equivalent standalone
-  moderation API as of this repo's knowledge — moderation via
-  Claude is a prompted classification call on the standard
-  Messages API, not a dedicated endpoint. Found during the
-  2026-09-25 (second) fresh A-G sweep; marked PLAUSIBLE rather
-  than CONFIRMED since Anthropic's product surface could add
-  one before this row is next reviewed — reverify before
-  shipping.
-- next: reword both docs' three-way list (and the
-  moderation-loop.md placeholder token) to something like "a
-  prompted Claude classification call" instead of implying a
-  dedicated Anthropic product, unless a real one has since
-  shipped.
+## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -2755,3 +2742,28 @@ pass 15. This block unchanged.
   building` (§1), `## Surface` (§2), `## Auth` (§3) — Surface
   is §2, not §3.
 - fix: changed "§3" to "§2" in ship-asset.md:95.
+
+### [x] [F, 2.4] templates/skills/moderate.md and customization/moderation-loop.md name a nonexistent "Anthropic moderation API" — this commit (closes #64)
+- category: freshness
+- impact: 4, ease: 6
+- evidence: `templates/skills/moderate.md:51-52` and
+  `customization/moderation-loop.md:123` both listed AI
+  pre-filter options as "OpenAI moderation endpoint, Anthropic
+  moderation API, or a local classifier," and
+  `moderation-loop.md:286`'s placeholder token spelled it
+  `anthropic:moderation` as if it were a real, distinct
+  endpoint. Reproduced unchanged from the 2026-09-25 (second)
+  sweep; confirmed CONFIRMED on reverify — Anthropic still ships
+  no standalone moderation endpoint the way OpenAI does,
+  moderation via Claude is a prompted classification call on the
+  standard Messages API. Widened scope during the fix: the same
+  invented `anthropic:moderation` placeholder token also appears
+  in `templates/plan/bearings.md:185`, the actual adopter-facing
+  bearings template — not cited in the original finding, but
+  same root cause and same public-API surface (`agents.md` rule
+  7).
+- fix: reworded both prose mentions to "a prompted Claude
+  classification call"; both placeholder-token spots
+  (`moderation-loop.md:286`, `templates/plan/bearings.md:185`)
+  now read `claude:prompted-classifier` instead of
+  `anthropic:moderation`.

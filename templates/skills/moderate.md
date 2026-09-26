@@ -48,8 +48,8 @@ columns) per moderation-loop.md "Where queues live".
 ## 4. Delegation
 
 - AI pre-filter model per `plan/bearings.md`'s "AI pre-filter
-  model" standing decision (OpenAI moderation endpoint,
-  Anthropic moderation API, or a local classifier).
+  model" standing decision (OpenAI moderation endpoint, a
+  prompted Claude classification call, or a local classifier).
 - `<DOMAIN_SPECIALIST>` — optional, for domain-specific spam
   or abuse heuristics the generic pre-filter misses.
 

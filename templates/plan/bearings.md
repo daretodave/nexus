@@ -182,7 +182,7 @@ mod queues that these limits produce get drained.
 - **Mod queue location:** `<data/mod/*.md | DB columns on
   the content table | setup/04_<auth>.md RBAC-gated>`
 - **AI pre-filter model:** `<openai:omni-moderation-latest
-  | anthropic:moderation | local-classifier | none>`
+  | claude:prompted-classifier | local-classifier | none>`
 - **`/oversight` escalation thresholds:**
   - Flagged spike: `<N items in M hours>`
   - New-account age: `<24h default>`
