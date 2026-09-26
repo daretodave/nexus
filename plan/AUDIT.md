@@ -1690,17 +1690,6 @@ pass 15. This block unchanged.
 
 ## Pending
 
-### [C, 2.7] templates/skills/ship-asset.md:95 cites the wrong bearings.md section number
-- category: link + tree hygiene
-- impact: 3, ease: 9
-- evidence: `templates/skills/ship-asset.md:95` reads "read
-  `plan/bearings.md`'s `Surface:` line per §3", but
-  `templates/plan/bearings.md`'s headings run `## What we're
-  building` (§1), `## Surface` (§2), `## Auth` (§3) — Surface
-  is §2, not §3. Found during the 2026-09-25 (second) fresh
-  A-G sweep.
-- next: change "§3" to "§2" in ship-asset.md:95.
-
 ### [F, 2.4, PLAUSIBLE] templates/skills/moderate.md and customization/moderation-loop.md name a nonexistent "Anthropic moderation API"
 - category: freshness
 - impact: 4, ease: 6
@@ -2761,3 +2750,13 @@ pass 15. This block unchanged.
   "Anthropic moderation API" naming in `templates/skills/
   moderate.md` + `customization/moderation-loop.md` (score 2.4,
   PLAUSIBLE) — both moved to Pending above for a future tick.
+
+### [x] [C, 2.7] templates/skills/ship-asset.md:95 cites the wrong bearings.md section number — this commit
+- category: link + tree hygiene
+- impact: 3, ease: 9
+- evidence: `templates/skills/ship-asset.md:95` read "read
+  `plan/bearings.md`'s `Surface:` line per §3", but
+  `templates/plan/bearings.md`'s headings run `## What we're
+  building` (§1), `## Surface` (§2), `## Auth` (§3) — Surface
+  is §2, not §3.
+- fix: changed "§3" to "§2" in ship-asset.md:95.

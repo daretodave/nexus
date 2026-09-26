@@ -92,7 +92,7 @@ This gate is unconditional. There is no `--force` flag.
 git pull --ff-only
 ```
 
-Then read `plan/bearings.md`'s `Surface:` line per §3. Exit
+Then read `plan/bearings.md`'s `Surface:` line per §2. Exit
 clean if not `site`/`hybrid`.
 
 ### Step 1 — Pick the work
