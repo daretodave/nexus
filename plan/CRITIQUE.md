@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-09-24
-> Pass count: 20
+> Last pass: 2026-09-27
+> Pass count: 21
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -35,6 +35,35 @@ path, comprehension stumble. See `skills/critique.md`.
   skim the rest as needed") or narrow the glob to just the 4
   named files and let the playbook's inline links pull in the
   rest on demand.
+- source: dry-run
+
+### [MED] concepts/architecture.md:100-104,176-201 — Layer 2's numbered dispatch list and Layer 4's prose drop `/expand`, which the file's own diagram includes
+- category: instruction-drift
+- observation: the top-of-file ASCII diagram (lines 16, 27,
+  31) lists `/expand` as a Layer 4 member and shows the
+  dispatch chain as `triage → critique → phase → data →
+  expand → iterate`. But the detailed Layer 2 prose a few
+  dozen lines later — the numbered dispatch list at
+  lines 100-104 and its "Why this order" rationale
+  (107-119) — enumerates only triage, critique, phase, data,
+  iterate; expand is never mentioned. The same omission
+  repeats in Layer 4's detailed section: its header (line 176)
+  reads "critique + triage" (not the three-item diagram box)
+  and the body (177-201) describes only those two skills.
+  `templates/skills/march.md:10-19` confirms the diagram is
+  the accurate one — the prose in both places is stale.
+- evidence: concepts/architecture.md:16,27,31 (diagram) vs
+  :100-104,107-119 (Layer 2 prose) vs :176,177-201 (Layer 4
+  prose) — `grep -n expand concepts/architecture.md` returns
+  only the four diagram-line hits, zero elsewhere in the
+  file's ~450 lines.
+- suggested fix: add expand as a conditional step in the
+  Layer-2 numbered list ("pending phase/data ship first;
+  expand fires only when due + posture is bold/autonomous"),
+  renumbering iterate; extend the Layer 4 header to "critique
+  + triage + expand" and add a bullet describing expand's role
+  (reads signals, proposes phases to `plan/PHASE_CANDIDATES.md`,
+  posture-gated, promoted only by `/oversight`).
 - source: dry-run
 
 ## Done
