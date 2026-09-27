@@ -1,98 +1,101 @@
-# Digest — 2026-09-26
+# Digest — 2026-09-27
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-A clean, quiet-in-a-good-way window — four ticks shipped, all four
-carried an intact `Cloud-Run:` trailer, and the standing fix
-`#63` demanded finally landed: `skills/critique.md` step 3 now
-spells out the no-commit instruction as a literal sentence the
-delegate's prompt must carry, not just implied scope. Candidate
-queue silting is unchanged and still the loudest open item.
+A quiet, clean window: three ticks shipped (one closed a
+moderation-API naming defect, one ran critique pass 21, one
+closed the finding it filed), plus a ceiling-skip no-op. The
+48h audit-staleness threshold tripped this pass — a fresh A-G
+sweep, dispatched to a foreground sub-agent, found nothing new;
+all five durable rows reproduced unchanged. Candidate queue
+silting is unchanged and still the loudest open item.
 
 ## While you were out
 
-Window: since the last digest commit (2026-09-25 15:26 UTC).
+Window: since the last digest commit (2026-09-26 14:39 UTC).
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 09-25 18:12 | march → iterate | shipped `8180842` — bare `sed -i` recurrence fixed in three doc one-liners (`playbooks/workspace.md`, `customization/external-services.md`, `playbooks/new-project.md`) that BSD/macOS sed misparses. |
-| 09-25 23:03 | march → expand | shipped `073e1ea` — pass 15: 0 new candidates, 1 re-evidenced (folded `#63` into the existing "Mechanically verify the Cloud-Run trailer" candidate rather than filing a duplicate). |
-| 09-26 07:03 | march → iterate | shipped `fe55612` — `templates/skills/ship-asset.md:95` cited `bearings.md` §3 for the `Surface:` line; it's actually §2. |
-| 09-26 12:39 | march → iterate | shipped `d682d04` — **closes `#63`**: `skills/critique.md` step 3's delegate scoping was narrative-only ("scope to steps 3-5"); a 2026-09-24 sub-agent overstepped anyway and committed directly, dropping the trailer. Step 3 now carries the literal sentence ("Do not write to `plan/CRITIQUE.md`. Do not run `git commit` or `git push`...") the dispatching agent's prompt must include verbatim. |
+| 09-26 17:35 | march | no-op — cloud ceiling reached (8/8 weighted budget in trailing 24h; phase=3, churn=1). Exited cleanly, nothing shipped. |
+| 09-26 22:21 | march → iterate | shipped `9a4340c` — **closes `#64`**: `templates/skills/moderate.md` + `customization/moderation-loop.md` named a nonexistent "Anthropic moderation API"; reworded to what the kit actually ships. |
+| 09-27 07:34 | march → critique | shipped `942884e` — pass 21: 1 finding (0 high, 1 med, 0 low) — `concepts/architecture.md`'s Layer 2 dispatch list and Layer 4 prose both dropped `/expand`, even though the file's own top-of-file diagram includes it. |
+| 09-27 13:31 | march → iterate | shipped `9fd21c0` — **closes `#65`**: fixed the same `/expand`-omission finding pass 21 just filed — added it to Layer 2's numbered dispatch list and Layer 4's prose. |
 
 `heartbeat` ran green throughout (5/5 sampled this window). All
-four commits above carry an intact `Cloud-Run:` trailer — no
-repeat of the `0cdb345` gap `#63` was filed against.
+three shipped commits above carry an intact `Cloud-Run:`
+trailer.
 
 ## Shipped
 
-- `8180842` — iterate: bare `sed -i` fixed in three remaining
-  one-liners (same bug class fixed once before elsewhere).
-- `073e1ea` — expand pass 15: no new candidates cleared the 3.0
-  floor; re-evidenced the Cloud-Run-trailer candidate instead.
-- `fe55612` — iterate: `ship-asset.md`'s wrong `bearings.md`
-  section citation (§3 → §2).
-- `d682d04` — iterate: `skills/critique.md`'s delegate prompt now
-  carries an explicit no-commit imperative. Closes `#63`.
+- `9a4340c` — iterate: moderation-API naming fixed to match what
+  the kit actually ships. Closes `#64`.
+- `942884e` — critique pass 21: 1 finding (0 high, 1 med, 0 low)
+  — the `/expand`-dispatch-omission row.
+- `9fd21c0` — iterate: `concepts/architecture.md` Layer 2/4 now
+  include `/expand`. Closes `#65`.
 
 ## Queues now
 
-- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 34 days
-  blocked) and phase 32 (`#49`, 27 days blocked), both still on
-  the same cloud-push-token workflows-scope gap, unchanged.
-- **AUDIT:** 6 pending rows (unchanged count — `#63` closed, one
-  new `[F, 2.4, PLAUSIBLE]` row landed the same sweep it closed: the
-  "Anthropic moderation API" naming in `templates/skills/moderate.md`
-  + `customization/moderation-loop.md` may be an invented product,
-  unverified). Top score is 2.4, still under the 3.0 ship
-  threshold; the rest are the low-priority `[F, ~2]` freshness row
-  plus the four durable blocked user-issue rows (`#54`, `#40`,
-  `#35`, `#49`). Header is 2026-09-25, still under the 48h refresh
-  threshold — no refresh needed this pass.
-- **CRITIQUE:** 1 pending (LOW — `prompts/adopt.md`'s reading-list
-  glob undercount), last pass 3 days ago (pass 20, 2026-09-24).
-- **PHASE_CANDIDATES:** 28 pending (22 >21d), oldest 87d (proposed
-  2026-07-02, unchanged row) — flat vs. yesterday; nothing drained.
-- **Issues:** 6 open (`#63` closed this window; `#54`, `#49`/`#48`,
-  `#40`, `#35`/`#34` remain). No `triage:needs-user` or `loop:do`
-  labels open.
-- **Sibling lessons:** not checked — no local sibling checkout in
-  this cloud environment; skipped per digest's own carve-out.
+- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 35
+  days blocked) and phase 32 (`#49`, 28 days blocked), both
+  still on the same cloud-push-token workflows-scope gap,
+  unchanged.
+- **AUDIT:** 5 pending rows, unchanged content. Header was
+  2026-09-25 (~50h old), past the 48h refresh threshold this
+  pass, so dispatched a fresh A-G sweep to a foreground
+  sub-agent (read-only; no edits/commits) to protect context.
+  It found nothing new across all seven dimensions — every
+  tree/placeholder/link/count claim it re-derived from disk
+  matched, sibling-lessons dimension (G) stayed skipped (no
+  local checkout). All five durable rows (the low-priority
+  `[F, ~2]` freshness row plus the four blocked user-issue rows
+  `#54`/`#40`/`#35`/`#49`) reproduced unchanged; header bumped
+  to today. Top score is still ~2.0, under the 3.0 ship
+  threshold.
+- **CRITIQUE:** 1 pending (LOW — `prompts/adopt.md`'s
+  reading-list glob undercount), last pass 15h ago (pass 21,
+  today).
+- **PHASE_CANDIDATES:** 28 pending (22 >21d), oldest 88d
+  (proposed 2026-07-02, unchanged row) — flat vs. yesterday;
+  nothing drained.
+- **Issues:** 6 open (`#64` and `#65` both closed this window;
+  `#54`, `#49`/`#48`, `#40`, `#35`/`#34` remain). No
+  `triage:needs-user` or `loop:do` labels open.
+- **Sibling lessons:** not checked — no local sibling checkout
+  in this cloud environment; skipped per digest's own carve-out.
 
 ## Needs you
 
 - **oversight needed: candidate queue silting (22 pending >21d,
-  oldest 87d).** Both trigger conditions remain met; four ticks
-  shipped this window and none touched the candidate queue —
-  unchanged for at least two digest passes running.
+  oldest 88d).** Both trigger conditions remain met; this
+  window's three shipped ticks all landed docs/critique fixes,
+  none touched the candidate queue — unchanged for at least
+  three digest passes running.
 - Two blocked build-plan rows still waiting on a local/human
   session with normal (non-App-token) push credentials: phase 20
-  (`#35`, 34 days) and phase 32 (`#49`, 27 days).
+  (`#35`, 35 days) and phase 32 (`#49`, 28 days).
 - The candidate queue's own top-scoring pending row (score 7.8,
-  "Workflow-scope-blocked lane," proposed 2026-08-31, now 26 days
-  old) targets the exact recurring blocker behind both stuck
-  phases — it would close `#35`, `#40`, and `#49` together if
-  promoted.
+  "Workflow-scope-blocked lane," proposed 2026-08-31, now 27
+  days old) targets the exact recurring blocker behind both
+  stuck phases — it would close `#35`, `#40`, and `#49` together
+  if promoted.
 
 ## Today's intent
 
 No `[ ]` build-plan phase pending (only the two blocked rows).
-AUDIT's top pending row now scores 2.4 (the moderation-API naming
-row), still below the 3.0 floor; CRITIQUE holds one LOW row not
-yet re-scored against it. Expect the next `/iterate` tick to ship
-whichever of those two wins the tie-break, or fall through to
-`/expand` again if neither clears 3.0 after a fresh sweep — same
-pattern as pass 15 this window.
+AUDIT's fresh sweep found nothing new; its top pending row still
+scores ~2.0, below the 3.0 floor. CRITIQUE holds one LOW row
+(the `prompts/adopt.md` glob mismatch) not yet re-scored against
+it — expect the next `/iterate` tick to ship that row, or fall
+through to `/expand` again if the tie-break says otherwise.
 
 ## Tuning proposals
 
-None new. This window closes the loop on the last flagged gap
-(`#63`, the critique delegate-prompt fix) cleanly — no new
-mistuned-gate signal surfaced. The standing candidates already on
-file (workflow-scope-blocked lane, candidate-queue silting) still
-cover what this pass's pulse numbers would otherwise motivate; the
-silting condition persists but is already the tracked, expected
-state pending an `/oversight` pass, not a new finding.
+None new. Today's fresh A-G sweep came back clean — no new
+mistuned-gate signal surfaced, and the standing candidates
+already on file (workflow-scope-blocked lane, candidate-queue
+silting) still cover what this pass's pulse numbers would
+otherwise motivate.

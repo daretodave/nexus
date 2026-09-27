@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-25
+# Kit audit — 2026-09-27
 
 > Bias: none
 
@@ -1714,6 +1714,21 @@ Done section. `plan/CRITIQUE.md`'s Pending queue is now one LOW
 row. This block's own five rows (`[F, ~2]` and the four blocked
 user-issues `#54`/`#40`/`#35`/`#49`) unchanged and still
 Pending. Not a full A-G sweep.
+
+Cloud tick 2026-09-27 (digest): header was ~50h old, past the
+48h threshold, so dispatched a fresh A-G sweep to a foreground
+sub-agent (read-only — no edits, no commits) to protect context.
+It re-derived every tree/placeholder/link/count claim from disk
+rather than trusting the green gate, live-curled every real
+external URL (all 200 except an expected auth-gated Cloudflare
+dashboard page), spot-checked cross-references and voice against
+`plan/bearings.md`, and grepped for stale model ids/dates —
+nothing new survived across any of the seven dimensions.
+Dimension G stayed skipped (no local sibling checkout). This
+block's five durable rows (`[F, ~2]` and the four blocked
+user-issues `#54`/`#40`/`#35`/`#49`) reproduced unchanged; header
+bumped to today. Not a fix tick — ships nothing, per
+`skills/digest.md` §3 step 5.
 
 ## Pending
 
