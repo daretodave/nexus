@@ -11,33 +11,19 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] prompts/adopt.md:39-40 — reading-list item undercounts what its own glob covers
-- category: comprehension
-- observation: item 7 of the "read in order" list says
-  "../nexus/customization/*.md — verify gate + hermetic e2e +
-  data layer + sub-agents". The glob customization/*.md
-  literally matches all 13 files in that directory, but the
-  parenthetical names only 4. A literal-following agent has to
-  guess whether to read all 13 (cutting against the "well under
-  an hour" estimate quoted two paragraphs later) or just the 4
-  named (missing e.g. claude-code.md, bootstrap-automation.md,
-  moderation-loop.md at the point they're actually needed —
-  workaroundable since the playbook re-links each one locally
-  at its point of use).
-- evidence: prompts/adopt.md:39-40 vs `ls customization/*.md` →
-  13 files (auth-aware-critique.md, bootstrap-automation.md,
-  branding.md, claude-code.md, data-layer.md,
-  external-services.md, hermetic-e2e.md, lanes.md,
-  lessons-layer.md, moderation-loop.md, sub-agents.md,
-  verify-gate.md, visual-system.md).
-- suggested fix: either list all four as "e.g." explicitly
-  ("e.g. verify gate, hermetic e2e, data layer, sub-agents —
-  skim the rest as needed") or narrow the glob to just the 4
-  named files and let the playbook's inline links pull in the
-  rest on demand.
-- source: dry-run
-
 ## Done
+
+### [x] [LOW] prompts/adopt.md:39-40 — reading-list item undercounts what its own glob covers — this commit (closes #66)
+- category: comprehension
+- fix: item 7 of the "read in order" list said
+  "../nexus/customization/*.md — verify gate + hermetic e2e +
+  data layer + sub-agents", reading as an exhaustive list even
+  though the glob `customization/*.md` matches all 13 files in
+  that directory. Reworded to "e.g. verify gate, hermetic e2e,
+  data layer, sub-agents; skim the rest as needed" — the row's
+  first suggested-fix option, cheaper than narrowing the glob
+  and losing the playbook's per-topic inline links.
+- source: dry-run
 
 ### [x] [MED] concepts/architecture.md:100-104,176-201 — Layer 2's numbered dispatch list and Layer 4's prose drop `/expand`, which the file's own diagram includes — this commit (closes #65)
 - category: instruction-drift

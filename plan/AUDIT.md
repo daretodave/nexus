@@ -1730,6 +1730,24 @@ user-issues `#54`/`#40`/`#35`/`#49`) reproduced unchanged; header
 bumped to today. Not a fix tick — ships nothing, per
 `skills/digest.md` §3 step 5.
 
+Cloud tick 2026-09-27 (march → iterate): no pending build-plan
+phase (all rows `[x]` or `[blocked: ...]`), critique gate not
+due (2 commits since pass 21, same day), and expand gate not
+due (9 commits / 2 days since candidates pass 15, both under
+threshold), so `/march` routed here. This block's five durable
+rows (`[F, ~2]` and the four blocked user-issues) all score
+under 1 except the already-downgraded `[F, ~2]` (~2) — none
+actionable. `plan/CRITIQUE.md`'s Pending queue held exactly one
+LOW row (the prompts/adopt.md reading-list glob-undercount from
+pass 21), the only actionable finding in either queue, so shipped
+it rather than dispatching to `skills/expand.md` — same reading
+of failure mode 1 as the 2026-09-18 tick above (expand-fallback
+is for nothing left to ship, not merely sub-3.0 scores). Mirrored
+as issue #66 and shipped; full fix detail in `plan/CRITIQUE.md`'s
+Done section. `node scripts/verify.mjs` green (all seven legs).
+This block's own rows unchanged and still Pending. Not a full
+A-G sweep.
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge

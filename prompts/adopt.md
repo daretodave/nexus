@@ -36,8 +36,9 @@ making a single change:
                                      either
   5. ../nexus/playbooks/ci-providers.md  — for the deploy gate
   6. ../nexus/intervention-spectrum.md   — how the loop scales
-  7. ../nexus/customization/*.md   — verify gate + hermetic
-                                     e2e + data layer + sub-agents
+  7. ../nexus/customization/*.md   — e.g. verify gate, hermetic
+                                     e2e, data layer, sub-agents;
+                                     skim the rest as needed
 
 Then:
 
