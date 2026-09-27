@@ -101,7 +101,8 @@ tick. The dispatch order matters:
 2. critique due (rate-limited)    →  critique
 3. pending phase                  →  ship-a-phase
 4. pending data                   →  ship-data
-5. else                           →  iterate
+5. expand due + bold/autonomous   →  expand
+6. else                           →  iterate
 ```
 
 Why this order:
@@ -115,6 +116,9 @@ Why this order:
   is *for*.
 - **Data fourth** because data work is usually less critical
   than feature work.
+- **Expand fifth** because growing the plan only matters once
+  nothing pending is waiting to ship; posture-gated (bold or
+  autonomous only) and rate-limited so it doesn't dominate.
 - **Iterate last** because iteration is the catch-all — when
   there's nothing scheduled, audit + improve.
 
@@ -173,7 +177,7 @@ the walk-away assembly is
 
 ---
 
-## Layer 4: external signals (critique + triage)
+## Layer 4: external signals (critique + triage + expand)
 
 The autonomous loop ships what `plan/` describes. The external
 signals layer brings in **what the loop wouldn't notice on its
@@ -187,17 +191,23 @@ own**:
   (bug, feature, content, data, docs, perf, a11y, seo).
   Routes (loop-queued, needs-user, closed). Comments. Drains
   to `plan/AUDIT.md` or `data/BACKLOG.md`.
+- **`expand`** — reads accumulated signals (pending AUDIT /
+  CRITIQUE rows, sibling-project lessons, platform drift) and
+  proposes new phases to `plan/PHASE_CANDIDATES.md`.
+  Posture-gated (bold or autonomous only); promoted into the
+  build plan only by `/oversight`.
 
-Both are **rate-limited or fast-exit by design** so they don't
-dominate the loop:
+All three are **rate-limited or fast-exit by design** so they
+don't dominate the loop:
 
 - Critique: ≥12 commits + ≥24h spacing, green-deploy required.
 - Triage: cheap when idle (one API call counts unlabeled
   issues; if zero, fall through in <1s).
+- Expand: ≥20 commits + ≥48h spacing, posture ≠ strict.
 
-Both **write only to state files**. They never modify code.
-The shipping skills (iterate, ship-data) consume the queues
-and ship the actual fixes.
+All three **write only to state files**. They never modify
+code. The shipping skills (iterate, ship-data) consume the
+queues and ship the actual fixes.
 
 ---
 

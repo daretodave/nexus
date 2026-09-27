@@ -37,7 +37,9 @@ path, comprehension stumble. See `skills/critique.md`.
   rest on demand.
 - source: dry-run
 
-### [MED] concepts/architecture.md:100-104,176-201 — Layer 2's numbered dispatch list and Layer 4's prose drop `/expand`, which the file's own diagram includes
+## Done
+
+### [x] [MED] concepts/architecture.md:100-104,176-201 — Layer 2's numbered dispatch list and Layer 4's prose drop `/expand`, which the file's own diagram includes — this commit (closes #65)
 - category: instruction-drift
 - observation: the top-of-file ASCII diagram (lines 16, 27,
   31) lists `/expand` as a Layer 4 member and shows the
@@ -52,21 +54,14 @@ path, comprehension stumble. See `skills/critique.md`.
   and the body (177-201) describes only those two skills.
   `templates/skills/march.md:10-19` confirms the diagram is
   the accurate one — the prose in both places is stale.
-- evidence: concepts/architecture.md:16,27,31 (diagram) vs
-  :100-104,107-119 (Layer 2 prose) vs :176,177-201 (Layer 4
-  prose) — `grep -n expand concepts/architecture.md` returns
-  only the four diagram-line hits, zero elsewhere in the
-  file's ~450 lines.
-- suggested fix: add expand as a conditional step in the
-  Layer-2 numbered list ("pending phase/data ship first;
-  expand fires only when due + posture is bold/autonomous"),
-  renumbering iterate; extend the Layer 4 header to "critique
-  + triage + expand" and add a bullet describing expand's role
-  (reads signals, proposes phases to `plan/PHASE_CANDIDATES.md`,
-  posture-gated, promoted only by `/oversight`).
+- fix: added expand as step 5 in the Layer 2 numbered dispatch
+  list plus a "why this order" bullet, renumbered iterate to
+  6, extended the Layer 4 header to "critique + triage +
+  expand", added a bullet describing expand's role, and
+  widened the "rate-limited" / "write only to state files"
+  paragraphs from "Both" to "All three" with expand's own
+  rate-limit figures.
 - source: dry-run
-
-## Done
 
 ### [x] [MED] prompts/pitch.md:52-56 vs prompts/adopt.md:62-69 — Phase B tells the agent not to ask, then points at a prompt that explicitly asks — this commit
 - category: instruction-drift

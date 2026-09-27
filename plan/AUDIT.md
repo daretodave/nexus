@@ -1699,6 +1699,22 @@ blocked user-issue rows (`#54`, `#40`, `#35`, `#49`, all needing a
 local/human session per their own `next` fields). Mirrored as
 issue #64. This block's remaining rows unchanged.
 
+Cloud tick 2026-09-27: header 2 days old (last full sweep the
+2026-09-25 second tick), past the 24h threshold, but
+`/critique` pass 21 (this same tick's earlier dispatch pass,
+see `plan/CRITIQUE.md`) had just landed a fresh MED row
+outscoring everything in this block, so skipped a manual re-
+derive and shipped the queue row instead: `concepts/architecture.md`'s
+Layer 2 dispatch list and Layer 4 prose both omitted `/expand`
+even though the file's own top-of-file diagram includes it —
+reproduced (`grep -n expand concepts/architecture.md` showed
+only the four diagram-line hits before the fix). Mirrored as
+issue #65 and shipped; full fix detail in `plan/CRITIQUE.md`'s
+Done section. `plan/CRITIQUE.md`'s Pending queue is now one LOW
+row. This block's own five rows (`[F, ~2]` and the four blocked
+user-issues `#54`/`#40`/`#35`/`#49`) unchanged and still
+Pending. Not a full A-G sweep.
+
 ## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
