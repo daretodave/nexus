@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-09-25
-> Pass count: 15
+> Last pass: 2026-09-28
+> Pass count: 16
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -968,6 +968,60 @@ kit + sibling surveys.
   every future tick remembering the bump.
 - estimated phases: 1
 - conflicts: none.
+
+### [ ] [score 6.2] `/doctor prompt-audit` isn't in the kit's prompt-maintenance story
+- proposed: 2026-09-28 (expand pass 16)
+- source signals: Claude Code v2.1.283's changelog — "Added
+  `/doctor prompt-audit` (also `/checkup prompt-audit`) to
+  audit your CLAUDE.md files, skills, agents and commands for
+  prompting patterns written for older models." Confirmed via
+  a fresh raw-text fetch of
+  `raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`
+  this pass (grepped directly, not a summarized read): the
+  immediately preceding entry (v2.1.282) shows the command
+  already existed and was actively developed that same window —
+  "Improved `prompt-audit` on Claude Code configuration: stale
+  paths, stale commands and contradicting instruction files now
+  lead the report, and thinking keywords that Claude Code
+  documents are kept" — so this is a maturing, not
+  brand-new-and-unstable, surface. Zero hits for "prompt-audit"
+  or "prompt audit" anywhere in this repo's history
+  (`git log --all -i --grep`) or docs. This is the direct
+  sibling of the already-pending `/skill-doctor` candidate
+  (score 5.8, expand pass 10) — same class of first-party
+  auditing command, but this one names its targets as exactly
+  the four artifact types nexus ships and calls public API:
+  CLAUDE.md files (`templates/claude/CLAUDE.md`), skills
+  (`skills/*.md` / `templates/skills/*.md`), agents
+  (`.claude/agents/`), and commands (`.claude/commands/` /
+  `templates/claude/commands/`).
+- rationale: nexus's product IS this exact artifact family —
+  `customization/claude-code.md` and `concepts/skills-anatomy.md`
+  already own the kit's prompting-quality story (voice, wrap,
+  anatomy conventions the verify gate partially checks). A
+  first-party command that flags "prompting patterns written
+  for older models" and "contradicting instruction files" is
+  on-mission for both this repo's own maintenance (skills/*.md
+  drift is the single most-audited defect class in
+  `plan/AUDIT.md`) and for adopters who inherit a growing
+  `skills/` directory. Cheap: doc-only, no template API change.
+- proposed scope: a short subsection in
+  `customization/claude-code.md` (near the existing
+  `/skill-doctor` candidate's proposed home) naming
+  `/doctor prompt-audit` / `/checkup prompt-audit`, what it
+  checks (stale paths, stale commands, contradicting
+  instructions, older-model prompting patterns), and when to
+  run it (after `/skill-doctor` pruning, or before a `/critique`
+  pass). Investigate, don't assume: confirm the command's actual
+  output format and whether it flags anything in this repo's own
+  `skills/*.md`/`CLAUDE.md` before writing the mapping — a first
+  read of a changelog blurb may not match the real CLI surface,
+  same caveat as the `/skill-doctor` candidate.
+- estimated phases: 1
+- conflicts: none — pairs naturally with the pending
+  `/skill-doctor` candidate (score 5.8); sequence together if
+  both promote, since they'd likely land in the same
+  `customization/claude-code.md` section.
 
 ## Promoted
 
