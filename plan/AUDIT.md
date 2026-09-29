@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-27
+# Kit audit — 2026-09-29
 
 > Bias: none
 
@@ -1748,7 +1748,48 @@ Done section. `node scripts/verify.mjs` green (all seven legs).
 This block's own rows unchanged and still Pending. Not a full
 A-G sweep.
 
+Cloud tick 2026-09-29 (digest): first full A-G sweep since
+2026-09-25 (header was 2 days stale, past the 48h threshold).
+Confirmed the five durable rows below unchanged and
+`plan/CRITIQUE.md`'s Pending queue still empty. Swept all seven
+dimensions fresh: doc-drift, completeness, link/tree hygiene,
+voice, adopter friction, freshness, and lessons (still no
+sibling lessons files reachable from this checkout) all came
+back clean except one new doc-drift row (below) —
+`customization/moderation-loop.md`'s `/march` dispatch
+illustration omits `/expand`, the exact bug class fixed in
+`concepts/architecture.md` by commit `9fd21c0` two days ago,
+just never propagated to this second copy. `node
+scripts/verify.mjs` green (all seven legs). Audit only, per
+`skills/digest.md` §3 step 5 — nothing shipped this tick.
+
 ## Pending
+
+### [A, 4.5] customization/moderation-loop.md's `/march` dispatch illustration omits `/expand`
+- category: doc-drift
+- impact: 5, ease: 9
+- evidence: `customization/moderation-loop.md:136-142`'s
+  dispatch illustration reads:
+  ```
+  1. unlabeled GitHub issues  →  triage
+  2. mod queue items > age threshold  →  moderate    [NEW]
+  3. critique due  →  critique
+  4. pending phase  →  ship-a-phase
+  5. pending data  →  ship-data
+  6. else  →  iterate
+  ```
+  missing the `expand` step entirely. `skills/march.md:13-17`,
+  `templates/skills/march.md`, and
+  `.github/CLOUD_LOOP.md:65-68` all correctly include it
+  (`triage → critique → phase → expand → iterate`). This is
+  the identical defect commit `9fd21c0` (2026-09-27) just fixed
+  in `concepts/architecture.md`'s Layer 2 list — that fix
+  didn't touch this second, independent copy of the same
+  illustration, so the drift survived here unreported.
+- next: add `expand due + bold/autonomous posture → expand` as
+  a new step 6 (renumbering `else → iterate` to 7), matching
+  the wording/order already established in `skills/march.md`
+  and `.github/CLOUD_LOOP.md`.
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness

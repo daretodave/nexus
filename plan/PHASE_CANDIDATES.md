@@ -1023,6 +1023,60 @@ kit + sibling surveys.
   both promote, since they'd likely land in the same
   `customization/claude-code.md` section.
 
+### [ ] [score 3.5] pulse.mjs's candidate-pending count still includes the four `[promoted]`-tagged rows never relocated out of `## Pending`
+- proposed: 2026-09-29 (digest)
+- source signals: today's pulse read "29 pending, oldest 90d,"
+  and this digest's own hand-count (per `skills/digest.md` §3
+  step 2/4) put 22 of those over the 21-day silting threshold.
+  But this file's `## Pending` section (lines 12-1025) actually
+  contains only 25 genuine `### [ ]` rows — four of the 29
+  `### ` headers `pulse.mjs` walks are `[promoted 2026-08-23 →
+  phase N]` rows (phases 19/20/21/22) that the 2026-08-23
+  `/oversight` note explicitly says stay "under Pending above
+  with relabeled `[promoted …]` headers, so their evidence
+  trails survive intact" — a deliberate choice, but
+  `scripts/pulse.mjs`'s `countRows()` (`/^### /` — any header)
+  and its `proposedDates` extraction (any `- proposed:` line in
+  the section) don't distinguish `[ ]` from `[promoted …]`, so
+  both the pending-count and the >21d/oldest aging numbers
+  double-count already-shipped work as still-pending. This exact
+  gap was already named as a known loose end in phase 30's own
+  brief (`plan/phases/phase_30_candidate_aging_silt_guard.md`
+  Non-goals: "Not fixing the pre-existing `[promoted]`-tag
+  filing drift... inflating `pulse.mjs`'s mechanical count by
+  4. Out of scope for this phase; already on record as a loose
+  end, not a duplicate candidate") but has sat unfiled as an
+  actual candidate for 37 days since — surfaced in past
+  `plan/DIGEST.md` snapshots (overwritten nightly, so never
+  durable) but never promoted into this queue until now.
+- rationale: phase 30 built the "oversight needed: candidate
+  queue silting" alarm specifically so a human doesn't have to
+  notice queue rot by hand — but the alarm's own inputs are
+  currently off by a consistent +4 on both the count and the
+  >21d tally (25 real pending vs. 29 reported; 18 real >21d vs.
+  22 reported), which could either cry wolf on a queue that's
+  milder than reported, or — if the drift grows past four rows —
+  mask real staleness the same way title-only crash-alarm
+  dedupe does (see the score-4.5 candidate above). The true
+  oldest-pending figure (2026-07-02, ~90d) happens to be
+  unaffected since a genuine `[ ]` row shares that date, but the
+  count itself is provably wrong today, not hypothetically.
+  Cheap to fix, already root-caused, already scoped by phase
+  30's own brief as a fair follow-up.
+- proposed scope: teach `scripts/pulse.mjs`'s `pendingSection`
+  consumers (`countRows()` and the `proposedDates` map/filter in
+  the candidates block) to skip any header matching
+  `/^### \[promoted/` — or, simpler, physically relocate the
+  four `[promoted 2026-08-23 → phase 19/20/21/22]` rows from
+  `## Pending` to `## Promoted` now (their evidence trails
+  already live in the `## Promoted` section's 2026-08-23 summary
+  note, so moving the full rows loses nothing) and add a one-line
+  note to `skills/expand.md` or `skills/oversight.md` that
+  promoted rows must relocate, not just relabel, going forward.
+  Either half closes the gap; doing both is more robust.
+- estimated phases: 1
+- conflicts: none.
+
 ## Promoted
 
 (moves to the build plan via /oversight)
