@@ -1771,11 +1771,12 @@ routed here. plan/CRITIQUE.md's Pending queue confirmed empty.
 Shipped this block's own top scorer from the same-day digest
 sweep, [A, 4.5] (customization/moderation-loop.md's /march
 dispatch illustration omitting /expand), over the remaining
-four durable/downgraded rows ([F, ~2] and the three blocked
-user-issues #40/#35/#49; #54 closed since). Added "expand due +
-bold/autonomous posture -> expand" as step 6, renumbering "else
--> iterate" to 7, matching templates/skills/march.md's own
-dispatch order. node scripts/verify.mjs green (all seven legs).
+five durable/downgraded rows ([F, ~2] and the four blocked/
+external user-issues #54/#40/#35/#49, all unchanged). Added
+"expand due + bold/autonomous posture -> expand" as step 6,
+renumbering "else -> iterate" to 7, matching
+templates/skills/march.md's own dispatch order. node
+scripts/verify.mjs green (all seven legs).
 
 ## Pending
 
