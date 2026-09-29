@@ -1763,33 +1763,21 @@ just never propagated to this second copy. `node
 scripts/verify.mjs` green (all seven legs). Audit only, per
 `skills/digest.md` §3 step 5 — nothing shipped this tick.
 
-## Pending
+Cloud tick 2026-09-29 (march → iterate): no pending build-plan
+phase, critique gate not due (7 commits / 2 days since pass 21,
+both under threshold), and expand gate not due (3 commits / 1
+day since candidates pass 16, both under threshold), so /march
+routed here. plan/CRITIQUE.md's Pending queue confirmed empty.
+Shipped this block's own top scorer from the same-day digest
+sweep, [A, 4.5] (customization/moderation-loop.md's /march
+dispatch illustration omitting /expand), over the remaining
+four durable/downgraded rows ([F, ~2] and the three blocked
+user-issues #40/#35/#49; #54 closed since). Added "expand due +
+bold/autonomous posture -> expand" as step 6, renumbering "else
+-> iterate" to 7, matching templates/skills/march.md's own
+dispatch order. node scripts/verify.mjs green (all seven legs).
 
-### [A, 4.5] customization/moderation-loop.md's `/march` dispatch illustration omits `/expand`
-- category: doc-drift
-- impact: 5, ease: 9
-- evidence: `customization/moderation-loop.md:136-142`'s
-  dispatch illustration reads:
-  ```
-  1. unlabeled GitHub issues  →  triage
-  2. mod queue items > age threshold  →  moderate    [NEW]
-  3. critique due  →  critique
-  4. pending phase  →  ship-a-phase
-  5. pending data  →  ship-data
-  6. else  →  iterate
-  ```
-  missing the `expand` step entirely. `skills/march.md:13-17`,
-  `templates/skills/march.md`, and
-  `.github/CLOUD_LOOP.md:65-68` all correctly include it
-  (`triage → critique → phase → expand → iterate`). This is
-  the identical defect commit `9fd21c0` (2026-09-27) just fixed
-  in `concepts/architecture.md`'s Layer 2 list — that fix
-  didn't touch this second, independent copy of the same
-  illustration, so the drift survived here unreported.
-- next: add `expand due + bold/autonomous posture → expand` as
-  a new step 6 (renumbering `else → iterate` to 7), matching
-  the wording/order already established in `skills/march.md`
-  and `.github/CLOUD_LOOP.md`.
+## Pending
 
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
@@ -1916,6 +1904,17 @@ scripts/verify.mjs` green (all seven legs). Audit only, per
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 4.5] customization/moderation-loop.md's /march dispatch illustration omits /expand — this commit
+- category: doc-drift
+- fix: added "expand due + bold/autonomous posture -> expand"
+  as step 6 to the dispatch illustration
+  (customization/moderation-loop.md), renumbering "else ->
+  iterate" to step 7 - matching templates/skills/march.md's own
+  dispatch order (triage -> critique -> phase -> data -> expand
+  -> iterate). Same defect class fixed two days prior in
+  concepts/architecture.md's Layer 2 list (commit 9fd21c0),
+  which never touched this second, independent illustration.
 
 ### [x] [user-issue #63] [MED] critique's dry-run sub-agent overstepped its scope and shipped commit 0cdb345 without the required Cloud-Run trailer — this commit (closes #63)
 - category: external-issue

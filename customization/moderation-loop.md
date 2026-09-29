@@ -139,7 +139,8 @@ one tick = one queue item drained.
 3. critique due  →  critique
 4. pending phase  →  ship-a-phase
 5. pending data  →  ship-data
-6. else  →  iterate
+6. expand due + bold/autonomous posture  →  expand
+7. else  →  iterate
 ```
 
 ### Option B — `/iterate` mod-pass
