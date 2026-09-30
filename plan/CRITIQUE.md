@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-09-27
-> Pass count: 21
+> Last pass: 2026-09-30
+> Pass count: 22
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,29 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [ ] [MED] playbooks/new-project.md:255-267 — data-layer copy has no runnable command, only prose
+- category: instruction-drift
+- observation: the step-4 copy one-liner (line 255) is a
+  `node -e` array of `[src,dst]` pairs covering every other
+  templates/ subtree, but has no `['templates/data','data']`
+  entry. The parenthetical right after it (263-267) covers the
+  gap only in prose — "also copy `../nexus/templates/data/` to
+  `./data/`" — with no literal `cp`/PowerShell command, unlike
+  every other copy step in this playbook. The same parenthetical's
+  "both one-liners already include it" refers to the two
+  placeholder-sweep one-liners below (which do list `./data` in
+  scope), not to the copy one-liner just above it — a reader
+  skimming linearly could easily conflate the two and believe the
+  data dir is already copied by the node command.
+- evidence: playbooks/new-project.md:255 (array lacks a data
+  entry), 263-267 (prose-only instruction)
+- fix: add a conditionally-worded `['templates/data','data']`
+  entry to the step-4 array, or give an explicit `cp -r
+  ../nexus/templates/data ./data` / PowerShell twin right in the
+  parenthetical, matching the pattern used everywhere else in the
+  playbook.
+- source: dry-run
 
 ## Done
 
