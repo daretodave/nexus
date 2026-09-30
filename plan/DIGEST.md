@@ -1,112 +1,109 @@
-# Digest — 2026-09-29
+# Digest — 2026-09-30
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-A quiet window on the surface — three march ticks in a row
-no-op'd — but the digest's own overdue audit refresh (header
-was 2 days stale) turned up a genuinely new, ship-able AUDIT
-row, and a 37-day-old loose end (pulse.mjs double-counting
-already-promoted candidates as pending) finally got filed as
-its own tuning candidate instead of staying buried in a phase
-brief.
+An active window — three march ticks in a row shipped
+something, one self-corrected its own log entry mid-tick — plus
+a heartbeat false alarm that triage ran down and closed out as
+a non-reproducible `gh run list` read, not an actual gap.
 
 ## While you were out
 
-Window: since the last digest commit (2026-09-28 18:15 UTC).
+Window: since the last digest commit (2026-09-29 16:46 UTC).
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 09-28 20:22 | march → iterate → oversight audit | no-op — AUDIT topped out at `[F, ~2]` plus four blocked user-issues, CRITIQUE empty, expand gate not due. Checked for a fresh `/expand` signal per failure mode 1: found Claude Code v2.1.284 (Sonnet 5.5 now the API default) but every kit reference to `claude-sonnet-5` already carries the standing "model ids age" hedge, so no new candidate filed. |
-| 09-29 07:51 | march → iterate → oversight audit | no-op — same gate shape (triage/critique/expand all not due, no `[ ]` phase). Ran a targeted freshness re-check; queues genuinely empty. |
-| 09-29 14:36 | march → iterate → oversight audit | no-op — delegated a full A-G sweep to a sub-agent (AUDIT.md's header was already >24h stale by this tick); it found fewer than 5 findings ≥3.0 and closed the tick without shipping, per `iterate.md` §6 failure mode 1. This digest's own independent sweep (below) reached the AUDIT.md header refresh a few hours later and did surface one row that clears the ship floor — the two sweeps disagree on `customization/moderation-loop.md` specifically; this digest's finding is verified against `skills/march.md`'s real dispatch order and stands. |
+| 09-29 23:25 | march → iterate | shipped the `[A, 4.5]` AUDIT row from yesterday's digest — `customization/moderation-loop.md`'s dispatch illustration omitted `/expand` (commit `efcb7e7`). Same tick then caught its own mistake: the fix's AUDIT log line had claimed user-issue #54 was "closed since," but `gh issue view` showed it still open — corrected in a same-tick follow-up commit (`465b3e1`). Both share one `Cloud-Run` URL. |
+| 09-30 07:57 | march → critique | scheduled critique pass came due; filed one new MED finding (`playbooks/new-project.md`'s step-4 data-layer copy has no runnable command, only prose) and shipped nothing else this tick — commit `a4c2d82`, pass 22. |
+| 09-30 14:44 | march → triage | routed issue #67 (heartbeat's "march has flatlined" alarm) into `plan/AUDIT.md` as `[user-issue #67] [LOW]` — investigated and found march had actually ticked normally 5h before the alarm fired; the alarm read a stale, non-reproducible `gh run list` result. Commit `5f57223`. |
 
-`heartbeat` ran green throughout (5/5 sampled). No commits
-landed in this window before this one — all three ticks above
-were clean no-ops, not gate failures.
+`heartbeat` itself fired once mid-window (12:32 UTC, the #67
+alarm above) but otherwise ran green. No gate failures this
+window — every tick that touched the tree committed clean on
+the first pass.
 
 ## Shipped
 
-Nothing by `/march` this window (three no-ops, see above). This
-digest itself ships two doc-only updates, per its own rails
-(proposals/audit only, never fixes):
-
-- `plan/AUDIT.md` — full A-G sweep (first since 2026-09-25,
-  header was stale past the 48h threshold). Five durable rows
-  unchanged; one new row filed: `[A, 4.5]`
-  `customization/moderation-loop.md`'s `/march` dispatch
-  illustration omits `/expand` — the same defect class commit
-  `9fd21c0` fixed in `concepts/architecture.md` two days ago,
-  never propagated to this second copy.
-- `plan/PHASE_CANDIDATES.md` — one new tuning candidate filed
-  (score 3.5): `scripts/pulse.mjs`'s pending-candidate count
-  still includes four `[promoted 2026-08-23 → phase N]` rows
-  that were deliberately left in `## Pending` for their
-  evidence trails but never taught to `pulse.mjs`'s counting
-  logic — a gap phase 30's own brief already named as a loose
-  end 37 days ago but that never got filed as an actual
-  candidate until now.
+By `/march` this window (see table above): the moderation-loop
+`/expand` omission fix, its own log-line self-correction, one
+new CRITIQUE finding filed (not yet fixed), and issue #67 routed
+into AUDIT. This digest ships nothing beyond itself — no doc
+fixes, no template edits, per its own rails; `plan/AUDIT.md` and
+`plan/PHASE_CANDIDATES.md` are both <24h old (last touched by
+the ticks above) so neither needs a refresh this pass.
 
 ## Queues now
 
-- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 37
-  days blocked) and phase 32 (`#49`, 30 days blocked), both
+- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 38
+  days blocked) and phase 32 (`#49`, 31 days blocked), both
   still on the same cloud-push-token workflows-scope gap,
   unchanged.
-- **AUDIT:** 6 pending rows (up 1). Header refreshed to
-  2026-09-29 (first full A-G sweep since 2026-09-25). New top
-  row `[A, 4.5]` clears the 3.0 ship floor — first actionable
-  AUDIT row in several passes; the five durable rows
-  (`[F, ~2]` + four blocked user-issues) all unchanged.
-- **CRITIQUE:** 0 pending, last pass 3d ago (pass 21,
-  2026-09-27) — within the normal cadence, not yet due.
-- **PHASE_CANDIDATES:** 30 pending (22 >21d), oldest 90d
-  (proposed 2026-07-02, unchanged row) — up one row from
-  yesterday, this digest's own pulse.mjs tuning proposal.
-- **Issues:** 6 open (`#54`, `#49`/`#48`, `#40`, `#35`/`#34`),
-  unchanged. No `triage:needs-user` or `loop:do` labels open.
+- **AUDIT:** 6 pending rows (net unchanged — one shipped
+  (`[A, 4.5]`), one added (`[user-issue #67] [LOW]`)). Header
+  fresh (2026-09-30, <2h old at pulse time). Top score is
+  `[F, ~2]` at 2.0 (impact 4 × ease 5 / 10) — still below the
+  3.0 ship floor on its own.
+- **CRITIQUE:** 1 pending (MED, filed this window, pass 22,
+  2026-09-30) — the `playbooks/new-project.md` data-copy gap.
+  Queue rows compete with AUDIT on the same scale (MED band
+  impact 5–7); this row likely outscores AUDIT's own top finding.
+- **PHASE_CANDIDATES:** 30 pending (22 >21d), oldest 91d
+  (proposed 2026-07-02, unchanged row) — flat vs. yesterday (no
+  new candidate filed this window). Note: pulse.mjs's raw count
+  still includes four `[promoted …]` rows never relocated out of
+  `## Pending` (real actionable pending is 26, not 30) — already
+  filed as its own candidate (score 3.5) 2026-09-29, still
+  pending, not yet promoted.
+- **Issues:** 7 open (`#67`, `#54`, `#49`/`#48`, `#40`,
+  `#35`/`#34`) — up one from yesterday (`#67`, filed by
+  heartbeat, already triaged into AUDIT as LOW). No
+  `triage:needs-user` or `loop:do` labels open.
 - **Sibling lessons:** not checked — no local sibling checkout
   in this cloud environment; skipped per digest's own carve-out.
 
 ## Needs you
 
-- **oversight needed: candidate queue silting (22 pending
-  >21d, oldest 90d).** Both trigger conditions remain met,
-  unchanged from yesterday. Note the raw count itself is now
-  known to be off by +4 (see the new pulse.mjs candidate above)
-  — real pending is 25 with 18 over 21 days, not 29/22 — but
-  the oldest-age figure (90d) is genuine, not an artifact, so
-  the alarm still stands either way.
+- **oversight needed: candidate queue silting (22 pending >21d,
+  oldest 91d).** Both trigger conditions remain met, unchanged
+  in substance from yesterday (raw count crept from 90d to 91d
+  oldest; the >21d count held at 22). The queue's own
+  top-scoring pending row (score 7.8, "Workflow-scope-blocked
+  lane," proposed 2026-08-31, now 30 days old) targets the exact
+  recurring blocker behind both stuck build-plan phases below —
+  promoting it would close `#35`, `#40`, and `#49` together.
 - Two blocked build-plan rows still waiting on a local/human
-  session with normal (non-App-token) push credentials: phase
-  20 (`#35`, 37 days) and phase 32 (`#49`, 30 days).
-- The candidate queue's own top-scoring pending row (score 7.8,
-  "Workflow-scope-blocked lane," proposed 2026-08-31, now 29
-  days old) targets the exact recurring blocker behind both
-  stuck phases — it would close `#35`, `#40`, and `#49`
-  together if promoted.
+  session with normal (non-App-token) push credentials: phase 20
+  (`#35`, 38 days) and phase 32 (`#49`, 31 days).
+- Issue #67 (heartbeat false alarm) is logged LOW and left open
+  per its own `next`: safe to close on inactivity, but worth
+  watching — if the same stale-read alarm fires again, it's
+  evidence for hardening heartbeat's query to a double-read
+  before trusting one `gh run list` call.
 
 ## Today's intent
 
-The freshly-filed `[A, 4.5]` AUDIT row — `customization/
-moderation-loop.md`'s dispatch list omitting `/expand` — is the
-first AUDIT finding in several passes to clear the 3.0 ship
-floor. Expect the next `/march` tick to dispatch to `/iterate`
-(no `[ ]` build-plan phase pending, CRITIQUE empty) and ship it
-directly rather than falling through to `/expand`.
+No `[ ]` build-plan phase is pending (both remaining rows are
+blocked), and today's critique pass already ran (pass 22, this
+window). Expect the next `/march` tick to dispatch to `/iterate`,
+which will score the new CRITIQUE MED row (`playbooks/
+new-project.md`'s data-copy gap) against AUDIT's current top
+(`[F, ~2]` at 2.0) — the MED band's 5–7 impact range makes the
+CRITIQUE row the likely pick, and the first queue item in
+several days to clear the 3.0 ship floor without needing a fresh
+audit sweep.
 
 ## Tuning proposals
 
-One filed this pass: `scripts/pulse.mjs`'s candidate-pending
-count and >21-day tally both include four `[promoted …]` rows
-that a 2026-08-23 `/oversight` pass deliberately left in
-`## Pending` for their evidence trails, but `pulse.mjs` never
-learned to skip them — inflating today's reported numbers by
-+4 on both counts (see `plan/PHASE_CANDIDATES.md`'s new
-score-3.5 row for the full evidence and two proposed fixes).
-Filed as a candidate, not applied — the meta-loop rail. No
-other mistuned-gate signal this window; the three march no-ops
-were routine gate checks, not evidence of a starved queue on
-their own.
+None filed this pass. The pulse looked routine: three active
+march ticks (no starved gates, no mistuned ceiling), one
+non-reproducible heartbeat false alarm already logged with its
+own conditional next step rather than a premature fix, and the
+candidate-queue silting alarm is unchanged from yesterday with
+its own remediation (the score-7.8 workflow-scope-blocked lane
+candidate, and the score-3.5 pulse.mjs promoted-row fix) already
+sitting in the queue awaiting `/oversight`. Filing another
+candidate for either would just be noise on top of an existing
+row.
