@@ -1778,6 +1778,26 @@ renumbering "else -> iterate" to 7, matching
 templates/skills/march.md's own dispatch order. node
 scripts/verify.mjs green (all seven legs).
 
+Cloud tick 2026-09-30 (march → iterate): no pending build-plan
+phase, critique gate not due (2 commits since pass 22, same
+day), and expand gate not due (7 commits / 2 days since
+candidates pass 16, both under threshold), so /march routed
+here. This block's six Pending rows (below) all score under 1
+except `[F, ~2]` (already downgraded, no actionable next step)
+— `#67` and `#54` explicitly have no fix available, `#40`/`#35`/
+`#49` are all blocked on the same cloud-push workflows-scope
+gap. None shippable from this environment. `plan/CRITIQUE.md`'s
+Pending queue held exactly one MED row (the playbooks/
+new-project.md data-layer copy prose-only-instruction finding),
+the only actionable item in either queue, so shipped it rather
+than dispatching to `skills/expand.md` — same reading of
+failure mode 1 as the 2026-09-18 and 2026-09-25 (fourth) ticks
+above (expand-fallback is for nothing left to ship, not merely
+sub-3.0 scores). Mirrored as issue #68 and shipped; full fix
+detail in `plan/CRITIQUE.md`'s Done section. `node
+scripts/verify.mjs` green (all seven legs). This block's own
+rows unchanged and still Pending.
+
 ## Pending
 
 ### [user-issue #67] [LOW] heartbeat's "march has flatlined" alarm fired on a stale `gh run list` read, not an actual gap

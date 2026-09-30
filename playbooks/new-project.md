@@ -262,7 +262,19 @@ needs both copies to actually fire.)
 
 (If using GitHub-as-DB, also copy `../nexus/templates/data/` to
 `./data/`. See [`customization/data-layer.md`](../customization/data-layer.md)
-to decide. If you copy it, add `./data` to the search-and-replace
+to decide.
+
+```bash
+cp -r ../nexus/templates/data ./data
+```
+
+The PowerShell twin, Windows native:
+
+```powershell
+Copy-Item -Recurse ..\nexus\templates\data .\data
+```
+
+If you copy it, add `./data` to the search-and-replace
 scope below — both one-liners already include it, so nothing
 else to change.)
 
