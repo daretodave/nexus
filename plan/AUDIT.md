@@ -1780,6 +1780,32 @@ scripts/verify.mjs green (all seven legs).
 
 ## Pending
 
+### [user-issue #67] [LOW] heartbeat's "march has flatlined" alarm fired on a stale `gh run list` read, not an actual gap
+- category: external-issue
+- impact: 2, ease: 2
+- evidence: issue #67 (created 2026-09-30T12:32:50Z) claimed "No
+  successful march tick in 638h" via `.github/workflows/
+  heartbeat.yml`'s `gh run list --workflow march --status
+  success -L 1 --json updatedAt` alarm step. But `gh run list
+  --workflow march.yml -L 10` (checked this tick,
+  2026-09-30T14:45Z) shows march succeeding on its normal
+  ~6-12h cadence straight through today — most recently
+  2026-09-30T07:57:11Z, under 5h before the alarm fired, nowhere
+  near 638h. Re-running heartbeat's exact query moments later
+  (`--workflow march --status success -L 1`) returned that same
+  recent run correctly and consistently across three repeats —
+  the stale read did not reproduce on retry. Most likely a
+  one-off GitHub Actions list-endpoint consistency lag at the
+  moment the cron fired, not a defect in march.yml, the cron
+  schedule, or the token.
+- next: no fix indicated yet — a single non-reproducible stale
+  read isn't evidence of a systemic bug in heartbeat.yml's
+  query. If this recurs, worth hardening the alarm step to a
+  double-read (query twice a few seconds apart, only alarm if
+  both agree) before trusting one `gh run list` call for a
+  638h-since claim. Safe to close #67 on inactivity if it
+  doesn't recur.
+
 ### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
 - category: freshness
 - impact: 4, ease: 5 (weaker than the raw score suggests — see
