@@ -140,9 +140,16 @@ verbs — a docs kit ships docs, not pages.
   so cloud ticks can push `.github/workflows/` edits
   themselves — a deliberate trade, and nothing broader: this
   token is what a prompt-injected tick would run with, so no
-  Secrets/Webhooks/etc). Cloud commits author as `nexus`, not
-  `github-actions[bot]` — see `.github/CLOUD_LOOP.md` setup
-  step 3.
+  Secrets/Webhooks/etc). In practice, the scope grant alone
+  hasn't been enough: three confirmed cloud ticks (phase 20,
+  `#40`, `#49` in `plan/AUDIT.md`) still had their
+  `.github/workflows/*.yml` push rejected, because the Claude
+  Code Action's own GitHub App installation token overrides
+  the configured `ACTIONS_PAT` credential for workflow-file
+  pushes specifically. Apply workflow-file changes from a
+  local `/oversight` session until that's resolved. Cloud
+  commits author as `nexus`, not `github-actions[bot]` — see
+  `.github/CLOUD_LOOP.md` setup step 3.
 - No other secrets. The kit's gate is hermetic and offline.
 
 ## Where to look

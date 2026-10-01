@@ -28,12 +28,14 @@
    2026-08-23 so cloud ticks can ship `.github/workflows/`
    edits themselves; grant nothing beyond these three — this
    token is what a prompt-injected tick runs with, so no
-   Secrets/Webhooks/Variables. This repo runs **user-author
-   mode**: cloud commits author as `nexus` (the PAT account's
-   noreply email), never `github-actions[bot]`. Identity rides
-   `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars on the action
-   step — NOT `git config`, which the action's own internal
-   config step silently overrides.
+   Secrets/Webhooks/Variables. In practice the scope grant
+   alone hasn't been enough — see "When something breaks"
+   below. This repo runs **user-author mode**: cloud commits
+   author as `nexus` (the PAT account's noreply email), never
+   `github-actions[bot]`. Identity rides `GIT_AUTHOR_*` /
+   `GIT_COMMITTER_*` env vars on the action step — NOT
+   `git config`, which the action's own internal config step
+   silently overrides.
 4. Validate once by hand: `gh workflow run march`, watch the
    run end green, read the closing `/oversight audit` block.
 
@@ -99,6 +101,15 @@ cloud volume from local work. Nothing else — no
   hang: the gate was backgrounded, which agents.md rule 3
   forbids. Full story in
   [`playbooks/cloud-loop.md`](../playbooks/cloud-loop.md).
+- **`git push` rejected on a `.github/workflows/*.yml` edit**
+  despite `ACTIONS_PAT`'s Workflows scope — confirmed three
+  times (phase 20, issues `#40`, `#49` in `plan/AUDIT.md`):
+  the Claude Code Action's own GitHub App installation token
+  overrides the configured `ACTIONS_PAT` credential for
+  workflow-file pushes specifically, regardless of the PAT's
+  actual scope. Apply the change from a local `/oversight`
+  session instead, which pushes with normal repo-write
+  credentials.
 - **Ticks no-op forever** — the plan may be out of `[ ]` rows
   and the queues drained (a good problem: run `/oversight`
   locally and promote candidates), or GitHub paused the cron

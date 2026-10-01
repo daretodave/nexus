@@ -1,4 +1,4 @@
-# Kit audit — 2026-09-29
+# Kit audit — 2026-10-01
 
 > Bias: none
 
@@ -1798,6 +1798,27 @@ detail in `plan/CRITIQUE.md`'s Done section. `node
 scripts/verify.mjs` green (all seven legs). This block's own
 rows unchanged and still Pending.
 
+Cloud tick 2026-10-01 (march → iterate): no pending build-plan
+phase, critique gate not due (3 commits since pass 22, under
+72h), expand gate not due (8 commits / 3 days since candidates
+pass 16, both under threshold), `plan/CRITIQUE.md` Pending
+empty, so /march routed here. This block's Pending rows
+(below) still all sub-3.0 or blocked, unchanged since the prior
+tick. Ran a fresh A-G sweep instead of reusing the >24h-old
+block: doc-drift, completeness, link/tree hygiene, and
+freshness all came back clean (the obvious candidates all
+check out — most already fixed in recent ticks), but found one
+real doc-drift row — `agents.md`'s `ACTIONS_PAT` bullet and
+`.github/CLOUD_LOOP.md` setup step 3 both assert cloud ticks
+"can push `.github/workflows/` edits themselves" as a settled
+capability, while this same Pending block's own `#35`/`#40`/
+`#49` rows document three confirmed failures of exactly that
+(the Claude Code Action's own GitHub App token overrides
+`ACTIONS_PAT` for workflow-file pushes specifically), and
+neither doc's troubleshooting section mentioned it. Shipped
+below. `node scripts/verify.mjs` green (all seven legs). This
+block's own Pending rows unchanged.
+
 ## Pending
 
 ### [user-issue #67] [LOW] heartbeat's "march has flatlined" alarm fired on a stale `gh run list` read, not an actual gap
@@ -1951,6 +1972,32 @@ rows unchanged and still Pending.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 3.5] agents.md + .github/CLOUD_LOOP.md assert cloud ticks "can push `.github/workflows/` edits themselves" despite three confirmed failures — this commit (closes #69)
+- category: doc-drift
+- impact: 5, ease: 7
+- evidence: `agents.md`'s `ACTIONS_PAT` bullet and
+  `.github/CLOUD_LOOP.md` setup step 3 both describe the
+  2026-08-23 Workflows-scope grant as a solved capability. But
+  this file's own Pending block (`[user-issue #35]`, `#40`,
+  `#49`) documents three independent confirmed failures of
+  exactly that — phase 20 (same day as the grant), then #40,
+  then #49 — all blocked because the Claude Code Action's own
+  GitHub App installation token overrides the configured
+  `ACTIONS_PAT` credential specifically for
+  `.github/workflows/*.yml` pushes. `.github/CLOUD_LOOP.md`'s
+  "When something breaks" section listed five other failure
+  modes but omitted this, the most-evidenced recurring one in
+  the whole pending queue.
+- fix: added a caveat to `agents.md`'s `ACTIONS_PAT` bullet and
+  `.github/CLOUD_LOOP.md` setup step 3 pointing at the three
+  confirmed failures and the "apply from a local `/oversight`
+  session" workaround, plus a new bullet in `.github/
+  CLOUD_LOOP.md`'s "When something breaks" section describing
+  the symptom (`git push` rejected on a workflow-file edit
+  despite the PAT's scope) and the same workaround.
+- source: audit (fresh A-G sweep, delegated to a research
+  subagent; verified directly before shipping)
 
 ### [x] [A, 4.5] customization/moderation-loop.md's /march dispatch illustration omits /expand — this commit
 - category: doc-drift
