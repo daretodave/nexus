@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-09-28
-> Pass count: 16
+> Last pass: 2026-10-01
+> Pass count: 17
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -724,7 +724,7 @@ kit + sibling surveys.
 
 ### [ ] [score 6.5] Auto mode: Claude Code's new default permission model isn't in the kit's playbooks
 - proposed: 2026-09-09 (expand pass 9); re-evidenced 2026-09-19
-  (expand pass 13)
+  (expand pass 13); re-evidenced 2026-10-01 (expand pass 17)
 - source signals: Claude Code's own "What's new" changelog
   (Week 32, Aug 3-7 2026) — "auto mode becomes the default
   permission mode for new sessions on Pro, Max, and Team
@@ -753,7 +753,27 @@ kit + sibling surveys.
   platform shift the kit missed and can catch up on once — the
   proposed scope's "investigate, don't assume" caveat is now more
   load-bearing, since a doc written against today's classifier
-  behavior risks going stale again on the next release.
+  behavior risks going stale again on the next release. Signal E,
+  2026-10-01 (expand pass 17): fetched the changelog fresh again —
+  `main` now runs through v2.1.287 (nine more versions since pass
+  13's v2.1.278 check), still actively touching this exact
+  surface rather than settling: "Fixed fast mode staying off in
+  remote sessions owned by an agent with no user account, even
+  when the organization allows it," "Changed automatic model
+  switches after a flagged message to keep your current effort
+  level instead of the new model's default," and — most directly
+  relevant to this candidate's own "investigate, don't assume"
+  scope item — "Changed whole-tool `Bash` allow rules and
+  allowing hooks to prompt for, not run, shell writes to files
+  Claude Code's file tools refuse outright (the Anthropic profile
+  store, the host credentials file)," a behavior change in
+  exactly the allow-rule/classifier interaction this candidate's
+  proposed scope says needs verifying before the doc is written.
+  Model lineup has also moved (Opus 5.5/Sonnet 5.5 are now the
+  named defaults in this same changelog, up from Opus 4.7/4.8) —
+  orthogonal to auto mode itself, but reinforces that any doc
+  this candidate produces should cite behavior, not version
+  numbers, per the kit's existing "ids age" hedge convention.
 - rationale: `playbooks/hands-off.md` Step 1's whole premise —
   "burn down the prompt list... zero prompts across three
   attended ticks is the bar" — was written for a world where
