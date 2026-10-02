@@ -6,7 +6,7 @@
 > `/iterate` runs, your jot competes with every other finding
 > on impact × ease and almost certainly wins (user-source
 > findings carry a `+0.5` score bump — see
-> `iterate.md` §Scoring).
+> `iterate.md` §User-source bump).
 >
 > **Decide-and-ship.** No questions back. No `AskUserQuestion`.
 > Hard rule #6 (`AskUserQuestion` confined to `/oversight` and

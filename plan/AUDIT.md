@@ -1855,9 +1855,21 @@ nearby, the one unhedged live model-id mention found repo-wide
 beyond the already-triaged `[F, ~2]` row below). `node
 scripts/verify.mjs` green (all seven legs).
 
+Cloud tick 2026-10-02 (second, march → iterate): no pending
+build-plan phase, critique gate not due (8 commits / 2 days
+since pass 22, both under threshold), expand gate not due (1
+commit / 1 day since candidates pass 17, both under threshold),
+`plan/CRITIQUE.md` Pending empty, so `/march` routed here again.
+Header was <24h old (the prior tick's own fresh sweep), so
+reused it rather than re-sweeping. Shipped the top Pending row
+(below), `[C, 3.6]`. Mirrored as issue #70 and shipped. `node
+scripts/verify.mjs` green (all seven legs). Remaining Pending
+rows unchanged (`#67`/`#54`/`#40`/`#35`/`#49` all blocked or no
+fix available; `[F, ~2]` already downgraded).
+
 ## Pending
 
-### [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump
+### [x] [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump — this commit (closes #70)
 - category: link-hygiene
 - impact: 4, ease: 9
 - evidence: `templates/skills/jot.md:9` reads "user-source
@@ -1867,7 +1879,7 @@ scripts/verify.mjs` green (all seven legs).
   39; `### Scoring` (line 112) is a later, unrelated subsection
   covering only the generic impact×ease formula. Following the
   citation literally lands a reader in the wrong subsection.
-- next: change `§Scoring` to `§User-source bump` at
+- fix: changed `§Scoring` to `§User-source bump` at
   `templates/skills/jot.md:9`.
 
 ### [A/B, 2.4] customization/bootstrap-automation.md quotes three playbooks as ending with text they don't contain
