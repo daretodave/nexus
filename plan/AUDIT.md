@@ -1819,7 +1819,94 @@ neither doc's troubleshooting section mentioned it. Shipped
 below. `node scripts/verify.mjs` green (all seven legs). This
 block's own Pending rows unchanged.
 
+Cloud tick 2026-10-02 (march → iterate): no pending build-plan
+phase, critique gate not due (6 commits / ~2 days since pass 22,
+both under threshold), expand gate not due (1 commit / 1 day
+since candidates pass 17, both under threshold),
+`plan/CRITIQUE.md` Pending empty, so `/march` routed here.
+Header was ~30h old (past the 24h threshold), so ran a fresh A-G
+sweep (delegated the read-only pass to an agent to protect
+context, then verified the top candidate by hand before
+shipping). D (voice) and E (adopter friction) swept clean — wrap,
+heading case, and the TL;DR copy/placeholder path (bash +
+PowerShell) all reproduce correctly; `adopt-dryrun.mjs` reports 0
+unresolved tokens. G stays empty — no `../kintilla`,
+`../semilayer`, or `NEXUS_LESSONS.md` anywhere reachable. A/B/C/F
+each turned up one new row. Shipped the top scorer (below):
+`customization/moderation-loop.md:263` and `:318` both cited
+"Level 4 pre-flight item 8" for the UGC mod-drain confirmation,
+but `intervention-spectrum.md`'s own numbered checklist has that
+content at item **9** — item 8 is the unrelated runbook-checklist
+item, whose own doc (`external-services.md:296,313`) correctly
+self-cites "item 8". A reader working the Level 4 pre-flight list
+could tick the wrong prerequisite and skip confirming the
+moderation queue actually drains. Three more new rows queued to
+Pending below, all lower-scoring: `[C, 3.6]`
+(`templates/skills/jot.md:9` cites `iterate.md` `§Scoring` for the
+`/jot` `+0.5` bump, which actually lives under
+`§User-source bump`), `[A/B, 2.4]`
+(`customization/bootstrap-automation.md:443-448` quotes three
+playbooks — `pre-spec.md`, `new-project.md`,
+`existing-project.md` — as ending with specific `/bootstrap`
+pointer sentences none of them actually contain), `[F, 2.4]`
+(`templates/setup/bootstrap.example.json:49` ships a bare
+`"model": "claude-sonnet-5"` with no "ids age" hedge anywhere
+nearby, the one unhedged live model-id mention found repo-wide
+beyond the already-triaged `[F, ~2]` row below). `node
+scripts/verify.mjs` green (all seven legs).
+
 ## Pending
+
+### [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump
+- category: link-hygiene
+- impact: 4, ease: 9
+- evidence: `templates/skills/jot.md:9` reads "user-source
+  findings carry a `+0.5` score bump — see `iterate.md`
+  §Scoring)." But in `templates/skills/iterate.md` the bump is
+  documented under `### User-source bump (from `/jot`)` at line
+  39; `### Scoring` (line 112) is a later, unrelated subsection
+  covering only the generic impact×ease formula. Following the
+  citation literally lands a reader in the wrong subsection.
+- next: change `§Scoring` to `§User-source bump` at
+  `templates/skills/jot.md:9`.
+
+### [A/B, 2.4] customization/bootstrap-automation.md quotes three playbooks as ending with text they don't contain
+- category: doc-drift
+- impact: 4, ease: 6
+- evidence: `customization/bootstrap-automation.md:443-448`
+  claims `playbooks/pre-spec.md` "ends with: 'now run
+  `/bootstrap`.'" (actual ending is a "See also" list, no
+  `/bootstrap` mention), `playbooks/new-project.md` "ends with:
+  'Day-1 checklist passed → run `/bootstrap`.'" (actual last line,
+  `new-project.md:697`, is "invoke `/ship-a-phase` for the first
+  time"; `/bootstrap` only appears mid-document at §9), and
+  `playbooks/existing-project.md` "ends with: 'overlay applied →
+  run `/bootstrap status`...'" (actual ending is a 9-item "You're
+  ready when" checklist, no bootstrap mention). The fourth bullet
+  in the same list (cloud-loop.md's `/bootstrap cloud-loop` note)
+  is accurate — only these three are invented quotes.
+- next: either add the described `/bootstrap` pointer sentences to
+  the three playbooks' actual endings, or rewrite
+  `bootstrap-automation.md:443-448` to describe what's really
+  there.
+
+### [F, 2.4] templates/setup/bootstrap.example.json ships a model id with no "ids age" hedge anywhere nearby
+- category: freshness
+- impact: 3, ease: 8
+- evidence: `templates/setup/bootstrap.example.json:49` —
+  `"model": "claude-sonnet-5"` inside the
+  `optional_services.anthropic` block. The file's own
+  `_help.schema_doc` (line 7) points to
+  `customization/bootstrap-automation.md` for field descriptions,
+  but that doc never documents or hedges this field. Every other
+  live model-id mention in the repo carries an inline "ids age —
+  check `/model`" caveat per `bearings.md` decision 5; this is the
+  one unhedged live mention found repo-wide beyond the
+  already-triaged `[F, ~2]` row below.
+- next: add a `"_note"` key near the `anthropic` block (matching
+  the `_purpose`/`_comment` convention already used in the same
+  file) hedging the model id, e.g. `"_note": "ids age — check
+  /model"`.
 
 ### [user-issue #67] [LOW] heartbeat's "march has flatlined" alarm fired on a stale `gh run list` read, not an actual gap
 - category: external-issue
@@ -1972,6 +2059,22 @@ block's own Pending rows unchanged.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 4.5] customization/moderation-loop.md miscites its own prerequisite checklist item number — this commit
+- category: doc-drift
+- impact: 5, ease: 9
+- evidence: `customization/moderation-loop.md:263` and `:318`
+  both cited "Level 4 pre-flight item 8" for the UGC mod-drain
+  confirmation. But `intervention-spectrum.md`'s own numbered
+  checklist (lines 207-224) has that content at item **9**; item
+  8 is the unrelated runbook-checklist item, whose own doc
+  (`customization/external-services.md:296,313`) correctly
+  self-cites "item 8" for that content. A reader working the
+  Level 4 pre-flight checklist could tick "item 8 verified"
+  against the wrong prerequisite and silently skip confirming the
+  moderation queue actually drains.
+- next: change "item 8" to "item 9" at both
+  `moderation-loop.md:263` and `:318`. Done.
 
 ### [x] [A, 3.5] agents.md + .github/CLOUD_LOOP.md assert cloud ticks "can push `.github/workflows/` edits themselves" despite three confirmed failures — this commit (closes #69)
 - category: doc-drift

@@ -260,7 +260,7 @@ Level 3+ prerequisite (see
 > compatible; the loop will pile up items and the user
 > will come back to a crater.
 
-Level 4 pre-flight (item 8 in the checklist):
+Level 4 pre-flight (item 9 in the checklist):
 
 > **Confirm `/moderate` (or `/iterate`'s mod-pass) drains
 > the queue cleanly.** File a test comment that triggers
@@ -315,7 +315,7 @@ shape (one block, not scattered). Add this block to the
 - [`./data-layer.md`](./data-layer.md) — queue storage
   follows the data-layer variant.
 - [`../intervention-spectrum.md`](../intervention-spectrum.md)
-  — Level 3+ UGC prerequisite + Level 4 pre-flight item 8.
+  — Level 3+ UGC prerequisite + Level 4 pre-flight item 9.
 - [`../templates/skills/oversight.md`](../templates/skills/oversight.md)
   — adds the four escalation triggers as question templates
   in §5 if your project adopts this customization.
