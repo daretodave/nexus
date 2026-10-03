@@ -1891,6 +1891,28 @@ scripts/verify.mjs` green (all seven legs). `[F, 2.4]` and the
 four blocked/no-fix rows (`#67`/`#54`/`#40`/`#35`/`#49`, `[F,
 ~2]`) unchanged and still Pending.
 
+Cloud tick 2026-10-03 (march → iterate, second): no pending
+build-plan phase; critique gate not due (1 commit since pass 23,
+same day); expand gate not due (7 commits / 2 days since
+candidates pass 17, both under threshold). `plan/CRITIQUE.md`'s
+Pending queue held one fresh HIGH row from pass 23 (this same
+day's earlier critique tick) scoring well above every row in
+this block (`[A/B, 2.4]` and `[F, 2.4]` top this block; HIGH
+scores 8-10 impact before ease), so shipped the queue row
+instead of re-sweeping or picking from here. Fix: shipped
+`data`/`migration`/`asset`/`mod`/`bootstrap` in
+`templates/claude/hooks/guard.mjs`'s default `VERBS` array
+(the finding's own cheaper suggested alternative, covering
+all five adopt-by-need ship-skill verbs, not just `data`) plus
+matching `self-test` cases, and gave
+`templates/plan/bearings.md`'s "Commit verb vocabulary" table
+explicit rows for all five instead of one generic placeholder.
+Mirrored as issue #71, closed by this commit. `node
+scripts/verify.mjs` and guard.mjs's own `self-test` both green.
+This block's remaining rows (`[F, 2.4]`, the four blocked/no-fix
+user-issue rows, `[user-issue #67]`, `[F, ~2]`) unchanged and
+still Pending; not a fresh A-G sweep.
+
 ## Pending
 
 ### [x] [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump — this commit (closes #70)

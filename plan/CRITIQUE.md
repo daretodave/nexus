@@ -11,37 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [HIGH] playbooks/new-project.md §2/§4 — adopting /ship-data never prompts the "Commit verb vocabulary" bearings.md row, so the first ship-data commit trips guard.mjs
-- category: instruction-drift
-- observation: `templates/skills/ship-data.md` (e.g. line 180)
-  commits with `git commit -m "data: add <entity> <slug>"`, but
-  `templates/claude/hooks/guard.mjs`'s default `VERBS` array
-  (line 39) is `['critique','digest','expand','jot',
-  'oversight','triage','phases','plan','feat','fix','docs',
-  'chore']` — no `data`. `templates/plan/bearings.md`'s
-  "Commit verb vocabulary (locked)" section (line 329) does
-  carry the fix as a placeholder row (`<YOUR SHIP-SKILL VERB>`)
-  with instructions to add it "the same commit you adopt a new
-  `/ship-<x>` skill" — but `playbooks/new-project.md` §2's list
-  of bearings.md sections to fill in (Stack pins, URL contract,
-  Visual/tonal defaults, Standing decisions, Hard rules) never
-  mentions it, and §4's "Prune adopt-by-need files" step
-  (which is where ship-data gets kept or removed) doesn't
-  either.
-- evidence: `grep -n "VERBS\|commit verb" playbooks/new-project.md
-  playbooks/existing-project.md` returns nothing in either file;
-  piping a `git commit -m "data: add profile for jane"` through
-  a freshly-copied `.claude/hooks/guard.mjs` exits 2 ("commit
-  message verb isn't in the documented vocabulary").
-- suggested fix: add "Commit verb vocabulary" to the §2
-  fill-in list (or a line in §4's prune step) instructing: "if
-  you keep any `/ship-<x>` skill, add its verb to bearings.md's
-  table and to `VERBS` in `.claude/hooks/guard.mjs`, same
-  commit." Alternatively ship `data`/`asset`/`migration`/`mod`
-  in the template's default `VERBS` array since bearings.md's
-  own example row already names them.
-- source: dry-run
-
 ### [MED] playbooks/new-project.md §4 "Prune adopt-by-need files" never updates the just-copied root agents.md
 - category: instruction-drift
 - observation: §4's prune step removes skill/command/script
@@ -68,6 +37,24 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] playbooks/new-project.md §2/§4 — adopting /ship-data never prompts the "Commit verb vocabulary" bearings.md row, so the first ship-data commit trips guard.mjs — this commit (closes #71)
+- category: instruction-drift
+- fix: took the suggested fix's cheaper alternative — shipped
+  `data`/`migration`/`asset`/`mod`/`bootstrap` (all five
+  adopt-by-need ship-skill verbs, not just `data`) in
+  `templates/claude/hooks/guard.mjs`'s default `VERBS` array
+  plus matching `self-test` cases, instead of adding
+  prune-step instructions to `playbooks/new-project.md`. Pruning
+  a skill file removes the only way to trigger its verb, so
+  listing all five unconditionally is harmless and avoids
+  relying on an adopter to remember a manual bearings.md +
+  guard.mjs edit. Also updated `templates/plan/bearings.md`'s
+  "Commit verb vocabulary" table with explicit rows for the five
+  verbs (was one generic `<YOUR SHIP-SKILL VERB>` placeholder
+  row), reserving that placeholder for genuinely new custom
+  ship skills.
+- source: dry-run
 
 ### [x] [MED] playbooks/new-project.md:255-267 — data-layer copy has no runnable command, only prose — this commit (closes #68)
 - category: instruction-drift

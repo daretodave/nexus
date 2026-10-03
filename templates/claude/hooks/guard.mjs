@@ -32,12 +32,16 @@ import path from 'node:path'
 const DEFAULT_BRANCH = '<DEFAULT_BRANCH>'
 
 // The commit-verb vocabulary — see plan/bearings.md "Commit
-// verb vocabulary (locked)". Starter set: the skills every
-// nexus project ships unconditionally, plus generic
-// conventional-commit verbs. New verb (a `/ship-<x>` skill, a
-// new category) → add it there and here in the same commit.
+// verb vocabulary (locked)". Starter set: every skill the
+// templates ship (including adopt-by-need ones — pruning the
+// skill file removes the only way to trigger its verb, so
+// listing it here unconditionally costs nothing), plus generic
+// conventional-commit verbs. New verb (a custom `/ship-<x>`
+// skill, a new category) → add it there and here in the same
+// commit.
 const VERBS = [
   'critique', 'digest', 'expand', 'jot', 'oversight', 'triage',
+  'data', 'migration', 'asset', 'mod', 'bootstrap',
   'phases', 'plan', 'feat', 'fix', 'docs', 'chore',
 ]
 
@@ -285,6 +289,8 @@ function selfTest() {
     ['git commit -m "fix(cloud): user-author mode"', null],
     ['git commit -m "critique: pass 3 — 2 findings (1 high, 1 low)"', null],
     ['git commit -m "phases: brief for phase 5 — topic"', null],
+    ['git commit -m "data: add profile jane"', null],
+    ['git commit -m "bootstrap: provision myapp end-to-end"', null],
     // heredoc-body commit messages — the verb rule reads the
     // heredoc's own first line, not the "$(cat <<'EOF'" wrapper
     ['git commit -m "$(cat <<\'EOF\'\nfeat: ship phase 1\n\nbody line\nEOF\n)"', null],

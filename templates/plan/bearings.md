@@ -347,12 +347,21 @@ stripped before matching). `.claude/hooks/guard.mjs`'s
 | `fix` | correcting a prior mistake |
 | `docs` | doc-only edit |
 | `chore` | tooling/config, no product change |
-| `<YOUR SHIP-SKILL VERB>` | `/ship-<x>`, e.g. `asset`, `data`, `migration`, `mod` |
+| `data` | `/ship-data` |
+| `migration` | `/ship-migration` |
+| `asset` | `/ship-asset` |
+| `mod` | `/moderate` |
+| `bootstrap` | `/bootstrap` |
+| `<YOUR SHIP-SKILL VERB>` | a custom `/ship-<x>` skill you add yourself |
 
-Add a row here (and the matching entry in `VERBS` inside
-`.claude/hooks/guard.mjs`, plus its `self-test` cases) the same
-commit you adopt a new `/ship-<x>` skill or a new commit
-category.
+The five adopt-by-need verbs (`data`/`migration`/`asset`/`mod`/
+`bootstrap`) ship pre-wired in `VERBS` inside
+`.claude/hooks/guard.mjs` even if you prune their skill files in
+step 4 of `playbooks/new-project.md` — an unused verb in the
+list is harmless, since pruning the skill removes the only way
+to trigger it. Add a row here (and the matching entry in
+`VERBS`, plus its `self-test` cases) the same commit you adopt a
+genuinely new, custom `/ship-<x>` skill or commit category.
 
 ## Hard rules
 
