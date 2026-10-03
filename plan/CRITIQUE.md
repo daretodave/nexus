@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-09-30
-> Pass count: 22
+> Last pass: 2026-10-03
+> Pass count: 23
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,62 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [HIGH] playbooks/new-project.md §2/§4 — adopting /ship-data never prompts the "Commit verb vocabulary" bearings.md row, so the first ship-data commit trips guard.mjs
+- category: instruction-drift
+- observation: `templates/skills/ship-data.md` (e.g. line 180)
+  commits with `git commit -m "data: add <entity> <slug>"`, but
+  `templates/claude/hooks/guard.mjs`'s default `VERBS` array
+  (line 39) is `['critique','digest','expand','jot',
+  'oversight','triage','phases','plan','feat','fix','docs',
+  'chore']` — no `data`. `templates/plan/bearings.md`'s
+  "Commit verb vocabulary (locked)" section (line 329) does
+  carry the fix as a placeholder row (`<YOUR SHIP-SKILL VERB>`)
+  with instructions to add it "the same commit you adopt a new
+  `/ship-<x>` skill" — but `playbooks/new-project.md` §2's list
+  of bearings.md sections to fill in (Stack pins, URL contract,
+  Visual/tonal defaults, Standing decisions, Hard rules) never
+  mentions it, and §4's "Prune adopt-by-need files" step
+  (which is where ship-data gets kept or removed) doesn't
+  either.
+- evidence: `grep -n "VERBS\|commit verb" playbooks/new-project.md
+  playbooks/existing-project.md` returns nothing in either file;
+  piping a `git commit -m "data: add profile for jane"` through
+  a freshly-copied `.claude/hooks/guard.mjs` exits 2 ("commit
+  message verb isn't in the documented vocabulary").
+- suggested fix: add "Commit verb vocabulary" to the §2
+  fill-in list (or a line in §4's prune step) instructing: "if
+  you keep any `/ship-<x>` skill, add its verb to bearings.md's
+  table and to `VERBS` in `.claude/hooks/guard.mjs`, same
+  commit." Alternatively ship `data`/`asset`/`migration`/`mod`
+  in the template's default `VERBS` array since bearings.md's
+  own example row already names them.
+- source: dry-run
+
+### [MED] playbooks/new-project.md §4 "Prune adopt-by-need files" never updates the just-copied root agents.md
+- category: instruction-drift
+- observation: §4's prune step removes skill/command/script
+  files for capabilities the project doesn't adopt (e.g.
+  `ship-migration.md`, `ship-asset.md`, `moderate.md`,
+  `digest.md`, `bootstrap.md`, `.claude/agents/brander.md`),
+  but `templates/agents.md`'s Skills table (lines 132-144),
+  Invocation block (151-163), and Sub-agents table (173) list
+  all of them with inline "(if X)" gating text, not a removal
+  instruction. After following the documented prune example
+  (a `Surface: service`, no-UGC, no-cloud-loop project), the
+  adopted repo's root `agents.md` — the designated cold-start
+  entry point for any agent — still advertises
+  `/ship-migration`, `/ship-asset`, `/moderate`, `/digest`,
+  `/bootstrap`, and `brander`, none of which exist on disk.
+- evidence: `templates/agents.md:132-144,151-163,173` list all
+  six; the §4 prune example's `rm -f` list never touches
+  `agents.md`.
+- suggested fix: extend §4's prune step (and
+  `existing-project.md`'s pointer to it) to also strip the
+  corresponding rows from the copied root `agents.md` Skills
+  table, Invocation block, and Sub-agents table, same trigger
+  conditions already listed per adopt-by-need file.
+- source: dry-run
 
 ## Done
 
