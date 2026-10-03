@@ -440,12 +440,14 @@ The bootstrap layer is **structured to work standalone** on
 any repo (nexus-adopted or not), and the nexus playbooks
 **recommend it** as the next step after adoption:
 
-- `playbooks/pre-spec.md` ends with: "now run `/bootstrap`."
-- `playbooks/new-project.md` ends with: "Day-1 checklist
-  passed → run `/bootstrap`."
-- `playbooks/existing-project.md` ends with: "overlay
-  applied → run `/bootstrap status` to see what's already
-  wired; then `/bootstrap` to fill the gaps."
+- `playbooks/pre-spec.md` doesn't mention bootstrap itself;
+  it hands off to `playbooks/new-project.md`, which does.
+- `playbooks/new-project.md` §9 says: "(Optional) Run
+  `/bootstrap` to provision external services."
+- `playbooks/existing-project.md` recommends adding a
+  `plan/phases/phase_1_bootstrap.md` build-plan phase rather
+  than running `/bootstrap` directly — the script still runs,
+  just via `/ship-a-phase` instead of the standalone command.
 - `playbooks/cloud-loop.md` notes that
   `/bootstrap cloud-loop` is the streamlined alternative to
   the manual 10-step walkthrough.

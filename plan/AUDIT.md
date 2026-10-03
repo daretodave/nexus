@@ -1867,6 +1867,30 @@ scripts/verify.mjs` green (all seven legs). Remaining Pending
 rows unchanged (`#67`/`#54`/`#40`/`#35`/`#49` all blocked or no
 fix available; `[F, ~2]` already downgraded).
 
+Cloud tick 2026-10-03 (march → iterate): no pending build-plan
+phase, critique gate not due (9 commits / ~71.5h since pass 22,
+both under threshold), expand gate not due (3 commits / ~1.5
+days since candidates pass 17, both under threshold),
+`plan/CRITIQUE.md` Pending empty, so `/march` routed here.
+Header was <24h old (the 2026-10-02 sweep), so reused it rather
+than re-sweeping. Two non-blocked rows tied at 2.4: `[A/B, 2.4]`
+(bootstrap-automation.md's invented playbook-ending quotes) and
+`[F, 2.4]` (bootstrap.example.json's unhedged model id). Picked
+`[A/B, 2.4]` — category A is iterate.md §3's explicit
+highest-value class, and reproducing it surfaced the drift was
+worse than filed: `playbooks/pre-spec.md` has zero mentions of
+bootstrap at all (not just a different ending sentence), and
+`playbooks/existing-project.md` never names the `/bootstrap`
+command anywhere in its body (only file paths containing the
+substring "bootstrap" from the `phase_1_bootstrap.md` phase-file
+name) — it recommends adding that phase file instead, run later
+via `/ship-a-phase`, not the standalone command. Rewrote the
+four-bullet list to describe each playbook's actual relationship
+to bootstrap instead of quoting invented sentences. `node
+scripts/verify.mjs` green (all seven legs). `[F, 2.4]` and the
+four blocked/no-fix rows (`#67`/`#54`/`#40`/`#35`/`#49`, `[F,
+~2]`) unchanged and still Pending.
+
 ## Pending
 
 ### [x] [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump — this commit (closes #70)
@@ -1882,7 +1906,7 @@ fix available; `[F, ~2]` already downgraded).
 - fix: changed `§Scoring` to `§User-source bump` at
   `templates/skills/jot.md:9`.
 
-### [A/B, 2.4] customization/bootstrap-automation.md quotes three playbooks as ending with text they don't contain
+### [x] [A/B, 2.4] customization/bootstrap-automation.md quotes three playbooks as ending with text they don't contain — this commit
 - category: doc-drift
 - impact: 4, ease: 6
 - evidence: `customization/bootstrap-automation.md:443-448`
