@@ -1913,6 +1913,24 @@ This block's remaining rows (`[F, 2.4]`, the four blocked/no-fix
 user-issue rows, `[user-issue #67]`, `[F, ~2]`) unchanged and
 still Pending; not a fresh A-G sweep.
 
+Cloud tick 2026-10-03 (march → iterate, third): no pending
+build-plan phase; critique gate not due (2 commits / same day
+since pass 23); expand gate not due (7 commits / 2 days since
+candidates pass 17, both under threshold). `plan/CRITIQUE.md`'s
+Pending queue confirmed empty. Header <24h old, so reused rather
+than re-swept. Shipped this block's own top actionable scorer,
+`[F, 2.4]` (`templates/setup/bootstrap.example.json`'s unhedged
+`anthropic.model` id) — the three `#35`/`#40`/`#49` rows stay
+blocked on the same workflows-scope gap (impact 4, ease 2 = 0.8,
+below 2.4), and `#67`/`#54`/`[F, ~2]` all carry no indicated fix
+or are explicitly downgraded. Added a `_note` key beside the
+`model` field hedging it ("ids age — check `/model`"), confirmed
+filtered by `bootstrap.mjs:231`'s `!k.startsWith('_')`, matching
+the file's existing `_purpose`/`_comment` convention. Mirrored as
+issue #72, closed by this commit. `node scripts/verify.mjs` green
+(all seven legs). Remaining rows (`#67`, `[F, ~2]`, `#54`, `#40`,
+`#35`, `#49`) unchanged and still Pending; not a fresh A-G sweep.
+
 ## Pending
 
 ### [x] [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump — this commit (closes #70)
@@ -1948,7 +1966,7 @@ still Pending; not a fresh A-G sweep.
   `bootstrap-automation.md:443-448` to describe what's really
   there.
 
-### [F, 2.4] templates/setup/bootstrap.example.json ships a model id with no "ids age" hedge anywhere nearby
+### [x] [F, 2.4] templates/setup/bootstrap.example.json ships a model id with no "ids age" hedge anywhere nearby — this commit (closes #72)
 - category: freshness
 - impact: 3, ease: 8
 - evidence: `templates/setup/bootstrap.example.json:49` —
