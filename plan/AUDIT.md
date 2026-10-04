@@ -1931,6 +1931,31 @@ issue #72, closed by this commit. `node scripts/verify.mjs` green
 (all seven legs). Remaining rows (`#67`, `[F, ~2]`, `#54`, `#40`,
 `#35`, `#49`) unchanged and still Pending; not a fresh A-G sweep.
 
+Cloud tick 2026-10-04 (march -> iterate): no pending build-plan
+phase; critique gate not due (3 commits / <72h since pass 23);
+expand gate not due (10 commits / 3 days since candidates pass
+17, both under the 20-commits/7-days threshold). Header was 3
+days old (past the 24h threshold), but `plan/CRITIQUE.md`'s
+Pending queue held one MED row that clearly outscored every row
+in this block (all six below are blocked external-issues or
+carry no indicated fix, scoring 0.4-0.8), so shipped the queue
+row rather than running a full fresh A-G sweep first:
+`playbooks/new-project.md` §4's prune step never told the
+adopter to also strip the pruned capabilities' rows from the
+just-copied root `agents.md` (Skills table, Invocation block,
+Sub-agents table). Reproduced: `templates/agents.md`'s Skills
+table, Invocation block, and Sub-agents table all gate the six
+adopt-by-need rows with inline "(if X)" text rather than a
+removal instruction, and §4's worked `rm -f`/`Remove-Item`
+example never touches `agents.md`. Fixed by extending §4's six
+file-prune bullets with a trailing instruction to also delete
+the matching `agents.md` rows. `existing-project.md`'s pointer
+to §4 needed no separate edit (references the section, not a
+copy of its text). Mirrored as issue #73, closed by this commit.
+`node scripts/verify.mjs` green (all seven legs). This block's
+six rows (`#67`, `[F, ~2]`, `#54`, `#40`, `#35`, `#49`) unchanged
+and still Pending; not a fresh A-G sweep.
+
 ## Pending
 
 ### [x] [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump — this commit (closes #70)

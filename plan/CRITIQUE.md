@@ -11,7 +11,9 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md §4 "Prune adopt-by-need files" never updates the just-copied root agents.md
+## Done
+
+### [x] [MED] playbooks/new-project.md §4 "Prune adopt-by-need files" never updates the just-copied root agents.md — this commit (closes #73)
 - category: instruction-drift
 - observation: §4's prune step removes skill/command/script
   files for capabilities the project doesn't adopt (e.g.
@@ -29,14 +31,14 @@ path, comprehension stumble. See `skills/critique.md`.
 - evidence: `templates/agents.md:132-144,151-163,173` list all
   six; the §4 prune example's `rm -f` list never touches
   `agents.md`.
-- suggested fix: extend §4's prune step (and
-  `existing-project.md`'s pointer to it) to also strip the
-  corresponding rows from the copied root `agents.md` Skills
-  table, Invocation block, and Sub-agents table, same trigger
-  conditions already listed per adopt-by-need file.
+- fix: extended §4's prune bullet list in
+  `playbooks/new-project.md` with an instruction to also delete
+  the matching rows from the just-copied root `agents.md` —
+  Skills table, Invocation block, and (for `ship-asset`) the
+  `brander` Sub-agents row — for each of the six capabilities
+  pruned. `existing-project.md`'s pointer to §4 inherits the fix
+  since it references the section, not a copy of its text.
 - source: dry-run
-
-## Done
 
 ### [x] [HIGH] playbooks/new-project.md §2/§4 — adopting /ship-data never prompts the "Commit verb vocabulary" bearings.md row, so the first ship-data commit trips guard.mjs — this commit (closes #71)
 - category: instruction-drift

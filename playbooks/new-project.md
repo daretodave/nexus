@@ -372,6 +372,14 @@ table:
 - `skills/bootstrap.md` + `.claude/commands/bootstrap.md` +
   `scripts/bootstrap.mjs` — remove unless you plan to run
   `/bootstrap` as the setup executor.
+
+For every one of the six above you remove, also strip its row
+from the just-copied root `agents.md`: the matching line in the
+Skills table, the matching `/<skill-name>` line in the
+Invocation block, and — for `ship-asset` only — the `brander`
+row in the Sub-agents table. Leaving them means the kit's own
+cold-start entry point still advertises a command that isn't on
+disk.
 - `scripts/refresh-critique-session.mjs` +
   `scripts/check-secrets-liveness.mjs` — remove unless
   `bearings.md`'s `Auth:` is anything other than `none`.
