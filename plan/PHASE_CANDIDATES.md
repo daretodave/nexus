@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-10-01
-> Pass count: 17
+> Last pass: 2026-10-04
+> Pass count: 18
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -724,7 +724,8 @@ kit + sibling surveys.
 
 ### [ ] [score 6.5] Auto mode: Claude Code's new default permission model isn't in the kit's playbooks
 - proposed: 2026-09-09 (expand pass 9); re-evidenced 2026-09-19
-  (expand pass 13); re-evidenced 2026-10-01 (expand pass 17)
+  (expand pass 13); re-evidenced 2026-10-01 (expand pass 17);
+  re-evidenced 2026-10-04 (expand pass 18)
 - source signals: Claude Code's own "What's new" changelog
   (Week 32, Aug 3-7 2026) — "auto mode becomes the default
   permission mode for new sessions on Pro, Max, and Team
@@ -774,6 +775,21 @@ kit + sibling surveys.
   orthogonal to auto mode itself, but reinforces that any doc
   this candidate produces should cite behavior, not version
   numbers, per the kit's existing "ids age" hedge convention.
+  Signal E, 2026-10-04 (expand pass 18): fetched the changelog
+  fresh again (raw CHANGELOG.md, grepped directly) — `main` now
+  runs through v2.1.289 (two more versions since pass 17's
+  v2.1.287 check), still shipping auto-mode-specific fixes rather
+  than settling: v2.1.288 "Fixed auto mode denials pointing
+  Claude at a Bash permission rule when the blocked tool was not
+  Bash" and "Fixed auto mode on Bedrock and Mantle switching to
+  the local classifier for the rest of the session after a
+  request to an older model, such as a WebFetch summary or a
+  `sonnet` subagent." Both are narrow bug fixes to the
+  classifier's own denial-reporting and model-switch logic, not
+  structural changes — fourth straight pass confirming the
+  surface is still moving, which keeps this candidate's
+  "investigate, don't assume" scope note live rather than
+  resolved.
 - rationale: `playbooks/hands-off.md` Step 1's whole premise —
   "burn down the prompt list... zero prompts across three
   attended ticks is the bar" — was written for a world where
