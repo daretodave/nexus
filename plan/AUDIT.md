@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-01
+# Kit audit — 2026-10-04
 
 > Bias: none
 
@@ -1956,58 +1956,33 @@ copy of its text). Mirrored as issue #73, closed by this commit.
 six rows (`#67`, `[F, ~2]`, `#54`, `#40`, `#35`, `#49`) unchanged
 and still Pending; not a fresh A-G sweep.
 
+`/digest` 2026-10-04: header was 3 days old (past the digest's
+48h refresh threshold), so recomputed the Top 5 per
+`skills/iterate.md` §3 — audit only, shipped nothing. Found the
+block itself stale in a different way: the three rows the
+previous three ticks had already shipped and closed (`[C, 3.6]`
+jot.md §Scoring citation closes #70, `[A/B, 2.4]`
+bootstrap-automation.md's three invented playbook quotes, `[F,
+2.4]` bootstrap.example.json's unhedged model id closes #72)
+were marked `[x]` in place but never relocated out of `##
+Pending`, so `scripts/pulse.mjs`'s row-counting (any `###` under
+`## Pending`, checked or not) was overcounting the live queue by
+3. Moved all three to `## Done`. Also dropped `[F, ~2]`
+(customization/claude-code.md's model-id table cell) per its own
+drop criterion — re-verified unchanged (doc-wide hedge at line
+~329 still present, table cell still bare), confirmed droppable
+rather than carried another cycle. Ran a focused (not full A-G)
+sweep for new drift across doc-drift, link+tree hygiene,
+freshness, and adopter friction, spot-checking the 3
+most-recently-touched files plus the kit's layout trees and
+placeholder table: clean, nothing found. The five remaining rows
+(`#67`, `#54`, `#40`, `#35`, `#49`) are all `[user-issue #N]`
+durable rows, confirmed still open via `gh issue list`, carried
+verbatim — all five blocked on the same cloud-push-token
+workflows-scope gap or a non-reproducible transient, no new fix
+surface. `node scripts/verify.mjs` green (all seven legs).
+
 ## Pending
-
-### [x] [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump — this commit (closes #70)
-- category: link-hygiene
-- impact: 4, ease: 9
-- evidence: `templates/skills/jot.md:9` reads "user-source
-  findings carry a `+0.5` score bump — see `iterate.md`
-  §Scoring)." But in `templates/skills/iterate.md` the bump is
-  documented under `### User-source bump (from `/jot`)` at line
-  39; `### Scoring` (line 112) is a later, unrelated subsection
-  covering only the generic impact×ease formula. Following the
-  citation literally lands a reader in the wrong subsection.
-- fix: changed `§Scoring` to `§User-source bump` at
-  `templates/skills/jot.md:9`.
-
-### [x] [A/B, 2.4] customization/bootstrap-automation.md quotes three playbooks as ending with text they don't contain — this commit
-- category: doc-drift
-- impact: 4, ease: 6
-- evidence: `customization/bootstrap-automation.md:443-448`
-  claims `playbooks/pre-spec.md` "ends with: 'now run
-  `/bootstrap`.'" (actual ending is a "See also" list, no
-  `/bootstrap` mention), `playbooks/new-project.md` "ends with:
-  'Day-1 checklist passed → run `/bootstrap`.'" (actual last line,
-  `new-project.md:697`, is "invoke `/ship-a-phase` for the first
-  time"; `/bootstrap` only appears mid-document at §9), and
-  `playbooks/existing-project.md` "ends with: 'overlay applied →
-  run `/bootstrap status`...'" (actual ending is a 9-item "You're
-  ready when" checklist, no bootstrap mention). The fourth bullet
-  in the same list (cloud-loop.md's `/bootstrap cloud-loop` note)
-  is accurate — only these three are invented quotes.
-- next: either add the described `/bootstrap` pointer sentences to
-  the three playbooks' actual endings, or rewrite
-  `bootstrap-automation.md:443-448` to describe what's really
-  there.
-
-### [x] [F, 2.4] templates/setup/bootstrap.example.json ships a model id with no "ids age" hedge anywhere nearby — this commit (closes #72)
-- category: freshness
-- impact: 3, ease: 8
-- evidence: `templates/setup/bootstrap.example.json:49` —
-  `"model": "claude-sonnet-5"` inside the
-  `optional_services.anthropic` block. The file's own
-  `_help.schema_doc` (line 7) points to
-  `customization/bootstrap-automation.md` for field descriptions,
-  but that doc never documents or hedges this field. Every other
-  live model-id mention in the repo carries an inline "ids age —
-  check `/model`" caveat per `bearings.md` decision 5; this is the
-  one unhedged live mention found repo-wide beyond the
-  already-triaged `[F, ~2]` row below.
-- next: add a `"_note"` key near the `anthropic` block (matching
-  the `_purpose`/`_comment` convention already used in the same
-  file) hedging the model id, e.g. `"_note": "ids age — check
-  /model"`.
 
 ### [user-issue #67] [LOW] heartbeat's "march has flatlined" alarm fired on a stale `gh run list` read, not an actual gap
 - category: external-issue
@@ -2034,24 +2009,6 @@ and still Pending; not a fresh A-G sweep.
   both agree) before trusting one `gh run list` call for a
   638h-since claim. Safe to close #67 on inactivity if it
   doesn't recur.
-
-### [F, ~2] customization/claude-code.md:315's model-id table cell has no inline "ids age" hedge
-- category: freshness
-- impact: 4, ease: 5 (weaker than the raw score suggests — see
-  evidence)
-- evidence: the `claude-sonnet-5` mention in the Model routing
-  table (`customization/claude-code.md:315`) has no inline
-  caveat, unlike `templates/.github/CLOUD_LOOP.md`'s matching
-  cells. But the same doc already states, 15 lines below the
-  table (`customization/claude-code.md:330`), "Model ids age.
-  Check `/model` ... rather than trusting any id you find
-  hardcoded in a doc — including this one" — an explicit,
-  doc-wide catch-all that already covers the table cell.
-  Downgraded on discovery; may not be worth a tick at all.
-  Reproduced unchanged this sweep (2026-09-17), no line drift.
-- next: low priority — only act if a future sweep finds the
-  doc-wide hedge itself removed or weakened; otherwise this row
-  can be dropped rather than shipped.
 
 ### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect
 - category: external-issue
@@ -2160,6 +2117,52 @@ and still Pending; not a fresh A-G sweep.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [F, 2.4] templates/setup/bootstrap.example.json ships a model id with no "ids age" hedge anywhere nearby — this commit (closes #72)
+- category: freshness
+- impact: 3, ease: 8
+- evidence: `templates/setup/bootstrap.example.json:49` —
+  `"model": "claude-sonnet-5"` inside the
+  `optional_services.anthropic` block. The file's own
+  `_help.schema_doc` (line 7) points to
+  `customization/bootstrap-automation.md` for field descriptions,
+  but that doc never documents or hedges this field. Every other
+  live model-id mention in the repo carries an inline "ids age —
+  check `/model`" caveat per `bearings.md` decision 5; this was the
+  one unhedged live mention found repo-wide.
+- fix: added a `"_note"` key near the `anthropic` block hedging
+  the model id.
+
+### [x] [A/B, 2.4] customization/bootstrap-automation.md quotes three playbooks as ending with text they don't contain — this commit
+- category: doc-drift
+- impact: 4, ease: 6
+- evidence: `customization/bootstrap-automation.md:443-448`
+  claimed `playbooks/pre-spec.md` "ends with: 'now run
+  `/bootstrap`.'" (actual ending is a "See also" list, no
+  `/bootstrap` mention), `playbooks/new-project.md` "ends with:
+  'Day-1 checklist passed → run `/bootstrap`.'" (actual last line,
+  `new-project.md:697`, is "invoke `/ship-a-phase` for the first
+  time"; `/bootstrap` only appears mid-document at §9), and
+  `playbooks/existing-project.md` "ends with: 'overlay applied →
+  run `/bootstrap status`...'" (actual ending is a 9-item "You're
+  ready when" checklist, no bootstrap mention). The fourth bullet
+  in the same list (cloud-loop.md's `/bootstrap cloud-loop` note)
+  was accurate — only these three were invented quotes.
+- fix: corrected the three playbook-ending quotes in
+  `bootstrap-automation.md:443-448` to match reality.
+
+### [x] [C, 3.6] templates/skills/jot.md cites the wrong iterate.md section for the +0.5 user-source bump — this commit (closes #70)
+- category: link-hygiene
+- impact: 4, ease: 9
+- evidence: `templates/skills/jot.md:9` read "user-source
+  findings carry a `+0.5` score bump — see `iterate.md`
+  §Scoring)." But in `templates/skills/iterate.md` the bump is
+  documented under `### User-source bump (from `/jot`)` at line
+  39; `### Scoring` (line 112) is a later, unrelated subsection
+  covering only the generic impact×ease formula. Following the
+  citation literally landed a reader in the wrong subsection.
+- fix: changed `§Scoring` to `§User-source bump` at
+  `templates/skills/jot.md:9`.
 
 ### [x] [A, 4.5] customization/moderation-loop.md miscites its own prerequisite checklist item number — this commit
 - category: doc-drift

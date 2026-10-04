@@ -1,113 +1,125 @@
-# Digest — 2026-10-03
+# Digest — 2026-10-04
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-Three ticks, two `/iterate` fixes shipped and one `/critique`
-pass crossing its 72h gate to file two fresh dry-run findings
-(1 HIGH, 1 MED) — the first non-empty CRITIQUE queue in a few
-days. No gate failures. The candidate queue keeps silting past
-its own alarm threshold with no new relief this window.
+Three `/iterate` fixes shipped overnight (closing `#71`, `#72`,
+`#73`), one gate failure — `#71`'s closing commit used prose
+("closed by this commit") instead of the documented `Closes #N`
+trailer, so the issue never auto-closed; closed by hand this
+pass. AUDIT's own `## Pending` block had the same
+never-relocated-after-shipping problem at 3x the scale (3 `[x]`
+rows inflating the count); refreshed per the 48h-stale trigger,
+true pending dropped from 9 to 5. No new drift found in a
+focused sweep. Candidate queue silting continues unrelieved.
 
 ## While you were out
 
-Window: since the last digest commit (2026-10-02 16:22 UTC).
+Window: since the last digest commit (2026-10-03 14:50 UTC).
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 10-02 23:32 | march → iterate | critique gate not yet due (8 commits / ~31h since pass 22, both under threshold); AUDIT header <24h old, reused. Shipped the top Pending row — `templates/skills/jot.md` cited the wrong `iterate.md` section (`§Scoring` instead of `§User-source bump`) for the `/jot` +0.5 bump. Mirrored and closed `#70`. Commit `a0692f1`. |
-| 10-03 07:33 | march → iterate | critique gate still not due (9 commits / ~71.5h since pass 22 — just under the 72h line); AUDIT header still <24h old, reused. Shipped the next-top Pending row (tied at 2.4, picked for category A's priority) — `customization/bootstrap-automation.md` invented specific "playbook-ending" quotes for three playbooks; none actually end that way (`pre-spec.md` never mentions bootstrap at all; `existing-project.md` never names the `/bootstrap` command). Rewrote the bullet list to describe each playbook's real relationship instead. Commit `03695a5`. |
-| 10-03 13:01 | march → critique | 72h since pass 22 (2026-09-30 08:01) crossed — gate opened. Ran pass 23: a scoped dry-run adoption walk (gh-as-db + ship-data default, Claude Code hardening layer) via `prompts/adopt.md` + `playbooks/new-project.md`. Mechanized copy+sweep held clean; two findings surfaced past that point — 1 HIGH (adopting `/ship-data` never prompts the bearings.md commit-verb row, so the first `ship-data` commit trips `guard.mjs`), 1 MED (`playbooks/new-project.md`'s prune step never strips dead rows from the just-copied `agents.md`). Filed, not shipped (critique only files). Commit `c5d2643`. |
+| 10-03 17:44 | march → iterate | Shipped `templates/claude/hooks/guard.mjs`'s `VERBS` array fix — `data`/`migration`/`asset`/`mod`/`bootstrap` were missing, so a fresh adopter's first `ship-data` commit tripped the commit-verb guard. Mirrored as `#71`; commit `8b587f2` did *not* actually close it (see Headline). |
+| 10-03 22:39 | march → iterate | Shipped the next-top Pending row — `templates/setup/bootstrap.example.json`'s `anthropic.model` id had no "ids age" hedge. Added a `_note` key. Closes `#72`. Commit `eafdb62`. |
+| 10-04 07:44 | march → iterate | No-op: no pending build-plan phase; critique gate not due; AUDIT header <24h old at the time, reused; nothing scored above the ship floor. |
+| 10-04 13:39 | march → iterate | Shipped `playbooks/new-project.md` §4's prune-step fix — pruning a skill never told the adopter to also strip its row from the just-copied root `agents.md`. Closes `#73`. Commit `03f12e0`. |
 
 `heartbeat` ran green across the window (5/5 success, no
-alarms). No gate failures — all three ticks committed clean on
-the first pass. One scheduling note: the cron is nominally 4
-ticks/day (`0 2,8,14,20 * * *`), but as in most prior windows
-only 3 fired this time (no ~02:00 UTC run) — a long-standing
-GH Actions schedule-drop pattern, not a kit-side gate; not
-proposed as a tuning candidate since it isn't something the
-kit's own rails control.
+flatline alarms). No `node scripts/verify.mjs` failures — all
+four ticks (3 shipping, 1 no-op) completed clean.
 
 ## Shipped
 
-By `/march` this window (see table above): `/iterate`'s two
-fixes — the `jot.md` section citation (commit `a0692f1`, closes
-`#70`) and the `bootstrap-automation.md` invented-quotes rewrite
-(commit `03695a5`) — plus `/critique` pass 23's two new findings
-filed to `plan/CRITIQUE.md` (not shipped; critique's job is
-filing, not fixing). This digest ships nothing beyond itself —
+By `/march` this window: the three `/iterate` fixes in the table
+above (`#71`, `#72`, `#73`). By this digest: closed `#71` by
+hand (the commit that should have closed it used non-keyword
+prose); refreshed `plan/AUDIT.md` per the 48h-stale trigger
+(header was reading 2026-10-01, 3 days old) — relocated the
+three already-`[x]`'d-but-never-moved rows (`#70`'s jot.md fix,
+the bootstrap-automation.md quotes fix, `#72`'s bootstrap.json
+fix) from `## Pending` to `## Done`, and dropped `[F, ~2]`
+(`customization/claude-code.md`'s model-id cell) per its own
+drop criterion after re-confirming the doc-wide hedge still
+covers it unchanged. Ran a focused (not full A-G) drift sweep —
+doc-drift, link+tree hygiene, freshness, adopter-friction spot
+checks — clean, nothing new. This digest ships nothing else —
 no doc fixes, no template edits, per its own rails.
-`plan/AUDIT.md`'s content is same-day-ish fresh (last full sweep
-2026-10-02 14:38 UTC, ~24h ago, under the 48h refresh threshold)
-even though its literal H1 still reads "2026-10-01" — the
-known gap already tracked by the pending score-4.2 candidate —
-so no refresh action needed this pass.
 
 ## Queues now
 
-- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 41
-  days blocked) and phase 32 (`#49`, 34 days blocked), both
+- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 42
+  days blocked) and phase 32 (`#49`, 35 days blocked), both
   still on the same cloud-push-token workflows-scope gap;
-  unchanged this window, still needs a local `/ship-a-phase` or
-  `/oversight` session with normal repo-write push.
-- **AUDIT:** 9 rows under `## Pending` (2 already ticked `[x]`
-  this window — the two shipped fixes above, not yet relocated
-  to `## Done`; real open rows: 7). Top open score is `[F, 2.4]`
-  (`templates/setup/bootstrap.example.json` ships a model id
-  with no "ids age" hedge nearby) — still below the 3.0-plus
-  ship floor most ticks clear at. The rest: the durable
-  blocked/external-issue rows (`#67`, `#54`, `#40`, `#35`, `#49`,
-  all ≤0.8) and the pre-existing `[F, ~2]` model-id hedge gap in
-  `customization/claude-code.md`.
-- **CRITIQUE:** 2 pending (new this window, pass 23) — 1 HIGH
-  (ship-data adoption gap), 1 MED (stale `agents.md` rows after
-  pruning). First non-empty CRITIQUE queue in a few passes; both
-  rows score in iterate's HIGH/MED bands (8–10 / 5–7), well
-  above AUDIT's current top, so the next tick likely ships the
-  HIGH row. Last critique pass now today (pass 23, 2026-10-03
-  13:09 UTC).
-- **PHASE_CANDIDATES:** 30 pending (24 >21d), oldest 94d
-  (proposed 2026-07-02, unchanged row) — flat vs. yesterday, no
-  new candidate filed this window (the window's one queue-growth
-  event was CRITIQUE's two new rows, not a candidate).
-- **Issues:** 7 open (`#67`, `#54`, `#49`/`#48`, `#40`,
-  `#35`/`#34`) — unchanged from yesterday; `#70` closed by this
-  window's first tick, no new issue opened.
+  unchanged this window.
+- **AUDIT:** 5 pending (corrected from the raw 9 `pulse.mjs` was
+  reporting before this pass's cleanup — see Shipped). All five
+  are durable `[user-issue #N]` rows (`#67`, `#54`, `#40`, `#35`,
+  `#49`), confirmed still open, all scoring 0.4–0.8 — below any
+  ship floor a cloud tick has cleared recently, and all need a
+  local/human session (workflows-scope token gap, or no fix
+  available for a non-reproducible transient). No cloud-actionable
+  row remains in AUDIT right now.
+- **CRITIQUE:** 0 pending, last pass 40h ago (pass 23,
+  2026-10-03 13:09 UTC) — under the 72h / 12-commit gate, not due
+  again yet.
+- **PHASE_CANDIDATES:** 30 pending per `pulse.mjs` (25 >21d,
+  oldest 95d, proposed 2026-07-02) — but 4 of those 30 are
+  `[promoted → phase N]`-tagged rows still sitting under
+  `## Pending`, never relocated, the exact same bug this digest
+  just fixed in `plan/AUDIT.md`. True pending: 26 (21 >21d). This
+  is already a filed candidate (score 3.5, proposed 2026-09-29,
+  "pulse.mjs's candidate-pending count still includes the four
+  `[promoted]`-tagged rows") — not this digest's to fix directly,
+  since it touches script logic / queue structure, not audit
+  content.
+- **Issues:** 7 open (`#67`, `#54`, `#49`/`#48`, `#40`, `#35`/
+  `#34`) — `#70`, `#71`, `#72`, `#73` all closed now (`#71` by
+  this digest, by hand). No open `triage:needs-user` or `loop:do`
+  issues.
 
 ## Needs you
 
 - Phase 20 (`#35`) and phase 32 (`#49`) both need a local
   `/ship-a-phase` or `/oversight` session to push the
-  workflow-file changes a cloud tick's App token can't —
-  unresolved, now 41/34 days blocked respectively.
+  workflow-file changes a cloud tick's App token can't — now
+  42/35 days blocked respectively.
+- Commit-message hygiene: when mirroring and immediately closing
+  a `/critique`/`/iterate` finding, use a standalone `Closes #N`
+  line (per `skills/iterate.md` §4) — prose like "closed by this
+  commit" doesn't trigger GitHub's auto-close keyword matching.
+  `#71` sat open for ~20h after its fix actually shipped before
+  this digest caught it by hand; no systemic fix proposed since
+  two of the last three ticks already used the correct form.
 - No open `triage:needs-user` or `loop:do` issues.
-- oversight needed: candidate queue silting (24 pending >21d,
-  oldest 94d) — both silting thresholds (≥5 pending >21d, oldest
+- oversight needed: candidate queue silting (25 pending >21d,
+  oldest 95d) — both silting thresholds (≥5 pending >21d, oldest
   >45d) are cleared, same as every digest since the alarm shipped
   (phase 30); the queue's own aging-silt fix (score 3.5) is
-  itself one of the 24.
+  itself one of the 25, and is specifically about this same
+  queue's stale-relocation bug (see Queues now).
 
 ## Today's intent
 
-No `[ ]` build-plan rows remain — per `skills/march.md` §3 the
-next tick dispatches to `/iterate`'s combined AUDIT/CRITIQUE
-queue. The fresh CRITIQUE HIGH row — `playbooks/new-project.md`
-§2/§4 never prompting the bearings.md commit-verb addition when
-adopting `/ship-data`, so the first `ship-data` commit trips
-`guard.mjs` — scores in iterate's 8–10 HIGH band, well clear of
-AUDIT's current top (`[F, 2.4]`), so it's the likely next ship
-once a tick picks it up.
+No `[ ]` build-plan rows remain. Critique gate not due. Expand
+gate not due (12 commits / 3 days since candidates pass 17,
+both under the 20-commit/7-day threshold). Per `skills/march.md`
+§3 the next tick dispatches to `/iterate`, but AUDIT's queue (now
+freshly refreshed) has no cloud-actionable row left — all five
+pending findings are durable, blocked-on-human-session rows.
+Likely outcome: either a genuine no-op tick, or a fresh full A-G
+sweep turning up something new since this pass's sweep was
+focused, not exhaustive.
 
 ## Tuning proposals
 
-None this pass. The one live mistune signal (candidate-queue
-silting) already has its own pending candidate (score 3.5,
-2026-09-29); nothing else in this window's pulse — three clean
-ticks dispatching correctly through the chain (two iterate
-ships, one critique gate opening exactly on schedule), zero gate
-failures — suggests a gate, cadence, or ceiling needs re-tuning.
-The observed 3-of-4 cron fire rate (see pulse table) is a GH
-Actions scheduling characteristic, not a rail this kit owns, so
-it isn't filed as a candidate either.
+None this pass. The two live mistune signals — candidate-queue
+silting, and the AUDIT/CANDIDATES stale-relocation bug this
+digest hand-fixed in AUDIT.md but left as-is in
+PHASE_CANDIDATES.md — already have pending candidates (score 3.5
+each) citing exactly these pulse numbers; filing a third would
+just be a duplicate. Three clean ticks dispatching correctly
+through the chain, one caught-and-fixed issue-close miss, zero
+`verify.mjs` failures — nothing here points at a gate, cadence,
+or ceiling that needs re-tuning.
