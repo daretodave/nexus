@@ -1982,58 +1982,44 @@ verbatim — all five blocked on the same cloud-push-token
 workflows-scope gap or a non-reproducible transient, no new fix
 surface. `node scripts/verify.mjs` green (all seven legs).
 
+Cloud tick 2026-10-04 (march -> iterate, second): no pending
+build-plan phase; critique gate not due (6 commits / same day
+since pass 23); expand gate not due (0 commits / same day since
+candidates pass 18, which this same chain just shipped minutes
+earlier). `plan/CRITIQUE.md` Pending confirmed empty. Dispatched
+a fresh A-G sweep to a research agent (header's last full sweep
+was 2026-10-01, past the 24h threshold): it reproduced the exact
+five Pending rows below, spot-checked a wide sample of `§N`
+cross-references (all correct), model-id freshness (all hedged),
+and the tree/reverse-check gap (already tracked as an open phase
+candidate, not fresh) — found nothing new. Before falling to
+`skills/iterate.md` §6 failure mode 1's expand-dispatch, checked
+whether that would be pure duplication: pass 18 (this same chain,
+minutes earlier) already read every signal A-E as of today and
+found 0 new/1 re-evidenced; re-fetched the live Claude Code
+changelog directly (`raw.githubusercontent.com/anthropics/
+claude-code/main/CHANGELOG.md`) and confirmed it's still v2.1.289,
+identical to what pass 18 already saw — no new signal E material,
+so redispatching to expand right now would just reproduce pass
+18's output with a new pass number, which is exactly the
+"manufacturing churn" failure mode 1 exists to avoid, not a
+legitimate use of it.
+Instead, re-examined the two LOW rows' own `next` fields for an
+exit condition this tick could actually act on: `#67` ("safe to
+close on inactivity if it doesn't recur") and `#54` ("close if it
+doesn't recur") both specify closing as their own prescribed next
+step, contingent only on time passing without recurrence. Checked
+`gh issue list` for both failure classes: no new heartbeat-
+flatlined issue since #67 (4 days of normal cadence) and no new
+Bun-504 crash issue since #54 (nearly a month). Both confirmed
+non-recurring; closed both on GitHub and moved their rows to
+`## Done` below. The three remaining MED rows (`#40`, `#35`,
+`#49`) are unchanged — still blocked on the cloud-push-token
+workflows-scope gap, needing a local/human session, not
+actionable from cloud. `node scripts/verify.mjs` green (all seven
+legs).
+
 ## Pending
-
-### [user-issue #67] [LOW] heartbeat's "march has flatlined" alarm fired on a stale `gh run list` read, not an actual gap
-- category: external-issue
-- impact: 2, ease: 2
-- evidence: issue #67 (created 2026-09-30T12:32:50Z) claimed "No
-  successful march tick in 638h" via `.github/workflows/
-  heartbeat.yml`'s `gh run list --workflow march --status
-  success -L 1 --json updatedAt` alarm step. But `gh run list
-  --workflow march.yml -L 10` (checked this tick,
-  2026-09-30T14:45Z) shows march succeeding on its normal
-  ~6-12h cadence straight through today — most recently
-  2026-09-30T07:57:11Z, under 5h before the alarm fired, nowhere
-  near 638h. Re-running heartbeat's exact query moments later
-  (`--workflow march --status success -L 1`) returned that same
-  recent run correctly and consistently across three repeats —
-  the stale read did not reproduce on retry. Most likely a
-  one-off GitHub Actions list-endpoint consistency lag at the
-  moment the cron fired, not a defect in march.yml, the cron
-  schedule, or the token.
-- next: no fix indicated yet — a single non-reproducible stale
-  read isn't evidence of a systemic bug in heartbeat.yml's
-  query. If this recurs, worth hardening the alarm step to a
-  double-read (query twice a few seconds apart, only alarm if
-  both agree) before trusting one `gh run list` call for a
-  638h-since claim. Safe to close #67 on inactivity if it
-  doesn't recur.
-
-### [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect
-- category: external-issue
-- impact: 2, ease: 2
-- evidence: run 34130300338 (2026-09-07T13:57:41Z) failed inside
-  the Claude Code Action's own `Install Bun` step —
-  `oven-sh/setup-bun` hit `Unexpected HTTP response: 504`
-  downloading `bun-linux-x64.zip` from GitHub's release CDN,
-  retried twice more (18s/12s backoff, the action's own built-in
-  retry), then gave up and failed the job before the agent turn
-  ever started. The job's crash-alarm step then correctly filed
-  this issue per `.github/workflows/march.yml`'s own
-  dead-man's-switch. No nexus code or workflow config is
-  implicated — this is a third-party CDN transient, not a repo
-  defect. Confirmed self-healed: the very next scheduled run
-  (34152492907, this tick) started and progressed normally with
-  no retry or config change needed.
-- next: no code fix available from inside this repo — the
-  failure point is `oven-sh/setup-bun`'s own retry loop hitting a
-  transient GitHub release-asset 504, outside `march.yml`'s
-  control. Close if it doesn't recur; if this class of crash
-  starts repeating, that would be a signal worth a
-  `plan/PHASE_CANDIDATES.md` entry (e.g. pinning a Bun version
-  known to be cached, or widening the action's retry window), but
-  a single occurrence isn't evidence of a pattern yet.
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
 - category: external-issue
@@ -2117,6 +2103,27 @@ surface. `node scripts/verify.mjs` green (all seven legs).
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [user-issue #67] [LOW] heartbeat's "march has flatlined" alarm fired on a stale `gh run list` read, not an actual gap — this commit (closes #67)
+- category: external-issue
+- closed: own `next` said "safe to close on inactivity if it
+  doesn't recur." Checked `gh issue list --search "heartbeat
+  flatlined"` this tick (2026-10-04): no new heartbeat-flatlined
+  issue since #67 itself (2026-09-30) — 4 days and dozens of
+  march ticks (visible in this file's own log and `git log`)
+  with no recurrence. Confirmed non-reproducible one-off, closed
+  per its own documented exit condition.
+
+### [x] [user-issue #54] [LOW] cloud march tick crashed on a transient Bun-download 504, not a code defect — this commit (closes #54)
+- category: external-issue
+- closed: own `next` said "close if it doesn't recur." Checked
+  `gh issue list --search "crashed"` this tick (2026-10-04): the
+  only other open crash-alarm issue is unrelated (#40, a
+  follow-up task, not a crash report); every actual
+  "cloud march tick crashed" issue since #54 (2026-09-07) has
+  been none — nearly a month of normal cadence with zero
+  recurrence of the Bun-install 504. Confirmed third-party CDN
+  transient, closed per its own documented exit condition.
 
 ### [x] [F, 2.4] templates/setup/bootstrap.example.json ships a model id with no "ids age" hedge anywhere nearby — this commit (closes #72)
 - category: freshness
