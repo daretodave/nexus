@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-10-04
-> Pass count: 18
+> Last pass: 2026-10-06
+> Pass count: 19
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -725,7 +725,8 @@ kit + sibling surveys.
 ### [ ] [score 6.5] Auto mode: Claude Code's new default permission model isn't in the kit's playbooks
 - proposed: 2026-09-09 (expand pass 9); re-evidenced 2026-09-19
   (expand pass 13); re-evidenced 2026-10-01 (expand pass 17);
-  re-evidenced 2026-10-04 (expand pass 18)
+  re-evidenced 2026-10-04 (expand pass 18); re-evidenced
+  2026-10-06 (expand pass 19)
 - source signals: Claude Code's own "What's new" changelog
   (Week 32, Aug 3-7 2026) — "auto mode becomes the default
   permission mode for new sessions on Pro, Max, and Team
@@ -789,7 +790,20 @@ kit + sibling surveys.
   structural changes — fourth straight pass confirming the
   surface is still moving, which keeps this candidate's
   "investigate, don't assume" scope note live rather than
-  resolved.
+  resolved. Signal E, 2026-10-06 (expand pass 19): fetched the
+  changelog fresh again — `main` now runs through v2.1.292
+  (three more versions since pass 18's v2.1.289 check), still
+  landing auto-mode-specific fixes: v2.1.290 "Fixed auto mode
+  classifier approving non-read-only connector tools" and
+  "Fixed plan mode not restoring on session resume"; v2.1.292
+  "Fixed `permissionMode: auto` entering auto mode when
+  unavailable" and the matching subagent-side fix, plus "Fixed
+  PreToolUse hook approvals bypassing permission prompts for
+  network paths" — the last one bears directly on this
+  candidate's own "investigate... before writing the note"
+  caveat about how auto mode composes with the hook/allowlist
+  layer. Fifth straight pass confirming the surface is still
+  moving.
 - rationale: `playbooks/hands-off.md` Step 1's whole premise —
   "burn down the prompt list... zero prompts across three
   attended ticks is the bar" — was written for a world where

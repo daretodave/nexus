@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-04
+# Kit audit — 2026-10-06
 
 > Bias: none
 
@@ -2018,6 +2018,28 @@ non-recurring; closed both on GitHub and moved their rows to
 workflows-scope gap, needing a local/human session, not
 actionable from cloud. `node scripts/verify.mjs` green (all seven
 legs).
+
+Cloud tick 2026-10-06: header was 2 days old (last full sweep
+2026-10-04), past the 24h threshold, so delegated a fresh A-G
+sweep to a research agent to protect context. Verify gate green
+throughout (all seven legs: links 284 ok, tree 199
+entries/59 reverse-checked ok, discover 30 docs ok, placeholders
+549 tokens ok, anatomy 25/25 ok, emoji 146 files ok, dualshell 11
+blocks ok). The three durable `[user-issue #40/#35/#49]` rows
+confirmed unchanged — same cloud-push-token workflows-scope gap,
+not actionable from cloud. Dimensions A-F swept fresh (links all
+200 or expected-auth-gated, anchors all resolve, model ids all
+current and hedged, voice/wrap clean after filtering false
+positives, adopter-friction paths all accurate, completeness
+checked against `find templates -type f`); G stayed empty — no
+sibling lessons files present in this checkout. One sub-threshold
+item surfaced (`playbooks/ci-providers.md`'s AWS/Azure matrix
+rows) but confirmed not a real gap — the doc already scopes
+built-in support to the providers `deploy-check.mjs` actually
+implements. Nothing cleared the 3.0 threshold, so per
+`skills/iterate.md` §6 failure mode 1 (posture bold), dispatched
+to `/expand` instead of manufacturing churn — see
+`plan/PHASE_CANDIDATES.md` pass 19.
 
 ## Pending
 
