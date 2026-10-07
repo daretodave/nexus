@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-10-03
-> Pass count: 23
+> Last pass: 2026-10-07
+> Pass count: 24
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,54 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [MED] playbooks/new-project.md:40 vs playbooks/new-project.md:250-251 — Prerequisites states "Node 20+" but step 4 calls back to it as "Node ≥18"
+- category: instruction-drift
+- observation: the Prerequisites section says "Node 20+ installed,
+  plus **pnpm**." Later, step 4's copy command is introduced as
+  "one `node` command (Node ≥18, already a prerequisite)" —
+  explicitly referring back to the earlier prerequisite, but
+  citing a different minimum version (18 vs 20). A first-time
+  adopter reading top to bottom hits a self-referential
+  contradiction in the same file: which number is the real floor?
+- evidence: `playbooks/new-project.md:40` ("Node 20+ installed")
+  and `playbooks/new-project.md:250-251` ("This is one `node`
+  command (Node ≥18, already a prerequisite)").
+- suggested fix: pick one minimum (20+ is likely the real intent,
+  matching modern LTS conventions used elsewhere in the kit) and
+  make step 4's parenthetical say "Node 20+, already a
+  prerequisite" instead of "≥18."
+- source: dry-run
+
+### [MED] README.md:290-291 vs README.md:650,653 — Hard Rule #6's "AskUserQuestion is allowed only in /oversight and /bootstrap" doesn't acknowledge pre-spec.md's own carve-out, stated 359 lines earlier
+- category: comprehension
+- observation: reading top to bottom, a stranger hits the "Three
+  paths to start" section first, where `pre-spec.md` is described
+  as "The only nexus playbook where `AskUserQuestion` is allowed"
+  (README.md:290-291). Much later, "Hard rules carried across
+  every project" states Rule 6 as "`AskUserQuestion` is allowed
+  only in `/oversight` and `/bootstrap`... Every other skill
+  decides and ships" (README.md:650,653), with no mention of
+  pre-spec. The kit's own `concepts/architecture.md` §6 and
+  `templates/skills/oversight.md` scope their version of this
+  rule to "skill" (deliberately excluding the pre-adoption
+  `pre-spec.md` playbook), but README's Hard Rules list never
+  surfaces or explains that skill-vs-playbook distinction, so a
+  literal first read experiences it as two conflicting absolute
+  claims about where `AskUserQuestion` lives.
+- evidence: `README.md:290-291` ("The only nexus playbook where
+  `AskUserQuestion` is allowed") vs `README.md:650,653` ("allowed
+  only in `/oversight` and `/bootstrap`... Every other skill
+  decides and ships") — no cross-reference between the two in
+  README itself.
+- suggested fix: in Hard Rule #6, add a short parenthetical:
+  "(plus `pre-spec.md`'s one-time interactive session, before any
+  skill exists — see Three paths to start)" — or add "skill"
+  scoping language consistent with `concepts/architecture.md`'s
+  phrasing so the exhaustiveness claim doesn't read as
+  contradicting the pre-spec carve-out stated earlier in the same
+  file.
+- source: dry-run
 
 ## Done
 
