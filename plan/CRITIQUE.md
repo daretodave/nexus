@@ -11,24 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md:40 vs playbooks/new-project.md:250-251 — Prerequisites states "Node 20+" but step 4 calls back to it as "Node ≥18"
-- category: instruction-drift
-- observation: the Prerequisites section says "Node 20+ installed,
-  plus **pnpm**." Later, step 4's copy command is introduced as
-  "one `node` command (Node ≥18, already a prerequisite)" —
-  explicitly referring back to the earlier prerequisite, but
-  citing a different minimum version (18 vs 20). A first-time
-  adopter reading top to bottom hits a self-referential
-  contradiction in the same file: which number is the real floor?
-- evidence: `playbooks/new-project.md:40` ("Node 20+ installed")
-  and `playbooks/new-project.md:250-251` ("This is one `node`
-  command (Node ≥18, already a prerequisite)").
-- suggested fix: pick one minimum (20+ is likely the real intent,
-  matching modern LTS conventions used elsewhere in the kit) and
-  make step 4's parenthetical say "Node 20+, already a
-  prerequisite" instead of "≥18."
-- source: dry-run
-
 ### [MED] README.md:290-291 vs README.md:650,653 — Hard Rule #6's "AskUserQuestion is allowed only in /oversight and /bootstrap" doesn't acknowledge pre-spec.md's own carve-out, stated 359 lines earlier
 - category: comprehension
 - observation: reading top to bottom, a stranger hits the "Three
@@ -60,6 +42,27 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:40 vs playbooks/new-project.md:250-251 — Prerequisites states "Node 20+" but step 4 calls back to it as "Node ≥18" — this commit
+- category: instruction-drift
+- observation: the Prerequisites section says "Node 20+ installed,
+  plus **pnpm**." Later, step 4's copy command was introduced as
+  "one `node` command (Node ≥18, already a prerequisite)" —
+  explicitly referring back to the earlier prerequisite, but
+  citing a different minimum version (18 vs 20). A first-time
+  adopter reading top to bottom hit a self-referential
+  contradiction in the same file: which number is the real floor?
+- evidence: `playbooks/new-project.md:40` ("Node 20+ installed")
+  and `playbooks/new-project.md:250-251` ("This is one `node`
+  command (Node ≥18, already a prerequisite)").
+- fix: reworded step 4's parenthetical in `playbooks/new-project.md`
+  to "Node 20+, already a prerequisite", matching the Prerequisites
+  floor. Widened scope to the same bug class found while fixing
+  it: `playbooks/existing-project.md:134`'s overlay step carried
+  the identical stale "Node ≥18" phrasing with no local
+  contradiction but the same drift from the kit's actual 20+
+  floor — fixed to "Node 20+" too.
+- source: dry-run
 
 ### [x] [MED] playbooks/new-project.md §4 "Prune adopt-by-need files" never updates the just-copied root agents.md — this commit (closes #73)
 - category: instruction-drift

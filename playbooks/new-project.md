@@ -248,7 +248,7 @@ sweep before prune, prune after sweep, never the reverse.
 ### Copy
 
 Run from your repo root. This is one `node` command (Node
-≥18, already a prerequisite) so it runs identically in
+20+, already a prerequisite) so it runs identically in
 bash/zsh, PowerShell, or `cmd.exe` — no shell twin needed:
 
 ```bash

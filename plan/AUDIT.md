@@ -3186,3 +3186,22 @@ to `/expand` instead of manufacturing churn — see
   (`moderation-loop.md:286`, `templates/plan/bearings.md:185`)
   now read `claude:prompted-classifier` instead of
   `anthropic:moderation`.
+
+Cloud tick 2026-10-07: header ~20h old (last full sweep the
+2026-10-06 tick, `db6952b` at 23:43:39Z), under the 24h
+threshold, so re-scored rather than re-swept. This block's own
+Pending rows are the same three durable `[user-issue #40/#35/
+#49]` entries (impact 4 x ease 2 / 10 = 0.8 each, still blocked
+on the cloud-push-token workflows-scope gap). `plan/CRITIQUE.md`'s
+Pending queue held two fresh MED rows from critique pass 24
+(commit `8b606c2`, same day), both well above 0.8: shipped the
+cheaper, more confidently-scoped one — `playbooks/new-project.md`'s
+self-contradicting Node floor ("20+" at line 40 vs "≥18" at
+250-251) — over the README Hard-Rule-6/pre-spec cross-reference
+gap, which needs a more careful wording call. Widened the fix to
+`playbooks/existing-project.md:134`'s identical stale "Node ≥18"
+phrasing, same root cause, no local contradiction but the same
+drift from the kit's actual 20+ floor. `node scripts/verify.mjs`
+green (all seven legs). Not a fresh A-G sweep; the three durable
+rows and the remaining CRITIQUE MED row are unchanged and still
+Pending.

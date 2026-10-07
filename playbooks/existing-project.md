@@ -131,7 +131,7 @@ Commit `spec.md` and `plan/CURRENT-STATE.md`.
 Now add the methodology files. **None of these should touch
 existing source code.**
 
-One `node` command (Node ≥18), from your repo root, with
+One `node` command (Node 20+), from your repo root, with
 `nexus/` accessible at `../nexus` or wherever — runs
 identically in bash/zsh, PowerShell, or `cmd.exe`, and appends
 the `.env` gitignore lines in the same pass (see
