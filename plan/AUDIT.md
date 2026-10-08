@@ -2041,7 +2041,47 @@ implements. Nothing cleared the 3.0 threshold, so per
 to `/expand` instead of manufacturing churn — see
 `plan/PHASE_CANDIDATES.md` pass 19.
 
+Cloud tick 2026-10-08: `/march` routed here (no pending build-plan
+phase; critique gate not due — header 1 day old, 3 commits since
+last pass; expand gate not due — 5 commits / 2 days, both under
+threshold). Header was 2 days old (last full sweep 2026-10-06),
+past the 24h threshold, so delegated a fresh A-G sweep to a
+research agent to protect context. The three durable
+`[user-issue #40/#35/#49]` rows confirmed unchanged — same
+cloud-push-token workflows-scope gap, not actionable from cloud.
+Checked specifically whether the Node-floor fix from commit
+f348e7e (previous tick) left any stray drift: found one new row,
+below (`package.json`'s `engines` field still says `>=18`,
+contradicting the just-reconciled "Node 20+" floor and both CI
+workflows, which pin node-version 20/22). F (model ids), C (links,
+tree-reverse-check coverage), G (sibling lessons, still absent),
+and B (spot-checked paths in docs touched by the last 10 commits)
+all swept clean otherwise. `plan/CRITIQUE.md`'s Pending queue held
+one MED row (score ~5.4, impact 6 x ease 9) scoring well above the
+new `[A, 3.6]` finding and the three blocked 0.8-scoring rows, so
+shipped that instead: reworded README.md Hard Rule #6 to scope the
+"AskUserQuestion only in /oversight and /bootstrap" claim to
+"once a skill is running," naming `pre-spec.md`'s one-time
+interactive interview as the carve-out outside that list and
+linking back to "Three paths to start." `node scripts/verify.mjs`
+green (all seven legs). This block's own new row queued to
+Pending below for a future tick.
+
 ## Pending
+
+### [A, 3.6] package.json's engines.node still says ">=18", contradicting the just-reconciled Node 20+ floor
+- category: doc-drift
+- impact: 4, ease: 9
+- evidence: commit f348e7e reconciled `playbooks/new-project.md`
+  and `playbooks/existing-project.md` to both say "Node 20+" (one
+  previously said ">=18"). `package.json:13`'s
+  `"engines": { "node": ">=18" }` was never touched in that fix
+  and still contradicts the reconciled floor — also inconsistent
+  with `.github/workflows/march.yml` and `night.yml`, which both
+  pin `node-version: 20`/`22`, never 18.
+- next: change `package.json`'s `engines.node` to `">=20"`
+  (or `"20.x"` to match CI exactly), then re-run
+  `node scripts/verify.mjs`.
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
 - category: external-issue

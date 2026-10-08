@@ -11,7 +11,11 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] README.md:290-291 vs README.md:650,653 — Hard Rule #6's "AskUserQuestion is allowed only in /oversight and /bootstrap" doesn't acknowledge pre-spec.md's own carve-out, stated 359 lines earlier
+(none)
+
+## Done
+
+### [x] [MED] README.md:290-291 vs README.md:650,653 — Hard Rule #6's "AskUserQuestion is allowed only in /oversight and /bootstrap" doesn't acknowledge pre-spec.md's own carve-out, stated 359 lines earlier — this commit
 - category: comprehension
 - observation: reading top to bottom, a stranger hits the "Three
   paths to start" section first, where `pre-spec.md` is described
@@ -32,16 +36,13 @@ path, comprehension stumble. See `skills/critique.md`.
   only in `/oversight` and `/bootstrap`... Every other skill
   decides and ships") — no cross-reference between the two in
   README itself.
-- suggested fix: in Hard Rule #6, add a short parenthetical:
-  "(plus `pre-spec.md`'s one-time interactive session, before any
-  skill exists — see Three paths to start)" — or add "skill"
-  scoping language consistent with `concepts/architecture.md`'s
-  phrasing so the exhaustiveness claim doesn't read as
-  contradicting the pre-spec carve-out stated earlier in the same
-  file.
+- fix: reworded Rule 6's opening clause to "Once a skill is
+  running, `AskUserQuestion` is allowed only in `/oversight` and
+  `/bootstrap`" and appended a sentence naming `pre-spec.md`'s
+  one-time interactive interview (before any skill exists) as the
+  one carve-out outside that list, linked back to "Three paths to
+  start" — the row's first suggested-fix option, no scope changes.
 - source: dry-run
-
-## Done
 
 ### [x] [MED] playbooks/new-project.md:40 vs playbooks/new-project.md:250-251 — Prerequisites states "Node 20+" but step 4 calls back to it as "Node ≥18" — this commit
 - category: instruction-drift
