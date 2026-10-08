@@ -39,14 +39,15 @@ When **not** to use it:
 ## Decide vs. ask — the carve-out
 
 Nexus's standing rule is "skills decide; only `/oversight`
-asks." **The pre-spec session is an explicit carve-out.**
-The agent running this playbook isn't yet inside a shipping
-skill; it's helping the user write the brief that *will be*
-the input to skills. Asking questions here is the job.
+and `/bootstrap` ask." **The pre-spec session is an
+explicit carve-out.** The agent running this playbook isn't
+yet inside a shipping skill; it's helping the user write the
+brief that *will be* the input to skills. Asking questions
+here is the job.
 
 Once `spec.md` is written and committed at the end of this
-session, the no-AskUserQuestion-outside-`/oversight` rule
-kicks back in. From that commit forward, the agent decides.
+session, the no-AskUserQuestion rule from above kicks back
+in. From that commit forward, the agent decides.
 
 For the shape of the asks during this session, follow
 [`../concepts/asking-well.md`](../concepts/asking-well.md):

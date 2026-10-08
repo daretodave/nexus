@@ -2109,6 +2109,20 @@ additional evidence for the existing
 from the tree diagrams themselves, not a new finding. Audit
 only — shipped nothing, per `skills/digest.md` rule 2.
 
+Cloud tick 2026-10-08: header 2h old (last full sweep this
+same day's digest tick, above), so no re-sweep. No pending
+build-plan phase, critique gate not due (4 commits / <72h
+since last pass), expand gate not due (7 commits / 2 days
+since last pass, both under posture `bold`'s thresholds).
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. This
+block's three durable rows (`[user-issue #40]`, `[#35]`,
+`[#49]`) score impact 4 x ease 2 / 10 = 0.8 and stay blocked
+on the same workflows-scope gap a cloud tick can't fix.
+Shipped the one remaining actionable row, `[A, 3.6]`
+(pre-spec.md's AskUserQuestion carve-out omitting
+`/bootstrap`) — the digest tick's own finding from two hours
+earlier.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -2192,7 +2206,9 @@ only — shipped nothing, per `skills/digest.md` rule 2.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
-### [A, 3.6] playbooks/pre-spec.md restates the AskUserQuestion carve-out using only "/oversight," omitting "/bootstrap"
+## Done
+
+### [x] [A, 3.6] playbooks/pre-spec.md restates the AskUserQuestion carve-out using only "/oversight," omitting "/bootstrap" — this commit (closes #74)
 - category: doc-drift
 - impact: 4, ease: 9
 - evidence: `playbooks/pre-spec.md:41` ("Nexus's standing rule
@@ -2202,17 +2218,15 @@ only — shipped nothing, per `skills/digest.md` rule 2.
   correctly stated with both carve-outs, lives at
   `README.md:650` ("allowed only in `/oversight` and
   `/bootstrap`") and `concepts/asking-well.md:8-9` ("only
-  `/oversight` and `/bootstrap` ask"). Commit `a5bd02f` (this
+  `/oversight` and `/bootstrap` ask"). Commit `a5bd02f` (prior
   cycle) fixed README's Hard Rule #6 to acknowledge pre-spec.md's
   own carve-out but never touched pre-spec.md's own two
-  mentions, which still undersell the rule to a reader who
+  mentions, which still undersold the rule to a reader who
   starts here.
-- next: reword `pre-spec.md:41` and `:48` to "only `/oversight`
-  and `/bootstrap` ask" / "no-AskUserQuestion-outside-
-  `/oversight`-and-`/bootstrap`," matching
-  `concepts/asking-well.md`'s phrasing.
-
-## Done
+- fix: reworded `pre-spec.md:41` to name both `/oversight` and
+  `/bootstrap`; simplified `:48`'s mention to point back at the
+  first statement instead of repeating a long hyphenated
+  compound (which also wrapped badly at this doc's line width).
 
 ### [x] [A, 3.6] package.json's engines.node still said ">=18", contradicting the just-reconciled Node 20+ floor — this commit
 - category: doc-drift
