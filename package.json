@@ -10,6 +10,6 @@
     "deploy:check": "node -e \"console.log('deploy:check · kit repo — push to GitHub IS the deploy; nothing to poll. ok.')\""
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

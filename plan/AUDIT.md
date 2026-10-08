@@ -2067,21 +2067,19 @@ linking back to "Three paths to start." `node scripts/verify.mjs`
 green (all seven legs). This block's own new row queued to
 Pending below for a future tick.
 
-## Pending
+Cloud tick 2026-10-08 (second): `/march` routed here again (same
+gate state as the prior tick this cycle — no pending phase,
+critique/expand gates still not due). Re-verified the queued
+`[A, 3.6]` row rather than re-running a full sweep (same day as
+the sweep above, still fresh): confirmed `package.json:13` still
+read `">=18"` against both CI workflows pinning `node-version:
+20`/`22` and the two playbooks reconciled to "Node 20+" in commit
+f348e7e. No other pending row scores higher (the three
+`[user-issue #40/#35/#49]` rows stay blocked at 0.8, unchanged).
+Shipped the one-line fix. `node scripts/verify.mjs` green (all
+seven legs) both before and after.
 
-### [A, 3.6] package.json's engines.node still says ">=18", contradicting the just-reconciled Node 20+ floor
-- category: doc-drift
-- impact: 4, ease: 9
-- evidence: commit f348e7e reconciled `playbooks/new-project.md`
-  and `playbooks/existing-project.md` to both say "Node 20+" (one
-  previously said ">=18"). `package.json:13`'s
-  `"engines": { "node": ">=18" }` was never touched in that fix
-  and still contradicts the reconciled floor — also inconsistent
-  with `.github/workflows/march.yml` and `night.yml`, which both
-  pin `node-version: 20`/`22`, never 18.
-- next: change `package.json`'s `engines.node` to `">=20"`
-  (or `"20.x"` to match CI exactly), then re-run
-  `node scripts/verify.mjs`.
+## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
 - category: external-issue
@@ -2165,6 +2163,18 @@ Pending below for a future tick.
   `plan/steps/01_build_plan.md`.
 
 ## Done
+
+### [x] [A, 3.6] package.json's engines.node still said ">=18", contradicting the just-reconciled Node 20+ floor — this commit
+- category: doc-drift
+- impact: 4, ease: 9
+- evidence: commit f348e7e reconciled `playbooks/new-project.md`
+  and `playbooks/existing-project.md` to both say "Node 20+" (one
+  previously said ">=18"). `package.json:13`'s
+  `"engines": { "node": ">=18" }` was never touched in that fix
+  and still contradicted the reconciled floor — also inconsistent
+  with `.github/workflows/march.yml` and `night.yml`, which both
+  pin `node-version: 20`/`22`, never 18.
+- fix: changed `package.json`'s `engines.node` to `">=20"`.
 
 ### [x] [user-issue #67] [LOW] heartbeat's "march has flatlined" alarm fired on a stale `gh run list` read, not an actual gap — this commit (closes #67)
 - category: external-issue
