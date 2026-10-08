@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-06
+# Kit audit — 2026-10-08
 
 > Bias: none
 
@@ -2079,6 +2079,36 @@ f348e7e. No other pending row scores higher (the three
 Shipped the one-line fix. `node scripts/verify.mjs` green (all
 seven legs) both before and after.
 
+Digest tick 2026-10-08: header was 59h old (last full sweep the
+2026-10-06 block, now stale past the 48h threshold), so delegated
+a fresh A-G sweep to a research agent to protect context.
+`plan/CRITIQUE.md`'s Pending queue confirmed empty. G confirmed
+empty (no sibling checkout, no `NEXUS_LESSONS.md` anywhere on
+disk). `node scripts/verify.mjs` green throughout (links 284,
+tree 199 entries/59 reverse-checked, discover 30 docs,
+placeholders 549 tokens, anatomy 25 skills/25 command pointers,
+emoji 146 files, dualshell 11 blocks). The three durable
+`[user-issue #40/#35/#49]` rows confirmed unchanged — same
+cloud-push-token workflows-scope gap. One new row found and
+queued below: `playbooks/pre-spec.md:41,48` restates the
+AskUserQuestion carve-out using only "`/oversight`," the same
+stale-shorthand bug class just fixed in README's Hard Rule #6
+(commit a5bd02f) — that fix added the pre-spec acknowledgment to
+README but never touched pre-spec.md's own two mentions, which
+still undersell the rule to a reader who starts there. A/C/D/E/F
+otherwise swept clean: Node-version mentions all reconciled to
+"20+"; model ids consistently hedged; external links (`thock.xyz`,
+`ember.vercel.app`, `ntfy.sh`) all 200; README/templates-README
+trees match disk; placeholder table and one-liners check out;
+`templates/agents.md`'s tables match shipped files. One related
+observation (not filed as its own row): `scripts/verify.mjs`'s
+`REVERSE_CHECK_DIRS` still omits `templates/claude/hooks`
+(currently harmless — one file, already listed in both trees) —
+additional evidence for the existing
+`plan/PHASE_CANDIDATES.md` candidate deriving the reverse-check
+from the tree diagrams themselves, not a new finding. Audit
+only — shipped nothing, per `skills/digest.md` rule 2.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -2161,6 +2191,26 @@ seven legs) both before and after.
   cloud tick's App token. Closes #49 when done; also flips phase
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
+
+### [A, 3.6] playbooks/pre-spec.md restates the AskUserQuestion carve-out using only "/oversight," omitting "/bootstrap"
+- category: doc-drift
+- impact: 4, ease: 9
+- evidence: `playbooks/pre-spec.md:41` ("Nexus's standing rule
+  is 'skills decide; only `/oversight` asks.'") and `:48` ("the
+  no-AskUserQuestion-outside-`/oversight` rule kicks back in")
+  both state the rule with one carve-out. The actual rule,
+  correctly stated with both carve-outs, lives at
+  `README.md:650` ("allowed only in `/oversight` and
+  `/bootstrap`") and `concepts/asking-well.md:8-9` ("only
+  `/oversight` and `/bootstrap` ask"). Commit `a5bd02f` (this
+  cycle) fixed README's Hard Rule #6 to acknowledge pre-spec.md's
+  own carve-out but never touched pre-spec.md's own two
+  mentions, which still undersell the rule to a reader who
+  starts here.
+- next: reword `pre-spec.md:41` and `:48` to "only `/oversight`
+  and `/bootstrap` ask" / "no-AskUserQuestion-outside-
+  `/oversight`-and-`/bootstrap`," matching
+  `concepts/asking-well.md`'s phrasing.
 
 ## Done
 
