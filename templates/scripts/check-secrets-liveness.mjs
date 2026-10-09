@@ -15,7 +15,7 @@
 //              "present (unverifiable)" — that's expected, not a fail)
 //   exit 1  →  at least one declared secret is dead or missing
 //
-// Zero dependencies, ESM, Node >=18. No network calls at all if
+// Zero dependencies, ESM, Node >=20. No network calls at all if
 // neither GH_TOKEN nor CRITIQUE_AUTH_MODE is set.
 
 import fs from 'node:fs'

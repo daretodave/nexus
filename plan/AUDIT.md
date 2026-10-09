@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-08
+# Kit audit — 2026-10-09
 
 > Bias: none
 
@@ -2208,6 +2208,25 @@ earlier.
 
 ## Done
 
+### [x] [F, 3.6] three templates/scripts/*.mjs header comments still say "Node >=18" against the reconciled 20+ floor — this commit
+- category: freshness
+- impact: 4, ease: 9
+- evidence: `templates/scripts/refresh-critique-session.mjs:22`,
+  `templates/scripts/stack-lifecycle.mjs:14`, and
+  `templates/scripts/check-secrets-liveness.mjs:18` each read
+  "Zero dependencies, ESM, Node >=18." Commit `a8e1e1a`
+  (2026-10-08) reconciled `package.json`'s `engines.node` from
+  `>=18` to `>=20` after `f348e7e` fixed the same drift in
+  `playbooks/new-project.md`/`existing-project.md`, but that
+  sweep only grepped prose docs and `package.json`, missing
+  these three comment headers inside scripts that ship directly
+  into adopter repos (`agents.md` rule 7: templates are the
+  product). Node 18 reached EOL in April 2025, so the comment
+  as written claims support for an end-of-life runtime,
+  contradicting both CI (`node-version: 20`/`22` in
+  `march.yml`/`night.yml`) and the kit's own stated floor.
+- fix: changed all three comments to "Node >=20."
+
 ### [x] [A, 3.6] playbooks/pre-spec.md restates the AskUserQuestion carve-out using only "/oversight," omitting "/bootstrap" — this commit (closes #74)
 - category: doc-drift
 - impact: 4, ease: 9
@@ -3319,3 +3338,26 @@ drift from the kit's actual 20+ floor. `node scripts/verify.mjs`
 green (all seven legs). Not a fresh A-G sweep; the three durable
 rows and the remaining CRITIQUE MED row are unchanged and still
 Pending.
+
+Cloud tick 2026-10-09: no pending build-plan phase (all rows `[x]`
+or `[blocked: ...]`); critique gate not due (8 commits / ~2 days
+since pass 24, both under threshold); expand gate not due (pass 20
+ran this same day, 0 commits/0 days since). `plan/CRITIQUE.md`'s
+Pending queue confirmed empty. This block's three durable rows
+(`[user-issue #40]`, `[#35]`, `[#49]`) stay blocked on the same
+cloud-push-token workflows-scope gap, score 0.8 each. Header was
+the 2026-10-08 digest tick's sweep (now >24h old), so delegated a
+fresh A-G sweep to a research agent to protect context. Found one
+new row, shipped this tick (above): `[F, 3.6]` — three
+`templates/scripts/*.mjs` header comments still read "Node >=18"
+against the floor `a8e1e1a` (two ticks ago) reconciled to `>=20`
+everywhere else grepped, because that fix's sweep only covered
+prose docs and `package.json`, not script-header comments. Rest
+of the sweep clean: verify.mjs green throughout (links 284/284,
+tree 199 entries/59 reverse-checked, discover 30 docs, placeholders
+549 tokens, anatomy 25/25, emoji 146 files, dualshell 11 blocks);
+all external links 200; README/templates-README trees match disk
+both directions; placeholder table matches both bash/PowerShell
+one-liners key-for-key; model ids current and hedged; G still
+empty (no sibling lessons files reachable on disk). The three
+durable rows and no other Pending rows remain.

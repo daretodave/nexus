@@ -19,7 +19,7 @@
 // (or appending one under the existing "Pattern B" block if the key
 // isn't there yet). Every other line is left byte-identical.
 //
-// Zero dependencies, ESM, Node >=18.
+// Zero dependencies, ESM, Node >=20.
 
 import fs from 'node:fs'
 import readline from 'node:readline'

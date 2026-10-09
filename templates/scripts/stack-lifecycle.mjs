@@ -11,7 +11,7 @@
 //     isPortInUse, waitForHealth, readState, writeState, isStackHealthy,
 //   } from './stack-lifecycle.mjs'
 //
-// Zero dependencies, ESM, Node >=18.
+// Zero dependencies, ESM, Node >=20.
 
 import net from 'node:net'
 import fs from 'node:fs'
