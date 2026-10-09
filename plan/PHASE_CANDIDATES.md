@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-10-06
-> Pass count: 19
+> Last pass: 2026-10-09
+> Pass count: 20
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -1126,6 +1126,58 @@ kit + sibling surveys.
   Either half closes the gap; doing both is more robust.
 - estimated phases: 1
 - conflicts: none.
+
+### [ ] [score 6.5] Arm `CLAUDE_CODE_RETRY_WATCHDOG` in the cloud workflows so transient 429/529s are waited out instead of crash-alarming
+- proposed: 2026-10-09 (expand pass 20)
+- source signals: Signal E (platform drift) — Claude Code's
+  changelog, fetched fresh this pass
+  (`raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`,
+  grepped directly): v2.1.295 (today's latest, three versions past
+  pass 19's v2.1.292 check) adds
+  `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS` to cap how long
+  `CLAUDE_CODE_RETRY_WATCHDOG` — described elsewhere in the same
+  changelog's history ("Changed `CLAUDE_CODE_MAX_RETRIES` to cap at
+  15; for unattended sessions, use `CLAUDE_CODE_RETRY_WATCHDOG`
+  instead") as the mechanism built specifically for unattended
+  sessions — waits out 429 and 529 errors before giving up. Neither
+  env var appears anywhere in this repo (`git log --all -i --grep`,
+  zero hits; grepped across `.github/workflows/`, zero hits)
+  despite `march.yml`, `night.yml`, and `heartbeat.yml` all running
+  unattended, with no human present to retry a failed tick by hand.
+  Signal A (`plan/AUDIT.md`) — this isn't hypothetical: the
+  already-pending "[score 4.5] Crash-alarm dedupe matches by
+  generic title only" candidate's own evidence shows two
+  independent 429 `rate_limit` crashes in a single 24h window
+  (2026-09-21, runs `35525362773` and `35540854118`), both of which
+  exited the tick entirely rather than waiting out the transient
+  limit.
+- rationale: today the only response to a transient 429/529 is the
+  whole GitHub Actions job failing — the crash-alarm then fires
+  (or, per the 4.5 candidate, gets masked by title-only dedupe).
+  `CLAUDE_CODE_RETRY_WATCHDOG` is Claude Code's own first-party
+  answer to exactly this shape of problem, and the new
+  `_MAX_WAIT_MS` cap removes the previous objection to arming it in
+  a job with a hard `timeout-minutes` ceiling — the wait is now
+  bounded and tunable against that ceiling instead of open-ended.
+  Distinct from, and complementary to, the 4.5 candidate: that one
+  makes a crash visible when it happens; this one prevents a whole
+  class of crashes (transient rate/overload errors) from happening
+  at all.
+- proposed scope: add `CLAUDE_CODE_RETRY_WATCHDOG` (exact value per
+  the real flag semantics — investigate, don't assume, the
+  changelog blurb doesn't confirm whether it's a boolean truthy or
+  a specific token) and a `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS`
+  set comfortably under each workflow's own `timeout-minutes` to
+  the `env:` block of `.github/workflows/march.yml`, `night.yml`,
+  and `heartbeat.yml`, plus their `templates/.github/workflows/`
+  mirrors (agents.md rule 7); a short note in
+  `.github/CLOUD_LOOP.md` and `playbooks/cloud-loop.md` naming the
+  two env vars and why the wait is capped below the job timeout,
+  not uncapped.
+- estimated phases: 1 (workflow + doc only, no template API change
+  beyond the env block)
+- conflicts: none — complements rather than overlaps the pending
+  "[score 4.5] Crash-alarm dedupe" candidate above.
 
 ## Promoted
 
