@@ -11,34 +11,6 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md:594 — step 9's "Manual" external-services path never shows the `setup/00_files.md` copy command
-- category: ordering
-- observation: step 9 offers two paths — "Manual. Walk each
-  `setup/NN_<service>.md` runbook yourself" and "Automated. Run
-  `/bootstrap`." Only the Automated branch gets an inline copy
-  command (`mkdir -p setup && cp
-  ../nexus/templates/setup/bootstrap.example.json
-  setup/bootstrap.local.json`, lines 605-611). A stranger who
-  picks Manual has no instruction anywhere in this playbook for
-  how `setup/00_files.md` (the runbook index) or
-  `setup/NN_<service>.md` actually get copied in — step 4's bulk
-  copy never lands `templates/setup/`. The only place that copy
-  command exists is `customization/external-services.md:189-195`,
-  which step 9 never links to; the adopter only reaches it later
-  via the Day-1 checklist (line 737), after already being told
-  to "walk the runbook."
-- evidence: `grep -n "00_files\|NN_service\|setup/"
-  playbooks/new-project.md` returns zero `cp .../00_files.md` or
-  `cp .../NN_service.md` lines — the only matching `cp` is for
-  `bootstrap.example.json` (610-611). The real copy command lives
-  only at `customization/external-services.md:189-195`.
-- suggested fix: add a one-line pointer in step 9's "Manual"
-  bullet to `customization/external-services.md`'s per-service
-  runbook workflow for the `setup/00_files.md` copy command, or
-  duplicate that `mkdir -p setup && cp .../00_files.md` snippet
-  into step 9 itself so both paths are self-contained.
-- source: dry-run
-
 ### [LOW] playbooks/new-project.md:471,742 — canonical-sibling phase number hedged as "phase 4 or 5" against the file's own fixed "4 substrate phases" rule
 - category: instruction-drift
 - observation: step 3 fixes "4 substrate phases at the front"
@@ -66,6 +38,33 @@ path, comprehension stumble. See `skills/critique.md`.
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:594 — step 9's "Manual" external-services path never shows the `setup/00_files.md` copy command — this commit
+- category: ordering
+- observation: step 9 offers two paths — "Manual. Walk each
+  `setup/NN_<service>.md` runbook yourself" and "Automated. Run
+  `/bootstrap`." Only the Automated branch got an inline copy
+  command (`mkdir -p setup && cp
+  ../nexus/templates/setup/bootstrap.example.json
+  setup/bootstrap.local.json`, lines 605-611). A stranger who
+  picks Manual had no instruction anywhere in this playbook for
+  how `setup/00_files.md` (the runbook index) or
+  `setup/NN_<service>.md` actually get copied in — step 4's bulk
+  copy never lands `templates/setup/`. The only place that copy
+  command exists is `customization/external-services.md:189-195`,
+  which step 9 never linked to; the adopter only reached it later
+  via the Day-1 checklist (line 737), after already being told
+  to "walk the runbook."
+- evidence: `grep -n "00_files\|NN_service\|setup/"
+  playbooks/new-project.md` returned zero `cp .../00_files.md` or
+  `cp .../NN_service.md` lines — the only matching `cp` was for
+  `bootstrap.example.json` (610-611). The real copy command lived
+  only at `customization/external-services.md:189-195`.
+- fix: added a pointer in step 9's "Manual" bullet to
+  `customization/external-services.md`'s "Per-service runbook
+  authoring" step 1, which has the `setup/00_files.md` copy
+  command this path needs first.
+- source: dry-run
 
 ### [x] [MED] README.md:290-291 vs README.md:650,653 — Hard Rule #6's "AskUserQuestion is allowed only in /oversight and /bootstrap" doesn't acknowledge pre-spec.md's own carve-out, stated 359 lines earlier — this commit
 - category: comprehension

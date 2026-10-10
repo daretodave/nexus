@@ -593,7 +593,11 @@ have two paths to wire them:
 
 - **Manual.** Walk each `setup/NN_<service>.md` runbook
   yourself. Best when you want maximal control or you're
-  using providers without a stable CLI / API.
+  using providers without a stable CLI / API. Step 4's bulk
+  copy never lands `templates/setup/`, so start with
+  [`../customization/external-services.md`](../customization/external-services.md)'s
+  "Per-service runbook authoring" step 1 — it has the
+  `setup/00_files.md` copy command this path needs first.
 - **Automated.** Run `/bootstrap` (see
   [`../customization/bootstrap-automation.md`](../customization/bootstrap-automation.md)).
   Takes tokens in, drives provider CLIs out, ends with a

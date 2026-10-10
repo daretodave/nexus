@@ -2123,6 +2123,20 @@ Shipped the one remaining actionable row, `[A, 3.6]`
 `/bootstrap`) — the digest tick's own finding from two hours
 earlier.
 
+Cloud tick 2026-10-10: no pending build-plan phase (all rows
+`[x]` or `[blocked: ...]`); critique gate not due (pass 25 ran
+this same day, 0 commits since); expand gate not due (4
+commits / 1 day since pass 20, both under posture `bold`'s
+thresholds). This block's three durable rows (`[user-issue
+#40]`, `[#35]`, `[#49]`) stay blocked on the same
+cloud-push-token workflows-scope gap, score 0.8 each.
+`plan/CRITIQUE.md`'s Pending queue held two rows; shipped the
+higher scorer, `[MED, 4.8]` (step 9's "Manual" external-
+services path missing the `setup/00_files.md` copy pointer),
+over the remaining `[LOW, 2.4]` row (the "phase 4 or 5" hedge).
+Not a fresh A-G sweep; last full sweep still the 2026-10-09
+tick (above).
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
