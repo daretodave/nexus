@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-10-07
-> Pass count: 24
+> Last pass: 2026-10-10
+> Pass count: 25
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -11,7 +11,59 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-(none)
+### [MED] playbooks/new-project.md:594 — step 9's "Manual" external-services path never shows the `setup/00_files.md` copy command
+- category: ordering
+- observation: step 9 offers two paths — "Manual. Walk each
+  `setup/NN_<service>.md` runbook yourself" and "Automated. Run
+  `/bootstrap`." Only the Automated branch gets an inline copy
+  command (`mkdir -p setup && cp
+  ../nexus/templates/setup/bootstrap.example.json
+  setup/bootstrap.local.json`, lines 605-611). A stranger who
+  picks Manual has no instruction anywhere in this playbook for
+  how `setup/00_files.md` (the runbook index) or
+  `setup/NN_<service>.md` actually get copied in — step 4's bulk
+  copy never lands `templates/setup/`. The only place that copy
+  command exists is `customization/external-services.md:189-195`,
+  which step 9 never links to; the adopter only reaches it later
+  via the Day-1 checklist (line 737), after already being told
+  to "walk the runbook."
+- evidence: `grep -n "00_files\|NN_service\|setup/"
+  playbooks/new-project.md` returns zero `cp .../00_files.md` or
+  `cp .../NN_service.md` lines — the only matching `cp` is for
+  `bootstrap.example.json` (610-611). The real copy command lives
+  only at `customization/external-services.md:189-195`.
+- suggested fix: add a one-line pointer in step 9's "Manual"
+  bullet to `customization/external-services.md`'s per-service
+  runbook workflow for the `setup/00_files.md` copy command, or
+  duplicate that `mkdir -p setup && cp .../00_files.md` snippet
+  into step 9 itself so both paths are self-contained.
+- source: dry-run
+
+### [LOW] playbooks/new-project.md:471,742 — canonical-sibling phase number hedged as "phase 4 or 5" against the file's own fixed "4 substrate phases" rule
+- category: instruction-drift
+- observation: step 3 fixes "4 substrate phases at the front"
+  (bootstrap, data, content, URL contract) — making the first
+  page-family phase structurally phase 5 — and step 5's own intro
+  ("Phase 5 (the canonical sibling) gets a detailed brief"), step
+  11's "Common Pitfalls" (line 706), and the shipped
+  `templates/plan/steps/01_build_plan.md` (`### Phase 5 —
+  <CANONICAL SIBLING>`, line 75) all agree on phase 5
+  unconditionally. But line 471 ("rename it to match your phase
+  number (usually phase 4 or 5)") and the Day-1 checklist line
+  742 ("Canonical sibling brief (usually phase 4 or 5) is
+  detailed") introduce an unexplained "4 or" alternative that
+  contradicts the fixed substrate-phase count and the template's
+  own hardcoded "Phase 5" heading.
+- evidence: `templates/plan/steps/01_build_plan.md:75`
+  ("### Phase 5 — <CANONICAL SIBLING>") vs
+  `playbooks/new-project.md:471` ("...rename it to match your
+  phase number (usually phase 4 or 5)...").
+- suggested fix: drop the "4 or" hedge and say "usually phase 5"
+  in both spots to match the template and the rest of the
+  playbook — or, if some projects legitimately land it at phase 4
+  (e.g. skipping a substrate phase), add a clause explaining when
+  that happens so the hedge isn't unexplained.
+- source: dry-run
 
 ## Done
 
