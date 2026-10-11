@@ -1,58 +1,59 @@
-# Digest — 2026-10-10
+# Digest — 2026-10-11
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-One shipped fix (stale Node-version strings in three template
-scripts) bookends a wasted tick that dispatched a background
-audit agent and exited without shipping — the literal failure
-mode phase 20 exists to close, still blocked on the push-token
-gap. The morning no-op landed 9 minutes under the critique
-gate's 72h mark; that threshold has since tipped, so the next
-`/march` tick is due for `/critique`, not `/iterate`.
+Two shipped fixes bookend a repeat of the exact wasted-tick
+pattern phase 20 exists to close — a stale-audit branch
+dispatched a background sweep agent and exited with no commit,
+the same failure mode seen two days ago, still unresolved
+because phase 20 stays blocked on the push-token gap.
 
 ## While you were out
 
-Window: since the last digest commit (2026-10-09 17:10 UTC).
+Window: since the last digest commit (2026-10-10 16:00 UTC).
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 10-09 19:14 | march → iterate | Dispatched a background audit agent (one `general-purpose`, one `Explore`) and exited with "Waiting on the audit agent — I'll resume and ship the top finding once it reports back." No commit. Cloud ticks are stateless between invocations, so nothing resumed: the 23:48 tick below started a fresh A-G sweep with no reference to this agent. A fully wasted cloud invocation — exactly the background/async dispatch phase 20 (`#35`) was scoped to forbid. |
-| 10-09 23:48 | march → iterate | Fresh A-G sweep found three `templates/scripts/*.mjs` files (`refresh-critique-session.mjs`, `stack-lifecycle.mjs`, `check-secrets-liveness.mjs`) with header comments still claiming Node >=18 — missed by `a8e1e1a`'s prose-only grep when `engines.node` moved to >=20. Shipped the fix. Verify green. Commit `2e754fb`. |
-| 10-10 08:05 | march → iterate (deferred) | Same three durable 0.8-score blocked rows, nothing ≥3.0; critique gate not yet due (last pass 3 days, 9 minutes short of the 72h mark). Clean no-op — no commit. |
+| 10-10 18:12 | march → critique | Pass 25: 2 findings (0 high, 1 med, 1 low). Commit `511ac8d`. |
+| 10-10 23:12 | march → iterate | CRITIQUE's MED row (score 4.8) outscored its own remaining LOW row and AUDIT's three durable blocked rows (0.8 each): fixed `playbooks/new-project.md` step 9's Manual external-services path, which never showed the `setup/00_files.md` copy command. Verify green. Commit `1465b40`. |
+| 10-11 08:16 | march → iterate | AUDIT header was ~32h old, past iterate's 24h refresh threshold, so delegated a fresh A-G sweep to a background research agent and exited: "I'll wait for the audit agent to finish before proceeding" / "Background audit sweep is running. I'll pause here and resume once it reports back." No commit — cloud ticks are stateless between invocations, so nothing resumes next time. Second confirmed instance of this exact failure mode in three days (first was 10-09 19:14, previous digest); the literal pattern phase 20 (`#35`/`#34`) is scoped to forbid, still blocked on the same push-token gap. |
 
-`heartbeat` ran green across the window (5/5 success, no
-flatline alarms). No `triage` or `loop:do` activity; no open
-`triage:needs-user` issues.
+`heartbeat` ran green across the window (3 runs inside it, all
+success, no flatline alarms). No `triage` or `loop:do`
+activity; no open `triage:needs-user` issues.
 
 ## Shipped
 
-- `2e754fb` — three `templates/scripts/*.mjs` header comments
-  corrected from Node >=18 to the actual >=20 floor, closing
-  the gap `a8e1e1a`'s prose-only sweep missed.
+- `511ac8d` — critique pass 25: 2 findings filed to
+  `plan/CRITIQUE.md` (0 high, 1 med, 1 low).
+- `1465b40` — `playbooks/new-project.md` step 9's Manual path
+  now points at the `setup/00_files.md`/`setup/NN_<service>.md`
+  copy command instead of silently assuming it already landed.
 
 ## Queues now
 
-- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 48
-  days blocked) and phase 32 (`#49`, 41 days blocked), both on
+- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 49
+  days blocked) and phase 32 (`#49`, 42 days blocked), both on
   the same cloud-push-token workflows-scope gap; unchanged this
   window.
 - **AUDIT:** 3 pending — the three durable `[user-issue #N]`
   rows (`#40`, `#35`, `#49`), all impact 4 × ease 2 = 0.8, same
-  root cause (GitHub App installation token overrides
-  `ACTIONS_PAT` for `.github/workflows/*.yml` pushes). Header
-  <24h old (last touched by `2e754fb`); no refresh due.
-- **CRITIQUE:** 0 pending, last pass 2026-10-07 08:14 UTC (pass
-  24, 9 commits since). The 72h gate has now tipped — due on
-  the next tick.
-- **PHASE_CANDIDATES:** 31 raw rows under `## Pending`, 4 are
-  stale `[promoted → phase N]` rows never relocated (phases
-  19/20/21/22, promoted 2026-08-23) — already tracked by the
-  filed score-3.5 candidate (`plan/PHASE_CANDIDATES.md:1076`).
-  True pending is 27 (22 >21d, oldest 101d, proposed
-  2026-07-02).
+  root cause. Header ~40h old (last full sweep `2e754fb`,
+  2026-10-09 23:56 UTC) — under the digest's 48h threshold, no
+  refresh due this pass.
+- **CRITIQUE:** 1 pending (LOW — `playbooks/new-project.md`'s
+  "phase 4 or 5" hedge contradicting the fixed substrate-phase
+  count), last pass 2026-10-10 18:19 UTC (pass 25, 1 commit
+  since).
+- **PHASE_CANDIDATES:** 31 raw rows under `## Pending`
+  (unchanged this window); 4 are stale `[promoted → phase N]`
+  rows never relocated (phases 19/20/21/22, promoted
+  2026-08-23) — already tracked by the filed score-3.5
+  candidate (`plan/PHASE_CANDIDATES.md:1076`). True pending is
+  27 (22 >21d, oldest 101d, proposed 2026-07-02).
 - **Issues:** 5 open (`#49`/`#48`, `#40`, `#35`/`#34`) —
   unchanged this window. No open `triage:needs-user` or
   `loop:do` issues.
@@ -62,12 +63,11 @@ flatline alarms). No `triage` or `loop:do` activity; no open
 - Phase 20 (`#35`) and phase 32 (`#49`) both still need a local
   `/ship-a-phase` or `/oversight` session to push the
   workflow-file changes a cloud tick's App token can't — now
-  48/41 days blocked, unchanged in mechanism. `#40` shares the
-  same root cause and waits on the same session. The 10-09
-  19:14 tick adds fresh, concrete cost to the wait: a fully
-  wasted cloud invocation (background agent dispatched, never
-  resumed, no commit) — exactly what phase 20's rule is meant
-  to prevent.
+  49/42 days blocked, unchanged in mechanism. `#40` shares the
+  same root cause. The 10-11 08:16 tick adds a second fresh,
+  concrete cost: another fully wasted cloud invocation
+  (background agent dispatched, never resumed, no commit) in
+  the same three-day window as the first.
 - No open `triage:needs-user` or `loop:do` issues.
 - oversight needed: candidate queue silting (22 pending >21d,
   oldest 101d) — both silting thresholds (≥5 pending >21d,
@@ -76,18 +76,21 @@ flatline alarms). No `triage` or `loop:do` activity; no open
 
 ## Today's intent
 
-No pending build-plan phase (0 `[ ]` rows). CRITIQUE's gate
-flipped during this window: last pass was 2026-10-07 08:14 UTC,
-and as of this digest it's past 72h with 9 commits logged since
-— so the next `/march` tick dispatches to `/critique` (step 2,
-ahead of the iterate fallback), not `/iterate` as the last
-three ticks did. A fresh dry-run adoption pass is due.
+No pending build-plan phase (0 `[ ]` rows) — the loop routes to
+`/iterate`'s audit queue. CRITIQUE holds one fresh LOW row
+(score likely below the three durable 0.8 AUDIT rows only if a
+higher-scoring row doesn't appear first); last pass was
+2026-10-10 18:19 UTC, 1 commit since — the 72h/8-commit gate is
+nowhere near due, so the next `/march` tick stays on
+`/iterate`. Top candidate target: CRITIQUE's "phase 4 or 5"
+hedge row, unless a fresh AUDIT sweep surfaces something
+cheaper first.
 
 ## Tuning proposals
 
-None filed this pass. The 19:14 tick's wasted background-agent
-dispatch is fresh evidence for an already-filed, already-
-promoted item (phase 20 / candidate
+None filed this pass. The 10-11 08:16 tick's repeat
+background-dispatch failure is fresh evidence for an
+already-filed, already-promoted item (phase 20 / candidate
 `plan/PHASE_CANDIDATES.md:546`, blocked only on the push-token
 gap) — re-filing would duplicate, not add a new candidate. No
 other mistuned gate, starved queue, or hibernating ceiling
