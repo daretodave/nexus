@@ -2137,6 +2137,28 @@ over the remaining `[LOW, 2.4]` row (the "phase 4 or 5" hedge).
 Not a fresh A-G sweep; last full sweep still the 2026-10-09
 tick (above).
 
+Cloud tick 2026-10-11: header 2 days old (last full sweep
+2026-10-09, above), past the 24h threshold, so ran a fresh A-G
+sweep (delegated the read-only pass to an agent to protect
+context). No pending build-plan phase (all rows `[x]` or
+`[blocked: ...]`); critique gate not due (2 commits / <72h since
+pass 25); expand gate not due (6 commits / 2 days since pass 20,
+both under posture `bold`'s thresholds). The sweep spot-checked
+the two commits since the last full sweep (1465b40, 422d520),
+curled nine external URLs outside github.com/anthropic.com (all
+live or expected non-200), re-confirmed the model-id hedge
+pattern holds everywhere live, and found no new rows — this
+block's three durable rows (`[user-issue #40]`, `[#35]`, `[#49]`)
+stay the only Pending AUDIT findings, still blocked on the same
+cloud-push-token workflows-scope gap, score 0.8 each.
+`plan/CRITIQUE.md`'s Pending queue held one LOW row (score ~2.7,
+impact 3 ease 9), which outscored this block's blocked rows, so
+shipped it instead: `playbooks/new-project.md`'s "usually phase 4
+or 5" hedge (lines 471, 746) dropped its unexplained "4 or"
+alternative to match the template's and the rest of the
+playbook's fixed "phase 5" convention. `plan/CRITIQUE.md`'s
+Pending queue is now empty.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand

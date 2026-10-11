@@ -468,7 +468,7 @@ without asking you a question**. If you find yourself thinking
 "the agent will figure that out" — write it down instead.
 
 Same for `plan/phases/phase_canonical_sibling.md` — rename it
-to match your phase number (usually phase 4 or 5) as you edit
+to match your phase number (usually phase 5) as you edit
 it. This is the **template** every later page-family /
 feature-surface phase mirrors. Time spent here amortizes across
 the whole build.
@@ -743,7 +743,7 @@ which assumes a working loop and is about leaving for 80 hours.
       [`../customization/external-services.md`](../customization/external-services.md).
 - [ ] `plan/steps/01_build_plan.md` has 10–20 phases.
 - [ ] Phase 1 brief is detailed enough to ship without asking.
-- [ ] Canonical sibling brief (usually phase 4 or 5) is detailed.
+- [ ] Canonical sibling brief (usually phase 5) is detailed.
 - [ ] At least one design artifact (visual system, design
       tokens, or a `claude-design.prompt.md` for commissioning
       one) is either committed or has a written brief. See

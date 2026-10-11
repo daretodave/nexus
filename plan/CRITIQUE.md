@@ -11,7 +11,9 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [LOW] playbooks/new-project.md:471,742 — canonical-sibling phase number hedged as "phase 4 or 5" against the file's own fixed "4 substrate phases" rule
+## Done
+
+### [x] [LOW] playbooks/new-project.md:471,746 — canonical-sibling phase number hedged as "phase 4 or 5" against the file's own fixed "4 substrate phases" rule — this commit
 - category: instruction-drift
 - observation: step 3 fixes "4 substrate phases at the front"
   (bootstrap, data, content, URL contract) — making the first
@@ -22,22 +24,18 @@ path, comprehension stumble. See `skills/critique.md`.
   <CANONICAL SIBLING>`, line 75) all agree on phase 5
   unconditionally. But line 471 ("rename it to match your phase
   number (usually phase 4 or 5)") and the Day-1 checklist line
-  742 ("Canonical sibling brief (usually phase 4 or 5) is
-  detailed") introduce an unexplained "4 or" alternative that
-  contradicts the fixed substrate-phase count and the template's
+  746 ("Canonical sibling brief (usually phase 4 or 5) is
+  detailed") introduced an unexplained "4 or" alternative that
+  contradicted the fixed substrate-phase count and the template's
   own hardcoded "Phase 5" heading.
 - evidence: `templates/plan/steps/01_build_plan.md:75`
   ("### Phase 5 — <CANONICAL SIBLING>") vs
   `playbooks/new-project.md:471` ("...rename it to match your
   phase number (usually phase 4 or 5)...").
-- suggested fix: drop the "4 or" hedge and say "usually phase 5"
-  in both spots to match the template and the rest of the
-  playbook — or, if some projects legitimately land it at phase 4
-  (e.g. skipping a substrate phase), add a clause explaining when
-  that happens so the hedge isn't unexplained.
+- fix: dropped the "4 or" hedge in both spots — both now read
+  "usually phase 5," matching the template and the rest of the
+  playbook.
 - source: dry-run
-
-## Done
 
 ### [x] [MED] playbooks/new-project.md:594 — step 9's "Manual" external-services path never shows the `setup/00_files.md` copy command — this commit
 - category: ordering
