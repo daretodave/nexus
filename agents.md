@@ -116,7 +116,7 @@ verbs — a docs kit ships docs, not pages.
 | `critique` | `skills/critique.md` | Dry-run adoption as a stranger; file friction findings. |
 | `triage` | `skills/triage.md` | Route incoming GitHub issues. |
 | `expand` | `skills/expand.md` | Propose new phases from accumulated signals. |
-| `oversight` | `skills/oversight.md` | **User-in-the-loop.** The only skill that asks. |
+| `oversight` | `skills/oversight.md` | **User-in-the-loop.** The general-purpose skill that asks (`lessons-pr` carries the one narrow planning-step carve-out). |
 | `jot` | `skills/jot.md` | User quickfire → `plan/CRITIQUE.md`. |
 | `digest` | `skills/digest.md` | **The night shift.** Daily morning briefing → `plan/DIGEST.md`; tuning proposals as candidates. Own workflow, never dispatched by march. |
 | `lessons-pr` | `skills/lessons-pr.md` | Fold a sibling project's lessons into the kit. |

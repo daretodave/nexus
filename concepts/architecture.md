@@ -347,14 +347,16 @@ deploy state for HEAD and reports it. It doesn't trigger
 deploys (the push does that) or judge the deploy beyond
 ready/error. This makes it cheap to add to any project.
 
-### 6. AskUserQuestion only in oversight (plus bootstrap's carve-out).
+### 6. AskUserQuestion only in oversight (plus two carve-outs).
 
-Every other skill is autonomous. `bootstrap` is the one named
-exception — it collects tokens and confirms destructive-feeling
-provisioning actions, documented in its own file. If you find
-yourself wanting to ask the user mid-skill anywhere else,
-**you're using the wrong skill**. The right move is to surface
-the question in oversight (write to AUDIT.md as
+Every other skill is autonomous. `bootstrap` and `lessons-pr`
+are the two named exceptions: bootstrap collects tokens and
+confirms destructive-feeling provisioning actions; lessons-pr
+asks only at its planning step, before the plan ships. Both
+are documented in their own files. If you find yourself
+wanting to ask the user mid-skill anywhere else, **you're
+using the wrong skill**. The right move is to surface the
+question in oversight (write to AUDIT.md as
 `[needs-user-call]`) and continue.
 
 ### 7. Bias the loop, don't paper-over it.

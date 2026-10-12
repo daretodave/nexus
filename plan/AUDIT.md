@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-09
+# Kit audit — 2026-10-12
 
 > Bias: none
 
@@ -2159,6 +2159,44 @@ alternative to match the template's and the rest of the
 playbook's fixed "phase 5" convention. `plan/CRITIQUE.md`'s
 Pending queue is now empty.
 
+Cloud tick 2026-10-12: header 3 days old (last full sweep
+2026-10-09, above), past the 24h threshold, so ran a fresh A-G
+sweep (delegated the read-only pass to an agent to protect
+context; `node scripts/verify.mjs` confirmed green first).
+`plan/CRITIQUE.md`'s Pending queue confirmed empty; this
+block's three durable rows (`[user-issue #40]`, `[#35]`,
+`[#49]`) stay blocked on the same cloud-push-token
+workflows-scope gap, score 0.8 each. F (model-id hedges), C
+(every external URL + internal anchor), E (both placeholder
+one-liners actually executed in scratch dirs), G (sibling
+lessons files, still absent), and B (adopt-by-need table vs.
+prune list) all swept clean. Found one new row, scored well
+above the durable blocked rows and shipped this tick: `[A,
+4.5]` — README.md's Hard Rule #6 (commit `a5bd02f`, 4 days
+old) named `pre-spec.md`'s interview as "the one carve-out
+outside" `/oversight`+`/bootstrap`, but `skills/lessons-pr.md`
+§3 (predates that commit) documents its own AskUserQuestion
+carve-out at its planning step — a second, already-shipped
+exception the absolute "the one" phrasing didn't account for.
+The same root claim recurred in `concepts/architecture.md` §6
+("bootstrap is the one named exception"), `concepts/
+asking-well.md` (header blockquote, the standing-rule quote,
+and "Where this is used today"'s "narrower of the two"),
+`playbooks/pre-spec.md`:41 (quotes the same standing rule), and
+two nexus-self-only mentions (`agents.md`:119,
+`skills/oversight.md`:3 — both say "the only skill that asks").
+Fixed all seven, generalizing the claim to name both carve-outs
+explicitly and adding `lessons-pr.md` to asking-well.md's
+"used today" list. `templates/` copies of this rule
+(`templates/agents.md`:141 and others fixed by the prior
+`a5bd02f`/HIGH-row commit) were deliberately left untouched —
+`lessons-pr.md` has no `templates/` counterpart (confirmed by a
+2026-09 AUDIT tick), so adopters' copies never see the second
+exception and the templated wording stays accurate as-is. One
+lower-scoring row found and queued to Pending below: `[D/A,
+2.7, low confidence]` (new-project.md's "Common pitfalls"
+phase-count hedge).
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -2242,7 +2280,56 @@ Pending queue is now empty.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
+### [D/A, 2.7, low confidence] playbooks/new-project.md:705 "Common pitfalls" narrows the phase-count target to 12-17 without explaining why it differs from the canonical "10-20" stated three times elsewhere
+- category: voice/doc-drift
+- impact: 3, ease: 9
+- evidence: `playbooks/new-project.md` lines 15, 228, and 744
+  all say "Aim for **10–20 phases total**." Line 705 (Common
+  pitfalls) instead says "If your plan is only 6 phases,
+  you'll run out of work in 2 days. Aim for **12–17**." — a
+  narrower sub-range with no stated rationale for why pitfalls
+  uses a tighter band than the canonical guidance repeated
+  three times elsewhere.
+- next: either change line 705 to match the canonical "10–20",
+  or add a one-clause reason for the narrower practical
+  sweet-spot. Low confidence: this could be deliberate nuance
+  (a tighter practical range inside a wider stated ceiling)
+  rather than drift — a human judgment call before spending a
+  tick on it.
+
 ## Done
+
+### [x] [A, 4.5] README's Hard Rule #6 claims pre-spec.md is "the one carve-out" outside /oversight+/bootstrap, but skills/lessons-pr.md documents a second, already-shipped one — this commit
+- category: doc-drift
+- impact: 5, ease: 9
+- evidence: `README.md:650-657` (introduced by commit
+  `a5bd02f`, 4 days old) said "Once a skill is running,
+  `AskUserQuestion` is allowed only in `/oversight` and
+  `/bootstrap`"... and `pre-spec.md`'s interview "is the one
+  carve-out outside this list." But `skills/lessons-pr.md`:57-61
+  §3 (predates that commit) explicitly documents its own
+  AskUserQuestion carve-out: "allowed at the planning step
+  only... This is the same carve-out
+  [`../playbooks/pre-spec.md`] has." That's a second
+  already-shipped exception the absolute "the one" phrasing
+  didn't account for. The same root claim recurred in
+  `concepts/architecture.md`:352 ("`bootstrap` is the one named
+  exception"), `concepts/asking-well.md` (header blockquote
+  lines 3-9, the standing-rule quote, and "Where this is used
+  today"'s "narrower of the two skill-level exceptions"),
+  `playbooks/pre-spec.md`:41 (quotes the same standing rule),
+  and two nexus-self-only mentions — `agents.md`:119 and
+  `skills/oversight.md`:3, both "the only skill that asks."
+- fix: reworded all seven to name both carve-outs (`/bootstrap`
+  and `/lessons-pr`) explicitly, and added a `skills/lessons-pr.md`
+  row to `asking-well.md`'s "Where this is used today" list.
+  `templates/agents.md`:141 and the other `templates/` copies
+  of this rule (fixed by the prior `a5bd02f` HIGH-row commit)
+  were deliberately left untouched: `lessons-pr.md` has no
+  `templates/` counterpart (confirmed by a 2026-09 AUDIT tick —
+  it's a nexus-self-only meta-skill), so an adopter's copy
+  never sees the second exception and the templated wording
+  stays accurate as written.
 
 ### [x] [F, 3.6] three templates/scripts/*.mjs header comments still say "Node >=18" against the reconciled 20+ floor — this commit
 - category: freshness

@@ -1,9 +1,11 @@
 # Skill: oversight (nexus)
 
-> **User-in-the-loop. The only skill that asks.** Audit the
-> kit's state, brief the user in ~20 lines, ask 1–4 computed
-> questions, apply the answers to the plan files, commit. The
-> emergency brake and the calibration touch.
+> **User-in-the-loop. The general-purpose skill that asks**
+> (`lessons-pr` carries the one narrow planning-step
+> carve-out). Audit the kit's state, brief the user in ~20
+> lines, ask 1–4 computed questions, apply the answers to the
+> plan files, commit. The emergency brake and the calibration
+> touch.
 
 ## 1. Purpose
 

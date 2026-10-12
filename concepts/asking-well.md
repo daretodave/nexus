@@ -2,13 +2,14 @@
 
 > A reusable convention for the rare moments where a nexus
 > skill is allowed to ask the user a question. Today that's
-> `/oversight`, `/bootstrap`, and the pre-spec interview.
-> Tomorrow it may be a fourth — same pattern.
+> `/oversight`, `/bootstrap`, `/lessons-pr`, and the pre-spec
+> interview. Tomorrow it may be a fifth — same pattern.
 >
 > The methodology's #1 hard rule is "skills decide; only
-> `/oversight` and `/bootstrap` ask." But when a skill *does*
-> ask, the shape of the ask is load-bearing. Bad questions cost
-> minutes per click and trash the user's trust in the loop.
+> `/oversight`, `/bootstrap`, and `/lessons-pr` ask." But when
+> a skill *does* ask, the shape of the ask is load-bearing. Bad
+> questions cost minutes per click and trash the user's trust
+> in the loop.
 > Good questions feel like a competent colleague handing you a
 > short ballot with the obvious choice pre-highlighted.
 
@@ -171,8 +172,10 @@ question budget for decisions that change behavior.
   above.
 - **[`templates/skills/bootstrap.md`](../templates/skills/bootstrap.md)**
   — token collection and destructive-action confirmation
-  during provisioning; the narrower of the two skill-level
-  exceptions.
+  during provisioning.
+- **[`skills/lessons-pr.md`](../skills/lessons-pr.md)** — asks
+  only at its planning step, before the plan ships; a
+  nexus-self meta-skill with no `templates/` counterpart.
 
 Future skills that need the `AskUserQuestion` exception
 should reference this doc rather than re-deriving the

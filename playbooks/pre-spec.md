@@ -38,11 +38,11 @@ When **not** to use it:
 
 ## Decide vs. ask — the carve-out
 
-Nexus's standing rule is "skills decide; only `/oversight`
-and `/bootstrap` ask." **The pre-spec session is an
-explicit carve-out.** The agent running this playbook isn't
-yet inside a shipping skill; it's helping the user write the
-brief that *will be* the input to skills. Asking questions
+Nexus's standing rule is "skills decide; only `/oversight`,
+`/bootstrap`, and `/lessons-pr` ask." **The pre-spec session
+is an explicit carve-out.** The agent running this playbook
+isn't yet inside a shipping skill; it's helping the user write
+the brief that *will be* the input to skills. Asking questions
 here is the job.
 
 Once `spec.md` is written and committed at the end of this

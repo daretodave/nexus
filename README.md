@@ -648,13 +648,14 @@ upfront:
 5. **The deploy gate runs after every push.** A red deploy is a
    blocked tick.
 6. **Once a skill is running, `AskUserQuestion` is allowed only
-   in `/oversight` and `/bootstrap`** (bootstrap's narrow,
-   documented carve-out for token collection and
-   destructive-action confirmation). Every other skill decides
-   and ships. `pre-spec.md`'s one-time interactive interview,
-   before any skill exists yet (see
-   [Three paths to start](#three-paths-to-start)), is the one
-   carve-out outside this list.
+   in `/oversight`**, plus two narrow, documented carve-outs:
+   `/bootstrap` (token collection and destructive-action
+   confirmation) and `/lessons-pr` (planning step only, before
+   the plan ships). Every other skill decides and ships.
+   `pre-spec.md`'s one-time interactive interview, before any
+   skill exists yet (see
+   [Three paths to start](#three-paths-to-start)), is allowed
+   separately — it isn't a skill yet at that point.
 
 ---
 
