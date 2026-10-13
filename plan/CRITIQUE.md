@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-10-10
-> Pass count: 25
+> Last pass: 2026-10-13
+> Pass count: 26
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,40 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [MED] README.md:276-282 vs playbooks/pre-spec.md:29-35 — "Three paths to start" diagram routes existing-code repos into pre-spec.md, which then tells them not to use it
+- category: ordering
+- observation: the mermaid flowchart's only gate before routing
+  to pre-spec.md is "Have a spec.md?" — a "no, but I have a
+  pitch" answer goes straight to `presp` regardless of whether
+  the repo already has code. The "Existing repo with code?"
+  check (`brown_check`) only appears *after* `presp --> green`,
+  i.e. downstream of pre-spec.md, not before it. But
+  `playbooks/pre-spec.md` itself (lines 29-35, "When not to use
+  it") explicitly disqualifies this exact case: "The repo has
+  existing code and history. Use existing-project.md instead;
+  the pre-spec interview is for blank-slate work." A stranger
+  with an existing-code repo and a pitch-but-no-spec follows the
+  diagram into pre-spec.md, reads its own opening disqualifier,
+  and has to backtrack to figure out they actually wanted
+  existing-project.md (which itself handles writing a
+  retrospective spec in its own §2) — the diagram sent them to a
+  file that immediately tells them it isn't for them.
+- evidence: `README.md:276-282` (`spec -- "no, but I have a
+  pitch" --> presp[...]`; `brown_check` node only reachable via
+  `green`, after `presp`) vs `playbooks/pre-spec.md:29-35` ("The
+  repo has existing code and history. Use existing-project.md
+  instead... the pre-spec interview is for blank-slate work.")
+- suggested fix: either (a) add an existing-code check before
+  the pitch/no-spec branch in the diagram (route "no spec,
+  existing code" straight to `existing-project.md`, bypassing
+  pre-spec.md, and only send fresh/no-code repos with a pitch to
+  `presp`), or (b) soften pre-spec.md's disqualifier to
+  acknowledge the diagram's ordering explicitly (e.g. "if you
+  arrived here via the diagram and already have code, the
+  retrospective-spec step in existing-project.md §2 covers this
+  better — bail out now").
+- source: dry-run
 
 ## Done
 
