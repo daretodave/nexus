@@ -1,106 +1,92 @@
-# Digest — 2026-10-12
+# Digest — 2026-10-13
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-A third confirmed instance of the exact wasted-tick pattern
-phase 20 exists to close hit overnight — and this time it
-nested one level deeper (the delegated audit agent itself
-fanned out three background sub-agents, then both it and the
-tick above it ended their turns waiting on notifications that
-can never arrive) — bookended by two ticks that shipped
-cleanly, including one that closed a real user-filed issue
-across seven files.
+A quiet window: two `march` ticks both correctly fell through to
+a no-op or queue-maintenance commit, and — notably — the 21:57
+tick resolved its no-finding case cleanly instead of repeating
+the background-dispatch hang flagged in three prior digests.
 
 ## While you were out
 
-Window: since the last digest commit (2026-10-11 16:27 UTC).
+Window: since the last digest commit (2026-10-12 19:58 UTC).
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 10-11 18:36 | march → iterate | Fresh A-G sweep (delegated, single foreground-awaited agent) found nothing new. Shipped CRITIQUE's queued LOW row instead: `playbooks/new-project.md`'s "usually phase 4 or 5" hedge (lines 471, 746) dropped its unexplained "4 or," matching the fixed "phase 5" convention everywhere else. Commit `b8aa764`. |
-| 10-11 23:26 | march → iterate | Delegated the AUDIT sweep to a background agent; that agent itself spawned three further background sub-agents (doc-drift/completeness, link+voice, friction+freshness), then reported back "still running" instead of compiling. The tick above it accepted that hand-back and also ended its turn waiting — "I'll end this turn and wait for the background sub-agents' completion notifications." No commit; cloud ticks are stateless between invocations, so nothing resumed. Third confirmed instance of the phase-20 failure mode (prior: 10-09 19:14, 10-11 08:16, both previous digests), and the first to recur one dispatch level deeper than the two prior instances. |
-| 10-12 08:35 | march → iterate | Fresh A-G sweep (again a single foreground-awaited agent — no async wait this time) found 2 findings. Shipped the higher-scoring one (`[A, 4.5]`): README's Hard Rule #6 claimed `pre-spec.md`'s interview was "the one carve-out" outside `/oversight`+`/bootstrap`, but `skills/lessons-pr.md` §3 already documents its own AskUserQuestion carve-out — a second, already-shipped exception the absolute phrasing missed. Reworded all seven live mentions (`README.md`, `concepts/architecture.md`, `concepts/asking-well.md` ×3, `playbooks/pre-spec.md`, `agents.md`, `skills/oversight.md`) to name both carve-outs, and added `lessons-pr.md` to asking-well.md's "used today" list. Closed `#75`. Commit `af8126c`. |
+| 10-12 21:57 | march → iterate → expand | Clean no-op: iterate's fresh sweep found the top AUDIT row scores 2.7 (below the 3.0 ship floor) and is flagged low-confidence; expand found zero new signals (everything open is already a pending candidate or promoted phase). Self-diagnosed and ended cleanly this time — no lingering background-agent wait (contrast the three incidents this file flagged on 10-09, 10-11, and 10-11 again). No commit. |
+| 10-13 00:38 | heartbeat | Green. |
+| 10-13 08:55 | march → iterate → expand | Fresh A-G sweep again found nothing ≥3.0, so posture `bold` fell to expand pass 21: checked all five signal sources, only the Claude Code changelog moved (v2.1.292 → v2.1.296, one more auto-mode-specific entry — a denial-message change reverted inside the same four-version window). Re-evidenced the standing "Auto mode" candidate for a sixth straight pass; 0 new candidates cleared the bar. Commit `bb9e08f`. |
+| 10-13 14:09 | heartbeat | Green. |
 
-`heartbeat` ran green across the window (3 runs inside it, all
-success, no flatline alarms). No `triage` or `loop:do`
-activity; no open `triage:needs-user` issues.
+`heartbeat` ran green across the window (2 runs, both success,
+no flatline alarms). No `triage` or `loop:do` activity; no open
+`triage:needs-user` issues.
 
 ## Shipped
 
-- `b8aa764` — `playbooks/new-project.md`'s canonical-sibling
-  phase number no longer hedges "4 or 5"; it agrees with step
-  3's fixed substrate-phase count and the shipped template
-  everywhere.
-- `af8126c` — README's AskUserQuestion carve-out rule now names
-  both exceptions (`/bootstrap`, `/lessons-pr`) instead of
-  implying `pre-spec.md` is the only one, across all seven live
-  mentions. Closes `#75`.
+- `bb9e08f` — `plan/PHASE_CANDIDATES.md` header bumped to pass
+  21 and the "Auto mode" candidate's evidence log extended with
+  the latest changelog check. Queue maintenance, not a kit fix —
+  no doc/template content changed this window.
 
 ## Queues now
 
-- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 50
-  days blocked) and phase 32 (`#49`, 43 days blocked), both on
+- **Build plan:** 0 pending, 2 blocked — phase 20 (`#35`, 51
+  days blocked) and phase 32 (`#49`, 44 days blocked), both on
   the same cloud-push-token workflows-scope gap; unchanged this
   window.
-- **AUDIT:** 4 pending (up from 3) — the three durable
-  `[user-issue #N]` rows (`#40`, `#35`, `#49`, 0.8 each,
-  unchanged) plus one fresh row from the 08:35 sweep: `[D/A,
-  2.7, low confidence]` — `playbooks/new-project.md:705`'s
-  "Common pitfalls" narrows the phase-count target to 12–17
-  against the canonical "10–20" stated three times elsewhere,
-  with no stated reason for the tighter band. Header fresh (the
-  08:35 tick's own sweep, ~11h old).
-- **CRITIQUE:** 0 pending, last pass 2026-10-10 (pass 25), 4
-  commits since — nowhere near the 72h/8-commit gate.
+- **AUDIT:** 4 pending, unchanged — the three durable
+  `[user-issue #N]` rows (`#40`, `#35`, `#49`, 0.8 each) plus the
+  one carried fresh row, `[D/A, 2.7, low confidence]`
+  (`playbooks/new-project.md:705`'s "Common pitfalls" 12–17
+  phase-count hedge against the canonical "10–20" stated three
+  times elsewhere). Header ~33h old (last full sweep 2026-10-12
+  08:49 UTC) — under the 48h refresh threshold, not stale.
+- **CRITIQUE:** 0 pending, last pass 2026-10-10 (pass 25), 6
+  commits / 3 days since — nowhere near the 72h/8-commit gate.
 - **PHASE_CANDIDATES:** 31 raw rows under `## Pending`
   (unchanged); 4 are stale `[promoted → phase N]` rows never
   relocated (already tracked by the filed score-3.5 candidate).
-  True pending is 27 (23 >21d, oldest 102d, proposed
+  True pending is 27 (23 >21d, oldest 104d, proposed
   2026-07-02).
-- **Issues:** 5 open (`#49`/`#48`, `#40`, `#35`/`#34`) — `#75`
-  closed this window by the 08:35 tick. No open
-  `triage:needs-user` or `loop:do` issues.
+- **Issues:** 5 open (`#49`/`#48`, `#40`, `#35`/`#34`), unchanged
+  this window. No open `triage:needs-user` or `loop:do` issues.
 
 ## Needs you
 
 - Phase 20 (`#35`) and phase 32 (`#49`) both still need a local
   `/ship-a-phase` or `/oversight` session to push the
   workflow-file changes a cloud tick's App token can't — now
-  50/43 days blocked, unchanged in mechanism. The 10-11 23:26
-  tick adds a third, more severe data point for the same
-  already-scoped fix: the background-default dispatch bug now
-  demonstrably recurs one delegation level deeper than the
-  evidence phase 20 was written against, confirming the
-  platform-default-backgrounding root cause applies wherever a
-  sweep is further delegated, not just at the top dispatch.
+  51/44 days blocked, unchanged in mechanism.
 - No open `triage:needs-user` or `loop:do` issues.
 - oversight needed: candidate queue silting (23 pending >21d,
-  oldest 102d) — both silting thresholds (≥5 pending >21d,
-  oldest >45d) stay cleared past their bar, same as every
-  digest since the alarm shipped (phase 30).
+  oldest 104d) — both silting thresholds (≥5 pending >21d,
+  oldest >45d) stay cleared, same as every digest since the
+  alarm shipped (phase 30).
 
 ## Today's intent
 
 No pending build-plan phase (0 `[ ]` rows) — the loop routes to
 `/iterate`'s audit queue. CRITIQUE is empty; AUDIT's top
-non-durable row is the fresh `[D/A, 2.7, low confidence]`
-phase-count hedge (`new-project.md:705`), which outscores the
-three durable 0.8 rows but carries a flagged low-confidence
-caveat (could be deliberate nuance, not drift) worth a human
-glance before shipping. Neither the critique gate (4 commits /
-2 days since pass 25) nor the expand gate (8 commits / 3 days
-since pass 20, both under posture `bold`'s ≥20/>7d thresholds)
-is due, so the next `/march` tick stays on `/iterate`.
+non-durable row is still the carried `[D/A, 2.7, low
+confidence]` phase-count hedge (`new-project.md:705`) — below
+the 3.0 ship floor, so the next `/march` tick likely falls
+through to `/expand` again unless a fresh sweep or a human
+resolves the low-confidence flag first. Neither the critique
+gate (6 commits / 3 days since pass 25) nor the expand gate (0
+commits since pass 21 just ran) is due, both under posture
+`bold`'s ≥20/>7d thresholds, so the next `/march` tick stays on
+`/iterate`.
 
 ## Tuning proposals
 
-None filed this pass. The 10-11 23:26 tick's nested
-background-dispatch failure is fresh evidence for an
-already-filed, already-promoted item (phase 20 /
-`plan/PHASE_CANDIDATES.md:546`), blocked only on the
-push-token gap — re-filing would duplicate, not add a new
-candidate. No other mistuned gate, starved queue, or
-hibernating ceiling surfaced this window.
+None filed this pass. Both ticks this window resolved cleanly
+on their own terms — one a correctly-diagnosed no-op, one a
+queue re-evidencing pass — with no mistuned gate, starved queue,
+or hibernating ceiling surfaced. The 21:57 tick's clean exit is
+itself evidence the background-dispatch failure mode three
+earlier digests flagged may be intermittent rather than
+structural; worth one more window before treating it as settled.
