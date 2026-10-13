@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-10-09
-> Pass count: 20
+> Last pass: 2026-10-13
+> Pass count: 21
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -726,7 +726,8 @@ kit + sibling surveys.
 - proposed: 2026-09-09 (expand pass 9); re-evidenced 2026-09-19
   (expand pass 13); re-evidenced 2026-10-01 (expand pass 17);
   re-evidenced 2026-10-04 (expand pass 18); re-evidenced
-  2026-10-06 (expand pass 19)
+  2026-10-06 (expand pass 19); re-evidenced 2026-10-13 (expand
+  pass 21)
 - source signals: Claude Code's own "What's new" changelog
   (Week 32, Aug 3-7 2026) — "auto mode becomes the default
   permission mode for new sessions on Pro, Max, and Team
@@ -803,7 +804,16 @@ kit + sibling surveys.
   candidate's own "investigate... before writing the note"
   caveat about how auto mode composes with the hook/allowlist
   layer. Fifth straight pass confirming the surface is still
-  moving.
+  moving. Signal E, 2026-10-13 (expand pass 21): fetched the
+  changelog fresh again — `main` now runs through v2.1.296
+  (four more versions since pass 19's v2.1.292 check), with one
+  more auto-mode-specific entry: v2.1.293 "Reverted the auto
+  mode denial message change from 2.1.281" — the classifier's
+  own denial-message behavior changed, then changed back,
+  inside this single four-version window. Sixth straight pass
+  confirming the surface hasn't settled; still no structural
+  change that would resolve this candidate's "investigate,
+  don't assume" scope note either way.
 - rationale: `playbooks/hands-off.md` Step 1's whole premise —
   "burn down the prompt list... zero prompts across three
   attended ticks is the bar" — was written for a world where
