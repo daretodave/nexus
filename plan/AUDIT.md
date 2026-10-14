@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-12
+# Kit audit — 2026-10-14
 
 > Bias: none
 
@@ -2197,6 +2197,28 @@ lower-scoring row found and queued to Pending below: `[D/A,
 2.7, low confidence]` (new-project.md's "Common pitfalls"
 phase-count hedge).
 
+Digest tick 2026-10-14: header was >48h old (last full sweep
+2026-10-12), so per `skills/digest.md` §3 step 5, delegated a
+fresh A-G sweep to a research agent to protect context —
+audit only, nothing shipped (the digest's own rail; `/iterate`
+ships the fix next). `node scripts/verify.mjs` green on all
+seven legs (links 286/286, tree 199 entries/59 reverse-checked,
+discover 30 docs, placeholders 549 tokens, anatomy 25/25,
+emoji 146 files, dualshell 11 blocks). Sampled external links
+(`thock.xyz`, `github.com/daretodave/thock`, `github.com/apps/
+claude`, `cli.github.com`, `claude.com/claude-code`,
+`supabase.com/docs/guides/cli`, `ntfy.sh`) all 200. Dimension G
+empty — no sibling lessons files on disk. Commit `82b6b5c`'s
+README diagram fix and `957f406` (expand pass 22) both checked
+for new drift; neither introduced any. The three durable
+`[user-issue #40/#35/#49]` rows and the `[D/A, 2.7]` row are
+unchanged and still accurate. One new row found and queued to
+Pending below: `[F, 4.5]` — four model-id mentions (`Opus 4.8`
+×2, `claude-opus-4-8`, `claude-haiku-4-5`) still citing the
+prior lineup against the current Opus 5.5 / Sonnet 5.5 / Haiku
+5.5 / Fable 5.1 lineup, despite each already carrying the
+standing "ids age — check `/model`" hedge.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
@@ -2296,6 +2318,26 @@ phase-count hedge).
   (a tighter practical range inside a wider stated ceiling)
   rather than drift — a human judgment call before spending a
   tick on it.
+
+### [F, 4.5] four model-id mentions still cite the prior "Opus 4.8" / "claude-haiku-4-5" lineup against the current Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1 lineup
+- category: freshness
+- impact: 5, ease: 9
+- evidence: `templates/.github/CLOUD_LOOP.md`:36 and :233 both
+  say "Opus 4.8"; `customization/data-layer.md`:525's example
+  comment uses `"claude-opus-4-8"`; `templates/claude/agents/
+  generic-specialist.md`:5 uses `claude-haiku-4-5`. All four
+  already carry the standing "ids age — check `/model`" hedge,
+  which caps this at MED rather than HIGH — same recurring
+  class the kit has fixed before (Sonnet 4.6→5, Opus 4.7→4.8,
+  each scored 3.6–4.5). `plan/PHASE_CANDIDATES.md`:775 (expand
+  pass 17, 2026-10-01) already flagged the lineup move in
+  passing but no tick has swept the live docs for it since.
+- next: bump "Opus 4.8" → "Opus 5.5" in both `templates/.github/
+  CLOUD_LOOP.md` lines, `claude-opus-4-8` → `claude-opus-5-5`
+  in `customization/data-layer.md`:525, and
+  `claude-haiku-4-5` → `claude-haiku-5-5` in `templates/claude/
+  agents/generic-specialist.md`:5. Keep the existing hedge
+  comments verbatim; this is a value swap, not a rewording.
 
 ## Done
 
