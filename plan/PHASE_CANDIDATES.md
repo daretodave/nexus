@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-10-13
-> Pass count: 21
+> Last pass: 2026-10-14
+> Pass count: 22
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -727,7 +727,7 @@ kit + sibling surveys.
   (expand pass 13); re-evidenced 2026-10-01 (expand pass 17);
   re-evidenced 2026-10-04 (expand pass 18); re-evidenced
   2026-10-06 (expand pass 19); re-evidenced 2026-10-13 (expand
-  pass 21)
+  pass 21); re-evidenced 2026-10-14 (expand pass 22)
 - source signals: Claude Code's own "What's new" changelog
   (Week 32, Aug 3-7 2026) — "auto mode becomes the default
   permission mode for new sessions on Pro, Max, and Team
@@ -813,7 +813,23 @@ kit + sibling surveys.
   inside this single four-version window. Sixth straight pass
   confirming the surface hasn't settled; still no structural
   change that would resolve this candidate's "investigate,
-  don't assume" scope note either way.
+  don't assume" scope note either way. Signal E, 2026-10-14
+  (expand pass 22): fetched the changelog fresh again — `main`
+  now runs through v2.1.299 (three more versions since pass
+  21's v2.1.296 check), with three more auto-mode-specific
+  entries: a fix for SDK/headless sessions staying in auto mode
+  after the host switched to a model that doesn't support it, a
+  fix for tools from an MCP server named `constructor` or
+  `toString` wrongly asking for permission in auto mode and
+  bypass-permissions mode, and a narrowing of what a
+  `PermissionRequest` hook can approve in Cowork cloud sessions
+  (shell commands and subagents now wait or are denied rather
+  than being hook-approved) — the last one is a different
+  product surface (Cowork cloud sessions, not the GitHub
+  Actions-based cloud loop this kit documents) so it's noted but
+  not treated as directly applicable. Seventh straight pass
+  confirming the surface hasn't settled; still no structural
+  change either way.
 - rationale: `playbooks/hands-off.md` Step 1's whole premise —
   "burn down the prompt list... zero prompts across three
   attended ticks is the bar" — was written for a world where
