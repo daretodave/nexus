@@ -142,7 +142,7 @@ jobs:
           # Alternative: ANTHROPIC_API_KEY env var (pay-per-token).
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Sonnet for cheap-on-quota dispatch. Upgrade to
-          # claude-opus-4-8 once you've measured a week of weekly-cap
+          # claude-opus-5-5 once you've measured a week of weekly-cap
           # consumption and confirmed headroom.
           #
           # --permission-mode bypassPermissions is REQUIRED here:

@@ -2319,25 +2319,6 @@ standing "ids age — check `/model`" hedge.
   rather than drift — a human judgment call before spending a
   tick on it.
 
-### [F, 4.5] four model-id mentions still cite the prior "Opus 4.8" / "claude-haiku-4-5" lineup against the current Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1 lineup
-- category: freshness
-- impact: 5, ease: 9
-- evidence: `templates/.github/CLOUD_LOOP.md`:36 and :233 both
-  say "Opus 4.8"; `customization/data-layer.md`:525's example
-  comment uses `"claude-opus-4-8"`; `templates/claude/agents/
-  generic-specialist.md`:5 uses `claude-haiku-4-5`. All four
-  already carry the standing "ids age — check `/model`" hedge,
-  which caps this at MED rather than HIGH — same recurring
-  class the kit has fixed before (Sonnet 4.6→5, Opus 4.7→4.8,
-  each scored 3.6–4.5). `plan/PHASE_CANDIDATES.md`:775 (expand
-  pass 17, 2026-10-01) already flagged the lineup move in
-  passing but no tick has swept the live docs for it since.
-- next: bump "Opus 4.8" → "Opus 5.5" in both `templates/.github/
-  CLOUD_LOOP.md` lines, `claude-opus-4-8` → `claude-opus-5-5`
-  in `customization/data-layer.md`:525, and
-  `claude-haiku-4-5` → `claude-haiku-5-5` in `templates/claude/
-  agents/generic-specialist.md`:5. Keep the existing hedge
-  comments verbatim; this is a value swap, not a rewording.
 
 ## Done
 
@@ -3548,3 +3529,43 @@ reaches the interview. `node scripts/verify.mjs` green (all
 seven legs, 286 links). CRITIQUE row moved Pending → Done. The
 three durable rows and the D/A row remain Pending; no other
 findings surfaced this tick.
+
+### [x] [F, 4.5] four model-id mentions still cite the prior "Opus 4.8" / "claude-haiku-4-5" lineup against the current Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1 lineup — this commit
+- category: freshness
+- impact: 5, ease: 9
+- evidence: `templates/.github/CLOUD_LOOP.md`:36 and :233 both
+  said "Opus 4.8"; `customization/data-layer.md`:525's example
+  comment used `"claude-opus-4-8"`; `templates/claude/agents/
+  generic-specialist.md`:5 used `claude-haiku-4-5`. All four
+  already carried the standing "ids age — check `/model`" hedge.
+- fix: bumped "Opus 4.8" → "Opus 5.5" in both `CLOUD_LOOP.md`
+  lines, `claude-opus-4-8` → `claude-opus-5-5` in
+  `data-layer.md`:525, and `claude-haiku-4-5` →
+  `claude-haiku-5-5` in `generic-specialist.md`:5 — hedge
+  comments left verbatim, value swap only, exactly as the row's
+  `next` prescribed. Widened scope during the fix: a fifth,
+  previously-unflagged mention of the same stale id —
+  `templates/.github/workflows/march.yml`:145's comment
+  (`claude-opus-4-8 once you've measured a week of weekly-cap
+  consumption`) — shares the same root cause and the same
+  public-API-adjacent surface (a template file), so it was
+  bumped to `claude-opus-5-5` too. Confirmed no matching gaps in
+  nexus's own root `.github/workflows/march.yml` or
+  `.github/CLOUD_LOOP.md` (grep clean).
+
+Cloud tick 2026-10-14 (second): no pending build-plan phase;
+triage gate clear (0 urgent, 0 unlabeled); critique gate not due
+(3 commits / ~8h since pass 26); expand gate not due (pass 22
+ran this same day, 0 commits/0 days since). Header <24h old
+(updated by the prior tick this morning), so re-scored rather
+than re-swept. This block's Pending rows were the three durable
+`[user-issue #40/#35/#49]` (0.8 each, blocked on the cloud
+push-token workflows-scope gap, needs a local session) and
+`[D/A, 2.7, low confidence]` (new-project.md's phase-count
+hedge, flagged low-confidence/possibly-deliberate) — but the
+night shift's digest tick had already queued a higher scorer,
+`[F, 4.5]` (model-id lineup drift), above both. Shipped that one
+(above) rather than the blocked or low-confidence rows. `node
+scripts/verify.mjs` green (all seven legs, 286 links, 549
+placeholder tokens). The three durable rows and the `[D/A, 2.7]`
+row remain Pending; no other findings surfaced this tick.
