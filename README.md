@@ -274,11 +274,13 @@ You **don't** want this when:
 ```mermaid
 flowchart LR
   spec{Have a spec.md?} -- yes --> green["playbooks/new-project.md"]
-  spec -- "no, but I have a pitch" --> presp["playbooks/pre-spec.md (interactive)"]
+  spec -- "no, but I have a pitch" --> pitch_check{Existing repo with code?}
   spec -- nothing yet --> think[Come back when you have a pitch.]
+  pitch_check -- yes --> brown["playbooks/existing-project.md"]
+  pitch_check -- no --> presp["playbooks/pre-spec.md (interactive)"]
   presp --> green
   green --> brown_check{Existing repo with code?}
-  brown_check -- yes --> brown["playbooks/existing-project.md"]
+  brown_check -- yes --> brown
   brown_check -- no --> ship[/ship-a-phase manually for the first time/]
 ```
 

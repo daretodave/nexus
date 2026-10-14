@@ -11,7 +11,11 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] README.md:276-282 vs playbooks/pre-spec.md:29-35 — "Three paths to start" diagram routes existing-code repos into pre-spec.md, which then tells them not to use it
+(none)
+
+## Done
+
+### [x] [MED] README.md:276-282 vs playbooks/pre-spec.md:29-35 — "Three paths to start" diagram routes existing-code repos into pre-spec.md, which then tells them not to use it — this commit
 - category: ordering
 - observation: the mermaid flowchart's only gate before routing
   to pre-spec.md is "Have a spec.md?" — a "no, but I have a
@@ -43,9 +47,18 @@ path, comprehension stumble. See `skills/critique.md`.
   arrived here via the diagram and already have code, the
   retrospective-spec step in existing-project.md §2 covers this
   better — bail out now").
+- fix: applied suggested-fix (a) — the diagram now gates on
+  "Existing repo with code?" (`pitch_check`) immediately after
+  the "no, but I have a pitch" branch, before `presp`. "No
+  spec, existing code" now routes straight to
+  `playbooks/existing-project.md`, bypassing pre-spec.md
+  entirely; only "no spec, no code" still reaches it. The
+  original downstream `brown_check` stays in place for the
+  "have a spec.md" branch and now points at the same `brown`
+  node. `pre-spec.md`'s disqualifier text is unchanged — it's
+  no longer reachable from this case, so it stays accurate as a
+  safety net for anyone who lands there by other means.
 - source: dry-run
-
-## Done
 
 ### [x] [LOW] playbooks/new-project.md:471,746 — canonical-sibling phase number hedged as "phase 4 or 5" against the file's own fixed "4 substrate phases" rule — this commit
 - category: instruction-drift

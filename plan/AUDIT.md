@@ -3484,3 +3484,25 @@ both directions; placeholder table matches both bash/PowerShell
 one-liners key-for-key; model ids current and hedged; G still
 empty (no sibling lessons files reachable on disk). The three
 durable rows and no other Pending rows remain.
+
+Cloud tick 2026-10-14: no pending build-plan phase (all rows
+`[x]` or `[blocked: ...]`); triage gate clear (0 urgent, 0
+unlabeled); critique gate not due (0 commits / ~11h since pass
+26); expand gate not due (2 commits / ~1 day since pass 21,
+posture `bold` needs 20 commits or 7 days). Header is >24h old
+(2026-10-12) but `plan/CRITIQUE.md`'s sole Pending row — the
+MED "Three paths to start" diagram routing an existing-code
+repo into `pre-spec.md`, which then disqualifies that exact
+case (pass 26, `4814b91`) — scored well above this block's three
+durable rows (0.8 each) and the low-confidence D/A row (2.7) on
+impact×ease alone (MED impact 5-7 × a doc-only two-file fix),
+so shipped it without a fresh A-G sweep rather than spend the
+tick re-deriving a lower-value pick. Applied the row's suggested
+fix (a): `README.md`'s mermaid diagram now gates on "Existing
+repo with code?" immediately after the "no, but I have a pitch"
+branch, before `pre-spec.md`, so "no spec, existing code" routes
+straight to `existing-project.md`; only "no spec, no code" still
+reaches the interview. `node scripts/verify.mjs` green (all
+seven legs, 286 links). CRITIQUE row moved Pending → Done. The
+three durable rows and the D/A row remain Pending; no other
+findings surfaced this tick.
