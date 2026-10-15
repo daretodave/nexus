@@ -1,7 +1,7 @@
 # Phase candidates
 
-> Last pass: 2026-10-14
-> Pass count: 22
+> Last pass: 2026-10-15
+> Pass count: 23
 > Posture: bold
 
 `/expand` files candidates here; `/oversight` promotes them
@@ -727,7 +727,8 @@ kit + sibling surveys.
   (expand pass 13); re-evidenced 2026-10-01 (expand pass 17);
   re-evidenced 2026-10-04 (expand pass 18); re-evidenced
   2026-10-06 (expand pass 19); re-evidenced 2026-10-13 (expand
-  pass 21); re-evidenced 2026-10-14 (expand pass 22)
+  pass 21); re-evidenced 2026-10-14 (expand pass 22); re-evidenced
+  2026-10-15 (expand pass 23)
 - source signals: Claude Code's own "What's new" changelog
   (Week 32, Aug 3-7 2026) — "auto mode becomes the default
   permission mode for new sessions on Pro, Max, and Team
@@ -829,7 +830,16 @@ kit + sibling surveys.
   Actions-based cloud loop this kit documents) so it's noted but
   not treated as directly applicable. Seventh straight pass
   confirming the surface hasn't settled; still no structural
-  change either way.
+  change either way. Signal E, 2026-10-15 (expand pass 23):
+  fetched the changelog fresh again — `main` now runs through
+  v2.1.300 (one more version since pass 22's v2.1.299 check),
+  with no new auto-mode-specific entries; the handful of new
+  items are Cowork-cloud-session-specific (same out-of-scope
+  surface noted last pass) and background-agent/subagent
+  bookkeeping fixes unrelated to the classifier itself. Eighth
+  straight pass confirming the surface hasn't settled, but this
+  check found nothing that changes the proposed scope's
+  "investigate, don't assume" note either way.
 - rationale: `playbooks/hands-off.md` Step 1's whole premise —
   "burn down the prompt list... zero prompts across three
   attended ticks is the bar" — was written for a world where
