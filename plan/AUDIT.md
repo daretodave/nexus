@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-14
+# Kit audit — 2026-10-19
 
 > Bias: none
 
@@ -3569,3 +3569,35 @@ night shift's digest tick had already queued a higher scorer,
 scripts/verify.mjs` green (all seven legs, 286 links, 549
 placeholder tokens). The three durable rows and the `[D/A, 2.7]`
 row remain Pending; no other findings surfaced this tick.
+
+Digest tick 2026-10-19: header was 5 days old (last full sweep
+2026-10-14's second tick, above), well past the 48h threshold,
+so ran a fresh A-G sweep (delegated the read-only pass to a
+foreground agent to protect context). All three durable rows
+confirmed still `OPEN` via `gh issue view` (`#40`, `#35`, `#49`)
+— same `ACTIONS_PAT` workflows-scope gap, unchanged. Reproduced
+`[D/A, 2.7, low confidence]` unchanged: `playbooks/
+new-project.md:705` ("Common pitfalls") still says "Aim for
+12-17" against lines 15/228/744's "10-20 phases total" — still
+flagged low-confidence, possibly deliberate tighter practical
+guidance rather than drift. `node scripts/verify.mjs` green
+(links 286, tree 199 entries/59 reverse-checked, discover 30
+docs, placeholders 549 tokens, anatomy 25/25, emoji 146 files,
+dualshell 11 blocks). Fresh whole-tree grep for stale model-id
+patterns (`Opus 4.x`/`Haiku 4.x`/`Sonnet 4.x`/`claude-opus-4-*`
+etc.) hit only historical log prose in this file, `plan/
+DIGEST.md`, and `plan/PHASE_CANDIDATES.md` — zero live-doc
+hits. G still empty — no `../kintilla`, no `NEXUS_LESSONS.md`
+anywhere on disk in this checkout. A clean sweep: no new rows
+found this pass. Separately (not an AUDIT finding, logged here
+for continuity): this window also saw a four-day cloud outage,
+2026-10-15 through 2026-10-19, 14 consecutive `march` ticks and
+4 consecutive `night` ticks failing on `api_error:
+usage_limit_reached` (the account's weekly usage quota, not a
+transient rate limit) — self-reported as issues `#76`/`#77`/
+`#78`, all triaged and closed by the first clean tick after the
+quota's stated 2026-10-19 08:00 UTC reset. Not a kit bug, no
+AUDIT row filed; full account in `plan/DIGEST.md`'s 2026-10-19
+entry. Audit only — shipped nothing, per `skills/digest.md`
+rule 2. The three durable rows and `[D/A, 2.7]` remain Pending,
+unchanged.
