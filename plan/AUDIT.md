@@ -2219,6 +2219,22 @@ prior lineup against the current Opus 5.5 / Sonnet 5.5 / Haiku
 5.5 / Fable 5.1 lineup, despite each already carrying the
 standing "ids age — check `/model`" hedge.
 
+Cloud tick 2026-10-20: header was >24h old (last touch
+2026-10-19 17:15), but `plan/CRITIQUE.md`'s Pending queue held
+a MED row scoring higher than everything already queued here
+(the three durable `[user-issue #40/#35/#49]` rows score 0.8
+each and stay blocked on the same cloud-push-token gap; the
+`[D/A, 2.7, low confidence]` row scores below the MED row's
+~3.6-4.2), so shipped that instead of running a fresh A-G
+sweep — same "queue beats sweep when it's clearly ahead"
+precedent as the 2026-07-12 ticks above. Shipped: extended
+`scripts/adopt-dryrun.mjs` to mechanize the "Prune
+adopt-by-need files" step and flag stale `agents.md` rows,
+which also exposed the playbook's own worked prune example as
+incomplete (file removal only, no `agents.md` edit) — fixed
+both in the same commit. The four AUDIT Pending rows below are
+unchanged and still accurate; no fresh sweep run.
+
 ## Pending
 
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand

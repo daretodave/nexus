@@ -413,7 +413,7 @@ nexus/
 ├── scripts/
 │   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
-│   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep step
+│   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep + prune steps
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
 │   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs as a pre-commit hook
 ├── playbooks/

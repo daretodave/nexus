@@ -28,8 +28,8 @@
 //                 has an adjacent ```powershell twin, or an explicit
 //                 <!-- dualshell:posix-only --> annotation
 //   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
-//                 copy + placeholder-sweep block. Skipped by the
-//                 default no-argument run; opt in with
+//                 copy + placeholder-sweep + prune blocks. Skipped by
+//                 the default no-argument run; opt in with
 //                 `node scripts/verify.mjs adopt-dryrun` or
 //                 `NEXUS_VERIFY_ADOPT_DRYRUN=1 node scripts/verify.mjs`
 //

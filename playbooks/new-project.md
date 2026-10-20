@@ -405,7 +405,7 @@ Example for a `Surface: service` project with `Structured data:
 none`, no UGC, no cloud loop, no `/bootstrap`, `Auth: none`, no
 hermetic e2e, not running the loop on Claude Code, and no
 outside-the-loop pre-commit hook wanted — none of the ten apply,
-so remove them all:
+so remove them all, including their `agents.md` rows:
 
 ```bash
 rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
@@ -418,6 +418,14 @@ rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
       .claude/commands/ship-data.md .claude/commands/ship-migration.md \
       .claude/commands/ship-asset.md .claude/commands/moderate.md \
       .claude/commands/digest.md .claude/commands/bootstrap.md
+sed -i.bak \
+    -e '/skills\/ship-data\.md/d' -e '/^\/ship-data\s/d' \
+    -e '/skills\/ship-migration\.md/d' -e '/^\/ship-migration\s/d' \
+    -e '/skills\/ship-asset\.md/d' -e '/^\/ship-asset\s/d' -e '/`brander`/d' \
+    -e '/skills\/moderate\.md/d' -e '/^\/moderate\s/d' \
+    -e '/skills\/digest\.md/d' -e '/^\/digest\s/d' \
+    -e '/skills\/bootstrap\.md/d' -e '/^\/bootstrap\s/d' \
+    agents.md && rm -f agents.md.bak
 ```
 
 ```powershell
@@ -431,10 +439,21 @@ Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migra
   .claude\commands\ship-data.md, .claude\commands\ship-migration.md, `
   .claude\commands\ship-asset.md, .claude\commands\moderate.md, `
   .claude\commands\digest.md, .claude\commands\bootstrap.md
+(Get-Content agents.md) | Where-Object {
+  $_ -notmatch 'skills/ship-data\.md' -and $_ -notmatch '^/ship-data\s' -and
+  $_ -notmatch 'skills/ship-migration\.md' -and $_ -notmatch '^/ship-migration\s' -and
+  $_ -notmatch 'skills/ship-asset\.md' -and $_ -notmatch '^/ship-asset\s' -and $_ -notmatch '`brander`' -and
+  $_ -notmatch 'skills/moderate\.md' -and $_ -notmatch '^/moderate\s' -and
+  $_ -notmatch 'skills/digest\.md' -and $_ -notmatch '^/digest\s' -and
+  $_ -notmatch 'skills/bootstrap\.md' -and $_ -notmatch '^/bootstrap\s'
+} | Set-Content agents.md
 ```
 
-Commit the templates as a single commit: `chore: nexus
-templates copied`.
+A different removal set needs the matching `sed`/`Where-Object`
+clauses swapped in — the pattern per skill is one `skills/<name>.md`
+line-match plus one `^/<name>\s` line-match, plus `` `brander` ``
+for `ship-asset`. Commit the templates as a single commit: `chore:
+nexus templates copied`.
 
 (nexus checks this walkthrough mechanically, on itself, with
 `node scripts/adopt-dryrun.mjs` — see `skills/critique.md`.)

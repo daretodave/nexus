@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // scripts/adopt-dryrun.mjs — mechanizes playbooks/new-project.md
-// step 4 (copy the templates, then sweep placeholders) against a
-// scratch dir, so a broken command fails a script instead of
-// waiting for the next /critique pass to hit it by hand.
+// step 4 (copy the templates, sweep placeholders, prune
+// adopt-by-need files using the step's own worked example)
+// against a scratch dir, so a broken command fails a script
+// instead of waiting for the next /critique pass to hit it by
+// hand.
 //
 //   node scripts/adopt-dryrun.mjs
 //
@@ -73,10 +75,12 @@ function main() {
   const doc = fs.readFileSync(PLAYBOOK, 'utf-8')
   const copyCmd = extractBashBlock(doc, /^###\s+Copy\s*$/)
   const sweepCmd = extractBashBlock(doc, /^###\s+Replace placeholders\s*$/)
+  const pruneCmd = extractBashBlock(doc, /^###\s+Prune adopt-by-need files\s*$/)
 
   const failures = []
   if (!copyCmd) failures.push('could not find the "### Copy" fenced bash block in playbooks/new-project.md')
   if (!sweepCmd) failures.push('could not find the "### Replace placeholders" fenced bash block in playbooks/new-project.md')
+  if (!pruneCmd) failures.push('could not find the "### Prune adopt-by-need files" fenced bash block in playbooks/new-project.md')
   if (failures.length) {
     failures.forEach((f) => console.error(`adopt-dryrun: ${f}`))
     process.exit(1)
@@ -116,6 +120,31 @@ function main() {
         }
       }
     }
+
+    // The example rm block removes every adopt-by-need file the playbook's
+    // worked example doesn't need — the exact scenario that left stale
+    // agents.md rows behind in the CRITIQUE finding this check closes.
+    execSync(pruneCmd, { cwd: adopterDir, shell: '/bin/bash', stdio: 'pipe' })
+
+    const agentsText = fs.readFileSync(path.join(adopterDir, 'agents.md'), 'utf-8')
+    const skillRowRe = /^\|\s*`([\w-]+)`\s*\|\s*`(skills\/[\w.-]+\.md)`\s*\|/gm
+    const skillNames = new Set()
+    for (const [, name, skillPath] of agentsText.matchAll(skillRowRe)) {
+      skillNames.add(name)
+      if (!fs.existsSync(path.join(adopterDir, skillPath))) {
+        failures.push(`prune step: agents.md Skills table still references \`${skillPath}\`, which the example prune removed`)
+      }
+    }
+    for (const [, name] of agentsText.matchAll(/^\/([\w-]+)\s/gm)) {
+      if (!skillNames.has(name)) continue // not one of this kit's own skills (e.g. the built-in /loop)
+      const commandPath = `.claude/commands/${name}.md`
+      if (!fs.existsSync(path.join(adopterDir, commandPath))) {
+        failures.push(`prune step: agents.md Invocation block still references \`/${name}\`, but \`${commandPath}\` was removed`)
+      }
+    }
+    if (/`brander`/.test(agentsText) && !fs.existsSync(path.join(adopterDir, '.claude/agents/brander.md'))) {
+      failures.push('prune step: agents.md Sub-agents table still references `brander`, but `.claude/agents/brander.md` was removed')
+    }
   } catch (err) {
     failures.push(`command failed — ${err.message}`)
   } finally {
@@ -127,7 +156,7 @@ function main() {
     failures.forEach((f) => console.error(`  ${f}`))
     process.exit(1)
   }
-  console.log(`adopt-dryrun: ok (${pairs.length} copy targets, ${scanned} files swept, 0 unresolved tokens)`)
+  console.log(`adopt-dryrun: ok (${pairs.length} copy targets, ${scanned} files swept, 0 unresolved tokens, agents.md clean after prune)`)
   process.exit(0)
 }
 

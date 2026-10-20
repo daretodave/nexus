@@ -11,7 +11,9 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [MED] playbooks/new-project.md:376-382 — agents.md prune cross-references have no mechanical check, unlike the copy+sweep step
+## Done
+
+### [x] [MED] playbooks/new-project.md:376-382 — agents.md prune cross-references have no mechanical check, unlike the copy+sweep step — this commit
 - category: comprehension
 - observation: step 4's "Prune adopt-by-need files" explicitly
   requires manually stripping the matching row from the
@@ -36,9 +38,17 @@ path, comprehension stumble. See `skills/critique.md`.
   small lint) to flag `agents.md` rows naming a `skills/*.md` /
   `.claude/commands/*.md` file that doesn't exist in the scratch
   tree after pruning.
+- fix: extended `scripts/adopt-dryrun.mjs` to run the Prune
+  step's own worked `rm` example after the copy+sweep, then
+  check the scratch `agents.md` for any Skills-table row,
+  Invocation-block line, or `brander` Sub-agents row still
+  pointing at a file the prune removed. That surfaced the
+  example itself as incomplete (it only removed files, never
+  the `agents.md` rows the surrounding prose also requires), so
+  extended the example's `bash`/`powershell` blocks in
+  `playbooks/new-project.md` to strip those rows too — the
+  mechanized check and the doc's own worked example now agree.
 - source: dry-run
-
-## Done
 
 ### [x] [HIGH] prompts/adopt.md:89 / templates/agents.md:24-26 — kit's "no Co-Authored-By" rule is unconditional and actively blocks commits under a common Claude Code attribution convention — this commit
 - category: instruction-drift
