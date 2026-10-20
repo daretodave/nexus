@@ -19,7 +19,10 @@ dirty tree at turn end.
 
 Plain commit bodies. The single carve-out: cloud ticks append
 the `Cloud-Run: <run-url>` trailer (see
-`.github/CLOUD_LOOP.md`). Nothing else, ever. The `✓` and `❌`
+`.github/CLOUD_LOOP.md`). Nothing else, ever. If your harness
+injects its own default attribution trailer (a `Co-Authored-By:`
+line, a "Generated with…" footer), strip it before every commit
+— this rule overrides that convention here. The `✓` and `❌`
 dingbats used in docs are fine; pictographic emoji are not —
 the verify gate enforces this mechanically.
 

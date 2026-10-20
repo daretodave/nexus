@@ -86,7 +86,9 @@ Then:
 
 Standing rules carried from agents.md:
   - Commit and push as a single atomic act.
-  - No Co-Authored-By trailers, no emojis.
+  - No Co-Authored-By trailers, no emojis. If your harness
+    auto-appends one of these by default, strip it before every
+    commit — this rule overrides that convention here.
   - No --no-verify, no force-push, no destructive resets.
   - Tests alongside code.
   - When in doubt: decide, document the call in the commit body,

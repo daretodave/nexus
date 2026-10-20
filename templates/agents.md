@@ -25,7 +25,10 @@ unpushed between ticks. Don't leave the working tree dirty.
 
 Plain commit message bodies. **Never** add a `Co-Authored-By:`
 line, a "Generated with…" footer, or any emoji — in commits,
-in code, in content, in design notes.
+in code, in content, in design notes. If your harness injects
+one of these by default (some Claude Code environments add a
+`Co-Authored-By:` trailer automatically), strip it before every
+commit — this rule overrides that convention in this repo.
 
 ### 3. The verify gate is non-negotiable.
 

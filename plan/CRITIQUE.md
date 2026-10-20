@@ -11,7 +11,36 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [HIGH] prompts/adopt.md:89 / templates/agents.md:24-26 — kit's "no Co-Authored-By" rule is unconditional and actively blocks commits under a common Claude Code attribution convention
+### [MED] playbooks/new-project.md:376-382 — agents.md prune cross-references have no mechanical check, unlike the copy+sweep step
+- category: comprehension
+- observation: step 4's "Prune adopt-by-need files" explicitly
+  requires manually stripping the matching row from the
+  just-copied root `agents.md` (Skills table + Invocation block
+  + `brander` row) for each adopt-by-need skill removed —
+  "Leaving them means the kit's own cold-start entry point still
+  advertises a command that isn't on disk." Unlike the
+  copy+placeholder-sweep step (verified by
+  `node scripts/adopt-dryrun.mjs`), nothing mechanizes this
+  check. Following the playbook's own example `rm` block
+  literally (pruning `ship-data`/`ship-migration`/`ship-asset`/
+  `moderate`/`digest`/`bootstrap` in a scratch repo) leaves
+  `agents.md` referencing all six removed skills/commands —
+  exactly the "misleading" state the doc warns against, and
+  nothing in the adoption flow catches it.
+- evidence: after running the playbook's own prune `rm` command
+  in a scratch repo, `grep -n
+  "ship-data\|ship-migration\|ship-asset\|moderate\|digest\|bootstrap\|brander"
+  agents.md` still returned 10 live rows pointing at files that
+  no longer exist on disk.
+- suggested fix: extend `scripts/adopt-dryrun.mjs` (or add a
+  small lint) to flag `agents.md` rows naming a `skills/*.md` /
+  `.claude/commands/*.md` file that doesn't exist in the scratch
+  tree after pruning.
+- source: dry-run
+
+## Done
+
+### [x] [HIGH] prompts/adopt.md:89 / templates/agents.md:24-26 — kit's "no Co-Authored-By" rule is unconditional and actively blocks commits under a common Claude Code attribution convention — this commit
 - category: instruction-drift
 - observation: `agents.md` standing rule 2 and the paste-prompt
   in `prompts/adopt.md` ("No Co-Authored-By trailers, no
@@ -41,36 +70,13 @@ path, comprehension stumble. See `skills/critique.md`.
   adopting agent to strip any harness-injected attribution
   trailer before every commit, since some Claude Code
   environments add one by default.
+- fix: applied the suggested fix in all three cited locations —
+  `agents.md` rule 2, `templates/agents.md`'s matching rule, and
+  `prompts/adopt.md`'s standing-rules block each now carry a
+  sentence telling the agent to strip any harness-injected
+  attribution trailer before every commit, since this rule
+  overrides that convention in this repo.
 - source: dry-run
-
-### [MED] playbooks/new-project.md:376-382 — agents.md prune cross-references have no mechanical check, unlike the copy+sweep step
-- category: comprehension
-- observation: step 4's "Prune adopt-by-need files" explicitly
-  requires manually stripping the matching row from the
-  just-copied root `agents.md` (Skills table + Invocation block
-  + `brander` row) for each adopt-by-need skill removed —
-  "Leaving them means the kit's own cold-start entry point still
-  advertises a command that isn't on disk." Unlike the
-  copy+placeholder-sweep step (verified by
-  `node scripts/adopt-dryrun.mjs`), nothing mechanizes this
-  check. Following the playbook's own example `rm` block
-  literally (pruning `ship-data`/`ship-migration`/`ship-asset`/
-  `moderate`/`digest`/`bootstrap` in a scratch repo) leaves
-  `agents.md` referencing all six removed skills/commands —
-  exactly the "misleading" state the doc warns against, and
-  nothing in the adoption flow catches it.
-- evidence: after running the playbook's own prune `rm` command
-  in a scratch repo, `grep -n
-  "ship-data\|ship-migration\|ship-asset\|moderate\|digest\|bootstrap\|brander"
-  agents.md` still returned 10 live rows pointing at files that
-  no longer exist on disk.
-- suggested fix: extend `scripts/adopt-dryrun.mjs` (or add a
-  small lint) to flag `agents.md` rows naming a `skills/*.md` /
-  `.claude/commands/*.md` file that doesn't exist in the scratch
-  tree after pruning.
-- source: dry-run
-
-## Done
 
 ### [x] [MED] README.md:276-282 vs playbooks/pre-spec.md:29-35 — "Three paths to start" diagram routes existing-code repos into pre-spec.md, which then tells them not to use it — this commit
 - category: ordering
