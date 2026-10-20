@@ -1,0 +1,45 @@
+name: publish
+
+# Publishes packages/cli as @usenexus/cli via npm Trusted Publishing
+# (OIDC). No NPM_TOKEN: npm trusts this workflow file for
+# daretodave/nexus and adds provenance automatically.
+# Release: bump packages/cli/package.json, land it, then push an
+# annotated tag cli-v<version>.
+
+on:
+  push:
+    tags: ['cli-v*']
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      - name: npm >= 11.5.1 (trusted publishing)
+        run: npm install -g npm@latest && npm --version
+      - name: tag matches package version
+        if: startsWith(github.ref, 'refs/tags/cli-v')
+        working-directory: packages/cli
+        run: |
+          want="${GITHUB_REF_NAME#cli-v}"
+          have="$(node -p "require('./package.json').version")"
+          if [ "$want" != "$have" ]; then
+            echo "tag $GITHUB_REF_NAME does not match packages/cli version $have"
+            exit 1
+          fi
+      - name: publish
+        working-directory: packages/cli
+        run: npm publish --access public

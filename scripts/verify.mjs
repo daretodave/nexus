@@ -21,7 +21,8 @@
 //   anatomy       skill files carry the canonical sections; command
 //                 pointers carry frontmatter + $ARGUMENTS; skills
 //                 and command pointers pair 1:1
-//   emoji         no pictographic emoji anywhere in tracked docs
+//   emoji         no pictographic emoji anywhere in tracked docs,
+//                 nor in packages/cli source (js/ts/tsx/json/css/html)
 //                 (✓ and ❌ dingbats are fine; 🤖 is not)
 //   dualshell     every playbooks/*.md ```bash fence that leans on a
 //                 POSIX-only tool (sed, grep, xargs, mkdir, cp, rm, …)
@@ -369,8 +370,16 @@ function legAnatomy() {
 
 const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{FE0F}\u{2705}\u{2728}\u{26A0}-\u{26FF}\u{2B00}-\u{2BFF}]/u
 
-function legEmoji(files) {
+// The CLI package ships text to users too, so its source files join
+// the scan. Tracked files only; no npm install, no build.
+function trackedCliSource() {
+  const out = execSync('git ls-files packages/cli', { cwd: ROOT, encoding: 'utf-8' })
+  return out.trim().split(/\r?\n/).filter((f) => /\.(m?js|cjs|ts|tsx|json|css|html)$/.test(f))
+}
+
+function legEmoji(mdFiles) {
   const failures = []
+  const files = [...mdFiles, ...trackedCliSource()]
   for (const file of files) {
     const lines = read(file).split(/\r?\n/)
     lines.forEach((line, i) => {

@@ -153,6 +153,10 @@ verbs — a docs kit ships docs, not pages.
   local `/oversight` session until that's resolved. Cloud
   commits author as `nexus`, not `github-actions[bot]` — see
   `.github/CLOUD_LOOP.md` setup step 3.
+- **npm publishing has no secret.** `.github/workflows/publish.yml`
+  publishes `packages/cli` as `@usenexus/cli` through npm Trusted
+  Publishing (OIDC, provenance automatic) on a `cli-v*` tag.
+  Never add an `NPM_TOKEN`.
 - No other secrets. The kit's gate is hermetic and offline.
 
 ## Where to look

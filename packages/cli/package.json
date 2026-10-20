@@ -1,0 +1,13 @@
+{
+  "name": "@usenexus/cli",
+  "version": "0.0.2",
+  "description": "nexus: a repo that ships itself. npx @usenexus/cli launches the local GUI (coming soon).",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "nexus": "bin/nexus.mjs" },
+  "files": ["bin", "README.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "repository": { "type": "git", "url": "git+https://github.com/daretodave/nexus.git" },
+  "homepage": "https://github.com/daretodave/nexus#readme",
+  "keywords": ["claude-code", "nexus", "autonomous", "agents", "methodology"]
+}
