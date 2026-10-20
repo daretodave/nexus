@@ -78,7 +78,9 @@ templates/
 │   ├── stack-lifecycle.mjs            (Pattern B port/health/state helpers, omit unless hermetic e2e is Pattern B)
 │   ├── new-skill.mjs                  (skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md)
 │   ├── install-hooks.mjs              (opt-in: arms pnpm verify as a pre-commit hook)
-│   └── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
+│   ├── plan-check.mjs                 (the plan-shape gate; add it to your verify composition)
+│   ├── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
+│   └── __tests__/plan-check.test.mjs  (unit tests for plan-check.mjs)
 ├── env/
 │   └── env.example                    → repo's .env.example
 └── workspace/                          → workspace ROOT, not any repo (adopt-by-need; see below)

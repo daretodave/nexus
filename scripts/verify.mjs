@@ -28,6 +28,12 @@
 //                 POSIX-only tool (sed, grep, xargs, mkdir, cp, rm, …)
 //                 has an adjacent ```powershell twin, or an explicit
 //                 <!-- dualshell:posix-only --> annotation
+//   chunks        the plan shape holds in plan/ and templates/plan/:
+//                 Measure lines true, chunk lines parse, every A-ID
+//                 covered, needs resolve, the roadmap links every
+//                 spec, and (vs HEAD) a chunk that left the plan has
+//                 its archive line. Runs templates/scripts/plan-check.mjs
+//                 so adopters and the kit share one implementation
 //   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
 //                 copy + placeholder-sweep + prune blocks. Skipped by
 //                 the default no-argument run; opt in with
@@ -42,6 +48,7 @@
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..')
 
@@ -445,6 +452,23 @@ function legDualshell(files) {
   return { failures, note: `${checked} posix-leaning bash blocks checked` }
 }
 
+// --- leg: chunks ---------------------------------------------------------------
+// The plan shape (concepts/plan-shape.md) is mechanical, so the gate
+// checks it with the same script adopters run. History is checked
+// against HEAD: the working tree is what the next commit records.
+
+async function legChunks() {
+  const { runCheck } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan-check.mjs')).href)
+  const failures = []
+  const notes = []
+  for (const dirRel of ['plan', 'templates/plan']) {
+    const { failures: f, note } = runCheck({ repoAbs: ROOT, dirRel, since: 'HEAD' })
+    failures.push(...f)
+    notes.push(`${dirRel}: ${note}`)
+  }
+  return { failures, note: notes.join('; ') }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -470,6 +494,7 @@ const LEGS = {
   anatomy: () => legAnatomy(),
   emoji: (files) => legEmoji(files),
   dualshell: (files) => legDualshell(files),
+  chunks: () => legChunks(),
   'adopt-dryrun': () => legAdoptDryrun(),
 }
 
@@ -478,7 +503,7 @@ const LEGS = {
 // fast (agents.md rule 3: foreground, every commit).
 const OPT_IN_LEGS = new Set(['adopt-dryrun'])
 
-function main() {
+async function main() {
   const only = process.argv[2]
   if (only && !LEGS[only]) {
     process.stderr.write(`verify: unknown leg "${only}". Legs: ${Object.keys(LEGS).join(', ')}\n`)
@@ -489,7 +514,7 @@ function main() {
   for (const [name, run] of Object.entries(LEGS)) {
     if (only && name !== only) continue
     if (!only && OPT_IN_LEGS.has(name) && process.env.NEXUS_VERIFY_ADOPT_DRYRUN !== '1') continue
-    const { failures, note } = run(files)
+    const { failures, note } = await run(files)
     if (failures.length === 0) {
       process.stdout.write(`  ${name.padEnd(13)} ok    (${note})\n`)
     } else {

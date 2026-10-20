@@ -33,7 +33,7 @@ node scripts/verify.mjs
 ```
 
 Legs: `links → tree → discover → placeholders → anatomy →
-emoji → dualshell`. Every leg is a hard gate; red = blocked
+emoji → dualshell → chunks`. Every leg is a hard gate; red = blocked
 commit. Run it
 **foreground and wait** — never `run_in_background`. No
 `--no-verify`, ever. When a change introduces a new invariant

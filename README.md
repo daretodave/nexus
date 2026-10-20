@@ -411,7 +411,7 @@ nexus/
 │   └── pitch.md                       # the full pitch-to-adopted agent prompt
 ├── package.json                       # the kit's own verify gate wiring
 ├── scripts/
-│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell
+│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep + prune steps
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
@@ -518,7 +518,9 @@ nexus/
     │   ├── stack-lifecycle.mjs        # Pattern B port/health/state helpers (omit unless hermetic e2e is Pattern B)
     │   ├── new-skill.mjs              # skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md
     │   ├── install-hooks.mjs          # opt-in: arms pnpm verify as a pre-commit hook
-    │   └── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
+    │   ├── plan-check.mjs             # the plan-shape gate: Measure lines, chunk lines, A-ID coverage, archive
+    │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
+    │   └── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
     ├── env/
     │   └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
     └── workspace/                      # → workspace root, not any repo (adopt-by-need)
