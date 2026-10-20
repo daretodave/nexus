@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-10-13
-> Pass count: 26
+> Last pass: 2026-10-20
+> Pass count: 27
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -11,7 +11,64 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-(none)
+### [HIGH] prompts/adopt.md:89 / templates/agents.md:24-26 — kit's "no Co-Authored-By" rule is unconditional and actively blocks commits under a common Claude Code attribution convention
+- category: instruction-drift
+- observation: `agents.md` standing rule 2 and the paste-prompt
+  in `prompts/adopt.md` ("No Co-Authored-By trailers, no
+  emojis. ... Nothing else, ever") are absolute, with zero
+  carve-out for environments where the agent's own harness
+  injects an attribution convention. This isn't hypothetical:
+  cloud/team Claude Code setups commonly carry a system
+  instruction to append a `Co-Authored-By:` trailer to every
+  commit. A dry-run reproduction of the resulting deadlock: a
+  `git commit` with that trailer, in a scratch repo with
+  `.claude/hooks/guard.mjs` active (copied per the template),
+  was hard-blocked by the guard hook.
+- evidence: exact command and output —
+  ```
+  git commit -m "feat: probe attribution conflict
+
+  Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+  ```
+  →
+  ```
+  PreToolUse:Bash hook error: [node .claude/hooks/guard.mjs pre-bash]: guard: commit bodies are plain (agents.md standing rule 2) — no Co-Authored-By trailers, no emojis. The only sanctioned trailer is Cloud-Run: (cloud ticks only). Rewrite the message.
+  ```
+  (rule source: `agents.md:18`, `templates/agents.md:24-26`,
+  `prompts/adopt.md:87-89`)
+- suggested fix: add one line to `agents.md` rule 2 /
+  `prompts/adopt.md`'s standing-rules block telling the
+  adopting agent to strip any harness-injected attribution
+  trailer before every commit, since some Claude Code
+  environments add one by default.
+- source: dry-run
+
+### [MED] playbooks/new-project.md:376-382 — agents.md prune cross-references have no mechanical check, unlike the copy+sweep step
+- category: comprehension
+- observation: step 4's "Prune adopt-by-need files" explicitly
+  requires manually stripping the matching row from the
+  just-copied root `agents.md` (Skills table + Invocation block
+  + `brander` row) for each adopt-by-need skill removed —
+  "Leaving them means the kit's own cold-start entry point still
+  advertises a command that isn't on disk." Unlike the
+  copy+placeholder-sweep step (verified by
+  `node scripts/adopt-dryrun.mjs`), nothing mechanizes this
+  check. Following the playbook's own example `rm` block
+  literally (pruning `ship-data`/`ship-migration`/`ship-asset`/
+  `moderate`/`digest`/`bootstrap` in a scratch repo) leaves
+  `agents.md` referencing all six removed skills/commands —
+  exactly the "misleading" state the doc warns against, and
+  nothing in the adoption flow catches it.
+- evidence: after running the playbook's own prune `rm` command
+  in a scratch repo, `grep -n
+  "ship-data\|ship-migration\|ship-asset\|moderate\|digest\|bootstrap\|brander"
+  agents.md` still returned 10 live rows pointing at files that
+  no longer exist on disk.
+- suggested fix: extend `scripts/adopt-dryrun.mjs` (or add a
+  small lint) to flag `agents.md` rows naming a `skills/*.md` /
+  `.claude/commands/*.md` file that doesn't exist in the scratch
+  tree after pruning.
+- source: dry-run
 
 ## Done
 
