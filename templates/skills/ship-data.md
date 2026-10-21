@@ -53,7 +53,7 @@ and skip `/ship-data` entirely. `/march` handles its absence.
   source schema), regenerate / migrate, proceed.
 - **Cross-reference broken → repair, don't ignore.** Create
   parent / vendor / referenced stubs in the same commit.
-- **Audit finds 50 problems → ship one fix per phase, not all
+- **Audit finds 50 problems → ship one fix per tick, not all
   at once.**
 
 ## 4. Provenance — AI-generated vs user-sourced

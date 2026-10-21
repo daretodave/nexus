@@ -224,7 +224,7 @@ Write findings to `plan/AUDIT.md` under category `asset`.
 1. **`Surface:` gate is unconditional.** No override, no
    force, no exception.
 2. **One asset per invocation.** Batching is for an explicit
-   phase, not for the iterate loop.
+   chunk, not for the iterate loop.
 3. **Provenance JSON sibling required** for every generated
    raster. Hand-authored static assets are exempt.
 4. **Never overwrite a hand-authored asset.** Refuse + flag.
