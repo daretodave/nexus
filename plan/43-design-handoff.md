@@ -85,11 +85,6 @@ What exists today (2026-10-21):
 
 ## Acceptance
 
-- **A1** A concept doc and playbook describe the Claude Design
-  round trip (prompt, addendum, artifact link, ingest, port)
-  and how it differs from `templates/design-prompt.md`'s
-  in-repo session; `customization/visual-system.md` names
-  both paths.
 - **A2** `/design prompt` and `/design addendum` write a paste
   prompt from the plan, the addendum continuing the last
   prompt's numbering.
@@ -113,14 +108,12 @@ What exists today (2026-10-21):
 they are in the Claude Design flow, by giving a link.)
 
 ## Chunks
-Measure: 7 open · 0 closed · next A8
+Measure: 6 open · 1 closed · next A8
 
-- [ ] **43.1** The Claude Design round trip, documented · S ·
-  closes A1 · needs —
 - [ ] **43.2** `/design prompt` and `/design addendum` · S ·
-  closes A2 · needs 43.1
+  closes A2 · needs —
 - [ ] **43.3** `/design ingest`: artifact link or folder in,
-  handoff and port chunk out · M · closes A3 · needs 43.1
+  handoff and port chunk out · M · closes A3 · needs —
 - [ ] **43.4** The board renderer and screenshot compare,
   promoted from the scratchpad · M · closes A4 · needs 43.3
 - [ ] **43.5** The port recipe as a Workflow, and the

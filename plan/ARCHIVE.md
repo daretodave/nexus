@@ -111,3 +111,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 42.9 · a contributor keeps local-only keys; sinks refuse; no project secrets · 2cc4dca2..84522c6e
 - 2026-10-21 · 42.5 · secrets push sets Vercel and Cloudflare secrets through stdin · e3609fad..bf1dfa2d
 - 2026-10-21 · 44.2 · npm run record turns a demo scenario into a GIF and a poster · b72bdae5..46ac8e58
+- 2026-10-21 · 43.1 · the Claude Design round trip has a concept doc and a playbook · bedb4c36..bedb4c36
