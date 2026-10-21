@@ -14,6 +14,15 @@ Adopt when more than one session builds from the plan at a
 time, or when anyone besides the owner builds at all. A single
 loop on a single checkout doesn't need it.
 
+**First, set `NEXUS_SESSION`.** A claim belongs to a session,
+and the session is `NEXUS_SESSION` when it is set. Without it
+a Claude Code session uses its own id, and a plain terminal
+falls back to `pid<parent pid>`: that id dies with the shell,
+so the next terminal can't renew or release what this one
+claimed. Give each loop or terminal a name it will reuse
+(`NEXUS_SESSION=sam-1`); `whoami` warns on stderr when it sees
+the pid fallback.
+
 ---
 
 ## The files
@@ -69,8 +78,9 @@ when it is main).
 ## The rules
 
 - **Session-scoped.** A claim belongs to the session that made
-  it: `NEXUS_SESSION`, else the Claude Code session id, or
-  `--session <id>`. Two loops of one person never share a
+  it: `--session <id>`, else `NEXUS_SESSION`, else the Claude
+  Code session id, else the parent pid (which `whoami` warns
+  about). Two loops of one person never share a
   chunk, and one loop's renew or release never touches
   another's. A claim with a PR is also its author's on that
   machine in any session, so a later session can carry the
@@ -106,7 +116,7 @@ when it is main).
 ## The commands
 
 ```
-node scripts/claims.mjs whoami                  # owner or contributor, who, session, host
+node scripts/claims.mjs whoami                  # owner or contributor, who, session (warns on a pid), host
 node scripts/claims.mjs list                    # every claim: state live|stale|pr|held, mine?
 node scripts/claims.mjs free 16.3               # may I claim it? (exit 1 when not)
 node scripts/claims.mjs claim 16.3              # claim (all or nothing); --base <b>, --force (owner)
@@ -136,7 +146,7 @@ anyone's. A held claim is never `stale`.
 
 | Variable | Meaning |
 |---|---|
-| `NEXUS_SESSION` | This session's claims id (the GUI sets one per session). |
+| `NEXUS_SESSION` | This session's claims id (the GUI sets one per session); set it in any terminal that claims. |
 | `NEXUS_CONTRIBUTOR=1` | Run as a contributor in the owner's checkout (rehearse the PR path). |
 | `NEXUS_GH_LOGIN` | This machine's GitHub login; else asked of `gh`. |
 | `NEXUS_CLAIMS_REMOTE` | The remote holding `claims` (default `origin`). |
