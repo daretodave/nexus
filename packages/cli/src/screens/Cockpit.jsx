@@ -61,6 +61,7 @@ export default function Cockpit() {
 
   const listed = sessions?.find((s) => s.id === id);
   const session = identity(id, ledger || listed);
+  const terminal = (ledger || listed)?.kind === 'terminal';
   const owner = isOwner(ledger || listed, shell.owner);
   const phase = sessionPhase(ledger || listed, owner);
   const asked = params.get('phase');
@@ -105,7 +106,14 @@ export default function Cockpit() {
         if (route === 'pin') { await api('/api/pin', { session: id, text }); } else {
           let prompt = toPrompt(text, r, prefs);
           if (route === 'plot' && plotMode === 'do') prompt = `${prompt} and do`;
-          await server.send(prompt + attachments);
+          if (terminal) {
+            // A terminal session: sending from its own cockpit aims at it, so link it and steer it. The line reaches
+            // its next tool call (the steer hook), and only this session.
+            if (!listed?.linked) await api(`${base}/link`, { on: true });
+            await api(`${base}/steer`, { text: prompt + attachments });
+            toast({ kind: 'info', title: `Sent to ${session.name}`, body: 'It reads it at its next tool call, or with its next prompt if it is idle.' });
+            sessionsRes.reload();
+          } else await server.send(prompt + attachments);
         }
       }
       setDraft(''); setOverride(null); setPlotMode('plan');

@@ -93,6 +93,13 @@ export default function Fleet() {
     sessions.reload();
   }
 
+  // Link a terminal session: from then on a tug or an answer aimed at it lands at its next tool call (the steer hook).
+  async function link(s, on) {
+    const r = await act(`/api/sessions/${encodeURIComponent(s.id)}/link`, { on });
+    if (!r.ok) push({ kind: 'error', title: `Couldn't ${on ? 'link' : 'unlink'} ${s.name}`, body: r.error });
+    sessions.reload();
+  }
+
   async function trainAct(action) {
     const r = await act('/api/train', { action });
     if (!r.ok) {
@@ -134,7 +141,7 @@ export default function Fleet() {
         ) : null}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', margin: '-8px -28px 0', padding: '8px 28px 24px' }}>
           <div className="fleet-grid">
-            {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} onResume={() => resume(s)} />)}
+            {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} onResume={() => resume(s)} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
             {sessions.status !== 'loading' && filter === 'all' ? (
               <TileNew>
                 <span className="cstar is-neutral" />

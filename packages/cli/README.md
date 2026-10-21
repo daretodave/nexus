@@ -19,10 +19,13 @@ You need no API key.
   size, sub-agents, workflows); Plot (a dump of messy thoughts, sent
   to `/messy`); the cloud loop; and Launch, which opens the first
   session's cockpit.
-- **Fleet**: every session as a live tile with its star name (vega,
-  sirius, deneb, altair; terminal sessions show read-only), its phase,
-  chunk and git strip. Pause all runs the reboot train, and a fallen
-  session resumes from its tile.
+- **Fleet**: every live session on this machine as a tile with its
+  star name (vega, sirius, deneb, altair), its phase, chunk and git
+  strip: the session ledgers plus Claude Code's own session files for
+  the repo. Link a terminal session and a tug or an answer sent to it
+  reaches its next tool call, and only that session (the steer hook;
+  nexus `customization/sessions.md`). Pause all runs the reboot train,
+  and a fallen session resumes from its tile.
 - **Cockpit** (`/s/<id>`): the session's phase track (Questions,
   Working, Questions, Package). On the left are the conversation and a
   composer. Free text routes itself: a bug goes to `/bug`, a feature or
@@ -40,7 +43,7 @@ You need no API key.
   (owner mode, run mode, night or dawn).
 
 Some of this waits on server endpoints that are not built yet (the
-session list, the plan, the merged inbox). Until they land, those
+plan, the merged inbox). Until they land, those
 screens show the design's empty state, never made-up data.
 
 Using another agent? The Welcome step quotes the canonical prompt

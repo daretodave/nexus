@@ -4,7 +4,7 @@
 import { Link } from 'react-router-dom';
 import {
   Tile, TileChunk, TileBar, TileEvent, TileChip, ParkedBadge, Observing, Fresh, Fell, Flag,
-  MTrack, Orb, Fil, SNode, Junction, FreshMark, Icon,
+  MTrack, Orb, Fil, SNode, Junction, FreshMark, Icon, cx,
 } from '../../ui/index.js';
 import { PATHS } from '../../routes.js';
 import FleetGit from './FleetGit.jsx';
@@ -71,7 +71,7 @@ function OwnerChip() {
 
 const recoverHref = (s) => (s.run ? `${PATHS.recover}?dir=${encodeURIComponent(s.run)}` : PATHS.recover);
 
-export default function SessionTile({ s, train, onResume, busy, now }) {
+export default function SessionTile({ s, train, onResume, onLink, busy, now }) {
   const st = s.state;
   const fallen = st === 'fallen' || st === 'resume-failed';
   const toRecover = fallen || st === 'resuming';
@@ -105,7 +105,18 @@ export default function SessionTile({ s, train, onResume, busy, now }) {
   if (st === 'asking') {
     info = <>{chunk}{track}{b ? <TileBar {...b} /> : null}<Link className="btn btn-warn btn-s" to={href} style={{ alignSelf: 'flex-start' }}>{waiting ? `Answer ${waiting} to start` : 'Answer to start'}</Link></>;
   } else if (st === 'observing') {
-    info = <>{chunk}{track}{b ? <TileBar {...b} /> : null}<TileEvent flexNone>Started in a terminal. Read-only here.</TileEvent></>;
+    // Linked, a tug or an answer from here reaches this session at its next tool call, and only this session.
+    info = (
+      <>
+        {chunk}{track}{b ? <TileBar {...b} /> : null}
+        <TileEvent flexNone>{s.linked ? 'Linked: what you send reaches its next tool call.' : 'Started in a terminal. Link it to steer it from here.'}</TileEvent>
+        {onLink ? (
+          <button className={cx('btn btn-s', s.linked ? 'btn-ghost' : 'btn-primary')} type="button" onClick={() => onLink(!s.linked)} disabled={busy} aria-pressed={s.linked ? 'true' : 'false'} style={{ alignSelf: 'flex-start' }}>
+            {s.linked ? 'Unlink' : 'Link'}
+          </button>
+        ) : null}
+      </>
+    );
   } else if (st === 'fallen') {
     const f = s.fell || {};
     const lost = f.at || s.beat;

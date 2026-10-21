@@ -78,8 +78,6 @@ export const useRuns = (poll) => useResource('/api/runs', { poll });
  * below asks for its endpoint and reports status 'missing' on a 404.
  */
 export const MISSING = [
-  { endpoint: 'GET /api/sessions', hook: 'useSessions', for: 'Fleet tiles, the switcher, the train: every session (GUI and terminal) with name, kind, state, phase, chunk, git strip, claims, parked count, heartbeat' },
-  { endpoint: 'GET /api/sessions/:id', hook: 'useSession', for: 'Cockpit: one session ledger (phase track, questions, parked defaults, context layers, worktree, branch)' },
   { endpoint: 'GET /api/events?session=<id>', hook: 'useEvents(session)', for: 'a per-session SSE channel (today one channel serves the single session)' },
   { endpoint: 'POST /api/sessions', hook: 'startSession', for: 'Start heads-down: take the next star name, claim a package, open a worktree' },
   { endpoint: 'POST /api/sessions/:id/(pause|resume|close)', hook: 'sessionAction', for: 'pause after this step, resume a fallen session (Resume / relight), close it' },
@@ -96,7 +94,6 @@ export const MISSING = [
   { endpoint: 'POST /api/pin', hook: 'pinNote', for: 'a pinned note every agent reads on its next step ({ session, text })' },
   { endpoint: 'POST /api/sessions/:id/questions', hook: 'cockpit', for: 'answer a start question ({ index, answer, how }) or take every default ({ defaults: true })' },
   { endpoint: 'POST /api/sessions/:id/start', hook: 'cockpit', for: 'leave the start questions and begin working' },
-  { endpoint: 'POST /api/sessions/:id/parked', hook: 'cockpit', for: 'settle a parked question ({ index, action: approve|change, pick }) or approve the rest' },
   { endpoint: 'POST /api/sessions/:id/package', hook: 'cockpit', for: 'open the package PR ({ action: "open" }) or save its description' },
   { endpoint: 'POST /api/inbox/:id', hook: 'Inbox', for: 'settle an inbox item from any session or the cloud loop ({ answer, how })' },
   { endpoint: 'POST /api/plan/chunk', hook: 'Board', for: 'Chunk it: { spec } returns questions, { spec, answers } writes the chunks' },
@@ -108,7 +105,7 @@ export const MISSING = [
   { endpoint: 'POST /api/pick-folder', hook: 'Recover', for: 'optional: an OS folder picker, since a browser cannot hand back an absolute path' },
 ];
 
-/** GET /api/sessions -> [{ id, name, kind: 'local'|'terminal'|'other', state, phase, chunk, git, claims, parked, beat }]. Full shape: screens/fleet/model.js. */
+/** GET /api/sessions (served): the live local sessions -> [{ id, claude, name, kind: 'local'|'terminal', state, chunk, git, parked, beat, linked, steer: 'sdk'|'hook' }]. POST /api/sessions/:id/(link|steer|parked) act on one. Full shape: screens/fleet/model.js. */
 export const useSessions = (poll = 4000) => useResource('/api/sessions', { poll });
 
 /** GET /api/sessions/:id -> the session ledger. Shape: screens/cockpit/model.js (cockpit), screens/headsdown-inbox/headsModel.js (heads-down). */
