@@ -125,7 +125,42 @@ npx @usenexus/cli --repo <dir>   another folder
 npx @usenexus/cli --no-open      print the link instead of opening it
 npx @usenexus/cli --port <n>     a fixed port
 NEXUS_PROVIDER=cli               use `claude -p` stream-json instead of the Agent SDK
+npx @usenexus/cli --demo <name>  a scripted demo (below): no repo, no Claude, no network
 ```
+
+## Demo: fixtures and a timed beat script
+
+```
+npx @usenexus/cli --demo list
+npx @usenexus/cli --demo fleet-to-tug [--speed <n>] [--loop] [--port <n>] [--no-open]
+```
+
+`--demo` serves the real UI over a scenario's fixtures and replays its
+beat script on the session channels, through the same endpoints and
+event shapes the live server uses (`/api/sessions`, `/api/plan`,
+`/api/inbox`, `/api/events?session=`, beats from `shared/beats.mjs`,
+transcript items from `server/normalize.mjs`). It reads no repo, starts
+no Claude session, opens no connection out and writes nothing: an
+answer, a send or a setting lands in memory and is gone when it stops.
+An endpoint the scenario does not stage answers 404, so its screen shows
+the design's empty state. The project and everything in it is invented.
+
+| Scenario | Script | What happens |
+|---|---|---|
+| `fleet-to-tug` | 7.0 s | Four sessions breathe on the fleet; vega asks, the stage hushes and the card pulls into the conversation; the owner answers; vega wakes and 12.4 lands on main |
+| `bug-to-archive` | 5.7 s | "the PDF export crashes on long seasons" goes to `/bug`; 15.3 slots into the plan, is claimed, built, gated and closed |
+| `fall-and-resume` | 6.6 s | deneb fell over mid-chunk; Resume on its tile picks it up and 14.1 lands |
+| `heads-down` | 7.6 s | altair works a claimed list of three chunks, one after another |
+
+The owner's turn (an answer, a send, a Resume) is a gate: click it in
+the page and the script carries on from that moment, or leave it and
+the script takes it on its own. `--speed 2` runs the script twice as
+fast; `--loop` starts it over two seconds after it ends. `GET
+/api/demo` reports the scenario, its length and the steps fired so far,
+and `POST /api/demo/restart` starts it over: hooks for recorders and UI
+tests. The scenarios live in `server/demo/scenarios.mjs`, the player in
+`server/demo/world.mjs`, and tests drive them on a manual clock
+(`server/demo/clock.mjs`).
 
 ## One server, many sessions
 

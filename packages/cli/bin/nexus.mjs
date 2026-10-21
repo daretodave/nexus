@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // npx @usenexus/cli [--repo <dir>] [--port <n>] [--no-open]
 // npx @usenexus/cli run "<prompt>" [--cwd <dir>]   one turn headless, JSON out
+// npx @usenexus/cli --demo <scenario> [--speed <n>] [--loop]   fixtures and a beat script, no repo
 //
 // Starts the nexus GUI on 127.0.0.1 (random port, per-launch token) for
 // the repo in the current directory and opens it in the browser. One
@@ -39,6 +40,11 @@ if (flag('--help') || flag('-h')) {
                                     (a server already running for the repo is
                                     reused: its link opens instead)
   npx @usenexus/cli run "<prompt>"  one turn headless, JSON out (run --help)
+  npx @usenexus/cli --demo <name>   a scripted demo: fixtures and a timed beat
+                                    script, no repo, no Claude, no network, no
+                                    writes (--demo list names them; --speed <n>
+                                    runs the script n times faster; --loop
+                                    starts it over when it ends)
 
   NEXUS_PROVIDER=cli                drive \`claude -p\` instead of the Agent SDK
 
@@ -52,6 +58,46 @@ if (flag('--version') || flag('-v')) {
   process.exit(0);
 }
 
+// `nexus --demo <scenario>`: the real UI over fixtures and a timed beat script (server/demo.mjs). No repo is read,
+// no .nexus/server.json is written, nothing reaches out.
+if (flag('--demo')) {
+  await demo();
+  // The demo server keeps the process alive; Ctrl+C stops it.
+} else {
+  await serve();
+}
+
+async function demo() {
+  const { startDemo, scenarioNames } = await import('../server/demo.mjs');
+  const { SCENARIOS } = await import('../server/demo/scenarios.mjs');
+  const name = opt('--demo');
+  if (!name || name.startsWith('-') || name === 'list') {
+    const rows = scenarioNames().map((n) => `  ${n.padEnd(17)}${SCENARIOS[n].summary}`).join('\n');
+    console.log(`  npx @usenexus/cli --demo <scenario> [--speed <n>] [--loop] [--no-open]\n\n${rows}\n`);
+    process.exit(name === 'list' ? 0 : 2);
+  }
+  let d;
+  try {
+    d = await startDemo({ scenario: name, port: Number(opt('--port') || 0), speed: Number(opt('--speed') || 1), loop: flag('--loop') });
+  } catch (e) {
+    console.error(`  ${e.message}`);
+    process.exit(2);
+  }
+  console.log(`
+  nexus demo  ·  ${d.scenario.title}  (a ${(d.world.duration / 1000).toFixed(1)} s script${flag('--loop') ? ', looping' : ''})
+
+  ${d.url}
+
+  Fixtures only: no repo, no Claude session, no network, nothing written.
+  Ctrl+C to stop.
+`);
+  if (!flag('--no-open')) openBrowser(d.url);
+  const stop = async () => { await d.close().catch(() => {}); process.exit(0); };
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
+}
+
+async function serve() {
 const repo = path.resolve(opt('--repo') || process.cwd());
 const port = Number(opt('--port') || 0);
 
@@ -99,6 +145,7 @@ const shutdown = async () => {
 process.on('exit', () => removeInstance(root));
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+}
 
 function openBrowser(url) {
   const [cmd, args] = process.platform === 'win32'
