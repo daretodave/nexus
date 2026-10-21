@@ -504,6 +504,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/settle.test.mjs',
   'templates/scripts/__tests__/claims-codec.test.mjs',
   'templates/scripts/__tests__/push-policy.test.mjs',
+  'templates/scripts/__tests__/progress.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
@@ -517,6 +518,7 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
+  'plan/progress.mjs',
 ]
 
 function legScripts() {

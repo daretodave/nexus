@@ -87,6 +87,7 @@ templates/
 │   ├── plan/settled.mjs               (the plan as it reads once pending edits settle, in memory)
 │   ├── plan/config.mjs                (what settle may differ on per repo; overrides in plan/settle.json)
 │   ├── plan/footguns.mjs              (the footgun list's format and budget lint)
+│   ├── plan/progress.mjs              (ASCII progress per spec: the bar, closed struck, <--- [here], ETAs from sizes)
 │   ├── claims-codec.mjs               (the claims rules as pure functions: any claimant imports them)
 │   ├── claims.mjs                     (who builds what: the orphan claims branch, compare-and-swap; --json)
 │   ├── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
@@ -96,6 +97,7 @@ templates/
 │   ├── __tests__/settle-run.test.mjs  (settle end to end in a scratch git repo; slower, offline)
 │   ├── __tests__/claims-codec.test.mjs  (the claims rules, pure)
 │   ├── __tests__/push-policy.test.mjs  (the push policy, pure)
+│   ├── __tests__/progress.test.mjs    (the progress view, pure)
 │   ├── __tests__/push-policy-hook.test.mjs  (the pre-push hook end to end in a scratch git repo; slower, offline)
 │   └── __tests__/claims.test.mjs      (claims over git in scratch repos; slower, offline)
 ├── env/

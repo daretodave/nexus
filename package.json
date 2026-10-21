@@ -9,7 +9,8 @@
     "pulse": "node scripts/pulse.mjs",
     "deploy:check": "node -e \"console.log('deploy:check · kit repo — push to GitHub IS the deploy; nothing to poll. ok.')\"",
     "settle": "node scripts/plan/settle.mjs",
-    "claims": "node scripts/claims.mjs"
+    "claims": "node scripts/claims.mjs",
+    "progress": "node scripts/plan/progress.mjs"
   },
   "engines": {
     "node": ">=20"
