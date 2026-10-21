@@ -78,9 +78,10 @@ templates/
 │   ├── check-secrets-liveness.mjs     (GH_TOKEN + CRITIQUE_* liveness probe, omit unless Auth: is set)
 │   ├── stack-lifecycle.mjs            (Pattern B port/health/state helpers, omit unless hermetic e2e is Pattern B)
 │   ├── new-skill.mjs                  (skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md)
-│   ├── install-hooks.mjs              (opt-in: arms pnpm verify as a pre-commit hook)
+│   ├── install-hooks.mjs              (opt-in: arms pnpm verify as pre-commit, the push policy as pre-push)
 │   ├── plan-check.mjs                 (the plan-shape gate; add it to your verify composition)
 │   ├── owner.mjs                      (effective owner mode: .owner + .nexus/local.json; who settles and lands on main)
+│   ├── git/push-policy.mjs            (pre-push: a push to main outside owner mode is refused; the claims ref passes)
 │   ├── plan/pending.mjs               (reads plan/pending/<id>.md; a pending close counts as closed)
 │   ├── plan/settle.mjs                (the owner's settle: pending files -> spec, roadmap, archive, decisions, footguns)
 │   ├── plan/settled.mjs               (the plan as it reads once pending edits settle, in memory)
@@ -94,6 +95,7 @@ templates/
 │   ├── __tests__/settle.test.mjs      (settle's pure functions)
 │   ├── __tests__/settle-run.test.mjs  (settle end to end in a scratch git repo; slower, offline)
 │   ├── __tests__/claims-codec.test.mjs  (the claims rules, pure)
+│   ├── __tests__/push-policy.test.mjs  (the push policy, pure)
 │   └── __tests__/claims.test.mjs      (claims over git in scratch repos; slower, offline)
 ├── env/
 │   └── env.example                    → repo's .env.example
@@ -183,7 +185,7 @@ the corresponding capability:
 | `workspace/CLAUDE.md` + `workspace/AGENTS.md` + `workspace/README.md` + `workspace/REPOS.md` | You've outgrown polyrepo into a 3+-repo workspace (an un-versioned local root holding `plan/` and every product as siblings). Copy all four to the workspace root, not into any single repo. See `nexus/playbooks/workspace.md`. |
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
-| `scripts/install-hooks.mjs` | You want `pnpm verify` to run automatically on hand commits made outside the loop. Opt-in — run it once (`node scripts/install-hooks.mjs`) to arm a `.git/hooks/pre-commit`; `--uninstall` removes it. See `nexus/customization/verify-gate.md`. |
+| `scripts/install-hooks.mjs` | You want `pnpm verify` to run automatically on hand commits made outside the loop, and (with `scripts/git/push-policy.mjs`) a push to main refused outside owner mode. Opt-in — run it once per checkout (`node scripts/install-hooks.mjs`; `--only pre-push` for just the policy) to arm the `pre-commit` and `pre-push` hooks; `--uninstall` removes them. See `nexus/customization/verify-gate.md` + `nexus/playbooks/owner-mode.md`. |
 | `plan/reflexes.md` + `plan/lessons.md` | The loop has run long enough to accumulate real recurring lessons and a single `NEXUS_LESSONS.md` scratch file no longer scales. See `nexus/customization/lessons-layer.md`. |
 
 If your `bearings.md` declares `Surface: service / library /

@@ -402,7 +402,9 @@ disk.
   and it doubles as plain project docs for any other agent.
 - `scripts/install-hooks.mjs` — remove unless you want `pnpm
   verify` auto-armed as a pre-commit hook for hand commits made
-  outside the loop.
+  outside the loop, or the push policy armed as a pre-push hook
+  (contributors land through pull requests; see
+  [`owner-mode.md`](./owner-mode.md)).
 
 Each command file opens with "Read `skills/<name>.md` end to
 end before touching anything else" — leaving it behind after

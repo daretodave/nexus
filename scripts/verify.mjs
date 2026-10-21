@@ -36,8 +36,9 @@
 //                 its archive line. Runs templates/scripts/plan-check.mjs
 //                 so adopters and the kit share one implementation,
 //                 plus that script's own node:test suite
-//   scripts       the node:test suites of the plan and claims scripts
-//                 adopters copy (templates/scripts/plan/, claims):
+//   scripts       the node:test suites of the plan, claims and push
+//                 policy scripts adopters copy (templates/scripts/plan/,
+//                 claims, git/push-policy):
 //                 pure, no git, no network, about a second; and
 //                 nexus's own copies in scripts/ match them byte
 //                 for byte (the kit dogfoods what it ships)
@@ -502,6 +503,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/pending.test.mjs',
   'templates/scripts/__tests__/settle.test.mjs',
   'templates/scripts/__tests__/claims-codec.test.mjs',
+  'templates/scripts/__tests__/push-policy.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
@@ -512,7 +514,7 @@ const GIT_SUITES = [
 // claims) from byte copies in scripts/: a fix lands in both or the
 // gate goes red, so the kit never runs a version adopters don't get.
 const DOGFOOD_TWINS = [
-  'owner.mjs', 'claims.mjs', 'claims-codec.mjs',
+  'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
 ]
 

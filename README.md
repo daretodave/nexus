@@ -416,9 +416,10 @@ nexus/
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
+│   ├── git/push-policy.mjs            # pre-push: main is the owner's checkout's alone (owner mode)
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep + prune steps
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
-│   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs as a pre-commit hook
+│   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs (pre-commit) + the push policy (pre-push)
 ├── playbooks/
 │   ├── pre-spec.md                    # pitch → spec.md (interactive)
 │   ├── new-project.md                 # greenfield setup
@@ -429,6 +430,7 @@ nexus/
 │   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
 │   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
 │   ├── upgrade.md                     # v1 (phases) → v2 (specs + chunks); pin with plan/nexus.lock
+│   ├── owner-mode.md                  # how work lands: .owner pushes main + settles, else next/<id> PRs; rulesets
 │   ├── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos
 │   └── workspace.md                   # variant: un-versioned root + org-per-project, past two repos
 ├── concepts/
@@ -525,9 +527,10 @@ nexus/
     │   ├── check-secrets-liveness.mjs # GH_TOKEN + CRITIQUE_* liveness probe (omit unless Auth: is set)
     │   ├── stack-lifecycle.mjs        # Pattern B port/health/state helpers (omit unless hermetic e2e is Pattern B)
     │   ├── new-skill.mjs              # skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md
-    │   ├── install-hooks.mjs          # opt-in: arms pnpm verify as a pre-commit hook
+    │   ├── install-hooks.mjs          # opt-in: arms pnpm verify (pre-commit) + the push policy (pre-push)
     │   ├── plan-check.mjs             # the plan-shape gate: Measure lines, chunk lines, A-ID coverage, archive
     │   ├── owner.mjs                  # effective owner mode (.owner + .nexus/local.json)
+    │   ├── git/push-policy.mjs        # pre-push: refuses main outside owner mode; claims ref passes unchecked
     │   ├── plan/pending.mjs           # pending files: a branch's plan change, counted closed until it settles
     │   ├── plan/settle.mjs            # the owner's settle: pending files -> plan edits, one commit on main
     │   ├── plan/settled.mjs           # the plan as it reads once pending edits settle
@@ -541,6 +544,7 @@ nexus/
     │   ├── __tests__/settle.test.mjs  # settle's pure functions
     │   ├── __tests__/settle-run.test.mjs # settle end to end in a scratch repo (offline)
     │   ├── __tests__/claims-codec.test.mjs # the claims rules
+    │   ├── __tests__/push-policy.test.mjs # the push policy, pure
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)
     ├── env/
     │   └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.

@@ -1,67 +1,93 @@
 #!/usr/bin/env node
-// scripts/install-hooks.mjs — opt-in pre-commit gate for hand commits.
+// scripts/install-hooks.mjs — opt-in git hooks for hand commits and pushes.
 //
 // The verify gate binds the *loop* (every skill runs it foreground
 // before commit), but a human editing outside the loop has to
-// remember to run it. This writes .git/hooks/pre-commit running
-// node scripts/verify.mjs — nothing else: no network, no
-// formatting, no auto-fix. Opt-in only: clone-and-read adopters are
-// unaffected until they run this themselves.
+// remember to run it. This writes two hooks:
 //
-//   node scripts/install-hooks.mjs
-//   node scripts/install-hooks.mjs --uninstall
+//   pre-commit  node scripts/verify.mjs — nothing else: no network, no
+//               formatting, no auto-fix.
+//   pre-push    scripts/git/push-policy.mjs — a push to main from a
+//               checkout not in owner mode is refused (land through a
+//               pull request); see nexus/playbooks/owner-mode.md. The
+//               step is skipped when the script is missing, so the
+//               hook never breaks a checkout that pruned it.
 //
-// Refuses to touch a pre-commit hook it didn't write (checks for
-// its own marker line) — prints the path and exits 1 rather than
-// clobbering something else's hook.
+// Opt-in only: clone-and-read adopters are unaffected until they
+// run this themselves.
+//
+//   node scripts/install-hooks.mjs                    # both hooks
+//   node scripts/install-hooks.mjs --only pre-push    # just one
+//   node scripts/install-hooks.mjs --uninstall        # remove what it wrote
+//
+// The hooks go where git looks for them (core.hooksPath if set, and a
+// worktree shares its main checkout's). Refuses to touch a hook it
+// didn't write (checks for its own marker line) — prints the path and
+// exits 1 rather than clobbering something else's hook.
 
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..')
 const MARKER = '# nexus:install-hooks'
-const hookPath = path.join(ROOT, '.git', 'hooks', 'pre-commit')
+const HOOKS = {
+  'pre-commit': `node scripts/verify.mjs
+`,
+  'pre-push': `# Owner mode decides how work lands: a push to main from a checkout
+# without effective owner mode is refused (scripts/git/push-policy.mjs).
+# The claims ref passes unchecked. A checkout without the script skips it.
+refs=$(cat)
+if [ -f scripts/git/push-policy.mjs ]; then
+  refs=$(printf '%s\n' "$refs" | node scripts/git/push-policy.mjs) || exit 1
+fi
+exit 0
+`,
+}
 
 function usage(msg) {
   if (msg) console.error(`install-hooks: ${msg}`)
-  console.error('usage: node scripts/install-hooks.mjs [--uninstall]')
+  console.error('usage: node scripts/install-hooks.mjs [--only pre-commit|pre-push] [--uninstall]')
   process.exit(1)
 }
 
-if (!fs.existsSync(path.join(ROOT, '.git'))) {
-  usage('no .git/ found at repo root — run from a git checkout')
+let hooksDir
+try {
+  hooksDir = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-path', 'hooks'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+} catch {
+  usage('not inside a git checkout')
 }
 
-const uninstall = process.argv.includes('--uninstall')
-const existing = fs.existsSync(hookPath) ? fs.readFileSync(hookPath, 'utf8') : null
-const ours = existing !== null && existing.includes(MARKER)
+const args = process.argv.slice(2)
+const uninstall = args.includes('--uninstall')
+const onlyAt = args.indexOf('--only')
+const only = onlyAt === -1 ? null : args[onlyAt + 1]
+if (only !== null && !HOOKS[only]) usage(`--only takes ${Object.keys(HOOKS).join(' or ')}`)
+const names = only ? [only] : Object.keys(HOOKS)
 
-if (uninstall) {
-  if (existing === null) {
-    console.log('install-hooks: no pre-commit hook installed — nothing to do')
-    process.exit(0)
+let failed = false
+for (const name of names) {
+  const hookPath = path.join(hooksDir, name)
+  const existing = fs.existsSync(hookPath) ? fs.readFileSync(hookPath, 'utf8') : null
+  const ours = existing !== null && existing.includes(MARKER)
+  if (existing !== null && !ours) {
+    console.error(`install-hooks: ${hookPath} exists and wasn't written by this script — remove it by hand first if you mean to replace it`)
+    failed = true
+    continue
   }
-  if (!ours) {
-    usage(`${path.relative(ROOT, hookPath)} exists and wasn't written by this script — remove it by hand if you mean to`)
+  if (uninstall) {
+    if (existing === null) {
+      console.log(`install-hooks: no ${name} hook installed — nothing to do`)
+    } else {
+      fs.rmSync(hookPath)
+      console.log(`install-hooks: removed ${hookPath}`)
+    }
+    continue
   }
-  fs.rmSync(hookPath)
-  console.log(`install-hooks: removed ${path.relative(ROOT, hookPath)}`)
-  process.exit(0)
+  fs.mkdirSync(hooksDir, { recursive: true })
+  fs.writeFileSync(hookPath, `#!/bin/sh\n${MARKER} — do not edit by hand; regenerate with\n# node scripts/install-hooks.mjs (--uninstall to remove).\n${HOOKS[name]}`, { mode: 0o755 })
+  fs.chmodSync(hookPath, 0o755)
+  console.log(`install-hooks: wrote ${hookPath}`)
 }
 
-if (existing !== null && !ours) {
-  usage(`${path.relative(ROOT, hookPath)} already exists and wasn't written by this script — remove it by hand first if you mean to replace it`)
-}
-
-const hookBody = `#!/bin/sh
-${MARKER} — do not edit by hand; regenerate with
-# node scripts/install-hooks.mjs (--uninstall to remove).
-node scripts/verify.mjs
-`
-
-fs.mkdirSync(path.dirname(hookPath), { recursive: true })
-fs.writeFileSync(hookPath, hookBody, { mode: 0o755 })
-fs.chmodSync(hookPath, 0o755)
-
-console.log(`install-hooks: wrote ${path.relative(ROOT, hookPath)} — node scripts/verify.mjs now runs before every commit`)
-console.log('install-hooks: node scripts/install-hooks.mjs --uninstall to remove')
+if (!uninstall && !failed) console.log('install-hooks: node scripts/install-hooks.mjs --uninstall to remove')
+process.exit(failed ? 1 : 0)
