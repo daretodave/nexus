@@ -68,8 +68,13 @@ node scripts/install-hooks.mjs
 
 That writes two git hooks: `pre-commit` runs the verify gate,
 and `pre-push` runs `scripts/git/push-policy.mjs`, which
-refuses a push to the default branch from a checkout not in
-owner mode. `--only pre-push` arms just the policy;
+refuses a push to the default branch on `origin` or
+`upstream` from a checkout not in owner mode. Any other remote
+is left alone: a contributor's own fork is theirs, main
+included. The policy goes by the remote's name (git hands the
+hook the name and the URL), so name the shared repository
+`origin` or `upstream`; a push straight to a URL has no name
+and is not checked. `--only pre-push` arms just the policy;
 `--uninstall` removes both. The hook skips any step whose
 script is missing, so pruning a script never breaks a push.
 

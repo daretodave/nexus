@@ -31,8 +31,9 @@ lands depends on the checkout (`npm run claims -- whoami`;
   `plan/pending/<id>.md`.
 
 `scripts/git/push-policy.mjs` (pre-push, armed by
-`node scripts/install-hooks.mjs`) refuses main outside owner
-mode. `.owner` is gitignored; never commit it. No unpushed
+`node scripts/install-hooks.mjs`) refuses main on `origin` or
+`upstream` outside owner mode (a fork's main is its
+contributor's). `.owner` is gitignored; never commit it. No unpushed
 commits between ticks; no dirty tree at turn end.
 
 ### 2. No `Co-Authored-By:` trailers. No emojis.

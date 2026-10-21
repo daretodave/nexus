@@ -489,7 +489,7 @@ nexus/
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
 │   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
-│   ├── git/push-policy.mjs            # pre-push: main is the owner's checkout's alone (owner mode)
+│   ├── git/push-policy.mjs            # pre-push: main on origin/upstream is the owner's checkout's alone (owner mode)
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
 │   ├── ledger.mjs                     # npm run ledger: each session's live ledger (star names; a crash resumes like a reboot)
 │   ├── worktree.mjs                   # npm run worktree: close a worktree without deleting through its links; list for /tidy
@@ -636,7 +636,7 @@ nexus/
     │   ├── install-hooks.mjs          # opt-in: arms pnpm verify (pre-commit) + the push policy (pre-push)
     │   ├── plan-check.mjs             # the plan-shape gate: Measure lines, chunk lines, A-ID coverage, archive
     │   ├── owner.mjs                  # effective owner mode (.owner + .nexus/local.json)
-    │   ├── git/push-policy.mjs        # pre-push: refuses main outside owner mode; claims ref passes unchecked
+    │   ├── git/push-policy.mjs        # pre-push: refuses main on origin/upstream outside owner mode; claims ref passes unchecked
     │   ├── plan/pending.mjs           # pending files: a branch's plan change, counted closed until it settles
     │   ├── plan/settle.mjs            # the owner's settle: pending files -> plan edits, one commit on main
     │   ├── plan/settled.mjs           # the plan as it reads once pending edits settle

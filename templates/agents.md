@@ -41,7 +41,8 @@ How work lands depends on the checkout, never on the skill
 A skill's "push `<DEFAULT_BRANCH>`" step means "land per this
 rule". The pre-push hook (`scripts/git/push-policy.mjs`, armed
 by `node scripts/install-hooks.mjs`) refuses a push to
-`<DEFAULT_BRANCH>` outside owner mode: a leg trip, not a lock.
+`<DEFAULT_BRANCH>` on `origin` or `upstream` outside owner
+mode (a fork's own remote is left alone): a leg trip, not a lock.
 The lock is the host's branch ruleset; see
 `nexus/playbooks/owner-mode.md`. Never commit `.owner`. Either
 way: no commits unpushed between ticks, no dirty tree at turn
