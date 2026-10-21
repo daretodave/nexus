@@ -106,6 +106,14 @@ describe('closing a chunk', () => {
     assert.equal(dropNeeds(spec, '07.3'), '- [ ] **08.1** x · S · closes A1 · needs\n  07.4\n- [ ] **08.2** y · S · closes A2 · needs —\n');
   });
 
+  it('tidies a needs clause wrapped onto its own line under a joint', () => {
+    const spec = '- [ ] **42.4** x · S · closes A8 ·\n  needs 42.2\n- [ ] **42.5** y · S · closes A9 ·\n  needs 42.2, 42.3\n';
+    assert.equal(dropNeeds(spec, '42.2'), '- [ ] **42.4** x · S · closes A8 ·\n  needs —\n- [ ] **42.5** y · S · closes A9 ·\n  needs 42.3\n');
+    // Prose that opens a wrapped line with "needs" under no joint stays as written.
+    const prose = '- [ ] **42.6** z · S · closes A10 · needs — the sink\n  needs 42.2 in prose\n';
+    assert.equal(dropNeeds(prose, '42.2'), prose);
+  });
+
   it('recounts a measure from the A-IDs listed, and sets only its row\'s N left', () => {
     assert.match(recountMeasure('Measure: 2 open · 0 closed · next A3\n- **A1** x\n- **A2** y', 'Measure: 2 open · 0 closed · next A3\n- **A2** y'), /Measure: 1 open · 1 closed · next A3/);
     const r = setLeft(README, '07-search.md', 2);

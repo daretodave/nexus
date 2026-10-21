@@ -188,9 +188,16 @@ function dropEmptyAcceptance(lines) {
  * it. Settle runs it over every other spec too: a chunk may need another spec's chunk.
  */
 export function dropNeeds(spec, id) {
-  const lines = spec.split('\n').map((l) => (ANY_CHUNK.test(l) || /^ {2}\S/.test(l) ? dropNeed(l, id) : l));
+  const lines = spec.split('\n').map((l, i, all) => {
+    // A needs clause wrapped onto a line of its own opens a clause only under a joint (`·`) ending the line above.
+    if (/·\s*$/.test(all[i - 1] ?? '') && WRAPPED_NEEDS.test(l)) return dropNeed(l, id, WRAPPED_NEEDS);
+    return ANY_CHUNK.test(l) || /^ {2}\S/.test(l) ? dropNeed(l, id) : l;
+  });
   return dropWrappedNeed(lines, id).join('\n');
 }
+
+/** `  needs 07.3` on a wrapped line of its own, under a line that ends `·`. */
+const WRAPPED_NEEDS = /^( {2}needs )(.+)$/;
 
 /** A needs list on its own line under a chunk line that ends `· needs`: the id out of it, and `needs —` once empty. */
 const NEED_LIST = /^ {2}(\d+\.\d+[a-z\d]*(?:,\s*\d+\.\d+[a-z\d]*)*)\s*$/;
@@ -211,8 +218,8 @@ function dropWrappedNeed(lines, id) {
 }
 
 /** `· needs 07.3` → `· needs —`, and out of a list. */
-function dropNeed(line, id) {
-  const m = /(· needs )(.+)$/.exec(line);
+function dropNeed(line, id, clause = /(· needs )(.+)$/) {
+  const m = clause.exec(line);
   if (!m) return line;
   const items = m[2].split(/,\s*/);
   if (!items.some((s) => s.trim() === id)) return line;
