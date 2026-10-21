@@ -13,6 +13,7 @@ import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
 import { preflight } from './preflight.mjs';
 import * as repoMod from './repo.mjs';
 import * as gh from './gh.mjs';
+import { createSteering, primaryRoot, readLedgers, parkedItem } from './sessions.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -43,8 +44,9 @@ function readPrompt(name) {
  * @param {string} [o.token]         defaults to a fresh random token
  * @param {object|function} [o.provider]  inject a provider, or a factory given the hooks (tests)
  * @param {boolean} [o.pollRuns=true]
+ * @param {string} [o.claudeHome]    Claude Code's config folder (sessions under projects/); tests point it elsewhere
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist') } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome } = {}) {
   const hub = createHub();
   const asks = new Map();
   const permissions = new Map();
@@ -52,11 +54,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   let beatCtx = newBeatContext();
   let prefs = await repoMod.readPrefs(repo);
   let busy = false;
+  let guiSession = null;
 
   const publishAsks = () => hub.set('asks', [...asks.values()].map((a) => a.view));
   const publishPerms = () => hub.set('permissions', [...permissions.values()].map((a) => a.view));
 
   const onMessage = (msg) => {
+    if (msg.session_id) guiSession = msg.session_id;
     for (const item of txFromMessage(msg, txCtx)) hub.tx(item);
     for (const b of beatsFromMessage(msg, beatCtx)) hub.beat(b);
     if (msg.type === 'result') {
@@ -147,6 +151,17 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     provider.send(text);
   }
 
+  // Live local sessions and steering a linked one (spec 41): the SDK stream for this server's own session, an
+  // addressed owner line on the notice board (handed over by the steer hook) for a terminal one.
+  const steering = createSteering({ repo, send: (t) => sendPrompt(t), guiSession: () => guiSession, home: claudeHome });
+
+  async function sessionDetail(id) {
+    const s = await steering.find(id);
+    if (!s) return null;
+    const l = readLedgers(await primaryRoot(repo)).find((x) => x.id === s.id) || {};
+    return { ...s, parked: (Array.isArray(l.parked) ? l.parked : []).map(parkedItem), defaults: Array.isArray(l.defaults) ? l.defaults : [], started: l.started || null };
+  }
+
   async function handle(req, res) {
     const url = new URL(req.url, 'http://127.0.0.1');
     if (!url.pathname.startsWith('/api/')) return serveStatic(req, res, url);
@@ -184,9 +199,16 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           const b = await body(req);
           const rows = (Array.isArray(b.answers) ? b.answers : []).filter((a) => a && a.file && a.answer && String(a.answer).trim());
           if (!rows.length) return send(res, 400, { error: 'no answers' });
+          const prompt = repoMod.answersPrompt(rows.map((a) => ({ file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer) })), repoMod.isOwner(repo));
+          if (b.session) {
+            // Aimed at one linked session: it reaches that session's next turn, and only that session.
+            const r = await steering.steer(String(b.session), prompt, { kind: 'answer' });
+            return send(res, r.status, r);
+          }
           sendPrompt(repoMod.answersPrompt(rows.map((a) => ({ file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer) })), repoMod.isOwner(repo)));
           return send(res, 200, { ok: true });
         }
+        case 'GET /api/sessions': return send(res, 200, await steering.list());
         case 'GET /api/claims': return send(res, 200, await repoMod.claims(repo));
         case 'POST /api/claims/release': { const b = await body(req); return send(res, 200, await repoMod.releaseClaim(repo, String(b.id || ''))); }
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
@@ -205,6 +227,20 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         const answers = b.answers && typeof b.answers === 'object' ? Object.fromEntries(Object.entries(b.answers).map(([k, v]) => [String(k), String(v)])) : null;
         entry.resolve(answers);
         return send(res, 200, { ok: true });
+      }
+      const one = /^GET \/api\/sessions\/([\w.%-]+)$/.exec(route);
+      if (one) {
+        const d = await sessionDetail(decodeURIComponent(one[1]));
+        return d ? send(res, 200, d) : send(res, 404, { error: 'no such live session' });
+      }
+      const sact = /^POST \/api\/sessions\/([\w.%-]+)\/(link|steer|parked)$/.exec(route);
+      if (sact) {
+        const b = await body(req);
+        const id = decodeURIComponent(sact[1]);
+        const r = sact[2] === 'link' ? await steering.link(id, b.on !== false)
+          : sact[2] === 'steer' ? await steering.steer(id, b.text, { kind: b.kind === 'answer' ? 'answer' : 'tug' })
+            : await steering.settleParked(id, { index: Number(b.index), q: b.q, action: b.action, pick: b.pick, answer: b.answer });
+        return send(res, r.status, r);
       }
       const perm = /^POST \/api\/permission\/([\w-]+)$/.exec(route);
       if (perm) {
