@@ -128,3 +128,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 45.3 · /plot extends before it adds, through ## Add · 8e7dfb3a..4bc5178e
 - 2026-10-21 · 45.4 · /plot spots a spec an open PR extends · c156c6b3..c156c6b3
 - 2026-10-21 · 45 · spec complete: an ## Add extends a spec without quoting it, numbered and placed at settle in merge order; the settled view, plan-check and order --mark read it; /plot extends before it adds and spots a spec an open PR extends · b1c9b54e..c156c6b3
+- 2026-10-21 · 43.6 · the GUI hands off a design link and shows each board's port status · 3194063e..c2f930fb
+- 2026-10-21 · 43 · spec complete: the Claude Design round trip runs from the kit: /design prompt, addendum and ingest, a board renderer and compare, the port recipe as a Workflow with an opt-in map leg, and the GUI's hand-off and gallery · bedb4c36..c2f930fb

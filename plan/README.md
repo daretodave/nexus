@@ -37,7 +37,6 @@ line goes):
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 1 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 1 left |
 | 42 | Secrets: manifest, vault, sinks | [42-secrets-vault.md](42-secrets-vault.md) | planned | 1 left |
-| 43 | The Claude Design handoff: prompt out, artifact in | [43-design-handoff.md](43-design-handoff.md) | planned | 1 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
