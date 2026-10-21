@@ -85,9 +85,6 @@ What exists today (2026-10-21):
 
 ## Acceptance
 
-- **A4** The board renderer and the screenshot compare live in
-  `templates/scripts/design/` with tests, and nexus's own
-  41.3 handoff renders through them.
 - **A5** The port recipe runs as a Workflow from the skill:
   foundation, screens per page, integrate, per-theme fidelity,
   land with the skip list.
@@ -102,11 +99,9 @@ What exists today (2026-10-21):
 they are in the Claude Design flow, by giving a link.)
 
 ## Chunks
-Measure: 4 open · 3 closed · next A8
+Measure: 3 open · 4 closed · next A8
 
-- [ ] **43.4** The board renderer and screenshot compare,
-  promoted from the scratchpad · M · closes A4 · needs —
 - [ ] **43.5** The port recipe as a Workflow, and the
-  fidelity leg · M · closes A5, A6 · needs 43.4
+  fidelity leg · M · closes A5, A6 · needs —
 - [ ] **43.6** "Hand off a design" and the board gallery in
   the GUI · M · closes A7 · needs 43.5
