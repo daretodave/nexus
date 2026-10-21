@@ -66,8 +66,6 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
   question's age and session.
 - **A3** `packages/cli` carries the export's tokens, motion
   and both themes verbatim; every skipped pattern is logged.
-- **A5** The Trusted Publisher reads validated; 0.0.1 and
-  `0.0.0-stage` are deprecated.
 
 ## Open questions
 
@@ -76,7 +74,7 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
   the next turn (default), or interrupt? Default: wait.
 
 ## Chunks
-Measure: 4 open · 1 closed · next A6
+Measure: 3 open · 2 closed · next A6
 
 - [ ] **41.1** Magical steering: link to a local Claude Code
   session · L · closes A1 · needs —
@@ -85,5 +83,3 @@ Measure: 4 open · 1 closed · next A6
 - [ ] **41.3** Apply the Claude Design handoff to packages/cli
   · L · closes A3 · needs —
   - Waits on the owner's export (Held lane).
-- [ ] **41.5** Trusted Publisher validated; old versions
-  deprecated · S · closes A5 · needs —

@@ -50,16 +50,13 @@ scripts).
   `upstream`, with tests.
 - **A3** The nexus repo carries the `main` and `claims`
   rulesets, the cloud token bypassing `main`'s.
-- **A4** The primary checkout's pre-push policy is armed.
-- **A5** `.claude/settings.json` allows what an overnight
-  `/heads-down` runs.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 5 open · 0 closed · next A6
+Measure: 3 open · 2 closed · next A6
 
 - [ ] **38.1** Adoption asks owner or contributor and arms the
   hooks · S · closes A1 · needs —
@@ -67,5 +64,3 @@ Measure: 5 open · 0 closed · next A6
   only · S · closes A2 · needs —
 - [ ] **38.3** Post the main and claims rulesets on nexus ·
   S · closes A3 · needs —
-- [ ] **38.4** Arm the push policy and widen the session
-  allowlist · S · closes A4, A5 · needs —
