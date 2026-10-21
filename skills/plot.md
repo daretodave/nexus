@@ -46,9 +46,9 @@ origin/main`.
 
 - Restate the task in 1-3 lines, in the asker's terms.
 - Find what exists: grep the code, the specs, `plan/pending/`
-  and the decisions. Mark each part *already built*, *already
-  planned* (spec, A-ID) or *new*. Don't plan what is done; link
-  what is planned.
+  (open PRs' too, Step 4.2) and the decisions. Mark each part
+  *already built*, *already planned* (spec, A-ID) or *new*.
+  Don't plan what is done; link what is planned.
 - **Existing features first.** Before designing anything new,
   name the smallest version built from what exists: an entry
   point, a link, a button that reaches a feature already built.
@@ -109,9 +109,12 @@ origin/main`.
    `origin/main`: owner, detached at
    `../nexus-wt/plot-<slug>`; contributor, on branch
    `plot/<slug>`.
-2. **A new spec's number** is above every spec on origin, in
-   `ARCHIVE.md` and in every open PR (`gh pr list --json files
-   --jq '.[].files[].path' | grep '^plan/[0-9]'`). Reserve it:
+2. **Open PRs:** `gh pr list --json number,files`; for each
+   touching `plan/pending/`, `gh pr diff <n> | grep -E
+   '^\+## (Add|Edit) plan/[0-9]'` names the specs it extends.
+   One already covering the task: "Already in PR #N", plot
+   nothing. **A new spec's number** is above every spec on
+   origin, in `ARCHIVE.md` and in every open PR. Reserve it:
    `node scripts/claims.mjs claim <NN>` (refused: take the next).
    The new spec file is written directly: a new file conflicts
    with nothing.

@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { CONFIG_FILE, DEFAULTS, fill, loadConfig, makeConfig, mayEdit } from '../plan/config.mjs';
-import { parsePending, pendingArchiveLines, pendingCloses, pendingFiles } from '../plan/pending.mjs';
+import { parsePending, pendingArchiveLines, pendingCloses, pendingFiles, pendingSpecs } from '../plan/pending.mjs';
 import { settledView } from '../plan/settled.mjs';
 
 const temps = [];
@@ -226,6 +226,30 @@ describe('a pending ## Add', () => {
       assert.deepEqual(a.sections, [{ heading: 'Design', text: 'The strip compares a cached page with a served one.' }]);
       assert.equal(p.edits[0].new, '**Asap**\n- 07.?strip the strip');
     }
+  });
+
+  it('names the specs an open pull request extends through its pending file alone', () => {
+    const patch = [
+      'diff --git a/plan/pending/plot-strip.md b/plan/pending/plot-strip.md',
+      'new file mode 100644',
+      '--- /dev/null',
+      '+++ b/plan/pending/plot-strip.md',
+      '@@ -0,0 +1,9 @@',
+      '+---',
+      '+date: 2026-10-21',
+      '+---',
+      '+## Add plan/07-search.md',
+      '+~~~ chunks',
+      '+- [ ] **07.?strip** The strip · S',
+      '+~~~',
+      '+## Edit plan/README.md',
+      '+## Edit plan/100-big.md',
+      '+## Edit plan/07-search.md',
+      '',
+    ].join('\r\n');
+    assert.deepEqual(pendingSpecs(patch), ['plan/07-search.md', 'plan/100-big.md']);
+    assert.deepEqual(pendingSpecs(ADD), ['plan/07-search.md']);
+    assert.deepEqual(pendingSpecs('---\ndate: 2026-10-21\n---\n## Notes\n- x\n'), []);
   });
 
   it('reads a three-digit spec, and refuses a second Add of the same spec in one file', () => {

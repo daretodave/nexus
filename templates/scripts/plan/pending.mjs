@@ -177,6 +177,15 @@ function entries(body, start, why, under = /^ {2}\S/) {
   return out;
 }
 
+/**
+ * The specs a pending file adds to or edits, read from its text or from a diff that adds it (`gh pr diff <n>`: its
+ * `+` lines): what an open pull request changes in the plan without touching a spec file, so a /plot sees "already in
+ * PR #N" for a spec extended only through plan/pending/.
+ */
+export function pendingSpecs(text) {
+  return [...new Set([...text.replace(/\r\n/g, '\n').matchAll(/^\+?## (?:Add|Edit) (plan\/\d{2,}-[^/\s]+\.md)[ \t]*$/gm)].map((m) => m[1]))];
+}
+
 /** The pending files in a checkout: [{ file, text }] by name. */
 export function pendingFiles(root) {
   const dir = path.join(root, PENDING_DIR);
