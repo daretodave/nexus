@@ -55,6 +55,7 @@ test('token, Host and Origin are enforced; a good call goes through', async () =
     assert.ok(app.hub.beats.some((b) => b.k === 'oversight' && b.p === 'tug'));
     assert.equal((await req(port, { pathname: '/' })).status, 200, 'placeholder index when unbuilt');
     assert.equal((await req(port, { pathname: '/../../etc/passwd.js' })).status, 404);
+    assert.equal((await req(port, { pathname: '/%E0%A4%A' })).status, 400, 'malformed escape is a 400, not a 500');
   } finally {
     await app.close();
   }

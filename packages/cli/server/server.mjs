@@ -225,7 +225,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   function serveStatic(req, res, url) {
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'method' });
     if (!hosts.has(req.headers.host || '')) return send(res, 403, { error: 'bad host' });
-    let rel = decodeURIComponent(url.pathname);
+    let rel;
+    try { rel = decodeURIComponent(url.pathname); } catch { return send(res, 400, { error: 'bad path' }); }
     if (rel === '/' || !path.extname(rel)) rel = '/index.html';
     const file = path.resolve(dist, `.${rel}`);
     if (!file.startsWith(path.resolve(dist) + path.sep)) return send(res, 403, { error: 'path' });
