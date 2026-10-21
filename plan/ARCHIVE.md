@@ -90,3 +90,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 40.3 · the plan board reads order.mjs and progress.mjs · 13b5666c..9d9bf4bf
 - 2026-10-21 · 41.2 · the stage draws each tug's path, state and age · 0cdb2ebd..991b2aad
 - 2026-10-21 · 40.7 · Actions panel pauses, runs a pass, shows stalls, least privilege · 3c533099..40612240
+- 2026-10-21 · 40.8 · owner lines post through announce.mjs; explode draws theme cards · 6682ccf4..fa249fa5

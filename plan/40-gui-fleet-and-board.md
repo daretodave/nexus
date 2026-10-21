@@ -74,8 +74,6 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
   claims, releases, holds, assigns and requests.
 - **A6** Every session and the repo show their git state, and
   the tidy dry run lists idle worktrees.
-- **A8** Owner lines post through `announce.mjs`; explode
-  renders `/messy`'s themes as cards.
 - **A10** The GUI resumes a Workflow from its transcript
   folder.
 - **A11** Run mode and owner mode live in
@@ -89,7 +87,7 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 (None.)
 
 ## Chunks
-Measure: 9 open · 3 closed · next A13
+Measure: 8 open · 4 closed · next A13
 
 - [ ] **40.1** One server, many sessions, deep links, a reused
   launch · M · closes A1 · needs —
@@ -101,8 +99,6 @@ Measure: 9 open · 3 closed · next A13
   · M · closes A5 · needs 40.1
 - [ ] **40.6** Git per session and the repo's worktree panel ·
   M · closes A6 · needs 40.1
-- [ ] **40.8** Owner lines via announce.mjs; explode as theme
-  cards · S · closes A8 · needs —
 - [ ] **40.10** Recover from a Workflow transcript folder · M
   · closes A10 · needs 40.1
 - [ ] **40.11** `/api/local`: run mode and owner mode, one
