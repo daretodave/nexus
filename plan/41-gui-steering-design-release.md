@@ -65,9 +65,6 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
 - **A6** Hover, focus, popover and motion states match their
   boards in a live browser, in both themes, and the button
   ink the cascade repair chose is confirmed or reverted.
-- **A7** The cockpit, heads-down and inbox draw the boards'
-  durations, diffstats, message times, estimates, phase marks
-  and countdowns from real data.
 
 ## Open questions
 
@@ -77,7 +74,7 @@ running tool call can't be killed, so the next tool boundary
 is the interrupt point.)
 
 ## Chunks
-Measure: 2 open · 7 closed · next A10
+Measure: 1 open · 8 closed · next A10
 
 - [ ] **41.6** Live fidelity pass: hover, popovers, motion,
   both themes · S · closes A6 · needs —
@@ -89,9 +86,3 @@ Measure: 2 open · 7 closed · next A10
   - The boards draw `<button class="btn-primary">` with
     `--text` ink (the reset outranks it); the app draws
     on-accent ink (`repairCascade`). Default: keep the repair.
-- [ ] **41.7** Boards' times, durations, diffstats and marks
-  from real data · M · closes A7 · needs —
-  - The stream and ledger carry tool durations and
-    diffstats, message times, the workflow junction, chunk
-    estimates and phase marks, the tug's default deadline;
-    CloudLoop counts "PRs opened" from `/api/cloud`.

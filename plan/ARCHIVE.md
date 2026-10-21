@@ -100,3 +100,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 40.10 · Recover reads a Workflow run folder and resumes the run · cf3546a3..97209d2a
 - 2026-10-21 · 41.8 · fleet idle curves, the orphan's tidy link, one switcher rule · ce67d9e2..1d222f64
 - 2026-10-21 · 40.5 · claims panel groups, claims, releases, holds, assigns, requests · 4b28490e..bfb03e87
+- 2026-10-21 · 41.7 · boards draw durations, diffstats, times, estimates from real data · a37caf1c..8957c92d
