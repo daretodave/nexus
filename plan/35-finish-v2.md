@@ -65,8 +65,6 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
   tests; ship-a-chunk uses them.
 - **A4** `plan/CANDIDATES.md` replaces `PHASE_CANDIDATES.md`
   everywhere, gate included.
-- **A5** `scripts/upgrade-plan.mjs` converts a v1 fixture plan
-  to one `plan-check` passes; `upgrade.md` Step 4 runs it.
 - **A6** adopt-dryrun covers `new-project.md` §3 and runs on
   Windows.
 - **A8** `CLAUDE.md` points at the v2 pick order.
@@ -78,7 +76,7 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
 (None.)
 
 ## Chunks
-Measure: 7 open · 2 closed · next A10
+Measure: 6 open · 3 closed · next A10
 
 - [ ] **35.2** Vocabulary sweep: phase words and a sibling's
   name out of public docs · M · closes A1 · needs —
@@ -86,11 +84,9 @@ Measure: 7 open · 2 closed · next A10
   moves to them · S · closes A2 · needs —
 - [ ] **35.5** PHASE_CANDIDATES.md becomes CANDIDATES.md ·
   S · closes A4 · needs 35.2
-- [ ] **35.6** scripts/upgrade-plan.mjs, the v1 to v2
-  converter · M · closes A5 · needs —
 - [ ] **35.7** adopt-dryrun walks new-project §3, and on
   Windows · S · closes A6 · needs —
 - [ ] **35.8** CLAUDE.md points at the v2 pick order · S ·
   closes A8 · needs —
 - [ ] **35.9** Tag v2.0.0 and point both lock files at it ·
-  S · closes A9 · needs 35.2, 35.3, 35.5, 35.6, 35.7
+  S · closes A9 · needs 35.2, 35.3, 35.5, 35.7
