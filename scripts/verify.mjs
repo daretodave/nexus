@@ -64,6 +64,13 @@
 //                 memory; a hand edit, a missing or a stray SVG is
 //                 red, naming the file), plus the generator's own
 //                 node:test suite
+//   secrets       no vault value in what the next commit can hold:
+//                 the working tree vs HEAD plus the untracked files,
+//                 scanned for every value in the vault (.env at the
+//                 primary checkout, .env.workspace, the keychain when
+//                 it is on; values of 8+ characters), each hit named
+//                 by file, line and secret, never shown
+//                 (scripts/secrets-scan.mjs). No vault: green, noted
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds). Opt in with
@@ -684,6 +691,26 @@ async function legDiagrams() {
   return { failures: [...check(), ...suite.failures], note: `${Object.keys(DIAGRAMS).length} SVGs match scripts/diagrams.mjs; ${suite.note}` }
 }
 
+// --- leg: secrets -------------------------------------------------------------
+// The rail behind "the model sees names, never values": a value that
+// reaches a diff would reach git history. The vault is the primary
+// checkout's (every worktree shares it); the values stay in memory.
+
+async function legSecrets() {
+  const load = (rel) => import(pathToFileURL(path.join(ROOT, rel)).href)
+  const { openVault } = await load('scripts/secrets-vault.mjs')
+  const { describeHit, scanRepo, vaultValues } = await load('scripts/secrets-scan.mjs')
+  const { localSettings, primaryRoot } = await load('scripts/owner.mjs')
+  const { readManifest } = await load('scripts/plan/secrets-manifest.mjs')
+  let vroot = ROOT
+  try { vroot = primaryRoot(ROOT) } catch { /* not a checkout: the vault beside it */ }
+  const manifest = readManifest(path.join(ROOT, 'nexus.secrets.json'))
+  const values = vaultValues(openVault({ root: vroot, settings: localSettings(vroot) }), manifest ? [...manifest.names] : [])
+  if (!values.size) return { failures: [], note: 'no vault values here (.env, .env.workspace, keychain): nothing to scan for' }
+  const { hits, scanned } = scanRepo({ root: ROOT, values })
+  return { failures: hits.map(describeHit), note: `${scanned} added lines (vs HEAD, and untracked) hold none of ${values.size} vault values` }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -713,6 +740,7 @@ const LEGS = {
   scripts: () => legScripts(),
   workflows: () => legWorkflows(),
   diagrams: () => legDiagrams(),
+  secrets: () => legSecrets(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
 }
