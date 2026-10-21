@@ -34,6 +34,7 @@ plan/
 ├── README.md            # the roadmap: lanes + one row per spec (what /next reads)
 ├── NN-<slug>.md         # one spec per initiative, written before the code
 ├── ARCHIVE.md           # one line per finished chunk; append-only
+├── pending/             # plan changes waiting for the owner's settle (one file each)
 ├── nexus.lock           # the kit version this plan's shape follows
 ├── bearings.md          # standing context (unchanged from v1)
 ├── AUDIT.md · CRITIQUE.md · PHASE_CANDIDATES.md   # the queues (unchanged)
@@ -129,6 +130,41 @@ Closing is one atomic act with the code:
 No ticked boxes, no "learned" notes, no struck-through lines
 stay in a spec. The plan grows only by a justified increase in
 scope, stated in the commit body.
+
+## Closing from a branch: pending files and settle
+
+The steps above edit shared files (the spec, the roadmap, the
+archive), and two branches closing chunks at once conflict on
+every one of them. So a branch never edits them. It closes its
+chunk with one new file, `plan/pending/<chunk id>.md`:
+
+```md
+---
+close: 07.3
+date: 2026-10-20
+says: Empty query shows the empty state
+---
+```
+
+plus optional `## Edit <path>` sections (exact old text, found
+exactly once at settle), `## Decisions` (`D?<slug>`, numbered at
+settle) and `## Footguns`. Two branches never write the same
+file, so the plan never conflicts. Only the owner settles: on
+main, `node scripts/plan/settle.mjs` folds every pending file
+into steps 1-4 above, in date order, and commits once; a file
+that won't apply is skipped with its reason and the rest
+settle. Until then every reader counts a pending close as
+closed: the next build skips the chunk, and the gate's history
+check accepts its pending file in place of the archive line.
+
+The owner's own work may skip the pending file and close
+in place, since nothing races it on main; a contributor's pull
+request always carries pending files. The format, the settle
+rules and the per-repo config (`plan/settle.json`) are in
+`templates/plan/pending/README.md` and
+`templates/scripts/plan/`. The mechanism was learned from a
+mature adopter whose loops and people closed chunks in
+parallel for months.
 
 ## The gate
 

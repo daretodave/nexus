@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseChunk, parseSpec, checkPlan, checkHistory, archived, runCheck } from '../plan-check.mjs'
+import { parseChunk, parseSpec, checkPlan, checkHistory, archived, runCheck, loadPlanDir } from '../plan-check.mjs'
 
 const spec = (body) => parseSpec('plan/07-search.md', `# 07 — Search\n\n${body}`)
 
@@ -167,5 +167,19 @@ test('--since: an unknown ref fails; an unborn HEAD has no history to check', ()
   try {
     assert.deepEqual(runCheck({ repoAbs: dir, since: 'HEAD' }).failures, [])
     assert.match(runCheck({ repoAbs: dir, since: 'no-such-ref' }).failures.join('\n'), /--since no-such-ref: not a commit/)
+  } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('a pending close counts by its file name or its close: line, never the folder README', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-pending-'))
+  try {
+    fs.mkdirSync(path.join(dir, 'pending'))
+    fs.writeFileSync(path.join(dir, 'pending', 'README.md'), '# not a close\n')
+    fs.writeFileSync(path.join(dir, 'pending', '07.3.md'), '---\nclose: 07.3\ndate: 2026-10-20\nsays: x\n---\n')
+    fs.writeFileSync(path.join(dir, 'pending', 'late-fix.md'), '---\ndate: 2026-10-20\nclose: 07.4\nsays: y\n---\n')
+    fs.writeFileSync(path.join(dir, 'pending', 'note-a.md'), '---\ndate: 2026-10-20\n---\n## Notes\nclose: 07.9\n')
+    const ids = loadPlanDir(dir).pendingIds
+    assert.ok(ids.has('07.3') && ids.has('07.4'))
+    assert.ok(!ids.has('README') && !ids.has('07.9'))
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })

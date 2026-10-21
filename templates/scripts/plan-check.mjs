@@ -267,8 +267,14 @@ export function loadPlanDir(dirAbs, label = 'plan') {
     specs: files.map((f) => parseSpec(`${label}/${f}`, read(f))),
     readme: read('README.md'),
     archive: read('ARCHIVE.md'),
+    // A pending close (plan/pending/, scripts/plan/pending.mjs) counts
+    // as closed: by its file name (`<chunk id>.md`) or its `close:` line.
     pendingIds: new Set(fs.existsSync(path.join(dirAbs, 'pending'))
-      ? fs.readdirSync(path.join(dirAbs, 'pending')).filter((f) => f.endsWith('.md')).map((f) => f.slice(0, -3))
+      ? fs.readdirSync(path.join(dirAbs, 'pending')).filter((f) => f.endsWith('.md') && f !== 'README.md').flatMap((f) => {
+          const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(read(`pending/${f}`) ?? '')
+          const close = fm && /^close:[ \t]*(\S+)/m.exec(fm[1])
+          return close ? [f.slice(0, -3), close[1]] : [f.slice(0, -3)]
+        })
       : []),
   }
 }

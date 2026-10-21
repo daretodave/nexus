@@ -412,7 +412,7 @@ nexus/
 │   └── pitch.md                       # the full pitch-to-adopted agent prompt
 ├── package.json                       # the kit's own verify gate wiring
 ├── scripts/
-│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks
+│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep + prune steps
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
@@ -468,6 +468,7 @@ nexus/
     │   ├── 01-bootstrap.md            # starter spec (design, acceptance IDs, chunks)
     │   ├── 02-canonical-sibling.md    # starter spec: the first feature surface
     │   ├── ARCHIVE.md                 # one line per finished chunk
+    │   ├── pending/README.md          # plan changes waiting for the owner's settle
     │   ├── nexus.lock                 # the kit version + plan shape this repo follows
     │   ├── bearings.md
     │   ├── AUDIT.md
@@ -523,8 +524,17 @@ nexus/
     │   ├── new-skill.mjs              # skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md
     │   ├── install-hooks.mjs          # opt-in: arms pnpm verify as a pre-commit hook
     │   ├── plan-check.mjs             # the plan-shape gate: Measure lines, chunk lines, A-ID coverage, archive
+    │   ├── owner.mjs                  # effective owner mode (.owner + .nexus/local.json)
+    │   ├── plan/pending.mjs           # pending files: a branch's plan change, counted closed until it settles
+    │   ├── plan/settle.mjs            # the owner's settle: pending files -> plan edits, one commit on main
+    │   ├── plan/settled.mjs           # the plan as it reads once pending edits settle
+    │   ├── plan/config.mjs            # per-repo settle config (plan/settle.json)
+    │   ├── plan/footguns.mjs          # footgun list format + budget lint
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
-    │   └── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
+    │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
+    │   ├── __tests__/pending.test.mjs # pending files, config, settled view
+    │   ├── __tests__/settle.test.mjs  # settle's pure functions
+    │   └── __tests__/settle-run.test.mjs # settle end to end in a scratch repo (offline)
     ├── env/
     │   └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
     └── workspace/                      # → workspace root, not any repo (adopt-by-need)
@@ -588,12 +598,13 @@ adapt them.
 This repo eats its own dogfood — it is an adopted nexus
 project. The ouroboros, concretely:
 
-- **Its own verify gate.** `node scripts/verify.mjs` — seven
+- **Its own verify gate.** `node scripts/verify.mjs` — nine
   hermetic legs (every relative link resolves, the kit tree
   matches disk, no orphaned doc, placeholder vocabulary
   enforced, skill anatomy enforced, no emojis, dual-shell
-  parity checked). On its first ever run it caught five real
-  defects in this repo. The gate works.
+  parity checked, the plan shape true, the plan and claims
+  scripts' own suites green). On its first ever run it caught
+  five real defects in this repo. The gate works.
 - **Its own plan.** `plan/README.md` and its specs carry the
   kit's roadmap, in the same chunk shape adopters use; `plan/AUDIT.md` and
   `plan/PHASE_CANDIDATES.md` are seeded with real findings

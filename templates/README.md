@@ -16,6 +16,7 @@ templates/
 │   ├── 01-bootstrap.md                (starter spec: the bootstrap)
 │   ├── 02-canonical-sibling.md        (starter spec: the first feature surface)
 │   ├── ARCHIVE.md                     (one line per finished chunk; append-only)
+│   ├── pending/README.md              (plan changes waiting to settle: what a branch writes instead of shared plan files)
 │   ├── nexus.lock                     (the kit version + plan shape this repo follows)
 │   ├── bearings.md
 │   ├── AUDIT.md
@@ -79,8 +80,17 @@ templates/
 │   ├── new-skill.mjs                  (skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md)
 │   ├── install-hooks.mjs              (opt-in: arms pnpm verify as a pre-commit hook)
 │   ├── plan-check.mjs                 (the plan-shape gate; add it to your verify composition)
+│   ├── owner.mjs                      (effective owner mode: .owner + .nexus/local.json; who settles and lands on main)
+│   ├── plan/pending.mjs               (reads plan/pending/<id>.md; a pending close counts as closed)
+│   ├── plan/settle.mjs                (the owner's settle: pending files -> spec, roadmap, archive, decisions, footguns)
+│   ├── plan/settled.mjs               (the plan as it reads once pending edits settle, in memory)
+│   ├── plan/config.mjs                (what settle may differ on per repo; overrides in plan/settle.json)
+│   ├── plan/footguns.mjs              (the footgun list's format and budget lint)
 │   ├── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
-│   └── __tests__/plan-check.test.mjs  (unit tests for plan-check.mjs)
+│   ├── __tests__/plan-check.test.mjs  (unit tests for plan-check.mjs)
+│   ├── __tests__/pending.test.mjs     (pending files, the config, the settled view)
+│   ├── __tests__/settle.test.mjs      (settle's pure functions)
+│   └── __tests__/settle-run.test.mjs  (settle end to end in a scratch git repo; slower, offline)
 ├── env/
 │   └── env.example                    → repo's .env.example
 └── workspace/                          → workspace ROOT, not any repo (adopt-by-need; see below)

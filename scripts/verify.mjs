@@ -36,6 +36,14 @@
 //                 its archive line. Runs templates/scripts/plan-check.mjs
 //                 so adopters and the kit share one implementation,
 //                 plus that script's own node:test suite
+//   scripts       the node:test suites of the plan and claims scripts
+//                 adopters copy (templates/scripts/plan/, claims):
+//                 pure, no git, no network, about a second
+//   scripts-git   opt-in — the same scripts end to end in scratch git
+//                 repos in the temp folder (offline, but every case
+//                 spawns git, so tens of seconds). Opt in with
+//                 `node scripts/verify.mjs scripts-git` or
+//                 `NEXUS_VERIFY_GIT_TESTS=1 node scripts/verify.mjs`
 //   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
 //                 copy + placeholder-sweep + prune blocks. Skipped by
 //                 the default no-argument run; opt in with
@@ -482,6 +490,30 @@ async function legChunks() {
   return { failures, note: notes.join('; ') }
 }
 
+// --- legs: scripts, scripts-git ---------------------------------------------
+// The plan and claims scripts are templates adopters run on their
+// own plan, so their suites gate the kit. The pure suites run on
+// every commit; the end-to-end ones spawn git in scratch repos and
+// are opt-in, like adopt-dryrun.
+
+const PURE_SUITES = [
+  'templates/scripts/__tests__/pending.test.mjs',
+  'templates/scripts/__tests__/settle.test.mjs',
+]
+const GIT_SUITES = [
+  'templates/scripts/__tests__/settle-run.test.mjs',
+]
+
+function runSuites(suites, label) {
+  try {
+    execSync(`node --test ${suites.join(' ')}`, { cwd: ROOT, encoding: 'utf-8', stdio: 'pipe' })
+    return { failures: [], note: `${suites.length} ${label} suites pass` }
+  } catch (err) {
+    const out = `${err.stdout || ''}${err.stderr || ''}`
+    return { failures: ['node --test failed:', ...out.split(/\r?\n/).filter((l) => /^\s*(✖|not ok|Error|AssertionError)/.test(l)).slice(0, 20)], note: 'see failures' }
+  }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -508,13 +540,16 @@ const LEGS = {
   emoji: (files) => legEmoji(files),
   dualshell: (files) => legDualshell(files),
   chunks: () => legChunks(),
+  scripts: () => runSuites(PURE_SUITES, 'pure'),
+  'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
 }
 
 // Opt-in legs run only when named explicitly or env-gated on —
 // excluded from the default no-argument pass so the gate stays
 // fast (agents.md rule 3: foreground, every commit).
-const OPT_IN_LEGS = new Set(['adopt-dryrun'])
+const OPT_IN_LEGS = new Set(['adopt-dryrun', 'scripts-git'])
+const OPT_IN_ENV = { 'adopt-dryrun': 'NEXUS_VERIFY_ADOPT_DRYRUN', 'scripts-git': 'NEXUS_VERIFY_GIT_TESTS' }
 
 async function main() {
   const only = process.argv[2]
@@ -526,7 +561,7 @@ async function main() {
   let red = false
   for (const [name, run] of Object.entries(LEGS)) {
     if (only && name !== only) continue
-    if (!only && OPT_IN_LEGS.has(name) && process.env.NEXUS_VERIFY_ADOPT_DRYRUN !== '1') continue
+    if (!only && OPT_IN_LEGS.has(name) && process.env[OPT_IN_ENV[name]] !== '1') continue
     const { failures, note } = await run(files)
     if (failures.length === 0) {
       process.stdout.write(`  ${name.padEnd(13)} ok    (${note})\n`)
