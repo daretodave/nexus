@@ -62,8 +62,6 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
 
 ## Acceptance
 
-- **A1** The GUI links to a terminal Claude Code session; an
-  answer or tug reaches its next turn, and only that session.
 - **A2** The stage shows each tug's path and state and each
   question's age and session.
 - **A6** Hover, focus, popover and motion states match their
@@ -80,15 +78,14 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
 
 ## Open questions
 
-- Which surface the steering hook uses when a terminal
-  session is mid-tool for a long time (an L build): wait for
-  the next turn (default), or interrupt? Default: wait.
+(None. The owner chose interrupt on 2026-10-21: the steer
+hook denies the next tool call with the owner's line; a
+running tool call can't be killed, so the next tool boundary
+is the interrupt point.)
 
 ## Chunks
-Measure: 6 open · 3 closed · next A10
+Measure: 5 open · 4 closed · next A10
 
-- [ ] **41.1** Magical steering: link to a local Claude Code
-  session · L · closes A1 · needs —
 - [ ] **41.2** Oversight tugs, visualized: path, state, age ·
   M · closes A2 · needs —
 - [ ] **41.6** Live fidelity pass: hover, popovers, motion,
