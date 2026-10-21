@@ -39,14 +39,23 @@ line goes):
 
 1. **Pick.** An explicit argument wins (`/ship-a-chunk 02.3`).
    Otherwise the first ready chunk in the Asap lane, then in
-   table order. Within a spec, the first chunk whose `needs`
-   are done. A need is done when its line is gone from every
-   spec. Held chunks are never picked.
+   priority rows (a Status of `planned · priority N`,
+   `priority 1` first), then in table order. Within a spec,
+   the first chunk whose `needs` are done. A need is done when
+   its line is gone from every spec. Held chunks are never
+   picked.
 2. **Spec.** Read the spec end to end: Design and Contracts
    are decided upfront, and Acceptance says what done means.
 3. **Bearings.** `bearings.md` holds stack pins, contracts,
    visual defaults, the sub-agent registry and standing
    decisions. Read once per session.
+4. **Arrive.** New work enters through `/plot` (one task,
+   researched and chunked, with its place in line: `asap`
+   appends to the Asap lane, `anytime` leaves the row in table
+   order after every priority row), `/messy` (a dump of
+   thoughts, clustered into themes, each refined into a spec),
+   or `/oversight` promoting a
+   [`PHASE_CANDIDATES.md`](PHASE_CANDIDATES.md) entry.
 
 ## Chunks, measure, archive
 

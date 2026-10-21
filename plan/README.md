@@ -49,7 +49,9 @@ are archived; 20 and 32 were the two left blocked when the
 plan moved to chunks on 2026-10-20). The next new spec is 42.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`PHASE_CANDIDATES.md`](PHASE_CANDIDATES.md)
-entry.
+entry. A row whose Status reads `planned · priority N` is
+picked after the Asap lane, `priority 1` first; the other
+rows follow in table order.
 
 > **When no chunk is ready,** `/march` transitions to
 > `/iterate`: the audit dimensions (drift, completeness, voice,
