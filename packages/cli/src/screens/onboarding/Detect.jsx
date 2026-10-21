@@ -3,7 +3,7 @@
 // take the state of the stars they join. Continue unlocks once Claude Code
 // is found and signed in.
 import { useState } from 'react';
-import { Icon, Err } from '../../ui/index.js';
+import { Icon, Err, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { usePreflight } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next, useCopy, CopyFace } from './frame.jsx';
@@ -122,11 +122,11 @@ export default function Detect() {
 
   const foot = (
     <>
-      <Back to="welcome" />
-      <span className="ob-count">2 of 6</span>
+      <Back to={stepBefore('detect')} />
+      <span className="ob-count">{stepCount('detect')}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {ready
-          ? <Next to={PATHS.onboarding('shape')} />
+          ? <Next to={PATHS.onboarding(stepAfter('detect'))} />
           : (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
               <span className="t-body-s c-3">{pf ? 'Continue unlocks once Claude Code is found' : 'Checking this machine…'}</span>
@@ -141,7 +141,7 @@ export default function Detect() {
     <ObFrame step="detect" foot={foot}>
       <div className="ob-grid" style={{ gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, .9fr)' }}>
         <div className="ob-copy" style={{ gap: 16 }}>
-          <span className="kicker">step 2 · detect</span>
+          <span className="kicker">step {stepNo('detect')} · detect</span>
           <h1 className="t-display-s">Looking around this machine</h1>
           <p className="t-body-l ob-lede" style={{ marginTop: -4 }}>Four quick checks. Nothing gets installed and nothing leaves this machine. Each one lights a star.</p>
           {pre.status === 'error' && !pf

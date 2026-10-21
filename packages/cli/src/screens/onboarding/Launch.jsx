@@ -4,7 +4,7 @@
 // cockpit. Opening it saves the run mode and marks setup done.
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Icon, Orb, Kbd, SessTag, Star, nextSessionName, useShell } from '../../ui/index.js';
+import { Icon, Orb, Kbd, SessTag, Star, nextSessionName, useShell, stepCount, stepBefore, stepNo } from '../../ui/index.js';
 import { api, server, useLocalSettings, useSessions } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, markOnboarded, useEnter } from './frame.jsx';
@@ -137,8 +137,8 @@ export default function Launch() {
 
   const foot = (
     <>
-      <Back to="cloud" />
-      <span className="ob-count">6 of 6 · done</span>
+      <Back to={stepBefore('launch')} />
+      <span className="ob-count">{stepCount('launch')} · done</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span className="t-body-s c-3">Press <Kbd>⏎</Kbd> to open</span>
       </div>
@@ -150,7 +150,7 @@ export default function Launch() {
       <div className="launch">
         <div className="ob-copy">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span className="kicker">step 6 · launch</span>
+            <span className="kicker">step {stepNo('launch')} · launch</span>
             <h1 className="t-display-m">Your first session is ready</h1>
           </div>
           <p className="t-body-l ob-lede">Everything you set up gathers into one star. Open it, answer its first questions, and it goes heads-down for the next few hours.</p>

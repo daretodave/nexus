@@ -1,6 +1,6 @@
 // The onboarding frame, as every onboarding board draws it: the aurora and
-// the starfield behind, a header (wordmark, the six-star stepper, Skip
-// setup), the step in main, and a footer (Back, "n of 6", the way on).
+// the starfield behind, a header (wordmark, the stepper's stars, Skip
+// setup), the step in main, and a footer (Back, "n of N", the way on).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Ob, Stepper, STEPS, Icon } from '../../ui/index.js';

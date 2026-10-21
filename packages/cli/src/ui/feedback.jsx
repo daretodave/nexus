@@ -2,16 +2,7 @@
 // heads-down .tui frame. Calm: says what is safe before what broke.
 import { Icon } from './icons.jsx';
 import { cx, NavA } from './controls.jsx';
-
-/** The six onboarding steps, in order. */
-export const STEPS = [
-  { id: 'welcome', label: 'Welcome' },
-  { id: 'detect', label: 'Detect' },
-  { id: 'shape', label: 'Shape' },
-  { id: 'plot', label: 'Plot' },
-  { id: 'cloud', label: 'Cloud loop' },
-  { id: 'launch', label: 'Launch' },
-];
+import { STEPS } from './steps.js';
 
 /**
  * .stepper: a constellation. `current` is a step id; `done` and `skipped`

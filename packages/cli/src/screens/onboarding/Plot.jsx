@@ -8,7 +8,7 @@
 // report; /messy's Step 6 pins its shape). Nothing here is planned until
 // it is written.
 import { useMemo, useState } from 'react';
-import { Icon, Kbd, ChoiceButtons, SizeTag, useShell } from '../../ui/index.js';
+import { Icon, Kbd, ChoiceButtons, SizeTag, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { server } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next } from './frame.jsx';
@@ -161,12 +161,12 @@ export default function Plot() {
 
   const foot = (
     <>
-      <Back to="shape" />
-      <span className="ob-count">4 of 6</span>
+      <Back to={stepBefore('plot')} />
+      <span className="ob-count">{stepCount('plot')}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {plotErr ? <span className="t-body-s" style={{ color: 'var(--st-blocked)' }}>Not planned yet: {plotErr}</span> : null}
         <span className="t-body-s c-3">{chunks.length} chunks planned</span>
-        <Next to={PATHS.onboarding('cloud')} onClick={writePlan} />
+        <Next to={PATHS.onboarding(stepAfter('plot'))} onClick={writePlan} />
       </div>
     </>
   );
@@ -175,7 +175,7 @@ export default function Plot() {
     <ObFrame step="plot" foot={foot} mainStyle={{ maxWidth: 1360 }} mainClass="plot-main">
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 20 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <span className="kicker">step 4 · plot the first work</span>
+          <span className="kicker">step {stepNo('plot')} · plot the first work</span>
           <h1 className="t-display-s">Plot the first work</h1>
         </div>
         <p className="t-body ob-lede" style={{ maxWidth: 520, textAlign: 'right' }}>Type or paste whatever is in your head. Explode it into ideas, keep what matters, and give each one a place in line.</p>

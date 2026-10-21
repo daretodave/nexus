@@ -3,7 +3,7 @@
 // whose checkout this is (writes or removes .owner), and how agents split
 // the work (the run mode, saved to .nexus/local.json through /api/local).
 import { useState } from 'react';
-import { nextRunMode, Icon, InfoBtn, Seg, OwnerPick, Switch, Check, BadgeAuto, BadgeDef, FileTag, useShell } from '../../ui/index.js';
+import { nextRunMode, Icon, InfoBtn, Seg, OwnerPick, Switch, Check, BadgeAuto, BadgeDef, FileTag, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { api, server, useLocalSettings } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next } from './frame.jsx';
@@ -69,10 +69,10 @@ export default function Shape() {
 
   const foot = (
     <>
-      <Back to="detect" />
-      <span className="ob-count">3 of 6</span>
+      <Back to={stepBefore('shape')} />
+      <span className="ob-count">{stepCount('shape')}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Next to={PATHS.onboarding('plot')} onClick={() => { if (d.runMode == null) setRm(v); }} />
+        <Next to={PATHS.onboarding(stepAfter('shape'))} onClick={() => { if (d.runMode == null) setRm(v); }} />
       </div>
     </>
   );
@@ -82,7 +82,7 @@ export default function Shape() {
       <div className="shape-grid">
         <div className="ob-copy" style={{ gap: 20 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span className="kicker">step 3 · shape the project</span>
+            <span className="kicker">step {stepNo('shape')} · shape the project</span>
             <h1 className="t-display-s">A few friendly questions</h1>
           </div>
 

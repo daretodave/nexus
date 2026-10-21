@@ -1,4 +1,4 @@
-// Onboarding: the six steps of design/handoff Welcome (+ WelcomeAgent),
+// Onboarding: the steps (ui/feedback.jsx STEPS) of design/handoff Welcome (+ WelcomeAgent),
 // Detect (+ DetectMissing), Shape (+ ShapeContributor), Plot, CloudSetup
 // and Launch, each with its Light board through the tokens alone. One
 // draft of the answers is shared across the steps (screens/onboarding/).

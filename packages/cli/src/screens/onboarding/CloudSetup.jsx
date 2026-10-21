@@ -5,7 +5,7 @@
 // so where it would act, and nothing claims to be done that is not.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon } from '../../ui/index.js';
+import { Icon, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { server, useActions, useRuns } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, useCopy, CopyFace } from './frame.jsx';
@@ -128,11 +128,11 @@ export default function CloudSetup() {
 
   const foot = (
     <>
-      <Back to="plot" />
-      <span className="ob-count">5 of 6 · optional</span>
+      <Back to={stepBefore('cloud')} />
+      <span className="ob-count">{stepCount('cloud')} · optional</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Link className="btn btn-ghost" to={PATHS.onboarding('launch')} onClick={skip}>Skip</Link>
-        <Link className="btn btn-primary btn-l" to={PATHS.onboarding('launch')} onClick={turnOn}>Turn on the cloud loop<Icon name="arrowRight" size={14} /></Link>
+        <Link className="btn btn-ghost" to={PATHS.onboarding(stepAfter('cloud'))} onClick={skip}>Skip</Link>
+        <Link className="btn btn-primary btn-l" to={PATHS.onboarding(stepAfter('cloud'))} onClick={turnOn}>Turn on the cloud loop<Icon name="arrowRight" size={14} /></Link>
       </div>
     </>
   );
@@ -142,7 +142,7 @@ export default function CloudSetup() {
       <div className="cloud-grid">
         <div className="ob-copy">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span className="kicker">step 5 · cloud loop · optional</span>
+            <span className="kicker">step {stepNo('cloud')} · cloud loop · optional</span>
             <h1 className="t-display-s">Let it run while you sleep</h1>
           </div>
           <p className="t-body-l ob-lede">A CI workflow wakes nexus on a schedule. Each run claims the next chunk, builds it, checks it and commits, then parks any question for the morning. Same loop, minus your laptop.</p>
@@ -154,7 +154,7 @@ export default function CloudSetup() {
             </ul>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
-            <Link className="btn btn-l" to={PATHS.onboarding('launch')} onClick={skip}><Icon name="moonNight" />Skip, I'll run it locally</Link>
+            <Link className="btn btn-l" to={PATHS.onboarding(stepAfter('cloud'))} onClick={skip}><Icon name="moonNight" />Skip, I'll run it locally</Link>
             <span className="t-body-s c-3">You can set it up later from Cloud loop.</span>
           </div>
         </div>
