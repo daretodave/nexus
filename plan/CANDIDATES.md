@@ -1215,6 +1215,46 @@ kit + sibling surveys.
 - conflicts: none — complements rather than overlaps the pending
   "[score 4.5] Crash-alarm dedupe" candidate above.
 
+### [ ] [score 7.0] heartbeat's wedged-run canceller breaks outright when the workflow it watches is disabled, instead of skipping like its two sibling steps
+- proposed: 2026-10-21 (digest)
+- source signals: two consecutive heartbeat runs failed today —
+  2026-10-21T04:43:57Z (run 39545645949) and 2026-10-21T11:46:50Z
+  (run 39594489838) — both on `could not find any workflows named
+  march`. `gh run list --workflow <name>` can't resolve a workflow
+  by its display name once it leaves the `active` state: `gh
+  workflow list --all` shows `march` as `disabled_manually` since
+  2026-10-20T23:20:24Z, the owner's deliberate pause during
+  today's marathon local `/heads-down` session (`a1f5f127`). The
+  "Cancel wedged runs" step (`.github/workflows/heartbeat.yml`'s
+  first step) loops `$WATCH` ("march night") and calls `gh run
+  list --workflow "$wf" --status in_progress` with no armed-state
+  guard, so it hard-fails under `bash -e` for as long as any
+  watched workflow stays non-`active`. Today's own spec-32 chunks
+  (`b6acc842`, committed 2026-10-21T14:51:43Z) taught the other
+  two steps ("Alarm if not armed", "Alarm if march or night has
+  not succeeded a tick in time") to read `gh workflow list --all`
+  first and skip a non-`active` workflow instead of erroring —
+  step 1 still lacks that exact guard, and its failure aborts the
+  whole job (so the two newer steps never even ran on either of
+  today's two failing ticks). The template twin
+  (`templates/.github/workflows/heartbeat.yml`) is byte-identical,
+  so every adopter who pauses a watched workflow hits the same
+  failure.
+- rationale: cheap (reuse the armed-state read the other two steps
+  already do) and adopter-facing (ships via the template); the
+  watchdog going dark exactly when the thing it watches is paused
+  is the worst time for it to fail silently-loud instead of
+  reporting cleanly.
+- proposed scope: `.github/workflows/heartbeat.yml` +
+  `templates/.github/workflows/heartbeat.yml`, step 1 only — read
+  `gh workflow list --all` once (ahead of all three steps, not
+  just the latter two) and skip `$wf` in the cancel loop when its
+  state isn't `active`. Touches `.github/workflows/*.yml`, so per
+  `agents.md` "Operational secrets" it lands from a local/human
+  session, not a cloud tick.
+- estimated chunks: 1
+- conflicts: none
+
 ## Promoted
 
 (moves to the build plan via /oversight)
