@@ -54,3 +54,57 @@ test('a Workflow call draws the junction, captioned with its agents, and they ha
   assert.equal(kids.find((f) => f.key === 'Y').flow, true);
   assert.equal(kids.find((f) => f.key === 'L').flow, false);
 });
+
+// ---- the session detail's times (server/session-times.mjs) ---------------------------
+
+const { sessionTimes, createStepWatch } = await import('../server/session-times.mjs');
+const { phaseBudget, estimateMinutes } = await import('../shared/times.mjs');
+
+const PLAN = { hours: { S: 1, M: 2.5, L: 5 }, specs: [{ id: '12', chunks: [{ id: '12.3', title: 'Conflict resolution', size: 'M' }, { id: '12.2', title: 'Merge view', size: 'S' }] }] };
+
+test('the chunk in flight carries its title, size, estimate and the start the stream saw', () => {
+  const t = sessionTimes({
+    ledger: { id: 'L', started: '2026-10-21T01:00:00.000Z', chunk: '12.3', step: 'building', done: ['12.2'], parked: [{ q: 'tie?', at: '2026-10-21T02:30:00.000Z' }, 'bare'] },
+    beats: [{ k: 'chunk', p: 'claim', id: '12.2', at: Date.parse('2026-10-21T01:05:00Z') }, { k: 'chunk', p: 'archive', id: '12.2', at: Date.parse('2026-10-21T01:50:00Z') }, { k: 'chunk', p: 'claim', id: '12.3', at: Date.parse('2026-10-21T02:00:00Z') }],
+    plan: PLAN, phase: 'std',
+  });
+  assert.equal(t.startedAt, '2026-10-21T01:00:00.000Z');
+  assert.deepEqual(t.budget, { label: '3–4h', ms: 4 * 3600000 });
+  assert.deepEqual(t.chunk, { id: '12.3', step: 'building', title: 'Conflict resolution', size: 'M', estimate: 150, startedAt: '2026-10-21T02:00:00.000Z' });
+  assert.deepEqual(t.closed, [{ id: '12.2', title: 'Merge view', at: '2026-10-21T01:50:00.000Z' }]);
+  assert.deepEqual(t.marks.map((m) => [m.kind, m.at]), [['closed', '2026-10-21T01:50:00.000Z'], ['parked', '2026-10-21T02:30:00.000Z']]);
+});
+
+test('what no one saw stays null: no beats, no plan, no phase', () => {
+  const t = sessionTimes({ ledger: { id: 'L', chunk: '9.1', done: ['9.0'] } });
+  assert.deepEqual(t.chunk, { id: '9.1', step: '', title: '', size: null, estimate: null, startedAt: null });
+  assert.deepEqual(t.closed, [{ id: '9.0', title: '', at: null }]);
+  assert.deepEqual([t.startedAt, t.budget, t.marks], [null, null, []]);
+  assert.equal(sessionTimes({}).chunk, null);
+});
+
+test('a ledger watched across reads dates a chunk change and a close at its beat; the first read dates nothing', () => {
+  const w = createStepWatch();
+  const first = w.observe({ id: 'L', chunk: '7.1', done: [], beat: '2026-10-21T01:00:00.000Z' });
+  assert.equal(first.starts.size, 0);
+  w.observe({ id: 'L', chunk: '7.1', done: [], beat: '2026-10-21T01:10:00.000Z' });
+  const later = w.observe({ id: 'L', chunk: '7.2', done: ['7.1'], beat: '2026-10-21T01:40:00.000Z' });
+  assert.equal(later.starts.get('7.2'), '2026-10-21T01:40:00.000Z');
+  assert.equal(later.closes.get('7.1'), '2026-10-21T01:40:00.000Z');
+  assert.equal(later.starts.has('7.1'), false);
+  const t = sessionTimes({ ledger: { id: 'L', chunk: '7.2', done: ['7.1'] }, watched: later });
+  assert.equal(t.chunk.startedAt, '2026-10-21T01:40:00.000Z');
+  assert.equal(t.closed[0].at, '2026-10-21T01:40:00.000Z');
+});
+
+test('the Working budget is the Settings phase; an estimate needs both a size and the hours table', () => {
+  assert.deepEqual(['short', 'std', 'night', 'bogus'].map((p) => phaseBudget(p)?.label ?? null), ['2–3h', '3–4h', 'all night', null]);
+  assert.deepEqual([estimateMinutes('S', PLAN.hours), estimateMinutes('L', PLAN.hours), estimateMinutes(null, PLAN.hours), estimateMinutes('M', null)], [60, 300, null, null]);
+});
+
+test('the cockpit counts a chunk\'s elapsed time from the start the server saw', async () => {
+  const { ctxLayers } = await import('../src/screens/cockpit/model.js');
+  const now = Date.parse('2026-10-21T02:18:42Z');
+  const rows = ctxLayers({ ledger: { chunk: { id: '12.3', title: 'Conflicts', startedAt: '2026-10-21T02:00:00Z' } }, owner: true, phase: 'working', stage: null, info: {}, sessionName: 'vega', now });
+  assert.equal(rows.find((r) => r.k === 'Now').m, '18:42');
+});

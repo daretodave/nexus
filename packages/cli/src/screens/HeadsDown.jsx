@@ -11,6 +11,7 @@ import { api, server, useClaims, useCloudLoop, useEvents, useInbox, useLocalSett
 import { PATHS, lastSession } from '../routes.js';
 import { headsRows } from './headsdown-inbox/headsModel.js';
 import { renderRows } from './headsdown-inbox/tuiCanvas.jsx';
+import { phaseBudget } from '../../shared/times.mjs';
 
 const SKY = {
   boxSizing: 'border-box',
@@ -160,7 +161,8 @@ export default function HeadsDown() {
     claims: mineClaims,
     waiting,
     cloud: cloudRes.status === 'ready' ? cloudRes.data : null,
-    budget: (local.status === 'ready' && local.data?.phase) || (typeof ledger?.budget === 'object' ? ledger?.budget?.label : ledger?.budget) || null,
+    // The Working phase's length as Settings saved it ("3–4h"), not its key.
+    budget: (typeof ledger?.budget === 'object' ? ledger?.budget?.label : ledger?.budget) || (local.status === 'ready' && phaseBudget(local.data?.phase)?.label) || null,
     titles: chunkTitles(plan),
     now,
     seenAt,

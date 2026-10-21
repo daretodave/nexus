@@ -4,15 +4,15 @@
 //
 // Two sources feed it:
 //
-//   ledger  GET /api/sessions/:id (not served yet; null until it lands).
+//   ledger  GET /api/sessions/:id (its times and marks: server/session-times.mjs).
 //           The shape this file reads, every field optional:
 //           { id, name, kind: 'local'|'terminal'|'other', mode: 'owner'|'contributor',
 //             phase: 'start'|'working'|'review'|'package', state: 'live'|'pausing'|'paused'|'fallen',
 //             pausedAt, pausingStep, startedAt, workedMs, budget: { label: '3–4h', ms },
 //             repo, git: { branch, worktree, up, down, dirty, pr: { num, ci }, claims, commits: [{ sha, m, w }] },
-//             chunk: { id, title, ac: { met, total }, elapsed }, spec: { line, ref },
+//             chunk: { id, title, step, size, estimate (min), startedAt, ac: { met, total }, elapsed }, spec: { line, ref },
 //             pinned: { text, at }, claims: { now, next: [], held },
-//             closed: [{ id, title, at, fix }], landed: [{ sha, msg, at, chunk }],
+//             closed: [{ id, title, at, fix }], marks: [{ kind: 'closed'|'parked', at }], landed: [{ sha, msg, at, chunk }],
 //             lastShip: { sha, msg, where, at },
 //             context: { room, strata: [n, n, n], compactsAt },
 //             questions: [{ q, chunk, opts: [], rec, answer, how: 'answered'|'default' }],
@@ -259,7 +259,9 @@ export function ctxLayers({ ledger, owner, phase, stage, info, sessionName, now 
   const cur = L.chunk || (stage?.current ? { id: stage.current, stage: stage.chunks[stage.current]?.stage } : null);
   if (cur) {
     const ac = cur.ac ? `AC ${cur.ac.met}/${cur.ac.total}` : cur.stage || '';
-    const el = typeof cur.elapsed === 'number' ? mmss(cur.elapsed) : cur.elapsed;
+    // Elapsed on the chunk: the ledger's own figure, else counted from when the server saw it start.
+    const since = cur.startedAt ? Date.parse(cur.startedAt) : NaN;
+    const el = typeof cur.elapsed === 'number' ? mmss(cur.elapsed) : cur.elapsed || (Number.isFinite(since) && now ? mmss(now - since) : '');
     out.push({ k: 'Now', v: [cur.id, cur.title].filter(Boolean).join(' '), m: [ac, el].filter(Boolean).join(' · '), depth: 2 });
   }
   if (L.spec?.line) out.push({ k: 'Spec', v: L.spec.line, m: L.spec.ref || '', depth: 2 });

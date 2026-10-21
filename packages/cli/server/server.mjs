@@ -23,6 +23,7 @@ import { createGitView } from './git.mjs';
 import { readRun, recentRuns } from './recover.mjs';
 import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
 import { claimsAction, listClaims, SESSION as CLAIMS_SESSION } from './claims.mjs';
+import { createStepWatch, sessionTimes } from './session-times.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -144,6 +145,14 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   // Under an injected provider (tests) with no ghRun, gh reads as missing: a test never reaches the real one.
   const noGh = async () => ({ ok: false, code: -1, stdout: '', stderr: 'gh is not stubbed in this test', missing: true });
   const gitView = createGitView({ repo, root: () => primaryRoot(repo), sessions: () => steering.list(), run: ghRun || (injected ? noGh : undefined), ...gitOpts });
+  // The boards' times (41.7): ledgers watched across reads, and the plan's titles, sizes and hours, read at most once a
+  // minute (the cockpit polls the detail every few seconds).
+  const stepWatch = createStepWatch();
+  let planRead = { at: 0, p: null };
+  const planForTimes = () => {
+    if (!planRead.p || Date.now() - planRead.at > 60000) planRead = { at: Date.now(), p: readPlan(repo).catch(() => null) };
+    return planRead.p;
+  };
 
   async function sessionDetail(id) {
     const h = sessionOf(id);
@@ -159,6 +168,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       Object.assign(out, { hosted: true, cwd: run.cwd, worktree: run.place.worktree || '', branch: run.place.branch || out.git?.branch || '' });
     }
     out.git = await gitView.forSession(out);
+    const times = sessionTimes({
+      ledger: l, beats: run ? run.hub.beats : [], hostedAt: run?.at || null, plan: await planForTimes(),
+      watched: stepWatch.observe(l), phase: (await local.localView(repo).catch(() => null))?.phase || null,
+    });
+    Object.assign(out, times, { chunk: times.chunk || out.chunk || null });
     return out;
   }
 
@@ -285,7 +299,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   async function sessionList() {
     const list = await steering.list();
     const hosted = hostedLive().map((h) => ({ ...h, asks: h.asks.length }));
-    return fleetRows(list, { ledgers: readLedgers(await primaryRoot(repo)), hosted, resumers, owner: repoMod.isOwner(repo) });
+    const ledgers = readLedgers(await primaryRoot(repo));
+    for (const l of ledgers) stepWatch.observe(l);
+    return fleetRows(list, { ledgers, hosted, resumers, owner: repoMod.isOwner(repo) });
   }
 
   /** GET /api/inbox: every session's questions, tagged by star, and the plan's. */

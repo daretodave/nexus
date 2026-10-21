@@ -234,15 +234,18 @@ export function headsRows(m) {
     const r = at(2);
     r.put(L, 'time       ', 'k');
     const started = chunk ? ts(chunk.startedAt) : null;
-    const est = chunk?.estimate; // [lo, hi] minutes
+    // The estimate: [lo, hi] minutes, or one figure (the chunk's size against the plan's hours table, from the server).
+    const raw = chunk?.estimate;
+    const est = Array.isArray(raw) ? raw : typeof raw === 'number' && raw > 0 ? [raw] : null;
     if (started) {
       const el = now - started;
       const lo = est?.[0] || 40;
       const cells = Math.min(33, Math.round((el / 60000) * (24 / lo)));
       r.fill(LV, LV + 24, '░', 'b');
-      if (est) { r.put(LV + 24, '┊', 'k'); r.fill(LV + 25, LV + 32, '▒', 'd'); r.put(LV + 32, '┊', 'k'); }
+      if (est && est.length > 1) { r.put(LV + 24, '┊', 'k'); r.fill(LV + 25, LV + 32, '▒', 'd'); r.put(LV + 32, '┊', 'k'); } else if (est) r.put(LV + 24, '┊', 'k');
       r.fill(LV, LV + cells, '█', 'a');
-      r.seq(LV + 33, [['h', `  ${mmss(el)}`], est ? ['k', ` of ${est[0]}–${est[1]}m`] : null]);
+      const of = !est ? null : est.length > 1 ? ` of ${est[0]}–${est[1]}m` : ` of ${hm(est[0] * 60000)}`;
+      r.seq(LV + 33, [['h', `  ${mmss(el)}`], of ? ['k', of] : null]);
     } else r.put(LV, DASH, 'd');
   }
   {
