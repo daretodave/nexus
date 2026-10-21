@@ -576,6 +576,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/bootstrap.test.mjs',
   'templates/scripts/__tests__/secrets.test.mjs',
   'templates/scripts/__tests__/secrets-vault.test.mjs',
+  'templates/scripts/__tests__/secrets-sinks.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
 ]
@@ -597,7 +598,7 @@ const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
   'plan/progress.mjs', 'plan/order.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
-  'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs',
+  'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
 ]
 // The steer hook runs in nexus's own sessions from .claude/hooks/, byte for byte the one adopters copy.
 const HOOK_TWINS = ['steer.mjs']

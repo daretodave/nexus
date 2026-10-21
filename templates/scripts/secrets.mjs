@@ -8,24 +8,29 @@
 //   node scripts/secrets.mjs import FILE --store [--ring R]   # a real .env: values into the vault, names into the manifest
 //   node scripts/secrets.mjs names                            # the declared names, one per line
 //   node scripts/secrets.mjs check                            # the manifest keeps its shape (plan-check runs this too)
+//   node scripts/secrets.mjs push NAME [--to D] [--repo O/R]  # the value to its destinations through a sink (owner mode)
 //
 // There is no `get`: a value goes from the vault to code (scripts/secrets-vault.mjs's get and resolve: the run
 // wrapper, a sink, the GUI server), never to a terminal, where the model would read it. The vault: `.env` at the
 // primary checkout (local), `.env.workspace` at the workspace root (workspace), the OS keychain (keychain, opt-in in
 // .nexus/local.json). `--ring` picks one of local, workspace, keychain (default: the keychain when it is on, else
 // local). `import` without --store reads names and comments only: a value on a line is skipped. `--root <dir>` runs
-// against another checkout (the default is this one, its vault at the primary checkout). Exit 0 = done, 1 = a
-// problem, 64 = usage. The manifest: scripts/plan/secrets-manifest.mjs; the how: nexus/customization/secrets.md.
+// against another checkout (the default is this one, its vault at the primary checkout). `push` sends a declared
+// name's value to each destination the manifest lists for it (or the one `--to` names) through scripts/secrets-sinks.mjs
+// (stdin only), records each push in .nexus/secrets-audit.jsonl, and runs in owner mode only: a contributor's keys are
+// local-only. Exit 0 = done, 1 = a problem, 64 = usage. The manifest: scripts/plan/secrets-manifest.mjs; the how: nexus/customization/secrets.md.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { localSettings, primaryRoot } from './owner.mjs';
+import { isOwner, localSettings, primaryRoot } from './owner.mjs';
 import { MANIFEST, NAME, emptyManifest, importEnvExample, mergeImport, readManifest, serialize } from './plan/secrets-manifest.mjs';
 import { RINGS, openVault, parseEnv } from './secrets-vault.mjs';
+import { pushSecret, recordAudit, sinkFor, spawnRunner } from './secrets-sinks.mjs';
 
-export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check   [--root <dir>]';
-const COMMANDS = ['status', 'set', 'import', 'names', 'check'];
+export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check | push NAME [--to D] [--repo O/R]   [--root <dir>]';
+const COMMANDS = ['status', 'set', 'import', 'names', 'check', 'push'];
+const SINK_DESTINATIONS = ['github-actions', 'vercel', 'cloudflare'];
 
 function topLevel() {
   try { return execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return process.cwd(); }
@@ -64,7 +69,7 @@ export async function readSecretInput(prompt) {
 
 const where = (rings) => (rings.length ? `set · ${rings.join(', ')}` : 'missing');
 
-export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), input = readSecretInput, vault: vaultOpts = {} } = {}) {
+export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), input = readSecretInput, vault: vaultOpts = {}, owner, run = spawnRunner } = {}) {
   const args = [...argv];
   const flag = (name) => { const i = args.indexOf(name); if (i === -1) return false; args.splice(i, 1); return true; };
   const opt = (name) => { const i = args.indexOf(name); if (i === -1) return null; const v = args[i + 1]; args.splice(i, 2); return v ?? ''; };
@@ -73,13 +78,16 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
   const json = flag('--json');
   const rootArg = opt('--root');
   const ring = opt('--ring');
+  const to = opt('--to');
+  const repo = opt('--repo');
   const [cmd, arg, ...extra] = args;
   if (cmd === 'get') {
     err('secrets get: no such command. A value goes from the vault to code, never to a terminal: `status` says where each name is set, and scripts/secrets-vault.mjs exports get and resolve for scripts.');
     return 64;
   }
   const bad = !COMMANDS.includes(cmd) || extra.length || rootArg === '' || ring === '' || (ring && !RINGS.includes(ring))
-    || (arg && !['import', 'set'].includes(cmd)) || (cmd === 'set' && !arg) || (ring && cmd !== 'set' && !store)
+    || (arg && !['import', 'set', 'push'].includes(cmd)) || (['set', 'push'].includes(cmd) && !arg)
+    || ((to !== null || repo !== null) && cmd !== 'push') || (to !== null && !SINK_DESTINATIONS.includes(to)) || repo === '' || (ring && cmd !== 'set' && !store)
     || ((store || dry) && cmd !== 'import') || (store && (dry || !arg)) || (json && cmd !== 'status');
   if (bad) { err(USAGE); return 64; }
   const root = path.resolve(rootArg ?? topLevel());
@@ -100,6 +108,7 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     out(current ? `secrets check: green (${current.names.size} declared in ${MANIFEST})` : `secrets check: no ${MANIFEST}, nothing to check`);
     return 0;
   }
+  if (cmd === 'push') return push({ name: arg, to, repo, root, vroot, current, open, out, err, run, owner: owner ?? (() => isOwner(root)) });
   try {
     if (cmd === 'status') return status(open(), current, { out, json });
     if (cmd === 'set') {
@@ -149,6 +158,31 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
   out(`secrets import: added ${added.length}${list}; ${kept.length} already declared -> ${MANIFEST}`);
   if (added.length) out(`  each new entry goes to local, provided by the owner: edit its for, where and destinations in ${MANIFEST}`);
   return 0;
+}
+
+function push({ name, to, repo, root, vroot, current, open, out, err, run, owner }) {
+  if (!owner()) {
+    err(`secrets push: sinks run in owner mode only (scripts/owner.mjs); a contributor's keys are local-only`);
+    return 1;
+  }
+  const entry = current ? current.manifest.secrets.find((e) => e.name === name) : null;
+  if (!entry) { err(`secrets push: ${name} is not declared in ${MANIFEST}: declare it and its destinations first`); return 1; }
+  if (to && !entry.destinations.includes(to)) { err(`secrets push: ${name} does not go to ${to} (${entry.destinations.join(', ')}): add it to its destinations in ${MANIFEST}`); return 1; }
+  const targets = to ? [to] : entry.destinations.filter((d) => d !== 'local');
+  if (!targets.length) { out(`secrets push: ${name} goes to local only: nothing to push`); return 0; }
+  let values;
+  try { values = open().resolve([name]).values; } catch (e) { err(`secrets push: ${e.message}`); return 1; }
+  if (!values.has(name)) { err(`secrets push: ${name} is not in the vault: set it first (node scripts/secrets.mjs set ${name})`); return 1; }
+  let failed = 0;
+  for (const destination of targets) {
+    if (!sinkFor(destination)) { err(`secrets push: ${name} -> ${destination}: no sink for ${destination} yet`); failed++; continue; }
+    let done;
+    try { done = pushSecret({ name, value: values.get(name), destination, run, cwd: root, repo: repo ?? undefined }); } catch (e) { done = { ok: false, error: e.message }; }
+    if (!done.ok) { err(`secrets push: ${name} -> ${destination}: ${done.error}`); failed++; continue; }
+    recordAudit(vroot, { action: 'push', name, destination });
+    out(`secrets push: ${name} -> ${destination}`);
+  }
+  return failed ? 1 : 0;
 }
 
 function status(vault, current, { out, json }) {
