@@ -12,7 +12,7 @@
 // may claim many chunks at once and lands on main; every other checkout is a contributor's: it claims under its git
 // user.name, one chunk per call (or a heads-down package with --package, all or nothing), and lands through a PR.
 //
-// A claim belongs to the session that made it (NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID, or --session): two loops
+// A claim belongs to the session that made it (--session, else NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID): two loops
 // of one person, the owner's included, never share a chunk, and one loop's renew or release never touches another's.
 // A claim with a PR also belongs to its author on that machine, so a later session can carry the PR's review. The
 // owner takes over any claim with --force (a crashed loop's). A crash never releases a claim: it stays until its TTL.
