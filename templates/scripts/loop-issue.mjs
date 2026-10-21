@@ -238,9 +238,9 @@ function isPhaseMatch(title, phaseId) {
 // matches the mirror id. Returns { number, state } | null.
 //
 // We deliberately do NOT use `--search "<prefix>" in:title` here:
-// GitHub's text-search index is eventually-consistent, so a phase
+// GitHub's text-search index is eventually-consistent, so a mirror
 // issue created seconds ago may not surface in a follow-up search
-// for several minutes. The `--label loop:phase` filter goes through
+// for several minutes. The `--label <mirror label>` filter goes through
 // the issues REST API, which is read-your-writes consistent — every
 // issue tagged with that label appears immediately. We pull all
 // mirror-label issues (both states) and prefix-match the title

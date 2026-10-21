@@ -64,9 +64,9 @@ A-ID, a true Measure line), commit that alone
 
 ```bash
 issue_body=$(mktemp)
-# title MUST be "Phase <NN> — <spec title>" (the helper's v1 contract)
-node templates/scripts/loop-issue.mjs phase-open \
-  --phase <NN> --title "Phase <NN> — <spec title>" --body-file "$issue_body"
+# the helper titles it "Spec <NN> — <spec title>"
+node templates/scripts/loop-issue.mjs spec-open \
+  --spec <NN> --title "<spec title>" --body-file "$issue_body"
 ```
 
 Failure = warn and continue (rule: the mirror never gates).
@@ -134,8 +134,8 @@ on the spec's last chunk. Then post the chunk's comment on the
 mirror (best-effort):
 
 ```bash
-node templates/scripts/loop-issue.mjs phase-close \
-  --phase <NN> --commit <sha> --deploy-url https://github.com/daretodave/nexus
+node templates/scripts/loop-issue.mjs spec-close \
+  --spec <NN> --commit <sha> --deploy-url https://github.com/daretodave/nexus
 ```
 
 ### Step 9 — Done
@@ -198,5 +198,5 @@ scripts/verify.mjs                   # when a new invariant lands
 git pull --ff-only
 node scripts/verify.mjs
 git add <explicit> && git commit && git push origin main
-node templates/scripts/loop-issue.mjs phase-open|phase-close ...
+node templates/scripts/loop-issue.mjs spec-open|spec-close ...
 ```

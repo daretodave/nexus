@@ -177,9 +177,9 @@ cat > "$issue_body" <<EOF
 _Tracked by the autonomous loop. The commit that closes the spec's last chunk closes this issue via a \`Closes #<this-issue>\` trailer._
 EOF
 
-SPEC_ISSUE=$(node scripts/loop-issue.mjs phase-open \
-    --phase "<NN>" \
-    --title "Phase <NN> — <spec title>" \
+SPEC_ISSUE=$(node scripts/loop-issue.mjs spec-open \
+    --spec "<NN>" \
+    --title "<spec title>" \
     --body-file "$issue_body")
 echo "spec mirror: #$SPEC_ISSUE"
 ```
@@ -339,8 +339,8 @@ Outcomes:
 If Step 2.5 captured `$SPEC_ISSUE` and Step 12 was green:
 
 ```bash
-node scripts/loop-issue.mjs phase-close \
-  --phase "<NN>" \
+node scripts/loop-issue.mjs spec-close \
+  --spec "<NN>" \
   --commit "<commit-sha>" \
   --deploy-url <DEPLOY_URL>
 ```
@@ -370,7 +370,7 @@ next in 2–3 lines.
    `<DATA_LOCATION>`. No hardcoded copy/records in components.
 9. <PROJECT-SPECIFIC RULES — e.g., site name lowercase>
 10. **Spec issue mirror is best-effort, not gating.** If
-    `loop-issue.mjs phase-open` fails, the chunk still ships;
+    `loop-issue.mjs spec-open` fails, the chunk still ships;
     log the stderr and continue. The mirror is a public
     timeline, not a verification step.
 11. **The plan only shrinks.** A closed chunk leaves no ticked

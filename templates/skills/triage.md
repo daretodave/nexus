@@ -92,9 +92,9 @@ gh issue list \
 ```
 
 The `-label:loop:opened` clause excludes issues the loop opened on
-itself (per-finding mirror via `loop-issue.mjs open`, per-phase
-mirror via `phase-open` — phase issues carry both `loop:opened`
-and `loop:phase`, so this single exclusion catches both). Those
+itself (per-finding mirror via `loop-issue.mjs open`, per-spec
+mirror via `spec-open` — spec issues carry both `loop:opened`
+and `loop:spec`, so this single exclusion catches both). Those
 have a known provenance and don't need triage labeling.
 
 If `[]`: print `"triage: 0 unlabeled open issues — humming
