@@ -16,11 +16,15 @@ needs are done):
 
 ## Edit plan/README.md
 ~~~ old
-| 44 | The README in motion: the GUI in one or two GIFs | [44-readme-in-motion.md](44-readme-in-motion.md) | planned · priority 1 | 1 left |
+
+
+Spec numbers continue from the v1 phase numbers (phases 1–33
 ~~~
 ~~~ new
-| 44 | The README in motion: the GUI in one or two GIFs | [44-readme-in-motion.md](44-readme-in-motion.md) | planned · priority 1 | 1 left |
+
 | 45 | Plan additions that never conflict | [45-plan-additions.md](45-plan-additions.md) | planned (**Asap**) | 3 left |
+
+Spec numbers continue from the v1 phase numbers (phases 1–33
 ~~~
 
 ## Edit plan/README.md
