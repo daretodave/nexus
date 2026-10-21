@@ -15,6 +15,7 @@ import * as repoMod from './repo.mjs';
 import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem } from './sessions.mjs';
+import { boardTugs, createTugLog, tugOf } from './tugs.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -56,12 +57,14 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   let prefs = await repoMod.readPrefs(repo);
   let busy = false;
   let guiSession = null;
+  const tugLog = createTugLog();
 
   const publishAsks = () => hub.set('asks', [...asks.values()].map((a) => a.view));
   const publishPerms = () => hub.set('permissions', [...permissions.values()].map((a) => a.view));
 
   const onMessage = (msg) => {
     if (msg.session_id) guiSession = msg.session_id;
+    tugLog.onMessage(msg);
     for (const item of txFromMessage(msg, txCtx)) hub.tx(item);
     for (const b of beatsFromMessage(msg, beatCtx)) hub.beat(b);
     if (msg.type === 'result') {
@@ -143,8 +146,10 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
 
   // A send while a turn is under way is a tug (steering mid-run); the
   // session itself stays open between turns, so "active" is not "busy".
-  function sendPrompt(text) {
+  function sendPrompt(text, steered = false) {
     const running = busy;
+    // A tug (or a steer aimed at this session) is drawn on the stage with its state (tugs.mjs).
+    if (running || steered) tugLog.sent(text, { session: guiSession, busy: running });
     busy = true;
     hub.tx({ kind: 'user', text });
     if (running) hub.beat({ k: 'oversight', p: 'tug', agent: MAIN });
@@ -154,13 +159,24 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
 
   // Live local sessions and steering a linked one (spec 41): the SDK stream for this server's own session, an
   // addressed owner line on the notice board (handed over by the steer hook) for a terminal one.
-  const steering = createSteering({ repo, send: (t) => sendPrompt(t), guiSession: () => guiSession, home: claudeHome });
+  const steering = createSteering({ repo, send: (t) => sendPrompt(t, true), guiSession: () => guiSession, home: claudeHome });
 
   async function sessionDetail(id) {
     const s = await steering.find(id);
     if (!s) return null;
     const l = readLedgers(await primaryRoot(repo)).find((x) => x.id === s.id) || {};
-    return { ...s, parked: (Array.isArray(l.parked) ? l.parked : []).map(parkedItem), defaults: Array.isArray(l.defaults) ? l.defaults : [], started: l.started || null };
+    return { ...s, parked: (Array.isArray(l.parked) ? l.parked : []).map(parkedItem), defaults: Array.isArray(l.defaults) ? l.defaults : [], started: l.started || null, tugs: await tugsFor(s) };
+  }
+
+  /** The tugs aimed at (or taken by) one session, newest first: the board's for a terminal one, the stream's for this server's own. */
+  async function tugsFor(s) {
+    const me = { id: s.id, name: s.name, kind: s.kind };
+    if (s.steer === 'sdk') return tugLog.list().filter((t) => !t.to || t.to === s.claude || t.to === s.id).map((t) => ({ ...t, session: me, takenBy: t.takenBy ? me : null }));
+    try {
+      return (await boardTugs({ repo, sessions: await steering.list(), home: claudeHome })).filter((t) => tugOf(t, s));
+    } catch {
+      return []; // a board that cannot be read draws no tugs; the session detail still loads
+    }
   }
 
   async function handle(req, res) {
