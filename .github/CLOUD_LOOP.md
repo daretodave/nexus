@@ -42,7 +42,10 @@
 That's all. The kit's gate needs no other secrets (zero
 dependencies, no deploy provider). If `ACTIONS_PAT` expires or
 is removed, checkout fails red on the next tick — re-mint and
-re-set, nothing else to repair.
+re-set, nothing else to repair. The crash-alarm issue still
+files even then: it authenticates with the run's own
+`GITHUB_TOKEN`, not `ACTIONS_PAT`, so the alarm never shares
+the failure mode of the thing it watches.
 
 ## Daily operation
 

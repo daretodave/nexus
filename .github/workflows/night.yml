@@ -20,11 +20,12 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
-      issues: read
+      issues: write         # the crash alarm (GITHUB_TOKEN)
       actions: read         # gh run list - the pulse
       id-token: write
     steps:
       - name: Checkout
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -41,6 +42,7 @@ jobs:
       # march.yml for why `git config` doesn't survive the action).
 
       - name: Run /digest (night shift)
+        id: run_digest
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -70,11 +72,18 @@ jobs:
       - name: Open night-failed issue if action crashed
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
+          # GITHUB_TOKEN, not ACTIONS_PAT: an alarm that shares the
+          # PAT's failure mode goes silent exactly when the PAT dies
+          # (the 2026-08-02 outage went 21 days unreported). The
+          # run's own token is minted fresh and survives it.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          failed_step="unknown step (see run log)"
+          if [ "${{ steps.checkout.outcome }}" = "failure" ]; then failed_step="Checkout"; fi
+          if [ "${{ steps.run_digest.outcome }}" = "failure" ]; then failed_step="Run /digest (night shift)"; fi
           existing=$(gh issue list --search 'in:title "Night digest crashed" state:open' --json number --jq 'length')
           if [ "$existing" -eq 0 ]; then
             gh issue create \
               --title "Night digest crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              --body "The night shift exited non-zero. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              --body "Failed step: $failed_step. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
