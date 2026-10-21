@@ -8,12 +8,31 @@
 
 ## Standing rules
 
-### 1. Commit and push. Always. As a single atomic act.
+### 1. Land per owner mode. Always committed, always pushed.
 
-The loop assumes `origin/main` is the source of truth. Every
-shipping skill ends with `git commit` immediately followed by
-`git push origin main`. No unpushed commits between ticks; no
-dirty tree at turn end.
+The loop assumes `origin/main` is the source of truth. How work
+lands depends on the checkout (`npm run claims -- whoami`;
+`playbooks/owner-mode.md`):
+
+- **Owner mode** (an untracked `.owner` at the checkout root,
+  not switched off in `.nexus/local.json`). **nexus runs in
+  owner mode:** the owner's checkout carries `.owner`, and the
+  cloud loop pushes main on the owner's token. Every shipping
+  skill ends with `git commit` immediately followed by `git
+  push origin main`; a rejected push means `git pull
+  --rebase` of your own unpushed commits, the gate again, and
+  another push. The owner settles `plan/pending/`
+  (`npm run settle`).
+- **Contributor mode** (no `.owner`: any other clone, or the
+  owner's switched off). Never push main: each chunk lands on
+  `next/<id>` as a pull request, stacked at most two deep,
+  review fixes as new commits, plan changes only through
+  `plan/pending/<id>.md`.
+
+`scripts/git/push-policy.mjs` (pre-push, armed by
+`node scripts/install-hooks.mjs`) refuses main outside owner
+mode. `.owner` is gitignored; never commit it. No unpushed
+commits between ticks; no dirty tree at turn end.
 
 ### 2. No `Co-Authored-By:` trailers. No emojis.
 
@@ -50,7 +69,9 @@ deploy-confirmation steps.
 
 ### 5. No force-push. No destructive resets. No `--no-verify`.
 
-If `git pull --ff-only` diverges, stop and report. The
+If `git pull --ff-only` diverges, rebase only your own unpushed
+commits (`git pull --rebase`), rerun the gate, and retry;
+anything else, stop and report. The
 `.claude/hooks/guard.mjs` hook enforces this class of rule
 mechanically; a guard block firing is itself a finding.
 
@@ -77,6 +98,17 @@ doorways (npx installer, plugin manifest) will reference the
 same canonical text. Renames need the same discipline as a
 `templates/` rename, even though nothing under `prompts/` is
 ever copied into an adopter repo.
+
+### 8. Ask before the first write, or not at all.
+
+A skill run by a person may ask (`AskUserQuestion`) only before
+its first write, in one batch (`concepts/asking-well.md`); after
+that it decides and ships. Under a loop (`/loop`, a cloud tick,
+`/heads-down`) it never asks: it takes the default and logs each
+one in the commit body or the close. A question that outlives the
+run goes to the `/oversight` queue (a `[needs-user-call]` row in
+`plan/AUDIT.md`) and the work continues. `/oversight` remains
+the skill that asks anything, any time.
 
 ---
 

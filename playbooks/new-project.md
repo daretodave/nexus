@@ -174,11 +174,19 @@ question twice during the build.
 Carry over from `../nexus/templates/agents.md` Standing Rules. These
 are universal:
 
-1. Commit and push as a single atomic act.
+1. Land per owner mode: the owner's checkout (`.owner`) commits
+   and pushes main as one act; every other checkout lands
+   through pull requests ([`owner-mode.md`](./owner-mode.md)).
 2. No `Co-Authored-By:` trailers, no emojis.
 3. Verify gate non-negotiable; deploy gate runs after every push.
 4. No `--no-verify`, no force-push.
 5. Tests alongside code.
+6. Ask before the first write, or not at all; loops take
+   defaults and log them.
+
+Choose the mode now: the owner's checkout gets an untracked
+`.owner` (and `.owner` plus `.nexus/` go in `.gitignore`); with
+no `.owner` the repo runs in pull-request mode for everyone.
 
 Add project-specific ones (e.g. "site name lowercase", "content
 stays in MDX").

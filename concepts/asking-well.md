@@ -162,6 +162,20 @@ question budget for decisions that change behavior.
 
 ---
 
+## When a skill may ask at all
+
+`/oversight` asks any time. Any other skill run by a person
+may ask once, before its first write (the claim, a file, a
+commit): collect every question the run will need, ask them
+in one batch shaped by the rules above, then never block
+again. Under a loop (`/loop`, a cloud tick, `/heads-down`) the
+same skill asks nothing: it takes the recommended option as
+the default and logs each default it took where the work
+lands (the commit body, the PR description, the close). A
+question that outlives the run becomes a `[needs-user-call]`
+row in `plan/AUDIT.md`, the `/oversight` queue. This is
+standing rule 9 in `templates/agents.md`.
+
 ## Where this is used today
 
 - **[`templates/skills/oversight.md`](../templates/skills/oversight.md)**

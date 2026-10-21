@@ -347,17 +347,30 @@ deploy state for HEAD and reports it. It doesn't trigger
 deploys (the push does that) or judge the deploy beyond
 ready/error. This makes it cheap to add to any project.
 
-### 6. AskUserQuestion only in oversight (plus two carve-outs).
+### 6. Ask before the first write, or not at all.
 
-Every other skill is autonomous. `bootstrap` and `lessons-pr`
-are the two named exceptions: bootstrap collects tokens and
-confirms destructive-feeling provisioning actions; lessons-pr
-asks only at its planning step, before the plan ships. Both
-are documented in their own files. If you find yourself
-wanting to ask the user mid-skill anywhere else, **you're
-using the wrong skill**. The right move is to surface the
-question in oversight (write to AUDIT.md as
-`[needs-user-call]`) and continue.
+`/oversight` asks anything, any time. Any other skill run by a
+person may ask once, in one batch, before its first write (the
+claim, a file, a commit), and then decides and ships. Under a
+loop (`/loop`, a cloud tick, `/heads-down`) nothing asks: each
+skill takes the default and logs it where the work lands (the
+commit body, the PR description, the close). `bootstrap` and
+`lessons-pr` keep their documented carve-outs: bootstrap
+collects tokens and confirms destructive-feeling provisioning
+actions; lessons-pr asks only at its planning step. If you
+find yourself wanting to ask the user mid-skill anywhere else,
+**you're using the wrong skill**. The right move is to surface
+the question in oversight (write to AUDIT.md as
+`[needs-user-call]`), take the default, and continue.
+
+### 6a. Owner mode decides how work lands.
+
+The same verbs run in every checkout; an untracked `.owner`
+file decides where their work goes. The owner's checkout
+pushes main and settles the plan; any other checkout lands
+through pull requests, and its pre-push hook refuses main (a
+leg trip; the host's ruleset is the lock). See
+[`../playbooks/owner-mode.md`](../playbooks/owner-mode.md).
 
 ### 7. Bias the loop, don't paper-over it.
 

@@ -72,7 +72,9 @@ stale critique, gate additions). Plain text, no questions yet.
 
 ## 6. Hard rules
 
-1. The ONLY skill that asks. And `audit` mode doesn't.
+1. The skill that asks anything, any time (any other skill asks
+   only before its first write: `agents.md` rule 8). And
+   `audit` mode doesn't.
 2. Never edits kit docs/templates — plan files only.
 3. The Q&A transcript goes in the commit body verbatim —
    that's the audit trail.

@@ -1,5 +1,5 @@
 ---
-description: User-in-the-loop — brief, ask, apply, commit. The ONLY interactive skill. `audit` mode is read-only.
+description: User-in-the-loop — brief, ask, apply, commit. The skill that asks anything, any time. `audit` mode is read-only.
 ---
 
 You are invoked under the `oversight` skill — the opposite of

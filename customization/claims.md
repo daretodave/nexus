@@ -156,12 +156,17 @@ anyone's. A held claim is never `stale`.
 - [ ] `.owner` and `.nexus/` are gitignored; the owner's
       checkout has `.owner`.
 - [ ] A ruleset on `claims`: no force push, no deletion.
-- [ ] Any pre-push hook skips the `claims` ref.
+- [ ] Any pre-push hook skips the `claims` ref
+      (`scripts/git/push-policy.mjs` drops it; see
+      [`owner-mode.md`](../playbooks/owner-mode.md)).
 - [ ] The build skill claims before its first write, renews,
       and releases (owner) or attaches the PR (contributor).
 
 ## See also
 
+- [`../playbooks/owner-mode.md`](../playbooks/owner-mode.md):
+  how the owner's work and a contributor's land, and the
+  rulesets on main and `claims`.
 - [`lanes.md`](./lanes.md): parallel sessions on one branch;
   claims are its board.
 - [`../concepts/plan-shape.md`](../concepts/plan-shape.md):

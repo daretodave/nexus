@@ -10,16 +10,40 @@ These apply to every command, every skill, every session. They
 are not optional. The skill files repeat them; this is the
 canonical source.
 
-### 1. Commit and push. Always. As a single atomic act.
+### 1. Land per owner mode. Always committed, always pushed.
 
 Shipped work that isn't committed is rolled-back work waiting to
 happen. Shipped work that's committed but not pushed is invisible
 to <HOSTING_PROVIDER> and to future loop ticks. The autonomous
 loop assumes `origin/<DEFAULT_BRANCH>` is the source of truth.
 
-Every shipping skill ends with `git commit` **immediately followed
-by** `git push origin <DEFAULT_BRANCH>`. Don't leave commits
-unpushed between ticks. Don't leave the working tree dirty.
+How work lands depends on the checkout, never on the skill
+(`node scripts/claims.mjs whoami` prints which):
+
+- **Owner mode** — an untracked `.owner` file at the checkout
+  root, not switched off in `.nexus/local.json`
+  (`scripts/owner.mjs`). Every shipping skill ends with `git
+  commit` **immediately followed by** `git push origin
+  <DEFAULT_BRANCH>`. A rejected push: rebase your own unpushed
+  commits onto `origin/<DEFAULT_BRANCH>`, rerun the gate, push
+  again. The owner settles `plan/pending/`
+  (`node scripts/plan/settle.mjs`).
+- **Contributor mode** — no `.owner`; what every fresh clone
+  gets. Never push `<DEFAULT_BRANCH>`. Each chunk lands on its
+  own branch `next/<id>`, pushed, as a pull request. Stack at
+  most two deep (a branch off an open PR's branch, its PR onto
+  that branch). Review fixes are new commits: never amend or
+  force-push a pushed branch. Plan changes go only through
+  `plan/pending/<id>.md`, never the shared plan files.
+
+A skill's "push `<DEFAULT_BRANCH>`" step means "land per this
+rule". The pre-push hook (`scripts/git/push-policy.mjs`, armed
+by `node scripts/install-hooks.mjs`) refuses a push to
+`<DEFAULT_BRANCH>` outside owner mode: a leg trip, not a lock.
+The lock is the host's branch ruleset; see
+`nexus/playbooks/owner-mode.md`. Never commit `.owner`. Either
+way: no commits unpushed between ticks, no dirty tree at turn
+end.
 
 ### 2. No `Co-Authored-By:` trailers. No emojis.
 
@@ -77,9 +101,10 @@ patch, push again. Repeated failures escalate per failure modes.
 
 ### 5. No `--no-verify`. No force-push. No destructive resets.
 
-If a hook fails, fix the underlying issue. If `git pull`
-diverges, stop and report. Tests alongside code, never "add tests
-later".
+If a hook fails, fix the underlying issue. If `git pull
+--ff-only` diverges, rebase only your own unpushed commits
+(`git pull --rebase`), rerun the gate, and retry; anything else,
+stop and report. Tests alongside code, never "add tests later".
 
 ### 6. <PROJECT-SPECIFIC RULE — e.g. site name lowercase>
 
@@ -99,6 +124,20 @@ Before stopping on any failure-mode condition, run
 --body "<reason>" --priority high` (best-effort — a failed
 notification never becomes its own stop). Applies to every
 skill; see `nexus/playbooks/hands-off.md`.
+
+### 9. Ask before the first write, or not at all.
+
+A skill run by a person may ask (`AskUserQuestion`) only before
+its first write: the claim, a file, a commit. All its questions
+go in that one batch (`nexus/concepts/asking-well.md`). Once it
+has written, it decides and ships. Under a loop (`/loop`, a
+cloud tick, `/heads-down`) it never asks: it takes the default
+and logs each one it took (the commit body, the PR description,
+the close). A question that outlives the run (a product call, a
+taste call, a default the owner should confirm) goes to the
+`/oversight` queue as a `[needs-user-call]` row in
+`plan/AUDIT.md`, and the work continues. `/oversight` remains
+the skill that asks anything, any time.
 
 ---
 

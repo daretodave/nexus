@@ -671,19 +671,27 @@ trail in commit bodies). Override what doesn't fit your culture
 These are baked into every skill template and worth surfacing
 upfront:
 
-1. **Commit and push as a single atomic act.** No unpushed
-   commits between ticks.
+1. **Land per owner mode.** The owner's checkout (an untracked
+   `.owner`) commits and pushes main as a single atomic act and
+   settles the plan; every other checkout lands on `next/<id>`
+   as a pull request, stacked at most two deep. No unpushed
+   commits between ticks. See
+   [`playbooks/owner-mode.md`](./playbooks/owner-mode.md).
 2. **No `Co-Authored-By:` trailers, no emojis** — anywhere.
 3. **The verify gate is non-negotiable.** No `--no-verify`. No
    force-push. No destructive resets.
 4. **Tests alongside code** — never "add tests later".
 5. **The deploy gate runs after every push.** A red deploy is a
    blocked tick.
-6. **Once a skill is running, `AskUserQuestion` is allowed only
-   in `/oversight`**, plus two narrow, documented carve-outs:
-   `/bootstrap` (token collection and destructive-action
-   confirmation) and `/lessons-pr` (planning step only, before
-   the plan ships). Every other skill decides and ships.
+6. **Ask before the first write, or not at all.** A skill run
+   by a person may ask once, in one batch, before it writes
+   anything; after that it decides and ships. Under a loop it
+   never asks: it takes defaults and logs each one, and a
+   question that outlives the run goes to the `/oversight`
+   queue. `/oversight` asks anything, any time; `/bootstrap`
+   (token collection and destructive-action confirmation) and
+   `/lessons-pr` (planning step only) keep their documented
+   carve-outs.
    `pre-spec.md`'s one-time interactive interview, before any
    skill exists yet (see
    [Three paths to start](#three-paths-to-start)), is allowed

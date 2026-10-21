@@ -7,9 +7,10 @@ autonomous**. The user has paused the loop (or never started one)
 to course-correct. Read `skills/oversight.md` end to end first.
 
 This is the general-purpose skill that uses `AskUserQuestion`
-(`bootstrap` carries the one narrow provisioning exception). The
-other shipping skills decide and ship; this one observes,
-briefs, asks, adjusts.
+any time (`bootstrap` carries the one narrow provisioning
+exception; any other skill asks only before its first write,
+`agents.md` rule 9). The other shipping skills decide and ship;
+this one observes, briefs, asks, adjusts.
 
 Argument handling:
 - No argument → full audit + general questionnaire.
