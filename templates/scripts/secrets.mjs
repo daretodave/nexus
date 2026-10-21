@@ -18,14 +18,16 @@
 // against another checkout (the default is this one, its vault at the primary checkout). `push` sends a declared
 // name's value to each destination the manifest lists for it (or the one `--to` names) through scripts/secrets-sinks.mjs
 // (stdin only), records each push in .nexus/secrets-audit.jsonl, and runs in owner mode only: a contributor's keys are
-// local-only. Exit 0 = done, 1 = a problem, 64 = usage. The manifest: scripts/plan/secrets-manifest.mjs; the how: nexus/customization/secrets.md.
+// local-only. A contributor checkout (not effective owner mode) keeps its own local-only keys: `set` and `import
+// --store` write the local ring or the keychain and record the names in .nexus/secrets-local.json, never in the
+// manifest, and `status` leads with "No project secrets needed". Exit 0 = done, 1 = a problem, 64 = usage. The manifest: scripts/plan/secrets-manifest.mjs; the how: nexus/customization/secrets.md.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isOwner, localSettings, primaryRoot } from './owner.mjs';
 import { MANIFEST, NAME, emptyManifest, importEnvExample, mergeImport, readManifest, serialize } from './plan/secrets-manifest.mjs';
-import { RINGS, openVault, parseEnv } from './secrets-vault.mjs';
+import { CONTRIBUTOR_RINGS, RINGS, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
 import { pushSecret, recordAudit, sinkFor, spawnRunner } from './secrets-sinks.mjs';
 
 export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check | push NAME [--to D] [--repo O/R]   [--root <dir>]';
@@ -108,14 +110,26 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     out(current ? `secrets check: green (${current.names.size} declared in ${MANIFEST})` : `secrets check: no ${MANIFEST}, nothing to check`);
     return 0;
   }
-  if (cmd === 'push') return push({ name: arg, to, repo, root, vroot, current, open, out, err, run, owner: owner ?? (() => isOwner(root)) });
+  const ownerHere = () => (owner ? owner() : isOwner(root));
+  if (cmd === 'push') return push({ name: arg, to, repo, root, vroot, current, open, out, err, run, owner: ownerHere });
+  const contributor = (cmd === 'set' || store) && !ownerHere();
+  if (contributor && ring && !CONTRIBUTOR_RINGS.includes(ring)) {
+    err(`secrets ${cmd}: a contributor's keys stay with this repo on this machine (${CONTRIBUTOR_RINGS.join(' or ')}): the ${ring} ring is shared with sibling repos`);
+    return 1;
+  }
   try {
-    if (cmd === 'status') return status(open(), current, { out, json });
+    if (cmd === 'status') return status(open(), current, { out, json, owner: ownerHere(), localKeys: readLocalKeys(vroot) });
     if (cmd === 'set') {
       if (!NAME.test(arg)) { err(`secrets set: ${arg} is not an env-var name (A-Z, 0-9 and _, starting with a letter)`); return 1; }
       const vault = open();
       const value = await input(`${arg} (hidden; Enter to save): `);
       const done = vault.set([[arg, value]], ring ?? undefined);
+      if (contributor) {
+        recordLocalKeys(vroot, [arg]);
+        out(`secrets set: ${arg} -> ${done.ring} (this machine only)`);
+        if (current && current.names.has(arg)) out(`  ${arg} is a project secret in ${MANIFEST}: the owner provides it; this value stays on this machine and is never pushed`);
+        return 0;
+      }
       out(`secrets set: ${arg} -> ${done.ring}`);
       if (!current || !current.names.has(arg)) out(`  ${arg} is not declared in ${MANIFEST}: a local-only key, or add its entry (import, or by hand)`);
       return 0;
@@ -137,6 +151,16 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
       const skipped = entries.filter(([, v]) => /[\r\n\0]/.test(v)).map(([n]) => n);
       const same = picked !== 'keychain' && path.resolve(source) === path.resolve(picked === 'local' ? vault.config.local : vault.config.workspace);
       stored = same ? { ring: picked, names: [], same: true, skipped } : { ...vault.set(oneLine, picked), skipped };
+      if (contributor) {
+        const mine = same ? oneLine.map(([n]) => n) : stored.names;
+        recordLocalKeys(vroot, mine);
+        if (stored.same) out(`secrets import: ${path.basename(source)} is the ${stored.ring} vault already`);
+        else out(`secrets import: stored ${stored.names.length} in ${stored.ring}${stored.names.length ? `: ${stored.names.join(', ')}` : ''}`);
+        if (skipped.length) out(`  skipped (a value on more than one line): ${skipped.join(', ')}`);
+        if (!same && stored.names.length) out(`  the values are in the vault now: delete ${path.relative(root, source) || source}`);
+        out(`secrets import: kept ${mine.length} names on this machine, not in ${MANIFEST} (a contributor's own keys; project secrets are the owner's)`);
+        return 0;
+      }
     } catch (e) {
       err(`secrets import: ${e.message}`);
       return 1;
@@ -162,7 +186,7 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
 
 function push({ name, to, repo, root, vroot, current, open, out, err, run, owner }) {
   if (!owner()) {
-    err(`secrets push: sinks run in owner mode only (scripts/owner.mjs); a contributor's keys are local-only`);
+    err(sinkRefusal('push'));
     return 1;
   }
   const entry = current ? current.manifest.secrets.find((e) => e.name === name) : null;
@@ -185,12 +209,25 @@ function push({ name, to, repo, root, vroot, current, open, out, err, run, owner
   return failed ? 1 : 0;
 }
 
-function status(vault, current, { out, json }) {
+function status(vault, current, { out, json, owner = true, localKeys = [] }) {
   const entries = current ? current.manifest.secrets : [];
   const declared = entries.map((e) => e.name);
   const dest = new Map(entries.map((e) => [e.name, e.destinations]));
   const rows = vault.status(declared).map((r) => ({ ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [] }));
-  if (json) { out(JSON.stringify({ vault: { local: vault.config.local, workspace: vault.config.workspace, keychain: vault.config.keychain ? vault.config.service : null }, secrets: rows }, null, 2)); return 0; }
+  // A contributor's local keys: the names recorded for this checkout plus any name its .env holds; this machine only.
+  const inEnv = owner ? [] : vault.status([]).filter((r) => r.rings.includes('local')).map((r) => r.name);
+  const names = [...new Set([...localKeys, ...inEnv])].sort();
+  const mine = owner ? [] : vault.status(names).filter((r) => names.includes(r.name))
+    .map((r) => ({ name: r.name, rings: r.rings.filter((g) => CONTRIBUTOR_RINGS.includes(g)) }));
+  if (json) { out(JSON.stringify({ mode: owner ? 'owner' : 'contributor', projectSecretsNeeded: owner ? declared.length : 0, vault: { local: vault.config.local, workspace: vault.config.workspace, keychain: vault.config.keychain ? vault.config.service : null }, secrets: rows, localKeys: mine }, null, 2)); return 0; }
+  if (!owner) {
+    out(`secrets status: No project secrets needed (a contributor checkout: the owner provides the ${declared.length} declared in ${MANIFEST})`);
+    out('Your local keys (this machine only):');
+    if (!mine.length) out('  None. Add one if the app needs it to run locally.');
+    const w = Math.max(0, ...mine.map((r) => r.name.length));
+    for (const r of mine) out(`  ${r.name.padEnd(w)}  ${where(r.rings)}`);
+    return 0;
+  }
   const set = rows.filter((r) => r.declared && r.rings.length).length;
   const places = [vault.config.local, vault.config.workspace, ...(vault.config.keychain ? [`keychain ${vault.config.service}`] : [])].join(', ');
   out(`secrets status: ${declared.length} declared · ${set} set · ${declared.length - set} missing (vault: ${places})`);

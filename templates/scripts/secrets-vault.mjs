@@ -184,3 +184,51 @@ export function openVault({ root, settings = {}, platform = process.platform, gi
 
   return { config, get, resolve, status, set };
 }
+
+// A contributor's own keys (scripts/owner.mjs: not effective owner mode). Project secrets are the owner's; a
+// contributor keeps local-only keys (a dev API key, a local database URL) in this checkout's vault: the local ring
+// or the keychain, never the workspace ring (shared with sibling repos) and never a sink. Their names are recorded
+// here, untracked at the primary checkout, never in the manifest (so no chunk can require one); the keychain can't
+// be listed, so this record is how status finds them. Names only, never a value.
+export const LOCAL_KEYS_FILE = '.nexus/secrets-local.json';
+/** The rings a contributor writes: this machine, this repo. */
+export const CONTRIBUTOR_RINGS = ['local', 'keychain'];
+/** The one refusal every sink gives a contributor checkout (secrets.mjs push, and any later caller of a sink). */
+export function sinkRefusal(what = 'push') {
+  return `secrets ${what}: refused in a contributor checkout: sinks run in owner mode only (scripts/owner.mjs); a contributor's keys are local-only and stay on this machine`;
+}
+
+/** The local key names recorded for this checkout (`root`: the primary checkout), sorted; [] when none. */
+export function readLocalKeys(root) {
+  try {
+    const v = JSON.parse(fs.readFileSync(path.join(root, LOCAL_KEYS_FILE), 'utf8'));
+    return Array.isArray(v?.localKeys) ? [...new Set(v.localKeys.filter((n) => typeof n === 'string' && NAME.test(n)))].sort() : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Add names to the record, under a lock, renamed into place. Returns every recorded name. */
+export function recordLocalKeys(root, names) {
+  const file = path.join(root, LOCAL_KEYS_FILE);
+  const lock = `${file}.lock`;
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const until = Date.now() + 3000;
+  for (;;) {
+    try { fs.closeSync(fs.openSync(lock, 'wx')); break; } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+      try { if (Date.now() - fs.statSync(lock).mtimeMs > 10000) { fs.rmSync(lock, { force: true }); continue; } } catch { continue; }
+      if (Date.now() > until) throw new Error(`${LOCAL_KEYS_FILE} is locked (another write is under way): try again`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+    }
+  }
+  try {
+    const all = [...new Set([...readLocalKeys(root), ...names.filter((n) => NAME.test(n))])].sort();
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, `${JSON.stringify({ version: 1, about: 'A contributor\'s own local-only keys: names, never a value. Never in nexus.secrets.json.', localKeys: all }, null, 2)}\n`);
+    fs.renameSync(tmp, file);
+    return all;
+  } finally {
+    fs.rmSync(lock, { force: true });
+  }
+}

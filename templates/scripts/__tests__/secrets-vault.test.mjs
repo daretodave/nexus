@@ -11,7 +11,8 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { keychain } from '../secrets-keychain.mjs';
-import { formatEnvValue, openVault, parseEnv, upsertEnv, vaultConfig } from '../secrets-vault.mjs';
+import { main } from '../secrets.mjs';
+import { LOCAL_KEYS_FILE, formatEnvValue, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal, upsertEnv, vaultConfig } from '../secrets-vault.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(HERE, '..', 'secrets.mjs');
@@ -22,6 +23,17 @@ function workspace() {
   const repo = path.join(ws, 'repo');
   fs.mkdirSync(repo);
   return { ws, repo, done: () => fs.rmSync(ws, { recursive: true, force: true }) };
+}
+
+const ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_') && k !== 'NEXUS_CONTRIBUTOR'));
+
+/** A git checkout that ignores the vault files: the owner's (an untracked .owner) or a contributor's (none). False
+ * when git can't run here (the test then has nothing to check). */
+function checkout(repo, { owner }) {
+  if (spawnSync('git', ['init', '-q', repo], { env: ENV }).status !== 0) return false;
+  fs.writeFileSync(path.join(repo, '.gitignore'), '.env\n.env.workspace\n.owner\n.nexus/\n');
+  if (owner) fs.writeFileSync(path.join(repo, '.owner'), '');
+  return true;
 }
 
 const notRepo = () => ({ status: 128, stdout: '' });
@@ -164,12 +176,13 @@ describe('the keychain, through a recording runner', () => {
 });
 
 describe('the CLI', () => {
-  const run = (repo, input, ...args) => spawnSync(process.execPath, [CLI, ...args, '--root', repo], { input, encoding: 'utf8' });
+  const run = (repo, input, ...args) => spawnSync(process.execPath, [CLI, ...args, '--root', repo], { input, encoding: 'utf8', env: ENV });
   const clean = (r) => { for (const f of FAKES) assert.ok(!(r.stdout + r.stderr).includes(f), `a value reached the terminal: ${r.stdout}${r.stderr}`); return r; };
 
   it('sets from stdin, says where each name is set, imports a dropped .env, and never prints a value', () => {
     const t = workspace();
     try {
+      if (!checkout(t.repo, { owner: true })) return;
       fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), JSON.stringify({ version: 1, secrets: [
         { name: 'GH_TOKEN', for: 'The issue mirror.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
         { name: 'MISSING_TOKEN', for: 'Not set yet.', where: null, destinations: ['local'], provider: 'owner', chunk: null },
@@ -226,6 +239,125 @@ describe('the CLI', () => {
       assert.ok(!fs.existsSync(path.join(t.repo, '.env')));
       fs.writeFileSync(path.join(t.repo, '.gitignore'), '.env\n.env.workspace\n');
       assert.equal(clean(run(t.repo, FAKES[0], 'set', 'GH_TOKEN')).status, 0);
+    } finally {
+      t.done();
+    }
+  });
+});
+
+// A15: a contributor (not effective owner mode, scripts/owner.mjs) keeps their own local-only keys. The vault and the
+// import work, the names stay on this machine (never the tracked manifest, so no chunk can require one), the shared
+// workspace ring and every sink are refused, and status leads with "No project secrets needed".
+describe('a contributor checkout', () => {
+  const run = (repo, input, args, env = {}) => spawnSync(process.execPath, [CLI, ...args, '--root', repo], { input, encoding: 'utf8', env: { ...ENV, ...env } });
+  const clean = (r) => { for (const f of FAKES) assert.ok(!(r.stdout + r.stderr).includes(f), `a value reached the terminal: ${r.stdout}${r.stderr}`); return r; };
+  const PROJECT = JSON.stringify({ version: 1, secrets: [
+    { name: 'GH_TOKEN', for: 'The issue mirror.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+  ] }, null, 2);
+
+  it('records local key names on this machine only: deduped, sorted, names and never a value', () => {
+    const t = workspace();
+    try {
+      assert.deepEqual(readLocalKeys(t.repo), []);
+      assert.deepEqual(recordLocalKeys(t.repo, ['B_KEY', 'A_KEY']), ['A_KEY', 'B_KEY']);
+      assert.deepEqual(recordLocalKeys(t.repo, ['A_KEY', 'C_KEY', 'bad-name']), ['A_KEY', 'B_KEY', 'C_KEY']);
+      assert.deepEqual(readLocalKeys(t.repo), ['A_KEY', 'B_KEY', 'C_KEY']);
+      assert.ok(!fs.existsSync(path.join(t.repo, `${LOCAL_KEYS_FILE}.lock`)), 'the lock is released');
+      fs.writeFileSync(path.join(t.repo, LOCAL_KEYS_FILE), '{ not json');
+      assert.deepEqual(readLocalKeys(t.repo), []);
+      assert.match(sinkRefusal('push'), /contributor/);
+    } finally {
+      t.done();
+    }
+  });
+
+  it('sets and imports into the local ring, keeps the names out of the manifest, and leads status with no project secrets', () => {
+    const t = workspace();
+    try {
+      if (!checkout(t.repo, { owner: false })) return;
+      const manifestFile = path.join(t.repo, 'nexus.secrets.json');
+      fs.writeFileSync(manifestFile, PROJECT);
+
+      const empty = clean(run(t.repo, '', ['status']));
+      assert.equal(empty.status, 0, empty.stderr);
+      assert.match(empty.stdout, /^secrets status: No project secrets needed/);
+      assert.match(empty.stdout, /Your local keys \(this machine only\)/);
+      assert.match(empty.stdout, /None\. Add one if the app needs it to run locally\./);
+      assert.doesNotMatch(empty.stdout, /missing/, 'a project secret is the owner\'s, never missing for a contributor');
+
+      const set = clean(run(t.repo, `${FAKES[0]}\n`, ['set', 'DEV_API_KEY']));
+      assert.equal(set.status, 0, set.stderr);
+      assert.match(set.stdout, /DEV_API_KEY -> local \(this machine only\)/);
+      assert.equal(parseEnv(fs.readFileSync(path.join(t.repo, '.env'), 'utf8')).get('DEV_API_KEY'), FAKES[0]);
+
+      const shared = clean(run(t.repo, FAKES[1], ['set', 'SHARED_TOKEN', '--ring', 'workspace']));
+      assert.equal(shared.status, 1);
+      assert.match(shared.stderr, /workspace ring is shared/);
+      assert.ok(!fs.existsSync(path.join(t.ws, '.env.workspace')));
+
+      fs.writeFileSync(path.join(t.repo, 'dropped.env'), `LOCAL_DB_URL=${FAKES[3]}\nGH_TOKEN=${FAKES[2]}\n`);
+      const imp = clean(run(t.repo, '', ['import', 'dropped.env', '--store']));
+      assert.equal(imp.status, 0, imp.stderr);
+      assert.match(imp.stdout, /stored 2 in local: LOCAL_DB_URL, GH_TOKEN/);
+      assert.match(imp.stdout, /kept 2 names on this machine, not in nexus\.secrets\.json/);
+      assert.doesNotMatch(imp.stdout, /added/);
+      assert.equal(fs.readFileSync(manifestFile, 'utf8'), PROJECT, 'the tracked manifest is untouched');
+      assert.equal(clean(run(t.repo, '', ['import', 'dropped.env', '--store', '--ring', 'workspace'])).status, 1);
+
+      assert.deepEqual(readLocalKeys(t.repo), ['DEV_API_KEY', 'GH_TOKEN', 'LOCAL_DB_URL']);
+      assert.equal(run(t.repo, '', ['names']).stdout, 'GH_TOKEN\n', 'no chunk can require a local key: the manifest never names one');
+
+      const status = clean(run(t.repo, '', ['status']));
+      assert.match(status.stdout, /^secrets status: No project secrets needed/);
+      assert.match(status.stdout, /DEV_API_KEY\s+set · local/);
+      assert.match(status.stdout, /LOCAL_DB_URL\s+set · local/);
+      const json = JSON.parse(clean(run(t.repo, '', ['status', '--json'])).stdout);
+      assert.equal(json.mode, 'contributor');
+      assert.equal(json.projectSecretsNeeded, 0);
+      assert.deepEqual(json.localKeys.map((k) => [k.name, k.rings]), [['DEV_API_KEY', ['local']], ['GH_TOKEN', ['local']], ['LOCAL_DB_URL', ['local']]]);
+
+      const push = clean(run(t.repo, '', ['push', 'DEV_API_KEY']));
+      assert.equal(push.status, 1);
+      assert.match(push.stderr, /refused in a contributor checkout/);
+    } finally {
+      t.done();
+    }
+  });
+
+  it('treats the owner switched off, or NEXUS_CONTRIBUTOR=1, as a contributor; the owner keeps the project view', () => {
+    const t = workspace();
+    try {
+      if (!checkout(t.repo, { owner: true })) return;
+      fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), PROJECT);
+      const owner = clean(run(t.repo, '', ['status', '--json']));
+      assert.equal(JSON.parse(owner.stdout).mode, 'owner');
+      assert.match(clean(run(t.repo, '', ['status'])).stdout, /1 declared · 0 set · 1 missing/);
+      assert.match(clean(run(t.repo, '', ['push', 'GH_TOKEN'])).stderr, /GH_TOKEN is not in the vault/, 'the owner reaches the sink path');
+      assert.match(clean(run(t.repo, '', ['status'], { NEXUS_CONTRIBUTOR: '1' })).stdout, /No project secrets needed/);
+      fs.mkdirSync(path.join(t.repo, '.nexus'));
+      fs.writeFileSync(path.join(t.repo, '.nexus', 'local.json'), JSON.stringify({ ownerMode: false }));
+      assert.match(clean(run(t.repo, '', ['push', 'GH_TOKEN'])).stderr, /refused in a contributor checkout/);
+    } finally {
+      t.done();
+    }
+  });
+
+  it('writes the keychain when it is on, and records the name (the keychain cannot be listed)', async () => {
+    const t = workspace();
+    try {
+      fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), PROJECT);
+      fs.mkdirSync(path.join(t.repo, '.nexus'));
+      fs.writeFileSync(path.join(t.repo, '.nexus', 'local.json'), JSON.stringify({ secrets: { keychain: true } }));
+      const chain = fakeChain();
+      const lines = [];
+      const io = { out: (s) => lines.push(s), err: (s) => lines.push(s), owner: () => false, vault: { keychain: chain, git: notRepo } };
+      assert.equal(await main(['set', 'DEV_API_KEY', '--root', t.repo], { ...io, input: async () => FAKES[2] }), 0);
+      assert.equal(chain.items.get('DEV_API_KEY'), FAKES[2]);
+      assert.deepEqual(readLocalKeys(t.repo), ['DEV_API_KEY']);
+      lines.length = 0;
+      assert.equal(await main(['status', '--root', t.repo], io), 0);
+      assert.match(lines.join('\n'), /DEV_API_KEY\s+set · keychain/);
+      assert.ok(!lines.join('\n').includes(FAKES[2]));
     } finally {
       t.done();
     }
