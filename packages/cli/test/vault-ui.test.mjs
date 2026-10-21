@@ -275,3 +275,15 @@ test('a paste field never mirrors the value into the DOM: no value attribute, cl
   assert.match(field, /maskInputProps\(/);
   assert.doesNotMatch(field, /\bvalue=\{/);
 });
+
+test('Settings\' Secrets section follows the effective mode, as the Vault does: owner mode off draws the contributor\'s', async () => {
+  const fs = await import('node:fs');
+  const { secretsSide } = await import('../src/screens/cloud-settings/secrets.js');
+  assert.equal(secretsSide({ owner: true, ownerMode: true }), 'owner');
+  assert.equal(secretsSide({ owner: true }), 'owner', 'owner mode is on unless turned off');
+  assert.equal(secretsSide({ owner: true, ownerMode: false }), 'contributor');
+  assert.equal(secretsSide({ owner: false, ownerMode: true }), 'contributor');
+  const src = fs.readFileSync(new URL('../src/screens/Settings.jsx', import.meta.url), 'utf8');
+  assert.match(src, /secretsSide\(/);
+  assert.doesNotMatch(src, /\{owner \? \(\s*<section className="set-sec" style=\{SEC\}>\s*<div><h2 className="set-h">Secrets/, 'the Secrets section is not chosen by the .owner file alone');
+});

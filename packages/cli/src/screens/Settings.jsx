@@ -16,7 +16,7 @@ import { nextRunMode, localRunMode, saveRunMode, Icon, InfoBtn, Check, BadgeDef,
 import { api, useLocalSettings, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { useLoop, hhmm } from './cloud-settings/loop.js';
-import { MANIFEST, secretCounts, namesLabel, localKeysLabel } from './cloud-settings/secrets.js';
+import { MANIFEST, secretCounts, namesLabel, localKeysLabel, secretsSide } from './cloud-settings/secrets.js';
 import { Frame, LoopDot } from './cloud-settings/parts.jsx';
 
 const SEC = { padding: '18px 26px', gap: 28 };
@@ -78,6 +78,8 @@ export default function Settings() {
   const rm = localRunMode(s);
   const phase = PHASES.includes(s.phase) ? s.phase : 'std';
   const push = s.ownerMode !== false;
+  // The Secrets section follows the effective mode, as the Vault does: owner mode off draws a contributor's local keys.
+  const vaultOwner = secretsSide({ owner, ownerMode: s.ownerMode }) === 'owner';
 
   const change = async (patch) => {
     setMine((m) => ({ ...m, ...patch }));
@@ -90,6 +92,7 @@ export default function Settings() {
       const { runMode, ...rest } = patch;
       if (runMode) await saveRunMode(runMode, api);
       if (Object.keys(rest).length) await api('/api/local', rest);
+      if ('ownerMode' in rest) secrets.reload?.(); // the vault's counts follow the mode
       setSave('saved');
     } catch (e) {
       setSave(e.status === 404 ? 'missing' : { error: e.message });
@@ -250,7 +253,7 @@ export default function Settings() {
             </div>
           </section>
 
-          {owner ? (
+          {vaultOwner ? (
             <section className="set-sec" style={SEC}>
               <div><h2 className="set-h">Secrets</h2><p className="set-d">nexus agents see names, not values. Values live in your keychain and the places you sync them to.</p></div>
               <div style={{ minWidth: 0 }}>

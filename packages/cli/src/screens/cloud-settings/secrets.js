@@ -26,3 +26,12 @@ export function namesLabel(n) {
 export function localKeysLabel(n) {
   return n == null ? 'Local keys' : `${n} local key${n === 1 ? '' : 's'}`;
 }
+
+/**
+ * Which Secrets section Settings draws: the owner's only in the effective
+ * owner mode (a .owner file and owner mode on), as the Vault and GET
+ * /api/secrets decide; with owner mode off, the contributor's local keys.
+ */
+export function secretsSide({ owner, ownerMode } = {}) {
+  return owner && ownerMode !== false ? 'owner' : 'contributor';
+}
