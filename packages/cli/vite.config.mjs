@@ -34,6 +34,33 @@ const cascadeRepair = {
   },
 };
 
+// The @fontsource weight files declare every script the family covers
+// (cyrillic, greek, vietnamese...), each as woff2 plus a woff fallback, and
+// the build copied all of them into the package. The UI's copy is English;
+// only the latin and latin-ext faces are kept (with their unicode-range, so
+// both still resolve per glyph), and only their woff2 source: every browser
+// that runs React 19 reads woff2. The symbol ranges come from mono-symbols.css.
+export const FONT_SUBSETS = ['latin', 'latin-ext'];
+
+export function trimFontsource(css) {
+  const blocks = css.split(/(?=\/\* [a-z0-9-]+ \*\/\s*@font-face)/).filter((b) => b.trim());
+  const keep = blocks.filter((b) => {
+    const name = /^\/\* ([a-z0-9-]+) \*\//.exec(b)?.[1] || '';
+    return FONT_SUBSETS.some((s) => new RegExp(`-${s}-\\d{3}-(normal|italic)$`).test(name));
+  });
+  if (!keep.length) throw new Error('an @fontsource stylesheet no longer has latin faces: revisit trimFontsource in vite.config.mjs');
+  return keep.map((b) => b.replace(/,\s*url\([^)]*\.woff\) format\('woff'\)/, '')).join('');
+}
+
+const fontTrim = {
+  name: 'nexus-fontsource-trim',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!/[\/]@fontsource[\/][^\/]+[\/]\d{3}(-italic)?\.css(\?|$)/.test(id)) return null;
+    return { code: trimFontsource(code), map: null };
+  },
+};
+
 // The UI is prebuilt into dist/ and shipped in the package; the server
 // serves it as static files. No runtime bundler, no CDN.
 export default defineConfig({
@@ -41,7 +68,7 @@ export default defineConfig({
   // Absolute asset paths, so reloading a deep link (/s/vega, /onboarding/detect)
   // still finds /assets/*; the server answers every extensionless path with index.html.
   base: '/',
-  plugins: [cascadeRepair, react()],
+  plugins: [cascadeRepair, fontTrim, react()],
   build: {
     outDir: '../dist',
     emptyOutDir: true,

@@ -256,6 +256,34 @@ test('the fonts are never inlined, so the page CSP (font-src self) loads every s
   assert.equal(inline('x/icon.svg'), undefined);
 });
 
+test('every @fontsource weight the UI imports keeps only latin and latin-ext, woff2 with its range', async () => {
+  const fs = await import('node:fs');
+  const { trimFontsource } = await import('../vite.config.mjs');
+  const src = fs.readFileSync(new URL('../src/styles/fonts.js', import.meta.url), 'utf8');
+  const files = [...src.matchAll(/import '(@fontsource\/[^']+\.css)'/g)].map((m) => m[1]);
+  assert.ok(files.length >= 14);
+  for (const f of files) {
+    const out = trimFontsource(fs.readFileSync(new URL(`../node_modules/${f}`, import.meta.url), 'utf8'));
+    const names = [...out.matchAll(/\/\* ([a-z0-9-]+) \*\//g)].map((m) => m[1]);
+    assert.equal(names.length, 2, f);
+    assert.ok(names.some((n) => /-latin-\d{3}-/.test(n)) && names.some((n) => /-latin-ext-\d{3}-/.test(n)), f);
+    assert.equal((out.match(/unicode-range:/g) || []).length, 2, f);
+    assert.ok(!/\.woff\)/.test(out) && !/cyrillic|greek|vietnamese/.test(out), f);
+  }
+});
+
+test('the mono symbol faces point at the committed range cuts, not the full webfonts', async () => {
+  const fs = await import('node:fs');
+  const css = fs.readFileSync(new URL('../src/styles/mono-symbols.css', import.meta.url), 'utf8');
+  const urls = [...css.matchAll(/url\('([^']+)'\)/g)].map((m) => m[1]);
+  assert.equal(urls.length, 3);
+  for (const u of urls) {
+    assert.match(u, /^\.\/fonts\/JetBrainsMono-\w+-symbols\.woff2$/);
+    const size = fs.statSync(new URL(`../src/styles/${u}`, import.meta.url)).size;
+    assert.ok(size < 24_000, `${u} is ${size} bytes`);
+  }
+});
+
 test('the plan board reads progress.mjs\'s % done and a claimed chunk from it', () => {
   const p = normalizePlan({
     specs: [{ id: '07', title: 'Search', percent: 33, counts: { closed: 1, claimed: 1, open: 1, total: 3 }, chunks: [

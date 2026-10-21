@@ -2,7 +2,9 @@
 // Fira Sans 300-700 + 400 italic (UI), Quicksand 300-700 (display),
 // JetBrains Mono 400/500/700 (mono). Box-drawing, block, geometric and
 // arrow glyphs are outside the @fontsource subsets; mono-symbols.css serves
-// them from the full JetBrains Mono webfonts, so 120-column rows hold.
+// them from range cuts of the JetBrains Mono webfonts, so 120-column rows
+// hold. The build keeps only the latin and latin-ext faces of each import,
+// woff2 only (trimFontsource in vite.config.mjs).
 import '@fontsource/fira-sans/300.css';
 import '@fontsource/fira-sans/400.css';
 import '@fontsource/fira-sans/400-italic.css';
