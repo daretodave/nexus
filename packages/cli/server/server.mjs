@@ -15,6 +15,7 @@ import * as repoMod from './repo.mjs';
 import * as local from './local.mjs';
 import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
+import { writeReorder } from './reorder.mjs';
 import { createSummaries } from './summaries.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
@@ -398,6 +399,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/announce': { const b = await body(req); const r = await steering.announce(b.text); return send(res, r.status, r); }
         case 'GET /api/claims': return send(res, 200, await listClaims(repo, await claimsCtx(url.searchParams.get('session'))));
         case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));
+        case 'POST /api/plan/reorder': { const b = await body(req); return send(res, 200, await writeReorder(repo, b, { owner: (await local.localView(repo)).effective })); }
         case 'GET /api/summaries': return send(res, 200, await summaries.get());
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
         case 'GET /api/actions': return send(res, 200, await gh.actionsSetup(repo, ghOpts));

@@ -111,7 +111,7 @@ export function requestIssue({ id, title = '', me = {}, login = '' }) {
 }
 
 /**
- * POST /api/claims/:verb. body: { id, to?, login?, title? }. ctx: { session, login, base, ghRun }.
+ * POST /api/claims/:verb. body: { id, to?, login?, title?, owner? } (`owner: true` reassigns to the owner). ctx: { session, login, base, ghRun }.
  * @returns {Promise<{ status: number, ok: boolean, verb: string, id: string, error?: string, out?: any, issue?: object }>}
  */
 export async function claimsAction(repo, verb, body = {}, ctx = {}) {
@@ -138,6 +138,14 @@ export async function claimsAction(repo, verb, body = {}, ctx = {}) {
     const login = String(ctx.login || '');
     if (owner && !LOGIN.test(login)) return { status: 200, ok: false, verb, id, error: 'A hold needs your GitHub login: sign gh in (gh auth login) or set NEXUS_GH_LOGIN.' };
     return done(await cli.exec(['assign', id, '--to', owner ? PRIVILEGED : (me.out.who || ''), '--login', login || '-']));
+  }
+
+  if (verb === 'reassign' && body.owner === true) {
+    // The Reassign picker's owner row (spec 40 A12): to the owner, as a hold is, but over anyone's claim (--force).
+    const login = String(ctx.login || '');
+    if (!owner) return { status: 200, ok: false, verb, id, error: 'Only the owner reassigns a claim to the owner.' };
+    if (!LOGIN.test(login)) return { status: 200, ok: false, verb, id, error: 'Reassigning to you needs your GitHub login: sign gh in (gh auth login) or set NEXUS_GH_LOGIN.' };
+    return done(await cli.exec(['assign', id, '--to', PRIVILEGED, '--login', login, '--force']));
   }
 
   if (verb === 'assign' || verb === 'reassign') {

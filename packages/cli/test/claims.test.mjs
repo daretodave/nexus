@@ -120,6 +120,13 @@ test('owner: claim, list by session, hold, release, assign, reassign and unhold,
     const re = await claimsAction(fx.owner, 'reassign', { id: '07.3', to: 'Jun Park', login: '@junpark' }, own);
     assert.equal(re.ok, true, re.error);
     assert.match(claimsOn(fx.origin)['07.3'], /^Jun Park\|.*\|held:junpark/);
+    // the picker's owner row: to the owner, over anyone's claim, keyed to the owner's login
+    const toMe = await claimsAction(fx.owner, 'reassign', { id: '07.3', owner: true }, own);
+    assert.equal(toMe.ok, true, toMe.error);
+    assert.match(claimsOn(fx.origin)['07.3'], new RegExp(`^${PRIVILEGED}\\|.*\\|held:dave`));
+    assert.match((await claimsAction(fx.owner, 'reassign', { id: '07.3', owner: true }, { ...own, login: '' })).error, /GitHub login/);
+    assert.match((await claimsAction(fx.contrib, 'reassign', { id: '07.3', owner: true }, sam)).error, /Only the owner/);
+    assert.equal((await claimsAction(fx.owner, 'reassign', { id: '07.3', to: 'Jun Park', login: 'junpark' }, own)).ok, true);
     assert.equal((await claimsAction(fx.owner, 'assign', { id: '07.4', to: 'Sam Lee', login: 'samlee' }, own)).ok, true);
     assert.equal((await claimsAction(fx.owner, 'assign', { id: '07.5', login: 'bad login!' }, own)).status, 400);
 

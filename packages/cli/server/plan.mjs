@@ -4,7 +4,9 @@
 // in flight and what is blocked); the specs, their chunks and % done are
 // `progress.mjs <every spec> --json` (what `/next status` prints, pending
 // closes counted). Nothing is parsed from the plan files here except the
-// spec file names, to ask progress.mjs about every spec.
+// spec file names, to ask progress.mjs about every spec, and each spec's
+// chunk order as it reads once settled (a grip reorder waits in a pending
+// file, server/reorder.mjs), so the spec view lists what /next will read.
 //
 // The answer is the shape src/screens/board/model.js normalizePlan reads:
 //   { repo, available, specs: [{ id, title, file, unchunked, percent, counts, hoursLeft, here, chunks: [chunk] }],
@@ -17,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { run, json } from './sh.mjs';
 import { findScript, PROGRESS_SCRIPTS, CHUNK_ID } from './repo.mjs';
+import { listedIds, settledPlan, specFile } from './reorder.mjs';
 
 export const ORDER_SCRIPTS = ['scripts/plan/order.mjs', 'scripts/order.mjs', 'scripts/dev/order.mjs'];
 const SPEC_FILE = /^(\d{2,})-[a-z0-9][a-z0-9-]*\.md$/;
@@ -95,7 +98,7 @@ export function boardFrom(order, progress, { repo = '' } = {}) {
  * { available: false, note } when the repo has no plan scripts; throws
  * (status 502) when one fails, with what it printed.
  */
-export async function readPlan(repo, { mark = [], exec = run, name = path.basename(repo) } = {}) {
+export async function readPlan(repo, { mark = [], exec = run, name = path.basename(repo), settled } = {}) {
   const orderScript = findScript(repo, ORDER_SCRIPTS);
   const progressScript = findScript(repo, PROGRESS_SCRIPTS);
   if (!orderScript || !progressScript) {
@@ -114,5 +117,27 @@ export async function readPlan(repo, { mark = [], exec = run, name = path.basena
     const bad = !order ? [orderScript, o] : [progressScript, p];
     throw Object.assign(new Error(`${bad[0]} failed: ${String(bad[1].stderr || bad[1].stdout || '').trim().slice(0, 400)}`), { status: 502 });
   }
-  return boardFrom(order, progress, { repo: name });
+  const board = boardFrom(order, progress, { repo: name });
+  try {
+    const view = settled || (await settledPlan(repo));
+    const listed = new Map(board.specs.map((s) => {
+      const file = specFile(repo, s.id);
+      return [s.id, file ? listedIds(view.read(file) || '') : []];
+    }));
+    board.specs = inListedOrder(board.specs, listed);
+  } catch { /* progress.mjs's order stands */ }
+  return board;
+}
+
+/**
+ * Each spec's chunks in the order its file lists them once settled (listed: spec id -> chunk ids). Pure. A chunk the
+ * listing does not name (closed and gone, or only in a pending file) keeps its own slot; the listed ones fill theirs.
+ */
+export function inListedOrder(specs, listed) {
+  return specs.map((s) => {
+    const at = new Map((listed.get(s.id) || []).map((id, i) => [id, i]));
+    const named = s.chunks.filter((c) => at.has(c.id)).sort((a, b) => at.get(a.id) - at.get(b.id));
+    let k = 0;
+    return { ...s, chunks: s.chunks.map((c) => (at.has(c.id) ? named[k++] : c)) };
+  });
 }
