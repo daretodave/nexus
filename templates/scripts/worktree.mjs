@@ -33,8 +33,26 @@ function git(cwd, ...args) {
   return { ok: res.status === 0, out: (res.stdout ?? '').trim(), err: (res.stderr ?? '').trim() };
 }
 
-/** One spelling per folder: absolute, and case-folded where the file system ignores case. */
-const norm = (p) => (process.platform === 'win32' ? path.resolve(p).toLowerCase() : path.resolve(p));
+/**
+ * One spelling per folder: the real path of its nearest existing ancestor plus the rest (so a Windows 8.3 short name
+ * such as RUNNER~1, a symlinked /tmp or a junction spells as git's own listing does), case-folded where the file
+ * system ignores case.
+ */
+function real(p) {
+  let at = path.resolve(p);
+  const rest = [];
+  for (;;) {
+    try {
+      return path.join(fs.realpathSync.native(at), ...rest);
+    } catch {
+      const up = path.dirname(at);
+      if (up === at) return path.resolve(p);
+      rest.unshift(path.basename(at));
+      at = up;
+    }
+  }
+}
+const norm = (p) => (process.platform === 'win32' ? real(p).toLowerCase() : real(p));
 const within = (p, dir) => norm(p) === norm(dir) || norm(p).startsWith(norm(dir) + path.sep);
 
 /** The repository's worktrees (`git worktree list --porcelain`), the main checkout first. */
