@@ -151,7 +151,7 @@ the design's empty state. The project and everything in it is invented.
 | Scenario | Script | What happens |
 |---|---|---|
 | `fleet-to-tug` | 7.0 s | Four sessions breathe on the fleet; vega asks, the stage hushes and the card pulls into the conversation; the owner answers; vega wakes and 12.4 lands on main |
-| `bug-to-archive` | 5.7 s | "the PDF export crashes on long seasons" goes to `/bug`; 15.3 slots into the plan, is claimed, built, gated and closed |
+| `bug-to-archive` | 6.7 s | "the PDF export crashes on long seasons" goes to `/bug`; 15.3 slots into the plan, is claimed, built, gated and closed |
 | `fall-and-resume` | 6.6 s | deneb fell over mid-chunk; Resume on its tile picks it up and 14.1 lands |
 | `heads-down` | 7.6 s | altair works a claimed list of three chunks, one after another |
 
@@ -302,6 +302,23 @@ follows the wall once capture starts, so the first frame is the
 script's first moment. The length is the script plus a 0.6 s hold.
 Frames are captured on a fixed grid (a slow frame skips a slot rather
 than bunching) and the GIF's delays come from the capture times.
+
+A scenario's `shot` (`server/demo/scenarios.mjs`) is its camera: the
+screen it opens on and the moves a drawn pointer makes there at script
+times, a click (`{ at, click, text }`) or a line typed into a field
+(`{ at, type, keys, ms, enter }`). `fleet-to-tug` opens on the fleet,
+clicks vega's tile and then the recommended answer, so the owner's turn
+is taken in the page, as the owner would; `bug-to-archive` types the bug
+into vega's composer. The pointer leaves after the last move, so the
+poster shows the app alone. `--session <name>` opens that session's
+cockpit instead, with no moves.
+
+The README shows `assets/gifs/fleet-to-tug.gif` and links its poster;
+the kit's gate (`node scripts/verify.mjs gifs`) checks that every GIF
+the README shows exists, runs 5 to 8 s, weighs at most 3 MB, has alt
+text and has its poster. Re-record it from `packages/cli` with
+`npm run build && npm run record -- fleet-to-tug`, look at it, and
+commit both files.
 
 There's no ffmpeg and no browser download.
 `playwright-core` (a dev dependency) drives the Chrome already

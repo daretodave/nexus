@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import zlib from 'node:zlib';
 import { encodeGif, readGif, quantize, centiseconds } from '../scripts/record/gif.mjs';
 import { decodePng } from '../scripts/record/png.mjs';
-import { BUDGET, budgetProblems, parseArgs, recordLength } from '../scripts/record.mjs';
+import { BUDGET, budgetProblems, parseArgs, recordLength, shotFor } from '../scripts/record.mjs';
+import { SCENARIOS } from '../server/demo/scenarios.mjs';
 
 const W = 48;
 const H = 32;
@@ -187,4 +188,22 @@ test('the arguments: a scenario, then flags with defaults', () => {
   assert.throws(() => parseArgs(['x', '--bogus']), /unknown/);
   assert.equal(parseArgs(['--help']).help, true);
   assert.equal(parseArgs(['list']).scenario, 'list');
+});
+
+test('the shot: the scenario opens where it says and makes its moves in order; --session opens a cockpit and makes none', () => {
+  const tug = shotFor(SCENARIOS['fleet-to-tug']);
+  assert.equal(tug.start, 'fleet');
+  assert.deepEqual(tug.moves.map((m) => m.click), ['a.tile-name', 'button.tug-opt']);
+  assert.ok(tug.moves[0].at < tug.moves[1].at);
+  // The answer is clicked while the question is open: after the ask, before the script would take the default.
+  const gate = SCENARIOS['fleet-to-tug'].script.find((s) => s.gate);
+  assert.ok(tug.moves[1].at > gate.at && tug.moves[1].at < gate.at + gate.gate.auto);
+  const bug = shotFor(SCENARIOS['bug-to-archive']);
+  assert.equal(bug.start, 'vega');
+  const send = SCENARIOS['bug-to-archive'].script.find((s) => s.gate);
+  assert.ok(bug.moves[0].at + bug.moves[0].ms < send.at + send.gate.auto, 'the line is sent before the script sends it');
+  assert.deepEqual(shotFor(SCENARIOS['fleet-to-tug'], { session: 'sirius' }), { start: 'sirius', moves: [], seconds: null });
+  assert.deepEqual(shotFor({ name: 'bare' }), { start: 'fleet', moves: [], seconds: null });
+  assert.throws(() => shotFor({ name: 'bad', shot: { moves: [{ at: 100 }] } }), /bad: a shot move/);
+  assert.throws(() => shotFor({ name: 'bad', shot: { moves: [{ at: 100, type: 'textarea' }] } }), /bad: a shot move/);
 });

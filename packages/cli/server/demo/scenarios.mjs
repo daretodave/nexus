@@ -11,6 +11,10 @@
 //   heads-down      altair works a claimed list of three chunks, one after another
 //
 // The script format is server/demo/world.mjs's. Times are ms from the start (or from the gate that holds them).
+// A scenario may carry a `shot` for the recorder (scripts/record.mjs): the screen it opens on (`fleet`, or a
+// session's name; default the home session's cockpit) and the clicks a pointer makes there, each
+// `{ at, click: <css selector>, text?, what }` (`at`: script ms; `text`: the element holds it). A click on the
+// owner's turn takes it as the owner would; the gate's `auto` stays the fallback.
 import { MAIN } from '../../shared/beats.mjs';
 
 export const PROJECT = 'fieldday';
@@ -202,6 +206,13 @@ export const fleetToTug = {
   title: 'Fleet to tug',
   summary: 'Four sessions breathing on the fleet; vega asks, the stage hushes and the card pulls in; the owner answers; vega wakes and the chunk lands on main.',
   home: 'vega',
+  shot: {
+    start: 'fleet',
+    moves: [
+      { at: 1100, click: 'a.tile-name', text: 'vega', what: "vega's tile" },
+      { at: 4100, click: 'button.tug-opt', text: 'Goal difference', what: 'the recommended answer' },
+    ],
+  },
   fixtures: (ctx) => base(ctx),
   script: [
     ...breathing(2400),
@@ -252,6 +263,12 @@ export const bugToArchive = {
   title: 'Bug to archive',
   summary: 'A bug typed in the composer goes to /bug; its chunk slots into the plan, is claimed, built, gated and closed.',
   home: 'vega',
+  shot: {
+    start: 'vega',
+    moves: [
+      { at: 400, type: 'textarea[aria-label="Message the session"]', keys: BUG, ms: 1200, enter: true, what: 'the composer' },
+    ],
+  },
   fixtures: (ctx) => base(ctx),
   script: [
     ...breathing(1200),
@@ -259,7 +276,7 @@ export const bugToArchive = {
       at: 600, session: 'vega',
       gate: {
         send: `/bug ${BUG} -- plan it and do it`,
-        auto: 1400,
+        auto: 2400,
         then: [
           ...at(300, 'vega', tx({ kind: 'text', id: 'b1:0', agent: MAIN, text: 'Reproduced: a season past 38 fixtures overflows the PDF page table. Plotting it as 15.3, then doing it.' }), tool('t-b1', MAIN, 'Skill', '/plot asap 15.3 PDF export: long seasons overflow the page table')),
           ...at(700, 'vega', done('t-b1', MAIN, 400), { chunk: { id: '15.3', title: 'PDF export: long seasons overflow the page table', size: 'S', plotted: true, lane: 'asap' } }),

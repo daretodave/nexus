@@ -11,6 +11,9 @@
 //
 // The scenario runs in this process (server/demo.mjs) on a manual clock that stands still while the page loads
 // and moves with the wall (times --speed) once capture starts, so frame one is the script's first moment.
+// A scenario's `shot` (server/demo/scenarios.mjs) names the screen to open on and the clicks a drawn pointer
+// makes, at script times: the fleet, a tile clicked, an answer picked. --session opens on that session's
+// cockpit and makes no clicks.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -39,6 +42,83 @@ export function budgetProblems({ durationMs, bytes }) {
 export function recordLength({ script, speed = 1, seconds = null }) {
   if (seconds) return Math.round(seconds * 1000);
   return Math.min(BUDGET.maxMs, Math.max(BUDGET.minMs, Math.round(script / speed) + 600));
+}
+
+/**
+ * Where a recording opens, the moves it makes and how long it holds: the scenario's `shot`, or --session's
+ * cockpit with no moves. A move is `{ at, click, text?, what }` (press at `at`) or
+ * `{ at, type, keys, ms, enter?, what }` (focus the field, type `keys` from `at` over `ms`, then Enter).
+ */
+export function shotFor(scenario, { session = null } = {}) {
+  if (session) return { start: session, moves: [], seconds: null };
+  const shot = scenario.shot || {};
+  const moves = [...(shot.moves || [])].sort((x, y) => x.at - y.at);
+  for (const m of moves) {
+    const ok = Number.isFinite(m.at) && m.at >= 0 && (typeof m.click === 'string' && m.click
+      ? true
+      : typeof m.type === 'string' && m.type && typeof m.keys === 'string' && m.keys && Number.isFinite(m.ms) && m.ms >= 0);
+    if (!ok) throw new Error(`${scenario.name}: a shot move is { at, click } or { at, type, keys, ms }: ${JSON.stringify(m)}`);
+  }
+  return { start: shot.start || 'fleet', moves, seconds: shot.seconds || null };
+}
+
+// The drawn pointer: headless Chrome draws none, so the page gets one (an arrow and a ring that pulses on a
+// press). It sits above everything, takes no events and survives route changes (it hangs off <body>).
+const POINTER = `(() => {
+  if (window.__nexusPointer) return;
+  const el = document.createElement('div');
+  el.setAttribute('aria-hidden', 'true');
+  el.style.cssText = 'position:fixed;left:0;top:0;width:28px;height:28px;z-index:2147483647;pointer-events:none;transition:transform 0ms linear,opacity 200ms;opacity:0;will-change:transform';
+  el.innerHTML = '<span style="position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.9);opacity:0;transform:scale(.4);transition:opacity 260ms,transform 260ms"></span>'
+    + '<svg width="22" height="24" viewBox="0 0 22 24" style="position:absolute;left:-3px;top:-2px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))"><path d="M3 2 L3 19 L7.5 15 L10.5 22 L13.5 20.7 L10.6 14 L17 14 Z" fill="#fff" stroke="#10131f" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  document.body.appendChild(el);
+  const ring = el.firstChild;
+  window.__nexusPointer = {
+    place(x, y) { el.style.transitionDuration = '0ms, 200ms'; el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; el.style.opacity = '1'; },
+    move(x, y, ms) { el.style.transitionDuration = ms + 'ms, 200ms'; el.style.transitionTimingFunction = 'cubic-bezier(.45,.05,.25,1)'; el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; },
+    hide() { el.style.opacity = '0'; },
+    press() { ring.style.transition = 'none'; ring.style.opacity = '1'; ring.style.transform = 'scale(.4)'; void ring.offsetWidth; ring.style.transition = 'opacity 380ms ease-out, transform 380ms ease-out'; ring.style.opacity = '0'; ring.style.transform = 'scale(1.5)'; },
+  };
+})()`;
+const GLIDE = 650; // ms of wall time the pointer takes to reach what it clicks
+
+/** Play a shot's moves against the page: glide to each target, press it at its script time, type if asked. */
+async function play(page, moves, { speed, elapsed, width, height }) {
+  if (!moves.length) return;
+  const until = async (ms) => { const wait = ms - elapsed(); if (wait > 0) await new Promise((r) => setTimeout(r, wait)); };
+  await page.evaluate(POINTER);
+  await page.evaluate(([x, y]) => window.__nexusPointer.place(x, y), [Math.round(width * 0.62), Math.round(height * 0.92)]);
+  for (const m of moves) {
+    const sel = m.click || m.type;
+    const what = m.what || sel;
+    const target = page.locator(sel, m.click && m.text ? { hasText: m.text } : {}).first();
+    const at = m.at / speed;
+    await until(Math.max(0, at - GLIDE - 400));
+    await target.waitFor({ state: 'visible', timeout: Math.max(1000, at - elapsed()) }).catch(() => {
+      throw new Error(`the shot found nothing to ${m.click ? 'click' : 'type in'} for ${what} by ${(m.at / 1000).toFixed(1)} s`);
+    });
+    const centre = async () => { const b = await target.boundingBox(); return b ? [Math.round(b.x + Math.min(b.width / 2, 60)), Math.round(b.y + b.height / 2)] : null; };
+    let xy = await centre();
+    if (!xy) throw new Error(`the shot's ${what} has no box`);
+    const glide = Math.max(0, Math.min(GLIDE, at - elapsed()));
+    await page.evaluate(([x, y, ms]) => window.__nexusPointer.move(x, y, ms), [...xy, Math.round(glide)]);
+    await until(at);
+    xy = (await centre()) || xy;
+    await page.evaluate(([x, y]) => { window.__nexusPointer.move(x, y, 60); window.__nexusPointer.press(); }, xy);
+    await page.mouse.click(xy[0], xy[1]);
+    if (m.type) {
+      // One key at a time on the wall's schedule, so a slow key never stretches the line.
+      const step = m.ms / speed / m.keys.length;
+      for (let i = 0; i < m.keys.length; i++) {
+        await until(at + i * step);
+        await page.keyboard.type(m.keys[i]);
+      }
+      if (m.enter) { await until(at + m.ms / speed + 120); await page.keyboard.press('Enter'); }
+    }
+  }
+  // The pointer bows out once the last move is made, so the end (and the poster) show the app alone.
+  await until(elapsed() + 700);
+  await page.evaluate(() => window.__nexusPointer.hide());
 }
 
 const USAGE = `  npm run record -- <scenario> [--out <dir>] [--name <moment>] [--fps 12] [--width 960] [--height 600]
@@ -111,7 +191,8 @@ export async function record(a, log = console.log) {
   const demo = await startDemo({ scenario: a.scenario, clock });
   let browser;
   try {
-    const length = recordLength({ script: demo.world.duration, speed: a.speed, seconds: a.seconds });
+    const shot = shotFor(demo.world.scenario, a);
+    const length = recordLength({ script: demo.world.duration, speed: a.speed, seconds: a.seconds ?? shot.seconds });
     try {
       browser = await chromium.launch({ headless: !a.headed, ...(a.chrome ? { executablePath: a.chrome } : { channel: 'chrome' }) });
     } catch (e) {
@@ -123,9 +204,9 @@ export async function record(a, log = console.log) {
     });
     const page = await context.newPage();
     let url = demo.url;
-    if (a.session) {
-      const s = demo.world.session(a.session);
-      if (!s) throw new Error(`no session "${a.session}" in ${a.scenario}`);
+    if (shot.start !== 'fleet') {
+      const s = demo.world.session(shot.start);
+      if (!s) throw new Error(`no session "${shot.start}" in ${a.scenario}`);
       url = demo.urlFor(s.id);
     }
     await page.goto(url, { waitUntil: 'load' });
@@ -141,6 +222,7 @@ export async function record(a, log = console.log) {
     const pump = setInterval(() => { const now = elapsed(); clock.advance((now - last) * a.speed); last = now; }, 5);
     const shots = [];
     const step = 1000 / a.fps;
+    const moving = play(page, shot.moves, { speed: a.speed, elapsed, width: a.width, height: a.height }).then(() => null, (e) => e);
     try {
       for (let slot = 0; slot * step < length; ) {
         const wait = slot * step - elapsed();
@@ -153,6 +235,8 @@ export async function record(a, log = console.log) {
     } finally {
       clearInterval(pump);
     }
+    const missed = await moving;
+    if (missed) throw missed;
 
     const frames = shots.map((s) => {
       const img = decodePng(s.png);
