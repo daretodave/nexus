@@ -1,7 +1,7 @@
 # Skill: expand (nexus)
 
 > **Plan growth, posture-gated.** Read the accumulated signals
-> and propose new kit phases as candidates. Candidates are
+> and propose new kit specs as candidates. Candidates are
 > filed, never self-promoted — `/oversight` promotes.
 
 ## 1. Purpose
@@ -9,7 +9,7 @@
 The kit's roadmap should grow from evidence: clustered audit
 findings, repeated adopter friction, sibling-project lessons,
 and the ground shifting under the kit (Claude Code releases).
-This skill turns those signals into scored phase candidates in
+This skill turns those signals into scored candidates in
 `plan/PHASE_CANDIDATES.md`.
 
 ## 2. Invocation
@@ -25,14 +25,14 @@ Rate-limited by `/march` (≥20 commits or >7 days); posture
 ## 3. Signal sources
 
 - **A.** `plan/AUDIT.md` clusters — 3+ pending rows sharing a
-  root cause = one phase, not three ticks.
+  root cause = one spec, not three ticks.
 - **B.** `plan/CRITIQUE.md` clusters — repeated dry-run
   friction in one playbook area.
 - **C.** Triage patterns — multiple adopters asking for the
   same missing layer.
-- **D.** Sibling lessons — new material in
-  `../kintilla/plan/lessons.md` / any `NEXUS_LESSONS.md`
-  since last pass.
+- **D.** Sibling lessons — new material in a sibling
+  adopter's `plan/lessons.md` / any `NEXUS_LESSONS.md` since
+  last pass.
 - **E.** Platform drift — Claude Code features the kit
   doesn't cover or contradicts.
 
@@ -57,7 +57,7 @@ still >3). **Cap 3 candidates per pass.**
    list.
 4. File to `## Pending` (standard candidate schema: proposed /
    source signals / rationale / proposed scope / estimated
-   phases / conflicts / `last re-evidenced` — optional, absent
+   chunks / conflicts / `last re-evidenced` — optional, absent
    until a later pass re-affirms the candidate). Update the
    metadata header.
 5. `node scripts/verify.mjs` → commit + push:
@@ -67,7 +67,7 @@ still >3). **Cap 3 candidates per pass.**
 
 1. Candidates only — never write a spec or the roadmap
    (promotion into a spec is `/oversight`'s).
-2. Every candidate cites its signals; no vibes-only phases.
+2. Every candidate cites its signals; no vibes-only candidates.
 3. Respect the cap; a 10-candidate dump is noise.
 4. No candidate that breaks template API without a migration
    story in its scope.
@@ -83,7 +83,7 @@ still >3). **Cap 3 candidates per pass.**
 ```bash
 plan/PHASE_CANDIDATES.md             # output + metadata header
 plan/AUDIT.md  plan/CRITIQUE.md      # signal sources A/B
-../kintilla/plan/lessons.md          # signal source D (if present)
+../<sibling>/plan/lessons.md         # signal source D (if present)
 node scripts/verify.mjs
 git commit -m "expand: pass <N> — <K> candidates" && git push origin main
 ```

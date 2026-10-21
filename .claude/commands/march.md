@@ -1,5 +1,5 @@
 ---
-description: Kit dispatcher — triage → critique → phase → expand → iterate. The autonomous entry point.
+description: Kit dispatcher — triage → critique → chunk → expand → iterate. The autonomous entry point.
 ---
 
 You are invoked under the `march` skill — the kit's outer

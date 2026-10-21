@@ -66,8 +66,8 @@ to be the target of edits.
   or too large for one session. Defer is fine and documented
   in the commit body.
 - **Generalize before landing.** A sibling project's
-  recommendation is often Pantheon-shaped (or thock-shaped,
-  or tickpedia-shaped). The nexus repo serves many projects.
+  recommendation is often shaped by that one project. The
+  nexus repo serves many projects.
   Broaden recommendations — never let one project's specific
   shape land as the methodology's general guidance.
 - **Single bundled commit by default.** 3–4 themed commits

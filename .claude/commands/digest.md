@@ -10,7 +10,7 @@ Argument handling:
 - No argument → the full nightly pass.
 
 Procedure: §3. Hard rules: §4. Failure modes: §5. The rail
-that matters most: tuning proposals become phase candidates,
+that matters most: tuning proposals become candidates,
 never direct edits — the loop does not vote on its own
 constraints.
 

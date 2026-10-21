@@ -29,8 +29,8 @@ misconfiguration (§6).
 
 ## 3. What it reads (parallel where independent)
 
-0. `node scripts/pulse.mjs` — the fast aggregate: build-plan
-   pending/blocked, AUDIT pending, CRITIQUE pending + last
+0. `node scripts/pulse.mjs` — the fast aggregate: chunks
+   left/held, AUDIT pending, CRITIQUE pending + last
    pass age, candidates pending + oldest-pending age. Items
    3–6 below still get read in full — the briefing needs row
    *content* (blocked reasons, durable rows, bias) that an

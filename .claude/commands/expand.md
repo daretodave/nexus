@@ -1,5 +1,5 @@
 ---
-description: Propose new kit phases from accumulated signals. Candidates only; /oversight promotes.
+description: Propose new kit specs from accumulated signals. Candidates only; /oversight promotes.
 ---
 
 You are invoked under the `expand` skill — posture-gated plan

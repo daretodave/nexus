@@ -1,8 +1,8 @@
 # Skill: iterate (nexus)
 
 > **Full autonomy.** Audit the kit, pick the top-scoring
-> finding, ship the fix, drain the queues. The post-phase
-> endgame — and between phases, the polish engine.
+> finding, ship the fix, drain the queues. The endgame once
+> no chunk is ready — and between chunks, the polish engine.
 
 ## 1. Purpose
 
@@ -38,7 +38,7 @@ Dimensions (score each finding `impact × ease / 10`, 0–10):
 - **F. freshness** — model ids, Claude Code feature drift,
   provider API changes.
 - **G. lessons** — new bullets in sibling adopters'
-  lessons files (`../kintilla/plan/lessons.md`,
+  lessons files (`../<sibling>/plan/lessons.md`,
   `NEXUS_LESSONS.md` anywhere) that the kit hasn't absorbed.
 
 Queue sources compete with audit findings, same scale:
@@ -89,7 +89,7 @@ verbatim when regenerating the audit block.
 2. **Gate red ≥3× same root cause** — stop loud (rule 6).
 3. **`git pull` divergence** — stop.
 4. **A fix requires breaking template API** — don't; file it
-   as a phase candidate with the migration story and pick the
+   as a candidate with the migration story and pick the
    next finding.
 
 ## 7. Quick reference
@@ -97,7 +97,7 @@ verbatim when regenerating the audit block.
 ```bash
 plan/AUDIT.md                        # queue + bias + durable rows
 plan/CRITIQUE.md                     # external queue
-../kintilla/plan/lessons.md          # lessons source (if present)
+../<sibling>/plan/lessons.md         # lessons source (if present)
 node scripts/verify.mjs
 node templates/scripts/loop-issue.mjs open|close-comment ...
 git add <explicit> && git commit && git push origin main
