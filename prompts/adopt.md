@@ -50,7 +50,8 @@ Then:
     under one un-versioned root? Infer a default from that
     (single-repo if neither), but always confirm it with the
     user before proceeding — see the ask list below. Getting
-    this wrong reshapes file locations from phase 1 onward.
+    this wrong reshapes file locations from the first chunk
+    onward.
   - Follow the matching playbook end-to-end. Do not skip steps.
   - Copy templates from ../nexus/templates/ into this repo.
   - Replace placeholders (<PROJECT>, <PROJECT_LOWER>,
