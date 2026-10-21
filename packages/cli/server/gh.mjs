@@ -246,3 +246,40 @@ export function runBeats(runs, seen) {
   }
   return out;
 }
+
+/** After a loop run completes, how long a PR it opened may take to show its creation time. */
+const PR_SLACK_MS = 2 * 60 * 1000;
+
+/**
+ * GET /api/cloud, as far as gh can say it today (41.7): the loop workflow (LOOP_FILE), whether it is paused (disabled)
+ * or running a pass, and tonight's PRs opened by the loop since `since` (ms). A PR counts as the loop's when it was
+ * created while one of the loop's runs was going (from its start to its end, plus PR_SLACK_MS): the loop pushes on the
+ * owner's token, so the PR's author cannot tell it apart. `prs` is null when gh could not list the runs or the PRs.
+ * No loop workflow: { ok: false, status: 404 } (the screens draw their empty state); gh failing: status 502.
+ */
+export async function cloudLoop(repo, { run = shRun, now = Date.now(), since = 0 } = {}) {
+  const wl = await run('gh', ['workflow', 'list', '--all', '--json', 'id,name,path,state'], { cwd: repo });
+  if (!wl.ok) return { ok: false, status: 502, error: (wl.stderr || 'gh could not list workflows').trim().slice(0, 300) };
+  const loop = (json(wl.stdout) || []).find((w) => LOOP_FILE.test(w.path || ''));
+  if (!loop || !ID.test(String(loop.id))) return { ok: false, status: 404, error: 'no loop workflow in this repo' };
+  const [runs, prs] = await Promise.all([
+    run('gh', ['run', 'list', '--workflow', String(loop.id), '-L', '50', '--json', 'databaseId,status,createdAt,updatedAt'], { cwd: repo }),
+    run('gh', ['pr', 'list', '--state', 'all', '-L', '100', '--json', 'number,createdAt'], { cwd: repo }),
+  ]);
+  const runList = runs.ok ? json(runs.stdout) : null;
+  const prList = prs.ok ? json(prs.stdout) : null;
+  const windows = (Array.isArray(runList) ? runList : [])
+    .map((r) => [Date.parse(r.createdAt), r.status === 'completed' ? Date.parse(r.updatedAt) + PR_SLACK_MS : now])
+    .filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b) && b >= since);
+  const opened = Array.isArray(runList) && Array.isArray(prList)
+    ? prList.filter((p) => { const t = Date.parse(p.createdAt); return t >= since && windows.some(([a, b]) => t >= a && t <= b); }).length
+    : null;
+  return {
+    ok: true,
+    live: true,
+    workflow: { id: loop.id, name: loop.name, path: loop.path, enabled: loop.state === 'active', state: loop.state },
+    paused: loop.state !== 'active',
+    running: Array.isArray(runList) && runList.some((r) => r.status && r.status !== 'completed'),
+    tonight: { since: new Date(since).toISOString(), prs: opened },
+  };
+}

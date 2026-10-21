@@ -4,6 +4,14 @@
 
 const H = 3600000;
 
+/** The start of "tonight" (the cloud loop's stats): 18:00 local, today if it has passed, else yesterday. */
+export function tonightStart(now = new Date()) {
+  const d = new Date(now);
+  d.setHours(18, 0, 0, 0);
+  if (d > now) d.setDate(d.getDate() - 1);
+  return d;
+}
+
 /**
  * The Working phase each Settings choice means: the label the phase track shows and the span (ms) its bar and marks
  * are drawn against, the top of the range. "All night" is drawn against 8 hours.

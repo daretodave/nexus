@@ -152,3 +152,100 @@ test('the inbox carries a live question\'s deadline to its tug', async () => {
   assert.equal(x.deadline, '2026-10-21T03:06:00Z');
   assert.deepEqual(countdown(x.deadline, Date.parse('2026-10-21T03:01:12Z')), { left: '4:48', pct: 80 });
 });
+
+// ---- the cloud loop's "PRs opened" (GET /api/cloud) -------------------------------------
+
+const { cloudLoop } = await import('../server/gh.mjs');
+
+/** A fake gh: answers by the command's leading words; records every call. Never the PATH's gh. */
+function fakeGh(answers) {
+  const calls = [];
+  const fn = async (cmd, args) => {
+    assert.equal(cmd, 'gh');
+    const key = args.join(' ');
+    calls.push(key);
+    const hit = Object.entries(answers).find(([k]) => key === k || key.startsWith(`${k} `));
+    if (!hit) return { ok: false, code: 1, stdout: '', stderr: `unexpected: ${key}` };
+    const v = hit[1];
+    return v === null ? { ok: false, code: 1, stdout: '', stderr: 'HTTP 403' } : { ok: true, code: 0, stdout: JSON.stringify(v), stderr: '' };
+  };
+  fn.calls = calls;
+  return fn;
+}
+
+const SINCE = Date.parse('2026-10-21T18:00:00Z');
+const WORKFLOWS = [{ id: 7, name: 'ci', path: '.github/workflows/ci.yml', state: 'active' }, { id: 9, name: 'march', path: '.github/workflows/march.yml', state: 'active' }];
+
+test('PRs opened tonight are the ones created while a loop run was going', async () => {
+  const gh = fakeGh({
+    'workflow list': WORKFLOWS,
+    'run list --workflow 9': [
+      { databaseId: 3, status: 'completed', createdAt: '2026-10-21T19:00:00Z', updatedAt: '2026-10-21T19:20:00Z' },
+      { databaseId: 4, status: 'in_progress', createdAt: '2026-10-21T21:00:00Z', updatedAt: '2026-10-21T21:01:00Z' },
+      { databaseId: 1, status: 'completed', createdAt: '2026-10-20T19:00:00Z', updatedAt: '2026-10-20T19:30:00Z' },
+    ],
+    'pr list': [
+      { number: 50, createdAt: '2026-10-21T19:10:00Z' }, // in run 3
+      { number: 51, createdAt: '2026-10-21T19:21:30Z' }, // just after run 3 ends: within the slack
+      { number: 52, createdAt: '2026-10-21T20:00:00Z' }, // between runs: someone else's
+      { number: 53, createdAt: '2026-10-21T21:05:00Z' }, // in the run still going
+      { number: 40, createdAt: '2026-10-20T19:10:00Z' }, // last night
+    ],
+  });
+  const r = await cloudLoop('.', { run: gh, now: Date.parse('2026-10-21T21:10:00Z'), since: SINCE });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.tonight, { since: '2026-10-21T18:00:00.000Z', prs: 3 });
+  assert.deepEqual([r.paused, r.running, r.workflow.id], [false, true, 9]);
+  assert.ok(gh.calls.every((c) => !/^(workflow (enable|disable|run)|pr (create|merge))\b/.test(c)), 'reading never changes anything');
+});
+
+test('no loop workflow is not served; a gh that cannot list PRs leaves the count unknown', async () => {
+  const none = await cloudLoop('.', { run: fakeGh({ 'workflow list': [WORKFLOWS[0]] }), since: SINCE });
+  assert.deepEqual([none.ok, none.status], [false, 404]);
+  const blind = await cloudLoop('.', { run: fakeGh({ 'workflow list': [{ ...WORKFLOWS[1], state: 'disabled_manually' }], 'run list': [], 'pr list': null }), since: SINCE });
+  assert.deepEqual([blind.ok, blind.paused, blind.tonight.prs], [true, true, null]);
+  const down = await cloudLoop('.', { run: fakeGh({}), since: SINCE });
+  assert.equal(down.status, 502);
+});
+
+// ---- through the server ------------------------------------------------------------------
+
+test('the server serves /api/cloud from the injected gh and the session detail with its stream times', async () => {
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const http = await import('node:http');
+  const { execFileSync } = await import('node:child_process');
+  const { startServer } = await import('../server/server.mjs');
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-real-data-'));
+  execFileSync('git', ['init', '-q'], { cwd: repo });
+  const gh = fakeGh({ 'workflow list': WORKFLOWS, 'run list': [], 'pr list': [] });
+  let hooks;
+  const provider = (h) => { hooks = h; return { kind: 'fake', send() {}, async interrupt() {}, async stop() {}, async fresh() {} }; };
+  const app = await startServer({ repo, provider, pollRuns: false, dist: path.join(os.tmpdir(), 'nexus-cli-no-dist'), ghRun: gh });
+  const get = (p) => new Promise((resolve, reject) => {
+    http.get({ host: '127.0.0.1', port: app.port, path: p, headers: { host: `127.0.0.1:${app.port}`, 'x-nexus-token': app.token } }, (res) => {
+      let d = '';
+      res.on('data', (c) => { d += c; });
+      res.on('end', () => resolve({ status: res.statusCode, json: JSON.parse(d || '{}') }));
+    }).on('error', reject);
+  });
+  try {
+    const cloud = await get('/api/cloud');
+    assert.equal(cloud.status, 200);
+    assert.equal(cloud.json.tonight.prs, 0);
+    await get('/api/cloud');
+    assert.equal(gh.calls.filter((c) => c.startsWith('workflow list')).length, 1, 'read once a minute, not per screen');
+    hooks.onMessage({ type: 'system', subtype: 'init', session_id: 'c1' });
+    hooks.onMessage({ type: 'assistant', session_id: 'c1', message: { content: [{ type: 'tool_use', id: 'B1', name: 'Bash', input: { command: 'node scripts/claims.mjs claim 3.1' } }] } });
+    const home = (await get('/api/server')).json.home;
+    const d = (await get(`/api/sessions/${home}`)).json;
+    assert.equal(d.chunk.id, '3.1');
+    assert.match(d.chunk.startedAt, /^\d{4}-\d\d-\d\dT/);
+    assert.equal(d.chunk.estimate, null, 'no plan scripts here: no estimate');
+    assert.ok(d.startedAt);
+  } finally {
+    await app.close();
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});

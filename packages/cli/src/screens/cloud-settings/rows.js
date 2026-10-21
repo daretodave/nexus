@@ -1,6 +1,7 @@
 // The cloud loop's pure view rules: times, durations, and one gh run (or a
 // /api/cloud run) as a timeline row with its chips, per-step stalls among
 // them. No React, so node --test reads it directly.
+import { tonightStart } from '../../../shared/times.mjs';
 
 export const pad2 = (n) => String(n).padStart(2, '0');
 
@@ -27,13 +28,8 @@ export function clock(ms) {
   return `${Math.floor(s / 60)}:${pad2(s % 60)}`;
 }
 
-/** The start of "tonight": 18:00 local, today if it has passed, else yesterday. */
-export function tonightStart(now = new Date()) {
-  const d = new Date(now);
-  d.setHours(18, 0, 0, 0);
-  if (d > now) d.setDate(d.getDate() - 1);
-  return d;
-}
+// The start of "tonight" (18:00 local) is shared with the server, which counts tonight's PRs from it (GET /api/cloud).
+export { tonightStart };
 
 /** The board's day words: tonight, yesterday, else a short date. */
 export function dayWord(t, now = new Date()) {

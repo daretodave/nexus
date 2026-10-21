@@ -24,6 +24,7 @@ import { readRun, recentRuns } from './recover.mjs';
 import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
 import { claimsAction, listClaims, SESSION as CLAIMS_SESSION } from './claims.mjs';
 import { createStepWatch, sessionTimes } from './session-times.mjs';
+import { tonightStart } from '../shared/times.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -152,6 +153,17 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   const planForTimes = () => {
     if (!planRead.p || Date.now() - planRead.at > 60000) planRead = { at: Date.now(), p: readPlan(repo).catch(() => null) };
     return planRead.p;
+  };
+
+  // GET /api/cloud (gh.cloudLoop): many screens read it for the loop line, so gh is asked at most once a minute.
+  let cloudRead = { at: 0, p: null };
+  const cloudNow = () => {
+    if (!cloudRead.p || Date.now() - cloudRead.at > 60000) {
+      // Like the git view: under an injected provider with no ghRun, gh reads as missing, never the real one.
+      const p = gh.cloudLoop(repo, { run: ghRun || (injected ? noGh : undefined), since: tonightStart(new Date()).getTime() }).catch((e) => ({ ok: false, status: 502, error: String(e.message || e) }));
+      cloudRead = { at: Date.now(), p };
+    }
+    return cloudRead.p;
   };
 
   async function sessionDetail(id) {
@@ -389,15 +401,17 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/summaries': return send(res, 200, await summaries.get());
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
         case 'GET /api/actions': return send(res, 200, await gh.actionsSetup(repo, ghOpts));
-        case 'POST /api/actions/workflow': { const b = await body(req); return send(res, 200, await gh.setWorkflow(repo, b.id, !!b.enabled, ghOpts)); }
+        case 'POST /api/actions/workflow': { const b = await body(req); const r = await gh.setWorkflow(repo, b.id, !!b.enabled, ghOpts); cloudRead.p = null; return send(res, 200, r); }
         case 'POST /api/cloud/run': {
           const b = await body(req);
           const r = await gh.dispatchWorkflow(repo, b.id, ghOpts);
+          cloudRead.p = null;
           return send(res, r.ok ? 200 : r.status || 400, r);
         }
         case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo, ghOpts));
         case 'GET /api/recover': { const r = await recoverRead(url.searchParams.get('dir') || ''); return send(res, r.status, r); }
         case 'POST /api/recover/resume': { const r = await recoverResume(await body(req)); return send(res, r.status, r); }
+        case 'GET /api/cloud': { const r = await cloudNow(); return send(res, r.ok ? 200 : r.status || 502, r); }
       }
       // The claims panel (spec 40 A5): each verb is one run of the repo's claims CLI as the acting session (claims.mjs).
       const cv = /^POST \/api\/claims\/([a-z]+)$/.exec(route);
