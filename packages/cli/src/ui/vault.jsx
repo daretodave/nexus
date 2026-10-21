@@ -3,8 +3,9 @@
 // saved (.secret-set), partial (.secret-set.is-partial) and skipped (.secret-wait) lines, the .env rows, the audit log
 // and the "Where values go" card. Names and status only: a value lives in a .mask-field's own state until Save sends
 // it, and every stored value draws as the same eight dots.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './icons.jsx';
+import { clearPaste, maskInputProps } from './mask-input.js';
 import { cx } from './controls.jsx';
 
 /** The eight dots of a stored value, whatever its length. */
@@ -41,17 +42,16 @@ export function KeyNote({ children }) {
 
 /**
  * .mask-field: a password input behind a key glyph. `onToggle` adds Show / Hide (only for your own paste, before it
- * is saved). The browser is told not to keep or autocomplete it.
+ * is saved). The browser is told not to keep or autocomplete it. The input is uncontrolled (ui/mask-input.js), so
+ * the paste never reaches a DOM attribute; `value` is the parent's copy, and handing back '' empties the field.
  */
 export function MaskField({ value, onChange, show = false, onToggle, label, placeholder = 'Paste the value', autoFocus, onEnter }) {
+  const ref = useRef(null);
+  useEffect(() => { clearPaste(ref.current, value); }, [value]);
   return (
     <div className="mask-field">
       <Icon name="key" />
-      <input
-        type={show ? 'text' : 'password'} value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off" spellCheck={false}
-        aria-label={label} placeholder={placeholder} autoFocus={autoFocus} name="nexus-vault-value" data-lpignore="true" data-1p-ignore="true"
-        onKeyDown={onEnter ? (e) => { if (e.key === 'Enter') onEnter(); } : undefined}
-      />
+      <input {...maskInputProps({ inputRef: ref, show, onChange, label, placeholder, autoFocus, onEnter })} />
       {onToggle ? <button className="btn btn-ghost" type="button" onClick={onToggle} aria-pressed={show ? 'true' : 'false'}>{show ? 'Hide' : 'Show'}</button> : null}
     </div>
   );

@@ -214,3 +214,28 @@ test('the Inbox key row\'s Add value is the design\'s warn button', async () => 
   assert.match(src, /r\.secret \? <button className="btn btn-s btn-warn"[^\n]*?<Icon name="key" size=\{14\} \/>Add value/);
   assert.match(fs.readFileSync(new URL('../design/handoff/Inbox.dc.html', import.meta.url), 'utf8'), /btn btn-s btn-warn/);
 });
+
+test('a paste field never mirrors the value into the DOM: no value attribute, cleared through the property', async () => {
+  const fs = await import('node:fs');
+  const { maskInputProps, clearPaste } = await import('../src/ui/mask-input.js');
+  const { createElement } = await import('react');
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const props = maskInputProps({ show: false, onChange() {}, label: 'Paste the value of X', placeholder: 'Paste the value' });
+  assert.ok(!('value' in props) && !('defaultValue' in props), 'an uncontrolled input: React never writes the value attribute');
+  assert.equal(props.type, 'password');
+  assert.equal(maskInputProps({ show: true }).type, 'text');
+  assert.doesNotMatch(renderToStaticMarkup(createElement('input', props)), /value=/);
+  // the parent's '' (after Save) clears the field's property, never an attribute
+  const el = { value: 'TESTONLY_paste_42' };
+  clearPaste(el, '');
+  assert.equal(el.value, '');
+  const kept = { value: 'TESTONLY_paste_42' };
+  clearPaste(kept, 'TESTONLY_paste_42');
+  assert.equal(kept.value, 'TESTONLY_paste_42');
+  clearPaste(null, '');
+  // MaskField draws its input from these props, with no value prop of its own
+  const src = fs.readFileSync(new URL('../src/ui/vault.jsx', import.meta.url), 'utf8');
+  const field = src.slice(src.indexOf('export function MaskField'), src.indexOf('export function TickBox'));
+  assert.match(field, /maskInputProps\(/);
+  assert.doesNotMatch(field, /\bvalue=\{/);
+});
