@@ -137,7 +137,6 @@ the vault arrives):
   self-tests.
 - **A7** A gate leg refuses a staged diff that contains a
   vault value, with tests.
-- **A9** The Vercel and Cloudflare sinks do the same.
 - **A10** `/next` parks a chunk whose secret is missing and
   files a secret request in the oversight queue; `/heads-down`
   moves on.
@@ -159,15 +158,13 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 9 open · 6 closed · next A16
+Measure: 8 open · 7 closed · next A16
 
 - [ ] **42.3** `nexus secrets run` and the rails · M ·
   closes A5, A6, A7 · needs —
   - The run wrapper, the guard hook rules with self-tests,
     and the gate leg that scans a staged diff for vault
     values.
-- [ ] **42.5** The Vercel and Cloudflare sinks · S · closes
-  A9 · needs —
 - [ ] **42.6** `/next` parks and asks; contributors skip; the
   audit log · M · closes A10, A11, A12 · needs —
 - [ ] **42.7** The GUI server's secrets API and transcript
