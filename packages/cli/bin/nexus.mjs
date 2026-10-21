@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // npx @usenexus/cli [--repo <dir>] [--port <n>] [--no-open]
+// npx @usenexus/cli run "<prompt>" [--cwd <dir>]   one turn headless, JSON out
 //
 // Starts the nexus GUI on 127.0.0.1 (random port, per-launch token) for
 // the repo in the current directory and opens it in the browser.
@@ -9,6 +10,15 @@ import fs from 'node:fs';
 import { startServer } from '../server/server.mjs';
 
 const argv = process.argv.slice(2);
+
+// `nexus run "<prompt>"`: one turn headless, JSON out (server/headless.mjs).
+if (argv[0] === 'run') {
+  const { runCli } = await import('../server/headless.mjs');
+  const code = await runCli(argv.slice(1));
+  await new Promise((r) => process.stdout.write('', r));
+  process.exit(code);
+}
+
 const flag = (name) => argv.includes(name);
 const opt = (name) => {
   const i = argv.indexOf(name);
@@ -22,6 +32,7 @@ if (flag('--help') || flag('-h')) {
   npx @usenexus/cli --repo <dir>    ...for another folder
   npx @usenexus/cli --no-open       print the URL instead of opening a browser
   npx @usenexus/cli --port <n>      a fixed port (default: any free port)
+  npx @usenexus/cli run "<prompt>"  one turn headless, JSON out (run --help)
 
   NEXUS_PROVIDER=cli                drive \`claude -p\` instead of the Agent SDK
 

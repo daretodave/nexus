@@ -1,4 +1,5 @@
-// The provider seam: the only module that starts a Claude Code session.
+// The provider seam: the only module that starts a GUI Claude Code session
+// (headless.mjs starts the one-turn `nexus run` session, reusing this queue).
 //
 // Primary: @anthropic-ai/claude-agent-sdk query() on the person's own
 // Claude Code login (no API key). Fallback: `claude -p` speaking
