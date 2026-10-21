@@ -81,5 +81,9 @@ Measure: 3 open · 0 closed · next A4
   heartbeat files · M · closes A1, A2 · needs —
   - Touches `.github/workflows/`: ship it from a local session
     (the cloud token can't push workflow files).
+  - Decide in the build: while the owner pauses `march` by
+    hand, the flatline alarm keeps reopening its issue. Default:
+    a `disabled_manually` march is reported by the armed-ness
+    check once and skips the cadence check.
 - [ ] **32.2** Loop-shapes and CLOUD_LOOP describe the new
   checks · S · closes A3 · needs 32.1
