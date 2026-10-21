@@ -337,11 +337,16 @@ how `pnpm deploy:check` is wired and what state file it polls.
 ### → [`playbooks/cloud-loop.md`](./playbooks/cloud-loop.md) *(opt-in)*
 
 Once your local loop is happy, optionally put the same loop on
-GitHub Actions so it ticks while your laptop is closed. Three
-files, three secrets, one validation run. Defaults to
-`github-actions[bot]` author for zero-config setup; opt-in to
-your own GitHub identity if you want a uniform git log. **Free
-to operate** if your repo is public + you're on Claude Pro/Max.
+GitHub Actions so it ticks while your laptop is closed. A few
+files, the secrets, one validation run. One repo variable picks
+how ticks land: pushed to main (owner mode) or, by default, one
+chunk per pull request, built by an agent that holds no token.
+Defaults to `github-actions[bot]` author for zero-config setup;
+opt-in to your own GitHub identity if you want a uniform git
+log. **Free to operate** if your repo is public + you're on
+Claude Pro/Max. Already running your own Actions and a local
+workflow? [`playbooks/cloud-loop-existing-actions.md`](./playbooks/cloud-loop-existing-actions.md)
+adds the loop beside them, step by step.
 
 Don't reach for this until your verify gate is genuinely
 hermetic and the local loop has run cleanly for a few days —
@@ -432,6 +437,7 @@ nexus/
 │   ├── windows-notes.md               # PowerShell twins + Windows hazards page
 │   ├── ci-providers.md                # deploy-gate variations
 │   ├── cloud-loop.md                  # opt-in GitHub Actions loop
+│   ├── cloud-loop-existing-actions.md # adding it beside your own Actions and local workflow (the GUI's checklist)
 │   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
 │   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
 │   ├── upgrade.md                     # v1 (phases) → v2 (specs + chunks); pin with plan/nexus.lock

@@ -83,7 +83,10 @@ scripts/
 Plus the GitHub secrets, one repo variable (`NEXUS_LOOP_MODE`:
 `owner` pushes main; unset opens pull requests), one
 workflow_dispatch validation run, and (optionally) a
-fine-grained PAT or, for PR mode, a GitHub App.
+fine-grained PAT or, for PR mode, a GitHub App. A repo that
+already has its own Actions and a local workflow: follow
+[`cloud-loop-existing-actions.md`](./cloud-loop-existing-actions.md)
+instead, step by step.
 
 ## Prerequisites
 

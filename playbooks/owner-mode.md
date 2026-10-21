@@ -249,3 +249,5 @@ the ruleset and the fence are the rules there.
 - [`../concepts/plan-shape.md`](../concepts/plan-shape.md):
   pending files, and the owner's settle.
 - [`cloud-loop.md`](./cloud-loop.md): the scheduled loop.
+- [`cloud-loop-existing-actions.md`](./cloud-loop-existing-actions.md):
+  adding it to a repo that already has Actions, step by step.
