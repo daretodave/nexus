@@ -16,7 +16,8 @@ Argument handling:
 
 Show the build order before and after
 (`node scripts/plan/order.mjs`). Shared plan files change only
-through `plan/pending/plot-<slug>.md`; land per owner mode
+through `plan/pending/plot-<slug>.md` (an `## Add` extends an
+open spec before a new one is written); land per owner mode
 (owner: settled on main; contributor: a `plot/<slug>` PR).
 
 Argument: $ARGUMENTS

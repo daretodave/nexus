@@ -67,13 +67,18 @@ origin/<DEFAULT_BRANCH>`.
   features is the first chunk(s); a new flow follows only for
   what it can't do. When the small version does the whole task,
   plot only it.
-- **Extend the spec that owns it** (new A-IDs after its last,
-  new chunks after its last), or write a new
-  `plan/<NN>-<slug>.md` in the spec format
+- **Extend before you add:** an open spec that owns the
+  surface (screen, flow, script, seam) takes the task, even a
+  one-chunk fix, as an `## Add` (Step 4.3); a held spec takes
+  no Asap slot. Say which spec it joined, or why none could:
+  only then a new `plan/<NN>-<slug>.md` in the spec format
   (`skills/plan-a-spec.md` §4: why, Design, Acceptance with
   A-IDs, Open questions, Chunks). Several specs: each gets its
   part; a cross-spec A-ID closes at this spec's boundary,
   naming the other's.
+- **Never quote a spec's moving lines** (last A-ID or chunk,
+  Measure line, `N left`): every branch extending it quotes the
+  same ones and only the first settles. Add places, settle counts.
 - Chunking rules (`nexus/concepts/plan-shape.md`): stable
   A-IDs, never renumbered; sizes S/M/L (split anything bigger
   into vertical slices); every A-ID closed by a chunk;
@@ -112,27 +117,31 @@ origin/<DEFAULT_BRANCH>`.
    with nothing.
 3. **Everything shared goes in one pending file**,
    `plan/pending/plot-<slug>.md` (`plan/pending/README.md`;
-   `date:` front matter first): `## Edit plan/README.md` for the
-   row (status, progress, priority) and the lane entry, `## Edit`
-   for an existing spec it extends, the root `README.md`'s
-   roadmap if it lists specs, and `## Decisions` for a
-   `(proposed)` decision. Each old text quotes enough to be
-   found exactly once.
+   `date:` front matter first): `## Add plan/NN-<slug>.md` for
+   a spec it extends (parts `~~~ acceptance`, `chunks`,
+   `questions`, `section <Heading>`; placeholder ids wherever
+   the file names them); `## Edit plan/README.md` for a row
+   and the lane entry, the root `README.md`'s roadmap if it
+   lists specs; `## Edit` of a spec only to rewrite its text;
+   `## Decisions` for a `(proposed)` decision. Each old text
+   quotes enough to be found exactly once.
 4. The gate (`pnpm verify`, or what `agents.md` names),
    foreground. Commit `plan: plot <what>`, the body saying why
    this slot.
 5. The **after** picture: `node scripts/plan/order.mjs --mark
-   <new chunk ids>` (it reads the pending edits as settled).
+   <new chunk ids>` (placeholders too; it reads the pending
+   file as settled).
 
 ### Step 5 — `and do` (only when asked)
 
 Build the plotted chunks in order in the same worktree, each
 as `/next` Steps 3-4 (`skills/next.md`): claim the chunk
 (release the spec number's reservation first), delegate the
-build by size, gate, write its pending close. Contributor: on
-`plot/<slug>`, so plot and build are one pull request. A chunk
-that turns out bigger than the run: stop doing, keep the plot,
-say what's left.
+build by size, gate, write its pending close (an `## Add`
+chunk has a number once the plot settles: settle first).
+Contributor: on `plot/<slug>`, so plot and build are one pull
+request; an `## Add` chunk waits for the merge. Too big for
+the run: stop doing, keep the plot, say what's left.
 
 ### Step 6 — Land per owner mode
 
@@ -165,6 +174,7 @@ it (`/plot asap …`, or `/next <id>` to build it now). Retro as
 3. A principle the task would break is asked, never decided.
 4. `and do` is off unless asked; the plot always lands, even
    when the doing stops early.
+5. Extend before you add; never quote a spec's moving lines.
 
 ## 5. Failure modes
 
@@ -172,6 +182,8 @@ it (`/plot asap …`, or `/next <id>` to build it now). Retro as
 - **It needs an owner's call before it can be shaped:** ask
   before the first write; under a loop, park it in the
   `/oversight` queue and stop.
+- **It needs a chunk in another open PR** (no number yet):
+  `needs —`, and say what it waits on.
 - **The pending edit won't apply** (main moved under it):
   re-quote the old text against origin and retry once.
 
@@ -179,7 +191,7 @@ it (`/plot asap …`, or `/next <id>` to build it now). Retro as
 
 ```bash
 node scripts/plan/order.mjs --ref origin/<DEFAULT_BRANCH>   # before
-node scripts/plan/order.mjs --mark 07.4,07.5               # after (reads pending edits as settled)
+node scripts/plan/order.mjs --mark 07.4,07.?zip            # after (reads pending files as settled)
 node scripts/claims.mjs claim <NN>                          # reserve a new spec number
 node scripts/plan/settle.mjs --no-commit                    # owner: land it settled
 ```

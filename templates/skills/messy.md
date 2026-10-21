@@ -40,7 +40,8 @@ or links into `plan/messy/`.
 Group the fragments into themes. For each, check what exists:
 the specs, `plan/pending/`, and the code (grep, don't guess).
 Mark each *new*, *extends spec NN*, or *already built*
-(partial or done; say where).
+(partial or done; say where). Extend before you add: a theme
+an open spec owns extends it, even a one-chunk fix.
 
 ### Step 3 — Refine
 
@@ -55,9 +56,8 @@ reserved with `node scripts/claims.mjs claim <NN>`.
   (Agent tool; foreground under a cloud tick), each writing
   **exactly one file** on a disjoint path in the worktree: a new
   theme its `plan/<NN>-<slug>.md`, an extending theme its
-  proposed edits as `plan/messy/<date>-<slug>.<NN>.md` in the
-  primary checkout (old text and new text, for the lead to
-  apply). Each reads `plan/README.md`, the related specs and the
+  proposed `## Add` parts as `plan/messy/<date>-<slug>.<NN>.md`
+  in the primary checkout (for the lead to fold in). Each reads `plan/README.md`, the related specs and the
   raw dump first, weights what was called important, and never
   commits.
 - A spec is written in the spec format (`skills/plan-a-spec.md`
@@ -72,9 +72,11 @@ Read what came back and check it against the code for false
 claims; fix overlaps between themes. Then everything shared
 goes in one `plan/pending/messy-<slug>.md` (`date:` front
 matter first): `## Edit plan/README.md` for each new row
-(status `idea` or `planned`, `plan only` where asked), `## Edit`
-sections for the extending themes' spec changes, `## Decisions`
-for `(proposed)` ones. New spec files are written directly.
+(status `idea` or `planned`, `plan only` where asked),
+`## Add plan/NN-*.md` for an extending theme's new work
+(placeholder ids, numbered at settle; `## Edit` only to rewrite
+existing text, never a spec's last chunk, Measure line or
+`N left`), `## Decisions` for `(proposed)` ones. New spec files are written directly.
 Fill `## Refined into` in the raw file (spec numbers, not
 text).
 

@@ -43,8 +43,8 @@ footguns: guard-test-noop
 
 - `says`: ≤ 10 words, what now works (the archive line).
 - `footguns:` sightings of traps this run hit that have a line.
-- `## Edit <path>` (exact old text, found once at settle) only
-  for a need a later chunk carries, or one this chunk moots.
+- `## Edit <path>` (old text found once) only for a need a
+  later chunk carries or this chunk moots; `## Add` a follow-up.
 - `## Decisions` (`D?<slug>`, numbered at settle) for a lasting
   choice; `## Footguns` for a new trap (≤ 500 bytes: one
   sentence of trap, one of rule).
