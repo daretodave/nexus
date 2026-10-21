@@ -420,7 +420,7 @@ nexus/
 │   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
-│   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print)
+│   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
 │   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── git/push-policy.mjs            # pre-push: main is the owner's checkout's alone (owner mode)
@@ -576,7 +576,7 @@ nexus/
     │   ├── plan/settled.mjs           # the plan as it reads once pending edits settle
     │   ├── plan/config.mjs            # per-repo settle config (plan/settle.json)
     │   ├── plan/footguns.mjs          # footgun list format + budget lint
-    │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h)
+    │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h); --json: the same as data
     │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
     │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
     │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json

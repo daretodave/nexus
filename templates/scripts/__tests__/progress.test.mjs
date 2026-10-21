@@ -1,10 +1,10 @@
 // progress.mjs (/next status, /heads-down): a spec's chunks read from the spec and ARCHIVE.md (a pending close counts
 // as closed), when the chunk under way began (its claim, or the release of the one before it in a group claim), and
 // the view: the 24-character bar, closed chunks struck through, `<--- [here]`, and times only for the chunks the same
-// loop holds. node:test, no deps, no git.
+// loop holds; the same as data for --json (states closed, claimed, open). node:test, no deps, no git.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { BAR, bar, claimEvents, closedChunks, hours, openChunks, render, short, startedAt } from '../plan/progress.mjs';
+import { BAR, bar, claimEvents, closedChunks, hours, openChunks, render, short, specData, startedAt } from '../plan/progress.mjs';
 
 const H = 3_600_000;
 const now = Date.parse('2026-10-20T18:00:00Z');
@@ -114,5 +114,60 @@ describe('the view', () => {
     const quiet = render({ spec: '07', closed, open, now });
     assert.ok(quiet.includes('- 07.2 Results page (M) · not claimed yet'));
     assert.ok(!quiet.some((l) => l.includes('<--- [here]')));
+  });
+});
+
+describe('the data (--json)', () => {
+  const closed = [{ id: '07.1', day: '2026-10-20', text: 'Search box renders' }];
+  const open = [
+    { id: '07.2', text: 'Results page', size: 'M' },
+    { id: '07.3', text: 'Empty state', size: 'S' },
+    { id: '07.4', text: 'Paging', size: null },
+    { id: '07.5', text: 'Someone else', size: 'S' },
+    { id: '07.6', text: 'Forgotten', size: 'L' },
+  ];
+  const claims = {
+    '07.2': loop,
+    '07.3': loop,
+    '07.5': { ...loop, who: 'sam', session: 'bbbb2222', pr: 41 },
+    '07.6': { ...loop, who: 'kim', session: 'cccc3333', at: new Date(now - 30 * H).toISOString() },
+  };
+  const events = claimEvents(`${new Date(now - H).toISOString()}\tclaim 07.2, 07.3 · privileged_agent_session@box`);
+  const data = specData({ spec: '07', title: 'Search', file: '07-search.md', closed, open, claims, events, now, mine: (c) => c?.session === 'aaaa1111' });
+  const byId = Object.fromEntries(data.chunks.map((c) => [c.id, c]));
+
+  it('lists every chunk with its state: closed, claimed (live claim or PR) or open (none, or a stale claim)', () => {
+    assert.deepEqual(data.chunks.map((c) => `${c.id}:${c.state}`), ['07.1:closed', '07.2:claimed', '07.3:claimed', '07.4:open', '07.5:claimed', '07.6:open']);
+    assert.deepEqual(byId['07.1'], { id: '07.1', title: 'Search box renders', size: null, state: 'closed', hours: null, closedOn: '2026-10-20', claim: null, underWay: null, comingUpIn: null });
+    assert.equal(byId['07.6'].claim, null);
+  });
+
+  it('counts, percent, the estimate left and the chunk under way', () => {
+    assert.deepEqual(
+      [data.spec, data.title, data.file, data.status, data.percent, data.hoursLeft, data.here],
+      ['07', 'Search', '07-search.md', 'chunked', 17, 2.5 + 1 + 2.5 + 1 + 5, '07.2'],
+    );
+    assert.deepEqual(data.counts, { closed: 1, claimed: 3, open: 2, total: 6 });
+  });
+
+  it('carries the times the view draws: under way, and coming up in the same loop', () => {
+    assert.deepEqual(byId['07.2'].underWay, { since: new Date(now - H).toISOString(), hours: 1, left: 1.5 });
+    assert.equal(byId['07.3'].comingUpIn, 1.5);
+    assert.deepEqual(byId['07.2'].claim, { who: 'privileged_agent_session', mine: true, pr: null, held: null, wholeSpec: false });
+    assert.deepEqual(byId['07.5'].claim, { who: 'sam', mine: false, pr: 41, held: null, wholeSpec: false });
+    assert.equal(byId['07.5'].comingUpIn, null);
+  });
+
+  it("counts a hold on the spec's number as a claim on every chunk without its own", () => {
+    const hold = { ...loop, who: 'dave', session: '', held: 'dave' };
+    const d = specData({ spec: '07', closed: [], open: open.slice(0, 2), claims: { '07': hold }, now });
+    assert.deepEqual(d.chunks.map((c) => [c.state, c.claim?.wholeSpec, c.claim?.held]), [['claimed', true, 'dave'], ['claimed', true, 'dave']]);
+  });
+
+  it('says unchunked or missing for a spec with no chunks, and serializes as plain JSON', () => {
+    assert.equal(specData({ spec: '11', file: '11-docs.md', closed: [], open: [], now }).status, 'unchunked');
+    const none = specData({ spec: '12', closed: [], open: [], now });
+    assert.deepEqual([none.status, none.percent, none.counts.total, none.here], ['missing', 0, 0, null]);
+    assert.deepEqual(JSON.parse(JSON.stringify(data)), data);
   });
 });

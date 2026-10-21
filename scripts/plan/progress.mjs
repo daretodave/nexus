@@ -7,8 +7,10 @@
 // (from their sizes: S 1 h, M 2.5 h, L 5 h), and the notice board's newest lines when the repo has one. Nothing is
 // written; nothing is marked seen.
 //
-//   node scripts/plan/progress.mjs [spec…] [--ref <ref>] [--all-closed]
+//   node scripts/plan/progress.mjs [spec…] [--ref <ref>] [--all-closed] [--json]
 //
+// --json prints the same specs as data instead (the GUI reads it): { at, hours, specs: [specData()] }, every closed
+// chunk listed, no notice board; `specs` is empty when no spec is named and no claim is live.
 // With no spec: the specs this session holds claims in, else every spec someone holds a live claim in. `--ref
 // origin/main` reads the plan at that ref instead of the working tree (`/heads-down` reads main just fetched, never a
 // primary checkout that may be behind). Needs git; works with no claims branch (nothing is under way then).
@@ -104,15 +106,11 @@ function whose(claim) {
 }
 
 /**
- * One spec's progress as lines. `claims`: { id: parsed claim }; `mine(claim)`: whether this session holds it;
- * `events`: claimEvents(); `now`: ms.
+ * Walk a spec's open chunks the way the view reads them: each with its claim (its own, or a long hold on the spec's
+ * number) and its kind: `here` (under way: `since` ms or null, `spent` and `left` hours), `coming` (the same loop holds
+ * it after the one under way: `in` hours), `other` (someone else's live claim or hold) or `free`.
  */
-export function render({ spec, title, closed, open, claims = {}, events = [], now = Date.now(), mine = () => false, allClosed = false }) {
-  const total = closed.length + open.length;
-  const lines = [`Spec ${spec}${title ? ` · ${title}` : ''}`, bar(closed.length, total), '-'.repeat(BAR)];
-  const shown = allClosed ? closed : closed.slice(-SHOWN_CLOSED);
-  if (shown.length < closed.length) lines.push(`- [${closed.length - shown.length} earlier closed, ${shown.length} shown]`);
-  for (const c of shown) lines.push(`- ~~${c.id} ${c.text}~~ (closed ${c.day.slice(5)})`);
+function walk({ spec, open, claims, events, now, mine }) {
   // A long hold on the spec's number holds every chunk with no claim of its own (a spec and its chunks exclude each other).
   const specHold = claims[spec]?.held ? claims[spec] : null;
   const held = open.filter((c) => claims[c.id] && ['live', 'pr'].includes(claimState(claims[c.id], now)));
@@ -122,28 +120,90 @@ export function render({ spec, title, closed, open, claims = {}, events = [], no
   const sameLoop = (c) => Boolean(hereClaim && c && c.who === hereClaim.who && c.session && c.session === hereClaim.session);
   let clock = 0;
   let after = false;
-  for (const c of open) {
+  return open.map((c) => {
     const claim = claims[c.id] ?? specHold;
-    const size = c.size ? ` (${c.size})` : '';
     if (c === here) {
       const since = startedAt(c.id, events);
       const spent = since ? (now - since) / 3_600_000 : 0;
       clock = Math.max((HOURS[c.size] ?? HOURS.M) - spent, 0.25);
-      const who = mine(claim) ? '' : `, ${whose(claim)}`;
-      lines.push(`- ${c.id} ${c.text}${size} · under way${since ? ` for about ${hours(spent)}` : ''}${claim.pr ? `, PR #${claim.pr} waiting on review` : ''}${who} <--- [here]`);
       after = true;
-      continue;
+      return { c, claim, kind: 'here', since, spent, left: clock };
     }
     if (claim && !mine(claim) && !sameLoop(claim) && (claim.held || claimState(claim, now) !== 'stale')) {
-      lines.push(`- ${c.id} ${c.text}${size} · ${claim.pr ? `PR #${claim.pr}, ` : ''}${whose(claim)}${claim === specHold ? ', the whole spec' : ''}`);
-      continue;
+      return { c, claim, kind: 'other', wholeSpec: claim === specHold };
     }
     if (after && claim && (mine(claim) || sameLoop(claim))) {
-      lines.push(`- ${c.id} ${c.text}${size} · coming up in about ${hours(clock)}`);
+      const at = clock;
       clock += HOURS[c.size] ?? HOURS.M;
-    } else lines.push(`- ${c.id} ${c.text}${size} · not claimed yet`);
+      return { c, claim, kind: 'coming', in: at };
+    }
+    return { c, claim, kind: 'free' };
+  });
+}
+
+/**
+ * One spec's progress as lines. `claims`: { id: parsed claim }; `mine(claim)`: whether this session holds it;
+ * `events`: claimEvents(); `now`: ms.
+ */
+export function render({ spec, title, closed, open, claims = {}, events = [], now = Date.now(), mine = () => false, allClosed = false }) {
+  const total = closed.length + open.length;
+  const lines = [`Spec ${spec}${title ? ` · ${title}` : ''}`, bar(closed.length, total), '-'.repeat(BAR)];
+  const shown = allClosed ? closed : closed.slice(-SHOWN_CLOSED);
+  if (shown.length < closed.length) lines.push(`- [${closed.length - shown.length} earlier closed, ${shown.length} shown]`);
+  for (const c of shown) lines.push(`- ~~${c.id} ${c.text}~~ (closed ${c.day.slice(5)})`);
+  for (const w of walk({ spec, open, claims, events, now, mine })) {
+    const { c, claim } = w;
+    const size = c.size ? ` (${c.size})` : '';
+    if (w.kind === 'here') {
+      const who = mine(claim) ? '' : `, ${whose(claim)}`;
+      lines.push(`- ${c.id} ${c.text}${size} · under way${w.since ? ` for about ${hours(w.spent)}` : ''}${claim.pr ? `, PR #${claim.pr} waiting on review` : ''}${who} <--- [here]`);
+    } else if (w.kind === 'other') {
+      lines.push(`- ${c.id} ${c.text}${size} · ${claim.pr ? `PR #${claim.pr}, ` : ''}${whose(claim)}${w.wholeSpec ? ', the whole spec' : ''}`);
+    } else if (w.kind === 'coming') lines.push(`- ${c.id} ${c.text}${size} · coming up in about ${hours(w.in)}`);
+    else lines.push(`- ${c.id} ${c.text}${size} · not claimed yet`);
   }
   return lines;
+}
+
+const round2 = (h) => Math.round(h * 100) / 100;
+
+/**
+ * One spec's progress as data, for `--json` (the GUI): what render draws, every closed chunk included. Each chunk is
+ * { id, title, size, state: closed | claimed | open, hours, closedOn, claim, underWay, comingUpIn }: `hours` is its
+ * size's estimate (null when closed), `claim` { who, mine, pr, held, wholeSpec } or null, `underWay` { since, hours,
+ * left } on the chunk marked here, `comingUpIn` hours on the ones the same loop holds after it. A chunk is claimed
+ * when a live claim, an open PR or a hold names it (or holds its whole spec); a stale claim leaves it open.
+ */
+export function specData({ spec, title = '', file = null, closed, open, claims = {}, events = [], now = Date.now(), mine = () => false }) {
+  const chunks = closed.map((c) => ({ id: c.id, title: c.text, size: null, state: 'closed', hours: null, closedOn: c.day, claim: null, underWay: null, comingUpIn: null }));
+  for (const w of walk({ spec, open, claims, events, now, mine })) {
+    const { c, claim } = w;
+    const live = Boolean(claim && (claim.held || claimState(claim, now) !== 'stale'));
+    chunks.push({
+      id: c.id,
+      title: c.text,
+      size: c.size,
+      state: live ? 'claimed' : 'open',
+      hours: HOURS[c.size] ?? HOURS.M,
+      closedOn: null,
+      claim: live ? { who: claim.who, mine: mine(claim), pr: claim.pr ?? null, held: claim.held || null, wholeSpec: Boolean(w.wholeSpec) } : null,
+      underWay: w.kind === 'here' ? { since: w.since ? new Date(w.since).toISOString() : null, hours: round2(w.spent), left: round2(w.left) } : null,
+      comingUpIn: w.kind === 'coming' ? round2(w.in) : null,
+    });
+  }
+  const count = (state) => chunks.filter((c) => c.state === state).length;
+  const total = chunks.length;
+  return {
+    spec,
+    title,
+    file,
+    status: total ? 'chunked' : file ? 'unchunked' : 'missing',
+    counts: { closed: count('closed'), claimed: count('claimed'), open: count('open'), total },
+    percent: total ? Math.round((count('closed') / total) * 100) : 0,
+    hoursLeft: chunks.reduce((sum, c) => sum + (c.hours ?? 0), 0),
+    here: chunks.find((c) => c.underWay)?.id ?? null,
+    chunks,
+  };
 }
 
 function git(args, cwd) {
@@ -171,10 +231,11 @@ async function main(argv) {
   const at = argv.indexOf('--ref');
   const ref = at >= 0 ? argv[at + 1] : null;
   if (at >= 0 && !ref) {
-    console.error('usage: node scripts/plan/progress.mjs [spec…] [--ref <ref>] [--all-closed]');
+    console.error('usage: node scripts/plan/progress.mjs [spec…] [--ref <ref>] [--all-closed] [--json]');
     return 64;
   }
   const allClosed = argv.includes('--all-closed');
+  const json = argv.includes('--json');
   const asked = argv.filter((a, i) => /^\d{2,}$/.test(a) && argv[i - 1] !== '--ref');
   // The claims module is optional: without it (or its branch), nothing is under way and every chunk is unclaimed.
   let claims = {};
@@ -197,6 +258,10 @@ async function main(argv) {
   const pool = live.some(([, c]) => mine(c)) ? live.filter(([, c]) => mine(c)) : live;
   const specs = asked.length ? asked : [...new Set(pool.map(([id]) => id.split('.')[0]))].sort();
   if (!specs.length) {
+    if (json) {
+      console.log(JSON.stringify({ at: new Date(now).toISOString(), hours: HOURS, specs: [] }, null, 2));
+      return 0;
+    }
     console.log('progress: no spec named and no live claim: node scripts/plan/progress.mjs <spec number>');
     return 0;
   }
@@ -206,17 +271,26 @@ async function main(argv) {
   // A close waiting in plan/pending/ is closed already; settle only writes it down.
   const withPending = `${archive.replace(/\n*$/, '\n')}${pendingArchiveLines(plan.pending()).join('\n')}\n`;
   const out = [];
+  const data = [];
   for (const spec of specs) {
     const file = names.find((n) => n.startsWith(`${spec}-`) && n.endsWith('.md'));
     const text = file ? plan.read(file) : '';
     const title = short((/^# \d{2,}\s*[—·-]\s*(.*)$/m.exec(text)?.[1] ?? '').trim());
     const closed = closedChunks(withPending, spec);
     const open = openChunks(text).filter((c) => !closed.some((x) => x.id === c.id));
+    if (json) {
+      data.push(specData({ spec, title, file: file ?? null, closed, open, claims, events, now, mine }));
+      continue;
+    }
     if (!closed.length && !open.length) {
       out.push(`Spec ${spec}${title ? ` · ${title}` : ''}: ${file ? 'not chunked yet (its first /next chunks it)' : 'no such spec in plan/ or ARCHIVE.md'}`, '');
       continue;
     }
     out.push(...render({ spec, title, closed, open, claims, events, now, mine, allClosed }), '');
+  }
+  if (json) {
+    console.log(JSON.stringify({ at: new Date(now).toISOString(), hours: HOURS, specs: data }, null, 2));
+    return 0;
   }
   // The notice board, when the repo has one (an untracked .announcements.md at the root): its newest lines, as is.
   const board = path.join(cwd, '.announcements.md');

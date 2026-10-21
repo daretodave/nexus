@@ -107,7 +107,7 @@ templates/
 │   ├── plan/settled.mjs               (the plan as it reads once pending edits settle, in memory)
 │   ├── plan/config.mjs                (what settle may differ on per repo; overrides in plan/settle.json)
 │   ├── plan/footguns.mjs              (the footgun list's format and budget lint)
-│   ├── plan/progress.mjs              (ASCII progress per spec: the bar, closed struck, <--- [here], ETAs from sizes)
+│   ├── plan/progress.mjs              (ASCII progress per spec: the bar, closed struck, <--- [here], ETAs from sizes; --json for a GUI)
 │   ├── plan/order.mjs                 (the plan in /next's pick order, simulated: /plot's before and after, the GUI's next up)
 │   ├── claims-codec.mjs               (the claims rules as pure functions: any claimant imports them)
 │   ├── claims.mjs                     (who builds what: the orphan claims branch, compare-and-swap; --json)
