@@ -235,6 +235,74 @@ describe('the settle run', () => {
     assert.equal(commitRange(r.dir, 'plan/pending/07.5.md'), `${b1}..${fix}`);
   });
 
+  it('archives back-to-back closes in one worktree with ranges that never cross: close, settle, the next chunk', async () => {
+    const r = repo();
+    const { commitRange } = await import(pathToFileURL(SETTLE).href);
+    const step = (file, text, msg) => {
+      r.put(file, text);
+      r.git('add', '-A');
+      r.git('commit', '-q', '-m', msg);
+      return r.git('rev-parse', 'HEAD').slice(0, 8);
+    };
+    // The 07.3 close the repo starts with, then its settle; then 07.4 built and closed.
+    step('plan/ARCHIVE.md', '# Archive\n\n- 2000-10-14 · 07.3 · Where an office is · x\n', 'plan: settle 07.3');
+    r.git('rm', '-q', 'plan/pending/07.3.md');
+    r.git('commit', '-q', '--amend', '--no-edit');
+    const b1 = step('b.txt', 'b\n', 'feat: b (07.4)');
+    const b2 = step('b.txt', 'b2\n', 'docs: b (07.4)');
+    step('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2000-10-15\nsays: B\n---\n', 'plan: close 07.4');
+    assert.equal(commitRange(r.dir, 'plan/pending/07.4.md'), `${b1}..${b2}`);
+  });
+
+  it('archives back-to-back closes in one run, no settle between, each with only its own commits', async () => {
+    const r = repo();
+    const { commitRange } = await import(pathToFileURL(SETTLE).href);
+    const step = (file, text, msg) => {
+      r.put(file, text);
+      r.git('add', '-A');
+      r.git('commit', '-q', '-m', msg);
+      return r.git('rev-parse', 'HEAD').slice(0, 8);
+    };
+    const a1 = step('a.txt', 'a\n', 'feat: a (07.4)');
+    step('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2000-10-15\nsays: A\n---\n', 'plan: close 07.4');
+    const b1 = step('b.txt', 'b\n', 'feat: b (07.5)');
+    const b2 = step('b.txt', 'b2\n', 'fix: b (07.5)');
+    step('plan/pending/07.5.md', '---\nclose: 07.5\ndate: 2000-10-15\nsays: B\n---\n', 'plan: close 07.5');
+    assert.equal(commitRange(r.dir, 'plan/pending/07.4.md'), `${a1}..${a1}`);
+    assert.equal(commitRange(r.dir, 'plan/pending/07.5.md'), `${b1}..${b2}`);
+  });
+
+  it('leaves the plot commit out of every range: /plot ... and do, on main and through a pull request', async () => {
+    const r = repo();
+    const { commitRange } = await import(pathToFileURL(SETTLE).href);
+    const step = (files, msg) => {
+      for (const [file, text] of Object.entries(files)) r.put(file, text);
+      r.git('add', '-A');
+      r.git('commit', '-q', '-m', msg);
+      return r.git('rev-parse', 'HEAD').slice(0, 8);
+    };
+    // On main: the plot writes its new spec and its pending file, then the chunk's work, then its close.
+    const plot = {
+      'plan/08-maps.md': '# 08 — Maps\n\n## Chunks\n\n- [ ] **08.1** A map · S · closes A1 · needs —\n',
+      'plan/pending/plot-maps.md': '---\ndate: 2000-10-15\n---\n## Edit plan/README.md\n~~~ old\n- (none)\n~~~\n~~~ new\n- (none)\n- 08.1\n~~~\n',
+    };
+    step(plot, 'plan: plot spec 08, maps');
+    const w1 = step({ 'map.txt': 'map\n' }, 'feat: a map (08.1)');
+    step({ 'plan/pending/08.1.md': '---\nclose: 08.1\ndate: 2000-10-15\nsays: A map\n---\n' }, 'plan: close 08.1');
+    assert.equal(commitRange(r.dir, 'plan/pending/08.1.md'), `${w1}..${w1}`);
+    // An Add to an open spec, plotted on a branch with its work and close, merged as one pull request.
+    r.git('checkout', '-q', '-b', 'plot/zip');
+    step({
+      'plan/09-zip.md': '# 09 — Zip\n',
+      'plan/pending/plot-zip.md': '---\ndate: 2000-10-16\n---\n## Add plan/07-search.md\n~~~ chunks\n- [ ] **07.?zip** Zip · S · closes A6 · needs —\n~~~\n',
+    }, 'plan: plot zip');
+    const z1 = step({ 'zip.txt': 'zip\n' }, 'feat: zip');
+    step({ 'plan/pending/07.6.md': '---\nclose: 07.6\ndate: 2000-10-16\nsays: Zip\n---\n' }, 'plan: close 07.6');
+    r.git('checkout', '-q', 'main');
+    r.git('merge', '-q', '--no-ff', '-m', 'Merge plot/zip', 'plot/zip');
+    assert.equal(commitRange(r.dir, 'plan/pending/07.6.md'), `${z1}..${z1}`);
+  });
+
   it('sees a worktree of the owner\'s checkout as the owner\'s', async () => {
     const r = repo();
     r.put('.owner', '');

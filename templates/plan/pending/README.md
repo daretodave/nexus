@@ -59,10 +59,11 @@ the empty copy (locked in Design)
 - `close`, `date`, `says` (ten words or fewer, what now works):
   the close's archive line. `commits` is optional: settle
   reads the range from git (the pull request's merge, split
-  per close in a package; or the commits pushed before the
-  pending file, back to the last settle, close or archive
-  write, and the pending file's own commit when it carries
-  work too).
+  per close or plot in a package; or the commits pushed
+  before the pending file, back to the last settle, close,
+  plot or archive write, and the pending file's own commit
+  when it carries work too). A plot's commit is in no
+  chunk's range.
 - Settle itself takes the chunk line, its sub-bullets and the
   A-IDs it closes out of the spec, keeps the Measure line and
   the roadmap's `N left` true, and takes the chunk out of the

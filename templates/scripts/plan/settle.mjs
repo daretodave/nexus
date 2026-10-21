@@ -909,10 +909,28 @@ function closesIn(cwd, h, names = git(['show', '--name-only', '--format=', h], c
 }
 
 /**
+ * Whether commit `h` writes a pending file that adds work (a plot, an `## Add`, an edit of the roadmap): a plot commit,
+ * which belongs to no chunk.
+ */
+function plotsIn(cwd, h, names = git(['show', '--name-only', '--format=', h], cwd).split('\n').filter(Boolean)) {
+  return names.some((n) => {
+    if (!n.startsWith('plan/pending/') || n === 'plan/pending/README.md') return false;
+    if (/^plot-/.test(path.basename(n))) return true;
+    try {
+      return /^## (Add |Edit plan\/README\.md[ \t]*$)/m.test(git(['show', `${h}:${n}`], cwd));
+    } catch {
+      return false;
+    }
+  });
+}
+
+/**
  * The chunk's own commits as the archive writes them (`first..last`, 8 characters): through a pull request, the merge's
  * branch side; pushed straight to main, the first-parent run back from the pending file's commit to the last merge,
  * settle, other pending close or archive write (a close made before the repo settled, so a first settle never reaches
- * back across old history). The pending file's own commit counts when it carries work too, or when nothing else does.
+ * back across old history). A plot commit (plotsIn) bounds the run as a close does and is in no chunk's range, so
+ * back-to-back chunks in one worktree, and a `/plot ... and do`, never get ranges that cross. The pending file's own
+ * commit counts when it carries work too, or when nothing else does.
  */
 export function commitRange(cwd, file) {
   const c = git(['log', '-1', '--diff-filter=A', '--format=%H', '--', file], cwd);
@@ -926,9 +944,9 @@ export function commitRange(cwd, file) {
     const brought = new Set(git(['rev-list', '--merges', '--ancestry-path', `${c}..HEAD`], cwd).split('\n').filter(Boolean));
     const merge = git(['rev-list', '--first-parent', '--merges', 'HEAD'], cwd).split('\n').filter((h) => brought.has(h)).at(-1);
     if (merge) list = git(['rev-list', '--no-merges', '--topo-order', '--reverse', `${merge}^1..${merge}^2`], cwd).split('\n').filter(Boolean);
-    // A package (one pull request, several closes): this chunk's run is the commits after the close before it, through
-    // its own close, plus the review fixes after it when it is the branch's last close.
-    const closes = list.map((h, i) => [h, i]).filter(([h]) => h !== c && closesIn(cwd, h));
+    // A package (one pull request, several closes): this chunk's run is the commits after the close (or plot) before
+    // it, through its own close, plus the review fixes after it when it is the branch's last close.
+    const closes = list.map((h, i) => [h, i]).filter(([h]) => h !== c && (closesIn(cwd, h) || plotsIn(cwd, h)));
     const at = list.indexOf(c);
     if (at >= 0 && closes.length) {
       const before = closes.filter(([, i]) => i < at).at(-1)?.[1] ?? -1;
@@ -948,6 +966,8 @@ export function commitRange(cwd, file) {
       if (names.includes('plan/ARCHIVE.md')) break;
       // Another chunk's close bounds the run; a lone pending file (a decision, a footgun, an archive fix) is this run's.
       if (closesIn(cwd, h, names)) break;
+      // A plot (its spec and pending file, a re-quote of its row) is no chunk's: it bounds the run as a close does.
+      if (plotsIn(cwd, h, names)) break;
       list.unshift(h);
     }
     // The close's own commit is work too when it touches more than plan/pending/ (the work and its close in one).
