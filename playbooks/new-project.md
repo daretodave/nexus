@@ -421,6 +421,11 @@ runs it to arm `pnpm verify` as pre-commit and the push
 policy as pre-push (§2's mode choice;
 [`owner-mode.md`](./owner-mode.md)).
 
+`scripts/upgrade-plan.mjs` + `scripts/__tests__/upgrade-plan.test.mjs`
++ `scripts/__tests__/upgrade-plan-run.test.mjs` go in every new
+project: the script converts a v1 plan, which a new project never
+has, and [`upgrade.md`](./upgrade.md) runs it from nexus anyway.
+
 Each command file opens with "Read `skills/<name>.md` end to
 end before touching anything else" — leaving it behind after
 removing its skill leaves a dead pointer, the same
@@ -429,15 +434,16 @@ presence-is-misleading problem as leaving the skill itself.
 Example for a `Surface: service` project with `Structured data:
 none`, no UGC, no cloud loop, no `/bootstrap`, `Auth: none`, no
 hermetic e2e, and not running the loop on Claude Code — none
-of the nine apply, so remove them all, including their
-`agents.md` rows:
+of the nine apply, so remove them all (and the converter),
+including their `agents.md` rows:
 
 ```bash
 rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
       skills/ship-asset.md .claude/agents/brander.md skills/moderate.md \
       skills/digest.md skills/bootstrap.md scripts/bootstrap.mjs \
       scripts/refresh-critique-session.mjs scripts/check-secrets-liveness.mjs \
-      scripts/stack-lifecycle.mjs \
+      scripts/stack-lifecycle.mjs scripts/upgrade-plan.mjs \
+      scripts/__tests__/upgrade-plan.test.mjs scripts/__tests__/upgrade-plan-run.test.mjs \
       .claude/settings.json .claude/hooks/guard.mjs .claude/CLAUDE.md \
       scripts/notify.mjs \
       .claude/commands/ship-data.md .claude/commands/ship-migration.md \
@@ -458,7 +464,8 @@ Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migra
   scripts\lint-migration.mjs, skills\ship-asset.md, .claude\agents\brander.md, skills\moderate.md, `
   skills\digest.md, skills\bootstrap.md, scripts\bootstrap.mjs, `
   scripts\refresh-critique-session.mjs, scripts\check-secrets-liveness.mjs, `
-  scripts\stack-lifecycle.mjs, `
+  scripts\stack-lifecycle.mjs, scripts\upgrade-plan.mjs, `
+  scripts\__tests__\upgrade-plan.test.mjs, scripts\__tests__\upgrade-plan-run.test.mjs, `
   .claude\settings.json, .claude\hooks\guard.mjs, .claude\CLAUDE.md, `
   scripts\notify.mjs, `
   .claude\commands\ship-data.md, .claude\commands\ship-migration.md, `
