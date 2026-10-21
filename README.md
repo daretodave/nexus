@@ -1,39 +1,97 @@
 # nexus
 
-Nexus is a methodology + template kit that turns a repo into a
-project that ships itself. You write a spec; nexus gives you a
-small set of slash commands (`/ship-a-chunk`, `/iterate`,
-`/critique`, `/triage`, `/march`) that read your spec, ship a
-slice, run the verify gate, push, watch the deploy, and
-iterate. Run it manually for an evening; let it loop for a
-weekend; come back to a working product. Stack-agnostic, AI
-client-agnostic, $0 marginal on Claude Pro/Max + a public repo.
+> Turn a repo into a project that ships itself. You write a
+> spec; nexus breaks it into chunks and gives your agent the
+> verbs to build them one at a time: pick, build, gate,
+> commit, push. Run one by hand tonight; loop it over the
+> weekend. Stack-agnostic, agent-agnostic, $0 marginal on
+> Claude Pro/Max and a public repo.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)](https://claude.com/claude-code)
+[![npm: @usenexus/cli](https://img.shields.io/npm/v/@usenexus/cli?label=npx%20%40usenexus%2Fcli)](https://www.npmjs.com/package/@usenexus/cli)
 [![Status: stable](https://img.shields.io/badge/status-stable-success)](#)
 [![Methodology + templates](https://img.shields.io/badge/kind-methodology%20%2B%20templates-lightgrey)](#)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](./CONTRIBUTING.md)
 
-> A methodology + template kit for turning any repo into an
-> **autonomous beast** — a project that ships itself end-to-end
-> through a small set of slash commands, supervises its own
-> deploys, observes its own output, and addresses its own
-> feedback. From "I drive every commit" to "leave it for 80
-> hours and come back to a working product."
+## Three doors in
 
-This kit is extracted from two real projects (tickpedia, thock)
-that operate this way. It is not theory; everything in here was
-shipped, broken, and refined in real codebases.
+Pick one. Each ends in the same place: your repo adopted, a
+plan of chunks, and `/next` ready to build the first.
 
-**Run it on your laptop, in the cloud, or both.** The base kit
-is local-only — `/loop /march` runs in your Claude Code session.
-An opt-in workflow (`playbooks/cloud-loop.md`) puts the same
-loop on GitHub Actions for unattended ticks while you're away.
-$0 marginal on Claude Pro/Max + a public repo.
+### 1. Using Claude Code? A GUI on us, free.
 
-<img width="1280" height="794" alt="WALK_AWAY" src="https://github.com/user-attachments/assets/9076088d-01ee-4720-aa10-b393b8dd4076" />
+```bash
+npx @usenexus/cli
+```
 
+Run it at your project's root. It starts a local server on
+`127.0.0.1`, opens your browser, and drives your own Claude
+Code login: no API key, no account. It adopts nexus if the
+repo is new, then opens a live cockpit per session
+([`packages/cli`](./packages/cli/README.md)).
+
+### 2. Any other agent? Give it this prompt.
+
+Paste it at your project's root, in Cursor, Codex, Claude Code
+without the GUI, or any agent that can read files and run git:
+
+```
+Clone https://github.com/daretodave/nexus.git to
+../nexus (or use ./.nexus if submoduled) if you haven't
+already, then read and follow ../nexus/prompts/adopt.md
+exactly, in order. Do not skip steps or invent scope beyond
+what it says.
+```
+
+What it authorizes, in full: [`prompts/adopt.md`](./prompts/adopt.md).
+More detail, and what to expect back:
+[below](#tldr--clone--delegate-the-adoption). A pitch but no
+spec yet? [Start from the pitch](#tldr--i-have-a-pitch-no-spec-yet).
+
+### 3. By hand? Follow a playbook.
+
+- [`playbooks/new-project.md`](./playbooks/new-project.md):
+  greenfield, a spec and an empty repo.
+- [`playbooks/existing-project.md`](./playbooks/existing-project.md):
+  brownfield, a loop laid over code that already works.
+
+Ten minutes to read each; [Pick a playbook](#pick-a-playbook)
+routes the rest (no spec yet, polyrepo, cloud loop).
+
+---
+
+## How it works
+
+![The plan shape: a spec ends in chunks, each chunk closes acceptance IDs, a finished chunk leaves the plan as one archive line](./assets/plan-shape.svg)
+
+**The plan.** Each spec under `plan/` says what to build and
+how you'll know it's done (acceptance IDs: `A1`, `A2`, never
+renumbered), and ends in chunks: S, M or L, one session at
+most. A finished chunk leaves the plan as one line in
+`plan/ARCHIVE.md`. The plan only shrinks; progress is what is
+left. See [`concepts/plan-shape.md`](./concepts/plan-shape.md).
+
+![The loop: /next builds one chunk and stops; /heads-down asks every question up front, then builds many; /march runs one tick per interval](./assets/loop.svg)
+
+**The verbs.** `/next` builds one chunk fully and stops.
+`/heads-down` asks every question first, claims a list, then
+runs `/next` through it on defaults. `/march` is the timed
+dispatcher: `/loop 45m /march` on your laptop, or the cloud
+loop on GitHub Actions. Work gets into the plan through
+`/plot` (a task, with its place in line), `/bug` (reproduce,
+fix or plot) and `/messy` (a raw dump, refined into specs);
+`/oversight` is where you steer.
+
+![How work lands: owner mode pushes main; contributor mode opens a pull request on next/<id>; both end on origin/main](./assets/landing.svg)
+
+**Owner mode.** The checkout decides how a chunk lands. The
+owner's (an untracked `.owner` file) pushes main and settles
+plan changes; every other checkout opens one pull request per
+chunk on `next/<id>`, its plan changes in `plan/pending/`. See
+[`playbooks/owner-mode.md`](./playbooks/owner-mode.md).
+
+---
 
 ## A single `/march` tick, at a glance
 
@@ -43,10 +101,10 @@ $ /march
   Triage:   0 unlabeled issues — humming on.
   Critique: deferred (4 of 12 commits since last pass).
   Expand:   not due (12 of 20 commits; deliveries first).
-  Dispatch: ready chunk → /ship-a-chunk, 08.3 (M · closes A4, A5).
+  Dispatch: ready chunk → /next top, 08.3 (M · closes A4, A5).
 
-      1   Read spec 08, chunk 08.3
-      2   Build 7 components + 3 helpers
+      1   Claim 08.3; read spec 08
+      2   Builder: 7 components + 3 helpers, in a worktree
       3   Tests:  12 unit, 2 e2e
       4   pnpm verify   ·  typecheck · test · validate · build · e2e   ✓
       5   Close 08.3 + commit + push  (a3f1e2c)
@@ -58,35 +116,31 @@ $ /march
 (Triage/Critique/Expand/Dispatch are the slash commands in
 [What you get](#what-you-get), below.)
 
-Each tick: one decision, one slice of work, one verify, one
-commit, one push, one deploy confirmation. Repeat under `/loop`
-for hours or days.
+Each tick: one decision, one chunk, one verify, one commit,
+one push, one deploy confirmation. Repeat under `/loop` for
+hours or days, or put the same loop on GitHub Actions
+([`playbooks/cloud-loop.md`](./playbooks/cloud-loop.md)) to
+tick while your laptop is closed.
 
-→ [TL;DR — clone + delegate the adoption](#tldr--clone--delegate-the-adoption) (skip the playbook, hand it to your agent)
-→ [TL;DR — I have a pitch, no spec yet](#tldr--i-have-a-pitch-no-spec-yet) (pre-spec interview, then adoption)
+<img width="1280" height="794" alt="WALK_AWAY" src="https://github.com/user-attachments/assets/9076088d-01ee-4720-aa10-b393b8dd4076" />
 
 ---
 
 ## TL;DR — clone + delegate the adoption
 
-> Use this if you already have a `spec.md`. If you only have
-> a verbal pitch, jump down to
+> Door 2 in detail. Use this if you already have a `spec.md`.
+> If you only have a verbal pitch, jump down to
 > [TL;DR — I have a pitch, no spec yet](#tldr--i-have-a-pitch-no-spec-yet).
-
-If you'd rather have an agent do the adoption work for you,
-clone nexus next to your repo and paste the prompt below into
-Claude Code (or Cursor, or any capable agent) at your project's
-root.
 
 ### 1. Clone
 
-Replace `<your-fork-or-mirror>` below with wherever you forked
-or mirrored nexus (e.g. `github.com/you/nexus`):
+Clone nexus next to your project (or your fork of it: swap the
+URL here and in the prompt below):
 
 ```bash
 # Sibling layout — recommended
 cd <parent-of-your-project>
-git clone https://github.com/<your-fork-or-mirror>/nexus.git nexus
+git clone https://github.com/daretodave/nexus.git nexus
 ls
 # my-project/   nexus/
 ```
@@ -97,20 +151,10 @@ nexus root throughout.)
 
 ### 2. Hand it to your agent
 
-Paste this at your project's root (where `git status` shows
-your repo) — swap `<your-fork-or-mirror>` for the URL you
-cloned in step 1:
-
-```
-Clone https://github.com/<your-fork-or-mirror>/nexus.git to
-../nexus (or use ./.nexus if submoduled) if you haven't
-already, then read and follow ../nexus/prompts/adopt.md
-exactly, in order. Do not skip steps or invent scope beyond
-what it says.
-```
-
+Paste the prompt from [door 2](#2-any-other-agent-give-it-this-prompt)
+at your project's root (where `git status` shows your repo).
 The full instruction set your agent follows lives in
-[`prompts/adopt.md`](./prompts/adopt.md) — read it yourself
+[`prompts/adopt.md`](./prompts/adopt.md); read it yourself
 first if you want to know exactly what you're authorizing.
 (See [`prompts/README.md`](./prompts/README.md) for what lives
 in that directory and why.)
@@ -131,9 +175,9 @@ When the agent returns, expect:
 
 Read the diff. Resolve the `[needs-user-call]` rows by editing
 the relevant files (or running `/oversight`). Populate `.env`
-with your tokens. **Then run `/ship-a-chunk` for the first
-time** — manually, level 0 of the intervention spectrum. Don't
-skip to `/loop /march`.
+with your tokens. **Then run `/next` for the first time** —
+by hand, level 0 of the intervention spectrum. Don't skip to
+`/loop /march`.
 
 ### When this TL;DR is the wrong path
 
@@ -158,11 +202,10 @@ keystrokes." The playbooks are for everyone else.
 > adoption flow above. End-to-end in one paste.
 
 Paste this at your project's root (where `git init` has run
-but there's nothing else yet) — swap `<your-fork-or-mirror>`
-for wherever you forked or mirrored nexus:
+but there's nothing else yet); swap the URL if you use a fork:
 
 ```
-Clone https://github.com/<your-fork-or-mirror>/nexus.git to
+Clone https://github.com/daretodave/nexus.git to
 ../nexus (or use ./.nexus if submoduled) if you haven't
 already, then read and follow ../nexus/prompts/pitch.md
 exactly, in order.
@@ -184,31 +227,47 @@ invent product direction for you.
 
 ## What you get
 
-A small family of slash commands the autonomous loop uses:
+The verbs you reach for:
 
 | Command | Job |
 |---|---|
-| `/ship-a-chunk` | Ship one chunk of the plan end-to-end (code, tests, close, commit, push). |
-| `/ship-data` | Add or repair one record in the GitHub-as-DB (optional — only for projects with structured data; see [`customization/data-layer.md`](./customization/data-layer.md)). |
-| `/ship-migration` | Ship one database migration — additive only, enforced by a linter; destructive changes escalate to `/oversight` (optional — only for `pure-db` / `hybrid-with-managed-postgres` projects). |
-| `/plan-a-spec` | Write, refine or chunk one spec without shipping code. |
-| `/iterate` | Audit the project, ship one improvement. The post-build endgame. |
+| `/next` | One chunk, done fully: pick the first ready chunk, claim it, build it (a delegated builder), gate, close, land per owner mode. |
+| `/heads-down` | Every question up front, then a claimed list of chunks built one `/next` after another, on defaults, with ASCII progress. |
+| `/plot` | Put a task into the plan with its place in line (`asap`, `anytime`, or worked out); `and do` builds it now. |
+| `/bug` | Report a bug (a screenshot welcome). Reproduced, then fixed now if it is small, otherwise plotted. |
+| `/messy` | Dump messy thoughts. Kept raw (untracked), clustered into themes, refined into specs. |
+| `/oversight` | **The general-purpose interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote candidates into specs. |
+| `/jot` | **The user's quickfire.** Drop a free-text observation into `plan/CRITIQUE.md` and push, in seconds. The next `/iterate` tick scores it (with a `+0.5` user-source bump) and ships the fix. No questions back. |
+
+The loop's own verbs, dispatched by `/march` or run by hand:
+
+| Command | Job |
+|---|---|
+| `/march` | Outer dispatcher, the autonomous entry point: triage → critique → chunk → data → expand → iterate. |
+| `/iterate` | Audit the project, ship one improvement. The endgame once the plan is empty. |
 | `/critique` | External-observer pass — visit the live site as a stranger, file fresh-eyes findings. |
 | `/triage` | Read open GitHub issues, classify, label, route into the address loop. |
-| `/expand` | Plan-expansion pass — read signals (audit, critique, spec drift, design landings, data growth) and propose new candidates (future specs). [Posture-gated](./templates/plan/bearings.md#plan-expansion-posture): **bold** by default, **strict** to opt out. |
-| `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → chunk → data → expand → iterate. |
-| `/digest` | **The night shift.** Daily tick: writes the morning briefing to `plan/DIGEST.md`, runs breadth checks too slow for the per-commit path, proposes gate tunings as candidates (never applies them). Own workflow (`night.yml`), never dispatched by `/march`. |
-| `/jot` | **The user's quickfire.** Drop a free-text observation into `plan/CRITIQUE.md` and push, in seconds. The next `/iterate` tick scores it (with a `+0.5` user-source bump) against everything else and ships the fix. No questions back; same shape as `/ship-data add` — input via the slash arg. |
-| `/oversight` | **The general-purpose interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote candidates into specs. |
+| `/expand` | Read signals (audit, critique, spec drift, design landings, data growth) and propose candidate specs. [Posture-gated](./templates/plan/bearings.md#plan-expansion-posture): **bold** by default, **strict** to opt out. |
+| `/digest` | **The night shift.** Daily: writes the morning briefing to `plan/DIGEST.md`, runs breadth checks too slow for the per-commit path, proposes gate tunings as candidates (never applies them). Own workflow (`night.yml`), never dispatched by `/march`. |
+| `/tidy` | Clear claims nobody is working on; offer to close idle worktrees and delete merged branches. |
+| `/rebooting` | The reboot train (with `/reboot-ready`, `/reboot-resume`): park every running loop, then resume each from its ledger. |
+
+The building blocks underneath, some optional:
+
+| Command | Job |
+|---|---|
+| `/ship-a-chunk` | The build steps for one chunk (code, tests, close) that `/next`'s builder follows. |
+| `/plan-a-spec` | Write, refine or chunk one spec without shipping code. |
+| `/ship-data` | Add or repair one record in the GitHub-as-DB (optional — only for projects with structured data; see [`customization/data-layer.md`](./customization/data-layer.md)). |
+| `/ship-migration` | Ship one database migration — additive only, enforced by a linter; destructive changes escalate to `/oversight` (optional — only for `pure-db` / `hybrid-with-managed-postgres` projects). |
 | `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets. State-aware, idempotent, never destructive. Carries its own narrow `AskUserQuestion` exception for token collection and destructive-action confirmation. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
 
-Plus one **opt-in** demand-pull skill for projects with
-`Surface: site` / `hybrid` that need to render brand assets
-(see [`customization/branding.md`](./customization/branding.md)):
+Plus two **opt-in** demand-pull skills for projects that need
+them:
 
 | Opt-in command | Job |
 |---|---|
-| `/ship-asset` | Render and ship one brand asset (OG image, favicon, social card, SVG → PNG, wordmark variant). Demand-pull only — drains asset findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. Same shape as `/ship-data`: omit the file if not adopting. |
+| `/ship-asset` | Render and ship one brand asset (OG image, favicon, social card, SVG → PNG, wordmark variant), for `Surface: site` / `hybrid` (see [`customization/branding.md`](./customization/branding.md)). Demand-pull only — drains asset findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. Omit the file if not adopting. |
 | `/moderate` | Drain the four moderation queues (`held`/`flagged`/`new-account`/`appeal`) one item per tick — approve/hide is loop-drainable, delete/ban always escalates to `/oversight`. Adopt only for UGC projects (see [`customization/moderation-loop.md`](./customization/moderation-loop.md)); omit the file otherwise. |
 
 Plus specialist sub-agents the main agent delegates to: `scout`
@@ -233,10 +292,12 @@ phone instead of waiting to be discovered. See
 and the walk-away runbook,
 [`playbooks/hands-off.md`](./playbooks/hands-off.md).
 
-Two state files that capture intent across context loss:
+State files that carry intent across context loss:
 - `plan/README.md` + the specs — what's left to build, as
   chunks with acceptance IDs (the plan only shrinks; see
-  [`concepts/plan-shape.md`](./concepts/plan-shape.md))
+  [`concepts/plan-shape.md`](./concepts/plan-shape.md));
+  `plan/pending/` holds plan changes waiting for the owner's
+  settle, and the claims branch says who builds which chunk
 - `plan/AUDIT.md` (+ `data/BACKLOG.md` + `plan/CRITIQUE.md`) —
   queues the loop drains
 
@@ -270,7 +331,9 @@ You **don't** want this when:
 
 ---
 
-## Three paths to start
+## Pick a playbook
+
+Door 3, routed:
 
 ```mermaid
 flowchart LR
@@ -282,7 +345,7 @@ flowchart LR
   presp --> green
   green --> brown_check{Existing repo with code?}
   brown_check -- yes --> brown
-  brown_check -- no --> ship[/ship-a-chunk manually for the first time/]
+  brown_check -- no --> ship["/next by hand, the first time"]
 ```
 
 ### → [`playbooks/pre-spec.md`](./playbooks/pre-spec.md)
@@ -299,9 +362,9 @@ the top of the playbook. Output feeds straight into
 
 Greenfield. You have a `spec.md` and an empty (or near-empty)
 repo. This walks you through the substrate — bearings, a
-roadmap with two starter specs, design exports landing pad, the
-skill set — and ends with you running `/ship-a-chunk` for
-the first time.
+plan with two starter specs, design exports landing pad, the
+skill set — and ends with you running `/next` for the first
+time.
 
 ### → [`playbooks/existing-project.md`](./playbooks/existing-project.md)
 
@@ -384,11 +447,11 @@ for the full ladder; the short version:
 
 | Level | What you do | What the loop does |
 |---|---|---|
-| **0 — Manual** | Run individual slash commands by hand. Review every diff. | Ships exactly what you ask, one chunk at a time. |
+| **0 — Manual** | Run `/next` (or any slash command) by hand. Review every diff. | Ships exactly what you ask, one chunk at a time. |
 | **1 — Supervised** | `/march` once. Review the diff. `/march` again. | One tick at a time, attended. |
-| **2 — Loop, attended** | `/loop 30m /march`. Stay around. | Ticks every 30m. You can see deploys, intervene with `/oversight`. |
+| **2 — Loop, attended** | `/heads-down` over a claimed list, or `/loop 30m /march`. Stay around. | Ticks every 30m. You can see deploys, intervene with `/oversight`. |
 | **3 — Loop, unattended** | `/loop 30m /march`. Walk away. | Hours of autonomous work. Deploy gate + audit trail keep it honest. |
-| **4 — 80-hour beast** | Same. Come back days later. | Every spec archived, transitioned to `/iterate`. The site iterates itself. |
+| **4 — 80-hour beast** | Same. Come back days later. | Every chunk archived, the plan empty, `/iterate` carrying the load. The site iterates itself. |
 
 Levels 3–4 require:
 - A green deploy gate is reachable (auth token + hosting wired).
@@ -443,7 +506,7 @@ nexus/
 │   ├── cloud-loop-existing-actions.md # adding it beside your own Actions and local workflow (the GUI's checklist)
 │   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
 │   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
-│   ├── upgrade.md                     # v1 (phases) → v2 (specs + chunks); pin with plan/nexus.lock
+│   ├── upgrade.md                     # an older plan shape → specs + chunks; pin with plan/nexus.lock
 │   ├── owner-mode.md                  # how work lands: .owner pushes main + settles, else next/<id> PRs; rulesets
 │   ├── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos
 │   └── workspace.md                   # variant: un-versioned root + org-per-project, past two repos
@@ -477,11 +540,11 @@ nexus/
 │   ├── messy.md                       # /messy — a raw dump into specs (the GUI's explode)
 │   ├── tidy.md                        # /tidy — clear dead claims, close idle worktrees (worktree.mjs)
 │   ├── rebooting.md                   # /rebooting, /reboot-ready, /reboot-resume — the reboot train
-│   ├── march.md                       # + ship-a-chunk, iterate, critique (dry-run adoption),
+│   ├── march.md                       # + ship-a-chunk (/next's build steps), iterate, critique,
 │   │                                  #   triage, expand, oversight, jot
 │   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
-├── plan/                              # nexus's OWN state files (roadmap, specs + chunks, archive, queues)
+├── plan/                              # nexus's OWN state files (specs + chunks, pending, archive, queues)
 ├── identity/                          # nexus's OWN identity layer: footguns.md (the ladder) + decisions/
 ├── .claude/                           # nexus's OWN commands + settings.json + guard hook
 ├── .github/                           # nexus's OWN cloud loop (march.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml
@@ -501,7 +564,7 @@ nexus/
     │   ├── bearings.md
     │   ├── AUDIT.md
     │   ├── CRITIQUE.md
-    │   ├── PHASE_CANDIDATES.md         # /expand output, /oversight promotes
+    │   ├── PHASE_CANDIDATES.md         # /expand's candidate specs, /oversight promotes
     │   ├── reflexes.md                # ≤50-line always-read core (adopt-by-need)
     │   ├── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
     │   └── CURRENT-STATE.md           # brownfield retrofit only (adopt-by-need)
@@ -624,7 +687,7 @@ adapt them.
 ## How to use this kit
 
 > This is the manual-path equivalent of
-> [Three paths to start](#three-paths-to-start) above — skip
+> [Pick a playbook](#pick-a-playbook) above — skip
 > it if you already delegated adoption to an agent.
 
 1. **Read this README.** (You're here.)
@@ -636,13 +699,13 @@ adapt them.
 5. **Copy templates into your repo** per the playbook. Replace
    all 8 placeholders (see
    [`templates/README.md`](./templates/README.md#placeholders)).
-   Write your real specs into the roadmap.
+   Write your real specs into `plan/`.
 6. **Wire your CI/CD provider** per
    [`playbooks/ci-providers.md`](./playbooks/ci-providers.md).
 7. **Customize** per the docs in `customization/` — pick which
    skills apply, which sub-agents you need, what your verify
    gate looks like.
-8. **First invocation: `/ship-a-chunk`.** Don't start with
+8. **First invocation: `/next`.** Don't start with
    `/loop /march` — run one chunk manually, see the shape of
    the work, then escalate.
 
@@ -680,9 +743,9 @@ project. The ouroboros, concretely:
   first ever run it caught five real defects in this repo.
   The gate works.
 - **Its own plan.** `plan/README.md` and its specs carry the
-  kit's roadmap, in the same chunk shape adopters use; `plan/AUDIT.md` and
-  `plan/PHASE_CANDIDATES.md` are seeded with real findings
-  from deep survey passes — the loop's food.
+  kit's specs and chunks, in the same shape adopters use;
+  `plan/AUDIT.md` and the candidate queue are seeded with
+  real findings from deep survey passes — the loop's food.
 - **Its own skills.** `skills/` holds the kit's adapted verbs.
   The best one is `/critique`: a **dry-run adoption** — a
   fresh-eyes agent follows this README's TL;DR into a scratch
@@ -757,7 +820,7 @@ upfront:
    carve-outs.
    `pre-spec.md`'s one-time interactive interview, before any
    skill exists yet (see
-   [Three paths to start](#three-paths-to-start)), is allowed
+   [Pick a playbook](#pick-a-playbook)), is allowed
    separately — it isn't a skill yet at that point.
 
 ---
