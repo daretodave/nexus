@@ -560,6 +560,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
   'templates/scripts/__tests__/loop-issue.test.mjs',
+  'templates/scripts/__tests__/upgrade-plan.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
 ]
 const GIT_SUITES = [
@@ -569,6 +570,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/worktree.test.mjs',
   'templates/scripts/__tests__/tick-run.test.mjs',
   'templates/scripts/__tests__/progress-run.test.mjs',
+  'templates/scripts/__tests__/upgrade-plan-run.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run
@@ -578,6 +580,7 @@ const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
   'plan/progress.mjs', 'plan/order.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
+  'upgrade-plan.mjs',
 ]
 
 async function legScripts() {

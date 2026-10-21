@@ -493,6 +493,7 @@ nexus/
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
 │   ├── ledger.mjs                     # npm run ledger: each session's live ledger (star names; a crash resumes like a reboot)
 │   ├── worktree.mjs                   # npm run worktree: close a worktree without deleting through its links; list for /tidy
+│   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep + prune steps
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
 │   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs (pre-commit) + the push policy (pre-push)
@@ -652,6 +653,7 @@ nexus/
     │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env
     │   ├── cloud/tick.mjs             # PR-mode tick: pick + claim, fence, land the PR, release
     │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
+    │   ├── upgrade-plan.mjs           # v1 to v2: shipped phases -> archive lines, pending -> spec stubs, blocked -> Held; dry run by default
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
     │   ├── __tests__/pending.test.mjs # pending files, config, settled view
@@ -668,6 +670,8 @@ nexus/
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver
     │   ├── __tests__/tick-run.test.mjs # the PR-mode tick over git (offline)
+    │   ├── __tests__/upgrade-plan.test.mjs # the v1 to v2 converter, pure
+    │   ├── __tests__/upgrade-plan-run.test.mjs # the converter over git, dry run and --write (offline)
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)
