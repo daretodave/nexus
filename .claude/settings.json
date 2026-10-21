@@ -121,7 +121,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/steer.mjs"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/steer.mjs"
           }
         ]
       }
@@ -141,7 +141,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/steer.mjs"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/steer.mjs"
           }
         ]
       }
@@ -152,7 +152,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/steer.mjs"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/steer.mjs"
           }
         ]
       }
@@ -166,7 +166,7 @@
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/steer.mjs"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/steer.mjs"
           }
         ]
       }

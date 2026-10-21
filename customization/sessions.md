@@ -126,9 +126,11 @@ node scripts/announce.mjs --to <session id | star> "<text>"
   a turn: any error exits 0 and says nothing.
 
 Wire it in `.claude/settings.json` (the template already
-does): `node .claude/hooks/steer.mjs` on `UserPromptSubmit`,
-`PreToolUse` and `PostToolUse` (matcher `*`) and `Stop`. It
-reads the board through `scripts/announce.mjs`.
+does): `node "$CLAUDE_PROJECT_DIR"/.claude/hooks/steer.mjs`
+on `UserPromptSubmit`, `PreToolUse` and `PostToolUse`
+(matcher `*`) and `Stop`. The path is the project's, not the
+cwd's: a session that has cd'd into a subfolder keeps
+steering. It reads the board through `scripts/announce.mjs`.
 
 ## The live ledger
 
