@@ -7,7 +7,8 @@
 // picks, counts the pick as done, and picks again, so the list reads as the order the chunks get built in, with a
 // running estimate from their sizes (S 1 h, M 2.5 h, L 5 h). What can't be reached (a need nothing will close, a held
 // spec) is listed after, with why. A pending close counts as closed; reading the working tree, a pending file's
-// `## Edit` of the roadmap counts as applied (the settled view), so a plot's own rows show before they settle.
+// `## Edit` of the roadmap or a spec counts as applied (the settled view, as plan-check reads it), so a plot's own rows
+// and chunks show before they settle.
 //
 //   node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--json]
 //
@@ -166,16 +167,17 @@ export function render({ inFlight, next, blocked, unchunked = [] }, { mark = new
 /** Read the plan (working tree through the settled view, or a ref) and simulate it. */
 export async function load(cwd, ref) {
   const reader = planReader(cwd, ref);
-  let readme;
-  if (ref) readme = reader.read('README.md');
-  else {
+  let read = (n) => reader.read(n);
+  if (!ref) {
     const { settledView } = await import('./settled.mjs');
-    readme = settledView(cwd).read('plan/README.md') ?? '';
+    const view = settledView(cwd);
+    read = (n) => view.read(`plan/${n}`) ?? '';
   }
+  const readme = read('README.md');
   const specs = reader
     .names()
     .filter((n) => SPEC_FILE.test(n))
-    .map((n) => parseSpec(n, reader.read(n)));
+    .map((n) => parseSpec(n, read(n)));
   const closed = pendingCloses(reader.pending());
   let claims = {};
   try {

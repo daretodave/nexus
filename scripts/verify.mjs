@@ -575,6 +575,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/tick-run.test.mjs',
   'templates/scripts/__tests__/progress-run.test.mjs',
   'templates/scripts/__tests__/upgrade-plan-run.test.mjs',
+  'templates/scripts/__tests__/plot-run.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run

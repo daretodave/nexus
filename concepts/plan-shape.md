@@ -190,6 +190,12 @@ verify composition) makes the shape mechanical:
   `closed` count went backwards. A ref that does not resolve
   is a failure, never a skipped check.
 
+It reads `plan/` as it will read once settled: each pending
+file's `## Edit` sections applied in memory
+(`scripts/plan/settled.mjs`), so a contributor's plot passes
+before the owner settles it, and a pending file settle would
+skip is a failure.
+
 nexus runs the same script on its own plan as the `chunks` leg
 of `node scripts/verify.mjs`.
 
