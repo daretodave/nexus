@@ -52,7 +52,7 @@ function fixture() {
   const owner = clone('owner', 'Dave');
   fs.writeFileSync(path.join(owner, '.owner'), 'owner\n');
   const contrib = clone('contrib', 'Sam Lee');
-  return { dir, origin, owner, contrib, done: () => fs.rmSync(dir, { recursive: true, force: true }) };
+  return { dir, origin, owner, contrib, done: () => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) };
 }
 
 const claimsOn = (origin) => {
@@ -207,7 +207,7 @@ test('a repo with no claims module says so, and runs nothing', async () => {
     assert.equal(r.ok, false);
     assert.match(r.error, /No claims module/);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 

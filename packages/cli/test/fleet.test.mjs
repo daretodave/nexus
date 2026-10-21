@@ -131,7 +131,7 @@ test('one server hosts many sessions: each its own name, ledger, provider and ch
     assert.ok(d.startedAt);
   } finally {
     await app.close();
-    fs.rmSync(parent, { recursive: true, force: true });
+    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 
@@ -153,7 +153,7 @@ test('questions and permissions are answered across sessions, tagged', async () 
     assert.deepEqual(await perm, { allow: true, always: false });
   } finally {
     await app.close();
-    fs.rmSync(parent, { recursive: true, force: true });
+    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 
@@ -179,7 +179,7 @@ test('pause waits for the turn, holds what is sent, and resume hands it over', a
     assert.equal((await call(app, '/api/sessions/terminal-only/pause', {})).status, 409, 'only a hosted session pauses here');
   } finally {
     await app.close();
-    fs.rmSync(parent, { recursive: true, force: true });
+    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 
@@ -197,7 +197,7 @@ test('close ends the ledger and frees the star; the home session stays', async (
     assert.equal((await call(app, '/api/sessions/main/close', {})).status, 409);
   } finally {
     await app.close();
-    fs.rmSync(parent, { recursive: true, force: true });
+    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 
@@ -216,7 +216,7 @@ test('a session started from the GUI gets its own worktree and branch, and works
     assert.equal((await call(app, '/api/sessions', { name: 'Bad Name' })).status, 400);
   } finally {
     await app.close();
-    fs.rmSync(parent, { recursive: true, force: true });
+    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 
@@ -232,7 +232,7 @@ test('a deep link serves the app, and urlFor carries the token', async () => {
     assert.equal(info.home, app.home);
   } finally {
     await app.close();
-    fs.rmSync(parent, { recursive: true, force: true });
+    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 
@@ -300,6 +300,6 @@ test('each hosted session keeps its own tug log, fed by its own stream; a steer 
     assert.equal(tugs[0].state, 'seen', 'taken at the next turn, from its own stream');
   } finally {
     await app.close();
-    fs.rmSync(parent, { recursive: true, force: true });
+    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });

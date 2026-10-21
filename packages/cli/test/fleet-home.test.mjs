@@ -69,7 +69,7 @@ async function withApp(opts, fn) {
     await fn({ ...t, ...f, app });
   } finally {
     await app.close();
-    fs.rmSync(t.parent, { recursive: true, force: true });
+    fs.rmSync(t.parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

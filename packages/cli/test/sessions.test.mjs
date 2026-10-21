@@ -153,8 +153,8 @@ test('a tug reaches the linked terminal session only, and a GUI-owned session ta
     assert.equal((await call('GET', '/api/sessions/nobody-here')).status, 404);
   } finally {
     await app.close();
-    fs.rmSync(repo, { recursive: true, force: true });
-    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    fs.rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 
@@ -178,8 +178,8 @@ test('an answered parked question leaves the ledger and reaches its session', as
     assert.deepEqual(ledger().parked, []);
   } finally {
     await app.close();
-    fs.rmSync(repo, { recursive: true, force: true });
-    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    fs.rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
 
@@ -207,7 +207,7 @@ test('an answer to a parked session waits for the session that resumes it, and s
     assert.match(out.hookSpecificOutput.permissionDecisionReason, /keep the old flag/);
   } finally {
     await app.close();
-    fs.rmSync(repo, { recursive: true, force: true });
-    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    fs.rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });

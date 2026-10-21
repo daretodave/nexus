@@ -46,7 +46,7 @@ async function withServer(repo, fn) {
     return await fn((m, p, b) => req(app.port, app.token, m, p, b));
   } finally {
     await app.close();
-    fs.rmSync(repo, { recursive: true, force: true });
+    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
