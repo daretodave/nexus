@@ -67,13 +67,18 @@ function commitVerb(message) {
   return firstLine.slice(0, idx).trim().replace(/\([^)]*\)$/, '')
 }
 
-// A bare `git worktree remove` (git's own options allowed before the
-// subcommand). git for Windows deletes through a junction in the
-// worktree (npm's workspace links) and stops at its first failure
-// after unregistering it, leaving the rest on disk. A mention inside
-// quotes (a commit message, a grep pattern) passes, unless a shell
-// runs that quoted text (`bash -c '...'`).
-const WORKTREE_REMOVE = /(^|[\s;&|(`'"])git(\.exe)?(\s+(-[Cc]\s+\S+|--[\w-]+(=\S+)?))*\s+worktree\s+remove\b/
+// A bare `git worktree remove`, behind any of git's own options (`-C
+// <dir>`, `-c <k=v>`, `--git-dir <x>`, `--work-tree=<y>`, `-p`: a value
+// after `=` or as the next word, quoted or not). git for Windows
+// deletes through a junction in the worktree (npm's workspace links)
+// and stops at its first failure after unregistering it, leaving the
+// rest on disk. A mention inside quotes (a commit message, a grep
+// pattern) passes, unless a shell runs that quoted text
+// (`bash -c '...'`).
+const GIT_VALUE = String.raw`("[^"]*"|'[^']*'|[^\s"';&|-][^\s;&|]*)`
+const WORKTREE_REMOVE = new RegExp(
+  String.raw`(^|[\s;&|(${'`'}'"])git(\.exe)?(\s+(-[A-Za-z]|--[\w-]+)(=${GIT_VALUE}|\s+${GIT_VALUE})?)*\s+worktree\s+remove\b`,
+)
 const RUNS_QUOTED = /\s-(c|Command|e)\s+["']/
 function maskQuoted(cmd) {
   return cmd.replace(/'[^']*'|"(?:[^"\\]|\\.)*"/g, (q) => q[0] + '_'.repeat(q.length - 2) + q[q.length - 1])
@@ -317,6 +322,16 @@ function selfTest() {
     // bare-worktree-remove: the command blocked, a quoted mention passes
     ['git worktree remove ../wt/07.1', 'bare-worktree-remove'],
     ['git -C /r worktree remove --force ../wt/x', 'bare-worktree-remove'],
+    // any git global option, its value after = or as the next word
+    ['git --git-dir /r/.git worktree remove ../wt/x', 'bare-worktree-remove'],
+    ['git --git-dir=/r/.git worktree remove x', 'bare-worktree-remove'],
+    ['git --work-tree /r --git-dir /r/.git worktree remove x', 'bare-worktree-remove'],
+    ['git -c core.longpaths=true worktree remove x', 'bare-worktree-remove'],
+    ['git --namespace ns --no-pager worktree remove x', 'bare-worktree-remove'],
+    ['git --exec-path=/usr/lib/git-core -p worktree remove x', 'bare-worktree-remove'],
+    ['git --git-dir "C:/my repo/.git" worktree remove x', 'bare-worktree-remove'],
+    ['git --git-dir /r/.git worktree list', null],
+    ['git --git-dir /r/.git log --grep "worktree remove"', null],
     ["bash -c 'git worktree remove ../wt/x'", 'bare-worktree-remove'],
     ['cd /r && git worktree remove x', 'bare-worktree-remove'],
     ['git commit -m "docs: never a bare git worktree remove"', null],
