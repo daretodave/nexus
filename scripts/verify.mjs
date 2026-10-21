@@ -22,7 +22,9 @@
 //                 pointers carry frontmatter + $ARGUMENTS; skills
 //                 and command pointers pair 1:1; /next stays within
 //                 200 lines, its next/*.md detail files 120 each,
-//                 /heads-down 150
+//                 /heads-down 150; no skill or pointer pushes the
+//                 default branch bare outside next/land.md (each
+//                 lands per owner mode; scripts/bare-push.mjs)
 //   emoji         no pictographic emoji anywhere in tracked docs,
 //                 nor in packages/cli source (js/jsx/ts/tsx/json/css/html)
 //                 (✓ and ❌ dingbats are fine; 🤖 is not, nor the
@@ -374,7 +376,7 @@ const LINE_BUDGETS = {
   'tidy.md': 150, 'rebooting.md': 150, 'reboot-ready.md': 150, 'reboot-resume.md': 150,
 }
 
-function legAnatomy() {
+async function legAnatomy() {
   const failures = []
   const skillFiles = [...globDir('templates/skills'), ...globDir('skills')]
   for (const file of skillFiles) {
@@ -430,7 +432,12 @@ function legAnatomy() {
       }
     }
   }
-  return { failures, note: `${skillFiles.length} skills, ${commandCount} command pointers, ${budgeted} budgets held` }
+  // No bare push of the default branch: every committing skill
+  // lands per owner mode, and only next/land.md names the push.
+  const { lintSkills } = await import(pathToFileURL(path.join(ROOT, 'scripts/bare-push.mjs')).href)
+  const pushes = lintSkills(ROOT)
+  failures.push(...pushes.problems)
+  return { failures, note: `${skillFiles.length} skills, ${commandCount} command pointers, ${budgeted} budgets held, no bare push in ${pushes.files}` }
 }
 
 // --- leg: emoji ------------------------------------------------------------
@@ -568,6 +575,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
   'templates/scripts/__tests__/bootstrap.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
+  'scripts/__tests__/bare-push.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
