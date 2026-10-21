@@ -51,8 +51,6 @@ What exists today (2026-10-20): `fileURLToPath` in
 
 ## Acceptance
 
-- **A2** loop-issue's suite runs in the gate; progress's
-  `main()` is tested from a path with a space.
 - **A4** Two concurrent ledger beats never share a star name;
   two concurrent `take` calls never both win; a busy rename
   retries.
@@ -65,12 +63,10 @@ What exists today (2026-10-20): `fileURLToPath` in
 (None.)
 
 ## Chunks
-Measure: 4 open · 6 closed · next A11
+Measure: 3 open · 7 closed · next A11
 
-- [ ] **36.2** loop-issue tests in the gate; progress main()
-  from a spaced path · S · closes A2 · needs —
 - [ ] **36.4** Ledger and notice board survive concurrent
   writers · M · closes A4, A5 · needs —
 - [ ] **36.9** First scripts-ci runs watched; timeout sized ·
-  S · closes A10 · needs 36.2
+  S · closes A10 · needs —
   - Touches `.github/workflows/`: ship it from a local session.
