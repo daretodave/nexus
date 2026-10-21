@@ -53,6 +53,7 @@ export const server = {
   answerPermission: (id, allow, always = false) => api(`/api/permission/${encodeURIComponent(id)}`, { allow, always }),
   oversight: () => api('/api/oversight'),
   answerDurable: (answers) => api('/api/oversight/answer', { answers }),
+  announce: (text) => api('/api/announce', { text }),
   claims: () => api('/api/claims'),
   releaseClaim: (id) => api('/api/claims/release', { id }),
   progress: (spec) => api(`/api/progress${spec ? `?spec=${encodeURIComponent(spec)}` : ''}`),

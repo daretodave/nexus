@@ -167,16 +167,30 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
   return out.sort((a, b) => String(b.beat || '').localeCompare(String(a.beat || '')));
 }
 
-/** The repo's notice board module (its own scripts/announce.mjs), or null when it has none that can address. */
-export async function boardOf(root) {
+/**
+ * The repo's notice board module (its own scripts/announce.mjs), or null when it has none that can post (`postTo`) or,
+ * with `addressed` (the default), none that can address one session. The server never writes `.announcements.md`
+ * itself: the repo's module owns the board's shape, its lock and its whole-file write.
+ */
+export async function boardOf(root, { addressed = true } = {}) {
   const file = path.join(root, 'scripts', 'announce.mjs');
   if (!fs.existsSync(file)) return null;
   try {
     const m = await import(`${pathToFileURL(file).href}?v=${fs.statSync(file).mtimeMs}`);
-    return typeof m.postTo === 'function' && typeof m.addressee === 'function' ? m : null;
+    if (typeof m.postTo !== 'function') return null;
+    return !addressed || typeof m.addressee === 'function' ? m : null;
   } catch {
     return null;
   }
+}
+
+/** Why there is no board to post to: no announce.mjs at all, or one too old to post from the GUI. */
+function noBoard(root, addressed) {
+  const has = fs.existsSync(path.join(root, 'scripts', 'announce.mjs'));
+  if (!has) return { status: 409, error: 'this repo has no notice board (scripts/announce.mjs): nothing posted' };
+  return { status: 409, error: addressed
+    ? 'this repo has no notice board that can address one session (scripts/announce.mjs with --to): nothing posted'
+    : "this repo's scripts/announce.mjs has no postTo (update it from the kit's templates/scripts/announce.mjs): nothing posted" };
 }
 
 /** Write a ledger the way scripts/ledger.mjs does: whole, through a temp file and a rename. */
@@ -254,7 +268,7 @@ export function createSteering({ repo, send, guiSession = () => null, home, now 
     if (requireLink && !linked.has(s.id)) return { status: 409, error: `link ${s.name} first: a ${kind} reaches only a linked session` };
     const r = await root();
     const board = await boardOf(r);
-    if (!board) return { status: 409, error: 'this repo has no notice board that can address one session (scripts/announce.mjs with --to)' };
+    if (!board) return noBoard(r, true);
     // Address by the Claude Code session id: the one name the steer hook is sure belongs to that session alone.
     const n = board.postTo(r, words, { from: 'owner', to: s.claude });
     const sent = { status: 200, via: 'board', line: n, session: s.id, to: s.claude };
@@ -296,5 +310,20 @@ export function createSteering({ repo, send, guiSession = () => null, home, now 
     return { status: 200, settled: 1, via: sent?.via || null, line: sent?.line ?? null, ...(sent?.waits ? { waits: sent.waits, note: sent.note } : {}) };
   }
 
-  return { list, find, link, steer, settleParked, linked };
+  /** Post an owner line to every loop on this machine, through the repo's own announce.mjs (its lock, its format). */
+  async function announce(text) {
+    const words = String(text || '').trim().replace(/\s+/g, ' ');
+    if (!words) return { status: 400, error: 'nothing to post' };
+    const r = await root();
+    const board = await boardOf(r, { addressed: false });
+    if (!board) return noBoard(r, false);
+    try {
+      return { status: 200, line: board.postTo(r, words, { from: 'owner' }) };
+    } catch (e) {
+      // announce.mjs refuses a line it would misread (one to every loop starting with `@name`) or a held lock.
+      return { status: 409, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  return { list, find, link, steer, announce, settleParked, linked };
 }

@@ -228,6 +228,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           return send(res, 200, { ok: true });
         }
         case 'GET /api/sessions': return send(res, 200, await steering.list());
+        case 'POST /api/announce': { const b = await body(req); const r = await steering.announce(b.text); return send(res, r.status, r); }
         case 'GET /api/claims': return send(res, 200, await repoMod.claims(repo));
         case 'POST /api/claims/release': { const b = await body(req); return send(res, 200, await repoMod.releaseClaim(repo, String(b.id || ''))); }
         case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));

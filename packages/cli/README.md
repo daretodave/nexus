@@ -25,7 +25,11 @@ You need no API key.
   the repo. Link a terminal session and a tug or an answer sent to it
   reaches its next tool call, and only that session (the steer hook;
   nexus `customization/sessions.md`). Pause all runs the reboot train,
-  and a fallen session resumes from its tile.
+  and a fallen session resumes from its tile. Every owner line the
+  GUI posts (a tug, an answer, a line to every loop: `POST
+  /api/announce`) goes through the repo's own `scripts/announce.mjs`
+  (its `postTo`: the board's lock and whole-file write); a repo
+  without one gets a refusal, never a hand-written board.
 - **Cockpit** (`/s/<id>`): the session's phase track (Questions,
   Working, Questions, Package). On the left are the conversation and a
   composer. Free text routes itself: a bug goes to `/bug`, a feature or
