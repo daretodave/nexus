@@ -85,9 +85,6 @@ What exists today (2026-10-21):
 
 ## Acceptance
 
-- **A2** `/design prompt` and `/design addendum` write a paste
-  prompt from the plan, the addendum continuing the last
-  prompt's numbering.
 - **A3** `/design ingest` takes an artifact link or a folder,
   writes `design/handoff/<date>/` with a manifest and README,
   and plots the port chunk.
@@ -108,10 +105,8 @@ What exists today (2026-10-21):
 they are in the Claude Design flow, by giving a link.)
 
 ## Chunks
-Measure: 6 open · 1 closed · next A8
+Measure: 5 open · 2 closed · next A8
 
-- [ ] **43.2** `/design prompt` and `/design addendum` · S ·
-  closes A2 · needs —
 - [ ] **43.3** `/design ingest`: artifact link or folder in,
   handoff and port chunk out · M · closes A3 · needs —
 - [ ] **43.4** The board renderer and screenshot compare,

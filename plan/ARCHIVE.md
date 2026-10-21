@@ -114,3 +114,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 43.1 · the Claude Design round trip has a concept doc and a playbook · bedb4c36..bedb4c36
 - 2026-10-21 · 42.6 · a missing secret parks its chunk and files a names-only request · fb1b1981..91e48734
 - 2026-10-21 · 42.3 · secrets run supplies values; the guard and a gate leg keep them out · 5f55b49d..751f7add
+- 2026-10-21 · 43.2 · /design prompt and addendum draft numbered prompts from the plan · 31b37052..8a09ae8f
