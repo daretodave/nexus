@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { questionsIn, answersPrompt } from '../server/repo.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { questionsIn, answersPrompt, isOwner, repoInfo } from '../server/repo.mjs';
 import { runBeats, markStall, STALL_MS } from '../server/gh.mjs';
 
 test('durable questions: needs-user-call rows and Open questions lists', () => {
@@ -48,4 +52,56 @@ test('only a queued run past STALL_MS reads stalled', () => {
   assert.equal(markStall({ status: 'queued', createdAt: old }, now).stalled, true);
   assert.equal(markStall({ status: 'in_progress', createdAt: old }, now).stalled, false);
   assert.equal(markStall({ status: 'queued', createdAt: new Date(now).toISOString() }, now).stalled, false);
+});
+
+// ---- owner mode: the effective one (scripts/owner.mjs), read at the primary checkout ----
+// A temp repo's own .owner, never a real checkout's.
+function ownedRepo() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-owner-'));
+  execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: dir });
+  execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init'], { cwd: dir });
+  fs.writeFileSync(path.join(dir, '.owner'), 'owner\n');
+  return dir;
+}
+const switchOff = (root) => {
+  fs.mkdirSync(path.join(root, '.nexus'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.nexus', 'local.json'), JSON.stringify({ ownerMode: false }));
+};
+
+test('isOwner is the effective owner mode: .owner present and not switched off in local.json', async () => {
+  const repo = ownedRepo();
+  try {
+    assert.equal(isOwner(repo), true);
+    assert.equal((await repoInfo(repo)).owner, true);
+    switchOff(repo);
+    assert.equal(isOwner(repo), false, 'ownerMode: false switches it off');
+    assert.equal((await repoInfo(repo)).owner, false);
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('a worktree reads owner mode at the primary checkout: its .owner and its local.json', () => {
+  const repo = ownedRepo();
+  const wt = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-owner-wt-')), 'wt');
+  try {
+    execFileSync('git', ['worktree', 'add', '-q', '--detach', wt], { cwd: repo });
+    assert.equal(fs.existsSync(path.join(wt, '.owner')), false);
+    assert.equal(isOwner(wt), true, "the primary's .owner makes the worktree the owner's");
+    switchOff(repo);
+    assert.equal(isOwner(wt), false, "the primary's local.json switches it off");
+  } finally {
+    fs.rmSync(path.dirname(wt), { recursive: true, force: true });
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('a committed .owner counts for no one', () => {
+  const repo = ownedRepo();
+  try {
+    execFileSync('git', ['add', '-f', '.owner'], { cwd: repo });
+    assert.equal(isOwner(repo), false);
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
 });

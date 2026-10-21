@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { run, json } from './sh.mjs';
+import { isOwner as effectiveOwner } from './local.mjs';
 
 export const CHUNK_ID = /^[0-9]{1,3}(?:\.[0-9a-z]+)?$/;
 
@@ -32,8 +33,9 @@ export async function repoInfo(repo) {
   };
 }
 
+/** Effective owner mode (server/local.mjs): `.owner` at the primary root, not switched off in .nexus/local.json. */
 export function isOwner(repo) {
-  return fs.existsSync(path.join(repo, '.owner'));
+  return effectiveOwner(repo);
 }
 
 /** A repo has adopted nexus when it carries the rule book and the plan. */

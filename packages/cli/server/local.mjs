@@ -54,6 +54,14 @@ export function hasOwnerFile(repo) {
   }
 }
 
+/**
+ * Effective owner mode, the one server-side owner check: an untracked `.owner` at the primary root and
+ * `ownerMode` not switched off in its local settings. A worktree reads its primary checkout's.
+ */
+export function isOwner(repo) {
+  return hasOwnerFile(repo) && readLocal(repo).ownerMode !== false;
+}
+
 /** What GET /api/local answers: { owner (.owner present), ownerMode (the switch), effective, runMode, phase }. */
 export async function localView(repo) {
   const s = readLocal(repo);

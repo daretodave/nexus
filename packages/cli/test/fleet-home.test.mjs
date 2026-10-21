@@ -249,6 +249,21 @@ test('Resume on a fallen tile starts a hosted session on /reboot-resume <star>, 
   });
 });
 
+test('GET /api/sessions reads the effective owner mode: .owner switched off in local.json reads contributor', async () => {
+  await withApp({}, async ({ dir, app }) => {
+    fs.writeFileSync(path.join(dir, '.owner'), 'owner\n'); // the temp repo's own .owner, never a real checkout's
+    ledger(dir, { id: 'mode0001', star: 'mira' });
+    const mode = async () => (await call(app, '/api/sessions')).json.find((x) => x.id === 'mode0001').mode;
+    assert.equal(await mode(), 'owner');
+    assert.equal((await call(app, '/api/local', { ownerMode: false })).status, 200);
+    assert.equal(await mode(), 'contributor', 'switching owner mode off reaches the tiles');
+    assert.equal((await call(app, '/api/state')).json.info.owner, false);
+    assert.equal((await call(app, '/api/local', { ownerMode: true })).status, 200);
+    assert.equal(await mode(), 'owner');
+    assert.equal((await call(app, '/api/state')).json.info.owner, true);
+  });
+});
+
 test('Resume refuses a live session, an unknown one, and a repo without /reboot-resume', async () => {
   await withApp({}, async ({ dir, app }) => {
     ledger(dir, { id: 'live0001', star: 'spica' });
