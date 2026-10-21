@@ -656,7 +656,7 @@ nexus/
     │   ├── secrets.mjs                # secrets by name: status, set (stdin), import (--store a real .env), names, check, push (owner mode); never a value
     │   ├── secrets-vault.mjs          # the vault: .env (local), .env.workspace (workspace root), the keychain; get/resolve for code only
     │   ├── secrets-keychain.mjs       # the opt-in OS keychain: security, PowerShell's PasswordVault, secret-tool; values on stdin only
-    │   ├── secrets-sinks.mjs          # sinks (GitHub Actions: gh secret set, value on stdin) + the push record, .nexus/secrets-audit.jsonl
+    │   ├── secrets-sinks.mjs          # sinks (gh secret set, vercel env add, wrangler secret put; value on stdin) + the push record, .nexus/secrets-audit.jsonl
     │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
     │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
     │   ├── claims-board.mjs           # the claims board: one issue, created or edited from the claims branch
@@ -690,7 +690,7 @@ nexus/
     │   ├── __tests__/plot-run.test.mjs # a plot: settle, plan-check and order agree (offline)
     │   ├── __tests__/secrets.test.mjs # the secrets manifest: shape, import, CLI (names only)
     │   ├── __tests__/secrets-vault.test.mjs # the vault: both rings, the keychain (stubbed runner), the CLI never prints a value
-    │   ├── __tests__/secrets-sinks.test.mjs # the sinks through a recording runner (never gh), push, the audit record by name
+    │   ├── __tests__/secrets-sinks.test.mjs # the sinks through a recording runner (never gh, vercel or wrangler), push, the audit record by name
     │   ├── __tests__/bootstrap.test.mjs # bootstrap's cloud-loop plan, pure
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
