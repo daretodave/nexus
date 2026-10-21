@@ -66,7 +66,7 @@ One call, every field from Steps 1-3:
 
 ```bash
 node scripts/ledger.mjs park <slug> \
-  --set 'loop=<the exact command or prompt that started this loop, verbatim>' \
+  --set-file 'loop=<a file holding the exact command or prompt that started this loop>' \
   --set kind=<heads-down | /loop dynamic | /loop <interval> | single /next> \
   --set chunk=<id> --set step=<orient | building | review | gate | closing | landing> \
   --set 'next_step=<the very next thing a fresh session should do, concretely>' \
@@ -78,7 +78,8 @@ node scripts/ledger.mjs park <slug> \
 ```
 
 Leave a field out rather than guess: the resume trusts the
-ledger.
+ledger. A `/heads-down` loop recorded `loop` and `kind` when it
+started: leave those two out.
 
 ### Step 5 — Marker and stop
 

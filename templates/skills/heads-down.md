@@ -4,7 +4,8 @@
 > Resolve a list of chunks from origin, ask every question they
 > will need in one batch, claim them, and loop `/next` through
 > them assuming defaults. Progress prints at the start and the
-> end of every iteration. Every iteration is a full `/next`.
+> end of every iteration. Every iteration is a full `/next`,
+> and every step beats the session's ledger.
 
 ## 1. Purpose
 
@@ -34,7 +35,9 @@ run for everyone, and owner mode decides how work lands.
 
 1. `node scripts/claims.mjs whoami`: owner or contributor, and
    this session's id (the loop runs in this session, so its
-   claims are this session's).
+   claims are this session's). `node scripts/ledger.mjs beat
+   --set kind=heads-down --set step=orient` names the session:
+   its star (`ledger: vega (…) live`) heads every banner.
 2. `git fetch origin`, then resolve the list from the plan **on
    origin/<base>** (`git show origin/<base>:plan/README.md`, the
    specs likewise), never the primary checkout's copy, which
@@ -70,10 +73,14 @@ After this gate the loop never blocks.
 
 ### Step 4 — Start the loop
 
-Say in ≤ 5 lines: the chunks claimed, those dropped and why,
-the stop conditions. Print `node scripts/plan/progress.mjs
-<specs> --ref origin/<base>` as it is. Then invoke the `loop`
-skill (no interval: it paces itself) with this prompt, filled:
+Say in ≤ 5 lines, the first `<star> heads down`: the chunks
+claimed, those dropped and why, the stop conditions. Print
+`node scripts/plan/progress.mjs <specs> --ref origin/<base>`
+as it is. Write the prompt below, filled, to a scratchpad file
+and record it with the claims: `node scripts/ledger.mjs beat
+--step loop --set-file loop=<file> --add claimed=<id>` (one
+`--add` per id; `/reboot-resume` rebuilds the loop from it).
+Then invoke the `loop` skill (no interval) with it:
 
 > /next Build this session's chunks in order, one per
 > iteration: <ids> (skip one whose needs aren't done; take the
@@ -89,15 +96,22 @@ skill (no interval: it paces itself) with this prompt, filled:
 > one pending file per chunk; push the branch; never push main,
 > never settle, no PR until the package ends."> Delegate each
 > build by size (S/M one builder, L a Workflow). The lead runs
-> the gate. Print `node scripts/plan/progress.mjs <specs> --ref
+> the gate. Beat the ledger (`node scripts/ledger.mjs beat`) at
+> every step: `--chunk <id> --step <step>` and the worktree as
+> `/next` says, `--set builder=<agent id>` or `--set
+> workflow.runId=<id> --set workflow.scriptPath=<path>` at
+> dispatch, `--add defaults=<…>` per default taken, `--add
+> parked=<…>` per question parked, `--add done=<id>` per close.
+> Print `node scripts/plan/progress.mjs <specs> --ref
 > origin/<base>` at the start and the end of every iteration.
 > Stop when every chunk is closed or every one left is blocked.
 > <Standing instructions from Step 1.>
 
 ### Step 5 — The end gate
 
-1. Ask the parked questions (one batch). An answer that
-   contradicts a default taken becomes a fix commit.
+1. Ask the parked questions (one batch; the ledger's `parked`,
+   `ledger.mjs show`). An answer that contradicts a default
+   taken becomes a fix commit.
 2. **Owner:** each chunk already landed; report.
 3. **Contributor:** one PR for the package (`gh pr create
    --head pkg/<slug>`), its body generated: the chunks closed
@@ -105,7 +119,8 @@ skill (no interval: it paces itself) with this prompt, filled:
    and the progress output. `claims.mjs pr <id> <n>` for each.
 4. Release every claim the session holds without a PR.
 5. Final report: what landed, the defaults, what is blocked on
-   whom, and the progress output as it is.
+   whom, and the progress output as it is. Then `node
+   scripts/ledger.mjs end` (an ended loop is never resumed).
 
 ## 4. Hard rules
 
@@ -113,6 +128,7 @@ skill (no interval: it paces itself) with this prompt, filled:
 2. The plan is read from origin, never the primary checkout.
 3. Every iteration obeys all of `skills/next.md`.
 4. A crash never releases claims (24 h TTL keeps the work).
+5. Every step beats the ledger; `loop` is the prompt verbatim.
 
 ## 5. Failure modes
 
@@ -129,4 +145,5 @@ skill (no interval: it paces itself) with this prompt, filled:
 node scripts/claims.mjs whoami | list | claim <ids…> [--package] | renew | release <ids…>
 git fetch origin && git show origin/main:plan/README.md
 node scripts/plan/progress.mjs <NN…> --ref origin/main
+node scripts/ledger.mjs beat --chunk <id> --step <s> | --set-file loop=<f> | --add parked=<…>
 ```

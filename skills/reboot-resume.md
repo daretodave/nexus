@@ -71,11 +71,19 @@ chunks in `done`, with one resume note in front: "Resuming
 <branch>. Next: <next_step>. Children: <state>. <notes>. Pick
 up there; don't re-plan, rebuild, re-claim or release."
 
-- `/heads-down …`: invoke it with the same argument. Its claim
-  step finds the claims already this session's and keeps them.
+- `kind` heads-down: `loop` is the `/next` prompt its Step 4
+  filled (its questions are asked, its claims taken): invoke
+  the `loop` skill (no interval) with it; when it stops, run
+  `/heads-down`'s Step 5 end gate (parked questions from the
+  old ledger's `parked`).
 - A `/loop /next …` prompt: invoke the `loop` skill with the
   same interval (none for dynamic) and prompt.
 - A single `/next`: finish the chunk in flight, then stop.
+
+Before invoking it, record it in this session's own ledger the
+same way (`ledger.mjs beat --set kind=<kind> --set-file
+loop=<file>`, `--add` each old `done`, `defaults` and
+`parked` entry), so a second crash resumes it too.
 
 ### Step 4 — Close out
 
