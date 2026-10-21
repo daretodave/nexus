@@ -130,11 +130,6 @@ the vault arrives):
 
 ## Acceptance
 
-- **A3** The vault reads and writes `.env` and
-  `.env.workspace` (two rings), and a `.env` import writes
-  names only into the manifest.
-- **A4** The OS keychain works as an opt-in vault on Windows,
-  macOS and Linux with no new dependencies.
 - **A5** `nexus secrets run -- <cmd>` gives the command the
   declared values in its environment and nothing else.
 - **A6** The guard hook blocks reading the vault files,
@@ -169,24 +164,19 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 13 open · 2 closed · next A16
+Measure: 11 open · 4 closed · next A16
 
-- [ ] **42.2** The vault: `.env` files, two rings, the
-  keychain, import · M · closes A3, A4 · needs —
-  - `scripts/secrets.mjs` (`get`, `set`, `status`, `import`),
-    names-only output by default; absorbs the two-ring
-    candidate into `customization/` docs.
 - [ ] **42.3** `nexus secrets run` and the rails · M ·
-  closes A5, A6, A7 · needs 42.2
+  closes A5, A6, A7 · needs —
   - The run wrapper, the guard hook rules with self-tests,
     and the gate leg that scans a staged diff for vault
     values.
 - [ ] **42.4** The GitHub Actions sink · S · closes A8 ·
-  needs 42.2
+  needs —
 - [ ] **42.5** The Vercel and Cloudflare sinks · S · closes
   A9 · needs 42.4
 - [ ] **42.6** `/next` parks and asks; contributors skip; the
-  audit log · M · closes A10, A11, A12 · needs 42.2
+  audit log · M · closes A10, A11, A12 · needs —
 - [ ] **42.7** The GUI server's secrets API and transcript
   masking · M · closes A13 · needs 42.3, 42.4
 - [ ] **42.8** The vault in the GUI, from the design export ·
@@ -206,4 +196,4 @@ Measure: 13 open · 2 closed · next A16
     not a project secret; GitHub Actions, Vercel and
     Cloudflare are named only as vault destinations.
 - [ ] **42.9** A contributor's own local keys · S · closes
-  A15 · needs 42.2
+  A15 · needs —
