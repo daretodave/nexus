@@ -207,6 +207,28 @@ test('the import: ticking an existing name replaces it where the manifest sends 
   assert.deepEqual(importBody([{ ...fresh, dests: { ...fresh.dests, local: false } }], { text: 'x' }).destinations, { NEW_KEY: ['local', 'github-actions'] });
 });
 
+test('the import in onboarding sends only the columns it draws: a declared Vercel name is never pushed there unseen', async () => {
+  const { keepToggle } = await import('../src/screens/vault/model.js');
+  const status = { secrets: [{ name: 'VERCEL_TOKEN', set: true, destinations: [{ destination: 'local', state: 'set' }, { destination: 'vercel', state: 'pushed' }] }] };
+  const preview = { names: [{ name: 'VERCEL_TOKEN', rings: ['local'], looks: 'secret' }, { name: 'NEW_KEY', rings: [], looks: 'secret' }] };
+  const cols = ['local', 'github-actions'];
+  const rows = importRows(preview, status, { owner: true, cols }).map((r) => ({ ...r, ...(r.keep ? {} : keepToggle(r)) }));
+  assert.deepEqual(importBody(rows, { file: '.env.local' }).destinations, { VERCEL_TOKEN: ['local'], NEW_KEY: ['local', 'github-actions'] });
+  assert.equal(rows[0].dests.vercel, false, 'no tick where no box is drawn');
+  // the Vault draws every column, so there the declared places stand
+  const all = importRows(preview, status, { owner: true }).map((r) => ({ ...r, ...(r.keep ? {} : keepToggle(r)) }));
+  assert.deepEqual(importBody(all, { file: '.env.local' }).destinations.VERCEL_TOKEN, ['local', 'vercel']);
+});
+
+test('the import draws Local ticked only on a row it will store', async () => {
+  const { importTick, keepToggle } = await import('../src/screens/vault/model.js');
+  const [pub] = importRows({ names: [{ name: 'NEXT_PUBLIC_SITE_URL', rings: [], looks: 'public' }] }, {});
+  assert.equal(pub.keep, false);
+  assert.equal(importTick(pub, 'local').checked, false);
+  assert.equal(importTick(pub, 'local').disabled, true);
+  assert.equal(importTick({ ...pub, ...keepToggle(pub) }, 'local').checked, true);
+});
+
 test('Add a secret: Local is locked on, and the body names only the sinks', async () => {
   const { addBody, addTick } = await import('../src/screens/vault/model.js');
   const nw = { name: 'NEW_KEY', for: 'x', value: 'v', dests: { local: false, 'github-actions': true, vercel: false, cloudflare: false } };

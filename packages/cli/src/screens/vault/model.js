@@ -284,9 +284,10 @@ const LOOK_NOTE = { public: 'looks public, not a secret', setting: 'a setting, n
 /**
  * The import's rows from a names-only preview. owner: each row ticks Local and the places the manifest names (Local
  * and Actions for a new name); contributor: this machine only. A public-looking name or a setting starts unticked, and
- * so does one already in the vault ("the vault value stays"); ticking that one replaces it.
+ * so does one already in the vault ("the vault value stays"); ticking that one replaces it. cols: the place columns the
+ * screen draws (onboarding draws Local and Actions only); a place with no box on screen is never ticked or sent.
  */
-export function importRows(preview, status, { owner = true } = {}) {
+export function importRows(preview, status, { owner = true, cols = DESTS } = {}) {
   const asked = requestedNames(status);
   const known = new Map((status?.secrets || []).map((s) => [s.name, s]));
   const mine = new Set((status?.localKeys || []).map((k) => k.name));
@@ -303,12 +304,12 @@ export function importRows(preview, status, { owner = true } = {}) {
     else note = 'new';
     const declared = known.get(n.name);
     const places = declared ? ['local', ...(declared.destinations || []).map((x) => x.destination).filter((d) => d !== 'local')] : ['local', 'github-actions'];
-    const dests = Object.fromEntries(DESTS.map((d) => [d, keep && owner && places.includes(d)]));
-    return { name: n.name, exists, look, note, tone, keep, dests, places, declared: !!declared, for: declared?.for || '' };
+    const dests = Object.fromEntries(DESTS.map((d) => [d, keep && owner && places.includes(d) && cols.includes(d)]));
+    return { name: n.name, exists, look, note, tone, keep, dests, places, cols, declared: !!declared, for: declared?.for || '' };
   });
 }
 
-/** The vault keeps every value (each sink pushes from it), so Local is ticked and locked wherever a value is stored. */
+/** The vault keeps every value (each sink pushes from it), so Local is locked, and ticked on every row that will be stored. */
 export const LOCAL_LOCKED = 'The vault keeps every value; pushes read it from there.';
 
 /**
@@ -319,13 +320,13 @@ export const LOCAL_LOCKED = 'The vault keeps every value; pushes read it from th
 export function keepToggle(row) {
   if (row.keep) return { keep: false };
   const any = DESTS.some((d) => d !== 'local' && row.dests[d]);
-  const places = row.places || ['local', 'github-actions'];
+  const places = (row.places || ['local', 'github-actions']).filter((d) => (row.cols || DESTS).includes(d));
   return { keep: true, dests: Object.fromEntries(DESTS.map((d) => [d, d === 'local' || (any ? !!row.dests[d] && places.includes(d) : places.includes(d))])) };
 }
 
 /** One of an import row's place boxes: Local locked on, a place a declared name does not go to locked off. */
 export function importTick(row, d) {
-  if (d === 'local') return { checked: true, disabled: true, title: LOCAL_LOCKED };
+  if (d === 'local') return { checked: !!row.keep, disabled: true, title: LOCAL_LOCKED };
   if (row.declared && !(row.places || []).includes(d)) return { checked: false, disabled: true, title: `${row.name} does not go to ${SHORT[d] || d} in nexus.secrets.json` };
   return { checked: !!row.dests[d], disabled: !row.keep, title: undefined };
 }
@@ -347,11 +348,11 @@ export function importNote(row, owner = true) {
   return { note: row.note, cls: `env-note${row.tone ? ` ${row.tone}` : ''}` };
 }
 
-/** What the confirm sends: the kept names and, for the owner, the places per name. */
+/** What the confirm sends: the kept names and, for the owner, the places per name (only places the screen draws). */
 export function importBody(rows, source, { owner = true } = {}) {
   const kept = rows.filter((r) => r.keep);
   const body = { ...source, confirm: true, names: kept.map((r) => r.name) };
-  if (owner) body.destinations = Object.fromEntries(kept.map((r) => [r.name, DESTS.filter((d) => d === 'local' || (r.dests[d] && (!r.declared || (r.places || []).includes(d))))]));
+  if (owner) body.destinations = Object.fromEntries(kept.map((r) => [r.name, DESTS.filter((d) => d === 'local' || (r.dests[d] && (r.cols || DESTS).includes(d) && (!r.declared || (r.places || []).includes(d))))]));
   return body;
 }
 

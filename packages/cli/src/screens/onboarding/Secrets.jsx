@@ -31,7 +31,9 @@ export default function Secrets() {
   const nav = useNavigate();
   const { toasts, push: toast } = useToasts();
   const [busy, setBusy] = useState(false);
-  const imp = useImport({ status: st, owner: true, toast });
+  // Step 4 draws Local and Actions only (the design: Vercel and Cloudflare connect later, from the vault), so it
+  // ticks and sends nothing else: a declared Vercel name is not pushed there from a screen that does not show it.
+  const imp = useImport({ status: st, owner: true, toast, cols: ['local', 'github-actions'] });
   const [fileInput, pickFile] = useFilePick(imp.fromFile);
   const found = st?.envFiles || [];
 

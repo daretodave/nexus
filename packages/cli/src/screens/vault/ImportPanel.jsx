@@ -15,8 +15,8 @@ export const readText = (file) => new Promise((resolve, reject) => {
   r.readAsText(file);
 });
 
-/** The import's source and preview, shared by the owner's panel and a contributor's local keys. */
-export function useImport({ status, owner, onDone, toast }) {
+/** The import's source and preview, shared by the owner's panel and a contributor's local keys; cols: the place columns drawn. */
+export function useImport({ status, owner, onDone, toast, cols = DESTS }) {
   const src = useRef(null);
   const [phase, setPhase] = useState('empty');
   const [name, setName] = useState('');
@@ -33,7 +33,7 @@ export function useImport({ status, owner, onDone, toast }) {
       src.current = source;
       setName(label);
       setPreview(p);
-      setRows(importRows(p, status, { owner }));
+      setRows(importRows(p, status, { owner, cols }));
       setPhase('loaded');
     } catch (e) {
       toast?.({ kind: 'error', title: `${label} did not read`, body: e.message });

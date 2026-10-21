@@ -435,7 +435,9 @@ age and draws blank.
   server declares the `local` destination whatever the body says:
   every value is stored in the vault, because each sink pushes from
   it, so an unticked Local would draw "not used there" over a value
-  sitting in `.env`.
+  sitting in `.env`. On a row the import will not store (unticked),
+  the locked Local box draws empty, as the boards draw every box in
+  that row.
 - **An import replaces a declared name only where the manifest sends
   it**: ticking an existing name ticks its declared places, a place it
   does not go to is locked off in the row, and the server refuses one
@@ -457,7 +459,11 @@ age and draws blank.
   repo's `scripts/secrets-audit.mjs` and nothing reads a setting yet.
 - **Onboarding's import panel** adds "Choose another" and a dropzone
   when no dotenv is found at the root (the board only draws the found
-  one).
+  one). It draws Local and Actions only, as the board does, so it ticks
+  and sends only those: a name the manifest also sends to Vercel or
+  Cloudflare is replaced in the vault and left out of sync there, for
+  the Vault's Sync, never pushed from a screen that shows no box for
+  it.
 - **Launch's secrets row** (41.10 left it here) reads the vault: "N
   names in the vault · values in .env and CI" (the keychain when it is
   on; CI once a push landed), "skipped" when Secrets was skipped, and a
