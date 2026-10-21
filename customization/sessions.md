@@ -26,6 +26,7 @@ files, and lets the owner steer them all at once.
 | `scripts/ledger.mjs` | The live ledger: `.nexus/sessions/<id>.json`, rewritten at every beat. Star names. |
 | `scripts/worktree.mjs` | Closes a worktree without deleting through its links; lists worktrees for `/tidy`. |
 | `.claude/hooks/guard.mjs` | Its `bare-worktree-remove` rule refuses a plain `git worktree remove`; it marks each session it runs in, and claims refuse a Claude Code session it never marked ([`claims.md`](claims.md#the-rules)). |
+| `.claude/hooks/steer.mjs` | Hands an owner line addressed to one session to that session at its next tool boundary. |
 | `skills/tidy.md` | `/tidy`: clear dead claims, offer to close idle worktrees and merged branches. |
 | `skills/rebooting.md`, `reboot-ready.md`, `reboot-resume.md` | The reboot train. |
 
@@ -72,6 +73,54 @@ node scripts/announce.mjs drop 3
 
 The GUI writes owner lines here too, which makes the board the
 channel for a tug on every loop at once.
+
+## Steering one session
+
+The GUI lists the live sessions on this machine (the ledgers,
+plus Claude Code's own session files for the repo and its
+worktrees) and links to one by its session id. An answer or a
+tug aimed at a linked terminal session becomes an owner line
+addressed to it, and the steer hook hands it over at once:
+
+```
+node scripts/announce.mjs --to <session id | star> "<text>"
+```
+
+| Event | What the session sees |
+|---|---|
+| `PreToolUse` | The interrupt: its next tool call is denied, and the reason is the owner's line. Nothing runs before it reads it. |
+| `PostToolUse` | The tool running when the line landed finished: the line rides with its result. |
+| `UserPromptSubmit` | An idle session: the line rides in with the next prompt. |
+| `Stop` | The session was about to end its turn: it keeps going to act on the line. |
+
+- **Only that session.** A line is addressed by the Claude
+  Code session id (or the star of that session's own held
+  ledger, never an ended one). No other session reads it, not
+  through the hook and not through `announce.mjs read`; a
+  subagent's tool calls never take the lead's line; a line
+  from a session never steers anything.
+- **Once.** Whichever of the hook or `read` hands a line over
+  first creates `.nexus/steered/<session>/<n>`; the other
+  skips it. A line to every loop is left to `read`, as
+  before.
+- **What an interrupt cannot do.** A hook cannot kill a tool
+  call already running: a long build, a test run, a builder
+  subagent's whole run all finish first, and the next tool
+  boundary is the interrupt point. A session idle at its
+  prompt has no turn to join until someone types into it.
+- **A GUI-owned session** takes the text on the SDK's input
+  stream instead; nothing is posted to the board.
+- **A parked question** answered from the GUI leaves the
+  ledger's `parked` list, and the answer goes to the session
+  the same way.
+- **Off switch.** `NEXUS_NO_STEER=1` in a session's
+  environment makes the hook inert there. The hook never fails
+  a turn: any error exits 0 and says nothing.
+
+Wire it in `.claude/settings.json` (the template already
+does): `node .claude/hooks/steer.mjs` on `UserPromptSubmit`,
+`PreToolUse` and `PostToolUse` (matcher `*`) and `Stop`. It
+reads the board through `scripts/announce.mjs`.
 
 ## The live ledger
 

@@ -41,11 +41,12 @@
 //                 plus that script's own node:test suite
 //   scripts       the node:test suites of the plan, claims and push
 //                 policy scripts adopters copy (templates/scripts/plan/,
-//                 claims, git/push-policy, announce, ledger), and both
-//                 guard hooks' self-tests:
+//                 claims, git/push-policy, announce, ledger, the
+//                 steer hook), and both guard hooks' self-tests:
 //                 pure, no git, no network, about a second; and
-//                 nexus's own copies in scripts/ match them byte
-//                 for byte (the kit dogfoods what it ships)
+//                 nexus's own copies in scripts/ and
+//                 .claude/hooks/steer.mjs match them byte for byte
+//                 (the kit dogfoods what it ships)
 //   workflows     every workflow in .github/workflows/ and
 //                 templates/.github/workflows/ keeps the cloud-loop
 //                 rules (templates/scripts/workflow-lint.mjs): a
@@ -557,6 +558,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/push-policy.test.mjs',
   'templates/scripts/__tests__/progress.test.mjs',
   'templates/scripts/__tests__/announce.test.mjs',
+  'templates/scripts/__tests__/steer.test.mjs',
   'templates/scripts/__tests__/ledger.test.mjs',
   'templates/scripts/__tests__/order.test.mjs',
   'templates/scripts/__tests__/workflow-lint.test.mjs',
@@ -587,6 +589,8 @@ const DOGFOOD_TWINS = [
   'plan/progress.mjs', 'plan/order.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs',
 ]
+// The steer hook runs in nexus's own sessions from .claude/hooks/, byte for byte the one adopters copy.
+const HOOK_TWINS = ['steer.mjs']
 
 async function legScripts() {
   const failures = []
@@ -596,6 +600,12 @@ async function legScripts() {
     const own = text(`scripts/${f}`)
     if (kit === null || own === null) failures.push(`scripts/${f} and templates/scripts/${f}: both must exist (nexus dogfoods the template)`)
     else if (kit !== own) failures.push(`scripts/${f} differs from templates/scripts/${f}: copy the template over it (or the fix into both)`)
+  }
+  for (const f of HOOK_TWINS) {
+    const kit = text(`templates/claude/hooks/${f}`)
+    const own = text(`.claude/hooks/${f}`)
+    if (kit === null || own === null) failures.push(`.claude/hooks/${f} and templates/claude/hooks/${f}: both must exist (nexus dogfoods the template)`)
+    else if (kit !== own) failures.push(`.claude/hooks/${f} differs from templates/claude/hooks/${f}: copy the template over it (or the fix into both)`)
   }
   // The footgun lists (the template adopters copy, and nexus's own)
   // stay in the format and budget settle enforces.
@@ -619,7 +629,7 @@ async function legScripts() {
   const urls = lintTree(ROOT)
   failures.push(...urls.problems)
   const suites = runSuites(PURE_SUITES, 'pure')
-  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length} dogfood twins match; 2 guard self-tests green; 2 footgun lists lint clean; no URL.pathname file paths in ${urls.files} scripts` }
+  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length + HOOK_TWINS.length} dogfood twins match; 2 guard self-tests green; 2 footgun lists lint clean; no URL.pathname file paths in ${urls.files} scripts` }
 }
 
 function runSuites(suites, label) {

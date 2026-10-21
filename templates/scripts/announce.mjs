@@ -85,6 +85,11 @@ export function addressee(a) {
 
 const HELD = new Set(['live', 'parked', 'resuming']);
 
+/** Every session ledger at `root` (`.nexus/sessions/`), for `identities`. */
+export function ledgers(root) {
+  return readAll(path.join(root, LEDGERS));
+}
+
 /**
  * Every name this session answers to: its own ids (the Claude session id, NEXUS_SESSION), plus the id and star of each
  * held ledger (live, parked, resuming) that is its own. An ended or resumed ledger's star is free for another session,
@@ -225,7 +230,7 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
     const key = env.NEXUS_SESSION || env.CLAUDE_CODE_SESSION_ID || 'terminal';
     const all = argv.includes('--all');
     const ids = [env.NEXUS_SESSION, env.CLAUDE_CODE_SESSION_ID].filter(Boolean);
-    const names = identities(ids, ids.length ? readAll(path.join(base, LEDGERS)) : []);
+    const names = identities(ids, ids.length ? ledgers(base) : []);
     const handed = delivered(base, [...names]);
     // A line to another session is never shown; one to this session is handed over once, by whichever reader is first.
     const fresh = (all ? lines : unread(lines, seen[key] ?? 0))

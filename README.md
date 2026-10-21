@@ -547,7 +547,7 @@ nexus/
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
 ├── plan/                              # nexus's OWN state files (specs + chunks, pending, archive, queues)
 ├── identity/                          # nexus's OWN identity layer: footguns.md (the ladder) + decisions/
-├── .claude/                           # nexus's OWN commands + settings.json + guard hook
+├── .claude/                           # nexus's OWN commands + settings.json + guard and steer hooks
 ├── .github/                           # nexus's OWN cloud loop (march.yml + pr-flow.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml
 ├── packages/
 │   └── cli/                           # @usenexus/cli — npx GUI for Claude Code (React+Vite; design/handoff/ is its UI source of truth; publish.yml ships it, cli-ci.yml tests it)
@@ -606,6 +606,7 @@ nexus/
     │   ├── CLAUDE.md                  # short pointer at agents.md
     │   ├── settings.json              # permission allowlist + hook wiring
     │   ├── hooks/guard.mjs            # mechanical hard rules (PreToolUse + Stop)
+    │   ├── hooks/steer.mjs            # the GUI's line to one session, at its next tool boundary
     │   ├── commands/                  # one terse pointer per skill
     │   └── agents/                    # generic sub-agent templates
     ├── data/                          # → repo's data/ (if using gh-as-db or hybrid)
@@ -667,6 +668,7 @@ nexus/
     │   ├── __tests__/progress.test.mjs # the progress view, pure
     │   ├── __tests__/progress-run.test.mjs # progress main() from a spaced path, over git (offline)
     │   ├── __tests__/announce.test.mjs # the notice board
+    │   ├── __tests__/steer.test.mjs   # the steer hook: one session only, once
     │   ├── __tests__/ledger.test.mjs  # the live ledger
     │   ├── __tests__/order.test.mjs   # the simulated pick order
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules

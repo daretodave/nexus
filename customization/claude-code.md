@@ -230,6 +230,17 @@ it to a hard block (exit 2 sends the agent back to finish the
 commit+push). Strict mode belongs in unattended windows only;
 leave it off for interactive work.
 
+### `steer.mjs`: the GUI's line to one session
+
+The template wires a second script,
+[`templates/claude/hooks/steer.mjs`](../templates/claude/hooks/steer.mjs),
+on `UserPromptSubmit`, `PreToolUse`, `PostToolUse` and
+`Stop`. It hands an owner line addressed to this session
+(`announce.mjs --to`) over at the next tool boundary, denying
+the next tool call with the line as its reason. It is inert
+with `NEXUS_NO_STEER=1` and never fails a turn. The whole
+contract is in [sessions.md](./sessions.md#steering-one-session).
+
 ### What hooks are not
 
 Hooks don't replace the skills' own discipline — the agent

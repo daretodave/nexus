@@ -68,6 +68,16 @@
     ]
   },
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/steer.mjs"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -75,6 +85,26 @@
           {
             "type": "command",
             "command": "node .claude/hooks/guard.mjs pre-bash"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/steer.mjs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/steer.mjs"
           }
         ]
       }
@@ -85,6 +115,10 @@
           {
             "type": "command",
             "command": "node .claude/hooks/guard.mjs stop"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/steer.mjs"
           }
         ]
       }
