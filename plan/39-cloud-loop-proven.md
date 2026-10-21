@@ -43,17 +43,13 @@ What exists today (2026-10-20): `templates/.github/workflows/
 
 - **A1** One PR-mode tick ran on GitHub end to end; what broke
   is fixed in the templates.
-- **A5** The optional claims-board workflow exists and is
-  documented in `customization/claims.md`.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 2 open · 3 closed · next A6
+Measure: 1 open · 4 closed · next A6
 
-- [ ] **39.3** The optional claims-board workflow · M ·
-  closes A5 · needs —
 - [ ] **39.4** One real PR-mode tick in a scratch adopter repo
   · M · closes A1 · needs —

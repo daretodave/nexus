@@ -39,7 +39,7 @@ line goes):
 | 36 | Script hardening: paths, races, tests | [36-script-hardening.md](36-script-hardening.md) | planned · priority 1 | 2 left |
 | 37 | Sessions carry their names; every skill lands per owner mode | [37-sessions-and-landing.md](37-sessions-and-landing.md) | planned · priority 3 | 3 left |
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 1 left |
-| 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 2 left |
+| 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 1 left |
 | 40 | GUI: the fleet, the plan board, git and Actions | [40-gui-fleet-and-board.md](40-gui-fleet-and-board.md) | planned · priority 2 | 12 left |
 | 41 | GUI: steering, tugs, the design, the release | [41-gui-steering-design-release.md](41-gui-steering-design-release.md) | planned | 6 left |
 
