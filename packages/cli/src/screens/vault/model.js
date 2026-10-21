@@ -1,0 +1,374 @@
+// The vault's view model (boards Vault, VaultImport, VaultContributor, VaultKit, Secrets, the Inbox's key card, the
+// plan board's "Waiting on a secret"), as pure functions over GET /api/secrets (server/secrets.mjs). No React here.
+//
+// The rule every function keeps: names and status in, names and status out. A value never enters this file; the only
+// place one lives is a paste field's own React state, until it is sent in a POST body and cleared.
+//
+//   status: { mode, owner, projectSecretsNeeded, vault: { local, workspace, keychain }, secrets: [secret],
+//             localKeys: [{ name, rings }], nudges, rotateDays, audit: [event], sinks, requests: [request], envFiles }
+//   secret: { name, for, where, chunk, declared, set, rings, destinations: [{ destination, state, at, stale? }], age,
+//             setAt, rotate }
+//   event:  { time, action: 'set'|'rotate'|'push', name, destination, ring?, ... }
+//   request: { chunk, names, missing, file, line, date }
+
+/** A stored value, always: eight dots, whatever its length (the design's rule: a length never leaks). */
+export const MASK = '\u2022'.repeat(8);
+
+/** The manifest's destinations, in the table's column order. */
+export const DESTS = ['local', 'github-actions', 'vercel', 'cloudflare'];
+/** A destination as the table's column and the dots' titles name it. */
+export const SHORT = { local: 'local', 'github-actions': 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+/** A destination as the "Where values go" card names it. */
+export const LABEL = { local: 'Local', 'github-actions': 'GitHub Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+/** The column heads' titles. */
+export const HEAD_TITLE = { local: 'this checkout\'s vault', 'github-actions': 'GitHub Actions secrets', vercel: 'Vercel environment variables', cloudflare: 'Cloudflare secrets' };
+/** A dot per state. */
+export const DOT = { set: 'dd is-set', stale: 'dd is-stale', missing: 'dd is-missing', none: 'dd is-none' };
+const WORD = { set: 'set', stale: 'out of sync', missing: 'missing', none: 'not used' };
+
+const DAY = 86_400_000;
+const pad2 = (n) => String(n).padStart(2, '0');
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "a, b and c". */
+export function andList(list) {
+  const a = list.filter(Boolean);
+  return a.length <= 1 ? (a[0] || '') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`;
+}
+
+/** Whole local days between two times (0 today, 1 yesterday). */
+function daysAgo(t, now) {
+  const a = new Date(t);
+  const b = new Date(now);
+  if (Number.isNaN(a.getTime())) return null;
+  const da = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const db = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((db - da) / DAY);
+}
+
+/** The audit log's when: "02:30" today, "yesterday", else "Oct 18". */
+export function whenText(t, now = Date.now()) {
+  const d = new Date(t);
+  if (Number.isNaN(d.getTime())) return '';
+  const n = daysAgo(t, now);
+  if (n === 0) return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  if (n === 1) return 'yesterday';
+  return `${MON[d.getMonth()]} ${d.getDate()}`;
+}
+
+/** The Rotated column: when the value was last set ("today", "yesterday", "3 days ago"), or why there is none. */
+export function ageText(s, now = Date.now()) {
+  if (!s.set) return 'never set';
+  if (s.setAt) {
+    const n = daysAgo(s.setAt, now);
+    if (n === 0) return 'today';
+    if (n === 1) return 'yesterday';
+    if (n != null) return `${n} days ago`;
+  }
+  if (Number.isFinite(s.age)) return s.age === 0 ? 'today' : s.age === 1 ? 'yesterday' : `${s.age} days ago`;
+  return '';
+}
+
+/** One destination's state for one secret: set, stale (out of sync), missing, or none (not used there). */
+export function destState(s, d) {
+  const e = (s.destinations || []).find((x) => x.destination === d);
+  if (!e) return 'none';
+  if (d === 'local') return e.state === 'set' ? 'set' : 'missing';
+  if (e.state === 'pushed') return e.stale ? 'stale' : 'set';
+  return 'missing';
+}
+
+/** Where the vault keeps values on this machine, in words. */
+export function vaultPlace(vault) {
+  if (vault?.keychain) return 'the keychain on this machine';
+  return '.env in this checkout';
+}
+
+/** The names a request still waits on, keyed `${chunk}:${name}`, from status.requests. */
+export function requestedNames(status) {
+  const out = new Map();
+  for (const r of status?.requests || []) for (const n of r.missing || []) if (!out.has(n)) out.set(n, r);
+  return out;
+}
+
+/**
+ * The vault table's rows. ui: { edit, fresh: Set, now }. Each row: name, for, the mask (eight dots or "no value"),
+ * a dot and its title per destination, the chunk that asked, the age with a rotate nudge, and which actions it offers.
+ */
+export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.now() } = {}) {
+  const asked = requestedNames(status);
+  return (status?.secrets || []).map((s) => {
+    const states = Object.fromEntries(DESTS.map((d) => [d, destState(s, d)]));
+    const stale = DESTS.filter((d) => states[d] === 'stale');
+    const where = DESTS.filter((d) => states[d] === 'set' || states[d] === 'stale').map((d) => SHORT[d]);
+    const ticks = DESTS.filter((d) => states[d] !== 'none').map((d) => SHORT[d]);
+    const req = asked.get(s.name);
+    const chunk = s.chunk || req?.chunk || '';
+    return {
+      name: s.name,
+      for: s.for || '',
+      set: !!s.set,
+      requested: !!req && !s.set,
+      editing: edit === s.name,
+      fresh: fresh.has(s.name),
+      mask: s.set ? MASK : 'no value',
+      maskAria: s.set ? 'value hidden' : 'no value yet',
+      dots: DESTS.map((d) => ({ d, cls: DOT[states[d]], title: `${SHORT[d]}: ${WORD[states[d]]}` })),
+      chunk,
+      age: ageText(s, now),
+      old: !!s.rotate,
+      canAdd: !s.set,
+      canSync: !!s.set && stale.length > 0,
+      canReplace: !!s.set,
+      stale,
+      sinks: ticks,
+      // Save pushes a replaced value where the old one lives, and a first value to every place the manifest names.
+      pushTo: DESTS.filter((d) => d !== 'local' && (s.set ? states[d] === 'set' || states[d] === 'stale' : states[d] !== 'none')),
+      placeholder: s.set ? 'Paste the new value' : 'Paste the value',
+      editNote: s.set
+        ? `Saving replaces it in ${andList(where.length ? where : ['the vault'])}. The old value is gone for good.`
+        : `Saving stores it in ${andList(ticks.length ? ticks : ['the vault'])}${chunk ? `, then ${chunk} is ready again` : ''}.`,
+    };
+  });
+}
+
+/** The "Where values go" card: one row per destination, with its count and its worst dot. */
+export function destRows(status, { repo = '' } = {}) {
+  const secrets = status?.secrets || [];
+  const what = {
+    local: vaultPlace(status?.vault),
+    'github-actions': repo ? `${repo} repository secrets` : 'repository secrets',
+    vercel: 'project environment variables',
+    cloudflare: 'worker secrets',
+  };
+  return DESTS.map((d) => {
+    const n = (w) => secrets.filter((s) => destState(s, d) === w).length;
+    const set = n('set');
+    const stale = n('stale');
+    const miss = n('missing');
+    const bits = [];
+    if (set) bits.push(`${set} set`);
+    if (stale) bits.push(`${stale} out of sync`);
+    if (miss) bits.push(`${miss} missing`);
+    return { d, label: LABEL[d], what: what[d], count: bits.join(' · ') || 'none', stale, dot: miss ? DOT.missing : stale ? DOT.stale : set ? DOT.set : DOT.none };
+  });
+}
+
+/** Every out-of-sync place: [{ name, destinations }] (Sync N). */
+export function staleList(status) {
+  return (status?.secrets || []).map((s) => ({ name: s.name, destinations: DESTS.filter((d) => destState(s, d) === 'stale') })).filter((x) => x.destinations.length);
+}
+
+const RING = { local: 'local', workspace: 'workspace', keychain: 'keychain' };
+
+/**
+ * The audit timeline, newest first: a set or rotation folds in the pushes that followed it within a minute ("set
+ * X → local, Actions"); a later push alone reads "synced". Requests join as "requested ... for 7.1". Names and
+ * places only. `limit` rows.
+ */
+export function auditRows(status, { now = Date.now(), limit = 8, fresh = new Set() } = {}) {
+  const events = [...(status?.audit || [])].filter((e) => e && typeof e.name === 'string').sort((a, b) => String(a.time).localeCompare(String(b.time)));
+  const rows = [];
+  const lastSetRow = new Map();
+  for (const e of events) {
+    const t = Date.parse(e.time);
+    if (e.action === 'set' || e.action === 'rotate') {
+      const place = RING[e.ring] || RING[e.destination] || 'local';
+      const row = { key: `${e.time}:${e.name}:${e.action}`, time: e.time, kind: e.action === 'set' ? 'set' : 'rotated', verb: e.action === 'set' ? 'set' : 'rotated', name: e.name, to: [place], sep: e.action === 'set' ? '\u2192' : '\u00b7' };
+      rows.push(row);
+      lastSetRow.set(e.name, { row, t });
+    } else if (e.action === 'push') {
+      const prev = lastSetRow.get(e.name);
+      const place = SHORT[e.destination] || e.destination;
+      if (prev && Number.isFinite(t) && t - prev.t <= 60000) { if (!prev.row.to.includes(place)) prev.row.to.push(place); continue; }
+      rows.push({ key: `${e.time}:${e.name}:push:${e.destination}`, time: e.time, kind: 'synced', verb: 'synced', name: e.name, to: [place], sep: '\u2192' });
+    }
+  }
+  for (const r of status?.requests || []) {
+    for (const n of r.missing || []) rows.push({ key: `req:${r.chunk}:${n}`, time: r.date ? `${r.date}T00:00:00` : '', kind: 'requested', verb: 'requested', name: n, rest: `for ${r.chunk}`, dateOnly: true });
+  }
+  rows.sort((a, b) => String(b.time).localeCompare(String(a.time)));
+  return rows.slice(0, limit).map((r) => ({
+    key: r.key,
+    w: r.dateOnly ? (r.time ? whenText(`${r.time.slice(0, 10)}T12:00:00`, now).replace(/^\d\d:\d\d$/, 'today') : '') : whenText(r.time, now),
+    cls: `audit-row${fresh.has(r.key) ? ' is-new' : ''}`,
+    pt: `pt is-${r.kind}`,
+    verb: r.verb,
+    name: r.name,
+    rest: r.rest || `${r.sep} ${r.to.join(', ')}`,
+  }));
+}
+
+/** The view's sub line: "6 secrets in nexus.secrets.json". */
+export function subLine(status) {
+  const n = (status?.secrets || []).length;
+  return `${n} ${n === 1 ? 'secret' : 'secrets'} in nexus.secrets.json`;
+}
+
+// ---- the key card (a secret request: Vault, Inbox) ---------------------------------------------------------------
+
+/** "vercel.com", for "Where to get this". */
+export function hostOf(url) {
+  try { return new URL(url).host.replace(/^www\./, ''); } catch { return ''; }
+}
+
+/**
+ * A key card's model, from a request and the secret's manifest entry: { name, chunk, who, src, why, where,
+ * whereLabel, dests: [{ d, label, locked }] }. Every place the manifest names starts ticked; the vault keeps every
+ * value (the sinks push from it), so its box is ticked and locked.
+ */
+export function keyCard(req, name, status, { now = Date.now() } = {}) {
+  const s = (status?.secrets || []).find((x) => x.name === name) || { name, destinations: [] };
+  const places = (s.destinations || []).map((x) => x.destination);
+  const local = status?.vault?.keychain ? 'keychain' : '.env';
+  const dests = ['local', ...places.filter((d) => d !== 'local')].map((d) => ({
+    d, locked: d === 'local', label: d === 'local' ? `Store locally \u00b7 ${local}` : `Push to ${LABEL[d] || d}`,
+  }));
+  const when = req?.date ? whenText(`${req.date}T12:00:00`, now).replace(/^\d\d:\d\d$/, 'today') : '';
+  const chunk = req?.chunk || s.chunk || '';
+  const purpose = s.for ? `${s.for.replace(/\.?\s*$/, '.')} ` : '';
+  return {
+    key: `${chunk}:${name}`,
+    name,
+    chunk,
+    who: 'the plan',
+    src: [req?.file ? 'secret request' : '', when].filter(Boolean).join(' \u00b7 '),
+    why: `${purpose}${chunk ? `${chunk} waits on it; /next picks ${chunk} back up once it is set.` : 'A chunk waits on it.'}`,
+    where: s.where || '',
+    whereLabel: s.where ? hostOf(s.where) : '',
+    dests,
+    sinks: places.filter((d) => d !== 'local'),
+  };
+}
+
+/** The cards the owner's vault shows: one per name a request still waits on, oldest request first. */
+export function keyCards(status, opts) {
+  const out = [];
+  const seen = new Set();
+  for (const r of status?.requests || []) {
+    for (const n of r.missing || []) {
+      if (seen.has(n)) continue;
+      seen.add(n);
+      out.push(keyCard(r, n, status, opts));
+    }
+  }
+  return out;
+}
+
+/** The body Save sends, from the card's ticks: the sinks only (the vault always keeps the value). */
+export function saveBody(value, ticked) {
+  return { value, destinations: ticked.filter((d) => d !== 'local') };
+}
+
+/** The saved line's places: "local, Actions, Vercel"; and the ones a sink refused. */
+export function savedPlaces(result) {
+  const ok = ['local', ...(result?.pushed || []).filter((p) => p.ok).map((p) => p.destination)];
+  const failed = (result?.pushed || []).filter((p) => !p.ok);
+  return { places: ok.map((d) => SHORT[d] || d).join(', '), failed: failed.map((p) => ({ d: p.destination, label: LABEL[p.destination] || p.destination, error: p.error || '' })) };
+}
+
+// ---- the import --------------------------------------------------------------------------------------------------
+
+/** The import's notes, as the boards word them. */
+const LOOK_NOTE = { public: 'looks public, not a secret', setting: 'a setting, not a secret' };
+
+/**
+ * The import's rows from a names-only preview. owner: each row ticks Local and the places the manifest names (Local
+ * and Actions for a new name); contributor: this machine only. A public-looking name or a setting starts unticked, and
+ * so does one already in the vault ("the vault value stays"); ticking that one replaces it.
+ */
+export function importRows(preview, status, { owner = true } = {}) {
+  const asked = requestedNames(status);
+  const known = new Map((status?.secrets || []).map((s) => [s.name, s]));
+  const mine = new Set((status?.localKeys || []).map((k) => k.name));
+  return (preview?.names || []).filter((n) => !n.skip).map((n) => {
+    const exists = owner ? (n.rings || []).length > 0 || !!known.get(n.name)?.set : mine.has(n.name) || (n.rings || []).length > 0;
+    const look = n.looks && n.looks !== 'secret' ? n.looks : null;
+    const req = asked.get(n.name);
+    const keep = !exists && !look;
+    let note;
+    let tone = '';
+    if (exists) { note = owner ? 'already in the vault; the vault value stays' : 'already a local key; yours stays'; tone = 'is-quiet'; }
+    else if (look) { note = LOOK_NOTE[look]; tone = look === 'public' ? 'is-warn' : 'is-quiet'; }
+    else if (req) { note = `new \u00b7 answers the request from ${req.chunk}`; tone = 'is-match'; }
+    else note = 'new';
+    const declared = known.get(n.name);
+    const places = declared ? (declared.destinations || []).map((x) => x.destination) : ['local', 'github-actions'];
+    const dests = Object.fromEntries(DESTS.map((d) => [d, keep && owner && places.includes(d)]));
+    if (keep && owner && !dests.local) dests.local = true;
+    return { name: n.name, exists, look, note, tone, keep, dests, for: declared?.for || '' };
+  });
+}
+
+/** A row's note once ticked or unticked: an existing name ticked replaces its value. */
+export function importNote(row, owner = true) {
+  if (row.exists && row.keep) return { note: owner ? 'replaces the vault value, a rotation' : 'replaces your local value', cls: 'env-note is-warn' };
+  return { note: row.note, cls: `env-note${row.tone ? ` ${row.tone}` : ''}` };
+}
+
+/** What the confirm sends: the kept names and, for the owner, the places per name. */
+export function importBody(rows, source, { owner = true } = {}) {
+  const kept = rows.filter((r) => r.keep);
+  const body = { ...source, confirm: true, names: kept.map((r) => r.name) };
+  if (owner) body.destinations = Object.fromEntries(kept.map((r) => [r.name, DESTS.filter((d) => r.dests[d])]));
+  return body;
+}
+
+/** "7 entries, 2 comment lines skipped · values stay masked". */
+export function importLine(preview) {
+  const n = (preview?.names || []).length;
+  const c = preview?.comments || 0;
+  return `${n} ${n === 1 ? 'entry' : 'entries'}${c ? `, ${c} comment line${c === 1 ? '' : 's'} skipped` : ''} \u00b7 values stay masked`;
+}
+
+// ---- a contributor's local keys ------------------------------------------------------------------------------------
+
+/** Where a local key sits, in words. */
+const RING_WORD = { local: 'in .env', keychain: 'in the keychain', workspace: 'in .env.workspace' };
+
+/** The local keys section's rows: name, where it sits and when it was last set (from the audit log). */
+export function localRows(status, { now = Date.now(), fresh = new Set(), edit = null } = {}) {
+  const last = new Map();
+  for (const e of status?.audit || []) if ((e.action === 'set' || e.action === 'rotate') && (!last.has(e.name) || last.get(e.name) < e.time)) last.set(e.name, e.time);
+  return (status?.localKeys || []).map((k) => {
+    const at = last.get(k.name);
+    const n = at ? daysAgo(at, now) : null;
+    const age = n == null ? '' : n === 0 ? 'set today' : n === 1 ? 'set yesterday' : `set ${n} days ago`;
+    const where = (k.rings || []).map((r) => RING_WORD[r] || r).join(', ') || 'on this machine';
+    return { name: k.name, sub: [where, age].filter(Boolean).join(' \u00b7 '), fresh: fresh.has(k.name), editing: edit === k.name };
+  });
+}
+
+/** The local keys' sub line: "2 keys for running tidepool on this machine", or when none, "only if tidepool needs them to run here". */
+export function localSub(n, repo) {
+  const r = repo || 'this repo';
+  return n ? `${n} ${n === 1 ? 'key' : 'keys'} for running ${r} on this machine` : `only if ${r} needs them to run here`;
+}
+
+/** The first chunk a contributor's board shows waiting on a project secret: { chunk, name } or null. */
+export function waitingOn(plan) {
+  for (const s of plan?.specs || []) {
+    for (const c of s.chunks || []) {
+      if (c.state === 'closed') continue;
+      const names = c.needsSecret || [];
+      if (names.length) return { chunk: String(c.id), name: names[0], title: c.title || '' };
+    }
+  }
+  return null;
+}
+
+/** An env-var name as typed into the name field: upper case, anything else an underscore. */
+export const nameInput = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+/** Can this name be stored? */
+export const validName = (n) => /^[A-Z][A-Z0-9_]*$/.test(String(n || ''));
+
+// ---- skipped requests: names only, kept for this tab ----------------------------------------------------------------
+
+const SKIP = 'nexus-vault-skipped';
+/** The request cards skipped for now (keys `${chunk}:${name}`, never a value), for this tab. */
+export function readSkipped() {
+  try { return new Set(JSON.parse(sessionStorage.getItem(SKIP) || '[]')); } catch { return new Set(); }
+}
+export function writeSkipped(set) {
+  try { sessionStorage.setItem(SKIP, JSON.stringify([...set])); } catch { /* the skip lasts for this page only */ }
+}

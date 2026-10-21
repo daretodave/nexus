@@ -72,6 +72,14 @@ export const server = {
   runs: () => api('/api/runs'),
   /** POST /api/design/handoff { link, session?: 'new' }: /design ingest <link> in the home session, or a new one. */
   designHandoff: (link, session) => api('/api/design/handoff', { link, ...(session ? { session } : {}) }),
+  // The vault (spec 42): a value goes only in these POST bodies, browser -> local server -> vault and sinks. Never in
+  // a URL, a log, browser storage or an SSE frame; no answer carries one back.
+  /** POST /api/secrets/:name { value, destinations?, declare?, for?, local? } -> { stored, ring, pushed: [{ destination, ok, error? }] } */
+  storeSecret: (name, body) => api(`/api/secrets/${encodeURIComponent(name)}`, body),
+  /** POST /api/secrets/:name/push { destinations }: push the stored value again (Sync, Retry). */
+  pushSecret: (name, destinations) => api(`/api/secrets/${encodeURIComponent(name)}/push`, { destinations }),
+  /** POST /api/secrets/import { text | file, confirm?, names?, destinations? }: a names-only preview, or the store. */
+  importSecrets: (body) => api('/api/secrets/import', body),
 };
 
 const EMPTY = { connected: false, stage: initialState(), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [] };

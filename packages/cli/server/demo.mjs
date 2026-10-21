@@ -23,6 +23,7 @@ import { ADOPT_PASTE } from './server.mjs';
 import { createWorld } from './demo/world.mjs';
 import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
 import { realClock } from './demo/clock.mjs';
+import { createDemoVault, DEMO_REQUEST } from './demo/vault.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG = path.resolve(HERE, '..');
@@ -48,6 +49,25 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   const world = createWorld(sc, { clock: clk, hub });
   let prefs = { onboarded: true, aiSummaries: true, theme: 'night' };
   let local = null;
+  // The vault (spec 42): names and status in memory; a posted value is dropped the moment it is read.
+  const vault = createDemoVault({ now: () => Date.now(), owner: () => !!(local ? local.effective : world.info().owner) });
+  /** The plan with the chunk the vault holds back: it waits on a secret until the value is set. */
+  const planWithSecret = () => {
+    const p = world.plan();
+    const sp = p.specs.find((x) => x.id === '15');
+    if (!sp || sp.chunks.some((c) => c.id === DEMO_REQUEST.chunk)) return p;
+    const waits = DEMO_REQUEST.names.filter((n) => !vault.isSet(n));
+    sp.chunks.push({ id: DEMO_REQUEST.chunk, title: DEMO_REQUEST.title, size: 'M', state: 'ready', closedOn: null, claim: null, plotted: null, secrets: DEMO_REQUEST.names, ...(waits.length ? { why: `needs secret ${waits.join(', ')}`, needsSecret: waits } : {}) });
+    if (waits.length) p.blocked = [...(p.blocked || []), { id: DEMO_REQUEST.chunk, why: `needs secret ${waits.join(', ')}` }];
+    p.order = [...(p.order || []), DEMO_REQUEST.chunk];
+    return p;
+  };
+  /** The inbox with the vault's request row, marked as the live server marks it (gone once the value is set). */
+  const inboxWithSecret = () => {
+    const row = vault.mark(DEMO_REQUEST.durable);
+    const rest = world.inbox();
+    return row && local?.effective !== false ? [...rest, { id: `plan:${row.id}`, kind: 'cloud', src: 'durable', question: row.text, durable: row, at: null }] : rest;
+  };
   let loopTimer = null;
   const begin = () => {
     world.start();
@@ -138,9 +158,12 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
           return send(res, 200, local);
         }
         case 'GET /api/sessions': return send(res, 200, world.rows());
-        case 'GET /api/inbox': return send(res, 200, world.inbox());
+        case 'GET /api/inbox': return send(res, 200, inboxWithSecret());
         case 'GET /api/oversight': return send(res, 200, { live: world.asks(), durable: world.durable() });
-        case 'GET /api/plan': return send(res, 200, world.plan());
+        case 'GET /api/plan': return send(res, 200, planWithSecret());
+        case 'GET /api/secrets': { const { status, ...r } = vault.status(); return send(res, 200, r); }
+        case 'GET /api/secrets/audit': return send(res, 200, vault.audit());
+        case 'POST /api/secrets/import': { const { status, ...r } = vault.importEnv(await body(req)); return send(res, status, r); }
         case 'GET /api/claims': return send(res, 200, world.claims());
         case 'GET /api/summaries': return send(res, 200, {});
         case 'POST /api/send': {
@@ -154,6 +177,13 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         }
         case 'POST /api/announce':
         case 'POST /api/oversight/answer': await body(req); return send(res, 200, { ok: true });
+      }
+      const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)(\/push)?$/.exec(route);
+      if (sec) {
+        const b = await body(req);
+        const name = decodeURIComponent(sec[1]);
+        const { status, ...r } = sec[2] ? vault.push(name, b) : vault.store(name, b);
+        return send(res, status, r);
       }
       const ask = /^POST \/api\/ask\/([\w-]+)$/.exec(route);
       if (ask) {
