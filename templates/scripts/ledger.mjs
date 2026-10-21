@@ -10,7 +10,8 @@
 // Sessions take star names (vega, sirius, polaris, ...): the next one no live or parked ledger holds. The name shows in
 // the claims session tag, the GUI's fleet tiles, the oversight inbox tags and the `/heads-down` banner.
 //
-//   node scripts/ledger.mjs beat [--chunk <id>] [--step <step>] [--set key=value …] [--add key=value …] [--clear key …]
+//   node scripts/ledger.mjs beat [--chunk <id>] [--step <step>] [--set key=value …] [--set-file key=<path> …]
+//                                [--add key=value …] [--clear key …]
 //   node scripts/ledger.mjs show [<id | star>] [--json]
 //   node scripts/ledger.mjs list [--train <slug>] [--json]   every session: star, state, chunk, step, last beat
 //   node scripts/ledger.mjs park <slug> [--set key=value …]  state parked for reboot train <slug>
@@ -18,8 +19,9 @@
 //   node scripts/ledger.mjs done <id | star>                 the resume finished (state resumed)
 //   node scripts/ledger.mjs end                              this session finished its loop (state ended)
 //
-// `--set a.b=v` writes a dotted key (a value that parses as JSON is stored as JSON); `--add k=v` appends to a list
-// (`defaults`, `parked`, `claimed`). Environment: NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID (the session's id);
+// `--set a.b=v` writes a dotted key (a value that parses as JSON is stored as JSON); `--set-file k=<path>` stores a
+// file's text verbatim (the `/heads-down` loop prompt: its quotes never meet a shell); `--add k=v` appends to a list
+// (`defaults`, `parked`, `claimed`, `done`). Environment: NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID (the session's id);
 // NEXUS_LEDGER_STALE_MIN (minutes without a beat before a live session reads as fallen; default 15).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,8 +62,8 @@ const parseValue = (v) => {
   }
 };
 
-/** The ledger with `--set`, `--add` and `--clear` applied (dotted keys reach into objects). */
-export function apply(ledger, { set = [], add = [], clear = [] } = {}) {
+/** The ledger with `--set`, `--set-file` (as `text`: stored verbatim), `--add` and `--clear` applied (dotted keys reach into objects). */
+export function apply(ledger, { set = [], text = [], add = [], clear = [] } = {}) {
   const out = structuredClone(ledger);
   const walk = (key, make) => {
     const parts = key.split('.');
@@ -84,6 +86,11 @@ export function apply(ledger, { set = [], add = [], clear = [] } = {}) {
     const [k, v] = pair(kv);
     const [o, last] = walk(k, true);
     o[last] = parseValue(v);
+  }
+  for (const kv of text) {
+    const [k, v] = pair(kv);
+    const [o, last] = walk(k, true);
+    o[last] = v;
   }
   for (const kv of add) {
     const [k, v] = pair(kv);
@@ -149,7 +156,7 @@ function write(dir, l) {
 }
 
 export const USAGE = `usage:
-  node scripts/ledger.mjs beat [--chunk <id>] [--step <s>] [--set k=v …] [--add k=v …] [--clear k …]
+  node scripts/ledger.mjs beat [--chunk <id>] [--step <s>] [--set k=v …] [--set-file k=<path> …] [--add k=v …] [--clear k …]
   node scripts/ledger.mjs show [<id | star>] [--json]
   node scripts/ledger.mjs list [--train <slug>] [--json]
   node scripts/ledger.mjs park <slug> [--set k=v …]
@@ -158,7 +165,7 @@ export const USAGE = `usage:
   node scripts/ledger.mjs end`;
 
 function opts(argv) {
-  const o = { set: [], add: [], clear: [], pos: [], json: false };
+  const o = { set: [], text: [], add: [], clear: [], pos: [], json: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const val = () => {
@@ -166,7 +173,14 @@ function opts(argv) {
       return argv[++i];
     };
     if (a === '--set') o.set.push(val());
-    else if (a === '--add') o.add.push(val());
+    else if (a === '--set-file') {
+      const kv = val();
+      const eq = kv.indexOf('=');
+      if (eq < 1) throw new Error(`ledger: "${kv}" is not key=<path>`);
+      const file = kv.slice(eq + 1);
+      if (!fs.existsSync(file)) throw new Error(`ledger: --set-file ${kv.slice(0, eq)}: no file ${file}`);
+      o.text.push(`${kv.slice(0, eq)}=${fs.readFileSync(file, 'utf8').replace(/\r?\n$/, '')}`);
+    } else if (a === '--add') o.add.push(val());
     else if (a === '--clear') o.clear.push(val());
     else if (a === '--chunk') o.set.push(`chunk=${val()}`);
     else if (a === '--step') o.set.push(`step=${val()}`);

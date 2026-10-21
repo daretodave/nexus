@@ -85,6 +85,7 @@ and the last beat.
 ```
 node scripts/ledger.mjs beat --chunk 07.3 --step building --set worktree=../app-wt/07.3
 node scripts/ledger.mjs beat --add "defaults=kept the spec's copy"
+node scripts/ledger.mjs beat --set-file loop=<file>   # a long text verbatim (the loop prompt)
 node scripts/ledger.mjs list              # star, state, chunk, step, last beat
 ```
 

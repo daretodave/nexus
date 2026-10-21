@@ -97,6 +97,19 @@ describe('the CLI', () => {
     assert.match(said[0], /ended its loop/);
   });
 
+  it('stores a file verbatim with --set-file (the loop prompt), refusing a missing one', () => {
+    const prompt = `/next Build these: 07.1 07.2 (skip one whose needs aren't done).\nSay "done" at the end.`;
+    const file = path.join(root, 'loop.txt');
+    fs.writeFileSync(file, `${prompt}\r\n`);
+    assert.equal(run(['beat', '--set-file', `loop=${file}`, '--set', 'kind=heads-down', '--add', 'done=07.1'], A), 0);
+    const l = readAll(path.join(root, DIR))[0];
+    assert.equal(l.loop, prompt);
+    assert.deepEqual(l.done, ['07.1']);
+    assert.throws(() => run(['beat', '--set-file', `loop=${file}.gone`], A), /no file/);
+    assert.throws(() => run(['beat', '--set-file', 'nokey'], A), /not key=<path>/);
+    assert.deepEqual(apply(l, { text: ['loop=[1,2]'] }).loop, '[1,2]');
+  });
+
   it('keeps no ledger without a session id, and says so', () => {
     assert.throws(() => run(['beat'], {}), /no session id/);
     assert.equal(run(['list'], {}), 0);
