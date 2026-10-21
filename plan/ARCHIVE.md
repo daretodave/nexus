@@ -53,3 +53,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 41.3 · Claude Design's handoff is the GUI: every screen, both themes · d8a0601c..d476b8d4
 - 2026-10-21 · 36.3 · order refuses bad --limit; progress --json prints spec data · 1637f034..1431cccd
 - 2026-10-21 · 34.1 · diagrams.mjs draws three SVGs; the gate catches drift · 662485d0..662485d0
+- 2026-10-21 · 36.6 · whoami warns on the pid fallback; docs lead NEXUS_SESSION · f1721b98..65891b54
