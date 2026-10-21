@@ -1,0 +1,77 @@
+name: pr-resolve
+run-name: resolve conflicts${{ inputs.pr && format(' in PR {0}', inputs.pr) || '' }}
+
+# Keeps open pull requests mergeable as the default branch moves
+# (scripts/pr/resolve.mjs): git merges it into each conflicted PR's
+# branch, where .gitattributes' union driver settles the
+# append-only files (plan/ARCHIVE.md, identity/footguns.md), and a
+# model resolves what is left with Read and Edit only. The PR's
+# code is never run here; the merge is pushed, never forced. A PR
+# from a fork, a draft, or one stacked on another branch is left
+# alone. Hosted runner (secrets are held).
+#
+# With NEXUS_APP_ID set (the same app march.yml's land job uses),
+# the push runs the PR's checks again; with the workflow's own
+# token it doesn't, so re-run them from the PR.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: One PR number (empty for every open PR)
+        required: false
+        default: ''
+
+concurrency:
+  group: pr-resolve
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write        # push the merge onto the PR's branch
+      pull-requests: write   # comment, label
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The resolver runs from the default branch's copy, read
+      # before any PR branch is checked out.
+      - name: Copy the resolver out of the checkout
+        run: mkdir -p "$RUNNER_TEMP/tools/pr" && cp scripts/pr/resolve.mjs "$RUNNER_TEMP/tools/pr/"
+
+      - name: The loop's app token
+        id: app
+        if: vars.NEXUS_APP_ID != ''
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.NEXUS_APP_ID }}
+          private-key: ${{ secrets.NEXUS_APP_PRIVATE_KEY }}
+
+      - name: Resolve
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Pin it: npm view @anthropic-ai/claude-code version
+          NEXUS_CLAUDE_CODE: '@anthropic-ai/claude-code@2.1.285'
+          NEXUS_MAIN_BRANCH: ${{ github.event.repository.default_branch }}
+          PR: ${{ inputs.pr }}
+          GIT_AUTHOR_NAME: nexus-resolve
+          GIT_AUTHOR_EMAIL: nexus-resolve@users.noreply.github.com
+          GIT_COMMITTER_NAME: nexus-resolve
+          GIT_COMMITTER_EMAIL: nexus-resolve@users.noreply.github.com
+        run: |
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $auth"
+          node "$RUNNER_TEMP/tools/pr/resolve.mjs" $PR

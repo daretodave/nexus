@@ -25,12 +25,16 @@ jobs:
       # The token sits on each step, never here: a job's env is
       # handed to every step (scripts/workflow-lint.mjs).
     steps:
+      # The watch list is a repo variable (space-separated workflow
+      # names), so a repo with more cloud writers (pr-resolve, a
+      # deploy loop) watches them with no edit here.
       - name: Cancel wedged runs (in_progress > 2h)
         env:
           GH_TOKEN: ${{ github.token }}
+          WATCH: ${{ vars.NEXUS_HEARTBEAT_WATCH || 'march night' }}
         run: |
           now=$(date -u +%s)
-          for wf in march night; do
+          for wf in $WATCH; do
             gh run list --workflow "$wf" --status in_progress \
               --json databaseId,createdAt \
               --jq '.[] | [.databaseId, .createdAt] | @tsv' |

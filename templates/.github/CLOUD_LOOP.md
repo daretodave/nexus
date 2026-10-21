@@ -39,6 +39,62 @@ roughly:
 The 12-point/24h weighted ceiling caps the worst case either
 way (see "The daily ceiling" below).
 
+## Owner mode or pull requests
+
+One repo variable decides how a tick lands, the cloud's
+`.owner` (`nexus/playbooks/owner-mode.md`):
+
+| `NEXUS_LOOP_MODE` | A tick | Its safety |
+|---|---|---|
+| `owner` | the `owner` job: `/march` as the owner's checkout runs it (an untracked `.owner` on the runner): claims as the owner, settles `plan/pending/`, pushes `<DEFAULT_BRANCH>` | the gate, and a token that holds the ruleset's bypass |
+| unset, or `pr` | `pick` → `build` → `land` (→ `release`): one chunk, a pull request | the owner's review, and a credential split |
+
+Pull-request mode, job by job (`scripts/cloud/tick.mjs`):
+
+1. **`pick`** claims the first ready, unclaimed chunk in
+   `/next`'s pick order as the contributor `nexus-cloud`,
+   session `cloud-<run id>`. It claims nothing while
+   `NEXUS_PR_LIMIT` (default 3) loop PRs wait on you, or when
+   no chunk is ready (an unchunked spec is yours to chunk).
+2. **`build`** runs `/next` on that chunk with **no token at
+   all** (read-only job, `persist-credentials: false`, the
+   Claude Code CLI rather than the action, which fetches a token
+   of its own), on the branch `nexus/<run id>`. Plan changes go
+   only into `plan/pending/<id>.md` (and a new spec file).
+3. **`land`** runs the default branch's scripts, never the
+   tick's: it fences the diff (`tick.mjs fence`: no shared plan
+   or identity file edited, nothing under `.github/workflows/`
+   or `.github/actions/`), then mints the app token if you set
+   one, pushes, opens the PR and attaches it to the claim.
+4. **`release`** gives the claim back when nothing landed.
+
+Then `pr-flow.yml` releases a PR's claims when it closes,
+merged or not (`claims prune`), and `pr-resolve.yml` merges
+`<DEFAULT_BRANCH>` into conflicted loop and contributor PRs
+after every push (the union driver first, a model with Read and
+Edit only for what is left). You merge; your next local
+`/next` (or an owner-mode tick) settles the pending files.
+
+**The app (optional, recommended for PR mode).** A PR opened
+with the workflow's own token never starts its checks, so you
+would re-run them by hand. Create a GitHub App with Contents and
+Pull requests read/write on this repo only, install it, then:
+
+```
+gh variable set NEXUS_APP_ID --body <app id>
+gh secret set NEXUS_APP_PRIVATE_KEY < app-private-key.pem
+```
+
+The token is minted in `land` after the fence, so the agent
+never holds it. Without the app, also allow Actions to open
+PRs: Settings → Actions → General → "Allow GitHub Actions to
+create and approve pull requests".
+
+Every job runs on GitHub-hosted runners, and no secret sits in
+`run-name` or a job's `env:`; `scripts/workflow-lint.mjs`
+checks both, and the night shift (`night.yml`) switches the
+same way (its PR carries only the digest's files).
+
 ## Identity choice — bot or you
 
 The default identity is `github-actions[bot]`. Zero secrets to
@@ -92,6 +148,15 @@ To upgrade from bot to user mode:
 4. Push. The next tick will commit as you.
 
 ## Setup (one-time)
+
+### 0. Choose how ticks land
+
+```
+gh variable set NEXUS_LOOP_MODE --body owner   # or leave it unset: pull requests
+```
+
+See "Owner mode or pull requests" above. Pull-request mode also
+wants `pr-flow.yml` and `pr-resolve.yml` beside `march.yml`.
 
 ### 1. Install the Claude Code GitHub App
 
@@ -262,6 +327,9 @@ These are encoded in the brief and in `agents.md`'s standing rules:
 | `Permission denied` on `git push` | (User mode only) PAT expired or rescoped | Mint a new fine-grained PAT, update `ACTIONS_PAT` |
 | Tick failed, issue opened | Tick hit a real error | Read the issue body for the run URL; fix root cause; close issue |
 | Loop appears stuck | A previous tick is still running | `gh run list --workflow march.yml --status in_progress`, cancel the stale one |
+| PR-mode tick: `fence:` lines, land failed | The tick edited a shared plan file or a workflow | Read the fence's lines; the claim was released; the next tick picks again |
+| PR-mode tick: `nothing claimed until the owner merges` | `NEXUS_PR_LIMIT` loop PRs are open | Review and merge (or close) them |
+| PR-mode PR's checks never start | Opened with the workflow's own token | Set up the app (`NEXUS_APP_ID`), or re-run the checks from the PR |
 | Quota pressure on Max | Cloud + heavy local work overlapping | Drop cloud cadence: change cron to every 4h instead of 2h |
 
 ## Why this is structured this way

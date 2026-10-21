@@ -214,13 +214,18 @@ shows the same.
 
 ## The cloud loop
 
-A cloud loop runs either way. In owner mode it pushes to main
-like the owner (its token needs the ruleset bypass: a token
-of the owner's, or an app added to `bypass_actors`), and its
-safety is the gate. In contributor mode each tick claims one
-chunk as a contributor, works on its own branch, writes only
-pending files, and opens a pull request. Hooks aren't armed
-on a hosted runner, so the ruleset is the only rule there.
+A cloud loop runs either way, switched by the repo variable
+`NEXUS_LOOP_MODE` (the cloud's `.owner`). Set to `owner`, it
+pushes to main like the owner (the runner's checkout gets an
+untracked `.owner`; its token needs the ruleset bypass: a
+token of the owner's, or an app added to `bypass_actors`), and
+its safety is the gate. Unset, each tick claims one chunk as
+the contributor `nexus-cloud` (session `cloud-<run id>`),
+builds it with no token on `nexus/<run id>`, writes only
+pending files, and a separate job fences the diff and opens the
+pull request (`templates/.github/CLOUD_LOOP.md`, "Owner mode
+or pull requests"). Hooks aren't armed on a hosted runner, so
+the ruleset and the fence are the rules there.
 
 ## Checklist
 

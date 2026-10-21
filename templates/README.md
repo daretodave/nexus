@@ -74,7 +74,10 @@ templates/
 │   ├── NN_service.md                  (per-service runbook template)
 │   └── bootstrap.example.json         (manifest for /bootstrap; copy to setup/bootstrap.local.json, gitignored)
 ├── .github/                           → repo's .github/ (opt-in; cloud loops)
-│   ├── workflows/march.yml            (the dispatcher)
+│   ├── workflows/march.yml            (the dispatcher: owner job, or PR mode's pick/build/land/release by NEXUS_LOOP_MODE)
+│   ├── workflows/pr-flow.yml          (PR mode: a closed PR's claims leave the claims branch)
+│   ├── workflows/pr-resolve.yml       (PR mode: main merged into conflicted PRs; union driver, then a model)
+│   ├── actions/setup/action.yml       (the project's toolchain, one place for every tick job)
 │   ├── workflows/night.yml            (the night shift — /digest daily)
 │   ├── workflows/heartbeat.yml        (model-free watchdog for the other two)
 │   ├── workflows/nightly-smoke.yml    (model-free SMOKE_SAMPLE=full walk; omit if night.yml owns breadth checks)
@@ -112,6 +115,8 @@ templates/
 │   ├── ledger.mjs                     (each session's live ledger in .nexus/sessions/: star names; a stale beat reads fallen)
 │   ├── worktree.mjs                   (close a worktree without deleting through its links; list them for /tidy)
 │   ├── workflow-lint.mjs              (cloud-loop workflow rules: secrets on hosted runners, no secret in a job env; add to your gate)
+│   ├── cloud/tick.mjs                 (PR-mode cloud tick: pick + claim, fence the diff, land the PR, release)
+│   ├── pr/resolve.mjs                 (pr-resolve.yml's resolver: merge main into conflicted PRs, never forced)
 │   ├── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
 │   ├── __tests__/plan-check.test.mjs  (unit tests for plan-check.mjs)
 │   ├── __tests__/pending.test.mjs     (pending files, the config, the settled view)
@@ -124,6 +129,8 @@ templates/
 │   ├── __tests__/ledger.test.mjs      (the live ledger)
 │   ├── __tests__/order.test.mjs       (the simulated pick order, pure)
 │   ├── __tests__/workflow-lint.test.mjs  (the workflow rules, pure)
+│   ├── __tests__/tick.test.mjs        (the PR-mode tick: fence, candidates, PR text; pure)
+│   ├── __tests__/resolve.test.mjs     (the resolver's pure parts)
 │   ├── __tests__/worktree.test.mjs    (worktree close and list in scratch repos; slower, offline)
 │   ├── __tests__/push-policy-hook.test.mjs  (the pre-push hook end to end in a scratch git repo; slower, offline)
 │   └── __tests__/claims.test.mjs      (claims over git in scratch repos; slower, offline)
@@ -211,6 +218,7 @@ the corresponding capability:
 | `scripts/refresh-critique-session.mjs` + `scripts/check-secrets-liveness.mjs` | `bearings.md`'s `Auth:` is anything other than `none` — Pattern B session refresh + the GH_TOKEN/`CRITIQUE_*` liveness probe for hands-off pre-flight. See `nexus/customization/auth-aware-critique.md`. |
 | `skills/digest.md` + `claude/commands/digest.md` + `.github/workflows/night.yml` + `.github/workflows/heartbeat.yml` | The cloud loop is live and you want the rest of the genus: a daily morning briefing (`plan/DIGEST.md`), nightly breadth checks, and a model-free watchdog. See `nexus/concepts/loop-shapes.md`. |
 | `skills/bootstrap.md` + `claude/commands/bootstrap.md` + `scripts/bootstrap.mjs` | You plan to run `/bootstrap` as the setup executor (tokens-in to deployed app + ticking cloud loop). See `nexus/customization/bootstrap-automation.md`. |
+| `.github/workflows/pr-flow.yml` + `.github/workflows/pr-resolve.yml` + `scripts/cloud/tick.mjs` + `scripts/pr/resolve.mjs` | The cloud loop lands as pull requests (`NEXUS_LOOP_MODE` unset): ticks claim one chunk as `cloud-<run id>`, build with no token, land a PR; a closed PR's claims are released and conflicted PRs get main merged in. Needs the claims module. See `.github/CLOUD_LOOP.md` "Owner mode or pull requests" and `nexus/playbooks/cloud-loop-existing-actions.md`. |
 | `.github/workflows/nightly-smoke.yml` | Hermetic e2e is adopted and `night.yml` doesn't already run `SMOKE_SAMPLE=full` as its breadth step — run one or the other, never both. See `nexus/customization/hermetic-e2e.md` + `nexus/concepts/loop-shapes.md`. |
 | `workspace/CLAUDE.md` + `workspace/AGENTS.md` + `workspace/README.md` + `workspace/REPOS.md` | You've outgrown polyrepo into a 3+-repo workspace (an un-versioned local root holding `plan/` and every product as siblings). Copy all four to the workspace root, not into any single repo. See `nexus/playbooks/workspace.md`. |
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |

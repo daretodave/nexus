@@ -541,7 +541,10 @@ nexus/
     │   ├── NN_service.md              # per-service runbook template
     │   └── bootstrap.example.json     # /bootstrap manifest (copy → bootstrap.local.json)
     ├── .github/                       # → repo's .github/ (opt-in cloud loops)
-    │   ├── workflows/march.yml        # the dispatcher: cron + Claude Code Action
+    │   ├── workflows/march.yml        # the dispatcher: owner job, or PR mode (pick/build/land/release)
+    │   ├── workflows/pr-flow.yml      # PR mode: a closed PR's claims are released
+    │   ├── workflows/pr-resolve.yml   # PR mode: main merged into conflicted PRs
+    │   ├── actions/setup/action.yml   # the project's toolchain, shared by every tick job
     │   ├── workflows/night.yml        # the night shift: /digest + breadth checks
     │   ├── workflows/heartbeat.yml    # the immune system: model-free watchdog
     │   ├── workflows/nightly-smoke.yml # model-free SMOKE_SAMPLE=full walk (omit if night.yml owns breadth)
@@ -575,6 +578,8 @@ nexus/
     │   ├── ledger.mjs                 # each session's live ledger (.nexus/sessions/), star names, fallen = stale beat
     │   ├── worktree.mjs               # close a worktree safely (links unlinked first); list for /tidy
     │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env
+    │   ├── cloud/tick.mjs             # PR-mode tick: pick + claim, fence, land the PR, release
+    │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
     │   ├── __tests__/pending.test.mjs # pending files, config, settled view
@@ -587,6 +592,8 @@ nexus/
     │   ├── __tests__/ledger.test.mjs  # the live ledger
     │   ├── __tests__/order.test.mjs   # the simulated pick order
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
+    │   ├── __tests__/tick.test.mjs    # the PR-mode tick
+    │   ├── __tests__/resolve.test.mjs # the resolver
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)

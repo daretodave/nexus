@@ -6,6 +6,22 @@ name: march
 #
 # See .github/CLOUD_LOOP.md for setup, debugging, and the upgrade path
 # from bot-author to user-author.
+#
+# Two ways to land, switched by the repo variable NEXUS_LOOP_MODE
+# (the cloud's .owner; nexus/playbooks/owner-mode.md):
+#   owner   the `owner` job: the tick works as the owner's checkout
+#           does - claims, settles, pushes <DEFAULT_BRANCH>. Its safety
+#           is the gate (and the ruleset bypass its token holds).
+#   unset   pull-request mode, the jobs after it: `pick` claims one
+#   or pr   chunk as cloud-<run id>; `build` runs /next on it with no
+#           token at all, on the branch nexus/<run id>, plan changes
+#           only as pending files; `land` fences the diff, then
+#           pushes and opens the PR (with an app token when
+#           NEXUS_APP_ID is set); `release` drops the claim when
+#           nothing landed. pr-flow.yml releases a PR'd claim when
+#           the PR closes; pr-resolve.yml keeps loop PRs mergeable.
+# Every job runs on GitHub-hosted runners (they hold secrets), and no
+# secret sits in run-name or a job's env (scripts/workflow-lint.mjs).
 
 on:
   schedule:
@@ -20,7 +36,12 @@ on:
         required: false
         type: choice
         default: march
-        options: [march, critique, iterate, ship-a-chunk, ship-data, expand, triage, digest]
+        options: [march, next, critique, iterate, ship-a-chunk, ship-data, expand, triage, digest]
+      chunk:
+        description: 'Pull-request mode: build this chunk id (empty: the next ready one)'
+        required: false
+        type: string
+        default: ''
 
 concurrency:
   # Serialize ticks. A long-running tick blocks the next scheduled
@@ -29,7 +50,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  march:
+  # ═════════════════════════════════════════════════════════════
+  # Owner mode (NEXUS_LOOP_MODE = owner): one job, pushes main.
+  # ═════════════════════════════════════════════════════════════
+  owner:
+    if: vars.NEXUS_LOOP_MODE == 'owner'
     runs-on: ubuntu-latest
     # 6h is the GH-Actions hard limit; 5h leaves headroom. Most ticks
     # finish in under 15min; the long tail is /ship-a-chunk doing a
@@ -51,34 +76,10 @@ jobs:
           # add it as ACTIONS_PAT secret, and uncomment the next line:
           # token: ${{ secrets.ACTIONS_PAT }}
 
-      # ───────────────────────────────────────────────────────────
-      # Project-specific install. Adjust for your stack.
-      # ───────────────────────────────────────────────────────────
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # If you have a Playwright e2e leg, cache + install browsers.
-      # Drop this block entirely for projects without e2e.
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('apps/e2e/package.json', 'pnpm-lock.yaml') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright browsers (chromium only)
-        run: pnpm --filter "<PROJECT_PKG_PREFIX>/e2e" e2e:install
+      # The project's toolchain: .github/actions/setup/action.yml
+      # (one place, shared with the pull-request build job).
+      - name: Project toolchain
+        uses: ./.github/actions/setup
 
       # ───────────────────────────────────────────────────────────
       # Cloud-loop control plane.
@@ -131,6 +132,14 @@ jobs:
       # for bot-author mode (the action's own default); set them
       # to switch to user-author mode — see CLOUD_LOOP.md
       # "Identity choice".
+
+      # The runner's checkout is the owner's for this tick: an
+      # untracked .owner makes scripts/claims.mjs claim as the
+      # owner, scripts/plan/settle.mjs settle and the push policy
+      # pass <DEFAULT_BRANCH> (nexus/playbooks/owner-mode.md).
+      - name: Owner mode for this checkout
+        if: steps.ceiling.outputs.skip != 'true'
+        run: touch .owner
 
       - name: Run /march (cloud mode)
         id: run_march
@@ -185,7 +194,9 @@ jobs:
                - exit cleanly with a one-line note in the action log explaining why no work shipped this tick, or
                - if there is a real failure to surface, open a GitHub issue with `gh issue create --title "Cloud march failed: <iso-date>" --body "<context + run URL>"` and exit. Do not pass `--label` — the issue lands unlabeled and the next scheduled tick's /triage classifies and labels it appropriately.
 
-            The dispatch order is the standard /march order from skills/march.md: triage → critique (web-fetch engine) → ship-a-chunk → ship-data → expand → iterate. Issues labeled loop:do jump the queue (the concierge lane - march step 1).
+            8. This checkout is in owner mode (an untracked .owner) and the claims session is NEXUS_SESSION (cloud-<run id>): /next claims, settles and lands on <DEFAULT_BRANCH> as the owner's checkout does.
+
+            The dispatch order is the standard /march order from skills/march.md: triage → critique (web-fetch engine) → /next top (the chunk step: one chunk, done fully) → ship-data → expand → iterate. Issues labeled loop:do jump the queue (the concierge lane - march step 1).
 
             Requested verb: ${{ inputs.verb || 'march' }}. If it is not 'march', skip dispatch and execute skills/<verb>.md directly - the user asked for exactly that pass.
 
@@ -207,6 +218,8 @@ jobs:
           # Default: GITHUB_TOKEN. To switch to user-PAT mode,
           # replace with: GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This tick's claims session (scripts/claims.mjs).
+          NEXUS_SESSION: cloud-${{ github.run_id }}
           #
           # Default (commented): bot-author mode, the action's own
           # identity. To switch to user-author mode, uncomment and
@@ -241,4 +254,245 @@ jobs:
               --body "Failed step: $failed_step. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
             echo "An open 'Cloud march tick crashed' issue already exists — skipping dedupe."
+          fi
+
+  # ═════════════════════════════════════════════════════════════
+  # Pull-request mode (NEXUS_LOOP_MODE unset or pr): the tick is a
+  # contributor. Four jobs, so the agent's job holds no token.
+  # ═════════════════════════════════════════════════════════════
+  pick:
+    if: vars.NEXUS_LOOP_MODE != 'owner'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write        # the claims branch (scripts/claims.mjs), nothing else
+      pull-requests: read    # how many loop PRs are open
+    outputs:
+      id: ${{ steps.pick.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The first ready, unclaimed chunk in /next's pick order on
+      # origin, claimed for this run's session (a contributor
+      # named nexus-cloud). Nothing when NEXUS_PR_LIMIT loop PRs
+      # (default 3) already wait on the owner.
+      - name: Pick and claim one chunk
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXUS_SESSION: cloud-${{ github.run_id }}
+          NEXUS_MAIN_BRANCH: ${{ github.event.repository.default_branch }}
+          NEXUS_PR_LIMIT: ${{ vars.NEXUS_PR_LIMIT || '3' }}
+          CHUNK: ${{ inputs.chunk }}
+        run: node scripts/cloud/tick.mjs pick --chunk "$CHUNK"
+
+  build:
+    needs: pick
+    if: needs.pick.outputs.id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    # Read-only, and the agent's step gets no token at all: a
+    # prompt-injected tick has nothing to push or comment with.
+    permissions:
+      contents: read
+    outputs:
+      commits: ${{ steps.bundle.outputs.commits }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Project toolchain
+        uses: ./.github/actions/setup
+
+      - name: The tick's branch
+        env:
+          BRANCH: nexus/${{ github.run_id }}
+        run: git switch -c "$BRANCH"
+
+      # The Claude Code CLI, not the action: the action fetches a
+      # token of its own, and this step must hold none. Pin the
+      # version (npm view @anthropic-ai/claude-code version).
+      - name: Claude runs /next on the claimed chunk (no token)
+        id: run_next
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          CHUNK: ${{ needs.pick.outputs.id }}
+          NEXUS_SESSION: cloud-${{ github.run_id }}
+          NEXUS_CONTRIBUTOR: '1'
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GIT_AUTHOR_NAME: nexus-cloud
+          GIT_AUTHOR_EMAIL: nexus-cloud@users.noreply.github.com
+          GIT_COMMITTER_NAME: nexus-cloud
+          GIT_COMMITTER_EMAIL: nexus-cloud@users.noreply.github.com
+        run: |
+          {
+            printf 'Chunk: %s\nRun: %s\n\n' "$CHUNK" "$RUN_URL"
+            cat <<'PROMPT'
+          You are running <PROJECT>'s cloud loop in pull-request mode: a
+          contributor tick. Read agents.md first; its standing rules apply.
+
+          Run /next on the chunk named above: read skills/next.md and do Steps
+          0-4 and 6 for that chunk, with these changes.
+
+          1. The workflow already holds this chunk's claim (the session in
+             NEXUS_SESSION) and will push, open the pull request and attach
+             it to the claim. Skip every claims.mjs call, the announce board,
+             settle, and Step 5. Never push: you hold no token, so a push or
+             a gh write fails anyway.
+          2. Build in this checkout, on the current branch (nexus/<run id>).
+             It is a disposable runner checkout, not a person's primary one:
+             do not cut a worktree.
+          3. You are a contributor: never edit a shared plan file (a spec's
+             chunk list, plan/README.md, plan/ARCHIVE.md, identity/). Close
+             with plan/pending/<chunk>.md (skills/next/land.md section 2). A
+             new spec file is the one plan file you may add. The land job
+             refuses the diff otherwise.
+          4. The verify gate (pnpm verify) runs FOREGROUND, never
+             run_in_background. Every subagent dispatch (the Agent tool, a
+             Workflow) passes run_in_background: false: leaving it out is a
+             background dispatch, and the job ends with your turn.
+          5. Never ask: take the default, and list each default taken in the
+             close's commit body, one line each.
+          6. Every commit ends with the trailer (blank line before it):
+               Cloud-Run: <the Run URL above>
+          7. Gate red three times on one root cause, or the chunk is not
+             buildable: commit nothing more, say why in one line, and exit.
+             The workflow releases the claim when no commit is left.
+
+          Begin. One chunk. Commits on this branch, then exit.
+          PROMPT
+          } > "$RUNNER_TEMP/prompt.txt"
+          npx --yes @anthropic-ai/claude-code@2.1.285 -p "$(cat "$RUNNER_TEMP/prompt.txt")" \
+            --model claude-sonnet-5 \
+            --permission-mode bypassPermissions \
+            --strict-mcp-config \
+            --output-format json > "$RUNNER_TEMP/claude.json" || echo "claude exited non-zero; the bundle step takes what it committed"
+          node -e "const r=JSON.parse(require('fs').readFileSync(process.env.RUNNER_TEMP+'/claude.json','utf8'));console.log('tick:', r.subtype ?? '', 'turns', r.num_turns ?? '?', '|', String(r.result ?? '').slice(-400))" || true
+
+      # Only commits travel: an uncommitted edit stays on the runner.
+      - name: Bundle the tick's commits
+        id: bundle
+        env:
+          BRANCH: nexus/${{ github.run_id }}
+          MAIN: ${{ github.event.repository.default_branch }}
+        run: |
+          git status --short
+          n=$(git rev-list --count "origin/$MAIN..$BRANCH")
+          echo "commits=$n" >> "$GITHUB_OUTPUT"
+          echo "the tick committed $n commit(s)"
+          if [ "$n" -gt 0 ]; then git bundle create "$RUNNER_TEMP/tick.bundle" "origin/$MAIN..$BRANCH"; fi
+
+      - name: Hand the commits to the land job
+        if: steps.bundle.outputs.commits != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tick-${{ github.run_id }}
+          path: ${{ runner.temp }}/tick.bundle
+          retention-days: 3
+
+  land:
+    needs: [pick, build]
+    if: needs.build.outputs.commits != '' && needs.build.outputs.commits != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write        # push nexus/<run id>, and the claims branch
+      pull-requests: write   # open the PR
+    steps:
+      # The default branch's checkout stays the working tree: every
+      # script below is the default branch's copy, never the tick's.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tick-${{ github.run_id }}
+          path: ${{ runner.temp }}/tick
+
+      - name: Fetch the tick's branch, then fence it
+        env:
+          BRANCH: nexus/${{ github.run_id }}
+          MAIN: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch -q "$RUNNER_TEMP/tick/tick.bundle" "$BRANCH:$BRANCH"
+          node scripts/cloud/tick.mjs fence "origin/$MAIN" "$BRANCH"
+
+      # Optional: a GitHub App (Contents + Pull requests on this
+      # repo) so the PR's checks run on its push; the workflow's own
+      # token opens PRs whose checks never start. Minted only now,
+      # after the agent's job has ended and the fence has passed.
+      - name: The loop's app token
+        id: app
+        if: vars.NEXUS_APP_ID != ''
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.NEXUS_APP_ID }}
+          private-key: ${{ secrets.NEXUS_APP_PRIVATE_KEY }}
+
+      - name: Push, open the PR, attach it to the claim
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          BRANCH: nexus/${{ github.run_id }}
+          CHUNK: ${{ needs.pick.outputs.id }}
+          NEXUS_SESSION: cloud-${{ github.run_id }}
+          NEXUS_MAIN_BRANCH: ${{ github.event.repository.default_branch }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $auth"
+          node scripts/cloud/tick.mjs land "$BRANCH" --chunk "$CHUNK"
+
+  release:
+    needs: [pick, build, land]
+    # A claim with nothing behind it goes back: the build failed or
+    # committed nothing, or the land failed before the PR existed.
+    if: >-
+      always() && needs.pick.outputs.id != '' &&
+      (needs.build.result != 'success' || needs.build.outputs.commits == '0' || needs.land.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write        # the claims branch
+      issues: write          # the crash alarm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Release the claim
+        env:
+          CHUNK: ${{ needs.pick.outputs.id }}
+          NEXUS_SESSION: cloud-${{ github.run_id }}
+        run: node scripts/cloud/tick.mjs release "$CHUNK"
+
+      - name: Open cloud-failed issue if a job crashed
+        if: needs.build.result == 'failure' || needs.land.result == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          existing=$(gh issue list --search 'in:title "Cloud march tick crashed" state:open' --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create \
+              --title "Cloud march tick crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --body "A pull-request-mode tick failed (the land job's fence names any path it refused). Run: $RUN_URL"
           fi

@@ -1,0 +1,38 @@
+name: setup
+description: >-
+  The project's toolchain for a cloud tick: one place for it, used
+  by march.yml's owner job and its pull-request build job alike
+  (and night.yml). Adjust for your stack; keep it free of secrets.
+
+runs:
+  using: composite
+  steps:
+    # ───────────────────────────────────────────────────────────
+    # Project-specific install. Adjust for your stack.
+    # ───────────────────────────────────────────────────────────
+    - name: Set up pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Set up Node 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    # If you have a Playwright e2e leg, cache + install browsers.
+    # Drop these two steps for projects without e2e.
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('apps/e2e/package.json', 'pnpm-lock.yaml') }}
+        restore-keys: |
+          playwright-${{ runner.os }}-
+
+    - name: Install Playwright browsers (chromium only)
+      shell: bash
+      run: pnpm --filter "<PROJECT_PKG_PREFIX>/e2e" e2e:install

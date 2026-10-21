@@ -545,6 +545,8 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/ledger.test.mjs',
   'templates/scripts/__tests__/order.test.mjs',
   'templates/scripts/__tests__/workflow-lint.test.mjs',
+  'templates/scripts/__tests__/tick.test.mjs',
+  'templates/scripts/__tests__/resolve.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',

@@ -64,17 +64,26 @@ age — check `/model`).
 
 ## The shape of the kit
 
-Two new files relative to the standard nexus overlay:
+A few new files relative to the standard nexus overlay:
 
 ```
 .github/
 ├── workflows/
-│   └── march.yml          # the cron workflow
+│   ├── march.yml          # the cron workflow (owner job, or PR-mode jobs)
+│   ├── pr-flow.yml        # PR mode: a closed PR's claims leave the claims branch
+│   └── pr-resolve.yml     # PR mode: main merged into conflicted PRs
+├── actions/setup/action.yml  # the project's toolchain, shared by every tick job
 └── CLOUD_LOOP.md          # operator's guide (lives in repo)
+scripts/
+├── cloud/tick.mjs         # PR mode: pick + claim, fence, land, release
+├── pr/resolve.mjs         # PR mode: pr-resolve's resolver
+└── workflow-lint.mjs      # the workflow rules, for your gate
 ```
 
-Plus three GitHub secrets, one workflow_dispatch validation
-run, and (optionally) a fine-grained PAT.
+Plus the GitHub secrets, one repo variable (`NEXUS_LOOP_MODE`:
+`owner` pushes main; unset opens pull requests), one
+workflow_dispatch validation run, and (optionally) a
+fine-grained PAT or, for PR mode, a GitHub App.
 
 ## Prerequisites
 
@@ -96,25 +105,48 @@ adoption is the *last* step, not the first.
 From your repo root:
 
 ```bash
-mkdir -p .github/workflows
-cp ../nexus/templates/.github/workflows/march.yml .github/workflows/march.yml
-cp ../nexus/templates/.github/CLOUD_LOOP.md       .github/CLOUD_LOOP.md
+mkdir -p .github/workflows .github/actions/setup scripts/cloud scripts/pr
+cp ../nexus/templates/.github/workflows/march.yml      .github/workflows/march.yml
+cp ../nexus/templates/.github/actions/setup/action.yml .github/actions/setup/action.yml
+cp ../nexus/templates/.github/CLOUD_LOOP.md            .github/CLOUD_LOOP.md
+cp ../nexus/templates/scripts/workflow-lint.mjs        scripts/workflow-lint.mjs
+# pull-request mode (NEXUS_LOOP_MODE unset) also needs these:
+cp ../nexus/templates/.github/workflows/pr-flow.yml    .github/workflows/pr-flow.yml
+cp ../nexus/templates/.github/workflows/pr-resolve.yml .github/workflows/pr-resolve.yml
+cp ../nexus/templates/scripts/cloud/tick.mjs           scripts/cloud/tick.mjs
+cp ../nexus/templates/scripts/pr/resolve.mjs           scripts/pr/resolve.mjs
 ```
 
 The PowerShell twin, Windows native:
 
 ```powershell
-New-Item -ItemType Directory -Force .github\workflows | Out-Null
-Copy-Item ..\nexus\templates\.github\workflows\march.yml .github\workflows\march.yml
-Copy-Item ..\nexus\templates\.github\CLOUD_LOOP.md       .github\CLOUD_LOOP.md
+New-Item -ItemType Directory -Force .github\workflows, .github\actions\setup, scripts\cloud, scripts\pr | Out-Null
+Copy-Item ..\nexus\templates\.github\workflows\march.yml      .github\workflows\march.yml
+Copy-Item ..\nexus\templates\.github\actions\setup\action.yml .github\actions\setup\action.yml
+Copy-Item ..\nexus\templates\.github\CLOUD_LOOP.md            .github\CLOUD_LOOP.md
+Copy-Item ..\nexus\templates\scripts\workflow-lint.mjs        scripts\workflow-lint.mjs
+# pull-request mode (NEXUS_LOOP_MODE unset) also needs these:
+Copy-Item ..\nexus\templates\.github\workflows\pr-flow.yml    .github\workflows\pr-flow.yml
+Copy-Item ..\nexus\templates\.github\workflows\pr-resolve.yml .github\workflows\pr-resolve.yml
+Copy-Item ..\nexus\templates\scripts\cloud\tick.mjs           scripts\cloud\tick.mjs
+Copy-Item ..\nexus\templates\scripts\pr\resolve.mjs           scripts\pr\resolve.mjs
 ```
+
+Pull-request mode also runs `scripts/claims.mjs` and
+`scripts/plan/order.mjs` (with what they import): adopt the
+claims module first
+([`../customization/claims.md`](../customization/claims.md)).
+Then choose the mode: `gh variable set NEXUS_LOOP_MODE --body
+owner` for owner mode, or leave it unset for pull requests (the
+template `CLOUD_LOOP.md`, "Owner mode or pull requests").
 
 ## Step 2 — fill placeholders
 
 In `.github/workflows/march.yml`, replace:
 
 - `<PROJECT>` → your project name (matches `agents.md`)
-- `<PROJECT_PKG_PREFIX>` → your package scope (e.g.,
+- `<PROJECT_PKG_PREFIX>` (in `.github/actions/setup/action.yml`,
+  with the rest of your toolchain) → your package scope (e.g.,
   `@thock`) or drop the Playwright steps entirely if you
   don't have an e2e workspace
 - `<DEFAULT_BRANCH>` → typically `main`
