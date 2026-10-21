@@ -55,3 +55,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 34.1 · diagrams.mjs draws three SVGs; the gate catches drift · 662485d0..662485d0
 - 2026-10-21 · 36.6 · whoami warns on the pid fallback; docs lead NEXUS_SESSION · f1721b98..65891b54
 - 2026-10-21 · 36.7 · settle drops an emptied Acceptance heading; neutral fixtures · b0812060..593c8d28
+- 2026-10-21 · 34.2 · the README opens on three doors, with the diagrams · 3ef5002f..3ef5002f
+- 2026-10-21 · 34 · spec complete: the README opens on three doors (npx GUI, agent prompt, manual) beside generated SVG diagrams the gate keeps in step · 662485d0..3ef5002f

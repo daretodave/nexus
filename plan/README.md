@@ -20,7 +20,6 @@ invariant teaches the gate in the same commit; hard-wrap
 **Asap** (built before the table, in this order, once their
 needs are done):
 
-- **34.2** the three doors themselves
 - **41.1** magical steering: answers reach a terminal session at once
 - **41.2** the tugs, readable at a glance
 - **37.1** a crashed overnight loop resumes from its ledger
@@ -38,7 +37,6 @@ line goes):
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 32 | Heartbeat watches armed-ness of every scheduled workflow, and night's cadence | [32-workflow-disable-watch.md](32-workflow-disable-watch.md) | planned (local session: workflow files) | 2 left |
-| 34 | README terraform: three doors, one art style | [34-readme-three-doors.md](34-readme-three-doors.md) | planned | 1 left |
 | 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 9 left |
 | 36 | Script hardening: paths, races, tests | [36-script-hardening.md](36-script-hardening.md) | planned · priority 1 | 6 left |
 | 37 | Sessions carry their names; every skill lands per owner mode | [37-sessions-and-landing.md](37-sessions-and-landing.md) | planned · priority 3 | 5 left |
