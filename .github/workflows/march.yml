@@ -191,6 +191,9 @@ jobs:
           GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
           # This tick's claims session (scripts/claims.mjs).
           NEXUS_SESSION: cloud-${{ github.run_id }}
+          # claude-code-action may not load project hooks, so claims.mjs
+          # would refuse whoami/claim without this (customization/claims.md).
+          NEXUS_NO_HOOK_CHECK: '1'
           # Author identity: display name "nexus", attributed to the
           # PAT's account via its noreply email. The Cloud-Run:
           # trailer (not the author) is the ceiling discriminator,

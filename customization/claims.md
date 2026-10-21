@@ -176,7 +176,7 @@ anyone's. A held claim is never `stale`.
 | `NEXUS_CLAIMS_REMOTE` | The remote holding `claims` (default `origin`). |
 | `NEXUS_MAIN_BRANCH` | The branch the audit reads by default (default `main`). |
 | `NEXUS_CLAIMS_BOARD` | A workflow file to dispatch after any write (`claims-board.yml`, [the board](#the-board-optional)); off when unset. |
-| `NEXUS_NO_HOOK_CHECK=1` | Claim in a Claude Code session that loaded no hooks (the escape hatch for a harness that can't run them). |
+| `NEXUS_NO_HOOK_CHECK=1` | Claim in a Claude Code session that loaded no hooks (the escape hatch for a harness that can't run them). `march.yml` sets it on the steps that run Claude, since `claude-code-action` may not load project hooks. |
 
 ## Where the loop calls it
 

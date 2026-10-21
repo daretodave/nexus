@@ -73,8 +73,10 @@ with a pending file, settled, pushed); expand due →
 `node scripts/verify.mjs` foreground and ends with an
 `/oversight audit` briefing in the run log. The runner's
 checkout gets an untracked `.owner` first, so the tick claims,
-settles and lands as the owner (nexus's cloud loop is owner
-mode; adopters can run theirs as pull requests:
+settles and lands as the owner (`NEXUS_NO_HOOK_CHECK=1` lets it
+claim, since the action may not load project hooks; nexus's
+cloud loop is owner mode; adopters can run theirs as pull
+requests:
 [`templates/.github/CLOUD_LOOP.md`](../templates/.github/CLOUD_LOOP.md)).
 
 ## Contributor pull requests
