@@ -589,6 +589,8 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/secrets-run.test.mjs',
   'templates/scripts/__tests__/design-prompt.test.mjs',
   'templates/scripts/__tests__/design-ingest.test.mjs',
+  'templates/scripts/__tests__/design-compare.test.mjs',
+  'templates/scripts/__tests__/design-render.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
 ]
@@ -616,6 +618,7 @@ const DOGFOOD_TWINS = [
   'secrets-run.mjs', 'secrets-scan.mjs',
   'design/prompt.mjs',
   'design/ingest.mjs',
+  'design/png.mjs', 'design/compare.mjs', 'design/render.mjs', 'design/board-runtime.js',
 ]
 // The steer hook runs in nexus's own sessions from .claude/hooks/, byte for byte the one adopters copy.
 const HOOK_TWINS = ['steer.mjs']
