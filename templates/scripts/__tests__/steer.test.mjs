@@ -1,6 +1,5 @@
 // claude/hooks/steer.mjs (the steer hook): an owner line addressed to one session reaches that session at its next
-// tool boundary (deny with the line as the reason), with its next prompt, after the running tool, or before it stops;
-// never another session, never a subagent, never twice, never a line to every loop; inert under NEXUS_NO_STEER=1; and
+// tool boundary (deny with the line as the reason) or with its next prompt; never another session, never a subagent, never twice, never a line to every loop; inert under NEXUS_NO_STEER=1; and
 // any error exits 0 with nothing said. node:test, no deps, no git (a `.git` folder made by hand stands in for a repo).
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -37,8 +36,8 @@ describe('the addressing', () => {
     assert.match(text(out), /stop and re-read the spec/);
     assert.doesNotMatch(text(out), /sirius|every loop|@aaaa/);
     assert.equal(hook('PreToolUse', A), null, 'handed over once');
-    assert.equal(hook('PostToolUse', A), null);
-    assert.match(text(hook('PostToolUse', B)), /sirius, keep going/);
+    assert.equal(hook('UserPromptSubmit', A), null);
+    assert.match(text(hook('UserPromptSubmit', B)), /sirius, keep going/);
     assert.equal(hook('UserPromptSubmit', 'cccc3333-unrelated'), null, 'a third session gets nothing');
   });
 
@@ -57,10 +56,10 @@ describe('the addressing', () => {
     fs.appendFileSync(path.join(root, board.FILE), `- **9** · 2026-10-21T10:00Z · session bbbb2222 · @${A} a session cannot steer\n`);
     assert.equal(hook('PreToolUse', A, { agent_id: 'sub-1' }), null);
     assert.equal(hook('PreToolUse', A, {}, { NEXUS_NO_STEER: '1' }), null);
-    const out = hook('Stop', A, { stop_hook_active: false });
-    assert.equal(out.decision, 'block');
-    assert.match(out.reason, /for the lead/);
-    assert.doesNotMatch(out.reason, /cannot steer/);
+    const out = hook('UserPromptSubmit', A);
+    assert.equal(out.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+    assert.match(text(out), /for the lead/);
+    assert.doesNotMatch(text(out), /cannot steer/);
   });
 
   it('a subagent running announce.mjs read under the lead\'s id leaves the line to the lead', () => {
@@ -112,7 +111,9 @@ describe('the addressing', () => {
     board.postTo(root, 'x', { to: A });
     assert.equal(hook('PreToolUse', ''), null);
     assert.equal(hook('SessionStart', A), null);
-    assert.equal(output('PostToolUse', []), null);
+    assert.equal(hook('PostToolUse', A), null, 'not served: PreToolUse is the interrupt');
+    assert.equal(hook('Stop', A), null, 'not served');
+    assert.equal(output('UserPromptSubmit', []), null);
   });
 });
 
@@ -162,7 +163,7 @@ describe('the process', () => {
     for (const file of settings) {
       const hooks = JSON.parse(fs.readFileSync(file, 'utf8')).hooks;
       const commands = Object.values(hooks).flat().flatMap((g) => g.hooks).map((h) => h.command).filter((c) => /steer\.mjs/.test(c));
-      assert.equal(commands.length, 4, `${file}: steer on four events`);
+      assert.equal(commands.length, 2, `${file}: steer on two events`);
       for (const command of new Set(commands)) {
         fs.rmSync(path.join(root, board.STEERED), { recursive: true, force: true });
         const input = JSON.stringify({ hook_event_name: 'PreToolUse', session_id: A, cwd: sub, tool_name: 'Bash' });
@@ -233,7 +234,7 @@ describe('the process', () => {
     fs.mkdirSync(path.join(root, '.nexus/sessions'), { recursive: true });
     fs.writeFileSync(path.join(root, '.nexus/sessions/a.json'), JSON.stringify({ id: A, star: 'vega', state: 'resuming', resumed_by: B }));
     board.postTo(root, 'answered: use postgres', { to: A });
-    const r = spawn(JSON.stringify({ hook_event_name: 'PostToolUse', session_id: B, cwd: root }), { CLAUDE_PROJECT_DIR: root });
+    const r = spawn(JSON.stringify({ hook_event_name: 'UserPromptSubmit', session_id: B, cwd: root }), { CLAUDE_PROJECT_DIR: root });
     assert.match(r.stdout, /use postgres/);
   });
 

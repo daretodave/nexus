@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 // .claude/hooks/steer.mjs: hands an owner line addressed to THIS session (`announce.mjs --to <session>`, which the
 // nexus GUI posts for an answer or a tug aimed at a linked terminal session) to this session at once. Wired in
-// .claude/settings.json for four events; the one hook runs for each:
+// .claude/settings.json for two events; the one hook runs for each:
 //
 //   UserPromptSubmit  the line rides in with the next prompt (additionalContext)
 //   PreToolUse        the interrupt: the next tool call is denied and the reason is the owner's line, so the model
 //                     reads it before anything else runs (permissionDecision: deny)
-//   PostToolUse       the tool that was running when the line landed has finished: the line rides with its result
-//   Stop              the session was about to end its turn: it is kept going to act on the line (decision: block)
 //
 // What an interrupt cannot do: a hook never kills a tool call already running (a long build, a test run, a builder
 // subagent's whole run), so the next tool boundary is the interrupt point. A session idle at its prompt has no turn to
@@ -31,7 +29,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const EVENTS = new Set(['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']);
+const EVENTS = new Set(['UserPromptSubmit', 'PreToolUse']);
 const BOARD = '.announcements.md';
 const LEDGERS = '.nexus/sessions';
 const STEERED = '.nexus/steered';
@@ -187,7 +185,6 @@ export function output(event, lines) {
       },
     };
   }
-  if (event === 'Stop') return { decision: 'block', reason: text };
   return { hookSpecificOutput: { hookEventName: event, additionalContext: text } };
 }
 

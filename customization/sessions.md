@@ -95,9 +95,7 @@ node scripts/announce.mjs --to <session id | star> "<text>"
 | Event | What the session sees |
 |---|---|
 | `PreToolUse` | The interrupt: its next tool call is denied, and the reason is the owner's line. Nothing runs before it reads it. |
-| `PostToolUse` | The tool running when the line landed finished: the line rides with its result. |
 | `UserPromptSubmit` | An idle session: the line rides in with the next prompt. |
-| `Stop` | The session was about to end its turn: it keeps going to act on the line. |
 
 - **Only that session.** A line is addressed by the Claude
   Code session id (or the star of that session's own held
@@ -147,11 +145,11 @@ node scripts/announce.mjs --to <session id | star> "<text>"
 
 Wire it in `.claude/settings.json` (the template already
 does): `node "$CLAUDE_PROJECT_DIR"/.claude/hooks/steer.mjs`
-on `UserPromptSubmit`, `PreToolUse` and `PostToolUse`
-(matcher `*`) and `Stop`. The path is the project's, not the
-cwd's, and so is the board it reads (`$CLAUDE_PROJECT_DIR`
-first, then the tool's cwd): a session that has cd'd into a
-subfolder, or out of the repo, keeps steering. It reads the
+on `UserPromptSubmit` and `PreToolUse` (matcher `*`). The
+path is the project's, not the cwd's, and so is the board it
+reads (`$CLAUDE_PROJECT_DIR` first, then the tool's cwd): a
+session that has cd'd into a subfolder, or out of the repo,
+keeps steering. It reads the
 board through `scripts/announce.mjs`.
 
 ## The live ledger

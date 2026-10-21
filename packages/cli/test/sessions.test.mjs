@@ -140,7 +140,7 @@ test('a tug reaches the linked terminal session only, and a GUI-owned session ta
     const out = await hookFor(root, A);
     assert.equal(out.hookSpecificOutput.permissionDecision, 'deny');
     assert.match(out.hookSpecificOutput.permissionDecisionReason, /stop and check the docs/);
-    assert.equal(await hookFor(root, A, 'PostToolUse'), null);
+    assert.equal(await hookFor(root, A, 'UserPromptSubmit'), null);
 
     // The GUI's own session: the SDK stream, the text whole, nothing posted.
     const before = fs.readFileSync(path.join(root, '.announcements.md'), 'utf8');

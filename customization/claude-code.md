@@ -242,10 +242,11 @@ leave it off for interactive work.
 
 The template wires a second script,
 [`templates/claude/hooks/steer.mjs`](../templates/claude/hooks/steer.mjs),
-on `UserPromptSubmit`, `PreToolUse`, `PostToolUse` and
-`Stop`. It hands an owner line addressed to this session
-(`announce.mjs --to`) over at the next tool boundary, denying
-the next tool call with the line as its reason. It is inert
+on `PreToolUse` and `UserPromptSubmit`. It hands an owner
+line addressed to this session (`announce.mjs --to`) over at
+the next tool boundary, denying the next tool call with the
+line as its reason, or with the next prompt of an idle
+session. It is inert
 with `NEXUS_NO_STEER=1` and never fails a turn. The whole
 contract is in [sessions.md](./sessions.md#steering-one-session).
 
