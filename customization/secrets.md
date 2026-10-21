@@ -23,14 +23,16 @@ only asks for one once a chunk names a secret.
 | `scripts/secrets.mjs` | The command line: `status`, `set`, `import`, `names`, `check`. Prints names, never values. |
 | `scripts/secrets-vault.mjs` | The vault: reads and writes `.env` and `.env.workspace`, and the keychain when it is on. Hands a value to code only. |
 | `scripts/secrets-keychain.mjs` | The opt-in OS keychain, through the OS's own command line. |
+| `scripts/secrets-sinks.mjs` | The sinks that push a value where it is needed (GitHub Actions), and the push record. Needs `scripts/ledger.mjs` (its lock). |
 | `scripts/plan/secrets-manifest.mjs` | The shape and the import, as pure functions. It sits in `scripts/plan/` because `plan-check.mjs` imports it: a copy of `scripts/plan/` plus `plan-check.mjs` still runs. |
 | `scripts/plan-check.mjs` | Checks the manifest's shape and every chunk's `secrets` field against it. |
 | `.env` | The local ring: values, untracked, at the primary checkout. |
 | `.env.workspace` | The workspace ring: values several repos share, at the workspace root, outside every repo. |
+| `.nexus/secrets-audit.jsonl` | The push record: which name went where, and when. Untracked, at the primary checkout. Never a value. |
 
-`nexus secrets run` and the sinks that push a value to GitHub
-Actions, Vercel or Cloudflare extend `scripts/secrets.mjs`
-with more commands; this page grows with them.
+`nexus secrets run`, and the Vercel and Cloudflare sinks,
+extend `scripts/secrets.mjs` with more; this page grows with
+them.
 
 ## The shape
 
@@ -211,6 +213,48 @@ The other settings, all optional, in the same `secrets` object:
 | `keychainService` | `nexus/<repo folder>` | The keychain service the items file under. |
 | `workspace` | `..` | The workspace root, relative to the checkout (or absolute). |
 
+## Push: the sinks
+
+A sink pushes a value from the vault to where it is needed, so
+nobody pastes a token into a web form or a command line:
+
+```bash
+node scripts/secrets.mjs push GH_TOKEN                        # every destination the manifest lists for it
+node scripts/secrets.mjs push GH_TOKEN --to github-actions    # one of them
+node scripts/secrets.mjs push GH_TOKEN --repo me/other-repo   # another repo than this checkout's
+```
+
+| Destination | Sink | Through |
+|---|---|---|
+| `local` | none: it is the vault | |
+| `github-actions` | `gh secret set NAME --app actions` | `gh` reads the value from stdin when `--body` is left out; `gh auth login` first |
+| `vercel`, `cloudflare` | not yet: `push` names them and exits 1 | |
+
+- The name must be declared, and set in the vault; `--to`
+  must be one of its destinations. A name that goes to `local`
+  only has nothing to push.
+- The value goes to the sink's tool on stdin, never as an
+  argument. The tool's own output is dropped; a failure is
+  named by its exit code, never by what it printed.
+- `push` runs in owner mode only
+  ([`playbooks/owner-mode.md`](../playbooks/owner-mode.md)).
+  A contributor's keys are local-only: every sink refuses
+  there.
+- Each push that lands is one line in
+  `.nexus/secrets-audit.jsonl` at the primary checkout:
+
+```json
+{"time":"2026-10-21T10:00:00.000Z","action":"push","name":"GH_TOKEN","destination":"github-actions"}
+```
+
+The record is append-only, written under
+`.nexus/secrets-audit.lock`. It refuses a `value` key and any
+field that isn't a string, so a value can't slip in under
+another word. Code adds events through
+`scripts/secrets-sinks.mjs`'s `recordAudit` and reads them
+with `readAudit`. A new sink is one entry in its `SINKS`
+table: the command, and its arguments for a name.
+
 ## A chunk's `secrets` field
 
 A chunk line gains an optional field beside `needs`:
@@ -257,6 +301,8 @@ secrets") and leaves the loop's sign-in out.
 4. A value goes in through stdin, never argv; `.env` and
    `.env.workspace` are gitignored, and the workspace ring sits
    outside every repo.
+5. A sink takes the value on stdin, runs in owner mode only,
+   and records each push by name, destination and time.
 
 ## You're ready when
 
