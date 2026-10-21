@@ -121,3 +121,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 41 · spec complete: a linked terminal session takes an owner line at its next tool, tugs and real data drawn on the stage, the Claude Design handoffs ported and re-ported at fidelity, a lighter package · 240b8f36..3c899851
 - 2026-10-21 · 43.4 · design render draws a handoff's boards; compare scores the app · b5a67eb9..a3127926
 - 2026-10-21 · 43.5 · the port recipe runs as a Workflow; an opt-in leg checks the port map · d638c51a..466a05db
+- 2026-10-21 · 44.3 · fleet to tug plays in the README; the gifs leg holds its budget · e2a9c183..5f424fb1
+- 2026-10-21 · 44 · spec complete: nexus --demo plays fixture scenarios, a pure-JS recorder makes the GIF, and fleet to tug plays in the README with a gate leg holding its budget · 567d168f..5f424fb1
