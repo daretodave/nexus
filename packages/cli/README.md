@@ -187,6 +187,31 @@ child's environment: the server acts for you, not as a Claude Code
 session, so one started from inside Claude Code never claims under
 that session's id or trips the module's hook-marker check.
 
+## Secrets: names out, values in
+
+The server is the one place outside your terminal that handles a
+secret's value, so the model never has to. It runs the repo's own
+secrets scripts (`scripts/secrets.mjs` and its modules, from
+`nexus/customization/secrets.md`); a repo without them, or with
+copies too old, gets a 409 that names the file to update.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /api/secrets` | Every name with where it is set (`local`, `keychain`, `workspace`), each destination's state (`set`, `missing`, `pushed` with when, `not pushed`), what it is for, the chunk that asked, its age and rotation nudge, plus `mode`, `projectSecretsNeeded`, `localKeys` and the last audit events. Never a value. |
+| `POST /api/secrets/:name` | `{ value, ring?, destinations?, repo?, environments?, worker? }`: the value into the vault through the repo's `set` (on its stdin seam, never argv), then each destination through its sink. Pushes are owner-only and checked against the manifest before anything is stored; a contributor's value stays local. Answers `{ stored, ring, pushed: [{ destination, ok, error? }] }`. |
+| `POST /api/secrets/import` | `{ text }`: a `.env` body, previewed as names only (declared, where set, skipped and why). `{ text, confirm: true, names? }` stores the picked ones and, for the owner, adds new names to `nexus.secrets.json`. |
+| `GET /api/secrets/audit` | Every set, push and rotation by name, and the rotation nudges. |
+
+A posted value is never echoed: not in an answer, an error, a header
+or a log. Every JSON answer and every event-stream frame (transcripts,
+session detail, Recover's journal previews, the claims and announce
+passthroughs) passes through one mask fed by the vault's current
+values, so a value a session prints reads `[secret NAME]`. The mask
+refreshes when a vault file changes (a `secrets set` in a terminal
+counts), right after a store here, and every minute when the keychain
+is on. It skips values under 8 characters and ones shaped like
+configuration, as the repo's scan does.
+
 ## Headless: one prompt, JSON out
 
 ```
@@ -206,7 +231,9 @@ object on stdout:
 ```
 
 It exits 0 on success, 1 when the turn ends in an error (the JSON
-still prints, with `is_error: true`), and 2 on a usage error.
+still prints, with `is_error: true`), and 2 on a usage error. A vault
+value in the output prints as `[secret NAME]`, through the same mask
+the server uses.
 
 Options: `--cwd <dir>` (default: this folder), `--model <name>`,
 `--permission-mode <mode>`, `--json` (the default, accepted for
