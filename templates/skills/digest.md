@@ -68,7 +68,10 @@ its own cadence.
    candidates are pending >21 days or the oldest pending
    candidate exceeds 45 days — a line reading "oversight
    needed: candidate queue silting (N pending >21d, oldest
-   Xd)"), `Today's intent` (next ready chunk + top finding),
+   Xd)", and each `rotate <NAME>` line of `node
+   scripts/secrets.mjs audit`, a secret last set over 90
+   days ago; the log is local, so a cloud run skips it),
+   `Today's intent` (next ready chunk + top finding),
    `Tuning proposals` (step 5, or "none").
 5. **Meta-loop, within rails:** if the pulse shows a mistuned
    gate (critique never firing, the ceiling hibernating

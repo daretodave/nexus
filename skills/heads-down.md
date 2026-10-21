@@ -88,8 +88,9 @@ Then invoke the `loop` skill (no interval) with it:
 > default for every question and list each one in the close and
 > the report; park any new question in the `/oversight` queue
 > and go on. An owner-only gate (a principle the work would
-> break, a legal read, a production action nobody okayed) parks
-> the chunk and moves on. <Owner: "Renew these claims each
+> break, a legal read, a production action nobody okayed) or a
+> missing secret (`/next` files its request) parks the chunk
+> and moves on. <Owner: "Renew these claims each
 > iteration, settle at each orient, land each chunk on main as
 > it closes, release each once main holds it." | Contributor:
 > "Build on pkg/<slug> in one worktree, one commit series and

@@ -64,6 +64,11 @@ In parallel where independent:
    recent commits; the last 10 lines of `plan/ARCHIVE.md`.
 9. `design/` — has a new export landed since the last sibling
    commit?
+10. Secret requests: `[needs-user-call] secret request <id>`
+    rows (`plan/pending/secrets-<id>.md`, then `plan/notes.md`)
+    and `node scripts/secrets.mjs status`. The owner sets each
+    with `node scripts/secrets.mjs set <NAME>` in their own
+    terminal, never pasted here; then delete the row.
 
 ## 4. The briefing (~25 lines max)
 

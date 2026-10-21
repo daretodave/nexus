@@ -20,15 +20,16 @@ only asks for one once a chunk names a secret.
 | File | What it is |
 |---|---|
 | `nexus.secrets.json` | The manifest, tracked, at the repo root. Names and facts, never a value. Copied from `nexus/templates/env/nexus.secrets.json`. |
-| `scripts/secrets.mjs` | The command line: `status`, `set`, `import`, `names`, `check`. Prints names, never values. |
+| `scripts/secrets.mjs` | The command line: `status`, `set`, `import`, `names`, `check`, `push`, `audit`, `request`. Prints names, never values. |
 | `scripts/secrets-vault.mjs` | The vault: reads and writes `.env` and `.env.workspace`, and the keychain when it is on. Hands a value to code only. |
 | `scripts/secrets-keychain.mjs` | The opt-in OS keychain, through the OS's own command line. |
 | `scripts/secrets-sinks.mjs` | The sinks that push a value where it is needed (GitHub Actions, Vercel, Cloudflare), and the push record. Needs `scripts/ledger.mjs` (its lock). |
+| `scripts/secrets-audit.mjs` | Set and rotation in the same record, by name; the rotation nudge. Needs `scripts/secrets-sinks.mjs`. |
 | `scripts/plan/secrets-manifest.mjs` | The shape and the import, as pure functions. It sits in `scripts/plan/` because `plan-check.mjs` imports it: a copy of `scripts/plan/` plus `plan-check.mjs` still runs. |
 | `scripts/plan-check.mjs` | Checks the manifest's shape and every chunk's `secrets` field against it. |
 | `.env` | The local ring: values, untracked, at the primary checkout. |
 | `.env.workspace` | The workspace ring: values several repos share, at the workspace root, outside every repo. |
-| `.nexus/secrets-audit.jsonl` | The push record: which name went where, and when. Untracked, at the primary checkout. Never a value. |
+| `.nexus/secrets-audit.jsonl` | The audit record: each set, push and rotation, by name, and when. Untracked, at the primary checkout. Never a value. |
 | `.nexus/secrets-local.json` | A contributor's own local key names (never values), untracked, at the primary checkout. |
 
 `nexus secrets run` extends `scripts/secrets.mjs` with more;
@@ -330,6 +331,70 @@ the GUI can see which chunks wait on a secret.
 When a chunk first needs a secret, add its entry with
 `"chunk": "<that chunk>"` in the same change that adds the
 field.
+
+### A chunk waiting on a secret
+
+`order.mjs` (what `/next` picks from) gates a chunk with a
+`secrets` field:
+
+| Checkout | The chunk's secrets | It reads |
+|---|---|---|
+| Contributor | any | `owner only`: never picked |
+| Owner | every one set | ready, as any chunk |
+| Owner | one missing | `needs secret <names>`: parked |
+
+A name counts as set when a vault ring holds it or the
+environment does (a cloud tick gets its secrets as env). The
+vault is asked where a name is set, never what it is.
+`--no-vault` skips the check; `--json` carries `needsSecret`.
+
+When the owner's `/next` meets a parked chunk, it files the
+ask and picks again (under `/heads-down` the loop moves on):
+
+```bash
+node scripts/secrets.mjs request 07.3
+```
+
+That writes `plan/pending/secrets-07.3.md`, a
+`[needs-user-call]` note for the `/oversight` queue (and the
+GUI's inbox) naming each missing secret, what it is for,
+where to get it, where it goes and the `set` command, never a
+value. Once per chunk: a row already in `plan/` is left
+alone. The owner runs `set` in their own terminal (never in a
+session), and the chunk is ready on the next pick; delete the
+row then.
+
+## The audit log
+
+Every set, push and rotation is one line in the record the
+sinks write, `.nexus/secrets-audit.jsonl` (untracked, beside
+the vault): the time, the action, the name, the destination,
+never a value.
+
+| Action | Written by |
+|---|---|
+| `set` | the owner's `set` or `import --store`, a name the vault didn't hold |
+| `rotate` | the same, a name it held: the value replaced |
+| `push` | `push`, a sink sending a value to a destination |
+
+```json
+{"time":"2026-10-21T10:00:00.000Z","action":"rotate","name":"GH_TOKEN","destination":"local","ring":"local"}
+```
+
+```bash
+node scripts/secrets.mjs audit           # every event, then the rotation nudges
+node scripts/secrets.mjs audit --json    # the same as data
+```
+
+`scripts/secrets-audit.mjs`'s `recordSets` writes set and
+rotate through the sinks' `recordAudit`. A contributor's own
+keys are theirs and aren't recorded.
+
+**The rotation nudge.** A secret the vault still holds whose
+last set or rotation is over 90 days old gets a line,
+`rotate <NAME>: last set N days ago`, in `audit` and
+`status` (`status` also shows each name's age), and the
+digest's `Needs you` carries it.
 
 ## What is not a project secret
 

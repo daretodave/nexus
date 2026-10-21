@@ -10,9 +10,8 @@
 
 `/next` moves the kit's plan by one chunk, leaving nothing
 half-done: built, gated, closed, landed, claim released.
-`/march` (the 30-40 minute run) calls `/next top`;
-`/heads-down` loops it. The builder follows
-`skills/ship-a-chunk.md`'s build steps.
+`/march` (the 30-40 minute run) calls `/next top`; `/heads-down`
+loops it. The builder follows `skills/ship-a-chunk.md`'s steps.
 
 ## 2. Invocation
 
@@ -79,6 +78,10 @@ another base, and every chunk someone else claims or holds.
 In a cloud tick, also skip a chunk that touches
 `.github/workflows/` (the tick's token can't push it; `agents.md`
 "Operational secrets"): a local session builds it.
+A chunk with `secrets` is the owner's (a contributor skips it).
+One whose secret is missing reads `needs secret` (`order.mjs`):
+file the ask (`node scripts/secrets.mjs request <id>`, names
+only), commit it, land, pick again; once set, it is ready.
 
 - `peek`: say the pick, its size, its A-IDs, why it beat the
   rest, and what blocks it, then run the retro and stop.
@@ -173,8 +176,7 @@ the progress at its start and end, and never asks.
 2. Shared plan files change only through settle (owner, main).
 3. Never build in the primary checkout; never force-push; no
    `--no-verify`; no destructive resets.
-4. A claim before any write; release only once main holds the
-   work (or it carries a PR).
+4. Claim before any write; release once main (or a PR) holds it.
 5. The plan only shrinks; A-IDs and chunk ids never reused.
    This file stays ≤ 200 lines, `next/*.md` ≤ 120 (the gate).
 
@@ -195,5 +197,4 @@ the progress at its start and end, and never asks.
 node scripts/claims.mjs whoami | list | claim <id> | renew | pr <id> <n> | release <id>
 node scripts/plan/progress.mjs <NN…> --ref origin/main
 node scripts/plan/settle.mjs            # owner, on main / detached origin/main
-node scripts/verify.mjs                  # the gate (lead only)
 ```

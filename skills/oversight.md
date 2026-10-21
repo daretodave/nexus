@@ -43,6 +43,11 @@ misconfiguration (§6).
 5. `plan/CRITIQUE.md` — pending count + last pass age.
 6. `plan/CANDIDATES.md` — pending candidates.
 7. Open `triage:needs-user` issues.
+8. Secret requests: `[needs-user-call] secret request <id>`
+   rows (`plan/pending/secrets-<id>.md`, then `plan/notes.md`)
+   and `node scripts/secrets.mjs status`. The owner sets each
+   with `node scripts/secrets.mjs set <NAME>` in their own
+   terminal, never pasted here; then delete the row.
 
 ## 4. The briefing (~20 lines)
 
