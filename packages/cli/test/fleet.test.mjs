@@ -267,3 +267,31 @@ test('withHosted folds the running sessions into the list', () => {
   assert.ok(!by.home, 'the home session shows once it has run');
   assert.equal(list[0].kind, 'terminal', 'the input is not changed');
 });
+
+test('each hosted session keeps its own tug log, fed by its own stream; a steer through it logs a tug', async () => {
+  const { parent, dir } = tmpRepo();
+  const { by, factory } = fakes();
+  const app = await startServer({ repo: dir, provider: factory, pollRuns: false, dist: NO_DIST, ghLogin: async () => '' });
+  try {
+    const a = (await call(app, '/api/sessions', { worktree: false })).json;
+    const b = (await call(app, '/api/sessions', { worktree: false })).json;
+    const pa = by.get(a.id);
+    await call(app, '/api/send', { text: 'start', session: a.id });
+    pa.hooks.onMessage({ type: 'system', session_id: 'claude-a' });
+    assert.equal((await call(app, `/api/sessions/${a.id}/steer`, { text: 'also the docs' })).status, 200);
+    assert.deepEqual(pa.sent, ['start', 'also the docs'], 'the steer reaches its own session');
+    let tugs = (await call(app, `/api/sessions/${a.id}`)).json.tugs;
+    assert.equal(tugs.length, 1);
+    assert.equal(tugs[0].text, 'also the docs');
+    assert.equal(tugs[0].state, 'sent');
+    assert.equal(tugs[0].session.id, a.id);
+    assert.deepEqual((await call(app, `/api/sessions/${b.id}`)).json.tugs, [], 'another session draws none of them');
+    pa.hooks.onMessage({ type: 'result', session_id: 'claude-a' });
+    pa.hooks.onMessage({ type: 'assistant', session_id: 'claude-a', message: { content: [] } });
+    tugs = (await call(app, `/api/sessions/${a.id}`)).json.tugs;
+    assert.equal(tugs[0].state, 'seen', 'taken at the next turn, from its own stream');
+  } finally {
+    await app.close();
+    fs.rmSync(parent, { recursive: true, force: true });
+  }
+});
