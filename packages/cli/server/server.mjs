@@ -47,8 +47,10 @@ function readPrompt(name) {
  * @param {object|function} [o.provider]  inject a provider, or a factory given the hooks (tests)
  * @param {boolean} [o.pollRuns=true]
  * @param {string} [o.claudeHome]    Claude Code's config folder (sessions under projects/); tests point it elsewhere
+ * @param {function} [o.ghRun]       run(cmd, args, opts) for every gh call (tests inject a fake gh; never PATH)
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun } = {}) {
+  const ghOpts = ghRun ? { run: ghRun } : {};
   const hub = createHub();
   const asks = new Map();
   const permissions = new Map();
@@ -230,9 +232,14 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/claims/release': { const b = await body(req); return send(res, 200, await repoMod.releaseClaim(repo, String(b.id || ''))); }
         case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
-        case 'GET /api/actions': return send(res, 200, await gh.actionsSetup(repo));
-        case 'POST /api/actions/workflow': { const b = await body(req); return send(res, 200, await gh.setWorkflow(repo, b.id, !!b.enabled)); }
-        case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo));
+        case 'GET /api/actions': return send(res, 200, await gh.actionsSetup(repo, ghOpts));
+        case 'POST /api/actions/workflow': { const b = await body(req); return send(res, 200, await gh.setWorkflow(repo, b.id, !!b.enabled, ghOpts)); }
+        case 'POST /api/cloud/run': {
+          const b = await body(req);
+          const r = await gh.dispatchWorkflow(repo, b.id, ghOpts);
+          return send(res, r.ok ? 200 : r.status || 400, r);
+        }
+        case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo, ghOpts));
       }
       const ask = /^POST \/api\/ask\/([\w-]+)$/.exec(route);
       if (ask) {
@@ -306,7 +313,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   let ghBroken = 0;
   const poll = pollRuns ? setInterval(async () => {
     if (!hub.clients || Date.now() < ghBroken) return;
-    const r = await gh.listRuns(repo);
+    const r = await gh.listRuns(repo, ghOpts);
     if (!r.ok) { ghBroken = Date.now() + 60000; return; }
     hub.set('runs', r.runs);
     for (const b of gh.runBeats(r.runs, seenRuns)) hub.beat(b);
