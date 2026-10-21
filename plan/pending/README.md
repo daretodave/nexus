@@ -22,7 +22,8 @@ owner's settle folds them in after the merge, all at once.
 
 Until it settles, a pending close counts as closed: the next
 build treats the chunk as done, and so do the plan gate
-(`scripts/plan-check.mjs`), progress and the claims audit.
+(`scripts/plan-check.mjs`), progress and the claims audit;
+the gate and `order.mjs` read the whole plan as settled.
 
 ```md
 ---
