@@ -61,13 +61,14 @@ async function loadSdk() {
  * @param {(req: {id, agent, tool, input, suggestions}) => Promise<{allow: boolean, always?: boolean}>} o.onPermission
  * @param {(s: object) => void} o.onStatus
  * @param {() => string} [o.permissionMode]
+ * @param {() => object} [o.env]   extra environment (NEXUS_SESSION, NEXUS_GH_LOGIN), read when a session starts
  */
 export async function createProvider(o) {
   const sdk = await loadSdk();
   return sdk ? sdkProvider(sdk, o) : cliProvider(o);
 }
 
-function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default' }) {
+function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', env = () => ({}) }) {
   let session = null;
   let lastSessionId = null;
 
@@ -95,7 +96,7 @@ function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, perm
         permissionMode: permissionMode(),
         canUseTool,
         ...(resume ? { resume } : {}),
-        env: { ...process.env, CLAUDE_AGENT_SDK_CLIENT_APP: 'nexus-cli' },
+        env: { ...process.env, ...env(), CLAUDE_AGENT_SDK_CLIENT_APP: 'nexus-cli' },
       },
     });
     const s = { q, queue, seen: 0, ended: false, sent: [] };
@@ -161,7 +162,7 @@ function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, perm
  * CLI, and AskUserQuestion cannot be answered live (questions belong in the
  * oversight queue anyway).
  */
-function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'default' }) {
+function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'default', env = () => ({}) }) {
   let child = null;
   let lastSessionId = null;
 
@@ -169,8 +170,8 @@ function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'defaul
     const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages', '--permission-mode', permissionMode()];
     if (lastSessionId) args.push('--resume', lastSessionId);
     const c = process.platform === 'win32'
-      ? spawn(['claude', ...args].join(' '), { cwd: repo, shell: true, windowsHide: true })
-      : spawn('claude', args, { cwd: repo, windowsHide: true });
+      ? spawn(['claude', ...args].join(' '), { cwd: repo, shell: true, windowsHide: true, env: { ...process.env, ...env() } })
+      : spawn('claude', args, { cwd: repo, windowsHide: true, env: { ...process.env, ...env() } });
     let buf = '';
     c.stdout.on('data', (d) => {
       buf += d;

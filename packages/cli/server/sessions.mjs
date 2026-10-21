@@ -125,10 +125,11 @@ export function parkedItem(p) {
 const FLEET_STATE = { live: 'live', fallen: 'fallen', parked: 'paused', resuming: 'resuming', resumed: 'resumed', ended: 'closed' };
 
 /**
- * Every live local session, newest beat first. `gui` is the session id this server's SDK session runs as (null before
+ * Every live local session, newest beat first. `gui` is the session id (or ids) this server's SDK sessions run as (null before
  * its first message); `linked` the ids the person linked.
  */
 export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(), repoName = '', now = Date.now() }) {
+  const guis = (gui == null ? [] : typeof gui === 'string' ? [gui] : [...gui]).filter(Boolean);
   const byId = new Map();
   for (const l of ledgers) {
     const status = ledgerStatus(l, now);
@@ -144,7 +145,7 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
   for (const [id, s] of byId) {
     const l = s.ledger || {};
     const claudeId = l.claude || s.claude?.id || id;
-    const isGui = !!gui && (gui === id || gui === claudeId);
+    const isGui = guis.includes(id) || guis.includes(claudeId);
     const parked = (Array.isArray(l.parked) ? l.parked : []).map(parkedItem).filter((p) => p.state === 'pending');
     out.push({
       id,
@@ -163,6 +164,38 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
       held: HELD.has(l.state),
       sources: [s.ledger ? 'ledger' : null, s.claude ? 'claude' : null].filter(Boolean),
     });
+  }
+  return out.sort((a, b) => String(b.beat || '').localeCompare(String(a.beat || '')));
+}
+
+/**
+ * The list with the sessions this server runs folded in: each is local, steered through the SDK, linked and live
+ * (paused when paused), whatever its ledger's beat says; one started from the GUI shows before its ledger or session
+ * file does. `hosted`: [{ id, claude, name, place: { worktree, branch }, listed, pause: { state }, at }].
+ */
+export function withHosted(list, hosted = [], repoName = '') {
+  const out = list.map((s) => ({ ...s }));
+  for (const h of hosted) {
+    const names = [h.id, h.claude].filter(Boolean);
+    let row = out.find((s) => names.includes(s.id) || names.includes(s.claude));
+    if (!row) {
+      if (!h.listed && !h.claude) continue;
+      row = { id: h.id, claude: h.claude || h.id, name: h.name || h.id.slice(0, 8), repo: repoName, chunk: null, parked: 0, beat: h.at || null, git: { branch: h.place?.branch || '', worktree: h.place?.worktree || '' }, held: true, sources: [] };
+      out.push(row);
+    }
+    const paused = h.pause?.state === 'paused' || h.pause?.state === 'pausing';
+    Object.assign(row, {
+      name: h.name || row.name,
+      kind: 'local',
+      steer: 'sdk',
+      linked: true,
+      live: true,
+      hosted: true,
+      state: paused ? 'paused' : row.state === 'fallen' || row.state === 'paused' ? 'live' : row.state,
+      pause: h.pause?.state || 'run',
+      sources: [...new Set([...(row.sources || []), 'server'])],
+    });
+    if (!row.git?.worktree && h.place?.worktree) row.git = { ...row.git, worktree: h.place.worktree, branch: row.git?.branch || h.place.branch || '' };
   }
   return out.sort((a, b) => String(b.beat || '').localeCompare(String(a.beat || '')));
 }
@@ -194,7 +227,7 @@ function noBoard(root, addressed) {
 }
 
 /** Write a ledger the way scripts/ledger.mjs does: whole, through a temp file and a rename. */
-function writeLedger(file, l) {
+export function writeLedger(file, l) {
   const { _file, ...clean } = l;
   const tmp = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, `${JSON.stringify(clean, null, 2)}\n`);
@@ -218,10 +251,11 @@ export function parkedAnswer(item, { action, pick, answer } = {}) {
 }
 
 /**
- * The steering desk for one server: links, the session list, and delivery. `send(text)` is the SDK input stream of the
- * GUI-owned session; `guiSession()` its id.
+ * The steering desk for one server: links, the session list, and delivery. `send(text, row)` is the SDK input stream of
+ * the GUI-owned session `row` names; `guiSession()` its id (or ids); `hosted()` the sessions this server runs
+ * (withHosted).
  */
-export function createSteering({ repo, send, guiSession = () => null, home, now = () => Date.now() }) {
+export function createSteering({ repo, send, guiSession = () => null, hosted = () => [], home, now = () => Date.now() }) {
   const linked = new Set();
   let rootP = null;
   const root = () => (rootP ||= primaryRoot(repo));
@@ -229,7 +263,7 @@ export function createSteering({ repo, send, guiSession = () => null, home, now 
   async function list() {
     const r = await root();
     const dirs = await worktreeDirs(repo);
-    return mergeSessions({
+    const merged = mergeSessions({
       ledgers: readLedgers(r),
       claude: claudeSessions(dirs, { home: home || claudeHome(), now: now() }),
       gui: guiSession(),
@@ -237,6 +271,7 @@ export function createSteering({ repo, send, guiSession = () => null, home, now 
       repoName: path.basename(r),
       now: now(),
     });
+    return withHosted(merged, hosted(), path.basename(r));
   }
 
   async function find(id) {
@@ -262,7 +297,7 @@ export function createSteering({ repo, send, guiSession = () => null, home, now 
     const s = await find(id);
     if (!s) return { status: 404, error: 'no such live session' };
     if (s.steer === 'sdk') {
-      send(whole);
+      await send(whole, s);
       return { status: 200, via: 'sdk', session: s.id };
     }
     if (requireLink && !linked.has(s.id)) return { status: 409, error: `link ${s.name} first: a ${kind} reaches only a linked session` };

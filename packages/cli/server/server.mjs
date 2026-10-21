@@ -7,15 +7,15 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createHub } from './hub.mjs';
-import { createProvider, PERMISSION_MODES } from './provider.mjs';
-import { txFromMessage, newTxContext } from './normalize.mjs';
-import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
+import { PERMISSION_MODES } from './provider.mjs';
+import { createSession } from './session.mjs';
+import { endLedger, ghLoginOnce, heldNames, newSessionId, nextName, openPlace, startLedger, validName, writeStartLedger } from './fleet.mjs';
 import { preflight } from './preflight.mjs';
 import * as repoMod from './repo.mjs';
 import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
-import { createSteering, primaryRoot, readLedgers, parkedItem } from './sessions.mjs';
-import { boardTugs, createTugLog, tugOf } from './tugs.mjs';
+import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from './sessions.mjs';
+import { boardTugs, tugOf } from './tugs.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -48,71 +48,40 @@ function readPrompt(name) {
  * @param {boolean} [o.pollRuns=true]
  * @param {string} [o.claudeHome]    Claude Code's config folder (sessions under projects/); tests point it elsewhere
  * @param {function} [o.ghRun]       run(cmd, args, opts) for every gh call (tests inject a fake gh; never PATH)
+ * @param {() => Promise<string>} [o.ghLogin]  how to learn the gh login once (tests stub it; default asks gh)
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin } = {}) {
   const ghOpts = ghRun ? { run: ghRun } : {};
-  const hub = createHub();
-  const asks = new Map();
-  const permissions = new Map();
-  let txCtx = newTxContext();
-  let beatCtx = newBeatContext();
   let prefs = await repoMod.readPrefs(repo);
-  let busy = false;
-  let guiSession = null;
-  const tugLog = createTugLog();
 
-  const publishAsks = () => hub.set('asks', [...asks.values()].map((a) => a.view));
-  const publishPerms = () => hub.set('permissions', [...permissions.values()].map((a) => a.view));
-
-  const onMessage = (msg) => {
-    if (msg.session_id) guiSession = msg.session_id;
-    tugLog.onMessage(msg);
-    for (const item of txFromMessage(msg, txCtx)) hub.tx(item);
-    for (const b of beatsFromMessage(msg, beatCtx)) hub.beat(b);
-    if (msg.type === 'result') {
-      busy = false;
-      hub.setStatus({ state: 'idle', cost: msg.total_cost_usd ?? null, session: msg.session_id || null });
-    }
-  };
-
-  const onAsk = ({ id, agent, questions, signal }) => new Promise((resolve) => {
-    const view = { id, agent, questions, at: Date.now() };
-    asks.set(id, { view, resolve });
-    // The SDK's agentID is a subagent's own id, not the tool_use id the stage
-    // draws it under, so stage beats attach questions to the session orb.
-    hub.beat({ k: 'oversight', p: 'ask', id, agent: MAIN });
-    publishAsks();
-    signal?.addEventListener('abort', () => {
-      if (!asks.has(id)) return;
-      asks.delete(id);
-      hub.beat({ k: 'oversight', p: 'answer', id });
-      publishAsks();
-      resolve(null);
+  // Many sessions, one server (spec 40): each its own query(), claims session id, worktree and SSE channel. The
+  // home session is the one the server starts with: every call that names no session reaches it.
+  // The gh login is asked once, early, so a first prompt never waits on it. An injected provider is the test seam:
+  // nothing there calls out to gh unless the test hands a ghLogin.
+  const login = ghLoginOnce(ghLogin || (injected ? async () => '' : undefined));
+  if (!injected) login();
+  const sessions = new Map();
+  async function host({ id, name = '', cwd, place = {}, listed = false }) {
+    const s = await createSession({
+      id, name, cwd, place, listed,
+      env: async () => ({ NEXUS_SESSION: id, NEXUS_GH_LOGIN: await login() }),
+      // An injected provider object serves the home session only; a factory serves every session (tests).
+      provider: typeof injected === 'function' ? injected : sessions.size ? undefined : injected,
+      permissionMode: () => prefs.permissionMode,
     });
-  });
-
-  const onPermission = ({ id, agent, tool, input, suggestions, reason, signal }) => new Promise((resolve) => {
-    const view = { id, agent, tool, summary: JSON.stringify(input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length) };
-    permissions.set(id, { view, resolve });
-    if (!agent || agent === MAIN) hub.beat({ k: 'agent', p: 'wait', id: MAIN });
-    publishPerms();
-    signal?.addEventListener('abort', () => {
-      if (!permissions.delete(id)) return;
-      publishPerms();
-      resolve({ allow: false });
-    });
-  });
-
-  const hooks = {
-    repo,
-    onMessage,
-    onAsk,
-    onPermission,
-    onStatus: (s) => { if (s.state === 'idle') busy = false; hub.setStatus(s); },
-    permissionMode: () => prefs.permissionMode,
-  };
-  const provider = typeof injected === 'function' ? injected(hooks) : injected || await createProvider(hooks);
-  hub.setStatus({ state: 'idle', provider: provider.kind });
+    sessions.set(id, s);
+    return s;
+  }
+  const home = await host({ id: newSessionId(), cwd: repo });
+  const hub = home.hub;
+  const provider = home.provider;
+  /** The hosted session `key` names (id, Claude Code session id or star; none or `main`: home), or null. */
+  const sessionOf = (key) => (!key || key === 'main' ? home : [...sessions.values()].find((s) => s.is(String(key))) || null);
+  const hostedRows = () => [...sessions.values()].map((s) => ({ id: s.id, claude: s.claude, name: s.name, place: s.place, listed: s.listed, pause: s.pause, at: s.at }));
+  // A session this server does not run (a terminal one) gets a quiet channel: a hello with nothing in it, never
+  // another session's stream.
+  const elsewhere = createHub();
+  elsewhere.setStatus({ state: 'idle', hosted: false });
 
   const server = http.createServer((req, res) => {
     handle(req, res).catch((e) => send(res, 500, { error: String(e && e.message ? e.message : e) }));
@@ -146,40 +115,89 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw Object.assign(new Error('bad json'), { status: 400 }); }
   }
 
-  // A send while a turn is under way is a tug (steering mid-run); the
-  // session itself stays open between turns, so "active" is not "busy".
-  function sendPrompt(text, steered = false) {
-    const running = busy;
-    // A tug (or a steer aimed at this session) is drawn on the stage with its state (tugs.mjs).
-    if (running || steered) tugLog.sent(text, { session: guiSession, busy: running });
-    busy = true;
-    hub.tx({ kind: 'user', text });
-    if (running) hub.beat({ k: 'oversight', p: 'tug', agent: MAIN });
-    else hub.beat({ k: 'agent', p: 'start', id: MAIN, label: 'session' });
-    provider.send(text);
-  }
+  // The home session's input stream, for calls that name no session.
+  const sendPrompt = (text) => home.send(text);
 
-  // Live local sessions and steering a linked one (spec 41): the SDK stream for this server's own session, an
+  // Live local sessions and steering a linked one (spec 41): the SDK stream for a session this server runs, an
   // addressed owner line on the notice board (handed over by the steer hook) for a terminal one.
-  const steering = createSteering({ repo, send: (t) => sendPrompt(t, true), guiSession: () => guiSession, home: claudeHome });
+  const steering = createSteering({
+    repo,
+    // A steer aimed at a session this server runs is drawn on its stage with its state (tugs.mjs).
+    send: (t, row) => (sessionOf(row?.id) || sessionOf(row?.claude) || home).send(t, { steered: true }),
+    guiSession: () => [...sessions.values()].flatMap((s) => [s.id, s.claude]).filter(Boolean),
+    hosted: hostedRows,
+    home: claudeHome,
+  });
 
   async function sessionDetail(id) {
-    const s = await steering.find(id);
+    const h = sessionOf(id);
+    const s = await steering.find(id) || (h && withHosted([], [{ ...hostedRows().find((x) => x.id === h.id), listed: true }])[0]);
     if (!s) return null;
     const l = readLedgers(await primaryRoot(repo)).find((x) => x.id === s.id) || {};
-    return { ...s, parked: (Array.isArray(l.parked) ? l.parked : []).map(parkedItem), defaults: Array.isArray(l.defaults) ? l.defaults : [], started: l.started || null, tugs: await tugsFor(s) };
+    const out = { ...s, parked: (Array.isArray(l.parked) ? l.parked : []).map(parkedItem), defaults: Array.isArray(l.defaults) ? l.defaults : [], started: l.started || null, tugs: await tugsFor(s) };
+    const run = h || sessionOf(s.id) || sessionOf(s.claude);
+    if (run) {
+      const p = run.pause;
+      // The cockpit reads `state` paused | pausing for its pause control.
+      if (p.state !== 'run') Object.assign(out, { state: p.state, pausedAt: p.at, held: p.held });
+      Object.assign(out, { hosted: true, cwd: run.cwd, worktree: run.place.worktree || '', branch: run.place.branch || out.git?.branch || '' });
+    }
+    return out;
   }
 
-  /** The tugs aimed at (or taken by) one session, newest first: the board's for a terminal one, the stream's for this server's own. */
+  /** The tugs aimed at (or taken by) one session, newest first: the board's for a terminal one, its own stream's for one this server runs. */
   async function tugsFor(s) {
     const me = { id: s.id, name: s.name, kind: s.kind };
-    if (s.steer === 'sdk') return tugLog.list().filter((t) => !t.to || t.to === s.claude || t.to === s.id).map((t) => ({ ...t, session: me, takenBy: t.takenBy ? me : null }));
+    const run = s.steer === 'sdk' ? sessionOf(s.id) || sessionOf(s.claude) : null;
+    if (run) return run.tugs.list().filter((t) => !t.to || t.to === s.claude || t.to === s.id || t.to === run.claude).map((t) => ({ ...t, session: me, takenBy: t.takenBy ? me : null }));
     try {
       return (await boardTugs({ repo, sessions: await steering.list(), home: claudeHome })).filter((t) => tugOf(t, s));
     } catch {
       return []; // a board that cannot be read draws no tugs; the session detail still loads
     }
   }
+
+  /** POST /api/sessions: start a hosted session in its own worktree, under the next free star (or `name`). */
+  async function startSession(b) {
+    const root = await primaryRoot(repo);
+    const ledgers = readLedgers(root);
+    const taken = heldNames(ledgers, [...sessions.values()].map((s) => s.name));
+    let name = b.name == null || b.name === '' ? null : String(b.name).trim().toLowerCase();
+    if (name && !validName(name)) return { status: 400, error: 'a session name is lowercase letters, digits and dashes' };
+    if (name && taken.includes(name)) name = null; // the screen's guess went stale: take the next free star
+    name ||= nextName(taken);
+    let place = {};
+    let note = null;
+    if (b.worktree !== false) {
+      const p = await openPlace(root, name, ledgers);
+      if (p.error) note = `no worktree (${p.error}): it works in ${repo}`;
+      else place = { worktree: p.worktree, branch: p.branch };
+    }
+    const id = newSessionId();
+    const cwd = place.worktree || repo;
+    writeStartLedger(root, startLedger({ id, name, cwd, place }));
+    const s = await host({ id, name, cwd, place, listed: true });
+    if (b.prompt && String(b.prompt).trim()) await s.send(String(b.prompt).trim());
+    return { status: 200, id, name, cwd, worktree: place.worktree || '', branch: place.branch || '', ...(note ? { note } : {}) };
+  }
+
+  /** POST /api/sessions/:id/(pause|resume|close) for a session this server runs. */
+  async function sessionAction(key, action) {
+    const s = sessionOf(key);
+    if (!s) {
+      return { status: 409, error: action === 'resume' ? 'that session is not running here: a fallen one resumes through /reboot-resume' : 'only a session this server runs pauses, resumes or closes here' };
+    }
+    if (action === 'pause') return { status: 200, id: s.id, pause: s.pauseAfterStep() };
+    if (action === 'resume') return { status: 200, id: s.id, pause: await s.resume() };
+    if (s === home) return { status: 409, error: 'the home session stays while the server runs: stop it instead' };
+    await s.close();
+    sessions.delete(s.id);
+    if (s.listed) endLedger(await primaryRoot(repo), s.id);
+    return { status: 200, id: s.id, closed: true, worktree: s.place.worktree || '', note: s.place.worktree ? 'its worktree stays: close it with /tidy' : undefined };
+  }
+
+  const answerAsk = (askId, answers) => [...sessions.values()].some((s) => s.answerAsk(askId, answers));
+  const answerPermission = (reqId, d) => [...sessions.values()].some((s) => s.answerPermission(reqId, d));
 
   async function handle(req, res) {
     const url = new URL(req.url, 'http://127.0.0.1');
@@ -189,7 +207,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const route = `${req.method} ${url.pathname}`;
     try {
       switch (route) {
-        case 'GET /api/events': return hub.attach(req, res);
+        case 'GET /api/events': return (sessionOf(url.searchParams.get('session'))?.hub || elsewhere).attach(req, res);
+        case 'GET /api/server': return send(res, 200, { nexus: true, pid: process.pid, repo, root: await primaryRoot(repo), home: home.id, sessions: sessions.size });
         case 'GET /api/state': return send(res, 200, { info: await repoMod.repoInfo(repo), prefs, commands: repoMod.listCommands(repo), provider: provider.kind, permissionModes: PERMISSION_MODES });
         case 'GET /api/preflight': return send(res, 200, await preflight(repo));
         case 'GET /api/prompts': return send(res, 200, { paste: ADOPT_PASTE, adopt: readPrompt('adopt.md'), pitch: readPrompt('pitch.md') });
@@ -199,21 +218,21 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           const b = await body(req);
           const text = String(b.text || '').trim();
           if (!text) return send(res, 400, { error: 'empty prompt' });
-          sendPrompt(text);
-          return send(res, 200, { ok: true });
+          const s = sessionOf(b.session);
+          if (!s) return send(res, 404, { error: 'no such session on this server' });
+          return send(res, 200, { ok: true, session: s.id, ...(await s.send(text)) });
         }
-        case 'POST /api/adopt': await body(req); sendPrompt(ADOPT_PASTE); return send(res, 200, { ok: true });
-        case 'POST /api/interrupt': await body(req); await provider.interrupt(); return send(res, 200, { ok: true });
-        case 'POST /api/stop': await body(req); await provider.stop(); return send(res, 200, { ok: true });
+        case 'POST /api/adopt': await body(req); await sendPrompt(ADOPT_PASTE); return send(res, 200, { ok: true, session: home.id });
+        case 'POST /api/interrupt':
+        case 'POST /api/stop':
         case 'POST /api/fresh': {
-          await body(req);
-          await provider.fresh();
-          txCtx = newTxContext();
-          beatCtx = newBeatContext();
-          hub.reset();
-          return send(res, 200, { ok: true });
+          const s = sessionOf((await body(req)).session);
+          if (!s) return send(res, 404, { error: 'no such session on this server' });
+          await s[route.slice('POST /api/'.length)]();
+          return send(res, 200, { ok: true, session: s.id });
         }
-        case 'GET /api/oversight': return send(res, 200, { live: [...asks.values()].map((a) => a.view), durable: repoMod.durableQuestions(repo) });
+        case 'POST /api/sessions': { const r = await startSession(await body(req)); return send(res, r.status, r); }
+        case 'GET /api/oversight': return send(res, 200, { live: [...sessions.values()].flatMap((s) => [...s.asks.values()].map((a) => a.view)), durable: repoMod.durableQuestions(repo) });
         case 'POST /api/oversight/answer': {
           const b = await body(req);
           const rows = (Array.isArray(b.answers) ? b.answers : []).filter((a) => a && a.file && a.answer && String(a.answer).trim());
@@ -224,7 +243,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
             const r = await steering.steer(String(b.session), prompt, { kind: 'answer' });
             return send(res, r.status, r);
           }
-          sendPrompt(repoMod.answersPrompt(rows.map((a) => ({ file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer) })), repoMod.isOwner(repo)));
+          await sendPrompt(prompt);
           return send(res, 200, { ok: true });
         }
         case 'GET /api/sessions': return send(res, 200, await steering.list());
@@ -245,13 +264,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       const ask = /^POST \/api\/ask\/([\w-]+)$/.exec(route);
       if (ask) {
         const b = await body(req);
-        const entry = asks.get(ask[1]);
-        if (!entry) return send(res, 404, { error: 'no such question (already answered or expired)' });
-        asks.delete(ask[1]);
-        hub.beat({ k: 'oversight', p: 'answer', id: ask[1] });
-        publishAsks();
         const answers = b.answers && typeof b.answers === 'object' ? Object.fromEntries(Object.entries(b.answers).map(([k, v]) => [String(k), String(v)])) : null;
-        entry.resolve(answers);
+        if (!answerAsk(ask[1], answers)) return send(res, 404, { error: 'no such question (already answered or expired)' });
         return send(res, 200, { ok: true });
       }
       const one = /^GET \/api\/sessions\/([\w.%-]+)$/.exec(route);
@@ -268,14 +282,16 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
             : await steering.settleParked(id, { index: Number(b.index), q: b.q, action: b.action, pick: b.pick, answer: b.answer });
         return send(res, r.status, r);
       }
-      const perm = /^POST \/api\/permission\/([\w-]+)$/.exec(route);
+      const life = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close)$/.exec(route);
+      if (life) {
+        await body(req);
+        const r = await sessionAction(decodeURIComponent(life[1]), life[2]);
+        return send(res, r.status, r);
+      }
+      const perm =/^POST \/api\/permission\/([\w-]+)$/.exec(route);
       if (perm) {
         const b = await body(req);
-        const entry = permissions.get(perm[1]);
-        if (!entry) return send(res, 404, { error: 'no such request' });
-        permissions.delete(perm[1]);
-        publishPerms();
-        entry.resolve({ allow: !!b.allow, always: !!b.always });
+        if (!answerPermission(perm[1], { allow: !!b.allow, always: !!b.always })) return send(res, 404, { error: 'no such request' });
         return send(res, 200, { ok: true });
       }
       return send(res, 404, { error: 'not found' });
@@ -289,7 +305,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     if (!hosts.has(req.headers.host || '')) return send(res, 403, { error: 'bad host' });
     let rel;
     try { rel = decodeURIComponent(url.pathname); } catch { return send(res, 400, { error: 'bad path' }); }
-    if (rel === '/' || !path.extname(rel)) rel = '/index.html';
+    // A deep link (/s/<id>) is the app's own route, even when the id carries a dot.
+    if (rel === '/' || !path.extname(rel) || /^\/s\/[^/]+\/?$/.test(rel)) rel = '/index.html';
     const file = path.resolve(dist, `.${rel}`);
     if (!file.startsWith(path.resolve(dist) + path.sep)) return send(res, 403, { error: 'path' });
     if (!fs.existsSync(file)) {
@@ -309,15 +326,19 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     fs.createReadStream(file).pipe(res);
   }
 
-  // Live Actions runs -> loop beats, only while a tab is watching.
+  // Live Actions runs -> loop beats on every session's channel, only while a tab is watching one.
   const seenRuns = new Map();
   let ghBroken = 0;
   const poll = pollRuns ? setInterval(async () => {
-    if (!hub.clients || Date.now() < ghBroken) return;
+    const hubs = [...sessions.values()].map((s) => s.hub);
+    if (!hubs.some((h) => h.clients) || Date.now() < ghBroken) return;
     const r = await gh.listRuns(repo, ghOpts);
     if (!r.ok) { ghBroken = Date.now() + 60000; return; }
-    hub.set('runs', r.runs);
-    for (const b of gh.runBeats(r.runs, seenRuns)) hub.beat(b);
+    const beats = gh.runBeats(r.runs, seenRuns);
+    for (const h of hubs) {
+      h.set('runs', r.runs);
+      for (const b of beats) h.beat(b);
+    }
   }, gh.POLL_MS) : null;
 
   return {
@@ -325,10 +346,19 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     port: actual,
     token,
     hub,
+    home: home.id,
+    sessions,
+    /** A deep link to one session's cockpit, carrying this launch's token. */
+    urlFor: (id) => `http://127.0.0.1:${actual}/s/${encodeURIComponent(id)}?t=${encodeURIComponent(token)}`,
     async close() {
       if (poll) clearInterval(poll);
-      await provider.stop?.();
-      hub.close();
+      const root = await primaryRoot(repo);
+      for (const s of sessions.values()) {
+        await s.close();
+        // A session started here that never took a prompt frees its star; one that worked stays resumable.
+        if (s.listed && !s.sent) endLedger(root, s.id);
+      }
+      elsewhere.close();
       await new Promise((r) => server.close(r));
     },
   };
