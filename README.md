@@ -29,7 +29,9 @@ Run it at your project's root. It starts a local server on
 `127.0.0.1`, opens your browser, and drives your own Claude
 Code login: no API key, no account. It adopts nexus if the
 repo is new, then opens a live cockpit per session
-([`packages/cli`](./packages/cli/README.md)).
+([`packages/cli`](./packages/cli/README.md)). For scripts,
+`npx @usenexus/cli run "<prompt>"` answers one prompt headless
+and prints JSON.
 
 ### 2. Any other agent? Give it this prompt.
 

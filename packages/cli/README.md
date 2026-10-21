@@ -58,12 +58,47 @@ npx @usenexus/cli --port <n>     a fixed port
 NEXUS_PROVIDER=cli               use `claude -p` stream-json instead of the Agent SDK
 ```
 
+## Headless: one prompt, JSON out
+
+```
+npx @usenexus/cli run "summarize plan/README.md"
+echo "what ships next?" | npx @usenexus/cli run -
+npx @usenexus/cli run --cwd ../other-repo "..."
+```
+
+`run` answers one prompt in one turn through the Agent SDK on your
+Claude Code login, with no server and no browser. It prints one JSON
+object on stdout:
+
+```
+{"result":"...","session_id":"...","is_error":false,"subtype":"success",
+ "num_turns":1,"duration_ms":3794,"total_cost_usd":0.15,"usage":{...},
+ "permission_denials":[]}
+```
+
+It exits 0 on success, 1 when the turn ends in an error (the JSON
+still prints, with `is_error: true`), and 2 on a usage error.
+
+Options: `--cwd <dir>` (default: this folder), `--model <name>`,
+`--permission-mode <mode>`, `--json` (the default, accepted for
+scripts), `-` to read the prompt from stdin. `npx @usenexus/cli run
+--help` lists them.
+
+Permissions stay safe by default. The mode is `default`, and the
+repo's `.claude` settings load, so its allowlist and hooks (a guard
+hook, if the repo has one) apply as they do in Claude Code. A tool
+call the allowlist does not cover is denied, since no one is there
+to approve it, and is listed in `permission_denials`. A question
+(`AskUserQuestion`) is denied with a note to take the recommended
+option. `--permission-mode` can widen this to `acceptEdits`, `auto`
+or `plan`. `bypassPermissions` is refused.
+
 ## Develop
 
 ```
 cd packages/cli
 npm ci
-npm test          # node --test: beat reducer, routing, hub, server guards, UI rules
+npm test          # node --test: beat reducer, routing, hub, server guards, UI rules, headless run
 npm run build     # bundles prompts/ and builds the UI into dist/
 npm start         # serve this checkout's GUI
 ```
