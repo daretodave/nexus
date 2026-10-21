@@ -143,6 +143,13 @@ the reason (the 41.3 close carries the same list):
   Deny), an inline "Edit description" field, the contributor note
   under a routed `/plot`, Recover's "No recent runs yet", the
   not-signed-in, checking, red-run and skipped-cloud states.
+- **The stage's tug states** (41.2): each tug's path from the inbox
+  to the session reuses the Cockpit board's `.fil.is-tug` (its pulse
+  while sent) and the question line's dash once seen; applied draws
+  quiet in `--st-done`. The marks at the inbox end (state, age, the
+  session's `.sess-tag`) are app glue in `src/styles/stage-tugs.css`,
+  built from `nexus.css` tokens only, so a port that replaces the
+  tokens keeps them.
 - **Shared Tug props** (`whyIcon`, why-label, result line): the
   Inbox keeps its own markup that matches its board.
 - **The cockpit switcher** also shows terminal sessions (the

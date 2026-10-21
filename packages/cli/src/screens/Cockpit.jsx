@@ -17,6 +17,7 @@ import QuestionsEnd from './cockpit/QuestionsEnd.jsx';
 import QuestionsStart from './cockpit/QuestionsStart.jsx';
 import StageView from './cockpit/StageView.jsx';
 import Working from './cockpit/Working.jsx';
+import { questionMarks, tugFils, tugMarks } from './cockpit/tugs.js';
 import {
   PHASES, basinItems, clock, ctxLayers, identity, isOwner, liveChunks, liveStage, packageStage, phaseTrack, reviewStage, sessionPhase, startStage,
 } from './cockpit/model.js';
@@ -164,6 +165,13 @@ export default function Cockpit() {
   const showTether = showTray && !owner;
   const chunkLabel = ledger?.chunk?.id || (stage.current && stage.chunks[stage.current]?.stage !== 'archive' ? stage.current : '');
 
+  // Oversight marks on the live stage (A2): each tug's path and state, each open question's age and session.
+  const marks = useMemo(() => (view === 'working' ? {
+    tugs: tugMarks(ledger?.tugs, { now, session }),
+    questions: questionMarks({ asks: live.asks, parked: pendingParked, session, now }),
+    lifted: showTether,
+  } : null), [view, ledger, now, session.name, session.kind, live.asks, pendingParked, showTether]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const stageView = useMemo(() => {
     if (view === 'start' && ledger?.questions?.length) return startStage(ledger);
     if (view === 'review' && ledger?.parked?.length) return reviewStage(ledger);
@@ -180,8 +188,9 @@ export default function Cockpit() {
       // A live question pulls a tug from the session orb toward the conversation.
       s.fils.push({ key: 'ask-tug', l: '0', t: '30%', w: '50%', h: 'calc(100% - var(--tray-y) - 30%)', d: 'M100 0C55 0 45 100 0 100', tug: true, flow: true });
     }
+    if (marks?.tugs.length) s.fils.push(...tugFils(marks.tugs));
     return s;
-  }, [view, ledger, stage, chunkLabel, showTether, lastParked, asking]);
+  }, [view, ledger, stage, chunkLabel, showTether, lastParked, asking, marks]);
 
   const liveClosedCount = liveChunks(stage).filter((c) => c.closed).length;
   const basin = owner ? null : basinItems({ ledger, phase: view, stage });
@@ -275,7 +284,7 @@ export default function Cockpit() {
           {showTether ? <span className="tether-l" aria-hidden="true" /> : null}
         </section>
         <section className="pane-right" aria-label="Agent stage">
-          <StageView view={stageView} basin={basin} river={river} riverCap={river && river.length ? `${river.length} this session` : ''} drop={drop} />
+          <StageView view={stageView} basin={basin} river={river} riverCap={river && river.length ? `${river.length} this session` : ''} drop={drop} marks={marks} />
         </section>
       </Panes>
       <ToastHost toasts={toasts} />

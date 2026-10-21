@@ -31,7 +31,12 @@ You need no API key.
   composer. Free text routes itself: a bug goes to `/bug`, a feature or
   task to `/plot`, and a question is answered in place. On the right
   is the agent stage: the session is an orb, sub-agents bloom out on
-  filaments, and a question from an agent pulls toward you.
+  filaments, and a question from an agent pulls toward you. Each tug
+  or answer you aim at the session draws its path from the inbox to
+  the orb with its state: sent (the pulse travels), seen (the steer
+  hook handed it over: the line dashes) and applied (the session's
+  next reply or ledger beat after that: a quiet line, for ten
+  minutes). Each open question shows its age and the session's star.
 - **Heads-down**: the session as a 120-column terminal view.
 - **Oversight**: every open question across sessions, live
   (`AskUserQuestion` as buttons, tool permissions) and durable (from

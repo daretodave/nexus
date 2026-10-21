@@ -1,0 +1,36 @@
+/* The stage's oversight marks (spec 41, A2), app glue beside nexus.css (which stays verbatim from the handoff).
+   Every value is a nexus.css token or derived from one, so a design port that replaces the tokens keeps this.
+   The tug paths reuse the handoff's .fil.is-tug (the pulse while sent); these classes add only the states. */
+
+/* seen: handed over, the pulse stops and the line dashes (the question line's dash) */
+.fil.is-tug.is-seen path:first-child { stroke-dasharray: 2 5; }
+/* applied: the session moved on it; a quiet line in the done colour */
+.fil.is-quiet.is-applied path { stroke: color-mix(in oklab, var(--st-done) 46%, transparent); }
+
+/* The marks sit at the inbox end of the paths: the stage's left edge, just above the tray's height */
+.tug-marks {
+  position: absolute; z-index: 3; left: 18px; bottom: calc(var(--tray-y) + 10px);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  max-width: calc(100% - 36px); pointer-events: auto;
+}
+/* With the parked tether drawn, the parked node holds that corner: the marks rise above it */
+.tug-marks.is-lifted { bottom: calc(var(--tray-y) + 64px + 72px); }
+.tug-mark {
+  --tm: var(--st-blocked);
+  display: flex; align-items: center; gap: 8px; min-height: 26px; max-width: 100%;
+  padding: 2px 10px 2px 8px; border-radius: var(--r-full);
+  background: color-mix(in oklab, var(--bg) 62%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tm) 34%, transparent);
+  font-size: 11px; line-height: 16px; color: var(--text-2); white-space: nowrap;
+  animation: nx-settle-in var(--dur-settle) var(--ease-settle) both;
+}
+.tug-mark.is-sent { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tm) 50%, transparent), 0 0 18px -8px var(--glow-tug); }
+.tug-mark.is-seen { --tm: var(--st-thinking); }
+.tug-mark.is-applied { --tm: var(--st-done); }
+.tug-mark .tm-word { font-weight: 600; color: var(--tm); }
+.tug-mark .tm-age { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-3); }
+.tug-mark .sess-tag { height: 18px; font-size: 11px; }
+.tug-mark .tm-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
+
+@media (max-width: 1240px) { .tug-mark .tm-text { display: none; } }
+@media (prefers-reduced-motion: reduce) { .tug-mark { animation: none; } }
