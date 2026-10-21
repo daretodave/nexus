@@ -23,3 +23,6 @@ node_modules/
 # owner mode (scripts/owner.mjs): the owner's marker and local settings, per checkout
 .owner
 .nexus/
+
+# the notice board every loop on this machine reads (scripts/announce.mjs)
+.announcements.md

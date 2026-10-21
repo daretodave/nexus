@@ -40,7 +40,8 @@
 //                 plus that script's own node:test suite
 //   scripts       the node:test suites of the plan, claims and push
 //                 policy scripts adopters copy (templates/scripts/plan/,
-//                 claims, git/push-policy):
+//                 claims, git/push-policy, announce, ledger), and both
+//                 guard hooks' self-tests:
 //                 pure, no git, no network, about a second; and
 //                 nexus's own copies in scripts/ match them byte
 //                 for byte (the kit dogfoods what it ships)
@@ -525,11 +526,14 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/claims-codec.test.mjs',
   'templates/scripts/__tests__/push-policy.test.mjs',
   'templates/scripts/__tests__/progress.test.mjs',
+  'templates/scripts/__tests__/announce.test.mjs',
+  'templates/scripts/__tests__/ledger.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
   'templates/scripts/__tests__/claims.test.mjs',
   'templates/scripts/__tests__/push-policy-hook.test.mjs',
+  'templates/scripts/__tests__/worktree.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run
@@ -538,7 +542,7 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs',
+  'plan/progress.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
 ]
 
 function legScripts() {
@@ -550,8 +554,17 @@ function legScripts() {
     if (kit === null || own === null) failures.push(`scripts/${f} and templates/scripts/${f}: both must exist (nexus dogfoods the template)`)
     else if (kit !== own) failures.push(`scripts/${f} differs from templates/scripts/${f}: copy the template over it (or the fix into both)`)
   }
+  // The guard hook (nexus's own and the template) is a gate too: its
+  // self-test runs every rule against canned commands.
+  for (const g of ['.claude/hooks/guard.mjs', 'templates/claude/hooks/guard.mjs']) {
+    try {
+      execSync(`node ${g} self-test`, { cwd: ROOT, encoding: 'utf-8', stdio: 'pipe' })
+    } catch (err) {
+      failures.push(`${g} self-test failed:`, ...`${err.stdout || ''}`.split(/\r?\n/).filter((l) => /FAIL/.test(l)).slice(0, 10))
+    }
+  }
   const suites = runSuites(PURE_SUITES, 'pure')
-  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length} dogfood twins match` }
+  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length} dogfood twins match; 2 guard self-tests green` }
 }
 
 function runSuites(suites, label) {

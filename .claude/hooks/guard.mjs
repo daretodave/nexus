@@ -67,6 +67,18 @@ function commitVerb(message) {
   return firstLine.slice(0, idx).trim().replace(/\([^)]*\)$/, '')
 }
 
+// A bare `git worktree remove` (git's own options allowed before the
+// subcommand). git for Windows deletes through a junction in the
+// worktree (npm's workspace links) and stops at its first failure
+// after unregistering it, leaving the rest on disk. A mention inside
+// quotes (a commit message, a grep pattern) passes, unless a shell
+// runs that quoted text (`bash -c '...'`).
+const WORKTREE_REMOVE = /(^|[\s;&|(`'"])git(\.exe)?(\s+(-[Cc]\s+\S+|--[\w-]+(=\S+)?))*\s+worktree\s+remove\b/
+const RUNS_QUOTED = /\s-(c|Command|e)\s+["']/
+function maskQuoted(cmd) {
+  return cmd.replace(/'[^']*'|"[^"]*"/g, (q) => q[0] + '_'.repeat(q.length - 2) + q[q.length - 1])
+}
+
 // --- forbidden-command rules ------------------------------------------
 
 // Each rule: name, test(command) → true = block, message for the
@@ -104,6 +116,16 @@ const RULES = [
       'guard: destructive resets are forbidden (agents.md standing ' +
       'rule 5). Uncommitted work is either shipped (commit it) or a ' +
       'finding (write it to plan/AUDIT.md) — never discarded.',
+  },
+  {
+    name: 'bare-worktree-remove',
+    test: (cmd) => WORKTREE_REMOVE.test(RUNS_QUOTED.test(cmd) ? cmd : maskQuoted(cmd)),
+    message:
+      'guard: a bare `git worktree remove` deletes through any link in ' +
+      "the worktree (npm's workspace junctions) and can stop half done. " +
+      'Close it from outside it with `node scripts/worktree.mjs close ' +
+      '<path>`: it unlinks every link first, refuses a dirty or locked ' +
+      'worktree, and deletes the branch only once main holds it.',
   },
   {
     name: 'trailer-or-emoji-in-commit',
@@ -292,6 +314,15 @@ function selfTest() {
     // own first line, not the "$(cat <<'EOF'" wrapper
     ['git commit -m "$(cat <<\'EOF\'\nfeat: ship phase 28\n\nbody line\nEOF\n)"', null],
     ['git commit -m "$(cat <<\'EOF\'\nnonsense: bad verb\n\nbody line\nEOF\n)"', 'commit-verb'],
+    // bare-worktree-remove: the command blocked, a quoted mention passes
+    ['git worktree remove ../wt/07.1', 'bare-worktree-remove'],
+    ['git -C /r worktree remove --force ../wt/x', 'bare-worktree-remove'],
+    ["bash -c 'git worktree remove ../wt/x'", 'bare-worktree-remove'],
+    ['cd /r && git worktree remove x', 'bare-worktree-remove'],
+    ['git commit -m "docs: never a bare git worktree remove"', null],
+    ['node scripts/worktree.mjs close ../wt/07.1', null],
+    ['git worktree add --detach ../wt/07.1 abc123', null],
+    ['git worktree prune', null],
     // allowed commands — must NOT match any rule
     ['git push origin main', null],
     ['git commit -m "feat: ship phase 8"', null],

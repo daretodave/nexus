@@ -94,6 +94,9 @@ templates/
 │   ├── plan/progress.mjs              (ASCII progress per spec: the bar, closed struck, <--- [here], ETAs from sizes)
 │   ├── claims-codec.mjs               (the claims rules as pure functions: any claimant imports them)
 │   ├── claims.mjs                     (who builds what: the orphan claims branch, compare-and-swap; --json)
+│   ├── announce.mjs                   (the notice board: .announcements.md; owner lines outrank the command, REBOOT preempts)
+│   ├── ledger.mjs                     (each session's live ledger in .nexus/sessions/: star names; a stale beat reads fallen)
+│   ├── worktree.mjs                   (close a worktree without deleting through its links; list them for /tidy)
 │   ├── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
 │   ├── __tests__/plan-check.test.mjs  (unit tests for plan-check.mjs)
 │   ├── __tests__/pending.test.mjs     (pending files, the config, the settled view)
@@ -102,6 +105,9 @@ templates/
 │   ├── __tests__/claims-codec.test.mjs  (the claims rules, pure)
 │   ├── __tests__/push-policy.test.mjs  (the push policy, pure)
 │   ├── __tests__/progress.test.mjs    (the progress view, pure)
+│   ├── __tests__/announce.test.mjs    (the notice board)
+│   ├── __tests__/ledger.test.mjs      (the live ledger)
+│   ├── __tests__/worktree.test.mjs    (worktree close and list in scratch repos; slower, offline)
 │   ├── __tests__/push-policy-hook.test.mjs  (the pre-push hook end to end in a scratch git repo; slower, offline)
 │   └── __tests__/claims.test.mjs      (claims over git in scratch repos; slower, offline)
 ├── env/
@@ -193,6 +199,7 @@ the corresponding capability:
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 | `scripts/install-hooks.mjs` | You want `pnpm verify` to run automatically on hand commits made outside the loop, and (with `scripts/git/push-policy.mjs`) a push to main refused outside owner mode. Opt-in — run it once per checkout (`node scripts/install-hooks.mjs`; `--only pre-push` for just the policy) to arm the `pre-commit` and `pre-push` hooks; `--uninstall` removes them. See `nexus/customization/verify-gate.md` + `nexus/playbooks/owner-mode.md`. |
+| `scripts/announce.mjs` + `scripts/ledger.mjs` + `scripts/worktree.mjs` | More than one session runs on one machine (two `/heads-down` loops, the GUI): a notice board, a live ledger per session, safe worktree closes. See `nexus/customization/sessions.md`. |
 | `plan/reflexes.md` + `plan/lessons.md` | The loop has run long enough to accumulate real recurring lessons and a single `NEXUS_LESSONS.md` scratch file no longer scales. See `nexus/customization/lessons-layer.md`. |
 
 If your `bearings.md` declares `Surface: service / library /

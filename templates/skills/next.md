@@ -58,8 +58,8 @@ park it in the `/oversight` queue, skip the chunk, release it.
    in a worktree cut from `origin/<base>` (`next/build.md`).
 2. `node scripts/claims.mjs prune`, `list`, and `renew` this
    session's claims. No claims module: skip, and say so.
-3. The notice board, when the repo has one: an owner line
-   outranks this file; `REBOOT <slug>` means `/reboot-ready`.
+3. `node scripts/announce.mjs read`: an owner line outranks
+   this file; `REBOOT <slug>` means `/reboot-ready <slug>` now.
 4. **Owner only: settle.** `plan/pending/` on origin/main lists
    more than its README → settle first (`next/land.md` §1).
 5. Read `plan/nexus.lock` (`shape: chunks`, else stop: the repo
@@ -132,7 +132,7 @@ goes back once, then the lead finishes it.
 
 ### Step 5 — Land per owner mode
 
-Re-read the notice board first. Then (`next/land.md` §3-4):
+Re-read the board first (`announce.mjs read`). Then (`next/land.md` §3-4):
 
 - **Owner:** rebase onto `origin/<base>` just fetched, settle,
   gate, `git push origin HEAD:<DEFAULT_BRANCH>`. Rejected:

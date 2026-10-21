@@ -28,6 +28,10 @@ git worktree add -b pkg/<slug> ../<PROJECT_LOWER>-wt/pkg-<slug> "$base"
 - Uncommitted plan edits set aside before a rebase go to a
   patch in the scratchpad, never a bare `git stash` (other
   sessions share the stash).
+- Beat the session's ledger at each step (claim, build, gate,
+  close, land): `node scripts/ledger.mjs beat --chunk <id>
+  --step <step> --set worktree=<path>` (a crash then resumes
+  like a reboot: `customization/sessions.md`).
 
 ## 2. The builder's brief
 
@@ -84,8 +88,8 @@ commit.
   row, a candidate) and named in the close.
 - A stopped Workflow: keep its committed slices, lay its
   worktree's uncommitted files over them, finish inline.
-- Once main (or the PR) holds every commit:
-  `git worktree remove <path>` on a clean tree only (a repo
-  with `scripts/worktree.mjs` closes through it instead), then
-  `git branch -d next/<id>` once merged. A dirty or locked
-  worktree is reported, never forced.
+- Once main (or the PR) holds every commit: `node
+  scripts/worktree.mjs close <path>`, never a bare `git
+  worktree remove` (the guard refuses it): it unlinks links
+  first and deletes the branch once main holds it. A dirty or
+  locked worktree is reported, never forced.

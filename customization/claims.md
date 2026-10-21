@@ -176,5 +176,8 @@ anyone's. A held claim is never `stale`.
   rulesets on main and `claims`.
 - [`lanes.md`](./lanes.md): parallel sessions on one branch;
   claims are its board.
+- [`sessions.md`](./sessions.md): many sessions on one
+  machine: the notice board, the live ledger, worktrees and
+  the reboot train.
 - [`../concepts/plan-shape.md`](../concepts/plan-shape.md):
   chunks, and the pending files a branch closes them with.

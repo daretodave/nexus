@@ -418,6 +418,9 @@ nexus/
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── git/push-policy.mjs            # pre-push: main is the owner's checkout's alone (owner mode)
+│   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
+│   ├── ledger.mjs                     # npm run ledger: each session's live ledger (star names; a crash resumes like a reboot)
+│   ├── worktree.mjs                   # npm run worktree: close a worktree without deleting through its links; list for /tidy
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep + prune steps
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
 │   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs (pre-commit) + the push policy (pre-push)
@@ -447,6 +450,7 @@ nexus/
 │   ├── sub-agents.md                  # designing your specialists
 │   ├── lanes.md                       # alpha/beta/gamma — three agents, one branch (attended fan-out)
 │   ├── claims.md                      # who builds which chunk: orphan claims branch, CAS, session-scoped, 24h TTL
+│   ├── sessions.md                    # many sessions on one machine: notice board, live ledger, worktrees, reboot train
 │   ├── claude-code.md                 # the Claude Code layer — permissions, guard hooks, pager, model routing
 │   ├── branding.md                    # opt-in /ship-asset + brander agent (Surface-gated)
 │   ├── visual-system.md               # design system layer (upstream of branding/assets)
@@ -546,6 +550,9 @@ nexus/
     │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h)
     │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
     │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
+    │   ├── announce.mjs               # the notice board: owner lines outrank the command; REBOOT preempts
+    │   ├── ledger.mjs                 # each session's live ledger (.nexus/sessions/), star names, fallen = stale beat
+    │   ├── worktree.mjs               # close a worktree safely (links unlinked first); list for /tidy
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
     │   ├── __tests__/pending.test.mjs # pending files, config, settled view
@@ -554,6 +561,9 @@ nexus/
     │   ├── __tests__/claims-codec.test.mjs # the claims rules
     │   ├── __tests__/push-policy.test.mjs # the push policy, pure
     │   ├── __tests__/progress.test.mjs # the progress view, pure
+    │   ├── __tests__/announce.test.mjs # the notice board
+    │   ├── __tests__/ledger.test.mjs  # the live ledger
+    │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)
     ├── env/
