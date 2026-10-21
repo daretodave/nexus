@@ -416,8 +416,11 @@ nexus/
 │   ├── adopt.md                       # the full "Adopt nexus" agent prompt
 │   └── pitch.md                       # the full pitch-to-adopted agent prompt
 ├── package.json                       # the kit's own verify gate wiring
+├── assets/                            # generated SVG diagrams (scripts/diagrams.mjs); hand edits fail the gate
 ├── scripts/
-│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts
+│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams
+│   ├── diagrams.mjs                   # writes every assets/*.svg from one style table; --check is the gate's diagrams leg
+│   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
@@ -667,13 +670,15 @@ adapt them.
 This repo eats its own dogfood — it is an adopted nexus
 project. The ouroboros, concretely:
 
-- **Its own verify gate.** `node scripts/verify.mjs` — nine
+- **Its own verify gate.** `node scripts/verify.mjs` — eleven
   hermetic legs (every relative link resolves, the kit tree
   matches disk, no orphaned doc, placeholder vocabulary
   enforced, skill anatomy enforced, no emojis, dual-shell
   parity checked, the plan shape true, the plan and claims
-  scripts' own suites green). On its first ever run it caught
-  five real defects in this repo. The gate works.
+  scripts' own suites green, the workflows linted, every
+  diagram under `assets/` what its generator draws). On its
+  first ever run it caught five real defects in this repo.
+  The gate works.
 - **Its own plan.** `plan/README.md` and its specs carry the
   kit's roadmap, in the same chunk shape adopters use; `plan/AUDIT.md` and
   `plan/PHASE_CANDIDATES.md` are seeded with real findings

@@ -53,8 +53,8 @@ node scripts/verify.mjs
 ```
 
 Legs: `links → tree → discover → placeholders → anatomy →
-emoji → dualshell → chunks → scripts → workflows` (plus the opt-in
-`adopt-dryrun` and `scripts-git`). Every leg is a hard gate; red = blocked
+emoji → dualshell → chunks → scripts → workflows → diagrams`
+(plus the opt-in `adopt-dryrun` and `scripts-git`). Every leg is a hard gate; red = blocked
 commit. Run it
 **foreground and wait** — never `run_in_background`. No
 `--no-verify`, ever. When a change introduces a new invariant
@@ -133,7 +133,9 @@ customization/       Opt-in layers per project shape.
 templates/           THE PRODUCT — files adopters copy.
 skills/              nexus's OWN skills (the loop that ships the kit).
 plan/                nexus's OWN state files (roadmap, specs, archive, queues).
-scripts/             The kit's verify gate (verify.mjs).
+scripts/             The kit's verify gate (verify.mjs), the
+                     diagram generator (diagrams.mjs).
+assets/              Generated SVG diagrams; never hand-edited.
 .claude/             nexus's OWN Claude Code config (commands,
                      settings.json allowlist, guard hook).
 .github/             nexus's OWN cloud loop (march.yml).

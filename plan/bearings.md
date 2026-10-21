@@ -23,7 +23,8 @@ projects use `site | service | library | cli | hybrid`.)
 |---|---|---|
 | Content | Markdown, hard-wrapped ~62–64 cols | Tables exempt from wrap |
 | Scripts | Node ≥18, zero dependencies, ESM `.mjs` | No `node_modules`, no lockfile |
-| Verify gate | `node scripts/verify.mjs` | 8 legs; see `agents.md` rule 3 |
+| Verify gate | `node scripts/verify.mjs` | 11 legs, 2 opt-in more; see `agents.md` rule 3 |
+| Diagrams | `node scripts/diagrams.mjs` | SVG under `assets/`, one style table; never hand-drawn |
 | Deploy gate | none — push is the deploy | `npm run deploy:check` = symmetry no-op |
 | Issue mirror | `node templates/scripts/loop-issue.mjs` | The kit dogfoods its own template in place |
 

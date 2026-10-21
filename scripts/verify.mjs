@@ -53,6 +53,11 @@
 //                 env blocks read only the contexts GitHub allows
 //                 there and never a secret or token, and no run
 //                 script interpolates outsider text
+//   diagrams      every assets/*.svg is byte-identical to what
+//                 scripts/diagrams.mjs generates (regenerated in
+//                 memory; a hand edit, a missing or a stray SVG is
+//                 red, naming the file), plus the generator's own
+//                 node:test suite
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds). Opt in with
@@ -618,6 +623,16 @@ async function legWorkflows() {
   return { failures: problems.map((p) => normalize(path.relative(ROOT, p.split(':')[0])) + p.slice(p.indexOf(':'))), note: `${files} workflows: hosted runners for secrets, contexts, no outsider text in run scripts` }
 }
 
+// --- leg: diagrams ------------------------------------------------------------
+// The README's diagrams are generated (scripts/diagrams.mjs, one
+// style table); a committed SVG that drifts from its source is red.
+
+async function legDiagrams() {
+  const { check, DIAGRAMS } = await import(pathToFileURL(path.join(ROOT, 'scripts/diagrams.mjs')).href)
+  const suite = runSuites(['scripts/__tests__/diagrams.test.mjs'], 'generator')
+  return { failures: [...check(), ...suite.failures], note: `${Object.keys(DIAGRAMS).length} SVGs match scripts/diagrams.mjs; ${suite.note}` }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -646,6 +661,7 @@ const LEGS = {
   chunks: () => legChunks(),
   scripts: () => legScripts(),
   workflows: () => legWorkflows(),
+  diagrams: () => legDiagrams(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
 }
