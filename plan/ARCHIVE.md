@@ -77,3 +77,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 39.2 · nexus releases a closed contributor PR's claims · 0aded94a..b726e0b8
 - 2026-10-21 · 35.2 · public docs speak v2; sibling adopters go unnamed · 465f1d99..f3818460
 - 2026-10-21 · 39.3 · the optional claims-board workflow keeps one live issue · d0bdaac4..d0bdaac4
+- 2026-10-21 · 37.3 · claims refuse a Claude Code session that loaded no hooks · a10d950c..1453639d

@@ -49,7 +49,6 @@ committed; the guard hook.
 
 ## Acceptance
 
-- **A3** Claims refuse in a session that loaded no hooks.
 - **A4** No committing template skill pushes main directly;
   each lands per owner mode.
 - **A5** `next/land.md` says how a no-token cloud tick ends.
@@ -62,10 +61,8 @@ committed; the guard hook.
 (None.)
 
 ## Chunks
-Measure: 5 open · 2 closed · next A8
+Measure: 4 open · 3 closed · next A8
 
-- [ ] **37.3** Claims refuse a session with no hooks loaded ·
-  S · closes A3 · needs —
 - [ ] **37.4** Every committing skill lands per owner mode;
   the cloud-tick note · M · closes A4, A5 · needs —
 - [ ] **37.5** plan-check reads the settled view; a plot
