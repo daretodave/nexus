@@ -11,7 +11,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { run as shRun, json } from './sh.mjs';
-import { findScript, claims as readClaims } from './repo.mjs';
+import { findScript } from './repo.mjs';
+import { listClaims as readClaims } from './claims.mjs';
 
 export const WORKTREE_SCRIPTS = ['scripts/worktree.mjs', 'scripts/git/worktree.mjs', 'scripts/dev/worktree.mjs'];
 export const MAIN = process.env.NEXUS_MAIN_BRANCH || 'main';
