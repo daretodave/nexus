@@ -52,27 +52,79 @@ jobs:
             done
           done
 
-      - name: Alarm if march has not succeeded a tick in 14h
+      # A disabled schedule produces no runs, so the cadence check
+      # below cannot see it: watch the state itself. GitHub sets
+      # disabled_inactivity after 60 days with no repo commits; a
+      # human's `gh workflow disable` sets disabled_manually. Both
+      # alarm alike, one open issue per workflow. Never re-enabled
+      # from here: watchers stay dumber than what they watch.
+      - name: Alarm if a scheduled workflow is not armed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # --status success, not completed: a failed run still
-          # counts as "completed", so a loop failing every tick
-          # (e.g. expired auth) would reset this timer forever.
-          last=$(gh run list --workflow march --status success -L 1 \
-            --json updatedAt --jq '.[0].updatedAt // empty')
-          if [ -z "$last" ]; then
-            echo "No successful march runs yet - nothing to measure."
-            exit 0
-          fi
-          now=$(date -u +%s); then_s=$(date -u -d "$last" +%s)
-          hours=$(( (now - then_s) / 3600 ))
-          echo "Last successful march tick: ${hours}h ago"
-          if [ "$hours" -ge 14 ]; then
-            existing=$(gh issue list --search 'in:title "Heartbeat: march has flatlined" state:open' --json number --jq 'length')
+          # --all: the default listing hides disabled workflows.
+          states=$(gh workflow list --all --limit 200 \
+            --json name,state --jq '.[] | [.name, .state] | @tsv')
+          for wf in march night heartbeat; do
+            state=$(printf '%s\n' "$states" | awk -F'\t' -v w="$wf" '$1 == w { print $2; exit }')
+            if [ -z "$state" ]; then
+              echo "$wf: not installed - nothing to watch."
+              continue
+            fi
+            echo "$wf: $state"
+            [ "$state" = "active" ] && continue
+            existing=$(gh issue list --search "in:title \"Heartbeat: $wf is not armed\" state:open" --json number --jq 'length')
             if [ "$existing" -eq 0 ]; then
               gh issue create \
-                --title "Heartbeat: march has flatlined ($(date -u +%Y-%m-%d))" \
-                --body "No successful march tick in ${hours}h (cadence is 6h). Likely causes: every tick failing (check the newest run's log), workflow disabled and forgotten, cron auto-paused, or auth expiry. Check: gh workflow list; gh run list --workflow march -L 5."
+                --title "Heartbeat: $wf is not armed ($state, $(date -u +%Y-%m-%d))" \
+                --body "The $wf workflow is in state $state, so its schedule fires nothing and the cadence check skips it. Two causes: GitHub's 60-day inactivity rule (disabled_inactivity: no repo commits in 60 days) or a human's gh workflow disable (disabled_manually: a deliberate pause). Fix, once the pause is over: gh workflow enable $wf. This issue is the one report while it stays open; the heartbeat never re-enables anything itself."
             fi
-          fi
+          done
+
+      - name: Alarm if march or night has not succeeded a tick in time
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          states=$(gh workflow list --all --limit 200 \
+            --json name,state --jq '.[] | [.name, .state] | @tsv')
+
+          # check_cadence <workflow> <threshold_h>: one open issue
+          # when the newest successful run is threshold_h or older.
+          check_cadence() {
+            wf=$1; threshold=$2
+            state=$(printf '%s\n' "$states" | awk -F'\t' -v w="$wf" '$1 == w { print $2; exit }')
+            if [ -z "$state" ]; then
+              echo "$wf: not installed - nothing to measure."
+              return 0
+            fi
+            # A paused or auto-disabled workflow is the armed-ness
+            # step's report; a flatline alarm on top would reopen
+            # every tick the pause lasts.
+            if [ "$state" != "active" ]; then
+              echo "$wf: $state - cadence skipped (the armed-ness step reports it)."
+              return 0
+            fi
+            # --status success, not completed: a failed run still
+            # counts as "completed", so a loop failing every tick
+            # (e.g. expired auth) would reset this timer forever.
+            last=$(gh run list --workflow "$wf" --status success -L 1 \
+              --json updatedAt --jq '.[0].updatedAt // empty')
+            if [ -z "$last" ]; then
+              echo "$wf: no successful runs yet - nothing to measure."
+              return 0
+            fi
+            now=$(date -u +%s); then_s=$(date -u -d "$last" +%s)
+            hours=$(( (now - then_s) / 3600 ))
+            echo "$wf: last successful tick ${hours}h ago (alarm at ${threshold}h)"
+            if [ "$hours" -ge "$threshold" ]; then
+              existing=$(gh issue list --search "in:title \"Heartbeat: $wf has flatlined\" state:open" --json number --jq 'length')
+              if [ "$existing" -eq 0 ]; then
+                gh issue create \
+                  --title "Heartbeat: $wf has flatlined ($(date -u +%Y-%m-%d))" \
+                  --body "No successful $wf tick in ${hours}h (alarm threshold ${threshold}h; check the $wf cron schedule). The workflow is active, so the schedule is armed: likely every tick is failing (check the newest run's log), the cron is not firing, or auth expired. Check: gh run list --workflow $wf -L 5."
+              fi
+            fi
+          }
+
+          check_cadence march 14   # 6h cadence, two missed ticks tolerated
+          check_cadence night 48   # daily cadence, one skipped day tolerated
