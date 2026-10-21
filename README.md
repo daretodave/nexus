@@ -462,6 +462,8 @@ nexus/
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
 │   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md)
 │   ├── heads-down.md                  # /heads-down — ask up front, then loop /next for hours
+│   ├── tidy.md                        # /tidy — clear dead claims, close idle worktrees (worktree.mjs)
+│   ├── rebooting.md                   # /rebooting, /reboot-ready, /reboot-resume — the reboot train
 │   ├── march.md                       # + ship-a-chunk, iterate, critique (dry-run adoption),
 │   │                                  #   triage, expand, oversight, jot
 │   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
@@ -494,6 +496,10 @@ nexus/
     │   ├── next/build.md               # /next's build detail: worktree, builder brief, Workflow shape
     │   ├── next/land.md                # /next's close + land: settle, pending file, main vs PR
     │   ├── heads-down.md               # ask up front, claim a list, loop /next on defaults, ASCII progress
+    │   ├── tidy.md                     # clear dead claims; offer idle worktrees + merged branches
+    │   ├── rebooting.md                # reboot train: announce, ack, one resume line per loop
+    │   ├── reboot-ready.md             # reboot train: park this loop (children, work, claims, ledger)
+    │   ├── reboot-resume.md            # reboot train: pick a parked or fallen loop up from its ledger
     │   ├── ship-a-chunk.md
     │   ├── ship-data.md                # omit if no structured data layer
     │   ├── ship-migration.md           # omit unless Structured data: pure-db / hybrid-with-managed-postgres

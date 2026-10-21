@@ -150,6 +150,8 @@ verbs — a docs kit ships docs, not pages.
 | `march` | `skills/march.md` | Dispatch: triage → critique → chunk → expand → iterate. |
 | `next` | `skills/next.md` | One chunk, done fully: claim, delegated build (S/M a builder, L a Workflow), gate, pending close, land per owner mode, retro. |
 | `heads-down` | `skills/heads-down.md` | Questions up front, claim a list, loop `/next` on defaults with ASCII progress (`npm run progress`). |
+| `tidy` | `skills/tidy.md` | Clear dead claims; offer idle worktrees and merged branches (`npm run worktree -- list`). |
+| `rebooting` | `skills/rebooting.md` | The reboot train (with `reboot-ready`, `reboot-resume`): park every loop, resume each from its ledger. |
 | `ship-a-chunk` | `skills/ship-a-chunk.md` | Ship one chunk of the kit's plan and close it (the build steps `/next`'s builder follows). |
 | `iterate` | `skills/iterate.md` | Audit the kit, ship one improvement. |
 | `critique` | `skills/critique.md` | Dry-run adoption as a stranger; file friction findings. |

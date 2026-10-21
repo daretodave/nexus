@@ -175,6 +175,10 @@ invoke a skill that does the right thing end-to-end.
 |---|---|---|
 | `next` | `skills/next.md` | One chunk, done fully: pick, claim, delegate the build (S/M a builder subagent, L a Workflow), gate, pending close, land per owner mode, retro. |
 | `heads-down` | `skills/heads-down.md` | Ask every question up front, claim a list of chunks, loop `/next` for hours on defaults, ASCII progress each iteration. |
+| `tidy` | `skills/tidy.md` | Clear claims nobody works on; offer idle worktrees and merged branches in one question. |
+| `rebooting` | `skills/rebooting.md` | The reboot train, from the owner's terminal: announce, ack, one resume line per loop. |
+| `reboot-ready` | `skills/reboot-ready.md` | Inside a loop: park now (children stopped, work and claims kept, ledger written). |
+| `reboot-resume` | `skills/reboot-resume.md` | Pick a parked or fallen loop up from its ledger and carry on. |
 | `ship-a-chunk` | `skills/ship-a-chunk.md` | Ship one chunk of the plan and close it (the build steps `/next`'s builder follows). |
 | `ship-data` | `skills/ship-data.md` | Ship one data record (if data layer exists). |
 | `ship-migration` | `skills/ship-migration.md` | Ship one DB migration (if Structured data: pure-db / hybrid-with-managed-postgres). |

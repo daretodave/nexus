@@ -30,6 +30,10 @@ templates/
 │   ├── next/build.md                  (/next's delegated build: worktree, builder brief, Workflow shape, harvest)
 │   ├── next/land.md                   (/next's close and land: settle, pending file, owner main vs contributor PR)
 │   ├── heads-down.md                  (ask up front, claim a list, loop /next assuming defaults, ASCII progress)
+│   ├── tidy.md                        (clear dead claims; offer idle worktrees and merged branches in one question)
+│   ├── rebooting.md                   (reboot train, owner's terminal: announce, ack, one resume line per loop)
+│   ├── reboot-ready.md                (reboot train, inside a loop: stop children, keep work and claims, park the ledger)
+│   ├── reboot-resume.md               (reboot train, after the restart or a crash: take the ledger, carry on)
 │   ├── ship-a-chunk.md
 │   ├── ship-data.md                   (omit if no structured data layer)
 │   ├── ship-migration.md              (omit unless Structured data: pure-db / hybrid-with-managed-postgres)
@@ -199,7 +203,7 @@ the corresponding capability:
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 | `scripts/install-hooks.mjs` | You want `pnpm verify` to run automatically on hand commits made outside the loop, and (with `scripts/git/push-policy.mjs`) a push to main refused outside owner mode. Opt-in — run it once per checkout (`node scripts/install-hooks.mjs`; `--only pre-push` for just the policy) to arm the `pre-commit` and `pre-push` hooks; `--uninstall` removes them. See `nexus/customization/verify-gate.md` + `nexus/playbooks/owner-mode.md`. |
-| `scripts/announce.mjs` + `scripts/ledger.mjs` + `scripts/worktree.mjs` | More than one session runs on one machine (two `/heads-down` loops, the GUI): a notice board, a live ledger per session, safe worktree closes. See `nexus/customization/sessions.md`. |
+| `scripts/announce.mjs` + `scripts/ledger.mjs` + `scripts/worktree.mjs` + `skills/tidy.md` + `skills/rebooting.md` + `skills/reboot-ready.md` + `skills/reboot-resume.md` (+ their commands) | More than one session runs on one machine (two `/heads-down` loops, the GUI): a notice board, a live ledger per session, safe worktree closes. See `nexus/customization/sessions.md`. |
 | `plan/reflexes.md` + `plan/lessons.md` | The loop has run long enough to accumulate real recurring lessons and a single `NEXUS_LESSONS.md` scratch file no longer scales. See `nexus/customization/lessons-layer.md`. |
 
 If your `bearings.md` declares `Surface: service / library /
