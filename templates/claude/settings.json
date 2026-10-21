@@ -64,6 +64,9 @@
       "Bash(git branch -D:*)",
       "Read(.env)",
       "Read(.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.workspace)",
+      "Read(../.env.workspace)",
       "Read(setup/bootstrap.local.json)"
     ]
   },
@@ -85,6 +88,15 @@
           {
             "type": "command",
             "command": "node .claude/hooks/guard.mjs pre-bash"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/guard.mjs pre-read"
           }
         ]
       },

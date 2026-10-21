@@ -112,7 +112,10 @@
       "Bash(git clean -f:*)",
       "Bash(git branch -D:*)",
       "Read(.env)",
-      "Read(.env.*)"
+      "Read(.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.workspace)",
+      "Read(../.env.workspace)"
     ]
   },
   "hooks": {
@@ -133,6 +136,15 @@
           {
             "type": "command",
             "command": "node .claude/hooks/guard.mjs pre-bash"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/guard.mjs pre-read"
           }
         ]
       },
