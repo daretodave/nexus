@@ -46,8 +46,6 @@ scripts).
 
 - **A1** `prompts/adopt.md` asks the mode before writing and
   sets up `.owner`, `.gitignore` and the hooks to match.
-- **A2** push-policy refuses `main` only on `origin` or
-  `upstream`, with tests.
 - **A3** The nexus repo carries the `main` and `claims`
   rulesets, the cloud token bypassing `main`'s.
 
@@ -56,11 +54,9 @@ scripts).
 (None.)
 
 ## Chunks
-Measure: 3 open · 2 closed · next A6
+Measure: 2 open · 3 closed · next A6
 
 - [ ] **38.1** Adoption asks owner or contributor and arms the
   hooks · S · closes A1 · needs —
-- [ ] **38.2** push-policy guards main on origin and upstream
-  only · S · closes A2 · needs —
 - [ ] **38.3** Post the main and claims rulesets on nexus ·
   S · closes A3 · needs —
