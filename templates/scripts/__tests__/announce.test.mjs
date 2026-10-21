@@ -7,7 +7,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import {
-  FILE, SEEN, STEERED, addressee, author, claim, delivered, drop, forMe, identities, main, parse, post, postTo, reboot, steerable, unread,
+  FILE, HOOKED, SEEN, STEERED, addressee, author, claim, delivered, drop, forMe, identities, lineKey, main, parse, post, postTo, reboot, steerable,
+  unread,
 } from '../announce.mjs';
 
 describe('the board text', () => {
@@ -127,6 +128,16 @@ describe('a line to one session', () => {
     assert.deepEqual([...identities([], ledgers)], []);
   });
 
+  it('answers for the parked or fallen session it took to resume: a line to that session reaches its resumer', () => {
+    const ledgers = [
+      { id: 'aaaa1111', star: 'vega', state: 'resuming', claude: 'cl-aaaa', resumed_by: 'bbbb2222' },
+      { id: 'cccc3333', star: 'polaris', state: 'resumed', resumed_by: 'bbbb2222' },
+      { id: 'dddd4444', star: 'rigel', state: 'parked' },
+    ];
+    assert.deepEqual([...identities(['bbbb2222'], ledgers)].sort(), ['aaaa1111', 'bbbb2222', 'cccc3333', 'cl-aaaa', 'vega']);
+    assert.deepEqual([...identities(['eeee5555'], ledgers)], ['eeee5555'], 'only the session that took it');
+  });
+
   it('steers only owner lines addressed to this session, not yet handed over', () => {
     let t = post('', 'to everyone', 'owner').text;
     t = post(t, 'to vega', 'owner', undefined, 'vega').text;
@@ -134,17 +145,26 @@ describe('a line to one session', () => {
     const lines = [...parse(t), { n: 4, at: '2026-10-21T10:00Z', from: 'session bbbb2222', text: '@vega a session cannot steer another' }];
     const vega = new Set(['aaaa1111', 'vega']);
     assert.deepEqual(steerable(lines, vega).map((a) => a.n), [2]);
-    assert.deepEqual(steerable(lines, vega, new Set([2])), []);
+    assert.deepEqual(steerable(lines, vega, new Set([lineKey(lines[1])])), []);
     assert.deepEqual(lines.filter((a) => forMe(a, vega)).map((a) => a.n), [1, 2, 4]);
   });
 
   it('claims a line once per session, and one session claiming never marks another', () => {
-    assert.equal(claim(root, 'aaaa1111', 7), true);
-    assert.equal(claim(root, 'aaaa1111', 7), false);
-    assert.equal(claim(root, 'bbbb2222', 7), true);
-    assert.deepEqual([...delivered(root, ['aaaa1111'])], [7]);
+    const seven = { n: 7, at: '2026-10-21T10:00Z', text: '@aaaa1111 x' };
+    assert.equal(claim(root, 'aaaa1111', seven), true);
+    assert.equal(claim(root, 'aaaa1111', seven), false);
+    assert.equal(claim(root, 'bbbb2222', seven), true);
+    assert.deepEqual([...delivered(root, ['aaaa1111'])], [lineKey(seven)]);
     assert.deepEqual([...delivered(root, ['nobody'])], []);
-    assert.ok(fs.existsSync(path.join(root, STEERED, 'aaaa1111', '7')));
+    assert.match(lineKey(seven), /^7\.[0-9a-f]{8}$/);
+    assert.ok(fs.existsSync(path.join(root, STEERED, 'aaaa1111', lineKey(seven))));
+  });
+
+  it('keys a hand-over by the line, so a recreated board\'s line 1 is new', () => {
+    const one = { n: 1, at: '2026-10-21T10:00Z', text: '@aaaa1111 old' };
+    const again = { n: 1, at: '2026-10-21T11:00Z', text: '@aaaa1111 new instruction after the board was cleared' };
+    assert.notEqual(lineKey(one), lineKey(again));
+    assert.deepEqual(steerable([{ ...again, from: 'owner' }], new Set(['aaaa1111']), new Set([lineKey(one)])).map((a) => a.n), [1]);
   });
 
   it('posts --to from the CLI, shows it to that session once, and never to another or the terminal', () => {
@@ -162,7 +182,7 @@ describe('a line to one session', () => {
     assert.doesNotMatch(said.join('\n'), /stop after this chunk/);
     run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111', NEXUS_NO_STEER: '1' });
     assert.match(said.join('\n'), /@vega stop after this chunk {3}\(to one session only\)/);
-    assert.deepEqual([...delivered(root, ['aaaa1111'])], [1]);
+    assert.equal(delivered(root, ['aaaa1111']).size, 1);
     run(['list']);
     assert.match(said.join('\n'), /@vega stop/);
   });
@@ -170,18 +190,26 @@ describe('a line to one session', () => {
   it('does not show a line the steer hook already handed over, nor hide the broadcast after it', () => {
     run(['--to', 'aaaa1111', 'look at the spec again']);
     run(['and', 'everyone', 'reads', 'this']);
-    claim(root, 'aaaa1111', 1); // what the hook does when it delivers line 1
+    claim(root, 'aaaa1111', parse(fs.readFileSync(path.join(root, FILE), 'utf8'))[0]); // what the hook does for line 1
     run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' });
     assert.doesNotMatch(said.join('\n'), /look at the spec/);
     assert.match(said.join('\n'), /and everyone reads this/);
   });
 
-  it('leaves an owner line to this session to the steer hook: a subagent sharing the id never takes it', () => {
+  const hookRan = (id) => {
+    fs.mkdirSync(path.join(root, STEERED, id), { recursive: true });
+    fs.writeFileSync(path.join(root, STEERED, id, HOOKED), '');
+  };
+
+  it('leaves an owner line to this session to its running steer hook: a subagent sharing the id never takes it', () => {
     run(['--to', 'aaaa1111', 'stop and run the tests']);
+    hookRan('aaaa1111');
     // A subagent runs with its lead's CLAUDE_CODE_SESSION_ID; read cannot tell it from the lead.
     run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' });
     assert.doesNotMatch(said.join('\n'), /stop and run the tests/);
     assert.match(said.join('\n'), /1 line to this session only, left to its steer hook/);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' });
+    assert.match(said.join('\n'), /1 line to this session only/, 'still counted until the hook hands it over');
     assert.deepEqual([...delivered(root, ['aaaa1111'])], [], 'nothing marked handed');
     assert.deepEqual(steerable(parse(fs.readFileSync(path.join(root, FILE), 'utf8')), new Set(['aaaa1111'])).map((a) => a.n), [1]);
   });
@@ -190,8 +218,38 @@ describe('a line to one session', () => {
     run(['--to', 'cccc3333', 'seq test']);
     run(['read'], { NEXUS_SESSION: 'lead-n', CLAUDE_CODE_SESSION_ID: 'cccc3333', NEXUS_NO_STEER: '1' });
     assert.match(said.join('\n'), /seq test/);
-    assert.deepEqual([...delivered(root, ['cccc3333'])], [1], 'marked where the hook (session_id) looks');
+    assert.equal(delivered(root, ['cccc3333']).size, 1, 'marked where the hook (session_id) looks');
     assert.deepEqual([...delivered(root, ['lead-n'])], []);
+  });
+
+  it('hands the line over itself when no steer hook runs in this session, once', () => {
+    // A repo that pruned the hook, or a session started before settings.json wired it (hooks load at startup).
+    run(['--to', 'cccc3333', 'stop the migration now']);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'cccc3333' });
+    assert.match(said.join('\n'), /1 new.*\n.*stop the migration now/s);
+    assert.equal(delivered(root, ['cccc3333']).size, 1);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'cccc3333' });
+    assert.deepEqual(said, ['announce: nothing new']);
+  });
+
+  it('a resumer reads the owner\'s line to the parked session it took, and a stranger does not', () => {
+    ledger({ id: 'aaaa1111', star: 'vega', state: 'resuming', resumed_by: 'bbbb2222' });
+    run(['--to', 'aaaa1111', 'Parked question answered: use postgres']);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'eeee5555' });
+    assert.doesNotMatch(said.join('\n'), /postgres/);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'bbbb2222' });
+    assert.match(said.join('\n'), /use postgres/);
+  });
+
+  it('shows a line to this session posted after the board was recreated, though seen is past it', () => {
+    run(['--to', 'cccc3333', 'first']);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'cccc3333' });
+    run(['for', 'all']);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'cccc3333' });
+    fs.rmSync(path.join(root, FILE));
+    run(['--to', 'cccc3333', 'new instruction after the board was cleared']);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'cccc3333' });
+    assert.match(said.join('\n'), /new instruction after the board was cleared/);
   });
 
   it('never lets a session post an owner line to another session', () => {

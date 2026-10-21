@@ -10,11 +10,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import * as board from '../announce.mjs';
-import { mayBeDue, output, primaryRootOf, respond } from '../../claude/hooks/steer.mjs';
+import { keyOf, mayBeDue, namesOf, output, primaryRootOf, respond, scan } from '../../claude/hooks/steer.mjs';
 
 const HOOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../claude/hooks/steer.mjs');
 const A = 'aaaa1111-0000-4000-8000-000000000001';
 const B = 'bbbb2222-0000-4000-8000-000000000002';
+const C = 'cccc3333-0000-4000-8000-000000000003';
 
 let root;
 const hook = (event, session, extra = {}, env = {}) => respond({ hook_event_name: event, session_id: session, cwd: root, ...extra }, { env, root, board });
@@ -63,6 +64,7 @@ describe('the addressing', () => {
   });
 
   it('a subagent running announce.mjs read under the lead\'s id leaves the line to the lead', () => {
+    scan(root, [A]); // the lead's hook has run in this session (its first tool call)
     board.postTo(root, 'stop and run the tests', { to: A });
     const said = [];
     board.main(['read'], { env: { CLAUDE_CODE_SESSION_ID: A }, root, out: (s) => said.push(s), err: () => {} });
@@ -83,6 +85,26 @@ describe('the addressing', () => {
     board.postTo(root, 'second', { to: A });
     assert.match(text(hook('UserPromptSubmit', A)), /second/);
     assert.doesNotMatch(read({ CLAUDE_CODE_SESSION_ID: A, NEXUS_NO_STEER: '1' }), /second/);
+  });
+
+  it('hands an answer to a parked session to the session that took its ledger, and to no stranger', () => {
+    fs.mkdirSync(path.join(root, '.nexus/sessions'), { recursive: true });
+    const vega = { id: A, star: 'vega', state: 'parked', train: 't1', parked: [] };
+    fs.writeFileSync(path.join(root, '.nexus/sessions', `${A}.json`), JSON.stringify(vega));
+    board.postTo(root, 'Parked question answered: "Use sqlite?". Change to: no, postgres.', { to: A });
+    assert.equal(hook('PreToolUse', B), null, 'not before B takes the ledger');
+    fs.writeFileSync(path.join(root, '.nexus/sessions', `${A}.json`), JSON.stringify({ ...vega, state: 'resuming', resumed_by: B }));
+    assert.equal(hook('PreToolUse', C), null, 'a stranger never');
+    assert.match(text(hook('PreToolUse', B)), /Change to: no, postgres/);
+    assert.equal(hook('PreToolUse', B), null, 'once');
+  });
+
+  it('hands over a line posted after the board was recreated, though its number was handed before', () => {
+    board.postTo(root, 'old instruction', { to: C });
+    assert.match(text(hook('PreToolUse', C)), /old instruction/);
+    fs.rmSync(path.join(root, board.FILE));
+    board.postTo(root, 'new instruction after the board was cleared', { to: C });
+    assert.match(text(hook('PreToolUse', C)), /new instruction after the board was cleared/);
   });
 
   it('says nothing without a board or a session id, and for events it does not serve', () => {
@@ -152,13 +174,67 @@ describe('the process', () => {
   });
 
   it('decides there is nothing due without loading the board', () => {
+    const a = new Set([A]);
     const t = board.postTo(root, 'to every loop') && fs.readFileSync(path.join(root, board.FILE), 'utf8');
-    assert.equal(mayBeDue(t, new Set()), false, 'a line to every loop is read\'s');
+    assert.equal(mayBeDue(t, new Set(), a), false, 'a line to every loop is read\'s');
     board.postTo(root, 'for a', { to: A });
     const t2 = fs.readFileSync(path.join(root, board.FILE), 'utf8');
-    assert.equal(mayBeDue(t2, new Set()), true);
-    assert.equal(mayBeDue(t2, new Set([2])), false, 'already handed here');
-    assert.equal(mayBeDue(`${t2}- **3** · 2026-10-21T10:00Z · session bbbb2222 · @${A} news\n`, new Set([2])), false, 'a session\'s line never steers');
+    const two = board.parse(t2)[1];
+    assert.equal(mayBeDue(t2, new Set(), a), true);
+    assert.equal(mayBeDue(t2, new Set([board.lineKey(two)]), a), false, 'already handed here');
+    assert.equal(mayBeDue(`${t2}- **3** · 2026-10-21T10:00Z · session bbbb2222 · @${A} news\n`, new Set([board.lineKey(two)]), a), false, 'a session\'s line never steers');
+    assert.equal(mayBeDue(t2, new Set(), new Set([B])), false, 'a line to another session is not due here');
+    assert.equal(mayBeDue(t2.replace(/\n/g, '\r\n'), new Set([board.lineKey(two)]), a), false, 'CRLF reads the same');
+  });
+
+  it('keys and names the way the board does, without loading it', () => {
+    for (const l of [{ n: 1, at: '2026-10-21T10:00Z', text: `@${A} x` }, { n: 42, at: 'z', text: '@vega é ünïcode · dots' }]) {
+      assert.equal(keyOf(l.n, l.at, l.text), board.lineKey(l));
+    }
+    const ledgers = [
+      { id: A, star: 'vega', state: 'live' },
+      { id: 'nexus-1', star: 'rigel', state: 'parked', claude: B },
+      { id: 'old', star: 'sirius', state: 'ended' },
+      { id: 'p1', star: 'deneb', state: 'resuming', claude: 'cl-p1', resumed_by: C },
+      { id: 'p2', star: 'altair', state: 'resumed', resumed_by: C },
+      null,
+    ];
+    for (const ids of [[A], [B], [C], ['old'], [], [A, 'nexus-1']]) {
+      assert.deepEqual([...namesOf(ids, ledgers)].sort(), [...board.identities(ids, ledgers)].sort(), ids.join());
+    }
+  });
+
+  it('marks that it runs in this session, so read leaves the line to it, and finds the lines handed under any name', () => {
+    fs.mkdirSync(path.join(root, '.nexus/sessions'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.nexus/sessions/a.json'), JSON.stringify({ id: A, star: 'vega', state: 'resuming', resumed_by: B }));
+    board.postTo(root, 'for vega', { to: A });
+    board.claim(root, A, board.parse(fs.readFileSync(path.join(root, board.FILE), 'utf8'))[0]);
+    const { names, handed } = scan(root, [B]);
+    assert.ok(names.has(A) && names.has('vega'));
+    assert.equal(handed.size, 1, 'handed to A before it parked: not again to its resumer');
+    assert.equal(board.hooked(root, [B]), true);
+    assert.equal(board.hooked(root, [C]), false);
+  });
+
+  it('finds the board through CLAUDE_PROJECT_DIR while the session works outside the repo', () => {
+    const away = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-steer-away-'));
+    try {
+      board.postTo(root, 'stop now', { to: C });
+      const input = JSON.stringify({ hook_event_name: 'PreToolUse', session_id: C, cwd: away });
+      const r = spawnSync(process.execPath, [HOOK], { input, cwd: away, encoding: 'utf8', env: { ...process.env, NEXUS_NO_STEER: '', CLAUDE_PROJECT_DIR: root } });
+      assert.equal(r.status, 0);
+      assert.match(r.stdout, /stop now/);
+    } finally {
+      fs.rmSync(away, { recursive: true, force: true });
+    }
+  });
+
+  it('a resumer\'s hook process takes the line to the session whose ledger it took', () => {
+    fs.mkdirSync(path.join(root, '.nexus/sessions'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.nexus/sessions/a.json'), JSON.stringify({ id: A, star: 'vega', state: 'resuming', resumed_by: B }));
+    board.postTo(root, 'answered: use postgres', { to: A });
+    const r = spawn(JSON.stringify({ hook_event_name: 'PostToolUse', session_id: B, cwd: root }), { CLAUDE_PROJECT_DIR: root });
+    assert.match(r.stdout, /use postgres/);
   });
 
   it('prints the deny JSON for the addressed session, quickly, and nothing when switched off', () => {

@@ -19,11 +19,16 @@
 // `/reboot-ready <slug>` now, whatever it was doing.
 //
 // A line posted `--to` a session is stored as `@<session> <text>`, so a line to every loop may not start with `@name`.
-// It is for that session only (its full id, or the star of its own held ledger). An owner line to it is handed over by
-// the steer hook (`.claude/hooks/steer.mjs`) at its next tool boundary; `read` only counts it, because a subagent runs
-// with its lead's session id and must never take the lead's line. With NEXUS_NO_STEER=1, `read` hands it over. It is
-// handed over once: one marker file per session and line (`.nexus/steered/<claude session id>/<n>`, created
-// exclusively). Only the owner sends an owner line to one session: a session's `--owner --to` is refused.
+// It is for that session only (its full id, or the star of its own held ledger), and for the session that takes that
+// ledger to resume it (`ledger.mjs take`): an answer to a parked or fallen session waits for its resumer. An owner line
+// to it is handed over by the steer hook (`.claude/hooks/steer.mjs`) at its next tool boundary; `read` only counts it,
+// because a subagent runs with its lead's session id and must never take the lead's line. `read` hands it over itself
+// when no steer hook runs in this session (the hook leaves `.nexus/steered/<session>/.hook` on its first run; a session
+// started before the hook was wired, or a repo that pruned it, has none) or with NEXUS_NO_STEER=1. It is handed over
+// once: one marker file per session and line (`.nexus/steered/<claude session id>/<n>.<hash of the line>`, created
+// exclusively; the hash keeps a recreated board's line 1 from reading as the old one). An addressed owner line stays
+// due until it is handed over, whatever `read` has seen. Only the owner sends an owner line to one session: a
+// session's `--owner --to` is refused.
 //
 // Environment: NEXUS_SESSION (this session's id), else CLAUDE_CODE_SESSION_ID; neither means a terminal (the owner).
 import fs from 'node:fs';
@@ -89,6 +94,7 @@ export function addressee(a) {
 }
 
 const HELD = new Set(['live', 'parked', 'resuming']);
+const TAKEN = new Set(['resuming', 'resumed']);
 
 /** Every session ledger at `root` (`.nexus/sessions/`), for `identities`. */
 export function ledgers(root) {
@@ -97,17 +103,24 @@ export function ledgers(root) {
 
 /**
  * Every name this session answers to: its own ids (the Claude session id, NEXUS_SESSION), plus the id and star of each
- * held ledger (live, parked, resuming) that is its own. An ended or resumed ledger's star is free for another session,
- * so it never counts.
+ * held ledger (live, parked, resuming) that is its own, plus the ids of each ledger it took to resume (`resumed_by` one
+ * of its ids, and the star while it is resuming): a line to the parked or fallen session reaches its resumer. An ended
+ * or resumed ledger's star is free for another session, so it never counts. The steer hook applies the same rule.
  */
 export function identities(ids, ledgers = []) {
   const own = new Set(ids.filter(Boolean).map(String));
   const out = new Set(own);
   for (const l of ledgers) {
-    if (!l || !HELD.has(l.state)) continue;
-    if (own.has(l.id) || (typeof l.claude === 'string' && own.has(l.claude))) {
+    if (!l || typeof l.id !== 'string') continue;
+    const claude = typeof l.claude === 'string' && l.claude ? l.claude : null;
+    if (HELD.has(l.state) && (own.has(l.id) || (claude && own.has(claude)))) {
       out.add(l.id);
       if (l.star) out.add(l.star);
+    }
+    if (TAKEN.has(l.state) && typeof l.resumed_by === 'string' && own.has(l.resumed_by)) {
+      out.add(l.id);
+      if (claude) out.add(claude);
+      if (l.star && l.state === 'resuming') out.add(l.star);
     }
   }
   return out;
@@ -119,14 +132,33 @@ export function forMe(a, names) {
   return to === null || names.has(to);
 }
 
-/** The owner lines addressed to this session that it has not been handed yet (`handed`: their line numbers). */
+/**
+ * A line's hand-over key, `<n>.<hash>`: the number alone would read a recreated board's line 1 as the old line 1.
+ * FNV-1a of `<at> <text>`; the steer hook computes the same key without loading this module.
+ */
+export function lineKey(a) {
+  let h = 0x811c9dc5;
+  const s = `${a.at} ${a.text}`;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
+  return `${a.n}.${h.toString(16).padStart(8, '0')}`;
+}
+
+/** The owner lines addressed to this session that it has not been handed yet (`handed`: their keys, `lineKey`). */
 export function steerable(lines, names, handed = new Set()) {
-  return lines.filter((a) => a.from === 'owner' && names.has(addressee(a)) && !handed.has(a.n));
+  return lines.filter((a) => a.from === 'owner' && names.has(addressee(a)) && !handed.has(lineKey(a)));
 }
 
 const steeredDir = (root, id) => path.join(root, STEERED, String(id).replace(/[^A-Za-z0-9_-]/g, '_'));
 
-/** The addressed line numbers already handed to this session (by `read` or its steer hook). */
+/** The marker the steer hook leaves under its session id on its first run: a hook hands this session its lines. */
+export const HOOKED = '.hook';
+
+/** Has a steer hook run in any of these sessions? Without one, `read` hands an addressed owner line over itself. */
+export function hooked(root, ids) {
+  return ids.filter(Boolean).some((id) => fs.existsSync(path.join(steeredDir(root, id), HOOKED)));
+}
+
+/** The keys of the addressed lines already handed to this session (by `read` or its steer hook). */
 export function delivered(root, ids) {
   const out = new Set();
   for (const id of ids.filter(Boolean)) {
@@ -136,17 +168,17 @@ export function delivered(root, ids) {
     } catch {
       continue; // nothing handed over yet
     }
-    for (const f of files) if (/^\d+$/.test(f)) out.add(Number(f));
+    for (const f of files) if (/^\d+\.[0-9a-f]{8}$/.test(f)) out.add(f);
   }
   return out;
 }
 
-/** Mark line n handed to this session: false when another reader in the same session got there first. */
-export function claim(root, id, n) {
+/** Mark line `a` handed to this session: false when another reader in the same session got there first. */
+export function claim(root, id, a) {
   const dir = steeredDir(root, id);
   fs.mkdirSync(dir, { recursive: true });
   try {
-    fs.closeSync(fs.openSync(path.join(dir, String(n)), 'wx'));
+    fs.closeSync(fs.openSync(path.join(dir, lineKey(a)), 'wx'));
     return true;
   } catch (e) {
     if (e && e.code === 'EEXIST') return false;
@@ -239,13 +271,18 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
     const names = identities(ids, ids.length ? ledgers(base) : []);
     const handed = delivered(base, [...names]);
     // A subagent runs with its lead's session id, so `read` cannot tell the two apart: an owner line to this session
-    // is left to the steer hook, which skips a subagent's tool calls. With steering off, `read` hands it over instead.
-    const steered = env.NEXUS_NO_STEER !== '1';
-    const toHook = (a) => steered && a.from === 'owner' && addressee(a) !== null;
-    const mine = (all ? lines : unread(lines, seen[key] ?? 0)).filter((a) => forMe(a, names));
-    const waiting = all ? [] : mine.filter((a) => toHook(a) && !handed.has(a.n));
+    // is left to the steer hook, which skips a subagent's tool calls. With steering off, or no steer hook running in
+    // this session, `read` hands it over instead: a line nobody hands over is a line lost.
+    const steered = env.NEXUS_NO_STEER !== '1' && hooked(base, ids);
+    const owned = (a) => a.from === 'owner' && addressee(a) !== null;
+    const toHook = (a) => steered && owned(a);
+    // An addressed owner line is due until it is handed over, whatever `read` saw before; the rest go by `seen`.
+    const after = seen[key] ?? 0;
+    const due = all ? lines : lines.filter((a) => (owned(a) ? !handed.has(lineKey(a)) : a.n > after));
+    const mine = due.filter((a) => forMe(a, names));
+    const waiting = all ? [] : mine.filter(toHook);
     // A line to another session is never shown; one to this session is handed over once, by whichever reader is first.
-    const fresh = mine.filter((a) => all || addressee(a) === null || (!toHook(a) && !handed.has(a.n) && claim(base, ids[0], a.n)));
+    const fresh = mine.filter((a) => all || addressee(a) === null || (!toHook(a) && !handed.has(lineKey(a)) && claim(base, ids[0], a)));
     const r = reboot(fresh);
     if (r) out(`announce: REBOOT ${r.slug}: stop now and run /reboot-ready ${r.slug} (it preempts the chunk in flight)`);
     if (waiting.length) out(`announce: ${waiting.length} line${waiting.length === 1 ? '' : 's'} to this session only, left to its steer hook (it hands ${waiting.length === 1 ? 'it' : 'them'} to the lead session at its next tool call)`);

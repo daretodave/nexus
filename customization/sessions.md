@@ -100,17 +100,31 @@ node scripts/announce.mjs --to <session id | star> "<text>"
   subagent's tool calls never take the lead's line; a line
   from a session never steers anything, and `--owner --to`
   from inside a session is refused.
+- **A parked or fallen session's resumer.** The session that
+  takes its ledger (`ledger.mjs take`) answers to its ids
+  from then on: a line to it waits on the board and reaches
+  the resumer, through its hook or its `read`. The GUI says
+  `waits: resume` for it, never "sent".
 - **The hook hands it over, not `read`.** A subagent runs
   with its lead's session id, so `read` cannot tell the two
-  apart: it only counts an owner line to this session and
-  leaves it to the hook, which skips a subagent's tool calls.
-  With `NEXUS_NO_STEER=1`, `read` hands it over instead.
+  apart: it counts an owner line to this session, until it is
+  handed over, and leaves it to the hook, which skips a
+  subagent's tool calls. The hook leaves
+  `.nexus/steered/<session>/.hook` on its first run; where
+  none is (the hook pruned, or a session started before
+  `settings.json` wired it: hooks load at startup), or with
+  `NEXUS_NO_STEER=1`, `read` hands it over instead.
 - **Once.** The reader that hands a line over creates
-  `.nexus/steered/<claude session id>/<n>`; any other skips
-  it. A line to every loop is left to `read`, as before, and
-  may not start with `@name` (that is how an address is
-  stored): `announce.mjs` refuses it rather than post a line
-  no one would see.
+  `.nexus/steered/<claude session id>/<n>.<hash>`, the hash
+  of the line's time and text, so a recreated board's line 1
+  is new; any other reader skips it. A line to every loop is
+  left to `read`, as before, and may not start with `@name`
+  (that is how an address is stored): `announce.mjs` refuses
+  it rather than post a line no one would see.
+- **Cheap when nothing is due.** The hook reads the board,
+  the ledgers and its marker folders as plain files, and
+  loads `announce.mjs` only for a line that is its own and
+  not handed yet; lines to other sessions never slow it.
 - **What an interrupt cannot do.** A hook cannot kill a tool
   call already running: a long build, a test run, a builder
   subagent's whole run all finish first, and the next tool
@@ -129,8 +143,10 @@ Wire it in `.claude/settings.json` (the template already
 does): `node "$CLAUDE_PROJECT_DIR"/.claude/hooks/steer.mjs`
 on `UserPromptSubmit`, `PreToolUse` and `PostToolUse`
 (matcher `*`) and `Stop`. The path is the project's, not the
-cwd's: a session that has cd'd into a subfolder keeps
-steering. It reads the board through `scripts/announce.mjs`.
+cwd's, and so is the board it reads (`$CLAUDE_PROJECT_DIR`
+first, then the tool's cwd): a session that has cd'd into a
+subfolder, or out of the repo, keeps steering. It reads the
+board through `scripts/announce.mjs`.
 
 ## The live ledger
 

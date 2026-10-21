@@ -13,22 +13,29 @@
 // subagent's whole run), so the next tool boundary is the interrupt point. A session idle at its prompt has no turn to
 // join until someone types into it; the line waits for that prompt.
 //
-// Addressing: by the Claude Code session id on stdin (plus NEXUS_SESSION, and the star of the session's own held
-// ledger). A line to another session is never handed here; a line to every loop is left to `announce.mjs read`
-// exactly as before. A line is handed over once (`.nexus/steered/<session>/<n>`, created exclusively). This hook is
-// what hands it over; `read` only does with NEXUS_NO_STEER=1. A subagent's tool calls (agent_id on stdin) never take
-// the line: it is the lead's.
+// Addressing: by the Claude Code session id on stdin (plus NEXUS_SESSION, the star of the session's own held ledger,
+// and the ids of a parked or fallen session's ledger it took to resume, so an answer to that session reaches its
+// resumer). A line to another session is never handed here; a line to every loop is left to `announce.mjs read`
+// exactly as before. A line is handed over once (`.nexus/steered/<session>/<n>.<hash of the line>`, created
+// exclusively). The hook leaves `.nexus/steered/<session>/.hook` on its first run: `read` then leaves the session's
+// lines to it, and hands them over itself in a session with no hook running. A subagent's tool calls (agent_id on
+// stdin) never take the line: it is the lead's.
 //
 // NEXUS_NO_STEER=1 makes the hook inert. It never fails a turn: any error exits 0 with nothing on stdout. Zero
-// dependencies; it reads the board through the repo's scripts/announce.mjs, and loads that only when a scan of the
-// board finds an owner line to some session not yet handed here: nothing due costs node's startup and one file read.
-// Wired by "$CLAUDE_PROJECT_DIR"/.claude/hooks/steer.mjs, so a session in a subfolder still runs it.
+// dependencies. Nothing due costs node's startup, the board, the ledgers and this session's marker folders read as
+// plain files; it loads the repo's scripts/announce.mjs only for a line that is this session's and not handed yet.
+// The board is the project's ($CLAUDE_PROJECT_DIR), whatever folder the session's tools run in; wired by
+// "$CLAUDE_PROJECT_DIR"/.claude/hooks/steer.mjs, so a session in a subfolder still runs it.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EVENTS = new Set(['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']);
+const BOARD = '.announcements.md';
+const LEDGERS = '.nexus/sessions';
+const STEERED = '.nexus/steered';
+const HOOKED = '.hook';
 
 /** The primary checkout's root from any folder inside it or one of its worktrees, without spawning git. */
 export function primaryRootOf(start) {
@@ -54,25 +61,108 @@ export function primaryRootOf(start) {
   }
 }
 
-const OWNER_TO = /^- \*\*(\d+)\*\* · \S+ · owner · @[A-Za-z0-9]/gm;
-
-/**
- * Could the board hold an owner line for this session that it has not been handed (`handed`: the line numbers marked
- * under its session id)? A cheap scan of the text, so the common case (nothing due) never loads the board's modules.
- * A yes is checked properly by `respond`.
- */
-export function mayBeDue(text, handed) {
-  for (const m of String(text).matchAll(OWNER_TO)) if (!handed.has(Number(m[1]))) return true;
-  return false;
+/** The repo whose board this session reads: the project dir first, then the hook's cwd. */
+export function rootFor(input, env = process.env) {
+  for (const dir of [env.CLAUDE_PROJECT_DIR, input?.cwd, process.cwd()]) {
+    if (typeof dir !== 'string' || !dir) continue;
+    try {
+      const root = primaryRootOf(dir);
+      if (root) return root;
+    } catch {
+      /* a broken .git file: try the next */
+    }
+  }
+  return null;
 }
 
-/** The line numbers already marked handed under this session id, read without the board's modules. */
-export function handedHere(root, session) {
-  try {
-    return new Set(fs.readdirSync(path.join(root, '.nexus', 'steered', String(session).replace(/[^A-Za-z0-9_-]/g, '_'))).filter((f) => /^\d+$/.test(f)).map(Number));
-  } catch {
-    return new Set();
+/** A line's hand-over key, the same as announce.mjs `lineKey`: `<n>.<FNV-1a of "<at> <text>">`. */
+export function keyOf(n, at, text) {
+  let h = 0x811c9dc5;
+  const s = `${at} ${text}`;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
+  return `${n}.${h.toString(16).padStart(8, '0')}`;
+}
+
+const HELD = new Set(['live', 'parked', 'resuming']);
+const TAKEN = new Set(['resuming', 'resumed']);
+
+/** The names this session answers to: announce.mjs `identities`, the same rule, without loading it. */
+export function namesOf(ids, ledgers = []) {
+  const own = new Set(ids.filter(Boolean).map(String));
+  const out = new Set(own);
+  for (const l of ledgers) {
+    if (!l || typeof l.id !== 'string') continue;
+    const claude = typeof l.claude === 'string' && l.claude ? l.claude : null;
+    if (HELD.has(l.state) && (own.has(l.id) || (claude && own.has(claude)))) {
+      out.add(l.id);
+      if (l.star) out.add(l.star);
+    }
+    if (TAKEN.has(l.state) && typeof l.resumed_by === 'string' && own.has(l.resumed_by)) {
+      out.add(l.id);
+      if (claude) out.add(claude);
+      if (l.star && l.state === 'resuming') out.add(l.star);
+    }
   }
+  return out;
+}
+
+const dirOf = (root, id) => path.join(root, STEERED, String(id).replace(/[^A-Za-z0-9_-]/g, '_'));
+
+function readLedgers(root) {
+  let files = [];
+  try {
+    files = fs.readdirSync(path.join(root, LEDGERS)).filter((f) => f.endsWith('.json'));
+  } catch {
+    return [];
+  }
+  const out = [];
+  for (const f of files) {
+    try {
+      out.push(JSON.parse(fs.readFileSync(path.join(root, LEDGERS, f), 'utf8')));
+    } catch {
+      /* half written: skipped */
+    }
+  }
+  return out;
+}
+
+/**
+ * This session's names and the keys of the lines already handed under any of them, read as plain files. Marks that
+ * a steer hook runs in this session (`.hook`), which `read` checks before it leaves a line to the hook.
+ */
+export function scan(root, ids) {
+  const names = namesOf(ids, readLedgers(root));
+  const handed = new Set();
+  for (const id of names) {
+    let files = [];
+    try {
+      files = fs.readdirSync(dirOf(root, id));
+    } catch {
+      /* nothing handed under this name */
+    }
+    for (const f of files) if (/^\d+\.[0-9a-f]{8}$/.test(f)) handed.add(f);
+  }
+  const mine = dirOf(root, ids[0]);
+  if (!fs.existsSync(path.join(mine, HOOKED))) {
+    fs.mkdirSync(mine, { recursive: true });
+    fs.writeFileSync(path.join(mine, HOOKED), '');
+  }
+  return { names, handed };
+}
+
+const OWNER_TO = /^- \*\*(\d+)\*\* · (\S+) · owner · (@([A-Za-z0-9][\w.-]*)\s+.*)$/;
+
+/**
+ * Is an owner line to one of this session's `names` on the board, not yet `handed` (its keys)? A scan of the text,
+ * so the common case (nothing due, or lines to other sessions only) never loads the board's modules. A yes is checked
+ * properly by `respond`.
+ */
+export function mayBeDue(text, handed, names) {
+  for (const line of String(text).split(/\r?\n/)) {
+    const m = OWNER_TO.exec(line);
+    if (m && names.has(m[4]) && !handed.has(keyOf(Number(m[1]), m[2], m[3]))) return true;
+  }
+  return false;
 }
 
 /** The text the model reads: each line without its address, the owner's words verbatim. */
@@ -116,7 +206,7 @@ export function respond(input, { env = process.env, root, board }) {
   const names = board.identities(ids, board.ledgers(root));
   const lines = board.parse(fs.readFileSync(file, 'utf8'));
   const due = board.steerable(lines, names, board.delivered(root, [...names]));
-  return output(event, due.filter((a) => board.claim(root, session, a.n)));
+  return output(event, due.filter((a) => board.claim(root, session, a)));
 }
 
 async function loadBoard(root) {
@@ -135,18 +225,19 @@ async function main() {
     return;
   }
   if (!EVENTS.has(input?.hook_event_name) || typeof input.session_id !== 'string' || !input.session_id || input.agent_id) return;
-  const root = primaryRootOf(typeof input.cwd === 'string' && input.cwd ? input.cwd : process.cwd());
+  const root = rootFor(input);
   if (!root) return;
+  const { names, handed } = scan(root, [input.session_id, process.env.NEXUS_SESSION].filter(Boolean));
   let text;
   try {
-    text = fs.readFileSync(path.join(root, '.announcements.md'), 'utf8');
+    text = fs.readFileSync(path.join(root, BOARD), 'utf8');
   } catch {
     return; // no board
   }
-  // The common case, nothing due: say nothing without loading the board's modules (node's own startup is the cost).
-  if (!mayBeDue(text, handedHere(root, input.session_id))) return;
+  // The common case, nothing due here: say nothing without loading the board's modules.
+  if (!mayBeDue(text, handed, names)) return;
   const board = await loadBoard(root);
-  if (typeof board?.steerable !== 'function' || typeof board.ledgers !== 'function') return; // an older board
+  if (typeof board?.steerable !== 'function' || typeof board.lineKey !== 'function') return; // an older board
   const out = respond(input, { root, board });
   if (out) process.stdout.write(JSON.stringify(out));
 }
