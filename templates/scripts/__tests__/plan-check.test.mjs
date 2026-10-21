@@ -73,6 +73,13 @@ test('an unchunked spec needs the explicit marker; an empty spec must be absorbe
   assert.deepEqual(checkPlan({ specs: [unchunked], readme: README, archive: null }), [])
   const empty = spec('## Acceptance\n\n## Chunks\nMeasure: 0 open · 3 closed · next A4\n')
   assert.match(checkPlan({ specs: [empty], readme: README, archive: null }).join('\n'), /absorb/)
+  // Settle takes the heading out with the last A-ID: the spec is told to be absorbed, not that a heading is missing.
+  const settled = checkPlan({ specs: [spec('## Chunks\nMeasure: 0 open · 3 closed · next A4\n')], readme: README, archive: null })
+  assert.match(settled.join('\n'), /nothing left: absorb/)
+  assert.ok(!settled.some((f) => /missing/.test(f)), settled.join('\n'))
+  // A spec that still lists a chunk needs the heading.
+  const headless = spec(GOOD.replace(/## Acceptance[\s\S]*?(?=## Chunks)/, ''))
+  assert.match(checkPlan({ specs: [headless], readme: README, archive: null }).join('\n'), /missing `## Acceptance`/)
 })
 
 test('the roadmap must link every spec; archive lines must parse', () => {

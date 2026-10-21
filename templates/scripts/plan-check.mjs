@@ -5,8 +5,10 @@
 // that keep it honest are mechanical, so this script checks them
 // instead of trusting every writer to remember them:
 //
-//   - every spec (`plan/NN-<slug>.md`) has `## Acceptance`,
-//     `## Chunks` and a `Measure: N open · M closed · next A#` line
+//   - every spec (`plan/NN-<slug>.md`) has `## Acceptance` (one
+//     with no chunk left may not: settle takes the heading out with
+//     its last A-ID), `## Chunks` and a
+//     `Measure: N open · M closed · next A#` line
 //   - the Measure line is true: open = A-IDs listed, and
 //     open + closed = next - 1 (IDs are never renumbered or reused)
 //   - every chunk line parses: `- [ ] **NN.k** <title> · S|M|L ·
@@ -108,7 +110,6 @@ export function parseSpec(file, text) {
   const spec = { file, num, acceptance: [], chunks: [], measure: null, unchunked: false, errors: [] }
   const acc = secs.get('Acceptance')
   const chunks = secs.get('Chunks')
-  if (!acc) spec.errors.push('missing `## Acceptance`')
   if (!chunks) spec.errors.push('missing `## Chunks`')
   for (const { n, line } of acc || []) {
     const m = line.match(/^- \*\*(A\d+)\*\*/)
@@ -126,6 +127,8 @@ export function parseSpec(file, text) {
     if (c.id) spec.chunks.push({ ...c, n })
   }
   spec.unchunked = spec.chunks.length === 0 && (chunks || []).some(({ line }) => /not chunked yet/i.test(line))
+  // Settle takes the heading out with a spec's last A-ID: a spec with no chunk left is told to be absorbed instead.
+  if (!acc && (spec.chunks.length || spec.unchunked)) spec.errors.unshift('missing `## Acceptance`')
   return spec
 }
 

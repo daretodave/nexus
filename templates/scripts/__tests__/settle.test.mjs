@@ -91,6 +91,16 @@ describe('closing a chunk', () => {
     assert.equal(closeChunk(SPEC, '07.9'), null);
   });
 
+  it('takes the Acceptance heading out with the spec\'s last A-ID, never leaving it empty', () => {
+    let text = SPEC;
+    for (const id of ['07.3', '07.4', '07.5']) text = closeChunk(text, id).text;
+    assert.ok(!text.includes('## Acceptance'));
+    assert.equal(text, '# 07 — Search\n\n## Chunks\n\nMeasure: 0 open · 8 closed · next A9\n\n');
+    // Prose under the heading is not empty: the heading stays with it.
+    const prose = SPEC.replace('## Acceptance\n', '## Acceptance\n\nDone when a query finds a place.\n');
+    assert.match(closeChunk(closeChunk(closeChunk(prose, '07.3').text, '07.4').text, '07.5').text, /## Acceptance\n\nDone when/);
+  });
+
   it('drops a closed id from a wrapped needs list, writing needs — once it is empty', () => {
     const spec = '- [ ] **08.1** x · S · closes A1 · needs\n  07.3, 07.4\n- [ ] **08.2** y · S · closes A2 · needs\n  07.3\n';
     assert.equal(dropNeeds(spec, '07.3'), '- [ ] **08.1** x · S · closes A1 · needs\n  07.4\n- [ ] **08.2** y · S · closes A2 · needs —\n');
@@ -213,12 +223,20 @@ describe('footguns and the ladder', () => {
   it('opens the ladder spec with a chunk, once, and adds its row and lane entry', () => {
     const spec = ladderSpec(1);
     assert.match(spec, /^# 99 · Guard the traps/);
+    assert.ok(!spec.includes('## Acceptance'), 'no A-ID yet: no heading yet');
     const add = ladderChunk(spec, 'clock-edge', 2, []);
+    assert.match(add.text, /\n\n## Acceptance\n\n- \*\*A1\*\* `clock-edge` is guarded.*\n\n## Chunks\n/);
     assert.equal(add.id, '99.1');
     assert.match(add.text, /- \*\*A1\*\* `clock-edge` is guarded/);
     assert.match(add.text, /^Measure: 1 open · 0 closed · next A2$/m);
     assert.equal(ladderChunk(add.text, 'clock-edge', 3, []), null);
     assert.equal(ladderChunk(add.text, 'other', 2, ['99.4']).id, '99.5');
+    // Its last A-ID closed took the heading out; the next trap brings it back, numbered on.
+    const emptied = closeChunk(add.text, '99.1').text;
+    assert.ok(!emptied.includes('## Acceptance'));
+    const again = ladderChunk(emptied, 'other', 2, ['99.1']);
+    assert.match(again.text, /## Acceptance\n\n- \*\*A2\*\* `other` is guarded.*\n\n## Chunks\n/);
+    assert.match(again.text, /^Measure: 1 open · 1 closed · next A3$/m);
     const rows = openLadderRows({ readme: README, queue: null, root: null });
     assert.match(rows.readme, /\| 07 \| Search .*\n\| 99 \| Guard the traps.*\[99-guard-the-traps\.md\]\(99-guard-the-traps\.md\)/);
     assert.equal(rows.root, null);

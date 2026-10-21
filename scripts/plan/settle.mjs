@@ -40,9 +40,12 @@ const ID = String.raw`\d{2,}\.\d+[a-z0-9]*`;
 /** A chunk id's spec number: 07.3 → 07. */
 const specNum = (id) => id.split('.')[0];
 
-/** The ladder spec as settle opens it: no A-ID or chunk yet, both carrying on from `n` (the next free number). */
+/**
+ * The ladder spec as settle opens it: no A-ID or chunk yet, both carrying on from `n` (the next free number). No
+ * `## Acceptance` heading either: an empty one is never written; ladderChunk adds it with the first A-ID.
+ */
 export function ladderSpec(n, cfg = DEFAULTS) {
-  return [fill(cfg.ladder.heading, cfg.ladder), '', ...cfg.ladder.why.map((l) => fill(l, cfg.ladder)), '', '## Acceptance', '', '## Chunks', `Measure: 0 open · 0 closed · next A${n}`, ''].join('\n');
+  return [fill(cfg.ladder.heading, cfg.ladder), '', ...cfg.ladder.why.map((l) => fill(l, cfg.ladder)), '', '## Chunks', `Measure: 0 open · 0 closed · next A${n}`, ''].join('\n');
 }
 
 /** The next free ladder chunk number: past every id `taken` (the archive's) and every one a spec lists. */
@@ -167,7 +170,17 @@ export function closeChunk(spec, id) {
     const k = lines.findIndex((l) => l.startsWith(`- **${a}**`));
     if (k >= 0) lines.splice(k, blockEnd(lines, k) - k);
   }
+  dropEmptyAcceptance(lines);
   return { text: recountMeasure(spec, dropNeeds(lines.join('\n'), id)), closes };
+}
+
+/** The `## Acceptance` heading out, in place, once nothing but blank lines sits under it (its last A-ID closed). */
+function dropEmptyAcceptance(lines) {
+  const h = lines.findIndex((l) => /^## Acceptance\b/.test(l));
+  if (h < 0) return;
+  let end = h + 1;
+  while (end < lines.length && !/^#{1,2} /.test(lines[end])) end++;
+  if (lines.slice(h + 1, end).every((l) => !l.trim())) lines.splice(h, end - h);
 }
 
 /**
@@ -667,11 +680,16 @@ export function ladderChunk(spec, slug, seen, taken, cfg = DEFAULTS) {
   const aLine = `- **${a}** \`${slug}\` is guarded: a test, hook or lint fails on the trap, and its footgun line says \`guarded by\` it.`;
   if (lastA >= 0) lines.splice(blockEnd(lines, lastA), 0, aLine);
   else {
-    // Every chunk closed took its A-ID out: the bullet goes first under the heading.
+    // Every chunk closed took its A-ID out, and its heading with the last one (or the spec is new): the bullet goes
+    // first under the heading, which comes back before `## Chunks` when it's gone.
     const heading = lines.findIndex((l) => /^## Acceptance\b/.test(l));
+    const chunks = lines.findIndex((l) => /^## Chunks\b/.test(l));
     if (heading >= 0) {
       lines.splice(heading + 1, 0, '', aLine);
       lastA = heading + 2;
+    } else if (chunks >= 0) {
+      lines.splice(chunks, 0, '## Acceptance', '', aLine, '');
+      lastA = chunks + 2;
     }
   }
   const measure = lines.findIndex((l) => /^Measure: /.test(l));
