@@ -81,6 +81,24 @@ npx @usenexus/cli --port <n>     a fixed port
 NEXUS_PROVIDER=cli               use `claude -p` stream-json instead of the Agent SDK
 ```
 
+## One server, many sessions
+
+One server runs per repo. It writes `.nexus/server.json` (port and
+token, owner-only, kept out of git) at the primary checkout's root,
+and a second `npx @usenexus/cli` in the same repo prints and opens
+that server's link instead of starting another. A record whose
+process is gone, or whose server does not answer, is replaced.
+
+Each session the server runs has its own Agent SDK session, its own
+event channel (`/api/events?session=<id>`) and a deep link
+(`/s/<id>`). Its environment carries `NEXUS_SESSION` (its claims and
+ledger id) and `NEXUS_GH_LOGIN`, asked of `gh` once per server. Start
+one from the fleet or the Launch step: it takes the next free star
+name, a worktree at `../.nexus-wt/<name>-<n>` on branch
+`nexus/<name>-<n>`, and a ledger in `.nexus/sessions/`. Pause waits
+for the turn in flight and holds what you send until you resume.
+Closing a session ends its ledger; its worktree stays for `/tidy`.
+
 ## Headless: one prompt, JSON out
 
 ```

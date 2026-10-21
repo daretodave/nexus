@@ -9,7 +9,7 @@ import { server, useSessions } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, markOnboarded, useEnter } from './frame.jsx';
 import { useDraft, runModeFromPrefs, prefsFromRunMode, RUN_MODE_LABEL, SCHED_SUMMARY } from './draft.js';
-import { onboardingCalls, notServed } from './calls.js';
+import { onboardingCalls } from './calls.js';
 
 const RIM = [
   [-232, -118, '', 0], [-158, -168, 'v', 37], [-58, -186, '', 74], [72, -172, 'n', 111],
@@ -115,14 +115,14 @@ export default function Launch() {
     setErr(null);
     try {
       await finish();
-      let id = name || 'main';
-      try {
-        const s = await onboardingCalls.startSession(name);
+      let id = 'main';
+      if (!info.adopted) {
+        // A new repo adopts nexus first, in the repo itself: the server's home session does it.
+        await server.adopt();
+      } else {
+        // Its own star, worktree and branch (POST /api/sessions); the server takes the next free star if this one went.
+        const s = await server.startSession(name ? { name } : {});
         id = s.id || id;
-      } catch (e) {
-        if (!notServed(e)) throw e;
-        // One session per server today: it adopts nexus first when the repo is new.
-        if (!info.adopted) await server.adopt();
       }
       nav(PATHS.cockpit(id));
     } catch (e) {

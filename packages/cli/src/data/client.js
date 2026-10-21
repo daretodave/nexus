@@ -44,11 +44,17 @@ export const server = {
   prompts: () => api('/api/prompts'),
   setPrefs: (patch) => api('/api/prefs', patch),
   setOwner: (on) => api('/api/owner', { on }),
-  send: (text) => api('/api/send', { text }),
+  // `session` names a session this server runs (id, Claude Code session id or star); none is the home session.
+  send: (text, session) => api('/api/send', { text, ...(session ? { session } : {}) }),
   adopt: () => api('/api/adopt', {}),
-  interrupt: () => api('/api/interrupt', {}),
-  stop: () => api('/api/stop', {}),
-  fresh: () => api('/api/fresh', {}),
+  interrupt: (session) => api('/api/interrupt', session ? { session } : {}),
+  stop: (session) => api('/api/stop', session ? { session } : {}),
+  fresh: (session) => api('/api/fresh', session ? { session } : {}),
+  /** POST /api/sessions { name?, worktree?, prompt? } -> { id, name, cwd, worktree, branch, note? } */
+  startSession: (body = {}) => api('/api/sessions', body),
+  /** POST /api/sessions/:id/(pause|resume|close): pause after this step, resume, close (its worktree stays). */
+  sessionAction: (id, action) => api(`/api/sessions/${encodeURIComponent(id)}/${action}`, {}),
+  serverInfo: () => api('/api/server'),
   answerAsk: (id, answers) => api(`/api/ask/${encodeURIComponent(id)}`, { answers }),
   answerPermission: (id, allow, always = false) => api(`/api/permission/${encodeURIComponent(id)}`, { allow, always }),
   oversight: () => api('/api/oversight'),
@@ -93,9 +99,10 @@ const EVENT_TYPES = ['hello', 'beat', 'tx', 'status', 'asks', 'permissions', 'ru
 
 /**
  * The live store for one SSE channel: reconnects on drop, and a reconnect
- * replays from hello. `session` selects a channel (/api/events?session=<id>)
- * once the server hosts several; today the server has one channel and
- * ignores the parameter.
+ * replays from hello. `session` selects a session's own channel
+ * (/api/events?session=<id>); none is the home session's. A session the
+ * server does not run (a terminal one) gets a quiet channel whose status
+ * says hosted: false, never another session's stream.
  */
 export function useEvents(session) {
   const [state, dispatch] = useReducer(storeReducer, EMPTY);

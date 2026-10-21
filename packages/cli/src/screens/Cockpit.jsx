@@ -118,7 +118,7 @@ export default function Cockpit() {
               ? { kind: 'info', title: `Queued for ${session.name}`, body: sent.note || 'It is not running: the line waits.' }
               : { kind: 'info', title: `Sent to ${session.name}`, body: 'It reads it at its next tool call, or with its next prompt if it is idle.' });
             sessionsRes.reload();
-          } else await server.send(prompt + attachments);
+          } else await server.send(prompt + attachments, id);
         }
       }
       setDraft(''); setOverride(null); setPlotMode('plan');

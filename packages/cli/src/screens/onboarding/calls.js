@@ -14,8 +14,6 @@ export const onboardingCalls = {
   plot: (body) => api('/api/plot', body),
   /** POST /api/local { ownerMode } -> { owner, ownerMode, runMode, phase } (.nexus/local.json) */
   setLocal: (patch) => api('/api/local', patch),
-  /** POST /api/sessions { name } -> { id, name, branch, worktree } */
-  startSession: (name) => api('/api/sessions', { name }),
   /** POST /api/cloud/workflow {} -> { path, sha }: write the loop workflow and commit it */
   addWorkflow: () => api('/api/cloud/workflow', {}),
   /** POST /api/cloud/schedule { schedule, cron } -> { cron, next } */

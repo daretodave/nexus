@@ -78,9 +78,7 @@ export const useRuns = (poll) => useResource('/api/runs', { poll });
  * below asks for its endpoint and reports status 'missing' on a 404.
  */
 export const MISSING = [
-  { endpoint: 'GET /api/events?session=<id>', hook: 'useEvents(session)', for: 'a per-session SSE channel (today one channel serves the single session)' },
-  { endpoint: 'POST /api/sessions', hook: 'startSession', for: 'Start heads-down: take the next star name, claim a package, open a worktree' },
-  { endpoint: 'POST /api/sessions/:id/(pause|resume|close)', hook: 'sessionAction', for: 'pause after this step, resume a fallen session (Resume / relight), close it' },
+  { endpoint: 'POST /api/sessions/:id/resume (a fallen one)', hook: 'Fleet resume', for: 'Resume / relight a fallen session from its tile (a session this server runs already pauses, resumes and closes)' },
   { endpoint: 'POST /api/train', hook: 'trainAction', for: 'Pause all, the reboot train, and Resume all' },
   { endpoint: 'GET /api/inbox', hook: 'useInbox', for: 'Oversight inbox: open and parked questions across every session and the cloud loop, tagged by session' },
   { endpoint: 'POST /api/claims/(claim|hold|unhold|reassign|request)', hook: 'claimAction', for: 'row actions on chunks and specs (only release exists today)' },
@@ -104,7 +102,7 @@ export const MISSING = [
   { endpoint: 'POST /api/pick-folder', hook: 'Recover', for: 'optional: an OS folder picker, since a browser cannot hand back an absolute path' },
 ];
 
-/** GET /api/sessions (served): the live local sessions -> [{ id, claude, name, kind: 'local'|'terminal', state, chunk, git, parked, beat, linked, steer: 'sdk'|'hook' }]. POST /api/sessions/:id/(link|steer|parked) act on one. Full shape: screens/fleet/model.js. */
+/** GET /api/sessions (served): the live local sessions -> [{ id, claude, name, kind: 'local'|'terminal', state, chunk, git, parked, beat, linked, steer: 'sdk'|'hook', hosted? }]. POST /api/sessions starts one (server.startSession); POST /api/sessions/:id/(link|steer|parked|pause|resume|close) act on one. Full shape: screens/fleet/model.js. */
 export const useSessions = (poll = 4000) => useResource('/api/sessions', { poll });
 
 /** GET /api/sessions/:id -> the session ledger. Shape: screens/cockpit/model.js (cockpit), screens/headsdown-inbox/headsModel.js (heads-down). */

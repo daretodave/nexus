@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tui, useShell } from '../ui/index.js';
-import { api, server, useClaims, useCloudLoop, useInbox, useLocalSettings, usePlan, useSession } from '../data/index.js';
+import { api, server, useClaims, useCloudLoop, useEvents, useInbox, useLocalSettings, usePlan, useSession } from '../data/index.js';
 import { PATHS, lastSession } from '../routes.js';
 import { headsRows } from './headsdown-inbox/headsModel.js';
 import { renderRows } from './headsdown-inbox/tuiCanvas.jsx';
@@ -59,7 +59,8 @@ export default function HeadsDown() {
   const cloudRes = useCloudLoop();
   const local = useLocalSettings();
   const plan = usePlan();
-  const live = shell.live || { stage: undefined, transcript: [], connected: false };
+  // This session's own channel (/api/events?session=<id>); with no session named, the home session's.
+  const live = useEvents(id || undefined);
   const now = useNow();
   const seenAt = useSeenAt(live);
   const info = shell.app?.data?.info || {};
@@ -72,7 +73,10 @@ export default function HeadsDown() {
   const [note, setNote] = useState('');
   const input = useRef(null);
 
-  useEffect(() => { if (ledger && typeof ledger.paused === 'boolean') setPaused(ledger.paused); }, [ledger?.paused]);
+  useEffect(() => {
+    if (ledger && typeof ledger.paused === 'boolean') setPaused(ledger.paused);
+    else if (ledger?.hosted) setPaused(ledger.state === 'paused' || ledger.state === 'pausing');
+  }, [ledger?.paused, ledger?.hosted, ledger?.state]);
   useEffect(() => { if (!note) return undefined; const t = setTimeout(() => setNote(''), 6000); return () => clearTimeout(t); }, [note]);
 
   const cockpit = id ? PATHS.cockpit(id) : PATHS.fleet;
@@ -100,7 +104,7 @@ export default function HeadsDown() {
     const text = draft.trim();
     if (!text) return;
     try {
-      await server.send(text);
+      await server.send(text, id || undefined);
       setDraft('');
     } catch (e) {
       setNote(`not sent: ${e.message}`);
