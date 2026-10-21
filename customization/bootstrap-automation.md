@@ -255,6 +255,7 @@ script refuses to run if it's tracked). The shape:
   },
   "cloud_loop": {
     "enabled": true,
+    "mode": "pr",
     "identity": "user",
     "schedule_cron": "0 */2 * * *",
     "git_author_name": "",
@@ -280,6 +281,15 @@ Field semantics:
   random and stores in `.env`). Required as paste for
   pre-provisioned projects (the password is set at create
   time and not retrievable via CLI).
+- **`cloud_loop.mode`** — `owner` or `pr`; sets the repo
+  variable `NEXUS_LOOP_MODE` (`set-loop-mode`), which decides
+  how a tick lands (the template `CLOUD_LOOP.md`, "Owner mode
+  or pull requests"). `pr` also installs `pr-flow.yml`,
+  `pr-resolve.yml`, `scripts/cloud/tick.mjs` and
+  `scripts/pr/resolve.mjs` where missing
+  (`install-pr-workflows`), placeholders filled. Absent =
+  the variable stays as the repo has it (unset means pull
+  requests). Any other value is a config error.
 - **`git_author_name` / `git_author_email`** — used by
   the decorated-march workflow when
   `cloud_loop.identity: user`. Empty = bootstrap prompts
@@ -758,6 +768,12 @@ auth's accessible resources.
   manifest (`applyDailyCeiling`, `applyScheduleCron`); both are
   a no-op (warn + leave the default) if the field is unset or
   the anchor line has drifted.
+- **`pr-resolve.yml` carries `<DEFAULT_BRANCH>`** in its
+  `push: branches:` filter. `install-pr-workflows` fills it
+  (and every bracket placeholder) from
+  `project.default_branch` with the same `fillPlaceholders`
+  as `march.yml`; a hand copy fills it per
+  `nexus/playbooks/cloud-loop.md` Step 2.
 
 ### The "decorated march" (user-author cloud loop)
 

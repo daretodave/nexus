@@ -89,6 +89,7 @@ Read state from every source:
 | `vercel env ls development` | which dev env vars are set? |
 | `supabase projects list` | is there a Supabase project? |
 | `.github/workflows/march.yml` | does the cloud-loop workflow exist? |
+| `gh variable get NEXUS_LOOP_MODE` | how ticks land (`owner`, `pr`, or unset: pull requests); the manifest's `cloud_loop.mode` sets it |
 | `setup/bootstrap.local.json` | does the manifest exist? what's in it? |
 
 Produce a **state report** of the form:
@@ -354,6 +355,8 @@ setup/NN_<service>.md (each)        # checkbox state
 setup/00_files.md                   # row status updates
 plan/AUDIT.md                       # [needs-user-call] for deferred handoffs
 .github/workflows/march.yml         # cloud-loop install (if invoked)
+.github/workflows/pr-{flow,resolve}.yml  # cloud_loop.mode: pr, where missing
+scripts/{cloud/tick,pr/resolve}.mjs     # cloud_loop.mode: pr, where missing
 agents.md                           # cloud-loop trailer carve-out (if invoked)
 ```
 

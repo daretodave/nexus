@@ -157,6 +157,8 @@ gh variable set NEXUS_LOOP_MODE --body owner   # or leave it unset: pull request
 
 See "Owner mode or pull requests" above. Pull-request mode also
 wants `pr-flow.yml` and `pr-resolve.yml` beside `march.yml`.
+`/bootstrap cloud-loop` does both from the manifest's
+`cloud_loop.mode` (`owner` or `pr`).
 
 ### 1. Install the Claude Code GitHub App
 

@@ -29,6 +29,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
+import { pathToFileURL } from 'node:url'
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -41,6 +42,14 @@ const AUDIT_PATH = 'plan/AUDIT.md'
 const WORKFLOW_PATH = '.github/workflows/march.yml'
 const SETUP_ACTION_PATH = '.github/actions/setup/action.yml'
 const SUPPORTED_SERVICES = ['github', 'vercel', 'supabase', 'cloud-loop']
+const LOOP_MODES = ['owner', 'pr']
+// Pull-request mode's files beside march.yml (nexus/playbooks/cloud-loop.md Step 1).
+export const PR_MODE_FILES = [
+  '.github/workflows/pr-flow.yml',
+  '.github/workflows/pr-resolve.yml',
+  'scripts/cloud/tick.mjs',
+  'scripts/pr/resolve.mjs',
+]
 
 // ─────────────────────────────────────────────────────────────
 // Logging
@@ -363,6 +372,9 @@ function discoverGithub(git) {
       .stdout.split('\n').map((l) => l.split(/\s+/)[0]).filter(Boolean)
     out.variables = sh(`gh variable list -R ${git.owner}/${git.repo}`, { quiet: true })
       .stdout.split('\n').map((l) => l.split(/\s+/)[0]).filter(Boolean)
+    out.loopMode = out.variables.includes('NEXUS_LOOP_MODE')
+      ? sh(`gh variable get NEXUS_LOOP_MODE -R ${git.owner}/${git.repo}`, { quiet: true }).stdout
+      : ''
     const inst = sh(`gh api /repos/${git.owner}/${git.repo}/installation -H "Accept: application/vnd.github+json" 2>&1`, { quiet: true })
     out.claudeAppInstalled = inst.code === 0 && /\"app_slug\"\s*:\s*\"claude\"/.test(inst.stdout)
   }
@@ -404,6 +416,8 @@ function discoverCloudLoop(env, githubState) {
     workflowPresent: fs.existsSync(WORKFLOW_PATH),
     claudeOauthSet: (githubState.secrets ?? []).includes('CLAUDE_CODE_OAUTH_TOKEN'),
     actionsPatSet: (githubState.secrets ?? []).includes('ACTIONS_PAT'),
+    loopMode: githubState.loopMode ?? '',
+    prFilesMissing: PR_MODE_FILES.filter((f) => !fs.existsSync(f)),
   }
 }
 
@@ -457,6 +471,8 @@ function printStateReport(s, manifest) {
   log.info(`  workflow file:       ${tick(s.cloudLoop.workflowPresent)}`)
   log.info(`  CLAUDE_CODE_OAUTH:   ${tick(s.cloudLoop.claudeOauthSet)}`)
   log.info(`  ACTIONS_PAT:         ${tick(s.cloudLoop.actionsPatSet)}`)
+  log.info(`  NEXUS_LOOP_MODE:     ${s.cloudLoop.loopMode || '(unset: pull requests)'}`)
+  log.info(`  PR-mode files:       ${tick(!s.cloudLoop.prFilesMissing.length)}`)
   log.hr2()
 }
 
@@ -508,19 +524,56 @@ function composePlan(state, manifest, scope) {
     }
   }
 
-  if (want.includes('cloud-loop') && manifest.cloud_loop?.enabled) {
-    if (!state.cloudLoop.workflowPresent) {
-      actions.push({ provider: 'cloud-loop', verb: 'install-workflow', desc: 'install .github/workflows/march.yml' })
-    }
-    if (!state.cloudLoop.claudeOauthSet) {
-      actions.push({ provider: 'cloud-loop', verb: 'set-claude-oauth', handoff: true, desc: 'set CLAUDE_CODE_OAUTH_TOKEN secret' })
-    }
-    if (manifest.cloud_loop.identity === 'user' && !state.cloudLoop.actionsPatSet) {
-      actions.push({ provider: 'cloud-loop', verb: 'set-actions-pat', handoff: true, desc: 'set ACTIONS_PAT secret (fine-grained PAT)' })
-    }
-  }
+  if (want.includes('cloud-loop')) actions.push(...cloudLoopActions(state.cloudLoop, manifest))
 
   return actions
+}
+
+// The manifest's cloud_loop.mode: `owner` (one job pushes the
+// default branch) or `pr` (each tick opens a pull request). Absent
+// leaves NEXUS_LOOP_MODE as the repo has it.
+export function loopMode(manifest) {
+  const mode = manifest?.cloud_loop?.mode
+  if (mode === undefined || mode === null || mode === '') return null
+  if (!LOOP_MODES.includes(mode)) {
+    throw new Error(`cloud_loop.mode must be one of ${LOOP_MODES.join(' | ')} (got ${JSON.stringify(mode)})`)
+  }
+  return mode
+}
+
+export function cloudLoopActions(cloudLoop, manifest) {
+  const actions = []
+  if (!manifest.cloud_loop?.enabled) return actions
+  const mode = loopMode(manifest)
+  if (!cloudLoop.workflowPresent) {
+    actions.push({ provider: 'cloud-loop', verb: 'install-workflow', desc: 'install .github/workflows/march.yml' })
+  }
+  if (mode === 'pr' && cloudLoop.prFilesMissing?.length) {
+    actions.push({ provider: 'cloud-loop', verb: 'install-pr-workflows', desc: `install pull-request mode's files (${cloudLoop.prFilesMissing.join(', ')})` })
+  }
+  if (mode && cloudLoop.loopMode !== mode) {
+    actions.push({ provider: 'cloud-loop', verb: 'set-loop-mode', mode, desc: `set repo variable NEXUS_LOOP_MODE=${mode}` })
+  }
+  if (!cloudLoop.claudeOauthSet) {
+    actions.push({ provider: 'cloud-loop', verb: 'set-claude-oauth', handoff: true, desc: 'set CLAUDE_CODE_OAUTH_TOKEN secret' })
+  }
+  if (manifest.cloud_loop.identity === 'user' && !cloudLoop.actionsPatSet) {
+    actions.push({ provider: 'cloud-loop', verb: 'set-actions-pat', handoff: true, desc: 'set ACTIONS_PAT secret (fine-grained PAT)' })
+  }
+  return actions
+}
+
+// The bracket placeholders a copied cloud-loop file carries.
+export function fillPlaceholders(text, manifest) {
+  return text
+    .replaceAll('<PROJECT>', manifest.project.name)
+    .replaceAll('<DEFAULT_BRANCH>', manifest.project.default_branch ?? 'main')
+    .replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`)
+}
+
+// The nexus checkout bootstrap copies templates from.
+function findTemplates() {
+  return ['../nexus/templates', './.nexus/templates'].find((p) => fs.existsSync(path.join(p, '.github/workflows/march.yml')))
 }
 
 function printPlan(actions) {
@@ -840,21 +893,14 @@ async function execCloudLoop(a, state, manifest) {
   const slug = `${manifest.project.github_owner}/${manifest.project.github_repo}`
   if (a.verb === 'install-workflow') {
     if (!fs.existsSync('.github/workflows')) fs.mkdirSync('.github/workflows', { recursive: true })
-    // Copy from nexus/templates/.github/workflows/march.yml — try several paths
-    const candidates = [
-      '../nexus/templates/.github/workflows/march.yml',
-      './.nexus/templates/.github/workflows/march.yml',
-    ]
-    const src = candidates.find((p) => fs.existsSync(p))
-    if (!src) {
+    // Copy from nexus/templates/.github/workflows/march.yml (../nexus or a .nexus submodule)
+    const templates = findTemplates()
+    if (!templates) {
       log.err('cannot find nexus march.yml template; clone nexus at ../nexus or submodule at .nexus')
       throw new Error('nexus template not found')
     }
-    let yml = fs.readFileSync(src, 'utf-8')
-    yml = yml
-      .replaceAll('<PROJECT>', manifest.project.name)
-      .replaceAll('<DEFAULT_BRANCH>', manifest.project.default_branch ?? 'main')
-      .replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`)
+    const src = path.join(templates, '.github/workflows/march.yml')
+    let yml = fillPlaceholders(fs.readFileSync(src, 'utf-8'), manifest)
     yml = applyDailyCeiling(yml, manifest)
     yml = applyScheduleCron(yml, manifest)
     if (manifest.cloud_loop?.identity === 'user') {
@@ -873,8 +919,33 @@ async function execCloudLoop(a, state, manifest) {
     } else {
       log.warn(`no ${action}: copy nexus/templates/.github/actions/setup/action.yml to ${SETUP_ACTION_PATH}`)
     }
-    log.info('march.yml lands by the repo variable NEXUS_LOOP_MODE: unset means pull requests (scripts/cloud/tick.mjs);')
-    log.info(`  gh variable set NEXUS_LOOP_MODE -R ${slug} --body owner   pushes ${manifest.project.default_branch ?? 'main'} instead (.github/CLOUD_LOOP.md)`)
+    if (!loopMode(manifest)) {
+      log.info('march.yml lands by the repo variable NEXUS_LOOP_MODE: unset means pull requests (scripts/cloud/tick.mjs);')
+      log.info(`  set cloud_loop.mode (owner | pr) in ${MANIFEST_PATH}, or: gh variable set NEXUS_LOOP_MODE -R ${slug} --body owner (.github/CLOUD_LOOP.md)`)
+    }
+    return
+  }
+  if (a.verb === 'install-pr-workflows') {
+    const templates = findTemplates()
+    if (!templates) {
+      log.err('cannot find the nexus templates; clone nexus at ../nexus or submodule at .nexus')
+      throw new Error('nexus template not found')
+    }
+    for (const f of PR_MODE_FILES) {
+      if (fs.existsSync(f)) {
+        log.info(`kept your ${f}`)
+        continue
+      }
+      fs.mkdirSync(path.dirname(f), { recursive: true })
+      fs.writeFileSync(f, fillPlaceholders(fs.readFileSync(path.join(templates, f), 'utf-8'), manifest))
+      log.ok(`wrote ${f}`)
+    }
+    log.info('pull-request mode also runs scripts/claims.mjs and scripts/plan/order.mjs (nexus/customization/claims.md);')
+    log.info('  pr-resolve wants merge=union lines in .gitattributes for plan/ARCHIVE.md and identity/footguns.md')
+    return
+  }
+  if (a.verb === 'set-loop-mode') {
+    shOk(`gh variable set NEXUS_LOOP_MODE -R ${slug} --body ${a.mode}`)
     return
   }
   if (a.verb === 'set-claude-oauth') {
@@ -1016,8 +1087,10 @@ async function main() {
   rlClose()
 }
 
-main().catch((e) => {
-  log.err(`unexpected: ${e.message}`)
-  log.err(e.stack)
-  process.exit(1)
-})
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  main().catch((e) => {
+    log.err(`unexpected: ${e.message}`)
+    log.err(e.stack)
+    process.exit(1)
+  })
+}

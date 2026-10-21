@@ -561,6 +561,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/resolve.test.mjs',
   'templates/scripts/__tests__/loop-issue.test.mjs',
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
+  'templates/scripts/__tests__/bootstrap.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
 ]
 const GIT_SUITES = [
