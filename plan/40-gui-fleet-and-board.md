@@ -81,7 +81,6 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
   accepts least privilege.
 - **A8** Owner lines post through `announce.mjs`; explode
   renders `/messy`'s themes as cards.
-- **A9** `npx @usenexus/cli run` answers one prompt headless.
 - **A10** The GUI resumes a Workflow from its transcript
   folder.
 - **A11** Run mode and owner mode live in
@@ -95,7 +94,7 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 (None.)
 
 ## Chunks
-Measure: 12 open · 0 closed · next A13
+Measure: 11 open · 1 closed · next A13
 
 - [ ] **40.1** One server, many sessions, deep links, a reused
   launch · M · closes A1 · needs —
@@ -113,8 +112,6 @@ Measure: 12 open · 0 closed · next A13
   least privilege · M · closes A7 · needs —
 - [ ] **40.8** Owner lines via announce.mjs; explode as theme
   cards · S · closes A8 · needs —
-- [ ] **40.9** Headless: npx @usenexus/cli run · M · closes
-  A9 · needs —
 - [ ] **40.10** Recover from a Workflow transcript folder · M
   · closes A10 · needs 40.1
 - [ ] **40.11** `/api/local`: run mode and owner mode, one
