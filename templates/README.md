@@ -125,6 +125,7 @@ templates/
 │   ├── __tests__/claims-codec.test.mjs  (the claims rules, pure)
 │   ├── __tests__/push-policy.test.mjs  (the push policy, pure)
 │   ├── __tests__/progress.test.mjs    (the progress view, pure)
+│   ├── __tests__/progress-run.test.mjs  (progress main(), text and --json, from a path with a space; over git, offline)
 │   ├── __tests__/announce.test.mjs    (the notice board)
 │   ├── __tests__/ledger.test.mjs      (the live ledger)
 │   ├── __tests__/order.test.mjs       (the simulated pick order, pure)

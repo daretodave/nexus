@@ -660,6 +660,7 @@ nexus/
     │   ├── __tests__/claims-codec.test.mjs # the claims rules
     │   ├── __tests__/push-policy.test.mjs # the push policy, pure
     │   ├── __tests__/progress.test.mjs # the progress view, pure
+    │   ├── __tests__/progress-run.test.mjs # progress main() from a spaced path, over git (offline)
     │   ├── __tests__/announce.test.mjs # the notice board
     │   ├── __tests__/ledger.test.mjs  # the live ledger
     │   ├── __tests__/order.test.mjs   # the simulated pick order
