@@ -1,0 +1,863 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-20T23:52:00Z"
+ },
+ "title": "nexus — design system and UI",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [
+  {
+   "id": "system",
+   "name": "Design system"
+  },
+  {
+   "id": "fleet",
+   "name": "Fleet, recovery, git"
+  },
+  {
+   "id": "cockpit",
+   "name": "Cockpit"
+  },
+  {
+   "id": "views",
+   "name": "Views"
+  },
+  {
+   "id": "onboarding",
+   "name": "Onboarding"
+  }
+ ],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 2120,
+   "title": "Color",
+   "page": "system"
+  },
+  "Type.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 2120,
+   "title": "Type",
+   "page": "system"
+  },
+  "Space.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 2120,
+   "title": "Space, radius, elevation, motion curves",
+   "page": "system"
+  },
+  "Motion.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 2120,
+   "title": "Motion moments",
+   "page": "system"
+  },
+  "Tokens.dc.html": {
+   "x": 6080,
+   "y": 0,
+   "w": 1440,
+   "h": 2120,
+   "title": "Tokens as CSS custom properties",
+   "page": "system"
+  },
+  "Composer.dc.html": {
+   "x": 0,
+   "y": 2560,
+   "w": 1440,
+   "h": 1900,
+   "title": "Composer and routing",
+   "page": "system"
+  },
+  "Controls.dc.html": {
+   "x": 1520,
+   "y": 2560,
+   "w": 1440,
+   "h": 1900,
+   "title": "Run mode, owner mode, pause",
+   "page": "system"
+  },
+  "AgentNode.dc.html": {
+   "x": 3040,
+   "y": 2560,
+   "w": 1440,
+   "h": 1900,
+   "title": "Agent node and filaments",
+   "page": "system"
+  },
+  "Tug.dc.html": {
+   "x": 4560,
+   "y": 2560,
+   "w": 1440,
+   "h": 1900,
+   "title": "Oversight tug and parked questions",
+   "page": "system"
+  },
+  "WorkUnits.dc.html": {
+   "x": 6080,
+   "y": 2560,
+   "w": 1440,
+   "h": 1900,
+   "title": "Chunk, claim, log row, diff, pills",
+   "page": "system"
+  },
+  "Package.dc.html": {
+   "x": 7600,
+   "y": 2560,
+   "w": 1440,
+   "h": 1900,
+   "title": "Phase track, package PR, stacked PR, plan PR",
+   "page": "system"
+  },
+  "FleetKit.dc.html": {
+   "x": 9120,
+   "y": 2560,
+   "w": 1440,
+   "h": 1900,
+   "title": "Session tile, git strip, switcher, train",
+   "page": "system"
+  },
+  "Feedback.dc.html": {
+   "x": 10640,
+   "y": 2560,
+   "w": 1440,
+   "h": 1900,
+   "title": "Stepper, ring, toasts, empty, error",
+   "page": "system"
+  },
+  "ComposerLight.dc.html": {
+   "x": 0,
+   "y": 4880,
+   "w": 1440,
+   "h": 1900,
+   "title": "Composer and routing — dawn",
+   "page": "system"
+  },
+  "ControlsLight.dc.html": {
+   "x": 1520,
+   "y": 4880,
+   "w": 1440,
+   "h": 1900,
+   "title": "Run mode, owner mode, pause — dawn",
+   "page": "system"
+  },
+  "AgentNodeLight.dc.html": {
+   "x": 3040,
+   "y": 4880,
+   "w": 1440,
+   "h": 1900,
+   "title": "Agent node and filaments — dawn",
+   "page": "system"
+  },
+  "TugLight.dc.html": {
+   "x": 4560,
+   "y": 4880,
+   "w": 1440,
+   "h": 1900,
+   "title": "Oversight tug and parked questions — dawn",
+   "page": "system"
+  },
+  "WorkUnitsLight.dc.html": {
+   "x": 6080,
+   "y": 4880,
+   "w": 1440,
+   "h": 1900,
+   "title": "Chunk, claim, log row, diff, pills — dawn",
+   "page": "system"
+  },
+  "PackageLight.dc.html": {
+   "x": 7600,
+   "y": 4880,
+   "w": 1440,
+   "h": 1900,
+   "title": "Phase track, package PR, stacked PR, plan PR — dawn",
+   "page": "system"
+  },
+  "FleetKitLight.dc.html": {
+   "x": 9120,
+   "y": 4880,
+   "w": 1440,
+   "h": 1900,
+   "title": "Session tile, git strip, switcher, train — dawn",
+   "page": "system"
+  },
+  "FeedbackLight.dc.html": {
+   "x": 10640,
+   "y": 4880,
+   "w": 1440,
+   "h": 1900,
+   "title": "Stepper, ring, toasts, empty, error — dawn",
+   "page": "system"
+  },
+  "CockpitStart.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Questions (start)",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Cockpit.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Working",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CockpitReview.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Questions (end)",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CockpitPackage.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Package",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CockpitOwner.dc.html": {
+   "x": 6080,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Owner session",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Cockpit1024.dc.html": {
+   "x": 7600,
+   "y": 0,
+   "w": 1024,
+   "h": 768,
+   "title": "Working at 1024",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CockpitStartLight.dc.html": {
+   "x": 0,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Questions (start) — dawn",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CockpitLight.dc.html": {
+   "x": 1520,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Working — dawn",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CockpitReviewLight.dc.html": {
+   "x": 3040,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Questions (end) — dawn",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CockpitPackageLight.dc.html": {
+   "x": 4560,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Package — dawn",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CockpitOwnerLight.dc.html": {
+   "x": 6080,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Owner session — dawn",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Cockpit1024Light.dc.html": {
+   "x": 7600,
+   "y": 1320,
+   "w": 1024,
+   "h": 768,
+   "title": "Working at 1024 — dawn",
+   "page": "cockpit",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Fleet.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Fleet (home)",
+   "page": "fleet",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "FleetTrain.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Fleet, pause all",
+   "page": "fleet",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Recover.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Recover from a workflow folder",
+   "page": "fleet",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "GitPanel.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Repo git panel",
+   "page": "fleet",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "FleetLight.dc.html": {
+   "x": 0,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Fleet (home) — dawn",
+   "page": "fleet",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "RecoverLight.dc.html": {
+   "x": 3040,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Recover from a workflow folder — dawn",
+   "page": "fleet",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "GitPanelLight.dc.html": {
+   "x": 4560,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Repo git panel — dawn",
+   "page": "fleet",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "HeadsDown.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Heads-down",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Inbox.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Oversight inbox",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Board.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Plan board · All chunks (contributor)",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "BoardOwner.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Plan board · By spec (owner)",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CloudLoop.dc.html": {
+   "x": 6080,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Cloud loop",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Settings.dc.html": {
+   "x": 7600,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Settings (owner checkout)",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "SettingsContributor.dc.html": {
+   "x": 9120,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Settings (contributor checkout)",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "HeadsDownLight.dc.html": {
+   "x": 0,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Heads-down — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "InboxLight.dc.html": {
+   "x": 1520,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Oversight inbox — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "BoardLight.dc.html": {
+   "x": 3040,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Plan board · All chunks (contributor) — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "BoardOwnerLight.dc.html": {
+   "x": 4560,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Plan board · By spec (owner) — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CloudLoopLight.dc.html": {
+   "x": 6080,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Cloud loop — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "SettingsLight.dc.html": {
+   "x": 7600,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Settings (owner checkout) — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "SettingsContributorLight.dc.html": {
+   "x": 9120,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Settings (contributor checkout) — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Welcome.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "1 · Welcome",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "WelcomeAgent.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "1b · Welcome, another agent",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Detect.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "2 · Detect",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "DetectMissing.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "2b · Detect, Claude Code missing",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Shape.dc.html": {
+   "x": 6080,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "3 · Shape the project (owner checkout)",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "ShapeContributor.dc.html": {
+   "x": 7600,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "3b · Shape the project (contributor checkout)",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Plot.dc.html": {
+   "x": 9120,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "4 · Plot the first work",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CloudSetup.dc.html": {
+   "x": 10640,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "5 · Cloud loop (optional)",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Launch.dc.html": {
+   "x": 12160,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "6 · Launch",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "WelcomeLight.dc.html": {
+   "x": 0,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "1 · Welcome — dawn",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "DetectLight.dc.html": {
+   "x": 3040,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "2 · Detect — dawn",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "ShapeLight.dc.html": {
+   "x": 6080,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "3 · Shape the project — dawn",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "PlotLight.dc.html": {
+   "x": 9120,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "4 · Plot the first work — dawn",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "CloudSetupLight.dc.html": {
+   "x": 10640,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "5 · Cloud loop — dawn",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "LaunchLight.dc.html": {
+   "x": 12160,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "6 · Launch — dawn",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "PlanKit.dc.html": {
+   "x": 12160,
+   "y": 2560,
+   "w": 1440,
+   "h": 2120,
+   "title": "Plan board: chunk rows, specs, claims",
+   "page": "system"
+  },
+  "PlanKitLight.dc.html": {
+   "x": 12160,
+   "y": 4880,
+   "w": 1440,
+   "h": 2120,
+   "title": "Plan board: chunk rows, specs, claims — dawn",
+   "page": "system"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Type.dc.html",
+  "Space.dc.html",
+  "Motion.dc.html",
+  "Tokens.dc.html",
+  "Composer.dc.html",
+  "Controls.dc.html",
+  "AgentNode.dc.html",
+  "Tug.dc.html",
+  "WorkUnits.dc.html",
+  "Package.dc.html",
+  "FleetKit.dc.html",
+  "Feedback.dc.html",
+  "PlanKit.dc.html",
+  "ComposerLight.dc.html",
+  "ControlsLight.dc.html",
+  "AgentNodeLight.dc.html",
+  "TugLight.dc.html",
+  "WorkUnitsLight.dc.html",
+  "PackageLight.dc.html",
+  "FleetKitLight.dc.html",
+  "FeedbackLight.dc.html",
+  "PlanKitLight.dc.html",
+  "Cockpit.dc.html",
+  "CockpitStart.dc.html",
+  "CockpitReview.dc.html",
+  "CockpitPackage.dc.html",
+  "CockpitOwner.dc.html",
+  "Cockpit1024.dc.html",
+  "CockpitLight.dc.html",
+  "CockpitStartLight.dc.html",
+  "CockpitReviewLight.dc.html",
+  "CockpitPackageLight.dc.html",
+  "CockpitOwnerLight.dc.html",
+  "Cockpit1024Light.dc.html",
+  "Fleet.dc.html",
+  "FleetTrain.dc.html",
+  "FleetLight.dc.html",
+  "HeadsDown.dc.html",
+  "HeadsDownLight.dc.html",
+  "Inbox.dc.html",
+  "InboxLight.dc.html",
+  "Welcome.dc.html",
+  "WelcomeAgent.dc.html",
+  "WelcomeLight.dc.html",
+  "Detect.dc.html",
+  "DetectMissing.dc.html",
+  "DetectLight.dc.html",
+  "Shape.dc.html",
+  "ShapeContributor.dc.html",
+  "ShapeLight.dc.html",
+  "Plot.dc.html",
+  "PlotLight.dc.html",
+  "CloudSetup.dc.html",
+  "CloudSetupLight.dc.html",
+  "Launch.dc.html",
+  "LaunchLight.dc.html",
+  "Board.dc.html",
+  "BoardOwner.dc.html",
+  "BoardLight.dc.html",
+  "BoardOwnerLight.dc.html",
+  "CloudLoop.dc.html",
+  "CloudLoopLight.dc.html",
+  "Settings.dc.html",
+  "SettingsContributor.dc.html",
+  "SettingsLight.dc.html",
+  "SettingsContributorLight.dc.html",
+  "Recover.dc.html",
+  "RecoverLight.dc.html",
+  "GitPanel.dc.html",
+  "GitPanelLight.dc.html"
+ ],
+ "notes": {
+  "t-found": {
+   "x": 0,
+   "y": -300,
+   "text": "Foundations",
+   "kind": "title1",
+   "maxW": 7520,
+   "page": "system"
+  },
+  "t-comp-n": {
+   "x": 0,
+   "y": 2260,
+   "text": "Components · night",
+   "kind": "title1",
+   "maxW": 13600,
+   "page": "system"
+  },
+  "t-comp-d": {
+   "x": 0,
+   "y": 4580,
+   "text": "Components · paper at dawn",
+   "kind": "title1",
+   "maxW": 13600,
+   "page": "system"
+  },
+  "t-fl-n": {
+   "x": 0,
+   "y": -300,
+   "text": "Fleet, recovery and git · night",
+   "kind": "title1",
+   "maxW": 6000,
+   "page": "fleet"
+  },
+  "t-fl-d": {
+   "x": 0,
+   "y": 1020,
+   "text": "Fleet, recovery and git · paper at dawn",
+   "kind": "title1",
+   "maxW": 6000,
+   "page": "fleet"
+  },
+  "t-ck-n": {
+   "x": 0,
+   "y": -300,
+   "text": "Cockpit: questions, working, questions, package · night",
+   "kind": "title1",
+   "maxW": 8624,
+   "page": "cockpit"
+  },
+  "t-ck-d": {
+   "x": 0,
+   "y": 1020,
+   "text": "Cockpit · paper at dawn",
+   "kind": "title1",
+   "maxW": 8624,
+   "page": "cockpit"
+  },
+  "t-vw-n": {
+   "x": 0,
+   "y": -300,
+   "text": "Views · night",
+   "kind": "title1",
+   "maxW": 10560,
+   "page": "views"
+  },
+  "t-vw-d": {
+   "x": 0,
+   "y": 1020,
+   "text": "Views · paper at dawn",
+   "kind": "title1",
+   "maxW": 10560,
+   "page": "views"
+  },
+  "t-ob-n": {
+   "x": 0,
+   "y": -300,
+   "text": "Onboarding · night",
+   "kind": "title1",
+   "maxW": 13600,
+   "page": "onboarding"
+  },
+  "t-ob-d": {
+   "x": 0,
+   "y": 1020,
+   "text": "Onboarding · paper at dawn",
+   "kind": "title1",
+   "maxW": 13600,
+   "page": "onboarding"
+  }
+ },
+ "designSystems": []
+}

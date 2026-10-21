@@ -55,9 +55,12 @@ npm run build     # bundles prompts/ and builds the UI into dist/
 npm start         # serve this checkout's GUI
 ```
 
-The UI uses tokenized placeholder styling. Every colour, size and
-motion value lives in `ui/tokens.css`, which is the file the design
-handoff replaces. The agent stage moves only on structured beats
+The UI is the Claude Design handoff in `design/handoff/` (the source
+of truth; fidelity reviews diff against it). `src/styles/nexus.css`
+is its stylesheet, verbatim: every token and component class.
+`src/ui/` holds one React file per component family, `src/screens/`
+one file per route, and `src/data/` the server client and its hooks.
+The agent stage moves only on structured beats
 (`shared/beats.mjs`). Its pure reducer gives the same state whether
 the page was opened mid-run, refreshed, or watched from the start.
 

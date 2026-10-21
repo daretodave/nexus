@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan board · nexus</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./nexus.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Quicksand:wght@300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&text=%20%21%22%23%24%25%26%27%28%29%2A%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D~%E2%94%80%E2%94%81%E2%94%82%E2%94%83%E2%94%84%E2%94%85%E2%94%86%E2%94%87%E2%94%88%E2%94%89%E2%94%8A%E2%94%8B%E2%94%8C%E2%94%8D%E2%94%8E%E2%94%8F%E2%94%90%E2%94%91%E2%94%92%E2%94%93%E2%94%94%E2%94%95%E2%94%96%E2%94%97%E2%94%98%E2%94%99%E2%94%9A%E2%94%9B%E2%94%9C%E2%94%9D%E2%94%9E%E2%94%9F%E2%94%A0%E2%94%A1%E2%94%A2%E2%94%A3%E2%94%A4%E2%94%A5%E2%94%A6%E2%94%A7%E2%94%A8%E2%94%A9%E2%94%AA%E2%94%AB%E2%94%AC%E2%94%AD%E2%94%AE%E2%94%AF%E2%94%B0%E2%94%B1%E2%94%B2%E2%94%B3%E2%94%B4%E2%94%B5%E2%94%B6%E2%94%B7%E2%94%B8%E2%94%B9%E2%94%BA%E2%94%BB%E2%94%BC%E2%94%BD%E2%94%BE%E2%94%BF%E2%95%80%E2%95%81%E2%95%82%E2%95%83%E2%95%84%E2%95%85%E2%95%86%E2%95%87%E2%95%88%E2%95%89%E2%95%8A%E2%95%8B%E2%95%8C%E2%95%8D%E2%95%8E%E2%95%8F%E2%95%90%E2%95%91%E2%95%92%E2%95%93%E2%95%94%E2%95%95%E2%95%96%E2%95%97%E2%95%98%E2%95%99%E2%95%9A%E2%95%9B%E2%95%9C%E2%95%9D%E2%95%9E%E2%95%9F%E2%95%A0%E2%95%A1%E2%95%A2%E2%95%A3%E2%95%A4%E2%95%A5%E2%95%A6%E2%95%A7%E2%95%A8%E2%95%A9%E2%95%AA%E2%95%AB%E2%95%AC%E2%95%AD%E2%95%AE%E2%95%AF%E2%95%B0%E2%95%B1%E2%95%B2%E2%95%B3%E2%95%B4%E2%95%B5%E2%95%B6%E2%95%B7%E2%95%B8%E2%95%B9%E2%95%BA%E2%95%BB%E2%95%BC%E2%95%BD%E2%95%BE%E2%95%BF%E2%96%80%E2%96%81%E2%96%82%E2%96%83%E2%96%84%E2%96%85%E2%96%86%E2%96%87%E2%96%88%E2%96%89%E2%96%8A%E2%96%8B%E2%96%8C%E2%96%8D%E2%96%8E%E2%96%8F%E2%96%90%E2%96%91%E2%96%92%E2%96%93%E2%96%94%E2%96%95%E2%96%96%E2%96%97%E2%96%98%E2%96%99%E2%96%9A%E2%96%9B%E2%96%9C%E2%96%9D%E2%96%9E%E2%96%9F%E2%96%A0%E2%96%A1%E2%96%AA%E2%96%AB%E2%96%AC%E2%96%B2%E2%96%B3%E2%96%B4%E2%96%B5%E2%96%B6%E2%96%B7%E2%96%B8%E2%96%B9%E2%96%BA%E2%96%BB%E2%96%BC%E2%96%BD%E2%96%BE%E2%96%BF%E2%97%80%E2%97%81%E2%97%82%E2%97%83%E2%97%86%E2%97%87%E2%97%88%E2%97%8B%E2%97%8C%E2%97%8D%E2%97%8E%E2%97%8F%E2%97%90%E2%97%91%E2%97%92%E2%97%93%E2%97%94%E2%97%95%E2%97%9C%E2%97%9D%E2%97%9E%E2%97%9F%E2%97%A0%E2%97%A1%E2%97%A6%E2%97%AF%E2%9C%93%E2%9C%94%E2%9C%97%E2%9C%98%E2%86%90%E2%86%91%E2%86%92%E2%86%93%E2%86%94%E2%86%95%E2%86%96%E2%86%97%E2%86%98%E2%86%99%E2%86%A9%E2%86%AA%E2%86%B3%E2%86%B5%E2%87%A1%E2%87%A3%E2%87%A2%E2%87%A0%C2%B7%E2%80%A2%E2%80%A3%E2%80%A6%E2%80%93%E2%80%94%E2%80%98%E2%80%99%E2%80%9C%E2%80%9D%E2%80%B2%E2%80%B3%C3%97%C3%B7%C2%B1%E2%88%92%E2%89%88%E2%89%A0%E2%89%A4%E2%89%A5%C2%B0%E2%88%99%E2%8B%AF%E2%80%B9%E2%80%BA%C2%AB%C2%BB%C2%A7%C2%B6%E2%80%A0%E2%80%B0%E2%8C%98%E2%8C%A5%E2%87%A7%E2%8F%8E%E2%88%9E&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="nx app " data-theme="{{theme}}" style="width: 100%; height: 100vh; font-family: 'Fira Sans', system-ui, sans-serif"><header class="topbar"><a class="wordmark" href="{{links.fleet}}" aria-label="nexus, the fleet" style="color: var(--text); text-decoration: none"><span class="mark"></span>nexus</a><span class="tb-sep"></span><span class="tb-title"><b>{{repo}}</b><span class="tb-long">{{modeLabel}}</span></span><span class="tb-spacer"></span><span class="loop-status"><span class="loop-dot"></span><span><b class="tb-long">Cloud loop </b>next 03:30</span></span><a class="btn btn-s" href="{{links.inbox}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5 6 5.5h12l2.5 8v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM3.5 13.5H8l1.5 2.5h5l1.5-2.5h4.5"/></svg>Oversight<span class="tb-badge">4</span></a></header><div class="shell"><nav class="rail" aria-label="Views"><a class="rail-item" href="{{links.fleet}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 3.5h7v7h-7zM13.5 3.5h7v7h-7zM3.5 13.5h7v7h-7zM13.5 13.5h7v7h-7z"/></svg><span>Fleet</span></a><a class="rail-item" href="{{links.cockpit}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM2.5 12c0-2.5 4.3-4.5 9.5-4.5s9.5 2 9.5 4.5-4.3 4.5-9.5 4.5S2.5 14.5 2.5 12z"/></svg><span>Cockpit</span></a><a class="rail-item" href="{{links.heads}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 4.5h13A2.5 2.5 0 0 1 21 7v10a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V7a2.5 2.5 0 0 1 2.5-2.5zM7 9.5l3 2.5-3 2.5M12.5 15H17"/></svg><span>Heads-down</span></a><a class="rail-item" href="{{links.inbox}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5 6 5.5h12l2.5 8v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM3.5 13.5H8l1.5 2.5h5l1.5-2.5h4.5"/></svg><span>Oversight</span><span class="rail-badge">4</span></a><a class="rail-item is-current" href="{{links.plan}}" aria-current="page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Plan</span></a><a class="rail-item" href="{{links.cloud}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.4 4.5 4.5 0 0 0 7 18.5z"/></svg><span>Cloud</span></a><a class="rail-item" href="{{links.git}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM18 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 8.2v7.6M18 8.2c0 5-12 3-12 7.6"/></svg><span>Git</span></a><span class="rail-spacer"></span><a class="rail-item" href="{{links.settings}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM10 15a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg><span>Settings</span></a></nav><main class="view" aria-label="Plan board"><div class="view-head"><div class="view-title"><h1 class="t-title-l">Plan</h1><span class="view-sub">{{sub}}</span></div><div class="view-acts"><div class="seg" role="radiogroup" aria-label="View"><input type="radio" name="pbview" id="pv-all" checked="{{isAll}}" onChange="{{showAll}}"><label for="pv-all">All chunks</label><input type="radio" name="pbview" id="pv-spec" checked="{{isSpec}}" onChange="{{showSpec}}"><label for="pv-spec">By spec</label></div><a class="btn" href="{{links.cockpit}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Plot something</a></div></div><div class="pboard"><div class="pb-main"><div class="pb-tools"><sc-if value="{{isAll}}" hint-placeholder-val="{{ true }}"><span class="t-label">Sort</span><div class="choice" role="group" aria-label="Sort"><button type="button" class="{{so.nextCls}}" aria-pressed="{{so.nextP}}" onClick="{{so.next}}">Next up</button><button type="button" class="{{so.specCls}}" aria-pressed="{{so.specP}}" onClick="{{so.spec}}">By spec</button><button type="button" class="{{so.sizeCls}}" aria-pressed="{{so.sizeP}}" onClick="{{so.size}}">By size</button><button type="button" class="{{so.claimCls}}" aria-pressed="{{so.claimP}}" onClick="{{so.claim}}">Claimed / unclaimed</button></div></sc-if><span class="t-label">Show</span><div class="choice" role="group" aria-label="Filter"><button type="button" class="{{fi.mineCls}}" aria-pressed="{{fi.mineP}}" onClick="{{fi.mine}}">mine</button><button type="button" class="{{fi.unclaimedCls}}" aria-pressed="{{fi.unclaimedP}}" onClick="{{fi.unclaimed}}">unclaimed</button><button type="button" class="{{fi.heldCls}}" aria-pressed="{{fi.heldP}}" onClick="{{fi.held}}">held</button></div><span class="tb-spacer"></span><sc-if value="{{protected}}" hint-placeholder-val="{{ false }}"><span class="protect"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 8 0v3"/></svg>Claims protected · requests go to {{ownerName}}</span></sc-if><sc-if value="{{isOwner}}" hint-placeholder-val="{{ false }}"><span class="protect" style="background: transparent; box-shadow: inset 0 0 0 1px var(--line-2)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 8 0v3"/></svg>You own this plan · changes land on main</span></sc-if></div><sc-if value="{{isAll}}" hint-placeholder-val="{{ true }}"><div class="pb-list" role="list" aria-label="All chunks"><sc-for list="{{items}}" as="r" hint-placeholder-count="12"><sc-if value="{{r.isSec}}" hint-placeholder-val="{{ false }}"><div class="{{r.secCls}}"><span class="t-caps c-2">{{r.secTitle}}</span><span class="n">{{r.secN}}</span><span class="d">{{r.secD}}</span></div></sc-if><sc-if value="{{r.isRow}}" hint-placeholder-val="{{ true }}"><div class="{{r.cls}}"><span class="grip" aria-hidden="true"><svg class="ic ic-12" viewBox="0 0 24 24"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" style="stroke-width: 3"/></svg></span><sc-if value="{{r.isReady}}" hint-placeholder-val="{{ true }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/></svg></sc-if><sc-if value="{{r.isClaimed}}" hint-placeholder-val="{{ false }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 8V2a6 6 0 0 1 6 6z"/></svg></sc-if><sc-if value="{{r.isBuilding}}" hint-placeholder-val="{{ false }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 2a6 6 0 0 1 0 12z"/></svg></sc-if><sc-if value="{{r.isReview}}" hint-placeholder-val="{{ false }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 8V2a6 6 0 1 1-6 6z"/></svg></sc-if><sc-if value="{{r.isClosed}}" hint-placeholder-val="{{ false }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle class="f" cx="8" cy="8" r="6"/></svg></sc-if><span class="chunk-id">{{r.id}}</span><span class="crow-t"><span class="tt">{{r.t}}</span><sc-if value="{{r.ai}}" hint-placeholder-val="{{ false }}"><button class="ai-glyph" type="button" aria-label="Summary written by AI, not in the plan"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.6 4.9 4.9 1.6-4.9 1.6L12 16.5l-1.6-4.9L5.5 10l4.9-1.6zM18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg><span class="ai-tip">Summary written by AI, not in the plan</span></button></sc-if><sc-if value="{{r.plotted}}" hint-placeholder-val="{{ false }}"><span class="plotted-tag">{{r.plottedLabel}}</span></sc-if></span><span class="size-tag" aria-label="size {{r.size}}">{{r.size}}</span><span class="crow-state">{{r.stateLabel}}</span><sc-if value="{{r.hasClaim}}" hint-placeholder-val="{{ true }}"><span class="{{r.claimCls}}"><span class="claim-av"><sc-if value="{{r.avSess}}" hint-placeholder-val="{{ true }}"><svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="{{r.avStar}}"/></svg></sc-if><sc-if value="{{r.avCloud}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.4 4.5 4.5 0 0 0 7 18.5z"/></svg></sc-if><sc-if value="{{r.avHeld}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6"/></svg></sc-if><sc-if value="{{r.avOther}}" hint-placeholder-val="{{ false }}"><span>{{r.avInitial}}</span></sc-if></span><span class="claim-who">{{r.claimWho}}</span><span class="claim-since">{{r.claimSince}}</span></span></sc-if><sc-if value="{{r.noClaim}}" hint-placeholder-val="{{ false }}"><span class="crow-free">{{r.freeLabel}}</span></sc-if><div class="crow-acts"><sc-if value="{{r.canClaim}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s" type="button" onClick="{{r.claim}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>Claim</button></sc-if><sc-if value="{{r.canRequest}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s" type="button" onClick="{{r.request}}" aria-expanded="{{r.popAria}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>Request claim</button></sc-if><sc-if value="{{r.canRelease}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{r.release}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4.5A1.5 1.5 0 0 1 21 4.5v15a1.5 1.5 0 0 1-1.5 1.5H15M10 17l5-5-5-5M15 12H3"/></svg>Release</button></sc-if><sc-if value="{{r.canHold}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{r.hold}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6"/></svg>Hold</button></sc-if><sc-if value="{{r.canUnhold}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{r.unhold}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6"/></svg>Unhold</button></sc-if><sc-if value="{{r.canReassign}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{r.reassign}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Reassign</button></sc-if><a class="btn btn-s btn-ghost btn-icon" href="#spec-{{r.spec}}" aria-label="Open {{r.id}} in its spec"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a></div><sc-if value="{{r.showPop}}" hint-placeholder-val="{{ false }}"><div class="req-pop" role="dialog" aria-label="About protected claims"><span class="tip-arrow" style="top: -5px"></span><span><b>Claims are protected in {{repo}}.</b> The claims branch only takes pushes from {{ownerName}}, so nexus sends a request instead. {{ownerName}} gets a one-tap yes or no; most come back in minutes.</span><span>Until then <b>{{r.id}}</b> stays unclaimed, and /next keeps offering it to everyone.</span><div style="display: flex; gap: 8px"><button class="btn btn-s btn-primary" type="button" onClick="{{r.sendRequest}}">Send request</button><button class="btn btn-s btn-ghost" type="button" onClick="{{closePop}}">Not now</button></div></div></sc-if></div></sc-if><sc-if value="{{r.isFold}}" hint-placeholder-val="{{ false }}"><button class="pb-fold" type="button" onClick="{{r.toggle}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m10 7 5 5-5 5"/></svg><span>{{r.foldText}}</span></button></sc-if></sc-for></div></sc-if><sc-if value="{{isSpec}}" hint-placeholder-val="{{ false }}"><div class="specs"><sc-for list="{{specs}}" as="s" hint-placeholder-count="5"><section class="{{s.cls}}" id="spec-{{s.id}}" aria-label="{{s.title}}"><div class="spec-h"><button class="spec-tog" type="button" onClick="{{s.toggle}}" aria-expanded="{{s.openAria}}" aria-label="Show chunks of {{s.title}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m10 7 5 5-5 5"/></svg></button><div class="spec-name"><b>{{s.title}}</b><span>{{s.file}}</span></div><div class="pct"><span class="pct-bar"><i style="width: {{s.pct}}"></i></span><span class="pct-n">{{s.pctText}}</span></div><div class="spec-acts"><sc-if value="{{s.hasClaim}}" hint-placeholder-val="{{ false }}"><span class="{{s.claimCls}}"><span class="claim-av"><sc-if value="{{s.avSess}}" hint-placeholder-val="{{ true }}"><svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="{{s.avStar}}"/></svg></sc-if><sc-if value="{{s.avCloud}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.4 4.5 4.5 0 0 0 7 18.5z"/></svg></sc-if><sc-if value="{{s.avHeld}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6"/></svg></sc-if><sc-if value="{{s.avOther}}" hint-placeholder-val="{{ false }}"><span>{{s.avInitial}}</span></sc-if></span><span class="claim-who">{{s.claimWho}}</span><span class="claim-since">{{s.claimSince}}</span></span></sc-if><sc-if value="{{s.canClaim}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s" type="button" onClick="{{s.claim}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>{{s.claimLabel}}</button></sc-if><sc-if value="{{s.canHold}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{s.hold}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6"/></svg>Hold</button></sc-if><sc-if value="{{s.canRelease}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{s.release}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4.5A1.5 1.5 0 0 1 21 4.5v15a1.5 1.5 0 0 1-1.5 1.5H15M10 17l5-5-5-5M15 12H3"/></svg>Release</button></sc-if></div></div><sc-if value="{{s.showBody}}" hint-placeholder-val="{{ false }}"><div class="spec-body"><sc-for list="{{s.rows}}" as="r" hint-placeholder-count="3"><div class="{{r.cls}}"><span class="grip" aria-hidden="true"><svg class="ic ic-12" viewBox="0 0 24 24"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" style="stroke-width: 3"/></svg></span><sc-if value="{{r.isReady}}" hint-placeholder-val="{{ true }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/></svg></sc-if><sc-if value="{{r.isClaimed}}" hint-placeholder-val="{{ false }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 8V2a6 6 0 0 1 6 6z"/></svg></sc-if><sc-if value="{{r.isBuilding}}" hint-placeholder-val="{{ false }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 2a6 6 0 0 1 0 12z"/></svg></sc-if><sc-if value="{{r.isReview}}" hint-placeholder-val="{{ false }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 8V2a6 6 0 1 1-6 6z"/></svg></sc-if><sc-if value="{{r.isClosed}}" hint-placeholder-val="{{ false }}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle class="f" cx="8" cy="8" r="6"/></svg></sc-if><span class="chunk-id">{{r.id}}</span><span class="crow-t"><span class="tt">{{r.t}}</span><sc-if value="{{r.ai}}" hint-placeholder-val="{{ false }}"><button class="ai-glyph" type="button" aria-label="Summary written by AI, not in the plan"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.6 4.9 4.9 1.6-4.9 1.6L12 16.5l-1.6-4.9L5.5 10l4.9-1.6zM18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg><span class="ai-tip">Summary written by AI, not in the plan</span></button></sc-if><sc-if value="{{r.plotted}}" hint-placeholder-val="{{ false }}"><span class="plotted-tag">{{r.plottedLabel}}</span></sc-if></span><span class="size-tag" aria-label="size {{r.size}}">{{r.size}}</span><span class="crow-state">{{r.stateLabel}}</span><sc-if value="{{r.hasClaim}}" hint-placeholder-val="{{ true }}"><span class="{{r.claimCls}}"><span class="claim-av"><sc-if value="{{r.avSess}}" hint-placeholder-val="{{ true }}"><svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="{{r.avStar}}"/></svg></sc-if><sc-if value="{{r.avCloud}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.4 4.5 4.5 0 0 0 7 18.5z"/></svg></sc-if><sc-if value="{{r.avHeld}}" hint-placeholder-val="{{ false }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6"/></svg></sc-if><sc-if value="{{r.avOther}}" hint-placeholder-val="{{ false }}"><span>{{r.avInitial}}</span></sc-if></span><span class="claim-who">{{r.claimWho}}</span><span class="claim-since">{{r.claimSince}}</span></span></sc-if><sc-if value="{{r.noClaim}}" hint-placeholder-val="{{ false }}"><span class="crow-free">{{r.freeLabel}}</span></sc-if><div class="crow-acts"><sc-if value="{{r.canClaim}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s" type="button" onClick="{{r.claim}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>Claim</button></sc-if><sc-if value="{{r.canRequest}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s" type="button" onClick="{{r.request}}" aria-expanded="{{r.popAria}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>Request claim</button></sc-if><sc-if value="{{r.canRelease}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{r.release}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4.5A1.5 1.5 0 0 1 21 4.5v15a1.5 1.5 0 0 1-1.5 1.5H15M10 17l5-5-5-5M15 12H3"/></svg>Release</button></sc-if><sc-if value="{{r.canHold}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{r.hold}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6"/></svg>Hold</button></sc-if><sc-if value="{{r.canUnhold}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{r.unhold}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6"/></svg>Unhold</button></sc-if><sc-if value="{{r.canReassign}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{r.reassign}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Reassign</button></sc-if><a class="btn btn-s btn-ghost btn-icon" href="#spec-{{r.spec}}" aria-label="Open {{r.id}} in its spec"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a></div><sc-if value="{{r.showPop}}" hint-placeholder-val="{{ false }}"><div class="req-pop" role="dialog" aria-label="About protected claims"><span class="tip-arrow" style="top: -5px"></span><span><b>Claims are protected in {{repo}}.</b> The claims branch only takes pushes from {{ownerName}}, so nexus sends a request instead. {{ownerName}} gets a one-tap yes or no; most come back in minutes.</span><span>Until then <b>{{r.id}}</b> stays unclaimed, and /next keeps offering it to everyone.</span><div style="display: flex; gap: 8px"><button class="btn btn-s btn-primary" type="button" onClick="{{r.sendRequest}}">Send request</button><button class="btn btn-s btn-ghost" type="button" onClick="{{closePop}}">Not now</button></div></div></sc-if></div></sc-for></div></sc-if><sc-if value="{{s.showChunkIt}}" hint-placeholder-val="{{ false }}"><div class="chunkit"><span class="cstar is-neutral"></span><span class="t-body-s c-2" style="flex: 1">No chunks yet. nexus asks three short questions, then splits the spec into chunks with acceptance IDs.</span><button class="btn btn-primary" type="button" onClick="{{s.startChunk}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.5 2.5M15.2 15.2l2.5 2.5M6.3 17.7l2.5-2.5M15.2 8.8l2.5-2.5"/></svg>Chunk it</button></div></sc-if><sc-if value="{{s.showFlow}}" hint-placeholder-val="{{ false }}"><div class="chunkit-flow"><span class="t-caps c-2">Chunk it · 3 questions</span><sc-for list="{{ckQs}}" as="q" hint-placeholder-count="3"><div class="ck-q"><span>{{q.q}}</span><div class="choice" role="group" aria-label="{{q.q}}"><sc-for list="{{q.opts}}" as="o" hint-placeholder-count="2"><button type="button" class="{{o.cls}}" aria-pressed="{{o.p}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div></div></sc-for><div style="display: flex; gap: 8px; align-items: center"><button class="btn btn-primary btn-s" type="button" onClick="{{s.makeChunks}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.5 2.5M15.2 15.2l2.5 2.5M6.3 17.7l2.5-2.5M15.2 8.8l2.5-2.5"/></svg>Make the chunks</button><button class="btn btn-ghost btn-s" type="button" onClick="{{s.cancelChunk}}">Cancel</button><span class="t-body-s c-3">{{ckNote}}</span></div></div></sc-if></section></sc-for></div></sc-if></div><aside class="pb-main" aria-label="Claims by person"><sc-if value="{{planPr.show}}" hint-placeholder-val="{{ true }}"><div class="{{planPr.cls}}"><div class="planpr-head"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--accent)"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span class="planpr-title">{{planPr.title}}</span><span class="{{planPr.pillCls}}" style="margin-left: auto; height: 22px"><span class="num">{{planPr.pill}}</span></span></div><sc-for list="{{planPr.adds}}" as="a" hint-placeholder-count="2"><div class="planpr-add"><span class="plus">+</span><span class="id">{{a.id}}</span><span>{{a.t}}</span></div></sc-for><span class="t-body-s c-3">{{planPr.note}}</span></div></sc-if><div class="crail"><div class="crail-h"><span class="t-caps c-2">Claims by person</span><span class="tb-spacer"></span><span class="cap">{{railNote}}</span></div><sc-for list="{{people}}" as="pp" hint-placeholder-count="4"><div class="cr-person"><div class="cr-ph"><span class="{{pp.avCls}}">{{pp.initial}}</span><span>{{pp.name}}</span><span class="d">{{pp.d}}</span></div><sc-for list="{{pp.sessions}}" as="x" hint-placeholder-count="2"><div class="cr-sess {{x.sessCls}}"><div class="cr-sh"><sc-if value="{{x.hasStar}}" hint-placeholder-val="{{ false }}"><svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="{{x.star}}"/></svg></sc-if><span>{{x.name}}</span><span class="c-3" style="font-weight: 400">{{x.d}}</span></div><sc-for list="{{x.claims}}" as="c" hint-placeholder-count="2"><div class="{{c.cls}}"><span class="id">{{c.id}}</span><span class="t">{{c.t}}</span><span class="{{c.expCls}}">{{c.exp}}</span><div class="cr-acts"><sc-if value="{{c.canRelease}}" hint-placeholder-val="{{ false }}"><button class="btn btn-ghost" type="button" onClick="{{c.release}}">Release</button></sc-if><sc-if value="{{c.canReassign}}" hint-placeholder-val="{{ false }}"><button class="btn btn-ghost" type="button" onClick="{{c.reassign}}">Reassign</button></sc-if><sc-if value="{{c.noActs}}" hint-placeholder-val="{{ false }}"><span class="exp" style="visibility: visible">{{c.exp}}</span></sc-if></div></div></sc-for></div></sc-for></div></sc-for></div></aside></div></main></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"mode":{"editor":"enum","options":["contributor","owner"],"default":"contributor"},"view":{"editor":"enum","options":["auto","all","spec"],"default":"auto"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: null, sort: 'next', flt: { mine: false, unclaimed: false, held: false }, ov: {}, req: {}, pop: (props.mode === 'owner' ? null : '13.5'), specOv: {}, open: {}, ck: 'idle', cka: {}, showClosed: false, railHover: null };
+  }
+  renderVals() {
+    const theme = this.props.theme ?? 'dark';
+    const L = theme === 'light' ? 'Light' : '';
+    const owner = (this.props.mode ?? 'contributor') === 'owner';
+    const links = {
+      fleet: 'Fleet' + L + '.dc.html', train: 'FleetTrain.dc.html', cockpit: (owner ? 'CockpitOwner' : 'Cockpit') + L + '.dc.html',
+      start: 'CockpitStart' + L + '.dc.html', vega: 'Cockpit' + L + '.dc.html', deneb: 'CockpitOwner' + L + '.dc.html',
+      heads: 'HeadsDown' + L + '.dc.html', inbox: 'Inbox' + L + '.dc.html', plan: (owner ? 'BoardOwner' : 'Board') + L + '.dc.html',
+      board: 'Board' + L + '.dc.html', boardOwner: 'BoardOwner' + L + '.dc.html',
+      cloud: 'CloudLoop' + L + '.dc.html', git: 'GitPanel' + L + '.dc.html', recover: 'Recover' + L + '.dc.html',
+      settings: (owner ? 'Settings' : 'SettingsContributor') + L + '.dc.html', review: 'CockpitReview' + L + '.dc.html'
+    };
+    const st = this.state;
+    const D = owner ? this.lantern() : this.tidepool();
+    const view = st.view ?? (this.props.view === 'spec' || (this.props.view !== 'all' && owner) ? 'spec' : 'all');
+    const sort = st.sort;
+    const flt = st.flt;
+    const anyF = flt.mine || flt.unclaimed || flt.held;
+    const ov = st.ov;
+    const prot = D.protected && !owner;
+    const STARS = { vega: "M12 2C12.6 8.2 15.8 11.4 22 12C15.8 12.6 12.6 15.8 12 22C11.4 15.8 8.2 12.6 2 12C8.2 11.4 11.4 8.2 12 2Z", sirius: "M12 2l2.9 6.6 7.1.7-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.3l7.1-.7z", deneb: "M12 2l2.6 5.5H21l-3.4 4.5L21 16.5h-6.4L12 22l-2.6-5.5H3L6.4 12 3 7.5h6.4z", altair: "M12 2l2.1 5.1L19.1 5l-2.1 5L22 12l-5 2 2.1 5-5-2.1L12 22l-2-5-5 2.1 2.1-5L2 12l5-2-2.1-5 5 2.1z" };
+    const LAB = { ready: 'ready', claimed: 'claimed', building: 'building', review: 'in review', closed: 'closed' };
+    const CS = { ready: 'cs-ready', claimed: 'cs-claimed', building: 'cs-building', review: 'cs-review', closed: 'cs-settled' };
+    const ck = st.ck;
+    let chunks = D.chunks.map((c) => (ov[c.id] ? { ...c, ...ov[c.id] } : c));
+    if (ck === 'done') chunks = chunks.concat(D.ckChunks);
+    const specClaims = { ...D.specClaims, ...st.specOv };
+    const youSess = owner ? 'deneb' : 'you';
+    const mkClaim = (kind) => kind === 'held'
+      ? { kind: 'held', person: 'you', label: 'you · held', since: 'never expires' }
+      : owner ? { kind: 'sess', person: 'you', who: 'deneb', label: 'deneb', since: 'just now' } : { kind: 'other', person: 'you', label: 'you', since: 'just now', initial: 'y' };
+    const rowV = (c, covered) => {
+      const cl = c.claim || (covered ? { ...covered, label: covered.label + ' · via spec', since: 'covers this', via: true } : null);
+      const closed = c.state === 'closed';
+      const held = !!(cl && cl.kind === 'held');
+      const mine = !!(cl && cl.person === 'you');
+      const free = !cl && !closed;
+      const req = !!st.req[c.id];
+      const state = held ? 'ready' : c.state;
+      const m = (k) => state === k;
+      return {
+        id: c.id, t: c.t, size: c.size, spec: c.spec, ai: !!c.ai, plotted: !!c.plotted && !closed,
+        plottedLabel: c.plotted === 'main' ? 'just plotted · on main' : 'just plotted · plan PR ' + c.plotted,
+        cls: 'crow ' + CS[state] + (closed ? ' is-closed' : '') + (c.plotted ? ' is-plotted' : '') + (cl && cl.via ? ' is-covered' : '') + (st.pop === c.id ? ' is-hover' : '') + (c.bloom ? ' is-bloom' : ''),
+        isReady: m('ready'), isClaimed: m('claimed'), isBuilding: m('building'), isReview: m('review'), isClosed: m('closed'),
+        stateLabel: held ? 'held' : LAB[c.state], hasClaim: !!cl, noClaim: !cl,
+        freeLabel: closed ? (c.landed || 'closed') : req ? 'requested · waiting on ' + D.ownerName : 'unclaimed',
+        claimCls: 'claim' + (cl ? (cl.kind === 'sess' ? ' sess-' + cl.who : cl.kind === 'cloud' ? ' is-cloud' : cl.kind === 'held' ? ' is-held' : ' is-other') : '') + (cl && cl.stale ? ' is-stale' : ''),
+        avSess: !!(cl && cl.kind === 'sess'), avStar: cl && cl.kind === 'sess' ? STARS[cl.who] : '', avCloud: !!(cl && cl.kind === 'cloud'),
+        avHeld: held, avOther: !!(cl && cl.kind === 'other'), avInitial: cl && cl.initial ? cl.initial : '',
+        claimWho: cl ? cl.label : '', claimSince: cl ? cl.since : '',
+        canClaim: free && !req && !prot, canRequest: free && !req && prot,
+        canRelease: !!cl && !cl.via && (mine || owner) && cl.kind !== 'cloud' && !held,
+        canHold: !closed && !held && !cl && !prot, canUnhold: held && (owner || mine), canReassign: owner && !!cl && !cl.via && !closed && cl.kind !== 'cloud',
+        showPop: st.pop === c.id, popAria: st.pop === c.id ? 'true' : 'false',
+        claim: () => this.setOv(c.id, { claim: mkClaim('claim'), state: 'claimed' }),
+        request: () => this.setState({ pop: st.pop === c.id ? null : c.id }),
+        sendRequest: () => this.setState({ req: { ...st.req, [c.id]: true }, pop: null }),
+        release: () => this.setOv(c.id, { claim: null, state: 'ready' }),
+        hold: () => this.setOv(c.id, { claim: mkClaim('held') }),
+        unhold: () => this.setOv(c.id, { claim: null }),
+        reassign: () => this.setOv(c.id, { claim: cl && cl.person === 'you' ? D.reassignTo : mkClaim('claim') })
+      };
+    };
+    const cover = (c) => (!c.claim && c.state !== 'closed' && specClaims[c.spec]) ? specClaims[c.spec] : null;
+    const pass = (c) => {
+      if (!anyF) return true;
+      const cl = c.claim || cover(c);
+      if (flt.mine && cl && cl.person === 'you') return true;
+      if (flt.unclaimed && !cl && c.state !== 'closed') return true;
+      if (flt.held && cl && cl.kind === 'held') return true;
+      return false;
+    };
+    const items = [];
+    const secRow = (title, n, d, cls) => ({ isSec: true, isRow: false, isFold: false, secTitle: title, secN: String(n), secD: d || '', secCls: 'pb-sec' + (cls ? ' ' + cls : '') });
+    const push = (title, list, d, cls) => { const l = list.filter(pass); if (!l.length) return; items.push(secRow(title, l.length, d, cls)); l.forEach((c) => items.push({ isSec: false, isRow: true, isFold: false, ...rowV(c, cover(c)) })); };
+    const open = chunks.filter((c) => c.state !== 'closed');
+    const isHeld = (c) => !!(c.claim && c.claim.kind === 'held');
+    const byOrder = (a, b) => D.order.indexOf(a.id) - D.order.indexOf(b.id);
+    if (sort === 'next') {
+      push('asap', open.filter((c) => c.asap && !isHeld(c)).sort(byOrder), 'pinned on top, /next takes these first', 'is-asap');
+      push('Next up', open.filter((c) => !c.asap && !isHeld(c) && (c.state === 'ready' || c.state === 'claimed')).sort(byOrder), 'the order /next would pick');
+      push('In flight', open.filter((c) => !c.asap && (c.state === 'building' || c.state === 'review')).sort(byOrder), 'building or in review');
+      push('Held', open.filter(isHeld), 'never expires');
+    } else if (sort === 'spec') {
+      D.specs.forEach((s) => push(s.id + ' · ' + s.title, open.filter((c) => c.spec === s.id).sort(byOrder), s.file));
+    } else if (sort === 'size') {
+      ['L', 'M', 'S'].forEach((z) => push('Size ' + z, open.filter((c) => c.size === z).sort(byOrder), ''));
+    } else {
+      push('Unclaimed', open.filter((c) => !c.claim && !cover(c)).sort(byOrder), 'free to take');
+      push('Claimed', open.filter((c) => (c.claim || cover(c)) && !isHeld(c)).sort(byOrder), 'by a person, a session or the cloud loop');
+      push('Held', open.filter(isHeld), 'never expires');
+    }
+    const closedList = chunks.filter((c) => c.state === 'closed');
+    if (!anyF && closedList.length) {
+      items.push({ isSec: false, isRow: false, isFold: true, foldText: st.showClosed ? 'Hide ' + closedList.length + ' closed' : closedList.length + ' closed · ' + closedList.slice(0, 3).map((c) => c.id).join(', ') + '…', toggle: () => this.setState({ showClosed: !st.showClosed }) });
+      if (st.showClosed) closedList.forEach((c) => items.push({ isSec: false, isRow: true, isFold: false, ...rowV(c, null) }));
+    }
+    // By spec
+    const specs = D.specs.map((s) => {
+      const list = chunks.filter((c) => c.spec === s.id);
+      const total = list.length, done = list.filter((c) => c.state === 'closed').length;
+      const sc = specClaims[s.id];
+      const isOpen = st.open[s.id] ?? !!s.open;
+      const empty = total === 0;
+      const showFlow = empty && ck === 'asking' && s.id === D.ckSpec;
+      return {
+        id: s.id, title: s.id + ' · ' + s.title, file: s.file, pctText: empty ? 'no chunks yet' : done + ' of ' + total, pct: total ? Math.round(done / total * 100) + '%' : '0%',
+        cls: 'spec' + (isOpen ? ' is-open' : '') + (sc ? ' is-claimed' : ''), openAria: isOpen ? 'true' : 'false',
+        showBody: isOpen && !empty, showChunkIt: empty && ck === 'idle' && s.id === D.ckSpec, showFlow,
+        rows: list.filter(pass).map((c) => rowV(c, sc && c.state !== 'closed' && !c.claim ? sc : null)),
+        hasClaim: !!sc, claimCls: sc ? (sc.kind === 'sess' ? 'claim sess-' + sc.who : 'claim is-other') : 'claim',
+        avSess: !!(sc && sc.kind === 'sess'), avStar: sc && sc.kind === 'sess' ? STARS[sc.who] : '', avCloud: false, avHeld: false, avOther: !!(sc && sc.kind === 'other'), avInitial: sc && sc.initial ? sc.initial : '',
+        claimWho: sc ? sc.label + ' · whole spec' : '', claimSince: sc ? sc.since : '',
+        canClaim: !sc && !empty && done < total, claimLabel: prot ? 'Request spec' : 'Claim spec', canHold: !sc && !empty && done < total && !prot,
+        canRelease: !!sc && (owner || sc.person === 'you'),
+        toggle: () => this.setState({ open: { ...st.open, [s.id]: !isOpen } }),
+        claim: () => { if (prot) this.setState({ req: { ...st.req, ['spec' + s.id]: true } }); else this.setState({ specOv: { ...st.specOv, [s.id]: mkClaim('claim') } }); },
+        hold: () => this.setState({ specOv: { ...st.specOv, [s.id]: mkClaim('held') } }),
+        release: () => this.setState({ specOv: { ...st.specOv, [s.id]: null } }),
+        startChunk: () => this.setState({ ck: 'asking' }),
+        cancelChunk: () => this.setState({ ck: 'idle' }),
+        makeChunks: () => this.setState({ ck: 'done', open: { ...st.open, [s.id]: true } })
+      };
+    });
+    const ckQs = D.ckQs.map((q, qi) => ({ q: q.q, opts: q.opts.map((label, oi) => ({ label, cls: (st.cka[qi] ?? 0) === oi ? 'is-on' : '', p: (st.cka[qi] ?? 0) === oi ? 'true' : 'false', pick: () => this.setState({ cka: { ...st.cka, [qi]: oi } }) })) }));
+    // claims rail
+    const people = D.people.map((pp) => ({
+      ...pp,
+      sessions: pp.sessions.map((x) => ({
+        ...x, sessCls: x.who && STARS[x.who] ? 'sess-' + x.who : '', hasStar: !!(x.who && STARS[x.who]), star: x.who ? (STARS[x.who] || '') : '',
+        claims: x.ids.map((id) => {
+          const isSpec = id.startsWith('spec ');
+          const c = isSpec ? null : chunks.find((k) => k.id === id);
+          const cl = isSpec ? specClaims[id.slice(5)] : (c && c.claim);
+          const gone = !cl;
+          const mine = pp.you;
+          const heldK = cl && cl.kind === 'held';
+          return {
+            id: isSpec ? id : id, t: isSpec ? (D.specs.find((s) => 'spec ' + s.id === id) || {}).title : (c ? c.t : ''),
+            exp: gone ? 'released' : heldK ? 'held · never expires' : cl.exp || (cl.since + ' · ' + (cl.left || '24h') + ' left'),
+            expCls: 'exp' + (heldK ? ' is-held' : '') + (cl && cl.stale ? ' is-stale' : ''),
+            cls: 'cr-claim' + (gone ? ' is-gone' : '') + (st.railHover === id ? ' is-hover' : ''),
+            canRelease: !gone && (mine || owner) && !(cl && cl.kind === 'cloud'), canReassign: !gone && owner && !mine,
+            noActs: gone || !((mine || owner) && !(cl && cl.kind === 'cloud')),
+            release: () => { if (isSpec) this.setState({ specOv: { ...st.specOv, [id.slice(5)]: null } }); else this.setOv(id, { claim: null, state: c && (c.state === 'claimed' || c.state === 'building') ? 'ready' : c.state }); },
+            reassign: () => { if (!isSpec) this.setOv(id, { claim: mkClaim('claim') }); }
+          };
+        })
+      }))
+    }));
+    const pr = D.planPr;
+    const planPr = { show: true, ...pr, adds: pr.adds.concat(ck === 'done' ? D.ckChunks.map((c) => ({ id: c.id, t: c.t })) : []) };
+    if (ck === 'done') { planPr.title = D.ckPrTitle; planPr.note = D.ckPrNote; }
+    const so = {}, fi = {};
+    ['next', 'spec', 'size', 'claim'].forEach((k) => { so[k + 'Cls'] = sort === k ? 'is-on' : ''; so[k + 'P'] = sort === k ? 'true' : 'false'; so[k] = () => this.setState({ sort: k }); });
+    ['mine', 'unclaimed', 'held'].forEach((k) => { fi[k + 'Cls'] = flt[k] ? 'is-on' : ''; fi[k + 'P'] = flt[k] ? 'true' : 'false'; fi[k] = () => this.setState({ flt: { ...flt, [k]: !flt[k] } }); });
+    const ckNote = owner ? 'They land on main as soon as you make them.' : 'They go up as a plan PR for ' + D.ownerName + ' to review.';
+    return { theme, links, isOwner: owner, isContrib: !owner, repo: D.repo, ownerName: D.ownerName, sub: D.sub, modeLabel: owner ? 'Owner · plan changes land on main' : 'Contributor · plan changes go up as plan PRs',
+      isAll: view === 'all', isSpec: view === 'spec', showAll: () => this.setState({ view: 'all' }), showSpec: () => this.setState({ view: 'spec' }),
+      protected: prot, items, specs, ckQs, ckNote, people, planPr, so, fi, railNote: owner ? 'you can release or reassign any claim' : 'your own claims show actions',
+      closePop: () => this.setState({ pop: null }) };
+  }
+  setOv(id, patch) { this.setState({ ov: { ...this.state.ov, [id]: { ...(this.state.ov[id] || {}), ...patch } } }); }
+  tidepool() {
+    const you = (who, since, left, extra) => ({ kind: 'sess', person: 'you', who, label: who, since, left, ...(extra || {}) });
+    return {
+      repo: 'tidepool', ownerName: 'mira', protected: true,
+      sub: 'tidepool · 4 specs · 18 chunks · 6 closed · claims expire after 24h unless held',
+      specs: [
+        { id: '11', title: 'Offline maps', file: 'spec/11-maps.md', open: false },
+        { id: '12', title: 'Sync across devices', file: 'spec/12-sync.md', open: true },
+        { id: '13', title: 'Search, photos and export', file: 'spec/13-field-tools.md', open: true },
+        { id: '14', title: 'Tides', file: 'spec/14-tides.md', open: false }
+      ],
+      order: ['14.2', '12.4', '12.5', '13.4', '13.5', '11.7', '12.6', '12.3', '11.6', '14.1', '14.3', '14.4'],
+      chunks: [
+        { id: '14.2', spec: '14', t: 'Tide station picker', size: 'S', state: 'ready', asap: true, claim: null },
+        { id: '12.4', spec: '12', t: 'Merge view as a sheet over the entry', size: 'M', state: 'claimed', asap: true, claim: you('vega', '2h 19m', '21h 41m') },
+        { id: '12.5', spec: '12', t: 'Sync status badge, icon and text', size: 'S', state: 'claimed', claim: you('vega', '2h 19m', '21h 41m') },
+        { id: '13.4', spec: '13', t: 'Export a season of entries as PDF', size: 'M', state: 'claimed', plotted: '#151', claim: you('sirius', '6m', '23h 54m') },
+        { id: '13.5', spec: '13', t: 'PDF page layout and cover', size: 'S', state: 'ready', plotted: '#151', claim: null },
+        { id: '11.7', spec: '11', t: 'Pins for saved sites on the offline map', size: 'M', state: 'ready', ai: true, claim: null },
+        { id: '12.6', spec: '12', t: 'Sync history screen', size: 'S', state: 'claimed', claim: { kind: 'other', person: 'jun', label: 'jun · orion', since: '1h 05m', left: '22h 55m', initial: 'j' } },
+        { id: '12.3', spec: '12', t: 'Conflict resolution for edited entries', size: 'L', state: 'building', claim: you('vega', '2h 19m', '21h 41m') },
+        { id: '11.6', spec: '11', t: 'Prefetch offline map tiles', size: 'M', state: 'building', claim: { kind: 'other', person: 'you', label: 'polaris · terminal', since: '48m', left: '23h 12m', initial: 'p' } },
+        { id: '14.1', spec: '14', t: 'Tide table widget', size: 'M', state: 'building', claim: you('altair', 'fell over 26m ago', '19h 58m', { stale: true, exp: 'fell over · 19h 58m left' }) },
+        { id: '14.3', spec: '14', t: 'Tide station list', size: 'S', state: 'review', claim: { kind: 'cloud', person: 'cloud', label: 'loop #417', since: 'PR #153', exp: 'in review · PR #153' } },
+        { id: '14.4', spec: '14', t: 'Live tide heights', size: 'L', state: 'ready', claim: { kind: 'held', person: 'mira', label: 'mira · held', since: 'never expires' } },
+        { id: '11.5', spec: '11', t: 'Download a region for offline use', size: 'M', state: 'closed', landed: 'closed · in #141' },
+        { id: '12.1', spec: '12', t: 'Sync queue survives restarts', size: 'M', state: 'closed', landed: 'closed · in #148' },
+        { id: '12.2', spec: '12', t: 'Retry with backoff', size: 'S', state: 'closed', landed: 'closed · in #148' },
+        { id: '13.1', spec: '13', t: 'Fuzzy species search', size: 'S', state: 'closed', landed: 'closed · vega package' },
+        { id: '13.2', spec: '13', t: 'Compress photos on import', size: 'M', state: 'closed', landed: 'closed · vega package' },
+        { id: '13.6', spec: '13', t: 'Reject photos over 20 MB with a message', size: 'S', state: 'closed', landed: 'closed · vega package' }
+      ],
+      specClaims: {},
+      reassignTo: null,
+      ckSpec: '', ckQs: [], ckChunks: [], ckPrTitle: '', ckPrNote: '',
+      planPr: { cls: 'planpr', title: 'Plan PR #151 · adds 2 chunks to spec 13', pillCls: 'pill pill-pr is-open', pill: 'open', adds: [{ id: '13.4', t: 'Export a season of entries as PDF' }, { id: '13.5', t: 'PDF page layout and cover' }], note: 'Opened 20 min ago from sirius. mira reviews it; until then both chunks show as just plotted.' },
+      people: [
+        { name: 'you', d: '4 sessions on this machine', initial: 'y', avCls: 'cr-av is-you', you: true, sessions: [
+          { who: 'vega', name: 'vega', d: 'Working', ids: ['12.3', '12.4', '12.5'] },
+          { who: 'sirius', name: 'sirius', d: 'Questions', ids: ['13.4'] },
+          { who: 'altair', name: 'altair', d: 'fell over', ids: ['14.1'] },
+          { who: '', name: 'polaris', d: 'terminal', ids: ['11.6'] } ] },
+        { name: 'mira', d: 'owner', initial: 'm', avCls: 'cr-av', you: false, sessions: [ { who: '', name: 'held', d: '', ids: ['14.4'] } ] },
+        { name: 'jun', d: 'contributor', initial: 'j', avCls: 'cr-av', you: false, sessions: [ { who: '', name: 'orion', d: 'Working', ids: ['12.6'] } ] },
+        { name: 'cloud loop', d: 'next run 03:30', initial: '', avCls: 'cr-av is-cloud', you: false, sessions: [ { who: '', name: 'run #417', d: '02:30', ids: ['14.3'] } ] }
+      ]
+    };
+  }
+  lantern() {
+    const deneb = { kind: 'sess', person: 'you', who: 'deneb', label: 'deneb', since: '3h 12m', left: '20h 48m' };
+    return {
+      repo: 'lantern', ownerName: 'you', protected: false,
+      sub: 'lantern · 6 specs · 16 chunks · 9 closed · you own this checkout',
+      specs: [
+        { id: '01', title: 'Search that jumps to headings', file: 'spec/01-search.md', open: false },
+        { id: '02', title: 'Sidebar that follows the page', file: 'spec/02-sidebar.md', open: false },
+        { id: '03', title: 'Search analytics, privately', file: 'spec/03-analytics.md', open: false },
+        { id: '04', title: 'Index every heading', file: 'spec/04-index.md', open: true },
+        { id: '05', title: 'Versioned docs', file: 'spec/05-versions.md', open: true },
+        { id: '06', title: 'Search inside code blocks', file: 'spec/06-code.md', open: true }
+      ],
+      order: ['4.2', '4.3', '4.4', '2.3', '2.4', '6.1', '6.2', '3.2'],
+      chunks: [
+        { id: '1.1', spec: '01', t: 'Jump to the right heading, not just the page', size: 'M', state: 'closed', landed: 'landed · a71e03c' },
+        { id: '1.2', spec: '01', t: 'Forgive typos in search', size: 'M', state: 'closed', landed: 'landed · 5be19d0' },
+        { id: '1.3', spec: '01', t: 'Keyboard-first search: / to focus, arrows to move', size: 'M', state: 'closed', landed: 'landed · 0c44a8e' },
+        { id: '1.4', spec: '01', t: 'Cache the index between builds', size: 'M', state: 'closed', landed: 'landed · 77f2b13' },
+        { id: '2.1', spec: '02', t: 'Sidebar highlights the section in view', size: 'S', state: 'closed', landed: 'landed · 1d9e6a4' },
+        { id: '2.2', spec: '02', t: 'Collapse long sections', size: 'S', state: 'closed', landed: 'landed · 9a03f5c' },
+        { id: '2.3', spec: '02', t: 'Remember scroll position per page', size: 'M', state: 'claimed', claim: { kind: 'other', person: 'theo', label: 'theo · lyra', since: '5h 30m', left: '18h 30m', initial: 't' } },
+        { id: '2.4', spec: '02', t: 'Sidebar on small screens', size: 'M', state: 'ready', claim: null },
+        { id: '3.1', spec: '03', t: 'Count searches with no results, nothing else', size: 'S', state: 'closed', landed: 'landed · e81c2f7' },
+        { id: '3.2', spec: '03', t: 'Weekly report of empty searches', size: 'M', state: 'ready', claim: { kind: 'held', person: 'you', label: 'you · held', since: 'never expires' } },
+        { id: '4.1', spec: '04', t: 'Front matter in the tokenizer', size: 'S', state: 'closed', landed: 'landed · 2c9d4b7' },
+        { id: '4.2', spec: '04', t: 'Index markdown headings', size: 'M', state: 'building', claim: null },
+        { id: '4.3', spec: '04', t: 'Rank title matches above body matches', size: 'S', state: 'ready', claim: null },
+        { id: '4.4', spec: '04', t: 'Anchors for API reference pages', size: 'M', state: 'ready', ai: true, claim: null },
+        { id: '6.1', spec: '06', t: 'Index code blocks with their language', size: 'M', state: 'ready', plotted: 'main', claim: null },
+        { id: '6.2', spec: '06', t: 'Filter results to code only', size: 'S', state: 'ready', plotted: 'main', claim: null }
+      ],
+      specClaims: { '04': deneb },
+      reassignTo: { kind: 'other', person: 'theo', label: 'theo · lyra', since: 'just now', left: '24h', initial: 't' },
+      ckSpec: '05',
+      ckQs: [
+        { q: 'Which versions can readers switch between?', opts: ['Latest and one back', 'Every tagged release'] },
+        { q: 'Where does the switcher live?', opts: ['Top of the sidebar', 'Page header'] },
+        { q: 'Show a banner on older versions?', opts: ['Yes, read-only banner', 'No banner'] }
+      ],
+      ckChunks: [
+        { id: '5.1', spec: '05', t: 'Version switcher at the top of the sidebar', size: 'M', state: 'ready', plotted: 'main', claim: null, bloom: true },
+        { id: '5.2', spec: '05', t: 'Build each tagged release into its own folder', size: 'L', state: 'ready', plotted: 'main', claim: null, bloom: true },
+        { id: '5.3', spec: '05', t: 'Read-only banner on older versions', size: 'S', state: 'ready', plotted: 'main', claim: null, bloom: true }
+      ],
+      ckPrTitle: 'Landed on main · specs 05 and 06', ckPrNote: 'You own lantern, so chunked and plotted work lands straight on main. No plan PR to wait for.',
+      planPr: { cls: 'planpr is-landed', title: 'Landed on main · spec 06', pillCls: 'pill pill-pr is-merged', pill: 'on main', adds: [{ id: '6.1', t: 'Index code blocks with their language' }, { id: '6.2', t: 'Filter results to code only' }], note: 'Plotted from deneb 2 min ago. You own lantern, so it landed directly.' },
+      people: [
+        { name: 'you', d: 'owner · 1 session', initial: 'y', avCls: 'cr-av is-you', you: true, sessions: [
+          { who: 'deneb', name: 'deneb', d: 'Working', ids: ['spec 04'] },
+          { who: '', name: 'held', d: '', ids: ['3.2'] } ] },
+        { name: 'theo', d: 'contributor', initial: 't', avCls: 'cr-av', you: false, sessions: [ { who: '', name: 'lyra', d: 'Working', ids: ['2.3'] } ] },
+        { name: 'cloud loop', d: 'idle until 01:30', initial: '', avCls: 'cr-av is-cloud', you: false, sessions: [] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

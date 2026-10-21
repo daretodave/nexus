@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cockpit · nexus</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./nexus.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Quicksand:wght@300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&text=%20%21%22%23%24%25%26%27%28%29%2A%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D~%E2%94%80%E2%94%81%E2%94%82%E2%94%83%E2%94%84%E2%94%85%E2%94%86%E2%94%87%E2%94%88%E2%94%89%E2%94%8A%E2%94%8B%E2%94%8C%E2%94%8D%E2%94%8E%E2%94%8F%E2%94%90%E2%94%91%E2%94%92%E2%94%93%E2%94%94%E2%94%95%E2%94%96%E2%94%97%E2%94%98%E2%94%99%E2%94%9A%E2%94%9B%E2%94%9C%E2%94%9D%E2%94%9E%E2%94%9F%E2%94%A0%E2%94%A1%E2%94%A2%E2%94%A3%E2%94%A4%E2%94%A5%E2%94%A6%E2%94%A7%E2%94%A8%E2%94%A9%E2%94%AA%E2%94%AB%E2%94%AC%E2%94%AD%E2%94%AE%E2%94%AF%E2%94%B0%E2%94%B1%E2%94%B2%E2%94%B3%E2%94%B4%E2%94%B5%E2%94%B6%E2%94%B7%E2%94%B8%E2%94%B9%E2%94%BA%E2%94%BB%E2%94%BC%E2%94%BD%E2%94%BE%E2%94%BF%E2%95%80%E2%95%81%E2%95%82%E2%95%83%E2%95%84%E2%95%85%E2%95%86%E2%95%87%E2%95%88%E2%95%89%E2%95%8A%E2%95%8B%E2%95%8C%E2%95%8D%E2%95%8E%E2%95%8F%E2%95%90%E2%95%91%E2%95%92%E2%95%93%E2%95%94%E2%95%95%E2%95%96%E2%95%97%E2%95%98%E2%95%99%E2%95%9A%E2%95%9B%E2%95%9C%E2%95%9D%E2%95%9E%E2%95%9F%E2%95%A0%E2%95%A1%E2%95%A2%E2%95%A3%E2%95%A4%E2%95%A5%E2%95%A6%E2%95%A7%E2%95%A8%E2%95%A9%E2%95%AA%E2%95%AB%E2%95%AC%E2%95%AD%E2%95%AE%E2%95%AF%E2%95%B0%E2%95%B1%E2%95%B2%E2%95%B3%E2%95%B4%E2%95%B5%E2%95%B6%E2%95%B7%E2%95%B8%E2%95%B9%E2%95%BA%E2%95%BB%E2%95%BC%E2%95%BD%E2%95%BE%E2%95%BF%E2%96%80%E2%96%81%E2%96%82%E2%96%83%E2%96%84%E2%96%85%E2%96%86%E2%96%87%E2%96%88%E2%96%89%E2%96%8A%E2%96%8B%E2%96%8C%E2%96%8D%E2%96%8E%E2%96%8F%E2%96%90%E2%96%91%E2%96%92%E2%96%93%E2%96%94%E2%96%95%E2%96%96%E2%96%97%E2%96%98%E2%96%99%E2%96%9A%E2%96%9B%E2%96%9C%E2%96%9D%E2%96%9E%E2%96%9F%E2%96%A0%E2%96%A1%E2%96%AA%E2%96%AB%E2%96%AC%E2%96%B2%E2%96%B3%E2%96%B4%E2%96%B5%E2%96%B6%E2%96%B7%E2%96%B8%E2%96%B9%E2%96%BA%E2%96%BB%E2%96%BC%E2%96%BD%E2%96%BE%E2%96%BF%E2%97%80%E2%97%81%E2%97%82%E2%97%83%E2%97%86%E2%97%87%E2%97%88%E2%97%8B%E2%97%8C%E2%97%8D%E2%97%8E%E2%97%8F%E2%97%90%E2%97%91%E2%97%92%E2%97%93%E2%97%94%E2%97%95%E2%97%9C%E2%97%9D%E2%97%9E%E2%97%9F%E2%97%A0%E2%97%A1%E2%97%A6%E2%97%AF%E2%9C%93%E2%9C%94%E2%9C%97%E2%9C%98%E2%86%90%E2%86%91%E2%86%92%E2%86%93%E2%86%94%E2%86%95%E2%86%96%E2%86%97%E2%86%98%E2%86%99%E2%86%A9%E2%86%AA%E2%86%B3%E2%86%B5%E2%87%A1%E2%87%A3%E2%87%A2%E2%87%A0%C2%B7%E2%80%A2%E2%80%A3%E2%80%A6%E2%80%93%E2%80%94%E2%80%98%E2%80%99%E2%80%9C%E2%80%9D%E2%80%B2%E2%80%B3%C3%97%C3%B7%C2%B1%E2%88%92%E2%89%88%E2%89%A0%E2%89%A4%E2%89%A5%C2%B0%E2%88%99%E2%8B%AF%E2%80%B9%E2%80%BA%C2%AB%C2%BB%C2%A7%C2%B6%E2%80%A0%E2%80%B0%E2%8C%98%E2%8C%A5%E2%87%A7%E2%8F%8E%E2%88%9E&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="nx app {{hushCls}}" data-theme="{{theme}}" style="width: 100%; height: 100vh; font-family: 'Fira Sans', system-ui, sans-serif; color: var(--text)">
+
+  <header class="topbar">
+    <a class="wordmark" href="{{links.fleet}}" aria-label="nexus, back to the fleet" style="color: var(--text); text-decoration: none"><span class="mark"></span>nexus</a>
+    <button class="switcher {{sess.cls}}" type="button" aria-haspopup="menu" aria-label="Switch session"><svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="{{sess.star}}"/></svg><span>{{sess.name}}</span><span class="others tb-long"><sc-for list="{{others}}" as="o" hint-placeholder-count="3"><svg class="star {{o.cls}}" viewBox="0 0 24 24" aria-hidden="true"><path d="{{o.star}}"/></svg></sc-for></span><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
+    <span class="repo tb-long"><b>{{repo}}</b></span>
+    <span class="git" aria-label="Git state">
+      <span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M6 8.2v7.6M18 8.2c0 5-12 3-12 7.6"/></svg><span class="br" style="max-width: 120px">{{git.branch}}</span></span>
+      <span class="tb-long" aria-label="worktree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7" width="11" height="12" rx="2"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h8.5A1.5 1.5 0 0 1 20 5.5V15a1.5 1.5 0 0 1-1.5 1.5H14.5"/></svg></span>
+      <span class="ab"><span class="up">{{git.up}}</span> <span class="dn">{{git.dn}}</span></span>
+      <span aria-label="{{git.dirtyLabel}}"><i class="{{git.dirtyCls}}"></i></span>
+      <sc-if value="{{git.hasPr}}" hint-placeholder-val="{{ true }}"><span class="ci-green"><span class="ci-dot"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></span><span class="pr">{{git.pr}}</span></span></sc-if>
+      <sc-if value="{{git.noPr}}" hint-placeholder-val="{{ false }}"><span class="c-3 tb-long">pushes as chunks land</span></sc-if>
+      <span class="tb-long"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>{{git.claims}}</span>
+    </span>
+    <span class="tb-spacer"></span>
+    <sc-if value="{{isOwner}}" hint-placeholder-val="{{ false }}"><span class="mode-chip is-owner"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Owner<span class="tb-long"> · pushes to main</span></span></sc-if>
+    <sc-if value="{{isContrib}}" hint-placeholder-val="{{ true }}"><span class="mode-chip is-contrib"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M6 8.2v7.6M18 15.8V9a3 3 0 0 0-3-3h-4"/><path d="M13 3.5 10.5 6 13 8.5"/></svg>Contributor<span class="tb-long"> · opens PRs</span></span></sc-if>
+    <button class="btn btn-s" type="button" aria-label="Run mode: by size"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M12 8.2v3.3M12 11.5 6.8 16M12 11.5l5.2 4.5"/></svg><span class="tb-long">By size</span><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
+    <span class="loop-status"><span class="loop-dot"></span><span><b class="tb-long">Cloud loop </b>next 03:30</span></span>
+    <button class="{{pauseCls}}" type="button" onClick="{{togglePause}}"><span class="pb-ic"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{pauseIcon}}"/></svg></span><span class="pb-text">{{pauseLabel}}<span class="pb-sub tb-long">{{pauseSub}}</span></span></button>
+  </header>
+
+  <nav class="phases" aria-label="Session phases">
+    <sc-for list="{{phases}}" as="p" hint-placeholder-count="4">
+      <a class="{{p.cls}}" href="{{p.href}}" style="flex: {{p.flex}}" aria-current="{{p.current}}">
+        <span class="ph-head"><span class="ph-dot"></span><span class="ph-name">{{p.name}}</span><span class="ph-meta">{{p.meta}}</span></span>
+        <span class="ph-rail"><sc-if value="{{p.hasFill}}" hint-placeholder-val="{{ false }}"><span class="fill" style="width: {{p.fill}}; background: {{p.fillBg}}"></span></sc-if><sc-for list="{{p.marks}}" as="mk" hint-placeholder-count="0"><span class="{{mk.cls}}" style="left: {{mk.at}}"></span></sc-for></span>
+      </a>
+    </sc-for>
+    <sc-if value="{{isOwner}}" hint-placeholder-val="{{ false }}"><span class="ph-end"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M3 12h5.8M15.2 12H21"/></svg>no package: chunks land on main</span></sc-if>
+  </nav>
+
+  <div class="shell">
+    <nav class="rail" aria-label="Views">
+      <a class="rail-item" href="{{links.fleet}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg><span>Fleet</span></a>
+      <a class="rail-item is-current" href="{{links.cockpit}}" aria-current="page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="9.5" ry="4.5"/></svg><span>Cockpit</span></a>
+      <a class="rail-item" href="{{links.heads}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="m7 9.5 3 2.5-3 2.5M12.5 15H17"/></svg><span>Heads-down</span></a>
+      <a class="rail-item" href="{{links.inbox}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5 6 5.5h12l2.5 8v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M3.5 13.5H8l1.5 2.5h5l1.5-2.5h4.5"/></svg><span>Oversight</span><span class="rail-badge">4</span></a>
+      <a class="rail-item" href="{{links.plan}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Plan</span></a>
+      <a class="rail-item" href="{{links.cloud}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4.5 4.5 0 0 1-.5 9z"/></svg><span>Cloud</span></a>
+      <a class="rail-item" href="{{links.git}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M6 8.2v7.6M18 8.2c0 5-12 3-12 7.6"/></svg><span>Git</span></a>
+      <span class="rail-spacer"></span>
+      <a class="rail-item" href="{{links.settings}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Settings</span></a>
+    </nav>
+
+    <div class="{{panesCls}}">
+      <section class="pane-left" aria-label="Conversation and context">
+
+        <sc-if value="{{isWorking}}" hint-placeholder-val="{{ true }}">
+          <div class="convo" aria-live="polite">
+            <sc-for list="{{convo}}" as="m" hint-placeholder-count="3">
+              <sc-if value="{{m.isAgent}}" hint-placeholder-val="{{ true }}">
+                <div class="msg">
+                  <span class="{{m.orbCls}}" style="margin-top: 1px"></span>
+                  <div style="min-width: 0">
+                    <div class="msg-meta"><b>{{m.name}}</b><span>{{m.time}}</span></div>
+                    <p class="msg-text">{{m.text}}</p>
+                    <div class="msg-tools">
+                      <sc-for list="{{m.tools}}" as="t" hint-placeholder-count="2">
+                        <div class="{{t.cls}}"><button class="log-row" type="button" aria-expanded="false"><svg class="ic ic-14 log-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><sc-if value="{{t.running}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{t.still}}" hint-placeholder-val="{{ true }}"><svg class="ic ic-14 log-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{t.icon}}"/></svg></sc-if><span class="log-tool">{{t.tool}}</span><span class="log-args">{{t.args}}</span><span class="diffstat"><span class="add">{{t.add}}</span><span class="del">{{t.del}}</span><span class="c-3">{{t.note}}</span></span><span class="log-dur">{{t.dur}}</span></button></div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{m.isYou}}" hint-placeholder-val="{{ false }}">
+                <div class="msg-you"><div class="msg-meta" style="margin: 0"><b>you</b><span>{{m.time}}</span></div><div class="bubble">{{m.text}}</div><sc-if value="{{m.pinned}}" hint-placeholder-val="{{ false }}"><span class="pinned-tag"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5h6l-1 6 3.5 3.5v1.5h-11V13L10 9.5z"/><path d="M12 14.5V21"/></svg>Pinned · read on the next step</span></sc-if></div>
+              </sc-if>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isStart}}" hint-placeholder-val="{{ false }}">
+          <div class="lp">
+            <div><h2 class="lp-title">Before vega starts</h2><p class="lp-sub">Every question this session will need, asked at once. Settle them and it works quietly for three to four hours.</p></div>
+            <div style="display: flex; align-items: center; gap: 12px"><span class="t-label">{{settledText}}</span><div class="qprog" style="flex: 1"><sc-for list="{{qprog}}" as="g" hint-placeholder-count="6"><i class="{{g.cls}}"></i></sc-for></div></div>
+            <sc-if value="{{hasCurrent}}" hint-placeholder-val="{{ true }}">
+              <div class="qstack">
+                <div class="qstack-top tug is-pending" style="padding: 14px 16px; gap: 10px">
+                  <div class="tug-head"><span class="orb orb-s st-blocked"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 9.2a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2.9-1.2 1.8v.5M12 17.4v.01"/></svg></span><span><span class="tug-who">{{curNum}}</span> <span class="tug-src">· for {{cur.chunk}}</span></span></div>
+                  <p class="tug-q" style="font-size: 15px; line-height: 22px">{{cur.q}}</p>
+                  <div class="tug-opts"><sc-for list="{{curOpts}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" type="button" onClick="{{o.pick}}">{{o.label}}<sc-if value="{{o.isRec}}" hint-placeholder-val="{{ false }}"><span class="rec">recommended</span></sc-if></button></sc-for></div>
+                  <div class="tug-foot"><input class="field tug-other" type="text" aria-label="Other answer" placeholder="Other…"><button class="btn btn-s tug-default" type="button" onClick="{{useDefault}}">Use the default and keep going</button></div>
+                </div>
+                <sc-if value="{{peek1}}" hint-placeholder-val="{{ true }}"><div class="qstack-peek"></div></sc-if>
+                <sc-if value="{{peek2}}" hint-placeholder-val="{{ true }}"><div class="qstack-peek p2"></div></sc-if>
+              </div>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow: hidden">
+              <sc-for list="{{answered}}" as="a" hint-placeholder-count="2"><div class="qrow"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--st-done)"><path d="m5.5 12.5 4 4 9-9"/></svg><span class="q">{{a.q}}</span><span class="a">{{a.a}}</span></div></sc-for>
+            </div>
+            <sc-if value="{{locked}}" hint-placeholder-val="{{ true }}">
+              <div class="startbar"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--text-3)"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="t-body-s c-2" style="flex: 1">{{lockText}}</span><button class="btn btn-s" type="button" onClick="{{acceptDefaults}}">Accept defaults</button><button class="btn btn-primary btn-s" type="button" disabled>Start working</button></div>
+            </sc-if>
+            <sc-if value="{{unlocked}}" hint-placeholder-val="{{ false }}">
+              <div class="startbar" style="box-shadow: var(--e-3)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--st-done)"><path d="m5.5 12.5 4 4 9-9"/></svg><span class="t-body-s" style="flex: 1">{{unlockText}}</span><a class="btn btn-primary" href="{{links.working}}">Start working<svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isReview}}" hint-placeholder-val="{{ false }}">
+          <div class="lp">
+            <div><h2 class="lp-title">Before vega packages</h2><p class="lp-sub">Three questions came up while it worked. Each card says what the agent assumed. Approve it, or change it and a fix is queued.</p></div>
+            <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow: hidden">
+              <sc-for list="{{rev}}" as="r" hint-placeholder-count="3">
+                <sc-if value="{{r.isApproved}}" hint-placeholder-val="{{ false }}">
+                  <div class="pcard is-approved" style="padding: 10px 14px; gap: 6px"><div class="pcard-top"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--st-done)"><path d="m5.5 12.5 4 4 9-9"/></svg><span>{{r.who}} · {{r.chunk}} · approved</span></div><div class="t-body-s"><span class="c-2">{{r.q}}</span> <b>{{r.final}}</b></div></div>
+                </sc-if>
+                <sc-if value="{{r.isPending}}" hint-placeholder-val="{{ true }}">
+                  <div class="pcard"><div class="pcard-top"><span class="park-mark"></span><span>{{r.who}} · {{r.chunk}} · parked {{r.time}}</span></div><p class="pcard-q">{{r.q}}</p><div class="pcard-assumed"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--st-blocked)"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>The agent assumed <b>{{r.assumed}}</b></span></div><div class="pcard-acts"><button class="btn btn-s" type="button" onClick="{{r.approve}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg>Approve</button><button class="btn btn-ghost btn-s" type="button" onClick="{{r.change}}">Change</button></div></div>
+                </sc-if>
+                <sc-if value="{{r.isChanging}}" hint-placeholder-val="{{ false }}">
+                  <div class="pcard is-changing"><div class="pcard-top"><span class="park-mark"></span><span>{{r.who}} · {{r.chunk}} · parked {{r.time}}</span></div><p class="pcard-q">{{r.q}}</p><div class="tug-opts"><sc-for list="{{r.alts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" type="button" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div><div class="pcard-acts"><button class="btn btn-primary btn-s" type="button" onClick="{{r.queue}}">Queue the fix</button><button class="btn btn-ghost btn-s" type="button" onClick="{{r.cancel}}">Cancel</button><span class="hint">A change queues a fix chunk</span></div></div>
+                </sc-if>
+                <sc-if value="{{r.isChanged}}" hint-placeholder-val="{{ false }}">
+                  <div class="pcard is-changed" style="padding: 10px 14px; gap: 6px"><div class="pcard-top"><span class="park-mark is-changed"></span><span>{{r.who}} · {{r.chunk}} · changed</span></div><div class="t-body-s"><span class="c-2">Now</span> <b>{{r.final}}</b></div><span class="fixq"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Fix queued as {{r.fix}} · runs before the package</span></div>
+                </sc-if>
+              </sc-for>
+            </div>
+            <sc-if value="{{revOpen}}" hint-placeholder-val="{{ true }}"><div class="startbar"><span class="park-mark"></span><span class="t-body-s c-2" style="flex: 1">{{revText}}</span><button class="btn btn-s" type="button" onClick="{{approveRest}}">Approve the rest</button></div></sc-if>
+            <sc-if value="{{revDone}}" hint-placeholder-val="{{ false }}"><div class="startbar" style="box-shadow: var(--e-3)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--st-done)"><path d="m5.5 12.5 4 4 9-9"/></svg><span class="t-body-s" style="flex: 1">All three settled. The package is ready to assemble.</span><a class="btn btn-primary" href="{{links.package}}">Package it<svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div></sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isPackage}}" hint-placeholder-val="{{ false }}">
+          <div class="lp" style="padding-top: 18px">
+            <div class="stack">
+              <div class="stack-base"><span class="pill pill-pr is-open"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M6 8.2v7.6M18 15.8V9a3 3 0 0 0-3-3h-4"/></svg><span class="num">#148</span></span><span><b>Offline sync queue</b> · in review · CI green</span></div>
+              <div class="pkg" style="gap: 12px; padding: 14px 16px 16px">
+                <div class="pkg-head"><span class="pkg-ic"><svg class="ic ic-20" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 8.5 4.5-8.5 4.5L3.5 8z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16 8.5 4.5 8.5-4.5"/></svg></span><span style="flex: 1; min-width: 0"><span class="pkg-title" style="display: block">Sync conflicts and photo import</span><span class="pkg-sub">nexus/vega-2 → stacks on #148</span></span></div>
+                <div class="pkg-strip"><div>chunks <span class="ok"><i class="g">✓</i></span> 13.1  <span class="ok"><i class="g">✓</i></span> 13.2  <span class="ok"><i class="g">✓</i></span> 12.3  <span class="ok"><i class="g">✓</i></span> 12.4  <span class="ok"><i class="g">✓</i></span> 12.5  <span class="ok"><i class="g">✓</i></span> 13.6</div><div>AC     <span class="a">████████████████████████</span> 14/14  <span class="d">3h 52m</span></div></div>
+                <div class="pkg-grid" style="gap: 10px 16px">
+                  <div class="pkg-sec">
+                    <span class="pkg-k">Chunks closed · 6</span>
+                    <div class="pkg-row"><span class="id">13.1</span><span class="t">Fuzzy species search</span><span class="m">3/3</span></div>
+                    <div class="pkg-row"><span class="id">13.2</span><span class="t">Compress photos on import</span><span class="m">2/2</span></div>
+                    <div class="pkg-row"><span class="id">12.3</span><span class="t">Conflict resolution</span><span class="m">3/3</span></div>
+                    <div class="pkg-row"><span class="id">12.4</span><span class="t">Merge view</span><span class="m">3/3</span></div>
+                    <div class="pkg-row"><span class="id">12.5</span><span class="t">Sync status in the header</span><span class="m">2/2</span></div>
+                    <div class="pkg-row"><span class="id">13.6</span><span class="t">Reject photos over 20 MB</span><span class="m">1/1</span></div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0">
+                    <div class="pkg-sec">
+                      <span class="pkg-k">Defaults taken · 3</span>
+                      <div class="pkg-row" style="grid-template-columns: 12px minmax(0, 1fr) auto"><span class="park-mark is-ok"></span><span class="t">Tie: keep both, flag</span><span class="m">ok</span></div>
+                      <div class="pkg-row" style="grid-template-columns: 12px minmax(0, 1fr) auto"><span class="park-mark is-ok"></span><span class="t">Latin names too</span><span class="m">ok</span></div>
+                      <div class="pkg-row" style="grid-template-columns: 12px minmax(0, 1fr) auto"><span class="park-mark is-changed"></span><span class="t">Over 20 MB: reject</span><span class="m">13.6</span></div>
+                    </div>
+                    <div class="pkg-sec"><span class="pkg-k">Answers given · 6</span><span class="t-body-s c-2">4 answered, 2 defaults, all quoted in the description.</span></div>
+                  </div>
+                </div>
+                <div class="retarget"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Targets <b>#148</b>'s branch; retargets to main by itself when #148 merges.</span></div>
+                <div class="pkg-foot"><button class="btn btn-primary" type="button"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M6 8.2v7.6M18 15.8V9a3 3 0 0 0-3-3h-4"/><path d="M13 3.5 10.5 6 13 8.5"/></svg>Open pull request</button><button class="btn btn-ghost" type="button">Edit description</button><span class="tb-spacer"></span><span class="t-mono-xs c-3">+1,214 −388</span></div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <div class="dock">
+          <sc-if value="{{showTray}}" hint-placeholder-val="{{ true }}">
+            <div class="tray">
+              <a class="tray-head" href="{{links.inbox}}" style="color: var(--text-2); text-decoration: none"><span class="tray-count">{{trayCount}}</span><b>parked</b><span>· defaults taken · you review them at the end</span></a>
+              <div class="{{trayItem.cls}}"><span class="park-mark"></span><span style="min-width: 0"><span class="parked-q" style="display: block">{{trayItem.q}}</span><span class="parked-a" style="display: block">{{trayItem.who}} assumed <b>{{trayItem.a}}</b></span></span><span class="parked-t">{{trayItem.t}}</span></div>
+            </div>
+          </sc-if>
+          <div class="{{ctxCls}}" aria-label="What this session knows">
+            <sc-for list="{{ctx}}" as="c" hint-placeholder-count="6">
+              <div class="{{c.cls}}"><span class="ctx-k">{{c.k}}</span><span class="ctx-v"><sc-if value="{{c.strata}}" hint-placeholder-val="{{ false }}"><span class="strata" aria-hidden="true"><i style="width: {{c.s1}}"></i><i style="width: {{c.s2}}"></i><i style="width: {{c.s3}}"></i><i class="room"></i></span></sc-if><span class="trunc">{{c.v}}</span></span><span class="ctx-m">{{c.m}}</span></div>
+            </sc-for>
+          </div>
+          <sc-if value="{{plainComposer}}" hint-placeholder-val="{{ true }}">
+            <div class="composer">
+              <textarea rows="2" aria-label="Message the session" placeholder="Nudge the run, or type / for commands"></textarea>
+              <div class="composer-bar">
+                <button class="tool-btn" type="button" aria-label="Attach files"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5 12 19.5a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/></svg></button>
+                <button class="tool-btn" type="button"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5h6l-1 6 3.5 3.5v1.5h-11V13L10 9.5z"/><path d="M12 14.5V21"/></svg>Pin</button>
+                <span class="spacer"></span>
+                <span class="composer-hint tb-long"><span class="kbd">/</span>commands</span>
+                <button class="send" type="button" aria-label="Send" disabled><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"/></svg></button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{routeComposer}}" hint-placeholder-val="{{ false }}">
+            <div class="composer has-route is-typed is-focus">
+              <textarea rows="1" aria-label="Message the session" placeholder="Add a way to search inside code blocks"></textarea>
+              <div class="route-slot">
+                <button class="route" type="button"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="1.6"/><circle cx="12" cy="7" r="1.6"/><circle cx="19" cy="14" r="1.6"/><path d="M6.3 15.8l4.4-7.4M13.4 8.1l4.3 4.8"/></svg><span class="cmd">/plot</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
+                <span class="choice" role="radiogroup" aria-label="How far to take it"><input type="radio" name="ck-plot" id="ck-plan" checked><label for="ck-plan">Plan it</label><input type="radio" name="ck-plot" id="ck-do"><label for="ck-do">Plan it and do it</label></span>
+              </div>
+              <div class="route-why">Owner checkout: the plan change lands on main directly.</div>
+              <div class="composer-bar"><span class="spacer"></span><span class="composer-hint"><span class="kbd">⏎</span>plan it</span><button class="send" type="button" aria-label="Send"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"/></svg></button></div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{showTether}}" hint-placeholder-val="{{ true }}"><span class="tether-l" aria-hidden="true"></span></sc-if>
+      </section>
+
+      <section class="pane-right" aria-label="Agent stage">
+        <div class="stage">
+          <div class="starfield"></div>
+          <div class="stage-label"><span class="t-caps c-2">Agent stage</span><span class="cap">{{stageCount}}</span></div>
+          <sc-for list="{{fils}}" as="f" hint-placeholder-count="6">
+            <div class="{{f.cls}}" style="left: {{f.l}}; top: {{f.t}}; width: {{f.w}}; height: {{f.h}}"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="{{f.d}}"/><sc-if value="{{f.flow}}" hint-placeholder-val="{{ false }}"><path class="flow" d="{{f.d}}"/></sc-if></svg></div>
+          </sc-for>
+          <sc-for list="{{nodes}}" as="n" hint-placeholder-count="6">
+            <div class="{{n.cls}}" style="left: {{n.x}}; top: {{n.y}}">
+              <sc-if value="{{n.isOrb}}" hint-placeholder-val="{{ true }}"><span class="{{n.orbCls}}"><sc-if value="{{n.hasGlyph}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: {{n.sw}}"><path d="{{n.glyph}}"/></svg></sc-if></span></sc-if>
+              <sc-if value="{{n.isJunction}}" hint-placeholder-val="{{ false }}"><span class="junction"></span></sc-if>
+              <sc-if value="{{n.isPkg}}" hint-placeholder-val="{{ false }}"><span class="pkg-node" style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%)"><svg class="ic ic-24" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 8.5 4.5-8.5 4.5L3.5 8z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16 8.5 4.5 8.5-4.5"/></svg></span></sc-if>
+              <sc-if value="{{n.parked}}" hint-placeholder-val="{{ false }}"><span class="park-mark" style="position: absolute; left: {{n.pmx}}; top: {{n.pmy}}; box-shadow: 0 0 0 2px var(--bg)"></span></sc-if>
+              <div class="node-cap" style="top: {{n.capTop}}"><span class="node-label">{{n.label}}</span><span class="{{n.toolCls}}">{{n.tool}}</span></div>
+            </div>
+          </sc-for>
+          <sc-if value="{{showDrop}}" hint-placeholder-val="{{ false }}"><div class="drop" style="left: 50%; top: 63%"><span class="pill" style="box-shadow: 0 0 24px -6px color-mix(in oklab, var(--st-done) 60%, transparent)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M3 12h5.8M15.2 12H21"/></svg><span class="sha">2c9d4b7</span><span class="msg">4.1 landed on main</span></span></div></sc-if>
+          <sc-if value="{{showBasin}}" hint-placeholder-val="{{ true }}">
+            <div class="basin" aria-label="Package forming">
+              <div class="basin-head"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 8.5 4.5-8.5 4.5L3.5 8z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/></svg><b>Package</b><span>{{basinHead}}</span></div>
+              <div class="basin-row"><sc-for list="{{basin}}" as="b" hint-placeholder-count="3"><span class="{{b.cls}}"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true" style="color: {{b.color}}"><circle cx="8" cy="8" r="6"/><path class="f" d="{{b.moon}}"/></svg><span class="sha">{{b.id}}</span><span class="msg">{{b.title}}</span></span></sc-for></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{showRiver}}" hint-placeholder-val="{{ false }}">
+            <div class="river" aria-label="Shipped to main">
+              <svg class="river-wave" viewBox="0 0 100 18" preserveAspectRatio="none" aria-hidden="true"><path d="M0 9C10 3 20 15 30 9S50 3 60 9 80 15 100 9"/><path d="M0 12C12 7 24 16 36 11S60 6 72 11 90 15 100 11"/></svg>
+              <span class="river-label"><span class="t-caps c-2">Shipped to main</span><span class="cap">3 tonight</span></span>
+              <div class="river-flow"><sc-for list="{{river}}" as="rv" hint-placeholder-count="3"><span class="pill"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M3 12h5.8M15.2 12H21"/></svg><span class="sha">{{rv.sha}}</span><span class="msg">{{rv.msg}}</span><span class="when">{{rv.when}}</span></span></sc-for></div>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"phase":{"editor":"enum","options":["start","working","review","package"],"default":"working"},"mode":{"editor":"enum","options":["contributor","owner"],"default":"contributor"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      paused: false,
+      answers: { 0: { a: 'Icon and text', how: 'answered' }, 1: { a: 'Sheet over the entry', how: 'answered' } },
+      rev: [{ s: 'approved', pick: 0 }, { s: 'changing', pick: 1 }, { s: 'pending', pick: 0 }]
+    };
+  }
+  renderVals() {
+    const theme = this.props.theme ?? 'dark';
+    const phase = this.props.phase ?? 'working';
+    const mode = this.props.mode ?? 'contributor';
+    const L = theme === 'light' ? 'Light' : '';
+    const isOwner = mode === 'owner';
+    const owner = isOwner;
+    const ph = owner ? 'working' : phase;
+    const S4 = 'M12 2C12.6 8.2 15.8 11.4 22 12C15.8 12.6 12.6 15.8 12 22C11.4 15.8 8.2 12.6 2 12C8.2 11.4 11.4 8.2 12 2Z';
+    const S5 = 'M12 2l2.9 6.6 7.1.7-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.3l7.1-.7z';
+    const S6 = 'M12 2l2.6 5.5H21l-3.4 4.5L21 16.5h-6.4L12 22l-2.6-5.5H3L6.4 12 3 7.5h6.4z';
+    const S8 = 'M12 2l2.1 5.1L19.1 5l-2.1 5L22 12l-5 2 2.1 5-5-2.1L12 22l-2-5-5 2.1 2.1-5L2 12l5-2-2.1-5 5 2.1z';
+    const G = { idle: '', thinking: 'M6.5 12h.01M12 12h.01M17.5 12h.01', tool: 'm6.5 8.5 4 3.5-4 3.5M12.5 16h5', writing: 'M5 19.5l1-4.5L15.8 5.2a2.1 2.1 0 0 1 3 3L9 18z', blocked: 'M9.3 9.2a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2.9-1.2 1.8v.5M12 17.4v.01', done: 'm6 12.5 4 4 8-9', failed: 'M8 8l8 8M16 8l-8 8' };
+    const TI = {
+      Read: 'M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8zM14 3.5V8h4.5',
+      Edit: 'M5 19.5l1-4.5L15.8 5.2a2.1 2.1 0 0 1 3 3L9 18z',
+      Grep: 'M11 5a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM20 20l-4.5-4.5',
+      Task: 'M12 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM18 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM12 8.2v3.3M12 11.5 6.8 16M12 11.5l5.2 4.5',
+      Bash: 'M5.5 4.5h13A2.5 2.5 0 0 1 21 7v10a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V7a2.5 2.5 0 0 1 2.5-2.5zM7 9.5l3 2.5-3 2.5M12.5 15H17'
+    };
+    const links = {
+      fleet: 'Fleet' + L + '.dc.html', cockpit: (owner ? 'CockpitOwner' : 'Cockpit') + L + '.dc.html', heads: 'HeadsDown' + L + '.dc.html',
+      inbox: 'Inbox' + L + '.dc.html', plan: (owner ? 'BoardOwner' : 'Board') + L + '.dc.html', cloud: 'CloudLoop' + L + '.dc.html',
+      git: 'GitPanel' + L + '.dc.html', settings: (owner ? 'Settings' : 'SettingsContributor') + L + '.dc.html',
+      start: 'CockpitStart' + L + '.dc.html', working: 'Cockpit' + L + '.dc.html', review: 'CockpitReview' + L + '.dc.html', package: 'CockpitPackage' + L + '.dc.html'
+    };
+
+    const sess = owner ? { name: 'deneb', cls: 'sess-deneb', star: S6 } : { name: 'vega', cls: 'sess-vega', star: S4 };
+    const others = owner
+      ? [{ cls: 'sess-vega', star: S4 }, { cls: 'sess-sirius', star: S5 }, { cls: 'sess-altair', star: S8 }]
+      : [{ cls: 'sess-sirius', star: S5 }, { cls: 'sess-deneb', star: S6 }, { cls: 'sess-altair', star: S8 }];
+    const git = owner
+      ? { branch: 'main', up: '↑0', dn: '↓0', dirtyCls: 'dirty is-clean', dirtyLabel: 'clean', hasPr: false, noPr: true, pr: '', claims: '2' }
+      : { branch: 'nexus/vega-2', up: '↑7', dn: '↓0', dirtyCls: 'dirty', dirtyLabel: 'uncommitted changes', hasPr: true, noPr: false, pr: '#148', claims: '3' };
+
+    const grad = 'linear-gradient(90deg, var(--aurora-cyan), var(--aurora))';
+    const mk = (cls, at) => ({ cls, at });
+    const seg = (o) => ({
+      cls: 'ph ' + o.kind + (o.done ? ' is-done' : '') + (o.now ? ' is-now' : '') + (o.ask ? ' is-ask' : ''),
+      href: o.href || '#phase', flex: o.flex || (o.kind === 'w' ? '5.5 1 0' : o.kind === 'p' ? '1.35 1 0' : '1.25 1 0'),
+      current: o.now ? 'step' : undefined, name: o.name, meta: o.meta || '', hasFill: !!o.fill, fill: o.fill || '0%',
+      fillBg: o.ask ? 'var(--st-blocked)' : grad, marks: o.marks || []
+    });
+    let phases;
+    if (owner) {
+      phases = [
+        seg({ kind: 'q', name: 'Questions', meta: '4 settled', done: true }),
+        seg({ kind: 'w', name: 'Working', meta: '1h 12m of 3–4h · 2 landed on main', now: true, fill: '32%', flex: '6.6 1 0', href: links.cockpit, marks: [mk('ship', '14%'), mk('ship', '27%'), mk('park', '22%'), mk('bead', '32%')] }),
+        seg({ kind: 'q', name: 'Questions', meta: '1 parked' })
+      ];
+    } else if (ph === 'start') {
+      phases = [
+        seg({ kind: 'q', name: 'Questions', meta: this.settledCount() + ' of 6', now: true, ask: true, fill: Math.round(this.settledCount() / 6 * 100) + '%', href: links.start }),
+        seg({ kind: 'w', name: 'Working', meta: '3–4h, unlocks when questions settle', href: links.working }),
+        seg({ kind: 'q', name: 'Questions', href: links.review }),
+        seg({ kind: 'p', name: 'Package', href: links.package })
+      ];
+    } else if (ph === 'review') {
+      phases = [
+        seg({ kind: 'q', name: 'Questions', meta: '6 settled', done: true, href: links.start }),
+        seg({ kind: 'w', name: 'Working', meta: '3h 41m · 5 chunks closed', done: true, href: links.working, marks: [mk('tick', '18%'), mk('tick', '37%'), mk('tick', '58%'), mk('tick', '79%'), mk('tick', '97%')] }),
+        seg({ kind: 'q', name: 'Questions', meta: this.revSettled() + ' of 3 reviewed', now: true, ask: true, fill: Math.round(this.revSettled() / 3 * 100) + '%', href: links.review }),
+        seg({ kind: 'p', name: 'Package', meta: 'waits on review', href: links.package })
+      ];
+    } else if (ph === 'package') {
+      phases = [
+        seg({ kind: 'q', name: 'Questions', done: true, href: links.start }),
+        seg({ kind: 'w', name: 'Working', meta: '3h 52m · 6 chunks incl. 1 fix', done: true, href: links.working }),
+        seg({ kind: 'q', name: 'Questions', meta: '3 reviewed', done: true, href: links.review }),
+        seg({ kind: 'p', name: 'Package', meta: 'ready · stacked', now: true, fill: '100%', href: links.package })
+      ];
+    } else {
+      phases = [
+        seg({ kind: 'q', name: 'Questions', meta: '6 settled', done: true, href: links.start }),
+        seg({ kind: 'w', name: 'Working', meta: '1h 47m of 3–4h · 2 chunks closed · 12.3 building', now: true, fill: '48%', href: links.working, marks: [mk('tick', '18%'), mk('tick', '37%'), mk('park', '14%'), mk('park', '31%'), mk('park', '47%'), mk('bead', '48%')] }),
+        seg({ kind: 'q', name: 'Questions', meta: '3 parked', href: links.review }),
+        seg({ kind: 'p', name: 'Package', meta: 'stacks on #148', href: links.package })
+      ];
+    }
+
+    const tool = (t, args, o = {}) => ({ cls: 'log' + (o.running ? ' is-running' : '') + (o.failed ? ' is-failed' : ''), tool: t, args, icon: TI[t] || TI.Read, running: !!o.running, still: !o.running, add: o.add || '', del: o.del || '', note: o.note || '', dur: o.dur || '' });
+    const agent = (name, time, st, text, tools) => ({ isAgent: true, isYou: false, pinned: false, name, time, text, tools, orbCls: 'orb orb-s st-' + st });
+    const you = (time, text, pinned) => ({ isAgent: false, isYou: true, time, text, pinned: !!pinned, tools: [] });
+    const convo = owner ? [
+      agent('main', '03:02', 'tool', '4.1 landed on main. Starting 4.2: index every markdown heading with its anchor, so search can jump straight to a section.', [tool('Read', 'src/index/tokenize.ts', { dur: '0.1s' }), tool('Grep', '"^#{1,6} " docs/', { note: '212 hits', dur: '0.3s' })]),
+      agent('main', '03:09', 'tool', 'Headings are indexed with slugs that match the renderer. Running the index tests before this lands on main.', [tool('Edit', 'src/index/headings.ts', { add: '+58', del: '−3', dur: '0.9s' }), tool('Task', 'docs · document heading search', { note: 'delegated', dur: '2m' }), tool('Bash', 'npm test -- index', { running: true, dur: '0:18' })])
+    ] : [
+      agent('main', '03:12', 'thinking', 'Field-level merge is in. Same-field conflicts are the last piece of 12.3: when both devices change one field, I keep both values and flag the entry.', [tool('Edit', 'src/sync/merge.ts', { add: '+84', del: '−12', dur: '1.2s' }), tool('Task', 'tests · three-way merge cases', { note: 'delegated', dur: '4m' }), tool('Bash', 'npm test -- sync', { running: true, dur: '0:42' })]),
+      you('03:14', 'keep merge.ts pure, no I/O in there', true),
+      agent('main', '03:15', 'thinking', 'Understood. merge.ts only takes values and returns values; the resolver does the I/O.', [tool('Edit', 'src/sync/resolver.ts', { add: '+31', del: '−4', dur: '0.8s' })])
+    ];
+
+    const layer = (k, v, m, d, extra = {}) => ({ k, v, m, cls: 'ctx-layer' + (d ? ' ' + d : ''), strata: !!extra.strata, s1: extra.s1 || '0%', s2: extra.s2 || '0%', s3: extra.s3 || '0%' });
+    let ctx;
+    if (owner) ctx = [
+      layer('Pinned', 'Slugs must match the renderer exactly', 'you · 02:40', 'ctx-pin'),
+      layer('Now', '4.2 Index markdown headings', 'AC 2/3 · 11:05', 'd2'),
+      layer('Spec', 'spec/04-index.md §4.2 · anchors match rendered ids', '2.6k', 'd2'),
+      layer('Claims', '4.2 now · 4.3 next', 'deneb holds 2', 'd3'),
+      layer('Last ship', '2c9d4b7 index: front matter in tokenizer', 'on main · 9m', 'd4'),
+      layer('Context', '74% room left', 'compacts at 10%', 'd5', { strata: true, s1: '4%', s2: '8%', s3: '14%' })
+    ];
+    else if (ph === 'start') ctx = [
+      layer('Plan', '13.1 · 13.2 · 12.3 · 12.4 · 12.5', '5 chunks', 'd2'),
+      layer('Claims', 'vega holds all five · stacks on #148', 'fresh', 'd3'),
+      layer('Last ship', '7c2e0d1 sync: retry with backoff (in #148)', 'yesterday', 'd4'),
+      layer('Context', '91% room left', 'fresh session', 'd5', { strata: true, s1: '3%', s2: '4%', s3: '2%' })
+    ];
+    else if (ph === 'review') ctx = [
+      layer('Now', 'Session review · parked questions', this.revSettled() + ' of 3', 'd2'),
+      layer('Closed', '13.1 · 13.2 · 12.3 · 12.4 · 12.5', '5 · 3h 41m', 'd3'),
+      layer('Last ship', '3e8d0b6 sync: status badge in the header', '6m ago', 'd4'),
+      layer('Context', '23% room left', 'compacts at 10%', 'd5', { strata: true, s1: '10%', s2: '30%', s3: '37%' })
+    ];
+    else if (ph === 'package') ctx = [
+      layer('Now', 'Package · Sync conflicts and photo import', 'ready', 'd2'),
+      layer('Stack', 'on #148 Offline sync queue · in review', 'CI green', 'd3'),
+      layer('Last ship', 'f2a64c1 photos: reject over 20 MB (13.6)', '1m ago', 'd4'),
+      layer('Context', '19% room left', '', 'd5', { strata: true, s1: '10%', s2: '32%', s3: '39%' })
+    ];
+    else ctx = [
+      layer('Pinned', 'Keep merge.ts pure, no I/O in there', 'you · 03:14', 'ctx-pin'),
+      layer('Now', '12.3 Conflict resolution for edited entries', 'AC 1/3 · 18:42', 'd2'),
+      layer('Spec', '§12.3 same field changed twice: keep both, flag', 'spec/12-sync.md', 'd2'),
+      layer('Claims', '12.3 now · 12.4 · 12.5 next', 'vega holds 3', 'd3'),
+      layer('Last ship', 'e5b71d2 sync: resolver keeps both values', '2m ago', 'd4'),
+      layer('Context', '62% room left', 'compacts at 10%', 'd5', { strata: true, s1: '6%', s2: '12%', s3: '20%' })
+    ];
+
+    const node = (o) => {
+      const st = o.st || 'idle';
+      const glyph = G[st] || '';
+      return {
+        x: o.x, y: o.atTray ? 'auto' : o.y,
+        cls: 'snode' + (o.atTray ? ' at-tray' : '') + (o.capUp ? ' cap-up' : ''),
+        isOrb: !o.junction && !o.pkg, isJunction: !!o.junction, isPkg: !!o.pkg,
+        orbCls: 'orb ' + (o.size || 'orb-m') + ' st-' + st + (o.main ? ' is-main' : ''),
+        hasGlyph: !!glyph, glyph, sw: st === 'thinking' ? '4' : '2.2',
+        label: o.label || '', tool: o.tool || '', toolCls: 'node-tool' + (o.bad ? ' is-bad' : ''),
+        capTop: o.capUp ? 'auto' : (o.capTop || '30px'),
+        parked: !!o.parked, pmx: o.pmx || '10px', pmy: o.pmy || '-22px'
+      };
+    };
+    const fil = (l, t, w, h, d, o = {}) => ({ l, t, w, h, d, flow: !!o.flow, cls: 'fil' + (o.dash ? ' is-flow' : '') + (o.quiet ? ' is-quiet' : '') + (o.tug ? ' is-tug' : '') });
+    const trayTop = 'calc(100% - var(--tray-y) - 64px)';
+    let nodes, fils, stageCount;
+    if (owner) {
+      stageCount = '4 agents · 2 working';
+      nodes = [
+        node({ x: '50%', y: '32%', size: 'orb-xl', st: 'tool', main: true, label: 'main · 4.2', tool: 'Bash npm test -- index · 0:18', capTop: '54px', parked: true, pmx: '30px', pmy: '-46px' }),
+        node({ x: '24%', y: '14%', st: 'done', label: 'explore', tool: 'Grep headings · 212 hits' }),
+        node({ x: '76%', y: '16%', st: 'writing', label: 'docs', tool: 'Edit docs/search.md' }),
+        node({ x: '80%', y: '48%', st: 'idle', label: 'check', tool: 'waiting on tests' })
+      ];
+      fils = [
+        fil('24%', '14%', '26%', '18%', 'M100 100C100 45 0 55 0 0', { flow: true }),
+        fil('50%', '16%', '26%', '16%', 'M0 100C0 45 100 55 100 0', { flow: true }),
+        fil('50%', '32%', '30%', '16%', 'M0 0C40 0 60 100 100 100', { quiet: true })
+      ];
+    } else if (ph === 'start') {
+      stageCount = 'session plan · 5 chunks';
+      nodes = [
+        node({ x: '50%', y: '36%', size: 'orb-xl', st: 'blocked', main: true, label: 'main', tool: 'planning the session', capTop: '54px' }),
+        node({ x: '24%', y: '16%', size: 'orb-s', st: 'idle', label: '13.1', tool: 'species search', capTop: '20px' }),
+        node({ x: '42%', y: '9%', size: 'orb-s', st: 'idle', label: '13.2', tool: 'photo import', capTop: '20px' }),
+        node({ x: '62%', y: '10%', size: 'orb-s', st: 'idle', label: '12.3', tool: 'conflicts', capTop: '20px' }),
+        node({ x: '79%', y: '20%', size: 'orb-s', st: 'idle', label: '12.4', tool: 'merge view', capTop: '20px' }),
+        node({ x: '84%', y: '44%', size: 'orb-s', st: 'idle', label: '12.5', tool: 'sync badge', capTop: '20px' })
+      ];
+      fils = [
+        fil('24%', '16%', '26%', '20%', 'M100 100C100 45 0 55 0 0', { quiet: true }),
+        fil('42%', '9%', '8%', '27%', 'M100 100C100 50 0 50 0 0', { quiet: true }),
+        fil('50%', '10%', '12%', '26%', 'M0 100C0 50 100 50 100 0', { quiet: true }),
+        fil('50%', '20%', '29%', '16%', 'M0 100C0 45 100 55 100 0', { quiet: true }),
+        fil('50%', '36%', '34%', '8%', 'M0 0C40 0 60 100 100 100', { quiet: true }),
+        fil('0', '236px', '50%', 'calc(36% - 236px)', 'M100 100C55 100 45 0 0 0', { tug: true, flow: true })
+      ];
+    } else if (ph === 'review') {
+      stageCount = 'all agents done · 3 assumptions marked';
+      nodes = [
+        node({ x: '50%', y: '30%', size: 'orb-xl', st: 'done', main: true, label: 'main', tool: 'waiting on your review', capTop: '54px' }),
+        node({ x: '22%', y: '14%', st: 'done', label: 'explore', tool: 'assumed: Latin names too', parked: true }),
+        node({ x: '48%', y: '8%', st: 'done', label: 'tests' }),
+        node({ x: '76%', y: '14%', st: 'done', label: 'check', tool: 'assumed: downscale', parked: true }),
+        node({ x: '86%', y: '40%', st: 'done', label: 'docs' }),
+        node({ x: '38%', y: '56%', junction: true, label: 'review', tool: 'workflow', capTop: '18px' }),
+        node({ x: '22%', y: '72%', size: 'orb-s', st: 'done', label: 'lint', capTop: '20px' }),
+        node({ x: '54%', y: '74%', size: 'orb-s', st: 'done', label: 'types', tool: '0 errors', capTop: '20px' }),
+        node({ x: '16%', y: '50%', size: 'orb-s', st: 'done', label: 'spec', tool: 'assumed: keep both', capTop: '20px', parked: true, pmx: '6px', pmy: '-18px' })
+      ];
+      fils = [
+        fil('22%', '14%', '28%', '16%', 'M100 100C100 40 0 60 0 0', { quiet: true }),
+        fil('48%', '8%', '2%', '22%', 'M100 100C100 50 0 50 0 0', { quiet: true }),
+        fil('50%', '14%', '26%', '16%', 'M0 100C0 40 100 60 100 0', { quiet: true }),
+        fil('50%', '30%', '36%', '10%', 'M0 0C40 0 60 100 100 100', { quiet: true }),
+        fil('38%', '30%', '12%', '26%', 'M100 0C100 50 0 50 0 100', { quiet: true }),
+        fil('22%', '56%', '16%', '16%', 'M100 0C100 50 0 50 0 100', { quiet: true, dash: true }),
+        fil('38%', '56%', '16%', '18%', 'M0 0C0 50 100 50 100 100', { quiet: true, dash: true }),
+        fil('16%', '50%', '22%', '6%', 'M100 100C60 100 40 0 0 0', { quiet: true, dash: true })
+      ];
+    } else if (ph === 'package') {
+      stageCount = '6 chunks gathered';
+      nodes = [
+        node({ x: '50%', y: '40%', pkg: true, label: 'package', tool: 'stacks on #148', capTop: '44px' }),
+        node({ x: '28%', y: '20%', size: 'orb-s', st: 'done', label: '13.1', capTop: '20px' }),
+        node({ x: '50%', y: '12%', size: 'orb-s', st: 'done', label: '13.2', capTop: '20px' }),
+        node({ x: '72%', y: '20%', size: 'orb-s', st: 'done', label: '12.3', capTop: '20px' }),
+        node({ x: '76%', y: '52%', size: 'orb-s', st: 'done', label: '12.4', capTop: '20px' }),
+        node({ x: '50%', y: '66%', size: 'orb-s', st: 'done', label: '12.5', capTop: '20px' }),
+        node({ x: '24%', y: '52%', size: 'orb-s', st: 'done', label: '13.6', tool: 'fix', capTop: '20px' })
+      ];
+      fils = [
+        fil('28%', '20%', '22%', '20%', 'M0 0C0 50 100 50 100 100', { flow: true }),
+        fil('calc(50% - 2px)', '12%', '4px', '28%', 'M50 0L50 100', { flow: true }),
+        fil('50%', '20%', '22%', '20%', 'M100 0C100 50 0 50 0 100', { flow: true }),
+        fil('50%', '40%', '26%', '12%', 'M100 100C60 100 40 0 0 0', { flow: true }),
+        fil('calc(50% - 2px)', '40%', '4px', '26%', 'M50 100L50 0', { flow: true }),
+        fil('24%', '40%', '26%', '12%', 'M0 100C40 100 60 0 100 0', { flow: true })
+      ];
+    } else {
+      stageCount = '8 agents · 4 working';
+      nodes = [
+        node({ x: '50%', y: '30%', size: 'orb-xl', st: 'thinking', main: true, label: 'main · 12.3', tool: 'planning resolver.ts', capTop: '54px' }),
+        node({ x: '22%', y: '14%', st: 'done', label: 'explore', tool: 'Grep updatedAt · 14 hits' }),
+        node({ x: '48%', y: '8%', st: 'writing', label: 'tests', tool: 'Edit merge.test.ts' }),
+        node({ x: '76%', y: '14%', st: 'tool', label: 'check', tool: 'Bash npm test · 0:42' }),
+        node({ x: '86%', y: '40%', st: 'idle', label: 'docs', tool: 'waiting on tests' }),
+        node({ x: '38%', y: '56%', junction: true, label: 'review', tool: 'workflow · 3 agents', capTop: '18px' }),
+        node({ x: '22%', y: '72%', size: 'orb-s', st: 'done', label: 'lint', tool: '0 problems', capTop: '20px' }),
+        node({ x: '54%', y: '74%', size: 'orb-s', st: 'failed', label: 'types', tool: 'tsc · retry 1/2', capTop: '20px', bad: true }),
+        node({ x: '14%', atTray: true, size: 'orb-s', st: 'tool', label: 'spec', tool: 'default taken · parked', capUp: true, parked: true, pmx: '6px', pmy: '-18px' })
+      ];
+      fils = [
+        fil('22%', '14%', '28%', '16%', 'M100 100C100 40 0 60 0 0', { flow: true }),
+        fil('48%', '8%', '2%', '22%', 'M100 100C100 50 0 50 0 0', { flow: true }),
+        fil('50%', '14%', '26%', '16%', 'M0 100C0 40 100 60 100 0', { flow: true }),
+        fil('50%', '30%', '36%', '10%', 'M0 0C40 0 60 100 100 100', { quiet: true }),
+        fil('38%', '30%', '12%', '26%', 'M100 0C100 50 0 50 0 100', { flow: true }),
+        fil('22%', '56%', '16%', '16%', 'M100 0C100 50 0 50 0 100', { dash: true, quiet: true }),
+        fil('38%', '56%', '16%', '18%', 'M0 0C0 50 100 50 100 100', { dash: true }),
+        fil('14%', trayTop, '24%', 'calc(var(--tray-y) + 64px - 44%)', 'M100 100C100 50 0 50 0 0', { dash: true }),
+        fil('0', trayTop, '14%', '64px', 'M100 0C55 0 45 100 0 100', { tug: true, flow: true })
+      ];
+    }
+
+    const full = 'M8 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z';
+    const half = 'M8 2a6 6 0 0 1 0 12z';
+    const bp = (id, title, kind) => ({ id, title, cls: 'pill' + (kind === 'slot' ? ' is-slot' : ''), moon: kind === 'closed' ? full : kind === 'building' ? half : '', color: kind === 'closed' ? 'var(--st-done)' : kind === 'building' ? 'var(--st-tool)' : 'var(--text-3)' });
+    let basin = [], basinHead = '';
+    if (!owner) {
+      if (ph === 'start') { basinHead = '· forms at the end · stacks on #148'; basin = [bp('13.1', 'planned', 'slot'), bp('13.2', 'planned', 'slot'), bp('12.3', 'planned', 'slot'), bp('12.4', 'planned', 'slot')]; }
+      else if (ph === 'review') { basinHead = '· 5 closed · waits on review'; basin = [bp('13.1', 'species search', 'closed'), bp('13.2', 'photos', 'closed'), bp('12.3', 'conflicts', 'closed'), bp('12.4', 'merge view', 'closed'), bp('12.5', 'badge', 'closed')]; }
+      else if (ph === 'package') { basinHead = '· ready · stacked on #148'; basin = [bp('13.1', 'species search', 'closed'), bp('13.2', 'photos', 'closed'), bp('12.3', 'conflicts', 'closed'), bp('12.4', 'merge view', 'closed'), bp('12.5', 'badge', 'closed'), bp('13.6', 'fix', 'closed')]; }
+      else { basinHead = '· forming · stacks on #148 · opens at the end'; basin = [bp('13.1', 'Fuzzy species search', 'closed'), bp('13.2', 'Compress photos on import', 'closed'), bp('12.3', 'building', 'building'), bp('12.4', 'next', 'slot')]; }
+    }
+    const river = [
+      { sha: '2c9d4b7', msg: 'index: front matter in tokenizer (4.1)', when: '02:54' },
+      { sha: 'a71e03c', msg: 'ci: cache the index between runs', when: '02:21' },
+      { sha: 'd40f3e2', msg: 'index: walk docs in a stable order (4.0)', when: '01:58' }
+    ];
+
+    // Questions (start): six questions asked at once
+    const QS = this.questions();
+    const ans = this.state.answers;
+    let cur = -1;
+    for (let i = 0; i < QS.length; i++) { if (!ans[i]) { cur = i; break; } }
+    const settled = Object.keys(ans).length;
+    const remaining = QS.length - settled;
+    const qprog = QS.map((q, i) => ({ cls: ans[i] ? (ans[i].how === 'default' ? 'def' : 'on') : (i === cur ? 'cur' : '') }));
+    const curQ = cur >= 0 ? QS[cur] : { q: '', chunk: '', opts: [], rec: 0 };
+    const curOpts = curQ.opts.map((label, i) => ({ label, isRec: i === curQ.rec, cls: 'tug-opt' + (i === curQ.rec ? ' is-rec' : ''), pick: () => this.answer(cur, label, 'answered') }));
+    const answered = QS.map((q, i) => ans[i] ? { q: q.q, a: ans[i].a + (ans[i].how === 'default' ? ' (default)' : '') } : null).filter(Boolean);
+    const nAnswered = Object.values(ans).filter((a) => a.how !== 'default').length;
+    const nDefault = settled - nAnswered;
+
+    // Questions (end): three parked questions to review
+    const REV = this.parked();
+    const rs = this.state.rev;
+    const fixIds = ['13.7', '13.6', '13.8'];
+    const rev = REV.map((r, i) => {
+      const s = rs[i];
+      return {
+        who: r.who, chunk: r.chunk, time: r.time, q: r.q, assumed: r.alts[0],
+        final: s.s === 'changed' ? r.alts[s.pick] : r.alts[0], fix: fixIds[i],
+        isApproved: s.s === 'approved', isPending: s.s === 'pending', isChanging: s.s === 'changing', isChanged: s.s === 'changed',
+        alts: r.alts.map((label, j) => ({ label, cls: 'tug-opt' + (s.pick === j && s.s === 'changing' ? ' is-chosen' : ''), pick: () => this.setRev(i, { s: 'changing', pick: j }) })),
+        approve: () => this.setRev(i, { s: 'approved', pick: 0 }),
+        change: () => this.setRev(i, { s: 'changing', pick: 1 }),
+        queue: () => this.setRev(i, { s: 'changed', pick: s.pick === 0 ? 1 : s.pick }),
+        cancel: () => this.setRev(i, { s: 'pending', pick: 0 })
+      };
+    });
+    const revLeft = rs.filter((s) => s.s === 'pending' || s.s === 'changing').length;
+
+    const paused = this.state.paused;
+    return {
+      theme, links, sess, others, repo: owner ? 'lantern' : 'tidepool', git,
+      isOwner: owner, isContrib: !owner,
+      isWorking: ph === 'working', isStart: ph === 'start', isReview: ph === 'review', isPackage: ph === 'package',
+      hushCls: (ph === 'start' || ph === 'review') ? 'is-hushed' : '',
+      panesCls: 'panes' + (owner ? ' has-route' : ''),
+      phases, convo, ctx, ctxCls: 'ctx' + (ph === 'working' ? '' : ' is-short'),
+      showTray: ph === 'working', showTether: ph === 'working' && !owner,
+      trayCount: owner ? '1' : '3',
+      trayItem: owner
+        ? { cls: 'parked', q: 'Index code blocks too, or prose only?', who: 'main', a: 'Prose only', t: '02:44' }
+        : { cls: 'parked is-arriving', q: 'Which edit wins on a timestamp tie?', who: 'spec', a: 'Keep both, flag the entry', t: '03:17' },
+      plainComposer: !owner, routeComposer: owner,
+      nodes, fils, stageCount,
+      showBasin: !owner, basin, basinHead, showRiver: owner, river, showDrop: owner,
+      // start phase
+      settledText: settled + ' of 6 settled', hasCurrent: cur >= 0, cur: curQ, curNum: (cur + 1) + ' of 6', curOpts,
+      peek1: remaining > 1, peek2: remaining > 2, answered, qprog,
+      locked: remaining > 0, unlocked: remaining === 0,
+      lockText: 'Answer ' + remaining + ' more, or take the defaults for the rest.',
+      unlockText: 'All 6 settled: ' + nAnswered + ' answered, ' + nDefault + ' defaults. About 3 to 4 hours of quiet work.',
+      useDefault: () => { if (cur >= 0) this.answer(cur, curQ.opts[curQ.rec], 'default'); },
+      acceptDefaults: () => this.acceptAll(),
+      // review phase
+      rev, revOpen: revLeft > 0, revDone: revLeft === 0,
+      revText: revLeft + ' still open. The package waits until each is settled.',
+      approveRest: () => this.setState({ rev: rs.map((s) => (s.s === 'pending' || s.s === 'changing') ? { s: 'approved', pick: 0 } : s) }),
+      // top bar
+      pauseCls: 'pause-btn' + (paused ? ' is-paused' : ''), pauseLabel: paused ? 'Resume' : 'Pause',
+      pauseSub: paused ? 'paused at 03:21' : 'after this step', pauseIcon: paused ? 'M8 5.5v13l10-6.5z' : 'M9 6v12M15 6v12',
+      togglePause: () => this.setState({ paused: !paused })
+    };
+  }
+  questions() {
+    return [
+      { q: 'Sync badge: icon only, or icon and text?', chunk: '12.5 Sync status', opts: ['Icon and text', 'Icon only'], rec: 0 },
+      { q: 'Show the merge view as a sheet over the entry, or as a full page?', chunk: '12.4 Merge view', opts: ['Sheet over the entry', 'Full page'], rec: 0 },
+      { q: 'Strip location data from imported photos?', chunk: '13.2 Photo import', opts: ['Strip it unless the user opts in', 'Keep it'], rec: 0 },
+      { q: 'Fuzzy search: how many typos should it forgive?', chunk: '13.1 Species search', opts: ['Up to 2', 'Up to 1', 'Exact only'], rec: 0 },
+      { q: 'After a week offline, warn before syncing?', chunk: '12.3 Conflicts', opts: ['Yes, show a summary first', 'No, just sync'], rec: 0 },
+      { q: 'Run the review workflow on every chunk, or only large ones?', chunk: 'run mode', opts: ['Only large ones, by size', 'Every chunk'], rec: 0 }
+    ];
+  }
+  parked() {
+    return [
+      { who: 'explore', chunk: '13.1', time: '02:01', q: 'Fuzzy search: match Latin names too?', alts: ['Yes, both names', 'Common names only'] },
+      { who: 'check', chunk: '13.2', time: '02:37', q: 'Photos over 20 MB: downscale or reject?', alts: ['Downscale to 4096 px', 'Reject with a message', 'Keep the original'] },
+      { who: 'spec', chunk: '12.3', time: '03:17', q: 'Two edits to the same field have identical timestamps. Which one wins?', alts: ['Keep both, flag the entry', 'Device edit wins', 'Server edit wins'] }
+    ];
+  }
+  settledCount() { return Object.keys(this.state.answers).length; }
+  revSettled() { return this.state.rev.filter((s) => s.s === 'approved' || s.s === 'changed').length; }
+  answer(i, a, how) { const answers = { ...this.state.answers }; answers[i] = { a, how }; this.setState({ answers }); }
+  acceptAll() { const QS = this.questions(); const answers = { ...this.state.answers }; QS.forEach((q, i) => { if (!answers[i]) answers[i] = { a: q.opts[q.rec], how: 'default' }; }); this.setState({ answers }); }
+  setRev(i, v) { const rev = this.state.rev.slice(); rev[i] = v; this.setState({ rev }); }
+}
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // The UI is prebuilt into dist/ and shipped in the package; the server
 // serves it as static files. No runtime bundler, no CDN.
 export default defineConfig({
-  root: 'ui',
+  root: 'src',
   base: './',
   plugins: [react()],
   build: {

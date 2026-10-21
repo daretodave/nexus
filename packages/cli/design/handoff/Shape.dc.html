@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shape the project · nexus</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./nexus.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Quicksand:wght@300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&text=%20%21%22%23%24%25%26%27%28%29%2A%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D~%E2%94%80%E2%94%81%E2%94%82%E2%94%83%E2%94%84%E2%94%85%E2%94%86%E2%94%87%E2%94%88%E2%94%89%E2%94%8A%E2%94%8B%E2%94%8C%E2%94%8D%E2%94%8E%E2%94%8F%E2%94%90%E2%94%91%E2%94%92%E2%94%93%E2%94%94%E2%94%95%E2%94%96%E2%94%97%E2%94%98%E2%94%99%E2%94%9A%E2%94%9B%E2%94%9C%E2%94%9D%E2%94%9E%E2%94%9F%E2%94%A0%E2%94%A1%E2%94%A2%E2%94%A3%E2%94%A4%E2%94%A5%E2%94%A6%E2%94%A7%E2%94%A8%E2%94%A9%E2%94%AA%E2%94%AB%E2%94%AC%E2%94%AD%E2%94%AE%E2%94%AF%E2%94%B0%E2%94%B1%E2%94%B2%E2%94%B3%E2%94%B4%E2%94%B5%E2%94%B6%E2%94%B7%E2%94%B8%E2%94%B9%E2%94%BA%E2%94%BB%E2%94%BC%E2%94%BD%E2%94%BE%E2%94%BF%E2%95%80%E2%95%81%E2%95%82%E2%95%83%E2%95%84%E2%95%85%E2%95%86%E2%95%87%E2%95%88%E2%95%89%E2%95%8A%E2%95%8B%E2%95%8C%E2%95%8D%E2%95%8E%E2%95%8F%E2%95%90%E2%95%91%E2%95%92%E2%95%93%E2%95%94%E2%95%95%E2%95%96%E2%95%97%E2%95%98%E2%95%99%E2%95%9A%E2%95%9B%E2%95%9C%E2%95%9D%E2%95%9E%E2%95%9F%E2%95%A0%E2%95%A1%E2%95%A2%E2%95%A3%E2%95%A4%E2%95%A5%E2%95%A6%E2%95%A7%E2%95%A8%E2%95%A9%E2%95%AA%E2%95%AB%E2%95%AC%E2%95%AD%E2%95%AE%E2%95%AF%E2%95%B0%E2%95%B1%E2%95%B2%E2%95%B3%E2%95%B4%E2%95%B5%E2%95%B6%E2%95%B7%E2%95%B8%E2%95%B9%E2%95%BA%E2%95%BB%E2%95%BC%E2%95%BD%E2%95%BE%E2%95%BF%E2%96%80%E2%96%81%E2%96%82%E2%96%83%E2%96%84%E2%96%85%E2%96%86%E2%96%87%E2%96%88%E2%96%89%E2%96%8A%E2%96%8B%E2%96%8C%E2%96%8D%E2%96%8E%E2%96%8F%E2%96%90%E2%96%91%E2%96%92%E2%96%93%E2%96%94%E2%96%95%E2%96%96%E2%96%97%E2%96%98%E2%96%99%E2%96%9A%E2%96%9B%E2%96%9C%E2%96%9D%E2%96%9E%E2%96%9F%E2%96%A0%E2%96%A1%E2%96%AA%E2%96%AB%E2%96%AC%E2%96%B2%E2%96%B3%E2%96%B4%E2%96%B5%E2%96%B6%E2%96%B7%E2%96%B8%E2%96%B9%E2%96%BA%E2%96%BB%E2%96%BC%E2%96%BD%E2%96%BE%E2%96%BF%E2%97%80%E2%97%81%E2%97%82%E2%97%83%E2%97%86%E2%97%87%E2%97%88%E2%97%8B%E2%97%8C%E2%97%8D%E2%97%8E%E2%97%8F%E2%97%90%E2%97%91%E2%97%92%E2%97%93%E2%97%94%E2%97%95%E2%97%9C%E2%97%9D%E2%97%9E%E2%97%9F%E2%97%A0%E2%97%A1%E2%97%A6%E2%97%AF%E2%9C%93%E2%9C%94%E2%9C%97%E2%9C%98%E2%86%90%E2%86%91%E2%86%92%E2%86%93%E2%86%94%E2%86%95%E2%86%96%E2%86%97%E2%86%98%E2%86%99%E2%86%A9%E2%86%AA%E2%86%B3%E2%86%B5%E2%87%A1%E2%87%A3%E2%87%A2%E2%87%A0%C2%B7%E2%80%A2%E2%80%A3%E2%80%A6%E2%80%93%E2%80%94%E2%80%98%E2%80%99%E2%80%9C%E2%80%9D%E2%80%B2%E2%80%B3%C3%97%C3%B7%C2%B1%E2%88%92%E2%89%88%E2%89%A0%E2%89%A4%E2%89%A5%C2%B0%E2%88%99%E2%8B%AF%E2%80%B9%E2%80%BA%C2%AB%C2%BB%C2%A7%C2%B6%E2%80%A0%E2%80%B0%E2%8C%98%E2%8C%A5%E2%87%A7%E2%8F%8E%E2%88%9E&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="nx ob " data-theme="{{theme}}" style="font-family: 'Fira Sans', system-ui, sans-serif"><div class="aurora-field" aria-hidden="true"><div class="aurora-blob b1"></div><div class="aurora-blob b2"></div><div class="aurora-blob b3"></div><div class="aurora-rays"></div></div><div class="starfield" aria-hidden="true"></div><header class="ob-top"><span class="wordmark"><span class="mark"></span>nexus</span><nav class="stepper" aria-label="Setup steps"><span class="stp-lines" aria-hidden="true"><i class="lit"></i><i class="lit"></i><i></i><i></i><i></i></span><a class="stp is-done" href="{{links.welcome}}"><span class="stp-star"></span><span class="stp-label">Welcome</span></a><a class="stp is-done" href="{{links.detect}}"><span class="stp-star"></span><span class="stp-label">Detect</span></a><a class="stp is-current" href="{{links.shape}}" aria-current="step"><span class="stp-star"></span><span class="stp-label">Shape</span></a><a class="stp" href="{{links.plot}}"><span class="stp-star"></span><span class="stp-label">Plot</span></a><a class="stp" href="{{links.cloud}}"><span class="stp-star"></span><span class="stp-label">Cloud loop</span></a><a class="stp" href="{{links.launch}}"><span class="stp-star"></span><span class="stp-label">Launch</span></a></nav><a class="btn btn-ghost btn-s" href="{{links.skip}}">Skip setup<svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m10 7 5 5-5 5"/></svg></a></header><main class="ob-main"><div class="shape-grid"><div class="ob-copy" style="gap: 20px"><div style="display: flex; flex-direction: column; gap: 8px"><span class="kicker">step 3 · shape the project</span><h1 class="t-display-s">A few friendly questions</h1></div><div class="ob-q"><div class="ob-q-h"><span class="n">1</span>What are you building?</div><textarea class="field" rows="2" aria-label="What are you building?">Docs search for our team handbook. Fast, forgiving of typos, and it jumps straight to the right heading.</textarea><span class="t-body-s c-3">nexus turns this into the first spec. Plain words are fine.</span></div><div class="ob-q"><div class="ob-q-h"><span class="n">2</span>Just you, or a team?</div><div class="seg" role="radiogroup" aria-label="Just you, or a team?" style="align-self: flex-start"><input type="radio" name="team" id="tm-solo" checked="{{team.solo}}" onChange="{{team.pickSolo}}"><label for="tm-solo">Just me</label><input type="radio" name="team" id="tm-team" checked="{{team.team}}" onChange="{{team.pickTeam}}"><label for="tm-team">A small team</label><input type="radio" name="team" id="tm-oss" checked="{{team.oss}}" onChange="{{team.pickOss}}"><label for="tm-oss">Open source</label></div></div><div class="ob-q"><div class="ob-q-h"><span class="n">3</span>Whose checkout is this?</div><div class="owner" role="radiogroup" aria-label="Whose checkout is this?"><input class="o-own" type="radio" name="checkout" id="ck-own" checked="{{isOwner}}" onChange="{{pickOwner}}"><label for="ck-own"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="o-text"><span class="o-title">Mine</span><span class="o-sub">Owner: push straight to main</span></span></label><input class="o-con" type="radio" name="checkout" id="ck-con" checked="{{isContrib}}" onChange="{{pickContrib}}"><label for="ck-con"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM18 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 8.2v7.6M18 15.8V9a3 3 0 0 0-3-3h-4M13 3.5 10.5 6 13 8.5"/></svg><span class="o-text"><span class="o-title">Someone else's</span><span class="o-sub">Contributor: open pull requests</span></span></label></div><sc-if value="{{isOwner}}" hint-placeholder-val="{{ true }}"><div style="display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: start; padding: 14px 16px; border-radius: 14px; background: var(--well)"><label class="switch"><input type="checkbox" role="switch" checked="{{push}}" onChange="{{togglePush}}"><span class="track"><span class="knob"><svg class="ic k-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 8 0v3"/></svg><svg class="ic k-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 7.6-1.8"/></svg></span></span><span class="switch-text"><span class="switch-title">Owner mode</span><span class="switch-sub">{{pushSub}}</span></span></label><span class="t-body-s c-2">nexus writes a <span class="file-tag">.owner</span> file here, so this switch lives in Settings for this checkout only. Chunks land on main as they close; there is no package step.</span></div></sc-if><sc-if value="{{isContrib}}" hint-placeholder-val="{{ false }}"><div class="absent" style="font-family: inherit; font-size: 13px; line-height: 20px; color: var(--text-2); align-items: flex-start"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true" style="margin-top: 3px; flex: none"><path d="M6 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM18 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 8.2v7.6M18 15.8V9a3 3 0 0 0-3-3h-4M13 3.5 10.5 6 13 8.5"/></svg><span>No <span class="file-tag">.owner</span> file in this checkout, so owner mode will not appear in its Settings at all. Each session ends with a package PR for the owner to review.</span></div></sc-if></div></div><div class="panel" style="padding: 22px 24px; display: flex; flex-direction: column; gap: 16px"><div class="ob-q-h" style="align-items: center"><span class="n">4</span><span style="flex: 1">How should agents split the work?</span><button class="info-btn {{tipCls}}" type="button" onClick="{{toggleTip}}" aria-label="About token cost" aria-expanded="{{tipAria}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17zM12 11v5M12 8v.01"/></svg></button></div><sc-if value="{{tipOpen}}" hint-placeholder-val="{{ false }}"><div class="tip tip-static" role="tooltip" style="width: 100%"><span class="tip-arrow" style="left: auto; right: 16px"></span><div class="tip-row"><span><b>By size</b> · small chunks stay in this session, medium ones delegate, large ones fan out. Cost follows the work.</span><span class="cost" aria-label="cost varies"><i class="on"></i><i></i><i></i></span></div><div class="tip-row"><span><b>Sub-agents</b> · each is briefed in its own context, so the main one stays clear. You pay for every briefing.</span><span class="cost" aria-label="more tokens"><i class="on"></i><i class="on"></i><i></i></span></div><div class="tip-row"><span><b>Workflows</b> · several agents work one chunk and check each other. The most thorough, and the most tokens.</span><span class="cost" aria-label="most tokens"><i class="on"></i><i class="on"></i><i class="on"></i></span></div></div></sc-if><div style="display: flex; flex-direction: column; gap: 14px"><label class="{{rm.sizeCls}}"><input type="checkbox" checked="{{rm.sizeOn}}" onChange="{{pickSize}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg><span class="auto"></span><span class="check-text"><span class="check-title">By size <span class="badge-def">default</span></span><span class="check-sub">{{rm.sizeSub}}</span></span></label><label class="{{rm.subCls}}"><input type="checkbox" checked="{{rm.subOn}}" onChange="{{toggleSub}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg><span class="auto"></span><span class="check-text"><span class="check-title">Delegate to sub-agents<sc-if value="{{rm.size}}" hint-placeholder-val="{{ true }}"> <span class="badge-auto">by size</span></sc-if></span><span class="check-sub">{{rm.subSub}}</span></span></label><label class="{{rm.wfCls}}"><input type="checkbox" checked="{{rm.wfOn}}" onChange="{{toggleWf}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg><span class="auto"></span><span class="check-text"><span class="check-title">Use workflows<sc-if value="{{rm.size}}" hint-placeholder-val="{{ true }}"> <span class="badge-auto">by size</span></sc-if></span><span class="check-sub">{{rm.wfSub}}</span></span></label></div><sc-if value="{{rm.size}}" hint-placeholder-val="{{ true }}"><div class="explain"><b>By size, on a first plan:</b><ul><li style="grid-template-columns: 26px minmax(0, 1fr)"><span class="size-tag">S</span><span>stays in one session, start to finish</span></li><li style="grid-template-columns: 26px minmax(0, 1fr)"><span class="size-tag">M</span><span>delegates to sub-agents, each briefed on its own</span></li><li style="grid-template-columns: 26px minmax(0, 1fr)"><span class="size-tag">L</span><span>fans out as a workflow that checks its own work</span></li></ul></div></sc-if><sc-if value="{{rm.manual}}" hint-placeholder-val="{{ false }}"><div class="explain">{{rm.note}}</div></sc-if><span class="t-body-s c-3">Change it any time from the top bar or Settings.</span></div></div></main><footer class="ob-foot"><a class="btn btn-ghost" href="{{links.detect}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg>Back</a><span class="ob-count">3 of 6</span><div style="display: flex; align-items: center; gap: 10px"><a class="btn btn-primary btn-l" href="{{links.plot}}">Continue<svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div></footer></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"checkout":{"editor":"enum","options":["owner","contributor"],"default":"owner"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { checkout: null, rm: 'size', tip: false, team: 'team', push: true };
+  }
+  renderVals() {
+    const theme = this.props.theme ?? 'dark';
+    const L = theme === 'light' ? 'Light' : '';
+    const links = {
+      welcome: 'Welcome' + L + '.dc.html', detect: 'Detect' + L + '.dc.html', shape: 'Shape' + L + '.dc.html',
+      plot: 'Plot' + L + '.dc.html', cloud: 'CloudSetup' + L + '.dc.html', launch: 'Launch' + L + '.dc.html',
+      skip: 'Fleet' + L + '.dc.html', cockpit: 'CockpitOwner' + L + '.dc.html', fleet: 'Fleet' + L + '.dc.html'
+    };
+    const checkout = this.state.checkout ?? (this.props.checkout === 'contributor' ? 'contributor' : 'owner');
+    const v = this.state.rm;
+    const notes = {
+      sub: 'Every chunk delegates to sub-agents, whatever its size. More briefings, more tokens.',
+      wf: 'Every chunk runs as a workflow: several agents in parallel that check each other. The most tokens.',
+      both: 'Sub-agents and workflows on every chunk. Thorough, and the most expensive way to run.'
+    };
+    const bySize = v === 'size';
+    const subOn = v === 'sub' || v === 'both';
+    const wfOn = v === 'wf' || v === 'both';
+    const rm = {
+      size: bySize, manual: !bySize, note: notes[v] || '',
+      sizeOn: bySize, subOn, wfOn,
+      sizeCls: 'check', subCls: bySize ? 'check is-managed' : 'check', wfCls: bySize ? 'check is-managed' : 'check',
+      sizeSub: 'nexus picks per chunk',
+      subSub: bySize ? 'Used for medium chunks' : 'Every chunk, any size',
+      wfSub: bySize ? 'Multi-agent orchestration, large chunks' : 'Multi-agent orchestration'
+    };
+    const tipOpen = !!this.state.tip;
+    const tm = this.state.team;
+    const team = { solo: tm === 'solo', team: tm === 'team', oss: tm === 'oss',
+      pickSolo: () => this.setState({ team: 'solo' }), pickTeam: () => this.setState({ team: 'team' }), pickOss: () => this.setState({ team: 'oss' }) };
+    const push = this.state.push !== false;
+    return { theme, links, isOwner: checkout === 'owner', isContrib: checkout === 'contributor', rm, team,
+      push, pushSub: push ? 'Push straight to main' : 'Off: open pull requests like a contributor',
+      togglePush: () => this.setState({ push: !push }),
+      tipOpen, tipCls: tipOpen ? 'is-hover' : '', tipAria: tipOpen ? 'true' : 'false',
+      toggleTip: () => this.setState({ tip: !tipOpen }),
+      pickOwner: () => this.setState({ checkout: 'owner' }),
+      pickContrib: () => this.setState({ checkout: 'contributor' }),
+      pickSize: () => this.setState({ rm: 'size' }),
+      toggleSub: () => this.setState({ rm: this.nextRm(v, 'sub') }),
+      toggleWf: () => this.setState({ rm: this.nextRm(v, 'wf') }) };
+  }
+  nextRm(v, k) {
+    const sub = v === 'sub' || v === 'both';
+    const wf = v === 'wf' || v === 'both';
+    const s2 = k === 'sub' ? !(v !== 'size' && sub) : (v !== 'size' && sub);
+    const w2 = k === 'wf' ? !(v !== 'size' && wf) : (v !== 'size' && wf);
+    if (s2 && w2) return 'both';
+    if (s2) return 'sub';
+    if (w2) return 'wf';
+    return 'size';
+  }
+}
+</script>
+</body>
+</html>

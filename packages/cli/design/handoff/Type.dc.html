@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Type · nexus design system</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./nexus.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Quicksand:wght@300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&text=%20%21%22%23%24%25%26%27%28%29%2A%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D~%E2%94%80%E2%94%81%E2%94%82%E2%94%83%E2%94%84%E2%94%85%E2%94%86%E2%94%87%E2%94%88%E2%94%89%E2%94%8A%E2%94%8B%E2%94%8C%E2%94%8D%E2%94%8E%E2%94%8F%E2%94%90%E2%94%91%E2%94%92%E2%94%93%E2%94%94%E2%94%95%E2%94%96%E2%94%97%E2%94%98%E2%94%99%E2%94%9A%E2%94%9B%E2%94%9C%E2%94%9D%E2%94%9E%E2%94%9F%E2%94%A0%E2%94%A1%E2%94%A2%E2%94%A3%E2%94%A4%E2%94%A5%E2%94%A6%E2%94%A7%E2%94%A8%E2%94%A9%E2%94%AA%E2%94%AB%E2%94%AC%E2%94%AD%E2%94%AE%E2%94%AF%E2%94%B0%E2%94%B1%E2%94%B2%E2%94%B3%E2%94%B4%E2%94%B5%E2%94%B6%E2%94%B7%E2%94%B8%E2%94%B9%E2%94%BA%E2%94%BB%E2%94%BC%E2%94%BD%E2%94%BE%E2%94%BF%E2%95%80%E2%95%81%E2%95%82%E2%95%83%E2%95%84%E2%95%85%E2%95%86%E2%95%87%E2%95%88%E2%95%89%E2%95%8A%E2%95%8B%E2%95%8C%E2%95%8D%E2%95%8E%E2%95%8F%E2%95%90%E2%95%91%E2%95%92%E2%95%93%E2%95%94%E2%95%95%E2%95%96%E2%95%97%E2%95%98%E2%95%99%E2%95%9A%E2%95%9B%E2%95%9C%E2%95%9D%E2%95%9E%E2%95%9F%E2%95%A0%E2%95%A1%E2%95%A2%E2%95%A3%E2%95%A4%E2%95%A5%E2%95%A6%E2%95%A7%E2%95%A8%E2%95%A9%E2%95%AA%E2%95%AB%E2%95%AC%E2%95%AD%E2%95%AE%E2%95%AF%E2%95%B0%E2%95%B1%E2%95%B2%E2%95%B3%E2%95%B4%E2%95%B5%E2%95%B6%E2%95%B7%E2%95%B8%E2%95%B9%E2%95%BA%E2%95%BB%E2%95%BC%E2%95%BD%E2%95%BE%E2%95%BF%E2%96%80%E2%96%81%E2%96%82%E2%96%83%E2%96%84%E2%96%85%E2%96%86%E2%96%87%E2%96%88%E2%96%89%E2%96%8A%E2%96%8B%E2%96%8C%E2%96%8D%E2%96%8E%E2%96%8F%E2%96%90%E2%96%91%E2%96%92%E2%96%93%E2%96%94%E2%96%95%E2%96%96%E2%96%97%E2%96%98%E2%96%99%E2%96%9A%E2%96%9B%E2%96%9C%E2%96%9D%E2%96%9E%E2%96%9F%E2%96%A0%E2%96%A1%E2%96%AA%E2%96%AB%E2%96%AC%E2%96%B2%E2%96%B3%E2%96%B4%E2%96%B5%E2%96%B6%E2%96%B7%E2%96%B8%E2%96%B9%E2%96%BA%E2%96%BB%E2%96%BC%E2%96%BD%E2%96%BE%E2%96%BF%E2%97%80%E2%97%81%E2%97%82%E2%97%83%E2%97%86%E2%97%87%E2%97%88%E2%97%8B%E2%97%8C%E2%97%8D%E2%97%8E%E2%97%8F%E2%97%90%E2%97%91%E2%97%92%E2%97%93%E2%97%94%E2%97%95%E2%97%9C%E2%97%9D%E2%97%9E%E2%97%9F%E2%97%A0%E2%97%A1%E2%97%A6%E2%97%AF%E2%9C%93%E2%9C%94%E2%9C%97%E2%9C%98%E2%86%90%E2%86%91%E2%86%92%E2%86%93%E2%86%94%E2%86%95%E2%86%96%E2%86%97%E2%86%98%E2%86%99%E2%86%A9%E2%86%AA%E2%86%B3%E2%86%B5%E2%87%A1%E2%87%A3%E2%87%A2%E2%87%A0%C2%B7%E2%80%A2%E2%80%A3%E2%80%A6%E2%80%93%E2%80%94%E2%80%98%E2%80%99%E2%80%9C%E2%80%9D%E2%80%B2%E2%80%B3%C3%97%C3%B7%C2%B1%E2%88%92%E2%89%88%E2%89%A0%E2%89%A4%E2%89%A5%C2%B0%E2%88%99%E2%8B%AF%E2%80%B9%E2%80%BA%C2%AB%C2%BB%C2%A7%C2%B6%E2%80%A0%E2%80%B0%E2%8C%98%E2%8C%A5%E2%87%A7%E2%8F%8E%E2%88%9E&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="nx sheet" data-theme="{{theme}}" style="width: 1440px; height: 2120px; overflow: hidden; gap: 44px; font-family: 'Fira Sans', system-ui, sans-serif; color: var(--text)">
+
+  <header class="sheet-head">
+    <div>
+      <div class="sheet-kicker">nexus design system · 02 foundations</div>
+      <h1 class="sheet-title">Type</h1>
+      <p class="sheet-lede">A humanist sans for everything you read in passing, a monospace whose box-drawing glyphs lock cell to cell, and a soft display face kept for the few moments that should feel like arriving.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+      <span class="cap">--font-ui · --font-mono · --font-display</span>
+      <span class="cap">4px grid · every line height is a multiple of 2</span>
+    </div>
+  </header>
+
+  <section class="sec">
+    <h2 class="sec-title">Three voices</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+      <div class="specimen" style="display: flex; flex-direction: column; gap: 14px; padding: 26px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span class="t-caps c-2">UI</span><span class="cap">Fira Sans · 400 500 600</span></div>
+        <div style="font-family: 'Fira Sans', sans-serif; font-weight: 500; font-size: 96px; line-height: 100px; letter-spacing: -0.02em">Aa</div>
+        <p class="t-body c-2">Humanist sans in the FF Meta line. Open apertures and a generous x-height hold up when you glance over from another window forty minutes into a run.</p>
+        <div style="display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap"><span style="font-size: 18px; font-weight: 400">Regular</span><span style="font-size: 18px; font-weight: 500">Medium</span><span style="font-size: 18px; font-weight: 600">Semibold</span><span style="font-size: 18px; font-style: italic">Italic</span></div>
+        <div class="t-body-s c-3">Il1 0O rn m · 12.3 · AC-12.3.2 · 18:42</div>
+      </div>
+      <div class="specimen" style="display: flex; flex-direction: column; gap: 14px; padding: 26px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span class="t-caps c-2">Mono</span><span class="cap">JetBrains Mono · 400 500 700</span></div>
+        <div class="mono" style="font-weight: 500; font-size: 88px; line-height: 100px; letter-spacing: -0.02em">Aa</div>
+        <p class="t-body c-2">Tall x-height, a slashed zero, and box-drawing glyphs drawn to join cell to cell. Ligatures stay off so <span class="mono" style="font-size: 13px">-&gt;</span> reads as typed.</p>
+        <div class="t-mono-m">a41f9c2  <span style="color: var(--st-done)">+84</span> <span style="color: var(--st-failed)">−12</span>  0:42  ╭─╮</div>
+        <div class="t-body-s c-3">Loaded with a text= subset that carries U+2500–259F</div>
+      </div>
+      <div class="specimen" style="display: flex; flex-direction: column; gap: 14px; padding: 26px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span class="t-caps c-2">Display</span><span class="cap">Quicksand · 500 600</span></div>
+        <div style="font-family: 'Quicksand', sans-serif; font-weight: 500; font-size: 96px; line-height: 100px; letter-spacing: -0.03em">Aa</div>
+        <p class="t-body c-2">Rounded strokes of even weight, drawn with the same line as a filament. Onboarding, launch and empty-state heroes only, never inside the running cockpit.</p>
+        <div style="font-family: 'Quicksand', sans-serif; font-weight: 500; font-size: 26px; line-height: 32px">Enjoy a GUI on us.</div>
+        <div class="t-body-s c-3">Optional: falls back to Fira Sans without changing layout</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2 class="sec-title">Scale</h2>
+    <div style="display: flex; flex-direction: column; border-radius: 18px; box-shadow: var(--e-1); overflow: hidden">
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; background: var(--surface-solid)"><span class="t-caps c-2">Token</span><span class="t-caps c-2">Sample</span><span class="t-caps c-2">Size / line · weight</span><span class="t-caps c-2">Use</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 12px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">display-l</span><span class="t-display-l" style="white-space: nowrap; overflow: hidden">Enjoy a GUI on us.</span><span class="t-mono-xs c-2">64 / 72 · 500 · −2%</span><span class="t-body-s c-2">Welcome headline</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">display-m</span><span class="t-display-m">Shape the project</span><span class="t-mono-xs c-2">44 / 52 · 500 · −1.5%</span><span class="t-body-s c-2">Onboarding step titles</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">display-s</span><span class="t-display-s">tidepool is ready</span><span class="t-mono-xs c-2">30 / 38 · 600 · −1%</span><span class="t-body-s c-2">Launch, empty-state heroes</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">title-l</span><span class="t-title-l">Oversight inbox</span><span class="t-mono-xs c-2">24 / 32 · 500</span><span class="t-body-s c-2">Screen titles</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">title-m</span><span class="t-title-m">What this session knows</span><span class="t-mono-xs c-2">19 / 28 · 500</span><span class="t-body-s c-2">Panel and sheet titles</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">title-s</span><span class="t-title-s">12.3 Conflict resolution for edited entries</span><span class="t-mono-xs c-2">15 / 22 · 600</span><span class="t-body-s c-2">Card titles, node labels</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">body-l</span><span class="t-body-l">Field-level merge is in. Same-field conflicts are the last piece.</span><span class="t-mono-xs c-2">16 / 26 · 400</span><span class="t-body-s c-2">Conversation, composer</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">body</span><span class="t-body">Claimed by this session since 02:58.</span><span class="t-mono-xs c-2">14 / 22 · 400</span><span class="t-body-s c-2">Default UI text</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">body-s</span><span class="t-body-s">When two devices edit the same entry offline, sync merges field by field.</span><span class="t-mono-xs c-2">13 / 20 · 400</span><span class="t-body-s c-2">Specs, secondary lines</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">label</span><span class="t-label">Delegate to sub-agents</span><span class="t-mono-xs c-2">12 / 16 · 500 · +1%</span><span class="t-body-s c-2">Chips, small buttons, captions</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">caps</span><span class="t-caps c-2">Now · Spec · Claims · Last ship · Context</span><span class="t-mono-xs c-2">11 / 16 · 600 · +9%</span><span class="t-body-s c-2">Section labels, text-2 or brighter</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">mono-m</span><span class="t-mono-m">export function mergeEntry(base, ours, theirs) {</span><span class="t-mono-xs c-2">13 / 20 · 400</span><span class="t-body-s c-2">Code, diffs, spec excerpts</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">mono-s</span><span class="t-mono-s">Edit  src/sync/merge.ts  +84 −12  1.2s</span><span class="t-mono-xs c-2">12 / 18 · 400 500</span><span class="t-body-s c-2">Log rows, ids, pills</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">mono-xs</span><span class="t-mono-xs c-2">03:17:08  vega  loop #418  a41f9c2</span><span class="t-mono-xs c-2">11 / 16 · 400</span><span class="t-body-s c-2">Timestamps, captions</span></div>
+      <div style="display: grid; grid-template-columns: 132px minmax(0, 1fr) 210px 250px; gap: 20px; align-items: center; padding: 10px 24px; box-shadow: 0 -1px 0 var(--line)"><span class="t-mono-s c-accent">tui</span><span class="t-tui"><span style="color: var(--ink-500)">│ </span><span style="color: var(--st-tool)"><i class="g">◑</i></span><span> 12.3  building  18:42 / 30–40m </span><span style="color: var(--ink-500)">│</span></span><span class="t-mono-xs c-2">14 / 1.2 · 400 700</span><span class="t-body-s c-2">Heads-down; line height locked</span></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2 class="sec-title">Box drawing and glyphs</h2>
+    <div style="display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 24px">
+      <div class="nx" data-theme="dark" style="border-radius: 18px; padding: 26px 28px; box-shadow: var(--e-1); background: var(--ink-900)">
+        <div class="tui" style="font-size: 15px">
+          <div><span class="b">╭─ queue ──────────────╮   ┌───┬───┐   ┏━━━┳━━━┓   ╔═══╦═══╗</span></div>
+          <div><span class="b">│ </span><span class="ok"><i class="g">✓</i></span><span> 12.1   </span><span class="k">closed      </span><span class="b">│   │ </span><span class="k">a</span><span class="b"> │ </span><span class="k">b</span><span class="b"> │   ┃ </span><span class="k">e</span><span class="b"> ┃ </span><span class="k">f</span><span class="b"> ┃   ║ </span><span class="k">i</span><span class="b"> ║ </span><span class="k">j</span><span class="b"> ║</span></div>
+          <div><span class="b">│ </span><span class="tl"><i class="g">◑</i></span><span> 12.3   </span><span class="a">building    </span><span class="b">│   ├───┼───┤   ┣━━━╋━━━┫   ╠═══╬═══╣</span></div>
+          <div><span class="b">│ </span><span class="d"><i class="g">○</i></span><span> 12.5   </span><span class="k">ready       </span><span class="b">│   │ </span><span class="k">c</span><span class="b"> │ </span><span class="k">d</span><span class="b"> │   ┃ </span><span class="k">g</span><span class="b"> ┃ </span><span class="k">h</span><span class="b"> ┃   ║ </span><span class="k">k</span><span class="b"> ║ </span><span class="k">l</span><span class="b"> ║</span></div>
+          <div><span class="b">╰──────────────────────╯   └───┴───┘   ┗━━━┻━━━┛   ╚═══╩═══╝</span></div>
+          <div> </div>
+          <div><span class="a">▁▂▃▄▅▆▇█</span><span class="d">  sparkline   </span><span class="v">░▒▓█</span><span class="d">  shade   </span><span class="a">━━━━━━━━━━━━╸</span><span class="b">─────────</span><span class="d">  progress</span></div>
+          <div><span class="id"><i class="g">○</i></span><span class="k"> idle  </span><span class="th"><i class="g">◌</i></span><span class="k"> thinking  </span><span class="tl"><i class="g">◜</i></span><span class="k"> tool  </span><span class="wr"><i class="g">◆</i></span><span class="k"> writing  </span><span class="ask-b">?</span><span class="k"> asking  </span><span class="ok"><i class="g">✓</i></span><span class="k"> done  </span><span class="no"><i class="g">✗</i></span><span class="k"> failed</span></div>
+          <div><span class="k"><i class="g">○</i></span><span class="k"> ready  </span><span class="a"><i class="g">◔</i></span><span class="k"> claimed  </span><span class="tl"><i class="g">◑</i></span><span class="k"> building  </span><span class="th"><i class="g">◕</i></span><span class="k"> in review  </span><span class="ok"><i class="g">●</i></span><span class="k"> closed</span></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px; padding: 6px 4px">
+        <div class="t-title-s">Rules for terminal surfaces</div>
+        <ul style="display: flex; flex-direction: column; gap: 10px">
+          <li class="t-body-s c-2" style="display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px"><span class="mono c-accent">1</span><span>Line height is locked at 1.2 so vertical strokes overlap the line box instead of leaving hairline gaps.</span></li>
+          <li class="t-body-s c-2" style="display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px"><span class="mono c-accent">2</span><span>Each line is its own row element; spacing lives inside text, never between tags.</span></li>
+          <li class="t-body-s c-2" style="display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px"><span class="mono c-accent">3</span><span>State and phase glyphs sit in a fixed 1ch cell, so a missing glyph can never shift a column.</span></li>
+          <li class="t-body-s c-2" style="display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px"><span class="mono c-accent">4</span><span>Agent states and chunk states use different families: rings and marks for agents, moon phases for chunks.</span></li>
+          <li class="t-body-s c-2" style="display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px"><span class="mono c-accent">5</span><span>Heavy lines are reserved for the one thing that needs you; everything else is light.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1440,"height":2120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? 'dark' };
+  }
+}
+</script>
+</body>
+</html>

@@ -483,7 +483,7 @@ nexus/
 ├── .claude/                           # nexus's OWN commands + settings.json + guard hook
 ├── .github/                           # nexus's OWN cloud loop (march.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml
 ├── packages/
-│   └── cli/                           # @usenexus/cli — npx GUI for Claude Code (React+Vite; publish.yml ships it, cli-ci.yml tests it)
+│   └── cli/                           # @usenexus/cli — npx GUI for Claude Code (React+Vite; design/handoff/ is its UI source of truth; publish.yml ships it, cli-ci.yml tests it)
 └── templates/
     ├── README.md                      # how to apply the templates
     ├── agents.md                      # rule-book template (target: repo root)

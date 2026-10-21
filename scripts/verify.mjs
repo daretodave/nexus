@@ -25,7 +25,8 @@
 //                 /heads-down 150
 //   emoji         no pictographic emoji anywhere in tracked docs,
 //                 nor in packages/cli source (js/jsx/ts/tsx/json/css/html)
-//                 (✓ and ❌ dingbats are fine; 🤖 is not)
+//                 (✓ and ❌ dingbats are fine; 🤖 is not, nor the
+//                 geometric shapes that render as emoji)
 //   dualshell     every playbooks/*.md ```bash fence that leans on a
 //                 POSIX-only tool (sed, grep, xargs, mkdir, cp, rm, …)
 //                 has an adjacent ```powershell twin, or an explicit
@@ -426,7 +427,10 @@ function legAnatomy() {
 // kit holds itself to it. Dingbats the docs legitimately use (✓ ✗ ❌ →)
 // live outside the forbidden ranges.
 
-const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{FE0F}\u{2705}\u{2728}\u{26A0}-\u{26FF}\u{2B00}-\u{2BFF}]/u
+// The geometric shapes U+25AA, U+25AB, U+25B6, U+25C0 and U+25FB-25FE
+// render as emoji on some systems (the GUI design handoff's two such
+// glyphs were swapped for U+25C2 and U+25A0; packages/cli/design/handoff/README.md).
+const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{FE0F}\u{2705}\u{2728}\u{26A0}-\u{26FF}\u{2B00}-\u{2BFF}\u{25AA}\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}]/u
 
 // The CLI package ships text to users too, so its source files join
 // the scan. Tracked files only; no npm install, no build.

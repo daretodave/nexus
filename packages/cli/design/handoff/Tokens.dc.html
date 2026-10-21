@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tokens as CSS custom properties · nexus design system</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./nexus.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Quicksand:wght@300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&text=%20%21%22%23%24%25%26%27%28%29%2A%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D~%E2%94%80%E2%94%81%E2%94%82%E2%94%83%E2%94%84%E2%94%85%E2%94%86%E2%94%87%E2%94%88%E2%94%89%E2%94%8A%E2%94%8B%E2%94%8C%E2%94%8D%E2%94%8E%E2%94%8F%E2%94%90%E2%94%91%E2%94%92%E2%94%93%E2%94%94%E2%94%95%E2%94%96%E2%94%97%E2%94%98%E2%94%99%E2%94%9A%E2%94%9B%E2%94%9C%E2%94%9D%E2%94%9E%E2%94%9F%E2%94%A0%E2%94%A1%E2%94%A2%E2%94%A3%E2%94%A4%E2%94%A5%E2%94%A6%E2%94%A7%E2%94%A8%E2%94%A9%E2%94%AA%E2%94%AB%E2%94%AC%E2%94%AD%E2%94%AE%E2%94%AF%E2%94%B0%E2%94%B1%E2%94%B2%E2%94%B3%E2%94%B4%E2%94%B5%E2%94%B6%E2%94%B7%E2%94%B8%E2%94%B9%E2%94%BA%E2%94%BB%E2%94%BC%E2%94%BD%E2%94%BE%E2%94%BF%E2%95%80%E2%95%81%E2%95%82%E2%95%83%E2%95%84%E2%95%85%E2%95%86%E2%95%87%E2%95%88%E2%95%89%E2%95%8A%E2%95%8B%E2%95%8C%E2%95%8D%E2%95%8E%E2%95%8F%E2%95%90%E2%95%91%E2%95%92%E2%95%93%E2%95%94%E2%95%95%E2%95%96%E2%95%97%E2%95%98%E2%95%99%E2%95%9A%E2%95%9B%E2%95%9C%E2%95%9D%E2%95%9E%E2%95%9F%E2%95%A0%E2%95%A1%E2%95%A2%E2%95%A3%E2%95%A4%E2%95%A5%E2%95%A6%E2%95%A7%E2%95%A8%E2%95%A9%E2%95%AA%E2%95%AB%E2%95%AC%E2%95%AD%E2%95%AE%E2%95%AF%E2%95%B0%E2%95%B1%E2%95%B2%E2%95%B3%E2%95%B4%E2%95%B5%E2%95%B6%E2%95%B7%E2%95%B8%E2%95%B9%E2%95%BA%E2%95%BB%E2%95%BC%E2%95%BD%E2%95%BE%E2%95%BF%E2%96%80%E2%96%81%E2%96%82%E2%96%83%E2%96%84%E2%96%85%E2%96%86%E2%96%87%E2%96%88%E2%96%89%E2%96%8A%E2%96%8B%E2%96%8C%E2%96%8D%E2%96%8E%E2%96%8F%E2%96%90%E2%96%91%E2%96%92%E2%96%93%E2%96%94%E2%96%95%E2%96%96%E2%96%97%E2%96%98%E2%96%99%E2%96%9A%E2%96%9B%E2%96%9C%E2%96%9D%E2%96%9E%E2%96%9F%E2%96%A0%E2%96%A1%E2%96%AA%E2%96%AB%E2%96%AC%E2%96%B2%E2%96%B3%E2%96%B4%E2%96%B5%E2%96%B6%E2%96%B7%E2%96%B8%E2%96%B9%E2%96%BA%E2%96%BB%E2%96%BC%E2%96%BD%E2%96%BE%E2%96%BF%E2%97%80%E2%97%81%E2%97%82%E2%97%83%E2%97%86%E2%97%87%E2%97%88%E2%97%8B%E2%97%8C%E2%97%8D%E2%97%8E%E2%97%8F%E2%97%90%E2%97%91%E2%97%92%E2%97%93%E2%97%94%E2%97%95%E2%97%9C%E2%97%9D%E2%97%9E%E2%97%9F%E2%97%A0%E2%97%A1%E2%97%A6%E2%97%AF%E2%9C%93%E2%9C%94%E2%9C%97%E2%9C%98%E2%86%90%E2%86%91%E2%86%92%E2%86%93%E2%86%94%E2%86%95%E2%86%96%E2%86%97%E2%86%98%E2%86%99%E2%86%A9%E2%86%AA%E2%86%B3%E2%86%B5%E2%87%A1%E2%87%A3%E2%87%A2%E2%87%A0%C2%B7%E2%80%A2%E2%80%A3%E2%80%A6%E2%80%93%E2%80%94%E2%80%98%E2%80%99%E2%80%9C%E2%80%9D%E2%80%B2%E2%80%B3%C3%97%C3%B7%C2%B1%E2%88%92%E2%89%88%E2%89%A0%E2%89%A4%E2%89%A5%C2%B0%E2%88%99%E2%8B%AF%E2%80%B9%E2%80%BA%C2%AB%C2%BB%C2%A7%C2%B6%E2%80%A0%E2%80%B0%E2%8C%98%E2%8C%A5%E2%87%A7%E2%8F%8E%E2%88%9E&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="nx sheet" data-theme="{{theme}}" style="width: 1440px; height: 2120px; overflow: hidden; gap: 36px; font-family: 'Fira Sans', system-ui, sans-serif; color: var(--text)">
+
+  <header class="sheet-head">
+    <div>
+      <div class="sheet-kicker">nexus design system · 05 handoff</div>
+      <h1 class="sheet-title">Tokens as CSS custom properties</h1>
+      <p class="sheet-lede">Everything on this canvas reads from one stylesheet, <span class="mono" style="font-size: 14px">project/nexus.css</span>. Night is the default; dawn overrides only what changes. Components never use a raw hex, only the semantic layer.</p>
+    </div>
+    <span class="cap">tokens · component classes · motion · reduced motion</span>
+  </header>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px">
+    <div class="specimen" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+      <span class="t-caps c-2">Use</span>
+      <div class="code">
+        <div><span class="c">&lt;!-- in &lt;head&gt;, after support.js --&gt;</span></div>
+        <div>&lt;link rel=<span class="s">"stylesheet"</span> href=<span class="s">"./nexus.css"</span>&gt;</div>
+        <div><span class="c">&lt;!-- theme on the root; it nests, so one board can show both --&gt;</span></div>
+        <div>&lt;div class=<span class="s">"nx"</span> data-theme=<span class="s">"dark"</span>&gt; … &lt;/div&gt;</div>
+      </div>
+    </div>
+    <div class="specimen" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+      <span class="t-caps c-2">Naming</span>
+      <div class="code">
+        <div><span class="p">--ink-*</span>     the one neutral scale       <span class="p">--st-*</span>    agent and session states</div>
+        <div><span class="p">--aurora-*</span>  the one accent              <span class="p">--sess-*</span>  session identity</div>
+        <div><span class="p">--s-* --r-*</span> space, radius on a 4px grid <span class="p">--e-*</span>     elevation as light</div>
+        <div><span class="p">--ease-*</span>    snap settle breathe drift   <span class="p">--dur-*</span>   durations</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px">
+    <div class="nx" data-theme="dark" style="border-radius: 18px; padding: 20px 20px; box-shadow: var(--e-1); background: var(--ink-900)">
+      <div class="code" style="font-size: 11.5px; line-height: 17px">
+        <div><span class="c">/* night is the default */</span></div>
+        <div><span class="sel">:root, [data-theme="dark"]</span> {</div>
+        <div>  <span class="p">color-scheme:</span> dark;</div>
+        <div> </div>
+        <div>  <span class="c">/* Ink: one scale, night to dawn */</span></div>
+        <div>  <span class="p">--ink-50:</span>  #FBF6F0;  <span class="p">--ink-100:</span> #EFE9E1;  <span class="p">--ink-200:</span> #CECEDB;</div>
+        <div>  <span class="p">--ink-300:</span> #AAACC1;  <span class="p">--ink-400:</span> #8C8FA8;  <span class="p">--ink-500:</span> #5A5E7A;</div>
+        <div>  <span class="p">--ink-600:</span> #3A3F5C;  <span class="p">--ink-700:</span> #21253F;  <span class="p">--ink-800:</span> #12162B;</div>
+        <div>  <span class="p">--ink-900:</span> #080A1B;</div>
+        <div> </div>
+        <div>  <span class="c">/* Aurora: the single accent */</span></div>
+        <div>  <span class="p">--aurora-cyan:</span>   #4CECE7;</div>
+        <div>  <span class="p">--aurora-violet:</span> #AC89FC;</div>
+        <div>  <span class="p">--aurora:</span>        #8FB7FF;</div>
+        <div>  <span class="p">--aurora-grad:</span>   linear-gradient(115deg, #4CECE7 0%, #7FC8FF 46%, #AC89FC 100%);</div>
+        <div> </div>
+        <div>  <span class="c">/* Agent states: always with a silhouette and a glyph */</span></div>
+        <div>  <span class="p">--st-idle:</span>     #9198AB;  <span class="p">--st-thinking:</span> #BF96FA;  <span class="p">--st-tool:</span>    #52DDF0;</div>
+        <div>  <span class="p">--st-writing:</span>  #F495C0;  <span class="p">--st-blocked:</span>  #FEC766;  <span class="p">--st-done:</span>    #61DD9D;</div>
+        <div>  <span class="p">--st-failed:</span>   #F6706C;  <span class="p">--st-fallen:</span>   #B3A79C;</div>
+        <div> </div>
+        <div>  <span class="c">/* Session identity: always with a star glyph and a name */</span></div>
+        <div>  <span class="p">--sess-vega:</span>   #4CECE7;  <span class="p">--sess-sirius:</span> #7FC8FF;  <span class="p">--sess-deneb:</span> #AC89FC;</div>
+        <div>  <span class="p">--sess-altair:</span> #E2C69F;  <span class="p">--sess-term:</span>   #AAACC1;</div>
+        <div> </div>
+        <div>  <span class="c">/* Semantic: the only layer components touch */</span></div>
+        <div>  <span class="p">--bg:</span>            var(--ink-900);</div>
+        <div>  <span class="p">--surface:</span>       color-mix(in oklab, var(--ink-800) 86%, transparent);</div>
+        <div>  <span class="p">--surface-solid:</span> var(--ink-800);</div>
+        <div>  <span class="p">--raised:</span>        var(--ink-700);</div>
+        <div>  <span class="p">--overlay:</span>       color-mix(in oklab, var(--ink-800) 78%, transparent);</div>
+        <div>  <span class="p">--well:</span>          color-mix(in oklab, var(--ink-900) 62%, transparent);</div>
+        <div>  <span class="p">--line:</span>          color-mix(in oklab, var(--ink-300) 15%, transparent);</div>
+        <div>  <span class="p">--line-2:</span>        color-mix(in oklab, var(--ink-300) 30%, transparent);</div>
+        <div>  <span class="p">--text:</span>          var(--ink-100);</div>
+        <div>  <span class="p">--text-2:</span>        var(--ink-300);</div>
+        <div>  <span class="p">--text-3:</span>        var(--ink-400);</div>
+        <div>  <span class="p">--accent:</span>        var(--aurora);</div>
+        <div>  <span class="p">--focus:</span>         var(--aurora);</div>
+        <div>  <span class="p">--on-accent:</span>     var(--ink-900);  <span class="p">--on-state:</span> var(--ink-900);</div>
+        <div>  <span class="p">--owner:</span>         var(--ink-100);  <span class="p">--on-owner:</span> var(--ink-900);</div>
+        <div>  <span class="p">--glow:</span>          color-mix(in oklab, var(--aurora) 26%, transparent);</div>
+        <div>  <span class="p">--glow-tug:</span>      color-mix(in oklab, var(--st-blocked) 42%, transparent);</div>
+        <div>  <span class="p">--sky-a:</span>         color-mix(in oklab, var(--aurora-violet) 13%, transparent);</div>
+        <div>  <span class="p">--sky-b:</span>         color-mix(in oklab, var(--aurora-cyan) 9%, transparent);</div>
+        <div>}</div>
+        <div> </div>
+        <div><span class="c">/* Shared across themes */</span></div>
+        <div><span class="sel">:root</span> {</div>
+        <div>  <span class="p">--font-ui:</span>      "Fira Sans", "Segoe UI", system-ui, sans-serif;</div>
+        <div>  <span class="p">--font-mono:</span>    "JetBrains Mono", "DejaVu Sans Mono", Menlo, monospace;</div>
+        <div>  <span class="p">--font-display:</span> "Quicksand", "Fira Sans", system-ui, sans-serif;</div>
+        <div>  <span class="p">--s-1:</span> 4px;  <span class="p">--s-2:</span> 8px;  <span class="p">--s-3:</span> 12px; <span class="p">--s-4:</span> 16px; <span class="p">--s-5:</span> 20px; <span class="p">--s-6:</span> 24px;</div>
+        <div>  <span class="p">--s-8:</span> 32px; <span class="p">--s-10:</span> 40px; <span class="p">--s-12:</span> 48px; <span class="p">--s-16:</span> 64px; <span class="p">--s-20:</span> 80px;</div>
+        <div>  <span class="p">--r-1:</span> 4px; <span class="p">--r-2:</span> 8px; <span class="p">--r-3:</span> 12px; <span class="p">--r-4:</span> 16px; <span class="p">--r-5:</span> 20px; <span class="p">--r-full:</span> 999px;</div>
+        <div>}</div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div class="nx" data-theme="light" style="border-radius: 18px; padding: 20px 20px; box-shadow: var(--e-1)">
+        <div class="code" style="font-size: 11.5px; line-height: 17px">
+          <div><span class="c">/* paper at dawn: only what changes */</span></div>
+          <div><span class="sel">[data-theme="light"]</span> {</div>
+          <div>  <span class="p">color-scheme:</span> light;</div>
+          <div>  <span class="p">--aurora-cyan:</span>   #006E79;  <span class="p">--aurora-violet:</span> #6338B9;  <span class="p">--aurora:</span> #4354B9;</div>
+          <div>  <span class="p">--aurora-grad:</span>   linear-gradient(115deg, #0A7480 0%, #3D5EC2 46%, #6338B9 100%);</div>
+          <div>  <span class="p">--st-idle:</span>     #5A6072;  <span class="p">--st-thinking:</span> #733CB7;  <span class="p">--st-tool:</span>    #006C84;</div>
+          <div>  <span class="p">--st-writing:</span>  #A62D66;  <span class="p">--st-blocked:</span>  #8B570F;  <span class="p">--st-done:</span>    #147144;</div>
+          <div>  <span class="p">--st-failed:</span>   #B32926;  <span class="p">--st-fallen:</span>   #6B5F55;</div>
+          <div>  <span class="p">--sess-vega:</span>   #006E79;  <span class="p">--sess-sirius:</span> #1A609E;  <span class="p">--sess-deneb:</span> #6338B9;</div>
+          <div>  <span class="p">--sess-altair:</span> #74542C;  <span class="p">--sess-term:</span>   #3A3F5C;</div>
+          <div>  <span class="p">--bg:</span>            var(--ink-50);</div>
+          <div>  <span class="p">--surface:</span>       color-mix(in oklab, #FFFFFF 64%, transparent);</div>
+          <div>  <span class="p">--surface-solid:</span> #FFFCF8;   <span class="p">--raised:</span> #FFFFFF;</div>
+          <div>  <span class="p">--well:</span>          color-mix(in oklab, var(--ink-100) 70%, transparent);</div>
+          <div>  <span class="p">--line:</span>          color-mix(in oklab, var(--ink-600) 15%, transparent);</div>
+          <div>  <span class="p">--line-2:</span>        color-mix(in oklab, var(--ink-600) 30%, transparent);</div>
+          <div>  <span class="p">--text:</span>          var(--ink-900);  <span class="p">--text-2:</span> var(--ink-600);  <span class="p">--text-3:</span> var(--ink-500);</div>
+          <div>  <span class="p">--on-accent:</span>     var(--ink-50);   <span class="p">--on-state:</span> var(--ink-50);</div>
+          <div>  <span class="p">--owner:</span>         var(--ink-900);  <span class="p">--on-owner:</span> var(--ink-50);</div>
+          <div>  <span class="p">--glow:</span>          color-mix(in oklab, var(--aurora-violet) 16%, transparent);</div>
+          <div>  <span class="p">--glow-tug:</span>      color-mix(in oklab, var(--st-blocked) 26%, transparent);</div>
+          <div>  <span class="p">--sky-a:</span>         color-mix(in oklab, #F2BFA4 34%, transparent);  <span class="c">/* apricot */</span></div>
+          <div>  <span class="p">--sky-b:</span>         color-mix(in oklab, #C7B9EE 30%, transparent);  <span class="c">/* lavender */</span></div>
+          <div>}</div>
+        </div>
+      </div>
+      <div class="nx" data-theme="dark" style="border-radius: 18px; padding: 20px 20px; box-shadow: var(--e-1); background: var(--ink-900)">
+        <div class="code" style="font-size: 11.5px; line-height: 17px">
+          <div><span class="c">/* Elevation: glow and blur, never a drop shadow */</span></div>
+          <div><span class="sel">:root</span> {</div>
+          <div>  <span class="p">--e-1:</span>   0 0 0 1px var(--line);</div>
+          <div>  <span class="p">--e-2:</span>   0 0 0 1px var(--line), 0 0 28px -8px var(--glow);</div>
+          <div>  <span class="p">--e-3:</span>   0 0 0 1px var(--line-2), 0 0 56px -12px var(--glow);</div>
+          <div>  <span class="p">--e-4:</span>   0 0 0 1px var(--line-2), 0 0 96px -16px var(--glow), 0 0 4px 0 var(--glow);</div>
+          <div>  <span class="p">--e-tug:</span> 0 0 0 1px color-mix(in oklab, var(--st-blocked) 60%, transparent),</div>
+          <div>           0 0 40px -6px var(--glow-tug), 0 0 120px -24px var(--glow-tug);</div>
+          <div>  <span class="p">--blur-1:</span> blur(8px) saturate(1.1);  <span class="p">--blur-2:</span> blur(16px) saturate(1.15);</div>
+          <div> </div>
+          <div>  <span class="c">/* Motion: named curves. Nothing overshoots. */</span></div>
+          <div>  <span class="p">--ease-snap:</span>    cubic-bezier(.2, 0, 0, 1);        <span class="p">--dur-snap:</span>    140ms;</div>
+          <div>  <span class="p">--ease-settle:</span>  cubic-bezier(.16, 1, .3, 1);      <span class="p">--dur-settle:</span>  520ms;</div>
+          <div>  <span class="p">--ease-breathe:</span> cubic-bezier(.37, 0, .63, 1);     <span class="p">--dur-breathe:</span> 5.2s;</div>
+          <div>  <span class="p">--ease-drift:</span>   cubic-bezier(.45, .05, .55, .95); <span class="p">--dur-drift:</span>   40s;</div>
+          <div>  <span class="p">--dur-pull:</span> 900ms;  <span class="p">--dur-orbit:</span> 14s;  <span class="p">--dur-spin:</span> 2.8s;</div>
+          <div>}</div>
+          <div> </div>
+          <div><span class="c">/* Hush: a pending question quiets everything else */</span></div>
+          <div><span class="sel">.is-hushed .aurora-blob, .is-hushed .river-flow</span> { animation-play-state: paused; }</div>
+          <div><span class="sel">.is-hushed .orb::after</span> { animation-duration: calc(var(--dur-breathe) * 2); }</div>
+          <div> </div>
+          <div><span class="sel">@media (prefers-reduced-motion: reduce)</span> {</div>
+          <div>  <span class="sel">.nx *, .nx *::before, .nx *::after</span> {</div>
+          <div>    animation-duration: 1ms !important; animation-iteration-count: 1 !important;</div>
+          <div>    transition-duration: 1ms !important;</div>
+          <div>  }</div>
+          <div>  <span class="sel">.fil path.flow</span> { display: none; }   <span class="c">/* lines stay, particles go */</span></div>
+          <div>  <span class="sel">.rm-only</span> { display: inline-flex !important; }  <span class="c">/* text stand-ins */</span></div>
+          <div>}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sec">
+    <h2 class="sec-title">Component classes in the same file</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px">
+      <div class="specimen" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px"><span class="t-title-s">Controls</span><span class="t-mono-xs c-2">.btn .btn-primary .btn-ghost .kbd .field .seg .check .check.is-managed .switch .owner .mode-chip .chip .tip .menu</span></div>
+      <div class="specimen" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px"><span class="t-title-s">Composer and agents</span><span class="t-mono-xs c-2">.composer .slash .route .choice .orb .st-idle … .st-fallen .is-relight .node-cap .junction .fil .fil.is-tug .snode</span></div>
+      <div class="specimen" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px"><span class="t-title-s">Work and rhythm</span><span class="t-mono-xs c-2">.tug .qstack .tray .parked .pcard .chunk .cs-* .claim .log .diff .pill .pill-pr .pill-ci .phases .ph .mtrack .pkg .stack .planpr .basin</span></div>
+      <div class="specimen" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px"><span class="t-title-s">Shell and fleet</span><span class="t-mono-xs c-2">.app .topbar .rail .panes .stage .river .ctx .dock .tile .git .switcher .train .car .dropzone .runline .wt .flag .stepper .ring .toast .empty .err .tui</span></div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1440,"height":2120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? 'dark' };
+  }
+}
+</script>
+</body>
+</html>

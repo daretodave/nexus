@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chunk, claim, log row, diff, pills · nexus components</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./nexus.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Quicksand:wght@300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&text=%20%21%22%23%24%25%26%27%28%29%2A%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D~%E2%94%80%E2%94%81%E2%94%82%E2%94%83%E2%94%84%E2%94%85%E2%94%86%E2%94%87%E2%94%88%E2%94%89%E2%94%8A%E2%94%8B%E2%94%8C%E2%94%8D%E2%94%8E%E2%94%8F%E2%94%90%E2%94%91%E2%94%92%E2%94%93%E2%94%94%E2%94%95%E2%94%96%E2%94%97%E2%94%98%E2%94%99%E2%94%9A%E2%94%9B%E2%94%9C%E2%94%9D%E2%94%9E%E2%94%9F%E2%94%A0%E2%94%A1%E2%94%A2%E2%94%A3%E2%94%A4%E2%94%A5%E2%94%A6%E2%94%A7%E2%94%A8%E2%94%A9%E2%94%AA%E2%94%AB%E2%94%AC%E2%94%AD%E2%94%AE%E2%94%AF%E2%94%B0%E2%94%B1%E2%94%B2%E2%94%B3%E2%94%B4%E2%94%B5%E2%94%B6%E2%94%B7%E2%94%B8%E2%94%B9%E2%94%BA%E2%94%BB%E2%94%BC%E2%94%BD%E2%94%BE%E2%94%BF%E2%95%80%E2%95%81%E2%95%82%E2%95%83%E2%95%84%E2%95%85%E2%95%86%E2%95%87%E2%95%88%E2%95%89%E2%95%8A%E2%95%8B%E2%95%8C%E2%95%8D%E2%95%8E%E2%95%8F%E2%95%90%E2%95%91%E2%95%92%E2%95%93%E2%95%94%E2%95%95%E2%95%96%E2%95%97%E2%95%98%E2%95%99%E2%95%9A%E2%95%9B%E2%95%9C%E2%95%9D%E2%95%9E%E2%95%9F%E2%95%A0%E2%95%A1%E2%95%A2%E2%95%A3%E2%95%A4%E2%95%A5%E2%95%A6%E2%95%A7%E2%95%A8%E2%95%A9%E2%95%AA%E2%95%AB%E2%95%AC%E2%95%AD%E2%95%AE%E2%95%AF%E2%95%B0%E2%95%B1%E2%95%B2%E2%95%B3%E2%95%B4%E2%95%B5%E2%95%B6%E2%95%B7%E2%95%B8%E2%95%B9%E2%95%BA%E2%95%BB%E2%95%BC%E2%95%BD%E2%95%BE%E2%95%BF%E2%96%80%E2%96%81%E2%96%82%E2%96%83%E2%96%84%E2%96%85%E2%96%86%E2%96%87%E2%96%88%E2%96%89%E2%96%8A%E2%96%8B%E2%96%8C%E2%96%8D%E2%96%8E%E2%96%8F%E2%96%90%E2%96%91%E2%96%92%E2%96%93%E2%96%94%E2%96%95%E2%96%96%E2%96%97%E2%96%98%E2%96%99%E2%96%9A%E2%96%9B%E2%96%9C%E2%96%9D%E2%96%9E%E2%96%9F%E2%96%A0%E2%96%A1%E2%96%AA%E2%96%AB%E2%96%AC%E2%96%B2%E2%96%B3%E2%96%B4%E2%96%B5%E2%96%B6%E2%96%B7%E2%96%B8%E2%96%B9%E2%96%BA%E2%96%BB%E2%96%BC%E2%96%BD%E2%96%BE%E2%96%BF%E2%97%80%E2%97%81%E2%97%82%E2%97%83%E2%97%86%E2%97%87%E2%97%88%E2%97%8B%E2%97%8C%E2%97%8D%E2%97%8E%E2%97%8F%E2%97%90%E2%97%91%E2%97%92%E2%97%93%E2%97%94%E2%97%95%E2%97%9C%E2%97%9D%E2%97%9E%E2%97%9F%E2%97%A0%E2%97%A1%E2%97%A6%E2%97%AF%E2%9C%93%E2%9C%94%E2%9C%97%E2%9C%98%E2%86%90%E2%86%91%E2%86%92%E2%86%93%E2%86%94%E2%86%95%E2%86%96%E2%86%97%E2%86%98%E2%86%99%E2%86%A9%E2%86%AA%E2%86%B3%E2%86%B5%E2%87%A1%E2%87%A3%E2%87%A2%E2%87%A0%C2%B7%E2%80%A2%E2%80%A3%E2%80%A6%E2%80%93%E2%80%94%E2%80%98%E2%80%99%E2%80%9C%E2%80%9D%E2%80%B2%E2%80%B3%C3%97%C3%B7%C2%B1%E2%88%92%E2%89%88%E2%89%A0%E2%89%A4%E2%89%A5%C2%B0%E2%88%99%E2%8B%AF%E2%80%B9%E2%80%BA%C2%AB%C2%BB%C2%A7%C2%B6%E2%80%A0%E2%80%B0%E2%8C%98%E2%8C%A5%E2%87%A7%E2%8F%8E%E2%88%9E&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="nx sheet" data-theme="{{theme}}" style="width: 1440px; height: 1900px; overflow: hidden; gap: 40px; font-family: 'Fira Sans', system-ui, sans-serif; color: var(--text)">
+
+  <header class="sheet-head">
+    <div>
+      <div class="sheet-kicker">nexus components · 05</div>
+      <h1 class="sheet-title">Chunk, claim, log row, diff, pills</h1>
+      <p class="sheet-lede">The units of planned work and the trail they leave. Chunk states use moon phases, filling from ready to closed, so they never read as agent states.</p>
+    </div>
+    <span class="cap">.chunk · .cs-* · .moon · .acc · .claim · .log · .diff · .pill</span>
+  </header>
+
+  <section class="sec">
+    <h2 class="sec-title">Chunk card · ready, claimed, building, in review, closed</h2>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; align-items: start">
+      <div class="demo">
+        <article class="chunk cs-ready">
+          <div class="chunk-top"><span class="chunk-id">12.5</span><span class="chunk-state"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/></svg>ready</span></div>
+          <h3 class="chunk-title">Sync status in the header</h3>
+          <p class="chunk-spec">Show whether the device is synced, syncing or offline, with the time of the last sync.</p>
+          <div class="chunk-acc"><span class="acc">AC-12.5.1</span><span class="acc">AC-12.5.2</span></div>
+          <div class="chunk-foot"><span class="line-tag is-asap"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg>asap</span></div>
+        </article>
+        <div class="cap"><b>ready</b> · empty moon, place in line shown</div>
+      </div>
+      <div class="demo">
+        <article class="chunk cs-claimed">
+          <div class="chunk-top"><span class="chunk-id">12.4</span><span class="chunk-state"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 8V2a6 6 0 0 1 6 6z"/></svg>claimed</span></div>
+          <h3 class="chunk-title">Merge view for conflicting notes</h3>
+          <p class="chunk-spec">A sheet over the entry showing both versions side by side, with keep-left, keep-right and edit.</p>
+          <div class="chunk-acc"><span class="acc">AC-12.4.1</span><span class="acc">AC-12.4.2</span><span class="acc">AC-12.4.3</span></div>
+          <div class="chunk-foot"><span class="claim sess-vega"><span class="claim-av" style="background: color-mix(in oklab, var(--sess) 18%, transparent); color: var(--sess)"><svg class="star" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M12 2C12.6 8.2 15.8 11.4 22 12C15.8 12.6 12.6 15.8 12 22C11.4 15.8 8.2 12.6 2 12C8.2 11.4 11.4 8.2 12 2Z"/></svg></span><span class="claim-who">vega</span><span class="claim-since">next</span></span></div>
+        </article>
+        <div class="cap"><b>claimed</b> · quarter moon, the claim badge</div>
+      </div>
+      <div class="demo">
+        <article class="chunk cs-building">
+          <div class="chunk-top"><span class="chunk-id">12.3</span><span class="chunk-state"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 2a6 6 0 0 1 0 12z"/></svg>building</span></div>
+          <h3 class="chunk-title">Conflict resolution for edited entries</h3>
+          <p class="chunk-spec">When two devices edit the same entry offline, merge field by field. Same field changed on both: keep both and flag it.</p>
+          <div class="chunk-acc"><span class="acc is-met"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg>AC-12.3.1</span><span class="acc">AC-12.3.2</span><span class="acc">AC-12.3.3</span></div>
+          <div class="chunk-foot"><span class="ring ring-s" style="--ring: var(--st-tool)"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="15" pathLength="100"/><circle class="val" cx="18" cy="18" r="15" pathLength="100" stroke-dasharray="52 100"/></svg></span><span class="t-mono-xs c-2">18:42 / 30–40m</span></div>
+        </article>
+        <div class="cap"><b>building</b> · half moon, cyan glow, time against the target</div>
+      </div>
+      <div class="demo">
+        <article class="chunk cs-review">
+          <div class="chunk-top"><span class="chunk-id">13.2</span><span class="chunk-state"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="f" d="M8 8V2a6 6 0 1 1-6 6z"/></svg>in review</span></div>
+          <h3 class="chunk-title">Compress photos on import</h3>
+          <p class="chunk-spec">Downscale anything over 4096 px on the long edge and strip location data unless the user opts in.</p>
+          <div class="chunk-acc"><span class="acc is-met"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg>AC-13.2.1</span><span class="acc is-met"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg>AC-13.2.2</span></div>
+          <div class="chunk-foot"><span class="pill pill-ci ci-running"><span class="ci-dot"></span>checks</span><span class="t-mono-xs c-2">in #152</span></div>
+        </article>
+        <div class="cap"><b>in review</b> · three-quarter moon, CI and its PR</div>
+      </div>
+      <div class="demo">
+        <article class="chunk cs-settled">
+          <div class="chunk-top"><span class="chunk-id">12.2</span><span class="chunk-state"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle class="f" cx="8" cy="8" r="6"/></svg>closed</span></div>
+          <h3 class="chunk-title">Retry with backoff on flaky networks</h3>
+          <p class="chunk-spec">Exponential backoff with jitter, capped at five minutes, reset on any success.</p>
+          <div class="chunk-acc"><span class="acc is-met"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg>AC-12.2.1</span><span class="acc is-met"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg>AC-12.2.2</span></div>
+          <div class="chunk-foot"><span class="pill"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M3 12h5.8M15.2 12H21"/></svg><span class="sha">7c2e0d1</span></span></div>
+        </article>
+        <div class="cap"><b>closed</b> · full moon, quieter title, its commit</div>
+      </div>
+    </div>
+  </section>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start">
+    <section class="sec">
+      <h2 class="sec-title">Reorder · drag and drop slot</h2>
+      <div class="specimen" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding: 22px">
+        <div class="demo">
+          <article class="chunk cs-ready is-dragging">
+            <div class="chunk-top"><span class="grip" aria-hidden="true"><svg class="ic ic-fill" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span><span class="chunk-id">13.1</span><span class="chunk-state"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/></svg>ready</span></div>
+            <h3 class="chunk-title">Fuzzy species search</h3>
+            <div class="chunk-foot"><span class="line-tag">anytime</span></div>
+          </article>
+          <div class="cap"><b>dragging</b> · tilts 1.2°, lifts on e-4</div>
+        </div>
+        <div class="demo">
+          <div class="chunk is-ghost" style="height: 112px; display: grid; place-items: center"><span class="t-body-s c-3">Drop to make it 2nd in line</span></div>
+          <div class="cap"><b>drop slot</b> · outlined, says where it lands</div>
+        </div>
+      </div>
+    </section>
+    <section class="sec">
+      <h2 class="sec-title">Claim badge · who holds a chunk</h2>
+      <div class="specimen" style="display: flex; flex-direction: column; gap: 14px; padding: 22px">
+        <div style="display: flex; align-items: center; gap: 14px"><span class="claim sess-vega"><span class="claim-av" style="background: color-mix(in oklab, var(--sess) 18%, transparent); color: var(--sess)"><svg class="star" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M12 2C12.6 8.2 15.8 11.4 22 12C15.8 12.6 12.6 15.8 12 22C11.4 15.8 8.2 12.6 2 12C8.2 11.4 11.4 8.2 12 2Z"/></svg></span><span class="claim-who">vega</span><span class="claim-since">this machine · since 02:58 · 19m</span><button class="claim-release" type="button"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.8"/></svg>Release</button></span><span class="cap">local session</span></div>
+        <div style="display: flex; align-items: center; gap: 14px"><span class="claim is-cloud"><span class="claim-av"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4.5 4.5 0 0 1-.5 9z"/></svg></span><span class="claim-who">loop #417</span><span class="claim-since">cloud · since 02:30 · 47m</span><button class="claim-release is-hover" type="button"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.8"/></svg>Release</button></span><span class="cap">cloud run · release hovered</span></div>
+        <div style="display: flex; align-items: center; gap: 14px"><span class="claim is-stale sess-altair"><span class="claim-av" style="background: color-mix(in oklab, var(--sess) 18%, transparent); color: var(--sess)"><svg class="star" viewBox="0 0 24 24" aria-hidden="true" style="width: 11px; height: 11px"><path d="M12 2l2.1 5.1L19.1 5l-2.1 5L22 12l-5 2 2.1 5-5-2.1L12 22l-2-5-5 2.1 2.1-5L2 12l5-2-2.1-5 5 2.1z"/></svg></span><span class="claim-who">altair</span><span class="claim-since">held 2h 14m, no heartbeat</span><button class="claim-release" type="button">Release</button></span><span class="cap">stale · the session fell over</span></div>
+        <div style="display: flex; align-items: center; gap: 14px"><span class="claim is-releasing"><span class="claim-av"><span class="spin" style="width: 10px; height: 10px; border-width: 1.5px"></span></span><span class="claim-who">altair</span><span class="claim-since">releasing 13.4…</span></span><span class="cap">releasing</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 32px; align-items: start">
+    <section class="sec">
+      <h2 class="sec-title">Log line · tool-call row</h2>
+      <div class="specimen" style="display: flex; flex-direction: column; gap: 4px; padding: 16px 14px">
+        <div class="log"><button class="log-row" type="button" aria-expanded="false"><svg class="ic ic-14 log-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><svg class="ic ic-14 log-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3.5V8h4.5"/></svg><span class="log-tool">Read</span><span class="log-args">spec/12-sync.md · lines 40–118</span><span></span><span class="log-dur">0.1s</span></button></div>
+        <div class="log is-open"><button class="log-row" type="button" aria-expanded="true"><svg class="ic ic-14 log-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><svg class="ic ic-14 log-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19.5l1-4.5L15.8 5.2a2.1 2.1 0 0 1 3 3L9 18z"/></svg><span class="log-tool">Edit</span><span class="log-args">src/sync/merge.ts</span><span class="diffstat"><span class="add">+84</span><span class="del">−12</span><span class="diffbar"><i class="a"></i><i class="a"></i><i class="a"></i><i class="a"></i><i class="d"></i></span></span><span class="log-dur">1.2s</span></button>
+          <div class="log-body">
+            <div class="diff">
+              <div class="diff-head"><b>src/sync/merge.ts</b><span>+84 −12</span></div>
+              <div class="dl dl-hunk"><span class="ln"></span><span class="sg"></span><span>@@ -41,9 +41,22 @@ export function mergeEntry(base, ours, theirs)</span></div>
+              <div class="dl"><span class="ln">41</span><span class="sg"> </span><span>  const merged = { ...base };</span></div>
+              <div class="dl dl-del"><span class="ln">42</span><span class="sg">−</span><span>  for (const k of FIELDS) merged[k] = ours[k] ?? theirs[k];</span></div>
+              <div class="dl dl-add"><span class="ln">42</span><span class="sg">+</span><span>  for (const k of FIELDS) {</span></div>
+              <div class="dl dl-add"><span class="ln">43</span><span class="sg">+</span><span>    const a = ours[k], b = theirs[k];</span></div>
+              <div class="dl dl-add"><span class="ln">44</span><span class="sg">+</span><span>    if (a === b || b === base[k]) merged[k] = a;</span></div>
+              <div class="dl dl-add"><span class="ln">45</span><span class="sg">+</span><span>    else if (a === base[k]) merged[k] = b;</span></div>
+              <div class="dl dl-add"><span class="ln">46</span><span class="sg">+</span><span>    else conflicts.push({ k, a, b });</span></div>
+              <div class="dl"><span class="ln">48</span><span class="sg"> </span><span>  return { merged, conflicts };</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="log is-running"><button class="log-row" type="button" aria-expanded="false"><svg class="ic ic-14 log-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><span class="spin" aria-hidden="true"></span><span class="log-tool">Bash</span><span class="log-args">npm test -- sync</span><span></span><span class="log-dur">0:42</span></button></div>
+        <div class="log is-failed"><button class="log-row" type="button" aria-expanded="false"><svg class="ic ic-14 log-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><svg class="ic ic-14 log-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l8 8M16 8l-8 8"/></svg><span class="log-tool">Bash</span><span class="log-args">tsc --noEmit · 2 errors in resolver.ts</span><span></span><span class="log-dur">exit 2</span></button></div>
+        <div class="log is-hover"><button class="log-row" type="button" aria-expanded="false"><svg class="ic ic-14 log-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><svg class="ic ic-14 log-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M12 8.2v3.3M12 11.5 6.8 16M12 11.5l5.2 4.5"/></svg><span class="log-tool">Task</span><span class="log-args">tests · three-way merge cases</span><span class="t-mono-xs c-3">delegated</span><span class="log-dur">4m</span></button></div>
+      </div>
+      <div class="cap"><b>collapsed · expanded with diff · running · failed · sub-agent task (hovered)</b></div>
+    </section>
+    <section class="sec">
+      <h2 class="sec-title">Pills · commit, pull request, CI run</h2>
+      <div class="specimen" style="display: flex; flex-direction: column; gap: 18px; padding: 22px">
+        <div style="display: flex; flex-direction: column; gap: 8px"><span class="t-caps c-2">Commit</span><div style="display: flex; gap: 10px; flex-wrap: wrap"><span class="pill"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M3 12h5.8M15.2 12H21"/></svg><span class="sha">a41f9c2</span><span class="msg">sync: queue survives restart</span><span class="when">02:31</span></span><span class="pill is-hover"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M3 12h5.8M15.2 12H21"/></svg><span class="sha">7c2e0d1</span><span class="msg">sync: retry with backoff</span><span class="when">02:52</span></span></div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px"><span class="t-caps c-2">Pull request</span><div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <span class="pill pill-pr is-open"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M6 8.2v7.6M18 15.8V9a3 3 0 0 0-3-3h-4"/><path d="M13 3.5 10.5 6 13 8.5"/></svg><span class="num">#148</span><span class="msg">open</span></span>
+          <span class="pill pill-pr is-draft"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M6 8.2v7.6M18 15.8v-1.5M18 11V9.5"/></svg><span class="num">#152</span><span class="msg">draft</span></span>
+          <span class="pill pill-pr is-merged"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><circle cx="6" cy="18" r="2.2"/><path d="M6 8.2v7.6M8 7.2c5 1 8 4 9.6 8.8"/></svg><span class="num">#141</span><span class="msg">merged</span></span>
+          <span class="pill pill-pr is-closed"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M6 8.2v7.6M15.5 7.5l5 5M20.5 7.5l-5 5"/></svg><span class="num">#139</span><span class="msg">closed</span></span>
+        </div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px"><span class="t-caps c-2">CI run</span><div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <span class="pill pill-ci ci-queued"><span class="ci-dot"></span>queued</span>
+          <span class="pill pill-ci ci-running"><span class="ci-dot"></span>running · 2:10</span>
+          <span class="pill pill-ci ci-green"><span class="ci-dot"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></span>green · 4:02</span>
+          <span class="pill pill-ci ci-red"><span class="ci-dot"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></span>red · 2 failed</span>
+        </div></div>
+        <p class="t-body-s c-2">CI states differ by shape as well as color: a dashed ring, a spinning arc, a disc with a check, a square with a cross. Draft PRs get a dashed edge.</p>
+      </div>
+    </section>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? 'dark' };
+  }
+}
+</script>
+</body>
+</html>

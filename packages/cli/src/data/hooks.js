@@ -1,0 +1,124 @@
+// Typed hooks over the server. Each returns a Resource:
+//
+//   { status: 'loading' | 'ready' | 'missing' | 'error', data, error, endpoint, reload }
+//
+// 'missing' means the server does not provide this yet (it answered 404):
+// screens render their designed empty state for it, never invented data.
+// A hook for a missing endpoint still asks the server, so the screen lights
+// up on its own the day the endpoint lands. MISSING lists them.
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from './client.js';
+
+/**
+ * @typedef {object} Resource
+ * @property {'loading'|'ready'|'missing'|'error'} status
+ * @property {any} data
+ * @property {string} [error]
+ * @property {string} endpoint
+ * @property {() => void} reload
+ */
+
+/** Fetch `path` once (and on reload, or every `poll` ms). @returns {Resource} */
+export function useResource(path, { poll, skip } = {}) {
+  const [st, setSt] = useState({ status: skip ? 'missing' : 'loading', data: null, error: null });
+  const alive = useRef(true);
+  const gone = useRef(false);
+  const load = useCallback(async () => {
+    if (skip || !path) return;
+    try {
+      const data = await api(path);
+      if (alive.current) setSt({ status: 'ready', data, error: null });
+    } catch (e) {
+      if (!alive.current) return;
+      if (e.status === 404) { gone.current = true; setSt({ status: 'missing', data: null, error: null }); }
+      else setSt((s) => ({ status: s.data ? 'ready' : 'error', data: s.data, error: e.message }));
+    }
+  }, [path, skip]);
+  useEffect(() => {
+    alive.current = true;
+    gone.current = false;
+    load();
+    // A missing endpoint is asked once per mount, not on every poll.
+    const t = poll ? setInterval(() => { if (!gone.current) load(); }, poll) : null;
+    return () => { alive.current = false; if (t) clearInterval(t); };
+  }, [load, poll]);
+  return { ...st, endpoint: `GET ${path}`, reload: load };
+}
+
+// ---- served today ---------------------------------------------------------
+
+/** GET /api/state: { info: { repo, name, branch, remote, lastCommit, owner, adopted }, prefs, commands, provider, permissionModes }. */
+export const useAppState = () => useResource('/api/state');
+
+/** GET /api/preflight: the Detect step's checks. */
+export const usePreflight = () => useResource('/api/preflight');
+
+/** GET /api/prompts: { paste, adopt, pitch } for "give this to another agent". */
+export const usePrompts = () => useResource('/api/prompts');
+
+/** GET /api/oversight: { live: asks, durable: [{ file, line, text }] }. */
+export const useOversight = (poll) => useResource('/api/oversight', { poll });
+
+/** GET /api/claims: { available, rows, error? }. */
+export const useClaims = (poll) => useResource('/api/claims', { poll });
+
+/** GET /api/progress?spec: { available, text } (ASCII progress). */
+export const useProgress = (spec) => useResource(`/api/progress${spec ? `?spec=${encodeURIComponent(spec)}` : ''}`);
+
+/** GET /api/actions: the cloud loop's workflows, secret and repo state. */
+export const useActions = () => useResource('/api/actions');
+
+/** GET /api/runs: recent Actions runs. */
+export const useRuns = (poll) => useResource('/api/runs', { poll });
+
+// ---- not served yet: designed empty states until they land -------------------
+
+/**
+ * Endpoints the design needs and the server does not provide yet. Each hook
+ * below asks for its endpoint and reports status 'missing' on a 404.
+ */
+export const MISSING = [
+  { endpoint: 'GET /api/sessions', hook: 'useSessions', for: 'Fleet tiles, the switcher, the train: every session (GUI and terminal) with name, kind, state, phase, chunk, git strip, claims, parked count, heartbeat' },
+  { endpoint: 'GET /api/sessions/:id', hook: 'useSession', for: 'Cockpit: one session ledger (phase track, questions, parked defaults, context layers, worktree, branch)' },
+  { endpoint: 'GET /api/events?session=<id>', hook: 'useEvents(session)', for: 'a per-session SSE channel (today one channel serves the single session)' },
+  { endpoint: 'POST /api/sessions', hook: 'startSession', for: 'Start heads-down: take the next star name, claim a package, open a worktree' },
+  { endpoint: 'POST /api/sessions/:id/(pause|resume|close)', hook: 'sessionAction', for: 'pause after this step, resume a fallen session (Resume / relight), close it' },
+  { endpoint: 'POST /api/train', hook: 'trainAction', for: 'Pause all, the reboot train, and Resume all' },
+  { endpoint: 'GET /api/inbox', hook: 'useInbox', for: 'Oversight inbox: open and parked questions across every session and the cloud loop, tagged by session' },
+  { endpoint: 'GET /api/plan', hook: 'usePlan', for: 'Plan board: lanes, specs, chunks (id, title, size, state, needs), % done, next-up order, just-plotted rows' },
+  { endpoint: 'POST /api/claims/(claim|hold|unhold|reassign|request)', hook: 'claimAction', for: 'row actions on chunks and specs (only release exists today)' },
+  { endpoint: 'GET /api/summaries', hook: 'useSummaries', for: 'AI one-line chunk summaries cached in .nexus/cache/' },
+  { endpoint: 'GET /api/git', hook: 'useGitRepo', for: 'Git panel: worktrees (idle/orphaned), recent main commits, open PRs with CI, the primary checkout, a /tidy dry run' },
+  { endpoint: 'GET /api/cloud', hook: 'useCloudLoop', for: 'Cloud loop: schedule, next tick, paused state, runs as a timeline (today: /api/actions + /api/runs)' },
+  { endpoint: 'GET /api/recover?dir=', hook: 'useRecover', for: 'Recover: a workflow folder read as a timeline (journal.jsonl), and recent runs' },
+  { endpoint: 'POST /api/recover/resume', hook: 'recoverAction', for: 'resume a workflow from a chosen step (resumeFromRunId + scriptPath)' },
+  { endpoint: 'GET|POST /api/local', hook: 'useLocalSettings', for: 'effective owner mode (.owner and .nexus/local.json ownerMode), run mode, phase length' },
+  { endpoint: 'POST /api/pin', hook: 'pinNote', for: 'a pinned note every agent reads on its next step' },
+];
+
+/** GET /api/sessions -> [{ id, name, kind: 'local'|'terminal'|'other', state, phase, chunk, git, claims, parked, beat }]. */
+export const useSessions = (poll = 4000) => useResource('/api/sessions', { poll });
+
+/** GET /api/sessions/:id -> the session ledger. */
+export const useSession = (id) => useResource(id ? `/api/sessions/${encodeURIComponent(id)}` : null, { skip: !id });
+
+/** GET /api/inbox -> [{ id, session, kind: 'now'|'parked'|'cloud', question, options, default, chunk, at }]. */
+export const useInbox = (poll = 5000) => useResource('/api/inbox', { poll });
+
+/** GET /api/plan -> { lanes, specs: [{ n, name, file, chunks: [...] }], order }. */
+export const usePlan = () => useResource('/api/plan');
+
+/** GET /api/summaries -> { [chunkId]: { text, ai: true } }. */
+export const useSummaries = () => useResource('/api/summaries');
+
+/** GET /api/git -> { worktrees, main, prs, primary }. */
+export const useGitRepo = () => useResource('/api/git');
+
+/** GET /api/cloud -> { live, paused, schedule, next, runs }. */
+export const useCloudLoop = () => useResource('/api/cloud');
+
+/** GET /api/recover?dir= -> { run, agents, recent }. */
+export const useRecover = (dir) => useResource(`/api/recover${dir ? `?dir=${encodeURIComponent(dir)}` : ''}`);
+
+/** GET /api/local -> { owner, ownerMode, runMode, phase }. */
+export const useLocalSettings = () => useResource('/api/local');

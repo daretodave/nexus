@@ -1,0 +1,5 @@
+/* App glue around nexus.css (which stays verbatim from the handoff).
+   The boards are fixed-size artboards; the app fills the window. */
+html, body, #root { margin: 0; height: 100%; }
+body { background: var(--bg); }
+#root { display: contents; }
