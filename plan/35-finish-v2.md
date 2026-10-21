@@ -63,8 +63,6 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
   no sibling adopter named in public docs.
 - **A4** `plan/CANDIDATES.md` replaces `PHASE_CANDIDATES.md`
   everywhere, gate included.
-- **A6** adopt-dryrun covers `new-project.md` §3 and runs on
-  Windows.
 - **A8** `CLAUDE.md` points at the v2 pick order.
 - **A9** `v2.0.0` is tagged; both lock files and
   `plan-shape.md` say so.
@@ -74,15 +72,13 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
 (None.)
 
 ## Chunks
-Measure: 5 open · 4 closed · next A10
+Measure: 4 open · 5 closed · next A10
 
 - [ ] **35.2** Vocabulary sweep: phase words and a sibling's
   name out of public docs · M · closes A1 · needs —
 - [ ] **35.5** PHASE_CANDIDATES.md becomes CANDIDATES.md ·
   S · closes A4 · needs 35.2
-- [ ] **35.7** adopt-dryrun walks new-project §3, and on
-  Windows · S · closes A6 · needs —
 - [ ] **35.8** CLAUDE.md points at the v2 pick order · S ·
   closes A8 · needs —
 - [ ] **35.9** Tag v2.0.0 and point both lock files at it ·
-  S · closes A9 · needs 35.2, 35.5, 35.7
+  S · closes A9 · needs 35.2, 35.5
