@@ -14,6 +14,7 @@ import { preflight } from './preflight.mjs';
 import * as repoMod from './repo.mjs';
 import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
+import { createSummaries } from './summaries.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
 
@@ -50,9 +51,10 @@ function readPrompt(name) {
  * @param {function} [o.ghRun]       run(cmd, args, opts) for every gh call (tests inject a fake gh; never PATH)
  * @param {() => Promise<string>} [o.ghLogin]  how to learn the gh login once (tests stub it; default asks gh)
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery } = {}) {
   const ghOpts = ghRun ? { run: ghRun } : {};
   let prefs = await repoMod.readPrefs(repo);
+  const summaries = createSummaries({ repo, readPlan: (r) => readPlan(r), enabled: () => prefs.aiSummaries !== false, query: summaryQuery });
 
   // Many sessions, one server (spec 40): each its own query(), claims session id, worktree and SSE channel. The
   // home session is the one the server starts with: every call that names no session reaches it.
@@ -251,6 +253,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/claims': return send(res, 200, await repoMod.claims(repo));
         case 'POST /api/claims/release': { const b = await body(req); return send(res, 200, await repoMod.releaseClaim(repo, String(b.id || ''))); }
         case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));
+        case 'GET /api/summaries': return send(res, 200, await summaries.get());
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
         case 'GET /api/actions': return send(res, 200, await gh.actionsSetup(repo, ghOpts));
         case 'POST /api/actions/workflow': { const b = await body(req); return send(res, 200, await gh.setWorkflow(repo, b.id, !!b.enabled, ghOpts)); }

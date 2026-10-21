@@ -11,7 +11,8 @@
 //     order: [id], next: [{ id, lane, eta, spec }], asap: [id], held: [id], inFlight: [{ id, who }],
 //     blocked: [{ id, why }], unchunked: [spec], mark: [id], at, hours }
 //   chunk: { id, title, size, state: 'ready'|'claimed'|'closed', closedOn, claim, plotted: 'main'|null, why? }
-// A chunk with no title is where the AI one-liner (GET /api/summaries) fills in.
+// A chunk with no words of its own is where the AI one-liner (GET /api/summaries,
+// server/summaries.mjs) fills in.
 import fs from 'node:fs';
 import path from 'node:path';
 import { run, json } from './sh.mjs';

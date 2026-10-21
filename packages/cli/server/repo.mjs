@@ -62,7 +62,8 @@ export async function setOwner(repo, on) {
 }
 
 // Run mode "by size" (decision 2): no --agents or --workflow override until the person picks one.
-const DEFAULT_PREFS = { agents: false, workflows: false, permissionMode: 'default', onboarded: false };
+// AI one-liners for undescribed chunks (server/summaries.mjs) are on until Settings turns them off.
+const DEFAULT_PREFS = { agents: false, workflows: false, permissionMode: 'default', onboarded: false, aiSummaries: true };
 
 export async function readPrefs(repo) {
   const file = await gitPath(repo, 'nexus-gui.json');

@@ -52,7 +52,11 @@ You need no API key.
   status` reads it (`progress.mjs`, pending closes counted). Sort by
   next up, spec, size or claimed; just-plotted chunks are marked. Chunk
   it on an unchunked spec starts `/next chunk NN`. Claims show by
-  person and session; claim, hold and release from the row.
+  person and session; claim, hold and release from the row. A chunk
+  the plan leaves without words gets a one-line summary from Claude
+  Haiku, marked as AI, cached in `.nexus/cache/` and never written to
+  the plan (one batched call per board load, on your Claude Code
+  login; Settings turns it off).
 - **Cloud loop**: pause and resume the loop workflow (`gh workflow
   disable|enable`), run one pass now (`gh workflow run`), and each live
   run's current step, with a step running over 30 minutes (or a job
@@ -63,7 +67,7 @@ You need no API key.
   as the kit's do.
 - **Git** (worktrees, main, open PRs, a `/tidy` dry run), **Recover**
   (a workflow folder as a timeline) and **Settings** (owner mode, run
-  mode, night or dawn).
+  mode, AI one-liners, night or dawn).
 
 Some of this waits on server endpoints that are not built yet (the
 merged inbox, chunking in the page). Until they land, those
