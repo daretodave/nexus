@@ -61,8 +61,6 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
 
 - **A1** No v1 phase vocabulary in the listed docs and skills;
   no sibling adopter named in public docs.
-- **A2** `loop-issue.mjs spec-open|spec-close` exist with
-  tests; ship-a-chunk uses them.
 - **A4** `plan/CANDIDATES.md` replaces `PHASE_CANDIDATES.md`
   everywhere, gate included.
 - **A6** adopt-dryrun covers `new-project.md` §3 and runs on
@@ -76,12 +74,10 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
 (None.)
 
 ## Chunks
-Measure: 6 open · 3 closed · next A10
+Measure: 5 open · 4 closed · next A10
 
 - [ ] **35.2** Vocabulary sweep: phase words and a sibling's
   name out of public docs · M · closes A1 · needs —
-- [ ] **35.3** loop-issue spec-open/spec-close; ship-a-chunk
-  moves to them · S · closes A2 · needs —
 - [ ] **35.5** PHASE_CANDIDATES.md becomes CANDIDATES.md ·
   S · closes A4 · needs 35.2
 - [ ] **35.7** adopt-dryrun walks new-project §3, and on
@@ -89,4 +85,4 @@ Measure: 6 open · 3 closed · next A10
 - [ ] **35.8** CLAUDE.md points at the v2 pick order · S ·
   closes A8 · needs —
 - [ ] **35.9** Tag v2.0.0 and point both lock files at it ·
-  S · closes A9 · needs 35.2, 35.3, 35.5, 35.7
+  S · closes A9 · needs 35.2, 35.5, 35.7
