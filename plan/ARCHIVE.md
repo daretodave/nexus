@@ -64,3 +64,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 36.2 · loop-issue suite in the gate; progress main runs spaced · f31dd7c1..3e0bba2e
 - 2026-10-21 · 38.2 · push-policy guards main on origin and upstream only · ed84d83a..9357324e
 - 2026-10-21 · 35.1 · both plan READMEs name /plot, /messy and priority rows · 826fbef0..826fbef0
+- 2026-10-21 · 35.4 · neither guard knows a phases verb · 1cd9a3d5..1cd9a3d5

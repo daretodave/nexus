@@ -36,7 +36,7 @@ line goes):
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 32 | Heartbeat watches armed-ness of every scheduled workflow, and night's cadence | [32-workflow-disable-watch.md](32-workflow-disable-watch.md) | planned (local session: workflow files) | 2 left |
-| 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 8 left |
+| 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 7 left |
 | 36 | Script hardening: paths, races, tests | [36-script-hardening.md](36-script-hardening.md) | planned · priority 1 | 2 left |
 | 37 | Sessions carry their names; every skill lands per owner mode | [37-sessions-and-landing.md](37-sessions-and-landing.md) | planned · priority 3 | 4 left |
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 2 left |

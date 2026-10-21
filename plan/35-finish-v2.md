@@ -63,7 +63,6 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
   no sibling adopter named in public docs.
 - **A2** `loop-issue.mjs spec-open|spec-close` exist with
   tests; ship-a-chunk uses them.
-- **A3** Neither guard knows a `phases` verb.
 - **A4** `plan/CANDIDATES.md` replaces `PHASE_CANDIDATES.md`
   everywhere, gate included.
 - **A5** `scripts/upgrade-plan.mjs` converts a v1 fixture plan
@@ -79,14 +78,12 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
 (None.)
 
 ## Chunks
-Measure: 8 open · 1 closed · next A10
+Measure: 7 open · 2 closed · next A10
 
 - [ ] **35.2** Vocabulary sweep: phase words and a sibling's
   name out of public docs · M · closes A1 · needs —
 - [ ] **35.3** loop-issue spec-open/spec-close; ship-a-chunk
   moves to them · S · closes A2 · needs —
-- [ ] **35.4** Retire the guard's phases verb · S · closes A3 ·
-  needs —
 - [ ] **35.5** PHASE_CANDIDATES.md becomes CANDIDATES.md ·
   S · closes A4 · needs 35.2
 - [ ] **35.6** scripts/upgrade-plan.mjs, the v1 to v2
@@ -96,4 +93,4 @@ Measure: 8 open · 1 closed · next A10
 - [ ] **35.8** CLAUDE.md points at the v2 pick order · S ·
   closes A8 · needs —
 - [ ] **35.9** Tag v2.0.0 and point both lock files at it ·
-  S · closes A9 · needs 35.2, 35.3, 35.4, 35.5, 35.6, 35.7
+  S · closes A9 · needs 35.2, 35.3, 35.5, 35.6, 35.7
