@@ -80,9 +80,9 @@
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..')
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 // --- shared helpers ----------------------------------------------------
 
@@ -559,6 +559,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
+  'scripts/__tests__/url-path-lint.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
@@ -602,8 +603,13 @@ async function legScripts() {
       failures.push(`${g} self-test failed:`, ...`${err.stdout || ''}`.split(/\r?\n/).filter((l) => /FAIL/.test(l)).slice(0, 10))
     }
   }
+  // No script resolves a file path through URL.pathname (it keeps %20
+  // and a /C:/ drive): fileURLToPath only, in every script dir.
+  const { lintTree } = await import(pathToFileURL(path.join(ROOT, 'scripts/url-path-lint.mjs')).href)
+  const urls = lintTree(ROOT)
+  failures.push(...urls.problems)
   const suites = runSuites(PURE_SUITES, 'pure')
-  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length} dogfood twins match; 2 guard self-tests green; 2 footgun lists lint clean` }
+  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length} dogfood twins match; 2 guard self-tests green; 2 footgun lists lint clean; no URL.pathname file paths in ${urls.files} scripts` }
 }
 
 function runSuites(suites, label) {
