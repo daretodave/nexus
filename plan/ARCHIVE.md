@@ -117,3 +117,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 43.2 · /design prompt and addendum draft numbered prompts from the plan · 31b37052..8a09ae8f
 - 2026-10-21 · 42.7 · the GUI server lists secret names, stores values, masks transcripts · f2b03bdb..7612b013
 - 2026-10-21 · 43.3 · /design ingest writes a dated handoff with a manifest and plots the port · 71f213de..3de80eb0
+- 2026-10-21 · 41.10 · the second and third handoffs re-ported outside the vault · 01779662..3c899851
+- 2026-10-21 · 41 · spec complete: a linked terminal session takes an owner line at its next tool, tugs and real data drawn on the stage, the Claude Design handoffs ported and re-ported at fidelity, a lighter package · 240b8f36..3c899851

@@ -79,4 +79,4 @@ What exists today (2026-10-21):
 Measure: 1 open · 2 closed · next A4
 
 - [ ] **44.3** Fleet to tug (and optionally bug to archive),
-  recorded and placed in the README · M · closes A3 · needs 41.10
+  recorded and placed in the README · M · closes A3 · needs —
