@@ -160,7 +160,7 @@ describe('edits, decisions and notes', () => {
   });
 
   it('numbers decisions after the highest and rewrites their placeholders, never a longer slug', () => {
-    const out = numberDecisions('# 2026\n', ['- **D?a** · 2026-10-14 · one', '- **D?b** · 2026-10-14 · two, after D?a'], 12);
+    const out = numberDecisions('# 2000\n', ['- **D?a** · 2000-10-14 · one', '- **D?b** · 2000-10-14 · two, after D?a'], 12);
     assert.equal(out.numbers.get('D?a'), 'D13');
     assert.equal(out.numbers.get('D?b'), 'D14');
     assert.match(out.text, /two, after D13/);
@@ -173,49 +173,49 @@ const FOOTGUNS = [
   '',
   '## Open',
   '',
-  '- **clock-edge** · a test reads the wall clock → pass the time in · seen 1× · last 2026-10-01 · open',
+  '- **clock-edge** · a test reads the wall clock → pass the time in · seen 1× · last 2000-10-01 · open',
   '',
   '## Watch (seen once: searched before adding a line, not read before building)',
   '',
-  '- **old-trap** · an old trap → a rule · seen 1× · last 2026-01-01 · watch',
+  '- **old-trap** · an old trap → a rule · seen 1× · last 2000-01-01 · watch',
   '',
   '## Guarded',
   '',
-  '- **guarded-one** · a trap → a rule · seen 3× · last 2026-09-01 · guarded by scripts/x.test.mjs',
+  '- **guarded-one** · a trap → a rule · seen 3× · last 2000-09-01 · guarded by scripts/x.test.mjs',
   '',
 ].join('\n');
 
 describe('footguns and the ladder', () => {
   it('bumps a sighting, keeps a later last date, and promotes a Watch line on its second sighting', () => {
-    const b = bumpFootgun(FOOTGUNS, 'clock-edge', '2026-10-14');
+    const b = bumpFootgun(FOOTGUNS, 'clock-edge', '2000-10-14');
     assert.equal(b.seen, 2);
-    assert.match(b.text, /seen 2× · last 2026-10-14 · open/);
-    assert.equal(bumpFootgun(FOOTGUNS, 'nope', '2026-10-14'), null);
-    const w = bumpFootgun(FOOTGUNS, 'old-trap', '2026-10-14');
+    assert.match(b.text, /seen 2× · last 2000-10-14 · open/);
+    assert.equal(bumpFootgun(FOOTGUNS, 'nope', '2000-10-14'), null);
+    const w = bumpFootgun(FOOTGUNS, 'old-trap', '2000-10-14');
     assert.equal(w.promoted, true);
     assert.match(w.text, /## Open\n\n- \*\*clock-edge\*\*.*\n- \*\*old-trap\*\* .* · open\n/);
     assert.deepEqual(lintFootguns(w.text), []);
   });
 
   it('calls the ladder for a sighting that reaches 2× while open, and for a new open line arriving at 2×', () => {
-    const s = settleFootguns(FOOTGUNS, { footguns: ['clock-edge'], date: '2026-10-14', today: '2026-10-14' });
+    const s = settleFootguns(FOOTGUNS, { footguns: ['clock-edge'], date: '2000-10-14', today: '2000-10-14' });
     assert.deepEqual(s.ladder, [{ slug: 'clock-edge', seen: 2 }]);
-    const n = settleFootguns(FOOTGUNS, { add: ['- **fresh** · a → b · seen 2× · last 2026-10-14 · open'], date: '2026-10-14', today: '2026-10-14' });
+    const n = settleFootguns(FOOTGUNS, { add: ['- **fresh** · a → b · seen 2× · last 2000-10-14 · open'], date: '2000-10-14', today: '2000-10-14' });
     assert.deepEqual(n.ladder, [{ slug: 'fresh', seen: 2 }]);
   });
 
   it('drops a Watch line unseen for watchDays, and demotes the coldest single sighting past the open budget', () => {
-    const room = makeRoom(FOOTGUNS, '2026-06-01');
+    const room = makeRoom(FOOTGUNS, '2000-06-01');
     assert.deepEqual(room.dropped.map((d) => d.slug), ['old-trap']);
     const cfg = makeConfig({ limits: { openFootguns: 0 } });
-    const tight = makeRoom(FOOTGUNS, '2026-02-01', cfg);
+    const tight = makeRoom(FOOTGUNS, '2000-02-01', cfg);
     assert.deepEqual(tight.demoted, ['clock-edge']);
     assert.match(tight.text, /- \*\*clock-edge\*\* .* · watch/);
   });
 
   it('refuses a list the lint would newly refuse, before any write', () => {
     const cfg = makeConfig({ limits: { openFootguns: 1 } });
-    const over = FOOTGUNS.replace('\n## Watch', '- **two** · a → b · seen 1× · last 2026-10-14 · open\n\n## Watch');
+    const over = FOOTGUNS.replace('\n## Watch', '- **two** · a → b · seen 1× · last 2000-10-14 · open\n\n## Watch');
     assert.match(footgunsRefusal(FOOTGUNS, over, cfg), /2 open footguns \(budget 1\)/);
     assert.equal(footgunsRefusal(FOOTGUNS, FOOTGUNS, cfg), null);
   });

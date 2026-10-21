@@ -60,15 +60,15 @@ const FOOTGUNS = [
   '',
   '## Open',
   '',
-  '- **clock-edge** · a test reads the wall clock → pass the time in · seen 1× · last 2026-10-01 · open',
+  '- **clock-edge** · a test reads the wall clock → pass the time in · seen 1× · last 2000-10-01 · open',
   '',
   '## Watch (seen once: searched before adding a line, not read before building)',
   '',
-  '- **old-trap** · an old trap → a rule · seen 1× · last 2026-01-01 · watch',
+  '- **old-trap** · an old trap → a rule · seen 1× · last 2000-01-01 · watch',
   '',
   '## Guarded',
   '',
-  '- **guarded-one** · a trap → a rule · seen 3× · last 2026-09-01 · guarded by scripts/x.test.mjs',
+  '- **guarded-one** · a trap → a rule · seen 3× · last 2000-09-01 · guarded by scripts/x.test.mjs',
   '',
 ].join('\n');
 
@@ -94,14 +94,14 @@ function repo() {
   put('plan/README.md', README);
   put('plan/ARCHIVE.md', '# Archive\n\n');
   put('identity/footguns.md', FOOTGUNS);
-  put('identity/decisions/2026.md', '# 2026\n\n- **D4** · 2026-01-01 · An old one.\n');
+  put('identity/decisions/2000.md', '# 2000\n\n- **D4** · 2000-01-01 · An old one.\n');
   put('.gitignore', '.owner\n');
   git('add', '-A');
   git('commit', '-q', '-m', 'base');
   put('src.txt', 'the work\n');
   git('add', '-A');
   git('commit', '-q', '-m', 'feat: the resolver');
-  put('plan/pending/07.3.md', '---\nclose: 07.3\ndate: 2026-10-14\nsays: Where an office is\nfootguns: clock-edge\n---\n## Decisions\n- **D?resolver** · 2026-10-14 · The resolver is ours.\n');
+  put('plan/pending/07.3.md', '---\nclose: 07.3\ndate: 2000-10-14\nsays: Where an office is\nfootguns: clock-edge\n---\n## Decisions\n- **D?resolver** · 2000-10-14 · The resolver is ours.\n');
   git('add', '-A');
   git('commit', '-q', '-m', 'plan: close 07.3');
   const run = (...args) => {
@@ -152,9 +152,9 @@ describe('the settle run', () => {
     assert.ok(!r.read('plan/07-search.md').includes('**07.3**'));
     assert.match(r.read('plan/README.md'), /\| 2 left \|/);
     assert.ok(!r.read('plan/README.md').includes('- **07.3**'));
-    assert.match(r.read('plan/ARCHIVE.md'), new RegExp(`^- 2026-10-14 · 07\\.3 · Where an office is · \\w{8}\\.\\.${work}\\w*$`, 'm'));
-    assert.match(r.read('identity/decisions/2026.md'), /- \*\*D5\*\* · 2026-10-14 · The resolver is ours\./);
-    assert.match(r.read('identity/footguns.md'), /clock-edge.* seen 2× · last 2026-10-14 · open/);
+    assert.match(r.read('plan/ARCHIVE.md'), new RegExp(`^- 2000-10-14 · 07\\.3 · Where an office is · \\w{8}\\.\\.${work}\\w*$`, 'm'));
+    assert.match(r.read('identity/decisions/2000.md'), /- \*\*D5\*\* · 2000-10-14 · The resolver is ours\./);
+    assert.match(r.read('identity/footguns.md'), /clock-edge.* seen 2× · last 2000-10-14 · open/);
     assert.match(r.read('plan/99-guard-the-traps.md'), /\*\*99\.1\*\* Automate footgun `clock-edge`/);
     assert.match(r.read('plan/README.md'), /- \*\*99\.1\*\* · automate footgun `clock-edge`/);
     assert.match(r.read('plan/README.md'), /\[99-guard-the-traps\.md\]\(99-guard-the-traps\.md\) \| planned \(\*\*Asap\*\*: each chunk\) \| 1 left \|/);
@@ -176,7 +176,7 @@ describe('the settle run', () => {
   it('skips a file it cannot settle, saying why, and settles the rest', () => {
     const r = repo();
     r.put('.owner', '');
-    r.put('plan/pending/zz-bad.md', '---\ndate: 2026-10-13\n---\n## Edit plan/README.md\n~~~ old\nno such text\n~~~\n~~~ new\nx\n~~~\n');
+    r.put('plan/pending/zz-bad.md', '---\ndate: 2000-10-13\n---\n## Edit plan/README.md\n~~~ old\nno such text\n~~~\n~~~ new\nx\n~~~\n');
     r.git('add', '-A');
     r.git('commit', '-q', '-m', 'plan: a bad edit');
     const res = r.run();
@@ -203,11 +203,11 @@ describe('the settle run', () => {
     r.put('old.txt', 'old\n');
     r.git('add', '-A');
     r.git('commit', '-q', '-m', 'feat: old work');
-    r.put('plan/ARCHIVE.md', '# Archive\n\n- 2026-01-01 · 01 · an old close · abc\n');
+    r.put('plan/ARCHIVE.md', '# Archive\n\n- 2000-01-01 · 01 · an old close · abc\n');
     r.git('add', '-A');
     r.git('commit', '-q', '-m', 'plan: archive 01');
     r.put('src.txt', 'more work\n');
-    r.put('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2026-10-15\nsays: One commit\n---\n');
+    r.put('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2000-10-15\nsays: One commit\n---\n');
     r.git('add', '-A');
     r.git('commit', '-q', '-m', 'feat: work and close at once');
     const one = r.git('rev-parse', 'HEAD').slice(0, 8);
@@ -225,9 +225,9 @@ describe('the settle run', () => {
       return r.git('rev-parse', 'HEAD').slice(0, 8);
     };
     const a1 = step('a.txt', 'a\n', 'feat: a');
-    step('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2026-10-15\nsays: A\n---\n', 'plan: close 07.4');
+    step('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2000-10-15\nsays: A\n---\n', 'plan: close 07.4');
     const b1 = step('b.txt', 'b\n', 'feat: b');
-    step('plan/pending/07.5.md', '---\nclose: 07.5\ndate: 2026-10-15\nsays: B\n---\n', 'plan: close 07.5');
+    step('plan/pending/07.5.md', '---\nclose: 07.5\ndate: 2000-10-15\nsays: B\n---\n', 'plan: close 07.5');
     const fix = step('b.txt', 'b fixed\n', 'fix: review');
     r.git('checkout', '-q', 'main');
     r.git('merge', '-q', '--no-ff', '-m', 'Merge pkg/s1', 'pkg/s1');
