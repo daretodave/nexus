@@ -67,7 +67,9 @@
 //                 `node scripts/verify.mjs scripts-git` or
 //                 `NEXUS_VERIFY_GIT_TESTS=1 node scripts/verify.mjs`
 //   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
-//                 copy + placeholder-sweep + prune blocks. Skipped by
+//                 plan-starter copy (step 3), copy + placeholder-sweep
+//                 + prune blocks (step 4) and plan-check, on Unix or
+//                 through Git Bash on Windows. Skipped by
 //                 the default no-argument run; opt in with
 //                 `node scripts/verify.mjs adopt-dryrun` or
 //                 `NEXUS_VERIFY_ADOPT_DRYRUN=1 node scripts/verify.mjs`

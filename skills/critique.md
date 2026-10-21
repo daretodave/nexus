@@ -40,8 +40,8 @@ pass). Runs fine in the cloud — it needs only files and
    file the playbooks reference exists at the stated path,
    follow `playbooks/new-project.md` step numbers in order.
    Delegate the walk to a fresh sub-agent when available — its
-   ignorance is the instrument. Step 4's copy + placeholder-sweep
-   + prune mechanics are already covered mechanically by
+   ignorance is the instrument. Step 3's plan starters and step
+   4's copy + placeholder-sweep + prune mechanics are already covered mechanically by
    `node scripts/adopt-dryrun.mjs` — trust it for that part and
    spend this pass's budget on comprehension, ordering, and voice
    instead of re-deriving what it already checks. Scope the
