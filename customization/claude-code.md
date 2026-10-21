@@ -57,6 +57,7 @@ Mapping the standing rules to their backstops:
 | No force-push | every skill §Hard rules | `guard.mjs` + permissions deny | branch protection: no force pushes |
 | No destructive resets | every skill §Hard rules | `guard.mjs` denies `reset --hard`, `clean -fd` | reflog + branch protection |
 | Never background the gate | `agents.md` §3 | `guard.mjs` denies `run_in_background` on gate commands | CI re-runs the gate anyway |
+| The model sees names, never values | [`secrets.md`](./secrets.md) | `guard.mjs` denies reading `.env`/`.env.workspace`, echoing a secret, a vault value on a command line; `Read(.env)` denies | the `secrets scan` gate check; scoped tokens |
 | Commit + push atomic | every skill §Procedure | Stop hook warns on dirty tree / unpushed commits | — |
 | Loop stops are surfaced | skills §Failure modes | Stop/Notification hook fires `notify.mjs` | cloud crash issue (`march.yml`) |
 
@@ -177,6 +178,12 @@ Two of them carry this layer. The template ships one script —
         "hooks": [
           { "type": "command", "command": "node .claude/hooks/guard.mjs pre-bash" }
         ]
+      },
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          { "type": "command", "command": "node .claude/hooks/guard.mjs pre-read" }
+        ]
       }
     ],
     "Stop": [
@@ -203,6 +210,7 @@ on stdin, checks the command string, and **exits 2 to block**
 | `reset --hard`, `clean -fd`, `checkout -- .`, `branch -D` on `<DEFAULT_BRANCH>` | No destructive resets. |
 | `run_in_background: true` where the command matches `verify`, `deploy:check`, or `e2e` | Never background the gate — this is the post-result exit hang (see [`../playbooks/cloud-loop.md`](../playbooks/cloud-loop.md)). |
 | `Co-Authored-By` or an emoji inside a `git commit -m` body | Plain commit bodies. (`Cloud-Run:` trailers pass — the one carve-out.) |
+| Reading `.env` or `.env.workspace`, printing a secret's variable, a vault value on the command line | The model sees names, never values ([`secrets.md`](./secrets.md#the-rails); `pre-read` holds the same line for the Read and Grep tools). |
 
 The block message tells the agent *why* and what to do
 instead, so a blocked call self-corrects rather than looping:

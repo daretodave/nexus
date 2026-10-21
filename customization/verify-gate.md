@@ -205,6 +205,14 @@ If a test is genuinely flaky and you can't fix it: skip it,
 file an `[ ]` audit row to fix it, do not let it pollute
 verify.
 
+### Secrets: no vault value in a commit
+
+A repo with a vault ([`secrets.md`](./secrets.md)) adds
+`node scripts/secrets.mjs scan` to its gate: it refuses a diff
+that adds a vault value, by file, line and secret name, and
+passes with a note where there is no vault. Hermetic: it reads
+local files and `git diff`, nothing else.
+
 ---
 
 ## What's NOT in the verify gate

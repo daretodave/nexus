@@ -25,15 +25,15 @@ only asks for one once a chunk names a secret.
 | `scripts/secrets-keychain.mjs` | The opt-in OS keychain, through the OS's own command line. |
 | `scripts/secrets-sinks.mjs` | The sinks that push a value where it is needed (GitHub Actions, Vercel, Cloudflare), and the push record. Needs `scripts/ledger.mjs` (its lock). |
 | `scripts/secrets-audit.mjs` | Set and rotation in the same record, by name; the rotation nudge. Needs `scripts/secrets-sinks.mjs`. |
+| `scripts/secrets-run.mjs` | `secrets run`: a command with the declared values in its environment, its output masked. |
+| `scripts/secrets-scan.mjs` | `secrets scan`: a diff that adds a vault value is refused, by file, line and name. |
+| `.claude/hooks/guard.mjs` | The guard hook's vault rails: no read of a vault file, no echoed secret, no value on a command line. |
 | `scripts/plan/secrets-manifest.mjs` | The shape and the import, as pure functions. It sits in `scripts/plan/` because `plan-check.mjs` imports it: a copy of `scripts/plan/` plus `plan-check.mjs` still runs. |
 | `scripts/plan-check.mjs` | Checks the manifest's shape and every chunk's `secrets` field against it. |
 | `.env` | The local ring: values, untracked, at the primary checkout. |
 | `.env.workspace` | The workspace ring: values several repos share, at the workspace root, outside every repo. |
 | `.nexus/secrets-audit.jsonl` | The audit record: each set, push and rotation, by name, and when. Untracked, at the primary checkout. Never a value. |
 | `.nexus/secrets-local.json` | A contributor's own local key names (never values), untracked, at the primary checkout. |
-
-`nexus secrets run` extends `scripts/secrets.mjs` with more;
-this page grows with it.
 
 ## The shape
 
@@ -311,6 +311,82 @@ with `readAudit`. A new sink is one entry in its `SINKS`
 table: the command, its calls for a name (one argument list
 per target), and what the audit line adds.
 
+## Running with secrets
+
+`nexus secrets run` is `node scripts/secrets.mjs run`: the
+model writes the command, the wrapper supplies the values.
+
+```bash
+node scripts/secrets.mjs run -- npm run deploy                   # every declared name
+node scripts/secrets.mjs run --only VERCEL_TOKEN -- vercel deploy  # just these
+npm run secrets -- run -- npm run deploy                          # the same, through npm
+```
+
+- The command gets this shell's environment plus the declared
+  names' values, and nothing else from the vault: a name in
+  `.env` the manifest doesn't declare stays out. `--only`
+  narrows it to a list; a name it gives must be declared.
+- Every name it hands over must be set. A missing one stops it
+  before the command starts, naming what to `set`.
+- The command's stdout and stderr pass through with every value
+  it was given replaced by `[secret NAME]`, a value split
+  across two writes included, so a command that prints its
+  token doesn't put it in a transcript. Stdin is the terminal's.
+- Everything after `--` is the command's own: its flags never
+  reach the wrapper. Its exit code is the wrapper's.
+- On Windows an `.exe` runs directly; a `.cmd` or `.bat` (npm,
+  npx) runs through the shell.
+
+## The rails
+
+Three rails hold the rule in code, not prose.
+
+**The guard hook** (`.claude/hooks/guard.mjs`, copied from
+`nexus/templates/claude/hooks/guard.mjs`) refuses, before the
+call runs:
+
+| Rule | Refuses | Passes |
+|---|---|---|
+| `vault-file` | Reading `.env` or `.env.workspace`: `cat`, `type`, `Get-Content`, `head`, `grep NAME .env`, `cp .env x`, `source .env`, `< .env`, a glob that matches one (`cat .env*`), `node -e` or `python -c` code that opens one, and the Read and Grep tools on one | A mention: `.env.example`, a grep pattern (`grep -rn .env src/`), a commit message or heredoc body, `echo .env >> .gitignore`, `ls`, `git check-ignore`, `cp .env.example .env`, `node scripts/secrets.mjs` itself |
+| `secret-echo` | Printing a secret's variable (`echo $NAME`, `printenv NAME`, `$env:NAME`, `%NAME%`, `process.env.NAME` in `node -e`), or dumping an environment that holds one (`env`, `printenv`, `set`, `export -p`, `Get-ChildItem env:`) | Other variables (`echo $HOME`), a dump when no secret is in the environment or named, `$NAME` used without printing it (`curl -H "Authorization: Bearer $NAME"`) |
+| `secret-value` | A vault value anywhere on the command line | Configuration-shaped values (below) |
+
+The names are the manifest's, plus each name the vault's files
+hold a secret-shaped value for; the values are the vault's
+files, read through the repo's own `secrets-vault.mjs` (a repo
+without it gets the file rules, not the value rule). The hook
+never asks the keychain: a keychain call on every Bash call is
+too slow. The command is read as a shell would read it (quotes,
+heredocs, `$( )`, pipes, redirects, `bash -c` and `powershell
+-Command` bodies, `secrets run`'s own command), and `node
+.claude/hooks/guard.mjs self-test` runs every case above. The
+template's `settings.json` wires the hook on Bash and on
+Read|Grep (`pre-read`), and denies `Read` of both files.
+
+**The scan** (`node scripts/secrets.mjs scan`) refuses a diff
+that adds a vault value, naming the file, line and secret,
+never the value. With no flag it reads the working tree against
+`HEAD` plus the untracked files (what the next commit can
+hold); `--staged` reads the staged diff only. Every ring counts,
+the keychain included when it is on. No vault, it passes with a
+note. Add it to your gate beside `plan-check.mjs`; nexus runs
+it as its `secrets` leg.
+
+**The run wrapper's mask** (above) covers a value a command
+prints.
+
+Two filters keep the rails quiet on ordinary text: a value
+shorter than 8 characters, and one shaped like configuration
+(one plain word such as `production`, a number, a localhost
+URL), is not scanned, masked or refused. No real token looks
+like either.
+
+What the rails don't catch, so the prose still matters: a
+recursive search over the checkout (`grep -rn TOKEN .` reads
+`.env` too; `rg` and the Grep tool skip it as gitignored), a
+value the model types itself, and any tool the hook isn't
+wired on.
+
 ## A chunk's `secrets` field
 
 A chunk line gains an optional field beside `needs`:
@@ -424,6 +500,8 @@ secrets") and leaves the loop's sign-in out.
    outside every repo.
 5. A sink takes the value on stdin, runs in owner mode only,
    and records each push by name, destination and time.
+6. A command that needs a value runs under `secrets run`; the
+   guard hook and the scan refuse the rest.
 
 ## You're ready when
 
@@ -435,7 +513,10 @@ secrets") and leaves the loop's sign-in out.
       `node scripts/secrets.mjs status` shows every declared
       name set (a contributor needs none of them).
 - [ ] `plan-check.mjs` is in your verify composition (it gates
-      the manifest and the `secrets` fields).
+      the manifest and the `secrets` fields), and so is
+      `node scripts/secrets.mjs scan`.
+- [ ] `node .claude/hooks/guard.mjs self-test` is green and
+      `settings.json` wires `pre-read` on Read|Grep.
 
 ## See also
 
