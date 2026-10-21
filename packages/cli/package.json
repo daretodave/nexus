@@ -20,7 +20,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "node scripts/bundle-prompts.mjs && vite build",
+    "build": "node scripts/bundle-prompts.mjs && vite build && node scripts/check-bundle.mjs",
     "test": "node --test \"test/*.test.mjs\"",
     "start": "node bin/nexus.mjs",
     "prepublishOnly": "npm run build && npm test"

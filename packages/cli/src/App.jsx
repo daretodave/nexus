@@ -1,21 +1,45 @@
 // Routing for every screen, and the shell context every frame reads
 // (the inbox badge, owner mode, the repo name). Screens live in screens/.
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ShellContext, Err } from './ui/index.js';
 import { useAppState, useEvents, useInbox } from './data/index.js';
 import { fromInbox } from './screens/headsdown-inbox/inboxModel.js';
 import { PATHS } from './routes.js';
-import Fleet from './screens/Fleet.jsx';
-import Cockpit from './screens/Cockpit.jsx';
-import Onboarding from './screens/Onboarding.jsx';
-import HeadsDown from './screens/HeadsDown.jsx';
-import Inbox from './screens/Inbox.jsx';
-import Board from './screens/Board.jsx';
-import CloudLoop from './screens/CloudLoop.jsx';
-import Settings from './screens/Settings.jsx';
-import Recover from './screens/Recover.jsx';
-import GitPanel from './screens/GitPanel.jsx';
+// Every screen is its own chunk, fetched when its route first renders, so
+// the first paint loads the shell and one screen, not all ten. Once the
+// first screen is up, the rest are fetched in the background, so moving
+// between screens never waits on the network.
+const SCREENS = {
+  Fleet: () => import('./screens/Fleet.jsx'),
+  Cockpit: () => import('./screens/Cockpit.jsx'),
+  Onboarding: () => import('./screens/Onboarding.jsx'),
+  HeadsDown: () => import('./screens/HeadsDown.jsx'),
+  Inbox: () => import('./screens/Inbox.jsx'),
+  Board: () => import('./screens/Board.jsx'),
+  CloudLoop: () => import('./screens/CloudLoop.jsx'),
+  Settings: () => import('./screens/Settings.jsx'),
+  Recover: () => import('./screens/Recover.jsx'),
+  GitPanel: () => import('./screens/GitPanel.jsx'),
+};
+const Fleet = lazy(SCREENS.Fleet);
+const Cockpit = lazy(SCREENS.Cockpit);
+const Onboarding = lazy(SCREENS.Onboarding);
+const HeadsDown = lazy(SCREENS.HeadsDown);
+const Inbox = lazy(SCREENS.Inbox);
+const Board = lazy(SCREENS.Board);
+const CloudLoop = lazy(SCREENS.CloudLoop);
+const Settings = lazy(SCREENS.Settings);
+const Recover = lazy(SCREENS.Recover);
+const GitPanel = lazy(SCREENS.GitPanel);
+
+function usePrefetchScreens() {
+  useEffect(() => {
+    const go = () => { for (const load of Object.values(SCREENS)) load().catch(() => {}); };
+    const t = setTimeout(go, 1500);
+    return () => clearTimeout(t);
+  }, []);
+}
 
 /**
  * Until the person finishes onboarding once, opening the app lands there.
@@ -35,6 +59,7 @@ function Shell() {
   const app = useAppState();
   const live = useEvents();
   const inbox = useInbox();
+  usePrefetchScreens();
   if (app.status === 'error' && !app.data) {
     return (
       <div className="ob" style={{ justifyContent: 'center' }}>
@@ -57,6 +82,7 @@ function Shell() {
   const shell = { inbox: open, owner: !!info.owner, repo: info.name || '', app, live };
   return (
     <ShellContext.Provider value={shell}>
+      <Suspense fallback={null}>
       <Routes>
         <Route path="/" element={<Home app={app} />} />
         <Route path="/s/:id" element={<Cockpit />} />
@@ -71,6 +97,7 @@ function Shell() {
         <Route path="/git" element={<GitPanel />} />
         <Route path="*" element={<Navigate to={PATHS.fleet} replace />} />
       </Routes>
+      </Suspense>
     </ShellContext.Provider>
   );
 }

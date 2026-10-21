@@ -144,7 +144,7 @@ or `plan`. `bypassPermissions` is refused.
 cd packages/cli
 npm ci
 npm test          # node --test: beat reducer, routing, hub, server guards, UI rules, headless run
-npm run build     # bundles prompts/ and builds the UI into dist/
+npm run build     # bundles prompts/, builds the UI into dist/, checks its weight
 npm start         # serve this checkout's GUI
 ```
 
@@ -154,6 +154,7 @@ is its stylesheet, verbatim: every token and component class.
 `src/ui/` holds one React file per component family, plus the pure
 rules they share (`stars.js`: session names, colours and places;
 `theme-pick.js`; `run-mode.js`). `src/screens/` has one file per route,
+loaded as its own chunk when the route first renders (`App.jsx`),
 with a folder per screen family for its parts and its pure view model,
 and `src/data/` the server client and its hooks. Where the server does
 not serve an endpoint yet, a screen shows the design's empty state;
@@ -161,5 +162,12 @@ not serve an endpoint yet, a screen shows the design's empty state;
 The agent stage moves only on structured beats
 (`shared/beats.mjs`). Its pure reducer gives the same state whether
 the page was opened mid-run, refreshed, or watched from the start.
+
+The build holds the package's weight: `scripts/check-bundle.mjs`
+fails `npm run build` when a JS chunk passes 500 kB or a font face
+other than the latin and latin-ext woff2 faces and the three mono
+symbol cuts (`src/styles/mono-symbols.css`) lands in `dist/`.
+`npm test` runs the same rules on a fixture, and on `dist/` when a
+build is there.
 
 The kit: https://github.com/daretodave/nexus
