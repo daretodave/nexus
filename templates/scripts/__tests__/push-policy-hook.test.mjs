@@ -23,7 +23,10 @@ function git(cwd, ...args) {
   return res.stdout.trim();
 }
 const push = (cwd, ref, env, remote = 'origin') => run(cwd, 'git', ['push', '-q', remote, `HEAD:${ref}`], env);
-const commit = (cwd) => git(cwd, 'commit', '-q', '--allow-empty', '-m', 'work');
+// Each commit says something new: two empty commits on one parent with one message in the same second are the same
+// commit, and a push of a commit the remote already holds is "up to date" (exit 0) before any hook can refuse it.
+let commits = 0;
+const commit = (cwd) => git(cwd, 'commit', '-q', '--allow-empty', '-m', `work ${++commits}`);
 
 let dir, work;
 before(() => {
@@ -82,19 +85,25 @@ describe('the pre-push hook', () => {
   });
 
   it('refuses main again with owner mode switched off, or NEXUS_CONTRIBUTOR=1', () => {
+    // Catch up with the worktree's push first, so each push below is a fast-forward only the hook can refuse.
+    git(work, 'fetch', '-q', 'origin');
+    git(work, 'merge', '-q', '--ff-only', 'origin/main');
     commit(work);
-    assert.notEqual(push(work, 'main', { NEXUS_CONTRIBUTOR: '1' }).status, 0);
+    const policy = /push-policy: only the owner's checkout pushes main/;
+    const contributor = push(work, 'main', { NEXUS_CONTRIBUTOR: '1' });
+    assert.notEqual(contributor.status, 0);
+    assert.match(contributor.stderr, policy);
     fs.mkdirSync(path.join(work, '.nexus'), { recursive: true });
     fs.writeFileSync(path.join(work, '.nexus', 'local.json'), '{ "ownerMode": false }\n');
-    assert.notEqual(push(work, 'main').status, 0);
+    const off = push(work, 'main');
+    assert.notEqual(off.status, 0);
+    assert.match(off.stderr, policy);
     fs.rmSync(path.join(work, '.nexus'), { recursive: true, force: true });
   });
 
   it('a checkout without the script skips the step', () => {
     fs.rmSync(path.join(work, '.owner'));
     fs.rmSync(path.join(work, 'scripts', 'git'), { recursive: true, force: true });
-    git(work, 'fetch', '-q', 'origin');
-    git(work, 'merge', '-q', '--no-edit', 'origin/main'); // the worktree's push moved main
     commit(work);
     const res = push(work, 'main');
     assert.equal(res.status, 0, res.stderr);
