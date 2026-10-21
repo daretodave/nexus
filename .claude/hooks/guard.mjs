@@ -36,8 +36,8 @@ const DEFAULT_BRANCH = 'main'
 // in the same commit (the gate-teaching rule, agents.md rule 3).
 const VERBS = [
   'critique', 'digest', 'expand', 'jot', 'oversight', 'triage',
-  'feat', 'fix', 'docs', 'templates', 'playbook', 'phases',
-  'plan', 'ci', 'cloud',
+  'feat', 'fix', 'docs', 'templates', 'playbook', 'plan',
+  'ci', 'cloud',
 ]
 
 // Pulls the first `-m`/`--message` string out of a `git commit`
@@ -308,12 +308,12 @@ function selfTest() {
     ['git log --oneline -5\necho "we will commit this later"\nls -n', null],
     // commit-verb: bad/missing verb blocked, scoped + documented
     // verbs allowed, the phases/phase-N drift that motivated the
-    // rule is exactly what it now catches
+    // rule is exactly what it now catches (the retired phases verb included)
     ['git commit -m "nonsense: not a real verb"', 'commit-verb'],
     ['git commit -m "Update README.md"', 'commit-verb'],
     ['git commit -m "phase 28: brief for phase 28"', 'commit-verb'],
     ['git commit -m "fix(cloud): user-author mode"', null],
-    ['git commit -m "phases: brief for phase 28"', null],
+    ['git commit -m "phases: brief for phase 28"', 'commit-verb'],
     // heredoc-body commit messages (this skill set's convention
     // for multi-line bodies) — the verb rule reads the heredoc's
     // own first line, not the "$(cat <<'EOF'" wrapper

@@ -82,7 +82,6 @@ else at commit time; a block firing is itself a finding
 | `docs` | doc-only edit, no new capability |
 | `templates` | `templates/` content only |
 | `playbook` | new/edited `playbooks/*.md` |
-| `phases` | retired with the v1 plan shape (kept in the guard for history) |
 | `plan` | `plan/README.md`, specs, `plan/ARCHIVE.md`, `plan/PHASE_CANDIDATES.md` state changes |
 | `ci` | `.github/workflows/` only |
 | `cloud` | cloud-loop-specific code/doc changes |

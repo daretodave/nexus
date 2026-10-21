@@ -42,7 +42,7 @@ const DEFAULT_BRANCH = '<DEFAULT_BRANCH>'
 const VERBS = [
   'critique', 'digest', 'expand', 'jot', 'oversight', 'triage',
   'data', 'migration', 'asset', 'mod', 'bootstrap',
-  'phases', 'plan', 'feat', 'fix', 'docs', 'chore',
+  'plan', 'feat', 'fix', 'docs', 'chore',
 ]
 
 // Pulls the first `-m`/`--message` string out of a `git commit`
@@ -316,7 +316,7 @@ function selfTest() {
     ['git commit -m "Update README.md"', 'commit-verb'],
     ['git commit -m "fix(cloud): user-author mode"', null],
     ['git commit -m "critique: pass 3 — 2 findings (1 high, 1 low)"', null],
-    ['git commit -m "phases: brief for phase 5 — topic"', null],
+    ['git commit -m "phases: brief for phase 5 — topic"', 'commit-verb'],
     ['git commit -m "data: add profile jane"', null],
     ['git commit -m "bootstrap: provision myapp end-to-end"', null],
     // heredoc-body commit messages — the verb rule reads the
