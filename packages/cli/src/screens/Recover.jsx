@@ -2,12 +2,15 @@
 // load a workflow folder, read it as a timeline of agents, pick a step and
 // resume from it. Deep-linkable: /recover?dir=<folder> (the fleet's Inspect).
 //
-// Data: GET /api/recover?dir= (useRecover) ->
-//   { run: { session: { name, kind }, chunk, title, kind, state, fell: { at }, started,
-//            worktree: { branch, uncommitted }, runId, scriptPath },
-//     agents: [{ k, name, role, state, when, peek, pre, after }],
+// Data: GET /api/recover?dir= (useRecover; server/recover.mjs) ->
+//   { run: { runId, sessionId, dir, title, summary, kind, state, fell: { at }, started, scriptPath, resumedBy? },
+//     agents: [{ k, name, role, state, when, peek, pre, resume, why }],
+//     resume: { hostable, why, sessionId, cwd, scriptPath, runId, prompt, command },
 //     recent: [{ dir, t, d, when, kind: 'fallen'|'running'|'done' }] }
-// Action: POST /api/recover/resume { dir, from, runId, scriptPath }.
+// Action: POST /api/recover/resume { dir, from } -> { id, name }: a hosted session resumes the run's own Claude Code
+// session and calls the Workflow tool with { scriptPath, resumeFromRunId }. A resume always starts at the first agent
+// that did not finish (the tool replays the rest), so only that row offers it. When the server cannot host it, the
+// screen shows the command and prompt to paste.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -18,6 +21,7 @@ import { useRecover } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
 import { act, hhmm, plural } from './fleet/util.js';
+import { defaultPick, doneCount, recoverRows } from './fleet/recoverModel.js';
 import { useToasts } from './fleet/toasts.js';
 
 const URG = { fallen: 'urg is-parked', running: 'urg is-cloud', done: 'urg is-done' };
@@ -34,12 +38,18 @@ function NoRun() {
   );
 }
 
-/** The step a resume most likely wants: the first that failed, else the first not done. */
-function defaultPick(agents) {
-  const i = agents.findIndex((a) => a.state === 'failed');
-  if (i >= 0) return i;
-  const j = agents.findIndex((a) => a.state !== 'done' && a.state !== 'never');
-  return j >= 0 ? j : Math.max(0, agents.length - 1);
+/** The command and prompt to paste when the server cannot host the resume. */
+function PasteResume({ resume }) {
+  return (
+    <div className="resume-note">
+      <Icon name="terminal" style={{ color: 'var(--accent)', flex: 'none', marginTop: 2 }} />
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <b>Resume it yourself.</b> {resume.why ? `This server cannot: ${resume.why}.` : ''} Reopen the run's session, then paste the prompt.
+        <pre className="t-mono-xs" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{resume.command}</pre>
+        <pre className="t-mono-xs" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{resume.prompt}</pre>
+      </span>
+    </div>
+  );
 }
 
 function RunCard({ run, agents }) {
@@ -81,7 +91,9 @@ export default function Recover() {
   const [resumed, setResumed] = useState(null);
   const field = useRef(null);
 
-  useEffect(() => { setPathText(dir); setSel(null); setResumed(null); }, [dir]);
+  const [paste, setPaste] = useState(false);
+
+  useEffect(() => { setPathText(dir); setSel(null); setResumed(null); setPaste(false); }, [dir]);
 
   const data = rec.status === 'ready' ? rec.data || {} : {};
   const run = dir ? data.run : null;
@@ -100,27 +112,20 @@ export default function Recover() {
   async function resumeFrom(i) {
     const a = agents[i];
     setSel(i);
-    const r = await act('/api/recover/resume', { dir, from: a.k || a.name, runId: run.runId, scriptPath: run.scriptPath });
-    if (r.ok) { setResumed(i); return; }
-    if (r.missing) push({ kind: 'error', title: 'Resuming a run is not wired up yet', body: 'This server reads runs but cannot resume one yet. Resume it from a terminal with /reboot-resume.' });
-    else push({ kind: 'error', title: `Couldn't resume from ${a.name}`, body: r.error });
+    const r = await act('/api/recover/resume', { dir, from: a.name });
+    if (r.ok) { setResumed({ i, id: r.data.id, name: r.data.name }); rec.reload(); return; }
+    setPaste(true);
+    push({ kind: 'error', title: `Couldn't resume from ${a.name}`, body: r.error });
   }
 
-  const blocker = agents.find((a) => a.state === 'failed') || agents[here];
-  const rows = agents.map((a, i) => ({
-    name: a.name,
-    role: a.role,
-    state: a.state,
-    peek: a.peek,
-    pre: a.pre,
-    when: a.when && /^\d{4}-|T\d/.test(a.when) ? hhmm(a.when) : a.when,
-    here: i === here,
-    never: a.state === 'never',
-    canResume: a.state !== 'never',
-    cantWhy: `starts after ${a.after || blocker?.name || 'the step before'}`,
+  const rows = recoverRows(agents, here, (t) => (/^\d{4}-|T\d/.test(t) ? hhmm(t) : t)).map((r, i) => ({
+    ...r,
     onPick: () => { setSel(i); setResumed(null); },
     onResume: () => resumeFrom(i),
   }));
+  const by = resumed || (run?.resumedBy ? { i: agents.findIndex((a) => a.resume), ...run.resumedBy } : null);
+  const resume = data.resume;
+  const showPaste = !!(resume && !by && agents.some((a) => a.resume) && (paste || !resume.hostable));
 
   const onDrop = (e) => {
     e.preventDefault();
@@ -144,7 +149,7 @@ export default function Recover() {
     </Topbar>
   );
 
-  const selName = resumed != null ? agents[resumed]?.name : '';
+  const selName = by ? agents[by.i]?.name || 'the first unfinished step' : '';
 
   return (
     <AppFrame topbar={topbar} current="fleet">
@@ -204,14 +209,15 @@ export default function Recover() {
           {loaded ? (
             <div className="rec-main">
               <RunCard run={run} agents={agents} />
-              {resumed != null ? (
+              {by ? (
                 <div className="resume-note">
                   <Icon name="refresh" style={{ color: 'var(--accent)', flex: 'none', marginTop: 2 }} />
-                  <span><b>Resuming {run.session?.name || 'the run'} from {selName}.</b> A fresh session reads the recap of steps 1 to {resumed}, keeps their work, and starts at {selName}. Watch it relight in the fleet. <Link to={PATHS.fleet}>Open the fleet</Link></span>
+                  <span><b>Resuming {run.title || 'the run'} from {selName} in {by.name}.</b> It reopens the run's own session and resumes it with the Workflow tool: the {plural(doneCount(agents), 'finished agent')} replay from the journal and keep their work, and {selName} runs again. <Link to={PATHS.cockpit(by.id)}>Open its cockpit</Link></span>
                 </div>
               ) : null}
+              {showPaste ? <PasteResume resume={resume} /> : null}
               <Runline rows={rows} acts />
-              <span className="cap">Hover a step to resume from it. Steps before it keep their results; steps after it run again.</span>
+              <span className="cap">A run resumes at its first unfinished step: steps before it replay their results, steps after it run again.</span>
             </div>
           ) : dir && rec.status === 'error' ? (
             <div className="rec-main">

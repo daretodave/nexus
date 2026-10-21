@@ -81,8 +81,6 @@ export const MISSING = [
   { endpoint: 'POST /api/train', hook: 'trainAction', for: 'Pause all, the reboot train, and Resume all' },
   { endpoint: 'POST /api/claims/(claim|hold|unhold|reassign|request)', hook: 'claimAction', for: 'row actions on chunks and specs (only release exists today)' },
   { endpoint: 'GET /api/cloud', hook: 'useCloudLoop', for: 'Cloud loop: schedule, next tick, paused state, runs as a timeline (today: /api/actions + /api/runs)' },
-  { endpoint: 'GET /api/recover?dir=', hook: 'useRecover', for: 'Recover: a workflow folder read as a timeline (journal.jsonl), and recent runs' },
-  { endpoint: 'POST /api/recover/resume', hook: 'recoverAction', for: 'resume a workflow from a chosen step (resumeFromRunId + scriptPath)' },
   { endpoint: 'POST /api/pin', hook: 'pinNote', for: 'a pinned note every agent reads on its next step ({ session, text })' },
   { endpoint: 'POST /api/sessions/:id/questions', hook: 'cockpit', for: 'answer a start question ({ index, answer, how }) or take every default ({ defaults: true })' },
   { endpoint: 'POST /api/sessions/:id/start', hook: 'cockpit', for: 'leave the start questions and begin working' },
@@ -116,7 +114,7 @@ export const useGitRepo = () => useResource('/api/git');
 /** GET /api/cloud -> { live, paused, schedule, next, runs }. */
 export const useCloudLoop = () => useResource('/api/cloud');
 
-/** GET /api/recover?dir= -> { run, agents, recent }. */
+/** GET /api/recover?dir= (served) -> { run, agents, resume, recent }: a Workflow run folder read as a timeline (journal.jsonl), and this repo's recent runs. POST /api/recover/resume { dir } resumes it in a hosted session. Shape: server/recover.mjs. */
 export const useRecover = (dir) => useResource(`/api/recover${dir ? `?dir=${encodeURIComponent(dir)}` : ''}`);
 
 /** GET /api/local (served) -> { owner, ownerMode, effective, runMode, phase }: .nexus/local.json at the primary checkout (POST /api/local writes it; server/local.mjs). */

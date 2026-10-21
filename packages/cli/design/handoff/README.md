@@ -127,7 +127,9 @@ the reason (the 41.3 close carries the same list):
   reorder action), Reassign (no target picker in the design), the
   orphaned worktree's "open" link (no page for it), Recover's "Pick
   a folder" (focuses the path field: a browser cannot return an
-  absolute path).
+  absolute path), and Recover's "Resume from here", offered on the
+  first unfinished step only (the Workflow tool resumes a run there,
+  replaying every finished agent; it has no "from step N").
 - **Fleet:** deneb's custom idle curve (the four quadrant paths
   stand in); the grid scrolls where the board's `.view` clips;
   there is no "no sessions" board, so only the start tile shows.
@@ -141,8 +143,10 @@ the reason (the 41.3 close carries the same list):
 - **Additions no board draws,** built from existing classes:
   permission requests as question cards (Allow / Always allow /
   Deny), an inline "Edit description" field, the contributor note
-  under a routed `/plot`, Recover's "No recent runs yet", the
-  not-signed-in, checking, red-run and skipped-cloud states.
+  under a routed `/plot`, Recover's "No recent runs yet" and its
+  "Resume it yourself" note (the command and prompt to paste when
+  the server cannot resume a run), the not-signed-in, checking,
+  red-run and skipped-cloud states.
 - **The stage's tug states** (41.2): each tug's path from the inbox
   to the session reuses the Cockpit board's `.fil.is-tug` (its pulse
   while sent) and the question line's dash once seen; applied draws

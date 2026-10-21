@@ -81,10 +81,20 @@ You need no API key.
   main's recent commits and open pull requests, and a `/tidy` dry run
   that only lists: closing a worktree stays `/tidy`'s job, in a
   terminal.
-- **Recover** (a workflow folder as a timeline) and **Settings**
-  (owner mode, run mode, AI one-liners, night or dawn). Owner mode and
-  run mode live in the checkout's untracked `.nexus/local.json`, read
-  and written through `/api/local` by Settings and the cockpit alike.
+- **Recover**: point it at a Workflow run's transcript folder (under
+  `~/.claude/projects/`, or pick one of the repo's recent runs). It
+  reads `journal.jsonl` as a timeline: which agents finished, what
+  each returned, and where the run stopped. Resume starts a session
+  that reopens the run's own Claude Code session in the folder it
+  worked in and asks it to call the Workflow tool with the run's
+  `scriptPath` and `resumeFromRunId`: finished agents replay from
+  the journal, the rest run again. When that session is still open,
+  or its folder or script is gone, the screen shows the command and
+  prompt to paste instead.
+- **Settings** (owner mode, run mode, AI one-liners, night or dawn).
+  Owner mode and run mode live in the checkout's untracked
+  `.nexus/local.json`, read and written through `/api/local` by
+  Settings and the cockpit alike.
 
 Some of this waits on server endpoints that are not built yet (the
 reboot train's Pause all, chunking in the page). Until they land, those

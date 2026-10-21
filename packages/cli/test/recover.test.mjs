@@ -222,3 +222,25 @@ test('POST /api/recover/resume refuses a run with nothing to resume, and a live 
     await app.close();
   }
 });
+
+test('the screen offers resume on the resume point only, says why elsewhere, and shows a full result where it is read', async () => {
+  const { defaultPick, doneCount, recoverRows } = await import('../src/screens/fleet/recoverModel.js');
+  const { home, runDir } = lay();
+  const { agents } = readRun(runDir, { home, now: NOW });
+  const here = defaultPick(agents);
+  assert.equal(agents[here].name, 'fix-1');
+  assert.equal(doneCount(agents), 2);
+  const rows = recoverRows(agents, here);
+  assert.deepEqual(rows.map((r) => r.canResume), [false, false, true, false]);
+  assert.match(rows[0].cantWhy, /replays/);
+  assert.equal(rows[0].pre, '', 'a long result stays folded on a row not picked');
+  assert.match(recoverRows(agents, 0)[0].pre, /abc1234/);
+  assert.equal(rows[3].never, true);
+  const live = recoverRows([{ name: 'a', state: 'running', why: 'the run is still going' }], 0);
+  assert.equal(live[0].state, 'thinking', 'a live agent draws as thinking');
+  // hooks.js reads the page's token on load, so its MISSING list is read as text.
+  const hooks = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'hooks.js'), 'utf8');
+  const at = hooks.indexOf('export const MISSING');
+  assert.ok(at > 0);
+  assert.doesNotMatch(hooks.slice(at, hooks.indexOf('];', at)), /\/api\/recover/, 'Recover is served: no longer MISSING');
+});
