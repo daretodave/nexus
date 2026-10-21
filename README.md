@@ -416,6 +416,7 @@ nexus/
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print)
+│   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── git/push-policy.mjs            # pre-push: main is the owner's checkout's alone (owner mode)
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
@@ -462,6 +463,7 @@ nexus/
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
 │   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md)
 │   ├── heads-down.md                  # /heads-down — ask up front, then loop /next for hours
+│   ├── plot.md                        # /plot — a task into the plan with its place in line (+ bug.md: /bug)
 │   ├── tidy.md                        # /tidy — clear dead claims, close idle worktrees (worktree.mjs)
 │   ├── rebooting.md                   # /rebooting, /reboot-ready, /reboot-resume — the reboot train
 │   ├── march.md                       # + ship-a-chunk, iterate, critique (dry-run adoption),
@@ -496,6 +498,8 @@ nexus/
     │   ├── next/build.md               # /next's build detail: worktree, builder brief, Workflow shape
     │   ├── next/land.md                # /next's close + land: settle, pending file, main vs PR
     │   ├── heads-down.md               # ask up front, claim a list, loop /next on defaults, ASCII progress
+    │   ├── plot.md                     # a task into the plan with its slot (asap|anytime|auto|peek; and do)
+    │   ├── bug.md                      # reproduce; fix now via /plot … and do, or plot it
     │   ├── tidy.md                     # clear dead claims; offer idle worktrees + merged branches
     │   ├── rebooting.md                # reboot train: announce, ack, one resume line per loop
     │   ├── reboot-ready.md             # reboot train: park this loop (children, work, claims, ledger)
@@ -554,6 +558,7 @@ nexus/
     │   ├── plan/config.mjs            # per-repo settle config (plan/settle.json)
     │   ├── plan/footguns.mjs          # footgun list format + budget lint
     │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h)
+    │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
     │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
     │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
     │   ├── announce.mjs               # the notice board: owner lines outrank the command; REBOOT preempts
@@ -569,6 +574,7 @@ nexus/
     │   ├── __tests__/progress.test.mjs # the progress view, pure
     │   ├── __tests__/announce.test.mjs # the notice board
     │   ├── __tests__/ledger.test.mjs  # the live ledger
+    │   ├── __tests__/order.test.mjs   # the simulated pick order
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)

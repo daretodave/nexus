@@ -104,11 +104,16 @@ its `N left`). Whatever builds the next chunk (`/next`, or
 
 1. an explicit argument (`/next 07.3`);
 2. the **Asap** lane, in its written order;
-3. the spec table, in table order;
+3. rows marked `priority N` (1 first), then the spec table, in
+   table order;
 
 and within a spec, the first chunk whose `needs` are done.
 Chunks in the **Held** lane wait on a person's word and are
-never picked.
+never picked. `scripts/plan/order.mjs` plays this order
+forward (each pick counted done for what needs it), so
+`/plot` can show where a new task lands before and after it
+slots it in: `/plot asap` appends to the Asap lane, `/plot
+anytime` leaves the row in table order.
 
 ## Closing a chunk
 

@@ -175,6 +175,8 @@ invoke a skill that does the right thing end-to-end.
 |---|---|---|
 | `next` | `skills/next.md` | One chunk, done fully: pick, claim, delegate the build (S/M a builder subagent, L a Workflow), gate, pending close, land per owner mode, retro. |
 | `heads-down` | `skills/heads-down.md` | Ask every question up front, claim a list of chunks, loop `/next` for hours on defaults, ASCII progress each iteration. |
+| `plot` | `skills/plot.md` | A task into the plan with its place in line (`asap`, `anytime`, worked out, `peek`); `and do` builds it now. |
+| `bug` | `skills/bug.md` | Reproduce; fix now through `/plot asap … and do` (planned, built, archived), or plot it. |
 | `tidy` | `skills/tidy.md` | Clear claims nobody works on; offer idle worktrees and merged branches in one question. |
 | `rebooting` | `skills/rebooting.md` | The reboot train, from the owner's terminal: announce, ack, one resume line per loop. |
 | `reboot-ready` | `skills/reboot-ready.md` | Inside a loop: park now (children stopped, work and claims kept, ledger written). |

@@ -1,0 +1,207 @@
+// scripts/plan/order.mjs: the plan in /next's pick order, simulated. What /plot shows before and after it slots a
+// task, what `/next peek` reasons from, and the GUI's "next up" sort.
+//
+// /next picks the first listed chunk whose `needs` are all done, taking specs in this order: the **Asap** lane in
+// order, then `priority N` rows (1 first), then the roadmap table's order. It skips the **Held** lane, `plan only`
+// specs, a spec on another base, and every chunk someone else claims or holds. This script plays that forward: it
+// picks, counts the pick as done, and picks again, so the list reads as the order the chunks get built in, with a
+// running estimate from their sizes (S 1 h, M 2.5 h, L 5 h). What can't be reached (a need nothing will close, a held
+// spec) is listed after, with why. A pending close counts as closed; reading the working tree, a pending file's
+// `## Edit` of the roadmap counts as applied (the settled view), so a plot's own rows show before they settle.
+//
+//   node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--json]
+//
+// --mark flags chunks as "just plotted" (/plot's after picture); --ref reads the plan at a ref instead of the files.
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { SPEC_FILE, parseSpec } from '../plan-check.mjs';
+import { pendingCloses } from './pending.mjs';
+import { HOURS, planReader } from './progress.mjs';
+
+const ID = /\b\d{2,}\.\w+\b/g;
+
+/** The README's lanes: the chunk ids (and spec numbers) under its **Asap** and **Held** headings, in order. */
+export function lanes(readme) {
+  const out = { asap: [], held: [] };
+  let lane = null;
+  for (const line of readme.split(/\r?\n/)) {
+    if (/^\*\*Asap\b/.test(line)) lane = 'asap';
+    else if (/^\*\*Held\b/.test(line)) lane = 'held';
+    else if (/^(##|\*\*)/.test(line)) lane = null;
+    else if (lane && /^\s*- /.test(line) && !/\(none/.test(line)) {
+      const ids = line.match(ID) ?? [];
+      const specs = ids.length ? [] : (line.match(/\b\d{2,}\b/g) ?? []).slice(0, 1);
+      out[lane].push(...ids, ...specs);
+    }
+  }
+  return out;
+}
+
+/** The roadmap table's rows: { num, file, priority, planOnly, base }, in table order. */
+export function rows(readme) {
+  const out = [];
+  for (const line of readme.split(/\r?\n/)) {
+    const m = /^\|\s*(\d{2,})\s*\|.*?\]\(([^)]+\.md)\)/.exec(line);
+    if (!m) continue;
+    // The status column (# | Initiative | Spec | Status | Progress) carries the markers, never the initiative's words.
+    const status = line.split('|')[4] ?? '';
+    const pr = /\bpriority (\d+)\b/i.exec(status);
+    const base = /\bbase ([\w./-]+)/.exec(status);
+    out.push({ num: m[1].padStart(2, '0'), file: m[2], priority: pr ? Number(pr[1]) : null, planOnly: /\bplan only\b/i.test(status), base: base ? base[1] : null });
+  }
+  return out;
+}
+
+/**
+ * The simulated pick order. `specs` are parseSpec results; `closed` the ids a pending close already closes; `claims`
+ * maps an id to { who, mine } for live claims. Returns { inFlight, next, blocked }: `next` in build order with a
+ * running estimate in hours, `blocked` with why.
+ */
+export function simulate({ readme, specs, closed = new Set(), claims = {}, base = null }) {
+  const { asap, held } = lanes(readme);
+  const table = rows(readme);
+  const bySpec = new Map(specs.map((s) => [s.num, s]));
+  const listed = new Map();
+  for (const s of specs) for (const c of s.chunks) if (!closed.has(c.id)) listed.set(c.id, { ...c, spec: s.num });
+  const done = (id) => !listed.has(id);
+  const heldSpec = (num) => held.includes(num);
+  const order = [...table].sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
+  const skipSpec = new Map();
+  for (const r of table) {
+    if (heldSpec(r.num)) skipSpec.set(r.num, 'held');
+    else if (r.planOnly) skipSpec.set(r.num, 'plan only');
+    else if ((r.base ?? null) !== base) skipSpec.set(r.num, `base ${r.base ?? 'main'}`);
+  }
+  const inFlight = [];
+  const blocked = [];
+  const pool = [];
+  for (const c of listed.values()) {
+    const claim = claims[c.id] ?? claims[c.spec];
+    if (claim && !claim.mine) inFlight.push({ ...c, who: claim.who });
+    else if (held.includes(c.id)) blocked.push({ ...c, why: 'held' });
+    else if (skipSpec.has(c.spec)) blocked.push({ ...c, why: skipSpec.get(c.spec) });
+    else pool.push(c);
+  }
+  const taken = new Set(inFlight.map((c) => c.id));
+  const ready = (c) => (c.needs ?? []).every((n) => done(n) || taken.has(n));
+  const next = [];
+  let hours = 0;
+  const left = new Set(pool.map((c) => c.id));
+  const take = (c, lane) => {
+    left.delete(c.id);
+    taken.add(c.id);
+    hours += HOURS[c.size] ?? 0;
+    next.push({ ...c, lane, eta: hours });
+  };
+  for (;;) {
+    let pick = null;
+    for (const id of asap) {
+      const c = listed.get(id);
+      if (c && left.has(id) && ready(c)) {
+        pick = [c, 'asap'];
+        break;
+      }
+    }
+    for (const r of pick ? [] : order) {
+      const s = bySpec.get(r.num);
+      const c = s?.chunks.find((x) => left.has(x.id) && ready(x));
+      if (c) {
+        pick = [c, r.priority ? `priority ${r.priority}` : 'table'];
+        break;
+      }
+    }
+    if (!pick) break;
+    take(...pick);
+  }
+  for (const id of left) {
+    const c = listed.get(id);
+    const missing = (c.needs ?? []).filter((n) => !done(n) && !taken.has(n));
+    blocked.push({ ...c, why: missing.length ? `needs ${missing.join(', ')}` : 'not in the roadmap table' });
+  }
+  const unchunked = order.filter((r) => bySpec.get(r.num)?.unchunked && !skipSpec.has(r.num)).map((r) => r.num);
+  return { inFlight, next, blocked, unchunked };
+}
+
+const pad = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s.padEnd(n, ' '));
+
+/** The ASCII picture: in flight, then next (numbered, with the running estimate), then blocked. */
+export function render({ inFlight, next, blocked, unchunked = [] }, { mark = new Set(), limit = 12 } = {}) {
+  const out = [];
+  const tag = (c) => (mark.has(c.id) ? '  <-- just plotted' : '');
+  if (inFlight.length) {
+    out.push('in flight');
+    for (const c of inFlight) out.push(`      ${pad(c.id, 7)} ${pad(c.title, 44)} ${c.size}  ${c.who}${tag(c)}`);
+  }
+  out.push(next.length ? 'next up (as /next would pick)' : 'next up: nothing ready');
+  next.slice(0, limit).forEach((c, i) => {
+    const eta = c.eta < 1 ? '<1 h' : `~${Math.round(c.eta * 2) / 2} h`;
+    out.push(`  ${String(i + 1).padStart(3)}  ${pad(c.id, 7)} ${pad(c.title, 44)} ${c.size}  ${pad(c.lane, 10)} ${eta}${tag(c)}`);
+  });
+  if (next.length > limit) {
+    const marked = next.slice(limit).filter((c) => mark.has(c.id));
+    out.push(`       … ${next.length - limit} more${marked.length ? ` (${marked.map((c) => `${c.id} at ${next.indexOf(c) + 1}`).join(', ')}: just plotted)` : ''}`);
+  }
+  if (unchunked.length) out.push(`  specs to chunk first (the first /next that picks one chunks it): ${unchunked.join(', ')}`);
+  if (blocked.length) {
+    out.push('not reachable now');
+    for (const c of blocked) out.push(`      ${pad(c.id, 7)} ${pad(c.title, 44)} ${c.size}  ${c.why}${tag(c)}`);
+  }
+  return out.join('\n');
+}
+
+/** Read the plan (working tree through the settled view, or a ref) and simulate it. */
+export async function load(cwd, ref) {
+  const reader = planReader(cwd, ref);
+  let readme;
+  if (ref) readme = reader.read('README.md');
+  else {
+    const { settledView } = await import('./settled.mjs');
+    readme = settledView(cwd).read('plan/README.md') ?? '';
+  }
+  const specs = reader
+    .names()
+    .filter((n) => SPEC_FILE.test(n))
+    .map((n) => parseSpec(n, reader.read(n)));
+  const closed = pendingCloses(reader.pending());
+  let claims = {};
+  try {
+    const mod = await import(new URL('../claims.mjs', import.meta.url).href);
+    const { map } = mod.fetchClaims(cwd);
+    const session = mod.sessionId();
+    const now = Date.now();
+    for (const [id, v] of Object.entries(map)) {
+      const c = mod.parse(v);
+      if (mod.state(c, now) !== 'stale') claims[id] = { who: `${c.who}${c.session ? ` s:${c.session}` : ''}`, mine: c.session === session };
+    }
+  } catch {
+    // no claims module, no network or no claims branch: nothing is in flight
+  }
+  return { readme, specs, closed, claims };
+}
+
+async function main(argv) {
+  const val = (flag) => {
+    const i = argv.indexOf(flag);
+    return i >= 0 ? argv[i + 1] : undefined;
+  };
+  const ref = val('--ref');
+  const mark = new Set((val('--mark') ?? '').split(',').map((s) => s.trim()).filter(Boolean));
+  const limit = Number(val('--limit') ?? 12);
+  const cwd = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  const plan = await load(path.resolve(cwd), ref);
+  const sim = simulate(plan);
+  if (argv.includes('--json')) console.log(JSON.stringify({ ...sim, mark: [...mark] }, null, 2));
+  else console.log(render(sim, { mark, limit }));
+  return 0;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main(process.argv.slice(2)).then(
+    (code) => (process.exitCode = code),
+    (e) => {
+      console.error(e instanceof Error ? e.message : String(e));
+      process.exitCode = 1;
+    },
+  );
+}

@@ -11,6 +11,7 @@
     "settle": "node scripts/plan/settle.mjs",
     "claims": "node scripts/claims.mjs",
     "progress": "node scripts/plan/progress.mjs",
+    "order": "node scripts/plan/order.mjs",
     "announce": "node scripts/announce.mjs",
     "ledger": "node scripts/ledger.mjs",
     "worktree": "node scripts/worktree.mjs"
