@@ -89,3 +89,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 36 · spec complete: scripts behave the same from a spaced path, under concurrent sessions and on Windows; every suite runs in the gate or scripts-ci · 1637f034..e7a43ff2
 - 2026-10-21 · 40.3 · the plan board reads order.mjs and progress.mjs · 13b5666c..9d9bf4bf
 - 2026-10-21 · 41.2 · the stage draws each tug's path, state and age · 0cdb2ebd..991b2aad
+- 2026-10-21 · 40.7 · Actions panel pauses, runs a pass, shows stalls, least privilege · 3c533099..40612240
