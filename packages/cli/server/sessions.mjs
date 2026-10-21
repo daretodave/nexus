@@ -226,7 +226,9 @@ export function createSteering({ repo, send, guiSession = () => null, home, now 
   }
 
   async function find(id) {
-    return (await list()).find((s) => s.id === id || s.claude === id || s.name === id) || null;
+    const all = await list();
+    // A star names a session only through its held ledger; an id prefix never names one.
+    return all.find((s) => s.id === id || s.claude === id) || all.find((s) => s.held && s.name === id) || null;
   }
 
   async function link(id, on = true) {
