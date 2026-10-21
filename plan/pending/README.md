@@ -83,13 +83,15 @@ the empty copy (locked in Design)
   sub-bullets at any depth), `~~~ questions` (`- …`, numbered
   when the spec's list is) and `~~~ section <Heading>` (text for
   the end of that `## ` section; a new one before
-  `## Acceptance` when it's absent). At settle, in merge order
-  (date, then what adds before closes, then name),
-  `A?<slug>` takes the Measure line's next
+  `## Acceptance` when it's absent; never `Chunks` or
+  `Acceptance`, refused for their own parts). At settle, in
+  merge order (date, then what adds before closes, then
+  name), `A?<slug>` takes the Measure line's next
   A-ID and `NN.?<slug>` the next chunk number past the spec and
   `ARCHIVE.md`, in this file, its `## Edit` texts (an Asap
-  lane entry), notes and decisions; each part goes at the end
-  of its section, and the Measure line and the roadmap's
+  lane entry), notes, decisions and `## Footguns` lines;
+  each part goes at the end of its section, and the Measure
+  line and the roadmap's
   `N left` count again. A placeholder no Add defines is
   refused, and so is a line outside the parts or a `#` or `##`
   heading inside one. `## Edit` of a spec is for rewriting its

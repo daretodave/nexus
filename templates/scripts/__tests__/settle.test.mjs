@@ -408,6 +408,12 @@ describe('## Add: new work for a spec, numbered at settle', () => {
     assert.throws(() => parsePending(`${head}## Add plan/README.md\n~~~ questions\n- Q\n~~~\n`, 'e.md'), /an Add names a spec/);
     // A placeholder in the file's notes or decisions gets its number too, so it must be defined there as well.
     assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ questions\n- Q\n~~~\n## Notes\n- see 07.?gone\n`, 'f.md'), /07\.\?gone is used but no "## Add" part defines it/);
+    // A new footgun line is checked like notes and decisions: settle numbers it, so a placeholder there must be defined.
+    const fg = (ref) => `## Footguns\n- **new-trap** · a trap → ${ref} guards it · seen 1× · last 2026-10-21 · open\n`;
+    assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ questions\n- Q\n~~~\n${fg('07.?gone')}`, 'g.md'), /07\.\?gone is used but no "## Add" part defines it/);
+    assert.throws(() => parsePending(`${head}${fg('A?gone')}`, 'h.md'), /A\?gone is used but no "## Add" part defines it/);
+    const ok = parsePending(`${head}## Add plan/07-search.md\n~~~ chunks\n- [ ] **07.?guard** Guard · S · needs —\n~~~\n${fg('07.?guard')}`, 'i.md');
+    assert.equal(ok.newFootguns.length, 1);
   });
 
   it('refuses what an Add would drop or misplace: a misspelt part, a stray line, a heading inside a part', () => {
@@ -416,6 +422,10 @@ describe('## Add: new work for a spec, numbered at settle', () => {
     assert.throws(() => parsePending(`${head}~~~ chunk\n- [ ] **07.?a** A · S\n~~~\n${ok}`, 'a.md'), /only ~~~ acceptance \/ chunks \/ questions \/ section <Heading> parts go here; read "~~~ chunk"/);
     assert.throws(() => parsePending(`${head}${ok}- [ ] **07.?c** Outside any part · S\n`, 'b.md'), /parts go here; read "- \[ \] \*\*07\.\?c\*\*/);
     assert.throws(() => parsePending(`${head}~~~ section Findings\nfoo\n## Chunks\nbar\n~~~\n`, 'c.md'), /a part holds no # or ## heading \(### and below only\); read "## Chunks"/);
+    // Text after the Chunks or Acceptance list would be no chunk and no A-ID: those go through their own parts.
+    assert.throws(() => parsePending(`${head}~~~ section Chunks\nA note under the list.\n~~~\n`, 'e.md'), /"~~~ section Chunks" would append plain text after the chunk list: use the ~~~ chunks part/);
+    assert.throws(() => parsePending(`${head}~~~ section Acceptance\nMore criteria.\n~~~\n`, 'f.md'), /"~~~ section Acceptance" would append plain text after the acceptance list: use the ~~~ acceptance part/);
+    assert.throws(() => parsePending(`${head}~~~ section chunks\nlower case\n~~~\n`, 'g.md'), /use the ~~~ chunks part/);
     const deep = parsePending(`${head}\n~~~ section Findings\n### Root cause\nThe clock.\n~~~\n\n${ok}`, 'd.md');
     assert.equal(deep.adds[0].sections[0].text, '### Root cause\nThe clock.');
   });

@@ -28,7 +28,8 @@
 //   - [ ] **07.?strip** … · closes A?strip  keeps the Measure line and the roadmap's "N left" true. Parts:
 //   ~~~                                     acceptance, chunks (sub-bullets at any depth), questions (the Open
 //                                           questions list, numbered when it is) and `section <Heading>` (the end
-//                                           of that ## section; a new one before ## Acceptance when it's absent)
+//                                           of that ## section; a new one before ## Acceptance when it's absent;
+//                                           never Chunks or Acceptance, whose own parts number their entries)
 //   ## Decisions                            entries as the decisions file writes them, numbered at settle:
 //   - **D?empty-copy** · 2026-10-14 · …     `D?empty-copy` anywhere in the repo becomes the number it gets
 //   ## Footguns                             new lines, the footgun format, appended to their status's list
@@ -125,8 +126,9 @@ export function parsePending(raw, name, cfg = DEFAULTS) {
     }
   }
   const slugs = new Set(adds.flatMap((a) => [...a.acceptance, ...a.chunks].map(slugOf)));
-  // Settle fills the numbers into the file's notes and decisions too, so a placeholder there must be defined as well.
-  for (const ref of new Set([...JSON.stringify({ edits, adds, notes, decisions }).matchAll(PLACEHOLDER)].map((m) => m[0]))) {
+  // Settle fills the numbers into the file's notes, decisions and footgun lines too, so a placeholder there must be
+  // defined as well.
+  for (const ref of new Set([...JSON.stringify({ edits, adds, notes, decisions, newFootguns }).matchAll(PLACEHOLDER)].map((m) => m[0]))) {
     if (!slugs.has(ref)) throw new Error(`${name}: ${ref} is used but no "## Add" part defines it`);
   }
   if (!meta.close && !edits.length && !adds.length && !decisions.length && !newFootguns.length && !footguns.length && !notes.length) throw new Error(`${name}: nothing to settle`);
@@ -159,6 +161,9 @@ function parseAdd(file, body, name, earlier, cfg) {
     // A heading in a part would open a section of its own in the spec (a second ## Chunks, say): `### ` and below only.
     const heading = text.split('\n').find((l) => /^#{1,2} /.test(l));
     if (heading) throw new Error(`${name}: "## Add ${file}": a part holds no # or ## heading (### and below only); read "${heading}"`);
+    // Text at the end of Chunks or Acceptance would sit after the list as no chunk and no A-ID: their own parts number them.
+    const list = /^section (chunks|acceptance)$/i.exec(kind)?.[1].toLowerCase();
+    if (list) throw new Error(`${name}: ${where}: "~~~ ${kind}" would append plain text after the ${list === 'chunks' ? 'chunk' : 'acceptance'} list: use the ~~~ ${list} part`);
     if (kind === 'acceptance') add.acceptance.push(...entries(text, /^- \*\*A\?[a-z0-9-]+\*\* \S/, `${name}: ${where}: an acceptance entry starts "- **A?<slug>** "`, DEEP));
     else if (kind === 'chunks') add.chunks.push(...entries(text, new RegExp(`^- \\[ \\] \\*\\*${spec}\\.\\?[a-z0-9-]+\\*\\* \\S`), `${name}: ${where}: a chunk starts "- [ ] **${spec}.?<slug>** "`, DEEP));
     else if (kind === 'questions') add.questions.push(...entries(text, /^- \S/, `${name}: ${where}: a question starts "- "`, DEEP));

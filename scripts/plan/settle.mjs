@@ -8,7 +8,8 @@
 //     commits git shows it landed in;
 //   - its Edit sections apply, each old text found exactly once;
 //   - its Add parts are numbered past the spec and ARCHIVE.md in merge order (`A?<slug>`, `NN.?<slug>`, in its Edit
-//     texts too), placed at their sections' ends, and the Measure line and the roadmap row's "N left" kept true;
+//     texts, notes, decisions and new footgun lines too), placed at their sections' ends, and the Measure line and the
+//     roadmap row's "N left" kept true;
 //   - its decisions get the next numbers, and `D?<slug>` becomes that number wherever the repo says it;
 //   - its footgun sightings bump seen and last (a Watch line's second sighting moves it back to Open); one that reaches
 //     2× while open gets an "automate <slug>" chunk in the ladder spec and an entry in the Asap lane (the ladder,
@@ -1069,10 +1070,11 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
     // rewrites a line (a later chunk's `needs`, the measure) never moves an edit's anchor out from under it.
     const numbered = applyPlanChanges(p, r, w);
     said.push(...[...numbered].map(([k, v]) => `${k} is ${v}`));
-    // The numbers go into the file's own notes and decisions too (a decision naming the chunk it set up).
+    // The numbers go into the file's own notes, decisions and footgun lines too (a decision naming the chunk it set up).
     const given = (t) => t.replace(PLACEHOLDER, (k) => numbered.get(k) ?? k);
     p.notes = p.notes.map(given);
     p.decisions = p.decisions.map(given);
+    p.newFootguns = p.newFootguns.map(given);
     if (p.close) {
       const specFile = specOf(p.close);
       const archive = r('plan/ARCHIVE.md') ?? '';

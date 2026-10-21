@@ -293,4 +293,16 @@ describe('the settled view of an ## Add', () => {
     assert.match(view.problems.join('\n'), /07\.\?gone is used but no "## Add" part defines it/);
     assert.equal(view.numbers.size, 0);
   });
+
+  it('names the last refusals as problems: section Chunks or Acceptance, an undefined placeholder in a footgun line', () => {
+    const root = tmp();
+    write(root, 'plan/07-search.md', SPEC);
+    write(root, 'plan/pending/plot-s.md', '---\ndate: 2026-10-21\n---\n## Add plan/07-search.md\n~~~ section Chunks\nA note.\n~~~\n');
+    write(root, 'plan/pending/plot-f.md', '---\ndate: 2026-10-21\n---\n## Footguns\n- **t** · a trap → 07.?nope guards it · seen 1× · last 2026-10-21 · open\n');
+    const view = settledView(root);
+    assert.equal(view.problems.length, 2);
+    assert.match(view.problems.join('\n'), /plot-s\.md: .*use the ~~~ chunks part/);
+    assert.match(view.problems.join('\n'), /plot-f\.md: 07\.\?nope is used but no "## Add" part defines it/);
+    assert.equal(view.read('plan/07-search.md'), SPEC);
+  });
 });
