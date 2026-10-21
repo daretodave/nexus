@@ -71,8 +71,6 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
 - **A8** The fleet's last board details are drawn: each
   star's own idle curve, the orphaned worktree's link, and
   one rule for terminal sessions in the switcher.
-- **A9** The JS bundle loads per route under 500 kB and the
-  package ships only the font subsets it uses.
 
 ## Open questions
 
@@ -82,7 +80,7 @@ running tool call can't be killed, so the next tool boundary
 is the interrupt point.)
 
 ## Chunks
-Measure: 4 open · 5 closed · next A10
+Measure: 3 open · 6 closed · next A10
 
 - [ ] **41.6** Live fidelity pass: hover, popovers, motion,
   both themes · S · closes A6 · needs —
@@ -102,8 +100,3 @@ Measure: 4 open · 5 closed · next A10
     CloudLoop counts "PRs opened" from `/api/cloud`.
 - [ ] **41.8** The fleet's last details: idle curves, orphan
   link, switcher rule · S · closes A8 · needs 40.6
-- [ ] **41.9** A lighter package: routes split, fonts
-  trimmed · S · closes A9 · needs —
-  - `React.lazy` per route (the bundle is 556 kB); ship
-    latin and latin-ext `@fontsource` subsets only; subset
-    the mono symbol webfonts to their ranges.
