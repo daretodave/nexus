@@ -137,7 +137,7 @@
   },
   "ComposerLight.dc.html": {
    "x": 0,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 1900,
    "title": "Composer and routing — dawn",
@@ -145,7 +145,7 @@
   },
   "ControlsLight.dc.html": {
    "x": 1520,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 1900,
    "title": "Run mode, owner mode, pause — dawn",
@@ -153,7 +153,7 @@
   },
   "AgentNodeLight.dc.html": {
    "x": 3040,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 1900,
    "title": "Agent node and filaments — dawn",
@@ -161,7 +161,7 @@
   },
   "TugLight.dc.html": {
    "x": 4560,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 1900,
    "title": "Oversight tug and parked questions — dawn",
@@ -169,7 +169,7 @@
   },
   "WorkUnitsLight.dc.html": {
    "x": 6080,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 1900,
    "title": "Chunk, claim, log row, diff, pills — dawn",
@@ -177,7 +177,7 @@
   },
   "PackageLight.dc.html": {
    "x": 7600,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 1900,
    "title": "Phase track, package PR, stacked PR, plan PR — dawn",
@@ -185,7 +185,7 @@
   },
   "FleetKitLight.dc.html": {
    "x": 9120,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 2020,
    "title": "Session tile, git strip, switcher, train — dawn",
@@ -193,7 +193,7 @@
   },
   "FeedbackLight.dc.html": {
    "x": 10640,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 1900,
    "title": "Stepper, ring, toasts, empty, error — dawn",
@@ -689,7 +689,7 @@
   },
   "PlanKitLight.dc.html": {
    "x": 12160,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
    "h": 2640,
    "title": "Plan board: chunk rows, specs, claims — dawn",
@@ -759,16 +759,16 @@
    "x": 13680,
    "y": 2720,
    "w": 1440,
-   "h": 2730,
-   "title": "Vault: key card, dots, import, audit",
+   "h": 3460,
+   "title": "Vault: key card, dots, import, audit, local keys",
    "page": "system"
   },
   "VaultKitLight.dc.html": {
    "x": 13680,
-   "y": 5890,
+   "y": 6620,
    "w": 1440,
-   "h": 2730,
-   "title": "Vault: key card, dots, import, audit — dawn",
+   "h": 3460,
+   "title": "Vault: key card, dots, import, audit, local keys — dawn",
    "page": "system"
   },
   "BoardOwnerAll.dc.html": {
@@ -927,7 +927,7 @@
   },
   "t-comp-d": {
    "x": 0,
-   "y": 5590,
+   "y": 6320,
    "text": "Components · paper at dawn",
    "kind": "title1",
    "maxW": 15120,

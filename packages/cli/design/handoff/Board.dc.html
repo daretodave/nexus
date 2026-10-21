@@ -35,7 +35,7 @@ class Component extends DCLogic {
       cloud: 'CloudLoop' + L + '.dc.html', git: 'GitPanel' + L + '.dc.html', recover: 'Recover' + L + '.dc.html',
       settings: (owner ? 'Settings' : 'SettingsContributor') + L + '.dc.html', review: 'CockpitReview' + L + '.dc.html',
       vault: (owner ? 'Vault' : 'VaultContributor') + L + '.dc.html', vaultOwner: 'Vault' + L + '.dc.html',
-      vaultTip: owner ? 'Vault: secret names for this repo' : "No secrets needed: contributors open PRs; the owner's loop deploys.",
+      vaultTip: owner ? 'Vault: secret names for this repo' : "No project secrets needed: contributors open PRs; the owner's loop deploys.",
       vaultCls: owner ? '' : 'is-quiet'
     };
     const st = this.state;

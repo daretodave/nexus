@@ -1898,3 +1898,39 @@ textarea.field { resize: none; }
 .sched.sched-col label b { display: inline-flex; align-items: center; gap: 8px; }
 .env-rows.is-two .env-head, .env-rows.is-two .env-row { grid-template-columns: 22px minmax(0, 1.2fr) 70px minmax(0, 1fr) repeat(2, 62px); }
 .secrets-grid.is-contrib { grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr); }
+/* a contributor's own local keys: this machine only, never on the plan board */
+.vault-scroll { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; margin: 0 -28px -24px; padding: 0 28px 24px; }
+.vault-none.is-contrib { max-width: 680px; margin-top: 26px; gap: 12px; }
+.vault-none.is-contrib > p { max-width: 560px; }
+.vault-waiting { align-self: stretch; text-align: left; display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.lk { align-self: stretch; text-align: left; display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 14px; border-radius: 16px; background: color-mix(in oklab, var(--surface-solid) 55%, transparent); box-shadow: inset 0 0 0 1px var(--line); }
+.lk-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.lk-title { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 200px; }
+.lk-title b { font-size: 14px; line-height: 20px; font-weight: 600; color: var(--text); }
+.lk-title span { font-size: 12px; line-height: 16px; color: var(--text-3); }
+.lk-acts { display: flex; gap: 6px; }
+.lk-acts .btn { --h: 28px; padding: 0 10px; font-size: 12.5px; gap: 6px; }
+.lk-empty { padding: 13px 14px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); background-image: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in oklab, var(--text) 3%, transparent) 7px 8px); font-size: 13px; line-height: 20px; color: var(--text-2); }
+.lk-rows { display: flex; flex-direction: column; }
+.lk-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 76px auto auto; column-gap: 12px; align-items: center; padding: 8px 6px; border-radius: 10px; }
+.lk-row + .lk-row::before { content: ""; position: absolute; left: 6px; right: 6px; top: 0; height: 1px; background: var(--line); }
+.lk-row.is-editing { background: color-mix(in oklab, var(--accent) 6%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 34%, transparent); }
+.lk-row.is-editing::before, .lk-row.is-editing + .lk-row::before { display: none; }
+.lk-row.is-fresh { animation: nx-relit 2.4s var(--ease-settle) both; }
+.lk-row .vt-edit { padding-top: 8px; }
+.lk-row .vt-acts .btn { --h: 26px; padding: 0 9px; font-size: 12px; }
+.lk-dest { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: var(--r-full); background: var(--well); box-shadow: inset 0 0 0 1px var(--line); color: var(--text-2); font-size: 11.5px; line-height: 16px; font-weight: 500; white-space: nowrap; }
+.lk-dest .ic { width: 12px; height: 12px; color: var(--text-3); }
+.lk-dest.is-locked .ic { color: var(--accent); }
+.lk-form { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px; background: color-mix(in oklab, var(--accent) 5%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent); }
+.lk-form-fields { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 8px; }
+.lk-form-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lk-form-foot .btn { --h: 28px; padding: 0 10px; font-size: 12.5px; }
+.lk-note { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 18px; color: var(--text-3); }
+.lk-note .ic { width: 13px; height: 13px; color: var(--accent); flex: none; margin-top: 2px; }
+.lk-note b { color: var(--text-2); font-weight: 600; }
+.env-rows.is-local .env-row { grid-template-columns: 22px minmax(0, 1fr) 76px minmax(0, 1.05fr); }
+@media (prefers-reduced-motion: reduce) { .lk-row.is-fresh { animation: none; } }
+.env-rows.is-local .env-row:first-child::before { display: none; }
+.lk.is-bare { padding: 0; background: none; box-shadow: none; }
+.secrets-grid.is-contrib { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); align-items: start; }

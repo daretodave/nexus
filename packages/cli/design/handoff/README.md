@@ -48,6 +48,33 @@ This folder is not in the npm package (`package.json` `files`).
 
    The vault work is ported in 42.8; everything else is
    re-ported in 41.10.
+3. **2026-10-21, third delivery** (artifact version
+   1792603872-7f9f), a contributor's local keys:
+   - **Vault (contributor):** the headline is "No project
+     secrets needed", then the waiting card, then a quiet
+     "Your local keys" section. Keys show as names and eight
+     dots, tagged "this machine". "Add a key" and "Import a
+     .env" say "this machine only" with a lock instead of
+     destination checkboxes. A locked note sits at the
+     bottom. Replace changes the key on this machine only.
+     The empty state reads "None. Add one if the app needs it
+     to run locally." A `localKeys` prop picks some or none.
+   - **Import:** names only. Public-looking keys and settings
+     start unticked, and an existing key changes only when
+     ticked ("replaces your local value").
+   - **Onboarding (4b):** the same section for contributors,
+     starting empty.
+   - **Wording:** the Vault rail tooltip on every view, and
+     the waiting card now says "project secrets". Contributor
+     Settings counts the local keys and links to them.
+     VaultKit gains the local keys in four states (keys,
+     empty, adding, importing).
+   - **Changed boards:** Board, CloudLoop, Cockpit, Fleet,
+     GitPanel, Inbox, Recover, Secrets, Settings, Vault,
+     VaultKit, plus `canvas.json` and `nexus.css`.
+
+   The local keys belong to 42.9 (behaviour) and 42.8 (UI);
+   the tooltip and wording changes ride with 41.10.
 
 ## Changes from the delivered files
 
