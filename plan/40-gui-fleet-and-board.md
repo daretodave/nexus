@@ -66,8 +66,6 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 
 - **A5** The claims panel groups by person and session, and
   claims, releases, holds, assigns and requests.
-- **A10** The GUI resumes a Workflow from its transcript
-  folder.
 - **A12** The board's grip reorders chunks within a spec,
   and Reassign picks its target from the claimants.
 
@@ -76,12 +74,10 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 (None.)
 
 ## Chunks
-Measure: 3 open · 9 closed · next A13
+Measure: 2 open · 10 closed · next A13
 
 - [ ] **40.5** The claims panel: group, hold, assign, request
   · M · closes A5 · needs —
-- [ ] **40.10** Recover from a Workflow transcript folder · M
-  · closes A10 · needs —
 - [ ] **40.12** The board's grip reorders; Reassign picks a
   target · M · closes A12 · needs 40.5
   - The grip is drawn but inert in 41.3. A reorder lands as a

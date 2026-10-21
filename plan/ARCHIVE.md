@@ -97,3 +97,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 40.11 · run mode and owner mode live in .nexus/local.json via /api/local · 8c379d20..85391147
 - 2026-10-21 · 40.2 · fleet home tiles by star, a merged inbox, Resume on a fallen tile · ec219710..1f1a1629
 - 2026-10-21 · 40.6 · every session and the repo show git; tidy dry run lists idle trees · 6d4ca0c6..5e4c0711
+- 2026-10-21 · 40.10 · Recover reads a Workflow run folder and resumes the run · cf3546a3..97209d2a
