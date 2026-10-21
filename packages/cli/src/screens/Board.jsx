@@ -15,7 +15,7 @@ import {
   ViewFrame, ViewHead, ViewTitle, InboxBtn, LoopStatus, Seg, ChoiceButtons, Icon, Protect, PbSec, PbFold,
   Empty, Err, ToastHost, useShell,
 } from '../ui/index.js';
-import { api, server, usePlan, useClaims, useSummaries, useSessions, useLocalSettings, useCloudLoop } from '../data/index.js';
+import { api, server, usePlan, useClaims, useSummaries, useSessions, useLocalSettings, useCloudLoop, useReloadOn, chunkStagesOf } from '../data/index.js';
 import { PATHS, lastSession } from '../routes.js';
 import {
   normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, railPeople, hhmm,
@@ -50,6 +50,8 @@ export default function Board() {
   const sums = useSummaries();
   const sessR = useSessions(8000);
   const cloud = useCloudLoop();
+  // A chunk claimed, gated or archived on the home session's channel redraws the board now, not at the next look.
+  useReloadOn(chunkStagesOf(shell.live), planR, claimsR);
 
   const [view, setView] = useState(null);
   const [sort, setSort] = useState('next');

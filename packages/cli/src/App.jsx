@@ -3,7 +3,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ShellContext, Err } from './ui/index.js';
-import { useAppState, useEvents, useInbox } from './data/index.js';
+import { useAppState, useEvents, useInbox, useReloadOn } from './data/index.js';
 import { fromInbox } from './screens/headsdown-inbox/inboxModel.js';
 import { PATHS } from './routes.js';
 // Every screen is its own chunk, fetched when its route first renders, so
@@ -62,6 +62,8 @@ function Shell() {
   const live = useEvents();
   const inbox = useInbox();
   usePrefetchScreens();
+  // A question asked or answered on the live channel moves the badge now, not at the next poll.
+  useReloadOn(live.asks.length + live.permissions.length, inbox);
   if (app.status === 'error' && !app.data) {
     return (
       <div className="ob" style={{ justifyContent: 'center' }}>

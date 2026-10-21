@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AppFrame, Empty, Err, Panes, Phases, ToastHost, localRunMode, prefsFromRunMode, saveRunMode, useShell } from '../ui/index.js';
-import { api, server, useCloudLoop, useEvents, useLocalSettings, useResource, useSessions } from '../data/index.js';
+import { api, server, useCloudLoop, useEvents, useLocalSettings, useReloadOn, chunkStagesOf, useResource, useSessions } from '../data/index.js';
 import { PATHS, rememberSession } from '../routes.js';
 import { toPrompt } from '../../shared/route.mjs';
 import CockpitTop from './cockpit/CockpitTop.jsx';
@@ -53,6 +53,9 @@ export default function Cockpit() {
 
   const live = useEvents(id);
   const ledgerRes = useResource(`/api/sessions/${encodeURIComponent(id)}`, { poll: 4000 });
+  // A chunk claimed, gated or archived on the live channel refreshes the ledger now (the river, the strip),
+  // not at the next poll.
+  useReloadOn(chunkStagesOf(live), ledgerRes);
   const sessionsRes = useSessions();
   const cloudRes = useCloudLoop();
   const localRes = useLocalSettings();

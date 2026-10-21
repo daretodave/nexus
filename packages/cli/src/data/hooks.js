@@ -47,6 +47,20 @@ export function useResource(path, { poll, skip } = {}) {
   return { ...st, endpoint: `GET ${path}`, reload: load };
 }
 
+/** Reload resources when `key` changes after the first render (a live channel moved), not on mount. */
+export function useReloadOn(key, ...resources) {
+  const seen = useRef(key);
+  const reloads = resources.map((r) => r.reload);
+  useEffect(() => {
+    if (seen.current === key) return;
+    seen.current = key;
+    for (const reload of reloads) reload();
+  }, [key, ...reloads]);
+}
+
+/** The key that moves when a live store's chunks change stage (claim, build, gate, archive). */
+export const chunkStagesOf = (live) => Object.values(live?.stage?.chunks || {}).map((c) => `${c.id}:${c.stage}`).join(' ');
+
 // ---- served today ---------------------------------------------------------
 
 /** GET /api/state: { info: { repo, name, branch, remote, lastCommit, owner, adopted }, prefs, commands, provider, permissionModes }. */
