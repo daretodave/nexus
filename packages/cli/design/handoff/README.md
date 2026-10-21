@@ -86,3 +86,65 @@ theme-agnostic:
   ledger, as the cockpit does.
 - **Plot's empty thoughts box** keeps the board's ~440px height
   instead of collapsing to two lines before any idea card exists.
+
+## Patterns not adopted
+
+Every board pattern the app leaves out or draws differently, with
+the reason (the 41.3 close carries the same list):
+
+- **Documentation boards** (Main, Type, Space, Motion, Tokens) and
+  the kit boards' `.sheet`, `.sec`, `.specimen`, `.demo`, `.code`,
+  `.ease-demo`, `.curve` frames: they document the design and have
+  no app UI. `nexus.css` still ships them verbatim.
+- **Frozen demo states** (`.is-hover`, `.is-focus`, `.is-active`,
+  `.is-typed`; FleetKit's git-pop and PlanKit's popover open by
+  default; the Board's request popover, GitPanel's tidy pop, the
+  cockpit's "changing" parked card): real `:hover`,
+  `:focus-visible`, `:focus-within` and clicks open the same
+  classes live. The info button, request popover and git-pop keep
+  `.is-hover` while open.
+- **Board demo data and timers** (tidepool, lantern, the sample
+  sessions, commits, PRs, runs, questions, ideas, schedules; vega
+  pausing after 3.2s, altair resuming): real data and server state
+  replace them, using the board copy as templates. A missing
+  endpoint shows an empty state or a dim dash, never made-up values.
+- **The design tool's delivery** (Google Fonts links, `support.js`,
+  each onboarding board's inline font-family): fonts are bundled
+  offline with `@fontsource`.
+- **Cockpit1024 and every Light board** have no code of their own:
+  `nexus.css`'s breakpoints and `data-theme` tokens produce them.
+- **Data the stream does not carry yet:** tool-row durations and
+  diffstats, message times, the workflow junction node and its
+  dashed lines, stage captions with a tool's result (the tool's
+  name shows), "3 tonight" (reads "this session"), heads-down's
+  time bar and phase-track marks, the Inbox tug countdown
+  ("default in 4:48"), CloudLoop's run sentences, PR and parked
+  chips, "PRs opened" count and the topbar "next 03:30" line, run
+  mode's locked state and the owner-mode confirm while a session
+  runs, the Board rail's star names (an 8-character id until
+  GET /api/sessions exists).
+- **Inert or reduced interactions:** the Board's drag grip (no
+  reorder action), Reassign (no target picker in the design), the
+  orphaned worktree's "open" link (no page for it), Recover's "Pick
+  a folder" (focuses the path field: a browser cannot return an
+  absolute path).
+- **Fleet:** deneb's custom idle curve (the four quadrant paths
+  stand in); the grid scrolls where the board's `.view` clips;
+  there is no "no sessions" board, so only the start tile shows.
+  CloudLoop's `.view` scrolls for the same reason.
+- **Reader-only copy:** Launch's "collapse 1.6s..." caption (the
+  motion is kept); the Welcome prompt and CloudSetup preview show
+  the real prompt and workflow, not `npx @usenexus/cli readme` and
+  `loop --once`.
+- **Authoring slips not copied:** Inbox's "Why the default:" with
+  no space, and Detect's Claude Code row without its check mark.
+- **Additions no board draws,** built from existing classes:
+  permission requests as question cards (Allow / Always allow /
+  Deny), an inline "Edit description" field, the contributor note
+  under a routed `/plot`, Recover's "No recent runs yet", the
+  not-signed-in, checking, red-run and skipped-cloud states.
+- **Shared Tug props** (`whyIcon`, why-label, result line): the
+  Inbox keeps its own markup that matches its board.
+- **The cockpit switcher** also shows terminal sessions (the
+  terminal glyph); the board shows local stars only, and FleetKit
+  does not settle it.
