@@ -195,7 +195,7 @@ Pause-and-confirm beats:
   After tokens.v2: confirm the additive tokens + the
     deprecation note for any old tokens being phased out.
   After the new primitives: confirm the API matches the
-    existing primitive shapes (props, slots) so phases
+    existing primitive shapes (props, slots) so later chunks
     don't have to retrofit.
 ```
 
@@ -215,7 +215,7 @@ Deliverables (tiny variant):
   4. design/INDEX.md            — one paragraph
 
 No compositions — the project is small enough that
-phases ship the compositions inline.
+chunks ship the compositions inline.
 ```
 
 ---
@@ -223,8 +223,8 @@ phases ship the compositions inline.
 ## After the design session lands
 
 The next time the build agent runs (`/march`, `/ship-a-chunk`,
-`/iterate`), it picks up `design/` automatically. Phase 5
-(canonical sibling) consumes it. Update `plan/bearings.md`:
+`/iterate`), it picks up `design/` automatically. The
+canonical-sibling spec consumes it. Update `plan/bearings.md`:
 
 ```markdown
 ## Visual & tonal defaults

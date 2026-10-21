@@ -2,8 +2,8 @@
 
 > What is still to build, one spec per initiative, each ending
 > in chunks sized to one session. Read by every shipping skill
-> (`/ship-a-chunk`, `/plan-a-spec`, `/march`, `/iterate`,
-> `/oversight`) to pick the next chunk. The plan only shrinks:
+> (`/next`, `/ship-a-chunk`, `/plan-a-spec`, `/march`,
+> `/iterate`, `/oversight`) to pick the next chunk. The plan only shrinks:
 > a finished chunk leaves as one line in
 > [`ARCHIVE.md`](ARCHIVE.md).
 

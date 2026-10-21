@@ -9,7 +9,7 @@
 
 ## Pending
 
-(empty — first pass runs after the canonical sibling phase
+(empty — first pass runs after the canonical sibling chunk
 ships and the deploy is green)
 
 ## Done

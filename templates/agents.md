@@ -111,9 +111,9 @@ stop and report. Tests alongside code, never "add tests later".
 
 ### 6. <PROJECT-SPECIFIC RULE — e.g. site name lowercase>
 
-<Customize per the project. For thock: site name is lowercase
-"thock" always. For tickpedia: image alt text required on every
-image. Etc.>
+<Customize per the project. For an editorial site: site name
+is lowercase always. For a data-heavy site: image alt text
+required on every image. Etc.>
 
 ### 7. Content stays in <CONTENT_LOCATION>. Data stays in
        <DATA_LOCATION>.

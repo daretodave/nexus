@@ -91,7 +91,7 @@ templates/
 │   ├── deploy-check.mjs               (the deploy gate)
 │   ├── loop-issue.mjs                 (GitHub issue mirror)
 │   ├── notify.mjs                     (the pager — blocked is loud)
-│   ├── pulse.mjs                      (offline instrument panel: queue/build-plan/candidate counts, no network)
+│   ├── pulse.mjs                      (offline instrument panel: queue/plan/candidate counts, no network)
 │   ├── bootstrap.mjs                  (provider-CLI executor, opt-in)
 │   ├── lint-migration.mjs             (additive-migration linter, pairs with ship-migration.md)
 │   ├── refresh-critique-session.mjs   (Pattern B session refresh, omit unless Auth: is set)
@@ -155,14 +155,14 @@ After copying, search-and-replace across the new files:
 
 | Placeholder | Replace with | Example |
 |---|---|---|
-| `<PROJECT>` | Your product name | `thock` |
-| `<PROJECT_LOWER>` | Lowercase variant | `thock` |
+| `<PROJECT>` | Your product name | `acme` |
+| `<PROJECT_LOWER>` | Lowercase variant | `acme` |
 | `<PROJECT_TAGLINE>` | One-line description | `keyboards, deeply.` |
-| `<HOSTING_URL>` | Live site URL | `https://thock.xyz` |
+| `<HOSTING_URL>` | Live site URL | `https://acme.dev` |
 | `<HOSTING_PROVIDER>` | Hosting provider | `Netlify` |
-| `<REPO_SLUG>` | GitHub repo slug | `daretodave/thock` |
+| `<REPO_SLUG>` | GitHub repo slug | `you/acme` |
 | `<DEFAULT_BRANCH>` | Default branch | `main` |
-| `<PROJECT_PKG_PREFIX>` | Workspace package prefix | `@thock` (or empty if not a monorepo) |
+| `<PROJECT_PKG_PREFIX>` | Workspace package prefix | `@acme` (or empty if not a monorepo) |
 
 For the full bash and PowerShell one-liners that replace all
 eight in one pass, see
@@ -245,13 +245,12 @@ the only other one, for provisioning), and it's plenty.
 
 ## Reference implementations
 
-Two real projects you can copy from instead of (or alongside)
-these templates:
-
-- **thock** (editorial content site, monorepo, Next.js +
-  MDX-in-repo + JSON-as-DB) — `https://github.com/daretodave/thock`
-- **tickpedia** (data-heavy site with weekly automation) — see
-  the project's own repo if accessible.
+The real projects in the root README's
+[Provenance](../README.md#provenance) section (an editorial
+content site on Next.js + MDX-in-repo + JSON-as-DB, and a
+data-heavy site with weekly automation) are reference
+implementations you can copy from instead of (or alongside)
+these templates.
 
 If you're building something close to one of these shapes, copy
 that project's `skills/`, `plan/`, `.claude/` and adapt names —

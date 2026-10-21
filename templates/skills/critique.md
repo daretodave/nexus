@@ -123,7 +123,7 @@ on no-ops.**
 
 ### Step 1 — Build the page set
 
-Default §3. Adjust based on argument, phase progress (skip
+Default §3. Adjust based on argument, plan progress (skip
 non-existent pages), recent shipping focus.
 
 ### Step 2 — Spawn `reader`
@@ -232,7 +232,7 @@ Return 3-line summary.
 2. **`reader` returns malformed output.** Re-spawn once with
    stricter format. If fails again, write single finding "reader
    sub-agent malfunction at pass <N>", commit, exit 1.
-3. **No URLs in page set** (very early phases). Defer.
+3. **No URLs in page set** (very early chunks). Defer.
 4. **`git pull` divergence.**
 
 ## 8. Address loop contract (how `/iterate` consumes findings)
@@ -260,7 +260,7 @@ Conditions to dispatch:
 
 1. **At least 12 commits** after `Last pass` commit, OR
    `Last pass` more than **24 hours** ago, OR `Last pass` is
-   "never" and at least one page-family phase has shipped.
+   "never" and at least one page-family chunk has shipped.
 2. `pnpm deploy:check` shows green.
 3. No pending HIGH critique already queued for iterate.
 

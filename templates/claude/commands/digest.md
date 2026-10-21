@@ -12,7 +12,7 @@ Argument handling:
 Procedure: §3. Hard rules: §4. Failure modes: §5. Two rails
 that matter most: breadth failures become findings (the
 dispatcher fixes them tomorrow), and tuning proposals become
-phase candidates — the loop does not vote on its own
+candidates — the loop does not vote on its own
 constraints.
 
 When invoked from the night workflow, the user is not

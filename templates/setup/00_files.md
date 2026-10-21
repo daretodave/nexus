@@ -139,9 +139,9 @@ When `/oversight` runs, it should:
    cloud environments).
 3. For `PARTIAL` rows, surface a flag: "service N is
    partially configured; verify Section X is done before
-   phase Y ships."
-4. For `STUB` rows whose phase is in the next 3 pending
-   phases, surface as `[needs-user-call]` in
+   chunk Y ships."
+4. For `STUB` rows whose chunk is among the next 3 ready
+   chunks, surface as `[needs-user-call]` in
    `plan/AUDIT.md`.
 
 This makes external-service drift visible to the loop
@@ -154,7 +154,7 @@ without dashboard access.
 Before walking away for a Level 3–4 window (see
 [`../intervention-spectrum.md`](../../intervention-spectrum.md)):
 
-- [ ] Every service touching the next 5 pending phases is
+- [ ] Every service touching the next 5 ready chunks is
       `OK`.
 - [ ] Each `OK` service's verification checklist (bottom of
       its runbook) passes a spot-check.

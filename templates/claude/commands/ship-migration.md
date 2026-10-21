@@ -26,7 +26,7 @@ COLUMN, data-type changes, RLS downgrades) always escalate to
 `/oversight`. `scripts/lint-migration.mjs` enforces this
 mechanically before every commit.
 
-Every new RLS policy ships with a test in the same phase.
+Every new RLS policy ships with a test in the same chunk.
 
 When invoked under `/loop`, the user is not present. After
 commit + push, return cleanly — the loop never applies a

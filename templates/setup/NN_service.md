@@ -1,7 +1,7 @@
 # `<SERVICE>` setup — `<PROJECT>`
 
-> Complete dashboard configuration to support every phase
-> that will ever touch `<SERVICE>` — not just today's phase.
+> Complete dashboard configuration to support every chunk
+> that will ever touch `<SERVICE>` — not just today's chunk.
 > Pre-flighted upfront so `/march` can run unattended without
 > hitting a "configure this in the dashboard" wall.
 >
@@ -18,7 +18,7 @@ reads it.
 
 ## What `<PROJECT>` needs from `<SERVICE>`
 
-- <capability 1, with the phase that depends on it noted>
+- <capability 1, with the chunk that depends on it noted>
 - <capability 2>
 - <capability 3>
 - <...>

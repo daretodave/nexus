@@ -161,13 +161,13 @@ score bump (see `iterate.md`) means user-source findings
 typically beat auto-detected findings at the same severity, so
 they get picked next time `/iterate` runs.
 
-**Caveat: `/march` ships pending phases first.** If thock has
-queued phases, `/iterate` doesn't fire by default. Two
+**Caveat: `/march` ships ready chunks first.** If the plan has
+ready chunks, `/iterate` doesn't fire by default. Two
 escapes:
 
 1. `/jot --severity high <text>` — high-severity findings
    have impact 8–10, dominating the rubric. Still doesn't
-   interrupt phase work but jumps the iterate queue when it
+   interrupt chunk work but jumps the iterate queue when it
    fires.
 2. `/jot <text>` then immediately `/iterate` — runs iterate
    once directly, drains the highest-scoring finding (almost

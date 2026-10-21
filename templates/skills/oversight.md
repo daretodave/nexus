@@ -42,7 +42,7 @@ not oversight — it never asks, never applies, never commits.
 Every other mode requires a present user; under `/loop` they
 are a misconfiguration (§9).
 
-## 3. What `oversight` reads (audit phase)
+## 3. What `oversight` reads (the audit step)
 
 In parallel where independent:
 

@@ -110,7 +110,7 @@ its own cadence.
 plan/DIGEST.md                       # the deliverable (overwrite)
 plan/AUDIT.md                        # breadth failures land here
 plan/PHASE_CANDIDATES.md             # tuning proposals land here
-node scripts/pulse.mjs               # local queue/build-plan numbers
+node scripts/pulse.mjs               # local queue/plan numbers
 gh run list --workflow march -L 20   # the invisible no-ops
 SMOKE_SAMPLE=full pnpm e2e           # the nightly breadth leg
 pnpm verify

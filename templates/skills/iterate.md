@@ -7,10 +7,10 @@
 
 ## 1. Purpose
 
-Phases ship the structure. After they ship, the project is
-**alive but thin**. `/iterate` is the loop that fills it in.
+Specs ship the structure. After their chunks ship, the project
+is **alive but thin**. `/iterate` is the loop that fills it in.
 
-Useful **during** build phases too as a separate quality pass
+Useful **during** the build too as a separate quality pass
 on already-shipped surfaces.
 
 ## 2. Invocation

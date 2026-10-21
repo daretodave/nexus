@@ -4,7 +4,7 @@
 > data layer: `pure-db` and the dynamic side of
 > `hybrid-with-managed-postgres` (see
 > `nexus/customization/data-layer.md` Patterns B and D). One
-> phase = one migration + its RLS policies + its rollback note
+> chunk = one migration + its RLS policies + its rollback note
 > + its tests.
 >
 > Adopt only if `plan/bearings.md`'s `Structured data` row is
@@ -40,7 +40,7 @@ see "Migration safety" below.
   escalate to `/oversight` with the migration file, the linter
   output, and a proposed rollback plan.
 - **RLS policy without a test → block the ship.** Write the test
-  in the same phase; never land a policy untested.
+  in the same chunk; never land a policy untested.
 - **Schema-design judgment call → delegate to `data-steward`**
   (see `nexus/customization/sub-agents.md` §`data-steward`)
   rather than guessing at index selection or anti-abuse
@@ -63,7 +63,7 @@ git pull --ff-only
 ### Step 1 — Pick the work
 
 Read the pending migration brief from `data/BACKLOG.md` or a
-phase brief. Empty backlog → return cleanly, nothing to do this
+spec. Empty backlog → return cleanly, nothing to do this
 tick.
 
 ### Step 2 — Write the migration
@@ -163,7 +163,7 @@ commit.
 1. **Additive-only for autonomous ship.** Destructive migrations
    always route through `/oversight` — never bypass the linter.
 2. **No `Co-Authored-By:`. No emojis.**
-3. **Every new RLS policy ships with a test in the same phase.**
+3. **Every new RLS policy ships with a test in the same chunk.**
 4. **Rollback note required** — a comment block at the top of
    every migration file.
 5. **Sequential migration numbers.** Never reuse or skip a

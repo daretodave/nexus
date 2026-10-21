@@ -114,7 +114,7 @@ drift before it becomes a stall.
 | 05 | <EMAIL_PROVIDER> | `setup/05_<email>.md` | <status> | <date> | <URL> |
 | 06 | <AI_PROVIDER> | `setup/06_<ai>.md` | <status> | <date> | <URL> |
 
-Drop rows that don't apply. Add rows as the build plan
+Drop rows that don't apply. Add rows as the plan
 grows. The minimum is GitHub + hosting; everything else is
 project-specific.
 

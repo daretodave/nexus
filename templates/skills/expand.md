@@ -83,41 +83,41 @@ different "expansion shapes":
 `plan/AUDIT.md` Pending rows. Shape:
 - `impact ≥ 8` AND `ease ≤ 4` → too big for one tick.
 - 3+ findings under the same category → suggests a refactor
-  phase, not 3 fixes.
+  spec, not 3 fixes.
 
 ### B. Critique findings clustered
 
 `plan/CRITIQUE.md` Pending rows. Shape:
-- 3+ HIGH findings on the same URL/family → restructure phase.
+- 3+ HIGH findings on the same URL/family → restructure spec.
 - Repeated mobile-reflow findings across pages → "mobile audit"
-  phase.
+  spec.
 
 ### C. Triage backlog patterns
 
 GitHub issues labeled `triage:loop-queued` (or `triage:reviewed`)
 sitting in queue. Shape:
 - 4+ issues asking for the same feature → propose that feature
-  as a phase.
+  as a spec.
 - Issues consistently routed to `triage:needs-user` → propose a
-  phase that removes the user gate.
+  spec that removes the user gate.
 
 ### D. Spec drift
 
 `git log -p --since="<last expand pass>" -- spec.md`. If the
 spec has changed since the last expand pass:
-- New feature paragraphs → propose phases for them.
-- New non-goals removed → look for phases the loop avoided that
+- New feature paragraphs → propose specs for them.
+- New non-goals removed → look for work the loop avoided that
   may now be in scope.
 - Audience or scope expansion → flag as a meta-candidate (may
-  reshape multiple phases).
+  reshape multiple specs).
 
 ### E. Design landings
 
 New / modified files in `design/`:
 - `design/page-<family>.<ext>` for a family that doesn't have a
-  phase → propose the phase.
+  spec → propose the spec.
 - `design/atoms.<ext>` adding new atoms → propose extracting
-  them as a primitives phase if substantial.
+  them as a primitives spec if substantial.
 - `design/decisions.<ext>` modifications → check against
   `bearings.md`; propose alignment work.
 
@@ -128,15 +128,15 @@ written:
 - An entity went from 0 to 50+ records → may warrant its own
   index page / detail surface that wasn't planned.
 - Cross-reference graphs that grew complex → may warrant a
-  taxonomy / browse phase.
+  taxonomy / browse spec.
 
 ### G. Commit-pattern signals
 
 `git log --since="<last expand pass>" --pretty=format:'%s'`:
 - 5+ commits in a row touching the same surface with `fix:` →
   may be a refactor candidate.
-- A phase that took 3+ retries to ship → may have been
-  underspec'd; propose a brief-refresh phase.
+- A chunk that took 3+ retries to ship → its spec may have
+  been underspec'd; propose a spec refresh.
 
 ### H. Existing plan gaps
 
@@ -154,8 +154,8 @@ Each candidate gets `expand_score` 0–10:
 |---|---|
 | Signal multiplicity (≥2 source types pointing same way) | +1 to +3 |
 | Urgency (spec/design changed in last 7 days) | +2 |
-| Cheap-and-impactful (estimated 1 phase, high-leverage surface) | +2 |
-| Expensive-or-uncertain (estimated 3+ phases or unclear scope) | -2 |
+| Cheap-and-impactful (estimated 1 chunk, high-leverage surface) | +2 |
+| Expensive-or-uncertain (estimated 3+ chunks or unclear scope) | -2 |
 | Conflicts with `bearings.md` URL contract or non-goals | -3 |
 | Conflicts with `spec.md` non-goals (explicit "we don't do this") | -5 (drop unless score still > 3) |
 
@@ -189,8 +189,8 @@ For each signal cluster, draft a candidate:
   - <signal 1>
   - <signal 2>
 - rationale: <why this is real, not noise>
-- proposed scope: <1-phase | N-phase mini-plan>
-- estimated phases: <N>
+- proposed scope: <1-chunk | N-chunk spec>
+- estimated chunks: <N>
 - conflicts: <with spec / contract / existing plan; or "none">
 - last re-evidenced: <ISO date> (optional — omit until a later
   pass re-affirms this candidate)
@@ -210,11 +210,11 @@ For each top candidate, ask:
    independent signals = real. One audit row = wait.
 2. **Does it conflict with `spec.md` non-goals?** If yes, drop
    unless the user has explicitly broadened scope.
-3. **Is the scope honest?** "Add comments" = N phases minimum;
+3. **Is the scope honest?** "Add comments" = N chunks minimum;
    don't pretend it's one.
 4. **Does the loop have the capacity to ship this?** A
    candidate that requires schema migration of 100 records
-   deserves to be phase-promoted but only by `/oversight`.
+   deserves to be promoted to a spec, but only by `/oversight`.
 
 After assessment, you should have **2–4 candidates**, not 3
 mechanically.
@@ -281,14 +281,14 @@ oversight will review and promote.
 1. **Never modify code.** Plan adjustments only.
 2. **Cap at 3 filed candidates per pass.** Boldness != flooding.
 3. **Don't promote spec non-goals.** If spec.md says "no
-   comments thread," don't propose a comments phase even if
+   comments thread," don't propose a comments spec even if
    external signals demand it. Surface it as `[needs-user-call]`
    in the candidate's `conflicts` field; user resolves via
    `/oversight` or by editing spec.
 4. **Cite the signals.** Every candidate must list ≥1 concrete
    signal source (audit row, critique finding, issue number,
    spec diff line, design file).
-5. **Honest scope.** A 3-phase candidate is not a 1-phase
+5. **Honest scope.** A 3-chunk candidate is not a 1-chunk
    candidate just because that fits more comfortably.
 6. **One commit per pass.**
 7. **No emojis. No `Co-Authored-By:`.**

@@ -1,9 +1,9 @@
 # Current state — <fill in today's date>
 
 > Baseline for a brownfield retrofit. Written once, by hand,
-> before the build plan exists — see
+> before the plan's first spec exists — see
 > `nexus/playbooks/existing-project.md` §1. Not maintained by
-> the loop afterward; the build plan and `bearings.md` are the
+> the loop afterward; the plan and `bearings.md` are the
 > living documents. Keep this as history.
 
 ## What's there
