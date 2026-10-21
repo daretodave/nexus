@@ -140,3 +140,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 35.9 · v2.0.0 is tagged and both lock files and plan-shape point at it · plan only
 - 2026-10-21 · 38.3 · main needs a PR except for the owner and the loop; claims never force-pushed · plan only
 - 2026-10-21 · 38 · spec complete: adoption asks owner or contributor and arms the hooks, push-policy guards main on origin and upstream only, the owner's checkout is armed for overnight runs, and nexus's main and claims carry their rulesets · c4fddf0b..9357324e
+- 2026-10-21 · 35.8 · CLAUDE.md names the v2 pick order, priority rows included · plan only
+- 2026-10-21 · 35 · spec complete: the v2 move is finished: plan READMEs and public docs speak chunks, the guard and candidates file are renamed, upgrade-plan converts a v1 plan, spec mirrors replace phase mirrors, CLAUDE.md names the v2 pick order, and v2.0.0 is tagged · 826fbef0..7554eed0

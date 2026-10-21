@@ -24,14 +24,12 @@ needs are done):
 **Held** (waits on the owner's word; never picked until the
 line goes):
 
-- **35.8** `CLAUDE.md` is the owner's configuration
 - **39.4** creates a scratch repo on the owner's account
 
 ## Specs
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 1 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 1 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
