@@ -57,8 +57,6 @@ What exists today (2026-10-20): `fileURLToPath` in
   two concurrent `take` calls never both win; a busy rename
   retries.
 - **A5** Two concurrent `announce` posts both land.
-- **A6** The guard refuses `git --git-dir <x> worktree remove`;
-  `worktree.mjs list` reports a dead lock's pid as dead.
 - **A10** `scripts-ci.yml` has run green on both runners with
   a sized `timeout-minutes`.
 
@@ -67,14 +65,12 @@ What exists today (2026-10-20): `fileURLToPath` in
 (None.)
 
 ## Chunks
-Measure: 5 open · 5 closed · next A11
+Measure: 4 open · 6 closed · next A11
 
 - [ ] **36.2** loop-issue tests in the gate; progress main()
   from a spaced path · S · closes A2 · needs —
 - [ ] **36.4** Ledger and notice board survive concurrent
   writers · M · closes A4, A5 · needs —
-- [ ] **36.5** Guard sees --git-dir; worktree list checks the
-  lock's pid · S · closes A6 · needs —
 - [ ] **36.9** First scripts-ci runs watched; timeout sized ·
   S · closes A10 · needs 36.2
   - Touches `.github/workflows/`: ship it from a local session.
