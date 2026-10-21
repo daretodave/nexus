@@ -165,3 +165,11 @@ test('the inbox: a secret request is one key item per missing name, with no defa
   assert.equal(fromInbox([{ id: 'plan:x', src: 'durable', durable: d }]).length, 1);
   assert.equal(fromDurable([{ id: 'q', file: 'plan/a.md', line: 1, text: 'A plain question?' }])[0].secret, undefined);
 });
+
+test('Launch\'s secrets row: the vault by name, a skip, or a contributor\'s none', async () => {
+  const { secretsLine } = await import('../src/screens/vault/model.js');
+  assert.equal(secretsLine(STATUS, 'imp'), '3 names in the vault · values in .env and CI');
+  assert.equal(secretsLine({ owner: true, secrets: [], vault: { keychain: 'nexus' } }, 'skip'), 'skipped · the vault is in the rail');
+  assert.equal(secretsLine({ owner: false, secrets: [] }), 'no project secrets needed · local keys stay on this machine');
+  assert.equal(secretsLine(null), null);
+});

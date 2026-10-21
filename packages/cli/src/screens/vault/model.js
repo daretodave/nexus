@@ -375,3 +375,17 @@ export function readSkipped() {
 export function writeSkipped(set) {
   try { sessionStorage.setItem(SKIP, JSON.stringify([...set])); } catch { /* the skip lasts for this page only */ }
 }
+
+/**
+ * Launch's secrets row: "3 names in the vault · values in .env and CI", "skipped · the vault is in the rail", or for a
+ * contributor "no project secrets needed"; null when the vault does not answer.
+ */
+export function secretsLine(status, pick) {
+  if (!status) return null;
+  if (!status.owner) return 'no project secrets needed · local keys stay on this machine';
+  if (pick === 'skip' && !(status.secrets || []).length) return 'skipped · the vault is in the rail';
+  const n = (status.secrets || []).length;
+  const ci = (status.secrets || []).some((s) => (s.destinations || []).some((x) => x.state === 'pushed'));
+  const where = status.vault?.keychain ? 'your keychain' : '.env';
+  return `${n} ${n === 1 ? 'name' : 'names'} in the vault · values in ${where}${ci ? ' and CI' : ''}`;
+}

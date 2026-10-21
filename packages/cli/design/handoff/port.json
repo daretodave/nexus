@@ -150,15 +150,15 @@
     "PlanKitLight": {
       "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
     },
-    "Vault": {
-      "pending": "42.8"
-    },
-    "VaultImport": {
-      "pending": "42.8"
-    },
-    "VaultContributor": {
-      "pending": "42.8"
-    },
+    "Vault": [
+      "src/screens/Vault.jsx",
+      "src/screens/vault/model.js"
+    ],
+    "VaultImport": "src/screens/vault/ImportPanel.jsx",
+    "VaultContributor": [
+      "src/screens/Vault.jsx",
+      "src/screens/vault/LocalKeys.jsx"
+    ],
     "VaultLight": {
       "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
     },
@@ -168,9 +168,7 @@
     "VaultContributorLight": {
       "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
     },
-    "VaultKit": {
-      "pending": "42.8"
-    },
+    "VaultKit": "src/ui/vault.jsx",
     "VaultKitLight": {
       "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
     },
@@ -178,14 +176,13 @@
     "BoardOwnerAllLight": {
       "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
     },
-    "Secrets": {
-      "pending": "42.8"
-    },
+    "Secrets": "src/screens/onboarding/Secrets.jsx",
     "SecretsLight": {
       "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
     },
-    "SecretsContributor": {
-      "pending": "42.8"
-    }
+    "SecretsContributor": [
+      "src/screens/onboarding/Secrets.jsx",
+      "src/screens/vault/LocalKeys.jsx"
+    ]
   }
 }

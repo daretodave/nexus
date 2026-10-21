@@ -5,7 +5,8 @@
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, Orb, Kbd, SessTag, Star, nextSessionName, useShell, stepCount, stepBefore, stepNo } from '../../ui/index.js';
-import { api, server, useLocalSettings, useSessions } from '../../data/index.js';
+import { api, server, useLocalSettings, useSecrets, useSessions } from '../../data/index.js';
+import { secretsLine } from '../vault/model.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, markOnboarded, useEnter } from './frame.jsx';
 import { useDraft, localRunMode, saveRunMode, RUN_MODE_LABEL, SCHED_SUMMARY } from './draft.js';
@@ -94,6 +95,9 @@ export default function Launch() {
   const local = useLocalSettings();
   const sessions = useSessions(0);
   const [d] = useDraft();
+  // The secrets row (Launch board): what the vault holds by name, or why there is nothing to hold.
+  const secrets = useSecrets();
+  const vaultLine = secretsLine(secrets.status === 'ready' ? secrets.data : null, d.vault);
   const nav = useNavigate();
   const [again, setAgain] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -170,6 +174,7 @@ export default function Launch() {
             </div>
             <div><span className="k">run mode</span><span className="v">{RUN_MODE_LABEL[rm]}</span></div>
             <div><span className="k">plan</span><span className="v">{planLine(d, info.adopted)}</span></div>
+            {vaultLine ? <div><span className="k">secrets</span><span className="v">{vaultLine}</span></div> : null}
             <div><span className="k">cloud loop</span><span className="v">{cloudLine(d)}</span></div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>

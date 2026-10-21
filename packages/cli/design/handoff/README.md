@@ -12,8 +12,8 @@ differs from its board is a bug in the screen, not in the board.
 - `canvas.json`: the index of boards, grouped into pages
   (design system, fleet, cockpit, views, onboarding).
 - `port.json`: the port map, each board's file in the app, its
-  skip with the reason, or the chunk it waits on (the vault's
-  boards: 42.8, which maps them when it lands).
+  skip with the reason, or the chunk it waits on (none since 42.8
+  mapped the vault's boards).
   `node scripts/verify.mjs design` checks it; this folder
   predates ingest and has no manifest, so its files are not
   hashed (`skills/design/port.md` §5).
@@ -450,6 +450,14 @@ age and draws blank.
 - **Onboarding's import panel** adds "Choose another" and a dropzone
   when no dotenv is found at the root (the board only draws the found
   one).
+- **Launch's secrets row** (41.10 left it here) reads the vault: "N
+  names in the vault · values in .env and CI" (the keychain when it is
+  on; CI once a push landed), "skipped" when Secrets was skipped, and a
+  contributor's "no project secrets needed".
+- **CloudSetup's "the vault just lists the name"** is left out: the
+  loop's `CLAUDE_CODE_OAUTH_TOKEN` is its sign-in, not a project
+  secret, so the manifest and the Vault never list it (the design's own
+  decision, which the Vault board's sample row predates).
 
 **Not ported, with the reason:**
 
