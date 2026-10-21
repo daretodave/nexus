@@ -139,7 +139,7 @@ export default function Fleet() {
               <TileNew>
                 <span className="cstar is-neutral" />
                 <div className="t-title-s">Start another session</div>
-                <div className="t-body-s c-2"><NextChunk next={plan.data?.next} /></div>
+                <div className="t-body-s c-2"><NextChunk next={[].concat(plan.data?.next || [])[0]} /></div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button className="btn btn-primary btn-s" type="button" onClick={start} disabled={starting} aria-busy={starting || undefined}><Icon name="plus" size={14} />Start heads-down</button>
                   <Link className="btn btn-ghost btn-s" to={PATHS.board}>Pick a chunk</Link>

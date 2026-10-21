@@ -33,6 +33,7 @@
     "@fontsource/jetbrains-mono": "5.3.0",
     "@fontsource/quicksand": "5.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "jetbrains-mono": "1.0.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-router-dom": "7.18.4",

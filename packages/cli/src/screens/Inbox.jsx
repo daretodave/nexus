@@ -164,7 +164,8 @@ export default function Inbox() {
   // the Waiting now group: who it blocks, and the session to start once it is settled
   const nowSess = names(g.now.map(sessName));
   const nowStart = g.now.length > 0 && g.now.every((i) => i.phase === 'start');
-  const nowLine = nowSess ? (nowStart ? `blocks ${nowSess} from starting` : `${nowSess} waits on these`) : 'an agent waits on these';
+  const nowMany = new Set(g.now.map(sessName).filter(Boolean)).size > 1;
+  const nowLine = nowSess ? (nowStart ? `blocks ${nowSess} from starting` : `${nowSess} ${nowMany ? 'wait' : 'waits'} on these`) : 'an agent waits on these';
   const startId = nowStart ? g.now.find((i) => i.sessionId)?.sessionId : null;
 
   const effect = (i) => {

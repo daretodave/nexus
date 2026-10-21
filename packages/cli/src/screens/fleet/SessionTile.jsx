@@ -18,17 +18,22 @@ const SATS = [
   { x: '28%', y: '76%', fil: { l: '28%', t: '46%', w: '22%', h: '30%', d: 'M100 0C100 50 0 50 0 100' } },
   { x: '74%', y: '74%', fil: { l: '50%', t: '46%', w: '24%', h: '28%', d: 'M0 0C0 50 100 50 100 100' } },
 ];
+// A session waiting on its start questions seats its idle agents in a triangle,
+// and a terminal session its one helper up and left (Fleet board: sirius, polaris).
+const ASK_SATS = [{ x: '22%', y: '30%' }, { x: '78%', y: '30%' }, { x: '50%', y: '82%' }];
+const OBS_SATS = [{ x: '30%', y: '30%', fil: { l: '30%', t: '30%', w: '20%', h: '16%', d: 'M100 100C100 50 0 50 0 0' } }];
 const ACTIVE = new Set(['thinking', 'tool', 'writing']);
 
 function SkyStage({ s }) {
   const asking = s.state === 'asking';
   const observing = s.state === 'observing';
   const main = asking ? 'blocked' : s.orb || (s.state === 'resumed' ? 'thinking' : 'tool');
-  const agents = (s.agents || []).slice(0, SATS.length);
+  const seats = asking ? ASK_SATS : observing ? [...OBS_SATS, ...SATS.slice(1)] : SATS;
+  const agents = (s.agents || []).slice(0, seats.length);
   return (
     <>
       {!asking ? agents.map((a, i) => {
-        const g = SATS[i].fil;
+        const g = seats[i].fil;
         if (a.workflow) return <Fil key={`f${i}`} l={g.l} t={g.t} w={g.w} h={g.h} d={g.d} kind="flow" />;
         const quiet = observing || a.state === 'idle';
         return <Fil key={`f${i}`} l={g.l} t={g.t} w={g.w} h={g.h} d={g.d} kind={quiet ? 'quiet' : undefined} flow={!quiet && ACTIVE.has(a.state)} />;
@@ -38,7 +43,7 @@ function SkyStage({ s }) {
         {s.state === 'resumed' ? <FreshMark style={{ left: 10, top: -20, right: 'auto' }} /> : null}
       </SNode>
       {agents.map((a, i) => (
-        <SNode key={`n${i}`} x={SATS[i].x} y={SATS[i].y}>
+        <SNode key={`n${i}`} x={seats[i].x} y={seats[i].y}>
           {a.workflow ? <Junction style={{ transform: 'translate(-50%, -50%) scale(.7)' }} /> : <Orb state={asking ? 'idle' : a.state || 'idle'} size="xs" />}
         </SNode>
       ))}

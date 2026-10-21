@@ -3,6 +3,9 @@
 // a value yet (the session ledger, the inbox, the cloud loop), the row keeps
 // its label and shows a dim dash, never an invented number.
 import { row, framed, split, rule, fit, cut, len, WIDTH } from './tuiCanvas.jsx';
+import { headsLedger } from './headsLedger.js';
+
+export { headsLedger };
 
 const MID = 67; // the column of the pane divider (┬ ┴ │)
 const L = 3; // left content
@@ -95,7 +98,7 @@ function tapeEvent(t, stage) {
  */
 export function headsRows(m) {
   const { ledger, info = {}, live, claims = [], waiting = {}, cloud, budget, titles = {}, now, ui } = m;
-  const L0 = ledger || {};
+  const L0 = headsLedger(ledger);
   const stage = live?.stage || { agents: {}, order: [], chunks: {}, chunkOrder: [] };
   const transcript = live?.transcript || [];
   const name = L0.name || 'session';

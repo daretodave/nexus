@@ -4,11 +4,14 @@
 // or keyboard focus.
 import { useState } from 'react';
 import { GitStrip } from '../../ui/index.js';
-import { prNum } from './util.js';
+import { prNum, hhmm } from './util.js';
+
+// A commit's age may come as a display string ("03:15") or a timestamp.
+const when = (w) => (typeof w === 'number' || /^\d{4}-\d\d-\d\dT/.test(String(w || '')) ? hhmm(w) : w);
 
 export default function FleetGit({ git = {}, brMax = 104 }) {
   const [open, setOpen] = useState(false);
-  const commits = (git.commits || []).slice(0, 5);
+  const commits = (git.commits || []).slice(0, 5).map((c) => ({ ...c, w: when(c.w) }));
   const can = commits.length > 0;
   const show = (v) => () => { if (can) setOpen(v); };
   return (

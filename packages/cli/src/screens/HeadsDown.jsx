@@ -156,7 +156,7 @@ export default function HeadsDown() {
     claims: mineClaims,
     waiting,
     cloud: cloudRes.status === 'ready' ? cloudRes.data : null,
-    budget: (local.status === 'ready' && local.data?.phase) || ledger?.budget || null,
+    budget: (local.status === 'ready' && local.data?.phase) || (typeof ledger?.budget === 'object' ? ledger?.budget?.label : ledger?.budget) || null,
     titles: chunkTitles(plan),
     now,
     seenAt,

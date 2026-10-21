@@ -22,6 +22,19 @@ import LoopLine from './fleet/LoopLine.jsx';
 import { act, hhmm, plural, prNum } from './fleet/util.js';
 import { useToasts } from './fleet/toasts.js';
 
+// Ages and commit times may come as display strings ("2h 19m", "03:15") or as
+// timestamps; a timestamp is drawn the way the board writes it.
+const isStamp = (v) => typeof v === 'number' || /^\d{4}-\d\d-\d\dT/.test(String(v || ''));
+function age(v, now = Date.now()) {
+  if (!isStamp(v)) return v;
+  const m = Math.max(0, Math.floor((now - new Date(v).getTime()) / 60000));
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ${String(m % 60).padStart(2, '0')}m`;
+  return `${Math.floor(h / 24)}d`;
+}
+const when = (v) => (isStamp(v) ? hhmm(v) : v);
+
 const FLAG = { active: 'active', idle: 'idle', orphaned: 'orphan', orphan: 'orphan', fallen: 'fallen' };
 
 function wtHref(w) {
@@ -163,7 +176,7 @@ export default function GitPanel() {
                     branch={w.branch}
                     path={w.path}
                     act={w.act}
-                    age={w.age}
+                    age={age(w.age)}
                     flag={w.flag ? { kind: FLAG[w.flag] || w.flag, text: w.flag } : null}
                     dirty={w.dirty}
                     pr={w.pr ? { num: prNum(w.pr.num), ci: w.pr.ci } : null}
@@ -191,7 +204,7 @@ export default function GitPanel() {
             <div className="gp-col">
               <div className="gp-card">
                 <div className="gp-card-h"><span className="t-caps c-2">main · recent commits</span><TbSpacer /><span className="cap">origin/main</span></div>
-                {(d?.main?.commits || []).map((c) => <Commit key={c.sha} sha={c.sha} m={c.m} w={c.w} />)}
+                {(d?.main?.commits || []).map((c) => <Commit key={c.sha} sha={c.sha} m={c.m} w={when(c.w)} />)}
               </div>
               <div className="gp-card">
                 <div className="gp-card-h"><span className="t-caps c-2">Open pull requests</span><span className="n">{prs.length}</span></div>

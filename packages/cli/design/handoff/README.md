@@ -36,3 +36,30 @@ the originals; `scripts/verify.mjs`, the emoji leg).
 | U+25AA (black small square) | U+25A0 (black square) | the context legend swatches |
 
 Everything else is byte for byte as delivered.
+
+## How the app departs from the delivered render
+
+Two places where the app draws what the handoff means rather than what
+its own render shows, both found in the night fidelity review:
+
+- **The element resets' cascade.** `nexus.css` resets
+  `.nx button, .nx input, .nx textarea, .nx select` to `font: inherit;
+  color: inherit` and draws `.nx :focus-visible` with an outline. Both
+  outrank single-class component rules that follow them, so in the
+  boards a `<button class="btn btn-primary">` loses its ink and weight
+  (pale text on the aurora gradient), `.btn-s`, `.pause-btn`,
+  `.switcher`, `.tug-opt` and `.tool-btn` buttons lose their type size,
+  a `.field` input its 14px, and the composer's textarea draws a focus
+  box inside the composer's own focus glow. The handoff patches the
+  `<a>` cases by hand (`.nx a.btn`, `.nx a.btn-primary`,
+  `.nx a.btn-ghost`), which says what it means. `nexus.css` still ships
+  verbatim; `vite.config.mjs` wraps those two selectors in `:where()`
+  at build time (`repairCascade`, tested), so every component rule wins
+  as written.
+- **Box-drawing glyphs.** The boards load JetBrains Mono from Google
+  Fonts with a `text=` list that includes the box-drawing, block,
+  geometric and arrow ranges. The `@fontsource` subsets leave those
+  out, and a fallback mono with another advance width pulled the
+  heads-down canvas's 120-column rows off their frame.
+  `src/styles/mono-symbols.css` serves only those ranges from the full
+  JetBrains Mono webfonts (`jetbrains-mono@1.0.6`, OFL-1.1).

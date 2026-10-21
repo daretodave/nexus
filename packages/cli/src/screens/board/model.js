@@ -51,9 +51,10 @@ export function normalizePlan(plan) {
     for (const c of s.chunks || []) chunks.push({ ...c, spec: specKey(c.spec ?? id) });
   }
   for (const c of plan.chunks || []) if (!chunks.some((k) => k.id === c.id)) chunks.push({ ...c, spec: specKey(c.spec ?? specOf(c.id)) });
-  const order = (plan.order || (plan.next || []).map((c) => c.id) || []).map(String);
+  const next = [].concat(plan.next || []);
+  const order = (plan.order || next.map((c) => c.id) || []).map(String);
   const asapIds = new Set((plan.asap || []).map(String));
-  for (const c of plan.next || []) if (c.lane === 'asap') asapIds.add(String(c.id));
+  for (const c of next) if (c.lane === 'asap') asapIds.add(String(c.id));
   const heldIds = new Set((plan.held || []).map(String));
   const all = chunks.map((c) => {
     const closed = c.state === 'closed' || c.state === 'settled' || !!c.closed;
@@ -96,7 +97,7 @@ export function claimView(row, ctx, now = Date.now()) {
   }
   if (row.held) {
     const heldMe = !!row.mine || (owner && row.who === PRIVILEGED && isMe);
-    const name = heldMe ? 'you' : (row.held || whoName);
+    const name = heldMe ? 'you' : (typeof row.held === 'string' && row.held ? row.held : whoName);
     return { ...base, kind: 'held', person: name, label: `${name} · held`, since: 'never expires', exp: 'held · never expires' };
   }
   const sess = (sessions || []).find((s) => s.id === row.session || s.claimsSession === row.session);

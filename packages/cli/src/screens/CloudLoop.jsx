@@ -175,7 +175,7 @@ export default function CloudLoop() {
             {loop.paused || loop.next ? (
               <span className="t-body-s c-2" style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
                 <Icon name="clock" size={14} />
-                {loop.paused ? (loop.next ? `Paused. Resume to bring back the ${hhmm(loop.next)} run.` : 'Paused. Resume to bring back the scheduled runs.') : `Next run ${hhmm(loop.next)}, ${inWords(loop.next, now)}`}
+                {loop.paused ? (loop.next ? `Paused. Resume to bring back the ${hhmm(loop.next)} run.` : 'Paused. Resume to bring back the scheduled runs.') : ['Next run ' + hhmm(loop.next), inWords(loop.next, now)].filter(Boolean).join(', ')}
               </span>
             ) : null}
             <Link className="btn btn-ghost btn-s" to={PATHS.settings} style={{ alignSelf: 'flex-start' }}>Change in Settings</Link>

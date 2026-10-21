@@ -40,6 +40,13 @@ export function dur(ms) {
   return h ? `${h}h ${m % 60}m` : `${m}m`;
 }
 
+/** "18:42": minutes and seconds of a chunk's elapsed time (ms), as the context strip shows it. */
+export function mmss(ms) {
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return '';
+  const t = Math.floor(ms / 1000);
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+}
+
 /** "03:14" in local time. */
 export function clock(at) {
   if (!at) return '';
@@ -240,7 +247,8 @@ export function ctxLayers({ ledger, owner, phase, stage, info, sessionName, now 
   const cur = L.chunk || (stage?.current ? { id: stage.current, stage: stage.chunks[stage.current]?.stage } : null);
   if (cur) {
     const ac = cur.ac ? `AC ${cur.ac.met}/${cur.ac.total}` : cur.stage || '';
-    out.push({ k: 'Now', v: [cur.id, cur.title].filter(Boolean).join(' '), m: [ac, cur.elapsed].filter(Boolean).join(' · '), depth: 2 });
+    const el = typeof cur.elapsed === 'number' ? mmss(cur.elapsed) : cur.elapsed;
+    out.push({ k: 'Now', v: [cur.id, cur.title].filter(Boolean).join(' '), m: [ac, el].filter(Boolean).join(' · '), depth: 2 });
   }
   if (L.spec?.line) out.push({ k: 'Spec', v: L.spec.line, m: L.spec.ref || '', depth: 2 });
   if (L.claims && (L.claims.now || (L.claims.next || []).length)) {

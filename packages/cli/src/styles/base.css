@@ -3,3 +3,7 @@
 html, body, #root { margin: 0; height: 100%; }
 body { background: var(--bg); }
 #root { display: contents; }
+
+/* A tile clips its sky (overflow: hidden); while its git strip shows the last
+   five commits (FleetKit: git strip, hovered), the .git-pop must spill out. */
+.tile:has(.git.is-open) { overflow: visible; z-index: 6; }

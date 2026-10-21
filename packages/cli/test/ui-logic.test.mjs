@@ -189,3 +189,55 @@ test('fleet: the topbar line and the reboot train', () => {
   assert.deepEqual(t.cars.map((c) => [c.session.name, c.state]), [['vega', 'pausing'], ['sirius', 'pausing'], ['deneb', 'skipped'], ['polaris', 'skipped']]);
   assert.equal(t.all, false);
 });
+
+// ---- fidelity review (night): shared ledger shape, tolerant inputs, the cascade repair ----
+
+test('heads-down reads the one session ledger the cockpit documents', async () => {
+  const { headsLedger } = await import('../src/screens/headsdown-inbox/headsLedger.js');
+  const L = headsLedger({
+    phase: 'review', budget: { label: '3–4h', ms: 14400000 }, closed: [{ id: '13.1' }, { id: '13.2' }],
+    questions: [{ q: 'a', answer: 'x' }, { q: 'b', how: 'default' }, { q: 'c' }],
+    spec: { line: '§12.3 keep both', ref: 'spec/12-sync.md' },
+    git: { branch: 'nexus/vega-2', up: 7, down: 2, behind: true, pr: { num: 148, ci: 'green' } },
+    parked: [{ who: 'spec', q: 'tie?', alts: ['Keep both', 'Last wins'] }],
+    context: { room: 62, strata: [10, 12, 16], compactsAt: 10 }, base: { num: 148 },
+  });
+  assert.equal(L.phase, 'questions-end');
+  assert.equal(L.budget, '3–4h');
+  assert.equal(L.budgetMs, 14400000);
+  assert.equal(L.closed, 2);
+  assert.deepEqual(L.questions, { settled: 2, total: 3 });
+  assert.equal(L.spec, 'spec/12-sync.md  §12.3 keep both');
+  assert.equal(L.git.ahead, 7);
+  assert.equal(L.git.behind, 2);
+  assert.equal(L.git.pr.state, 'open');
+  assert.equal(L.parked[0].assumed, 'Keep both');
+  assert.deepEqual([L.context.pinned, L.context.spec, L.context.conversation, L.context.compactAt], [10, 12, 16, 10]);
+  assert.equal(L.package.stacksOn, 148);
+  assert.deepEqual(headsLedger(null), {});
+});
+
+test('the cockpit draws a chunk\'s elapsed ms as m:ss', async () => {
+  const { mmss } = await import('../src/screens/cockpit/model.js');
+  assert.equal(mmss(18 * 60000 + 42000), '18:42');
+  assert.equal(mmss(null), '');
+});
+
+test('the plan tolerates next as one chunk or a list, and a held claim names its login', () => {
+  const one = normalizePlan({ specs: [{ id: 14, chunks: [{ id: '14.2', size: 'S' }] }], next: { id: '14.2', lane: 'asap' } });
+  assert.deepEqual(one.order, ['14.2']);
+  assert.equal(one.chunks[0].asap, true);
+  const v = claimView({ id: '14.4', who: 'mira', held: 'mira', state: 'held' }, { meWho: null, owner: false, ownerName: 'mira', sessions: [] });
+  assert.equal(v.person, 'mira');
+});
+
+test('the nexus.css cascade repair wraps exactly the two element resets', async () => {
+  const fs = await import('node:fs');
+  const { repairCascade } = await import('../vite.config.mjs');
+  const css = fs.readFileSync(new URL('../src/styles/nexus.css', import.meta.url), 'utf8');
+  const out = repairCascade(css);
+  assert.ok(out.includes(':where(.nx) :where(button, input, textarea, select) {'));
+  assert.ok(out.includes(':where(.nx) :focus-visible {'));
+  assert.ok(!out.includes('.nx button, .nx input, .nx textarea, .nx select {'));
+  assert.equal(out.length - css.length, ':where(.nx) :where(button, input, textarea, select) {'.length - '.nx button, .nx input, .nx textarea, .nx select {'.length + ':where(.nx) :focus-visible {'.length - '.nx :focus-visible {'.length);
+});
