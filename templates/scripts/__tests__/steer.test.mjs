@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import * as board from '../announce.mjs';
-import { output, primaryRootOf, respond } from '../../claude/hooks/steer.mjs';
+import { mayBeDue, output, primaryRootOf, respond } from '../../claude/hooks/steer.mjs';
 
 const HOOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../claude/hooks/steer.mjs');
 const A = 'aaaa1111-0000-4000-8000-000000000001';
@@ -124,6 +124,41 @@ describe('the process', () => {
     const r = spawn(JSON.stringify({ hook_event_name: 'PreToolUse', session_id: A, cwd: root }));
     assert.equal(r.status, 0);
     assert.equal(r.stdout, '');
+  });
+
+  it('runs from the settings.json command in a subfolder: the path is the project dir, not the cwd', (t) => {
+    if (spawnSync('bash', ['-c', 'exit 0']).status !== 0) return t.skip('no bash to run a hook command line');
+    const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+    fs.mkdirSync(path.join(root, '.claude', 'hooks'), { recursive: true });
+    fs.copyFileSync(HOOK, path.join(root, '.claude', 'hooks', 'steer.mjs'));
+    fs.mkdirSync(path.join(root, 'scripts'));
+    for (const f of ['announce.mjs', 'ledger.mjs', 'owner.mjs']) fs.copyFileSync(path.join(repo, 'scripts', f), path.join(root, 'scripts', f));
+    const sub = path.join(root, 'packages', 'deep');
+    fs.mkdirSync(sub, { recursive: true });
+    board.postTo(root, 'from a subfolder too', { to: A });
+    const settings = [path.join(repo, 'claude', 'settings.json'), path.join(repo, '..', '.claude', 'settings.json')].filter((f) => fs.existsSync(f));
+    for (const file of settings) {
+      const hooks = JSON.parse(fs.readFileSync(file, 'utf8')).hooks;
+      const commands = Object.values(hooks).flat().flatMap((g) => g.hooks).map((h) => h.command).filter((c) => /steer\.mjs/.test(c));
+      assert.equal(commands.length, 4, `${file}: steer on four events`);
+      for (const command of new Set(commands)) {
+        fs.rmSync(path.join(root, board.STEERED), { recursive: true, force: true });
+        const input = JSON.stringify({ hook_event_name: 'PreToolUse', session_id: A, cwd: sub, tool_name: 'Bash' });
+        const r = spawnSync('bash', ['-c', command], { input, cwd: sub, encoding: 'utf8', env: { ...process.env, NEXUS_NO_STEER: '', CLAUDE_PROJECT_DIR: root } });
+        assert.equal(r.status, 0, `${file}: ${command} from a subfolder: ${r.stderr}`);
+        assert.match(r.stdout, /from a subfolder too/, `${file}: ${command}`);
+      }
+    }
+  });
+
+  it('decides there is nothing due without loading the board', () => {
+    const t = board.postTo(root, 'to every loop') && fs.readFileSync(path.join(root, board.FILE), 'utf8');
+    assert.equal(mayBeDue(t, new Set()), false, 'a line to every loop is read\'s');
+    board.postTo(root, 'for a', { to: A });
+    const t2 = fs.readFileSync(path.join(root, board.FILE), 'utf8');
+    assert.equal(mayBeDue(t2, new Set()), true);
+    assert.equal(mayBeDue(t2, new Set([2])), false, 'already handed here');
+    assert.equal(mayBeDue(`${t2}- **3** · 2026-10-21T10:00Z · session bbbb2222 · @${A} news\n`, new Set([2])), false, 'a session\'s line never steers');
   });
 
   it('prints the deny JSON for the addressed session, quickly, and nothing when switched off', () => {

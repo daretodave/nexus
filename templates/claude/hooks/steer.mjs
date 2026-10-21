@@ -15,12 +15,14 @@
 //
 // Addressing: by the Claude Code session id on stdin (plus NEXUS_SESSION, and the star of the session's own held
 // ledger). A line to another session is never handed here; a line to every loop is left to `announce.mjs read`
-// exactly as before. A line is handed over once (`.nexus/steered/<session>/<n>`, created exclusively), whichever of
-// this hook or `read` gets there first. A subagent's tool calls (agent_id on stdin) never take the line: it is the
-// lead's.
+// exactly as before. A line is handed over once (`.nexus/steered/<session>/<n>`, created exclusively). This hook is
+// what hands it over; `read` only does with NEXUS_NO_STEER=1. A subagent's tool calls (agent_id on stdin) never take
+// the line: it is the lead's.
 //
 // NEXUS_NO_STEER=1 makes the hook inert. It never fails a turn: any error exits 0 with nothing on stdout. Zero
-// dependencies; it reads the board through the repo's scripts/announce.mjs.
+// dependencies; it reads the board through the repo's scripts/announce.mjs, and loads that only when a scan of the
+// board finds an owner line to some session not yet handed here: nothing due costs node's startup and one file read.
+// Wired by "$CLAUDE_PROJECT_DIR"/.claude/hooks/steer.mjs, so a session in a subfolder still runs it.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -49,6 +51,27 @@ export function primaryRootOf(start) {
     const up = path.dirname(dir);
     if (up === dir) return null;
     dir = up;
+  }
+}
+
+const OWNER_TO = /^- \*\*(\d+)\*\* · \S+ · owner · @[A-Za-z0-9]/gm;
+
+/**
+ * Could the board hold an owner line for this session that it has not been handed (`handed`: the line numbers marked
+ * under its session id)? A cheap scan of the text, so the common case (nothing due) never loads the board's modules.
+ * A yes is checked properly by `respond`.
+ */
+export function mayBeDue(text, handed) {
+  for (const m of String(text).matchAll(OWNER_TO)) if (!handed.has(Number(m[1]))) return true;
+  return false;
+}
+
+/** The line numbers already marked handed under this session id, read without the board's modules. */
+export function handedHere(root, session) {
+  try {
+    return new Set(fs.readdirSync(path.join(root, '.nexus', 'steered', String(session).replace(/[^A-Za-z0-9_-]/g, '_'))).filter((f) => /^\d+$/.test(f)).map(Number));
+  } catch {
+    return new Set();
   }
 }
 
@@ -111,8 +134,17 @@ async function main() {
   } catch {
     return;
   }
-  const root = primaryRootOf(input.cwd || process.cwd());
-  if (!root || !fs.existsSync(path.join(root, '.announcements.md'))) return;
+  if (!EVENTS.has(input?.hook_event_name) || typeof input.session_id !== 'string' || !input.session_id || input.agent_id) return;
+  const root = primaryRootOf(typeof input.cwd === 'string' && input.cwd ? input.cwd : process.cwd());
+  if (!root) return;
+  let text;
+  try {
+    text = fs.readFileSync(path.join(root, '.announcements.md'), 'utf8');
+  } catch {
+    return; // no board
+  }
+  // The common case, nothing due: say nothing without loading the board's modules (node's own startup is the cost).
+  if (!mayBeDue(text, handedHere(root, input.session_id))) return;
   const board = await loadBoard(root);
   if (typeof board?.steerable !== 'function' || typeof board.ledgers !== 'function') return; // an older board
   const out = respond(input, { root, board });
