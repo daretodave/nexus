@@ -106,6 +106,22 @@ You need no API key.
   the journal, the rest run again. When that session is still open,
   or its folder or script is gone, the screen shows the command and
   prompt to paste instead.
+- **Design** (`/design`, from the Plan's Design button): for a project
+  designed in Claude Design. "Hand off a design" takes the artifact
+  link Claude Design shared, checks it is a
+  `https://claude.ai/artifact/<id>` or
+  `https://claude.ai/code/artifact/<id>` link before anything is sent,
+  and runs `/design ingest <link>` in this session or a new one
+  (`POST /api/design/handoff { link, session? }`, `session: "new"`
+  for a new one). The gallery shows each handoff's boards by canvas
+  page, each with its port status: ported (the files that draw it),
+  skipped (its reason) or pending (the chunk it waits on). It reads
+  them from the repo's own `scripts/design/port-map.mjs` (`check
+  --json` finds the handoffs in `design/handoff/` and
+  `packages/*/design/handoff/`, `status <handoff> --json` gives the
+  boards: `GET /api/design`); a repo without the script gets a note,
+  never a guess. Cards show no thumbnail: the boards need the design
+  tool's runtime to draw, and nothing renders on page load.
 - **Settings** (owner mode, run mode, AI one-liners, secrets, night or
   dawn). Secrets is names only: the owner's in `nexus.secrets.json`, a
   contributor's local keys for this machine (the Vault rail item; the

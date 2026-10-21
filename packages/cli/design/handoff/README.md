@@ -368,6 +368,17 @@ the reason (the 41.3 close carries the same list):
   row's accent edge: no board draws a dragging `.crow`) and Reassign's
   picker (the Composer board's `.menu`, placed as `.req-pop` is, with a
   `.field` for the login of a person no hold names).
+- **The design handoff screen** (43.6, `/design`, reached from the
+  Plan's "Design" button): no board draws it. It takes Recover's
+  layout (`.rec-wrap`, `.rec-side`, `.side-card`, `.rec-pick` for the
+  handoff list, `.run-card` for the handoff's head), a `.field` and a
+  `.seg` (this session or a new one) for the artifact link, and Plot's
+  `.ideas` grid of `.idea` cards for the boards, one section per canvas
+  page under a `.t-caps` label, the grid widened to fill (auto-fill,
+  220px columns). Each card's status is a `.flag`: ported `is-active`,
+  skipped `is-idle`, pending `is-fallen`, unmapped `is-orphan`. Cards
+  carry no thumbnail: a board needs the design tool's runtime to draw,
+  and renders are never run on page load.
 - **The stage's tug states** (41.2): each tug's path from the inbox
   to the session reuses the Cockpit board's `.fil.is-tug` (its pulse
   while sent) and the question line's dash once seen; applied draws
