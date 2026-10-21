@@ -397,3 +397,65 @@ the reason (the 41.3 close carries the same list):
   steers it. The button's small stars are the other local stars
   only. Someone else's session never appears
   (`src/screens/cockpit/switcher.js`).
+
+## The vault port (42.8)
+
+The second delivery's vault boards and the third delivery's local keys,
+ported with the 41.3 rule: Vault, VaultImport, VaultContributor,
+Secrets and SecretsContributor (onboarding 4 of 7), BoardOwnerAll's
+"Waiting on a secret", the Inbox's key card and CloudLoop's sign-in
+card; VaultKit's parts are `src/ui/vault.jsx`. `nexus.css` is the
+handoff's again, verbatim (its other second-delivery changes, the
+`.nx` box-sizing, `.rail-item.is-quiet` and the routed composer's
+height, came with it). The design's decisions hold in code: a stored
+value is always eight dots; Show reveals only your own paste before it
+is saved; a secret request has no default and no countdown, and
+batch-answer passes over it and says so; "Skip <chunk> for now" leaves
+it needs secret; the loop's `CLAUDE_CODE_OAUTH_TOKEN` is its sign-in;
+GitHub Actions, Vercel and Cloudflare appear only as destinations.
+
+**Drawn from real data, where the boards draw sample data:** the
+manifest is `nexus.secrets.json` (the boards say `.nexus/secrets.yml`);
+values live in the vault (`.env`, or the keychain when it is on), so
+"Store locally" names that, not "keychain"; the key card's asker is
+"the plan" with the request's date (a request file does not say which
+run filed it); its "why" is the manifest's `for` and the chunk it
+holds back; the Rotated column and the audit log come from the audit
+record, and a push within a minute of a set folds into that set's row
+("set X → local, Actions"), a later one reads "synced"; "Where values
+go" names the vault's place, the repo's Actions secrets, and Vercel's
+and Cloudflare's own words, since no project or worker name is
+recorded until a push carries one; a value set outside nexus has no
+age and draws blank.
+
+**Adapted, with the reason:**
+
+- **The Local tick is locked on** in the key card, and in the add form
+  it declares the `local` destination rather than skipping the vault:
+  every value is stored in the vault, because each sink pushes from
+  it.
+- **Sync** also covers a destination a set value never reached (it
+  draws missing): it is as far behind the vault as an out-of-sync one.
+- **An empty vault** opens on the import's dropzone (VaultKit: "also
+  the empty vault"); the table returns once a name exists.
+- **The contributor's waiting card** shows only when the plan has a
+  chunk waiting on the owner (GET /api/plan's `needsSecret`; on a
+  contributor checkout every secret chunk is the owner's), and the
+  onboarding 4b row shows that chunk, not the board's sample 14.4.
+- **A secret request in a contributor's inbox** is dropped by the
+  server: contributors never handle project secrets.
+- **Settings' "Nudge to rotate" segment** (60 days, 90 days, Never) is
+  a line instead ("after 90 days"): the threshold is fixed in the
+  repo's `scripts/secrets-audit.mjs` and nothing reads a setting yet.
+- **Onboarding's import panel** adds "Choose another" and a dropzone
+  when no dotenv is found at the root (the board only draws the found
+  one).
+
+**Not ported, with the reason:**
+
+- **VaultKit itself** (the sheet, its captions, `.is-relit-hold`,
+  `.is-fresh-hold`, `.pt-demo`, `.dot-key`, the manifest code card):
+  a component sheet, not app UI; its live states are the app's.
+- **CloudLoop's other second-delivery changes** (the "secret
+  requested" stat, the run row's "needs secret" chip) and the Vault
+  rail tooltip's per-view wording: 41.10's re-port.

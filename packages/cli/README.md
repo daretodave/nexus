@@ -13,10 +13,12 @@ You need no API key.
 
 ## What you get
 
-- **Onboarding**: six steps. Welcome; Detect (Claude Code installed
+- **Onboarding**: seven steps. Welcome; Detect (Claude Code installed
   and signed in, `gh`, the git remote, whether nexus is adopted);
   Shape (owner or contributor checkout, and how `/next` builds: by
-  size, sub-agents, workflows); Plot (a dump of messy thoughts, sent
+  size, sub-agents, workflows); Secrets, optional (an owner imports a
+  `.env`'s names into the vault, starts an empty manifest or skips; a
+  contributor needs no project secrets and may add local keys); Plot (a dump of messy thoughts, sent
   to `/messy`, which the GUI calls explode: its themes come back as
   cards, each with the `/plot` line from its report, one click to
   send); the cloud loop; and Launch, which opens the first session's
@@ -216,10 +218,21 @@ copies too old, gets a 409 that names the file to update.
 
 | Endpoint | What it does |
 |---|---|
-| `GET /api/secrets` | Every name with where it is set (`local`, `keychain`, `workspace`), each destination's state (`set`, `missing`, `pushed` with when, `not pushed`), what it is for, the chunk that asked, its age and rotation nudge, plus `mode`, `projectSecretsNeeded`, `localKeys` and the last audit events. Never a value. |
-| `POST /api/secrets/:name` | `{ value, ring?, destinations?, repo?, environments?, worker? }`: the value into the vault through the repo's `set` (on its stdin seam, never argv), then each destination through its sink. Pushes are owner-only and checked against the manifest before anything is stored; a contributor's value stays local. Answers `{ stored, ring, pushed: [{ destination, ok, error? }] }`. |
-| `POST /api/secrets/import` | `{ text }`: a `.env` body, previewed as names only (declared, where set, skipped and why). `{ text, confirm: true, names? }` stores the picked ones and, for the owner, adds new names to `nexus.secrets.json`. |
+| `GET /api/secrets` | Every name with where it is set (`local`, `keychain`, `workspace`), each destination's state (`set`, `missing`, `pushed` with when and `stale` when the vault's value is newer, `not pushed`), what it is for, the chunk that asked, its age, last set and rotation nudge, plus `mode`, `projectSecretsNeeded`, `localKeys`, the last audit events, the plan's open secret `requests` (chunk, names still missing) and the importable `envFiles` at the root, by name. Never a value. |
+| `POST /api/secrets/:name` | `{ value, ring?, destinations?, declare?, for?, local?, repo?, environments?, worker? }`: the value into the vault through the repo's `set` (on its stdin seam, never argv), then each destination through its sink. `declare` (owner) first adds the name, or the places ticked, to `nexus.secrets.json`. Pushes are owner-only and checked against the manifest before anything is stored; a contributor's value stays local. Answers `{ stored, ring, pushed: [{ destination, ok, error? }] }`. |
+| `POST /api/secrets/:name/push` | `{ destinations }`: push the stored value again (the vault's Sync and Retry), owner only. |
+| `POST /api/secrets/import` | `{ text }` or `{ file }` (a dotenv at the root, read by the server): previewed as names only (declared, where set, how each looks: `secret`, `public` or `setting`, skipped and why). `{ ..., confirm: true, names?, destinations? }` stores the picked ones, adds new names to `nexus.secrets.json` with the places per name and pushes them (owner). |
+| `POST /api/secrets/manifest` | An empty `nexus.secrets.json` (onboarding's Start empty), owner only; one that exists stays. |
 | `GET /api/secrets/audit` | Every set, push and rotation by name, and the rotation nudges. |
+
+The Vault (`/vault`, the key in the rail) draws this for the owner:
+every name with eight dots for its value (a length never shows), a
+dot per destination, Add value, Sync, Replace, Add a secret, the
+import, the open requests as key cards, where values go and the audit
+log. A secret request is also a key row in Oversight with no default
+(batch-answer passes over it), and the plan board marks a chunk
+waiting on one as needs secret. A contributor's Vault reads No
+project secrets needed, above their own local keys.
 
 A posted value is never echoed: not in an answer, an error, a header
 or a log. Every JSON answer and every event-stream frame (transcripts,
