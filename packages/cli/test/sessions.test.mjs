@@ -182,3 +182,32 @@ test('an answered parked question leaves the ledger and reaches its session', as
     fs.rmSync(home, { recursive: true, force: true });
   }
 });
+
+test('an answer to a parked session waits for the session that resumes it, and says so', async () => {
+  const { repo, home, root } = fixture();
+  const D = 'dddd4444-0000-4000-8000-000000000004';
+  const file = path.join(root, '.nexus', 'sessions', `${D}.json`);
+  fs.writeFileSync(file, JSON.stringify({ id: D, star: 'deneb', state: 'parked', train: 't1', beat: new Date(Date.now() - 3600e3).toISOString(), parked: [{ q: 'Use sqlite?', default: 'yes' }] }));
+  const app = await startServer({ repo, pollRuns: false, dist: NO_DIST, claudeHome: home, provider: { kind: 'fake', send() {}, async interrupt() {}, async stop() {}, async fresh() {} } });
+  const call = (m, p, b) => req(app.port, app.token, m, p, b);
+  try {
+    const r = await call('POST', '/api/sessions/deneb/parked', { index: 0, q: 'Use sqlite?', action: 'change', answer: 'no, postgres' });
+    assert.equal(r.status, 200);
+    assert.equal(r.data.waits, 'resume', 'not reported as delivered: deneb has no turn to join');
+    assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).parked, []);
+    assert.equal((await call('POST', `/api/sessions/${D}/link`, { on: true })).status, 200);
+    const tug = await call('POST', `/api/sessions/${D}/steer`, { text: 'and keep the old flag', kind: 'answer' });
+    assert.equal(tug.data.waits, 'resume');
+    // B resumes deneb (reboot-resume: ledger.mjs take): the answer and the tug reach B, and only B.
+    const { main } = await import(`${pathToFileURL(path.join(root, 'scripts', 'ledger.mjs')).href}?t=${Date.now()}`);
+    assert.equal(main(['take', 'deneb'], { env: { CLAUDE_CODE_SESSION_ID: B }, root, out() {}, err() {} }), 0);
+    assert.equal(await hookFor(root, A), null);
+    const out = await hookFor(root, B);
+    assert.match(out.hookSpecificOutput.permissionDecisionReason, /Change to: no, postgres/);
+    assert.match(out.hookSpecificOutput.permissionDecisionReason, /keep the old flag/);
+  } finally {
+    await app.close();
+    fs.rmSync(repo, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});

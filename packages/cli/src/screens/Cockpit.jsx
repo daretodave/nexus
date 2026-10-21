@@ -74,7 +74,9 @@ export default function Cockpit() {
   const act = async (path, body, what) => {
     setBusy(true);
     try {
-      await api(path, body ?? {});
+      const r = await api(path, body ?? {});
+      // An answer to a session that is not running waits for whoever resumes it: say so, never "sent".
+      if (r?.waits && r.note) toast({ kind: 'info', title: 'Queued', body: r.note });
       ledgerRes.reload();
       return true;
     } catch (e) {
@@ -110,8 +112,10 @@ export default function Cockpit() {
             // A terminal session: sending from its own cockpit aims at it, so link it and steer it. The line reaches
             // its next tool call (the steer hook), and only this session.
             if (!listed?.linked) await api(`${base}/link`, { on: true });
-            await api(`${base}/steer`, { text: prompt + attachments });
-            toast({ kind: 'info', title: `Sent to ${session.name}`, body: 'It reads it at its next tool call, or with its next prompt if it is idle.' });
+            const sent = await api(`${base}/steer`, { text: prompt + attachments });
+            toast(sent?.waits
+              ? { kind: 'info', title: `Queued for ${session.name}`, body: sent.note || 'It is not running: the line waits.' }
+              : { kind: 'info', title: `Sent to ${session.name}`, body: 'It reads it at its next tool call, or with its next prompt if it is idle.' });
             sessionsRes.reload();
           } else await server.send(prompt + attachments);
         }

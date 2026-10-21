@@ -257,7 +257,13 @@ export function createSteering({ repo, send, guiSession = () => null, home, now 
     if (!board) return { status: 409, error: 'this repo has no notice board that can address one session (scripts/announce.mjs with --to)' };
     // Address by the Claude Code session id: the one name the steer hook is sure belongs to that session alone.
     const n = board.postTo(r, words, { from: 'owner', to: s.claude });
-    return { status: 200, via: 'board', line: n, session: s.id, to: s.claude };
+    const sent = { status: 200, via: 'board', line: n, session: s.id, to: s.claude };
+    // A parked, resuming or fallen session has no turn to join: the line waits for the session that resumes its
+    // ledger (`ledger.mjs take`), which answers to it from then on. Never report that as delivered.
+    if (!s.live) return { ...sent, waits: 'resume', note: `${s.name} is not running: it reaches the session that resumes ${s.name}` };
+    // A repo without the steer hook: the line waits for the session's next `announce.mjs read`.
+    if (!fs.existsSync(path.join(r, '.claude', 'hooks', 'steer.mjs'))) return { ...sent, waits: 'read', note: `no steer hook here: ${s.name} reads it at its next announce.mjs read` };
+    return sent;
   }
 
   /** Settle parked question `index` of a session: it leaves the ledger's parked list, and the answer goes to it. */
@@ -287,7 +293,7 @@ export function createSteering({ repo, send, guiSession = () => null, home, now 
     const raw = JSON.stringify(ledger.parked[Number(index)]);
     const at = (fresh.parked || []).findIndex((p) => JSON.stringify(p) === raw);
     if (at !== -1) writeLedger(fresh._file, { ...fresh, parked: fresh.parked.filter((_, i) => i !== at) });
-    return { status: 200, settled: 1, via: sent?.via || null, line: sent?.line ?? null };
+    return { status: 200, settled: 1, via: sent?.via || null, line: sent?.line ?? null, ...(sent?.waits ? { waits: sent.waits, note: sent.note } : {}) };
   }
 
   return { list, find, link, steer, settleParked, linked };
