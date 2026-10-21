@@ -1,7 +1,7 @@
 // The pre-push hook end to end: install-hooks.mjs arms it in a scratch clone with a bare origin, and a real `git push`
-// runs push-policy.mjs. A contributor's push to main is refused, a branch and the claims ref go through, the owner's
-// push to main goes through (from a worktree too), owner mode switched off is refused again, and a checkout without
-// the script skips the step. Offline, but every case spawns git (the opt-in `scripts-git` gate leg). node:test, no deps.
+// runs push-policy.mjs. A contributor's push to main on origin or upstream is refused (their own fork's main is not), a
+// branch and the claims ref go through, the owner's push to main goes through (from a worktree too), owner mode
+// switched off is refused again, and a checkout without the script skips the step. Offline, but every case spawns git (the opt-in `scripts-git` gate leg). node:test, no deps.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -22,7 +22,7 @@ function git(cwd, ...args) {
   if (res.status !== 0) throw new Error(`git ${args.join(' ')}: ${res.stderr}`);
   return res.stdout.trim();
 }
-const push = (cwd, ref, env) => run(cwd, 'git', ['push', '-q', 'origin', `HEAD:${ref}`], env);
+const push = (cwd, ref, env, remote = 'origin') => run(cwd, 'git', ['push', '-q', remote, `HEAD:${ref}`], env);
 const commit = (cwd) => git(cwd, 'commit', '-q', '--allow-empty', '-m', 'work');
 
 let dir, work;
@@ -35,6 +35,11 @@ before(() => {
   git(work, 'config', 'user.name', 'alex');
   git(work, 'config', 'user.email', 'alex@example.com');
   git(work, 'remote', 'add', 'origin', origin);
+  for (const name of ['upstream', 'fork']) {
+    const bare = path.join(dir, `${name}.git`);
+    git(dir, 'init', '-q', '--bare', '-b', 'main', bare);
+    git(work, 'remote', 'add', name, bare);
+  }
   for (const f of ['install-hooks.mjs', 'owner.mjs', 'claims-codec.mjs', 'git/push-policy.mjs']) {
     fs.mkdirSync(path.dirname(path.join(work, 'scripts', f)), { recursive: true });
     fs.copyFileSync(path.join(SCRIPTS, f), path.join(work, 'scripts', f));
@@ -56,6 +61,14 @@ describe('the pre-push hook', () => {
     assert.match(refused.stderr, /push-policy: only the owner's checkout pushes main/);
     assert.equal(push(work, 'refs/heads/next/16.3').status, 0);
     assert.equal(push(work, 'refs/heads/claims').status, 0);
+  });
+
+  it("refuses a contributor's main on upstream, lets it onto their own fork", () => {
+    const refused = push(work, 'main', {}, 'upstream');
+    assert.notEqual(refused.status, 0);
+    assert.match(refused.stderr, /push-policy: only the owner's checkout pushes main to upstream/);
+    const res = push(work, 'main', {}, 'fork');
+    assert.equal(res.status, 0, res.stderr);
   });
 
   it("lets the owner's checkout push main, and its worktree", () => {

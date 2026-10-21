@@ -7,9 +7,10 @@
 //
 //   pre-commit  node scripts/verify.mjs — nothing else: no network, no
 //               formatting, no auto-fix.
-//   pre-push    scripts/git/push-policy.mjs — a push to main from a
-//               checkout not in owner mode is refused (land through a
-//               pull request); see nexus/playbooks/owner-mode.md. The
+//   pre-push    scripts/git/push-policy.mjs — a push to main on origin
+//               or upstream from a checkout not in owner mode is refused
+//               (land through a pull request; a fork's main is its
+//               contributor's); see nexus/playbooks/owner-mode.md. The
 //               step is skipped when the script is missing, so the
 //               hook never breaks a checkout that pruned it.
 //
@@ -33,12 +34,13 @@ const MARKER = '# nexus:install-hooks'
 const HOOKS = {
   'pre-commit': `node scripts/verify.mjs
 `,
-  'pre-push': `# Owner mode decides how work lands: a push to main from a checkout
-# without effective owner mode is refused (scripts/git/push-policy.mjs).
+  'pre-push': `# Owner mode decides how work lands: a push to main on origin or upstream
+# from a checkout without effective owner mode is refused (git passes the
+# remote name and URL as "$@"; scripts/git/push-policy.mjs decides by name).
 # The claims ref passes unchecked. A checkout without the script skips it.
 refs=$(cat)
 if [ -f scripts/git/push-policy.mjs ]; then
-  refs=$(printf '%s\n' "$refs" | node scripts/git/push-policy.mjs) || exit 1
+  refs=$(printf '%s\n' "$refs" | node scripts/git/push-policy.mjs "$@") || exit 1
 fi
 exit 0
 `,

@@ -1,8 +1,9 @@
-// push-policy.mjs: the pre-push leg trip. A push to main is the owner's alone; the claims ref is never checked by
-// later steps; everything else passes through untouched. Pure (owner is injected), node:test, no deps.
+// push-policy.mjs: the pre-push leg trip. A push to main on origin or upstream is the owner's alone (a fork's main is
+// its contributor's); the claims ref is never checked by later steps; everything else passes through untouched. Pure
+// (owner is injected), node:test, no deps.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { decide, main, mainOf, sortRefs } from '../git/push-policy.mjs';
+import { decide, GUARDED_REMOTES, guards, main, mainOf, sortRefs } from '../git/push-policy.mjs';
 
 const Z = '0'.repeat(40);
 const A = 'a'.repeat(40);
@@ -45,6 +46,26 @@ describe('decide', () => {
   });
   it('lets the owner push main', () => {
     assert.equal(decide(line('refs/heads/main'), { owner: true }).ok, true);
+    assert.equal(decide(line('refs/heads/main'), { owner: true, remote: 'origin' }).ok, true);
+    assert.equal(decide(line('refs/heads/main'), { owner: true, remote: 'upstream' }).ok, true);
+  });
+  it('refuses a contributor pushing main to origin or upstream', () => {
+    for (const remote of ['origin', 'upstream']) {
+      const v = decide(line('refs/heads/main'), { owner: false, remote });
+      assert.equal(v.ok, false, remote);
+      assert.match(v.reason, new RegExp(`pushes main to ${remote}`));
+    }
+  });
+  it("lets a contributor push main to their own fork's remote", () => {
+    for (const remote of ['fork', 'mine', 'origin2']) {
+      const v = decide(line('refs/heads/main'), { owner: false, remote });
+      assert.equal(v.ok, true, remote);
+      assert.deepEqual(v.keep, [line('refs/heads/main')]);
+    }
+  });
+  it('a push with no remote name is guarded (an older hook that passes no arguments still refuses)', () => {
+    assert.equal(decide(line('refs/heads/main'), { owner: false }).ok, false);
+    assert.equal(decide(line('refs/heads/main'), { owner: false, remote: '' }).ok, false);
   });
   it('lets a contributor push a branch and the claims ref', () => {
     const v = decide([line('refs/heads/next/16.3'), line('refs/heads/claims')].join('\n'), { owner: false });
@@ -56,7 +77,26 @@ describe('decide', () => {
   });
 });
 
+describe('guards', () => {
+  it('origin and upstream, by remote name, nothing else', () => {
+    assert.deepEqual(GUARDED_REMOTES, ['origin', 'upstream']);
+    assert.equal(guards('origin'), true);
+    assert.equal(guards('upstream'), true);
+    assert.equal(guards('fork'), false);
+    assert.equal(guards('origin2'), false);
+    assert.equal(guards('git@example.com:o/r.git'), false); // a bare URL push: no remote name to go by
+    assert.equal(guards(undefined), true);
+  });
+});
+
 describe('main', () => {
+  it('reads the remote name from argv, as git hands it to pre-push', () => {
+    const run = (argv) => main({ stdin: line('refs/heads/main'), argv, env: {}, owner: false, out: sink(), err: sink() });
+    assert.equal(run(['origin', 'git@example.com:o/r.git']), 1);
+    assert.equal(run(['upstream', 'git@example.com:o/r.git']), 1);
+    assert.equal(run(['fork', 'git@example.com:me/r.git']), 0);
+    assert.equal(run([]), 1);
+  });
   it('exit 1 with the reason on stderr, nothing on stdout', () => {
     const out = sink();
     const err = sink();
