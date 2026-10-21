@@ -351,7 +351,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
 
   /** GET /api/inbox: every session's questions, tagged by star, and the plan's. */
   async function inbox() {
-    return inboxItems({ hosted: hostedLive(), ledgers: readLedgers(await primaryRoot(repo)), durable: repoMod.durableQuestions(repo) });
+    // A secret request carries its chunk and the names still missing; one whose names are all set has left (secrets.mjs).
+    const durable = await secrets.markRequests(repoMod.durableQuestions(repo)).catch(() => repoMod.durableQuestions(repo));
+    return inboxItems({ hosted: hostedLive(), ledgers: readLedgers(await primaryRoot(repo)), durable });
   }
 
   /** POST /api/inbox/:id { answer, how }: a parked question (to its session, off its ledger) or a permission. */
@@ -454,6 +456,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/secrets': { const { status, ...r } = await secrets.status(); return send(res, status, r); }
         case 'GET /api/secrets/audit': { const { status, ...r } = await secrets.audit(); return send(res, status, r); }
         case 'POST /api/secrets/import': { const { status, ...r } = await secrets.importEnv(await body(req)); return send(res, status, r); }
+      }
+      const secPush = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/push$/.exec(route);
+      if (secPush) {
+        const { status, ...r } = await secrets.push(decodeURIComponent(secPush[1]), await body(req));
+        return send(res, status, r);
       }
       const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)$/.exec(route);
       if (sec) {

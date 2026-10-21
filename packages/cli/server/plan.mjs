@@ -12,7 +12,8 @@
 //   { repo, available, specs: [{ id, title, file, unchunked, percent, counts, hoursLeft, here, chunks: [chunk] }],
 //     order: [id], next: [{ id, lane, eta, spec }], asap: [id], held: [id], inFlight: [{ id, who }],
 //     blocked: [{ id, why }], unchunked: [spec], mark: [id], at, hours }
-//   chunk: { id, title, size, state: 'ready'|'claimed'|'closed', closedOn, claim, plotted: 'main'|null, why? }
+//   chunk: { id, title, size, state: 'ready'|'claimed'|'closed', closedOn, claim, plotted: 'main'|null, why?,
+//            secrets?: [name], needsSecret?: [name], ownerOnly? }  (secretsOf: the secret gate, names only)
 // A chunk with no words of its own is where the AI one-liner (GET /api/summaries,
 // server/summaries.mjs) fills in.
 import fs from 'node:fs';
@@ -30,6 +31,20 @@ export function specNumbers(repo) {
   const dir = path.join(repo, 'plan');
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir).map((n) => SPEC_FILE.exec(n)?.[1]).filter(Boolean).sort((a, b) => Number(a) - Number(b));
+}
+
+/**
+ * The secret gate's fields for a chunk order.mjs lists (spec 42): `secrets`, the names its line asks for, and
+ * `needsSecret`, the ones the vault lacks (the owner's checkout), or every one of them on a contributor's checkout,
+ * where a chunk with secrets is the owner's alone (`ownerOnly`). Names only, never a value.
+ */
+export function secretsOf(o) {
+  if (!o) return {};
+  const names = Array.isArray(o.secrets) ? o.secrets.map(String) : [];
+  const out = names.length ? { secrets: names } : {};
+  if (Array.isArray(o.needsSecret) && o.needsSecret.length) out.needsSecret = o.needsSecret.map(String);
+  else if (names.length && /^owner only \(secrets/.test(String(o.why || ''))) Object.assign(out, { needsSecret: names, ownerOnly: true });
+  return out;
 }
 
 /**
@@ -57,6 +72,7 @@ export function boardFrom(order, progress, { repo = '' } = {}) {
         closedOn: c.closedOn ?? null, claim: c.claim ?? null,
         plotted: marked.has(String(c.id)) ? 'main' : null,
         ...(why.has(String(c.id)) ? { why: why.get(String(c.id)) } : null),
+        ...secretsOf(o),
       };
     });
     return {
@@ -70,7 +86,7 @@ export function boardFrom(order, progress, { repo = '' } = {}) {
     const sid = String(c.spec ?? specOf(c.id));
     let s = specs.find((x) => x.id === sid);
     if (!s) specs.push((s = { id: sid, title: '', file: '', unchunked: false, percent: null, counts: null, hoursLeft: null, here: null, chunks: [] }));
-    s.chunks.push({ id: String(c.id), title: c.title || '', size: c.size ?? null, state: 'ready', closedOn: null, claim: null, plotted: 'main', ...(why.has(String(c.id)) ? { why: why.get(String(c.id)) } : null) });
+    s.chunks.push({ id: String(c.id), title: c.title || '', size: c.size ?? null, state: 'ready', closedOn: null, claim: null, plotted: 'main', ...(why.has(String(c.id)) ? { why: why.get(String(c.id)) } : null), ...secretsOf(c) });
   }
   const rank = new Map();
   const put = (sid) => { if (!rank.has(sid)) rank.set(sid, rank.size); };

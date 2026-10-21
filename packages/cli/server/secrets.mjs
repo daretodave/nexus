@@ -23,6 +23,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { primaryRoot } from './sessions.mjs';
 import { isOwner as effectiveOwner } from './local.mjs';
+import { durableQuestions } from './repo.mjs';
 
 /** The repo's scripts the API runs, each with the exports it needs. `audit` (42.6) is optional. */
 const FILES = {
@@ -37,6 +38,55 @@ const OPTIONAL = { audit: ['secrets-audit.mjs', ['rotationNudges', 'ROTATE_DAYS'
 const NAME = /^[A-Z][A-Z0-9_]*$/;
 const SINK_FLAGS = { 'github-actions': 'repo', vercel: 'environments', cloudflare: 'worker' };
 const KEYCHAIN_MS = 60000;
+
+/** A secret request row (scripts/secrets.mjs request): `secret request <chunk>: set A, B in your terminal ...`. */
+const REQUEST_ROW = /secret request (\S+?):\s*set\s+([A-Z][A-Z0-9_]*(?:\s*,\s*[A-Z][A-Z0-9_]*)*)/;
+
+/** The chunk and names a plan question asks a secret for, or null (a plain question). */
+export function parseRequest(text) {
+  const m = REQUEST_ROW.exec(String(text || ''));
+  return m ? { chunk: m[1], names: m[2].split(',').map((n) => n.trim()).filter(Boolean) } : null;
+}
+
+/** A dotenv file at the repo root the import may read by name: never the vault's own files, never a template. */
+const ENV_FILE = /^\.env(?:\.[A-Za-z0-9_-]+)?$/;
+const NOT_IMPORTED = new Set(['.env', '.env.workspace', '.env.example', '.env.sample', '.env.template', '.env.defaults']);
+export const importableEnv = (name) => ENV_FILE.test(String(name)) && !NOT_IMPORTED.has(String(name));
+
+const PUBLIC_NAME = /^(?:NEXT_PUBLIC_|PUBLIC_|VITE_|REACT_APP_|EXPO_PUBLIC_|NUXT_PUBLIC_|GATSBY_)/;
+const SETTING_NAME = /^(?:DEBUG|LOG_LEVEL|NODE_ENV|PORT|HOST|TZ|LANG|ENV|ENVIRONMENT|VERBOSE)$/;
+const CREDENTIAL_NAME = /(?:SECRET|TOKEN|PASSWORD|PASSWD|_KEY$|^KEY_|_KEY_|DATABASE|^DB_|_DB_|REDIS|MONGO|POSTGRES|MYSQL|AMQP|DSN|PRIVATE|SALT)/;
+
+/**
+ * What an imported entry looks like, from its name and value (the value never leaves the server): `public` (a public
+ * prefix, or a plain URL with no credentials under a name that is not a credential's), `setting` (a well-known
+ * setting's name, or configuration: a plain word, a number, a localhost URL), else `secret`. The import starts the
+ * first two unticked.
+ */
+export function looksOf(name, value, isSecretShaped = (v) => typeof v === 'string' && v.length >= 8) {
+  const n = String(name);
+  const v = String(value ?? '');
+  if (PUBLIC_NAME.test(n)) return 'public';
+  if (SETTING_NAME.test(n)) return 'setting';
+  if (/^https?:\/\/[^\s@/]+(?:[/?#]\S*)?$/.test(v) && !/^https?:\/\/(?:localhost|127\.0\.0\.1)\b/.test(v) && !CREDENTIAL_NAME.test(n)) return 'public';
+  if (!isSecretShaped(v)) return 'setting';
+  return 'secret';
+}
+
+/** Each name's last set or rotation time (ISO) from the audit events. */
+function lastSets(events) {
+  const out = new Map();
+  for (const e of events) {
+    if (!e || (e.action !== 'set' && e.action !== 'rotate') || typeof e.name !== 'string' || typeof e.time !== 'string') continue;
+    if (!out.has(e.name) || out.get(e.name) < e.time) out.set(e.name, e.time);
+  }
+  return out;
+}
+
+/** The date a plan file's frontmatter carries (`date: YYYY-MM-DD`), or null. */
+function fileDate(abs) {
+  try { return (/^---[\s\S]*?^date:\s*(\d{4}-\d{2}-\d{2})/m.exec(fs.readFileSync(abs, 'utf8')) || [])[1] || null; } catch { return null; }
+}
 
 /** One masking function over a list of [name, value] (longest value first): text, and a deep copy of any JSON. */
 export function createMask() {
@@ -171,17 +221,23 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     const entries = new Map((man?.manifest?.secrets ?? []).map((e) => [e.name, e]));
     const events = k.m.sinks.readAudit(root);
     const pushes = lastPushes(events);
+    const sets = lastSets(events);
     const isOwner = st.mode ? st.mode === 'owner' : !!owner();
     const secrets = (st.secrets ?? []).map((s) => {
       const e = entries.get(s.name) || {};
+      const setAt = sets.get(s.name) || null;
       const destinations = (s.destinations ?? []).map((d) => {
         if (d === 'local') return { destination: d, state: s.rings.length ? 'set' : 'missing' };
         const p = pushes.get(`${s.name}\0${d}`);
         const { time, action, name, destination, ...detail } = p || {};
-        return { destination: d, state: p ? 'pushed' : 'not pushed', at: p ? time : null, ...(p ? { detail } : {}) };
+        // A push older than the value's last set or rotation: the destination still holds the old value.
+        const stale = !!(p && setAt && time < setAt);
+        return { destination: d, state: p ? 'pushed' : 'not pushed', at: p ? time : null, ...(stale ? { stale } : {}), ...(p ? { detail } : {}) };
       });
-      return { name: s.name, for: e.for ?? null, where: e.where ?? null, chunk: e.chunk ?? null, declared: !!s.declared, set: s.rings.length > 0, rings: s.rings, destinations, age: s.age ?? null, rotate: !!s.rotate };
+      return { name: s.name, for: e.for ?? null, where: e.where ?? null, chunk: e.chunk ?? null, declared: !!s.declared, set: s.rings.length > 0, rings: s.rings, destinations, age: s.age ?? null, setAt, rotate: !!s.rotate };
     });
+    const isSet = new Set(secrets.filter((s) => s.set).map((s) => s.name));
+    for (const lk of st.localKeys ?? []) if (lk.rings?.length) isSet.add(lk.name);
     const nudges = k.m.audit ? k.m.audit.rotationNudges(events, { held: (n) => secrets.some((s) => s.name === n && s.rotate) }) : [];
     return {
       status: 200,
@@ -197,7 +253,67 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
       rotateDays: k.m.audit?.ROTATE_DAYS ?? null,
       audit: events.slice(-20),
       sinks: Object.keys(SINK_FLAGS).filter((d) => k.m.sinks.sinkFor(d)),
+      requests: requestsIn(durableQuestions(repo), (n) => isSet.has(n)),
+      envFiles: envFilesAt(root),
     };
+  }
+
+  /** The plan's open secret requests, each with the names still missing (a request whose names are all set is gone). */
+  function requestsIn(durable, has) {
+    const out = [];
+    for (const d of durable) {
+      const r = parseRequest(d.text);
+      if (!r) continue;
+      const missing = r.names.filter((n) => !has(n));
+      if (missing.length) out.push({ ...r, missing, file: d.file, line: d.line, date: fileDate(path.join(repo, d.file)) });
+    }
+    return out;
+  }
+
+  /** The importable dotenv files at the root, by name only. */
+  function envFilesAt(root) {
+    try { return fs.readdirSync(root, { withFileTypes: true }).filter((e) => e.isFile() && importableEnv(e.name)).map((e) => e.name).sort(); } catch { return []; }
+  }
+
+  /**
+   * The inbox's plan questions with each secret request marked: `secret: { chunk, names, missing }`. A request whose
+   * names are all set leaves the inbox (its chunk is ready again); the row stays in its plan file until someone deletes it.
+   */
+  async function markRequests(durable) {
+    if (!durable.some((d) => parseRequest(d.text))) return durable;
+    let has = () => false;
+    try {
+      const k = await kit();
+      if (k.ok) {
+        const root = await vroot();
+        const v = k.m.vault.openVault({ root, settings: k.m.owner.localSettings(root), ...vaultOpts });
+        const names = [...new Set(durable.flatMap((d) => parseRequest(d.text)?.names ?? []))];
+        const set = new Set(v.status(names).filter((r) => r.rings.length).map((r) => r.name));
+        has = (n) => set.has(n) || !!process.env[n];
+      }
+    } catch { /* a vault that cannot be read: every name reads missing */ }
+    const out = [];
+    for (const d of durable) {
+      const r = parseRequest(d.text);
+      if (!r) { out.push(d); continue; }
+      const missing = r.names.filter((n) => !has(n));
+      if (missing.length) out.push({ ...d, secret: { ...r, missing } });
+    }
+    return out;
+  }
+
+  /** POST /api/secrets/:name/push { destinations, repo?, environments?, worker? }: push the stored value again (Sync, Retry). */
+  async function push(name, b = {}) {
+    const k = await kit();
+    if (!k.ok) return unavailable(k);
+    if (!NAME.test(String(name))) return { status: 400, error: 'a secret\'s name is an env-var name (A-Z, 0-9 and _, starting with a letter)' };
+    const root = await vroot();
+    const dests = destList(b.destinations);
+    if (!dests.length) return { status: 400, error: `${name}: name the destinations to push to` };
+    const no = pushable(k, root, name, dests);
+    if (no) return no;
+    const pushed = await pushAll(k, root, name, dests, b);
+    return { status: 200, ok: pushed.every((p) => p.ok), name, pushed };
   }
 
   /** GET /api/secrets/audit: every set, push and rotation by name (never a value), and the rotation nudges. */
@@ -257,6 +373,12 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     if (typeof value !== 'string' || value === '') return { status: 400, error: `${name}: a value is a non-empty string` };
     const root = await vroot();
     const dests = destList(b.destinations);
+    // Add a secret (the Vault's form): the owner declares the name and the places ticked before it is stored.
+    if (b.declare === true) {
+      if (!owner()) return { status: 403, error: k.m.vault.sinkRefusal('push') };
+      const why = declareIn(k, root, name, { for: b.for, destinations: [...(b.local === false ? [] : ['local']), ...dests] });
+      if (why) return scrub({ status: 400, error: why });
+    }
     const no = pushable(k, root, name, dests);
     if (no) return scrub(no);
     try {
@@ -277,23 +399,35 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
    * added to the manifest the way `import` adds them.
    */
   async function importEnv(b = {}) {
-    const text = typeof b.text === 'string' ? b.text : '';
     const k = await kit();
     if (!k.ok) return unavailable(k);
+    const root = await vroot();
+    // `file` names a dotenv at the repo root (the onboarding step's "found .env.local"): the server reads it, so its
+    // values never reach the browser. Otherwise `text` is a file the person picked or dropped.
+    let text = typeof b.text === 'string' ? b.text : '';
+    const file = typeof b.file === 'string' && b.file ? b.file : null;
+    if (file) {
+      if (!importableEnv(file)) return { status: 400, error: `${file} is not a dotenv file the import reads (the vault's own files and templates are left alone)` };
+      try { text = fs.readFileSync(path.join(root, file), 'utf8'); } catch { return { status: 404, error: `no ${file} at the repo root` }; }
+    }
     const entries = [...k.m.vault.parseEnv(text)].filter(([, v]) => v !== '');
     const scrub = scrubber(entries.map(([, v]) => v));
     if (!entries.length) return { status: 400, error: 'no NAME=value lines to import' };
-    const root = await vroot();
+    const comments = text.split(/\r?\n/).filter((l) => /^\s*#/.test(l)).length;
     const v = k.m.vault.openVault({ root, settings: k.m.owner.localSettings(root), ...vaultOpts });
     const man = k.m.manifest.readManifest(path.join(root, k.m.manifest.MANIFEST));
     const declared = man?.names ?? new Set();
     const where = new Map(v.status(entries.map(([n]) => n).filter((n) => NAME.test(n))).map((r) => [r.name, r.rings]));
     const isOwner = !!owner();
+    const shaped = (val) => { try { return k.m.scan.scannable([['x', val]]).length > 0; } catch { return typeof val === 'string' && val.length >= 8; } };
     const why = (n, val) => (!NAME.test(n) ? 'not an env-var name' : /[\r\n\0]/.test(val) ? 'a value on more than one line' : null);
-    const names = entries.map(([n, val]) => ({ name: n, declared: declared.has(n), rings: where.get(n) ?? [], ...(why(n, val) ? { skip: why(n, val) } : {}) }));
-    if (b.confirm !== true) return scrub({ status: 200, preview: true, mode: isOwner ? 'owner' : 'contributor', names });
+    const names = entries.map(([n, val]) => ({ name: n, declared: declared.has(n), rings: where.get(n) ?? [], looks: looksOf(n, val, shaped), ...(why(n, val) ? { skip: why(n, val) } : {}) }));
+    if (b.confirm !== true) return scrub({ status: 200, preview: true, mode: isOwner ? 'owner' : 'contributor', ...(file ? { file } : {}), comments, names });
     const want = Array.isArray(b.names) ? new Set(b.names.map(String)) : null;
     const picked = entries.filter(([n, val]) => !why(n, val) && (!want || want.has(n)));
+    // Owner: where each picked name goes, { NAME: ['local', 'github-actions', ...] } (the import's checkboxes).
+    const toOf = (n) => (b.destinations && typeof b.destinations === 'object' && Array.isArray(b.destinations[n]) ? [...new Set(b.destinations[n].map(String))] : null);
+    if (!isOwner && picked.some(([n]) => (toOf(n) || []).some((d) => d !== 'local'))) return scrub({ status: 403, error: k.m.vault.sinkRefusal('push') });
     const stored = [];
     const failures = [];
     try {
@@ -305,19 +439,58 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
       await refresh({ force: true });
       let added = [];
       let kept = [];
+      const pushed = [];
       if (isOwner && stored.length) {
         const imported = k.m.manifest.importEnvExample(text).filter((e) => stored.includes(e.name));
         const merged = k.m.manifest.mergeImport(man ? man.manifest : k.m.manifest.emptyManifest(), imported);
-        if (merged.added.length || !man) fs.writeFileSync(path.join(root, k.m.manifest.MANIFEST), k.m.manifest.serialize(merged.manifest));
+        // The places ticked replace an added name's default (local) and join a declared name's own.
+        for (const e of merged.manifest.secrets) {
+          const to = toOf(e.name);
+          if (!to || !stored.includes(e.name)) continue;
+          const known = to.filter((d) => ['local', ...Object.keys(SINK_FLAGS)].includes(d));
+          e.destinations = merged.added.includes(e.name) ? (known.length ? known : ['local']) : [...new Set([...e.destinations, ...known])];
+        }
+        if (merged.added.length || !man || stored.some((n) => toOf(n))) fs.writeFileSync(path.join(root, k.m.manifest.MANIFEST), k.m.manifest.serialize(merged.manifest));
         ({ added, kept } = merged);
+        for (const n of stored) {
+          const sinks = destList(toOf(n));
+          if (!sinks.length) continue;
+          const no = pushable(k, root, n, sinks);
+          if (no) { pushed.push({ name: n, ok: false, error: no.error }); continue; }
+          for (const p of await pushAll(k, root, n, sinks, b)) pushed.push({ name: n, ...p });
+        }
       }
-      return scrub({ status: failures.length && !stored.length ? 409 : 200, ok: !failures.length, stored, failed: failures, skipped: names.filter((x) => x.skip).map((x) => ({ name: x.name, why: x.skip })), added, kept, mode: isOwner ? 'owner' : 'contributor' });
+      return scrub({ status: failures.length && !stored.length ? 409 : 200, ok: !failures.length && pushed.every((p) => p.ok), stored, failed: failures, pushed, skipped: names.filter((x) => x.skip).map((x) => ({ name: x.name, why: x.skip })), added, kept, mode: isOwner ? 'owner' : 'contributor' });
     } catch (e) {
       return scrub({ status: 500, error: String(e.message || e), stored });
     }
   }
 
-  return { mask, refresh, status, audit, store, importEnv };
+  /**
+   * Declare a name in the manifest, or add places to a declared one (owner, the Vault's "Add a secret"): null, or why
+   * not. A new entry gets what it is for and the places ticked; an existing one keeps its own and gains the ticked.
+   */
+  function declareIn(k, root, name, { for: what, destinations = [] } = {}) {
+    const file = path.join(root, k.m.manifest.MANIFEST);
+    let man;
+    try { man = k.m.manifest.readManifest(file); } catch (e) { return `${k.m.manifest.MANIFEST} did not read (${String(e.message || e).split('\n')[0]}): fix it first`; }
+    const m = man ? { ...man.manifest, secrets: [...man.manifest.secrets] } : k.m.manifest.emptyManifest();
+    const places = [...new Set(destinations.map(String))].filter((d) => d === 'local' || d in SINK_FLAGS);
+    const at = m.secrets.findIndex((e) => e.name === name);
+    if (at >= 0) {
+      const e = m.secrets[at];
+      const next = [...new Set([...e.destinations, ...places])];
+      if (next.length === e.destinations.length) return null;
+      m.secrets[at] = { ...e, destinations: next };
+    } else {
+      const words = typeof what === 'string' ? what.replace(/\s+/g, ' ').trim().slice(0, 200) : '';
+      m.secrets.push({ name, for: words || 'Added in the vault.', where: null, destinations: places.length ? places : ['local'], provider: 'owner', chunk: null });
+    }
+    fs.writeFileSync(file, k.m.manifest.serialize(m));
+    return null;
+  }
+
+  return { mask, refresh, status, audit, store, importEnv, push, markRequests };
 }
 
 /** The mask for one repo, fed once (headless `nexus run`): identity when the repo has no vault. */
