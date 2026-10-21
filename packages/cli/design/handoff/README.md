@@ -216,7 +216,70 @@ gradient that is 1.2 to 2.3:1 at night and 2.6 to 3.6:1 at dawn
   (`height: auto; min-height: 156px`, 132px below 800px), which can
   move the routed composer's tray line against `--tray-y`'s fixed
   355/397px; and onboarding gains the Secrets step (4 of 7; the app
-  still reads 4 of 6).
+  still reads 4 of 6). All re-ported in 41.10, below.
+
+## The second handoff's re-port (41.10)
+
+Every board the second and third deliveries changed outside the vault,
+diffed against its screen. `nexus.css` is the third delivery's copy,
+verbatim again; the glue files (`stage-tugs.css`, `plot-fit.css`,
+`mono-symbols.css`) read only its tokens and classes, and the cascade
+repair still wraps the same two resets.
+
+**Ported:**
+
+- **The rail, on every view board** (Fleet, Cockpit, Board, Inbox,
+  CloudLoop, GitPanel, Recover, Settings): a Vault item between Git and
+  Settings, with revision 3's tooltip ("Vault: secret names for this
+  repo"; for a contributor "No project secrets needed: contributors open
+  PRs; the owner's loop deploys.", drawn `is-quiet`). It opens `/vault`,
+  which shows the design's empty state, in the rail's words, until 42.8
+  ports the vault on 42.7's `GET /api/secrets`.
+- **The routed composer** (the owner cockpit's 11px clip): it grows with
+  its content now, so the app measures `--tray-y` from the tray's middle
+  to the pane's bottom instead of trusting 361/397px. A `/plot` route
+  with its why line is 192px, 36px past the old fixed line.
+- **Settings:** the Secrets section. The owner's: names in
+  `nexus.secrets.json`, Open the vault, the rotate nudge. A
+  contributor's (revision 3): the local keys counted, "Your local keys",
+  and the locked note. The cloud loop row says "sign-in".
+- **CloudLoop's Tonight card:** "question parked" in the singular, a
+  secrets-requested stat, red runs as a line under the grid.
+- **Inbox:** "your sessions and cloud loops"; a cloud run names its
+  repo's loop (row meta, card source, the context's from line).
+- **Onboarding** (Welcome, Detect, Shape, Plot, CloudSetup, Launch):
+  every count, kicker number and Back or Continue link reads the step
+  list, so the Secrets step renumbers them when 42.8 adds it.
+
+**Left, with the reason:**
+
+- **"n of 7" and the Secrets star in the stepper:** a counter cannot
+  say 7 without the step, and the step is 42.8's. The app reads "of 6"
+  until STEPS gains it (`src/ui/steps.js`; the test proves 7).
+- **Launch's "secrets" summary row** ("3 names in the vault") and
+  **CloudSetup's "the vault just lists the name":** both describe a
+  vault the app does not have yet; 42.8's.
+- **CloudLoop's Sign-in card** (the caption and the "not a project
+  secret" sentence) and its run sentence's "needs secret" chip: 42.8's,
+  as the spec lists them.
+- **Board** (the key badge, "needs secret", Add secret, "Waiting on a
+  secret"), **Inbox** (the key card, the key glyph in a row, "secrets
+  never take a default" in the batch line), **PlanKit**'s secret rows,
+  **Secrets**, **Vault**, **VaultKit**: 42.8's.
+- **Settings' "1 requested, VERCEL_TOKEN for 7.1":** no request data
+  until 42.6 and 42.7; the line shows the names alone. The board's
+  `.nexus/secrets.yml` is demo copy: the manifest is
+  `nexus.secrets.json`.
+- **Settings' rotate nudge store:** none on the server yet (prefs and
+  `/api/local` take known keys only); the choice lasts until reload and
+  the saved mark says so.
+- **The fleet's and the inbox's cross-repo Vault tooltip** ("secret
+  names for lantern, the repo you own") and **"2 cloud loops":** the
+  boards span two repos; one server runs one repo, so the owner's
+  tooltip and "the cloud loop" stand.
+- **Sheet fixes** (FleetKit, PlanKit, Main, Tokens heights and grids)
+  and the `.sc-interp` value reset: the design tool's frames and
+  runtime, no app UI.
 
 ## Patterns not adopted
 

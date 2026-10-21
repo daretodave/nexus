@@ -106,7 +106,10 @@ You need no API key.
   the journal, the rest run again. When that session is still open,
   or its folder or script is gone, the screen shows the command and
   prompt to paste instead.
-- **Settings** (owner mode, run mode, AI one-liners, night or dawn).
+- **Settings** (owner mode, run mode, AI one-liners, secrets, night or
+  dawn). Secrets is names only: the owner's in `nexus.secrets.json`, a
+  contributor's local keys for this machine (the Vault rail item; the
+  vault itself is still to come).
   Owner mode and run mode live in the checkout's untracked
   `.nexus/local.json`, read and written through `/api/local` by
   Settings and the cockpit alike.
