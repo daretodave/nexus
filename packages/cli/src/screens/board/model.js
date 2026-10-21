@@ -21,7 +21,7 @@ export const PRIVILEGED = 'privileged_agent_session';
 /** The word under the moon. */
 export const LAB = { ready: 'ready', claimed: 'claimed', building: 'building', review: 'in review', closed: 'closed' };
 /** The moon's state class (closed chunks wear the settled moon). */
-export const CS = { ready: 'cs-ready', claimed: 'cs-claimed', building: 'cs-building', review: 'cs-review', closed: 'cs-settled' };
+export const CS = { ready: 'cs-ready', claimed: 'cs-claimed', building: 'cs-building', review: 'cs-review', closed: 'cs-settled', secret: 'cs-secret' };
 
 const pad2 = (n) => String(n).padStart(2, '0');
 /** A spec's number as files spell it ("4" and "04" are one spec). */
@@ -65,6 +65,8 @@ export function normalizePlan(plan) {
       asap: !!c.asap || asapIds.has(String(c.id)) || asapIds.has(c.spec),
       laneHeld: heldIds.has(String(c.id)) || heldIds.has(c.spec),
       plotted: c.plotted === true ? 'main' : (c.plotted || null), landed: c.landed || null, ai: !!c.ai,
+      // The secret gate (spec 42): the names a chunk waits on; it parks as needs secret until they are set.
+      needsSecret: !closed && Array.isArray(c.needsSecret) ? c.needsSecret.map(String) : [],
     };
   });
   return {
@@ -161,20 +163,24 @@ export function rowModel(c, covered, ui) {
   const mine = !!(cl && cl.person === 'you');
   const free = !cl && !closed;
   const requested = !!req[c.id];
-  const state = held ? 'ready' : c.state;
+  // Waiting on a secret: the key stands in for the moon, nobody can take it, and the owner gets "Add secret".
+  const needs = !closed && !!(c.needsSecret && c.needsSecret.length);
+  const state = held ? 'ready' : needs ? 'secret' : c.state;
   return {
     id: c.id, t: c.t, size: c.size, spec: c.spec, ai: !!c.ai, plotted: !!c.plotted && !closed,
     plottedLabel: c.plotted === 'main' ? 'just plotted · on main' : `just plotted · plan PR ${c.plotted}`,
-    state, closed, bloom: !!c.bloom, delay: c.delay,
+    state, closed, bloom: !!c.bloom, delay: c.delay, relit: !!c.relit,
     covered: !!(cl && cl.via), hover: pop === c.id,
-    stateLabel: held ? 'held' : LAB[c.state],
+    stateLabel: held ? 'held' : needs ? 'needs secret' : LAB[c.state],
     claim: cl,
-    freeLabel: closed ? (c.landed || 'closed') : requested ? `requested · waiting on ${ownerName || 'the owner'}` : 'unclaimed',
-    canClaim: free && !requested && !prot,
-    canRequest: free && !requested && prot,
+    needsKey: needs, needs: needs ? c.needsSecret.join(', ') : '',
+    showAddKey: needs && !cl && owner,
+    freeLabel: closed ? (c.landed || 'closed') : needs ? `${ownerName || 'the owner'} adds the key` : requested ? `requested · waiting on ${ownerName || 'the owner'}` : 'unclaimed',
+    canClaim: free && !requested && !prot && !needs,
+    canRequest: free && !requested && prot && !needs,
     canRelease: !!cl && !cl.via && (mine || owner) && cl.kind !== 'cloud' && !held,
     // A hold is the owner's assign (claims.mjs refuses anyone else's).
-    canHold: owner && !closed && !held && !cl,
+    canHold: owner && !closed && !held && !cl && !needs,
     canUnhold: held && (owner || mine),
     canReassign: owner && !!cl && !cl.via && !closed && cl.kind !== 'cloud',
     showPop: pop === c.id,
@@ -191,12 +197,15 @@ export function ranker(plan) {
   return (a, b) => r(a) - r(b);
 }
 
+/** Does a chunk wait on a secret (spec 42)? */
+export const waits = (c) => c.state !== 'closed' && !!(c.needsSecret && c.needsSecret.length);
+
 /** Does a row pass the stacked filters (mine, unclaimed, held)? */
 export function passes(c, cover, flt) {
   if (!flt.mine && !flt.unclaimed && !flt.held) return true;
   const cl = c.claim || cover;
   if (flt.mine && cl && cl.person === 'you') return true;
-  if (flt.unclaimed && !cl && c.state !== 'closed') return true;
+  if (flt.unclaimed && !cl && c.state !== 'closed' && !waits(c)) return true;
   if (flt.held && cl && cl.kind === 'held') return true;
   return false;
 }
@@ -205,27 +214,29 @@ export function passes(c, cover, flt) {
  * The all-chunks list as sections: [{ title, d, asap, rows }]. sort: next |
  * spec | size | claim. Closed chunks are left out (the fold shows them).
  */
-export function lanes(plan, chunks, sort, flt, specClaims) {
+export function lanes(plan, chunks, sort, flt, specClaims, { owner = true, ownerName = '' } = {}) {
   const byOrder = ranker(plan);
   const cover = (c) => (!c.claim && c.state !== 'closed' && specClaims[c.spec]) ? specClaims[c.spec] : null;
   const out = [];
-  const push = (title, list, d, asap) => {
+  const push = (title, list, d, asap, secret) => {
     const l = list.filter((c) => passes(c, cover(c), flt));
-    if (l.length) out.push({ title, d: d || '', asap: !!asap, rows: l.map((c) => [c, cover(c)]) });
+    if (l.length) out.push({ title, d: d || '', asap: !!asap, secret: !!secret, rows: l.map((c) => [c, cover(c)]) });
   };
   const open = chunks.filter((c) => c.state !== 'closed');
   const isHeld = (c) => !!(c.claim && c.claim.kind === 'held') || c.laneHeld;
   if (sort === 'next') {
-    push('asap', open.filter((c) => c.asap && !isHeld(c)).sort(byOrder), 'pinned on top, /next takes these first', true);
-    push('Next up', open.filter((c) => !c.asap && !isHeld(c) && (c.state === 'ready' || c.state === 'claimed')).sort(byOrder), 'the order /next would pick');
+    push('asap', open.filter((c) => c.asap && !isHeld(c) && !waits(c)).sort(byOrder), 'pinned on top, /next takes these first', true);
+    push('Next up', open.filter((c) => !c.asap && !isHeld(c) && !waits(c) && (c.state === 'ready' || c.state === 'claimed')).sort(byOrder), 'the order /next would pick');
     push('In flight', open.filter((c) => !c.asap && !isHeld(c) && (c.state === 'building' || c.state === 'review')).sort(byOrder), 'building or in review');
+    push('Waiting on a secret', open.filter((c) => waits(c) && !isHeld(c)).sort(byOrder), owner ? 'add the value in the vault and it relights; /next skips it until then' : `${ownerName || 'the owner'} adds the value; /next skips it until then`, false, true);
     push('Held', open.filter(isHeld).sort(byOrder), 'never expires');
   } else if (sort === 'spec') {
     plan.specs.forEach((s) => push(`${s.id} · ${s.title}`, open.filter((c) => c.spec === s.id).sort(byOrder), s.file));
   } else if (sort === 'size') {
     ['L', 'M', 'S'].forEach((z) => push(`Size ${z}`, open.filter((c) => c.size === z).sort(byOrder), ''));
   } else {
-    push('Unclaimed', open.filter((c) => !c.claim && !cover(c) && !c.laneHeld).sort(byOrder), 'free to take');
+    push('Unclaimed', open.filter((c) => !c.claim && !cover(c) && !c.laneHeld && !waits(c)).sort(byOrder), 'free to take');
+    push('Waiting on a secret', open.filter((c) => waits(c) && !c.claim && !cover(c) && !c.laneHeld).sort(byOrder), 'nobody can take these until the value is set', false, true);
     push('Claimed', open.filter((c) => (c.claim || cover(c)) && !isHeld(c)).sort(byOrder), 'by a person, a session or the cloud loop');
     push('Held', open.filter(isHeld).sort(byOrder), 'never expires');
   }

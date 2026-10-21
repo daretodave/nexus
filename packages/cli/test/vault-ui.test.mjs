@@ -135,3 +135,33 @@ test('names: typed upper case, checked before a store', () => {
   assert.equal(validName('_X'), false);
   assert.equal(ageText({ set: true, setAt: null, age: null }, NOW), '');
 });
+
+test('the plan board: a chunk waiting on a secret wears the key, names it, and sits in its own lane', async () => {
+  const { normalizePlan, rowModel, lanes, withClaim } = await import('../src/screens/board/model.js');
+  const plan = normalizePlan({ specs: [{ id: '07', title: 'Deploys', chunks: [
+    { id: '07.1', title: 'Preview deploys', size: 'M', state: 'ready', needsSecret: ['VERCEL_TOKEN'] },
+    { id: '07.2', title: 'Docs', size: 'S', state: 'ready' },
+    { id: '07.3', title: 'Old', size: 'S', state: 'closed', needsSecret: ['X'] },
+  ] }], order: ['07.2', '07.1'] });
+  const claims = { chunk: {}, spec: {} };
+  const chunks = plan.chunks.map((c) => withClaim(c, claims));
+  const owner = rowModel(chunks[0], null, { owner: true, prot: false, ownerName: 'you' });
+  assert.deepEqual([owner.state, owner.stateLabel, owner.needs, owner.showAddKey, owner.canClaim, owner.canHold], ['secret', 'needs secret', 'VERCEL_TOKEN', true, false, false]);
+  const contrib = rowModel(chunks[0], null, { owner: false, prot: true, ownerName: 'mira' });
+  assert.deepEqual([contrib.showAddKey, contrib.canRequest, contrib.freeLabel], [false, false, 'mira adds the key']);
+  assert.equal(rowModel(chunks[2], null, { owner: true }).state, 'closed', 'a closed chunk waits on nothing');
+  const next = lanes(plan, chunks, 'next', {}, {}, { owner: true });
+  assert.deepEqual(next.map((l) => [l.title, l.secret, l.rows.map(([c]) => c.id).join()]), [['Next up', false, '07.2'], ['Waiting on a secret', true, '07.1']]);
+  const byClaim = lanes(plan, chunks, 'claim', {}, {}, { owner: false, ownerName: 'mira' });
+  assert.deepEqual(byClaim.map((l) => l.title), ['Unclaimed', 'Waiting on a secret']);
+  assert.deepEqual(lanes(plan, chunks, 'next', { unclaimed: true }, {}).map((l) => l.title), ['Next up'], 'unclaimed leaves out what nobody can take');
+});
+
+test('the inbox: a secret request is one key item per missing name, with no default', async () => {
+  const { fromDurable, fromInbox } = await import('../src/screens/headsdown-inbox/inboxModel.js');
+  const d = { id: 'plan/pending/secrets-07.1.md:5', file: 'plan/pending/secrets-07.1.md', line: 5, text: 'secret request 07.1: set A_KEY, B_KEY in your terminal', secret: { chunk: '07.1', names: ['A_KEY', 'B_KEY'], missing: ['B_KEY'] } };
+  const items = fromDurable([d]);
+  assert.deepEqual(items.map((i) => [i.id, i.q, i.secret, i.hasDefault, i.kind]), [['plan:plan/pending/secrets-07.1.md:5:B_KEY', '07.1 needs B_KEY', 'B_KEY', false, 'cloud']]);
+  assert.equal(fromInbox([{ id: 'plan:x', src: 'durable', durable: d }]).length, 1);
+  assert.equal(fromDurable([{ id: 'q', file: 'plan/a.md', line: 1, text: 'A plain question?' }])[0].secret, undefined);
+});

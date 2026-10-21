@@ -86,8 +86,9 @@ export function TickLabel({ checked, onChange, children, disabled, title }) {
 export function KeyCard({ card, phase = 'pending', saved, busy, error, onSave, onSkip, onUnskip, onChange, onRetry }) {
   const [paste, setPaste] = useState('');
   const [show, setShow] = useState(false);
-  const [ticks, setTicks] = useState(() => Object.fromEntries(card.dests.map((x) => [x.d, true])));
-  const chosen = card.dests.filter((x) => ticks[x.d] || x.locked).map((x) => x.d);
+  // Every place starts ticked, including ones the manifest names after the card first draws; unticking is remembered.
+  const [off, setOff] = useState({});
+  const chosen = card.dests.filter((x) => x.locked || !off[x.d]).map((x) => x.d);
   const save = async () => {
     if (!paste || !chosen.length || busy) return;
     const ok = await onSave(paste, chosen);
@@ -140,7 +141,7 @@ export function KeyCard({ card, phase = 'pending', saved, busy, error, onSave, o
         <span className="t-label c-2">Store it</span>
         <div className="dests">
           {card.dests.map((x) => (
-            <TickLabel key={x.d} checked={ticks[x.d] || x.locked} disabled={x.locked} title={x.locked ? 'The vault keeps every value; pushes read it from there.' : undefined} onChange={(on) => setTicks((t) => ({ ...t, [x.d]: on }))}>{x.label}</TickLabel>
+            <TickLabel key={x.d} checked={x.locked || !off[x.d]} disabled={x.locked} title={x.locked ? 'The vault keeps every value; pushes read it from there.' : undefined} onChange={(on) => setOff((t) => ({ ...t, [x.d]: !on }))}>{x.label}</TickLabel>
           ))}
         </div>
       </div>

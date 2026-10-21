@@ -8,16 +8,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ViewFrame, ViewHead, ViewTitle, ChoiceButtons, LoopStatus, Icon, Orb, Ring, SessTag, Empty, ToastHost, cx, useShell,
+  ViewFrame, ViewHead, ViewTitle, ChoiceButtons, LoopStatus, Icon, Orb, Ring, SessTag, Empty, ToastHost, KeyCard, KeyOrb, cx, useShell,
 } from '../ui/index.js';
 import { countdown } from '../../shared/times.mjs';
-import { api, server, useCloudLoop, useInbox, useOversight } from '../data/index.js';
+import { api, server, useCloudLoop, useInbox, useOversight, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { collect, clock, names } from './headsdown-inbox/inboxModel.js';
+import { keyCard } from './vault/model.js';
+import { useKeyCards } from './vault/useKeyCards.js';
 
 const KIND_CLS = { now: 'is-now', parked: 'is-parked', cloud: 'is-cloud' };
 const HOW_META = { approved: 'approved: ', default: 'default: ', answered: 'answered: ', changed: 'changed: ' };
-const HOW_LABEL = { approved: 'approved', default: 'default', answered: 'answered', changed: 'changed' };
+const HOW_LABEL = { approved: 'approved', default: 'default', answered: 'answered', changed: 'changed', set: 'set' };
 const CLOUD_TAG = { width: 12, height: 12, color: 'var(--accent)' };
 
 const sessName = (x) => x.session?.name || '';
@@ -83,6 +85,9 @@ export default function Inbox() {
   const now = Date.now();
 
   const { items: current } = collect({ inbox, live, oversight, now });
+  // A secret request's key card reads the manifest's entry (what it is for, where to get it, where it goes).
+  const hasKey = current.some((i) => i.secret);
+  const secretsRes = useSecrets(undefined, { skip: !hasKey });
 
   const [sel, setSel] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -91,6 +96,15 @@ export default function Inbox() {
   const [errs, setErrs] = useState({});
   const doneRef = useRef(done);
   doneRef.current = done;
+  // A saved secret settles its row ("set") without an answer to the plan: the value went to the vault, and the
+  // request leaves the server's list once its names are set.
+  const keys = useKeyCards({
+    reload: () => { secretsRes.reload(); inbox.reload?.(); },
+    onSaved: (card, saved) => {
+      const item = current.find((i) => i.secret === card.name && i.chunk === card.chunk) || doneRef.current[card.itemId]?.item;
+      if (item) setDone((d) => ({ ...d, [item.id]: { a: saved.places, how: 'set', item, sent: true } }));
+    },
+  });
 
   // A stable order: rows keep their place when they settle and leave the server's list.
   const order = useRef([]);
@@ -188,6 +202,7 @@ export default function Inbox() {
   const startId = nowStart ? g.now.find((i) => i.sessionId)?.sessionId : null;
 
   const effect = (i) => {
+    if (i.secret) return `${loopAt} picks ${i.chunk || 'its chunk'} back up; the agent sees the name, never the value`;
     if (i.src === 'perm') return `${i.who} waits on this permission`;
     if (i.src === 'durable') return 'the answer lands in the plan; the next loop or session picks it up';
     if (i.kind === 'now') {
@@ -197,6 +212,10 @@ export default function Inbox() {
     if (i.kind === 'cloud') return `${loopAt} picks up your answer`;
     return 'approving now saves a step at review; a change queues a fix chunk';
   };
+
+  // Secrets never take a default: batch-answer passes over a key row and says so.
+  const keyOpen = openItems.filter((i) => i.secret).map((i) => i.secret);
+  const keyNote = keyOpen.length ? ` ${names(keyOpen)} still ${keyOpen.length === 1 ? 'needs a value' : 'need values'}: secrets never take a default.` : '';
 
   const groupDone = (kind) => g[kind].length > 0 && g[kind].every(isDone);
   const batchLine = () => {
@@ -213,21 +232,23 @@ export default function Inbox() {
     const settled = !!d;
     let meta = '';
     let metaB = '';
-    if (settled) { meta = HOW_META[d.how] || 'answered: '; metaB = d.a; }
+    if (settled) { meta = d.how === 'set' ? `${r.secret} set · ` : HOW_META[d.how] || 'answered: '; metaB = d.a; }
+    else if (r.secret) { meta = `plan · ${r.chunk} · `; metaB = 'needs a value, no default'; }
     else if (r.src === 'durable') meta = `${r.raw.file}:${r.raw.line}`;
     else if (r.kind === 'now') meta = [r.who, r.chunk, r.age].filter(Boolean).join(' · ');
     else { meta = `${[r.kind === 'cloud' ? loopName : r.who, r.chunk, r.at].filter(Boolean).join(' · ')}${r.hasDefault ? ' · assumed ' : ''}`; metaB = r.hasDefault ? r.opts[0] : ''; }
     return (
       <div key={r.id} className={cx('ibx-row', x?.id === r.id && 'is-selected', settled && 'is-settled')}>
-        <span className={cx('urg', settled ? 'is-done' : KIND_CLS[r.kind])} />
+        {r.secret ? <KeyOrb small state={settled ? (d.how === 'set' ? 'set' : 'quiet') : ''} icon="key" /> : <span className={cx('urg', settled ? 'is-done' : KIND_CLS[r.kind])} />}
         <Tag x={r} />
         <button className="ibx-open" type="button" onClick={() => setSel(r.id)} aria-label={`Open: ${r.q}`}>
-          <span className="ibx-q">{r.q}</span>
+          <span className="ibx-q">{r.secret ? <>{r.chunk} needs <code className="secret-code">{r.secret}</code></> : r.q}</span>
           <span className="ibx-meta">{meta}{metaB ? <b>{metaB}</b> : null}</span>
         </button>
         <div className="ibx-acts">
           {!settled && r.kind === 'now' && r.hasDefault ? <button className="btn btn-ghost btn-s" type="button" onClick={() => settle(r, r.opts[0], 'default')}>Use default</button> : null}
           {!settled && r.kind !== 'now' && r.hasDefault ? <button className="btn btn-s" type="button" onClick={() => settle(r, r.opts[0], 'approved')}><Icon name="check" size={14} />Approve</button> : null}
+          {!settled && r.secret ? <button className="btn btn-s" type="button" onClick={() => setSel(r.id)}><Icon name="key" size={14} />Add value</button> : null}
           {settled ? <span className="chk-state is-ok"><Icon name="check" size={14} />{HOW_LABEL[d.how] || 'answered'}</span> : null}
         </div>
       </div>
@@ -294,10 +315,10 @@ export default function Inbox() {
             {batch > 0 ? (
               <div className="ibx-done">
                 <Icon name="check" style={{ color: 'var(--st-done)', flex: 'none', marginTop: 2 }} />
-                <span><b>{batch} settled with defaults.</b> {batchLine()}.</span>
+                <span><b>{batch} settled with defaults.</b> {batchLine()}.{keyNote}</span>
               </div>
             ) : null}
-            {x ? <Detail x={x} d={done[x.id]} items={g.now} done={done} settle={settle} reopen={reopen} effect={effect(x)} loopAt={loopAt} repo={shell.repo} /> : null}
+            {x ? <Detail x={x} d={done[x.id]} items={g.now} done={done} settle={settle} reopen={reopen} effect={effect(x)} loopAt={loopAt} repo={shell.repo} keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)} /> : null}
           </aside>
         </div>
       )}
@@ -307,7 +328,7 @@ export default function Inbox() {
 }
 
 /** The selected question: a pending tug, a parked card, or the settled tug; then its context. */
-function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo }) {
+function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyProps, onKeyChange }) {
   const sess = sessName(x);
   const src = x.kind === 'cloud'
     ? (x.src === 'durable' ? `${x.raw.file}:${x.raw.line}` : [`${repo ? `${repo} loop` : 'cloud run'}${x.run ? ` ${x.run}` : ''}`, x.chunk].filter(Boolean).join(' · '))
@@ -318,7 +339,11 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo }) {
   const canReopen = d && (!d.sent || x.src === 'inbox');
 
   let card;
-  if (d) {
+  if (keyProps) {
+    // The key card: no default, no countdown. Saved, it folds into one line and the chunk relights.
+    const phase = d?.how === 'set' && keyProps.phase === 'pending' ? 'saved' : keyProps.phase;
+    card = <KeyCard key={keyProps.card.key} {...keyProps} phase={phase} saved={keyProps.saved || (d ? { places: d.a, failed: [] } : undefined)} onChange={() => { keyProps.onChange(); onKeyChange(); }} />;
+  } else if (d) {
     const resultA = d.how === 'changed' ? 'Changed to ' : d.how === 'approved' ? 'Approved ' : d.how === 'default' ? 'Took the default, ' : 'You chose ';
     let resultC;
     if (x.src === 'perm') resultC = `. ${x.who} goes on.`;

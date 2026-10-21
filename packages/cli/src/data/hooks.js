@@ -140,4 +140,4 @@ export const useDesign = () => useResource('/api/design');
 export const useLocalSettings = () => useResource('/api/local');
 
 /** GET /api/secrets (served, spec 42) -> { available, mode, owner, projectSecretsNeeded, manifest, vault, secrets: [{ name, for, where, chunk, declared, set, rings, destinations: [{ destination, state, at, stale? }], age, setAt, rotate }], localKeys: [{ name, rings }], nudges, rotateDays, audit: [event], sinks, requests: [{ chunk, names, missing, file, line, date }], envFiles }: names and status, never a value. A repo without the secrets scripts answers 409 (status 'error', its reason). Shape: server/secrets.mjs; the view model: screens/vault/model.js. */
-export const useSecrets = (poll) => useResource('/api/secrets', { poll });
+export const useSecrets = (poll, { skip } = {}) => useResource('/api/secrets', { poll, skip });

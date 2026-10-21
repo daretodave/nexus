@@ -57,8 +57,8 @@ export function PbList({ children, style }) {
 }
 
 /** .pb-sec: a lane header inside the list ("asap · 2 · pinned on top"). */
-export function PbSec({ asap, title, n, d, style }) {
-  return <div className={cx('pb-sec', asap && 'is-asap')} style={style}><span className="t-caps c-2">{title}</span>{n != null ? <span className="n">{n}</span> : null}{d ? <span className="d">{d}</span> : null}</div>;
+export function PbSec({ asap, secret, title, n, d, style }) {
+  return <div className={cx('pb-sec', asap && 'is-asap', secret && 'is-secret')} style={style}><span className="t-caps c-2">{title}</span>{n != null ? <span className="n">{n}</span> : null}{d ? <span className="d">{d}</span> : null}</div>;
 }
 
 /** .pb-fold: "show 12 closed" style toggle. */

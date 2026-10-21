@@ -18,7 +18,7 @@ import {
 import { api, server, usePlan, useClaims, useSummaries, useSessions, useLocalSettings, useCloudLoop, useReloadOn, chunkStagesOf } from '../data/index.js';
 import { PATHS, lastSession } from '../routes.js';
 import {
-  normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, railPeople, hhmm,
+  normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, railPeople, hhmm, waits,
   gripKey, dragOrder, moveOf, inOrder, gripSays, reassignTargets, reassignBody, ownerLead,
 } from './board/model.js';
 import { BoardRow, BoardSpec, ClaimsRail, PlanPr } from './board/parts.jsx';
@@ -99,6 +99,7 @@ export default function Board() {
   const ctx = useMemo(() => ({ meWho: meWhoFrom(rows, owner, me), owner, ownerName, sessions, cloudNext }), [rows, owner, me, ownerName, sessions, cloudNext]);
   const claims = useMemo(() => indexClaims(rows, ctx), [rows, ctx]);
 
+  const relit = useRelit(plan);
   const chunks = useMemo(() => {
     if (!plan) return [];
     const sum = sums.status === 'ready' ? sums.data || {} : {};
@@ -107,9 +108,9 @@ export default function Board() {
       // The server sends a line only for a chunk the plan leaves without words (server/summaries.mjs).
       const named = s ?{ t: s.text ?? String(s), ai: true } : null;
       const b = bloom[c.id];
-      return withClaim({ ...c, ...named, ...(b != null ? { bloom: true, delay: b, plotted: c.plotted || 'main' } : null) }, claims);
+      return withClaim({ ...c, ...named, ...(b != null ? { bloom: true, delay: b, plotted: c.plotted || 'main' } : null), ...(relit.has(c.id) ? { relit: true } : null) }, claims);
     });
-  }, [plan, sums.status, sums.data, claims, bloom]);
+  }, [plan, sums.status, sums.data, claims, bloom, relit]);
   const byId = useMemo(() => Object.fromEntries(chunks.map((c) => [c.id, c])), [chunks]);
   const specById = useMemo(() => Object.fromEntries((plan?.specs || []).map((s) => [s.id, s])), [plan]);
 
@@ -277,7 +278,7 @@ export default function Board() {
     return !!claims.spec[id] || list.some((c) => c.plotted || c.claim || firstUp.has(c.id) || c.state === 'building');
   }
 
-  const items = plan ? lanes(plan, chunks, sort, f, claims.spec) : [];
+  const items = plan ? lanes(plan, chunks, sort, f, claims.spec, { owner, ownerName }) : [];
   const closedList = chunks.filter((c) => c.state === 'closed');
   const specs = (plan?.specs || []).map((s) => {
     const list = inOrder(chunks.filter((c) => c.spec === s.id), moved[s.id]);
@@ -286,11 +287,11 @@ export default function Board() {
     // The open chunks as listed: what a grip moves among (a closed one never moves).
     const ids = list.filter((c) => c.state !== 'closed').map((c) => c.id);
     return {
-      id: s.id, title: s.title, file: s.file, prog, claim: sc, empty: list.length === 0, ids,
+      id: s.id, title: s.title, file: s.file, prog, claim: sc, empty: list.length === 0, ids, needsN: list.filter(waits).length,
       open: openOv[s.id] ?? specOpenDefault(s.id),
       rows: inOrder(list, grab && grab.spec === s.id ? grab.order : null).filter((c) => {
         const cover = sc && c.state !== 'closed' && !c.claim ? sc : null;
-        return !anyF || (f.mine && (c.claim || cover)?.person === 'you') || (f.unclaimed && !(c.claim || cover) && c.state !== 'closed') || (f.held && (c.claim || cover)?.kind === 'held');
+        return !anyF || (f.mine && (c.claim || cover)?.person === 'you') || (f.unclaimed && !(c.claim || cover) && c.state !== 'closed' && !waits(c)) || (f.held && (c.claim || cover)?.kind === 'held');
       }).map((c) => rowModel(c, sc && c.state !== 'closed' && !c.claim ? sc : null, ui)),
     };
   });
@@ -379,7 +380,7 @@ export default function Board() {
         {nothing && anyF ? <PbSec title="Nothing matches" d="no chunk passes these filters; clear one to see more" /> : null}
         {nothing && !anyF ? <PbSec title="Nothing open" d="every chunk in the plan is closed" /> : null}
         {items.map((sec) => [
-          <PbSec key={`s-${sec.title}`} asap={sec.asap} title={sec.title} n={sec.rows.length} d={sec.d} />,
+          <PbSec key={`s-${sec.title}`} asap={sec.asap} secret={sec.secret} title={sec.title} n={sec.rows.length} d={sec.d} />,
           ...sec.rows.map(([c, cover]) => <BoardRow key={c.id} r={rowModel(c, cover, ui)} on={rowOn} repo={repo} ownerName={ownerName} busy={busy} pick={rowPick(c.id)} />),
         ])}
         {!anyF && closedList.length ? (
@@ -466,3 +467,19 @@ function fromPlanPr(pr, byId) {
   };
 }
 
+/** Chunks that stopped waiting on a secret since the last plan read: they relight for a moment (.crow.is-relit). */
+function useRelit(plan) {
+  const prev = useRef(null);
+  const [lit, setLit] = useState(() => new Set());
+  useEffect(() => {
+    if (!plan) return undefined;
+    const now = new Set(plan.chunks.filter((c) => c.needsSecret?.length).map((c) => c.id));
+    const back = prev.current ? [...prev.current].filter((id) => !now.has(id)) : [];
+    prev.current = now;
+    if (!back.length) return undefined;
+    setLit(new Set(back));
+    const t = setTimeout(() => setLit(new Set()), 2400);
+    return () => clearTimeout(t);
+  }, [plan]);
+  return lit;
+}

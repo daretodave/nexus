@@ -3,8 +3,10 @@
 // popover, the spec group with Chunk it, the plan PR card, the claims rail.
 // Built on the shared ui/ kit where its markup matches the board exactly.
 import {
-  AiGlyph, SizeTag, Icon, Moon, Grip, Star, Pct, ChunkIt, CkQ, CRail, CrPerson, CrSess, CrClaim, ReqPop, ChoiceButtons, cx,
+  AiGlyph, SizeTag, Icon, Moon, Grip, Star, Pct, ChunkIt, CkQ, CRail, CrPerson, CrSess, CrClaim, ReqPop, ChoiceButtons, KeyBadge, KeyMoon, cx,
 } from '../../ui/index.js';
+import { Link } from 'react-router-dom';
+import { PATHS } from '../../routes.js';
 import { CS, GH_LOGIN, ownerLead } from './model.js';
 
 /** The row's claim badge (.claim): a star session, the cloud loop, a hold, or a neutral initial. */
@@ -100,19 +102,20 @@ export function BoardRow({ r, on, repo, ownerName, busy, grip = null, pick = nul
   const b = busy === r.id;
   const style = { ...(r.delay != null ? { '--d': `${r.delay}ms` } : null), ...(grip?.moving ? MOVING : null) };
   return (
-    <div className={cx('crow', CS[r.state], r.closed && 'is-closed', r.plotted && 'is-plotted', r.covered && 'is-covered', (r.hover || pick) && 'is-hover', r.bloom && 'is-bloom')}
+    <div className={cx('crow', CS[r.state], r.closed && 'is-closed', r.plotted && 'is-plotted', r.covered && 'is-covered', (r.hover || pick) && 'is-hover', r.bloom && 'is-bloom', r.relit && 'is-relit')}
       style={Object.keys(style).length ? style : undefined} role="listitem" onDragOver={grip?.onDragOver} onDrop={grip?.onDrop}>
       {grip ? <GripBtn id={r.id} g={grip} /> : <Grip />}
-      <Moon state={r.state === 'closed' ? 'settled' : r.state} />
+      {r.state === 'secret' ? <KeyMoon /> : <Moon state={r.state === 'closed' ? 'settled' : r.state} />}
       <span className="chunk-id">{r.id}</span>
       <span className="crow-t">
         <span className="tt">{r.t}</span>
         {r.ai ? <AiGlyph /> : null}
         {r.plotted ? <span className="plotted-tag">{r.plottedLabel}</span> : null}
+        {r.needsKey ? <KeyBadge>{r.needs}</KeyBadge> : null}
       </span>
       <SizeTag size={r.size} />
       <span className="crow-state">{r.stateLabel}</span>
-      {cl ? <ClaimBadge cl={cl} /> : <span className="crow-free">{r.freeLabel}</span>}
+      {cl ? <ClaimBadge cl={cl} /> : r.showAddKey ? <Link className="btn btn-s btn-warn crow-key" to={PATHS.vault}><Icon name="key" size={14} />Add secret</Link> : <span className="crow-free">{r.freeLabel}</span>}
       <div className="crow-acts">
         {r.canClaim ? <Act icon="flag" busy={b} onClick={() => on.claim(r.id)}>Claim</Act> : null}
         {r.canRequest ? <Act icon="flag" busy={b} onClick={() => on.request(r.id)} aria-expanded={r.showPop ? 'true' : 'false'}>Request claim</Act> : null}
@@ -174,6 +177,7 @@ export function BoardSpec({ s, on, rowOn, repo, ownerName, busy, ck, prot, owner
         <div className="spec-name"><b>{title}</b><span>{s.file}</span></div>
         <Pct pct={s.prog.pct} n={s.prog.text} />
         <div className="spec-acts">
+          {s.needsN ? <KeyBadge style={{ fontFamily: 'var(--font-ui)', fontSize: 11 }} title={undefined}>{s.needsN} {s.needsN === 1 ? 'needs a secret' : 'need secrets'}</KeyBadge> : null}
           {sc ? <ClaimBadge cl={sc} whole /> : null}
           {canClaim ? <Act icon="flag" busy={busy === `spec ${s.id}`} onClick={() => on.claim(s.id)}>{prot ? 'Request spec' : 'Claim spec'}</Act> : null}
           {canClaim && owner ? <Act icon="hold" ghost busy={busy === `spec ${s.id}`} onClick={() => on.hold(s.id)}>Hold</Act> : null}

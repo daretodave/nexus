@@ -12,7 +12,7 @@
 // An item: { id, kind: 'now'|'parked'|'cloud', src: 'inbox'|'ask'|'perm'|'durable',
 //   session: { name, kind } | null, sessionId, run, who, chunk, chunkT, phase,
 //   age, at, deadline (a live question: when its session takes the default), q, opts: [label], why, hasDefault,
-//   freeText, raw }
+//   freeText, raw, secret? (a secret request: the name it waits on; answered by the key card, never by a default) }
 
 const label = (o) => (typeof o === 'string' ? o : o?.label || '');
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -42,14 +42,14 @@ function sessionOf(s) {
  */
 export function fromInbox(data, now) {
   const rows = Array.isArray(data) ? data : data?.items || [];
-  return rows.map((x) => {
+  return rows.flatMap((x) => {
     const tag = (item) => ({ ...item, session: sessionOf(x.session), sessionId: x.sessionId || x.session?.id || null, chunk: x.chunk || item.chunk });
     if (x.src === 'ask' && x.askId) {
       const [one] = fromAsks([{ id: x.askId, agent: x.agent, at: x.at, deadline: x.deadline, questions: [{ question: x.qText, options: x.options || [] }] }], { now });
       return tag({ ...one, id: String(x.id), q: x.question || one.q, opts: (x.options || []).map(label).filter(Boolean), why: x.why || '', raw: x });
     }
     if (x.src === 'perm' && x.perm) return tag(fromPermissions([x.perm], { now })[0]);
-    if (x.src === 'durable' && x.durable) return fromDurable([x.durable])[0];
+    if (x.src === 'durable' && x.durable) return fromDurable([x.durable]);
     return fromInboxRow(x, now);
   });
 }
@@ -152,9 +152,40 @@ export function fromPermissions(perms = [], { stage, chunk, now } = {}) {
   }));
 }
 
-/** Durable questions in plan/ -> items answered in words, landing in the plan. */
+/**
+ * A secret request (the server marks it: `secret: { chunk, names, missing }`) -> one key item per name still missing.
+ * It has no default and no countdown, so batch-answer and "Approve all" pass over it; the key card answers it.
+ */
+function fromSecretRequest(d) {
+  const { chunk = '', missing = [] } = d.secret || {};
+  return missing.map((name) => ({
+    id: `plan:${d.id}:${name}`,
+    kind: 'cloud',
+    src: 'durable',
+    session: null,
+    sessionId: null,
+    run: 'plan',
+    who: 'the plan',
+    chunk,
+    chunkT: '',
+    phase: '',
+    file: d.file,
+    line: d.line,
+    age: '',
+    at: '',
+    q: `${chunk} needs ${name}`,
+    secret: name,
+    opts: [],
+    why: '',
+    hasDefault: false,
+    freeText: false,
+    raw: d,
+  }));
+}
+
+/** Durable questions in plan/ -> items answered in words, landing in the plan (a secret request: key items). */
 export function fromDurable(rows = []) {
-  return rows.map((d) => ({
+  return rows.flatMap((d) => (d.secret ? fromSecretRequest(d) : [{
     id: `plan:${d.id}`,
     kind: 'cloud',
     src: 'durable',
@@ -175,7 +206,7 @@ export function fromDurable(rows = []) {
     hasDefault: false,
     freeText: true,
     raw: d,
-  }));
+  }]));
 }
 
 /** Every item for the view: the inbox when served, else today's sources. */
