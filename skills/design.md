@@ -12,7 +12,9 @@ pasted into it. `/design prompt` writes that paste from the
 plan, and `/design addendum` writes only what changed since,
 numbered to continue it, for a session already running. Every
 prompt and addendum is stored in the repo, so the next addendum
-knows where the last one left off.
+knows where the last one left off. `/design ingest` brings the
+finished artifact back: every board kept byte for byte with a
+manifest, the UI's source of truth, the port plotted.
 
 This is not the in-repo design session
 (`templates/design-prompt.md`):
@@ -27,7 +29,7 @@ step by step; `concepts/design-round-trip.md` is the why.
 /design prompt 41,42         # those specs, whole
 /design prompt vault         # the specs holding the word
 /design addendum             # what changed since the last stored file
-/design ingest <link|folder> # arrives in 43.3
+/design ingest <link|folder> # the artifact in, the port plotted
 ```
 
 ## 3. Autonomy contract
@@ -43,6 +45,7 @@ step by step; `concepts/design-round-trip.md` is the why.
 - An item that is not a screen (a script, a workflow): cut it
   from the text while polishing. Its hash stays in the front
   matter, so the next addendum names it only if it changes.
+- An artifact link is the go-ahead for ingest: never ask.
 - Under a loop: never ask; take the scope as given.
 
 ## 4. `prompt`
@@ -84,9 +87,20 @@ step by step; `concepts/design-round-trip.md` is the why.
 
 ## 6. `ingest`
 
-Arrives in 43.3: the artifact link or a downloaded folder in,
-`design/handoff/<date>/` with a manifest and README out, the
-port plotted as an L chunk. Until then, playbook step 4.
+1. A link: list and read every file through the Artifact tool
+   into a fresh scratch folder (no Artifact tool, as on a cloud
+   tick: park a `[needs-user-call]` row for the downloaded
+   folder, stop). A folder: use it as given.
+2. Shape the port chunk through `/plot` (Steps 0-2), so its id
+   is known; then, in the plot's worktree,
+   `node scripts/design/ingest.mjs <folder> --artifact <link>
+   --version <v> --chunk <id> --into packages/cli/design/handoff`
+   writes the GUI's `packages/cli/design/handoff/<date>/`: the
+   files verbatim, `manifest.json`, `README.md`.
+3. `check` passes; commit `docs: ingest the design handoff of
+   <date>`, plot the L port chunk, land as `/plot` does.
+
+`design/ingest.md` has each step in full.
 
 ## 7. Hard rules
 
@@ -107,7 +121,9 @@ port plotted as an L chunk. Until then, playbook step 4.
    report the file. Never guess its numbering.
 3. **Addendum before any prompt:** the script refuses; run
    `/design prompt` first.
-4. `git pull` divergence: rebase your own commits, retry.
+4. **The fetch stopped short:** ingest names the boards the
+   canvas holds and the folder lacks, writes nothing; refetch.
+5. `git pull` divergence: rebase your own commits, retry.
 
 ## 9. Quick reference
 
@@ -120,8 +136,11 @@ design/prompts/NNN-<date>.md          # the newest stored file's front matter
 node scripts/design/prompt.mjs prompt [<scope>] [--write]
 node scripts/design/prompt.mjs addendum [--write]
 #   --dir design/prompts  --plan plan  --date YYYY-MM-DD
+node scripts/design/ingest.mjs <folder> --artifact <link> --version <v> --chunk <id>
+node scripts/design/ingest.mjs check|rehash <handoff>   # --into packages/cli/design/handoff
 
 # Writes
 design/prompts/NNN-<date>.md          # one per prompt or addendum
+design/handoff/<date>/                # one per delivery: the files, manifest.json, README.md
 git commit -m "docs: design prompt NNN"   # then land per owner mode (next/land.md §6)
 ```

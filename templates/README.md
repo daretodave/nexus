@@ -48,7 +48,8 @@ templates/
 │   ├── ship-migration.md              (omit unless Structured data: pure-db / hybrid-with-managed-postgres)
 │   ├── ship-asset.md                  (omit unless Surface: site/hybrid AND branding in scope)
 │   ├── moderate.md                    (omit unless the project has UGC; see customization/moderation-loop.md)
-│   ├── design.md                      (omit unless the owner designs in Claude Design: the paste prompt and its addenda from the plan)
+│   ├── design.md                      (omit unless the owner designs in Claude Design: the paste prompt and its addenda from the plan; ingest the artifact, plot the port)
+│   ├── design/ingest.md               (/design ingest in full: the Artifact calls, the manifest, the port chunk, a package handoff)
 │   ├── plan-a-spec.md
 │   ├── iterate.md
 │   ├── critique.md
@@ -256,7 +257,7 @@ the corresponding capability:
 | `workspace/CLAUDE.md` + `workspace/AGENTS.md` + `workspace/README.md` + `workspace/REPOS.md` | You've outgrown polyrepo into a 3+-repo workspace (an un-versioned local root holding `plan/` and every product as siblings). Copy all four to the workspace root, not into any single repo. See `nexus/playbooks/workspace.md`. |
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
-| `skills/design.md` + `claude/commands/design.md` + `scripts/design/prompt.mjs` | The owner designs whole screens in Claude Design and the repo takes the artifact back: `/design prompt` and `/design addendum` write the paste from the plan, stored in `design/prompts/`. See `nexus/playbooks/design-handoff.md`. |
+| `skills/design.md` + `skills/design/ingest.md` + `claude/commands/design.md` + `scripts/design/prompt.mjs` + `scripts/design/ingest.mjs` | The owner designs whole screens in Claude Design and the repo takes the artifact back: `/design prompt` and `/design addendum` write the paste from the plan, stored in `design/prompts/`; `/design ingest` keeps the artifact in `design/handoff/<date>/` with a manifest and plots the port. See `nexus/playbooks/design-handoff.md`. |
 | `scripts/announce.mjs` + `scripts/ledger.mjs` + `scripts/worktree.mjs` + `skills/tidy.md` + `skills/rebooting.md` + `skills/reboot-ready.md` + `skills/reboot-resume.md` (+ their commands) | More than one session runs on one machine (two `/heads-down` loops, the GUI): a notice board, a live ledger per session, safe worktree closes. See `nexus/customization/sessions.md`. |
 | `identity/` (all five files) + `identity/footguns.md merge=union` in `.gitattributes` | Specs close often and more than one person or loop builds: lasting rules need a home, and a trap seen twice should become automation (settle runs the ladder). The alternative to `plan/reflexes.md` + `plan/lessons.md`; adopt one. See `nexus/customization/identity-layer.md`. |
 | `plan/reflexes.md` + `plan/lessons.md` | The loop has run long enough to accumulate real recurring lessons and a single `NEXUS_LESSONS.md` scratch file no longer scales. See `nexus/customization/lessons-layer.md`. |

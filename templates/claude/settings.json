@@ -26,6 +26,7 @@
       "Bash(node scripts/ledger.mjs:*)",
       "Bash(node scripts/worktree.mjs:*)",
       "Bash(node scripts/design/prompt.mjs:*)",
+      "Bash(node scripts/design/ingest.mjs:*)",
       "Bash(gh auth status:*)",
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
