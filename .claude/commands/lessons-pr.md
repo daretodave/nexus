@@ -8,7 +8,7 @@ else; it is the single source of truth.
 
 Argument handling:
 - `<path>` → the sibling lessons file to drain
-  (e.g. `../kintilla/plan/lessons.md`).
+  (e.g. `../<sibling>/plan/lessons.md`).
 - No argument → look for `NEXUS_LESSONS.md` in known sibling
   layouts and pick the freshest.
 

@@ -213,7 +213,7 @@ verify.
   hook; not in verify. (Optional: include if your culture
   treats style as substance.)
 - **Bundle size analysis.** Run quarterly or on major perf
-  phases; too heavy for every tick.
+  specs; too heavy for every tick.
 - **Visual regression.** Different beast (Percy / Chromatic).
   Useful but slow; runs in `/iterate` audits, not verify.
 - **Mutation testing.** Heavy; quarterly at most.

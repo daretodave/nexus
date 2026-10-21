@@ -176,7 +176,7 @@ Sample shape:
 3. `NETLIFY_AUTH_TOKEN` missing or rejected.
 4. A required dependency requires a paid service.
 5. `git pull` produces divergence.
-6. Phase scope is genuinely ambiguous after reading every input.
+6. Chunk scope is genuinely ambiguous after reading every input.
 ```
 
 Everything not in this list: **decide, ship, document.**
@@ -226,7 +226,7 @@ Unambiguous; the agent copies the command.
 
 ### Document the *why* of decisions, briefly.
 
-> ✓ "Top-N count: 8 (matches phase 4 — keeps cards visually
+> ✓ "Top-N count: 8 (matches chunk 4.2 — keeps cards visually
 > balanced)."
 
 The why protects against future re-litigation.
@@ -308,7 +308,7 @@ grows past ~12 steps, look for a refactor:
 - Extract sub-agents.
 - Split the skill into two if it's doing two things.
 
-The thock + tickpedia skill files all converge on ~300–500
+Sibling adopters' skill files all converge on ~300–500
 lines. Beyond that, the skill is doing too much.
 
 ### Embedded code that drifts.

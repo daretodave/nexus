@@ -250,7 +250,7 @@ is a zero-dependency pusher:
 
 ```bash
 node scripts/notify.mjs --title "march: stopped" \
-  --body "verify failed 3x on same root cause (phase 12)" \
+  --body "verify failed 3x on same root cause (chunk 12.3)" \
   --priority high
 ```
 
@@ -311,12 +311,12 @@ drift.
 ## 5. Model routing
 
 Not every verb needs the same model. The dispatch tick of
-`/march` is a classification problem; shipping a phase is not.
+`/march` is a classification problem; shipping a chunk is not.
 Routing levers, in order of usefulness:
 
 | Where | Lever | Use for |
 |---|---|---|
-| Cloud loop | `claude_args: --model <id>` (CLI-flag string, not JSON) in `march.yml` | The whole cloud tick. Default in the template: `claude-sonnet-5` — strong enough to ship phases, cheap enough to tick 7x/day. |
+| Cloud loop | `claude_args: --model <id>` (CLI-flag string, not JSON) in `march.yml` | The whole cloud tick. Default in the template: `claude-sonnet-5` — strong enough to ship chunks, cheap enough to tick 7x/day. |
 | Local session | `/model` | Whatever you're driving by hand. |
 | Sub-agents | `model:` frontmatter in `.claude/agents/<name>.md` | Downshift mechanical specialists (a formatting-only `copy-editor` runs fine on a small model); keep `scout`/`reader` on the session default — observation quality is the product. |
 
@@ -325,7 +325,7 @@ Guidance, not law:
 - **Dispatch + triage are cheap verbs.** They read state and
   classify. Any current model handles them.
 - **`ship-a-chunk` earns the strongest model you can afford.**
-  A bad phase costs more to unwind than the tokens saved.
+  A bad chunk costs more to unwind than the tokens saved.
 - **Upgrade the cloud model only after measuring.** Run a week
   on the default, read your provider's usage page, then decide
   whether the quality delta is worth it. The cost table in

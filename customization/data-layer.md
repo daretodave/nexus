@@ -42,7 +42,8 @@ those without forcing every record into the DB.
 - You want hermetic, no-API-key autonomous loops.
 
 **Examples:**
-- thock: switches, vendors, group buys, weekly trend snapshots.
+- An editorial hub: switches, vendors, group buys, weekly
+  trend snapshots.
 - A static documentation site: tutorial steps, API definitions.
 - A personal CMS: blog posts in MDX, project pages, photo
   metadata.
@@ -249,11 +250,11 @@ The methodology pins none of them.
 **`/ship-migration` shape (for the dynamic side):**
 - Companion skill:
   [`templates/skills/ship-migration.md`](../templates/skills/ship-migration.md) —
-  same shape as `/ship-data`: one phase = one migration +
+  same shape as `/ship-data`: one chunk = one migration +
   its RLS policies + its rollback note + its tests.
 - Per tick:
   1. Read pending migration brief (from
-     `data/BACKLOG.md` or a phase brief).
+     `data/BACKLOG.md` or a spec).
   2. Write `supabase/migrations/NNNN_<name>.sql`.
   3. Write the matching RLS policies in the same file (or
      a sibling `NNNN_<name>_rls.sql`).
@@ -602,7 +603,7 @@ real-time / multi-user.
    `/ship-data`. Wire `/march` to dispatch on pending
    migrations.
 
-This is a deliberate phase, not an iterate finding. Use
+This is a deliberate spec, not an iterate finding. Use
 `/plan-a-spec` to write the migration brief.
 
 ### `gh-as-db` → `pure-db`
@@ -641,7 +642,7 @@ shed ops burden.
 4. Switch loaders to read from SaaS.
 5. Decommission the DB.
 
-Same: deliberate phase via `/plan-a-spec`.
+Same: a deliberate spec via `/plan-a-spec`.
 
 ### Any → `gh-as-db` (consolidating to in-repo)
 

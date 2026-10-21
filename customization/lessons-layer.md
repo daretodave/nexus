@@ -8,10 +8,9 @@
 > grows unbounded) or none of it (the lesson is dead weight).
 > This doc adds a two-tier layer — **reflexes** (tiny, always
 > read) + **lessons** (large, domain-keyed, read by offset) —
-> that scales past kintilla's 333-lesson production corpus
-> without either failure mode. Provenance: kintilla's
-> `reflexes.md` / `lessons.md` split, the same credit pattern
-> [`branding.md`](./branding.md) gives thock/tickpedia.
+> that scales past a 333-lesson production corpus without
+> either failure mode. Learned from a sibling adopter's
+> `reflexes.md` / `lessons.md` split.
 
 ---
 
@@ -110,19 +109,19 @@ space for something that turned out to be a one-off.
 
 ## Staged hardening for adopter lint
 
-This phase ships no lint leg for lessons files in nexus's own
-gate — `scripts/verify.mjs` is hermetic and doesn't reach
-into adopter repos. If your project wants the caps enforced
+This layer ships no lint leg for lessons files in nexus's own
+gate — `scripts/verify.mjs` is hermetic and doesn't reach into
+adopter repos. If your project wants the caps enforced
 mechanically, write a small `scripts/check.mjs` in your own
-repo (kintilla's pattern): one check per invariant (reflexes
-line count, lessons bullet byte count, anchor uniqueness),
-each gated by an env flag like `REFLEXES_CAP_IS_ERROR`. Start
-every new check as a **warning** (prints, exits 0) so the
-corpus isn't blocked mid-migration; flip the flag to make it
-a hard error once the corpus is actually within cap. The flip
-commit is the natural checkpoint — it's the moment the
-project can say the invariant holds, not just that it's
-aspirational.
+repo (a sibling adopter's pattern): one check per invariant
+(reflexes line count, lessons bullet byte count, anchor
+uniqueness), each gated by an env flag like
+`REFLEXES_CAP_IS_ERROR`. Start every new check as a
+**warning** (prints, exits 0) so the corpus isn't blocked
+mid-migration; flip the flag to make it a hard error once the
+corpus is actually within cap. The flip commit is the natural
+checkpoint — it's the moment the project can say the invariant
+holds, not just that it's aspirational.
 
 This is the same staged-rollout shape
 [`verify-gate.md`](./verify-gate.md) uses for adding

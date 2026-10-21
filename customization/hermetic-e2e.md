@@ -446,7 +446,7 @@ The most common sources, ranked by frequency:
 
 You know the e2e leg is doing its job when:
 
-- A new phase that breaks any URL fails verify before the
+- A new chunk that breaks any URL fails verify before the
   commit lands. The agent never pushes broken code.
 - Local runs with `E2E_SKIP_BUILD=1` complete in under 30
   seconds. The inner loop is fast enough that you actually use

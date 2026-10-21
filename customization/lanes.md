@@ -3,17 +3,17 @@
 > Three agents, one branch, zero PRs. Lanes are parallel Claude
 > Code sessions in git worktrees that all land on
 > `<DEFAULT_BRANCH>`, coordinated by a claims board and a
-> strict landing ladder instead of merge machinery. Extracted
-> from kintilla, where the pattern runs hot in production
-> (alpha "bulldozer", beta "ninja", gamma "fly"). Adopt when
-> one human can supervise more throughput than one session
-> delivers; skip while you're still climbing the intervention
-> spectrum with a single loop.
+> strict landing ladder instead of merge machinery. Learned
+> from a sibling adopter, where the pattern runs hot in
+> production (alpha "bulldozer", beta "ninja", gamma "fly").
+> Adopt when one human can supervise more throughput than one
+> session delivers; skip while you're still climbing the
+> intervention spectrum with a single loop.
 
 The single-loop methodology serializes everything: one tick,
 one verb, one commit. That's the right default — but an
 attended afternoon often has three streams of work that don't
-touch the same files: a heavy phase, a queue of audit fixes,
+touch the same files: a heavy chunk, a queue of audit fixes,
 and a pile of small drains (jots, data rows, doc nits). Lanes
 run those concurrently without giving up the kit's spine:
 every lane still runs the full verify gate, still commits and
@@ -52,9 +52,9 @@ When not:
 | **gamma** | `.gamma/` worktree | fly — small, fast, frequent | `/ship-data` rows, doc nits, jot drains, one-file fixes |
 
 Three is the shipped shape because one human can genuinely
-supervise three terminals; kintilla's experience is that a
-fourth lane adds coordination cost faster than throughput.
-Two lanes (alpha + gamma) is a fine starter.
+supervise three terminals; a sibling adopter's experience is
+that a fourth lane adds coordination cost faster than
+throughput. Two lanes (alpha + gamma) is a fine starter.
 
 ---
 
@@ -77,7 +77,7 @@ pushed as branches.
 ### 2. Work in the lane
 
 Normal skill invocations, with the lane's temperament: alpha
-runs phases; beta and gamma run **single-verb sessions**
+runs chunks; beta and gamma run **single-verb sessions**
 (`/iterate`, `/ship-data`, `/jot` drains) — never `/march`.
 The dispatcher runs in **alpha only**; two dispatchers reading
 the same state files double-claim work.
@@ -133,7 +133,7 @@ touching and releases on landing**:
 
 | Lane | Claim (paths) | Work item | Status |
 |---|---|---|---|
-| alpha | apps/web/src/features/search/** | phase 12 | building |
+| alpha | apps/web/src/features/search/** | chunk 12.1 | building |
 | beta  | apps/web/src/components/nav/**  | AUDIT [7.2] | verifying |
 | gamma | data/venues/**                  | BACKLOG rows 3-5 | landing |
 ```
@@ -186,7 +186,7 @@ guess about senior code.
    branches go red.
 2. **Commit by explicit path. Never `git add -A`.** Concurrent
    sessions mean stray artifacts; explicit staging is the only
-   staging. (This is kintilla reflex 4, learned the hard way.)
+   staging. (A sibling adopter's reflex, learned the hard way.)
 3. **One dispatcher.** `/march` and `/loop` run in alpha only.
    Beta/gamma are single-verb sessions.
 4. **One `/oversight`, run from alpha,** after all lanes land
@@ -195,8 +195,9 @@ guess about senior code.
 5. **Absolute or repo-root-relative paths inside lane
    sessions.** Worktrees break lazy relative paths in scripts
    and tool configs — a `../` that resolved in the primary
-   checkout points somewhere else in `.beta/`. (Kintilla
-   lesson: the failure masquerades as `cmd.exe ENOENT`.)
+   checkout points somewhere else in `.beta/`. (A sibling
+   adopter's lesson: the failure masquerades as
+   `cmd.exe ENOENT`.)
 6. **Lanes never push lane branches.** The only thing that
    ever reaches origin is `HEAD:<DEFAULT_BRANCH>` after a
    green gate.

@@ -62,8 +62,8 @@ only entry points are:
    runs `/oversight` for a branding pass, the locked brief
    produces concrete `category: asset` rows in `plan/AUDIT.md`
    that the loop drains.
-4. **A phase brief explicitly named an asset deliverable.** A
-   phase shipping a public-facing surface (launch page, share
+4. **A chunk explicitly named an asset deliverable.** A
+   chunk shipping a public-facing surface (launch page, share
    modal, podcast episode page) lists the asset in its scope.
    `/ship-a-chunk` delegates the asset chunk to `brander`
    inline rather than ship a half-rendered placeholder.
@@ -115,13 +115,13 @@ projects choose at copy time. `/march` does not reference
 A project that adopts nexus and never copies the file has no
 asset code path at all. Removing it is a `git rm`.
 
-### 3. Asset work is never its own phase
+### 3. Asset work is never its own chunk
 
-The build plan doesn't get a phase like "phase 7: branding
-pass." Asset work rides along with whatever public-facing phase
-needs it (the launch phase, the share-card phase, the
-about-page phase). The `/expand` skill should not propose
-phase candidates whose primary deliverable is "make better
+The plan doesn't get a chunk like "7.1: branding pass."
+Asset work rides along with whatever public-facing chunk
+needs it (the launch chunk, the share-card chunk, the
+about-page chunk). The `/expand` skill should not propose
+candidates whose primary deliverable is "make better
 brand assets" — if it does, that's the trajectory smell to
 correct.
 
@@ -277,7 +277,7 @@ case cleanly without a third.
    raster. Hand-authored static assets are fine without — they
    only need provenance if the loop generated them.
 4. **One asset per `/ship-asset` invocation.** Same shape as
-   `/ship-data`. Batching is for a phase, not for the iterate
+   `/ship-data`. Batching is for a chunk, not for the iterate
    loop.
 5. **No external upload destinations** (no S3, no CDN, no
    image-hosting SaaS). Assets ship in the repo, served by the
@@ -340,7 +340,7 @@ sits dormant until pulled by a finding or by an
 The methodology should make it easy to *not* care about
 branding when branding doesn't matter, and easy to close the
 loop when it does. The opposite outcomes — a cron-job project
-that grew a logo phase, an editorial site whose share previews
+that grew a logo spec, an editorial site whose share previews
 were Netlify's default for six months — both happened in real
 projects and are the friction this doc resolves.
 

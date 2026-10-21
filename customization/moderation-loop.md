@@ -137,7 +137,7 @@ one tick = one queue item drained.
 1. unlabeled GitHub issues  →  triage
 2. mod queue items > age threshold  →  moderate    [NEW]
 3. critique due  →  critique
-4. pending phase  →  ship-a-chunk
+4. ready chunk  →  next top
 5. pending data  →  ship-data
 6. expand due + bold/autonomous posture  →  expand
 7. else  →  iterate

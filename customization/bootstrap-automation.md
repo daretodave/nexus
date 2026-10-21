@@ -368,7 +368,7 @@ before logging the handoff as a `[needs-user-call]` in
 
 Typing `skip` defers the handoff: it lands as a
 `[needs-user-call]` row in `plan/AUDIT.md` so `/march`
-won't dispatch into a phase that depends on it, and the
+won't dispatch into a chunk that depends on it, and the
 bootstrap moves on to whatever's parallel to the handoff.
 The user can resume later via `/bootstrap continue`.
 
@@ -438,9 +438,9 @@ The two never collide because:
    bootstrap exits, so the next `/oversight` sees them.
 
 `/oversight` may suggest the user run `/bootstrap <svc>`
-when it detects a STUB row whose phase is coming up — this
+when it detects a STUB row whose chunk is coming up — this
 is the natural place to surface "you have an unbootstrapped
-service blocking phase N."
+service blocking chunk N.M."
 
 ---
 
@@ -525,7 +525,7 @@ but it fragments the git log if the user also commits
 locally as themselves.
 
 The **decorated march** pattern (used in production by
-both `thock` and `pantheon`) makes every cloud-shipped
+sibling adopters) makes every cloud-shipped
 commit attribute to the human user, producing a uniform
 git log indistinguishable from local work. It's a small
 edit on top of the default workflow, but it's load-bearing
@@ -777,7 +777,7 @@ auth's accessible resources.
 
 ### The "decorated march" (user-author cloud loop)
 
-Pantheon and thock both run the decorated pattern that
+Sibling adopters run the decorated pattern that
 attributes cloud-shipped commits to the user, not
 `github-actions[bot]`. The bootstrap layer's
 `/bootstrap cloud-loop` slice must mirror this:

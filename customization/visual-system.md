@@ -9,7 +9,7 @@
 > contracts, type pairings, page compositions.
 >
 > When the project has a coherent visual identity worth
-> preserving across phases, build the system first. Assets
+> preserving across chunks, build the system first. Assets
 > are downstream.
 
 A project doesn't need this customization. Many ship fine
@@ -24,7 +24,7 @@ purchased UI kit). Adopt this when the visual identity is
 | | **Assets** | **System** |
 |---|---|---|
 | **Unit** | one OG image, one favicon, one wordmark | a palette + type scale + primitives + a worked-example page |
-| **Lifecycle** | render on demand from a finding | designed once, extended across phases |
+| **Lifecycle** | render on demand from a finding | designed once, extended across chunks |
 | **Skill** | `/ship-asset` (demand-pull, per-tick) | (none — pre-built; loop reads `design/`) |
 | **When to invest** | once the project has a visible surface that needs sharing | when the visual identity is a deliberate part of the product |
 | **Owner** | the `brander` sub-agent + assets findings | a one-off design-focused Claude session (separate from the build session) |
@@ -36,7 +36,7 @@ don't need the system layer. Ship on a starter theme; let
 If your project *does* have a strong visual identity (a
 content site whose look is its voice, a portfolio, a brand
 showcase), the system is load-bearing. The assets render
-against it; the phases consume it.
+against it; the chunks consume it.
 
 ---
 
@@ -68,13 +68,13 @@ project:
 
 `bearings.md`'s "Visual & tonal defaults" section points at
 `design/tokens.css` and `design/decisions.md` as
-authoritative. The build phases consume from
+authoritative. The build chunks consume from
 `design/primitives/` and `design/compositions/` as the
 canonical shape — they don't re-invent.
 
-The system landing is **a deliverable**, not a phase. It's
+The system landing is **a deliverable**, not a chunk. It's
 async: the user commissions it via a design-focused Claude
-session, the design lands as a commit, and the next phase
+session, the design lands as a commit, and the next chunk
 consumes it. The loop does not block on design.
 
 ---
@@ -86,7 +86,7 @@ as the seed. Customize the working name, the audience, and
 the mood notes, then paste into a *separate* Claude Code
 session (or any agent that can read repo state + write
 JSX). Best practice: run that session in a working copy of
-your project repo, *not* the same session running phases —
+your project repo, *not* the same session running chunks —
 the design pass produces a lot of intermediate output that
 should stay out of the build agent's context.
 
@@ -111,25 +111,25 @@ proceeds.
 
 ---
 
-## How the system feeds the build plan
+## How the system feeds the plan
 
-The system is typically commissioned **after Phase 1**
-(substrate ships) and **before Phase 5** (the canonical
-sibling — the page family every later phase mirrors).
-Place it at Phase 4 in a typical 17-phase plan:
+The system is typically commissioned **after spec 01**
+(substrate ships) and **before spec 05** (the canonical
+sibling — the page family every later spec mirrors).
+Place it at spec 04 in a typical plan:
 
 ```
-Phase 1: bootstrap (substrate, deploy gate)
-Phase 2: data foundation
-Phase 3: content layer (MDX, schemas)
-Phase 4: visual system (commission, land design/)   ← here
-Phase 5: canonical sibling (first page family)
-Phase 6+: page families consume primitives
+01-bootstrap        substrate, deploy gate
+02-data             data foundation
+03-content          content layer (MDX, schemas)
+04-visual-system    commission, land design/   ← here
+05-first-family     canonical sibling (first page family)
+06+                 page families consume primitives
 ```
 
-If the visual identity is so central that Phase 5 can't
+If the visual identity is so central that spec 05 can't
 ship coherently without it, move the design landing
-*before* Phase 4 substrate completion. The trade-off:
+*before* spec 04's substrate completion. The trade-off:
 substrate is generic; design is specific — moving design
 too early forces design decisions before the substrate
 demands them.
@@ -191,7 +191,7 @@ load-bearing to evolve via per-finding fixes.
    has a section listing pointers (mode, families, palette
    names) — the system lives in `design/`. Bearings is for
    pins; design is for system.
-3. **One commit lands the system.** Not a phase, not a
+3. **One commit lands the system.** Not a chunk, not a
    trickle of finds. The system arrives as a single
    commit: `design: visual system v1`. Easier rollback.
 4. **The build loop does not commission design.** The
@@ -199,7 +199,7 @@ load-bearing to evolve via per-finding fixes.
    `design/` and consumes; it does not generate the
    system.
 5. **Primitive divergence is a finding, not a
-   workaround.** If a phase needs a primitive that doesn't
+   workaround.** If a chunk needs a primitive that doesn't
    exist, file an audit finding to add it, then use the
    closest existing primitive. Don't ship a one-off
    `<Button2>` that looks like `<Button>`.
@@ -217,7 +217,7 @@ load-bearing to evolve via per-finding fixes.
   CSS-modules. Resolve before the commit lands — usually
   by re-doing the primitives in the chosen framework, not
   by retrofitting.
-- **Tokens drift after Phase 5.** Phases 6+ start adding
+- **Tokens drift after spec 05.** Later specs start adding
   ad-hoc colors / spacing. `/iterate` catches as fidelity
   findings; the fix is consuming-code update, not new
   tokens.
@@ -234,8 +234,8 @@ For a project that wants the system layer:
 
 1. Decide whether the project's visual identity is a
    product feature. If not, skip this customization.
-2. Add Phase 4 (or wherever it fits) to the build plan:
-   "Visual system commission — see
+2. Add a spec (04, or wherever it fits) to the plan with
+   `/plot`: "Visual system commission — see
    `customization/visual-system.md`."
 3. Copy [`../templates/design-prompt.md`](../templates/design-prompt.md)
    to `<repo>/claude-design.prompt.md` (or `design/prompt.md`).
@@ -243,7 +243,7 @@ For a project that wants the system layer:
 4. When ready, open a fresh Claude session in a working
    copy. Paste the design prompt. Let it run.
 5. Review the commit. Merge to main.
-6. Resume the build loop. Next phase consumes `design/`.
+6. Resume the build loop. The next chunk consumes `design/`.
 
 ---
 

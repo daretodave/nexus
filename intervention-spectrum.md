@@ -14,11 +14,11 @@
 **You do:** Run individual slash commands by hand. Review every
 diff before approving the next.
 
-**The loop does:** Exactly what you ask. One phase at a time. No
+**The loop does:** Exactly what you ask. One chunk at a time. No
 autonomous decisions.
 
 **When to use:** First time through this methodology. The first
-2–3 phases of any project (you're confirming the substrate works
+2–3 chunks of any project (you're confirming the substrate works
 before trusting the loop). Code areas where you want to learn
 the agent's patterns before delegating.
 
@@ -35,17 +35,17 @@ the agent's patterns before delegating.
 stay at the keyboard but stop running individual commands.
 
 **The loop does:** One tick at a time, but it picks the right
-verb (triage / critique / phase / data / expand /
+verb (triage / critique / chunk / data / expand /
 iterate). You're checking the dispatcher's choices.
 
-**When to use:** Once the first 2–3 phases shipped via Level 0
+**When to use:** Once the first 2–3 chunks shipped via Level 0
 and you trust the patterns. Useful for the middle of a build —
-say, phases 5–10 of a 17-phase plan.
+say, the second and third of five specs.
 
 **Required infrastructure:**
 - Level 0's stack.
 - A working `/march` skill that can dispatch.
-- Verify gate green on every phase.
+- Verify gate green on every chunk.
 
 **Failure mode:** Supervised is faster than manual but you're
 still bottlenecked on diff review.
@@ -75,7 +75,7 @@ commits forever.
 
 **You do:** `/loop 30m /march`. Walk away for 4–8 hours.
 
-**The loop does:** Hours of autonomous work. Phases ship. Audit
+**The loop does:** Hours of autonomous work. Chunks ship. Audit
 findings get drained. Issues get triaged as they come in. Critique
 runs every ~12 commits. Deploy gate watches every push.
 
@@ -85,8 +85,8 @@ having watched every commit.
 
 **Required infrastructure:**
 - Level 2's stack.
-- A build plan deep enough to last the unattended window (or
-  `/iterate` carries the load if phases run out).
+- A plan deep enough to last the unattended window (or
+  `/iterate` carries the load if chunks run out).
 - Sub-agents (`scout`, `reader`, plus your domain specialists)
   configured and tested.
 - All operational secrets in `.env` (Netlify token, GitHub PAT
@@ -126,13 +126,13 @@ that; verify gates don't.
 
 **You do:** Same as Level 3. Come back days later.
 
-**The loop does:** Phases all shipped. `/march` transitions
+**The loop does:** Every chunk shipped. `/march` transitions
 automatically to `/iterate`. The site iterates itself — fills
 content gaps, addresses critique findings, drains the data
 backlog, processes incoming GitHub issues. Days of activity, all
 of it commit-trail visible.
 
-**When to use:** When the build plan is finite (e.g., 17 phases)
+**When to use:** When the plan is finite (e.g., five specs)
 and you want to see what the iterate endgame produces. Weekend
 runs. Vacation runs. "Ship the v1 while I'm gone" runs.
 
@@ -142,16 +142,16 @@ runs. Vacation runs. "Ship the v1 while I'm gone" runs.
   enough surface that there's always meaningful next work. If
   `/iterate` runs out of findings within 4 ticks, the loop
   hibernates instead of producing churn.
-- **`/critique` and `/triage` carry weight.** With phases done,
+- **`/critique` and `/triage` carry weight.** With chunks done,
   most work comes from external signals (live-site critique +
   GitHub issues). These need to be wired and producing real
   findings, or the loop iterates on its own opinions only.
 - **A clear bias mechanism.** `/oversight reset` to set
   `> Bias: <category>` in `AUDIT.md` before walking away — tells
   iterate what to focus on for the next N ticks.
-- **High-quality first 2–3 phases.** If the substrate is wrong,
+- **High-quality first 2–3 chunks.** If the substrate is wrong,
   80 hours of iterate produces 80 hours of building on sand.
-  Get phase 1 right manually before stepping back.
+  Get the first spec right manually before stepping back.
 
 **Failure mode:** Genuinely rare if Levels 1–3 worked. The
 typical failure is **drift** — the loop converges on a local
@@ -172,7 +172,7 @@ every 12–24 hours, even from a phone).
 | Deploy gate wired (auth token) | | | ✓ | ✓ | ✓ |
 | Sub-agents working | | | (✓) | ✓ | ✓ |
 | `/oversight` ready for use | | | ✓ | ✓ | ✓ |
-| Build plan deep enough | | | | ✓ | ✓ |
+| Plan deep enough | | | | ✓ | ✓ |
 | `/iterate` audit pulls real findings | | | | (✓) | ✓ |
 | `/critique` + `/triage` wired | | | | (✓) | ✓ |
 | Bias mechanism | | | | | ✓ |
@@ -206,7 +206,7 @@ weekend:
    the briefing surprises you, don't go.
 8. **Run every service's runbook checklist.** Read
    `setup/00_files.md`. For each service touching the next 5
-   pending phases, confirm the row is `OK` (not `PARTIAL` /
+   ready chunks, confirm the row is `OK` (not `PARTIAL` /
    `STUB`). Spot-check the runbook's verification checklist
    passes (terminal curls / dashboard URLs at the bottom of
    each runbook). Confirm every env var in every runbook's
@@ -245,7 +245,7 @@ Always run `/oversight` first. **Always.** Even if nothing seems
 wrong.
 
 `/oversight` will:
-- Tell you how many phases shipped.
+- Tell you how many chunks shipped.
 - Show the velocity (commits/hour).
 - Surface the deploy state.
 - Flag any pattern that looks unusual (5 fix-commits in a row,
@@ -273,7 +273,7 @@ Decide:
 ## Anti-patterns
 
 **"I'll just run `/loop /march` for the first time and see what
-happens."** Don't. Run `/ship-a-chunk` manually first. Confirm
+happens."** Don't. Run `/next` manually first. Confirm
 the substrate. Step up gradually.
 
 **"I don't need `/oversight`, the loop is doing fine."** This

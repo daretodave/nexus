@@ -14,7 +14,7 @@
 > short ballot with the obvious choice pre-highlighted.
 
 This doc names the pattern that worked across two real
-sessions (a Pantheon pre-spec interview and dozens of
+sessions (a sibling adopter's pre-spec interview and dozens of
 `/oversight` ticks) so future skills can adopt it verbatim.
 
 ---
@@ -84,8 +84,8 @@ to figure out what they're trading.
 
 ## A complete worked example
 
-The first batch of the Pantheon pre-spec interview, from
-session capture:
+The first batch of a sibling adopter's pre-spec interview,
+from session capture:
 
 > **Foundation batch.** Before I can write `spec.md`, I need
 > four decisions about scope and data. The biggest call is #4
@@ -111,7 +111,7 @@ Then four single-select questions, each shaped per rules 1–3:
 >
 > - (Recommended) v1 = core feature only; everything else
 >   labeled `out of v1` in spec.md. Easier to ship; later
->   phases earn their slot.
+>   specs earn their slot.
 > - Wide v1 = ship multi-feature substrate. Higher upfront
 >   risk; faster to a "complete" product if it lands.
 >

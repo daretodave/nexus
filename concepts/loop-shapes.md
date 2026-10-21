@@ -5,8 +5,8 @@
 > is an organism. This doc is the taxonomy: seven shapes that
 > compose, and three that look tempting and aren't. Every
 > shape here either runs in production somewhere (nexus
-> itself, kintilla) or is a bounded extension of one that
-> does.
+> itself, a sibling adopter) or is a bounded extension of one
+> that does.
 
 The base methodology ships one loop: `/march` on a cadence,
 dispatching verbs over queues, fenced by gates. That's the
@@ -111,7 +111,7 @@ When more than one repo runs the methodology, lessons stop
 being local. The pollinator is a slow loop (weekly is plenty)
 that reads the fleet's lessons ledgers — `NEXUS_LESSONS.md`,
 `lessons.md`, adopters' filed issues — and turns convergent
-scars into kit phase candidates. `/lessons-pr` is its manual
+scars into kit candidates. `/lessons-pr` is its manual
 ancestor; the `/expand` sibling-lessons signal is its
 always-on trace. The full shape adds: scheduled harvesting,
 and (the bold half) opening PRs *downstream* when the kit
@@ -137,7 +137,7 @@ the pulse — verb mix, no-op rate, gate-failure rate,
 time-to-drain. The meta-loop closes the circuit: when the
 pulse says a gate is mistuned (critique never fires; the
 ceiling hibernates productive days; a rate limit starves a
-queue), it **proposes** the tuning as a phase candidate with
+queue), it **proposes** the tuning as a candidate with
 the pulse data as evidence.
 
 The rail is absolute: **proposals, never actions.** The loop

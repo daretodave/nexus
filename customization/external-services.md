@@ -3,9 +3,9 @@
 > The single highest-leverage addition for genuine
 > unattended-loop autonomy. **Every external service the
 > project depends on gets a runbook in `setup/` *before*
-> phase 1 ships** — not just the minimum to run locally,
-> but every dashboard click for every phase that will ever
-> touch it. The loop reads the runbook index every
+> the first chunk ships** — not just the minimum to run
+> locally, but every dashboard click for every chunk that
+> will ever touch it. The loop reads the runbook index every
 > `/oversight` tick and surfaces drift before it becomes
 > a stall.
 
@@ -24,7 +24,7 @@
 > keyboard.
 
 This is the difference between a clean 80-hour weekend run
-and a Monday-morning stall on "phase 11 needs RBAC enabled
+and a Monday-morning stall on "chunk 11.2 needs RBAC enabled
 on the Auth0 API."
 
 ---
@@ -95,7 +95,7 @@ the repo.)
 ## What each service runbook covers
 
 A runbook isn't "the minimum to run locally." It's "every
-dashboard click for every phase that will ever touch this
+dashboard click for every chunk that will ever touch this
 service." The shape:
 
 1. **What the project needs from the service.** Bullet list
@@ -154,9 +154,9 @@ Every `/oversight` tick should:
    environments).
 3. For `PARTIAL` rows, surface a flag: "service N is
    partially configured; verify Section X is done before
-   phase Y ships."
-4. For `STUB` rows whose phase is in the next 3 pending
-   phases, surface as `[needs-user-call]` in
+   chunk Y ships."
+4. For `STUB` rows whose chunk is among the next 3 ready
+   chunks, surface as `[needs-user-call]` in
    `plan/AUDIT.md`.
 
 This makes external-service drift visible to the loop
@@ -167,15 +167,15 @@ without dashboard access.
 `/march` doesn't read the index directly. But the next
 `/oversight` does, and `/oversight` writes
 `[needs-user-call]` rows that `/march` respects — when a
-needs-user-call points at the next pending phase,
-`/march` should not dispatch into that phase. It dispatches
+needs-user-call points at the next ready chunk,
+`/march` should not dispatch into that chunk. It dispatches
 elsewhere (audit, critique, data) until the user resolves.
 
 ### `/expand` respects it
 
-When `/expand` proposes a new phase candidate that touches
-a new external service, the candidate's brief should
-include a "Runbook to write before this phase ships:
+When `/expand` proposes a new candidate that touches a new
+external service, the candidate's brief should include a
+"Runbook to write before this spec ships:
 `setup/NN_<service>.md`" line. The candidate stays in
 `PHASE_CANDIDATES.md` until that runbook exists.
 
@@ -192,7 +192,7 @@ When the project decides to adopt a new service:
    ```bash
    mkdir -p setup
    cp ../nexus/templates/setup/00_files.md setup/00_files.md
-   sed -i.bak 's/<PROJECT>/thock/g' setup/00_files.md && rm -f setup/00_files.md.bak
+   sed -i.bak 's/<PROJECT>/acme/g' setup/00_files.md && rm -f setup/00_files.md.bak
    ```
 
    The PowerShell twin:
@@ -201,7 +201,7 @@ When the project decides to adopt a new service:
    New-Item -ItemType Directory -Force setup | Out-Null
    Copy-Item ..\nexus\templates\setup\00_files.md setup\00_files.md
    (Get-Content setup\00_files.md -Raw) `
-     -replace '<PROJECT>', 'thock' |
+     -replace '<PROJECT>', 'acme' |
      Set-Content setup\00_files.md -NoNewline
    ```
 
@@ -212,7 +212,7 @@ When the project decides to adopt a new service:
    dependency order).
 4. **Walk the dashboard yourself.** Click through every
    section the project will need across the *whole* build
-   plan — not just today's phase. Check off each item as
+   plan — not just today's chunk. Check off each item as
    you go. The runbook is the audit trail.
 5. **Wire env vars to `.env.example`.** Every env var the
    runbook produces lands in `.env.example` with a comment
@@ -239,7 +239,7 @@ for that service.
    runbook first.** A service's `.env` keys must be traceable
    back to a runbook section. Otherwise the next person on
    the project has no idea where it came from.
-2. **`STUB` runbooks must exist before phase 1.** Even if
+2. **`STUB` runbooks must exist before the first chunk.** Even if
    you haven't walked the service yet, the file should be in
    the repo so the loop knows the dependency exists.
 3. **Runbooks live in the project repo, not in a wiki.** The
@@ -259,7 +259,7 @@ for that service.
   email DNS verification).** The runbook flags this clearly
   ("step requires the human's email inbox + DNS access").
   The loop sees the `[needs-user-call]` and skips the
-  dependent phase.
+  dependent chunk.
 - **Service rate-limits config changes.** Some providers
   (Auth0 in particular) rate-limit API config calls. Keep
   the runbook dashboard-clicks-only unless the service has
@@ -282,7 +282,7 @@ Before invoking `/loop /march` and walking away for an
 80-hour window:
 
 1. Read `setup/00_files.md`. Every row covering a service
-   in the next 5 pending phases must be `OK`.
+   in the next 5 ready chunks must be `OK`.
 2. For each `OK` row, run its verification checklist (the
    terminal curls / dashboard URLs at the bottom of the
    runbook). Spot-check that the live state matches what the
