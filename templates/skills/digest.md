@@ -44,7 +44,7 @@ its own cadence.
    network or the data layer): `data/BACKLOG.md` pending (if a
    data layer exists), open `triage:needs-user` / `loop:do`
    issues, deploy state (`pnpm deploy:check`), and how many
-   `## Pending` rows in `plan/PHASE_CANDIDATES.md` carry a
+   `## Pending` rows in `plan/CANDIDATES.md` carry a
    `- proposed:` date more than 21 days old (hand-count from
    the same rows pulse.mjs already reads for the
    oldest-pending age — no script change).
@@ -73,7 +73,7 @@ its own cadence.
 5. **Meta-loop, within rails:** if the pulse shows a mistuned
    gate (critique never firing, the ceiling hibernating
    productive days, a starved queue), file the tuning as a
-   `plan/PHASE_CANDIDATES.md` candidate citing the pulse
+   `plan/CANDIDATES.md` candidate citing the pulse
    numbers. **Never edit gates, cadences, ceilings, or rules
    directly** — proposals only; `/oversight` promotes. The
    loop does not vote on its own constraints.
@@ -109,7 +109,7 @@ its own cadence.
 ```bash
 plan/DIGEST.md                       # the deliverable (overwrite)
 plan/AUDIT.md                        # breadth failures land here
-plan/PHASE_CANDIDATES.md             # tuning proposals land here
+plan/CANDIDATES.md             # tuning proposals land here
 node scripts/pulse.mjs               # local queue/plan numbers
 gh run list --workflow march -L 20   # the invisible no-ops
 SMOKE_SAMPLE=full pnpm e2e           # the nightly breadth leg

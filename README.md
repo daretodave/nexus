@@ -565,7 +565,7 @@ nexus/
     │   ├── bearings.md
     │   ├── AUDIT.md
     │   ├── CRITIQUE.md
-    │   ├── PHASE_CANDIDATES.md         # /expand's candidate specs, /oversight promotes
+    │   ├── CANDIDATES.md              # /expand's candidate specs, /oversight promotes
     │   ├── reflexes.md                # ≤50-line always-read core (adopt-by-need)
     │   ├── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
     │   └── CURRENT-STATE.md           # brownfield retrofit only (adopt-by-need)

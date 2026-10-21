@@ -14,7 +14,7 @@ ships a tick (or exits cleanly if there's nothing to do), and
 hands the runner back.
 
 State lives where it always has — `plan/`, `data/`, `AUDIT.md`,
-`BACKLOG.md`, `PHASE_CANDIDATES.md`, the build plan. The cloud
+`BACKLOG.md`, `CANDIDATES.md`, the build plan. The cloud
 agent reads these from `origin/<DEFAULT_BRANCH>`, writes its
 commit, pushes, and exits. No memory between ticks. Each tick
 is hermetic.

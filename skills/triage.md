@@ -43,7 +43,7 @@ Triage classifies and routes them so `/iterate` and
      `### [user-issue #<N>] [SEV] <title>` + `category:
      external-issue`; label `triage:loop-queued`.
    - lesson → same, biased HIGH; if it implies kit structure
-     work, also a `plan/PHASE_CANDIDATES.md` candidate.
+     work, also a `plan/CANDIDATES.md` candidate.
    - enhancement (large / strategy-shaped) →
      `triage:needs-user`; `/oversight` decides.
    - question → answer in a comment, label
@@ -79,6 +79,6 @@ gh issue list --repo daretodave/nexus --state open \
   --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number,title
 plan/AUDIT.md                        # routing target
-plan/PHASE_CANDIDATES.md             # lesson-shaped routing target
+plan/CANDIDATES.md             # lesson-shaped routing target
 git commit -m "triage: <K> issues routed" && git push origin main
 ```

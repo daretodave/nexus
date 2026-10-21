@@ -37,7 +37,7 @@ plan/
 ├── pending/             # plan changes waiting for the owner's settle (one file each)
 ├── nexus.lock           # the kit version this plan's shape follows
 ├── bearings.md          # standing context (unchanged from v1)
-├── AUDIT.md · CRITIQUE.md · PHASE_CANDIDATES.md   # the queues (unchanged)
+├── AUDIT.md · CRITIQUE.md · CANDIDATES.md   # the queues (unchanged)
 ```
 
 Lasting rules and decisions do not live in specs. When a spec

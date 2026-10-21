@@ -47,7 +47,7 @@ Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
 plan moved to chunks on 2026-10-20). The next new spec is 42.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
-promoting a [`PHASE_CANDIDATES.md`](PHASE_CANDIDATES.md)
+promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is
 picked after the Asap lane, `priority 1` first; the other
 rows follow in table order.
@@ -75,7 +75,7 @@ rows follow in table order.
 - `AUDIT.md`'s Pending section holds iterate-sized findings;
   they wait until no chunk is ready. Read the file for the
   live count.
-- `PHASE_CANDIDATES.md`'s Pending section holds candidates
+- `CANDIDATES.md`'s Pending section holds candidates
   awaiting `/oversight` promotion into specs. Read the file
   for the live count.
 - Workflow-file pushes: the cloud tick's token can't push

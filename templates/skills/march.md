@@ -144,7 +144,7 @@ has a data layer):
 Read `plan/bearings.md` "Plan expansion posture" section. If
 posture is **strict**, skip to 3d.
 
-Read metadata header at top of `plan/PHASE_CANDIDATES.md`:
+Read metadata header at top of `plan/CANDIDATES.md`:
 
 ```
 > Last pass: <ISO-date> at commit <sha>

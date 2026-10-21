@@ -84,7 +84,7 @@ return.
   builder foreground (`run_in_background: false`).
 - **3b. Expand due?** Posture `bold` (see
   `plan/bearings.md`) AND (≥20 commits or >7 days since
-  `plan/PHASE_CANDIDATES.md` last pass) AND at least one
+  `plan/CANDIDATES.md` last pass) AND at least one
   signal (AUDIT/CRITIQUE pending rows, sibling lessons growth,
   Claude Code release drift) → `skills/expand.md`.
 - **3c. Else** → `skills/iterate.md`.
@@ -118,7 +118,7 @@ plan/README.md                       # lanes + spec table: the chunk queue
 plan/<NN>-<slug>.md                  # each spec's chunks
 plan/AUDIT.md                        # iterate queue
 plan/CRITIQUE.md                     # critique queue + rate-limit metadata
-plan/PHASE_CANDIDATES.md             # expand output + rate-limit metadata
+plan/CANDIDATES.md             # expand output + rate-limit metadata
 gh issue list ...                    # triage gate
 node scripts/verify.mjs              # the gate every child runs
 ```

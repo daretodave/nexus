@@ -44,7 +44,7 @@ Never dispatched by `/march` — it is its own loop shape (see
    sibling lessons growth (`../<sibling>/plan/lessons.md`
    size, when present locally; skip silently in cloud), and
    how many `## Pending` candidates in
-   `plan/PHASE_CANDIDATES.md` carry a `- proposed:` date more
+   `plan/CANDIDATES.md` carry a `- proposed:` date more
    than 21 days old (hand-count from the same rows pulse.mjs
    already reads for the oldest-pending age — no script
    change).
@@ -64,7 +64,7 @@ Never dispatched by `/march` — it is its own loop shape (see
 4. **Meta-loop, within rails:** if the pulse shows a mistuned
    gate (critique gate never opening, ceiling hibernating
    productive days, a starved queue), file the tuning as a
-   `plan/PHASE_CANDIDATES.md` candidate citing the pulse
+   `plan/CANDIDATES.md` candidate citing the pulse
    numbers. **Never edit gates, cadences, ceilings, or rules
    directly** — proposals only; `/oversight` promotes.
 5. **Refresh the audit if stale:** `plan/AUDIT.md` header
@@ -99,7 +99,7 @@ Never dispatched by `/march` — it is its own loop shape (see
 ```bash
 plan/DIGEST.md                       # the deliverable (overwrite)
 plan/AUDIT.md                        # staleness check + durable rows
-plan/PHASE_CANDIDATES.md             # tuning proposals land here
+plan/CANDIDATES.md             # tuning proposals land here
 gh run list --workflow march -L 20   # the invisible no-ops
 node scripts/pulse.mjs               # local queue/plan numbers
 node scripts/verify.mjs

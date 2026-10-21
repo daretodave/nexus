@@ -1,4 +1,4 @@
-# Phase candidates
+# Candidates
 
 > Last pass: 2026-10-15
 > Pass count: 23

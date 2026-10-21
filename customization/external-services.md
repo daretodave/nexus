@@ -177,7 +177,7 @@ When `/expand` proposes a new candidate that touches a new
 external service, the candidate's brief should include a
 "Runbook to write before this spec ships:
 `setup/NN_<service>.md`" line. The candidate stays in
-`PHASE_CANDIDATES.md` until that runbook exists.
+`CANDIDATES.md` until that runbook exists.
 
 ---
 

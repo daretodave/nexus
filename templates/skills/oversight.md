@@ -151,7 +151,7 @@ Generate 1–4 questions via `AskUserQuestion`. Rules:
 
 **Candidates pending promotion**
 
-> `plan/PHASE_CANDIDATES.md` has <N> pending candidates. Top
+> `plan/CANDIDATES.md` has <N> pending candidates. Top
 > score [<X.Y>]: "<one-line>". Promote any?
 >
 > - (recommended) Review one — show me the candidate's
@@ -215,7 +215,7 @@ For each answer:
 - **"Investigate deploy"** → fetch latest deploy log; summarize;
   no patch yet.
 - **"Promote candidate"** → move row from
-  `plan/PHASE_CANDIDATES.md` `## Pending` to `## Promoted` (with
+  `plan/CANDIDATES.md` `## Pending` to `## Promoted` (with
   promotion date + assigned spec number, the next free one).
   Write `plan/<NN>-<slug>.md` from the candidate (outcome, Why,
   scope as Design, Acceptance with A-IDs, `Not chunked yet.`)

@@ -55,7 +55,7 @@ line goes):
    order after every priority row), `/messy` (a dump of
    thoughts, clustered into themes, each refined into a spec),
    or `/oversight` promoting a
-   [`PHASE_CANDIDATES.md`](PHASE_CANDIDATES.md) entry.
+   [`CANDIDATES.md`](CANDIDATES.md) entry.
 
 ## Chunks, measure, archive
 
@@ -98,7 +98,7 @@ plan/
 ├── bearings.md              # standing context: stack, contracts, defaults, sub-agents, posture
 ├── AUDIT.md                 # latest /iterate audit (rewritten on each pass)
 ├── CRITIQUE.md              # external-observer findings (append-only via /critique)
-├── PHASE_CANDIDATES.md      # candidates from /expand, gated by /oversight (each becomes a spec)
+├── CANDIDATES.md            # candidates from /expand, gated by /oversight (each becomes a spec)
 ├── CURRENT-STATE.md         # adopt-by-need: brownfield retrofit only (see nexus/playbooks/existing-project.md §1)
 ├── reflexes.md              # adopt-by-need: ≤50-line always-read core (see nexus/customization/lessons-layer.md)
 └── lessons.md               # adopt-by-need: domain-keyed corpus, read by offset
@@ -165,7 +165,7 @@ commit. The loop relies on the plan being true.
 - `skills/triage.md` — issue review; routes open issues into
   `AUDIT.md` / `BACKLOG.md` / the plan.
 - `skills/expand.md` — plan-expansion pass; reads signals,
-  proposes candidates to `PHASE_CANDIDATES.md`.
+  proposes candidates to `CANDIDATES.md`.
   Posture-controlled (bold default; strict opt-out).
 - `skills/march.md` — outer dispatcher (used with `/loop`).
 - `skills/oversight.md` — user-in-the-loop adjustment (the only

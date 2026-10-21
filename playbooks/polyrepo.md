@@ -41,7 +41,7 @@ workspace/
 │   ├── ARCHIVE.md
 │   ├── AUDIT.md
 │   ├── CRITIQUE.md
-│   ├── PHASE_CANDIDATES.md
+│   ├── CANDIDATES.md
 │   └── bearings.md
 ├── product-a/              # sibling repo, its own git history
 │   ├── skills/

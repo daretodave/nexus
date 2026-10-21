@@ -143,7 +143,7 @@ phase 12's spec is `plan/12-<slug>.md` and its chunks are
 | Routes, reads, components, composition, states, responsive, "Decisions made upfront" | `## Design` |
 | Stack pins, schemas, output formats | `## Contracts` |
 | Outputs, the tests matrix, the DoD | `## Acceptance`: one `- **A<n>**` bullet per observable outcome |
-| Follow-ups (out of scope) | a candidate in `plan/PHASE_CANDIDATES.md`, or nothing |
+| Follow-ups (out of scope) | a candidate in `plan/CANDIDATES.md`, or nothing |
 
 Then chunk it: S/M/L vertical slices (L = one session at
 most), each `closes` the A-IDs it finishes, every A-ID
@@ -157,9 +157,12 @@ rule: [`concepts/plan-shape.md`](../concepts/plan-shape.md).
 git rm -r plan/steps plan/phases
 git rm skills/ship-a-phase.md skills/plan-a-phase.md
 git rm .claude/commands/ship-a-phase.md .claude/commands/plan-a-phase.md
+git mv plan/PHASE_CANDIDATES.md plan/CANDIDATES.md
 ```
 
-PowerShell runs the same four `git` commands unchanged.
+PowerShell runs the same `git` commands unchanged. Already
+on v2 with a `plan/PHASE_CANDIDATES.md`? Run just that last
+`git mv` (`scripts/pulse.mjs` reads the old name until you do).
 
 ```bash
 grep -rlE "01_build_plan|plan/phases|ship-a-phase|plan-a-phase" --exclude-dir=.git .

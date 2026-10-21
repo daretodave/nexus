@@ -58,7 +58,7 @@ jobs:
               Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
             (blank line before it). Proposals never actions: gate tunings
-            become plan/PHASE_CANDIDATES.md candidates, nothing else. One
+            become plan/CANDIDATES.md candidates, nothing else. One
             commit (digest: <date>), push, exit.
         env:
           GH_TOKEN: ${{ secrets.ACTIONS_PAT }}

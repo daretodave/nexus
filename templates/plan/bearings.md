@@ -302,7 +302,7 @@ and proposes new candidates (future specs). The posture controls how
 aggressive it is.
 
 - **Mode: bold** (default) — `/expand` runs at standard cadence
-  and files candidates to `plan/PHASE_CANDIDATES.md`.
+  and files candidates to `plan/CANDIDATES.md`.
   `/oversight` promotes them into specs.
 - **Mode: strict** — `/expand` is a no-op. The plan grows
   only via manual `/plan-a-spec` or `/oversight`. Use this if

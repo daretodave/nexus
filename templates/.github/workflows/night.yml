@@ -70,7 +70,7 @@ jobs:
 
             (blank line before it). Breadth failures become plan/AUDIT.md
             findings, not fixes. Tuning proposals become
-            plan/PHASE_CANDIDATES.md candidates, never direct edits. One
+            plan/CANDIDATES.md candidates, never direct edits. One
             commit (digest: <date>), push, exit.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -135,7 +135,7 @@ jobs:
           Every gate runs FOREGROUND, and so does every subagent dispatch
           (run_in_background: false). Write only plan/DIGEST.md, plan/AUDIT.md
           (breadth failures become findings, not fixes) and
-          plan/PHASE_CANDIDATES.md (tuning proposals, never direct edits): the
+          plan/CANDIDATES.md (tuning proposals, never direct edits): the
           land job refuses anything else. One commit (digest: <date>) on this
           branch, ending with the trailer (blank line before it):
 
@@ -197,7 +197,7 @@ jobs:
           MAIN: ${{ github.event.repository.default_branch }}
         run: |
           git fetch -q "$RUNNER_TEMP/night/night.bundle" "$BRANCH:$BRANCH"
-          node scripts/cloud/tick.mjs fence "origin/$MAIN" "$BRANCH" --only plan/DIGEST.md,plan/AUDIT.md,plan/PHASE_CANDIDATES.md
+          node scripts/cloud/tick.mjs fence "origin/$MAIN" "$BRANCH" --only plan/DIGEST.md,plan/AUDIT.md,plan/CANDIDATES.md
 
       - name: The loop's app token
         id: app

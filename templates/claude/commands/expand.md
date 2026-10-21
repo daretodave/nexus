@@ -1,5 +1,5 @@
 ---
-description: Read accumulated signals (audit, critique, triage, spec drift, design, data) and propose new candidates (future specs) to plan/PHASE_CANDIDATES.md. Posture-controlled (bold default).
+description: Read accumulated signals (audit, critique, triage, spec drift, design, data) and propose new candidates (future specs) to plan/CANDIDATES.md. Posture-controlled (bold default).
 ---
 
 You are invoked under the `expand` skill — the plan-expansion
@@ -7,12 +7,12 @@ pass. Full autonomy. Read `skills/expand.md` end to end first.
 
 This skill produces **candidates**, not specs. It does
 **not** ship code or modify the plan directly (in default
-**bold** posture). Candidates flow into `plan/PHASE_CANDIDATES.md`;
+**bold** posture). Candidates flow into `plan/CANDIDATES.md`;
 `/oversight` reviews and promotes.
 
 Posture comes from `bearings.md`:
 
-- **bold** (default) — file candidates to PHASE_CANDIDATES.md.
+- **bold** (default) — file candidates to CANDIDATES.md.
 - **strict** — exit 0 as a no-op. The user wants the plan
   to stay exactly as authored.
 - **autonomous** — write new unchunked specs directly to

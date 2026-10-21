@@ -41,7 +41,7 @@ misconfiguration (§6).
    spec table (`N left`).
 4. `plan/AUDIT.md` — pending count, durable rows, bias.
 5. `plan/CRITIQUE.md` — pending count + last pass age.
-6. `plan/PHASE_CANDIDATES.md` — pending candidates.
+6. `plan/CANDIDATES.md` — pending candidates.
 7. Open `triage:needs-user` issues.
 
 ## 4. The briefing (~20 lines)
@@ -94,7 +94,7 @@ stale critique, gate additions). Plain text, no questions yet.
 node scripts/pulse.mjs               # the fast aggregate
 plan/README.md + plan/<NN>-*.md      # promote (new spec), unhold, split, drop targets
 plan/AUDIT.md                        # bias line + durable rows
-plan/PHASE_CANDIDATES.md             # promotion source
+plan/CANDIDATES.md             # promotion source
 gh issue list --label triage:needs-user
 git commit -m "oversight: <summary>" && git push origin main
 ```

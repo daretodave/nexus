@@ -1,4 +1,4 @@
-# Phase candidates
+# Candidates
 
 > Last pass: never
 > Pass count: 0

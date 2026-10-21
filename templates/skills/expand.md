@@ -1,7 +1,7 @@
 # Skill: expand
 
 > **Plan-expansion pass.** Read accumulated signals and propose
-> new candidates to `plan/PHASE_CANDIDATES.md`; each promoted
+> new candidates to `plan/CANDIDATES.md`; each promoted
 > one becomes a spec. The plan ships well; this skill is how it
 > *grows* well.
 >
@@ -58,7 +58,7 @@ Three settings:
 
 - **bold** (default) — `/expand` runs at standard cadence
   (rate-limited per §9). Candidates land in
-  `plan/PHASE_CANDIDATES.md`. `/oversight` promotes.
+  `plan/CANDIDATES.md`. `/oversight` promotes.
 - **strict** — `/expand` is a **no-op**. Print
   `"expand: strict posture — skipping"` and exit 0. The
   `/march` dispatcher skips the expand gate entirely.
@@ -219,13 +219,13 @@ For each top candidate, ask:
 After assessment, you should have **2–4 candidates**, not 3
 mechanically.
 
-### Step 4 — Write to `PHASE_CANDIDATES.md`
+### Step 4 — Write to `CANDIDATES.md`
 
 Append under `## Pending`. Update metadata header (last pass,
 pass count).
 
 If posture is **autonomous**, instead of writing to
-`PHASE_CANDIDATES.md`, **write each as a new spec**:
+`CANDIDATES.md`, **write each as a new spec**:
 `plan/<NN>-<slug>.md` with the next free spec number, its
 outcome, Why, Design, Acceptance (A-IDs) and `Not chunked
 yet.`, plus a row in `plan/README.md`. Run `node
@@ -235,7 +235,7 @@ body that this was autonomous (not via oversight).
 ### Step 5 — Commit + push
 
 ```bash
-git add plan/PHASE_CANDIDATES.md
+git add plan/CANDIDATES.md
 git commit -m "$(cat <<'EOF'
 expand: pass <N> — <K> candidates filed
 
@@ -272,7 +272,7 @@ Print 3-line summary:
 
 ```
 expand pass <N>: <K> candidates filed (<L> dropped below threshold).
-plan/PHASE_CANDIDATES.md updated.
+plan/CANDIDATES.md updated.
 oversight will review and promote.
 ```
 
@@ -337,7 +337,7 @@ to expand" and runs `/expand`.
 plan/bearings.md                              # posture
 plan/AUDIT.md                                 # audit signals
 plan/CRITIQUE.md                              # critique signals
-plan/PHASE_CANDIDATES.md                      # current state
+plan/CANDIDATES.md                      # current state
 plan/README.md                                # existing specs + lanes
 data/BACKLOG.md                               # data signals (Pattern A)
 spec.md                                       # spec drift
@@ -351,7 +351,7 @@ git log --since="<last pass>" --pretty=format:'%s'
 gh issue list --repo $GH_REPO --label "triage:loop-queued" --json number,title
 
 # Write
-plan/PHASE_CANDIDATES.md                      # bold posture
+plan/CANDIDATES.md                      # bold posture
 plan/<NN>-<slug>.md + plan/README.md          # autonomous posture only
 
 # Commit + push + confirm

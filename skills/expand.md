@@ -10,7 +10,7 @@ The kit's roadmap should grow from evidence: clustered audit
 findings, repeated adopter friction, sibling-project lessons,
 and the ground shifting under the kit (Claude Code releases).
 This skill turns those signals into scored candidates in
-`plan/PHASE_CANDIDATES.md`.
+`plan/CANDIDATES.md`.
 
 ## 2. Invocation
 
@@ -48,7 +48,7 @@ still >3). **Cap 3 candidates per pass.**
 1. `git pull --ff-only`; read posture (`strict` → print
    "expand: strict posture — skipping", exit 0).
 2. Read signals A–E since the `Last pass` header of
-   `plan/PHASE_CANDIDATES.md`.
+   `plan/CANDIDATES.md`.
 3. Synthesize + score; self-assess down to ≤3. If a signal
    reinforces a candidate already sitting in `## Pending`
    rather than describing something new, don't file a
@@ -81,7 +81,7 @@ still >3). **Cap 3 candidates per pass.**
 ## 8. Quick reference
 
 ```bash
-plan/PHASE_CANDIDATES.md             # output + metadata header
+plan/CANDIDATES.md             # output + metadata header
 plan/AUDIT.md  plan/CRITIQUE.md      # signal sources A/B
 ../<sibling>/plan/lessons.md         # signal source D (if present)
 node scripts/verify.mjs

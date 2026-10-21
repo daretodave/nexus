@@ -5,7 +5,7 @@
 // hand-derive the same numbers from the same plan/ files. This
 // script computes them once: last-commit age, plan
 // specs / chunks-left / held counts, AUDIT pending count, CRITIQUE pending
-// count + last-pass age, PHASE_CANDIDATES pending count +
+// count + last-pass age, CANDIDATES pending count +
 // oldest-pending age.
 //
 //   node scripts/pulse.mjs
@@ -123,9 +123,10 @@ if (critique === null) {
 
 // --- candidates --------------------------------------------------------------
 
-const candidates = readSafe('plan/PHASE_CANDIDATES.md')
+// v2 renamed PHASE_CANDIDATES.md; read the old name until the adopter git mv's it.
+const candidates = readSafe('plan/CANDIDATES.md') ?? readSafe('plan/PHASE_CANDIDATES.md')
 if (candidates === null) {
-  printRow('candidates', 'unreadable (plan/PHASE_CANDIDATES.md)')
+  printRow('candidates', 'unreadable (plan/CANDIDATES.md)')
 } else {
   const section = pendingSection(candidates)
   const count = countRows(section)

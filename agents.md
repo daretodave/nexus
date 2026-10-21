@@ -220,6 +220,6 @@ verbs — a docs kit ships docs, not pages.
 | Traps hit building the kit | `identity/footguns.md` (Open lines, before building; `customization/identity-layer.md`) |
 | Open findings | `plan/AUDIT.md` |
 | Critique queue | `plan/CRITIQUE.md` |
-| Phase candidates | `plan/PHASE_CANDIDATES.md` |
+| Candidates (future specs) | `plan/CANDIDATES.md` |
 | How a skill works | `skills/<skill>.md` |
 | What adopters copy | `templates/` + `templates/README.md` |

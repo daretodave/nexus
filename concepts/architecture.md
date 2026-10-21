@@ -16,7 +16,7 @@ the top two enable unattended runs.
 │ Layer 4 — External signals (critique, triage, expand)    │
 │  Live-site observer + GitHub issue inbox + plan grower.  │
 │  Findings flow into AUDIT / BACKLOG / CRITIQUE /         │
-│  PHASE_CANDIDATES queues.                                │
+│  CANDIDATES queues.                                      │
 ├──────────────────────────────────────────────────────────┤
 │ Layer 3 — Awareness (verify gate, deploy gate)           │
 │  Pre-commit hermetic check + post-push CI/CD poll.       │
@@ -193,7 +193,7 @@ own**:
   to `plan/AUDIT.md` or `data/BACKLOG.md`.
 - **`expand`** — reads accumulated signals (pending AUDIT /
   CRITIQUE rows, sibling-project lessons, platform drift) and
-  proposes new specs to `plan/PHASE_CANDIDATES.md`.
+  proposes new specs to `plan/CANDIDATES.md`.
   Posture-gated (bold or autonomous only); promoted into the
   plan only by `/oversight`.
 

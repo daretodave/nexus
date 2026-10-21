@@ -82,7 +82,7 @@ else at commit time; a block firing is itself a finding
 | `docs` | doc-only edit, no new capability |
 | `templates` | `templates/` content only |
 | `playbook` | new/edited `playbooks/*.md` |
-| `plan` | `plan/README.md`, specs, `plan/ARCHIVE.md`, `plan/PHASE_CANDIDATES.md` state changes |
+| `plan` | `plan/README.md`, specs, `plan/ARCHIVE.md`, `plan/CANDIDATES.md` state changes |
 | `ci` | `.github/workflows/` only |
 | `cloud` | cloud-loop-specific code/doc changes |
 
@@ -94,7 +94,7 @@ to the guard hook too.
 ## Plan expansion posture
 
 **bold** — `/expand` files candidates to
-`plan/PHASE_CANDIDATES.md`; promotion happens in `/oversight`.
+`plan/CANDIDATES.md`; promotion happens in `/oversight`.
 
 ## Decisions standing for the loop
 

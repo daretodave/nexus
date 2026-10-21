@@ -21,7 +21,7 @@ templates/
 │   ├── bearings.md
 │   ├── AUDIT.md
 │   ├── CRITIQUE.md
-│   ├── PHASE_CANDIDATES.md
+│   ├── CANDIDATES.md
 │   ├── reflexes.md                    (omit unless the lessons layer is adopted; see below)
 │   ├── lessons.md                     (omit unless the lessons layer is adopted; see below)
 │   └── CURRENT-STATE.md               (brownfield retrofit only; see existing-project.md)
