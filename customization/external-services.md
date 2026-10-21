@@ -320,3 +320,6 @@ actually reachable.
   with runbook path and last-verified date).
 - [`../playbooks/new-project.md`](../playbooks/new-project.md)
   — Day-1 checklist references this customization.
+- [`./secrets.md`](./secrets.md) — where a runbook's keys
+  land: the manifest names them, the vault (`.env`,
+  `.env.workspace`, the keychain) holds them.

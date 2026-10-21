@@ -20,15 +20,17 @@ only asks for one once a chunk names a secret.
 | File | What it is |
 |---|---|
 | `nexus.secrets.json` | The manifest, tracked, at the repo root. Names and facts, never a value. Copied from `nexus/templates/env/nexus.secrets.json`. |
-| `scripts/secrets.mjs` | The command line: `import`, `names`, `check`. Prints names, never values. |
+| `scripts/secrets.mjs` | The command line: `status`, `set`, `import`, `names`, `check`. Prints names, never values. |
+| `scripts/secrets-vault.mjs` | The vault: reads and writes `.env` and `.env.workspace`, and the keychain when it is on. Hands a value to code only. |
+| `scripts/secrets-keychain.mjs` | The opt-in OS keychain, through the OS's own command line. |
 | `scripts/plan/secrets-manifest.mjs` | The shape and the import, as pure functions. It sits in `scripts/plan/` because `plan-check.mjs` imports it: a copy of `scripts/plan/` plus `plan-check.mjs` still runs. |
 | `scripts/plan-check.mjs` | Checks the manifest's shape and every chunk's `secrets` field against it. |
+| `.env` | The local ring: values, untracked, at the primary checkout. |
+| `.env.workspace` | The workspace ring: values several repos share, at the workspace root, outside every repo. |
 
-The vault (where the values live: `.env`, `.env.workspace`, or
-the OS keychain), `nexus secrets run`, and the sinks that push
-a value to GitHub Actions, Vercel or Cloudflare extend
-`scripts/secrets.mjs` with more commands; this page grows with
-them.
+`nexus secrets run` and the sinks that push a value to GitHub
+Actions, Vercel or Cloudflare extend `scripts/secrets.mjs`
+with more commands; this page grows with them.
 
 ## The shape
 
@@ -94,6 +96,121 @@ secrets (a provider name, a page selector). Keep
 `.env.example` if your stack's tooling reads it; the manifest
 is what the plan and the gate read.
 
+## The vault: where the values live
+
+Values live in three places, local and untracked. The model
+never reads one: `scripts/secrets-vault.mjs` is the only code
+that does, and it hands a value to code (the run wrapper, a
+sink, the GUI server), never to a terminal.
+
+| Ring | File | Holds |
+|---|---|---|
+| `local` | `.env` at the primary checkout's root (every worktree of it shares the one file) | The loop's own tokens: what this repo's scripts and deploys need. |
+| `keychain` | The OS keychain, service `nexus/<repo>` | Opt-in: the same names, kept out of plain files. |
+| `workspace` | `.env.workspace` at the workspace root | Secrets several repos share. |
+
+A name is read from `local`, then `keychain`, then
+`workspace`: the first ring that holds it wins, so a repo can
+override a shared value.
+
+### Two rings
+
+The workspace root is the folder that holds the sibling repos
+(`~/work/` holding `~/work/app/` and `~/work/api/`): by
+default the checkout's parent folder, or any folder set in
+`.nexus/local.json`. It is never a repo itself
+([`playbooks/workspace.md`](../playbooks/workspace.md)), and
+that is the safety property: `.env.workspace` sits outside
+every repo, so `git add -A` physically cannot reach it.
+
+Where a secret goes, the tiebreaker: a secret consumed by, or
+granting power over, more than one repo (an org-wide
+Cloudflare token, a shared database's admin URL) goes to the
+workspace ring; anything else stays in the repo's `.env`. A
+single-repo project needs only `.env`; repos already on the
+two-ring layout change nothing.
+
+A key **file** (a PEM, a service account's JSON) stays a file,
+outside every repo (a `.secrets/` folder at the workspace root
+is the convention). The vault holds its path under a name
+(`GCP_KEY_FILE=/home/me/work/.secrets/gcp.json`), never its
+contents: a vault value is one line.
+
+### Set, status, import
+
+```bash
+node scripts/secrets.mjs set VERCEL_TOKEN                     # a hidden prompt, or a pipe: never an argument
+node scripts/secrets.mjs set CF_API_TOKEN --ring workspace    # into .env.workspace
+node scripts/secrets.mjs status                               # each name: where it is set, where it goes
+node scripts/secrets.mjs import incoming.env --store          # a real .env: values into the vault, names into the manifest
+```
+
+- `set NAME` reads the value from stdin, or from a prompt that
+  doesn't echo when you type it in a terminal. Never from argv:
+  arguments land in process lists and shell history. A name the
+  manifest doesn't declare is stored too (a local-only key),
+  with a note.
+- `--ring` is `local`, `workspace` or `keychain`. The default
+  is the keychain when it is on, else `local`.
+- `status` lists every declared name with the rings that hold
+  it (or `missing`) and its destinations, then any name the
+  `.env` files hold that the manifest doesn't. `--json` gives
+  the same as data (for the GUI). Never a value.
+- `import FILE --store` takes a `.env` someone handed you: each
+  live `NAME=value` goes into the vault (the ring as for
+  `set`), the names go into the manifest exactly as the
+  `.env.example` import does, and the output names them. Then
+  delete the file. A value on more than one line is skipped
+  and named.
+
+**There is no `get`.** A command that prints a value is a
+command the model can run, and then the value is in the
+transcript. Code reads a value through the module:
+
+```js
+import { openVault } from './secrets-vault.mjs'
+const vault = openVault({ root })
+const { values, missing } = vault.resolve(['VERCEL_TOKEN'])   // values: a Map, for a child process's env
+```
+
+### The rails on a write
+
+- `.env` is refused unless git ignores it here; add `.env` and
+  `.env.workspace` to `.gitignore` before the first `set`.
+- `.env.workspace` is refused inside a git repo (unless that
+  repo ignores it): a misconfigured workspace path fails loud.
+- A new file is created owner-only (`0600`; Windows keeps its
+  own ACLs, which already scope a user's profile).
+- An empty or multi-line value is refused. Every message names
+  the secret, never the value.
+
+### The OS keychain (opt-in)
+
+Turn it on per checkout in the untracked `.nexus/local.json`:
+
+```json
+{ "secrets": { "keychain": true } }
+```
+
+| OS | Through | Notes |
+|---|---|---|
+| macOS | `security` (the login keychain) | A write goes through `security -i` on stdin. |
+| Windows | Windows PowerShell 5.1 and the Credential Locker (`Windows.Security.Credentials.PasswordVault`) | Built in; `pwsh` 7 lacks the API, so it runs `powershell.exe`. The value crosses as base64 on stdin and stdout. |
+| Linux | `secret-tool` (libsecret: GNOME Keyring, KWallet) | `apt install libsecret-tools` if it is missing. |
+
+No new dependencies: each is the OS's own command line, and a
+value travels on stdin and stdout only. Items file under the
+service `nexus/<repo folder>`; the keychain is asked about
+declared names only (it can't be listed cheaply).
+
+The other settings, all optional, in the same `secrets` object:
+
+| Key | Default | Means |
+|---|---|---|
+| `keychain` | `false` | Use the OS keychain, and write to it by default. |
+| `keychainService` | `nexus/<repo folder>` | The keychain service the items file under. |
+| `workspace` | `..` | The workspace root, relative to the checkout (or absolute). |
+
 ## A chunk's `secrets` field
 
 A chunk line gains an optional field beside `needs`:
@@ -131,11 +248,15 @@ secrets") and leaves the loop's sign-in out.
 
 ## Hard rules
 
-1. The manifest never holds a value; nothing prints one.
+1. The manifest never holds a value; nothing prints one, and
+   no command reads one back to a terminal.
 2. Every name a chunk line carries is declared in the manifest.
 3. The model reads names and statuses. Values move only
    between the vault, a sink and a child process, inside
    scripts.
+4. A value goes in through stdin, never argv; `.env` and
+   `.env.workspace` are gitignored, and the workspace ring sits
+   outside every repo.
 
 ## You're ready when
 
@@ -143,6 +264,9 @@ secrets") and leaves the loop's sign-in out.
       `node scripts/secrets.mjs check` is green.
 - [ ] Every entry's `for`, `where` and `destinations` are
       true, and configuration that isn't a secret is gone.
+- [ ] `.env` and `.env.workspace` are in `.gitignore`, and
+      `node scripts/secrets.mjs status` shows every declared
+      name set (a contributor needs none of them).
 - [ ] `plan-check.mjs` is in your verify composition (it gates
       the manifest and the `secrets` fields).
 

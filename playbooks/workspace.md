@@ -80,7 +80,9 @@ without ever needing a `.gitignore` entry per repo:
 - **A personal secrets bridge** — an untracked `.env.workspace`
   or shell profile snippet holding tokens no single repo's gate
   needs but a cross-repo script might (a script that walks every
-  sibling to run its own verify gate, for example).
+  sibling to run its own verify gate, for example). The vault's
+  workspace ring reads and writes it
+  ([`customization/secrets.md`](../customization/secrets.md#two-rings)).
 - **Nothing that needs history.** The moment something at root
   needs a commit log, a diff, or a PR, it belongs in one of the
   sibling repos instead — usually `plan/`, since it's already

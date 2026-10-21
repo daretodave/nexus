@@ -615,7 +615,8 @@ commit" — that's fine; the contract is post-push.
 
 Commit `package.json` + `scripts/deploy-check.mjs` + `.env.example`.
 
-**Do not commit `.env`.** Confirm `.env` is in `.gitignore`.
+**Do not commit `.env`.** Confirm `.env` and `.env.workspace` are
+in `.gitignore` (`nexus/customization/secrets.md`).
 
 ---
 
