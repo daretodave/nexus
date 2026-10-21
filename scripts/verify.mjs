@@ -350,7 +350,10 @@ function globDir(rel) {
 
 // Per skill tree (templates/skills/ and skills/); a key ending in
 // "/" covers every .md directly in that folder.
-const LINE_BUDGETS = { 'next.md': 200, 'next/': 120, 'heads-down.md': 150 }
+const LINE_BUDGETS = {
+  'next.md': 200, 'next/': 120, 'heads-down.md': 150, 'plot.md': 200, 'bug.md': 150, 'messy.md': 150,
+  'tidy.md': 150, 'rebooting.md': 150, 'reboot-ready.md': 150, 'reboot-resume.md': 150,
+}
 
 function legAnatomy() {
   const failures = []
