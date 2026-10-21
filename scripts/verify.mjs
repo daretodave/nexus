@@ -623,7 +623,7 @@ function runSuites(suites, label) {
 async function legWorkflows() {
   const { lintDirs } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/workflow-lint.mjs')).href)
   const { problems, files } = lintDirs(['.github/workflows', '.github/actions', 'templates/.github/workflows', 'templates/.github/actions'].map((d) => path.join(ROOT, d)))
-  return { failures: problems.map((p) => normalize(path.relative(ROOT, p.split(':')[0])) + p.slice(p.indexOf(':'))), note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts` }
+  return { failures: problems.map((p) => { const m = /^(.*?\.ya?ml)(:.*)$/s.exec(p); return m ? normalize(path.relative(ROOT, m[1])) + m[2] : p }), note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts` }
 }
 
 // --- leg: diagrams ------------------------------------------------------------
