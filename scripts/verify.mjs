@@ -578,6 +578,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/secrets-vault.test.mjs',
   'templates/scripts/__tests__/secrets-sinks.test.mjs',
   'templates/scripts/__tests__/secrets-audit.test.mjs',
+  'templates/scripts/__tests__/secrets-run.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
 ]
@@ -590,6 +591,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/progress-run.test.mjs',
   'templates/scripts/__tests__/upgrade-plan-run.test.mjs',
   'templates/scripts/__tests__/plot-run.test.mjs',
+  'templates/scripts/__tests__/secrets-scan-run.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run
@@ -601,6 +603,7 @@ const DOGFOOD_TWINS = [
   'plan/progress.mjs', 'plan/order.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',
+  'secrets-run.mjs', 'secrets-scan.mjs',
 ]
 // The steer hook runs in nexus's own sessions from .claude/hooks/, byte for byte the one adopters copy.
 const HOOK_TWINS = ['steer.mjs']

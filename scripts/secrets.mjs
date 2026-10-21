@@ -11,6 +11,8 @@
 //   node scripts/secrets.mjs push NAME [--to D] [--repo O/R]  # the value to its destinations through a sink (owner mode)
 //   node scripts/secrets.mjs audit [--json]                   # every set, push and rotation by name; rotation nudges
 //   node scripts/secrets.mjs request <chunk>                  # a missing secret's ask, into the oversight queue
+//   node scripts/secrets.mjs run [--only A,B] -- <cmd...>     # the command, with the declared values in its env only
+//   node scripts/secrets.mjs scan [--staged]                  # refuse a diff that holds a vault value (the gate's rail)
 //
 // The owner's `set` and `import --store` record each name in the audit record (scripts/secrets-audit.mjs: `set` for
 // a first value, `rotate` for a replaced one); `status` and `audit` nudge a secret last set over 90 days ago.
@@ -38,11 +40,13 @@ import { isOwner, localSettings, primaryRoot } from './owner.mjs';
 import { MANIFEST, NAME, emptyManifest, importEnvExample, mergeImport, readManifest, serialize } from './plan/secrets-manifest.mjs';
 import { CONTRIBUTOR_RINGS, RINGS, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
 import { pushSecret, recordAudit, sinkFor, spawnRunner } from './secrets-sinks.mjs';
+import { runWithSecrets } from './secrets-run.mjs';
+import { describeHit, scanRepo, vaultValues } from './secrets-scan.mjs';
 import { ROTATE_DAYS, ageDays, lastSet, nudgeLine, readAudit, recordSets, rotationNudges } from './secrets-audit.mjs';
 import { loadPlanDir } from './plan-check.mjs';
 
-export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check | push NAME [--to D] [--repo O/R] [--env E,E] [--worker W] | audit [--json] | request <chunk>   [--root <dir>]';
-const COMMANDS = ['status', 'set', 'import', 'names', 'check', 'push', 'audit', 'request'];
+export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check | push NAME [--to D] [--repo O/R] [--env E,E] [--worker W] | audit [--json] | request <chunk> | run [--only A,B] -- <cmd...> | scan [--staged]   [--root <dir>]';
+const COMMANDS = ['status', 'set', 'import', 'names', 'check', 'push', 'audit', 'request', 'run', 'scan'];
 export const REQUEST = (id) => `secret request ${id}:`;
 const SINK_DESTINATIONS = ['github-actions', 'vercel', 'cloudflare'];
 
@@ -84,7 +88,10 @@ export async function readSecretInput(prompt) {
 const where = (rings) => (rings.length ? `set · ${rings.join(', ')}` : 'missing');
 
 export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), input = readSecretInput, vault: vaultOpts = {}, owner, run = spawnRunner } = {}) {
-  const args = [...argv];
+  // Everything after `--` is run's command: its flags are the command's, never this script's.
+  const dd = argv.indexOf('--');
+  const command = dd === -1 ? null : argv.slice(dd + 1);
+  const args = dd === -1 ? [...argv] : argv.slice(0, dd);
   const flag = (name) => { const i = args.indexOf(name); if (i === -1) return false; args.splice(i, 1); return true; };
   const opt = (name) => { const i = args.indexOf(name); if (i === -1) return null; const v = args[i + 1]; args.splice(i, 2); return v ?? ''; };
   const dry = flag('--dry-run');
@@ -96,6 +103,8 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
   const repo = opt('--repo');
   const env = opt('--env');
   const worker = opt('--worker');
+  const only = opt('--only');
+  const staged = flag('--staged');
   const [cmd, arg, ...extra] = args;
   if (cmd === 'get') {
     err('secrets get: no such command. A value goes from the vault to code, never to a terminal: `status` says where each name is set, and scripts/secrets-vault.mjs exports get and resolve for scripts.');
@@ -105,7 +114,9 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     || (arg && !['import', 'set', 'push', 'request'].includes(cmd)) || (['set', 'push', 'request'].includes(cmd) && !arg)
     || ((to !== null || repo !== null) && cmd !== 'push') || (to !== null && !SINK_DESTINATIONS.includes(to)) || repo === '' || (ring && cmd !== 'set' && !store)
     || ((env !== null || worker !== null) && cmd !== 'push') || env === '' || worker === ''
-    || ((store || dry) && cmd !== 'import') || (store && (dry || !arg)) || (json && !['status', 'audit'].includes(cmd));
+    || ((store || dry) && cmd !== 'import') || (store && (dry || !arg)) || (json && !['status', 'audit'].includes(cmd))
+    || ((command !== null) !== (cmd === 'run')) || (cmd === 'run' && !command.length) || only === '' || (only !== null && cmd !== 'run')
+    || (staged && cmd !== 'scan');
   if (bad) { err(USAGE); return 64; }
   const root = path.resolve(rootArg ?? topLevel());
   const vroot = rootArg ? root : vaultRoot(root);
@@ -133,6 +144,8 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     return 1;
   }
   try {
+    if (cmd === 'run') return await runCommand(open(), current, { command, only, err });
+    if (cmd === 'scan') return scan(open(), current, { root, staged, out });
     if (cmd === 'status') return status(open(), current, { out, json, owner: ownerHere(), localKeys: readLocalKeys(vroot), log: readAudit(vroot) });
     if (cmd === 'audit') return audit(open(), readAudit(vroot), { out, json });
     if (cmd === 'request') return request(open(), current, { root, id: arg, out, err });
@@ -264,6 +277,30 @@ function durableAsk(root, marker) {
     return null;
   };
   return walk(path.join(root, 'plan'));
+}
+
+/** `run`: the declared names (or the --only ones), every one set, into the command's environment. */
+async function runCommand(vault, current, { command, only, err }) {
+  const declared = current ? [...current.names] : [];
+  const picked = only === null ? declared : only.split(',').map((n) => n.trim()).filter(Boolean);
+  const undeclared = picked.filter((n) => !declared.includes(n));
+  if (undeclared.length) { err(`secrets run: not declared in ${MANIFEST}: ${undeclared.join(', ')} (run hands over declared names only)`); return 1; }
+  const { values, missing } = vault.resolve(picked);
+  if (missing.length) { err(`secrets run: not set in the vault: ${missing.join(', ')} (node scripts/secrets.mjs set NAME); ${command[0]} did not run`); return 1; }
+  if (!picked.length) err(`secrets run: no secrets declared in ${MANIFEST}; running ${command[0]} with none`);
+  return runWithSecrets(command, values);
+}
+
+/** `scan`: the gate's rail. Exit 1 when the diff holds a vault value, naming the file, line and secret. */
+function scan(vault, current, { root, staged, out }) {
+  const values = vaultValues(vault, current ? [...current.names] : []);
+  if (!values.size) { out('secrets scan: no vault values here, nothing to scan for'); return 0; }
+  const { hits, scanned } = scanRepo({ root, values, staged });
+  const what = staged ? 'the staged diff' : 'the working tree vs HEAD and the untracked files';
+  if (!hits.length) { out(`secrets scan: green (${scanned} added lines in ${what}; ${values.size} vault values)`); return 0; }
+  for (const h of hits) out(`  ${describeHit(h)}`);
+  out(`secrets scan: ${what} holds ${hits.length} vault value(s): take each out (reference it by name; the value stays in the vault), then commit`);
+  return 1;
 }
 
 function push({ name, to, repo, env, worker, root, vroot, current, open, out, err, run, owner }) {
