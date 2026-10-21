@@ -1,13 +1,13 @@
 // Step 3 · Shape (boards Shape, ShapeContributor, ShapeLight). Four friendly
 // questions: what you are building (seeds the first spec), who works on it,
 // whose checkout this is (writes or removes .owner), and how agents split
-// the work (the run mode, saved to the server's prefs as agents/workflows).
+// the work (the run mode, saved to .nexus/local.json through /api/local).
 import { useState } from 'react';
 import { nextRunMode, Icon, InfoBtn, Seg, OwnerPick, Switch, Check, BadgeAuto, BadgeDef, FileTag, useShell } from '../../ui/index.js';
-import { server } from '../../data/index.js';
+import { api, server, useLocalSettings } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next } from './frame.jsx';
-import { useDraft, runModeFromPrefs, prefsFromRunMode } from './draft.js';
+import { useDraft, localRunMode, saveRunMode } from './draft.js';
 import { onboardingCalls } from './calls.js';
 
 const TEAM = [
@@ -45,15 +45,16 @@ function useCheckout() {
 export default function Shape() {
   const shell = useShell();
   const prefs = shell.app?.data?.prefs;
+  const local = useLocalSettings();
   const [d, patch] = useDraft();
   const [checkout, setCheckout, ownerErr] = useCheckout();
   const [tip, setTip] = useState(false);
   const isOwner = checkout === 'owner';
 
-  const v = d.runMode ?? (prefs?.onboarded ? runModeFromPrefs(prefs) : 'size');
+  const v = d.runMode ?? (prefs?.onboarded && local.status === 'ready' ? localRunMode(local.data) : 'size');
   const setRm = (rm) => {
     patch({ runMode: rm });
-    server.setPrefs(prefsFromRunMode(rm)).catch(() => {});
+    saveRunMode(rm, api).catch(() => {});
   };
   const bySize = v === 'size';
   const subOn = v === 'sub' || v === 'both';

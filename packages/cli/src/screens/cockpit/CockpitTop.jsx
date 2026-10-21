@@ -42,8 +42,9 @@ function SwRow({ s, current, onPick }) {
 
 const RUN_MODES = [
   { key: 'size', label: 'By size', desc: 'Small chunks stay here, medium delegate, large fan out' },
-  { key: 'agents', label: 'Delegate to sub-agents', short: 'Sub-agents', desc: 'Each is briefed in its own context' },
-  { key: 'workflows', label: 'Use workflows', short: 'Workflows', desc: 'Several agents work one chunk and check each other' },
+  { key: 'sub', label: 'Delegate to sub-agents', short: 'Sub-agents', desc: 'Each is briefed in its own context' },
+  { key: 'wf', label: 'Use workflows', short: 'Workflows', desc: 'Several agents work one chunk and check each other' },
+  { key: 'both', label: 'Sub-agents and workflows', short: 'Both', desc: 'Both overrides, as Settings can set them' },
 ];
 
 /**

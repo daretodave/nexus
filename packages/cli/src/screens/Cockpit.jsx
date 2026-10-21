@@ -6,8 +6,8 @@
 // each phase's page (?phase=), the session's own phase when none is named.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { AppFrame, Empty, Err, Panes, Phases, ToastHost, useShell } from '../ui/index.js';
-import { api, server, useCloudLoop, useEvents, useResource, useSessions } from '../data/index.js';
+import { AppFrame, Empty, Err, Panes, Phases, ToastHost, localRunMode, prefsFromRunMode, saveRunMode, useShell } from '../ui/index.js';
+import { api, server, useCloudLoop, useEvents, useLocalSettings, useResource, useSessions } from '../data/index.js';
 import { PATHS, rememberSession } from '../routes.js';
 import { toPrompt } from '../../shared/route.mjs';
 import CockpitTop from './cockpit/CockpitTop.jsx';
@@ -55,6 +55,7 @@ export default function Cockpit() {
   const ledgerRes = useResource(`/api/sessions/${encodeURIComponent(id)}`, { poll: 4000 });
   const sessionsRes = useSessions();
   const cloudRes = useCloudLoop();
+  const localRes = useLocalSettings();
   const ledger = ledgerRes.status === 'ready' ? ledgerRes.data : null;
   const sessions = sessionsRes.status === 'ready' && Array.isArray(sessionsRes.data) ? sessionsRes.data : null;
   const info = shell.app?.data?.info || {};
@@ -107,7 +108,7 @@ export default function Cockpit() {
       } else {
         const r = route === 'nudge' ? 'ask' : route === 'pin' ? null : (route || 'slash');
         if (route === 'pin') { await api('/api/pin', { session: id, text }); } else {
-          let prompt = toPrompt(text, r, prefs);
+          let prompt = toPrompt(text, r, { ...prefs, ...prefsFromRunMode(runMode) });
           if (route === 'plot' && plotMode === 'do') prompt = `${prompt} and do`;
           if (terminal) {
             // A terminal session: sending from its own cockpit aims at it, so link it and steer it. The line reaches
@@ -141,12 +142,12 @@ export default function Cockpit() {
   };
   const togglePause = () => act(`${base}/${pauseState === 'paused' ? 'resume' : 'pause'}`, {}, pauseState === 'paused' ? 'Resume' : 'Pause');
 
-  // ---- run mode (prefs: agents / workflows) ----------------------------------------
-  const runMode = prefs.workflows ? 'workflows' : prefs.agents ? 'agents' : 'size';
+  // ---- run mode (.nexus/local.json through ui/run-mode.js, as Settings saves it) ----
+  const runMode = localRunMode(localRes.status === 'ready' ? localRes.data : null);
   const setRunMode = async (m) => {
     try {
-      await server.setPrefs({ agents: m === 'agents', workflows: m === 'workflows' });
-      shell.app?.reload?.();
+      await saveRunMode(m, api);
+      localRes.reload();
     } catch (e) { toast({ kind: 'error', title: 'Run mode not saved', body: e.message }); }
   };
 

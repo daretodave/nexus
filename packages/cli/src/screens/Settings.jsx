@@ -9,7 +9,7 @@
 // (POST /api/prefs aiSummaries, on by default); the theme is per browser.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { RUN_MODES, nextRunMode, prefsFromRunMode, runModeFromPrefs, Icon, InfoBtn, Check, BadgeDef, BadgeAuto, Tip, Switch, Seg, ThemeSeg, useShell } from '../ui/index.js';
+import { nextRunMode, localRunMode, saveRunMode, Icon, InfoBtn, Check, BadgeDef, BadgeAuto, Tip, Switch, Seg, ThemeSeg, useShell } from '../ui/index.js';
 import { api, useLocalSettings } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { useLoop, hhmm } from './cloud-settings/loop.js';
@@ -54,8 +54,9 @@ function Saved({ state }) {
 export default function Settings() {
   const { app, repo } = useShell();
   const info = app?.data?.info || {};
-  const owner = !!info.owner;
   const local = useLocalSettings();
+  // .owner at the primary checkout (a worktree's Settings sees it too), as /api/local reads it.
+  const owner = local.status === 'ready' ? !!local.data?.owner : !!info.owner;
   const loop = useLoop();
 
   // Local settings: what the server holds, then what this page changed.
@@ -63,26 +64,22 @@ export default function Settings() {
   const [save, setSave] = useState('saved');
   const server = local.status === 'ready' ? local.data || {} : {};
   const s = { ...server, ...mine };
-  // Run mode saves through prefs today (the same store the cockpit and onboarding use);
-  // /api/local takes it over once it lands.
-  const rm = RUN_MODES.includes(s.runMode) ? s.runMode : runModeFromPrefs(app?.data?.prefs);
+  // Run mode: .nexus/local.json through ui/run-mode.js, the same path the cockpit's menu takes.
+  const rm = localRunMode(s);
   const phase = PHASES.includes(s.phase) ? s.phase : 'std';
   const push = s.ownerMode !== false;
 
   const change = async (patch) => {
     setMine((m) => ({ ...m, ...patch }));
     if (local.status === 'missing') {
-      if (Object.keys(patch).length === 1 && patch.runMode) {
-        setSave('saving');
-        try { await api('/api/prefs', prefsFromRunMode(patch.runMode)); app?.reload?.(); setSave('saved'); } catch (e) { setSave({ error: e.message }); }
-        return;
-      }
       setSave('missing');
       return;
     }
     setSave('saving');
     try {
-      await api('/api/local', patch);
+      const { runMode, ...rest } = patch;
+      if (runMode) await saveRunMode(runMode, api);
+      if (Object.keys(rest).length) await api('/api/local', rest);
       setSave('saved');
     } catch (e) {
       setSave(e.status === 404 ? 'missing' : { error: e.message });

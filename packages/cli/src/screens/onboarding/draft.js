@@ -51,8 +51,8 @@ export function useDraftStore() {
 
 export const useDraft = () => useContext(DraftContext);
 
-/** The run mode as the server's prefs store it (agents, workflows). Neither: by size. */
-export { runModeFromPrefs, prefsFromRunMode } from '../../ui/run-mode.js';
+/** The run mode as /api/local holds it (.nexus/local.json runMode), read and saved through ui/run-mode.js. */
+export { localRunMode, saveRunMode } from '../../ui/run-mode.js';
 
 export const RUN_MODE_LABEL = {
   size: 'By size',

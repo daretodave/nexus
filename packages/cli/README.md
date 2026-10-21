@@ -67,7 +67,9 @@ You need no API key.
   as the kit's do.
 - **Git** (worktrees, main, open PRs, a `/tidy` dry run), **Recover**
   (a workflow folder as a timeline) and **Settings** (owner mode, run
-  mode, AI one-liners, night or dawn).
+  mode, AI one-liners, night or dawn). Owner mode and run mode live in
+  the checkout's untracked `.nexus/local.json`, read and written through
+  `/api/local` by Settings and the cockpit alike.
 
 Some of this waits on server endpoints that are not built yet (the
 merged inbox, chunking in the page). Until they land, those

@@ -5,10 +5,10 @@
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, Orb, Kbd, SessTag, Star, nextSessionName, useShell } from '../../ui/index.js';
-import { server, useSessions } from '../../data/index.js';
+import { api, server, useLocalSettings, useSessions } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, markOnboarded, useEnter } from './frame.jsx';
-import { useDraft, runModeFromPrefs, prefsFromRunMode, RUN_MODE_LABEL, SCHED_SUMMARY } from './draft.js';
+import { useDraft, localRunMode, saveRunMode, RUN_MODE_LABEL, SCHED_SUMMARY } from './draft.js';
 import { onboardingCalls } from './calls.js';
 
 const RIM = [
@@ -91,6 +91,7 @@ export default function Launch() {
   const shell = useShell();
   const info = shell.app?.data?.info || {};
   const prefs = shell.app?.data?.prefs;
+  const local = useLocalSettings();
   const sessions = useSessions(0);
   const [d] = useDraft();
   const nav = useNavigate();
@@ -102,10 +103,11 @@ export default function Launch() {
   const name = nextSessionName(live);
   const owner = !!info.owner;
   const effectiveOwner = owner && d.ownerMode !== false;
-  const rm = d.runMode ?? (prefs?.onboarded ? runModeFromPrefs(prefs) : 'size');
+  const rm = d.runMode ?? (prefs?.onboarded && local.status === 'ready' ? localRunMode(local.data) : 'size');
 
   const finish = useCallback(async () => {
-    await markOnboarded(prefsFromRunMode(rm));
+    await markOnboarded();
+    await saveRunMode(rm, api).catch(() => null);
     if (owner) await onboardingCalls.setLocal({ ownerMode: d.ownerMode !== false }).catch(() => null);
   }, [rm, owner, d.ownerMode]);
 
