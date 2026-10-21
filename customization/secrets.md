@@ -23,7 +23,7 @@ only asks for one once a chunk names a secret.
 | `scripts/secrets.mjs` | The command line: `status`, `set`, `import`, `names`, `check`. Prints names, never values. |
 | `scripts/secrets-vault.mjs` | The vault: reads and writes `.env` and `.env.workspace`, and the keychain when it is on. Hands a value to code only. |
 | `scripts/secrets-keychain.mjs` | The opt-in OS keychain, through the OS's own command line. |
-| `scripts/secrets-sinks.mjs` | The sinks that push a value where it is needed (GitHub Actions), and the push record. Needs `scripts/ledger.mjs` (its lock). |
+| `scripts/secrets-sinks.mjs` | The sinks that push a value where it is needed (GitHub Actions, Vercel, Cloudflare), and the push record. Needs `scripts/ledger.mjs` (its lock). |
 | `scripts/plan/secrets-manifest.mjs` | The shape and the import, as pure functions. It sits in `scripts/plan/` because `plan-check.mjs` imports it: a copy of `scripts/plan/` plus `plan-check.mjs` still runs. |
 | `scripts/plan-check.mjs` | Checks the manifest's shape and every chunk's `secrets` field against it. |
 | `.env` | The local ring: values, untracked, at the primary checkout. |
@@ -31,9 +31,8 @@ only asks for one once a chunk names a secret.
 | `.nexus/secrets-audit.jsonl` | The push record: which name went where, and when. Untracked, at the primary checkout. Never a value. |
 | `.nexus/secrets-local.json` | A contributor's own local key names (never values), untracked, at the primary checkout. |
 
-`nexus secrets run`, and the Vercel and Cloudflare sinks,
-extend `scripts/secrets.mjs` with more; this page grows with
-them.
+`nexus secrets run` extends `scripts/secrets.mjs` with more;
+this page grows with it.
 
 ## The shape
 
@@ -257,13 +256,27 @@ nobody pastes a token into a web form or a command line:
 node scripts/secrets.mjs push GH_TOKEN                        # every destination the manifest lists for it
 node scripts/secrets.mjs push GH_TOKEN --to github-actions    # one of them
 node scripts/secrets.mjs push GH_TOKEN --repo me/other-repo   # another repo than this checkout's
+node scripts/secrets.mjs push VERCEL_TOKEN --to vercel --env production,preview
+node scripts/secrets.mjs push CF_API_TOKEN --to cloudflare --worker edge-api
 ```
 
 | Destination | Sink | Through |
 |---|---|---|
 | `local` | none: it is the vault | |
 | `github-actions` | `gh secret set NAME --app actions` | `gh` reads the value from stdin when `--body` is left out; `gh auth login` first |
-| `vercel`, `cloudflare` | not yet: `push` names them and exits 1 | |
+| `vercel` | `vercel env add NAME <environment> --force --yes`, once per environment | `vercel` reads the value from stdin when `--value` is left out; `vercel login` and `vercel link` in the checkout first |
+| `cloudflare` | `wrangler secret put NAME` | `wrangler` reads the value from stdin; `wrangler login` (or its own `CLOUDFLARE_API_TOKEN`) first |
+
+The defaults, and the flags that change them:
+
+| Flag | Sink | Default |
+|---|---|---|
+| `--repo OWNER/REPO` | `github-actions` | The checkout's own repo. |
+| `--env E,E` | `vercel` | All three environments: `production`, `preview`, `development`. A name the app needs in one place only is narrowed here. `--force` overwrites, so a re-push is a rotation. |
+| `--worker NAME` | `cloudflare` | The worker the checkout's wrangler config (`wrangler.toml` or `wrangler.jsonc`) names; `--worker` passes `--name` for a checkout without one, or another worker. |
+
+The manifest stays as it is: a sink's target is a flag on the
+push, not a key on the entry (the shape names no more keys).
 
 - The name must be declared, and set in the vault; `--to`
   must be one of its destinations. A name that goes to `local`
@@ -275,11 +288,17 @@ node scripts/secrets.mjs push GH_TOKEN --repo me/other-repo   # another repo tha
   ([`playbooks/owner-mode.md`](../playbooks/owner-mode.md)).
   A contributor's keys are local-only: every sink refuses
   there ([A contributor's local keys](#a-contributors-local-keys)).
+- A sink with several targets (Vercel's environments) runs
+  them in order and stops at the first failure; the error
+  names the environment, and the ones that landed are still
+  recorded.
 - Each push that lands is one line in
-  `.nexus/secrets-audit.jsonl` at the primary checkout:
+  `.nexus/secrets-audit.jsonl` at the primary checkout, with
+  the repo, environments or worker when the push named them:
 
 ```json
 {"time":"2026-10-21T10:00:00.000Z","action":"push","name":"GH_TOKEN","destination":"github-actions"}
+{"time":"2026-10-21T10:01:00.000Z","action":"push","name":"VERCEL_TOKEN","destination":"vercel","environments":["production","preview","development"]}
 ```
 
 The record is append-only, written under
@@ -288,7 +307,8 @@ field that isn't a string, so a value can't slip in under
 another word. Code adds events through
 `scripts/secrets-sinks.mjs`'s `recordAudit` and reads them
 with `readAudit`. A new sink is one entry in its `SINKS`
-table: the command, and its arguments for a name.
+table: the command, its calls for a name (one argument list
+per target), and what the audit line adds.
 
 ## A chunk's `secrets` field
 
