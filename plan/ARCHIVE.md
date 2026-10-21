@@ -123,3 +123,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 43.5 · the port recipe runs as a Workflow; an opt-in leg checks the port map · d638c51a..466a05db
 - 2026-10-21 · 44.3 · fleet to tug plays in the README; the gifs leg holds its budget · e2a9c183..5f424fb1
 - 2026-10-21 · 44 · spec complete: nexus --demo plays fixture scenarios, a pure-JS recorder makes the GIF, and fleet to tug plays in the README with a gate leg holding its budget · 567d168f..5f424fb1
+- 2026-10-21 · 45.1 · an ## Add numbers new spec work at settle · b1c9b54e..eb902373
+- 2026-10-21 · 45.2 · plan-check and order read pending Adds as settled · 85041378..85041378

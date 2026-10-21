@@ -56,13 +56,6 @@ hold the task.
 
 ## Acceptance
 
-- **A1** An `## Add` numbers and places acceptance, chunks,
-  questions and sections past the spec and the archive, in
-  merge order, keeping the Measure line and `N left` true.
-- **A2** Placeholders are filled in the file's own Edit texts;
-  an undefined one is refused.
-- **A3** The settled view, plan-check and `order.mjs` read Adds
-  as settled; `--mark` takes placeholders.
 - **A4** `/plot`, `/messy` and the pending README use `## Add`
   for every extension and never quote moving lines; extend
   before you add.
@@ -74,14 +67,8 @@ hold the task.
 (None.)
 
 ## Chunks
-Measure: 5 open · 0 closed · next A6
+Measure: 2 open · 3 closed · next A6
 
-- [ ] **45.1** `## Add` in pending.mjs and settle.mjs, both
-  twins, with the settle, pending and settle-run cases · M ·
-  closes A1, A2 · needs —
-- [ ] **45.2** The settled view's numbers, `order.mjs --mark`
-  placeholders, plan-check reading Adds, the plot-run case ·
-  S · closes A3 · needs 45.1
 - [ ] **45.3** The docs and skills: `/plot`, `/messy`, the
   pending README, plan-shape, the claims doc · S · closes A4,
-  A5 · needs 45.1
+  A5 · needs —
