@@ -248,7 +248,7 @@ export default function Inbox() {
         <div className="ibx-acts">
           {!settled && r.kind === 'now' && r.hasDefault ? <button className="btn btn-ghost btn-s" type="button" onClick={() => settle(r, r.opts[0], 'default')}>Use default</button> : null}
           {!settled && r.kind !== 'now' && r.hasDefault ? <button className="btn btn-s" type="button" onClick={() => settle(r, r.opts[0], 'approved')}><Icon name="check" size={14} />Approve</button> : null}
-          {!settled && r.secret ? <button className="btn btn-s" type="button" onClick={() => setSel(r.id)}><Icon name="key" size={14} />Add value</button> : null}
+          {!settled && r.secret ? <button className="btn btn-s btn-warn" type="button" onClick={() => setSel(r.id)}><Icon name="key" size={14} />Add value</button> : null}
           {settled ? <span className="chk-state is-ok"><Icon name="check" size={14} />{HOW_LABEL[d.how] || 'answered'}</span> : null}
         </div>
       </div>

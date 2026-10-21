@@ -70,7 +70,7 @@ test('the audit timeline: newest first, a push right after a set folds into it, 
   const rows = auditRows(STATUS, { now: NOW });
   assert.deepEqual(rows.map((r) => `${r.w} | ${r.verb} ${r.name} ${r.rest}`), [
     'today | requested VERCEL_TOKEN for 07.1',
-    'yesterday | rotated GH_TOKEN · local',
+    'yesterday | rotated GH_TOKEN · local, Actions still has the old one',
     'Oct 18 | synced GH_TOKEN → Actions',
     'Jul 17 | set SMTP_PASSWORD → local, Actions',
   ]);
@@ -199,4 +199,18 @@ test('Add a secret: Local is locked on, and the body names only the sinks', asyn
   assert.deepEqual(addBody(nw), { value: 'v', declare: true, for: 'x', destinations: ['github-actions'] });
   assert.deepEqual(addTick(nw, 'local'), { checked: true, disabled: true, title: 'The vault keeps every value; pushes read it from there.' });
   assert.deepEqual(addTick(nw, 'vercel'), { checked: false, disabled: false, title: undefined });
+});
+
+test('the audit log: a rotation names the places still holding the old value', () => {
+  const rows = auditRows(STATUS, { now: NOW });
+  assert.equal(rows[1].rest, '· local, Actions still has the old one');
+  const two = { ...STATUS, secrets: STATUS.secrets.map((s) => (s.name === 'GH_TOKEN' ? { ...s, destinations: [...s.destinations, { destination: 'vercel', state: 'pushed', stale: true }] } : s)) };
+  assert.equal(auditRows(two, { now: NOW })[1].rest, '· local, Actions and Vercel still have the old one');
+});
+
+test('the Inbox key row\'s Add value is the design\'s warn button', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(new URL('../src/screens/Inbox.jsx', import.meta.url), 'utf8');
+  assert.match(src, /r\.secret \? <button className="btn btn-s btn-warn"[^\n]*?<Icon name="key" size=\{14\} \/>Add value/);
+  assert.match(fs.readFileSync(new URL('../design/handoff/Inbox.dc.html', import.meta.url), 'utf8'), /btn btn-s btn-warn/);
 });

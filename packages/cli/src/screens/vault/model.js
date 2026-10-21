@@ -187,6 +187,12 @@ export function auditRows(status, { now = Date.now(), limit = 8, fresh = new Set
       rows.push({ key: `${e.time}:${e.name}:push:${e.destination}`, time: e.time, kind: 'synced', verb: 'synced', name: e.name, to: [place], sep: '\u2192' });
     }
   }
+  // The name's last set or rotation says where the old value still sits: "\u00b7 local, Vercel still has the old one".
+  for (const [name, { row }] of lastSetRow) {
+    const s = (status?.secrets || []).find((x) => x.name === name);
+    const stale = DESTS.filter((d) => d !== 'local' && s && destState(s, d) === 'stale').map((d) => SHORT[d]);
+    if (stale.length) row.tail = ` ${andList(stale)} still ${stale.length === 1 ? 'has' : 'have'} the old one`;
+  }
   for (const r of status?.requests || []) {
     for (const n of r.missing || []) rows.push({ key: `req:${r.chunk}:${n}`, time: r.date ? `${r.date}T00:00:00` : '', kind: 'requested', verb: 'requested', name: n, rest: `for ${r.chunk}`, dateOnly: true });
   }
@@ -198,7 +204,7 @@ export function auditRows(status, { now = Date.now(), limit = 8, fresh = new Set
     pt: `pt is-${r.kind}`,
     verb: r.verb,
     name: r.name,
-    rest: r.rest || `${r.sep} ${r.to.join(', ')}`,
+    rest: r.rest || `${r.sep} ${r.to.join(', ')}${r.tail ? `,${r.tail}` : ''}`,
   }));
 }
 
