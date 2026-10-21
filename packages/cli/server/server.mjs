@@ -12,6 +12,7 @@ import { createSession } from './session.mjs';
 import { endLedger, ghLoginOnce, heldNames, newSessionId, nextName, openPlace, startLedger, validName, writeStartLedger } from './fleet.mjs';
 import { preflight } from './preflight.mjs';
 import * as repoMod from './repo.mjs';
+import * as local from './local.mjs';
 import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
 import { createSummaries } from './summaries.mjs';
@@ -54,6 +55,8 @@ function readPrompt(name) {
 export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery } = {}) {
   const ghOpts = ghRun ? { run: ghRun } : {};
   let prefs = await repoMod.readPrefs(repo);
+  // Run mode moved to .nexus/local.json (A11): carry an older GUI's prefs copy over once.
+  await local.migrateRunMode(repo, prefs, async () => { prefs = await repoMod.forgetPrefs(repo, ['agents', 'workflows']); }).catch(() => null);
   const summaries = createSummaries({ repo, readPlan: (r) => readPlan(r), enabled: () => prefs.aiSummaries !== false, query: summaryQuery });
 
   // Many sessions, one server (spec 40): each its own query(), claims session id, worktree and SSE channel. The
@@ -215,6 +218,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/preflight': return send(res, 200, await preflight(repo));
         case 'GET /api/prompts': return send(res, 200, { paste: ADOPT_PASTE, adopt: readPrompt('adopt.md'), pitch: readPrompt('pitch.md') });
         case 'POST /api/prefs': { const b = await body(req); if (b.permissionMode && !PERMISSION_MODES.includes(b.permissionMode)) delete b.permissionMode; prefs = await repoMod.writePrefs(repo, b); return send(res, 200, prefs); }
+        case 'GET /api/local': return send(res, 200, await local.localView(repo));
+        case 'POST /api/local': return send(res, 200, await local.writeLocal(repo, await body(req)));
         case 'POST /api/owner': { const b = await body(req); return send(res, 200, { owner: await repoMod.setOwner(repo, !!b.on) }); }
         case 'POST /api/send': {
           const b = await body(req);

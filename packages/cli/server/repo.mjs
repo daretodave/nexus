@@ -61,9 +61,10 @@ export async function setOwner(repo, on) {
   return true;
 }
 
-// Run mode "by size" (decision 2): no --agents or --workflow override until the person picks one.
+// Run mode lives in .nexus/local.json (server/local.mjs, /api/local), not here: a run mode an older GUI kept in
+// these prefs (agents, workflows) moves there once at server start, and forgetPrefs drops it.
 // AI one-liners for undescribed chunks (server/summaries.mjs) are on until Settings turns them off.
-const DEFAULT_PREFS = { agents: false, workflows: false, permissionMode: 'default', onboarded: false, aiSummaries: true };
+const DEFAULT_PREFS = { permissionMode: 'default', onboarded: false, aiSummaries: true };
 
 export async function readPrefs(repo) {
   const file = await gitPath(repo, 'nexus-gui.json');
@@ -77,6 +78,17 @@ export async function writePrefs(repo, patch) {
   const file = await gitPath(repo, 'nexus-gui.json');
   if (file) fs.writeFileSync(file, `${JSON.stringify(next, null, 2)}\n`);
   return next;
+}
+
+/** Drop keys from the saved prefs (a setting that moved elsewhere). Returns the prefs as read after. */
+export async function forgetPrefs(repo, keys) {
+  const file = await gitPath(repo, 'nexus-gui.json');
+  const saved = file && fs.existsSync(file) ? json(fs.readFileSync(file, 'utf8')) : null;
+  if (saved && keys.some((k) => k in saved)) {
+    for (const k of keys) delete saved[k];
+    fs.writeFileSync(file, `${JSON.stringify(saved, null, 2)}\n`);
+  }
+  return readPrefs(repo);
 }
 
 const BUILTIN = [

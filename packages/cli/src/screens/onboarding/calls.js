@@ -12,7 +12,7 @@ export const onboardingCalls = {
   explode: (text, team) => api('/api/explode', { text, team }),
   /** POST /api/plot { spec, thoughts, chunks: [{ id, title, size, place, from }] } -> { file, chunks } */
   plot: (body) => api('/api/plot', body),
-  /** POST /api/local { ownerMode } -> { owner, ownerMode, runMode, phase } (.nexus/local.json) */
+  /** POST /api/local { ownerMode } -> { owner, ownerMode, effective, runMode, phase } (.nexus/local.json; served) */
   setLocal: (patch) => api('/api/local', patch),
   /** POST /api/cloud/workflow {} -> { path, sha }: write the loop workflow and commit it */
   addWorkflow: () => api('/api/cloud/workflow', {}),

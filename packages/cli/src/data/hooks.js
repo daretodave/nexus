@@ -86,7 +86,6 @@ export const MISSING = [
   { endpoint: 'GET /api/cloud', hook: 'useCloudLoop', for: 'Cloud loop: schedule, next tick, paused state, runs as a timeline (today: /api/actions + /api/runs)' },
   { endpoint: 'GET /api/recover?dir=', hook: 'useRecover', for: 'Recover: a workflow folder read as a timeline (journal.jsonl), and recent runs' },
   { endpoint: 'POST /api/recover/resume', hook: 'recoverAction', for: 'resume a workflow from a chosen step (resumeFromRunId + scriptPath)' },
-  { endpoint: 'GET|POST /api/local', hook: 'useLocalSettings', for: 'effective owner mode (.owner and .nexus/local.json ownerMode), run mode, phase length' },
   { endpoint: 'POST /api/pin', hook: 'pinNote', for: 'a pinned note every agent reads on its next step ({ session, text })' },
   { endpoint: 'POST /api/sessions/:id/questions', hook: 'cockpit', for: 'answer a start question ({ index, answer, how }) or take every default ({ defaults: true })' },
   { endpoint: 'POST /api/sessions/:id/start', hook: 'cockpit', for: 'leave the start questions and begin working' },
@@ -125,5 +124,5 @@ export const useCloudLoop = () => useResource('/api/cloud');
 /** GET /api/recover?dir= -> { run, agents, recent }. */
 export const useRecover = (dir) => useResource(`/api/recover${dir ? `?dir=${encodeURIComponent(dir)}` : ''}`);
 
-/** GET /api/local -> { owner, ownerMode, runMode, phase }. */
+/** GET /api/local (served) -> { owner, ownerMode, effective, runMode, phase }: .nexus/local.json at the primary checkout (POST /api/local writes it; server/local.mjs). */
 export const useLocalSettings = () => useResource('/api/local');

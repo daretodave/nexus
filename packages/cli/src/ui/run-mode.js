@@ -1,9 +1,26 @@
 // Run mode (decision 2): 'size' (nexus picks per chunk: S and M in one
-// builder, L as a workflow), or the overrides 'sub', 'wf', 'both'. Stored
-// today as prefs { agents, workflows } (POST /api/prefs); /api/local will
-// carry it as runMode. Pure, so the toggle rule is tested.
+// builder, L as a workflow), or the overrides 'sub', 'wf', 'both'. It lives
+// in the checkout's .nexus/local.json as runMode, read (GET) and written
+// (POST) through /api/local (server/local.mjs, the one writer). Settings,
+// the cockpit's run-mode menu and onboarding all read it with localRunMode
+// and save it with saveRunMode. The rules are pure, so they are tested.
 
 export const RUN_MODES = ['size', 'sub', 'wf', 'both'];
+
+/** GET /api/local's answer -> the run mode. Anything else (not loaded, unknown) is by size. */
+export function localRunMode(local) {
+  return RUN_MODES.includes(local?.runMode) ? local.runMode : 'size';
+}
+
+/**
+ * Save a run mode: POST /api/local { runMode }. `post` is the data layer's
+ * api(path, body), passed in so this file stays pure (tests pass their own).
+ * Resolves to GET /api/local's shape after the write.
+ */
+export async function saveRunMode(rm, post) {
+  if (!RUN_MODES.includes(rm)) throw new Error(`run mode must be one of ${RUN_MODES.join(', ')}`);
+  return post('/api/local', { runMode: rm });
+}
 
 /** prefs { agents, workflows } -> a run mode. Neither set is "by size". */
 export function runModeFromPrefs(prefs) {
