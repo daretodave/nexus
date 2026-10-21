@@ -64,8 +64,16 @@ other loops' vital signs:
 - A run wedged `in_progress` past its honest duration →
   cancel it (the concurrency group unblocks; the next cron
   firing resumes naturally — no re-trigger machinery needed).
-- No completed tick inside 2× the expected cadence → open or
-  refresh a single deduped issue, fire the pager.
+- A scheduled loop not armed (disabled by the platform's
+  inactivity rule or paused by hand) → one deduped issue per
+  loop naming the state and the re-enable command. A disabled
+  schedule fires no runs, so only its state can show it; the
+  heartbeat never re-enables anything itself.
+- No successful tick inside ~2× each armed loop's own
+  cadence → open or refresh a single deduped issue, fire the
+  pager. One threshold per loop (a 6h dispatcher at 14h, a
+  daily digest at 48h), and successful runs only: a loop
+  failing every tick must not reset its own timer.
 
 The heartbeat never fixes anything and never writes to the
 repo. It converts "the loop silently died Tuesday" into "you

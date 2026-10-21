@@ -143,9 +143,14 @@ genus: [`concepts/loop-shapes.md`](../concepts/loop-shapes.md)):
   with coffee instead of reading run logs.
 - **`heartbeat.yml` — the immune system.** Every 6h, no
   model: cancels runs wedged past 2h (unblocking the shared
-  concurrency group) and opens a deduped issue if march
-  hasn't completed a tick in 14h. It never writes to the
-  repo; it only tells on the others.
+  concurrency group); opens one deduped issue per workflow
+  when march, night or heartbeat itself is not `active`
+  (GitHub's 60-day pause above, or a human's
+  `gh workflow disable`), naming the state and
+  `gh workflow enable <name>`; and opens a deduped issue
+  when an active march has no successful tick in 14h or an
+  active night none in 48h. It never re-enables a workflow
+  and never writes to the repo; it only tells on the others.
 - **The concierge lane.** Two remote controls: label any
   issue `loop:do` and the next tick triages it straight to
   the top with a priority bump; or run a specific verb from
