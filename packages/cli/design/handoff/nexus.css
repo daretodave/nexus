@@ -183,7 +183,7 @@
   -moz-osx-font-smoothing: grayscale;
   font-kerning: normal;
 }
-.nx *, .nx *::before, .nx *::after { box-sizing: border-box; }
+.nx, .nx *, .nx *::before, .nx *::after { box-sizing: border-box; }
 .nx h1, .nx h2, .nx h3, .nx h4, .nx p, .nx figure, .nx ul, .nx ol, .nx dl, .nx dd { margin: 0; }
 .nx ul, .nx ol { padding: 0; list-style: none; }
 .nx button, .nx input, .nx textarea, .nx select { font: inherit; color: inherit; }
@@ -689,6 +689,7 @@ textarea.field { resize: none; }
 .rail-item:hover { background: color-mix(in oklab, var(--text) 6%, transparent); color: var(--text); text-decoration: none; }
 .nx a.rail-item.is-current, .rail-item.is-current { color: var(--text); background: color-mix(in oklab, var(--accent) 13%, transparent); }
 .rail-item .ic { width: 20px; height: 20px; }
+.nx a.rail-item.is-quiet:not(.is-current) { color: var(--text-3); }
 .rail-badge { position: absolute; top: 3px; right: 9px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--st-blocked); color: var(--on-state); font-size: 10px; line-height: 17px; font-weight: 700; text-align: center; }
 .rail-spacer { flex: 1; }
 
@@ -1245,7 +1246,7 @@ textarea.field { resize: none; }
 .panes { --tray-y: 361px; }
 .panes.has-route { --tray-y: 397px; }
 .dock .composer { height: 120px; }
-.dock .composer.has-route { height: 156px; }
+.dock .composer.has-route { height: auto; min-height: 156px; }
 .dock .ctx { height: 171px; gap: 3px; }
 .dock .ctx.is-short { height: 113px; }
 .dock .tray { height: 72px; overflow: hidden; }
@@ -1271,7 +1272,7 @@ textarea.field { resize: none; }
   .panes.has-route { --tray-y: 355px; }
   .dock { padding-bottom: 12px; }
   .dock .composer { height: 96px; }
-  .dock .composer.has-route { height: 132px; }
+  .dock .composer.has-route { height: auto; min-height: 132px; }
   .dock .ctx { height: 159px; }
   .dock .ctx.is-short { height: 105px; }
   .dock .ctx-layer { min-height: 24px; height: 24px; }
@@ -1736,3 +1737,164 @@ textarea.field { resize: none; }
 .tile .tile-stage { pointer-events: none; }
 .cr-claim.is-gone { opacity: .55; }
 .cr-claim.is-gone .exp { visibility: visible !important; }
+
+/* --------------------------------------------------------------------------
+   20. VAULT: secret names, destination dots, the key card, .env import, audit log
+   Agents see names, never values. A masked value is always the same eight dots,
+   so the UI never even hints at a secret's length.
+   -------------------------------------------------------------------------- */
+.vault-note { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; line-height: 20px; color: var(--text-3); }
+.vault-note .ic { width: 14px; height: 14px; color: var(--accent); }
+.vault-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 352px; gap: 20px; align-items: start; }
+.vault-wrap > .vt-col { max-height: 100%; overflow: auto; scrollbar-width: thin; }
+.vt-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.vt { display: flex; flex-direction: column; padding: 4px 6px 6px; border-radius: 16px; background: var(--surface-solid); box-shadow: var(--e-1); }
+.vt-head, .vt-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px repeat(4, 58px) 48px 104px 138px; gap: 10px; align-items: center; padding: 0 10px; }
+.vt-head { min-height: 36px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.vt-head .dest { justify-self: center; text-align: center; letter-spacing: .02em; text-transform: none; font-weight: 500; }
+.vt-row { position: relative; min-height: 60px; padding-top: 9px; padding-bottom: 9px; border-radius: 12px; }
+.vt-row::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 1px; background: var(--line); }
+.vt-head + .vt-row::before { display: none; }
+.vt-row:hover { background: color-mix(in oklab, var(--text) 4%, transparent); }
+.vt-row.is-requested { background: color-mix(in oklab, var(--st-blocked) 7%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-blocked) 42%, transparent); }
+.vt-row.is-requested::before, .vt-row.is-requested + .vt-row::before { display: none; }
+.vt-row.is-editing { background: color-mix(in oklab, var(--accent) 6%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 36%, transparent); }
+.vt-row.is-fresh { animation: nx-relit 2.4s var(--ease-settle) both; }
+.sec-name { display: flex; flex-direction: column; min-width: 0; }
+.sec-name b { font-family: var(--font-mono); font-size: 12.5px; line-height: 18px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-ligatures: none; }
+.sec-name span { font-size: 12px; line-height: 17px; color: var(--text-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: pretty; }
+.mask { font-family: var(--font-mono); font-size: 13px; line-height: 18px; letter-spacing: .12em; color: var(--text-2); white-space: nowrap; font-variant-ligatures: none; }
+.mask.is-empty { font-family: var(--font-ui); font-size: 12px; letter-spacing: 0; font-weight: 600; color: var(--st-blocked); }
+.dd { justify-self: center; position: relative; width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.dd.is-set { background: var(--st-done); box-shadow: 0 0 8px color-mix(in oklab, var(--st-done) 50%, transparent); }
+.dd.is-stale { background: linear-gradient(90deg, var(--st-blocked) 50%, transparent 50%); box-shadow: inset 0 0 0 1.5px var(--st-blocked); }
+.dd.is-missing { box-shadow: inset 0 0 0 1.5px var(--st-blocked); }
+.dd.is-none { width: 10px; height: 2px; border-radius: 1px; background: var(--line-2); }
+.dd-legend { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; line-height: 16px; color: var(--text-3); }
+.dd-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.vt-age { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; font-size: 12px; line-height: 16px; color: var(--text-2); white-space: nowrap; }
+.rotate-nudge { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px; border: 0; border-radius: var(--r-full); background: color-mix(in oklab, var(--st-blocked) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-blocked) 36%, transparent); color: var(--text); font-size: 11px; line-height: 16px; font-weight: 600; cursor: pointer; }
+.rotate-nudge:hover { background: color-mix(in oklab, var(--st-blocked) 18%, transparent); }
+.vt-acts { display: flex; justify-content: flex-end; gap: 4px; }
+.vt-acts .btn { --h: 26px; padding: 0 9px; font-size: 12px; gap: 5px; }
+.vt-edit { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 4px 0 4px; }
+.vt-edit .mask-field { flex: 1 1 240px; }
+.vt-edit .t-body-s { flex: 1 0 100%; }
+.mask-field { display: flex; align-items: center; gap: 6px; height: 38px; min-width: 0; flex: none; padding: 0 4px 0 12px; border-radius: 10px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line-2); transition: box-shadow var(--dur-snap) var(--ease-snap); }
+.mask-field:focus-within { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--focus) 72%, transparent), 0 0 0 4px color-mix(in oklab, var(--focus) 16%, transparent); }
+.mask-field input { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: transparent; font-family: var(--font-mono); font-size: 13px; letter-spacing: .08em; color: var(--text); font-variant-ligatures: none; }
+.mask-field input::placeholder { font-family: var(--font-ui); letter-spacing: 0; color: var(--text-3); }
+.mask-field > .ic { width: 14px; height: 14px; color: var(--text-3); flex: none; }
+.mask-field .btn { --h: 30px; padding: 0 8px; font-size: 12px; }
+/* the key card: an oversight tug for a secret; there is no default, so no countdown */
+.tug.is-secret .tug-timer { color: var(--st-blocked); font-family: var(--font-ui); font-weight: 600; }
+.key-name { font-family: var(--font-mono); font-size: 17px; line-height: 24px; font-weight: 600; color: var(--text); letter-spacing: .01em; overflow-wrap: anywhere; font-variant-ligatures: none; }
+.key-why { font-size: 14px; line-height: 22px; color: var(--text-2); text-wrap: pretty; }
+.key-where { align-self: flex-start; display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: 6px; font-size: 13px; line-height: 20px; white-space: nowrap; }
+.key-where .d { flex-basis: 100%; white-space: normal; font-size: 12px; line-height: 18px; color: var(--text-3); }
+.dests { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.key-note { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 18px; color: var(--text-3); }
+.key-note .ic { width: 13px; height: 13px; color: var(--accent); flex: none; }
+.secret-set { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: color-mix(in oklab, var(--st-done) 8%, var(--surface-solid)); box-shadow: 0 0 0 1px color-mix(in oklab, var(--st-done) 40%, transparent), 0 0 30px -14px color-mix(in oklab, var(--st-done) 50%, transparent); animation: nx-settle-in var(--dur-settle) var(--ease-settle) both; }
+.secret-set .t { min-width: 0; font-size: 13px; line-height: 20px; color: var(--text-2); }
+.secret-set .t b { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--text); font-variant-ligatures: none; }
+.secret-wait { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; padding: 14px 16px; border-radius: 16px; background: var(--surface-solid); box-shadow: inset 0 0 0 1px var(--line-2); font-size: 13px; line-height: 20px; color: var(--text-2); }
+.secret-wait b { color: var(--text); font-weight: 600; }
+.secret-wait code { font-family: var(--font-mono); font-size: 12.5px; color: var(--text); font-weight: 600; font-variant-ligatures: none; }
+.key-orb { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--st-blocked); background: color-mix(in oklab, var(--st-blocked) 12%, transparent); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-blocked) 60%, transparent); flex: none; }
+.key-orb .ic { width: 14px; height: 14px; }
+.key-orb.is-set { color: var(--on-state); background: var(--st-done); box-shadow: 0 0 14px -2px color-mix(in oklab, var(--st-done) 60%, transparent); }
+.key-orb.is-quiet { color: var(--text-3); background: transparent; box-shadow: inset 0 0 0 1.5px var(--line-2); }
+.relit { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: var(--r-full); background: color-mix(in oklab, var(--st-done) 12%, transparent); color: var(--text); font-size: 11px; line-height: 16px; font-weight: 600; white-space: nowrap; animation: nx-relit 2.4s var(--ease-settle) both; }
+.relit .chunk-id { font-size: 11px; }
+@keyframes nx-relit { 0% { box-shadow: 0 0 0 0 transparent; filter: saturate(.25) brightness(.85); } 45% { box-shadow: 0 0 0 4px color-mix(in oklab, var(--st-done) 26%, transparent), 0 0 26px 2px color-mix(in oklab, var(--st-done) 40%, transparent); filter: saturate(1.1) brightness(1.08); } 100% { box-shadow: 0 0 0 0 transparent; filter: none; } }
+/* key badge on the plan board */
+.key-badge { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px 0 5px; border-radius: 6px; flex: none; background: color-mix(in oklab, var(--st-blocked) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-blocked) 45%, transparent); color: var(--text); font-family: var(--font-mono); font-size: 10px; line-height: 14px; font-weight: 600; white-space: nowrap; font-variant-ligatures: none; }
+.key-badge .ic { width: 11px; height: 11px; color: var(--st-blocked); }
+.cs-secret { --cs: var(--st-blocked); }
+/* .env import */
+.env-rows { display: flex; flex-direction: column; }
+.env-head, .env-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 76px minmax(0, 1.15fr) repeat(4, 58px); gap: 10px; align-items: center; padding: 0 10px; }
+.env-head { min-height: 32px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.env-head .dest { justify-self: center; text-transform: none; letter-spacing: .02em; font-weight: 500; }
+.env-row { position: relative; min-height: 42px; border-radius: 10px; }
+.env-row::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 1px; background: var(--line); }
+.env-row.is-off .sec-name b, .env-row.is-off .mask { color: var(--text-3); }
+.env-row .check { justify-self: center; }
+.env-row .check input { margin: 0; }
+.env-note { font-size: 12px; line-height: 16px; color: var(--text-2); min-width: 0; }
+.env-note.is-match { color: var(--accent); font-weight: 600; }
+.env-note.is-warn { color: var(--st-blocked); }
+.env-note.is-quiet { color: var(--text-3); }
+.env-file { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
+.env-file .t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.env-file .t b { font-family: var(--font-mono); font-size: 13px; line-height: 18px; color: var(--text); font-variant-ligatures: none; }
+.env-file .t span { font-size: 12px; line-height: 16px; color: var(--text-3); }
+/* audit log */
+.audit { display: flex; flex-direction: column; }
+.audit-row { position: relative; display: grid; grid-template-columns: 64px 12px minmax(0, 1fr); gap: 10px; align-items: start; padding: 7px 2px; font-size: 12.5px; line-height: 18px; color: var(--text-2); }
+.audit-row::before { content: ""; position: absolute; left: 81px; top: 0; bottom: 0; width: 1px; background: var(--line-2); }
+.audit-row:first-child::before { top: 13px; }
+.audit-row:last-child::before { bottom: calc(100% - 13px); }
+.audit-row .w { font-family: var(--font-mono); font-size: 11px; line-height: 18px; color: var(--text-3); white-space: nowrap; font-variant-ligatures: none; }
+.audit-row .pt { position: relative; z-index: 1; width: 9px; height: 9px; margin: 4.5px 0 0 1.5px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--text-3); }
+.audit-row .pt.is-set { background: var(--st-done); box-shadow: none; }
+.audit-row .pt.is-synced { background: var(--accent); box-shadow: none; border-radius: 2px; transform: rotate(45deg) scale(.86); }
+.audit-row .pt.is-rotated { background: var(--st-thinking); box-shadow: none; }
+.audit-row .pt.is-requested { box-shadow: inset 0 0 0 1.5px var(--st-blocked); }
+.audit-row b { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text); font-variant-ligatures: none; }
+.audit-row .verb { font-weight: 600; color: var(--text); }
+.audit-row.is-new { animation: nx-settle-in var(--dur-settle) var(--ease-settle) both; }
+/* contributor view: nothing to type */
+.vault-none { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; max-width: 520px; margin: 70px auto 0; }
+.vault-none > .key-orb { width: 64px; height: 64px; }
+.vault-none > .key-orb .ic { width: 26px; height: 26px; }
+.vault-none .t-title-l { color: var(--text); }
+@media (prefers-reduced-motion: reduce) {
+  .relit, .vt-row.is-fresh { animation: none; }
+}
+/* where values go + the audit card under the table */
+.dest-list { display: flex; flex-direction: column; }
+.dest-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; column-gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+.dest-row:first-child { border-top: 0; padding-top: 2px; }
+.dest-row .t { display: flex; flex-direction: column; min-width: 0; }
+.dest-row .t b { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text); }
+.dest-row .t span { font-size: 12px; line-height: 16px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dest-row .n { font-size: 12px; line-height: 16px; color: var(--text-2); white-space: nowrap; text-align: right; }
+.audit-card .audit-row { padding: 5px 2px; }
+.side-card .crail-h .btn { --h: 26px; padding: 0 9px; font-size: 12px; gap: 5px; }
+/* the key glyph in an inbox row, in place of the urgency dot */
+.key-orb.key-orb-s { width: 18px; height: 18px; margin-left: -4px; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-blocked) 70%, transparent), 0 0 10px -2px color-mix(in oklab, var(--st-blocked) 60%, transparent); }
+.key-orb.key-orb-s .ic { width: 11px; height: 11px; }
+.key-orb.key-orb-s.is-set { box-shadow: none; }
+.key-orb.key-orb-s.is-quiet { box-shadow: inset 0 0 0 1.5px var(--line-2); }
+.secret-code { font-family: var(--font-mono); font-size: .92em; font-weight: 600; letter-spacing: .01em; color: var(--text); font-variant-ligatures: none; }
+/* plan board: waiting on a secret */
+.pb-sec.is-secret .t-caps { color: var(--st-blocked); }
+.crow.cs-secret .tt { color: var(--text-2); }
+.crow .crow-key { justify-self: start; --h: 24px; padding: 0 9px; font-size: 12px; gap: 5px; }
+.crow.is-relit { animation: nx-relit 2.4s var(--ease-settle) both; }
+@media (prefers-reduced-motion: reduce) { .crow.is-relit { animation: none; } }
+/* The runtime wraps interpolated text in span.sc-interp. Keep it invisible to layout and type,
+   so a rule like `.stat span` styles the label it was written for and never the value inside a b. */
+.nx .sc-interp:not(.sc-missing):not(.sc-unresolved) { all: unset !important; }
+/* a relit row held still for the component sheet */
+.crow.is-relit-hold { background: color-mix(in oklab, var(--st-done) 7%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-done) 40%, transparent), 0 0 26px -12px color-mix(in oklab, var(--st-done) 60%, transparent); }
+.crow.is-relit-hold .relit { animation: none; }
+/* vault kit helpers */
+.secret-set.is-partial { background: color-mix(in oklab, var(--st-blocked) 8%, var(--surface-solid)); box-shadow: 0 0 0 1px color-mix(in oklab, var(--st-blocked) 42%, transparent); animation: none; }
+.secret-set.is-partial .key-orb { color: var(--st-blocked); }
+.dot-key { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; align-items: center; font-size: 13px; line-height: 19px; color: var(--text-2); }
+.dot-key > .dd { justify-self: start; margin-left: 2px; }
+.dot-key b { color: var(--text); font-weight: 600; }
+.pt-demo { display: inline-grid; place-items: center; width: 14px; height: 14px; }
+.pt-demo .audit-row::before { display: none; }
+.vt-row.is-fresh-hold { background: color-mix(in oklab, var(--st-done) 7%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-done) 36%, transparent); }
+.vt-row.is-fresh-hold::before, .vt-row.is-fresh-hold + .vt-row::before { display: none; }
+.side-card.is-marks .dot-key { grid-template-columns: 18px minmax(0, 1fr); }
+/* onboarding · secrets step */
+.secrets-grid { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 40px; align-items: center; }
+.sched.sched-col { grid-template-columns: minmax(0, 1fr); }
+.sched.sched-col label b { display: inline-flex; align-items: center; gap: 8px; }
+.env-rows.is-two .env-head, .env-rows.is-two .env-row { grid-template-columns: 22px minmax(0, 1.2fr) 70px minmax(0, 1fr) repeat(2, 62px); }
+.secrets-grid.is-contrib { grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr); }

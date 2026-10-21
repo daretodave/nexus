@@ -65,6 +65,11 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
 - **A6** Hover, focus, popover and motion states match their
   boards in a live browser, in both themes, and the button
   ink the cascade repair chose is confirmed or reverted.
+- **A10** The boards the second handoff (2026-10-21) changed
+  outside the vault match the app again: sheet clipping,
+  the owner cockpit's composer, value styling, and the
+  changed Fleet, Cockpit, Inbox, CloudLoop, GitPanel,
+  Recover, Settings and onboarding boards.
 
 ## Open questions
 
@@ -74,7 +79,7 @@ running tool call can't be killed, so the next tool boundary
 is the interrupt point.)
 
 ## Chunks
-Measure: 1 open · 8 closed · next A10
+Measure: 2 open · 8 closed · next A11
 
 - [ ] **41.6** Live fidelity pass: hover, popovers, motion,
   both themes · S · closes A6 · needs —
@@ -86,3 +91,12 @@ Measure: 1 open · 8 closed · next A10
   - The boards draw `<button class="btn-primary">` with
     `--text` ink (the reset outranks it); the app draws
     on-accent ink (`repairCascade`). Default: keep the repair.
+- [ ] **41.10** Re-port what the second handoff changed
+  outside the vault · M · closes A10 · needs —
+  - `packages/cli/design/handoff/` was refreshed on
+    2026-10-21 (its README lists every changed board).
+    Diff each changed board against its screen and port the
+    change; `nexus.css` is copied verbatim again. Vault,
+    Secrets, BoardOwnerAll's "Waiting on a secret" section,
+    the Inbox key card and the board's key badge belong to
+    42.8; leave them.

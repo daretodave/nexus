@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vault · nexus</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./nexus.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Quicksand:wght@300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&text=%20%21%22%23%24%25%26%27%28%29%2A%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D~%E2%94%80%E2%94%81%E2%94%82%E2%94%83%E2%94%84%E2%94%85%E2%94%86%E2%94%87%E2%94%88%E2%94%89%E2%94%8A%E2%94%8B%E2%94%8C%E2%94%8D%E2%94%8E%E2%94%8F%E2%94%90%E2%94%91%E2%94%92%E2%94%93%E2%94%94%E2%94%95%E2%94%96%E2%94%97%E2%94%98%E2%94%99%E2%94%9A%E2%94%9B%E2%94%9C%E2%94%9D%E2%94%9E%E2%94%9F%E2%94%A0%E2%94%A1%E2%94%A2%E2%94%A3%E2%94%A4%E2%94%A5%E2%94%A6%E2%94%A7%E2%94%A8%E2%94%A9%E2%94%AA%E2%94%AB%E2%94%AC%E2%94%AD%E2%94%AE%E2%94%AF%E2%94%B0%E2%94%B1%E2%94%B2%E2%94%B3%E2%94%B4%E2%94%B5%E2%94%B6%E2%94%B7%E2%94%B8%E2%94%B9%E2%94%BA%E2%94%BB%E2%94%BC%E2%94%BD%E2%94%BE%E2%94%BF%E2%95%80%E2%95%81%E2%95%82%E2%95%83%E2%95%84%E2%95%85%E2%95%86%E2%95%87%E2%95%88%E2%95%89%E2%95%8A%E2%95%8B%E2%95%8C%E2%95%8D%E2%95%8E%E2%95%8F%E2%95%90%E2%95%91%E2%95%92%E2%95%93%E2%95%94%E2%95%95%E2%95%96%E2%95%97%E2%95%98%E2%95%99%E2%95%9A%E2%95%9B%E2%95%9C%E2%95%9D%E2%95%9E%E2%95%9F%E2%95%A0%E2%95%A1%E2%95%A2%E2%95%A3%E2%95%A4%E2%95%A5%E2%95%A6%E2%95%A7%E2%95%A8%E2%95%A9%E2%95%AA%E2%95%AB%E2%95%AC%E2%95%AD%E2%95%AE%E2%95%AF%E2%95%B0%E2%95%B1%E2%95%B2%E2%95%B3%E2%95%B4%E2%95%B5%E2%95%B6%E2%95%B7%E2%95%B8%E2%95%B9%E2%95%BA%E2%95%BB%E2%95%BC%E2%95%BD%E2%95%BE%E2%95%BF%E2%96%80%E2%96%81%E2%96%82%E2%96%83%E2%96%84%E2%96%85%E2%96%86%E2%96%87%E2%96%88%E2%96%89%E2%96%8A%E2%96%8B%E2%96%8C%E2%96%8D%E2%96%8E%E2%96%8F%E2%96%90%E2%96%91%E2%96%92%E2%96%93%E2%96%94%E2%96%95%E2%96%96%E2%96%97%E2%96%98%E2%96%99%E2%96%9A%E2%96%9B%E2%96%9C%E2%96%9D%E2%96%9E%E2%96%9F%E2%96%A0%E2%96%A1%E2%96%AA%E2%96%AB%E2%96%AC%E2%96%B2%E2%96%B3%E2%96%B4%E2%96%B5%E2%96%B6%E2%96%B7%E2%96%B8%E2%96%B9%E2%96%BA%E2%96%BB%E2%96%BC%E2%96%BD%E2%96%BE%E2%96%BF%E2%97%80%E2%97%81%E2%97%82%E2%97%83%E2%97%86%E2%97%87%E2%97%88%E2%97%8B%E2%97%8C%E2%97%8D%E2%97%8E%E2%97%8F%E2%97%90%E2%97%91%E2%97%92%E2%97%93%E2%97%94%E2%97%95%E2%97%9C%E2%97%9D%E2%97%9E%E2%97%9F%E2%97%A0%E2%97%A1%E2%97%A6%E2%97%AF%E2%9C%93%E2%9C%94%E2%9C%97%E2%9C%98%E2%86%90%E2%86%91%E2%86%92%E2%86%93%E2%86%94%E2%86%95%E2%86%96%E2%86%97%E2%86%98%E2%86%99%E2%86%A9%E2%86%AA%E2%86%B3%E2%86%B5%E2%87%A1%E2%87%A3%E2%87%A2%E2%87%A0%C2%B7%E2%80%A2%E2%80%A3%E2%80%A6%E2%80%93%E2%80%94%E2%80%98%E2%80%99%E2%80%9C%E2%80%9D%E2%80%B2%E2%80%B3%C3%97%C3%B7%C2%B1%E2%88%92%E2%89%88%E2%89%A0%E2%89%A4%E2%89%A5%C2%B0%E2%88%99%E2%8B%AF%E2%80%B9%E2%80%BA%C2%AB%C2%BB%C2%A7%C2%B6%E2%80%A0%E2%80%B0%E2%8C%98%E2%8C%A5%E2%87%A7%E2%8F%8E%E2%88%9E&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="nx app " data-theme="{{theme}}" style="width: 100%; height: 100vh; font-family: 'Fira Sans', system-ui, sans-serif"><header class="topbar"><a class="wordmark" href="{{links.fleet}}" aria-label="nexus, the fleet" style="color: var(--text); text-decoration: none"><span class="mark"></span>nexus</a><span class="tb-sep"></span><span class="tb-title"><b>Vault</b><span class="tb-long">{{repo}}</span></span><span class="tb-spacer"></span><span class="loop-status"><span class="loop-dot"></span><span><b class="tb-long">Cloud loop </b>next 03:30</span></span><a class="btn btn-s" href="{{links.inbox}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5 6 5.5h12l2.5 8v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM3.5 13.5H8l1.5 2.5h5l1.5-2.5h4.5"/></svg>Oversight<span class="tb-badge">4</span></a></header><div class="shell"><nav class="rail" aria-label="Views"><a class="rail-item" href="{{links.fleet}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 3.5h7v7h-7zM13.5 3.5h7v7h-7zM3.5 13.5h7v7h-7zM13.5 13.5h7v7h-7z"/></svg><span>Fleet</span></a><a class="rail-item" href="{{links.cockpit}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM2.5 12c0-2.5 4.3-4.5 9.5-4.5s9.5 2 9.5 4.5-4.3 4.5-9.5 4.5S2.5 14.5 2.5 12z"/></svg><span>Cockpit</span></a><a class="rail-item" href="{{links.heads}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 4.5h13A2.5 2.5 0 0 1 21 7v10a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V7a2.5 2.5 0 0 1 2.5-2.5zM7 9.5l3 2.5-3 2.5M12.5 15H17"/></svg><span>Heads-down</span></a><a class="rail-item" href="{{links.inbox}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5 6 5.5h12l2.5 8v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM3.5 13.5H8l1.5 2.5h5l1.5-2.5h4.5"/></svg><span>Oversight</span><span class="rail-badge">4</span></a><a class="rail-item" href="{{links.plan}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Plan</span></a><a class="rail-item" href="{{links.cloud}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.4 4.5 4.5 0 0 0 7 18.5z"/></svg><span>Cloud</span></a><a class="rail-item" href="{{links.git}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM18 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 8.2v7.6M18 8.2c0 5-12 3-12 7.6"/></svg><span>Git</span></a><a class="rail-item is-current {{links.vaultCls}}" href="{{links.vault}}" aria-current="page" title="{{links.vaultTip}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg><span>Vault</span></a><span class="rail-spacer"></span><a class="rail-item" href="{{links.settings}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM10 15a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg><span>Settings</span></a></nav><main class="view" aria-label="Vault"><sc-if value="{{isOwner}}" hint-placeholder-val="{{ true }}"><div class="view-head"><div class="view-title"><h1 class="t-title-l">Vault</h1><span class="vault-note"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg>nexus agents see names, not values.</span></div><div class="view-acts"><span class="view-sub">{{sub}}</span><button class="btn" type="button" onClick="{{openImport}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8zM14 3.5V8h4.5"/></svg>Import .env</button><button class="btn btn-primary" type="button" onClick="{{startAdd}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a secret</button></div></div><div class="vault-wrap"><div class="vt-col"><sc-if value="{{showTable}}" hint-placeholder-val="{{ true }}"><div class="vt" role="table" aria-label="Secrets"><div class="vt-head" role="row"><span>Name</span><span>Value</span><span class="dest" title="keychain or .env.local">Local</span><span class="dest" title="GitHub Actions secrets">Actions</span><span class="dest" title="Vercel environment variables">Vercel</span><span class="dest" title="Cloudflare secrets">Cloudflare</span><span>Chunk</span><span>Rotated</span><span></span></div><sc-if value="{{adding}}" hint-placeholder-val="{{ false }}"><div class="vt-row is-editing" role="row" style="grid-template-columns: minmax(0, 1fr); padding-top: 10px; padding-bottom: 12px"><div style="display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10px"><input class="field" type="text" value="{{nw.name}}" onChange="{{nw.setName}}" aria-label="Secret name" placeholder="NAME_LIKE_THIS" style="font-family: var(--font-mono); text-transform: uppercase"><input class="field" type="text" value="{{nw.for}}" onChange="{{nw.setFor}}" aria-label="What it is for" placeholder="What it is for"></div><div class="mask-field"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg><input type="password" value="{{nw.value}}" onChange="{{nw.setValue}}" autocomplete="off" spellcheck="false" aria-label="Value" placeholder="Paste the value"></div><div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap"><span class="t-label c-2">Store it</span><sc-for list="{{nw.dests}}" as="y" hint-placeholder-count="4"><label class="check check-s"><input type="checkbox" checked="{{y.on}}" onChange="{{y.toggle}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg><span class="check-text"><span class="check-title">{{y.label}}</span></span></label></sc-for></div><div style="display: flex; gap: 8px; align-items: center"><button class="btn btn-s btn-primary" type="button" onClick="{{nw.save}}" disabled="{{nw.cantSave}}">Add to the vault</button><button class="btn btn-s btn-ghost" type="button" onClick="{{nw.cancel}}">Cancel</button><span class="t-body-s c-3">The manifest gets the name; the value goes only where you tick.</span></div></div></sc-if><sc-for list="{{secrets}}" as="s" hint-placeholder-count="6"><div class="{{s.cls}}" role="row"><span class="sec-name" role="cell"><b>{{s.name}}</b><span>{{s.for}}</span></span><span class="{{s.maskCls}}" role="cell" aria-label="{{s.maskAria}}">{{s.mask}}</span><span class="{{s.d.local}}" role="img" aria-label="{{s.t.local}}" title="{{s.t.local}}"></span><span class="{{s.d.actions}}" role="img" aria-label="{{s.t.actions}}" title="{{s.t.actions}}"></span><span class="{{s.d.vercel}}" role="img" aria-label="{{s.t.vercel}}" title="{{s.t.vercel}}"></span><span class="{{s.d.cloudflare}}" role="img" aria-label="{{s.t.cloudflare}}" title="{{s.t.cloudflare}}"></span><span role="cell"><sc-if value="{{s.hasChunk}}" hint-placeholder-val="{{ true }}"><span class="chunk-id">{{s.chunk}}</span></sc-if><sc-if value="{{s.noChunk}}" hint-placeholder-val="{{ false }}"><span class="t-body-s c-3">{{s.chunkText}}</span></sc-if></span><span class="vt-age" role="cell"><span>{{s.age}}</span><sc-if value="{{s.old}}" hint-placeholder-val="{{ false }}"><button class="rotate-nudge" type="button" onClick="{{s.replace}}"><svg class="ic ic-12" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>rotate?</button></sc-if></span><span class="vt-acts" role="cell"><sc-if value="{{s.canAdd}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-primary" type="button" onClick="{{s.replace}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg>Add value</button></sc-if><sc-if value="{{s.canSync}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s" type="button" onClick="{{s.sync}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>Sync</button></sc-if><sc-if value="{{s.canReplace}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s btn-ghost" type="button" onClick="{{s.replace}}">Replace</button></sc-if></span><sc-if value="{{s.editing}}" hint-placeholder-val="{{ false }}"><div class="vt-edit"><div class="mask-field"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg><input type="password" value="{{s.draft}}" onChange="{{s.setDraft}}" autocomplete="off" spellcheck="false" aria-label="New value for {{s.name}}" placeholder="{{s.placeholder}}"></div><button class="btn btn-s btn-primary" type="button" onClick="{{s.saveDraft}}" disabled="{{s.cantSave}}">Save</button><button class="btn btn-s btn-ghost" type="button" onClick="{{s.cancel}}">Cancel</button><span class="t-body-s c-3">{{s.editNote}}</span></div></sc-if></div></sc-for></div><div class="dd-legend"><span><i class="dd is-set"></i>set</span><span><i class="dd is-stale"></i>out of sync</span><span><i class="dd is-missing"></i>missing</span><span><i class="dd is-none"></i>not used there</span><span class="tb-spacer" style="flex: 1"></span><span>Rotate nudges after 90 days.</span></div><div class="side-card audit-card"><div class="crail-h"><span class="t-caps c-2">Audit log</span><span class="tb-spacer" style="flex: 1"></span><span class="cap">names and destinations only, never values</span></div><div class="audit"><sc-for list="{{audit}}" as="a" hint-placeholder-count="7"><div class="{{a.cls}}"><span class="w">{{a.w}}</span><span class="{{a.pt}}"></span><span><span class="verb">{{a.verb}}</span> <b>{{a.name}}</b> {{a.rest}}</span></div></sc-for></div></div></sc-if><sc-if value="{{showImport}}" hint-placeholder-val="{{ false }}"><div class="vt" style="padding: 14px 16px 16px; gap: 14px"><div style="display: flex; align-items: center; gap: 10px"><span class="t-title-s">Import a .env</span><span class="tb-spacer" style="flex: 1"></span><button class="btn btn-ghost btn-s" type="button" onClick="{{closeImport}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>Close</button></div><sc-if value="{{imp.empty}}" hint-placeholder-val="{{ false }}"><div class="dropzone" role="button" tabindex="0" aria-label="Drop a .env to import"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width: 28px; height: 28px; color: var(--accent)"><path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8zM14 3.5V8h4.5"/></svg><span class="t-title-s">Drop a .env to import</span><span class="t-body-s c-2">nexus reads the names and keeps the values out of every session. You choose which to keep and where each one syncs.</span><button class="btn btn-s" type="button" onClick="{{loadEnv}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8zM14 3.5V8h4.5"/></svg>Pick a file</button></div></sc-if><sc-if value="{{imp.loaded}}" hint-placeholder-val="{{ false }}"><div class="env-file"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--accent)"><path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8zM14 3.5V8h4.5"/></svg><span class="t"><b>.env.production</b><span>7 entries, 2 comment lines skipped · values stay masked</span></span><button class="btn btn-ghost btn-s" type="button" onClick="{{pickAgain}}">Choose another</button></div><div class="env-rows" role="table" aria-label="Parsed names"><div class="env-head" role="row"><span></span><span>Name</span><span>Value</span><span>Notes</span><span class="dest">Local</span><span class="dest">Actions</span><span class="dest">Vercel</span><span class="dest">Cloudflare</span></div><sc-for list="{{envRows}}" as="e" hint-placeholder-count="7"><div class="{{e.cls}}" role="row"><label class="check check-s"><input type="checkbox" checked="{{e.keep}}" onChange="{{e.toggleKeep}}" aria-label="{{e.keepAria}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></label><span class="sec-name"><b>{{e.name}}</b></span><span class="mask">••••••••</span><span class="{{e.noteCls}}">{{e.note}}</span><label class="check check-s"><input type="checkbox" checked="{{e.d.local}}" onChange="{{e.t.local}}" aria-label="{{e.a.local}}" disabled="{{e.off}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></label><label class="check check-s"><input type="checkbox" checked="{{e.d.actions}}" onChange="{{e.t.actions}}" aria-label="{{e.a.actions}}" disabled="{{e.off}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></label><label class="check check-s"><input type="checkbox" checked="{{e.d.vercel}}" onChange="{{e.t.vercel}}" aria-label="{{e.a.vercel}}" disabled="{{e.off}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></label><label class="check check-s"><input type="checkbox" checked="{{e.d.cloudflare}}" onChange="{{e.t.cloudflare}}" aria-label="{{e.a.cloudflare}}" disabled="{{e.off}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></label></div></sc-for></div><div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap"><button class="btn btn-primary" type="button" onClick="{{doImport}}" disabled="{{imp.none}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg>{{imp.label}}</button><span class="t-body-s c-2" style="flex: 1; min-width: 280px">Writes <code class="t-mono-s c-1">.nexus/secrets.yml</code> with names only. Values go to your keychain and the destinations you tick; the manifest never holds one.</span></div></sc-if><sc-if value="{{imp.done}}" hint-placeholder-val="{{ false }}"><div class="secret-set"><span class="key-orb is-set"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></span><span class="t"><b>{{imp.doneCount}}</b> imported · manifest written to <b>.nexus/secrets.yml</b>, names only</span><button class="btn btn-s" type="button" onClick="{{closeImport}}">Back to the vault</button></div></sc-if></div></sc-if></div><div class="vt-col" aria-label="Requests and destinations"><sc-if value="{{hasReq}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: 8px"><sc-if value="{{rq.pending}}" hint-placeholder-val="{{ true }}"><div class="tug is-pending is-secret" role="group" aria-label="Secret requested: {{rq.name}}"><div class="tug-head"><span class="key-orb"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg></span><span><span class="tug-who">{{rq.who}}</span> <span class="tug-src">· {{rq.src}}</span></span><span class="tug-timer">needs a value</span></div><div style="display: flex; flex-direction: column; gap: 6px"><span class="key-name">{{rq.name}}</span><p class="key-why">{{rq.why}}</p><a class="key-where" href="{{rq.where}}" target="_blank" rel="noreferrer">Where to get this<svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg><span class="d">{{rq.whereLabel}}</span></a></div><div class="mask-field"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg><input type="{{rq.pasteType}}" value="{{rq.paste}}" onChange="{{rq.setPaste}}" autocomplete="off" spellcheck="false" aria-label="Paste the value of {{rq.name}}" placeholder="Paste the value"><button class="btn btn-ghost" type="button" onClick="{{rq.toggleShow}}" aria-pressed="{{rq.showP}}">{{rq.showLabel}}</button></div><div style="display: flex; flex-direction: column; gap: 8px"><span class="t-label c-2">Store it</span><div class="dests"><sc-for list="{{rq.dests}}" as="x" hint-placeholder-count="3"><label class="check check-s"><input type="checkbox" checked="{{x.on}}" onChange="{{x.toggle}}"><svg class="ic tick" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg><span class="check-text"><span class="check-title">{{x.label}}</span></span></label></sc-for></div></div><span class="key-note"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 8 0v3"/></svg>Agents only ever see the name. The value goes from this field to the places you tick.</span><div class="tug-foot" style="justify-content: flex-start"><button class="btn btn-primary btn-s" type="button" onClick="{{rq.save}}" disabled="{{rq.cantSave}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg>Save and resume chunk</button><button class="btn btn-ghost btn-s" type="button" onClick="{{rq.skip}}">Skip {{rq.chunk}} for now</button></div></div></sc-if><sc-if value="{{rq.saved}}" hint-placeholder-val="{{ false }}"><div class="secret-set" role="status"><span class="key-orb is-set"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4 4 9-9"/></svg></span><span class="t"><b>{{rq.name}}</b> set · {{rq.setDests}}</span><span style="display: inline-flex; align-items: center; gap: 8px"><span class="relit"><span class="chunk-id">{{rq.chunk}}</span> relit</span><button class="btn btn-ghost btn-s" type="button" onClick="{{rq.change}}">Change</button></span></div></sc-if><sc-if value="{{rq.skipped}}" hint-placeholder-val="{{ false }}"><div class="secret-wait"><span class="key-orb is-quiet"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg></span><span><b>{{rq.chunk}} skipped for now.</b> It shows as needs secret on the plan board until <code>{{rq.name}}</code> has a value. <button class="btn btn-ghost btn-s" type="button" onClick="{{rq.unskip}}" style="margin-left: 4px">Add it now</button></span></div></sc-if></div></sc-if><div class="side-card"><div class="crail-h"><span class="t-caps c-2">Where values go</span><span class="tb-spacer" style="flex: 1"></span><sc-if value="{{anyStale}}" hint-placeholder-val="{{ false }}"><button class="btn btn-s" type="button" onClick="{{syncAll}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>Sync {{staleCount}}</button></sc-if></div><div class="dest-list"><sc-for list="{{destRows}}" as="g" hint-placeholder-count="4"><div class="dest-row"><span class="{{g.dot}}"></span><span class="t"><b>{{g.label}}</b><span>{{g.what}}</span></span><span class="n">{{g.count}}</span></div></sc-for></div><span class="key-note"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 8 0v3"/></svg>A command that needs a value gets it at run time; nexus scrubs it from anything a session can read.</span></div></div></div></sc-if><sc-if value="{{isContrib}}" hint-placeholder-val="{{ false }}"><div class="vault-none"><span class="key-orb is-quiet"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg></span><h1 class="t-title-l">No secrets needed: contributors open PRs; the owner's loop deploys.</h1><p class="t-body c-2">When a chunk needs a secret, the plan board marks it needs secret and the owner adds the value. Nothing here asks you for one.</p><div style="align-self: stretch; text-align: left; display: flex; flex-direction: column; gap: 8px; margin-top: 6px"><span class="t-caps c-2">Waiting on {{wait.owner}}</span><div class="secret-wait" role="note"><span class="key-orb is-quiet"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg></span><span><b>{{wait.chunk}} needs <code>{{wait.name}}</code>.</b> {{wait.owner}} adds it in the vault; the owner's loop deploys and picks {{wait.chunk}} back up. Contributors never handle secret values.</span></div></div><div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center"><a class="btn" href="{{links.plan}}"><svg class="ic ic-14" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Open the plan board</a></div><span class="vault-note"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4a5.5 5.5 0 1 1-4.9 8L4 17.6V20h3v-2h2v-2h2l1.1-1.1A5.5 5.5 0 0 1 14.5 4zM16 8.2v.01"/></svg>nexus agents see names, not values.</span></div></sc-if></main></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"mode":{"editor":"enum","options":["owner","contributor"],"default":"owner"},"panel":{"editor":"enum","options":["table","import"],"default":"table"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      edit: null, draft: '', adding: false, panel: null, imp: null, importedCount: 0, cards: {},
+      nw: { name: '', for: '', value: '', dests: { local: true, actions: true, vercel: false, cloudflare: false } },
+      secrets: [
+        { name: 'VERCEL_TOKEN', for: 'Deploys main and previews', dest: { local: 'missing', actions: 'missing', vercel: 'missing', cloudflare: 'none' }, chunk: '7.1', set: false, requested: true, age: 'never set', ageDays: 0 },
+        { name: 'CLOUDFLARE_API_TOKEN', for: 'Purges the CDN cache after deploys', dest: { local: 'set', actions: 'set', vercel: 'none', cloudflare: 'none' }, chunk: '7.3', set: true, age: 'yesterday', ageDays: 1 },
+        { name: 'PREVIEW_PASSWORD', for: 'Keeps preview deploys private', dest: { local: 'set', actions: 'none', vercel: 'stale', cloudflare: 'none' }, chunk: '7.2', set: true, age: '3 days ago', ageDays: 3 },
+        { name: 'CLAUDE_CODE_OAUTH_TOKEN', for: 'Runs the cloud loop on CI', dest: { local: 'none', actions: 'set', vercel: 'none', cloudflare: 'none' }, chunk: '', chunkText: 'setup', set: true, age: 'set 12 days ago', ageDays: 12 },
+        { name: 'SMTP_PASSWORD', for: 'Sends the weekly search report', dest: { local: 'set', actions: 'set', vercel: 'none', cloudflare: 'none' }, chunk: '3.2', set: true, age: '96 days ago', ageDays: 96 },
+        { name: 'ANALYTICS_SALT', for: 'Keeps search analytics anonymous', dest: { local: 'set', actions: 'set', vercel: 'none', cloudflare: 'set' }, chunk: '3.1', set: true, age: '124 days ago', ageDays: 124 }
+      ],
+      audit: [
+        { w: '02:30', kind: 'requested', verb: 'requested', name: 'VERCEL_TOKEN', rest: 'by cloud run #58 for 7.1' },
+        { w: 'yesterday', kind: 'synced', verb: 'synced', name: 'CLOUDFLARE_API_TOKEN', rest: '→ Actions' },
+        { w: 'yesterday', kind: 'rotated', verb: 'rotated', name: 'CLOUDFLARE_API_TOKEN', rest: '· local' },
+        { w: 'Oct 18', kind: 'rotated', verb: 'rotated', name: 'PREVIEW_PASSWORD', rest: '· local, Vercel still has the old one' },
+        { w: 'Oct 9', kind: 'set', verb: 'set', name: 'CLAUDE_CODE_OAUTH_TOKEN', rest: '→ Actions' },
+        { w: 'Jul 17', kind: 'set', verb: 'set', name: 'SMTP_PASSWORD', rest: '→ local, Actions' },
+        { w: 'Jun 19', kind: 'set', verb: 'set', name: 'ANALYTICS_SALT', rest: '→ local, Actions, Cloudflare' }
+      ],
+      env: [
+        { name: 'PUBLIC_SITE_URL', note: 'looks public, not a secret', noteCls: 'env-note is-warn', keep: false, dests: { local: false, actions: false, vercel: false, cloudflare: false } },
+        { name: 'VERCEL_TOKEN', note: 'new · answers the request from 7.1', noteCls: 'env-note is-match', keep: true, for: 'Deploys main and previews', dests: { local: true, actions: true, vercel: true, cloudflare: false } },
+        { name: 'SEARCH_ADMIN_KEY', note: 'new', noteCls: 'env-note', keep: true, for: 'Rebuilds the search index after deploys', dests: { local: true, actions: true, vercel: false, cloudflare: false } },
+        { name: 'CLOUDFLARE_API_TOKEN', exists: true, note: 'already in the vault; the vault value stays', noteCls: 'env-note is-quiet', keep: false, dests: { local: false, actions: false, vercel: false, cloudflare: false } },
+        { name: 'SMTP_PASSWORD', exists: true, note: 'already in the vault; the vault value stays', noteCls: 'env-note is-quiet', keep: false, dests: { local: false, actions: false, vercel: false, cloudflare: false } },
+        { name: 'ANALYTICS_SALT', exists: true, note: 'already in the vault; the vault value stays', noteCls: 'env-note is-quiet', keep: false, dests: { local: false, actions: false, vercel: false, cloudflare: false } },
+        { name: 'DEBUG', note: 'a setting, not a secret', noteCls: 'env-note is-quiet', keep: false, dests: { local: false, actions: false, vercel: false, cloudflare: false } }
+      ]
+    };
+  }
+  renderVals() {
+    const theme = this.props.theme ?? 'dark';
+    const L = theme === 'light' ? 'Light' : '';
+    const owner = (this.props.mode ?? 'owner') === 'owner';
+    const links = {
+      fleet: 'Fleet' + L + '.dc.html', train: 'FleetTrain.dc.html', cockpit: (owner ? 'CockpitOwner' : 'Cockpit') + L + '.dc.html',
+      start: 'CockpitStart' + L + '.dc.html', vega: 'Cockpit' + L + '.dc.html', deneb: 'CockpitOwner' + L + '.dc.html',
+      heads: 'HeadsDown' + L + '.dc.html', inbox: 'Inbox' + L + '.dc.html', plan: (owner ? 'BoardOwner' : 'Board') + L + '.dc.html',
+      board: 'Board' + L + '.dc.html', boardOwner: 'BoardOwner' + L + '.dc.html',
+      cloud: 'CloudLoop' + L + '.dc.html', git: 'GitPanel' + L + '.dc.html', recover: 'Recover' + L + '.dc.html',
+      settings: (owner ? 'Settings' : 'SettingsContributor') + L + '.dc.html', review: 'CockpitReview' + L + '.dc.html',
+      vault: (owner ? 'Vault' : 'VaultContributor') + L + '.dc.html', vaultOwner: 'Vault' + L + '.dc.html',
+      vaultTip: owner ? 'Vault: secret names for this repo' : "No secrets needed: contributors open PRs; the owner's loop deploys.",
+      vaultCls: owner ? '' : 'is-quiet'
+    };
+    const st = this.state;
+    const repo = owner ? 'lantern' : 'tidepool';
+    const SHORT = { local: 'local', actions: 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    const DOT = { set: 'dd is-set', stale: 'dd is-stale', missing: 'dd is-missing', none: 'dd is-none' };
+    const WORD = { set: 'set', stale: 'out of sync', missing: 'missing', none: 'not used' };
+    const secrets = st.secrets.map((x) => {
+      const d = {}, t = {};
+      Object.keys(SHORT).forEach((k) => { d[k] = DOT[x.dest[k]]; t[k] = SHORT[k] + ': ' + WORD[x.dest[k]]; });
+      const editing = st.edit === x.name;
+      const stale = Object.values(x.dest).includes('stale');
+      const where = Object.keys(x.dest).filter((k) => x.dest[k] === 'set' || x.dest[k] === 'stale').map((k) => SHORT[k]).join(', ');
+      return {
+        ...x, d, t, editing,
+        cls: 'vt-row' + (x.requested ? ' is-requested' : '') + (editing ? ' is-editing' : '') + (x.fresh ? ' is-fresh' : ''),
+        maskCls: x.set ? 'mask' : 'mask is-empty', mask: x.set ? '••••••••' : 'no value', maskAria: x.set ? 'value hidden' : 'no value yet',
+        hasChunk: !!x.chunk, noChunk: !x.chunk, chunkText: x.chunkText || '',
+        old: (x.ageDays || 0) > 90, canAdd: !x.set, canSync: x.set && stale, canReplace: x.set,
+        draft: st.draft, cantSave: !st.draft,
+        placeholder: x.set ? 'Paste the new value' : 'Paste the value',
+        editNote: x.set ? 'Saving replaces it in ' + (where || 'the vault') + '. The old value is gone for good.' : 'Saving stores it in local, Actions and Vercel, then resumes ' + x.chunk + '.',
+        setDraft: (e) => this.setState({ draft: e && e.target ? e.target.value : '' }),
+        replace: () => this.setState({ edit: x.name, draft: '', adding: false }),
+        cancel: () => this.setState({ edit: null, draft: '' }),
+        saveDraft: () => this.saveDraft(x.name),
+        sync: () => this.syncSecret(x.name)
+      };
+    });
+    const req = st.secrets.find((x) => x.name === 'VERCEL_TOKEN');
+    const rq = this.cardModel({ name: 'VERCEL_TOKEN', who: 'cloud loop', src: 'run #58 · 02:30', chunk: '7.1',
+      why: '7.1 deploys main to the docs host. The loop moved on; it resumes 7.1 once this is set.',
+      where: 'https://vercel.com/account/tokens', whereLabel: 'Vercel · Account Tokens · shown once, copy it then' }, 'vercel');
+    const audit = st.audit.map((a, i) => ({ ...a, cls: 'audit-row' + (a.isNew ? ' is-new' : ''), pt: 'pt is-' + a.kind }));
+    const nw = st.nw;
+    const NWL = { local: 'Local', actions: 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    const nwModel = {
+      ...nw,
+      setName: (e) => this.setState({ nw: { ...this.state.nw, name: (e && e.target ? e.target.value : '').toUpperCase().replace(/[^A-Z0-9_]/g, '_') } }),
+      setFor: (e) => this.setState({ nw: { ...this.state.nw, for: e && e.target ? e.target.value : '' } }),
+      setValue: (e) => this.setState({ nw: { ...this.state.nw, value: e && e.target ? e.target.value : '' } }),
+      dests: Object.keys(NWL).map((k) => ({ label: NWL[k], on: !!nw.dests[k], toggle: () => this.setState({ nw: { ...this.state.nw, dests: { ...this.state.nw.dests, [k]: !this.state.nw.dests[k] } } }) })),
+      cantSave: !nw.name || !nw.value,
+      save: () => this.addSecret(), cancel: () => this.setState({ adding: false })
+    };
+    const panel = st.panel ?? (this.props.panel === 'import' ? 'import' : null);
+    const impState = st.imp ?? (this.props.panel === 'import' ? 'loaded' : 'empty');
+    const envRows = st.env.map((e, i) => {
+      const d = {}, t = {}, a = {};
+      Object.keys(SHORT).forEach((k) => { d[k] = !!e.dests[k]; t[k] = () => this.setEnv(i, { dests: { ...e.dests, [k]: !e.dests[k] } }); a[k] = e.name + ' to ' + SHORT[k]; });
+      const note = e.exists && e.keep ? 'replaces the vault value, a rotation' : e.note;
+      const noteCls = e.exists && e.keep ? 'env-note is-warn' : e.noteCls;
+      const toggleKeep = () => this.setEnv(i, Object.values(e.dests).some(Boolean) || e.keep ? { keep: !e.keep } : { keep: true, dests: { ...e.dests, local: true, actions: true } });
+      return { ...e, d, t, a, note, noteCls, off: !e.keep, cls: 'env-row' + (e.keep ? '' : ' is-off'), keepAria: 'Keep ' + e.name, toggleKeep };
+    });
+    const kept = st.env.filter((e) => e.keep).length;
+    const WHAT = { local: 'keychain on this machine', actions: 'lantern repository secrets', vercel: 'lantern-docs project', cloudflare: 'lantern-edge worker' };
+    const LABEL = { local: 'Local', actions: 'GitHub Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    const staleCount = st.secrets.reduce((n, x) => n + Object.values(x.dest).filter((v) => v === 'stale').length, 0);
+    const destRows = Object.keys(SHORT).map((k) => {
+      const n = (w) => st.secrets.filter((x) => x.dest[k] === w).length;
+      const set = n('set'), stale = n('stale'), miss = n('missing');
+      const bits = [];
+      if (set) bits.push(set + ' set');
+      if (stale) bits.push(stale + ' out of sync');
+      if (miss) bits.push(miss + ' missing');
+      return { label: LABEL[k], what: WHAT[k], count: bits.join(' · ') || 'none', stale: stale > 0,
+        dot: miss ? DOT.missing : stale ? DOT.stale : set ? DOT.set : DOT.none, sync: () => this.syncDest(k) };
+    });
+    return { theme, links, isOwner: owner, isContrib: !owner, repo, secrets, rq, destRows, anyStale: staleCount > 0, staleCount: staleCount + ' out of sync', syncAll: () => this.syncAll(), hasReq: !!req && (req.requested || rq.saved || rq.skipped), audit, adding: st.adding, nw: nwModel,
+      sub: st.secrets.length + ' secrets in .nexus/secrets.yml',
+      showTable: panel !== 'import', showImport: panel === 'import',
+      imp: { empty: impState === 'empty', loaded: impState === 'loaded', done: impState === 'done', none: kept === 0, label: 'Import ' + kept + (kept === 1 ? ' name' : ' names') + ' and write the manifest', doneCount: st.importedCount + (st.importedCount === 1 ? ' name' : ' names') },
+      envRows,
+      openImport: () => this.setState({ panel: 'import', imp: 'empty', adding: false, edit: null }),
+      closeImport: () => this.setState({ panel: 'table' }),
+      loadEnv: () => this.setState({ imp: 'loaded' }),
+      pickAgain: () => this.setState({ imp: 'empty' }),
+      wait: { chunk: '14.4', name: 'TIDES_API_KEY', owner: 'mira' },
+      doImport: () => this.doImport(),
+      startAdd: () => this.setState({ adding: true, panel: 'table', edit: null }) };
+  }
+
+  cardModel(r, key) {
+    const st = this.state;
+    const c = st.cards[key] || { paste: '', show: false, dests: { local: true, actions: true, vercel: true }, state: 'pending' };
+    const LAB = { local: 'Store locally · keychain', actions: 'Push to GitHub Actions', vercel: 'Push to Vercel', cloudflare: 'Push to Cloudflare' };
+    const SHORT = { local: 'local', actions: 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    const put = (patch) => this.setState({ cards: { ...this.state.cards, [key]: { ...c, ...patch } } });
+    const chosen = Object.keys(c.dests).filter((k) => c.dests[k]);
+    return {
+      ...r,
+      pending: c.state === 'pending', saved: c.state === 'saved', skipped: c.state === 'skipped',
+      paste: c.paste, pasteType: c.show ? 'text' : 'password', showLabel: c.show ? 'Hide' : 'Show', showP: c.show ? 'true' : 'false',
+      setPaste: (e) => put({ paste: e && e.target ? e.target.value : '' }),
+      toggleShow: () => put({ show: !c.show }),
+      dests: Object.keys(c.dests).map((k) => ({ label: LAB[k], on: !!c.dests[k], toggle: () => put({ dests: { ...c.dests, [k]: !c.dests[k] } }) })),
+      cantSave: !c.paste || chosen.length === 0,
+      setDests: chosen.map((k) => SHORT[k]).join(', '),
+      save: () => { if (!c.paste || !chosen.length) return; put({ state: 'saved', paste: '', show: false }); if (this.onSecretSaved) this.onSecretSaved(r.name, chosen.map((k) => SHORT[k])); },
+      skip: () => put({ state: 'skipped', paste: '' }),
+      unskip: () => put({ state: 'pending' }),
+      change: () => put({ state: 'pending' })
+    };
+  }
+
+  stamp(entry) { return [{ ...entry, w: 'now', isNew: true }].concat(this.state.audit.map((a) => ({ ...a, isNew: false }))); }
+  onSecretSaved(name, short) {
+    const map = { local: 'local', Actions: 'actions', Vercel: 'vercel', Cloudflare: 'cloudflare' };
+    const secrets = this.state.secrets.map((x) => {
+      if (x.name !== name) return { ...x, fresh: false };
+      const dest = { ...x.dest };
+      short.forEach((s) => { dest[map[s]] = 'set'; });
+      Object.keys(dest).forEach((k) => { if (dest[k] === 'missing') dest[k] = 'none'; });
+      return { ...x, dest, set: true, requested: false, age: 'set just now', ageDays: 0, fresh: true };
+    });
+    this.setState({ secrets, audit: this.stamp({ kind: 'set', verb: 'set', name, rest: '→ ' + short.join(', ') + ' · 7.1 resumed' }) });
+  }
+  saveDraft(name) {
+    if (!this.state.draft) return;
+    const x = this.state.secrets.find((s) => s.name === name);
+    if (!x.set) { this.onSecretSaved(name, ['local', 'Actions', 'Vercel']); this.setState({ edit: null, draft: '', cards: { ...this.state.cards, vercel: { ...(this.state.cards.vercel || {}), state: 'saved', paste: '', dests: { local: true, actions: true, vercel: true } } } }); return; }
+    const SHORT = { local: 'local', actions: 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    const where = Object.keys(x.dest).filter((k) => x.dest[k] === 'set' || x.dest[k] === 'stale').map((k) => SHORT[k]);
+    const secrets = this.state.secrets.map((s) => {
+      if (s.name !== name) return { ...s, fresh: false };
+      const dest = { ...s.dest };
+      Object.keys(dest).forEach((k) => { if (dest[k] === 'stale') dest[k] = 'set'; });
+      return { ...s, dest, age: 'just now', ageDays: 0, fresh: true };
+    });
+    this.setState({ secrets, edit: null, draft: '', audit: this.stamp({ kind: 'rotated', verb: 'rotated', name, rest: '· ' + where.join(', ') }) });
+  }
+  syncSecret(name) {
+    const SHORT = { local: 'local', actions: 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    let to = [];
+    const secrets = this.state.secrets.map((s) => {
+      if (s.name !== name) return { ...s, fresh: false };
+      const dest = { ...s.dest };
+      Object.keys(dest).forEach((k) => { if (dest[k] === 'stale') { dest[k] = 'set'; to.push(SHORT[k]); } });
+      return { ...s, dest, fresh: true };
+    });
+    this.setState({ secrets, audit: this.stamp({ kind: 'synced', verb: 'synced', name, rest: '→ ' + to.join(', ') }) });
+  }
+  syncAll() { ['local', 'actions', 'vercel', 'cloudflare'].forEach((k) => this.syncDest(k)); }
+  syncDest(k) {
+    const SHORT = { local: 'local', actions: 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    const names = [];
+    const secrets = this.state.secrets.map((s) => {
+      if (s.dest[k] !== 'stale') return { ...s, fresh: false };
+      names.push(s.name);
+      return { ...s, dest: { ...s.dest, [k]: 'set' }, fresh: true };
+    });
+    let audit = this.state.audit.map((a) => ({ ...a, isNew: false }));
+    names.forEach((name) => { audit = [{ kind: 'synced', verb: 'synced', name, rest: '→ ' + SHORT[k], w: 'now', isNew: true }].concat(audit); });
+    this.setState({ secrets, audit });
+  }
+  addSecret() {
+    const nw = this.state.nw;
+    if (!nw.name || !nw.value) return;
+    const SHORT = { local: 'local', actions: 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    const dest = {};
+    Object.keys(SHORT).forEach((k) => { dest[k] = nw.dests[k] ? 'set' : 'none'; });
+    const to = Object.keys(SHORT).filter((k) => nw.dests[k]).map((k) => SHORT[k]);
+    const secrets = [{ name: nw.name, for: nw.for || 'added by hand', dest, chunk: '', chunkText: 'by hand', set: true, age: 'set just now', ageDays: 0, fresh: true }].concat(this.state.secrets.map((s) => ({ ...s, fresh: false })));
+    this.setState({ secrets, adding: false, nw: { name: '', for: '', value: '', dests: { local: true, actions: true, vercel: false, cloudflare: false } }, audit: this.stamp({ kind: 'set', verb: 'set', name: nw.name, rest: '→ ' + to.join(', ') }) });
+  }
+  setEnv(i, patch) { const env = this.state.env.slice(); env[i] = { ...env[i], ...patch }; this.setState({ env }); }
+  doImport() {
+    const SHORT = { local: 'local', actions: 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+    const kept = this.state.env.filter((e) => e.keep);
+    let secrets = this.state.secrets.map((s) => ({ ...s, fresh: false }));
+    let audit = this.state.audit.map((a) => ({ ...a, isNew: false }));
+    let cards = this.state.cards;
+    kept.forEach((e) => {
+      const dest = {};
+      Object.keys(SHORT).forEach((k) => { dest[k] = e.dests[k] ? 'set' : 'none'; });
+      const to = Object.keys(SHORT).filter((k) => e.dests[k]).map((k) => SHORT[k]);
+      const at = secrets.findIndex((s) => s.name === e.name);
+      if (at >= 0) secrets[at] = { ...secrets[at], dest, set: true, requested: false, age: 'set just now', ageDays: 0, fresh: true };
+      else secrets.push({ name: e.name, for: e.for || 'imported from .env.production', dest, chunk: '', chunkText: 'import', set: true, age: 'set just now', ageDays: 0, fresh: true });
+      audit = [{ kind: 'set', verb: 'imported', name: e.name, rest: '→ ' + to.join(', '), w: 'now', isNew: true }].concat(audit);
+      if (e.name === 'VERCEL_TOKEN') cards = { ...cards, vercel: { ...(cards.vercel || {}), state: 'saved', paste: '', dests: { local: !!e.dests.local, actions: !!e.dests.actions, vercel: !!e.dests.vercel } } };
+    });
+    this.setState({ secrets, audit, cards, imp: 'done', importedCount: kept.length });
+  }
+}
+</script>
+</body>
+</html>

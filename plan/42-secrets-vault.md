@@ -19,8 +19,11 @@ in its own settings. The missing piece is a way to *use*
 secrets without *holding* them.
 
 The roles differ:
-- **Contributors never need secrets.** They open pull
-  requests; the owner's loop deploys.
+- **Contributors never need project secrets.** They open
+  pull requests; the owner's loop deploys. Some still keep
+  their own local `.env` to run the app (a dev API key, a
+  local database URL): that stays theirs, local-only, never
+  pushed to a sink and never required by a chunk.
 - **The owner is the sysadmin.** A chunk that deploys
   somewhere should be able to say "I need `VERCEL_TOKEN`",
   wait for it, and then carry on, with nexus doing the
@@ -101,6 +104,10 @@ when:
 - Once the value is set, the chunk is ready again.
 - A contributor's `/next` treats any chunk with a `secrets`
   field as owner-only and passes over it.
+- A contributor's own local keys live in their vault as
+  `local` only: the import works the same, sinks are
+  refused, and their Vault reads "No project secrets needed"
+  above their local keys.
 
 **The audit log.** Every set, push and rotation is recorded
 with the name, the destinations and the time, never a value.
@@ -156,6 +163,9 @@ the vault arrives):
   the import, the contributor view, the onboarding step, the
   board's key badge and the audit timeline from the owner's
   Claude Design export.
+- **A15** A contributor keeps their own local-only keys: the
+  vault and import work in a contributor checkout, every sink
+  refuses there, and no chunk can require them.
 
 ## Open questions
 
@@ -163,7 +173,7 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 14 open · 0 closed · next A15
+Measure: 15 open · 0 closed · next A16
 
 - [ ] **42.1** The manifest and a chunk's `secrets` field ·
   S · closes A1, A2 · needs —
@@ -190,6 +200,19 @@ Measure: 14 open · 0 closed · next A15
   masking · M · closes A13 · needs 42.3, 42.4
 - [ ] **42.8** The vault in the GUI, from the design export ·
   L · closes A14 · needs 42.6, 42.7
-  - Held until the owner delivers the Claude Design export
-    for the vault; port it with the same fidelity rule as
-    41.3.
+  - The export arrived 2026-10-21 (the handoff's second
+    revision): Vault, VaultImport, VaultContributor,
+    VaultKit, Secrets and SecretsContributor (onboarding step
+    4 of 7), BoardOwnerAll ("Waiting on a secret"), the
+    Inbox's key card, CloudLoop's sign-in card. Port it with
+    the 41.3 fidelity rule.
+  - The design's decisions, adopted: a stored value always
+    shows as eight dots (its length never leaks); Show only
+    reveals your own paste before saving; a secret request has
+    no default, no countdown, and batch-answer skips it; "Skip
+    <chunk> for now" leaves it "needs secret"; the cloud
+    loop's `CLAUDE_CODE_OAUTH_TOKEN` is the loop's sign-in,
+    not a project secret; GitHub Actions, Vercel and
+    Cloudflare are named only as vault destinations.
+- [ ] **42.9** A contributor's own local keys · S · closes
+  A15 · needs 42.2

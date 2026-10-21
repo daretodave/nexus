@@ -23,6 +23,32 @@ here: the app bundles its fonts offline (`@fontsource`).
 
 This folder is not in the npm package (`package.json` `files`).
 
+## Revisions
+
+1. **2026-10-21, first delivery:** the design system, fleet,
+   cockpit, views and onboarding (ported in 41.3).
+2. **2026-10-21, second delivery** (artifact version
+   1792601423-1084):
+   - **New boards:** `Vault`, `VaultImport`, `VaultContributor`
+     and `VaultKit` (the vault), `Secrets` and
+     `SecretsContributor` (onboarding step 4 of 7), and
+     `BoardOwnerAll` (owner, All chunks, with a "Waiting on a
+     secret" section). Each has a `Light` board too, and
+     `ControlsLight` arrived as well.
+   - **Changed boards:** `Inbox` (the secret key card),
+     `Board`, `CloudLoop` (the loop's sign-in card), `Fleet`,
+     `FleetKit`, `GitPanel`, `Recover`, `Settings`,
+     `PlanKit`, and the onboarding boards `Welcome`,
+     `Detect`, `Shape`, `Plot`, `CloudSetup` and `Launch`.
+   - **Fixes:** every component sheet had been cutting off
+     about 140px on the right and at the bottom; the owner
+     cockpit's composer was clipped by 11px; some values
+     picked up their label's style.
+   - `canvas.json` and `nexus.css` both changed.
+
+   The vault work is ported in 42.8; everything else is
+   re-ported in 41.10.
+
 ## Changes from the delivered files
 
 One edit, so the kit's emoji gate holds: two glyphs in

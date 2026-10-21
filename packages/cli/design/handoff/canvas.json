@@ -35,7 +35,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 2120,
+   "h": 2280,
    "title": "Color",
    "page": "system"
   },
@@ -73,7 +73,7 @@
   },
   "Composer.dc.html": {
    "x": 0,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
    "h": 1900,
    "title": "Composer and routing",
@@ -81,7 +81,7 @@
   },
   "Controls.dc.html": {
    "x": 1520,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
    "h": 1900,
    "title": "Run mode, owner mode, pause",
@@ -89,7 +89,7 @@
   },
   "AgentNode.dc.html": {
    "x": 3040,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
    "h": 1900,
    "title": "Agent node and filaments",
@@ -97,7 +97,7 @@
   },
   "Tug.dc.html": {
    "x": 4560,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
    "h": 1900,
    "title": "Oversight tug and parked questions",
@@ -105,7 +105,7 @@
   },
   "WorkUnits.dc.html": {
    "x": 6080,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
    "h": 1900,
    "title": "Chunk, claim, log row, diff, pills",
@@ -113,7 +113,7 @@
   },
   "Package.dc.html": {
    "x": 7600,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
    "h": 1900,
    "title": "Phase track, package PR, stacked PR, plan PR",
@@ -121,15 +121,15 @@
   },
   "FleetKit.dc.html": {
    "x": 9120,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
-   "h": 1900,
+   "h": 2020,
    "title": "Session tile, git strip, switcher, train",
    "page": "system"
   },
   "Feedback.dc.html": {
    "x": 10640,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
    "h": 1900,
    "title": "Stepper, ring, toasts, empty, error",
@@ -137,7 +137,7 @@
   },
   "ComposerLight.dc.html": {
    "x": 0,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
    "h": 1900,
    "title": "Composer and routing — dawn",
@@ -145,7 +145,7 @@
   },
   "ControlsLight.dc.html": {
    "x": 1520,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
    "h": 1900,
    "title": "Run mode, owner mode, pause — dawn",
@@ -153,7 +153,7 @@
   },
   "AgentNodeLight.dc.html": {
    "x": 3040,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
    "h": 1900,
    "title": "Agent node and filaments — dawn",
@@ -161,7 +161,7 @@
   },
   "TugLight.dc.html": {
    "x": 4560,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
    "h": 1900,
    "title": "Oversight tug and parked questions — dawn",
@@ -169,7 +169,7 @@
   },
   "WorkUnitsLight.dc.html": {
    "x": 6080,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
    "h": 1900,
    "title": "Chunk, claim, log row, diff, pills — dawn",
@@ -177,7 +177,7 @@
   },
   "PackageLight.dc.html": {
    "x": 7600,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
    "h": 1900,
    "title": "Phase track, package PR, stacked PR, plan PR — dawn",
@@ -185,15 +185,15 @@
   },
   "FleetKitLight.dc.html": {
    "x": 9120,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
-   "h": 1900,
+   "h": 2020,
    "title": "Session tile, git strip, switcher, train — dawn",
    "page": "system"
   },
   "FeedbackLight.dc.html": {
    "x": 10640,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
    "h": 1900,
    "title": "Stepper, ring, toasts, empty, error — dawn",
@@ -430,7 +430,7 @@
    "is_interactive": true
   },
   "CloudLoop.dc.html": {
-   "x": 6080,
+   "x": 7600,
    "y": 0,
    "w": 1440,
    "h": 900,
@@ -440,7 +440,7 @@
    "is_interactive": true
   },
   "Settings.dc.html": {
-   "x": 7600,
+   "x": 9120,
    "y": 0,
    "w": 1440,
    "h": 900,
@@ -450,7 +450,7 @@
    "is_interactive": true
   },
   "SettingsContributor.dc.html": {
-   "x": 9120,
+   "x": 10640,
    "y": 0,
    "w": 1440,
    "h": 900,
@@ -500,7 +500,7 @@
    "is_interactive": true
   },
   "CloudLoopLight.dc.html": {
-   "x": 6080,
+   "x": 7600,
    "y": 1320,
    "w": 1440,
    "h": 900,
@@ -510,7 +510,7 @@
    "is_interactive": true
   },
   "SettingsLight.dc.html": {
-   "x": 7600,
+   "x": 9120,
    "y": 1320,
    "w": 1440,
    "h": 900,
@@ -520,7 +520,7 @@
    "is_interactive": true
   },
   "SettingsContributorLight.dc.html": {
-   "x": 9120,
+   "x": 10640,
    "y": 1320,
    "w": 1440,
    "h": 900,
@@ -590,31 +590,31 @@
    "is_interactive": true
   },
   "Plot.dc.html": {
-   "x": 9120,
+   "x": 12160,
    "y": 0,
    "w": 1440,
    "h": 900,
-   "title": "4 · Plot the first work",
+   "title": "5 · Plot the first work",
    "page": "onboarding",
    "expand": "fill",
    "is_interactive": true
   },
   "CloudSetup.dc.html": {
-   "x": 10640,
+   "x": 13680,
    "y": 0,
    "w": 1440,
    "h": 900,
-   "title": "5 · Cloud loop (optional)",
+   "title": "6 · Cloud loop (optional)",
    "page": "onboarding",
    "expand": "fill",
    "is_interactive": true
   },
   "Launch.dc.html": {
-   "x": 12160,
+   "x": 15200,
    "y": 0,
    "w": 1440,
    "h": 900,
-   "title": "6 · Launch",
+   "title": "7 · Launch",
    "page": "onboarding",
    "expand": "fill",
    "is_interactive": true
@@ -650,50 +650,176 @@
    "is_interactive": true
   },
   "PlotLight.dc.html": {
-   "x": 9120,
+   "x": 12160,
    "y": 1320,
    "w": 1440,
    "h": 900,
-   "title": "4 · Plot the first work — dawn",
+   "title": "5 · Plot the first work — dawn",
    "page": "onboarding",
    "expand": "fill",
    "is_interactive": true
   },
   "CloudSetupLight.dc.html": {
-   "x": 10640,
+   "x": 13680,
    "y": 1320,
    "w": 1440,
    "h": 900,
-   "title": "5 · Cloud loop — dawn",
+   "title": "6 · Cloud loop — dawn",
    "page": "onboarding",
    "expand": "fill",
    "is_interactive": true
   },
   "LaunchLight.dc.html": {
-   "x": 12160,
+   "x": 15200,
    "y": 1320,
    "w": 1440,
    "h": 900,
-   "title": "6 · Launch — dawn",
+   "title": "7 · Launch — dawn",
    "page": "onboarding",
    "expand": "fill",
    "is_interactive": true
   },
   "PlanKit.dc.html": {
    "x": 12160,
-   "y": 2560,
+   "y": 2720,
    "w": 1440,
-   "h": 2120,
+   "h": 2640,
    "title": "Plan board: chunk rows, specs, claims",
    "page": "system"
   },
   "PlanKitLight.dc.html": {
    "x": 12160,
-   "y": 4880,
+   "y": 5890,
    "w": 1440,
-   "h": 2120,
+   "h": 2640,
    "title": "Plan board: chunk rows, specs, claims — dawn",
    "page": "system"
+  },
+  "Vault.dc.html": {
+   "x": 12160,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Vault (owner)",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "VaultImport.dc.html": {
+   "x": 13680,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Vault, importing a .env",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "VaultContributor.dc.html": {
+   "x": 15200,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Vault (contributor checkout)",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "VaultLight.dc.html": {
+   "x": 12160,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Vault (owner) — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "VaultImportLight.dc.html": {
+   "x": 13680,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Vault, importing a .env — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "VaultContributorLight.dc.html": {
+   "x": 15200,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Vault (contributor checkout) — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "VaultKit.dc.html": {
+   "x": 13680,
+   "y": 2720,
+   "w": 1440,
+   "h": 2730,
+   "title": "Vault: key card, dots, import, audit",
+   "page": "system"
+  },
+  "VaultKitLight.dc.html": {
+   "x": 13680,
+   "y": 5890,
+   "w": 1440,
+   "h": 2730,
+   "title": "Vault: key card, dots, import, audit — dawn",
+   "page": "system"
+  },
+  "BoardOwnerAll.dc.html": {
+   "x": 6080,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Plan board · All chunks (owner)",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "BoardOwnerAllLight.dc.html": {
+   "x": 6080,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "Plan board · All chunks (owner) — dawn",
+   "page": "views",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Secrets.dc.html": {
+   "x": 9120,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "4 · Secrets (optional)",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "SecretsLight.dc.html": {
+   "x": 9120,
+   "y": 1320,
+   "w": 1440,
+   "h": 900,
+   "title": "4 · Secrets — dawn",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "SecretsContributor.dc.html": {
+   "x": 10640,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "4b · Secrets (contributor checkout)",
+   "page": "onboarding",
+   "expand": "fill",
+   "is_interactive": true
   }
  },
  "order": [
@@ -711,6 +837,7 @@
   "FleetKit.dc.html",
   "Feedback.dc.html",
   "PlanKit.dc.html",
+  "VaultKit.dc.html",
   "ComposerLight.dc.html",
   "ControlsLight.dc.html",
   "AgentNodeLight.dc.html",
@@ -720,6 +847,7 @@
   "FleetKitLight.dc.html",
   "FeedbackLight.dc.html",
   "PlanKitLight.dc.html",
+  "VaultKitLight.dc.html",
   "Cockpit.dc.html",
   "CockpitStart.dc.html",
   "CockpitReview.dc.html",
@@ -748,6 +876,9 @@
   "Shape.dc.html",
   "ShapeContributor.dc.html",
   "ShapeLight.dc.html",
+  "Secrets.dc.html",
+  "SecretsContributor.dc.html",
+  "SecretsLight.dc.html",
   "Plot.dc.html",
   "PlotLight.dc.html",
   "CloudSetup.dc.html",
@@ -756,14 +887,22 @@
   "LaunchLight.dc.html",
   "Board.dc.html",
   "BoardOwner.dc.html",
+  "BoardOwnerAll.dc.html",
   "BoardLight.dc.html",
   "BoardOwnerLight.dc.html",
+  "BoardOwnerAllLight.dc.html",
   "CloudLoop.dc.html",
   "CloudLoopLight.dc.html",
   "Settings.dc.html",
   "SettingsContributor.dc.html",
   "SettingsLight.dc.html",
   "SettingsContributorLight.dc.html",
+  "Vault.dc.html",
+  "VaultImport.dc.html",
+  "VaultContributor.dc.html",
+  "VaultLight.dc.html",
+  "VaultImportLight.dc.html",
+  "VaultContributorLight.dc.html",
   "Recover.dc.html",
   "RecoverLight.dc.html",
   "GitPanel.dc.html",
@@ -780,18 +919,18 @@
   },
   "t-comp-n": {
    "x": 0,
-   "y": 2260,
+   "y": 2420,
    "text": "Components · night",
    "kind": "title1",
-   "maxW": 13600,
+   "maxW": 15120,
    "page": "system"
   },
   "t-comp-d": {
    "x": 0,
-   "y": 4580,
+   "y": 5590,
    "text": "Components · paper at dawn",
    "kind": "title1",
-   "maxW": 13600,
+   "maxW": 15120,
    "page": "system"
   },
   "t-fl-n": {
@@ -831,7 +970,7 @@
    "y": -300,
    "text": "Views · night",
    "kind": "title1",
-   "maxW": 10560,
+   "maxW": 16640,
    "page": "views"
   },
   "t-vw-d": {
@@ -839,7 +978,7 @@
    "y": 1020,
    "text": "Views · paper at dawn",
    "kind": "title1",
-   "maxW": 10560,
+   "maxW": 16640,
    "page": "views"
   },
   "t-ob-n": {
@@ -847,7 +986,7 @@
    "y": -300,
    "text": "Onboarding · night",
    "kind": "title1",
-   "maxW": 13600,
+   "maxW": 16640,
    "page": "onboarding"
   },
   "t-ob-d": {
@@ -855,7 +994,7 @@
    "y": 1020,
    "text": "Onboarding · paper at dawn",
    "kind": "title1",
-   "maxW": 13600,
+   "maxW": 16640,
    "page": "onboarding"
   }
  },
