@@ -456,6 +456,8 @@ nexus/
 │   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
 │   └── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
+│   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md)
+│   ├── heads-down.md                  # /heads-down — ask up front, then loop /next for hours
 │   ├── march.md                       # + ship-a-chunk, iterate, critique (dry-run adoption),
 │   │                                  #   triage, expand, oversight, jot
 │   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
@@ -484,6 +486,10 @@ nexus/
     │   ├── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
     │   └── CURRENT-STATE.md           # brownfield retrofit only (adopt-by-need)
     ├── skills/                        # → repo's skills/
+    │   ├── next.md                     # one chunk, done fully: claim, delegated build, gate, pending close, land
+    │   ├── next/build.md               # /next's build detail: worktree, builder brief, Workflow shape
+    │   ├── next/land.md                # /next's close + land: settle, pending file, main vs PR
+    │   ├── heads-down.md               # ask up front, claim a list, loop /next on defaults, ASCII progress
     │   ├── ship-a-chunk.md
     │   ├── ship-data.md                # omit if no structured data layer
     │   ├── ship-migration.md           # omit unless Structured data: pure-db / hybrid-with-managed-postgres

@@ -173,7 +173,9 @@ invoke a skill that does the right thing end-to-end.
 
 | Skill | Source of truth | What it does |
 |---|---|---|
-| `ship-a-chunk` | `skills/ship-a-chunk.md` | Ship one chunk of the plan and close it. |
+| `next` | `skills/next.md` | One chunk, done fully: pick, claim, delegate the build (S/M a builder subagent, L a Workflow), gate, pending close, land per owner mode, retro. |
+| `heads-down` | `skills/heads-down.md` | Ask every question up front, claim a list of chunks, loop `/next` for hours on defaults, ASCII progress each iteration. |
+| `ship-a-chunk` | `skills/ship-a-chunk.md` | Ship one chunk of the plan and close it (the build steps `/next`'s builder follows). |
 | `ship-data` | `skills/ship-data.md` | Ship one data record (if data layer exists). |
 | `ship-migration` | `skills/ship-migration.md` | Ship one DB migration (if Structured data: pure-db / hybrid-with-managed-postgres). |
 | `ship-asset` | `skills/ship-asset.md` | Ship one brand asset (if Surface: site/hybrid and branding is in scope). |
@@ -192,7 +194,9 @@ invoke a skill that does the right thing end-to-end.
 ### Invocation
 
 ```
-/ship-a-chunk                # ship the next ready chunk
+/next                        # one chunk, done fully (delegated build)
+/heads-down                  # questions first, then hours of /next
+/ship-a-chunk                # ship the next ready chunk inline
 /ship-data                   # ship next data backlog row
 /ship-migration              # ship next DB migration
 /ship-asset                  # ship one brand asset

@@ -20,7 +20,9 @@
 //                 vocabulary (catches <PROJECT_NAME>-style typos)
 //   anatomy       skill files carry the canonical sections; command
 //                 pointers carry frontmatter + $ARGUMENTS; skills
-//                 and command pointers pair 1:1
+//                 and command pointers pair 1:1; /next stays within
+//                 200 lines, its next/*.md detail files 120 each,
+//                 /heads-down 150
 //   emoji         no pictographic emoji anywhere in tracked docs,
 //                 nor in packages/cli source (js/jsx/ts/tsx/json/css/html)
 //                 (✓ and ❌ dingbats are fine; 🤖 is not)
@@ -345,6 +347,10 @@ function globDir(rel) {
   return fs.readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => `${rel}/${f}`)
 }
 
+// Per skill tree (templates/skills/ and skills/); a key ending in
+// "/" covers every .md directly in that folder.
+const LINE_BUDGETS = { 'next.md': 200, 'next/': 120, 'heads-down.md': 150 }
+
 function legAnatomy() {
   const failures = []
   const skillFiles = [...globDir('templates/skills'), ...globDir('skills')]
@@ -382,7 +388,21 @@ function legAnatomy() {
   for (const c of globDir('.claude/commands').map((f) => path.basename(f))) {
     if (!selfSkills.has(c)) failures.push(`.claude/commands/${c} has no skills/${c} source of truth`)
   }
-  return { failures, note: `${skillFiles.length} skills, ${commandCount} command pointers` }
+  // Line budgets: /next and /heads-down are read on every run, so
+  // they stay short; a lesson becomes a check, not more prose.
+  let budgeted = 0
+  for (const base of ['templates/skills', 'skills']) {
+    for (const [rel, max] of Object.entries(LINE_BUDGETS)) {
+      const files = rel.endsWith('/') ? globDir(`${base}/${rel.slice(0, -1)}`) : [`${base}/${rel}`]
+      for (const file of files) {
+        if (!fs.existsSync(path.join(ROOT, file))) continue
+        budgeted++
+        const lines = read(file).replace(/\r?\n$/, '').split(/\r?\n/).length
+        if (lines > max) failures.push(`${file}: ${lines} lines, over its budget of ${max} — cut as much as you add`)
+      }
+    }
+  }
+  return { failures, note: `${skillFiles.length} skills, ${commandCount} command pointers, ${budgeted} budgets held` }
 }
 
 // --- leg: emoji ------------------------------------------------------------

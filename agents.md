@@ -148,7 +148,9 @@ verbs — a docs kit ships docs, not pages.
 | Skill | Source of truth | What it does |
 |---|---|---|
 | `march` | `skills/march.md` | Dispatch: triage → critique → chunk → expand → iterate. |
-| `ship-a-chunk` | `skills/ship-a-chunk.md` | Ship one chunk of the kit's plan and close it. |
+| `next` | `skills/next.md` | One chunk, done fully: claim, delegated build (S/M a builder, L a Workflow), gate, pending close, land per owner mode, retro. |
+| `heads-down` | `skills/heads-down.md` | Questions up front, claim a list, loop `/next` on defaults with ASCII progress (`npm run progress`). |
+| `ship-a-chunk` | `skills/ship-a-chunk.md` | Ship one chunk of the kit's plan and close it (the build steps `/next`'s builder follows). |
 | `iterate` | `skills/iterate.md` | Audit the kit, ship one improvement. |
 | `critique` | `skills/critique.md` | Dry-run adoption as a stranger; file friction findings. |
 | `triage` | `skills/triage.md` | Route incoming GitHub issues. |
@@ -160,6 +162,8 @@ verbs — a docs kit ships docs, not pages.
 
 ```
 /march                       # do the right thing
+/next                        # one chunk, done fully
+/heads-down                  # questions first, then hours of /next
 /loop 45m /march             # autonomous loop, local
 /oversight                   # course-correct
 ```

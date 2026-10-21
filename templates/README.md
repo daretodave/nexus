@@ -26,6 +26,10 @@ templates/
 │   ├── lessons.md                     (omit unless the lessons layer is adopted; see below)
 │   └── CURRENT-STATE.md               (brownfield retrofit only; see existing-project.md)
 ├── skills/                            → repo's skills/
+│   ├── next.md                        (one chunk, done fully: pick, claim, delegated build, gate, pending close, land per owner mode)
+│   ├── next/build.md                  (/next's delegated build: worktree, builder brief, Workflow shape, harvest)
+│   ├── next/land.md                   (/next's close and land: settle, pending file, owner main vs contributor PR)
+│   ├── heads-down.md                  (ask up front, claim a list, loop /next assuming defaults, ASCII progress)
 │   ├── ship-a-chunk.md
 │   ├── ship-data.md                   (omit if no structured data layer)
 │   ├── ship-migration.md              (omit unless Structured data: pure-db / hybrid-with-managed-postgres)
