@@ -1,0 +1,14 @@
+/* Plot on a short window (app glue beside nexus.css, which stays verbatim from the handoff).
+   The Plot board is drawn 900px tall. Below that, eight or more idea cards grew the grid past the window and
+   .ob's overflow hidden took the footer (Back, Continue) with it. Here the grid shrinks to the room left and the
+   ideas column scrolls, so the footer stays put. Only below the board's height: the overflow would also clip
+   each card's bloom in from the thoughts box, which the board's own height has room for. */
+@media (max-height: 880px) {
+  .ob-main.plot-main { min-height: 0; }
+  .plot-main .plot-grid { flex: 0 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+  .plot-main .ideas {
+    min-height: 0; overflow-y: auto; scrollbar-width: thin;
+    grid-auto-rows: max-content; /* a squeezed row would drop each card's quote line */
+    margin: -6px; padding: 6px; /* room for the cards' elevation inside the scroller */
+  }
+}

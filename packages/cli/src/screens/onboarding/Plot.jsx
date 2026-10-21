@@ -15,6 +15,7 @@ import { ObFrame, Back, Next } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls, notServed } from './calls.js';
 import { messyReport } from './themes.js';
+import '../../styles/plot-fit.css';
 
 const PLACES = [
   { value: 'asap', label: 'asap', asap: true },
@@ -171,7 +172,7 @@ export default function Plot() {
   );
 
   return (
-    <ObFrame step="plot" foot={foot} mainStyle={{ maxWidth: 1360 }}>
+    <ObFrame step="plot" foot={foot} mainStyle={{ maxWidth: 1360 }} mainClass="plot-main">
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 20 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span className="kicker">step 4 · plot the first work</span>
