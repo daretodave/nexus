@@ -59,7 +59,7 @@ export const usePrompts = () => useResource('/api/prompts');
 /** GET /api/oversight: { live: asks, durable: [{ file, line, text }] }. */
 export const useOversight = (poll) => useResource('/api/oversight', { poll });
 
-/** GET /api/claims: { available, rows, error? }. */
+/** GET /api/claims: { available, rows, me?, error? } (claims.mjs list and whoami --json, as the home session). Writes: server.claimAction. */
 export const useClaims = (poll) => useResource('/api/claims', { poll });
 
 /** GET /api/progress?spec: { available, text } (ASCII progress). */
@@ -79,7 +79,6 @@ export const useRuns = (poll) => useResource('/api/runs', { poll });
  */
 export const MISSING = [
   { endpoint: 'POST /api/train', hook: 'trainAction', for: 'Pause all, the reboot train, and Resume all' },
-  { endpoint: 'POST /api/claims/(claim|hold|unhold|reassign|request)', hook: 'claimAction', for: 'row actions on chunks and specs (only release exists today)' },
   { endpoint: 'GET /api/cloud', hook: 'useCloudLoop', for: 'Cloud loop: schedule, next tick, paused state, runs as a timeline (today: /api/actions + /api/runs)' },
   { endpoint: 'POST /api/pin', hook: 'pinNote', for: 'a pinned note every agent reads on its next step ({ session, text })' },
   { endpoint: 'POST /api/sessions/:id/questions', hook: 'cockpit', for: 'answer a start question ({ index, answer, how }) or take every default ({ defaults: true })' },

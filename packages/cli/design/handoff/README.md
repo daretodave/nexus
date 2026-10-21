@@ -124,7 +124,9 @@ the reason (the 41.3 close carries the same list):
   runs, the Board rail's star names (an 8-character id until
   GET /api/sessions exists).
 - **Inert or reduced interactions:** the Board's drag grip (no
-  reorder action), Reassign (no target picker in the design), the
+  reorder action), Reassign (no target picker in the design: it asks
+  for a GitHub login until 40.12's picker), Hold for a contributor
+  (a hold is the owner's `claims assign`, so only the owner sees it), the
   orphaned worktree's "open" link (the board's `#rigel-3`: a
   worktree no session holds opens `/git?tidy=<branch>`, the panel's
   dry run saying whether /tidy would close it and why; closing it

@@ -62,6 +62,8 @@ export const server = {
   announce: (text) => api('/api/announce', { text }),
   claims: () => api('/api/claims'),
   releaseClaim: (id) => api('/api/claims/release', { id }),
+  /** POST /api/claims/(claim|release|hold|unhold|assign|reassign|request) { id, session?, to?, login?, title? }: the repo's claims CLI as the acting session. */
+  claimAction: (verb, body) => api(`/api/claims/${verb}`, body),
   progress: (spec) => api(`/api/progress${spec ? `?spec=${encodeURIComponent(spec)}` : ''}`),
   actions: () => api('/api/actions'),
   setWorkflow: (id, enabled) => api('/api/actions/workflow', { id, enabled }),

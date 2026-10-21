@@ -116,7 +116,7 @@ export function BoardSpec({ s, on, rowOn, repo, ownerName, busy, ck, prot, owner
         <div className="spec-acts">
           {sc ? <ClaimBadge cl={sc} whole /> : null}
           {canClaim ? <Act icon="flag" busy={busy === `spec ${s.id}`} onClick={() => on.claim(s.id)}>{prot ? 'Request spec' : 'Claim spec'}</Act> : null}
-          {canClaim && !prot ? <Act icon="hold" ghost busy={busy === `spec ${s.id}`} onClick={() => on.hold(s.id)}>Hold</Act> : null}
+          {canClaim && owner ? <Act icon="hold" ghost busy={busy === `spec ${s.id}`} onClick={() => on.hold(s.id)}>Hold</Act> : null}
           {sc && (owner || sc.person === 'you') && sc.kind !== 'cloud' ? <Act icon="release" ghost busy={busy === `spec ${s.id}`} onClick={() => on.release(s.id)}>Release</Act> : null}
         </div>
       </div>

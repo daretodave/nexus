@@ -8,7 +8,7 @@ import {
 import { parsePick, themeFor } from '../src/ui/theme-pick.js';
 import { nextRunMode, prefsFromRunMode, runModeFromPrefs } from '../src/ui/run-mode.js';
 import {
-  normalizePlan, claimView, indexClaims, withClaim, rowModel, lanes, specProgress, specKey, specOf,
+  normalizePlan, claimView, indexClaims, withClaim, rowModel, lanes, specProgress, specKey, specOf, meWhoFrom, railPeople,
 } from '../src/screens/board/model.js';
 import { norm, summary, trainOf } from '../src/screens/fleet/model.js';
 
@@ -163,6 +163,42 @@ test('rows: a claim moves the moon, and actions follow owner and protection', ()
   const ownerRow = rowModel(building, null, { owner: true, prot: false });
   assert.equal(ownerRow.canRelease, true);
   assert.equal(ownerRow.canReassign, true);
+});
+
+test('claims panel (A5): grouped by person and session, the star read from the claim tag', () => {
+  const at = new Date(NOW - 3600000).toISOString();
+  const rows = [
+    { id: '04.2', who: 'me', session: 'ab12cd34', star: 'sirius', at, state: 'live', mine: false },
+    { id: '04.3', who: 'me', session: 'ab12cd34', star: 'sirius', at, state: 'live', mine: false },
+    { id: '04.4', who: 'me', session: 'ef56', at, state: 'live', mine: true },
+    { id: '04', who: 'jun', session: 'j1', star: 'rigel', at, state: 'live' },
+    { id: '05.1', who: 'Sam Lee', held: 'samlee', at, state: 'held' },
+  ];
+  const ctx = { meWho: meWhoFrom(rows, false, { who: 'me' }), owner: false, ownerName: 'dave', sessions: [] };
+  assert.equal(ctx.meWho, 'me');
+  // a star session with no live row still reads as that star (s:<session>~<star>)
+  const v = claimView(rows[0], ctx, NOW);
+  assert.equal(v.kind, 'sess');
+  assert.equal(v.who, 'sirius');
+  assert.equal(claimView(rows[3], ctx, NOW).label, 'jun · rigel');
+  const people = railPeople(rows, ctx, { '04.2': { t: 'Two' } }, { '04': { title: 'Four' } }, NOW);
+  assert.deepEqual(people.map((p) => p.name), ['you', 'jun', 'samlee']);
+  const you = people[0];
+  assert.deepEqual(you.sessions.map((s) => [s.name, s.star, s.claims.map((c) => c.id)]), [['sirius', 'sirius', ['04.2', '04.3']], ['ef56', '', ['04.4']]]);
+  assert.equal(you.sessions[0].claims[0].t, 'Two');
+  assert.deepEqual(people[1].sessions.map((s) => [s.name, s.claims.map((c) => c.id)]), [['rigel', ['spec 04']]]);
+  assert.equal(people[2].sessions[0].name, 'held');
+  // the server's whoami wins; without it, a mine row or the owner's privileged name
+  assert.equal(meWhoFrom(rows, false), 'me');
+  assert.equal(meWhoFrom([], true), 'privileged_agent_session');
+  assert.equal(meWhoFrom([], false), null);
+});
+
+test('a hold is the owner\'s: contributors never see Hold', () => {
+  const p = normalizePlan(PLAN);
+  const free = withClaim(p.chunks[2], { chunk: {}, spec: {} });
+  assert.equal(rowModel(free, null, { owner: false, prot: false }).canHold, false);
+  assert.equal(rowModel(free, null, { owner: true, prot: false }).canHold, true);
 });
 
 test('lanes: next-up puts asap first and leaves closed chunks out', () => {

@@ -59,7 +59,13 @@ You need no API key.
   status` reads it (`progress.mjs`, pending closes counted). Sort by
   next up, spec, size or claimed; just-plotted chunks are marked. Chunk
   it on an unchunked spec starts `/next chunk NN`. Claims show by
-  person and session; claim, hold and release from the row. A chunk
+  person and session (the star from each claim's `s:<session>~<star>`
+  tag); claim, release, hold, assign and reassign from the row or the
+  rail, each one run of the repo's own `scripts/claims.mjs` (never a
+  copy of its rules), so a refusal is the module's own words. The owner
+  holds, assigns and reassigns anyone's claim; where claims are
+  protected, a contributor's "Request claim" opens a GitHub issue asking
+  the owner to assign it (`POST /api/claims/:verb`). A chunk
   the plan leaves without words gets a one-line summary from Claude
   Haiku, marked as AI, cached in `.nexus/cache/` and never written to
   the plan (one batched call per board load, on your Claude Code
@@ -129,6 +135,13 @@ name, a worktree at `../.nexus-wt/<name>-<n>` on branch
 `nexus/<name>-<n>`, and a ledger in `.nexus/sessions/`. Pause waits
 for the turn in flight and holds what you send until you resume.
 Closing a session ends its ledger; its worktree stays for `/tidy`.
+
+The claims panel runs `scripts/claims.mjs` as the acting session (the
+home session unless a call names another) with the same two variables,
+and drops `CLAUDECODE` and every `CLAUDE_CODE_*` variable from that
+child's environment: the server acts for you, not as a Claude Code
+session, so one started from inside Claude Code never claims under
+that session's id or trips the module's hook-marker check.
 
 ## Headless: one prompt, JSON out
 

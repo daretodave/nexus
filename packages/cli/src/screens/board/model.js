@@ -9,7 +9,8 @@
 //             planPr?: { number?, state?, title?, adds?, note?, landed? } }
 //   chunk:  { id, spec?, title|t, size, state?: 'ready'|'claimed'|'building'|'review'|'closed', closed?, asap?,
 //             plotted?: 'main' | '#151' | true, landed?, ai? }
-//   claims: [{ id, who, host, at, session, pr, held, state: 'live'|'stale'|'pr'|'held', mine }]
+//   claims: [{ id, who, host, at, session, star?, pr, held, state: 'live'|'stale'|'pr'|'held', mine }]  (claims.mjs list --json;
+//           star is the session's star name from its tag, s:<session>~<star>)
 //   sessions (optional): [{ id, name, kind: 'local'|'terminal'|'other', state, phase, chunk, claimsSession? }]
 
 import { isStarName } from '../../ui/stars.js';
@@ -101,6 +102,8 @@ export function claimView(row, ctx, now = Date.now()) {
     return { ...base, kind: 'held', person: name, label: `${name} · held`, since: 'never expires', exp: 'held · never expires' };
   }
   const sess = (sessions || []).find((s) => s.id === row.session || s.claimsSession === row.session);
+  // A claim's tag names its session's star (s:<session>~<star>) even when no live session row does.
+  const star = sess?.name || row.star || '';
   const exp = stale ? `stale · ${since}` : pr ? `in review · ${pr}` : `${since} · ${left} left`;
   if (isMe) {
     if (sess && sess.kind !== 'terminal' && isStarName(sess.name)) {
@@ -108,9 +111,10 @@ export function claimView(row, ctx, now = Date.now()) {
       return { ...base, kind: 'sess', person: 'you', who: sess.name, label: sess.name, since: fell ? 'fell over' : (pr || since), exp: fell ? `fell over · ${left} left` : exp, stale: stale || fell, sess };
     }
     if (sess) return { ...base, kind: 'other', person: 'you', label: `${sess.name} · terminal`, since: pr || since, exp, initial: sess.name.slice(0, 1), sess };
+    if (isStarName(star)) return { ...base, kind: 'sess', person: 'you', who: star, label: star, since: pr || since, exp };
     return { ...base, kind: 'other', person: 'you', label: 'you', since: pr || since, exp, initial: 'y' };
   }
-  const sname = sess?.name || (row.session ? String(row.session).slice(0, 8) : '');
+  const sname = star || (row.session ? String(row.session).slice(0, 8) : '');
   return { ...base, kind: 'other', person: whoName, label: sname ? `${whoName} · ${sname}` : whoName, since: pr || since, exp, initial: whoName.slice(0, 1).toLowerCase() };
 }
 
@@ -127,8 +131,8 @@ export function indexClaims(rows, ctx, now) {
 }
 
 /** The current user's claims name: a claim of this session names it; the owner's checkout claims as the privileged agent. */
-export function meWhoFrom(rows, owner) {
-  return (rows || []).find((r) => r.mine && !r.held)?.who ?? (owner ? PRIVILEGED : null);
+export function meWhoFrom(rows, owner, me) {
+  return me?.who || ((rows || []).find((r) => r.mine && !r.held)?.who ?? (owner ? PRIVILEGED : null));
 }
 
 // ---- rows -------------------------------------------------------------------
@@ -169,7 +173,8 @@ export function rowModel(c, covered, ui) {
     canClaim: free && !requested && !prot,
     canRequest: free && !requested && prot,
     canRelease: !!cl && !cl.via && (mine || owner) && cl.kind !== 'cloud' && !held,
-    canHold: !closed && !held && !cl && !prot,
+    // A hold is the owner's assign (claims.mjs refuses anyone else's).
+    canHold: owner && !closed && !held && !cl,
     canUnhold: held && (owner || mine),
     canReassign: owner && !!cl && !cl.via && !closed && cl.kind !== 'cloud',
     showPop: pop === c.id,
@@ -266,7 +271,7 @@ export function railPeople(rows, ctx, chunkById, specById, now) {
     if (!p.sessions.has(skey)) {
       const s = v.sess;
       const star = v.kind === 'sess' ? v.who : '';
-      const name = v.kind === 'held' ? 'held' : v.kind === 'cloud' ? `run #${v.run}` : (s?.name || (v.session ? String(v.session).slice(0, 8) : 'no session'));
+      const name = v.kind === 'held' ? 'held' : v.kind === 'cloud' ? `run #${v.run}` : (s?.name || r.star || (v.session ? String(v.session).slice(0, 8) : 'no session'));
       const d = v.kind === 'held' ? '' : s ? sessionWord(s) : v.kind === 'cloud' && r.at ? hhmm(r.at) : '';
       p.sessions.set(skey, { key: skey, name, star, d, claims: [] });
     }

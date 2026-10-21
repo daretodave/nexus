@@ -71,7 +71,8 @@ export default function Board() {
   const rows = claimsR.status === 'ready' && Array.isArray(claimsR.data?.rows) ? claimsR.data.rows : [];
   const sessions = sessR.status === 'ready' && Array.isArray(sessR.data) ? sessR.data : [];
   const cloudNext = cloud.status === 'ready' && cloud.data?.next ? (/T/.test(cloud.data.next) ? hhmm(cloud.data.next) : String(cloud.data.next)) : '';
-  const ctx = useMemo(() => ({ meWho: meWhoFrom(rows, owner), owner, ownerName, sessions, cloudNext }), [rows, owner, ownerName, sessions, cloudNext]);
+  const me = claimsR.status === 'ready' ? claimsR.data?.me || null : null;
+  const ctx = useMemo(() => ({ meWho: meWhoFrom(rows, owner, me), owner, ownerName, sessions, cloudNext }), [rows, owner, me, ownerName, sessions, cloudNext]);
   const claims = useMemo(() => indexClaims(rows, ctx), [rows, ctx]);
 
   const chunks = useMemo(() => {
@@ -94,15 +95,23 @@ export default function Board() {
   const ui = { owner, prot, ownerName, req, pop };
 
   // ---- actions -------------------------------------------------------------
-  const act = useCallback(async (verb, id) => {
+  // Every verb is one run of the repo's claims CLI on the server (POST /api/claims/:verb), as the home session; a
+  // release or unhold of your own claim names that claim's session, so a claim another of your sessions made is
+  // still yours to drop (the CLI matches the person as well as the session).
+  const act = useCallback(async (verb, id, extra = {}) => {
     setBusy(/^\d+$/.test(id) ? `spec ${id}` : id);
     try {
-      const res = verb === 'release' ? await server.releaseClaim(id) : await api(`/api/claims/${verb}`, { id });
+      const own = verb === 'release' || verb === 'unhold' ? rows.find((r) => String(r.id) === String(id) && (r.mine || (ctx.meWho && r.who === ctx.meWho))) : null;
+      const res = await server.claimAction(verb, { id, ...(own?.session ? { session: own.session } : null), ...extra });
       if (res && res.ok === false) {
         const msg = res.error || res.out || 'The claims module said no.';
         if (/protected/i.test(msg)) setProtLive(true);
         toast({ kind: 'error', title: `Couldn't ${VERB[verb]} ${id}`, body: msg });
         return false;
+      }
+      if (verb === 'request') {
+        const n = res?.issue?.number;
+        toast({ kind: 'info', title: `Asked ${ownerName} for ${/^\d+$/.test(id) ? `spec ${id}` : id}`, body: n ? `Issue #${n} carries the request${res.issue.url ? `: ${res.issue.url}` : ''}.` : 'The request is an issue on the repo.' });
       }
       claimsR.reload();
       return true;
@@ -117,7 +126,16 @@ export default function Board() {
     } finally {
       setBusy(null);
     }
-  }, [claimsR, toast]);
+  }, [claimsR, toast, rows, ctx.meWho, ownerName]);
+
+  /** Reassign: the person's GitHub login (the target picker is 40.12's); their claims name when a hold already carries it. */
+  const reassign = useCallback((id) => {
+    let login = '';
+    try { login = (window.prompt(`Reassign ${id} to whom? Their GitHub login:`) || '').trim().replace(/^@/, ''); } catch { /* no prompt: nothing to do */ }
+    if (!login) return;
+    const known = rows.find((r) => r.held && String(r.held).toLowerCase() === login.toLowerCase());
+    act('reassign', id, { login, ...(known?.who ? { to: known.who } : null) });
+  }, [rows, act]);
 
   const openSpec = useCallback((spec) => {
     setView('spec');
@@ -130,12 +148,12 @@ export default function Board() {
   const rowOn = {
     claim: (id) => act('claim', id),
     request: (id) => setPop((p) => (p === id ? null : id)),
-    sendRequest: async (id) => { setPop(null); if (await act('request', id)) setReq((r) => ({ ...r, [id]: true })); },
+    sendRequest: async (id) => { setPop(null); if (await act('request', id, { title: byId[id]?.t || '' })) setReq((r) => ({ ...r, [id]: true })); },
     closePop: () => setPop(null),
     release: (id) => act('release', id),
     hold: (id) => act('hold', id),
     unhold: (id) => act('unhold', id),
-    reassign: (id) => act('reassign', id),
+    reassign,
     open: openSpec,
   };
 
@@ -186,7 +204,7 @@ export default function Board() {
 
   const specOn = {
     toggle: (id) => setOpenOv((o) => ({ ...o, [id]: !(o[id] ?? specOpenDefault(id)) })),
-    claim: (id) => (prot ? act('request', id).then((ok) => ok && setReq((r) => ({ ...r, [`spec${id}`]: true }))) : act('claim', id)),
+    claim: (id) => (prot ? act('request', id, { title: specById[id]?.title || '' }).then((ok) => ok && setReq((r) => ({ ...r, [`spec${id}`]: true }))) : act('claim', id)),
     hold: (id) => act('hold', id),
     release: (id) => act('release', id),
     startChunk,
@@ -316,7 +334,7 @@ export default function Board() {
           {planPr ? <PlanPr pr={planPr} /> : null}
           <ClaimsRail people={people} owner={owner} busy={busy} note={claimsNote}
             empty="Nobody holds a claim. Every open chunk is free to take."
-            onRelease={(id) => act('release', id)} onReassign={(id) => act('reassign', id)} />
+            onRelease={(id) => act('release', id)} onReassign={reassign} />
         </aside>
       </div>
       <ToastHost toasts={toasts.map((t) => ({ ...t, onDismiss: () => setToasts((l) => l.filter((x) => x.id !== t.id)) }))} />
