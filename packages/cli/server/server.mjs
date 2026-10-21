@@ -27,6 +27,8 @@ import { claimsAction, listClaims, SESSION as CLAIMS_SESSION } from './claims.mj
 import { createStepWatch, sessionTimes } from './session-times.mjs';
 import { tonightStart } from '../shared/times.mjs';
 import { createMask, createSecrets } from './secrets.mjs';
+import { readDesign } from './design.mjs';
+import { artifactLink } from '../shared/design-link.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -269,6 +271,24 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return { status: 200, ok: true, id, name, cwd: r.resume.cwd, runId: r.run.runId, ...manual };
   }
 
+  /**
+   * POST /api/design/handoff { link, session? }: "Hand off a design" (spec 43, A7). The link is checked first
+   * (shared/design-link.mjs), then `/design ingest <link>` goes to the home session, or to a new one when `session` is
+   * "new" (no worktree of its own: /design ingest plots in the plot's worktree).
+   */
+  async function designHandoff(b) {
+    const l = artifactLink(b.link);
+    if (!l.ok) return { status: 400, error: l.error };
+    const command = `/design ingest ${l.link}`;
+    if (b.session === 'new') {
+      const r = await startSession({ worktree: false, prompt: command });
+      if (r.status !== 200) return r;
+      return { status: 200, ok: true, session: r.id, name: r.name, link: l.link, command };
+    }
+    await home.send(command);
+    return { status: 200, ok: true, session: home.id, name: home.name || '', link: l.link, command };
+  }
+
   /** POST /api/sessions/:id/(pause|resume|close) for a session this server runs. */
   async function sessionAction(key, action) {
     const s = sessionOf(key);
@@ -426,6 +446,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo, ghOpts));
         case 'GET /api/recover': { const r = await recoverRead(url.searchParams.get('dir') || ''); return send(res, r.status, r); }
         case 'POST /api/recover/resume': { const r = await recoverResume(await body(req)); return send(res, r.status, r); }
+        // The design handoff (spec 43, A7; design.mjs): the repo's port-map.mjs read as a gallery, and a link sent to /design ingest.
+        case 'GET /api/design': return send(res, 200, await readDesign(repo));
+        case 'POST /api/design/handoff': { const r = await designHandoff(await body(req)); return send(res, r.status, r); }
         case 'GET /api/cloud': { const r = await cloudNow(); return send(res, r.ok ? 200 : r.status || 502, r); }
         // The vault (spec 42, A13; secrets.mjs): names and status out, a value in only through these POST bodies.
         case 'GET /api/secrets': { const { status, ...r } = await secrets.status(); return send(res, status, r); }
