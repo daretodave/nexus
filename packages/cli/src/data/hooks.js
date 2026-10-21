@@ -27,11 +27,13 @@ export function useResource(path, { poll, skip } = {}) {
     if (skip || !path) return;
     try {
       const data = await api(path);
-      if (alive.current) setSt({ status: 'ready', data, error: null });
+      if (alive.current) setSt({ status: 'ready', data, error: null, path });
     } catch (e) {
       if (!alive.current) return;
       if (e.status === 404) { gone.current = true; setSt({ status: 'missing', data: null, error: null }); }
-      else setSt((s) => ({ status: s.data ? 'ready' : 'error', data: s.data, error: e.message }));
+      // A failed poll keeps the last good data, but only this path's: a new path (Recover's ?dir=) that fails
+      // reads as an error, not as the previous path's data.
+      else setSt((s) => (s.data && s.path === path ? { ...s, error: e.message } : { status: 'error', data: null, error: e.message, path }));
     }
   }, [path, skip]);
   useEffect(() => {
