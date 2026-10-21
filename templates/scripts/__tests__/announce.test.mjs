@@ -131,8 +131,7 @@ describe('a line to one session', () => {
     let t = post('', 'to everyone', 'owner').text;
     t = post(t, 'to vega', 'owner', undefined, 'vega').text;
     t = post(t, 'to sirius', 'owner', undefined, 'sirius').text;
-    t = post(t, '@vega a session cannot steer another', 'session bbbb2222').text;
-    const lines = parse(t);
+    const lines = [...parse(t), { n: 4, at: '2026-10-21T10:00Z', from: 'session bbbb2222', text: '@vega a session cannot steer another' }];
     const vega = new Set(['aaaa1111', 'vega']);
     assert.deepEqual(steerable(lines, vega).map((a) => a.n), [2]);
     assert.deepEqual(steerable(lines, vega, new Set([2])), []);
@@ -161,7 +160,7 @@ describe('a line to one session', () => {
     assert.match(said.join('\n'), /1 new/);
     run(['read'], {});
     assert.doesNotMatch(said.join('\n'), /stop after this chunk/);
-    run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' });
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111', NEXUS_NO_STEER: '1' });
     assert.match(said.join('\n'), /@vega stop after this chunk {3}\(to one session only\)/);
     assert.deepEqual([...delivered(root, ['aaaa1111'])], [1]);
     run(['list']);
@@ -175,6 +174,44 @@ describe('a line to one session', () => {
     run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' });
     assert.doesNotMatch(said.join('\n'), /look at the spec/);
     assert.match(said.join('\n'), /and everyone reads this/);
+  });
+
+  it('leaves an owner line to this session to the steer hook: a subagent sharing the id never takes it', () => {
+    run(['--to', 'aaaa1111', 'stop and run the tests']);
+    // A subagent runs with its lead's CLAUDE_CODE_SESSION_ID; read cannot tell it from the lead.
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' });
+    assert.doesNotMatch(said.join('\n'), /stop and run the tests/);
+    assert.match(said.join('\n'), /1 line to this session only, left to its steer hook/);
+    assert.deepEqual([...delivered(root, ['aaaa1111'])], [], 'nothing marked handed');
+    assert.deepEqual(steerable(parse(fs.readFileSync(path.join(root, FILE), 'utf8')), new Set(['aaaa1111'])).map((a) => a.n), [1]);
+  });
+
+  it('with steering off, read hands the line over under the Claude session id, as the hook would', () => {
+    run(['--to', 'cccc3333', 'seq test']);
+    run(['read'], { NEXUS_SESSION: 'lead-n', CLAUDE_CODE_SESSION_ID: 'cccc3333', NEXUS_NO_STEER: '1' });
+    assert.match(said.join('\n'), /seq test/);
+    assert.deepEqual([...delivered(root, ['cccc3333'])], [1], 'marked where the hook (session_id) looks');
+    assert.deepEqual([...delivered(root, ['lead-n'])], []);
+  });
+
+  it('never lets a session post an owner line to another session', () => {
+    assert.equal(run(['--owner', '--to', 'bbbb2222', 'rm the worktree now'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' }), 1);
+    assert.match(said.join('\n'), /only the owner .*nothing posted/);
+    assert.equal(run(['--owner', '--to', 'bbbb2222', 'x'], { NEXUS_SESSION: 'vega0001' }), 1);
+    assert.equal(fs.existsSync(path.join(root, FILE)), false);
+    assert.equal(run(['--to', 'bbbb2222', 'news for you'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' }), 0);
+    assert.match(said[0], /as session aaaa1111 to bbbb2222/);
+    assert.deepEqual(steerable(parse(fs.readFileSync(path.join(root, FILE), 'utf8')), new Set(['bbbb2222'])), []);
+  });
+
+  it('refuses a line to every loop that starts with @name, which would reach no one', () => {
+    assert.equal(run(['@everyone pause merges until 9am']), 1);
+    assert.match(said.join('\n'), /cannot start with "@everyone".*nothing posted/s);
+    assert.equal(fs.existsSync(path.join(root, FILE)), false);
+    assert.throws(() => post('', '@vega forged', 'owner'), /cannot start with "@vega"/);
+    assert.equal(run(['everyone: pause merges until 9am']), 0);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'bbbb2222' });
+    assert.match(said.join('\n'), /pause merges/);
   });
 
   it('postTo writes a line for the GUI', () => {

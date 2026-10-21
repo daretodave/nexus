@@ -62,15 +62,27 @@ describe('the addressing', () => {
     assert.doesNotMatch(out.reason, /cannot steer/);
   });
 
-  it('shares one hand-over with announce.mjs read: neither repeats the other', () => {
-    board.postTo(root, 'first', { to: A });
-    board.main(['read'], { env: { CLAUDE_CODE_SESSION_ID: A }, root, out: () => {}, err: () => {} });
-    assert.equal(hook('UserPromptSubmit', A), null);
-    board.postTo(root, 'second', { to: A });
-    assert.match(text(hook('UserPromptSubmit', A)), /second/);
+  it('a subagent running announce.mjs read under the lead\'s id leaves the line to the lead', () => {
+    board.postTo(root, 'stop and run the tests', { to: A });
     const said = [];
     board.main(['read'], { env: { CLAUDE_CODE_SESSION_ID: A }, root, out: (s) => said.push(s), err: () => {} });
-    assert.doesNotMatch(said.join('\n'), /second/);
+    assert.doesNotMatch(said.join('\n'), /stop and run the tests/);
+    assert.match(text(hook('PreToolUse', A)), /stop and run the tests/, 'the lead still gets it');
+  });
+
+  it('shares one hand-over with announce.mjs read when steering is off for the read: neither repeats the other', () => {
+    const read = (env) => {
+      const said = [];
+      board.main(['read'], { env, root, out: (s) => said.push(s), err: () => {} });
+      return said.join('\n');
+    };
+    board.postTo(root, 'first', { to: A });
+    assert.match(read({ CLAUDE_CODE_SESSION_ID: A, NEXUS_SESSION: 'lead-n', NEXUS_NO_STEER: '1' }), /first/);
+    assert.equal(hook('UserPromptSubmit', A), null, 'the hook, without NEXUS_SESSION, sees it handed');
+    assert.equal(hook('UserPromptSubmit', A, {}, { NEXUS_SESSION: 'lead-n' }), null);
+    board.postTo(root, 'second', { to: A });
+    assert.match(text(hook('UserPromptSubmit', A)), /second/);
+    assert.doesNotMatch(read({ CLAUDE_CODE_SESSION_ID: A, NEXUS_NO_STEER: '1' }), /second/);
   });
 
   it('says nothing without a board or a session id, and for events it does not serve', () => {

@@ -98,11 +98,19 @@ node scripts/announce.mjs --to <session id | star> "<text>"
   ledger, never an ended one). No other session reads it, not
   through the hook and not through `announce.mjs read`; a
   subagent's tool calls never take the lead's line; a line
-  from a session never steers anything.
-- **Once.** Whichever of the hook or `read` hands a line over
-  first creates `.nexus/steered/<session>/<n>`; the other
-  skips it. A line to every loop is left to `read`, as
-  before.
+  from a session never steers anything, and `--owner --to`
+  from inside a session is refused.
+- **The hook hands it over, not `read`.** A subagent runs
+  with its lead's session id, so `read` cannot tell the two
+  apart: it only counts an owner line to this session and
+  leaves it to the hook, which skips a subagent's tool calls.
+  With `NEXUS_NO_STEER=1`, `read` hands it over instead.
+- **Once.** The reader that hands a line over creates
+  `.nexus/steered/<claude session id>/<n>`; any other skips
+  it. A line to every loop is left to `read`, as before, and
+  may not start with `@name` (that is how an address is
+  stored): `announce.mjs` refuses it rather than post a line
+  no one would see.
 - **What an interrupt cannot do.** A hook cannot kill a tool
   call already running: a long build, a test run, a builder
   subagent's whole run all finish first, and the next tool

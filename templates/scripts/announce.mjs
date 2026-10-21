@@ -18,10 +18,12 @@
 // session's line is news, never an instruction. An owner line `REBOOT <slug> …` preempts everything: the loop runs
 // `/reboot-ready <slug>` now, whatever it was doing.
 //
-// A line posted `--to` a session is stored as `@<session> <text>`: `read` shows it to that session only (its full id,
-// or the star of its own held ledger) and only once, and the steer hook (`.claude/hooks/steer.mjs`) hands it to that
-// session at its next tool boundary. Either way it is handed over once: one marker file per session and line
-// (`.nexus/steered/<session>/<n>`, created exclusively), so two readers in one session never both deliver it.
+// A line posted `--to` a session is stored as `@<session> <text>`, so a line to every loop may not start with `@name`.
+// It is for that session only (its full id, or the star of its own held ledger). An owner line to it is handed over by
+// the steer hook (`.claude/hooks/steer.mjs`) at its next tool boundary; `read` only counts it, because a subagent runs
+// with its lead's session id and must never take the lead's line. With NEXUS_NO_STEER=1, `read` hands it over. It is
+// handed over once: one marker file per session and line (`.nexus/steered/<claude session id>/<n>`, created
+// exclusively). Only the owner sends an owner line to one session: a session's `--owner --to` is refused.
 //
 // Environment: NEXUS_SESSION (this session's id), else CLAUDE_CODE_SESSION_ID; neither means a terminal (the owner).
 import fs from 'node:fs';
@@ -61,6 +63,9 @@ export function post(text, words, from, at = new Date().toISOString().slice(0, 1
     if (!SESSION_NAME.test(String(to))) throw new Error(`announce: --to takes a session id or star name, not "${to}"`);
     clean = clean.replace(TO, '');
     if (clean) clean = `@${to} ${clean}`;
+  } else if (TO.test(clean)) {
+    // `@name …` is how an addressed line is stored: posted to every loop, it would reach no one.
+    throw new Error(`announce: a line to every loop cannot start with "@${TO.exec(clean)[1]}" (it would read as one to that session only); reword it, or post it --to <session> (nothing posted)`);
   }
   if (!clean) throw new Error('announce: say something');
   const lines = parse(text);
@@ -229,15 +234,21 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
     const seen = readJson(seenFile);
     const key = env.NEXUS_SESSION || env.CLAUDE_CODE_SESSION_ID || 'terminal';
     const all = argv.includes('--all');
-    const ids = [env.NEXUS_SESSION, env.CLAUDE_CODE_SESSION_ID].filter(Boolean);
+    // The Claude session id first: it is the id the steer hook marks a hand-over under.
+    const ids = [env.CLAUDE_CODE_SESSION_ID, env.NEXUS_SESSION].filter(Boolean);
     const names = identities(ids, ids.length ? ledgers(base) : []);
     const handed = delivered(base, [...names]);
+    // A subagent runs with its lead's session id, so `read` cannot tell the two apart: an owner line to this session
+    // is left to the steer hook, which skips a subagent's tool calls. With steering off, `read` hands it over instead.
+    const steered = env.NEXUS_NO_STEER !== '1';
+    const toHook = (a) => steered && a.from === 'owner' && addressee(a) !== null;
+    const mine = (all ? lines : unread(lines, seen[key] ?? 0)).filter((a) => forMe(a, names));
+    const waiting = all ? [] : mine.filter((a) => toHook(a) && !handed.has(a.n));
     // A line to another session is never shown; one to this session is handed over once, by whichever reader is first.
-    const fresh = (all ? lines : unread(lines, seen[key] ?? 0))
-      .filter((a) => forMe(a, names))
-      .filter((a) => all || addressee(a) === null || (!handed.has(a.n) && claim(base, ids[0], a.n)));
+    const fresh = mine.filter((a) => all || addressee(a) === null || (!toHook(a) && !handed.has(a.n) && claim(base, ids[0], a.n)));
     const r = reboot(fresh);
     if (r) out(`announce: REBOOT ${r.slug}: stop now and run /reboot-ready ${r.slug} (it preempts the chunk in flight)`);
+    if (waiting.length) out(`announce: ${waiting.length} line${waiting.length === 1 ? '' : 's'} to this session only, left to its steer hook (it hands ${waiting.length === 1 ? 'it' : 'them'} to the lead session at its next tool call)`);
     if (!fresh.length) out('announce: nothing new');
     else {
       out(`announce: ${fresh.length} new (an owner line holds for the rest of this session and outranks the command):`);
@@ -268,6 +279,15 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
   }
   const words = argv.filter((a) => !FLAGS.has(a)).join(' ');
   const from = author(env, argv.includes('--owner'));
+  // An owner line to one session interrupts it: only the owner's own terminal (or the GUI's postTo) may send one.
+  if (to && author(env) !== 'owner' && from === 'owner') {
+    err(`announce: only the owner (a terminal, or the GUI) sends an owner line to one session; a session posts --to as news, without --owner (nothing posted)`);
+    return 1;
+  }
+  if (to === null && TO.test(String(words).trim())) {
+    err(`announce: a line to every loop cannot start with "@${TO.exec(String(words).trim())[1]}" (it would read as one to that session only); reword it, or post it --to <session> (nothing posted)`);
+    return 1;
+  }
   const posted = post(text, words, from, undefined, to);
   fs.writeFileSync(file, posted.text);
   out(`announce: posted ${posted.n} as ${from}${to ? ` to ${to}` : ''}`);
