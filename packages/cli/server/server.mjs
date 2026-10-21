@@ -26,6 +26,7 @@ import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
 import { claimsAction, listClaims, SESSION as CLAIMS_SESSION } from './claims.mjs';
 import { createStepWatch, sessionTimes } from './session-times.mjs';
 import { tonightStart } from '../shared/times.mjs';
+import { createMask, createSecrets } from './secrets.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -60,8 +61,9 @@ function readPrompt(name) {
  * @param {function} [o.ghRun]       run(cmd, args, opts) for every gh call (tests inject a fake gh; never PATH)
  * @param {() => Promise<string>} [o.ghLogin]  how to learn the gh login once (tests stub it; default asks gh)
  * @param {object} [o.git]          createGitView overrides (tests: claims, ttl)
+ * @param {object} [o.secrets]      the secrets API's seams (tests): { run } a sink's runner, { vault } openVault overrides
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, git: gitOpts } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, git: gitOpts, secrets: secretsOpts = {} } = {}) {
   const ghOpts = ghRun ? { run: ghRun } : {};
   let prefs = await repoMod.readPrefs(repo);
   // Run mode moved to .nexus/local.json (A11): carry an older GUI's prefs copy over once.
@@ -74,6 +76,15 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   // nothing there calls out to gh unless the test hands a ghLogin.
   const login = ghLoginOnce(ghLogin || (injected ? async () => '' : undefined));
   if (!injected) login();
+  // The vault mask (secrets.mjs, A13): every JSON answer and every SSE frame passes through it, fed by the vault's
+  // current values. Under an injected provider (tests) a sink runs only through the injected runner, never a real tool.
+  const mask = createMask();
+  const noSink = () => ({ status: 127, missing: true });
+  const secrets = createSecrets({ repo, mask, run: secretsOpts.run || (injected ? noSink : undefined), vault: secretsOpts.vault, ...(secretsOpts.owner ? { owner: secretsOpts.owner } : {}) });
+  await secrets.refresh().catch(() => null);
+  const refreshMask = setInterval(() => { secrets.refresh().catch(() => null); }, 5000);
+  refreshMask.unref?.();
+  const send = (res, status, data) => sendJson(res, status, mask.deep(data));
   const sessions = new Map();
   async function host({ id, name = '', cwd, place = {}, listed = false, resume = null }) {
     const s = await createSession({
@@ -82,6 +93,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       // An injected provider object serves the home session only; a factory serves every session (tests).
       provider: typeof injected === 'function' ? injected : sessions.size ? undefined : injected,
       permissionMode: () => prefs.permissionMode,
+      mask,
     });
     sessions.set(id, s);
     return s;
@@ -94,7 +106,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   const hostedRows = () => [...sessions.values()].map((s) => ({ id: s.id, claude: s.claude, name: s.name, place: s.place, listed: s.listed, pause: s.pause, at: s.at }));
   // A session this server does not run (a terminal one) gets a quiet channel: a hello with nothing in it, never
   // another session's stream.
-  const elsewhere = createHub();
+  const elsewhere = createHub({ mask });
   elsewhere.setStatus({ state: 'idle', hosted: false });
 
   const server = http.createServer((req, res) => {
@@ -349,6 +361,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     if (bad) return send(res, 403, { error: bad });
     const route = `${req.method} ${url.pathname}`;
     try {
+      await secrets.refresh().catch(() => null); // a value set in a terminal since the last answer is masked in this one
       switch (route) {
         case 'GET /api/events': return (sessionOf(url.searchParams.get('session'))?.hub || elsewhere).attach(req, res);
         case 'GET /api/server': return send(res, 200, { nexus: true, pid: process.pid, repo, root: await primaryRoot(repo), home: home.id, sessions: sessions.size });
@@ -414,6 +427,15 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/recover': { const r = await recoverRead(url.searchParams.get('dir') || ''); return send(res, r.status, r); }
         case 'POST /api/recover/resume': { const r = await recoverResume(await body(req)); return send(res, r.status, r); }
         case 'GET /api/cloud': { const r = await cloudNow(); return send(res, r.ok ? 200 : r.status || 502, r); }
+        // The vault (spec 42, A13; secrets.mjs): names and status out, a value in only through these POST bodies.
+        case 'GET /api/secrets': { const { status, ...r } = await secrets.status(); return send(res, status, r); }
+        case 'GET /api/secrets/audit': { const { status, ...r } = await secrets.audit(); return send(res, status, r); }
+        case 'POST /api/secrets/import': { const { status, ...r } = await secrets.importEnv(await body(req)); return send(res, status, r); }
+      }
+      const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)$/.exec(route);
+      if (sec) {
+        const { status, ...r } = await secrets.store(decodeURIComponent(sec[1]), await body(req));
+        return send(res, status, r);
       }
       // The claims panel (spec 40 A5): each verb is one run of the repo's claims CLI as the acting session (claims.mjs).
       const cv = /^POST \/api\/claims\/([a-z]+)$/.exec(route);
@@ -518,6 +540,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     urlFor: (id) => `http://127.0.0.1:${actual}/s/${encodeURIComponent(id)}?t=${encodeURIComponent(token)}`,
     async close() {
       if (poll) clearInterval(poll);
+      clearInterval(refreshMask);
       const root = await primaryRoot(repo);
       for (const s of sessions.values()) {
         await s.close();
@@ -530,7 +553,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   };
 }
 
-function send(res, status, data) {
+function sendJson(res, status, data) {
   if (res.headersSent) return res.end();
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
   res.end(JSON.stringify(data));

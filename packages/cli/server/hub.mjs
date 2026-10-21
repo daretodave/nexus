@@ -5,13 +5,15 @@
 // - A `: ping` comment every 20 s keeps proxies and sleeping tabs honest.
 // - Writes are coalesced into 300 ms flushes; consecutive text deltas for
 //   the same transcript item merge into one event.
+// - `mask` (server/secrets.mjs createMask) runs over every frame on its way
+//   out, the hello replay included: a vault value never reaches a tab.
 
 export const PING_MS = 20000;
 export const FLUSH_MS = 300;
 const MAX_BEATS = 5000;
 const MAX_TRANSCRIPT = 2000;
 
-export function createHub({ pingMs = PING_MS, flushMs = FLUSH_MS } = {}) {
+export function createHub({ pingMs = PING_MS, flushMs = FLUSH_MS, mask = null } = {}) {
   const clients = new Set();
   const beats = [];
   const transcript = [];
@@ -21,7 +23,7 @@ export function createHub({ pingMs = PING_MS, flushMs = FLUSH_MS } = {}) {
   const extras = {};
 
   function frame(type, data) {
-    return `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
+    return `event: ${type}\ndata: ${JSON.stringify(mask ? mask.deep(data) : data)}\n\n`;
   }
 
   function flush() {

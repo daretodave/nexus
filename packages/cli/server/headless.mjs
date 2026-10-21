@@ -18,10 +18,14 @@
 // denied and listed in permission_denials. AskUserQuestion is denied
 // with a note to take the recommended option. `--permission-mode` may
 // widen this to acceptEdits, auto or plan; bypassPermissions is refused.
+//
+// The output passes through the repo's vault mask (secrets.mjs, A13): a
+// vault value in the result prints as `[secret NAME]`.
 
 import path from 'node:path';
 import fs from 'node:fs';
 import { inputQueue, userMessage, PERMISSION_MODES } from './provider.mjs';
+import { maskFor } from './secrets.mjs';
 
 export const RUN_HELP = `nexus run: answer one prompt headless (one turn, JSON out, no browser).
 
@@ -156,8 +160,9 @@ export async function runOnce({ prompt, cwd, permissionMode = 'default', model, 
 /**
  * The `nexus run` entry. Returns the exit code; never calls process.exit.
  * @param {string[]} argv the arguments after `run`
+ * `mask` (tests) is the vault mask for the folder it runs in; the default reads that repo's own vault.
  */
-export async function runCli(argv, { stdin = process.stdin, stdout = process.stdout, stderr = process.stderr, query, env = process.env, cwd = process.cwd() } = {}) {
+export async function runCli(argv, { stdin = process.stdin, stdout = process.stdout, stderr = process.stderr, query, env = process.env, cwd = process.cwd(), mask } = {}) {
   let o;
   try {
     o = parseRunArgs(argv);
@@ -176,6 +181,7 @@ export async function runCli(argv, { stdin = process.stdin, stdout = process.std
     return 2;
   }
   const out = await runOnce({ prompt, cwd: dir, permissionMode: o.permissionMode, model: o.model, query, env });
-  stdout.write(`${JSON.stringify(out)}\n`);
+  const m = mask || await maskFor(dir).catch(() => null);
+  stdout.write(`${JSON.stringify(m ? m.deep(out) : out)}\n`);
   return out.is_error ? 1 : 0;
 }

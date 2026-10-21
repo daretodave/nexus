@@ -29,10 +29,11 @@ import { ASK_DEFAULT_MS, askDefaults } from '../shared/times.mjs';
  * @param {() => string} [o.permissionMode]
  * @param {boolean} [o.listed]        shown in the session list before it has run (started from the GUI)
  * @param {string} [o.resume]        a Claude Code session id its first turn resumes (Recover: a Workflow run's own)
+ * @param {object} [o.mask]         the server's vault mask (secrets.mjs): every frame this session's channel sends
  * @param {number} [o.askDefaultMs]   how long a live question waits before the session takes its default (0: never)
  */
-export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS }) {
-  const hub = createHub();
+export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null }) {
+  const hub = createHub({ mask });
   const asks = new Map();
   const permissions = new Map();
   let txCtx = newTxContext({ now });
