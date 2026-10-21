@@ -373,6 +373,11 @@ function legAnatomy() {
       if (!text.includes('Argument: $ARGUMENTS')) {
         failures.push(`${file}: missing the literal "Argument: $ARGUMENTS" line`)
       }
+      // A double-quoted frontmatter value with a bare `"` inside is
+      // broken YAML: Claude Code then drops the description.
+      for (const m of text.matchAll(/^([\w-]+): "(.*)"\s*$/gm)) {
+        if (/(^|[^\\])"/.test(m[2])) failures.push(`${file}: frontmatter ${m[1]} holds an unescaped double quote (broken YAML)`)
+      }
     }
   }
   // Pairing: every template skill has a command pointer, and vice versa.

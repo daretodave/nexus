@@ -1,6 +1,6 @@
 ---
-description: Put a task into the plan with its place in line -- researched, specced and chunked so /next builds it (asap | anytime | I work out when); "and do" builds it now
-argument-hint: "[asap | anytime | peek] "<task>" [and do | --do]"
+description: Put a task into the plan with its place in line, researched, specced and chunked so /next builds it (asap | anytime | worked out). With and do, it builds it now
+argument-hint: "[asap | anytime | peek] <task> [and do | --do]"
 ---
 
 You are invoked under the `plot` skill. Read `skills/plot.md`
