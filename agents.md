@@ -82,7 +82,7 @@ mechanically; a guard block firing is itself a finding.
 
 Before stopping on any failure-mode condition, surface it as a
 GitHub issue (`gh issue create`, unlabeled — the next `/triage`
-classifies it) or a comment on the phase's mirror issue.
+classifies it) or a comment on the spec's mirror issue.
 Best-effort; a failed notification never becomes its own stop.
 
 ### 7. Templates are the product. Guard their contracts.
@@ -165,7 +165,7 @@ verbs — a docs kit ships docs, not pages.
 | `iterate` | `skills/iterate.md` | Audit the kit, ship one improvement. |
 | `critique` | `skills/critique.md` | Dry-run adoption as a stranger; file friction findings. |
 | `triage` | `skills/triage.md` | Route incoming GitHub issues. |
-| `expand` | `skills/expand.md` | Propose new phases from accumulated signals. |
+| `expand` | `skills/expand.md` | Propose new specs from accumulated signals. |
 | `oversight` | `skills/oversight.md` | **User-in-the-loop.** The general-purpose skill that asks (`lessons-pr` carries the one narrow planning-step carve-out). |
 | `jot` | `skills/jot.md` | User quickfire → `plan/CRITIQUE.md`. |
 | `digest` | `skills/digest.md` | **The night shift.** Daily morning briefing → `plan/DIGEST.md`; tuning proposals as candidates. Own workflow, never dispatched by march. |
