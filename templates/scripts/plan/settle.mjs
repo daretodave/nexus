@@ -422,8 +422,9 @@ export function tidyAhead(readme, queue, closed, listed, cfg = DEFAULTS) {
       if (lines[i].startsWith(cfg.lanes.asap)) lane = true;
       else if (lines[i].startsWith(cfg.lanes.held)) lane = false;
       if (!pick(lines[i], lane)) continue;
-      // A lane entry headed by the closed chunk alone ("- **07.6** · your own domain: …") goes whole.
-      const headed = lane && /^- \*\*([^*]+)\*\* · /.exec(lines[i]);
+      // A lane entry headed by the closed chunk alone ("- **07.6** · your own domain: …", or with no middle dot:
+      // "- **07.6** your own domain") goes whole.
+      const headed = lane && /^- \*\*([^*]+)\*\*(?: · | |$)/.exec(lines[i]);
       if (headed && headed[1].split(/,\s*|\s+and\s+/).every((x) => x === closed)) {
         let j = i + 1;
         while (j < lines.length && /^ {2}\S/.test(lines[j])) j++;

@@ -126,6 +126,18 @@ describe('tidying a closed chunk out of the roadmap', () => {
     assert.match(t2.readme, /- 07\.5: near me\./);
   });
 
+  it('drops a lane entry the chunk heads without a middle dot, wrapped lines too, and keeps a two-id head', () => {
+    const readme = README.replace('- **07.3** · the resolver first.', '- **07.3** the resolver first, now that\n  the GUI ships');
+    const t = tidyAhead(readme, null, '07.3', ['07.4', '07.5']);
+    assert.ok(!t.readme.includes('the resolver first') && !t.readme.includes('the GUI ships'));
+    assert.match(t.readme, /- 07\.4, then 07\.5: near me\./);
+    assert.deepEqual(stillNamed(t.readme, null, '07.3'), []);
+    const two = README.replace('- **07.3** · the resolver first.', '- **07.3, 07.4** the resolver first.');
+    const t2 = tidyAhead(two, null, '07.3', ['07.4', '07.5']);
+    assert.match(t2.readme, /the resolver first\./);
+    assert.ok(t2.readme.includes('07.4** the resolver'));
+  });
+
   it('keeps an id named in prose, never writing broken prose, and names the line for a hand', () => {
     assert.equal(tidyLine("the canvas for 07.2's view is in", '07.2', []), "the canvas for 07.2's view is in");
     const readme = README.replace('- 07.4, then 07.5: near me.', '- wait until 07.3 lands, then the rest.');
