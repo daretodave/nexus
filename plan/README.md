@@ -20,7 +20,7 @@ invariant teaches the gate in the same commit; hard-wrap
 **Asap** (built before the table, in this order, once their
 needs are done):
 
-- 45.3: plan additions that never conflict.
+- 45.3, then 45.4: plan additions that never conflict.
 
 **Held** (waits on the owner's word; never picked until the
 line goes):
@@ -39,7 +39,7 @@ line goes):
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 1 left |
 | 42 | Secrets: manifest, vault, sinks | [42-secrets-vault.md](42-secrets-vault.md) | planned | 1 left |
 | 43 | The Claude Design handoff: prompt out, artifact in | [43-design-handoff.md](43-design-handoff.md) | planned | 1 left |
-| 45 | Plan additions that never conflict | [45-plan-additions.md](45-plan-additions.md) | planned (**Asap**) | 1 left |
+| 45 | Plan additions that never conflict | [45-plan-additions.md](45-plan-additions.md) | planned (**Asap**) | 2 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the

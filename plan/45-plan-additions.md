@@ -61,14 +61,19 @@ hold the task.
   before you add.
 - **A5** A hold on a spec covers chunks an Add settles into it
   later, documented.
+- **A6** `/plot` spots an open pull request whose
+  pending file extends the same spec ("Already in PR #N").
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 2 open · 3 closed · next A6
+Measure: 3 open · 3 closed · next A7
 
 - [ ] **45.3** The docs and skills: `/plot`, `/messy`, the
   pending README, plan-shape, the claims doc · S · closes A4,
   A5 · needs —
+- [ ] **45.4** `/plot` reads open pull requests'
+  pending files for the specs they extend · S · closes
+  A6 · needs 45.3
