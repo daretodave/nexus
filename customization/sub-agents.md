@@ -63,7 +63,7 @@ descriptions, marketing copy.
   bearings.md voice section verbatim.
 
 Used by `/iterate` content-gap fixes; could be used by
-`/ship-a-phase` if a phase requires drafting copy.
+`/ship-a-chunk` if a phase requires drafting copy.
 
 ### `data-steward` (schema-heavy data work)
 
@@ -102,7 +102,7 @@ For API projects where breaking the contract is expensive.
 - **Tools:** Read, Bash (for spec validation tools).
 - **Persona:** API governance reviewer.
 
-Used by `/ship-a-phase` for endpoint phases.
+Used by `/ship-a-chunk` for endpoint phases.
 
 ### `migration-specialist` (DB migrations)
 

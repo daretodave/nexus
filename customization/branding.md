@@ -65,7 +65,7 @@ only entry points are:
 4. **A phase brief explicitly named an asset deliverable.** A
    phase shipping a public-facing surface (launch page, share
    modal, podcast episode page) lists the asset in its scope.
-   `/ship-a-phase` delegates the asset chunk to `brander`
+   `/ship-a-chunk` delegates the asset chunk to `brander`
    inline rather than ship a half-rendered placeholder.
 5. **The user invoked `/ship-asset` directly.** Manual
    intervention — same as `/ship-data`. Falls through to the

@@ -20,7 +20,7 @@ on:
         required: false
         type: choice
         default: march
-        options: [march, critique, iterate, ship-a-phase, ship-data, expand, triage, digest]
+        options: [march, critique, iterate, ship-a-chunk, ship-data, expand, triage, digest]
 
 concurrency:
   # Serialize ticks. A long-running tick blocks the next scheduled
@@ -32,7 +32,7 @@ jobs:
   march:
     runs-on: ubuntu-latest
     # 6h is the GH-Actions hard limit; 5h leaves headroom. Most ticks
-    # finish in under 15min; the long tail is /ship-a-phase doing a
+    # finish in under 15min; the long tail is /ship-a-chunk doing a
     # full prerendered build.
     timeout-minutes: 300
     permissions:
@@ -92,12 +92,12 @@ jobs:
           # mandates it). The ceiling bounds *cloud volume* in 24h —
           # local commits don't count toward it.
           #
-          # The count is weighted, not flat: a phase-shipping commit
-          # (ship-a-phase — new docs, templates, a gate leg) costs more
+          # The count is weighted, not flat: a chunk-shipping commit
+          # (ship-a-chunk — code, tests, a closed chunk) costs more
           # runway than a churn commit (iterate/critique/triage/digest
           # — one finding, one file). Discriminator: does the commit
-          # tick a `[ ]` -> `[x]` row in the build plan? That's the one
-          # thing only ship-a-phase Step 8 does.
+          # add a line to plan/ARCHIVE.md? That's the one thing only
+          # a chunk close (ship-a-chunk Step 9.5) does.
           #
           # `ceiling=12` below is the literal default; `/bootstrap
           # cloud-loop` (templates/scripts/bootstrap.mjs install-
@@ -108,14 +108,14 @@ jobs:
           ceiling=12
           budget=0
           for sha in $(git log --since="$since" --grep='Cloud-Run:' --format='%H'); do
-            if git diff-tree --no-commit-id --name-only -r "$sha" | grep -qx 'plan/steps/01_build_plan.md' \
-               && git show "$sha" -- plan/steps/01_build_plan.md | grep -q '^+.*\[x\]'; then
-              budget=$((budget + 3))   # phase-shipping commit
+            if git diff-tree --no-commit-id --name-only -r "$sha" | grep -qx 'plan/ARCHIVE.md' \
+               && git show "$sha" -- plan/ARCHIVE.md | grep -q '^+- '; then
+              budget=$((budget + 3))   # chunk-shipping commit
             else
               budget=$((budget + 1))   # churn commit
             fi
           done
-          echo "Cloud-shipped weighted budget in last 24h: $budget / $ceiling (phase=3, churn=1)"
+          echo "Cloud-shipped weighted budget in last 24h: $budget / $ceiling (chunk=3, churn=1)"
           if [ "$budget" -ge "$ceiling" ]; then
             echo "Cloud ceiling reached ($ceiling weighted budget/24h). Exiting cleanly — no work this tick."
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -185,7 +185,7 @@ jobs:
                - exit cleanly with a one-line note in the action log explaining why no work shipped this tick, or
                - if there is a real failure to surface, open a GitHub issue with `gh issue create --title "Cloud march failed: <iso-date>" --body "<context + run URL>"` and exit. Do not pass `--label` — the issue lands unlabeled and the next scheduled tick's /triage classifies and labels it appropriately.
 
-            The dispatch order is the standard /march order from skills/march.md: triage → critique (web-fetch engine) → ship-a-phase → ship-data → expand → iterate. Issues labeled loop:do jump the queue (the concierge lane - march step 1).
+            The dispatch order is the standard /march order from skills/march.md: triage → critique (web-fetch engine) → ship-a-chunk → ship-data → expand → iterate. Issues labeled loop:do jump the queue (the concierge lane - march step 1).
 
             Requested verb: ${{ inputs.verb || 'march' }}. If it is not 'march', skip dispatch and execute skills/<verb>.md directly - the user asked for exactly that pass.
 

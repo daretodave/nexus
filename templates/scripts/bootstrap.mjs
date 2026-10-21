@@ -998,7 +998,7 @@ async function main() {
   log.hr2()
   log.ok(`bootstrap complete for scope: ${scope}`)
   log.info(`  next: re-run \`/bootstrap status\` to confirm everything is wired`)
-  log.info(`  then: \`/ship-a-phase\` to start the build`)
+  log.info(`  then: \`/ship-a-chunk\` to start the build`)
   rlClose()
 }
 

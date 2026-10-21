@@ -37,7 +37,7 @@ const purpose = purposeWords.join(' ')
 
 if (!name || !purpose) usage()
 if (!/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(name)) {
-  usage(`"${name}" isn't lower-kebab-case (e.g. ship-asset, plan-a-phase)`)
+  usage(`"${name}" isn't lower-kebab-case (e.g. ship-asset, plan-a-spec)`)
 }
 
 const skillDir = useTemplate ? 'templates/skills' : 'skills'

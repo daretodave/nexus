@@ -2,7 +2,7 @@
 
 > Adopt the autonomous-loop methodology in a fresh repo with a
 > spec but little or no code. Estimated time: **2–3 hours** of
-> setup before your first `/ship-a-phase` invocation, worked
+> setup before your first `/ship-a-chunk` invocation, worked
 > manually, section by section, at human reading pace. An
 > autonomous agent delegated the whole playbook in one paste
 > (README's TL;DR) has no read-and-decide pauses and typically
@@ -12,16 +12,16 @@
 > By the end, you'll have:
 > - A `spec.md` everyone trusts
 > - A `plan/bearings.md` that locks the stack and conventions
-> - A `plan/steps/01_build_plan.md` with 10–20 phases
-> - Two phase briefs ready to ship (phase 1 + the canonical
->   sibling)
+> - A `plan/README.md` roadmap with one row per spec
+> - Two specs ready to ship, chunked (the bootstrap + the
+>   canonical sibling)
 > - The skill set in `skills/` (count varies with which
 >   adopt-by-need files you keep)
 > - Slash-command pointers in `.claude/commands/`
 > - 2–4 sub-agent definitions
 > - A working verify gate (locally)
 > - A working deploy gate (post-push)
-> - `/ship-a-phase` ready to run
+> - `/ship-a-chunk` ready to run
 
 ---
 
@@ -60,14 +60,14 @@ section in brackets.
 
 1. Lock the spec [15 min]
 2. Choose your stack and write `bearings.md` [30 min]
-3. Choose your phases and write the build plan [30 min]
+3. Choose your specs and write the roadmap [30 min]
 4. Copy templates and replace placeholders [15 min]
-5. Write phase 1 brief in detail [20 min]
+5. Write the bootstrap spec in detail [20 min]
 6. Wire the verify gate [20 min]
 7. Wire the deploy gate [20 min]
 8. Author 2–4 sub-agents [15 min]
 9. (Optional) Run `/bootstrap` to provision external services [10–20 min]
-10. Smoke-test by running `/ship-a-phase` once [15 min]
+10. Smoke-test by running `/ship-a-chunk` once [15 min]
 11. Ratchet up the autonomy [variable]
 
 ---
@@ -164,7 +164,7 @@ The "the loop will never ask you about these" list. Sample:
 - Empty-state copy template.
 - Error-state styling.
 - Top-N count for lists.
-- Comments / login / payments — out of scope at every phase.
+- Comments / login / payments — out of scope in every spec.
 
 Add a row every time you find yourself answering the same
 question twice during the build.
@@ -184,56 +184,57 @@ Add project-specific ones (e.g. "site name lowercase", "content
 stays in MDX").
 
 Commit `bearings.md` separately. It's the most-read file in the
-loop after the build plan.
+loop after the roadmap.
 
 ---
 
-## 3. Phases + build plan
+## 3. Specs + roadmap
 
-`plan/steps/` doesn't exist yet either, so create it before
-copying the build plan in:
+The plan is specs, chunks and acceptance IDs: one spec per
+initiative, each ending in chunks sized to one session (the
+model: [`concepts/plan-shape.md`](../concepts/plan-shape.md)).
+Copy the roadmap, the archive and the two starter specs in:
 
 ```bash
-mkdir -p plan/steps
-cp ../nexus/templates/plan/steps/01_build_plan.md \
-  plan/steps/01_build_plan.md
+cp ../nexus/templates/plan/README.md ../nexus/templates/plan/ARCHIVE.md \
+  ../nexus/templates/plan/01-bootstrap.md \
+  ../nexus/templates/plan/02-canonical-sibling.md plan/
 ```
 
 The PowerShell twin, Windows native:
 
 ```powershell
-New-Item -ItemType Directory -Force plan\steps | Out-Null
-Copy-Item ..\nexus\templates\plan\steps\01_build_plan.md `
-  plan\steps\01_build_plan.md
+Copy-Item ..\nexus\templates\plan\README.md, ..\nexus\templates\plan\ARCHIVE.md, `
+  ..\nexus\templates\plan\01-bootstrap.md, `
+  ..\nexus\templates\plan\02-canonical-sibling.md plan\
 ```
 
-The "Status (at-a-glance)" block at the top is what the loop
-reads. Each row is one phase. Phases group into:
+`plan/README.md` is what the loop reads: its lanes (Asap,
+Held) and one row per spec, in build order. Specs group into:
 
-- **Substrate** (1–4): bootstrap, content/data layer, URL
-  contract scaffolding.
-- **Page families / feature surfaces** (5–N): the bulk of the
-  build.
-- **Cross-cutting** (last few): polish, perf, a11y.
+- **Substrate**: bootstrap, content/data layer, URL contract
+  scaffolding.
+- **Feature surfaces**: the bulk of the build; the first one
+  is the canonical sibling every later one mirrors.
+- **Cross-cutting** (last): polish, perf, a11y.
 
 For your project, work backward from the spec:
 
 1. List every distinct surface the v1 has (pages, screens,
    commands, endpoints).
-2. Group them. Each group is one phase.
-3. Add 4 substrate phases at the front (bootstrap, data,
-   content, URL contract).
-4. Add 2–3 cross-cutting phases at the end (search, polish,
-   perf).
-5. Aim for **10–20 phases total**. Less than 10 = phases too
-   big. More than 20 = phases too small (combine).
+2. Group them. Each group is one spec, `plan/NN-<slug>.md`,
+   numbered in build order; the number is its id for life.
+3. Keep `01-bootstrap.md` first and make
+   `02-canonical-sibling.md` your first feature surface
+   (rename it to its real slug and fix its row's link).
+4. Add cross-cutting specs at the end.
+5. A spec you won't build soon can stay a one-paragraph Why +
+   a few acceptance IDs + `Not chunked yet.` under its
+   `## Chunks`: the first build that picks it chunks it.
 
-For each phase, write a 1–2 line scope description in the
-"Per-phase scope" section. That's enough for the loop to ship
-the substrate phases. Phase 5 (the canonical sibling) gets a
-detailed brief in step 5 of this playbook.
-
-Commit the build plan.
+Every spec ends with a `Measure:` line and its chunks (S, M or
+L; L is one session at most). Step 5 fills in the two starters.
+Commit the roadmap and the specs.
 
 ---
 
@@ -252,7 +253,7 @@ Run from your repo root. This is one `node` command (Node
 bash/zsh, PowerShell, or `cmd.exe` — no shell twin needed:
 
 ```bash
-node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/README.md','plan/README.md'],['templates/plan/phases','plan/phases']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
+node -e "const fs=require('fs');for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true})"
 ```
 
 (The `CLAUDE.md` line is deliberate, not redundant with the
@@ -460,39 +461,39 @@ nexus templates copied`.
 
 ---
 
-## 5. Phase 1 brief
+## 5. The bootstrap spec
 
-`plan/phases/phase_1_bootstrap.md` is the first thing the loop
-ships. It needs to be **detailed**.
+`plan/01-bootstrap.md` is the first thing the loop ships. It
+needs to be **detailed**.
 
-Step 4's bulk copy already landed
-`plan/phases/phase_1_bootstrap.md` and
-`plan/phases/phase_canonical_sibling.md` locally, placeholders
-already swept (both sit under `./plan`, in the sweep's scope).
-Edit `plan/phases/phase_1_bootstrap.md` in place to match your
-stack:
+Step 3 landed `plan/01-bootstrap.md` and
+`plan/02-canonical-sibling.md` locally, and step 4's sweep
+already replaced their placeholders (both sit under `./plan`,
+in the sweep's scope). Edit `plan/01-bootstrap.md` in place to
+match your stack:
 
-- **Outputs section:** list every file phase 1 should produce.
-  For a Next.js project: `package.json`, `next.config.mjs`,
-  `tailwind.config.ts`, `apps/web/src/app/layout.tsx`,
-  `apps/web/src/app/page.tsx`, etc.
-- **Stack pins:** specific package versions.
-- **Tokens / theme:** if you have design tokens, paste them.
-- **Tests:** what unit + e2e the phase ships.
-- **Decisions made upfront:** every "the loop will not ask"
-  decision, written here.
+- **Design:** every file the bootstrap produces (for a Next.js
+  project: `package.json`, `next.config.mjs`,
+  `tailwind.config.ts`, `apps/web/src/app/layout.tsx`, …), the
+  stack pins, design tokens if you have them, and every "the
+  loop will not ask" decision.
+- **Acceptance:** observable outcomes with stable IDs (`A1`,
+  `A2`, …): the dev server runs, the verify gate is green, the
+  deploy gate is green.
+- **Chunks:** S/M/L slices that cover every A-ID, with
+  `needs` chaining them, and a true `Measure:` line.
 
-The bar for this brief is: **a competent agent could ship it
-without asking you a question**. If you find yourself thinking
-"the agent will figure that out" — write it down instead.
+The bar for this spec is: **a competent agent could ship every
+chunk without asking you a question**. If you find yourself
+thinking "the agent will figure that out", write it down
+instead.
 
-Same for `plan/phases/phase_canonical_sibling.md` — rename it
-to match your phase number (usually phase 5) as you edit
-it. This is the **template** every later page-family /
-feature-surface phase mirrors. Time spent here amortizes across
-the whole build.
+Same for `plan/02-canonical-sibling.md`. This is the
+**template** every later page-family / feature-surface spec
+mirrors. Time spent here amortizes across the whole build.
 
-Commit both briefs.
+Run `node scripts/plan-check.mjs` (step 4 copied it in) until
+it's green, then commit both specs.
 
 ---
 
@@ -517,13 +518,13 @@ the **target shape** step 7 wires in:
 }
 ```
 
-It will fail at first — that's fine; the rest of phase 1 is
+It will fail at first — that's fine; the rest of the bootstrap spec is
 what makes it green. But the script itself is in place and
-runnable as soon as step 7 lands, well before phase 1 ships.
+runnable as soon as step 7 lands, well before the bootstrap ships.
 
 If your project doesn't ship a build (e.g., a CLI), drop
-`pnpm build`. If no e2e yet, drop `pnpm e2e` until phase 4
-adds the harness. The gate is **what's actually runnable
+`pnpm build`. If no e2e yet, drop `pnpm e2e` until a substrate
+spec adds the harness. The gate is **what's actually runnable
 today**; it grows with the project.
 
 See [`customization/verify-gate.md`](../customization/verify-gate.md)
@@ -572,7 +573,7 @@ pnpm verify
 pnpm deploy:check
 ```
 
-`pnpm verify` will fail — expected pre-phase-1 (see step 6).
+`pnpm verify` will fail — expected before the bootstrap ships (see step 6).
 `pnpm deploy:check` should report the current deploy state. If
 you haven't pushed anything yet, it'll say "no deploy for this
 commit" — that's fine; the contract is post-push.
@@ -673,43 +674,45 @@ doesn't break anything; the rest of nexus works the same.
 Run:
 
 ```
-/ship-a-phase
+/ship-a-chunk
 ```
 
-(In Claude Code. Or read `skills/ship-a-phase.md` and follow
+(In Claude Code. Or read `skills/ship-a-chunk.md` and follow
 the procedure manually if using a different tool.)
 
 Expected:
 
-1. Reads the build plan, picks phase 1 (the first `[ ]`).
-2. Reads phase 1's brief.
-3. Builds the substrate per the brief.
+1. Reads `plan/README.md`, picks chunk 01.1 (the first ready
+   chunk).
+2. Reads `plan/01-bootstrap.md`.
+3. Builds the slice per the spec.
 4. Runs `pnpm verify` — fails the first time, iterates.
-5. Commits.
-6. Pushes.
+5. Closes the chunk: its line and A-IDs out, the Measure line
+   fixed, one line in `plan/ARCHIVE.md`.
+6. Commits and pushes.
 7. Runs `pnpm deploy:check` — may be red the first time
    (Netlify rebuilds the workspace; expected if the previous
    state was a stub).
 8. Reports done.
 
 If any step misbehaves: stop, read the relevant skill file
-section, fix the brief or the gate, retry. **Don't soldier on
-through a wonky phase 1.** It poisons every later phase.
+section, fix the spec or the gate, retry. **Don't soldier on
+through a wonky bootstrap.** It poisons every later chunk.
 
 ---
 
 ## 11. Ratchet up the autonomy
 
-Once phase 1 ships green:
+Once the bootstrap spec ships green:
 
-- Run `/ship-a-phase` manually for phases 2–4. Watch the agent
-  work.
-- At phase 5 (the canonical sibling), spend extra care — every
+- Run `/ship-a-chunk` manually for the next few chunks. Watch
+  the agent work.
+- At the canonical sibling spec, spend extra care — every
   later page family copies its structure.
-- After phase 5: `/loop /march` for an evening session. Watch
-  it ship 2–3 phases. Intervene with `/oversight` if needed.
-- Once you trust 3 unattended phases in a row: walk away for an
-  afternoon.
+- After it: `/loop /march` for an evening session. Watch it
+  ship 3–5 chunks. Intervene with `/oversight` if needed.
+- Once you trust 3 unattended chunks in a row: walk away for
+  an afternoon.
 - Once you trust an afternoon: read [`intervention-spectrum.md`](../intervention-spectrum.md)
   for the 80-hour beast pattern.
 
@@ -719,19 +722,23 @@ The progression is days, not minutes. Don't skip levels.
 
 ## Common pitfalls
 
-- **Build plan too shallow.** Phases 1–4 ship fast; phases 5+
-  ship slowly. If your plan is only 6 phases, you'll run out
-  of work in 2 days. Aim for 12–17.
+- **Plan too shallow.** Substrate specs ship fast; feature
+  surfaces ship slowly. If your roadmap holds only two or three
+  specs, you'll run out of work in 2 days. Write every v1
+  surface as a spec, even unchunked.
 - **Bearings vague.** If `bearings.md` doesn't enumerate
   standing decisions, the loop will ask you (= stop) on every
   ambiguity. Add to bearings every time you catch yourself
   re-deciding.
-- **No canonical sibling.** Phase 5 is the template every later
-  page-family phase mirrors. If you skip the brief detail
-  there, every later phase has to re-derive structure. 1 hour
-  in phase 5 saves 4 hours across phases 6–13.
+- **No canonical sibling.** Its spec is the template every
+  later page-family spec mirrors. If you skip the detail there,
+  every later spec has to re-derive structure. 1 hour there
+  saves 4 hours across the rest.
+- **Chunks too big.** A chunk that can't ship in one session
+  stalls the loop mid-slice. L is the ceiling; split anything
+  bigger into vertical slices.
 - **Deploy gate ignored.** "I'll add it later." No. Wire it on
-  day one even if it's red until phase 1. The gate's first job
+  day one even if it's red until the bootstrap ships. The gate's first job
   is keeping the loop honest.
 - **No `/oversight` checkpoint.** You'll need it. Set a
   reminder to run it every 12 hours during unattended runs.
@@ -740,7 +747,7 @@ The progression is days, not minutes. Don't skip levels.
 
 ## You're ready when (the Day 1 checklist)
 
-This is the "you're about to invoke `/ship-a-phase` for the
+This is the "you're about to invoke `/ship-a-chunk` for the
 first time on a fresh adoption — here's what should be true"
 checklist. Distinct from the Level-4 pre-flight (see
 [`../intervention-spectrum.md`](../intervention-spectrum.md)),
@@ -760,9 +767,11 @@ which assumes a working loop and is about leaving for 80 hours.
       hosting, `setup/00_files.md` index exists with one row
       per service. See
       [`../customization/external-services.md`](../customization/external-services.md).
-- [ ] `plan/steps/01_build_plan.md` has 10–20 phases.
-- [ ] Phase 1 brief is detailed enough to ship without asking.
-- [ ] Canonical sibling brief (usually phase 5) is detailed.
+- [ ] `plan/README.md` lists every v1 surface as a spec.
+- [ ] `plan/01-bootstrap.md` is detailed enough to ship
+      without asking, and chunked.
+- [ ] The canonical sibling spec is detailed and chunked.
+- [ ] `node scripts/plan-check.mjs` is green.
 - [ ] At least one design artifact (visual system, design
       tokens, or a `claude-design.prompt.md` for commissioning
       one) is either committed or has a written brief. See
@@ -773,7 +782,7 @@ which assumes a working loop and is about leaving for 80 hours.
       key, with a comment pointing back to the `setup/`
       runbook section that emits it.
 - [ ] Sub-agents are in `.claude/agents/` and tested.
-- [ ] You've read `skills/ship-a-phase.md` end to end.
+- [ ] You've read `skills/ship-a-chunk.md` end to end.
 - [ ] **Optional, pick up once the loop's been running a
       while:** once the project accumulates real recurring
       lessons (not day-1 setup), copy
@@ -791,5 +800,5 @@ which assumes a working loop and is about leaving for 80 hours.
       [`../skills/lessons-pr.md`](../skills/lessons-pr.md)).
       The methodology improves with every honest application.
 
-When all checks pass: invoke `/ship-a-phase` for the first
+When all checks pass: invoke `/ship-a-chunk` for the first
 time.

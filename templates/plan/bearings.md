@@ -2,7 +2,7 @@
 
 > Standing context for every command invocation. Read this
 > alongside the relevant skill file (`skills/<name>.md`) and
-> the matching phase brief. If anything here changes, update in
+> the matching spec. If anything here changes, update in
 > the same commit.
 
 ## What we're building
@@ -74,7 +74,7 @@ the field entirely (no critique surface to walk).
 ## Stack (locked — do not re-litigate)
 
 These were decided at project bootstrap. Revisit only if a
-phase genuinely cannot ship without changing one of these — and
+chunk genuinely cannot ship without changing one of these — and
 then stop and ask.
 
 | Layer | Choice | Why |
@@ -99,8 +99,8 @@ then stop and ask.
 ## External services (optional)
 
 For every external service the project depends on, write a
-`setup/NN_<service>.md` runbook *before* phase 1 ships. The
-runbook covers every dashboard click for every phase that
+`setup/NN_<service>.md` runbook *before* chunk 01.1 ships. The
+runbook covers every dashboard click for every spec that
 will ever touch the service. The loop reads
 `setup/00_files.md` every `/oversight` tick and surfaces
 drift before it becomes a stall.
@@ -129,9 +129,9 @@ runbook shape and the loop's introspection contract.
 **Auth provider:** `<none | Auth0 | Clerk | Supabase Auth |
 next-auth | Lucia | Better Auth | Iron Session | custom>`
 
-Tells every auth-touching phase which integration to wire.
+Tells every auth-touching spec which integration to wire.
 Pin on day one to prevent re-litigation. If the provider
-needs dashboard configuration, every phase that touches it
+needs dashboard configuration, every spec that touches it
 gets a section in `setup/NN_<auth>.md` per
 `nexus/customization/external-services.md`.
 
@@ -220,7 +220,7 @@ record-level `source: ai-generated` rigor.
 ## URL / API / CLI contract (locked)
 
 Every <surface> below is a permanent contract. Add new ones via
-new phases; don't change existing shapes.
+new specs; don't change existing shapes.
 
 ```
 <Enumerate every public surface the project exposes. For a web
@@ -241,15 +241,16 @@ path. For a CLI: every subcommand.>
 │   ├── commands/<verb>.md
 │   └── agents/<name>.md
 ├── skills/
-│   ├── ship-a-phase.md
+│   ├── ship-a-chunk.md
 │   ├── ...
 ├── plan/
 │   ├── README.md
 │   ├── bearings.md                      # this file
 │   ├── AUDIT.md
 │   ├── CRITIQUE.md
-│   ├── steps/01_build_plan.md
-│   └── phases/phase_<N>_<topic>.md
+│   ├── ARCHIVE.md
+│   ├── nexus.lock
+│   └── <NN>-<slug>.md                   # one spec per initiative
 ├── design/                              # design exports (user-emitted, async)
 ├── data/                                # if using GitHub-as-DB; otherwise omit
 └── <your app paths>
@@ -297,18 +298,18 @@ working defaults.>
 
 `/expand` reads accumulated signals (audit findings, critique
 findings, GH issues, spec drift, design landings, data growth)
-and proposes new phase candidates. The posture controls how
+and proposes new candidates (future specs). The posture controls how
 aggressive it is.
 
 - **Mode: bold** (default) — `/expand` runs at standard cadence
   and files candidates to `plan/PHASE_CANDIDATES.md`.
-  `/oversight` promotes them to the build plan.
-- **Mode: strict** — `/expand` is a no-op. Build plan grows
-  only via manual `/plan-a-phase` or `/oversight`. Use this if
+  `/oversight` promotes them into specs.
+- **Mode: strict** — `/expand` is a no-op. The plan grows
+  only via manual `/plan-a-spec` or `/oversight`. Use this if
   you want the project to stay exactly true to its original
   spec.
-- **Mode: autonomous** — `/expand` writes phase rows directly
-  to `plan/steps/01_build_plan.md`. No `/oversight` review.
+- **Mode: autonomous** — `/expand` writes new unchunked specs
+  directly to `plan/`. No `/oversight` review.
   Most aggressive; document in Hard Rules below if you choose
   this.
 
@@ -341,8 +342,7 @@ stripped before matching). `.claude/hooks/guard.mjs`'s
 | `jot` | `/jot` |
 | `oversight` | `/oversight` |
 | `triage` | `/triage` |
-| `phases` | `/plan-a-phase` |
-| `plan` | plan-state-only changes |
+| `plan` | plan-state-only changes (`/plan-a-spec`, new specs) |
 | `feat` | new capability |
 | `fix` | correcting a prior mistake |
 | `docs` | doc-only edit |

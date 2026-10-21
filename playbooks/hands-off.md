@@ -20,7 +20,7 @@ closes them one by one.
 |---|---|---|
 | 1 | Permission prompt wall — the loop stalls on tick one waiting for a "yes" nobody will give | Step 1 |
 | 2 | Blocked means silently blocked — the loop stops cleanly and nobody learns for two days | Step 2 |
-| 3 | One bad phase freezes the beast — a single ambiguous brief halts all work | Step 3 |
+| 3 | One bad chunk freezes the beast — a single ambiguous spec halts all work | Step 3 |
 | 4 | Drift accrues exactly where nobody is looking — the unattended path skips the drift-catchers | Step 4 |
 | 5 | A secret expires mid-window — critique degrades, deploys stall, PATs lapse | Step 5 |
 | 6 | Budget surprise — the ceiling hibernates the loop, or spend runs away | Step 6 |
@@ -98,27 +98,29 @@ end (Stop hook), a crashed cloud tick.
 
 ---
 
-## Step 3 — no phase freezes the beast (15 min)
+## Step 3 — no chunk freezes the beast (15 min)
 
-A `/ship-a-phase` stop used to halt the whole tick — one
-ambiguous brief could idle the loop for a weekend. The
+A `/ship-a-chunk` stop used to halt the whole tick — one
+ambiguous spec could idle the loop for a weekend. The
 current templates carry the fix; confirm your copies do
 (re-sync from `templates/skills/` if you adopted earlier):
 
-1. **`[blocked]` is part of the build-plan vocabulary.** When
-   `ship-a-phase` hits a stop condition that is *phase-shaped*
-   (ambiguous scope, missing paid dependency, infra failure
-   outside local code), it marks the row
-   `[blocked: <short reason> <ISO-date>]`, commits that state
-   change, notifies (Step 2), and returns cleanly.
-2. **`/march` skips blocked rows.** The dispatcher's "pending
-   phase" check matches `[ ]` rows only, so the next tick
-   flows past the blocked phase into data / expand / iterate
-   work. The loop keeps shipping what's shippable.
-3. **`/oversight` owns unblocking.** Blocked rows surface in
-   its briefing; the questionnaire offers re-brief / skip /
-   provide-the-missing-thing. A blocked row is a conversation
-   waiting for you, not a dead loop.
+1. **The Held lane is part of the plan.** When
+   `ship-a-chunk` hits a stop condition that is
+   *chunk-shaped* (ambiguous scope, missing paid dependency,
+   infra failure outside local code), it adds the chunk to
+   `plan/README.md`'s **Held** lane as
+   `- **<NN.k>** · blocked: <short reason> <ISO-date>`,
+   commits that state change, notifies (Step 2), and returns
+   cleanly.
+2. **The pick order skips Held.** `/march`'s ready-chunk check
+   never picks a held chunk, so the next tick flows past it
+   into the next ready chunk, or data / expand / iterate work.
+   The loop keeps shipping what's shippable.
+3. **`/oversight` owns unblocking.** Held lines surface in its
+   briefing; the questionnaire offers split / drop / provide-
+   the-missing-thing. A held chunk is a conversation waiting
+   for you, not a dead loop.
 
 Repo-wide stops (red verify on `main`, git divergence, deploy
 provider hard-down) still stop the whole loop — correctly.
@@ -209,7 +211,7 @@ credential. Before every long window:
    ceiling. The cost table in
    [`cloud-loop.md`](./cloud-loop.md) has current numbers.
 2. **The commit ceiling is your volume brake** — default 12
-   weighted-budget points/24h in `march.yml` (a phase-shipping
+   weighted-budget points/24h in `march.yml` (a chunk-shipping
    commit costs 3, a churn commit costs 1; see
    `.github/CLOUD_LOOP.md` "The daily ceiling"). It bounds
    runaway shipping, not spend. On API-key billing, set a hard
@@ -262,9 +264,9 @@ bias set). Then this playbook's additions:
       `node scripts/notify.mjs --title preflight`.
 - [ ] `NOTIFY_NTFY_TOPIC` (or webhook) present in `.env` AND
       as a repo secret for cloud.
-- [ ] Build plan has no stale `[blocked]` rows you could
-      unblock now; every remaining `[ ]` phase has a brief
-      that would survive your absence (read the next 3).
+- [ ] The Held lane has no stale `blocked:` lines you could
+      unblock now; the specs behind the next 3 ready chunks
+      would survive your absence (read them).
 - [ ] Secrets inventory: no credential expires inside the
       window (Step 5), or its degradation is written down.
 - [ ] Cloud dry run: `gh workflow run march` once,

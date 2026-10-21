@@ -180,16 +180,15 @@ mandatory. If a cloud commit lacks one, that's a bug to report.
 ## The daily ceiling
 
 The ceiling step in `march.yml` doesn't count cloud-shipped
-commits flatly — it weighs them. A **phase-shipping** commit
-(one that ticks a `[ ]` to `[x]` in `plan/steps/
-01_build_plan.md` — the one thing only `/ship-a-phase` does)
-costs **3** against the budget; a **churn** commit
+commits flatly — it weighs them. A **chunk-shipping** commit
+(one that adds a line to `plan/ARCHIVE.md`, the one thing only
+a chunk close does) costs **3** against the budget; a **churn** commit
 (`/iterate`, `/critique`, `/triage`, `/digest` — one finding,
 one file) costs **1**. The tick exits with no work once the
 24h total meets `cloud_loop.daily_ceiling` from your manifest
 (`/bootstrap cloud-loop` bakes it into the workflow's
 `ceiling=` line; hand-edit that line directly if you didn't
-bootstrap). Default is 12 — four phase ships, or a dozen
+bootstrap). Default is 12 — four chunk ships, or a dozen
 churn ticks, or any mix between.
 
 ## Operating it

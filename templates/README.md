@@ -12,25 +12,24 @@ templates/
 ├── design-prompt.md                   → optional, copy to <repo>/claude-design.prompt.md
 │                                        when commissioning a visual system
 ├── plan/                              → repo's plan/
-│   ├── README.md
+│   ├── README.md                      (the roadmap: lanes + one row per spec)
+│   ├── 01-bootstrap.md                (starter spec: the bootstrap)
+│   ├── 02-canonical-sibling.md        (starter spec: the first feature surface)
+│   ├── ARCHIVE.md                     (one line per finished chunk; append-only)
 │   ├── bearings.md
 │   ├── AUDIT.md
 │   ├── CRITIQUE.md
 │   ├── PHASE_CANDIDATES.md
 │   ├── reflexes.md                    (omit unless the lessons layer is adopted; see below)
 │   ├── lessons.md                     (omit unless the lessons layer is adopted; see below)
-│   ├── CURRENT-STATE.md               (brownfield retrofit only; see existing-project.md)
-│   ├── steps/01_build_plan.md
-│   └── phases/
-│       ├── phase_1_bootstrap.md
-│       └── phase_canonical_sibling.md
+│   └── CURRENT-STATE.md               (brownfield retrofit only; see existing-project.md)
 ├── skills/                            → repo's skills/
-│   ├── ship-a-phase.md
+│   ├── ship-a-chunk.md
 │   ├── ship-data.md                   (omit if no structured data layer)
 │   ├── ship-migration.md              (omit unless Structured data: pure-db / hybrid-with-managed-postgres)
 │   ├── ship-asset.md                  (omit unless Surface: site/hybrid AND branding in scope)
 │   ├── moderate.md                    (omit unless the project has UGC; see customization/moderation-loop.md)
-│   ├── plan-a-phase.md
+│   ├── plan-a-spec.md
 │   ├── iterate.md
 │   ├── critique.md
 │   ├── triage.md
@@ -129,12 +128,20 @@ shape that you must fill in:
 - `plan/bearings.md` — needs your stack, URL contract, voice,
   and the `Surface:` declaration (gates the optional branding
   capability).
-- `plan/steps/01_build_plan.md` — needs your phases (ours
-  describes a generic content-site shape; replace)
-- `plan/phases/phase_1_bootstrap.md` — needs your stack's
-  bootstrap (Next.js, Django, Rails, etc.)
-- `plan/phases/phase_canonical_sibling.md` — needs your project's
-  first non-substrate page-family / feature-surface
+- `plan/README.md` — needs your specs, one row each (ours
+  lists the two starters; replace and extend)
+- `plan/01-bootstrap.md` — needs your stack's bootstrap
+  (Next.js, Django, Rails, etc.): design, acceptance IDs,
+  chunks
+- `plan/02-canonical-sibling.md` — needs your project's first
+  non-substrate page-family / feature-surface
+- `plan/ARCHIVE.md` — delete the example lines; real lines
+  arrive as chunks close
+
+The plan shape (specs, chunks, acceptance IDs, the Measure
+line, the archive) is explained in
+[`concepts/plan-shape.md`](../concepts/plan-shape.md);
+`scripts/plan-check.mjs` checks it.
 
 For these, the templates are **scaffolds** showing the shape;
 adapt content to your reality.

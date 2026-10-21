@@ -27,8 +27,8 @@ via four demand-pull paths only:
    surfaced (e.g. missing `og:image`, broken favicon).
 2. `/iterate`'s "asset hygiene" audit flagged a missing
    per-route OG handler, a 404'd image ref, a favicon gap.
-3. A phase brief explicitly named an asset deliverable;
-   `/ship-a-phase` delegates the asset chunk inline.
+3. A spec explicitly named an asset deliverable;
+   `/ship-a-chunk` delegates the asset work inline.
 4. The user invoked `/ship-asset` directly with an explicit
    target.
 

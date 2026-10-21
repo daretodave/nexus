@@ -37,8 +37,8 @@ its own cadence.
    node scripts/pulse.mjs
    ```
 
-   `pulse.mjs` gives the local numbers in one shot: build-plan
-   `[ ]`/`[blocked:]` counts, AUDIT pending, CRITIQUE pending +
+   `pulse.mjs` gives the local numbers in one shot: specs and
+   chunks left, held chunks, AUDIT pending, CRITIQUE pending +
    last pass age, candidates pending + oldest-pending age.
    Plus (still hand-fetched — pulse.mjs never touches the
    network or the data layer): `data/BACKLOG.md` pending (if a
@@ -68,7 +68,7 @@ its own cadence.
    candidates are pending >21 days or the oldest pending
    candidate exceeds 45 days — a line reading "oversight
    needed: candidate queue silting (N pending >21d, oldest
-   Xd)"), `Today's intent` (next `[ ]` phase + top finding),
+   Xd)"), `Today's intent` (next ready chunk + top finding),
    `Tuning proposals` (step 5, or "none").
 5. **Meta-loop, within rails:** if the pulse shows a mistuned
    gate (critique never firing, the ceiling hibernating

@@ -13,7 +13,7 @@ briefs, asks, adjusts.
 
 Argument handling:
 - No argument → full audit + general questionnaire.
-- `phase` → bias toward phase progress + scope.
+- `chunks` → bias toward chunk progress + scope.
 - `content` → bias toward content / `/iterate` findings.
 - `deploy` → bias toward CI/CD signal.
 - `reset` → bias toward scope reduction.

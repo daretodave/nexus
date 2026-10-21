@@ -47,7 +47,7 @@ When not:
 
 | Lane | Where | Temperament | Typical work |
 |---|---|---|---|
-| **alpha** | the primary checkout | bulldozer — big, stateful, owns conflicts | `/ship-a-phase`, anything touching contracts or shared substrate |
+| **alpha** | the primary checkout | bulldozer — big, stateful, owns conflicts | `/ship-a-chunk`, anything touching contracts or shared substrate |
 | **beta** | `.beta/` worktree | ninja — focused, medium-sized | `/iterate` fixes, a bounded feature slice, test debt |
 | **gamma** | `.gamma/` worktree | fly — small, fast, frequent | `/ship-data` rows, doc nits, jot drains, one-file fixes |
 

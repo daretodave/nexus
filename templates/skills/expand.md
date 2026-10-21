@@ -1,28 +1,29 @@
 # Skill: expand
 
 > **Plan-expansion pass.** Read accumulated signals and propose
-> new phase candidates to `plan/PHASE_CANDIDATES.md`. The build
-> plan ships well; this skill is how it *grows* well.
+> new candidates to `plan/PHASE_CANDIDATES.md`; each promoted
+> one becomes a spec. The plan ships well; this skill is how it
+> *grows* well.
 >
 > **Posture-controlled.** Default is **bold** — the skill runs
 > on schedule and surfaces candidates. Set to **strict** in
-> `bearings.md` to make `/expand` a no-op (build plan grows only
-> via manual `/plan-a-phase` or `/oversight`).
+> `bearings.md` to make `/expand` a no-op (the plan grows only
+> via manual `/plan-a-spec` or `/oversight`).
 
 ## 1. Purpose
 
-The autonomous loop is good at consuming the build plan. It is
+The autonomous loop is good at consuming the plan. It is
 bad at noticing when the project has *outgrown* its plan:
 
 - An audit finding scores 9 but can't ship in one fix.
 - 4 GitHub issues all gesture at the same missing surface.
 - The data layer grew records the plan never anticipated.
-- A new design export landed that has no phase to integrate.
-- `spec.md` was edited and the change implies new phases.
+- A new design export landed that has no spec to integrate it.
+- `spec.md` was edited and the change implies new specs.
 
 `/expand` is the lens that catches these patterns. It does
 **not** abandon the spec or pre-empt deliveries. It surfaces
-**candidates**; `/oversight` decides which become real phases.
+**candidates**; `/oversight` decides which become real specs.
 
 The point isn't "ship more." The point is "notice when reality
 has overtaken the plan."
@@ -62,7 +63,8 @@ Three settings:
   `"expand: strict posture — skipping"` and exit 0. The
   `/march` dispatcher skips the expand gate entirely.
 - **autonomous** — `/expand` writes candidates **directly to
-  `plan/steps/01_build_plan.md`** as new pending phase rows.
+  the plan** as new unchunked specs (`plan/<NN>-<slug>.md` +
+  a row in `plan/README.md`).
   No `/oversight` review. Use only when the loop is deeply
   trusted and the spec is stable. **Document the choice in
   `bearings.md` Hard Rules** so the user knows.
@@ -138,11 +140,11 @@ written:
 
 ### H. Existing plan gaps
 
-`plan/steps/01_build_plan.md` review:
-- Phases marked `[skipped]` — may now be ship-able if context
-  changed.
-- Cross-cutting phases (polish, perf) sitting at the end with
-  many sub-tasks accumulated — may warrant a split.
+`plan/README.md` + specs review:
+- Chunks in the **Held** lane — may now be ship-able if
+  context changed.
+- Cross-cutting specs (polish, perf) sitting at the end with
+  many chunks accumulated — may warrant a split.
 
 ## 5. Scoring candidates
 
@@ -223,10 +225,12 @@ Append under `## Pending`. Update metadata header (last pass,
 pass count).
 
 If posture is **autonomous**, instead of writing to
-`PHASE_CANDIDATES.md`, **append the new phase rows directly to
-`plan/steps/01_build_plan.md` "Status (at-a-glance)" block**.
-Pick the next free phase number. Document in commit body that
-this was autonomous (not via oversight).
+`PHASE_CANDIDATES.md`, **write each as a new spec**:
+`plan/<NN>-<slug>.md` with the next free spec number, its
+outcome, Why, Design, Acceptance (A-IDs) and `Not chunked
+yet.`, plus a row in `plan/README.md`. Run `node
+scripts/plan-check.mjs --since HEAD`. Document in the commit
+body that this was autonomous (not via oversight).
 
 ### Step 5 — Commit + push
 
@@ -247,7 +251,7 @@ git push origin <DEFAULT_BRANCH>
 ```
 
 (If autonomous posture: subject is `expand: pass <N> — <K>
-phases promoted (autonomous)` and the body lists which phase
+specs added (autonomous)` and the body lists which spec
 numbers + their topics.)
 
 If **zero** candidates score above threshold: still update the
@@ -301,9 +305,9 @@ oversight will review and promote.
    exit 0.
 4. **All candidates conflict with spec.** Surface as
    `[needs-user-call]` rows; oversight resolves.
-5. **Autonomous posture but the phase number conflicts** with a
-   recently-shipped phase (race condition with concurrent
-   ship-a-phase). Stop and report.
+5. **Autonomous posture but the spec number conflicts** with a
+   spec written or archived meanwhile (race with a concurrent
+   writer). Stop and report; spec numbers are never reused.
 
 ## 9. When `/march` invokes `/expand`
 
@@ -311,15 +315,15 @@ Conditions in `/march` Step (between critique and dispatch):
 
 1. Posture is **bold** or **autonomous** (not strict).
 2. Last expand pass was **at least 20 commits ago**, OR more
-   than **48 hours ago**, OR is "never" and at least 3 phases
-   have shipped.
+   than **48 hours ago**, OR is "never" and at least 3 chunks
+   have archive lines.
 3. There's at least one signal worth examining
    (`pnpm` heuristic check: `wc -l plan/AUDIT.md` > some
    threshold, or `git log -p --since=...` shows spec/design
    changes).
 
 If all three: dispatch to `/expand`. If any fails: fall through
-to normal phase / data / iterate dispatch.
+to normal chunk / data / iterate dispatch.
 
 `/iterate` also dispatches to `/expand` when its own audit
 produces no findings scoring ≥ 3.0 — instead of stopping per
@@ -334,7 +338,7 @@ plan/bearings.md                              # posture
 plan/AUDIT.md                                 # audit signals
 plan/CRITIQUE.md                              # critique signals
 plan/PHASE_CANDIDATES.md                      # current state
-plan/steps/01_build_plan.md                   # existing phases
+plan/README.md                                # existing specs + lanes
 data/BACKLOG.md                               # data signals (Pattern A)
 spec.md                                       # spec drift
 
@@ -348,7 +352,7 @@ gh issue list --repo $GH_REPO --label "triage:loop-queued" --json number,title
 
 # Write
 plan/PHASE_CANDIDATES.md                      # bold posture
-plan/steps/01_build_plan.md                   # autonomous posture only
+plan/<NN>-<slug>.md + plan/README.md          # autonomous posture only
 
 # Commit + push + confirm
 git add <files>

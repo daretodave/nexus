@@ -445,9 +445,9 @@ any repo (nexus-adopted or not), and the nexus playbooks
 - `playbooks/new-project.md` §9 says: "(Optional) Run
   `/bootstrap` to provision external services."
 - `playbooks/existing-project.md` recommends adding a
-  `plan/phases/phase_1_bootstrap.md` build-plan phase rather
-  than running `/bootstrap` directly — the script still runs,
-  just via `/ship-a-phase` instead of the standalone command.
+  bootstrap chunk to the plan rather than running `/bootstrap`
+  directly — the script still runs,
+  just via `/ship-a-chunk` instead of the standalone command.
 - `playbooks/cloud-loop.md` notes that
   `/bootstrap cloud-loop` is the streamlined alternative to
   the manual 10-step walkthrough.

@@ -281,7 +281,7 @@ Two paths:
 **A. Skip the gate.** Add to `bearings.md`:
 
 > The project does not yet deploy. `pnpm deploy:check` is a
-> no-op until phase N (`<deploy-target>`) ships.
+> no-op until chunk NN.k (`<deploy-target>`) ships.
 
 Define `pnpm deploy:check` as `echo "no deploy gate yet" && exit 0`.
 
@@ -322,7 +322,7 @@ VERCEL_TARGET=preview                   # filter deployments by target
 
 See [`existing-project.md`](./existing-project.md) §5 Option A:
 teams whose CI requires PR review push loop work to
-`loop/<phase-N>` instead of `main`. The gate still targets it
+`loop/<chunk-id>` instead of `main`. The gate still targets it
 by commit SHA, no code change needed for that part — Netlify's
 `/deploys` and Vercel's `/v6/deployments` both return deploys
 across every branch, and `deploy-check.mjs` already matches on
@@ -334,13 +334,13 @@ failure.
 
 What genuinely changes: the loop can't tell "PR merged" from
 "PR still open" just by looking at `main`, so it can't safely
-mark the phase `[x]` there yet. `ship-a-phase` marks the
-build-plan row `[blocked: awaiting PR #<n> merge <date>]`
-instead (existing status vocabulary — no new state); `/march`
-already skips `[blocked: …]` rows, so it won't re-ship the same
-phase next tick. A human merging the PR (or the next
-`/oversight` pass, once it has) flips the row to
-`[x] (commit <hash>)`.
+close the chunk there yet. `ship-a-chunk` adds it to the Held
+lane as `- **<NN.k>** · blocked: awaiting PR #<n> merge
+<date>` instead (existing vocabulary — no new state); the pick
+order already skips Held, so it won't re-ship the same chunk
+next tick. Once the PR merges, the close (line out, A-IDs out,
+archive line in) is on `main`, and the Held line goes with
+it.
 
 ---
 

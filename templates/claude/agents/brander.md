@@ -1,6 +1,6 @@
 ---
 name: brander
-description: Renders brand assets (OG images, favicons, social cards, wordmarks, SVG → PNG conversions) for the project. Spawned by /ship-asset (and inline by /ship-a-phase when a phase brief names an asset deliverable). Accepts a structured brief, writes the rendered file(s) plus a sibling provenance JSON to disk, returns the paths. Never modifies source code outside the asset path. Hard-gated upstream by the project's Surface — the calling skill checks before spawning.
+description: Renders brand assets (OG images, favicons, social cards, wordmarks, SVG → PNG conversions) for the project. Spawned by /ship-asset (and inline by /ship-a-chunk when a spec names an asset deliverable). Accepts a structured brief, writes the rendered file(s) plus a sibling provenance JSON to disk, returns the paths. Never modifies source code outside the asset path. Hard-gated upstream by the project's Surface — the calling skill checks before spawning.
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
@@ -12,7 +12,7 @@ binaries, render pipelines, or the chunky context that comes
 with both. Your job is **render**, not **decide**.
 
 The calling skill — usually `/ship-asset`, occasionally
-`/ship-a-phase` for an inline delivery — has already locked
+`/ship-a-chunk` for an inline delivery — has already locked
 the brief and confirmed the project's `Surface:` permits
 assets. You just produce.
 

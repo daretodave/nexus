@@ -222,7 +222,7 @@ phases ship the compositions inline.
 
 ## After the design session lands
 
-The next time the build agent runs (`/march`, `/ship-a-phase`,
+The next time the build agent runs (`/march`, `/ship-a-chunk`,
 `/iterate`), it picks up `design/` automatically. Phase 5
 (canonical sibling) consumes it. Update `plan/bearings.md`:
 

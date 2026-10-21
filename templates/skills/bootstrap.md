@@ -128,8 +128,9 @@ If invocation is `status`, stop here and return.
 Diff discovery against desired state. Desired state is the
 union of:
 
-- Every row in `setup/00_files.md` whose phase is `≤ next 5
-  pending phases` (or the row's status row is `OK`-expected).
+- Every row in `setup/00_files.md` whose spec holds one of
+  the next 5 ready chunks (or the row's status row is
+  `OK`-expected).
 - Every field in `setup/bootstrap.local.json` (manifest flavor)
   or interactive defaults (interactive flavor).
 - Standing bearings (e.g., `bearings.md` says `Hosting:
@@ -217,7 +218,7 @@ Time:             4m 12s
 First deploy:     https://your-app.vercel.app  ✓ ready
 Cloud loop:       scheduled (next: 2026-05-13T20:00Z)
 
-Next: invoke /ship-a-phase to ship phase 1.
+Next: invoke /ship-a-chunk to ship chunk 01.1.
 ```
 
 Commit the bootstrap's changes as a single commit:

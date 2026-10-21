@@ -8,7 +8,7 @@ end to end before touching anything else.
 This skill reads issues from `<REPO_SLUG>` (or `$GH_REPO`),
 classifies, applies a `triage:*` label, posts a short comment,
 routes actionable issues into the right backlog (`plan/AUDIT.md`,
-`data/BACKLOG.md`, or build-plan row). Already-labeled issues
+`data/BACKLOG.md`, or a chunk in a spec). Already-labeled issues
 skipped — labels are the state.
 
 Argument handling:

@@ -27,7 +27,7 @@ resume.
 
 ```
 /oversight                  # full audit + general questionnaire
-/oversight phase            # bias toward phase progress / scope
+/oversight chunks           # bias toward chunk progress / scope
 /oversight content          # bias toward /iterate findings + content
 /oversight deploy           # bias toward Netlify / CI/CD signal
 /oversight reset            # bias toward scope reduction
@@ -46,8 +46,8 @@ are a misconfiguration (§9).
 
 In parallel where independent:
 
-0. `node scripts/pulse.mjs` — the fast aggregate: build-plan
-   pending/blocked, AUDIT pending, CRITIQUE pending + last
+0. `node scripts/pulse.mjs` — the fast aggregate: specs and
+   chunks left / held, AUDIT pending, CRITIQUE pending + last
    pass age, candidates pending + oldest-pending age. Items
    4–7 below still get read in full — the briefing needs row
    *content* (blocked reasons, durable rows, bias) that an
@@ -55,12 +55,13 @@ In parallel where independent:
 1. `git log --oneline -20` — recent shipping velocity.
 2. `git status --short` — uncommitted changes.
 3. `pnpm deploy:check` — current deploy state.
-4. `plan/steps/01_build_plan.md` "Status" block — pending
-   phases.
+4. `plan/README.md` — the lanes (Asap, Held) and the spec
+   table; each spec's `## Chunks` for what's left.
 5. `plan/AUDIT.md` — open `/iterate` findings.
 6. `data/BACKLOG.md` — pending data work.
 7. `plan/CRITIQUE.md` — critique pending.
-8. Last 3 phase briefs — current vs. recent commits.
+8. The specs holding the next 3 ready chunks — current vs.
+   recent commits; the last 10 lines of `plan/ARCHIVE.md`.
 9. `design/` — has a new export landed since the last sibling
    commit?
 
@@ -71,11 +72,12 @@ oversight — <ISO date>
 
 shipping
 - last commit: <sha> "<subject>" (<relative time>)
-- phases shipped since last oversight: <list with hashes>
+- chunks closed since last oversight: <ids from ARCHIVE.md>
 - velocity: ~<N> commits/hour over last 24h
 
 state
-- pending phases: <count>; next is phase <N> (<topic>)
+- chunks left: <count> across <K> specs; next is <NN.k> (<title>)
+- held: <count> (<ids + one-word reasons>)
 - open audit findings: <count>; top score <X>: "<one-liner>"
 - pending data backlog: <count>
 - pending critique findings: <count>; pass count <N>; last pass <when>
@@ -83,7 +85,7 @@ state
 - last deploy: <state> (<sha>) — <admin URL or "ready">
 
 flags
-- <unusual patterns: stuck phase, repeated fix commits,
+- <unusual patterns: stuck chunk, repeated fix commits,
   divergent local/Netlify state, design newer than sibling
   commit, etc.>
 ```
@@ -101,14 +103,15 @@ Generate 1–4 questions via `AskUserQuestion`. Rules:
 
 ### Question templates
 
-**Stuck phase**
+**Stuck chunk**
 
-> Phase <N> has been pending across <K> ticks; last <L> commits
+> Chunk <NN.k> has been next across <K> ticks; last <L> commits
 > were "fix:" against it. What now?
 >
-> - (recommended) Refresh the brief — design or scope drifted.
-> - Abandon — mark `[skipped]`, move on.
-> - Continue — the brief is right, just hard.
+> - (recommended) Split it — it's bigger than its size says.
+> - Hold — move it to the Held lane with a reason.
+> - Drop — remove it and its A-IDs with an archive line.
+> - Continue — the spec is right, just hard.
 
 **Audit overload**
 
@@ -118,13 +121,13 @@ Generate 1–4 questions via `AskUserQuestion`. Rules:
 > - No — keep balanced.
 > - Prune — drop bottom <M> findings.
 
-**Brief out of date**
+**Spec out of date**
 
-> `design/<family>/` was updated <K> commits ago, after phase
-> <N> shipped. Refresh phase <N>'s brief and ship a follow-up?
+> `design/<family>/` was updated <K> commits ago, after chunk
+> <NN.k> closed. Refresh spec <NN> and add a follow-up chunk?
 >
-> - (recommended) Yes — `/plan-a-phase phase <N>` then add
->   follow-up phase.
+> - (recommended) Yes — `/plan-a-spec <NN>`, with a new A-ID
+>   and chunk for the follow-up.
 > - No — note in `AUDIT.md`; let `/iterate` catch.
 > - Defer.
 
@@ -135,7 +138,7 @@ Generate 1–4 questions via `AskUserQuestion`. Rules:
 > - (recommended) Investigate — open log; I'll diagnose, no
 >   commit yet.
 > - Roll back — revert to <last-green-sha>.
-> - Continue — next ship-a-phase will reach the right code.
+> - Continue — next ship-a-chunk will reach the right code.
 
 **Uncommitted changes**
 
@@ -146,15 +149,16 @@ Generate 1–4 questions via `AskUserQuestion`. Rules:
 > - Roll forward — finish the tick.
 > - Roll back — `git checkout` and `git clean`; restart cleanly.
 
-**Phase candidates pending promotion**
+**Candidates pending promotion**
 
 > `plan/PHASE_CANDIDATES.md` has <N> pending candidates. Top
 > score [<X.Y>]: "<one-line>". Promote any?
 >
 > - (recommended) Review one — show me the candidate's
 >   rationale + signals; I'll decide.
-> - Promote top — append as a new phase row in the build plan,
->   move the candidate to `## Promoted`.
+> - Promote top — write it as a new spec (`plan/<NN>-<slug>.md`,
+>   unchunked) with a row in `plan/README.md`, move the
+>   candidate to `## Promoted`.
 > - Reject top — move to `## Rejected` with a one-line reason.
 > - Defer — leave them; next expand pass re-evaluates.
 
@@ -191,11 +195,16 @@ Invoke `AskUserQuestion`.
 
 For each answer:
 
-- **"Refresh brief"** → spawn `/plan-a-phase phase <N>` flow
-  inline.
-- **"Abandon phase"** → flip `[ ]` to `[skipped]` in
-  `01_build_plan.md` with comment `(skipped via oversight
-  <date> — <reason>)`.
+- **"Refresh spec" / "Split it"** → run the `/plan-a-spec
+  <NN>` flow inline.
+- **"Hold"** → add `- **<NN.k>** · held: <reason> (oversight
+  <date>)` to the Held lane in `plan/README.md`. Unholding is
+  removing the line.
+- **"Drop"** → remove the chunk and the A-IDs only it closed,
+  fix the Measure line (dropped IDs count as closed), and
+  archive `- <date> · <NN.k> · dropped via oversight: <reason>
+  · (this commit)`. Run `node scripts/plan-check.mjs --since
+  HEAD`.
 - **"Bias toward category X"** → write at top of
   `plan/AUDIT.md`: `> Bias: <category> (set via oversight
   <date>)`. `/iterate` reads this and weights 1.5x.
@@ -207,10 +216,11 @@ For each answer:
   no patch yet.
 - **"Promote candidate"** → move row from
   `plan/PHASE_CANDIDATES.md` `## Pending` to `## Promoted` (with
-  promotion date + assigned phase number). Append a new phase
-  row in `plan/steps/01_build_plan.md` Status block. Optionally
-  invoke `/plan-a-phase phase <N>` flow inline to draft the
-  brief.
+  promotion date + assigned spec number, the next free one).
+  Write `plan/<NN>-<slug>.md` from the candidate (outcome, Why,
+  scope as Design, Acceptance with A-IDs, `Not chunked yet.`)
+  and add its row to `plan/README.md`. Optionally run the
+  `/plan-a-spec <NN>` flow inline to chunk it.
 - **"Reject candidate"** → move row from `## Pending` to
   `## Rejected` with one-line reason.
 - **"Other" (free-form)** → interpret conservatively. If clear
@@ -250,7 +260,7 @@ Skip if no commit was made.
 ```
 oversight complete. <N> adjustments applied.
 - ready to resume: /march (or /loop /march)
-- next pending phase: <N> (<topic>)
+- next ready chunk: <NN.k> (<title>)
 ```
 
 ## 7. Hard rules
@@ -266,7 +276,7 @@ oversight complete. <N> adjustments applied.
 
 ## 8. When `oversight` is NOT the right tool
 
-- **Mid-tick of `/ship-a-phase`** etc. Don't pre-empt.
+- **Mid-tick of `/ship-a-chunk`** etc. Don't pre-empt.
 - **For trivia.** Read state files directly.
 - **As a way to ask permission mid-loop.** Decide instead.
 
@@ -285,21 +295,23 @@ oversight complete. <N> adjustments applied.
 node scripts/pulse.mjs             # the fast aggregate
 git log --oneline -20
 git status --short
-plan/steps/01_build_plan.md
+plan/README.md                     # lanes + spec table
+plan/<NN>-<slug>.md                # specs holding the next ready chunks
+plan/ARCHIVE.md                    # last 10 lines
 plan/AUDIT.md
 data/BACKLOG.md
 plan/CRITIQUE.md
-plan/phases/                       # last 3 modified
 design/                            # for newer-than-sibling check
 
 # Tools
 AskUserQuestion                    # allowed here and in /bootstrap only
 
 # Adjustment files
-plan/steps/01_build_plan.md
+plan/README.md                     # lanes, rows
+plan/<NN>-<slug>.md                # new specs, splits, drops
 plan/AUDIT.md
 data/BACKLOG.md
-plan/phases/phase_<N>_<topic>.md   # via /plan-a-phase
+plan/<NN>-<slug>.md                # new specs, via /plan-a-spec
 
 # Commit
 git commit -m "oversight: <one-line>"

@@ -61,8 +61,8 @@ don't ask.
 End-state:
   - chore: adopt nexus methodology commit landed and pushed
   - Day 1 checklist in new-project.md passes
-  - Ready for /ship-a-phase as the first conscious step.
-  - Do NOT invoke /ship-a-phase yourself; let the user do
+  - Ready for /ship-a-chunk as the first conscious step.
+  - Do NOT invoke /ship-a-chunk yourself; let the user do
     that.
 
 Standing rules:

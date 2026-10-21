@@ -72,16 +72,20 @@ Then:
     this repo. Do not assume Next.js, Tailwind, or any
     specific framework — read package.json / Cargo.toml /
     pyproject.toml / go.mod and adapt.
-  - Write a build plan with 10–20 phases drawn from the spec
-    (or from CURRENT-STATE.md for brownfield). Phase 1 ships
-    the nexus overlay itself; phase 2+ are real product work.
+  - Write the plan as specs and chunks (nexus/concepts/
+    plan-shape.md): a plan/README.md roadmap with one row per
+    spec drawn from the spec (or from CURRENT-STATE.md for
+    brownfield), the first spec or two chunked (S/M/L, every
+    acceptance ID covered), the rest `Not chunked yet.`.
+    Copy templates/plan/nexus.lock and run
+    scripts/plan-check.mjs until it is green.
   - Wire the verify gate against this repo's actual test
     setup. Wire the deploy gate against the chosen provider.
   - At the end: produce a single commit titled
     "chore: adopt nexus methodology" with a body listing every
     file added/modified, every placeholder you resolved, and
     every [needs-user-call] you logged. Push.
-  - Then stop. Do not invoke /ship-a-phase yourself; let the
+  - Then stop. Do not invoke /ship-a-chunk yourself; let the
     user do that as the first conscious step.
 
 Standing rules carried from agents.md:

@@ -267,13 +267,16 @@ missing" — a build plan whose status block is gone, an
 2. Recover the file from history:
 
    ```bash
-   git log --oneline -10 -- plan/steps/01_build_plan.md
-   git show <last-good-sha>:plan/steps/01_build_plan.md > plan/steps/01_build_plan.md
+   git log --oneline -10 -- plan/README.md
+   git show <last-good-sha>:plan/README.md > plan/README.md
    ```
 
 3. Replay reality since `<last-good-sha>`: `git log --oneline
-   <last-good-sha>..HEAD` — tick `[x]` any phase that actually
-   shipped in that span, re-add queue rows that survived.
+   <last-good-sha>..HEAD` — close any chunk that actually
+   shipped in that span (line out, archive line in), re-add
+   queue rows that survived. The same two commands recover a
+   spec file (`plan/<NN>-<slug>.md`); `node
+   scripts/plan-check.mjs` says when the plan is true again.
    Commit `plan: reconstruct state after corruption` with the
    reasoning in the body.
 4. One attended `/march` tick to confirm the dispatcher reads

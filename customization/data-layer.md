@@ -603,7 +603,7 @@ real-time / multi-user.
    migrations.
 
 This is a deliberate phase, not an iterate finding. Use
-`/plan-a-phase` to write the migration brief.
+`/plan-a-spec` to write the migration brief.
 
 ### `gh-as-db` → `pure-db`
 
@@ -641,7 +641,7 @@ shed ops burden.
 4. Switch loaders to read from SaaS.
 5. Decommission the DB.
 
-Same: deliberate phase via `/plan-a-phase`.
+Same: deliberate phase via `/plan-a-spec`.
 
 ### Any → `gh-as-db` (consolidating to in-repo)
 

@@ -12,13 +12,13 @@ right-thing-to-do every tick:
 ```
 unlabeled issues exist          →  /triage
 ELSE critique due (rate-lim)    →  /critique
-ELSE pending phase              →  /ship-a-phase
+ELSE ready chunk               →  /ship-a-chunk
 ELSE pending data               →  /ship-data
 ELSE expand due + bold posture  →  /expand
 ELSE                            →  /iterate
 ```
 
-Deliveries first: pending phases / data ship before `/expand`
+Deliveries first: ready chunks / data ship before `/expand`
 ever fires. `/expand` only runs when there's no immediate
 delivery, OR when its rate-limit window opens (every ~20
 commits or ~48h) AND the bearings posture is **bold** or
@@ -97,8 +97,8 @@ Dispatch to `/critique` if **all three** hold:
 
 1. Current commit is at least **12 commits after** `Last pass`,
    OR `Last pass` > **24 hours ago**, OR `Last pass` is "never"
-   and at least one substantive phase (e.g., the canonical
-   sibling) has shipped.
+   and at least one substantive spec (e.g., the canonical
+   sibling) has archive lines in `plan/ARCHIVE.md`.
 2. `pnpm deploy:check` shows a green deploy.
 3. No pending HIGH critique already queued for iterate.
 
@@ -112,16 +112,18 @@ Otherwise fall through to Step 3.
 
 ### Step 3 — Dispatch (first match wins)
 
-#### 3a. Pending phase?
+#### 3a. Ready chunk?
 
-Open `plan/steps/01_build_plan.md`. If any `[ ]` row in the
-"Status (at-a-glance)" block — skipping rows marked
-`[skipped]` or `[blocked: …]` (a blocked phase is a
-conversation waiting for `/oversight`, not work for this
-tick):
+Open `plan/README.md` (check `plan/nexus.lock` says
+`shape: chunks`). If any spec has a ready chunk under the pick
+order (Asap lane, then table order; every `needs` done; nothing
+in the **Held** lane, since a held or blocked chunk is a
+conversation waiting for `/oversight`, not work for this tick),
+or a spec ahead of it says `Not chunked yet.`:
 
-- Read `skills/ship-a-phase.md`.
-- Execute its procedure end-to-end.
+- Read `skills/ship-a-chunk.md`.
+- Execute its procedure end-to-end (it chunks an unchunked
+  spec first).
 - Return.
 
 #### 3b. Pending data?
@@ -150,13 +152,13 @@ Dispatch to `/expand` if **all four** hold:
 1. Posture is **bold** or **autonomous** (not strict).
 2. Current commit is at least **20 commits after** `Last pass`,
    OR `Last pass` is more than **48 hours ago**, OR `Last pass`
-   is "never" and at least **3 phases have shipped**.
+   is "never" and at least **3 chunks have archive lines**.
 3. There's at least one signal worth examining: `plan/AUDIT.md`
    has Pending rows, OR `plan/CRITIQUE.md` has Pending rows,
    OR `git log -p --since="<last pass>" -- spec.md design/`
    shows changes, OR `data/` has substantial growth since the
    plan was authored.
-4. No phase or data work is pending (Steps 3a/3b would have
+4. No chunk or data work is ready (Steps 3a/3b would have
    matched first if there were).
 
 If all four hold:
@@ -195,8 +197,9 @@ A march tick succeeds iff the child tick succeeds.
 `/march` itself only fails on:
 
 1. **`git pull` divergence.**
-2. **State files corrupted or missing** (build plan, AUDIT,
-   BACKLOG, CRITIQUE). Stop and report — don't reconstruct
+2. **State files corrupted or missing** (plan/README.md,
+   AUDIT, BACKLOG, CRITIQUE), or `node scripts/plan-check.mjs`
+   red on a clean checkout. Stop and report — don't reconstruct
    silently.
 
 Otherwise inherited from the dispatched skill.
@@ -205,7 +208,8 @@ Otherwise inherited from the dispatched skill.
 
 ```bash
 # State files
-plan/steps/01_build_plan.md          # pending phases
+plan/README.md                       # lanes + specs: the chunk queue
+plan/<NN>-<slug>.md                  # each spec's chunks
 data/BACKLOG.md                      # pending data work
 plan/CRITIQUE.md                     # critique queue + last-pass metadata
 
@@ -216,7 +220,7 @@ pnpm deploy:check                    # green-deploy condition
 # Skills it dispatches into
 skills/triage.md                     # Step 1 (cheapest)
 skills/critique.md                   # Step 2 (rate-limited)
-skills/ship-a-phase.md               # Step 3a
+skills/ship-a-chunk.md               # Step 3a
 skills/ship-data.md                  # Step 3b
 skills/expand.md                     # Step 3c (posture-gated)
 skills/iterate.md                    # Step 3d

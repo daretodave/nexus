@@ -273,7 +273,7 @@ Decide:
 ## Anti-patterns
 
 **"I'll just run `/loop /march` for the first time and see what
-happens."** Don't. Run `/ship-a-phase` manually first. Confirm
+happens."** Don't. Run `/ship-a-chunk` manually first. Confirm
 the substrate. Step up gradually.
 
 **"I don't need `/oversight`, the loop is doing fine."** This

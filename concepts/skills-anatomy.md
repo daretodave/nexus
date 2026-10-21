@@ -75,7 +75,7 @@ Every slash command follows this skeleton. The variations are:
 - The description line.
 - The argument-handling list.
 - The list of "things the skill autonomously handles."
-- For non-shipping skills (`oversight`, `plan-a-phase`,
+- For non-shipping skills (`oversight`, `plan-a-spec`,
   `critique`, `triage`): replace the autonomous-loop guidance
   with the skill's specific contract (e.g., "this is the only
   skill that asks the user anything").
@@ -93,7 +93,7 @@ sections that don't apply (e.g., a planning-only skill skips
 A 2–4 line blockquote at the top stating the persona:
 "Full autonomy, no review checkpoint" for shipping skills, or
 the specific contract for non-shipping ones (e.g., "Thinking
-pass" for plan-a-phase, "User-in-the-loop" for oversight).
+pass" for plan-a-spec, "User-in-the-loop" for oversight).
 
 ### §1. Purpose
 
@@ -209,10 +209,10 @@ prescribes. Skills are recipes, not menus.
 
 ### Use concrete file paths.
 
-> ❌ "Read the relevant phase brief."
+> ❌ "Read the relevant spec."
 
-> ✓ "Read `plan/phases/phase_<N>_<topic>.md`. If absent,
-> generate per `skills/plan-a-phase.md` §5."
+> ✓ "Read `plan/<NN>-<slug>.md`. If it says `Not chunked
+> yet.`, chunk it per `skills/plan-a-spec.md` §5."
 
 The first form requires inference. The second is unambiguous.
 
@@ -363,7 +363,7 @@ A new skill is justified when:
 
 Examples of skills that earn their place:
 
-- `ship-a-phase` — single biggest verb in any project.
+- `ship-a-chunk` — single biggest verb in any project.
 - `iterate` — non-trivial because the audit dimensions are
   numerous.
 - `triage` — the issue-routing classification is genuinely

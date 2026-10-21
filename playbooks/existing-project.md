@@ -31,12 +31,12 @@
 3. Add the methodology overlay (skills, plan, agents) [45 min]
 4. Wire the verify gate against the existing test setup [30 min]
 5. Wire the deploy gate against the existing CI [30 min]
-6. Write a build plan from where you ARE, not where you started [45 min]
-7. Smoke test with a small, low-risk phase [30 min]
+6. Write specs from where you ARE, not where you started [45 min]
+7. Smoke test with a small, low-risk chunk [30 min]
 8. Ratchet up [variable]
 
 The expensive parts (versus greenfield):
-- The build plan has to start from current state, not zero.
+- The plan has to start from current state, not zero.
 - The verify gate has to harmonize with whatever tests exist.
 - The deploy gate has to slot into the existing CI without
   breaking it.
@@ -46,7 +46,7 @@ The expensive parts (versus greenfield):
 ## 1. Audit what's there
 
 Before adding anything, document the current state. This becomes
-the baseline you write the build plan against.
+the baseline you write the plan against.
 
 These are `git`/`node`-native — no POSIX text tools (`wc`,
 `grep -c`, `tail`) — so the block runs unchanged in bash/zsh
@@ -96,7 +96,7 @@ there, what works, what's known broken, what's missing for v1,
 conventions worth keeping vs. breaking — from what step 1's
 commands above just showed you.
 
-This is the baseline. The build plan in step 6 starts from here.
+This is the baseline. The plan in step 6 starts from here.
 
 ---
 
@@ -119,7 +119,7 @@ Sections to include (compress to 1–2 pages):
 - **Non-goals** — explicit "we don't do this."
 
 If the existing code has drifted from the spec you write — that
-drift is a phase in your build plan (or a `triage:loop-queued`
+drift is a chunk in your plan (or a `triage:loop-queued`
 finding for `/iterate`).
 
 Commit `spec.md` and `plan/CURRENT-STATE.md`.
@@ -139,7 +139,7 @@ the `.env` gitignore lines in the same pass (see
 overlay step can trip on Windows):
 
 ```bash
-node -e "const fs=require('fs');fs.mkdirSync('plan/steps',{recursive:true});fs.mkdirSync('plan/phases',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/steps/01_build_plan.md','plan/steps/01_build_plan.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
+node -e "const fs=require('fs');fs.mkdirSync('plan',{recursive:true});for(const [s,d] of [['templates/skills','skills'],['templates/claude','.claude'],['templates/claude/CLAUDE.md','CLAUDE.md'],['templates/scripts','scripts'],['templates/agents.md','agents.md'],['templates/env/env.example','.env.example'],['templates/plan/README.md','plan/README.md'],['templates/plan/bearings.md','plan/bearings.md'],['templates/plan/AUDIT.md','plan/AUDIT.md'],['templates/plan/CRITIQUE.md','plan/CRITIQUE.md'],['templates/plan/PHASE_CANDIDATES.md','plan/PHASE_CANDIDATES.md'],['templates/plan/ARCHIVE.md','plan/ARCHIVE.md']]) fs.cpSync('../nexus/'+s,d,{recursive:true});const gi=fs.existsSync('.gitignore')?fs.readFileSync('.gitignore','utf-8'):'';const add=['.env','.env.local','.env.*.local'].filter(l=>!gi.includes(l));if(add.length) fs.appendFileSync('.gitignore','\n'+add.join('\n')+'\n')"
 ```
 
 (The `CLAUDE.md` line is deliberate, not redundant with the
@@ -150,15 +150,13 @@ needs both copies to actually fire.)
 (If using GitHub-as-DB:
 `mkdir -p ./data && cp -r ../nexus/templates/data/* ./data/`.)
 
-`plan/phases/` is created empty here — unlike
-`new-project.md`'s bulk `templates/plan` → `plan` copy, this
-overlay copies individual files and doesn't land a starting
-brief. Before committing §6's build plan below, add
-`plan/phases/phase_1_bootstrap.md` following
-[`new-project.md`](./new-project.md) §5's brief format (Scope /
-Outputs / Stack pins / Tests / Decisions) — or copy
-`../nexus/templates/plan/phases/phase_1_bootstrap.md` in as a
-starting point and edit it to match.
+No starter spec is copied here — unlike `new-project.md`'s
+step 3, this overlay doesn't assume a bootstrap. §6 below
+writes your first spec from the current state; the shape is in
+[`concepts/plan-shape.md`](../concepts/plan-shape.md), and
+`../nexus/templates/plan/02-canonical-sibling.md` is a good
+starting point to copy and edit. Delete `plan/ARCHIVE.md`'s
+example lines.
 
 Search-and-replace placeholders (see
 [`new-project.md`](./new-project.md) §4 for the mapping table
@@ -171,8 +169,8 @@ Pay special attention in `bearings.md`:
   you wish was there. The loop assumes bearings is truth.
 - **URL / API / CLI contract** — list every public surface
   the existing code already exposes. These are LOCKED. The
-  build plan adds new surfaces; it does not change existing
-  ones except via deliberate phases.
+  plan adds new surfaces; it does not change existing
+  ones except via deliberate specs.
 - **Standing decisions** — code-style conventions, naming, etc.
   Read 5–10 existing files; encode the patterns.
 
@@ -209,15 +207,15 @@ If a check is currently red and you don't have time to fix it:
 **don't skip it from verify**. Instead, document in
 `bearings.md` Hard Rules:
 
-> The verify gate is currently red on test X. Until phase Y
+> The verify gate is currently red on test X. Until chunk Y
 > ships the fix, the loop CANNOT autonomously commit; manual
-> phases only.
+> chunks only.
 
 This prevents the loop from learning to ignore red gates.
 
-If your project has no tests at all: that's a phase 1
-deliverable. Add a smoke test (anything that runs and passes)
-so the gate has a green baseline. The build plan's first phase
+If your project has no tests at all: that's the first
+chunk's deliverable. Add a smoke test (anything that runs and
+passes) so the gate has a green baseline. The next chunk
 expands coverage.
 
 See [`customization/verify-gate.md`](../customization/verify-gate.md)
@@ -243,7 +241,7 @@ team requires PRs, the loop cannot ship to main. Two options:
 **A. Override the methodology to push to a branch.** Add to
 `bearings.md`:
 
-> Loop pushes to `loop/<phase-N>` not `main`. The user
+> Loop pushes to `loop/<chunk-id>` not `main`. The user
 > reviews and merges manually. Deploy gate polls preview
 > deploys (Vercel/Netlify) instead of production.
 
@@ -257,14 +255,14 @@ gate" for the full version):
    poll never masks a preview failure; Netlify branch deploys
    already live on the same site, so `NETLIFY_SITE_NAME` is
    unchanged.
-2. **Not re-shipping the same phase next tick.** With `main`
-   untouched until merge, the build plan's `[ ]` row for that
-   phase would look pending forever. `ship-a-phase` marks it
-   `[blocked: awaiting PR #<n> merge <date>]` instead (existing
-   status vocabulary) in the same commit that ships the phase
-   to the branch — `/march` already skips `[blocked: …]` rows.
-   A human merging the PR (or the next `/oversight` pass, once
-   merged) flips it to `[x] (commit <hash>)`.
+2. **Not re-shipping the same chunk next tick.** With `main`
+   untouched until merge, the chunk's line would look ready
+   forever. `ship-a-chunk` adds it to the **Held** lane as
+   `- **<NN.k>** · blocked: awaiting PR #<n> merge <date>` in
+   the same commit that ships the chunk to the branch, and the
+   pick order already skips Held. Once the PR merges, the
+   close (line out, A-IDs out, archive line in) lands on `main`
+   with it, and the Held line goes in the same edit.
 
 **B. Use trunk-based development for loop work.** Allow the
 loop direct push to `main`; reserve PRs for human-driven work.
@@ -274,56 +272,59 @@ the loop. The methodology supports both; pick one and document.
 
 ---
 
-## 6. Build plan from current state
+## 6. Specs from current state
 
-Open `plan/steps/01_build_plan.md` — the overlay step already
-copied it in from the template.
+The plan describes what's *next*, not what's *done*: one spec
+per initiative that takes the project from here to v1 (or
+v1.5), each ending in chunks sized to one session. What
+already shipped lives in git and `plan/CURRENT-STATE.md`, not
+in the plan.
 
-The build plan describes what's *next*, not what's *done*.
-Write it as a list of phases that take the project from here
-to v1 (or v1.5).
-
-Format the existing Status block to reflect current truth:
+Write the roadmap's spec table in `plan/README.md` (the
+overlay copied it in), then the first spec,
+`plan/01-<slug>.md`:
 
 ```markdown
-## Status (at-a-glance)
+## Acceptance
 
-**Already shipped (pre-loop, prior history):**
-- [x] Phase 0a — initial scaffolding (commit history pre-2026-01)
-- [x] Phase 0b — current production deployment (last green deploy)
+- **A1** <first observable outcome the loop should deliver>
+- **A2** <next>
 
-**Next up (autonomous loop's queue):**
-- [ ] Phase 1 — <first thing the loop should do>
-- [ ] Phase 2 — <next>
-- ...
+## Chunks
+Measure: 2 open · 0 closed · next A3
+
+- [ ] **01.1** <first thing the loop should do> · S · closes A1 · needs —
+- [ ] **01.2** <next> · M · closes A2 · needs 01.1
 ```
 
-The loop's queue should start with **a small, low-risk phase**:
+The first chunk should be **small and low-risk**:
 - Adding a missing test.
 - Cleaning up a known dead module.
 - Bumping a dependency.
 - Adding an `<aside>` to one page.
 
-Resist the urge to make the first loop phase ambitious. The goal
-is to **prove the loop works in this codebase** — including the
-verify gate, the deploy gate, the rollback story. Once that's
-proven, phase 2 can be bigger.
+Resist the urge to make the first loop chunk ambitious. The
+goal is to **prove the loop works in this codebase** —
+including the verify gate, the deploy gate, the rollback
+story. Once that's proven, the chunks can grow to M and L.
 
-Aim for 5–10 phases in the initial plan. Add more as the loop
-chews through them and you observe what works.
+Aim for a handful of specs, only the first one or two chunked.
+Unchunked specs say `Not chunked yet.` under `## Chunks`; the
+loop chunks each on its first pick. Run `node
+scripts/plan-check.mjs` until it's green.
 
-Commit the build plan and the first phase brief.
+Commit the roadmap and the specs.
 
 ---
 
 ## 7. Smoke test
 
-Run `/ship-a-phase` (or follow `skills/ship-a-phase.md`
+Run `/ship-a-chunk` (or follow `skills/ship-a-chunk.md`
 manually).
 
 What you're watching for:
 
-- Does it pick the right phase from the build plan?
+- Does it pick the right chunk from the roadmap?
 - Does it respect the existing code conventions (bearings says
   "we use X" — does it use X)?
 - Does verify run cleanly against the existing test suite?
@@ -332,11 +333,11 @@ What you're watching for:
 - Does the push trigger the deploy gate cleanly?
 
 If any step is wrong, **fix the methodology files, not the
-code**. The first phase is a calibration run for the
+code**. The first chunk is a calibration run for the
 methodology, not a real feature.
 
 If the smoke test ships cleanly: you're calibrated. Move to
-real phases.
+real chunks.
 
 ---
 
@@ -345,14 +346,14 @@ real phases.
 Same progression as
 [`new-project.md`](./new-project.md) §10:
 
-- 2–3 phases manually.
+- 2–3 chunks manually.
 - Then `/loop /march` for a working session.
 - Then unattended afternoon.
 - Then unattended overnight.
 - Then 80-hour beast.
 
-Brownfield starts the ratchet ~1 phase ahead of greenfield (the
-substrate already exists), but takes ~2 phases longer to trust
+Brownfield starts the ratchet ~1 chunk ahead of greenfield (the
+substrate already exists), but takes ~2 chunks longer to trust
 the loop (the existing code introduces conventions the
 methodology has to learn).
 
@@ -363,9 +364,9 @@ methodology has to learn).
 ### Existing tests fail intermittently
 
 The loop treats verify-gate failures as blockers. Flaky tests
-will block phases. Either:
+will block chunks. Either:
 
-- Mark the flaky tests `skip` and add a phase to fix them, OR
+- Mark the flaky tests `skip` and add a chunk to fix them, OR
 - Document in bearings: "Test X is known-flaky; the loop may
   retry the verify gate up to 3 times before treating as red."
 
@@ -391,7 +392,7 @@ or override.
 ### The codebase has dead code / debt
 
 The loop won't clean up dead code unless you queue an `/iterate`
-finding for it (or add a dedicated cleanup phase). It's not
+finding for it (or add a dedicated cleanup chunk). It's not
 intrinsically motivated to refactor.
 
 If you want the loop to address debt, write findings:
@@ -443,14 +444,15 @@ the work is known but the time isn't there.
 - [ ] `plan/CURRENT-STATE.md` documents the baseline.
 - [ ] `plan/bearings.md` matches what's actually there, not what
       you wish.
-- [ ] `plan/steps/01_build_plan.md` starts with a small,
-      low-risk phase.
+- [ ] `plan/README.md`'s first spec starts with a small,
+      low-risk chunk, and `node scripts/plan-check.mjs` is
+      green.
 - [ ] `pnpm verify` runs against your existing tests and is
       green (or known-red with a Hard Rule).
 - [ ] `pnpm deploy:check` reads your existing provider's deploy
       state.
 - [ ] You've decided on PR-or-trunk strategy and documented it.
 - [ ] Sub-agents are tuned for your domain.
-- [ ] You've smoke-tested with one phase.
+- [ ] You've smoke-tested with one chunk.
 
 When all 9 pass: ratchet up.

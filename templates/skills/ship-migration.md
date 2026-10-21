@@ -184,7 +184,7 @@ commit.
    local Postgres). Surface as `[needs-user-call]`; the next
    tick retries.
 5. **Migration requires a data backfill of existing rows.**
-   That's a `/plan-a-phase` task — write the backfill as its own
+   That's a `/plan-a-spec` task — write the backfill as its own
    reviewed migration, not bundled into a schema-change tick.
 6. **`git pull` divergence.**
 

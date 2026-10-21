@@ -289,6 +289,8 @@ const PLACEHOLDER_VOCABULARY = new Set([
   '<N>', '<M>', '<K>', '<L>', '<H>', '<X>', '<Y>', '<URL>', '<REPO>',
   '<NAME>', '<STATUS>', '<ISO>', '<MOOD>', '<REFERENCE>', '<PHASE_N>',
   '<PHASE_M>', '<SEV>',
+  // plan shape (concepts/plan-shape.md)
+  '<NN>',
 ])
 
 function legPlaceholders(files) {

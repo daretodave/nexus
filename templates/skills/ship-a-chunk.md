@@ -1,10 +1,11 @@
-# Skill: ship-a-phase
+# Skill: ship-a-chunk
 
-> **Full autonomy.** When invoked (manually, via `/ship-a-phase`,
+> **Full autonomy.** When invoked (manually, via `/ship-a-chunk`,
 > or under `/loop` / `/march`), you have authority to ship one
-> phase of the build plan end-to-end with **no review checkpoint**:
-> build, write tests, run the verify gate, commit, push, confirm
-> deploy. The user reads the diff after — not before.
+> chunk of the plan end-to-end with **no review checkpoint**:
+> build, write tests, run the verify gate, close the chunk,
+> commit, push, confirm deploy. The user reads the diff after,
+> not before.
 >
 > **The bar for asking is high.** If you would have asked, decide
 > instead and document the call in the commit body. Stop only on
@@ -12,22 +13,27 @@
 
 ## 1. Purpose
 
-`plan/steps/01_build_plan.md` carves <PROJECT> into ~10–20 phases.
-Each phase is one self-contained slice that ships end-to-end:
-code + unit tests + e2e + commit + push (deploy follows).
+`plan/README.md` lists <PROJECT>'s specs; each spec
+(`plan/NN-<slug>.md`) ends in chunks sized S, M or L, where L
+is one session at most. A chunk is one self-contained slice
+that ships end-to-end: code + unit tests + e2e + commit + push
+(deploy follows), and in the same commit it leaves the plan as
+one line in `plan/ARCHIVE.md`. The shape is in
+`nexus/concepts/plan-shape.md`.
 
 This skill drives the build **autonomously, in a loop**, so a
 single overnight run can move the project forward by several
-phases.
+chunks.
 
 ## 2. Invocation
 
 ```
-/ship-a-phase                       # next [ ] phase
-/ship-a-phase phase 8               # specific phase by number
-/ship-a-phase phase 8 dry-run       # plan + emit brief, no code commit
-/loop 30m /ship-a-phase             # autonomous, every 30 min
-/loop /ship-a-phase                 # autonomous, self-paced
+/ship-a-chunk                       # next ready chunk (pick order, Step 1)
+/ship-a-chunk 08.2                  # that chunk
+/ship-a-chunk 08                    # the next ready chunk of spec 08
+/ship-a-chunk 08.2 dry-run          # read + plan, no code commit
+/loop 30m /ship-a-chunk             # autonomous, every 30 min
+/loop /ship-a-chunk                 # autonomous, self-paced
 /march                              # outer dispatcher (preferred)
 /loop /march                        # the autonomous-beast endgame
 ```
@@ -41,13 +47,18 @@ The user's standing instruction: **"more get-it-done, less ask
 me questions."** Internalize this:
 
 - **Design / scope ambiguity → decide.** Pick the choice most
-  consistent with the canonical sibling phase + `bearings.md`.
+  consistent with the spec's Design, the canonical sibling
+  spec, and `bearings.md`.
   Document the call in the commit body under "Decisions". Never
   block.
 - **Empty / missing content → render the empty state and ship.**
-- **Missing brief → generate one** per `skills/plan-a-phase.md`
-  §5 (the brief format is shared). Commit the brief separately,
-  then proceed.
+- **Spec not chunked yet → chunk it** per
+  `skills/plan-a-spec.md` §5. Commit the chunks separately
+  (`plan: chunk spec <NN>`), then build the first one.
+- **Chunk bigger than its size → split it.** Build the first
+  vertical slice; the rest become new chunks (`NN.ka`,
+  `NN.kb`) that divide its A-IDs. The split rides in the same
+  commit, stated in the body.
 - **Verify failure → read the log + patch.** Iterate up to 3
   times on the same root cause.
 - **Deploy failure → same as verify.** Up to 3 same-root-cause
@@ -72,8 +83,9 @@ and research.
 
 ## 5. The page-family / feature-surface shape
 
-Every page-family / feature-surface phase ships **all** of these,
-mirroring the canonical sibling (typically phase 4 or 5):
+Every page-family / feature-surface spec ships **all** of these
+across its chunks, mirroring the canonical sibling spec
+(`plan/02-*.md` in the starter plan):
 
 ```
 <your-app-path>/<route-or-surface>/
@@ -99,7 +111,7 @@ copy structure, swap names + queries.
 
 ### Already-built primitives
 
-After phases 1–<substrate count>, these exist and are reused:
+After the substrate specs ship, these exist and are reused:
 
 - Layout primitives (Header, Footer, Container, …)
 - Editorial atoms / UI atoms (cards, chips, etc.)
@@ -120,69 +132,63 @@ git pull --ff-only
 
 If divergence, stop per §10.
 
-### Step 1 — Pick the phase
+### Step 1 — Pick the chunk
 
-Read the "Status (at-a-glance)" block at the top of
-`plan/steps/01_build_plan.md`. The next phase is the **first
-`[ ]` row**. If the user passed `phase N`, ship that one
-regardless of order. Skip rows marked `[skipped]` (set by
-`/oversight`).
+Read `plan/nexus.lock` first: `shape: chunks` is this skill's
+plan; `shape: phases` (or no lock) means the repo is on kit v1,
+so stop and say so (see `nexus/playbooks/upgrade.md`).
 
-### Step 2 — Read the brief
+Then pick, from `plan/README.md`:
 
-`plan/phases/phase_<N>_<topic>.md`. If missing, follow
-`skills/plan-a-phase.md` §5 to generate (commit separately,
-then proceed).
+1. An explicit argument wins: a chunk id ships that chunk; a
+   spec number ships that spec's first ready chunk.
+2. Otherwise the **Asap** lane, in its written order.
+3. Otherwise the spec table, in table order.
 
-### Step 2.5 — Mirror the phase to GitHub
+Within a spec, take the first chunk whose `needs` are done (a
+need is done when its line is gone from every spec). Skip
+anything in the **Held** lane. A spec that says `Not chunked
+yet.` is chunked first (§9).
 
-Open (or reuse, or reopen) the phase mirror issue. The repo's
-Issues tab gets a public artifact for this phase the moment work
-begins; the same artifact closes when the shipping commit lands.
-The helper is **idempotent** — find-or-create-or-reopen keyed on
-the title prefix `Phase <N> — `, so re-runs of the same phase (or
-rapid-fire ticks) reuse the same number instead of spamming
-duplicates.
+### Step 2 — Read the spec
+
+`plan/NN-<slug>.md`, end to end. Design and Contracts are
+decided; Acceptance says what done means for the A-IDs this
+chunk `closes` (or `partial`s). The chunk's sub-bullets are
+requirements, not suggestions.
+
+### Step 2.5 — Mirror the spec to GitHub (best-effort)
+
+Open (or reuse, or reopen) the spec's mirror issue so the
+Issues tab shows the work the moment it begins. The helper is
+**idempotent**: find-or-create-or-reopen keyed on the title
+prefix `Phase <N> — ` (the helper's title contract, kept from
+kit v1; `<N>` is the spec number), so re-runs reuse the same
+number instead of spamming duplicates.
 
 ```bash
-# 1. Build the body file from the brief's Outcome / Why section.
-#    Keep it user-readable: 1–2 lines goal summary, then a link
-#    back to the phase brief in this repo.
 issue_body=$(mktemp)
 cat > "$issue_body" <<EOF
-**Goal:** <one-line outcome from the brief's "Outcome" section>
+**Goal:** <the spec's one-line outcome>
 
-<2–4 line summary of what shipping this phase delivers>
-
-**Brief:** [\`plan/phases/phase_<N>_<topic>.md\`](https://github.com/<REPO_SLUG>/blob/<DEFAULT_BRANCH>/plan/phases/phase_<N>_<topic>.md)
+**Spec:** [\`plan/<NN>-<slug>.md\`](https://github.com/<REPO_SLUG>/blob/<DEFAULT_BRANCH>/plan/<NN>-<slug>.md)
 
 ---
-_Tracked by the autonomous loop. The phase commit will close this issue via a \`Closes #<this-issue>\` trailer; deploy URL is posted as a follow-up comment._
+_Tracked by the autonomous loop. The commit that closes the spec's last chunk closes this issue via a \`Closes #<this-issue>\` trailer._
 EOF
 
-# 2. Open / reuse / reopen.
-PHASE_ISSUE=$(node scripts/loop-issue.mjs phase-open \
-    --phase "<N>" \
-    --title "Phase <N> — <topic>" \
+SPEC_ISSUE=$(node scripts/loop-issue.mjs phase-open \
+    --phase "<NN>" \
+    --title "Phase <NN> — <spec title>" \
     --body-file "$issue_body")
-echo "phase mirror: #$PHASE_ISSUE"
+echo "spec mirror: #$SPEC_ISSUE"
 ```
 
-`<N>` here is the phase identifier as it appears on the
-`01_build_plan.md` row (e.g. `15a`, not `15`). The title format
-**must** be `Phase <N> — <topic>` — the helper rejects mismatched
-titles to keep prefix-match reuse working.
-
-On **any failure** of `loop-issue.mjs phase-open` (auth, rate
-limit, network, repo unreachable):
-
-- Print stderr to the run log.
-- Continue with the build. The mirror is best-effort, not gating
-  (Hard rule §7 — phase mirror is non-gating).
-- The next ship-a-phase tick on the same phase will retry.
-
-If the open succeeded, capture `$PHASE_ISSUE` for use in Step 10
-(commit trailer) and Step 12.5 (close-comment).
+On **any failure** (auth, rate limit, network): print stderr
+to the run log and continue. The mirror is best-effort, never
+gating (Hard rule 10). If it succeeded, keep `$SPEC_ISSUE` for
+Step 10 (a `Closes` trailer only when this chunk is the spec's
+last) and Step 12.5.
 
 ### Step 3 — Read the design + canonical sibling
 
@@ -192,12 +198,12 @@ cat design/INDEX.md                      # if a design layer exists
 cat design/page-<family>.<ext>           # if family-specific design exists
 cat design/decisions.<ext>               # if a decisions doc exists
 
-# Canonical sibling — typically phase 4 or 5
+# Canonical sibling: the first feature-surface spec's code
 ls <repo-root>/<your-app-path>/<canonical-family>/
 ```
 
 If `design/` is empty or missing for this family, proceed using
-the brief + canonical sibling + bearings. Note in commit-body
+the spec + canonical sibling + bearings. Note in commit-body
 Decisions.
 
 ### Step 4 — Build
@@ -220,7 +226,7 @@ manifest / index files as needed.
 ### Step 6 — SEO / metadata (where applicable)
 
 Use shared SEO helpers. `generateMetadata`, JSON-LD per the
-brief's chosen type, OG image route handlers.
+spec's chosen type, OG image route handlers.
 
 ### Step 7 — Tests
 
@@ -246,8 +252,34 @@ pnpm verify    # or your stack's equivalent
 ```
 
 Runs `typecheck → test:run → data:validate → build → e2e` (or
-your project's gate composition). All hard. Iterate up to 3
+your project's gate composition), plus `node
+scripts/plan-check.mjs --since HEAD` once Step 9.5 has closed
+the chunk. All hard. Iterate up to 3
 times on the same root cause; otherwise stop per §10.
+
+### Step 9.5 — Close the chunk (same commit)
+
+The plan only shrinks. In the spec and the roadmap:
+
+1. Remove the chunk's line and its sub-bullets.
+2. Remove the A-IDs it `closes` from `## Acceptance`, and fix
+   the `Measure:` line (`open` down, `closed` up, `next`
+   unchanged). A `partial` ID stays; say in the body what's
+   left of it.
+3. Remove the chunk from other chunks' `needs` and from the
+   Asap lane; update the spec's `N left` in `plan/README.md`.
+4. Append one line to `plan/ARCHIVE.md`:
+   `- <ISO date> · <NN.k> · <what now works, ≤ 10 words> ·
+   (this commit)`. Git knows the hash; a later archive edit
+   may swap it in.
+5. If the spec now has nothing left: move its lasting rules
+   and decisions into `identity/` (or `bearings.md`'s standing
+   decisions if there's no `identity/`), delete the spec,
+   remove its row, and archive
+   `- <date> · <NN> · spec complete: <title> · absorbed into
+   identity · deleted in (this commit)`.
+
+Then run `node scripts/plan-check.mjs --since HEAD`.
 
 ### Step 10 — Commit + push (atomic)
 
@@ -255,15 +287,15 @@ Stage explicitly. Conventional subject; body in 4–8 bullets
 describing what shipped + what the user can now do. Add
 "Decisions" section listing autonomous design calls.
 
-**If Step 2.5 captured a phase issue number** (`$PHASE_ISSUE`),
-add a `Closes #<N>` trailer to the commit body. GitHub auto-closes
-the phase mirror when the commit pushes to <DEFAULT_BRANCH>; that's
-the canonical ship signal on the public timeline.
+**If Step 2.5 captured a spec issue number** (`$SPEC_ISSUE`)
+and this chunk was the spec's last, add a `Closes #<N>`
+trailer to the commit body. GitHub auto-closes the spec mirror
+when the commit pushes to <DEFAULT_BRANCH>.
 
 ```bash
 git add <explicit files>
 git commit -m "$(cat <<'EOF'
-feat: <family> page family — phase <N>
+feat: <family> page family (<NN.k>)
 
 - <bullet 1>
 - <bullet 2>
@@ -271,7 +303,7 @@ feat: <family> page family — phase <N>
 Decisions:
 - <design call 1 — picked X over Y because <reason>>
 
-Closes #<phase-issue-number>
+Closes #<spec-issue-number>   (only on the spec's last chunk)
 EOF
 )"
 git push origin <DEFAULT_BRANCH>
@@ -279,19 +311,11 @@ git push origin <DEFAULT_BRANCH>
 
 **No `Co-Authored-By:` trailer. No emojis.**
 
-### Step 11 — Tick the DoD
+### Step 11 — No separate tick
 
-Flip the shipped `[ ]` to `[x]` in
-`plan/steps/01_build_plan.md` and add the commit hash. Commit:
-
-```bash
-git add plan/steps/01_build_plan.md
-git commit -m "plan: phase <N> shipped — <one-line>"
-git push origin <DEFAULT_BRANCH>
-```
-
-If you generated a brief in step 2, that's a separate prior
-commit (subject `phases: brief for phase <N>`).
+The close (Step 9.5) rode in the Step 10 commit; there is no
+separate plan commit. If you chunked a spec in Step 1, that was
+its own prior commit (`plan: chunk spec <NN>`).
 
 ### Step 12 — Confirm deploy
 
@@ -310,24 +334,23 @@ Outcomes:
 - **Exit 3 (config)** — `<PROVIDER_AUTH_TOKEN>` missing or
   unreachable. Stop per §10.
 
-### Step 12.5 — Phase mirror close-comment
+### Step 12.5 — Spec mirror comment
 
-If Step 2.5 captured `$PHASE_ISSUE` and Step 12 was green:
+If Step 2.5 captured `$SPEC_ISSUE` and Step 12 was green:
 
 ```bash
 node scripts/loop-issue.mjs phase-close \
-  --phase "<N>" \
+  --phase "<NN>" \
   --commit "<commit-sha>" \
   --deploy-url <DEPLOY_URL>
 ```
 
-The `Closes #<N>` trailer in Step 10's commit already auto-closed
-the issue on push; this comment confirms the deploy URL on the
-public timeline. Failures here are warnings, not blockers.
+This posts the chunk's ship comment (and the deploy URL) on the
+spec's issue. Failures here are warnings, not blockers.
 
 ### Step 13 — Done
 
-Return cleanly. The loop's next tick picks up the next phase.
+Return cleanly. The loop's next tick picks up the next chunk.
 If you ran outside the loop, summarize what shipped + what's
 next in 2–3 lines.
 
@@ -346,26 +369,29 @@ next in 2–3 lines.
 8. **Content stays in <CONTENT_LOCATION>.** Data stays in
    `<DATA_LOCATION>`. No hardcoded copy/records in components.
 9. <PROJECT-SPECIFIC RULES — e.g., site name lowercase>
-10. **Phase issue mirror is best-effort, not gating.** If
-    `loop-issue.mjs phase-open` fails, the phase still ships;
-    log the stderr and continue. The mirror is a public timeline,
-    not a verification step. Do not block phase delivery on
-    GitHub issue API hiccups.
+10. **Spec issue mirror is best-effort, not gating.** If
+    `loop-issue.mjs phase-open` fails, the chunk still ships;
+    log the stderr and continue. The mirror is a public
+    timeline, not a verification step.
+11. **The plan only shrinks.** A closed chunk leaves no ticked
+    box, no "done" note, no struck-through line: its record is
+    the archive line. A-IDs are never renumbered or reused.
 
 ## 8. Cross-link retrofit policy
 
 When shipping family X, retro-fit links from already-shipped
-families to X. The retro-fit is part of the *same* phase commit.
+families to X. The retro-fit is part of the *same* chunk
+commit.
 Keep edits scoped. Do not rewrite an already-shipped page's
 structure to make room — that's a follow-up commit, not a
 retro-fit.
 
-## 9. Brief generation (when missing)
+## 9. Chunking (when a spec isn't chunked)
 
-If `plan/phases/phase_<N>_<topic>.md` doesn't exist, follow
-`skills/plan-a-phase.md` §5. The brief format is shared; the
-generation procedure is owned there. Generated briefs are
-committed separately from the code that follows.
+If the picked spec says `Not chunked yet.`, follow
+`skills/plan-a-spec.md` §5: cut it into S/M/L vertical slices
+that cover every A-ID, write the Measure line, and commit that
+alone (`plan: chunk spec <NN>`) before building the first one.
 
 ## 10. Failure modes — when to actually stop
 
@@ -378,13 +404,12 @@ notification never becomes its own failure.
 
 Stops come in two shapes. **Repo-shaped** failures (the whole
 loop is unsafe to continue) end the tick entirely.
-**Phase-shaped** failures (this one phase can't ship; the rest
-of the plan is fine) additionally mark the phase row
-`[blocked: <short reason> <ISO-date>]` in
-`plan/steps/01_build_plan.md`, commit + push that state
-change, and return cleanly — the next `/march` tick dispatches
-past the blocked row into still-shippable work, and
-`/oversight` owns unblocking.
+**Chunk-shaped** failures (this one chunk can't ship; the rest
+of the plan is fine) additionally add the chunk to the **Held**
+lane in `plan/README.md` as `- **<NN.k>** · blocked: <short
+reason> <ISO-date>`, commit + push that state change, and
+return cleanly. The next `/march` tick picks past it into
+still-shippable work, and `/oversight` owns unblocking.
 
 Repo-shaped — stop the tick:
 
@@ -400,16 +425,17 @@ Repo-shaped — stop the tick:
    missing, plugin incompatibility) and the fix isn't local
    code. Stop and report.
 
-Phase-shaped — mark `[blocked: …]`, notify, return:
+Chunk-shaped — hold it with `blocked: …`, notify, return:
 
-6. **The phase requires a paid service or API key that isn't
+6. **The chunk requires a paid service or API key that isn't
    configured.** Note which env var / runbook is missing in
    the blocked reason.
 7. **The design contradicts the URL / API / CLI contract** in a
    way you can't reconcile by trusting the contract.
-8. **Phase scope is genuinely ambiguous after reading step 01 +
-   the brief + bearings + spec.md.** Generate a more decisive
-   brief and proceed; block only if even that fails.
+8. **Chunk scope is genuinely ambiguous after reading the spec
+   + bearings + spec.md.** Make the spec's Design more
+   decisive (its own commit) and proceed; hold only if even
+   that fails.
 
 For everything else: **decide, ship, document.**
 
@@ -417,8 +443,10 @@ For everything else: **decide, ship, document.**
 
 ```bash
 # Where you read
-plan/steps/01_build_plan.md                  # status + scope
-plan/phases/phase_<N>_<topic>.md             # brief
+plan/nexus.lock                              # shape: chunks
+plan/README.md                               # lanes + spec table (pick order)
+plan/<NN>-<slug>.md                          # the spec: design, acceptance, chunks
+plan/ARCHIVE.md                              # one line per closed chunk
 plan/bearings.md                             # stack + conventions
 design/                                      # design exports (optional)
 spec.md                                      # product spec
@@ -428,8 +456,9 @@ spec.md                                      # product spec
 Agent({ subagent_type: "scout", prompt: "..." })
 # + your domain specialists
 
-# Verify + commit + push + deploy
+# Verify + close + commit + push + deploy
 pnpm verify
+node scripts/plan-check.mjs --since HEAD
 git add <explicit files>
 git commit -m "<subject>"
 git push origin <DEFAULT_BRANCH>

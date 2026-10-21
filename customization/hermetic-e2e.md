@@ -50,7 +50,7 @@ The "hermetic" half is what makes it loop-safe:
 
 When those three hold, a green e2e gate genuinely means *the
 product works end-to-end*. That is the contract every shipping
-skill (`/ship-a-phase`, `/iterate`, `/ship-data`) leans on
+skill (`/ship-a-chunk`, `/iterate`, `/ship-data`) leans on
 before pushing. Without it, the loop is firing blind.
 
 ---

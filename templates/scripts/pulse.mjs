@@ -3,8 +3,8 @@
 //
 // `/oversight`, `/oversight audit`, and `/digest` (if adopted) each
 // hand-derive the same numbers from the same plan/ files. This
-// script computes them once: last-commit age, build-plan
-// pending/blocked counts, AUDIT pending count, CRITIQUE pending
+// script computes them once: last-commit age, plan
+// specs / chunks-left / held counts, AUDIT pending count, CRITIQUE pending
 // count + last-pass age, PHASE_CANDIDATES pending count +
 // oldest-pending age.
 //
@@ -74,15 +74,29 @@ try {
   printRow('last commit', 'unreadable (not a git checkout?)')
 }
 
-// --- build plan ----------------------------------------------------------
+// --- plan -------------------------------------------------------------------
+// Specs are plan/NN-<slug>.md; a chunk line is `- [ ] **NN.k** …`;
+// held chunks are the `- ` lines under the roadmap's **Held** lane.
 
-const buildPlan = readSafe('plan/steps/01_build_plan.md')
-if (buildPlan === null) {
-  printRow('build plan', 'unreadable (plan/steps/01_build_plan.md)')
+let specFiles = null
+try {
+  specFiles = fs.readdirSync(path.join(ROOT, 'plan')).filter((f) => /^\d{2,}-[a-z0-9-]+\.md$/.test(f))
+} catch {}
+const roadmap = readSafe('plan/README.md')
+if (specFiles === null || roadmap === null) {
+  printRow('plan', 'unreadable (plan/README.md or plan/NN-*.md)')
 } else {
-  const pending = (buildPlan.match(/^- \[ \] /gm) ?? []).length
-  const blocked = (buildPlan.match(/^- \[blocked:/gm) ?? []).length
-  printRow('build plan', `${pending} pending, ${blocked} blocked`)
+  const chunks = specFiles.reduce((n, f) => n + ((readSafe(`plan/${f}`) ?? '').match(/^- \[ \] \*\*/gm) ?? []).length, 0)
+  const lines = roadmap.split(/\r?\n/)
+  const heldAt = lines.findIndex((l) => /^\*\*Held\*\*/.test(l))
+  let held = 0
+  if (heldAt !== -1) {
+    for (const l of lines.slice(heldAt + 1)) {
+      if (/^(\*\*|#|\|)/.test(l)) break
+      if (/^- \*\*/.test(l)) held++
+    }
+  }
+  printRow('plan', `${specFiles.length} specs, ${chunks} chunks left, ${held} held`)
 }
 
 // --- audit -----------------------------------------------------------------

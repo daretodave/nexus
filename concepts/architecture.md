@@ -11,7 +11,7 @@ the top two enable unattended runs.
 ┌──────────────────────────────────────────────────────────┐
 │ Layer 5 — User-in-loop (oversight)                       │
 │  Pause autonomy. Brief. Ask. Adjust. Resume.             │
-│  Promotes phase candidates from /expand.                 │
+│  Promotes /expand candidates into specs.                 │
 ├──────────────────────────────────────────────────────────┤
 │ Layer 4 — External signals (critique, triage, expand)    │
 │  Live-site observer + GitHub issue inbox + plan grower.  │
@@ -24,10 +24,10 @@ the top two enable unattended runs.
 ├──────────────────────────────────────────────────────────┤
 │ Layer 2 — Dispatcher (march)                             │
 │  Picks the right verb each tick:                         │
-│  triage → critique → phase → data → expand → iterate     │
+│  triage → critique → chunk → data → expand → iterate     │
 ├──────────────────────────────────────────────────────────┤
 │ Layer 1 — Skills + state files                           │
-│  ship-a-phase, ship-data, plan-a-phase, iterate,         │
+│  ship-a-chunk, ship-data, plan-a-spec, iterate,          │
 │  critique, triage, expand, oversight + the plan/ tree    │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -39,7 +39,7 @@ the top two enable unattended runs.
 ### Skills
 
 Skill files in `skills/` are the source of truth. Each describes
-**one verb** the agent can perform: ship-a-phase, ship-data,
+**one verb** the agent can perform: ship-a-chunk, ship-data,
 iterate, critique, etc. They're heavyweight (300–500 lines each),
 opinionated, and decisive.
 
@@ -79,7 +79,7 @@ The five canonical state files:
 
 | File | Holds | Read by |
 |---|---|---|
-| `plan/steps/01_build_plan.md` | At-a-glance status of every phase. The next `[ ]` row is what ships next. | `march`, `ship-a-phase`, `oversight` |
+| `plan/README.md` + `plan/NN-<slug>.md` | The roadmap (lanes + one row per spec) and the specs, each ending in chunks with acceptance IDs. The first ready chunk is what ships next; a closed chunk leaves as one line in `plan/ARCHIVE.md`. See [`plan-shape.md`](plan-shape.md). | `march`, `ship-a-chunk`, `oversight` |
 | `plan/AUDIT.md` | Open audit findings (scored, categorized). The Pending section is `iterate`'s queue. | `iterate`, `oversight` |
 | `data/BACKLOG.md` | Pending data work (records to add/repair). | `ship-data`, `march`, `oversight` |
 | `plan/CRITIQUE.md` | External-observer findings. Pending section is `iterate`'s second queue. | `critique`, `iterate`, `march`, `oversight` |
@@ -99,7 +99,7 @@ tick. The dispatch order matters:
 ```
 1. unlabeled GitHub issues exist  →  triage (cheapest check)
 2. critique due (rate-limited)    →  critique
-3. pending phase                  →  ship-a-phase
+3. ready chunk                    →  ship-a-chunk
 4. pending data                   →  ship-data
 5. expand due + bold/autonomous   →  expand
 6. else                           →  iterate
@@ -112,8 +112,8 @@ Why this order:
   is usually right.
 - **Critique second** because external observation breaks
   local-optimum thinking. Rate-limited so it doesn't dominate.
-- **Phases third** because the build plan is what the project
-  is *for*.
+- **Chunks third** because the plan is what the project is
+  *for*.
 - **Data fourth** because data work is usually less critical
   than feature work.
 - **Expand fifth** because growing the plan only matters once
@@ -193,9 +193,9 @@ own**:
   to `plan/AUDIT.md` or `data/BACKLOG.md`.
 - **`expand`** — reads accumulated signals (pending AUDIT /
   CRITIQUE rows, sibling-project lessons, platform drift) and
-  proposes new phases to `plan/PHASE_CANDIDATES.md`.
+  proposes new specs to `plan/PHASE_CANDIDATES.md`.
   Posture-gated (bold or autonomous only); promoted into the
-  build plan only by `/oversight`.
+  plan only by `/oversight`.
 
 All three are **rate-limited or fast-exit by design** so they
 don't dominate the loop:
@@ -228,7 +228,7 @@ The procedure:
    `AskUserQuestion`, computed from observed flags. Not
    pre-canned.
 4. **Apply** — modify plan files based on answers. Drop a
-   stuck phase. Bias the iterate loop. Refresh a brief.
+   stuck chunk. Bias the iterate loop. Refresh a spec.
 5. **Commit** — single `oversight: <summary>` commit with the
    literal Q&A in the body. Audit trail.
 6. **Done** — return cleanly. User re-invokes `/march` to
@@ -290,7 +290,7 @@ A single `/march` tick traverses every layer:
 5. The skill commits + pushes (atomic).
 6. **Layer 3 (deploy gate)** runs after push. Red = stop or
    patch.
-7. The skill updates state files (Layer 1) — phase ticked,
+7. The skill updates state files (Layer 1) — chunk archived,
    audit row moved to Done, etc.
 8. Skill returns. Next tick re-dispatches.
 
@@ -320,9 +320,9 @@ lives in a file.** This is why `bearings.md`, the build plan
 status block, AUDIT.md, etc. are so prescriptive — they're
 the agent's only durable memory.
 
-### 2. Decisions written upfront in briefs.
+### 2. Decisions written upfront in specs.
 
-Phase briefs say "DO NOT ASK" and list every judgment call
+Specs say "DO NOT ASK" and list every judgment call
 already made. This is the difference between the loop running
 unattended and the loop stopping every 20 minutes for a
 clarification.
@@ -411,7 +411,7 @@ What's **not** portable:
 
 - The exact verify-gate composition (depends on stack).
 - The deploy gate's API calls (depend on provider).
-- The build plan's phase structure (depends on the product).
+- The plan's specs and chunks (depend on the product).
 - The sub-agent specialists (depend on the domain).
 
 Those are the customization points. Everything else is the same

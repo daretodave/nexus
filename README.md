@@ -2,7 +2,7 @@
 
 Nexus is a methodology + template kit that turns a repo into a
 project that ships itself. You write a spec; nexus gives you a
-small set of slash commands (`/ship-a-phase`, `/iterate`,
+small set of slash commands (`/ship-a-chunk`, `/iterate`,
 `/critique`, `/triage`, `/march`) that read your spec, ship a
 slice, run the verify gate, push, watch the deploy, and
 iterate. Run it manually for an evening; let it loop for a
@@ -43,16 +43,16 @@ $ /march
   Triage:   0 unlabeled issues — humming on.
   Critique: deferred (4 of 12 commits since last pass).
   Expand:   not due (12 of 20 commits; deliveries first).
-  Dispatch: pending phase exists → /ship-a-phase, phase 8.
+  Dispatch: ready chunk → /ship-a-chunk, 08.3 (M · closes A4, A5).
 
-      1   Read brief, phase 8
+      1   Read spec 08, chunk 08.3
       2   Build 7 components + 3 helpers
       3   Tests:  12 unit, 2 e2e
       4   pnpm verify   ·  typecheck · test · validate · build · e2e   ✓
-      5   Commit + push  (a3f1e2c)
+      5   Close 08.3 + commit + push  (a3f1e2c)
       6   pnpm deploy:check  ·  ready ✓  →  https://thock.xyz
 
-  Phase 8 shipped. Next tick picks phase 9.
+  08.3 archived. Spec 08: 2 chunks left. Next tick picks 08.4.
 ```
 
 (Triage/Critique/Expand/Dispatch are the slash commands in
@@ -126,12 +126,12 @@ When the agent returns, expect:
 - A list of `[needs-user-call]` rows in `plan/AUDIT.md` if the
   agent had to defer any decisions to you.
 - `pnpm verify` (or stack-equivalent) and `pnpm deploy:check`
-  specified and ready to wire once phase 1 lands — not
+  specified and ready to wire once the bootstrap lands — not
   necessarily passing yet.
 
 Read the diff. Resolve the `[needs-user-call]` rows by editing
 the relevant files (or running `/oversight`). Populate `.env`
-with your tokens. **Then run `/ship-a-phase` for the first
+with your tokens. **Then run `/ship-a-chunk` for the first
 time** — manually, level 0 of the intervention spectrum. Don't
 skip to `/loop /march`.
 
@@ -188,18 +188,18 @@ A small family of slash commands the autonomous loop uses:
 
 | Command | Job |
 |---|---|
-| `/ship-a-phase` | Ship one slice of the build plan end-to-end (code, tests, commit, push). |
+| `/ship-a-chunk` | Ship one chunk of the plan end-to-end (code, tests, close, commit, push). |
 | `/ship-data` | Add or repair one record in the GitHub-as-DB (optional — only for projects with structured data; see [`customization/data-layer.md`](./customization/data-layer.md)). |
 | `/ship-migration` | Ship one database migration — additive only, enforced by a linter; destructive changes escalate to `/oversight` (optional — only for `pure-db` / `hybrid-with-managed-postgres` projects). |
-| `/plan-a-phase` | Refine the next phase brief without shipping code. |
+| `/plan-a-spec` | Write, refine or chunk one spec without shipping code. |
 | `/iterate` | Audit the project, ship one improvement. The post-build endgame. |
 | `/critique` | External-observer pass — visit the live site as a stranger, file fresh-eyes findings. |
 | `/triage` | Read open GitHub issues, classify, label, route into the address loop. |
-| `/expand` | Plan-expansion pass — read signals (audit, critique, spec drift, design landings, data growth) and propose new phase candidates. [Posture-gated](./templates/plan/bearings.md#plan-expansion-posture): **bold** by default, **strict** to opt out. |
-| `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → phase → data → expand → iterate. |
+| `/expand` | Plan-expansion pass — read signals (audit, critique, spec drift, design landings, data growth) and propose new candidates (future specs). [Posture-gated](./templates/plan/bearings.md#plan-expansion-posture): **bold** by default, **strict** to opt out. |
+| `/march` | Outer dispatcher. The autonomous-beast entry point: triage → critique → chunk → data → expand → iterate. |
 | `/digest` | **The night shift.** Daily tick: writes the morning briefing to `plan/DIGEST.md`, runs breadth checks too slow for the per-commit path, proposes gate tunings as candidates (never applies them). Own workflow (`night.yml`), never dispatched by `/march`. |
 | `/jot` | **The user's quickfire.** Drop a free-text observation into `plan/CRITIQUE.md` and push, in seconds. The next `/iterate` tick scores it (with a `+0.5` user-source bump) against everything else and ships the fix. No questions back; same shape as `/ship-data add` — input via the slash arg. |
-| `/oversight` | **The general-purpose interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote phase candidates. |
+| `/oversight` | **The general-purpose interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote candidates into specs. |
 | `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets. State-aware, idempotent, never destructive. Carries its own narrow `AskUserQuestion` exception for token collection and destructive-action confirmation. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
 
 Plus one **opt-in** demand-pull skill for projects with
@@ -234,8 +234,9 @@ and the walk-away runbook,
 [`playbooks/hands-off.md`](./playbooks/hands-off.md).
 
 Two state files that capture intent across context loss:
-- `plan/steps/01_build_plan.md` — at-a-glance status of every
-  phase
+- `plan/README.md` + the specs — what's left to build, as
+  chunks with acceptance IDs (the plan only shrinks; see
+  [`concepts/plan-shape.md`](./concepts/plan-shape.md))
 - `plan/AUDIT.md` (+ `data/BACKLOG.md` + `plan/CRITIQUE.md`) —
   queues the loop drains
 
@@ -281,7 +282,7 @@ flowchart LR
   presp --> green
   green --> brown_check{Existing repo with code?}
   brown_check -- yes --> brown
-  brown_check -- no --> ship[/ship-a-phase manually for the first time/]
+  brown_check -- no --> ship[/ship-a-chunk manually for the first time/]
 ```
 
 ### → [`playbooks/pre-spec.md`](./playbooks/pre-spec.md)
@@ -297,9 +298,9 @@ the top of the playbook. Output feeds straight into
 ### → [`playbooks/new-project.md`](./playbooks/new-project.md)
 
 Greenfield. You have a `spec.md` and an empty (or near-empty)
-repo. This walks you through the substrate — bearings, build
-plan with placeholder phases, design exports landing pad, the
-skill set — and ends with you running `/ship-a-phase` for
+repo. This walks you through the substrate — bearings, a
+roadmap with two starter specs, design exports landing pad, the
+skill set — and ends with you running `/ship-a-chunk` for
 the first time.
 
 ### → [`playbooks/existing-project.md`](./playbooks/existing-project.md)
@@ -350,7 +351,7 @@ the cloud surfaces every flake.
 
 The walk-away runbook. "Unattended" and "hands-off" are
 different claims — this closes the seven silent-death modes
-between them: permission walls, silent stops, one bad phase
+between them: permission walls, silent stops, one bad chunk
 freezing the beast, drift where nobody's looking, expiring
 secrets, budget surprises, and two loops racing one branch.
 Ends in a pre-flight checklist and a 24-hour dry run.
@@ -378,17 +379,17 @@ for the full ladder; the short version:
 
 | Level | What you do | What the loop does |
 |---|---|---|
-| **0 — Manual** | Run individual slash commands by hand. Review every diff. | Ships exactly what you ask, one phase at a time. |
+| **0 — Manual** | Run individual slash commands by hand. Review every diff. | Ships exactly what you ask, one chunk at a time. |
 | **1 — Supervised** | `/march` once. Review the diff. `/march` again. | One tick at a time, attended. |
 | **2 — Loop, attended** | `/loop 30m /march`. Stay around. | Ticks every 30m. You can see deploys, intervene with `/oversight`. |
 | **3 — Loop, unattended** | `/loop 30m /march`. Walk away. | Hours of autonomous work. Deploy gate + audit trail keep it honest. |
-| **4 — 80-hour beast** | Same. Come back days later. | Phases all shipped, transitioned to `/iterate`. The site iterates itself. |
+| **4 — 80-hour beast** | Same. Come back days later. | Every spec archived, transitioned to `/iterate`. The site iterates itself. |
 
 Levels 3–4 require:
 - A green deploy gate is reachable (auth token + hosting wired).
-- The build plan has enough phases to chew through without
-  running out (or `/iterate` carries the load when phases are
-  done).
+- The plan has enough specs to chew through without running
+  out (or `/iterate` carries the load once the plan is
+  empty).
 - `/oversight` works (you'll need it eventually).
 
 Level 4 is where the methodology earns its name. It's also the
@@ -430,6 +431,7 @@ nexus/
 ├── concepts/
 │   ├── architecture.md                # the whole system in one read
 │   ├── loop-shapes.md                 # the genus: dispatcher, night shift, heartbeat, concierge, pollinator, lanes, meta-loop
+│   ├── plan-shape.md                  # specs, chunks, acceptance IDs: the plan only shrinks
 │   ├── skills-anatomy.md              # how to read/write a skill file
 │   └── asking-well.md                 # the question-shape convention
 ├── customization/
@@ -447,7 +449,7 @@ nexus/
 │   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
 │   └── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
-│   ├── march.md                       # + ship-a-phase, iterate, critique (dry-run adoption),
+│   ├── march.md                       # + ship-a-chunk, iterate, critique (dry-run adoption),
 │   │                                  #   triage, expand, oversight, jot
 │   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
@@ -461,11 +463,11 @@ nexus/
     ├── agents.md                      # rule-book template (target: repo root)
     ├── design-prompt.md               # paste into a fresh agent to commission a visual system
     ├── plan/                          # → repo's plan/
-    │   ├── README.md
+    │   ├── README.md                  # the roadmap: lanes + one row per spec
+    │   ├── 01-bootstrap.md            # starter spec (design, acceptance IDs, chunks)
+    │   ├── 02-canonical-sibling.md    # starter spec: the first feature surface
+    │   ├── ARCHIVE.md                 # one line per finished chunk
     │   ├── bearings.md
-    │   ├── steps/01_build_plan.md
-    │   ├── phases/phase_1_bootstrap.md
-    │   ├── phases/phase_canonical_sibling.md
     │   ├── AUDIT.md
     │   ├── CRITIQUE.md
     │   ├── PHASE_CANDIDATES.md         # /expand output, /oversight promotes
@@ -473,12 +475,12 @@ nexus/
     │   ├── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
     │   └── CURRENT-STATE.md           # brownfield retrofit only (adopt-by-need)
     ├── skills/                        # → repo's skills/
-    │   ├── ship-a-phase.md
+    │   ├── ship-a-chunk.md
     │   ├── ship-data.md                # omit if no structured data layer
     │   ├── ship-migration.md           # omit unless Structured data: pure-db / hybrid-with-managed-postgres
     │   ├── ship-asset.md               # omit unless Surface: site / hybrid
     │   ├── moderate.md                 # omit unless UGC (see customization/moderation-loop.md)
-    │   ├── plan-a-phase.md
+    │   ├── plan-a-spec.md
     │   ├── iterate.md
     │   ├── critique.md
     │   ├── triage.md
@@ -508,7 +510,7 @@ nexus/
     │   └── CLOUD_LOOP.md              # operator's guide (lives in repo)
     ├── scripts/
     │   ├── deploy-check.mjs           # multi-provider deploy gate
-    │   ├── loop-issue.mjs             # GitHub issue mirror (findings + phases)
+    │   ├── loop-issue.mjs             # GitHub issue mirror (findings + specs)
     │   ├── notify.mjs                 # the pager — blocked is loud
     │   ├── pulse.mjs                  # offline instrument panel: queue/build-plan/candidate counts, no network
     │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
@@ -550,14 +552,14 @@ adapt them.
 5. **Copy templates into your repo** per the playbook. Replace
    all 8 placeholders (see
    [`templates/README.md`](./templates/README.md#placeholders)).
-   Adapt the build plan to your real phases.
+   Write your real specs into the roadmap.
 6. **Wire your CI/CD provider** per
    [`playbooks/ci-providers.md`](./playbooks/ci-providers.md).
 7. **Customize** per the docs in `customization/` — pick which
    skills apply, which sub-agents you need, what your verify
    gate looks like.
-8. **First invocation: `/ship-a-phase`.** Don't start with
-   `/loop /march` — run one phase manually, see the shape of
+8. **First invocation: `/ship-a-chunk`.** Don't start with
+   `/loop /march` — run one chunk manually, see the shape of
    the work, then escalate.
 
 ---
@@ -565,7 +567,7 @@ adapt them.
 ## What this is *not*
 
 - **Not a code generator.** It's a methodology. The actual code
-  is written by the agent during phases. Templates are docs +
+  is written by the agent, chunk by chunk. Templates are docs +
   prompts, not source.
 - **Not framework-specific.** The skills assume Node + git +
   some test runner. Stack details (Next.js, Django, Rails) live
@@ -590,8 +592,8 @@ project. The ouroboros, concretely:
   enforced, skill anatomy enforced, no emojis, dual-shell
   parity checked). On its first ever run it caught five real
   defects in this repo. The gate works.
-- **Its own plan.** `plan/steps/01_build_plan.md` carries the
-  kit's roadmap; `plan/AUDIT.md` and
+- **Its own plan.** `plan/README.md` and its specs carry the
+  kit's roadmap, in the same chunk shape adopters use; `plan/AUDIT.md` and
   `plan/PHASE_CANDIDATES.md` are seeded with real findings
   from deep survey passes — the loop's food.
 - **Its own skills.** `skills/` holds the kit's adapted verbs.
@@ -609,7 +611,7 @@ project. The ouroboros, concretely:
   [`.github/CLOUD_LOOP.md`](./.github/CLOUD_LOOP.md).
 
 If you want to see the methodology run before adopting it,
-watch this repo's commit log and Issues tab — every phase has
+watch this repo's commit log and Issues tab — every spec has
 a mirror issue, every cloud commit carries its run URL.
 
 ---
@@ -620,7 +622,7 @@ This methodology evolved across:
 
 - **tickpedia** (~2025) — A data-heavy site with structured
   records, page families, and weekly automation. Established
-  the **`ship-a-phase` + `plan/`** pattern.
+  the **`ship-a-chunk` + `plan/`** pattern.
 - **thock** (~2026) — An editorial content hub. Added
   **`/ship-data`, `/critique`, `/triage`, `/oversight`,
   `/march`** — the full autonomous family.

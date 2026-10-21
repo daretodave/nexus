@@ -337,7 +337,7 @@ Return cleanly. Loop's next tick re-audits.
 2. **`pnpm deploy:check` fails ≥3 times on same root cause.**
 3. **`<PROVIDER_AUTH_TOKEN>` missing.**
 4. **Finding requires schema migration > 20 records.** Push to
-   `/plan-a-phase`.
+   `/plan-a-spec`.
 5. **Finding requires user judgment.** Surface to AUDIT.md as
    `[needs-user-call]`, skip, ship next.
 6. **No actionable iterate work** (top score < 3.0). Read

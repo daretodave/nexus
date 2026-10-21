@@ -20,8 +20,8 @@ starting.
 
 - You have a working name and a 1–2 sentence pitch.
 - You have **no** `spec.md` yet, or only scratch notes.
-- The next thing you want to do is `/ship-a-phase` on the
-  adoption phase — but `new-project.md` requires a spec, and
+- The next thing you want to do is `/ship-a-chunk` on the
+  adoption — but `new-project.md` requires a spec, and
   you don't have one.
 
 When **not** to use it:
@@ -101,7 +101,7 @@ Then:
        ../nexus/playbooks/new-project.md step 10).
   6. Then stop. Point me at ../nexus/playbooks/new-project.md
      and the TL;DR adoption prompt. Don't invoke
-     /ship-a-phase.
+     /ship-a-chunk.
 
 Standing rules:
   - Commit and push as a single atomic act per batch.
@@ -156,7 +156,7 @@ pitch):
 
 2. **Scope.** What's in v1 vs. punted?
    - *Recommended:* v1 = core feature only; everything
-     else labeled `out of v1`. Easier to ship; later phases
+     else labeled `out of v1`. Easier to ship; later specs
      earn their slot.
    - Wide v1 = ship multi-feature substrate.
    - I'll dictate the v1 list myself (free-form).
@@ -203,14 +203,14 @@ architecture)`.
 
 How the product behaves at runtime. Authentication,
 authorization, and the moderation/policy surface. These are
-the decisions that drive phase 9–12 of every nexus build
-plan.
+the decisions that drive the community and trust specs of
+every nexus plan.
 
 **Leading prose:**
 
 > Four decisions about the runtime spine: who can do what,
 > how they prove identity, what auto-moderation looks like.
-> These shape every phase that touches user-generated
+> These shape every spec that touches user-generated
 > content. Auth (Q1) is the highest-impact choice — pin it
 > on day one to avoid re-litigation.
 
@@ -280,7 +280,7 @@ content cadence. The decisions that determine what the v1
 
 > Four decisions about the surface. Hosting (Q1) and the
 > visual system (Q2) drive what the loop needs to wire up
-> before phase 1. Voice and cadence (Q3, Q4) shape what
+> before the bootstrap ships. Voice and cadence (Q3, Q4) shape what
 > `/iterate` produces over time.
 
 **Questions:**
@@ -304,7 +304,7 @@ content cadence. The decisions that determine what the v1
      [`../customization/visual-system.md`](../customization/visual-system.md)
      and [`../templates/design-prompt.md`](../templates/design-prompt.md).
      Cost: 1–2 hours of async work; payoff: a coherent
-     primitive set that every phase builds on.
+     primitive set that every spec builds on.
    - Use a starter theme (Tailwind defaults, shadcn/ui,
      Catalyst, etc.) and let the loop iterate.
    - Defer — `bearings.md` declares "no visual system at
@@ -312,7 +312,7 @@ content cadence. The decisions that determine what the v1
 
 3. **Voice.** How does the product talk to the user?
    - *Recommended:* one sentence in `bearings.md` that the
-     loop reads every phase ("knowledgeable peer, terse,
+     loop reads every tick ("knowledgeable peer, terse,
      no marketing fluff" or similar). Concrete enough to
      check against.
    - A paragraph of voice doc with do/don't examples.
@@ -353,7 +353,7 @@ After the three batches:
       persona, lists v1 scope and out-of-scope.
 - [ ] `bearings.md` stub covers Surface, Auth, Stack pins,
       identity, anti-abuse, moderation, hosting, voice. (Full
-      build plan + phase briefs come later, in
+      roadmap + specs come later, in
       `new-project.md`.)
 - [ ] (Optional) `claude-design.prompt.md` is ready to paste
       into a design-focused agent.

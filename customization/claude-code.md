@@ -295,8 +295,8 @@ needs a session to be told to look. Ship the short pointer
 Read `agents.md` before anything else — it is the rule book
 for this repo and its standing rules are non-negotiable.
 Skills live in `skills/`; state lives in `plan/`; the next
-pending work is the first `[ ]` row in
-`plan/steps/01_build_plan.md`.
+pending work is the first ready chunk in `plan/README.md`'s
+pick order (Asap lane, then the spec table).
 
 This file is a pointer, not a rule book. Rules live in
 `agents.md` only — do not duplicate them here.
@@ -324,7 +324,7 @@ Guidance, not law:
 
 - **Dispatch + triage are cheap verbs.** They read state and
   classify. Any current model handles them.
-- **`ship-a-phase` earns the strongest model you can afford.**
+- **`ship-a-chunk` earns the strongest model you can afford.**
   A bad phase costs more to unwind than the tokens saved.
 - **Upgrade the cloud model only after measuring.** Run a week
   on the default, read your provider's usage page, then decide

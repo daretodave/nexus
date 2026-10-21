@@ -112,7 +112,7 @@ The product spec is `spec.md` at the repo root. Read it once.
 
 ```
 <your app paths>     <one-line per top-level group>
-plan/                Build plan, phase briefs, audit findings.
+plan/                Roadmap, specs + chunks, archive, audit findings.
 skills/              Source-of-truth skill files invoked by slash commands.
 .claude/             Claude Code config — slash commands, sub-agents,
                      settings.json (permission allowlist), hooks/ (guard).
@@ -130,18 +130,18 @@ invoke a skill that does the right thing end-to-end.
 
 | Skill | Source of truth | What it does |
 |---|---|---|
-| `ship-a-phase` | `skills/ship-a-phase.md` | Ship one phase from the build plan. |
+| `ship-a-chunk` | `skills/ship-a-chunk.md` | Ship one chunk of the plan and close it. |
 | `ship-data` | `skills/ship-data.md` | Ship one data record (if data layer exists). |
 | `ship-migration` | `skills/ship-migration.md` | Ship one DB migration (if Structured data: pure-db / hybrid-with-managed-postgres). |
 | `ship-asset` | `skills/ship-asset.md` | Ship one brand asset (if Surface: site/hybrid and branding is in scope). |
-| `plan-a-phase` | `skills/plan-a-phase.md` | Refine the next phase brief, no code. |
+| `plan-a-spec` | `skills/plan-a-spec.md` | Write, refine or chunk one spec, no code. |
 | `iterate` | `skills/iterate.md` | Audit + ship one improvement. |
 | `critique` | `skills/critique.md` | External-observer pass; writes to `CRITIQUE.md`. |
 | `triage` | `skills/triage.md` | Issue review; routes to backlogs. |
 | `moderate` | `skills/moderate.md` | Drain the moderation queues, one item per tick (if the project has UGC). |
-| `expand` | `skills/expand.md` | Plan-expansion pass; proposes phase candidates from accumulated signals. Posture-controlled (bold/strict/autonomous). |
-| `march` | `skills/march.md` | Outer dispatcher: triage → critique → phase → data → expand → iterate. |
-| `oversight` | `skills/oversight.md` | **User-in-the-loop.** The general-purpose skill that asks anything (`bootstrap` carries the one narrow provisioning exception). Promotes phase candidates. |
+| `expand` | `skills/expand.md` | Plan-expansion pass; proposes candidates (future specs) from accumulated signals. Posture-controlled (bold/strict/autonomous). |
+| `march` | `skills/march.md` | Outer dispatcher: triage → critique → chunk → data → expand → iterate. |
+| `oversight` | `skills/oversight.md` | **User-in-the-loop.** The general-purpose skill that asks anything (`bootstrap` carries the one narrow provisioning exception). Promotes candidates into specs. |
 | `jot` | `skills/jot.md` | User quickfire → one row in `CRITIQUE.md`, seconds flat. |
 | `digest` | `skills/digest.md` | The night shift — daily briefing to `DIGEST.md` (if the cloud loop is adopted). |
 | `bootstrap` | `skills/bootstrap.md` | Authorized executor — provisions external services (opt-in; see `customization/bootstrap-automation.md`). |
@@ -149,16 +149,16 @@ invoke a skill that does the right thing end-to-end.
 ### Invocation
 
 ```
-/ship-a-phase                # ship next pending phase
+/ship-a-chunk                # ship the next ready chunk
 /ship-data                   # ship next data backlog row
 /ship-migration              # ship next DB migration
 /ship-asset                  # ship one brand asset
-/plan-a-phase                # refine next phase brief
+/plan-a-spec                 # chunk or refine the next spec
 /iterate                     # audit + ship one improvement
 /critique                    # external-observer pass
 /triage                      # review unlabeled issues
 /moderate                    # drain the moderation queues
-/expand                      # propose new phase candidates
+/expand                      # propose new candidates (future specs)
 /march                       # do the right thing
 /oversight                   # course-correct
 /jot                         # quickfire a note to CRITIQUE.md
@@ -230,8 +230,10 @@ failure-mode condition rather than inventing a placeholder.
 |---|---|
 | What <PROJECT> is | `spec.md` |
 | Stack, conventions, defaults | `plan/bearings.md` |
-| What ships next | `plan/steps/01_build_plan.md` |
-| How a phase is built | `plan/phases/phase_<N>_<topic>.md` |
+| What ships next | `plan/README.md` (lanes + specs; the first ready chunk) |
+| What a chunk must do | `plan/<NN>-<slug>.md` (Design, Acceptance, Chunks) |
+| What already shipped | `plan/ARCHIVE.md` |
+| Which kit version | `plan/nexus.lock` |
 | How a skill works | `skills/<skill>.md` |
 | What a sub-agent does | `.claude/agents/<name>.md` |
 | Latest weaknesses | `plan/AUDIT.md`, `data/AUDIT.md` |

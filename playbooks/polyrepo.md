@@ -36,12 +36,13 @@ something.
 ```
 workspace/
 ├── plan/                  # the ledger — its own git repo
-│   ├── steps/01_build_plan.md
+│   ├── README.md          # the roadmap: lanes + one row per spec
+│   ├── NN-<slug>.md       # one spec per initiative
+│   ├── ARCHIVE.md
 │   ├── AUDIT.md
 │   ├── CRITIQUE.md
 │   ├── PHASE_CANDIDATES.md
-│   ├── bearings.md
-│   └── phases/
+│   └── bearings.md
 ├── product-a/              # sibling repo, its own git history
 │   ├── skills/
 │   ├── .claude/
@@ -117,10 +118,10 @@ code). A polyrepo tick is still exactly as safe as a
 single-repo tick — the gate just runs in the sibling directory
 instead of the current one.
 
-**State files stay identical.** `plan/steps/01_build_plan.md`,
+**State files stay identical.** `plan/README.md`, the specs,
 `plan/AUDIT.md`, `plan/CRITIQUE.md`, `plan/bearings.md`, and
 the rest keep the exact shapes this kit documents everywhere
-else. Nothing about a phase brief, an audit row, or a critique
+else. Nothing about a spec, an audit row, or a critique
 finding format changes — only where the file's repo boundary
 sits.
 

@@ -1,5 +1,5 @@
 ---
-description: The always-do-the-right-thing entry — triage → critique → phase → data → expand → iterate. The loop's outer orchestrator.
+description: The always-do-the-right-thing entry — triage → critique → chunk → data → expand → iterate. The loop's outer orchestrator.
 ---
 
 You are invoked under the `march` skill — the unified outer

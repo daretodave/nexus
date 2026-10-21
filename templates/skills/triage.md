@@ -127,8 +127,9 @@ For each issue, decide:
 3. **Backlog target** (only `loop-queued`):
    - bug / seo / a11y / perf / content / docs → `plan/AUDIT.md`
    - data → `data/BACKLOG.md`
-   - small enhancement → `plan/steps/01_build_plan.md`
-     carry-overs section
+   - small enhancement → a new chunk in the spec it belongs
+     to (with a new A-ID; fix the Measure line), or a new
+     unchunked spec if none fits
    - large / off-strategy enhancement → re-route to
      `triage:needs-user`
 
@@ -170,7 +171,7 @@ gh issue close "$NUM" --repo "$GH_REPO" --reason "not planned"
 ### Step 5 — Commit + push (if any backlog changes)
 
 ```bash
-git add plan/AUDIT.md data/BACKLOG.md plan/steps/01_build_plan.md
+git add plan/AUDIT.md data/BACKLOG.md plan/README.md plan/[0-9]*-*.md
 git commit -m "$(cat <<'EOF'
 triage: <K> issues processed (<L> queued, <M> user-call, <N> closed)
 
@@ -198,7 +199,7 @@ pnpm deploy:check
 ```
 triage processed: <K>. queued: <L>. needs-user: <M>. closed: <N>.
 plan/AUDIT.md +<X> rows. data/BACKLOG.md +<Y> rows.
-loop next: <iterate | ship-data | ship-a-phase | march>.
+loop next: <iterate | ship-data | ship-a-chunk | march>.
 ```
 
 ## 6. Closing the loop (when iterate / ship-data ships a fix)

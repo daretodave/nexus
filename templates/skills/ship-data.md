@@ -287,7 +287,7 @@ Commit each category as its own commit.
 4. **External DB / SaaS unreachable.** Surface; the next tick
    retries.
 5. **Schema change requires migration of >20 records.** That's
-   a `/plan-a-phase` task; not bundled here.
+   a `/plan-a-spec` task; not bundled here.
 6. **AI-generated record has unverifiable factual claims** that
    scout can't cite. Mark `verified: false`, file as
    `[needs-user-call]` in audit, ship anyway with the unverified
