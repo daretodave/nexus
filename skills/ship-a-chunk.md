@@ -3,7 +3,7 @@
 > **Full autonomy, no review checkpoint.** Ship one chunk of
 > the kit's plan end-to-end: docs written, templates landed,
 > cross-links wired, gate taught, verify green, the chunk
-> closed, commit + push. A docs kit's chunk is prose and
+> closed, commit + land. A docs kit's chunk is prose and
 > templates, not pages — the procedure reflects that.
 
 ## 1. Purpose
@@ -121,12 +121,12 @@ Foreground. The `chunks` leg checks Step 6 against HEAD. Red →
 fix root cause; ≤3 iterations on the same root cause, then §6
 failure modes.
 
-### Step 8 — Commit + push (atomic)
+### Step 8 — Commit + land (atomic)
 
 ```bash
 git add <explicit files>
 git commit -m "<feat|docs|templates|playbook|ci>: <subject> (<NN.k>)"
-git push origin main
+# land per owner mode: skills/next/land.md §6
 ```
 
 Body: 4–8 bullets + `Decisions:` section + `Closes #<mirror>`
@@ -145,7 +145,7 @@ Return cleanly.
 ## 5. Hard rules
 
 1. Verify gate foreground, non-negotiable, no `--no-verify`.
-2. Commit + push atomic; no dirty tree at turn end.
+2. Commit + land atomic; no dirty tree at turn end.
 3. No `Co-Authored-By`, no emojis (cloud `Cloud-Run:` trailer
    is the one carve-out).
 4. Templates are public API (`agents.md` rule 7).
@@ -197,6 +197,6 @@ scripts/verify.mjs                   # when a new invariant lands
 # Commands
 git pull --ff-only
 node scripts/verify.mjs
-git add <explicit> && git commit && git push origin main
+git add <explicit> && git commit   # then land per owner mode (next/land.md §6)
 node templates/scripts/loop-issue.mjs spec-open|spec-close ...
 ```

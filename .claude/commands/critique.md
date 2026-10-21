@@ -15,6 +15,6 @@ findings; every finding carries actionable evidence; the
 scratch dir is always cleaned up.
 
 When invoked under `/loop` or `/march`, the user is not
-present. After the findings commit + push, return cleanly.
+present. After the findings commit + land, return cleanly.
 
 Argument: $ARGUMENTS

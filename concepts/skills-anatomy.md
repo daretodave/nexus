@@ -133,7 +133,7 @@ For shipping skills, the canonical 14 steps:
 - Step 7: Tests
 - Step 8: Cross-link retrofit (where applicable)
 - Step 9: Verify gate (`pnpm verify`)
-- Step 10: Commit + push (atomic)
+- Step 10: Commit + land (atomic)
 - Step 11: Tick the DoD (state file update)
 - Step 12: Confirm deploy (`pnpm deploy:check`)
 - Step 13: Done

@@ -52,7 +52,7 @@ Triage classifies and routes them so `/iterate` and
 5. **Comment honestly** on every routed issue: what label,
    what queue, what happens next. Never close without a
    comment.
-6. **Commit + push** the queue changes:
+6. **Commit + land** the queue changes:
    `triage: <K> issues routed`.
 
 ## 4. Hard rules
@@ -80,5 +80,5 @@ gh issue list --repo daretodave/nexus --state open \
   --json number,title
 plan/AUDIT.md                        # routing target
 plan/CANDIDATES.md             # lesson-shaped routing target
-git commit -m "triage: <K> issues routed" && git push origin main
+git commit -m "triage: <K> issues routed"   # then land per owner mode (next/land.md §6)
 ```

@@ -96,5 +96,5 @@ plan/README.md + plan/<NN>-*.md      # promote (new spec), unhold, split, drop t
 plan/AUDIT.md                        # bias line + durable rows
 plan/CANDIDATES.md             # promotion source
 gh issue list --label triage:needs-user
-git commit -m "oversight: <summary>" && git push origin main
+git commit -m "oversight: <summary>"   # then land per owner mode (next/land.md §6)
 ```

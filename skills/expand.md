@@ -60,7 +60,7 @@ still >3). **Cap 3 candidates per pass.**
    chunks / conflicts / `last re-evidenced` — optional, absent
    until a later pass re-affirms the candidate). Update the
    metadata header.
-5. `node scripts/verify.mjs` → commit + push:
+5. `node scripts/verify.mjs` → commit + land:
    `expand: pass <N> — <K> candidates`.
 
 ## 6. Hard rules
@@ -85,5 +85,5 @@ plan/CANDIDATES.md             # output + metadata header
 plan/AUDIT.md  plan/CRITIQUE.md      # signal sources A/B
 ../<sibling>/plan/lessons.md         # signal source D (if present)
 node scripts/verify.mjs
-git commit -m "expand: pass <N> — <K> candidates" && git push origin main
+git commit -m "expand: pass <N> — <K> candidates"   # then land per owner mode (next/land.md §6)
 ```

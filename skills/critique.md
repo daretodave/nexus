@@ -52,7 +52,7 @@ pass). Runs fine in the cloud — it needs only files and
    findings only; the dispatching agent handles steps 6 and 7."
    It returns findings, nothing more. The dispatching agent stays
    responsible for step 6 (append to `plan/CRITIQUE.md`) and step
-   7 (commit + push), so cloud-mode trailer discipline never
+   7 (commit + land), so cloud-mode trailer discipline never
    depends on a sub-agent prompt the parent doesn't fully control.
 4. **Stranger-read.** Read `README.md` top to bottom as
    someone who has never seen the kit: where does
@@ -68,7 +68,7 @@ pass). Runs fine in the cloud — it needs only files and
    failing command) / `- suggested fix:` / `- source:
    dry-run`). Update the metadata header (`Last pass`, `Pass
    count`).
-7. **Clean up** the scratch dir. **Commit + push:**
+7. **Clean up** the scratch dir. **Commit + land:**
    `critique: pass <N> — <K> findings (<H> high, <M> med,
    <L> low)`. Findings-only commits skip the mirror; `/iterate`
    mirrors when it picks one up.
@@ -102,5 +102,5 @@ README.md                            # the surface under test
 templates/README.md                  # the copy contract
 playbooks/new-project.md             # the walked playbook
 scratch=$(mktemp -d)                 # the fictional adopter
-git commit -m "critique: pass <N> — <K> findings" && git push origin main
+git commit -m "critique: pass <N> — <K> findings"   # then land per owner mode (next/land.md §6)
 ```

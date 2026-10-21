@@ -205,11 +205,11 @@ Before committing:
    this kit" tree shows it. Same for the
    `customization/` and `playbooks/` indices in the README.
 
-### Step 5 — Commit and push
+### Step 5 — Commit and land
 
 Per nexus's standing rules:
 
-- **Atomic commit-and-push as a single act.** No unpushed
+- **Atomic commit-and-land as a single act.** No unpushed
   commits between operations.
 - **No emojis. No `Co-Authored-By:`.**
 - **No `--no-verify`. No force-push.**
@@ -299,7 +299,7 @@ application-level work to ship.
 2. **AskUserQuestion is allowed during Step 2 (Plan) only.**
    Once the plan is approved, the skill ships without
    further asks.
-3. **Single commit and push as an atomic act.** No
+3. **Single commit and land as an atomic act.** No
    unpushed commits.
 4. **No emojis. No `Co-Authored-By:`.**
 5. **No `--no-verify`. No force-push. No destructive
@@ -361,10 +361,10 @@ AskUserQuestion                               # only during planning
 Edit, Write                                   # nexus working tree only
 [link sanity check]
 
-# Commit + push (atomic)
+# Commit + land (atomic)
 git add <files>
 git commit -m "<message>"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 
 # Stop
 # Do NOT invoke /ship-a-chunk, /march, etc.

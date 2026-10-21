@@ -17,6 +17,6 @@ impact × ease / 10; user rows +0.5; `> Bias:` ×1.5. Durable
 AUDIT rows survive rewrites.
 
 When invoked under `/loop` or `/march`, the user is not
-present. After commit + push, return cleanly.
+present. After commit + land, return cleanly.
 
 Argument: $ARGUMENTS

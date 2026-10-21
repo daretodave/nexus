@@ -71,8 +71,8 @@ Never dispatched by `/march` — it is its own loop shape (see
    older than 48h → recompute the Top 5 per
    `skills/iterate.md` §3 (audit only — ship nothing,
    preserve durable rows).
-6. **Gate + commit + push:** `node scripts/verify.mjs`, then
-   one commit `digest: <YYYY-MM-DD>` and push.
+6. **Gate + commit + land:** `node scripts/verify.mjs`, then
+   one commit `digest: <YYYY-MM-DD>` and land.
 
 ## 4. Hard rules
 
@@ -103,5 +103,5 @@ plan/CANDIDATES.md             # tuning proposals land here
 gh run list --workflow march -L 20   # the invisible no-ops
 node scripts/pulse.mjs               # local queue/plan numbers
 node scripts/verify.mjs
-git commit -m "digest: <YYYY-MM-DD>" && git push origin main
+git commit -m "digest: <YYYY-MM-DD>"   # then land per owner mode (next/land.md §6)
 ```

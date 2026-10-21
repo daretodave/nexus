@@ -39,7 +39,7 @@ with the same user-source weight.
    ```
 
 3. Append to `plan/CRITIQUE.md` `## Pending`.
-4. Commit + push: `jot: <≤70-char summary>`. Push rejected →
+4. Commit + land: `jot: <≤70-char summary>`. Push rejected →
    pull + re-append + retry, ≤3.
 
 No verify gate (state-file-only append), no mirror (iterate
@@ -64,5 +64,5 @@ slash argument.
 
 ```bash
 plan/CRITIQUE.md                     # the one file this touches
-git commit -m "jot: <summary>" && git push origin main
+git commit -m "jot: <summary>"   # then land per owner mode (next/land.md §6)
 ```

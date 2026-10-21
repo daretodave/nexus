@@ -17,7 +17,7 @@ speculation. Ambiguous → `triage:needs-user`, never a
 guess-close.
 
 When invoked under `/loop` or `/march`, the user is not
-present. After the routing commit + push (or a clean zero),
+present. After the routing commit + land (or a clean zero),
 return cleanly.
 
 Argument: $ARGUMENTS

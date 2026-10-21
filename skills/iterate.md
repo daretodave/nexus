@@ -67,7 +67,7 @@ verbatim when regenerating the audit block.
    sweep, and any agent it dispatches, stays foreground in a
    cloud tick (`run_in_background: false`).
 6. **Gate:** `node scripts/verify.mjs` foreground.
-7. **Commit + push:** `fix|docs|templates: <subject>`, body
+7. **Commit + land:** `fix|docs|templates: <subject>`, body
    cites the finding, `Closes #N` when mirrored.
 8. **Tick:** finding `[ ]` → `[x] (commit <hash>)`; CRITIQUE
    rows move Pending → Done.
@@ -100,5 +100,5 @@ plan/CRITIQUE.md                     # external queue
 ../<sibling>/plan/lessons.md         # lessons source (if present)
 node scripts/verify.mjs
 node templates/scripts/loop-issue.mjs open|close-comment ...
-git add <explicit> && git commit && git push origin main
+git add <explicit> && git commit   # then land per owner mode (next/land.md §6)
 ```

@@ -16,7 +16,7 @@ lessons, platform drift. Never write to the build plan
 directly.
 
 When invoked under `/loop` or `/march`, the user is not
-present. After commit + push (or a clean no-candidates exit),
+present. After commit + land (or a clean no-candidates exit),
 return cleanly.
 
 Argument: $ARGUMENTS

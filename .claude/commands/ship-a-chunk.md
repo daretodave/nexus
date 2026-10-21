@@ -18,6 +18,6 @@ ship**, matching the voice exemplars in `plan/bearings.md`.
 The chunk closes in the commit that ships it.
 
 When invoked under `/loop` or `/march`, the user is not
-present. After commit + push, return cleanly.
+present. After commit + land, return cleanly.
 
 Argument: $ARGUMENTS
