@@ -47,3 +47,4 @@ still pending at the move and live on as specs.
 - 2026-08-31 · 33 · Workspace templates: root pointer family, topology ask · 0d45e8d
 - 2026-10-20 · 20.1 · Cloud ticks dispatch every agent in the foreground · 45b742c7..a1f5f127
 - 2026-10-20 · 20 · spec complete: every agent a cloud tick dispatches runs in the foreground (both march prompts, CLOUD_LOOP) · 45b742c7..a1f5f127
+- 2026-10-21 · 41.4 · @usenexus/cli 0.1.0 on npm from its tag, with provenance · de9b9839..f9fec5b0

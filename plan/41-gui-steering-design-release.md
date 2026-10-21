@@ -13,8 +13,9 @@ notice board, and a question parked by a terminal session
 waits for the end gate. The owner wants steering to feel
 immediate ("magical"): ask, answer, and the session moves.
 The design is coming from Claude Design and must be adopted
-as the source of truth, not reinterpreted. 0.1.0 is on main
-but not on npm.
+as the source of truth, not reinterpreted. 0.1.0 shipped to
+npm from the `cli-v0.1.0` tag on 2026-10-21 (OIDC, with
+provenance, `latest`).
 
 What exists today (2026-10-20): the cockpit's tug pulse and
 dashed question line on the canvas stage; `announce.mjs`
@@ -65,8 +66,6 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
   question's age and session.
 - **A3** `packages/cli` carries the export's tokens, motion
   and both themes verbatim; every skipped pattern is logged.
-- **A4** `@usenexus/cli@0.1.0` is on npm with provenance, as
-  `latest`.
 - **A5** The Trusted Publisher reads validated; 0.0.1 and
   `0.0.0-stage` are deprecated.
 
@@ -77,7 +76,7 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
   the next turn (default), or interrupt? Default: wait.
 
 ## Chunks
-Measure: 5 open · 0 closed · next A6
+Measure: 4 open · 1 closed · next A6
 
 - [ ] **41.1** Magical steering: link to a local Claude Code
   session · L · closes A1 · needs —
@@ -86,7 +85,5 @@ Measure: 5 open · 0 closed · next A6
 - [ ] **41.3** Apply the Claude Design handoff to packages/cli
   · L · closes A3 · needs —
   - Waits on the owner's export (Held lane).
-- [ ] **41.4** Release cli 0.1.0 from its tag · S · closes A4
-  · needs —
 - [ ] **41.5** Trusted Publisher validated; old versions
-  deprecated · S · closes A5 · needs 41.4
+  deprecated · S · closes A5 · needs —
