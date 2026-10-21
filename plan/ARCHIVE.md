@@ -45,3 +45,5 @@ still pending at the move and live on as specs.
 - 2026-08-29 · 30 · Candidate-aging silt guard in digest and expand · 9b11149
 - 2026-08-30 · 31 · scripts/install-hooks.mjs opt-in pre-commit gate · 6762cc9
 - 2026-08-31 · 33 · Workspace templates: root pointer family, topology ask · 0d45e8d
+- 2026-10-20 · 20.1 · Cloud ticks dispatch every agent in the foreground · 45b742c7..a1f5f127
+- 2026-10-20 · 20 · spec complete: every agent a cloud tick dispatches runs in the foreground (both march prompts, CLOUD_LOOP) · 45b742c7..a1f5f127

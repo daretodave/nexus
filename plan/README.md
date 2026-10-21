@@ -31,7 +31,6 @@ line goes):
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 20 | Cloud ticks run synchronously: no background agent dispatch in a tick | [20-synchronous-agents.md](20-synchronous-agents.md) | planned (local session: workflow files) | 1 left |
 | 32 | Heartbeat watches armed-ness of every scheduled workflow, and night's cadence | [32-workflow-disable-watch.md](32-workflow-disable-watch.md) | planned (local session: workflow files) | 2 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
@@ -69,4 +68,4 @@ New specs arrive through `/oversight` promoting a
 - Workflow-file pushes: the cloud tick's token can't push
   `.github/workflows/*.yml` (see `agents.md` "Operational
   secrets"), so chunks that touch them ship from a local
-  session. Specs 20 and 32 are both of that kind.
+  session. Spec 32 is of that kind.
