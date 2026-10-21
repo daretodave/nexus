@@ -121,6 +121,14 @@ test('one server hosts many sessions: each its own name, ledger, provider and ch
     assert.deepEqual(mine, ['sirius', 'vega']);
     assert.ok(list.filter((s) => s.hosted).every((s) => s.kind === 'local' && s.steer === 'sdk'));
     assert.equal((await call(app, `/api/sessions/${a.json.id}`)).json.name, 'vega');
+
+    // The detail carries the times the stream saw (41.7): a claim dates the chunk's start; no plan, no estimate.
+    by.get(a.json.id).hooks.onMessage({ type: 'assistant', session_id: 'claude-a', message: { content: [{ type: 'tool_use', id: 'B1', name: 'Bash', input: { command: 'node scripts/claims.mjs claim 3.1' } }] } });
+    const d = (await call(app, `/api/sessions/${a.json.id}`)).json;
+    assert.equal(d.chunk.id, '3.1');
+    assert.ok(Number.isFinite(Date.parse(d.chunk.startedAt)));
+    assert.equal(d.chunk.estimate, null);
+    assert.ok(d.startedAt);
   } finally {
     await app.close();
     fs.rmSync(parent, { recursive: true, force: true });

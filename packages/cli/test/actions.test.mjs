@@ -225,7 +225,10 @@ function req(port, { method = 'GET', pathname, headers = {}, body }) {
 test('POST /api/cloud/run and /api/actions/workflow reach only the injected gh', async () => {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-actions-srv-'));
   execFileSync('git', ['init', '-q'], { cwd: repo });
-  const gh = fakeGh({ 'workflow run 9': ok(''), 'workflow disable 9': ok(''), 'workflow enable 9': ok('') });
+  const gh = fakeGh({
+    'workflow run 9': ok(''), 'workflow disable 9': ok(''), 'workflow enable 9': ok(''),
+    'workflow list': ok([{ id: 9, name: 'march', path: '.github/workflows/march.yml', state: 'active' }]), 'run list': ok([]), 'pr list': ok([]),
+  });
   const provider = { kind: 'fake', send() {}, async interrupt() {}, async stop() {}, async fresh() {} };
   const app = await startServer({ repo, provider, pollRuns: false, dist: path.join(os.tmpdir(), 'nexus-cli-no-dist'), ghRun: gh });
   const headers = { 'x-nexus-token': app.token, 'content-type': 'application/json', origin: `http://127.0.0.1:${app.port}` };
@@ -237,6 +240,13 @@ test('POST /api/cloud/run and /api/actions/workflow reach only the injected gh',
     assert.equal((await req(app.port, { method: 'POST', pathname: '/api/actions/workflow', headers, body: '{"id":9,"enabled":false}' })).data.ok, true);
     assert.equal((await req(app.port, { method: 'POST', pathname: '/api/actions/workflow', headers, body: '{"id":9,"enabled":true}' })).data.ok, true);
     assert.deepEqual(gh.calls, ['workflow run 9', 'workflow disable 9', 'workflow enable 9']);
+    // GET /api/cloud (41.7) asks the same injected gh, and only once for many screens.
+    gh.calls.length = 0;
+    const cloud = await req(app.port, { pathname: '/api/cloud', headers: { 'x-nexus-token': app.token } });
+    await req(app.port, { pathname: '/api/cloud', headers: { 'x-nexus-token': app.token } });
+    assert.equal(cloud.status, 200);
+    assert.deepEqual([cloud.data.paused, cloud.data.tonight.prs], [false, 0]);
+    assert.equal(gh.calls.filter((c) => c.startsWith('workflow list')).length, 1);
   } finally {
     await app.close();
   }
