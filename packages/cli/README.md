@@ -254,4 +254,34 @@ symbol cuts (`src/styles/mono-symbols.css`) lands in `dist/`.
 `npm test` runs the same rules on a fixture, and on `dist/` when a
 build is there.
 
+### Recording a GIF of a demo
+
+```
+npm run build
+npm run record -- fleet-to-tug [--out <dir>] [--name <moment>] [--fps 12] [--width 960] [--height 600]
+                               [--theme night|dawn] [--speed 1] [--seconds <5-8>] [--session vega]
+                               [--poster last|first|<ms>] [--chrome <path>] [--headed]
+```
+
+`scripts/record.mjs` plays a demo scenario in headless Chrome and
+writes `<out>/<moment>.gif` and a still poster, `<out>/<moment>.png`,
+for readers who ask for less motion (default out: `assets/gifs/` at
+the repo root; default moment: the scenario's name). The scenario runs
+in-process on a manual clock that holds still while the page loads and
+follows the wall once capture starts, so the first frame is the
+script's first moment. The length is the script plus a 0.6 s hold.
+Frames are captured on a fixed grid (a slow frame skips a slot rather
+than bunching) and the GIF's delays come from the capture times.
+
+There's no ffmpeg and no browser download.
+`playwright-core` (a dev dependency) drives the Chrome already
+installed (`--chrome` names another). The encoder is
+`scripts/record/gif.mjs`, plain JavaScript: one median-cut palette
+for the whole recording (255 colours plus one for "unchanged"), each
+later frame cropped to what changed with the rest transparent, and
+LZW. `scripts/record/png.mjs` reads the screenshots back. The run
+fails, and says why, when the GIF is under 5 s, over 8 s or over
+3 MB: the README's budget. Recordings are not byte-stable, so check
+them by eye and by budget, not by diff.
+
 The kit: https://github.com/daretodave/nexus
