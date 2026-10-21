@@ -251,3 +251,28 @@ describe('the settle run', () => {
     assert.equal(isOwner(r.dir, {}), false);
   });
 });
+
+describe('a settle run over several ## Add files at once', () => {
+  it('numbers them in date-then-name order, keeps the counts, and commits them in one settle', () => {
+    const r = repo();
+    r.put('.owner', '');
+    r.put('plan/ARCHIVE.md', '# Archive\n\n- 2000-10-12 · 07.9 · Search on the web · abc12345..def67890\n');
+    for (const s of ['c', 'a', 'b']) {
+      const add = ['---', 'date: 2000-10-21', '---', '## Add plan/07-search.md', '~~~ acceptance', `- **A?${s}** Bug ${s} works.`, '~~~', '~~~ chunks', `- [ ] **07.?${s}** Bug ${s} · S · closes A?${s} · needs —`, '~~~', ''];
+      r.put(`plan/pending/plot-${s}.md`, add.join('\n'));
+    }
+    // The close already pending settles first (an older date); these three follow it.
+    r.git('rm', '-q', 'plan/pending/07.3.md');
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: plot three');
+    const res = r.run();
+    assert.equal(res.code, 0, res.out);
+    assert.match(res.out, /settle: 07\.\?a is 07\.10/);
+    const after = r.read('plan/07-search.md');
+    assert.deepEqual([...after.matchAll(/\*\*(07\.\d+)\*\* Bug (\w) · S · closes (A\d+)/g)].map((m) => `${m[1]}=${m[2]}/${m[3]}`), ['07.10=a/A9', '07.11=b/A10', '07.12=c/A11']);
+    assert.match(after, /^Measure: 6 open · 5 closed · next A12$/m);
+    assert.match(r.read('plan/README.md'), /\| 6 left \|/);
+    assert.equal(r.git('status', '--porcelain'), '');
+    assert.equal(r.git('log', '-1', '--format=%s'), 'plan: settle plot-a, plot-b, plot-c');
+  });
+});

@@ -20,6 +20,15 @@
 //   ~~~ new
 //   …
 //   ~~~
+//   ## Add plan/07-search.md                new work for an existing spec, quoting no line of it: numbered and
+//   ~~~ acceptance                          placed at settle, so any number of branches add to one spec and never
+//   - **A?strip** The empty strip shows …   collide. `A?<slug>` and `07.?<slug>` become the spec's next free A-ID
+//   ~~~                                     and chunk id (past the spec and ARCHIVE.md, in merge order), here and
+//   ~~~ chunks                              in this file's Edit texts; settle appends each part to its section and
+//   - [ ] **07.?strip** … · closes A?strip  keeps the Measure line and the roadmap's "N left" true. Parts:
+//   ~~~                                     acceptance, chunks (sub-bullets at any depth), questions (the Open
+//                                           questions list, numbered when it is) and `section <Heading>` (the end
+//                                           of that ## section; a new one before ## Acceptance when it's absent)
 //   ## Decisions                            entries as the decisions file writes them, numbered at settle:
 //   - **D?empty-copy** · 2026-10-14 · …     `D?empty-copy` anywhere in the repo becomes the number it gets
 //   ## Footguns                             new lines, the footgun format, appended to their status's list
@@ -69,6 +78,7 @@ export function parsePending(raw, name, cfg = DEFAULTS) {
   for (const f of footguns) if (!/^[a-z0-9-]+$/.test(f)) throw new Error(`${name}: footgun "${f}" isn't a slug`);
 
   const edits = [];
+  const adds = [];
   const decisions = [];
   const newFootguns = [];
   const notes = [];
@@ -88,6 +98,8 @@ export function parsePending(raw, name, cfg = DEFAULTS) {
         if (!p[1]) throw new Error(`${name}: an empty old text in "## Edit ${file}" (old must say where)`);
         edits.push({ path: file, old: p[1], new: p[2] });
       }
+    } else if (/^Add /.test(head)) {
+      adds.push(parseAdd(head.slice(4).trim(), body, name, adds, cfg));
     } else if (head === 'Decisions') {
       decisions.push(...entries(body, /^- \*\*D\?[a-z0-9-]+\*\* · /, `${name}: a decision starts "- **D?<slug>** · "`));
       // The decisions file's line cap, checked here so settle refuses the file before it writes anything.
@@ -109,20 +121,57 @@ export function parsePending(raw, name, cfg = DEFAULTS) {
         if (bytes > cfg.limits.footgunBytes) throw new Error(`${name}: a footgun is at most ${cfg.limits.footgunBytes} bytes; ${f.slice(0, 40)}… is ${bytes}`);
       }
     } else {
-      throw new Error(`${name}: unknown section "## ${head}" (Edit <path>, Decisions, Footguns, Notes)`);
+      throw new Error(`${name}: unknown section "## ${head}" (Edit <path>, Add <spec>, Decisions, Footguns, Notes)`);
     }
   }
-  if (!meta.close && !edits.length && !decisions.length && !newFootguns.length && !footguns.length && !notes.length) throw new Error(`${name}: nothing to settle`);
-  return { name, close: meta.close ?? null, date: meta.date, says: meta.says ?? '', commits: meta.commits ?? null, footguns, edits, decisions, newFootguns, notes };
+  const slugs = new Set(adds.flatMap((a) => [...a.acceptance, ...a.chunks].map(slugOf)));
+  for (const ref of new Set([...JSON.stringify({ edits, adds }).matchAll(PLACEHOLDER)].map((m) => m[0]))) {
+    if (!slugs.has(ref)) throw new Error(`${name}: ${ref} is used but no "## Add" part defines it`);
+  }
+  if (!meta.close && !edits.length && !adds.length && !decisions.length && !newFootguns.length && !footguns.length && !notes.length) throw new Error(`${name}: nothing to settle`);
+  return { name, close: meta.close ?? null, date: meta.date, says: meta.says ?? '', commits: meta.commits ?? null, footguns, edits, adds, decisions, newFootguns, notes };
+}
+
+/** An A-ID or chunk id a pending file names before settle numbers it: `A?strip`, `07.?strip`. */
+export const PLACEHOLDER = /(?<![\w?])(?:A|\d{2,}\.)\?[a-z0-9-]+(?![a-z0-9-])/g;
+/** An Add's entry holds its sub-bullets and their wrapped lines at any depth. */
+const DEEP = /^ {2,}\S/;
+const ADD_PART = /^~~~ ?(acceptance|chunks|questions|section [^\n]+?)[ \t]*\n([\s\S]*?)\n?^~~~[ \t]*$/gm;
+const slugOf = (entry) => /\*\*(\S+?)\*\*/.exec(entry)[1];
+
+/** One `## Add plan/NN-*.md` section: its acceptance, chunk and question entries and its section texts. */
+function parseAdd(file, body, name, earlier, cfg) {
+  const spec = /^plan\/(\d{2,})-[^/]+\.md$/.exec(file)?.[1];
+  if (!spec) throw new Error(`${name}: "## Add ${file}": an Add names a spec, plan/NN-<topic>.md`);
+  if (!mayEdit(file, cfg.editable)) throw new Error(`${name}: "## Add ${file}": settle edits only ${cfg.editable.join(', ')}`);
+  // The ladder spec is settle's own (it opens, numbers and removes it): nothing else writes there.
+  if (cfg.ladder && file === `plan/${cfg.ladder.file}`) throw new Error(`${name}: "## Add ${file}": the ladder spec takes no Add (settle writes it)`);
+  if (earlier.some((a) => a.path === file)) throw new Error(`${name}: "## Add ${file}" twice (one section per spec)`);
+  const add = { path: file, spec, acceptance: [], chunks: [], questions: [], sections: [] };
+  const parts = [...body.matchAll(ADD_PART)];
+  if (!parts.length) throw new Error(`${name}: "## Add ${file}" holds no ~~~ acceptance / chunks / questions / section part`);
+  const where = `"## Add ${file}"`;
+  for (const [, kind, text] of parts) {
+    if (kind === 'acceptance') add.acceptance.push(...entries(text, /^- \*\*A\?[a-z0-9-]+\*\* \S/, `${name}: ${where}: an acceptance entry starts "- **A?<slug>** "`, DEEP));
+    else if (kind === 'chunks') add.chunks.push(...entries(text, new RegExp(`^- \\[ \\] \\*\\*${spec}\\.\\?[a-z0-9-]+\\*\\* \\S`), `${name}: ${where}: a chunk starts "- [ ] **${spec}.?<slug>** "`, DEEP));
+    else if (kind === 'questions') add.questions.push(...entries(text, /^- \S/, `${name}: ${where}: a question starts "- "`, DEEP));
+    else if (text.trim()) add.sections.push({ heading: kind.slice('section '.length).trim(), text: text.replace(/^\n+|\n+$/g, '') });
+  }
+  const before = earlier.flatMap((a) => [...a.acceptance, ...a.chunks].map(slugOf));
+  const own = [...add.acceptance, ...add.chunks].map(slugOf);
+  const twice = own.find((s, i) => own.indexOf(s) !== i || before.includes(s));
+  if (twice) throw new Error(`${name}: ${where} defines ${twice} twice`);
+  if (!own.length && !add.questions.length && !add.sections.length) throw new Error(`${name}: ${where} adds nothing`);
+  return add;
 }
 
 /** Bullet entries in a section body: a line matching `start`, plus the lines indented under it. */
-function entries(body, start, why) {
+function entries(body, start, why, under = /^ {2}\S/) {
   const out = [];
   for (const line of body.split('\n')) {
     if (!line.trim()) continue;
     if (start.test(line)) out.push(line);
-    else if (/^ {2}\S/.test(line) && out.length) out[out.length - 1] += `\n${line}`;
+    else if (under.test(line) && out.length) out[out.length - 1] += `\n${line}`;
     else throw new Error(`${why}; read "${line}"`);
   }
   return out;

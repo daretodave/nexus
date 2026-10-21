@@ -179,3 +179,59 @@ describe('the settled view', () => {
     assert.equal(view.read('plan/README.md'), '| a |\n');
   });
 });
+
+describe('a pending ## Add', () => {
+  const ADD = [
+    '---',
+    'date: 2026-10-21',
+    '---',
+    '## Add plan/07-search.md',
+    '~~~ section Design',
+    'The strip compares a cached page with a served one.',
+    '~~~',
+    '~~~ acceptance',
+    '- **A?strip** The strip shows when the page is stale.',
+    '~~~',
+    '~~~ chunks',
+    '- [ ] **07.?strip** The strip · S · closes A?strip · needs —',
+    '  - Contract first: the compare.',
+    '    - Deeper: the served build id.',
+    '      wrapped under it.',
+    '~~~',
+    '~~~ questions',
+    '- Dismissable?',
+    '~~~',
+    '## Edit plan/README.md',
+    '~~~ old',
+    '**Asap**',
+    '~~~',
+    '~~~ new',
+    '**Asap**',
+    '- 07.?strip the strip',
+    '~~~',
+    '',
+  ].join('\n');
+
+  it('reads its parts, sub-bullets at any depth, from CRLF too', () => {
+    for (const text of [ADD, ADD.replace(/\n/g, '\r\n')]) {
+      const p = parsePending(text, 'plan/pending/plot-strip.md');
+      assert.equal(p.adds.length, 1);
+      const [a] = p.adds;
+      assert.equal(a.path, 'plan/07-search.md');
+      assert.equal(a.spec, '07');
+      assert.deepEqual(a.acceptance, ['- **A?strip** The strip shows when the page is stale.']);
+      assert.equal(a.chunks.length, 1);
+      assert.equal(a.chunks[0].split('\n').length, 4);
+      assert.deepEqual(a.questions, ['- Dismissable?']);
+      assert.deepEqual(a.sections, [{ heading: 'Design', text: 'The strip compares a cached page with a served one.' }]);
+      assert.equal(p.edits[0].new, '**Asap**\n- 07.?strip the strip');
+    }
+  });
+
+  it('reads a three-digit spec, and refuses a second Add of the same spec in one file', () => {
+    const p = parsePending('---\ndate: 2026-10-21\n---\n## Add plan/100-big.md\n~~~ chunks\n- [ ] **100.?x** X · S · needs —\n~~~\n', 'b.md');
+    assert.equal(p.adds[0].spec, '100');
+    const twice = '---\ndate: 2026-10-21\n---\n## Add plan/07-search.md\n~~~ questions\n- Q\n~~~\n## Add plan/07-search.md\n~~~ questions\n- R\n~~~\n';
+    assert.throws(() => parsePending(twice, 't.md'), /twice \(one section per spec\)/);
+  });
+});

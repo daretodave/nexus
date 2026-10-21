@@ -1,12 +1,16 @@
-// settle.mjs: a close takes its chunk out of the plan and appends its archive line; edits apply exactly once;
-// decisions get numbers; footgun sightings climb the ladder. Pure functions on strings, no git (the run itself is
-// settle-run.test.mjs). node:test, no deps.
+// settle.mjs: a close takes its chunk out of the plan and appends its archive line; edits apply exactly once; adds
+// are numbered and placed; decisions get numbers; footgun sightings climb the ladder. Pure functions on strings, no git
+// (the run itself is settle-run.test.mjs). node:test, no deps.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { makeConfig } from '../plan/config.mjs';
 import { lintFootguns } from '../plan/footguns.mjs';
+import { parsePending } from '../plan/pending.mjs';
 import {
   applyEdits,
+  applyPlanChanges,
   bumpFootgun,
   closeChunk,
   dropNeeds,
@@ -15,6 +19,7 @@ import {
   ladderSpec,
   laneEntry,
   makeRoom,
+  nextChunkNumber,
   numberDecisions,
   openLadderRows,
   closeLadderRows,
@@ -266,3 +271,174 @@ describe('footguns and the ladder', () => {
   });
 });
 
+// `## Add`: many branches add to one spec and never collide (learned from a mature adopter, where a dozen runs adding
+// to one spec all quoted the same last chunk, Measure line and "N left", so only the first could settle). Each pending
+// file quotes no text of the spec; settle numbers its A-IDs and chunks in turn and places them. A settle run over
+// several of them, end to end, is in settle-run.test.mjs.
+describe('## Add: new work for a spec, numbered at settle', () => {
+  const ADD_SPEC = [
+    '# 07 — Search',
+    '',
+    '## Design',
+    '',
+    '- The index is local.',
+    '',
+    '## Acceptance',
+    '',
+    '- **A17** The offline index.',
+    '- **A18** Search by voice',
+    '  on a phone.',
+    '',
+    '## Open questions',
+    '',
+    '- Fuzzy or exact?',
+    '',
+    '## Chunks',
+    'Measure: 2 open · 16 closed · next A19',
+    '',
+    '- [ ] **07.7** The offline index · M · closes A17 · needs —',
+    '- [ ] **07.8** Voice · S · closes A18 · needs 07.7',
+    '  - Every browser.',
+    '',
+  ].join('\n');
+  const ADD_README = '| 07 | Search | [07-search.md](07-search.md) | in progress | 2 left |\n';
+  const ADD_ARCHIVE = '- 2026-10-12 · 07.9 · Search on the web · abc12345..def67890\n';
+
+  /** A bug's pending file: no number and no quoted text of spec 07. */
+  const bug = (slug, words, extra = '') =>
+    [
+      '---',
+      'date: 2026-10-21',
+      '---',
+      '## Add plan/07-search.md',
+      '~~~ acceptance',
+      `- **A?${slug}** ${words} works.`,
+      '~~~',
+      '~~~ chunks',
+      `- [ ] **07.?${slug}** ${words} · S · closes A?${slug} · needs —`,
+      '  - Retest it.',
+      '    A wrapped line under the sub-bullet.',
+      '~~~',
+      extra,
+    ].join('\n');
+
+  function files(spec = ADD_SPEC) {
+    const store = new Map([
+      ['plan/07-search.md', spec],
+      ['plan/README.md', ADD_README],
+      ['plan/ARCHIVE.md', ADD_ARCHIVE],
+    ]);
+    return { store, read: (q) => store.get(q) ?? null, write: (q, t) => store.set(q, t) };
+  }
+
+  it('takes thirteen additions in a row, each its own A-ID and chunk, none colliding (07.9 is archived)', () => {
+    const f = files();
+    const given = [];
+    for (let i = 1; i <= 13; i++) {
+      const p = parsePending(bug(`bug${i}`, `Bug ${i}`), `plan/pending/plot-bug${i}.md`);
+      given.push(Object.fromEntries(applyPlanChanges(p, f.read, f.write)));
+    }
+    assert.deepEqual(given[0], { 'A?bug1': 'A19', '07.?bug1': '07.10' });
+    assert.deepEqual(given[12], { 'A?bug13': 'A31', '07.?bug13': '07.22' });
+    const spec = f.read('plan/07-search.md');
+    assert.match(spec, /^Measure: 15 open · 16 closed · next A32$/m);
+    assert.doesNotMatch(spec, /\?bug/);
+    // The acceptance entries follow A18's wrapped line, in order, before Open questions.
+    assert.ok(spec.includes('  on a phone.\n- **A19** Bug 1 works.\n- **A20** Bug 2'));
+    assert.ok(spec.indexOf('**A31**') < spec.indexOf('## Open questions'));
+    // The chunks follow 07.8's sub-bullet, each with its own lines at their depth.
+    assert.ok(spec.includes('  - Every browser.\n- [ ] **07.10** Bug 1 · S · closes A19 · needs —\n  - Retest it.\n    A wrapped line'));
+    assert.ok(spec.trimEnd().endsWith('- [ ] **07.22** Bug 13 · S · closes A31 · needs —\n  - Retest it.\n    A wrapped line under the sub-bullet.'));
+    assert.equal(f.read('plan/README.md'), '| 07 | Search | [07-search.md](07-search.md) | in progress | 15 left |\n');
+  });
+
+  it('writes its numbers into its own Edit texts (an Asap lane entry) and places questions and section text', () => {
+    const f = files();
+    f.write('plan/README.md', `${ADD_README}\n**Asap lane**\n- 01.1 first\n`);
+    const text = bug(
+      'strip',
+      'The strip',
+      [
+        '~~~ questions',
+        '- A prompt?',
+        '  Needs the version.',
+        '~~~',
+        '~~~ section Design',
+        '- The strip compares a cached page with a served one.',
+        '~~~',
+        '~~~ section Contract',
+        '`pageBuild` answers dev.',
+        '~~~',
+        '## Edit plan/README.md',
+        '~~~ old',
+        '- 01.1 first',
+        '~~~',
+        '~~~ new',
+        '- 01.1 first',
+        '- 07.?strip the strip (A?strip)',
+        '~~~',
+      ].join('\n'),
+    );
+    const numbers = applyPlanChanges(parsePending(text, 'plan/pending/plot-strip.md'), f.read, f.write);
+    assert.deepEqual(Object.fromEntries(numbers), { 'A?strip': 'A19', '07.?strip': '07.10' });
+    assert.ok(f.read('plan/README.md').includes('- 07.10 the strip (A19)'));
+    assert.ok(f.read('plan/README.md').includes('| 3 left |'));
+    const spec = f.read('plan/07-search.md');
+    assert.ok(spec.includes('- Fuzzy or exact?\n- A prompt?\n  Needs the version.\n\n## Chunks'));
+    assert.ok(spec.includes('- The index is local.\n\n- The strip compares a cached page with a served one.\n\n## Contract'));
+    assert.ok(spec.includes('## Contract\n\n`pageBuild` answers dev.\n\n## Acceptance'));
+  });
+
+  it('numbers a question in a numbered Open questions list', () => {
+    const f = files(ADD_SPEC.replace('- Fuzzy or exact?', '1. Fuzzy or exact?\n2. Which locale?'));
+    const p = parsePending(['---', 'date: 2026-10-21', '---', '## Add plan/07-search.md', '~~~ questions', '- A prompt?', '  Its version.', '~~~'].join('\n'), 'q.md');
+    applyPlanChanges(p, f.read, f.write);
+    assert.ok(f.read('plan/07-search.md').includes('2. Which locale?\n3. A prompt?\n   Its version.\n'));
+  });
+
+  it('refuses a placeholder no Add defines, a chunk of another spec, a slug twice, an Add of nothing and a non-spec', () => {
+    const head = '---\ndate: 2026-10-21\n---\n';
+    assert.throws(() => parsePending(`${head}## Edit plan/README.md\n~~~ old\nx\n~~~\n~~~ new\n07.?nope\n~~~\n`, 'a.md'), /07\.\?nope is used but no "## Add" part defines it/);
+    assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ chunks\n- [ ] **15.?x** Wrong spec · S\n~~~\n`, 'b.md'), /a chunk starts "- \[ \] \*\*07\.\?<slug>\*\* "/);
+    assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ acceptance\n- **A?x** One\n- **A?x** Two\n~~~\n`, 'c.md'), /defines A\?x twice/);
+    assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ chunks\n~~~\n`, 'd.md'), /adds nothing/);
+    assert.throws(() => parsePending(`${head}## Add plan/README.md\n~~~ questions\n- Q\n~~~\n`, 'e.md'), /an Add names a spec/);
+  });
+
+  it('refuses a spec with no Measure line before writing anything', () => {
+    const f = files(ADD_SPEC.replace(/^Measure:.*$/m, ''));
+    assert.throws(() => applyPlanChanges(parsePending(bug('x', 'X'), 'x.md'), f.read, f.write), /no "Measure: /);
+    assert.equal(f.read('plan/README.md'), ADD_README);
+  });
+
+  it('counts the next chunk past split ids and archived ones, a three-digit spec too', () => {
+    assert.equal(nextChunkNumber('07', ['07.4b', '07.7'], '- 2026-10-12 · 07.9 · x · a..b\n- 2026-10-12 · 15.30 · y · a..b\n'), 10);
+    assert.equal(nextChunkNumber('63', [], ''), 1);
+    assert.equal(nextChunkNumber('100', ['100.2'], '- 2026-10-12 · 100.5a · x · a..b\n- 2026-10-12 · 10.9 · y · a..b\n'), 6);
+  });
+
+  it('puts a new Acceptance before Chunks when the spec has no Open questions', () => {
+    const bare = ['# 07 — Search', '', '## Chunks', 'Measure: 0 open · 18 closed · next A19', '', '- [ ] **07.8** Voice · S · needs —', ''].join('\n');
+    const f = files(bare);
+    applyPlanChanges(parsePending(bug('x', 'X'), 'x.md'), f.read, f.write);
+    const spec = f.read('plan/07-search.md');
+    assert.ok(spec.indexOf('## Acceptance') < spec.indexOf('## Chunks'), spec);
+    assert.ok(spec.includes('## Acceptance\n\n- **A19** X works.\n'), spec);
+    assert.match(spec, /^Measure: 1 open · 18 closed · next A20$/m);
+    assert.ok(spec.trimEnd().endsWith('    A wrapped line under the sub-bullet.'));
+  });
+
+  it("refuses an Add to the ladder spec, and one outside the config's editable", () => {
+    const head = '---\ndate: 2026-10-21\n---\n';
+    assert.throws(() => parsePending(`${head}## Add plan/99-guard-the-traps.md\n~~~ questions\n- Q\n~~~\n`, 'l.md'), /ladder spec takes no Add/);
+    const cfg = makeConfig({ editable: ['plan/README.md'] });
+    assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ questions\n- Q\n~~~\n`, 'n.md', cfg), /settle edits only plan\/README\.md/);
+  });
+
+  it("applies a file's edits and adds before its close, in settle's loop", () => {
+    const src = readFileSync(fileURLToPath(new URL('../plan/settle.mjs', import.meta.url)), 'utf8');
+    const loop = src.slice(src.indexOf('for (const p of parsed)'));
+    assert.ok(loop.indexOf('applyPlanChanges(p, r, w)') > 0);
+    assert.ok(loop.indexOf('applyPlanChanges(p, r, w)') < loop.indexOf('closeChunk(r(specFile), p.close)'));
+  });
+});

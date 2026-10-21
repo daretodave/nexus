@@ -7,6 +7,8 @@
 //     the roadmap rows and the build queue (when the config names one), and appends its ARCHIVE.md line with the
 //     commits git shows it landed in;
 //   - its Edit sections apply, each old text found exactly once;
+//   - its Add parts are numbered past the spec and ARCHIVE.md in merge order (`A?<slug>`, `NN.?<slug>`, in its Edit
+//     texts too), placed at their sections' ends, and the Measure line and the roadmap row's "N left" kept true;
 //   - its decisions get the next numbers, and `D?<slug>` becomes that number wherever the repo says it;
 //   - its footgun sightings bump seen and last (a Watch line's second sighting moves it back to Open); one that reaches
 //     2× while open gets an "automate <slug>" chunk in the ladder spec and an entry in the Asap lane (the ladder,
@@ -31,7 +33,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { DEFAULTS, fill, loadConfig } from './config.mjs';
 import { lintFootguns } from './footguns.mjs';
-import { parsePending, pendingFiles } from './pending.mjs';
+import { PLACEHOLDER, parsePending, pendingFiles } from './pending.mjs';
 import { isOwner } from '../owner.mjs';
 
 const CHUNK_LINE = (id) => new RegExp(`^- \\[ \\] \\*\\*${esc(id)}\\*\\*`);
@@ -758,6 +760,121 @@ export function applyEdits(edits, read, write) {
   }
 }
 
+const MEASURE = /^Measure: (\d+) open · (\d+) closed · next A(\d+)$/m;
+const slugOf = (entry) => /\*\*(\S+?)\*\*/.exec(entry)[1];
+
+/** The next free chunk number of spec `nn`: past every id it lists and every one ARCHIVE.md closed (07.4a counts as 4). */
+export function nextChunkNumber(nn, listed, archive) {
+  const archived = [...(archive ?? '').matchAll(/ · (\d{2,}\.\w+) · /g)].map((m) => m[1]);
+  const nums = [...listed, ...archived].filter((id) => id.startsWith(`${nn}.`)).map((id) => Number(/^\d{2,}\.(\d+)/.exec(id)?.[1] ?? 0));
+  return Math.max(0, ...nums) + 1;
+}
+
+/** The [start, end) of the `## ` section whose heading `test` accepts (end: the next `## ` line), or null. */
+function sectionOf(lines, test) {
+  const start = lines.findIndex((l) => l.startsWith('## ') && test(l.slice(3).trim()));
+  if (start < 0) return null;
+  const next = lines.findIndex((l, i) => i > start && l.startsWith('## '));
+  return [start, next < 0 ? lines.length : next];
+}
+
+/** Where a section's last non-blank line ends: new entries go there, the blank lines before the next heading kept. */
+function sectionTail(lines, [start, end]) {
+  let at = end;
+  while (at - 1 > start && !lines[at - 1].trim()) at--;
+  // An empty section: after the blank line under its heading.
+  return at === start + 1 ? Math.min(start + 2, end) : at;
+}
+
+/** A new `## heading` section, put before the first of the `before` sections there is (or at the end): its range. */
+function openSection(lines, heading, before) {
+  const range = before.map((b) => sectionOf(lines, (h) => h.startsWith(b))).find(Boolean);
+  const at = range ? range[0] : lines.length;
+  lines.splice(at, 0, `## ${heading}`, '', '');
+  return [at, at + 2];
+}
+
+/**
+ * Place one `## Add` in its spec: its sections' texts at their sections' ends, its acceptance entries after the last
+ * A-ID, its questions at the end of Open questions (numbered when the list is), its chunks at the end of Chunks; then
+ * the Measure line counts again with `nextA` as its next free A-ID. `fill` writes the numbers in.
+ */
+export function placeAdd(spec, add, fill, nextA) {
+  const lines = spec.split('\n');
+  const put = (range, rows) => lines.splice(sectionTail(lines, range), 0, ...rows);
+  for (const s of add.sections) {
+    const range = sectionOf(lines, (h) => h === s.heading) ?? openSection(lines, s.heading, ['Acceptance', 'Open questions', 'Chunks']);
+    const held = lines.slice(range[0] + 1, range[1]).some((l) => l.trim());
+    put(range, [...(held ? [''] : []), ...fill(s.text).split('\n')]);
+  }
+  if (add.acceptance.length) {
+    const range = sectionOf(lines, (h) => h === 'Acceptance') ?? openSection(lines, 'Acceptance', ['Open questions', 'Chunks']);
+    let last = -1;
+    for (let i = range[0]; i < range[1]; i++) if (/^- \*\*A\d+\*\*/.test(lines[i])) last = i;
+    const rows = add.acceptance.flatMap((e) => fill(e).split('\n'));
+    if (last >= 0) lines.splice(blockEnd(lines, last), 0, ...rows);
+    else put(range, rows);
+  }
+  if (add.questions.length) {
+    const range = sectionOf(lines, (h) => h.startsWith('Open questions')) ?? openSection(lines, 'Open questions', ['Chunks']);
+    const numbered = lines.slice(range[0], range[1]).map((l) => /^(\d+)\. /.exec(l)).filter(Boolean);
+    let n = Math.max(0, ...numbered.map((m) => Number(m[1])));
+    const rows = add.questions.flatMap((q) => {
+      const text = fill(q).split('\n');
+      if (!numbered.length) return text;
+      const head = `${++n}. `;
+      return [head + text[0].slice(2), ...text.slice(1).map((l) => ' '.repeat(head.length - 2) + l)];
+    });
+    put(range, rows);
+  }
+  if (add.chunks.length) {
+    const range = sectionOf(lines, (h) => h === 'Chunks');
+    if (!range) throw new Error(`Add ${add.path}: the spec has no "## Chunks" section`);
+    put(range, add.chunks.flatMap((e) => fill(e).split('\n')));
+  }
+  const text = lines.join('\n');
+  const m = MEASURE.exec(text);
+  if (!m) return text;
+  const open = new Set([...text.matchAll(/^- \*\*(A\d+)\*\*/gm)].map((x) => x[1])).size;
+  return text.replace(MEASURE, `Measure: ${open} open · ${m[2]} closed · next A${nextA}`);
+}
+
+/**
+ * A pending file's text changes as settle makes them, and as the settled view reads them: its Add parts numbered
+ * against their specs as they stand (the Measure line's next A-ID, the next chunk id past the spec and ARCHIVE.md),
+ * those numbers written into its Edit texts, its edits applied, then each Add placed and the roadmap's "N left" set.
+ * Returns the numbers given (`A?strip` → `A19`, `07.?strip` → `07.10`). `only` limits the files written.
+ */
+export function applyPlanChanges(p, read, write, only = () => true) {
+  const numbers = new Map();
+  const nextA = new Map();
+  for (const a of p.adds ?? []) {
+    const spec = read(a.path);
+    if (spec === null) throw new Error(`Add ${a.path}: no such spec`);
+    const m = MEASURE.exec(spec);
+    if (!m) throw new Error(`Add ${a.path}: no "Measure: N open · N closed · next A#" line`);
+    let n = Number(m[3]);
+    for (const e of a.acceptance) numbers.set(slugOf(e), `A${n++}`);
+    nextA.set(a.path, n);
+    let c = nextChunkNumber(a.spec, listedChunks(spec), read('plan/ARCHIVE.md'));
+    for (const e of a.chunks) numbers.set(slugOf(e), `${a.spec}.${c++}`);
+  }
+  const fill = (t) => t.replace(PLACEHOLDER, (k) => numbers.get(k) ?? k);
+  applyEdits(
+    p.edits.filter((e) => only(e.path)).map((e) => ({ ...e, new: fill(e.new) })),
+    read,
+    write,
+  );
+  for (const a of p.adds ?? []) {
+    if (!only(a.path)) continue;
+    const text = placeAdd(read(a.path), a, fill, nextA.get(a.path));
+    write(a.path, text);
+    const readme = only('plan/README.md') ? read('plan/README.md') : null;
+    if (readme !== null) write('plan/README.md', setLeft(readme, path.basename(a.path), listedChunks(text).length));
+  }
+  return numbers;
+}
+
 // ---- the run (git and the files) ----
 
 function git(args, cwd) {
@@ -912,7 +1029,8 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
     try {
       // A pending file's edits are written against main as it was, before its close: applied first, so a close that
       // rewrites a line (a later chunk's `needs`, the measure) never moves an edit's anchor out from under it.
-      applyEdits(p.edits, r, w);
+      const numbered = applyPlanChanges(p, r, w);
+      notes.push(...[...numbered].map(([k, v]) => `${k} is ${v}`));
       if (p.close) {
         const specFile = specOf(p.close);
         const archive = r('plan/ARCHIVE.md') ?? '';
