@@ -66,8 +66,6 @@ What exists today (2026-10-21):
 
 ## Acceptance
 
-- **A2** One command records a scenario to a 5–8 second GIF
-  and a poster frame, pure JavaScript, within budget.
 - **A3** Fleet to tug (and optionally bug to archive) is
   recorded and placed in the README's GUI section with alt
   text, the diagrams untouched, and the gate checks every
@@ -78,9 +76,7 @@ What exists today (2026-10-21):
 (None.)
 
 ## Chunks
-Measure: 2 open · 1 closed · next A4
+Measure: 1 open · 2 closed · next A4
 
-- [ ] **44.2** The recorder: Playwright frames to a GIF,
-  pure JavaScript · M · closes A2 · needs —
 - [ ] **44.3** Fleet to tug (and optionally bug to archive),
-  recorded and placed in the README · M · closes A3 · needs 44.2, 41.10
+  recorded and placed in the README · M · closes A3 · needs 41.10
