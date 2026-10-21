@@ -22,6 +22,14 @@
 //     its `N left` counts match, and its Asap/Held lanes name only
 //     chunks (or specs) still in the plan; ARCHIVE.md lines parse
 //
+// plan/ is read as it will read once plan/pending/ settles (the
+// settled view, scripts/plan/settled.mjs): each pending file's
+// `## Edit` sections applied in memory, so a contributor's plot
+// (its new spec written directly, its roadmap row and lane entry
+// a pending edit) passes before the owner settles it. A pending
+// file settle would skip (it doesn't parse, or an old text isn't
+// there exactly once) is a failure.
+//
 // With `--since <ref>` it also checks history against that ref:
 // a chunk that left the plan has an archive line (or a pending
 // close in plan/pending/, or was split into `<id>a`, `<id>b`, …
@@ -42,6 +50,8 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { PENDING_DIR } from './plan/pending.mjs'
+import { settledView } from './plan/settled.mjs'
 
 export const SPEC_FILE = /^(\d{2,})-[a-z0-9][a-z0-9-]*\.md$/
 const MEASURE = /^Measure: (\d+) open · (\d+) closed · next A(\d+)\s*$/
@@ -263,8 +273,11 @@ export function checkHistory(before, after, archive, pendingIds = new Set()) {
 
 // --- I/O -------------------------------------------------------------------
 
-export function loadPlanDir(dirAbs, label = 'plan') {
-  const read = (f) => { try { return fs.readFileSync(path.join(dirAbs, f), 'utf-8') } catch { return null } }
+// `readFile(name)` reads one file of the folder (null when it isn't
+// there): the files as they stand unless a reader is given.
+export function loadPlanDir(dirAbs, label = 'plan', readFile = null) {
+  const disk = (f) => { try { return fs.readFileSync(path.join(dirAbs, f), 'utf-8') } catch { return null } }
+  const read = readFile || disk
   const files = fs.existsSync(dirAbs) ? fs.readdirSync(dirAbs).filter((f) => SPEC_FILE.test(f)) : []
   return {
     specs: files.map((f) => parseSpec(`${label}/${f}`, read(f))),
@@ -274,7 +287,7 @@ export function loadPlanDir(dirAbs, label = 'plan') {
     // as closed: by its file name (`<chunk id>.md`) or its `close:` line.
     pendingIds: new Set(fs.existsSync(path.join(dirAbs, 'pending'))
       ? fs.readdirSync(path.join(dirAbs, 'pending')).filter((f) => f.endsWith('.md') && f !== 'README.md').flatMap((f) => {
-          const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(read(`pending/${f}`) ?? '')
+          const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(disk(`pending/${f}`) ?? '')
           const close = fm && /^close:[ \t]*(\S+)/m.exec(fm[1])
           return close ? [f.slice(0, -3), close[1]] : [f.slice(0, -3)]
         })
@@ -300,8 +313,12 @@ export function loadPlanAtRef(repoAbs, ref, dirRel, label = dirRel) {
 
 export function runCheck({ repoAbs, dirRel = 'plan', since = null }) {
   const label = dirRel.replace(/\\/g, '/')
-  const now = loadPlanDir(path.join(repoAbs, dirRel), label)
-  const failures = checkPlan(now)
+  // Only the folder plan/pending/ sits in reads through the settled
+  // view: another plan folder (a template's) takes none of its edits.
+  const settled = path.posix.normalize(label) === path.posix.dirname(PENDING_DIR)
+  const view = settled ? settledView(repoAbs, { only: (p) => p.startsWith(`${label}/`) }) : null
+  const now = loadPlanDir(path.join(repoAbs, dirRel), label, view && ((f) => view.read(`${label}/${f}`)))
+  const failures = [...(view ? view.problems : []), ...checkPlan(now)]
   if (since) {
     try { failures.push(...checkHistory(loadPlanAtRef(repoAbs, since, label), now.specs, now.archive, now.pendingIds)) } catch (err) { failures.push(err.message) }
   }

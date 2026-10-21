@@ -155,7 +155,10 @@ function scratchRepo() {
   execFileSync('git', ['init', '-q'], { cwd: dir })
   fs.mkdirSync(path.join(dir, 'plan'))
   fs.mkdirSync(path.join(dir, 'scripts'))
+  // plan-check and what it imports: the settled view (plan/) and settle's owner check.
   fs.copyFileSync(fileURLToPath(new URL('../plan-check.mjs', import.meta.url)), path.join(dir, 'scripts', 'plan-check.mjs'))
+  fs.copyFileSync(fileURLToPath(new URL('../owner.mjs', import.meta.url)), path.join(dir, 'scripts', 'owner.mjs'))
+  fs.cpSync(fileURLToPath(new URL('../plan', import.meta.url)), path.join(dir, 'scripts', 'plan'), { recursive: true })
   return dir
 }
 
@@ -188,5 +191,42 @@ test('a pending close counts by its file name or its close: line, never the fold
     const ids = loadPlanDir(dir).pendingIds
     assert.ok(ids.has('07.3') && ids.has('07.4'))
     assert.ok(!ids.has('README') && !ids.has('07.9'))
+  } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})
+
+// A contributor's plot: the new spec written directly, its roadmap row
+// and lane entry in plan/pending/plot-<slug>.md, unsettled. The gate
+// reads the plan as it will read once settled, so the branch passes.
+test('a contributor\'s unsettled plot passes: the roadmap is read with its pending edits applied', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-plot-'))
+  const put = (rel, text) => { fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); fs.writeFileSync(path.join(dir, rel), text) }
+  try {
+    put('plan/07-search.md', `# 07 — Search\n\n${GOOD}`)
+    put('plan/README.md', `**Asap**\n\n- (none)\n\n| # | Initiative | Spec | Status | Progress |\n|---|---|---|---|---|\n${README}\n`)
+    put('plan/ARCHIVE.md', '# Archive\n')
+    assert.deepEqual(runCheck({ repoAbs: dir }).failures, [])
+    put('plan/08-maps.md', '# 08 — Maps\n\n## Acceptance\n\n- **A1** A map.\n\n## Chunks\nMeasure: 1 open · 0 closed · next A2\n\n- [ ] **08.1** The map · S · closes A1 · needs 07.2\n')
+    put('plan/pending/plot-maps.md', [
+      '---', 'date: 2026-10-21', '---',
+      '## Edit plan/README.md', '~~~ old', '- (none)', '~~~', '~~~ new', '- **08.1** · maps first.', '~~~', '',
+      '## Edit plan/README.md', '~~~ old', README, '~~~', '~~~ new', `${README}\n| 8 | Maps | [08-maps.md](08-maps.md) | planned | 1 left |`, '~~~', '',
+    ].join('\n'))
+    const r = runCheck({ repoAbs: dir })
+    assert.deepEqual(r.failures, [])
+    assert.equal(r.note, '2 specs, 3 chunks')
+    // The files on disk are untouched: settle writes them, on main.
+    assert.ok(!fs.readFileSync(path.join(dir, 'plan/README.md'), 'utf-8').includes('08-maps.md'))
+    // A wrong count in the pending row is still caught, and so is a pending file settle would skip.
+    put('plan/pending/plot-maps.md', fs.readFileSync(path.join(dir, 'plan/pending/plot-maps.md'), 'utf-8').replace('| 1 left |', '| 4 left |'))
+    assert.match(runCheck({ repoAbs: dir }).failures.join('\n'), /says 4 left, 08-maps\.md lists 1/)
+    put('plan/pending/plot-maps.md', '---\ndate: 2026-10-21\n---\n## Edit plan/README.md\n~~~ old\nno such row\n~~~\n~~~ new\nx\n~~~\n')
+    const red = runCheck({ repoAbs: dir }).failures.join('\n')
+    assert.match(red, /plot-maps\.md: Edit plan\/README\.md: the old text isn't there/)
+    assert.match(red, /no link to 08-maps\.md/)
+    // Another plan folder (a template's) never takes the root plan/pending/ edits.
+    fs.cpSync(path.join(dir, 'plan'), path.join(dir, 'other/plan'), { recursive: true })
+    fs.rmSync(path.join(dir, 'other/plan/pending'), { recursive: true })
+    assert.match(runCheck({ repoAbs: dir, dirRel: 'other/plan' }).failures.join('\n'), /no link to 08-maps\.md/)
+    assert.doesNotMatch(runCheck({ repoAbs: dir, dirRel: 'other/plan' }).failures.join('\n'), /plot-maps/)
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })
