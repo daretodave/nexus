@@ -243,9 +243,8 @@ Then, in the copies:
   `agents.md` names it.
 - **Placeholders.** `<PROJECT>`, `<DEFAULT_BRANCH>` and
   `<PROJECT_PKG_PREFIX>` as in
-  [`cloud-loop.md`](./cloud-loop.md) Step 2. If your default
-  branch isn't `main`, change `pr-resolve.yml`'s
-  `branches: [main]` too.
+  [`cloud-loop.md`](./cloud-loop.md) Step 2, in
+  `pr-resolve.yml` too (its `branches: [<DEFAULT_BRANCH>]`).
 - **Your PR bot.** If it acts on every PR, decide whether the
   loop's `nexus/*` PRs get the same treatment (usually yes).
 

@@ -16,7 +16,7 @@ run-name: resolve conflicts${{ inputs.pr && format(' in PR {0}', inputs.pr) || '
 
 on:
   push:
-    branches: [main]
+    branches: [<DEFAULT_BRANCH>]
   workflow_dispatch:
     inputs:
       pr:

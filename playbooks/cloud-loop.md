@@ -154,6 +154,11 @@ In `.github/workflows/march.yml`, replace:
   don't have an e2e workspace
 - `<DEFAULT_BRANCH>` → typically `main`
 
+In `.github/workflows/pr-resolve.yml` (pull-request mode):
+
+- `<DEFAULT_BRANCH>` → the branch whose pushes it follows,
+  typically `main`
+
 In `.github/CLOUD_LOOP.md`:
 
 - `<PROJECT>` → your project name
