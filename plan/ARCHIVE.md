@@ -72,3 +72,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 32.1 · heartbeat alarms on unarmed workflows; check_cadence per workflow · b6acc842..b6acc842
 - 2026-10-21 · 32.2 · loop-shapes and CLOUD_LOOP describe the heartbeat checks · fe136587..fe136587
 - 2026-10-21 · 32 · spec complete: the heartbeat alarms once per unarmed scheduled workflow (never re-enables one) and checks cadence per workflow, march 14h and night 48h · b6acc842..fe136587
+- 2026-10-21 · 39.1 · bootstrap sets the loop mode; pr-resolve follows DEFAULT_BRANCH · d9c843bd..d9c843bd
