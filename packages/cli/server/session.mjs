@@ -27,8 +27,9 @@ import { createTugLog } from './tugs.mjs';
  * @param {object|function} [o.provider]   a provider, or a factory given the hooks (tests)
  * @param {() => string} [o.permissionMode]
  * @param {boolean} [o.listed]        shown in the session list before it has run (started from the GUI)
+ * @param {string} [o.resume]        a Claude Code session id its first turn resumes (Recover: a Workflow run's own)
  */
-export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, now = () => Date.now() }) {
+export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, resume = null, now = () => Date.now() }) {
   const hub = createHub();
   const asks = new Map();
   const permissions = new Map();
@@ -95,6 +96,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     onPermission,
     onStatus: (s) => { if (s.state === 'idle') busy = false; hub.setStatus(s); },
     permissionMode,
+    ...(resume ? { resume } : {}),
   };
   const provider = typeof injected === 'function' ? injected(hooks) : injected || await createProvider(hooks);
   hub.setStatus({ state: 'idle', provider: provider.kind, pause: 'run' });

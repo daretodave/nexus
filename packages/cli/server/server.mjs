@@ -20,6 +20,8 @@ import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from
 import { boardTugs, tugOf } from './tugs.mjs';
 import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
 import { createGitView } from './git.mjs';
+import { readRun, recentRuns } from './recover.mjs';
+import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -69,9 +71,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   const login = ghLoginOnce(ghLogin || (injected ? async () => '' : undefined));
   if (!injected) login();
   const sessions = new Map();
-  async function host({ id, name = '', cwd, place = {}, listed = false }) {
+  async function host({ id, name = '', cwd, place = {}, listed = false, resume = null }) {
     const s = await createSession({
-      id, name, cwd, place, listed,
+      id, name, cwd, place, listed, resume,
       env: async () => ({ NEXUS_SESSION: id, NEXUS_GH_LOGIN: await login() }),
       // An injected provider object serves the home session only; a factory serves every session (tests).
       provider: typeof injected === 'function' ? injected : sessions.size ? undefined : injected,
@@ -193,6 +195,38 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const s = await host({ id, name, cwd, place, listed: true });
     if (b.prompt && String(b.prompt).trim()) await s.send(String(b.prompt).trim());
     return { status: 200, id, name, cwd, worktree: place.worktree || '', branch: place.branch || '', ...(note ? { note } : {}) };
+  }
+
+  // Recover (spec 40 A10; recover.mjs): read a Workflow run folder, and resume it in a hosted session that resumes
+  // the run's own Claude Code session, in its folder, and asks it to call the Workflow tool. One per run at a time.
+  const recoverHome = claudeHome || defaultClaudeHome();
+  const resumed = new Map(); // runId -> hosted session id
+  async function recoverRead(dir) {
+    const recent = recentRuns({ home: recoverHome, dirs: await worktreeDirs(repo) });
+    if (!dir) return { status: 200, run: null, agents: [], recent };
+    const r = readRun(dir, { home: recoverHome });
+    if (r.error) return { status: 400, error: r.error, recent };
+    const sid = resumed.get(r.run.runId);
+    if (sid && sessions.has(sid)) r.run.resumedBy = { id: sid, name: sessions.get(sid).name };
+    return { status: 200, ...r, recent };
+  }
+  async function recoverResume(b) {
+    const r = readRun(String(b.dir || ''), { home: recoverHome });
+    if (r.error) return { status: 400, error: r.error };
+    const manual = { prompt: r.resume.prompt, command: r.resume.command };
+    const sid = resumed.get(r.run.runId);
+    if (sid && sessions.has(sid)) return { status: 409, error: `already resuming in ${sessions.get(sid).name}`, id: sid, ...manual };
+    if (!r.agents.some((a) => a.resume)) return { status: 409, error: r.run.state === 'running' ? 'the run is still going' : 'nothing to resume: every agent finished', ...manual };
+    if (!r.resume.hostable || !/^[A-Za-z0-9-]{8,64}$/.test(r.resume.sessionId)) return { status: 409, error: r.resume.why || 'cannot resume that session here', ...manual };
+    const root = await primaryRoot(repo);
+    const ledgers = readLedgers(root);
+    const name = nextName(heldNames(ledgers, [...sessions.values()].map((s) => s.name)));
+    const id = newSessionId();
+    writeStartLedger(root, startLedger({ id, name, cwd: r.resume.cwd }));
+    const s = await host({ id, name, cwd: r.resume.cwd, listed: true, resume: r.resume.sessionId });
+    resumed.set(r.run.runId, id);
+    await s.send(r.resume.prompt);
+    return { status: 200, ok: true, id, name, cwd: r.resume.cwd, runId: r.run.runId, ...manual };
   }
 
   /** POST /api/sessions/:id/(pause|resume|close) for a session this server runs. */
@@ -335,6 +369,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           return send(res, r.ok ? 200 : r.status || 400, r);
         }
         case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo, ghOpts));
+        case 'GET /api/recover': { const r = await recoverRead(url.searchParams.get('dir') || ''); return send(res, r.status, r); }
+        case 'POST /api/recover/resume': { const r = await recoverResume(await body(req)); return send(res, r.status, r); }
       }
       const ask = /^POST \/api\/ask\/([\w-]+)$/.exec(route);
       if (ask) {

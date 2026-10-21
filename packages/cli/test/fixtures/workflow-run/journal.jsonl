@@ -1,0 +1,6 @@
+{"type":"launched"}
+{"type":"started","key":"v2:1111111111111111111111111111111111111111111111111111111111111111","agentId":"a0000000000000001","label":"build","phase":"Build"}
+{"type":"result","key":"v2:1111111111111111111111111111111111111111111111111111111111111111","agentId":"a0000000000000001","result":"Built chunk 9.9 in two commits.\nabc1234 feat: add the widget\ndef5678 feat: wire the widget"}
+{"type":"started","key":"v2:2222222222222222222222222222222222222222222222222222222222222222","agentId":"a0000000000000002","label":"verify-1","phase":"Verify"}
+{"type":"result","key":"v2:2222222222222222222222222222222222222222222222222222222222222222","agentId":"a0000000000000002","result":"{\"findings\":[{\"title\":\"The widget drops an empty line\",\"severity\":\"high\",\"repro\":\"echo '' | widget\"},{\"title\":\"A typo in the help\",\"severity\":\"low\",\"repro\":\"widget --help\"}]}"}
+{"type":"started","key":"v2:3333333333333333333333333333333333333333333333333333333333333333","agentId":"a0000000000000003","label":"fix-1","phase":"Fix"}

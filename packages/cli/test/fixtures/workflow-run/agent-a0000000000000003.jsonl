@@ -1,0 +1,1 @@
+{"parentUuid":null,"isSidechain":true,"agentId":"a0000000000000003","type":"user","message":{"role":"user","content":"You are the builder."},"timestamp":"2026-10-21T14:03:00.000Z","cwd":"{{CWD}}","sessionId":"{{SESSION}}","version":"2.1.306","gitBranch":"main"}

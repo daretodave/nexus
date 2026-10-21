@@ -62,15 +62,16 @@ async function loadSdk() {
  * @param {(s: object) => void} o.onStatus
  * @param {() => string} [o.permissionMode]
  * @param {() => object} [o.env]   extra environment (NEXUS_SESSION, NEXUS_GH_LOGIN), read when a session starts
+ * @param {string} [o.resume]      a Claude Code session id the first turn resumes (Recover: a Workflow run's own)
  */
 export async function createProvider(o) {
   const sdk = await loadSdk();
   return sdk ? sdkProvider(sdk, o) : cliProvider(o);
 }
 
-function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', env = () => ({}) }) {
+function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', env = () => ({}), resume: seed = null }) {
   let session = null;
-  let lastSessionId = null;
+  let lastSessionId = seed;
 
   const canUseTool = async (toolName, input, opts) => {
     const id = opts.toolUseID || randomUUID();
@@ -162,9 +163,9 @@ function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, perm
  * CLI, and AskUserQuestion cannot be answered live (questions belong in the
  * oversight queue anyway).
  */
-function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'default', env = () => ({}) }) {
+function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'default', env = () => ({}), resume: seed = null }) {
   let child = null;
-  let lastSessionId = null;
+  let lastSessionId = seed;
 
   function start() {
     const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages', '--permission-mode', permissionMode()];
