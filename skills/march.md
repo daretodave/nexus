@@ -12,7 +12,7 @@ Pick the right verb each tick:
 ```
 unlabeled issues exist            →  /triage
 ELSE critique due (rate-limited)  →  /critique
-ELSE ready chunk                  →  /ship-a-chunk
+ELSE ready chunk                  →  /next top
 ELSE expand due + bold posture    →  /expand
 ELSE                              →  /iterate
 ```
@@ -76,7 +76,12 @@ return.
 - **3a. Ready chunk?** The first ready chunk in
   `plan/README.md`'s pick order (Asap lane, then the spec
   table; every `needs` done; nothing in the Held lane), or an
-  unchunked spec ahead of it → `skills/ship-a-chunk.md`.
+  unchunked spec ahead of it → `/next top`: read
+  `skills/next.md` and run it with the argument `top` (one
+  chunk, claimed, built by a delegated builder, gated, closed,
+  landed). March stays the 30-40 minute run; `/next` is the
+  one-chunk unit inside it. A cloud tick dispatches the
+  builder foreground (`run_in_background: false`).
 - **3b. Expand due?** Posture `bold` (see
   `plan/bearings.md`) AND (≥20 commits or >7 days since
   `plan/PHASE_CANDIDATES.md` last pass) AND at least one

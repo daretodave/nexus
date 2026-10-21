@@ -12,7 +12,7 @@ right-thing-to-do every tick:
 ```
 unlabeled issues exist          →  /triage
 ELSE critique due (rate-lim)    →  /critique
-ELSE ready chunk               →  /ship-a-chunk
+ELSE ready chunk               →  /next top
 ELSE pending data               →  /ship-data
 ELSE expand due + bold posture  →  /expand
 ELSE                            →  /iterate
@@ -121,9 +121,13 @@ in the **Held** lane, since a held or blocked chunk is a
 conversation waiting for `/oversight`, not work for this tick),
 or a spec ahead of it says `Not chunked yet.`:
 
-- Read `skills/ship-a-chunk.md`.
-- Execute its procedure end-to-end (it chunks an unchunked
-  spec first).
+- Run `/next top`: read `skills/next.md` and execute it
+  end-to-end with the argument `top` (one chunk, claimed,
+  built by a delegated builder, gated, closed, landed; it
+  chunks an unchunked spec first). March stays the 30-40
+  minute run; `/next` is the one-chunk unit inside it.
+- No `skills/next.md` in this repo (an older adoption):
+  `skills/ship-a-chunk.md` end-to-end instead.
 - Return.
 
 #### 3b. Pending data?
@@ -220,7 +224,7 @@ pnpm deploy:check                    # green-deploy condition
 # Skills it dispatches into
 skills/triage.md                     # Step 1 (cheapest)
 skills/critique.md                   # Step 2 (rate-limited)
-skills/ship-a-chunk.md               # Step 3a
+skills/next.md                       # Step 3a (/next top)
 skills/ship-data.md                  # Step 3b
 skills/expand.md                     # Step 3c (posture-gated)
 skills/iterate.md                    # Step 3d
