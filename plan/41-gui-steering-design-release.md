@@ -42,8 +42,10 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
   the age of an open question, and which session a merged
   inbox item belongs to. Everything through `tokens.css`
   variables, so the design port keeps it.
-- **The design** (held until the owner hands over the
-  export): port its tokens (color, type, space, radii,
+- **The design** (ported 2026-10-21 in 41.3; the patterns
+  not adopted are listed with their reasons in
+  `packages/cli/design/handoff/README.md`): port its tokens
+  (color, type, space, radii,
   elevation), motion (named curves and durations,
   reduced-motion fallbacks) and night/day themes verbatim
   into `packages/cli`; adopt every pattern unless clearly
@@ -64,8 +66,17 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
   answer or tug reaches its next turn, and only that session.
 - **A2** The stage shows each tug's path and state and each
   question's age and session.
-- **A3** `packages/cli` carries the export's tokens, motion
-  and both themes verbatim; every skipped pattern is logged.
+- **A6** Hover, focus, popover and motion states match their
+  boards in a live browser, in both themes, and the button
+  ink the cascade repair chose is confirmed or reverted.
+- **A7** The cockpit, heads-down and inbox draw the boards'
+  durations, diffstats, message times, estimates, phase marks
+  and countdowns from real data.
+- **A8** The fleet's last board details are drawn: each
+  star's own idle curve, the orphaned worktree's link, and
+  one rule for terminal sessions in the switcher.
+- **A9** The JS bundle loads per route under 500 kB and the
+  package ships only the font subsets it uses.
 
 ## Open questions
 
@@ -74,12 +85,32 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
   the next turn (default), or interrupt? Default: wait.
 
 ## Chunks
-Measure: 3 open · 2 closed · next A6
+Measure: 6 open · 3 closed · next A10
 
 - [ ] **41.1** Magical steering: link to a local Claude Code
   session · L · closes A1 · needs —
 - [ ] **41.2** Oversight tugs, visualized: path, state, age ·
   M · closes A2 · needs —
-- [ ] **41.3** Apply the Claude Design handoff to packages/cli
-  · L · closes A3 · needs —
-  - Waits on the owner's export (Held lane).
+- [ ] **41.6** Live fidelity pass: hover, popovers, motion,
+  both themes · S · closes A6 · needs —
+  - The 41.3 reviews compared static renders; check live the
+    tile hover and glow, the git-pop, the train dock, the
+    tidy and request popovers, the cockpit's tug and tether
+    lines (`--tray-y`), heads-down's 120 columns at narrow
+    widths, Plot below ~800px of height, dawn contrast.
+  - The boards draw `<button class="btn-primary">` with
+    `--text` ink (the reset outranks it); the app draws
+    on-accent ink (`repairCascade`). Default: keep the repair.
+- [ ] **41.7** Boards' times, durations, diffstats and marks
+  from real data · M · closes A7 · needs 40.1
+  - The stream and ledger carry tool durations and
+    diffstats, message times, the workflow junction, chunk
+    estimates and phase marks, the tug's default deadline;
+    CloudLoop counts "PRs opened" from `/api/cloud`.
+- [ ] **41.8** The fleet's last details: idle curves, orphan
+  link, switcher rule · S · closes A8 · needs 40.6
+- [ ] **41.9** A lighter package: routes split, fonts
+  trimmed · S · closes A9 · needs —
+  - `React.lazy` per route (the bundle is 556 kB); ship
+    latin and latin-ext `@fontsource` subsets only; subset
+    the mono symbol webfonts to their ranges.

@@ -84,13 +84,18 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 - **A9** `npx @usenexus/cli run` answers one prompt headless.
 - **A10** The GUI resumes a Workflow from its transcript
   folder.
+- **A11** Run mode and owner mode live in
+  `.nexus/local.json`, read and written through
+  `/api/local` by Settings and the cockpit alike.
+- **A12** The board's grip reorders chunks within a spec,
+  and Reassign picks its target from the claimants.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 10 open · 0 closed · next A11
+Measure: 12 open · 0 closed · next A13
 
 - [ ] **40.1** One server, many sessions, deep links, a reused
   launch · M · closes A1 · needs —
@@ -112,3 +117,12 @@ Measure: 10 open · 0 closed · next A11
   A9 · needs —
 - [ ] **40.10** Recover from a Workflow transcript folder · M
   · closes A10 · needs 40.1
+- [ ] **40.11** `/api/local`: run mode and owner mode, one
+  writer · S · closes A11 · needs 40.1
+  - Settings reads run mode through `/api/prefs` today and the
+    cockpit's run-mode menu writes prefs directly; both move
+    to `ui/run-mode.js` over `/api/local`.
+- [ ] **40.12** The board's grip reorders; Reassign picks a
+  target · M · closes A12 · needs 40.3, 40.5
+  - The grip is drawn but inert in 41.3. A reorder lands as a
+    pending edit in contributor mode.

@@ -50,3 +50,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 41.4 · @usenexus/cli 0.1.0 on npm from its tag, with provenance · de9b9839..f9fec5b0
 - 2026-10-21 · 38.4 · The owner's checkout arms the pre-push policy and its allowlist covers an overnight /heads-down · plan only
 - 2026-10-21 · 41.5 · The Trusted Publisher reads validated and the hand-published 0.0.1 and 0.0.0-stage are deprecated (owner, on npmjs.com) · plan only
+- 2026-10-21 · 41.3 · Claude Design's handoff is the GUI: every screen, both themes · d8a0601c..d476b8d4

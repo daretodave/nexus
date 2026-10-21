@@ -29,7 +29,6 @@ needs are done):
 **Held** (waits on the owner's word; never picked until the
 line goes):
 
-- **41.3** waits on the Claude Design export from the owner
 - **35.8** `CLAUDE.md` is the owner's configuration
 - **35.9** a release: the owner tags v2.0.0
 - **38.3** rulesets on the owner's repo
@@ -46,8 +45,8 @@ line goes):
 | 37 | Sessions carry their names; every skill lands per owner mode | [37-sessions-and-landing.md](37-sessions-and-landing.md) | planned · priority 3 | 5 left |
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 3 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 4 left |
-| 40 | GUI: the fleet, the plan board, git and Actions | [40-gui-fleet-and-board.md](40-gui-fleet-and-board.md) | planned · priority 2 | 10 left |
-| 41 | GUI: steering, tugs, the design, the release | [41-gui-steering-design-release.md](41-gui-steering-design-release.md) | planned | 3 left |
+| 40 | GUI: the fleet, the plan board, git and Actions | [40-gui-fleet-and-board.md](40-gui-fleet-and-board.md) | planned · priority 2 | 12 left |
+| 41 | GUI: steering, tugs, the design, the release | [41-gui-steering-design-release.md](41-gui-steering-design-release.md) | planned | 6 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
