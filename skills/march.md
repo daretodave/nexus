@@ -49,7 +49,7 @@ urgent=$(gh issue list --repo daretodave/nexus --state open \
   --label loop:do --json number --jq 'length' 2>/dev/null || echo 0)
 
 unlabeled=$(gh issue list --repo daretodave/nexus --state open \
-  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
+  --search "-label:triage:loop-queued -label:triage:planned -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number --jq 'length' 2>/dev/null || echo 0)
 ```
 

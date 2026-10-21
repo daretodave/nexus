@@ -15,6 +15,10 @@ triage, they pile up. With triage:
   it.
 - Subsequent `/iterate` or `/ship-data` ticks drain the
   backlog.
+- An issue inside an open spec extends that spec through a
+  pending `## Add` (extend before you add, as `/plot` does);
+  one an open pull request already covers gets "Already in PR
+  #N".
 - Addressing commit closes the issue automatically.
 
 Cheap when idle (zero issues → exits in <1s). Non-blocking
@@ -62,11 +66,13 @@ default pass.
 | Label | Meaning |
 |---|---|
 | `triage:loop-queued` | The loop will address. Routed into the right backlog. |
+| `triage:planned` | Inside an open spec: an `## Add` to it is pending, or an open PR already covers it. |
 | `triage:needs-user` | Actionable but requires user judgment. Surfaces in `oversight`. |
 | `triage:closed` | Won't fix / duplicate / spam. Issue is closed with a comment. |
 | `triage:reviewed` | Seen but no action this pass. Re-eval on `/triage all`. |
 
-Plus a category label paired with `triage:loop-queued`:
+Plus a category label paired with `triage:loop-queued` or
+`triage:planned`:
 
 - `bug`, `enhancement`, `content`, `data`, `docs`, `seo`,
   `a11y`, `perf`
@@ -86,7 +92,7 @@ Load env, verify auth (§3). Exit 3 if missing.
 gh issue list \
   --repo "$GH_REPO" \
   --state open \
-  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
+  --search "-label:triage:loop-queued -label:triage:planned -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number,title,body,labels,author,createdAt,updatedAt,comments \
   --limit 50
 ```
@@ -121,17 +127,64 @@ For each issue, decide:
    `docs` | `seo` | `a11y` | `perf`.
 2. **Routing**:
    - `triage:loop-queued` if the loop can address autonomously.
+   - `triage:planned` if Step 2b files it inside an open spec
+     or finds it in an open pull request.
    - `triage:needs-user` if user judgment needed.
    - `triage:closed` if duplicate / spam / won't-fix.
    - `triage:reviewed` if waiting on something else.
 3. **Backlog target** (only `loop-queued`):
    - bug / seo / a11y / perf / content / docs → `plan/AUDIT.md`
    - data → `data/BACKLOG.md`
-   - small enhancement → a new chunk in the spec it belongs
-     to (with a new A-ID; fix the Measure line), or a new
-     unchunked spec if none fits
+   - inside an open spec → Step 2b (an `## Add` to it)
+   - small enhancement no spec owns → a new unchunked spec
    - large / off-strategy enhancement → re-route to
      `triage:needs-user`
+
+### Step 2b — Extend before you add
+
+Every `loop-queued` issue first asks whether an open spec
+already owns its area:
+
+```bash
+node scripts/plan/triage-match.mjs "$NUM"   # --json for the scores
+```
+
+It scores the issue against each spec in `plan/` (keywords
+from the title, the open chunk lines and `## Design`; a
+threshold, or the spec named outright) and reads the open
+pull requests' pending files (`gh pr list`, `gh pr diff`,
+read only). The script ranks; you judge.
+
+| Verdict | Do |
+|---|---|
+| `covered` | Comment "Already in PR #<pr>", label `triage:planned`, write nothing. |
+| `spec` | The Design or a chunk names the area: write the Add below, label `triage:planned` + category. Words that match but an area that doesn't: route per Step 2. |
+| `ambiguous` | Pick the spec whose area it is, or route per Step 2. |
+| `none` | Route per Step 2. |
+
+The Add is one pending file, `plan/pending/triage-<N>.md`
+(the format: `plan/pending/README.md`). Never edit the spec,
+the roadmap or the archive directly:
+
+```markdown
+---
+date: <YYYY-MM-DD>
+---
+## Add plan/NN-<slug>.md
+~~~ acceptance
+- **A?issue-<N>** <what works once it's fixed> (#<N>).
+~~~
+~~~ chunks
+- [ ] **NN.?issue-<N>** <title> (#<N>) · S · closes A?issue-<N> · needs —
+~~~
+```
+
+Work to do takes both parts; a missing promise, the
+acceptance item alone; a note the spec's builder should read,
+`~~~ section Findings` with `- [#<N>](<issue url>) <one
+line>`. Comment the placeholder and the spec: "Planned in
+`plan/NN-<slug>.md` as `NN.?issue-<N>`; it takes its number
+when the plan settles." The owner's settle numbers it.
 
 ### Step 3 — Apply labels + comment + (close)
 
@@ -171,11 +224,13 @@ gh issue close "$NUM" --repo "$GH_REPO" --reason "not planned"
 ### Step 5 — Commit + land (if any backlog changes)
 
 ```bash
-git add plan/AUDIT.md data/BACKLOG.md plan/README.md plan/[0-9]*-*.md
+git add plan/AUDIT.md data/BACKLOG.md plan/pending/triage-*.md plan/[0-9]*-*.md
 git commit -m "$(cat <<'EOF'
 triage: <K> issues processed (<L> queued, <M> user-call, <N> closed)
 
 - #<num> → loop-queued (bug, plan/AUDIT.md)
+- #<num> → planned (bug, ## Add plan/NN-<slug>.md as NN.?issue-<num>)
+- #<num> → planned (already in PR #<pr>)
 - #<num> → needs-user (enhancement)
 - #<num> → closed (duplicate of #X)
 
@@ -197,7 +252,7 @@ pnpm deploy:check
 ### Step 7 — Done
 
 ```
-triage processed: <K>. queued: <L>. needs-user: <M>. closed: <N>.
+triage processed: <K>. queued: <L>. planned: <count>. needs-user: <M>. closed: <N>.
 plan/AUDIT.md +<X> rows. data/BACKLOG.md +<Y> rows.
 loop next: <iterate | ship-data | ship-a-chunk | march>.
 ```
@@ -257,7 +312,7 @@ check:
 
 ```bash
 gh issue list --repo "$GH_REPO" --state open \
-  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
+  --search "-label:triage:loop-queued -label:triage:planned -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number --jq 'length'
 ```
 
@@ -276,6 +331,7 @@ export GH_REPO=$(awk -F= '/^GH_REPO=/ {sub(/^GH_REPO=/, ""); print; exit}' .env)
 GH_REPO=${GH_REPO:-<REPO_SLUG>}
 
 # Operations
+node scripts/plan/triage-match.mjs <N>   # spec | ambiguous | none | covered (--text, --json, --no-prs)
 gh issue list --repo "$GH_REPO" --state open --search "..."
 gh issue edit <N> --repo "$GH_REPO" --add-label "..."
 gh issue comment <N> --repo "$GH_REPO" --body "..."

@@ -9,7 +9,9 @@
 Issues are the kit's inbox: adopters reporting friction,
 lessons from real projects, the loop's own crash reports.
 Triage classifies and routes them so `/iterate` and
-`/ship-a-chunk` drain them as ordinary queue rows.
+`/ship-a-chunk` drain them as ordinary queue rows. An issue
+inside an open spec extends that spec instead (extend before
+you add, as `/plot` does).
 
 ## 2. Invocation
 
@@ -32,7 +34,26 @@ Triage classifies and routes them so `/iterate` and
    `.github/ISSUE_TEMPLATE/*.yml`? The form's label (`bug`,
    `lesson`, `enhancement`, or `triage:needs-user` direct) IS
    the classification — skip re-deriving it from prose.
-4. **Route:**
+4. **Extend before you add** (every class but `question`):
+   `node scripts/plan/triage-match.mjs <N>` scores the issue
+   against the open specs (title, open chunk lines, Design) and
+   reads open PRs' pending files (gh, read only).
+   - `covered` → comment "Already in PR #<pr>", label
+     `triage:planned`, write nothing.
+   - `spec`, or `ambiguous` where you judge one fits (its
+     Design or a chunk names the area) → one pending file,
+     `plan/pending/triage-<N>.md` (`date:` front matter;
+     `plan/pending/README.md`), one `## Add plan/NN-<slug>.md`:
+     work to do → `~~~ acceptance` `- **A?issue-<N>** …` and
+     `~~~ chunks` `- [ ] **NN.?issue-<N>** … (#<N>) · S · closes
+     A?issue-<N> · needs —`; a missing promise → the acceptance
+     item alone; a note for the spec's builder → `~~~ section
+     Findings` `- [#<N>](<url>) <one line>`. Label
+     `triage:planned` plus the class; comment the placeholder
+     and the spec ("settles to a number on main"). A score the
+     words earn but the area doesn't → route as below.
+   - `none` → route as below.
+5. **Route:**
    - **`loop:do` (the concierge lane)** — the user flagged
      "this one, now": route as below but file the AUDIT row
      at [HIGH] with `- priority: user-flagged (loop:do)`
@@ -49,10 +70,10 @@ Triage classifies and routes them so `/iterate` and
    - question → answer in a comment, label
      `triage:reviewed`; close politely if fully answered
      (`triage:closed`).
-5. **Comment honestly** on every routed issue: what label,
+6. **Comment honestly** on every routed issue: what label,
    what queue, what happens next. Never close without a
    comment.
-6. **Commit + land** the queue changes:
+7. **Commit + land** the queue changes and pending files:
    `triage: <K> issues routed`.
 
 ## 4. Hard rules
@@ -63,6 +84,9 @@ Triage classifies and routes them so `/iterate` and
 4. Labels created idempotently (`gh label create`, swallow
    "already exists").
 5. No empty commits — zero routed = zero commit.
+6. A spec is extended only through `plan/pending/`, never by
+   editing it, the roadmap or the archive; the owner's settle
+   (`npm run settle`) numbers the placeholders.
 
 ## 5. Failure modes
 
@@ -76,8 +100,10 @@ Triage classifies and routes them so `/iterate` and
 
 ```bash
 gh issue list --repo daretodave/nexus --state open \
-  --search "-label:triage:loop-queued -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
+  --search "-label:triage:loop-queued -label:triage:planned -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number,title
+node scripts/plan/triage-match.mjs <N>   # spec | ambiguous | none | covered (--text, --json, --no-prs)
+plan/pending/triage-<N>.md           # the ## Add to the spec it belongs to
 plan/AUDIT.md                        # routing target
 plan/CANDIDATES.md             # lesson-shaped routing target
 git commit -m "triage: <K> issues routed"   # then land per owner mode (next/land.md §6)
