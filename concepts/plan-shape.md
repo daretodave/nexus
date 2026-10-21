@@ -11,7 +11,7 @@
 This is the plan shape from nexus v2 onward. v1 planned in
 phases (a build-plan status block plus one brief per phase);
 that shape is frozen at the `v1.0.0` tag, and
-`playbooks/upgrade.md` moves a v1
+[`playbooks/upgrade.md`](../playbooks/upgrade.md) moves a v1
 plan to this one. The shape was learned from a mature adopter
 that ran it for months with several people and loops building
 from one plan at once.
@@ -156,21 +156,24 @@ each adopter records which one it follows:
 ```
 # plan/nexus.lock: the nexus kit version this repo follows.
 kit: nexus
-version: 2.0.0
-ref: v2.0.0
+version: 2.0.0-pre
+ref: main
 shape: chunks
 adopted: 2026-10-20
 ```
 
+(`ref:` becomes the `v2.0.0` tag once v2 is released; until
+then v2 adopters follow `main`.)
+
 A repo with no lock file is on v1 (phases). Skills read the
 lock's `shape:` before they read the plan; to stay on v1, pin
 `ref: v1.0.0` and read the kit at that tag. The move is in
-`playbooks/upgrade.md`.
+[`playbooks/upgrade.md`](../playbooks/upgrade.md).
 
 ## See also
 
 - [`concepts/architecture.md`](architecture.md): where the
   plan sits among the three layers.
-- `playbooks/upgrade.md`: v1 → v2.
+- [`playbooks/upgrade.md`](../playbooks/upgrade.md): v1 → v2.
 - `nexus/templates/plan/`: the roadmap, archive, lock and two
   starter specs.

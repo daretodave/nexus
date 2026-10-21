@@ -193,10 +193,12 @@ loop after the roadmap.
 The plan is specs, chunks and acceptance IDs: one spec per
 initiative, each ending in chunks sized to one session (the
 model: [`concepts/plan-shape.md`](../concepts/plan-shape.md)).
-Copy the roadmap, the archive and the two starter specs in:
+Copy the roadmap, the archive, the lock and the two starter
+specs in:
 
 ```bash
 cp ../nexus/templates/plan/README.md ../nexus/templates/plan/ARCHIVE.md \
+  ../nexus/templates/plan/nexus.lock \
   ../nexus/templates/plan/01-bootstrap.md \
   ../nexus/templates/plan/02-canonical-sibling.md plan/
 ```
@@ -205,9 +207,14 @@ The PowerShell twin, Windows native:
 
 ```powershell
 Copy-Item ..\nexus\templates\plan\README.md, ..\nexus\templates\plan\ARCHIVE.md, `
+  ..\nexus\templates\plan\nexus.lock, `
   ..\nexus\templates\plan\01-bootstrap.md, `
   ..\nexus\templates\plan\02-canonical-sibling.md plan\
 ```
+
+Set `adopted:` in `plan/nexus.lock` to today's date: the lock
+records which kit version (and plan shape) this repo follows,
+and [`upgrade.md`](./upgrade.md) is how it ever changes.
 
 `plan/README.md` is what the loop reads: its lanes (Asap,
 Held) and one row per spec, in build order. Specs group into:

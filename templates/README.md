@@ -16,6 +16,7 @@ templates/
 │   ├── 01-bootstrap.md                (starter spec: the bootstrap)
 │   ├── 02-canonical-sibling.md        (starter spec: the first feature surface)
 │   ├── ARCHIVE.md                     (one line per finished chunk; append-only)
+│   ├── nexus.lock                     (the kit version + plan shape this repo follows)
 │   ├── bearings.md
 │   ├── AUDIT.md
 │   ├── CRITIQUE.md

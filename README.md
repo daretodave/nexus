@@ -426,6 +426,7 @@ nexus/
 │   ├── cloud-loop.md                  # opt-in GitHub Actions loop
 │   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
 │   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
+│   ├── upgrade.md                     # v1 (phases) → v2 (specs + chunks); pin with plan/nexus.lock
 │   ├── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos
 │   └── workspace.md                   # variant: un-versioned root + org-per-project, past two repos
 ├── concepts/
@@ -467,6 +468,7 @@ nexus/
     │   ├── 01-bootstrap.md            # starter spec (design, acceptance IDs, chunks)
     │   ├── 02-canonical-sibling.md    # starter spec: the first feature surface
     │   ├── ARCHIVE.md                 # one line per finished chunk
+    │   ├── nexus.lock                 # the kit version + plan shape this repo follows
     │   ├── bearings.md
     │   ├── AUDIT.md
     │   ├── CRITIQUE.md
