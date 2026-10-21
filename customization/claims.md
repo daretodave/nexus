@@ -105,6 +105,10 @@ written before the star keeps parsing.
 - **A spec and its chunks exclude each other.** A claim on
   `16` (the spec, while it is being chunked or held whole) and
   a claim on `16.3` by someone else refuse each other.
+  Holding the spec (`assign 16 --to … --login …`) covers
+  every chunk it ever lists, those a later `## Add` settles
+  into it too (`plan/pending/README.md`), so hold the spec,
+  not a list of its chunk ids, when one person owns all of it.
 - **The owner claims many, a contributor one.** The owner
   (`scripts/owner.mjs`: an untracked `.owner` at the primary
   checkout, owner mode not switched off in

@@ -153,7 +153,8 @@ says: Empty query shows the empty state
 ```
 
 plus optional `## Edit <path>` sections (exact old text, found
-exactly once at settle), `## Decisions` (`D?<slug>`, numbered at
+exactly once at settle), `## Add plan/NN-<topic>.md` (new work
+for an open spec, below), `## Decisions` (`D?<slug>`, numbered at
 settle) and `## Footguns`. Two branches never write the same
 file, so the plan never conflicts. Only the owner settles: on
 main, `node scripts/plan/settle.mjs` folds every pending file
@@ -171,6 +172,22 @@ rules and the per-repo config (`plan/settle.json`) are in
 `templates/scripts/plan/`. The mechanism was learned from a
 mature adopter whose loops and people closed chunks in
 parallel for months.
+
+### Extending a spec from a branch
+
+New work for an open spec (an A-ID, a chunk, a question, a
+paragraph of Design) never quotes the spec's moving lines: its
+last A-ID or chunk, its Measure line, the roadmap's `N left`.
+Every branch extending that spec would quote the same ones,
+and only the first would settle. The pending file carries an
+`## Add plan/NN-<topic>.md` instead, its ids written
+`A?<slug>` and `NN.?<slug>`; settle numbers them past the spec
+and `ARCHIVE.md` in merge order, places each part at the end
+of its section and keeps the counts, so a dozen branches can
+add to one spec at once. `## Edit` stays for rewriting text
+that is already there (two rewrites of one paragraph still
+collide), and a new chunk can't `needs` one still in another
+open pull request. This too was learned from a mature adopter.
 
 ## The gate
 
@@ -194,7 +211,7 @@ verify composition) makes the shape mechanical:
   is a failure, never a skipped check.
 
 It reads `plan/` as it will read once settled: each pending
-file's `## Edit` sections applied in memory
+file's `## Edit` and `## Add` sections applied in memory
 (`scripts/plan/settled.mjs`), so a contributor's plot passes
 before the owner settles it, and a pending file settle would
 skip is a failure.
