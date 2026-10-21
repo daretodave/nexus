@@ -99,7 +99,8 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
   const asked = requestedNames(status);
   return (status?.secrets || []).map((s) => {
     const states = Object.fromEntries(DESTS.map((d) => [d, destState(s, d)]));
-    const stale = DESTS.filter((d) => states[d] === 'stale');
+    // What Sync pushes: a place holding an older value, or one the value never reached (a set value, missing there).
+    const stale = s.set ? DESTS.filter((d) => d !== 'local' && (states[d] === 'stale' || states[d] === 'missing')) : [];
     const where = DESTS.filter((d) => states[d] === 'set' || states[d] === 'stale').map((d) => SHORT[d]);
     const ticks = DESTS.filter((d) => states[d] !== 'none').map((d) => SHORT[d]);
     const req = asked.get(s.name);
@@ -154,9 +155,11 @@ export function destRows(status, { repo = '' } = {}) {
   });
 }
 
-/** Every out-of-sync place: [{ name, destinations }] (Sync N). */
+/** Every place behind the vault: [{ name, destinations }] (Sync N): an older value there, or a set value never pushed. */
 export function staleList(status) {
-  return (status?.secrets || []).map((s) => ({ name: s.name, destinations: DESTS.filter((d) => destState(s, d) === 'stale') })).filter((x) => x.destinations.length);
+  return (status?.secrets || []).filter((s) => s.set)
+    .map((s) => ({ name: s.name, destinations: DESTS.filter((d) => d !== 'local' && ['stale', 'missing'].includes(destState(s, d))) }))
+    .filter((x) => x.destinations.length);
 }
 
 const RING = { local: 'local', workspace: 'workspace', keychain: 'keychain' };

@@ -281,6 +281,8 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
    */
   async function markRequests(durable) {
     if (!durable.some((d) => parseRequest(d.text))) return durable;
+    // A secret request is the owner's: a contributor's inbox never asks them for a project secret.
+    if (!owner()) return durable.filter((d) => !parseRequest(d.text));
     let has = () => false;
     try {
       const k = await kit();

@@ -236,3 +236,15 @@ test('Start empty writes an empty manifest once (owner only); one that exists st
     await s2.app.close();
   }
 });
+
+test('a contributor\'s inbox never carries a secret request', async () => {
+  const { repo } = vaultRepo({ owner: false });
+  request(repo, '07.1', ['VERCEL_TOKEN']);
+  const { app, call } = await serve(repo, fakeRun().run);
+  try {
+    const rows = (await call('GET', '/api/inbox')).json;
+    assert.equal(rows.filter((x) => x.src === 'durable' && /secret request/.test(x.question)).length, 0);
+  } finally {
+    await app.close();
+  }
+});
