@@ -130,13 +130,6 @@ the vault arrives):
 
 ## Acceptance
 
-- **A5** `nexus secrets run -- <cmd>` gives the command the
-  declared values in its environment and nothing else.
-- **A6** The guard hook blocks reading the vault files,
-  echoing a declared variable, and a vault value in argv, with
-  self-tests.
-- **A7** A gate leg refuses a staged diff that contains a
-  vault value, with tests.
 - **A13** The GUI server lists names and status, takes a value
   through a masked POST into the vault and sinks, and masks
   vault values in every transcript it serves or logs.
@@ -151,15 +144,10 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 5 open · 10 closed · next A16
+Measure: 2 open · 13 closed · next A16
 
-- [ ] **42.3** `nexus secrets run` and the rails · M ·
-  closes A5, A6, A7 · needs —
-  - The run wrapper, the guard hook rules with self-tests,
-    and the gate leg that scans a staged diff for vault
-    values.
 - [ ] **42.7** The GUI server's secrets API and transcript
-  masking · M · closes A13 · needs 42.3
+  masking · M · closes A13 · needs —
 - [ ] **42.8** The vault in the GUI, from the design export ·
   L · closes A14 · needs 42.7
   - The export arrived 2026-10-21 (the handoff's second
