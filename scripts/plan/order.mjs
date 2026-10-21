@@ -97,7 +97,8 @@ export function simulate({ readme, specs, closed = new Set(), claims = {}, base 
     left.delete(c.id);
     taken.add(c.id);
     hours += HOURS[c.size] ?? 0;
-    next.push({ ...c, lane, eta: hours });
+    // The listed copy carries the spec number; a chunk found through its spec is the bare parsed one.
+    next.push({ ...(listed.get(c.id) ?? c), lane, eta: hours });
   };
   for (;;) {
     let pick = null;

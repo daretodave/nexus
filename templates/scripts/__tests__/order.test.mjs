@@ -58,6 +58,9 @@ describe('the simulated order', () => {
   it('builds priority rows before table order, a pick unblocking what needs it', () => {
     const sim = simulate({ readme: readme(), specs: specs() });
     assert.deepEqual(ids(sim.next), ['09.1', '09.2', '07.1', '07.2', '07.3']);
+    // every pick names its spec, whichever lane found it (the GUI's plan board groups by it)
+    assert.deepEqual(sim.next.map((c) => c.spec), ['09', '09', '07', '07', '07']);
+    assert.deepEqual(simulate({ readme: readme('- 07'), specs: specs() }).next.map((c) => c.spec), ['07', '07', '09', '09', '07']);
     assert.deepEqual(sim.next.map((c) => c.eta), [5, 6, 7, 9.5, 10.5]);
     assert.deepEqual(sim.blocked, []);
   });
