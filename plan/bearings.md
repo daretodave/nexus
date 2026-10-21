@@ -106,7 +106,7 @@ to the guard hook too.
 2. A doc that promises a file the kit doesn't ship is a HIGH
    finding — either ship the file or fix the promise; never
    leave the gap.
-3. Lessons from real adopters (`../semilayer`, `../kintilla`,
+3. Lessons from real adopters (sibling repos beside the kit,
    issues filed by users) outrank speculative features. When a
    sibling repo's `lessons.md` / `NEXUS_LESSONS.md` and the
    kit disagree, reality wins.

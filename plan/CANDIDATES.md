@@ -133,7 +133,7 @@ kit + sibling surveys.
 
 ### [promoted 2026-08-23 → phase 22] [score 8.8] Workspace-of-repos as a first-class adoption path
 - proposed: 2026-07-03
-- source signals: kintilla AND semilayer independently converged
+- source signals: two sibling adopters independently converged
   on the same topology — un-versioned workspace root,
   org-per-project GitHub layout, `plan/` its own repo, sibling
   product repos — which the kit only half-documents
@@ -235,7 +235,7 @@ kit + sibling surveys.
 
 ### [ ] [score 7.9] Handshake runbook profile for setup/
 - proposed: 2026-07-03
-- source signals: kintilla's runbooks follow a proven handshake
+- source signals: a sibling adopter's runbooks follow a proven handshake
   the kit's setup/ paradigm doesn't capture: "human dashboard
   steps (~N min) -> drop these exact keys into the env file ->
   say 'X is in' -> what the agent wires after the drop".
@@ -393,7 +393,7 @@ kit + sibling surveys.
 ### [ ] [score 7.4] plan/ carries the workspace: resurrection files + doctor
 - proposed: 2026-07-03
 - source signals: the un-versioned root's obvious objection —
-  lose the machine, lose the topology. kintilla's plan repo
+  lose the machine, lose the topology. a sibling adopter's plan repo
   already half-plays this role.
 - rationale: make plan/ the versioned carrier: canonical copies
   of the root files, a names-only keys manifest, a clone map,
@@ -411,7 +411,7 @@ kit + sibling surveys.
 
 ### [ ] [score 7.3] Workspace-aware /bootstrap + /oversight
 - proposed: 2026-07-03
-- source signals: kintilla's cloudflare runbook fans one
+- source signals: a sibling adopter's cloudflare runbook fans one
   workspace token out to repo Actions secrets by hand.
 - rationale: teach the executor the two rings — env resolution
   walks up (process env -> repo .env -> parent .env.workspace,
@@ -505,7 +505,7 @@ kit + sibling surveys.
 
 ### [ ] [score 6.8] closeloop: thank the humans who file issues
 - proposed: 2026-07-02
-- source signals: kintilla's `.claude/tools/closeloop.mjs`
+- source signals: a sibling adopter's `.claude/tools/closeloop.mjs`
   (Postmark batch thank-you emails to issue reporters,
   dry-run default, tested).
 - rationale: the address loop closes with the fix; closing
@@ -519,7 +519,7 @@ kit + sibling surveys.
 
 ### [ ] [score 6.1] Critique-household pattern for auth-aware critique
 - proposed: 2026-07-02
-- source signals: kintilla's planned `/visit` seals an
+- source signals: a sibling adopter's planned `/visit` seals an
   anonymous "critique household" so the observer never
   consents to analytics (no GA4 pollution) — a pattern
   auth-aware-critique.md doesn't cover.
@@ -532,7 +532,7 @@ kit + sibling surveys.
 
 ### [ ] [score 5.9] Staged hardening for verify legs
 - proposed: 2026-07-02
-- source signals: kintilla's `check.mjs` `*_IS_ERROR` flags —
+- source signals: a sibling adopter's `check.mjs` `*_IS_ERROR` flags —
   new invariants start as warnings, flip to errors once the
   corpus drains.
 - rationale: lets adopters (and this repo) add aggressive lint
