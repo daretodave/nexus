@@ -1,7 +1,7 @@
 // worktree.mjs: a link out of a worktree keeps what it points at, a worktree holding work git doesn't or a locked one
 // stays whole, a branch main holds goes and one it doesn't stays, neither the main checkout nor a stranger path is a
-// target, and `list` sorts worktrees into safe, holds work and locked. Each case builds a scratch repository in the
-// temp folder (offline, but it spawns git: the opt-in scripts-git leg).
+// target, and `list` sorts worktrees into safe, holds work and locked, saying whether a lock's pid lives. Each case
+// builds a scratch repository in the temp folder (offline, but it spawns git: the opt-in scripts-git leg).
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import { finish, parseWorktrees } from '../worktree.mjs';
+import { finish, parseWorktrees, pidAlive } from '../worktree.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'worktree.mjs');
 const KEPT = "the owner's file";
@@ -67,6 +67,23 @@ describe('worktree.mjs', () => {
   it('parses the porcelain listing, the main checkout first', () => {
     const rows = parseWorktrees('worktree /r\nHEAD abc\nbranch refs/heads/main\n\nworktree /r-wt/7\nHEAD def\ndetached\nlocked by pid 9\n');
     assert.deepEqual(rows.map((r) => [r.path, r.branch, r.locked]), [['/r', 'main', false], ['/r-wt/7', undefined, true]]);
+    assert.deepEqual(rows.map((r) => [r.lockReason, r.pid]), [[null, null], ['by pid 9', 9]]);
+  });
+
+  it('reads a pid out of the usual lock reasons, and none from a bare lock', () => {
+    const lock = (reason) => parseWorktrees(`worktree /r\n\nworktree /w\nlocked${reason === null ? '' : ` ${reason}`}\n`)[1];
+    assert.equal(lock('claude agent agent-a1 (pid 4242)').pid, 4242);
+    assert.equal(lock('pid=77').pid, 77);
+    assert.equal(lock('PID: 31').pid, 31);
+    assert.equal(lock('moving it by hand').pid, null);
+    assert.equal(lock(null).pid, null);
+  });
+
+  it('tells a live pid from a dead one', () => {
+    assert.equal(pidAlive(process.pid), true);
+    const gone = spawnSync(process.execPath, ['-e', '0']).pid;
+    assert.equal(pidAlive(gone), false);
+    assert.equal(pidAlive(null), null);
   });
 
   it('unlinks every link before anything deletes, so a link out keeps its target', () => {
@@ -132,6 +149,23 @@ describe('worktree.mjs', () => {
     assert.equal(res.code, 0, res.err);
     const rows = JSON.parse(res.out);
     assert.deepEqual(rows.map((r) => [r.branch, r.verdict]).sort(), [['next/02.1', 'safe'], ['next/02.2', 'holds work']]);
+  });
+
+  it("says whether a locked worktree's pid still lives, in the text and the --json", () => {
+    const gone = spawnSync(process.execPath, ['-e', '0']).pid;
+    git(repo, 'worktree', 'lock', '--reason', `claude agent agent-x (pid ${gone})`, worktree('wt-dead', 'next/03.1'));
+    git(repo, 'worktree', 'lock', '--reason', `claude agent agent-y (pid ${process.pid})`, worktree('wt-live', 'next/03.2'));
+    git(repo, 'worktree', 'lock', worktree('wt-bare', 'next/03.3'));
+    const rows = JSON.parse(run(['list', '--json']).out);
+    assert.deepEqual(
+      rows.map((r) => [r.branch, r.verdict, r.pid, r.pidAlive]).sort(),
+      [['next/03.1', 'locked', gone, false], ['next/03.2', 'locked', process.pid, true], ['next/03.3', 'locked', null, null]],
+    );
+    const res = run(['list']);
+    assert.equal(res.code, 0, res.err);
+    assert.match(res.out, new RegExp(`next/03\\.1 .*· locked by pid ${gone} \\(dead\\)`));
+    assert.match(res.out, new RegExp(`next/03\\.2 .*· locked by pid ${process.pid} \\(alive\\)`));
+    assert.match(res.out, /next\/03\.3 .*· locked\r?$/m);
   });
 
   it('prints the usage for a bad call', () => {

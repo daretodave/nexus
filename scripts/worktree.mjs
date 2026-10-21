@@ -12,7 +12,8 @@
 //     finishes any folder git left once git no longer lists it, and deletes the branch only when main or origin/main
 //     holds it (a branch main doesn't hold is kept and named).
 //   - `list` reports every linked worktree: branch, locked, dirty files, commits beyond origin/main, and a verdict
-//     (`safe` to close, `holds work`, `locked`), so /tidy can offer the safe ones in one question.
+//     (`safe` to close, `holds work`, `locked`), so /tidy can offer the safe ones in one question. A locked one's
+//     reason naming a pid says whether that pid still lives (a dead one is a stale lock: `git worktree unlock` it).
 //
 //   node scripts/worktree.mjs close <path> [<path> …] [--repo <checkout>]
 //   node scripts/worktree.mjs list [--json] [--repo <checkout>]
@@ -43,22 +44,45 @@ export function worktrees(repo) {
   return parseWorktrees(res.out);
 }
 
-/** The porcelain listing as { path, head, branch, locked, prunable }, the main checkout first. */
+/**
+ * The porcelain listing as { path, head, branch, locked, lockReason, pid, prunable }, the main checkout first. `pid` is
+ * the number a lock's reason names (`pid 4242`, `pid=4242`, `PID: 4242`, as an agent harness locks its worktree), or
+ * null.
+ */
 export function parseWorktrees(text) {
   return text
     .split(/\r?\n\s*\r?\n/)
     .map((block) => {
       const lines = block.split(/\r?\n/);
       const field = (name) => lines.find((l) => l.startsWith(`${name} `))?.slice(name.length + 1);
+      const locked = lines.some((l) => l === 'locked' || l.startsWith('locked '));
+      const lockReason = field('locked') ?? null;
+      const pid = Number(lockReason?.match(/\bpid\s*[:=#]?\s*(\d+)/i)?.[1]) || null;
       return {
         path: field('worktree'),
         head: field('HEAD'),
         branch: field('branch')?.replace(/^refs\/heads\//, ''),
-        locked: lines.some((l) => l === 'locked' || l.startsWith('locked ')),
+        locked,
+        lockReason,
+        pid,
         prunable: lines.some((l) => l === 'prunable' || l.startsWith('prunable ')),
       };
     })
     .filter((w) => w.path);
+}
+
+/**
+ * Whether a process lives: true, false, or null for no pid. Signal 0 only asks (Node maps it to OpenProcess and
+ * GetExitCodeProcess on Windows, so no tasklist is needed); EPERM is a live process someone else owns.
+ */
+export function pidAlive(pid) {
+  if (!pid) return null;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e?.code === 'EPERM';
+  }
 }
 
 /** Every link under `dir` (a symlink, or a junction on Windows), never descending into one. */
@@ -93,7 +117,7 @@ export function survey(repo) {
     const dirty = exists ? git(w.path, 'status', '--porcelain', '--untracked-files=all').out.split(/\r?\n/).filter(Boolean).length : 0;
     const ahead = w.head ? Number(git(home, 'rev-list', '--count', `${base}..${w.head}`).out) || 0 : 0;
     const verdict = w.locked ? 'locked' : !exists ? 'orphan' : dirty || ahead ? 'holds work' : 'safe';
-    return { ...w, exists, dirty, ahead, base, verdict };
+    return { ...w, pidAlive: w.locked ? pidAlive(w.pid) : null, exists, dirty, ahead, base, verdict };
   });
 }
 
@@ -157,7 +181,10 @@ export function close(target, repo) {
   return said;
 }
 
-export function main(argv, { out = console.log, err = console.error } = {}) {
+/** ` · locked`, plus the lock's pid and whether it lives when the reason names one. */
+const lockNote = (r) => (!r.locked ? '' : r.pid ? ` · locked by pid ${r.pid} (${r.pidAlive ? 'alive' : 'dead'})` : ' · locked');
+
+export function main(argv,{ out = console.log, err = console.error } = {}) {
   const [cmd, ...rest] = argv;
   let repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const targets = [];
@@ -173,7 +200,7 @@ export function main(argv, { out = console.log, err = console.error } = {}) {
     const rows = survey(repo);
     if (json) out(JSON.stringify(rows, null, 2));
     else if (!rows.length) out('worktree: no linked worktrees');
-    else for (const r of rows) out(`${r.verdict.padEnd(10)} ${r.path} · ${r.branch ?? '(detached)'} · ${r.dirty} dirty · ${r.ahead} ahead of ${r.base}${r.locked ? ' · locked' : ''}`);
+    else for (const r of rows) out(`${r.verdict.padEnd(10)} ${r.path} · ${r.branch ?? '(detached)'} · ${r.dirty} dirty · ${r.ahead} ahead of ${r.base}${lockNote(r)}`);
     return 0;
   }
   if (bad || cmd !== 'close' || !targets.length) {
