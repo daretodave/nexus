@@ -47,7 +47,7 @@ export function createHub({ pingMs = PING_MS, flushMs = FLUSH_MS } = {}) {
     if (item.kind === 'delta') {
       const last = transcript[transcript.length - 1];
       if (last && last.kind === 'text' && last.id === item.id) last.text += item.text;
-      else transcript.push({ kind: 'text', id: item.id, agent: item.agent, text: item.text });
+      else transcript.push({ kind: 'text', id: item.id, agent: item.agent, text: item.text, ...(item.at != null ? { at: item.at } : {}) });
     } else transcript.push(item);
     if (transcript.length > MAX_TRANSCRIPT) transcript.splice(0, transcript.length - MAX_TRANSCRIPT);
     emit('tx', item);

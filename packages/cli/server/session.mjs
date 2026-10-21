@@ -33,7 +33,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   const hub = createHub();
   const asks = new Map();
   const permissions = new Map();
-  let txCtx = newTxContext();
+  let txCtx = newTxContext({ now });
   let beatCtx = newBeatContext();
   let busy = false;
   let claude = null;
@@ -51,7 +51,8 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     if (msg.session_id) claude = msg.session_id;
     tugLog.onMessage(msg);
     for (const item of txFromMessage(msg, txCtx)) hub.tx(item);
-    for (const b of beatsFromMessage(msg, beatCtx)) hub.beat(b);
+    // Stream beats carry when they were read, so the stage knows when a chunk was claimed and closed.
+    for (const b of beatsFromMessage(msg, beatCtx)) hub.beat({ ...b, at: now() });
     if (msg.type === 'result') {
       busy = false;
       hub.setStatus({ state: 'idle', cost: msg.total_cost_usd ?? null, session: msg.session_id || null });
@@ -110,7 +111,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     if (running || steered) tugLog.sent(text, { session: claude, busy: running });
     busy = true;
     sent += 1;
-    hub.tx({ kind: 'user', text });
+    hub.tx({ kind: 'user', text, at: now() });
     if (running) hub.beat({ k: 'oversight', p: 'tug', agent: MAIN });
     else hub.beat({ k: 'agent', p: 'start', id: MAIN, label: 'session' });
     provider.send(text);
@@ -156,7 +157,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     stop: () => provider.stop(),
     async fresh() {
       await provider.fresh();
-      txCtx = newTxContext();
+      txCtx = newTxContext({ now });
       beatCtx = newBeatContext();
       hub.reset();
     },

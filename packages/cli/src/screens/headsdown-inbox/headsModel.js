@@ -38,7 +38,7 @@ const SPAWN = new Set(['Task', 'Agent']);
 
 /** An agent node from the stage reducer -> glyph, class and word (the board's tree). */
 export function agentLook(a, hasKids) {
-  if (hasKids && a.state === 'running') return { g: '◎', cls: 'k', word: 'workflow' };
+  if ((hasKids || a.junction) && a.state === 'running') return { g: '◎', cls: 'k', word: 'workflow' };
   if (a.state === 'waiting') return { g: '?', cls: 'ask', word: 'asking' };
   if (a.state === 'done') return { g: '✓', cls: 'ok', word: 'done' };
   if (a.state === 'failed') return { g: '✗', cls: 'no', word: 'failed' };

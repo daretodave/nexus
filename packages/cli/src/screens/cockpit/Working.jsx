@@ -1,19 +1,31 @@
 // Working (Cockpit board, phase "working"): the conversation, newest at the
 // bottom, with each agent message's tool rows; your notes on the right; a
 // live question as a pending tug (the stage hushes while it waits).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LogRow, MsgYou, Orb, Tug, toolGlyph } from '../../ui/index.js';
 import { server } from '../../data/client.js';
-import { agentState, convoItems } from './model.js';
+import { agentState, convoItems, mmss, toolDur } from './model.js';
 
-/** A .log row as the board draws it, with the board's tool glyph; opens to show the full call. */
-function ToolRow({ t, running }) {
+/**
+ * A .log row as the board draws it, with the board's tool glyph; opens to show the full call. Its diffstat comes from
+ * the call's own input, its duration from its result (a running call counts up from when it went out); either one
+ * unknown stays blank.
+ */
+function ToolRow({ t, running, now }) {
   const [open, setOpen] = useState(false);
+  const d = t.diff;
+  const time = running ? (t.at != null && now ? mmss(now - t.at) : '') : toolDur(t.ms);
   return (
     <LogRow
-      tool={t.tool} args={t.args} d={toolGlyph(t.tool)}
+      tool={t.tool} args={t.args} d={toolGlyph(t.tool)} dur={time}
       state={running ? 'running' : t.failed ? 'failed' : undefined}
-      meta={<span className="diffstat">{t.failed ? <span className="c-3">failed</span> : null}</span>}
+      meta={(
+        <span className="diffstat">
+          {d && d.add != null ? <span className="add">+{d.add}</span> : null}
+          {d && d.del != null ? <span className="del">−{d.del}</span> : null}
+          {t.failed ? <span className="c-3">failed</span> : t.note ? <span className="c-3">{t.note}</span> : null}
+        </span>
+      )}
       open={open} onToggle={() => setOpen((o) => !o)}
     >
       <pre className="t-mono-xs c-2" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{t.args}</pre>
@@ -22,7 +34,7 @@ function ToolRow({ t, running }) {
   );
 }
 
-function AgentMsg({ m, state, runningTool }) {
+function AgentMsg({ m, state, runningTool, now }) {
   return (
     <div className="msg">
       <Orb state={m.error ? 'failed' : state} size="s" style={{ marginTop: 1 }} />
@@ -31,7 +43,7 @@ function AgentMsg({ m, state, runningTool }) {
         {m.text ? <p className="msg-text">{m.text}</p> : null}
         {m.tools.length ? (
           <div className="msg-tools">
-            {m.tools.map((t, i) => <ToolRow key={t.id || i} t={t} running={runningTool === t} />)}
+            {m.tools.map((t, i) => <ToolRow key={t.id || i} t={t} running={runningTool === t} now={now} />)}
           </div>
         ) : null}
       </div>
@@ -90,6 +102,18 @@ function PermissionTug({ req, who }) {
   );
 }
 
+/** The clock a running tool row counts up on: a tick a second while one runs, still otherwise. */
+function useTick(on) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!on) return undefined;
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [on]);
+  return now;
+}
+
 export default function Working({ live, pinned }) {
   const { stage, transcript, asks, permissions, status } = live;
   const items = convoItems(transcript, stage);
@@ -99,16 +123,19 @@ export default function Working({ live, pinned }) {
   if (busy) {
     for (let i = items.length - 1; i >= 0 && !runningTool; i -= 1) {
       const m = items[i];
-      if (m.tools && m.tools.length) runningTool = m.tools[m.tools.length - 1];
+      // A call whose result came back is not running, whatever the turn is doing.
+      if (m.tools && m.tools.length) runningTool = m.tools[m.tools.length - 1].done ? null : m.tools[m.tools.length - 1];
+      if (m.tools && m.tools.length) break;
       if (m.you) break;
     }
   }
+  const now = useTick(!!runningTool);
   const nameOf = (agent) => (!agent || agent === 'main' ? 'main' : stage.agents?.[agent]?.label || 'agent');
   return (
     <div className="convo" aria-live="polite">
       {items.map((m) => (m.you
         ? <MsgYou key={m.key} time={m.time || ''} text={m.text} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
-        : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} />))}
+        : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} />))}
       {asks.map((a) => <AskTugs key={a.id} ask={a} who={nameOf(a.agent)} />)}
       {permissions.map((p) => <PermissionTug key={p.id} req={p} who={nameOf(p.agent)} />)}
     </div>

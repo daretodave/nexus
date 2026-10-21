@@ -11,6 +11,12 @@
 //   agent      start | tool | wait | end            { id, parent?, label?, tool?, ok? }
 //   loop       dispatch | run | conclude            { id, name?, conclusion? }
 //   oversight  ask | answer | tug                   { id?, agent?, text? }
+//
+// Any beat may carry `at` (ms): the session stamps the beats it reads off the
+// stream with when it read them. The reducer keeps a chunk's first claim and
+// its close (`claimedAt`, `closedAt`) and never reads a clock itself. An agent
+// start with `junction: true` is a Workflow call: the stage draws it as the
+// junction its agents hang from.
 
 export const LANES = 5;
 export const MAIN = 'main';
@@ -71,6 +77,7 @@ export function reduce(prev, beat) {
       if (id !== MAIN && !s.agents[MAIN]) ensureAgent(s, MAIN);
       const a = ensureAgent(s, id, beat.parent);
       if (beat.label) a.label = String(beat.label).slice(0, 80);
+      if (beat.junction) a.junction = true;
       if (beat.p === 'start') { a.state = 'running'; a.ok = null; }
       if (beat.p === 'tool') { a.state = 'running'; a.tool = beat.tool || null; a.tools += 1; }
       if (beat.p === 'wait') a.state = 'waiting';
@@ -81,6 +88,10 @@ export function reduce(prev, beat) {
       if (!beat.id) break;
       if (!s.chunks[beat.id]) { s.chunks[beat.id] = { id: beat.id, stage: beat.p }; s.chunkOrder.push(beat.id); }
       s.chunks[beat.id].stage = beat.p;
+      if (typeof beat.at === 'number') {
+        if (beat.p === 'claim' && s.chunks[beat.id].claimedAt == null) s.chunks[beat.id].claimedAt = beat.at;
+        if (beat.p === 'archive') s.chunks[beat.id].closedAt = beat.at;
+      }
       s.current = beat.p === 'archive' ? (s.current === beat.id ? null : s.current) : beat.id;
       break;
     }
@@ -132,6 +143,16 @@ function structuredCloneLite(s) {
 // Structured fields only: tool names, tool inputs, parent_tool_use_id.
 
 const SPAWN_TOOLS = new Set(['Task', 'Agent']);
+const JUNCTION_TOOLS = new Set(['Workflow']);
+
+/** A Workflow call's name: its own, else its script's file name. */
+function workflowLabel(input) {
+  const named = input.name || input.title || input.description;
+  if (named) return String(named);
+  const script = typeof input.script === 'string' && !/\n/.test(input.script) ? input.script : typeof input.script_path === 'string' ? input.script_path : '';
+  const base = script.split(/[\\/]/).pop().replace(/\.[a-z]+$/i, '');
+  return base || 'workflow';
+}
 const CLAIM_RE = /claims(?:\.mjs)?\s+claim\s+([0-9]+(?:\.[0-9a-z]+)?)/i;
 const GATE_RE = /(verify\.mjs|check\.mjs|npm run (?:check|verify|test)|pnpm (?:verify|check))/i;
 const PENDING_RE = /plan[\\/]pending[\\/]([0-9]+(?:\.[0-9a-z]+)?)\.md/i;
@@ -161,6 +182,13 @@ export function beatsFromMessage(msg, ctx) {
           ctx.spawns[block.id] = true;
           out.push({ k: 'agent', p: 'start', id: block.id, parent: parent || MAIN, label: input.description || input.subagent_type || 'subagent' });
           if (ctx.chunk) out.push({ k: 'chunk', p: 'build', id: ctx.chunk });
+        }
+        continue;
+      }
+      if (JUNCTION_TOOLS.has(block.name)) {
+        if (!ctx.spawns[block.id]) {
+          ctx.spawns[block.id] = true;
+          out.push({ k: 'agent', p: 'start', id: block.id, parent: parent || MAIN, label: workflowLabel(input), junction: true });
         }
         continue;
       }

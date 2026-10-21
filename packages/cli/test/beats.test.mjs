@@ -110,3 +110,33 @@ test('a failed subagent reads failed after replay', () => {
   assert.equal(s.agents.x.state, 'failed');
   assert.equal(s.agents[MAIN].state, 'done');
 });
+
+// ---- the workflow junction and chunk times (41.7) ----------------------------------
+
+test('a Workflow call is a junction node its agents hang from, ended by its result', () => {
+  const ctx = newBeatContext();
+  const wf = beatsFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { content: [{ type: 'tool_use', id: 'W1', name: 'Workflow', input: { script: '.claude/workflows/review.js' } }] } }, ctx);
+  assert.deepEqual(wf, [{ k: 'agent', p: 'start', id: 'W1', parent: MAIN, label: 'review', junction: true }]);
+  const kid = beatsFromMessage({ type: 'assistant', parent_tool_use_id: 'W1', message: { content: [{ type: 'tool_use', id: 'K1', name: 'Agent', input: { description: 'lint' } }] } }, ctx);
+  assert.equal(kid[0].parent, 'W1');
+  const end = beatsFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'W1' }] } }, ctx);
+  assert.deepEqual(end, [{ k: 'agent', p: 'end', id: 'W1', ok: true }]);
+  const s = replay([...wf, ...kid]);
+  assert.equal(s.agents.W1.junction, true);
+  assert.equal(s.agents.K1.parent, 'W1');
+  const named = beatsFromMessage({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 'W2', name: 'Workflow', input: { name: 'audit' } }] } }, newBeatContext());
+  assert.equal(named[0].label, 'audit');
+});
+
+test('stamped chunk beats keep the first claim and the close; unstamped ones keep none', () => {
+  const s = replay([
+    { k: 'chunk', p: 'claim', id: '7.1', at: 100 },
+    { k: 'chunk', p: 'claim', id: '7.1', at: 150 },
+    { k: 'chunk', p: 'build', id: '7.1', at: 200 },
+    { k: 'chunk', p: 'archive', id: '7.1', at: 900 },
+    { k: 'chunk', p: 'claim', id: '7.2' },
+  ]);
+  assert.equal(s.chunks['7.1'].claimedAt, 100);
+  assert.equal(s.chunks['7.1'].closedAt, 900);
+  assert.equal(s.chunks['7.2'].claimedAt, undefined);
+});

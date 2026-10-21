@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { txFromMessage, newTxContext, friendlyError, summarize } from '../server/normalize.mjs';
+import { txFromMessage, newTxContext, friendlyError, summarize, lines, lineDiff, diffOf } from '../server/normalize.mjs';
 
 test('streamed text is not repeated by the full assistant message', () => {
   const ctx = newTxContext();
@@ -33,4 +33,48 @@ test('result carries cost and session', () => {
   assert.equal(r.cost, 0.12);
   assert.equal(r.session, 'S');
   assert.equal(summarize('X', { command: 'a'.repeat(300) }).length, 140);
+});
+
+// ---- times, durations and diffstats (41.7) -----------------------------------------
+
+test('with a clock, items carry when they were read and a tool_result gives the call its duration', () => {
+  let t = 1000;
+  const ctx = newTxContext({ now: () => t });
+  const [call] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M1', content: [{ type: 'tool_use', id: 'T1', name: 'Bash', input: { command: 'npm test' } }] } }, ctx);
+  assert.equal(call.at, 1000);
+  t = 1900;
+  const done = txFromMessage({ type: 'user', parent_tool_use_id: null, message: { content: [{ type: 'tool_result', tool_use_id: 'T1', content: 'ok' }] } }, ctx);
+  assert.deepEqual(done, [{ kind: 'tool-done', id: 'T1', agent: 'main', ms: 900, ok: true, at: 1900 }]);
+  // A result for a call this context never saw has no start: no duration is guessed.
+  assert.deepEqual(txFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'X' }] } }, ctx), []);
+  // A failed call still ends, with ok false, after its tool-error.
+  txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M2', content: [{ type: 'tool_use', id: 'T2', name: 'Read', input: { file_path: 'a' } }] } }, ctx);
+  t = 2000;
+  const bad = txFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'T2', is_error: true, content: 'nope' }] } }, ctx);
+  assert.deepEqual(bad.map((x) => [x.kind, x.ok, x.ms]), [['tool-error', undefined, undefined], ['tool-done', false, 100]]);
+});
+
+test('without a clock nothing is stamped and no duration is made up', () => {
+  const ctx = newTxContext();
+  const [call] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'T', name: 'Bash', input: { command: 'ls' } }] } }, ctx);
+  assert.equal('at' in call, false);
+  assert.deepEqual(txFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'T' }] } }, ctx), []);
+});
+
+test('an Edit and a MultiEdit count their lines from the call; a Write knows only what it adds', () => {
+  assert.deepEqual(lines('a\nb\n'), ['a', 'b']);
+  assert.deepEqual(lines(''), []);
+  assert.deepEqual(lineDiff('a\nb\nc', 'a\nB\nc\nd'), { add: 2, del: 1 });
+  assert.deepEqual(lineDiff('same', 'same'), { add: 0, del: 0 });
+  assert.deepEqual(diffOf('Edit', { file_path: 'x', old_string: 'one\ntwo', new_string: 'one\n2\nthree' }), { add: 2, del: 1 });
+  assert.equal(diffOf('Edit', { old_string: 'a', new_string: 'b', replace_all: true }), null);
+  assert.deepEqual(diffOf('MultiEdit', { edits: [{ old_string: 'a', new_string: 'b' }, { old_string: '', new_string: 'x\ny' }] }), { add: 3, del: 1 });
+  assert.deepEqual(diffOf('Write', { content: 'l1\nl2\nl3\n' }), { add: 3, del: null });
+  assert.equal(diffOf('Bash', { command: 'ls' }), null);
+  const [row] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'E', name: 'Edit', input: { file_path: 'src/a.ts', old_string: 'x', new_string: 'x\ny' } }] } }, newTxContext());
+  assert.deepEqual(row.diff, { add: 1, del: 0 });
+  // A big changed middle past the diff budget counts as replaced, never hangs.
+  const big = Array.from({ length: 800 }, (_, i) => `l${i}`).join('\n');
+  const other = Array.from({ length: 800 }, (_, i) => `m${i}`).join('\n');
+  assert.deepEqual(lineDiff(big, other), { add: 800, del: 800 });
 });

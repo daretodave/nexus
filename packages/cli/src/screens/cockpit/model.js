@@ -55,6 +55,18 @@ export function clock(at) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+/**
+ * A tool call's duration as the board's tool rows show it: "0.9s", "12s",
+ * "2m", "1h 4m". Empty when unknown (the row shows nothing, never a guess).
+ */
+export function toolDur(ms) {
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return '';
+  if (ms < 10000) return `${(ms / 1000).toFixed(1)}s`;
+  if (ms < 60000) return `${Math.round(ms / 1000)}s`;
+  if (ms < 3600000) return `${Math.round(ms / 60000)}m`;
+  return dur(ms);
+}
+
 /** "2m ago", "yesterday". */
 export function ago(at, now) {
   if (!at || !now) return '';
@@ -266,6 +278,9 @@ export function ctxLayers({ ledger, owner, phase, stage, info, sessionName, now 
 /**
  * Transcript items to board messages: agent messages carry their tool rows,
  * your notes stand alone. `limit` keeps the newest (the convo fades the top).
+ * Times come from the stream: each item's `at` (when the server read it) is the
+ * message's time, a `tool-done` gives its call a duration, and an Edit or Write
+ * carries its diffstat. An item without them shows none.
  */
 export function convoItems(transcript, stage, limit = 40) {
   const out = [];
@@ -273,16 +288,23 @@ export function convoItems(transcript, stage, limit = 40) {
   const name = (agent) => (!agent || agent === MAIN ? 'main' : stage?.agents?.[agent]?.label || 'agent');
   const failed = new Set((transcript || []).filter((t) => t.kind === 'tool-error').map((t) => t.id));
   for (const t of transcript || []) {
-    if (t.kind === 'user') { out.push({ you: true, text: t.text, pinned: !!t.pinned, key: `u${out.length}` }); continue; }
+    if (t.kind === 'user') { out.push({ you: true, text: t.text, pinned: !!t.pinned, time: clock(t.at), key: `u${out.length}` }); continue; }
     if (t.kind === 'text' || t.kind === 'delta') {
-      const m = { agent: t.agent || MAIN, name: name(t.agent), text: t.text, tools: [], key: t.id || `t${out.length}` };
+      const m = { agent: t.agent || MAIN, name: name(t.agent), text: t.text, tools: [], time: clock(t.at), key: t.id || `t${out.length}` };
       out.push(m); lastOf[m.agent] = m; continue;
     }
     if (t.kind === 'tool') {
       const agent = t.agent || MAIN;
       let m = lastOf[agent];
-      if (!m || out[out.length - 1] !== m) { m = { agent, name: name(agent), text: '', tools: [], key: `tm${t.id || out.length}` }; out.push(m); lastOf[agent] = m; }
-      m.tools.push({ id: t.id, tool: t.name, args: t.summary || '', failed: failed.has(t.id) });
+      if (!m || out[out.length - 1] !== m) { m = { agent, name: name(agent), text: '', tools: [], time: clock(t.at), key: `tm${t.id || out.length}` }; out.push(m); lastOf[agent] = m; }
+      m.tools.push({
+        id: t.id, tool: t.name, args: t.summary || '', failed: failed.has(t.id), at: t.at ?? null,
+        diff: t.diff || null, note: SPAWN.has(t.name) ? 'delegated' : '', ms: null, done: false,
+      });
+      continue;
+    }
+    if (t.kind === 'tool-done') {
+      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) { tool.ms = t.ms ?? null; tool.done = true; if (t.ok === false) tool.failed = true; }
       continue;
     }
     if (t.kind === 'tool-error') {
@@ -293,6 +315,8 @@ export function convoItems(transcript, stage, limit = 40) {
   }
   return out.slice(-limit);
 }
+
+const SPAWN = new Set(['Task', 'Agent']);
 
 /** Node captions never wrap; long subagent descriptions are cut to fit. */
 const short = (s, n = 28) => { const t = String(s || ''); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
@@ -352,13 +376,21 @@ export function liveStage(stage, { chunkLabel, parkedAgent } = {}) {
   for (const id of [...seated, ...grand]) {
     const a = agents[id];
     const s = agentState(a);
-    nodes.push({
-      key: id, at: seat[id], size: grand.includes(id) ? 's' : 'm', state: s, capTop: grand.includes(id) ? '20px' : undefined,
-      label: short(a.label) || 'agent', tool: a.tool || (s === 'failed' ? 'failed' : ''), bad: s === 'failed', parked: parkedAgent === id,
-    });
+    if (a.junction) {
+      // A Workflow call (Cockpit board): the junction, captioned with how many agents hang from it.
+      const n = order.filter((x) => agents[x].parent === id).length;
+      nodes.push({ key: id, at: seat[id], junction: true, capTop: '18px', label: short(a.label) || 'workflow', tool: n ? `workflow · ${count(n, 'agent')}` : 'workflow' });
+    } else {
+      nodes.push({
+        key: id, at: seat[id], size: grand.includes(id) ? 's' : 'm', state: s, capTop: grand.includes(id) ? '20px' : undefined,
+        label: short(a.label) || 'agent', tool: a.tool || (s === 'failed' ? 'failed' : ''), bad: s === 'failed', parked: parkedAgent === id,
+      });
+    }
     const from = (a.parent || MAIN) === MAIN ? MAIN_AT : seat[a.parent];
     const running = a.state === 'running';
-    fils.push(filament(from, seat[id], { flow: running, quiet: !running && a.state !== 'waiting', key: id }));
+    // A workflow's own agents hang from it on the board's dashed lines.
+    const underJunction = !!agents[a.parent]?.junction;
+    fils.push(filament(from, seat[id], underJunction ? { dash: true, quiet: true, flow: running, key: id } : { flow: running, quiet: !running && a.state !== 'waiting', key: id }));
   }
   const working = [MAIN, ...order].filter((id) => agents[id] && agents[id].state === 'running').length;
   const total = (main ? 1 : 0) + order.length;
