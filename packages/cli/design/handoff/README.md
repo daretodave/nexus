@@ -140,6 +140,84 @@ theme-agnostic:
 - **Plot's empty thoughts box** keeps the board's ~440px height
   instead of collapsing to two lines before any idea card exists.
 
+## The live fidelity pass (41.6)
+
+The 41.3 reviews compared static renders. This pass drove the built
+app live in Chrome (real `:hover`, clicks, popovers and motion) against
+a scratch repo with session ledgers, worktrees and a staged workflow
+run, in night and dawn, against the second delivery's boards. Window
+sizes below 1440 were reached by re-evaluating `nexus.css`'s width and
+height media queries for the target size inside the page (the browser
+window itself was left alone). A stand-in response replaced endpoints
+the scratch repo cannot serve (hosted sessions for the train, a claim
+for Reassign, protected claims for the request popover, `/api/explode`
+for Plot's cards); nothing was sent, dispatched or requested.
+
+**Matched, no change:** the tile hover (the 2px lift and the
+`--sess` ring and glow, terminal tiles in haze), the git-pop on the
+tile foot's strip, the train dock (cars, skipped terminal car, Cancel
+and Resume all), the request popover (its arrow sits under Request
+claim), the Reassign picker, the board row's hover actions (the
+gradient lets the claim column's first letters through, as the board's
+own CSS does), the cockpit's parked tug and tether (`--tray-y`: the
+tether lands on the tray's middle at both the 72px and the
+below-800px 64px tray, and the tug path ends on it), the tidy popover
+(a dry run; Tidy now stays a dry-run control), the inbox's parked row
+(its `.sess-tag` fills the 104px column, as the board's grid does),
+Recover's timeline, and dawn on every screen named here.
+
+**The button ink: the cascade repair stays.** The boards' reset gives
+`<button class="btn-primary">` the `--text` ink; on the aurora
+gradient that is 1.2 to 2.3:1 at night and 2.6 to 3.6:1 at dawn
+(across the gradient's three stops). The app's on-accent ink is 7.2 to
+13.5:1 at night and 5.1 to 7.0:1 at dawn. The handoff's own
+`a.btn-primary` patch draws on-accent too.
+
+**Fixed:**
+
+- **The train dock covered the grid's last row.** The board's view
+  clips; the app's grid scrolls, and with the dock up the start tile
+  (or a last row of sessions) sat under it with no way to scroll
+  clear. The grid now gets the dock's height as room below while the
+  train runs (`Fleet.jsx`, measured, so it follows the dock's wrap).
+- **Heads-down below ~760px wide.** The 120 columns at the type's
+  10px floor are 720px; centred in an overflow-hidden frame, a
+  narrower window cut both ends and the left one could not be reached.
+  The frame now centres safely and scrolls (`HeadsDown.jsx`).
+- **Plot below the board's 900px.** Eight or more idea cards grew the
+  grid past the window, and `.ob`'s overflow hidden took the footer
+  (Back, Continue) with it. Below 880px of height the grid shrinks to
+  the room left and the ideas column scrolls, with rows kept at their
+  content height so no card loses its quote line
+  (`src/styles/plot-fit.css`, app glue; nothing changes at the board's
+  own height, so the cards' bloom is not clipped there).
+- **The request popover's copy** started a sentence with the fallback
+  owner name in lower case ("the owner gets a one-tap yes or no"), and
+  so did the plan PR note. The fallbacks take a capital at a sentence
+  start; a GitHub login never does (`ownerLead`, tested).
+- **Recover swallowed a refused folder.** A path the server refuses
+  showed "No run loaded" instead of the board's error card: the data
+  hook kept the previous path's data on a failed load. A failed load
+  now keeps only its own path's data (`src/data/hooks.js`).
+
+**Left, with the reason:**
+
+- **The parked tray clips its second line.** The tray is 72px (64px
+  below 800px of height) with overflow hidden, and a parked item with
+  "assumed ..." is taller; `--tray-y` is tuned to that height, and the
+  board's CSS clips the same way.
+- **The cloud loop screen** showed only its no-workflow state: the
+  scratch repo has no loop workflow, and dispatching a real one was
+  out of bounds. CloudLoop changed in the second delivery; its
+  re-port is 41.10's.
+- **The second delivery's other changes** are 41.10's re-port, not
+  this pass's: `nexus.css` now sizes `.nx` itself as border-box, adds
+  `.nx a.rail-item.is-quiet`, and lets a routed docked composer grow
+  (`height: auto; min-height: 156px`, 132px below 800px), which can
+  move the routed composer's tray line against `--tray-y`'s fixed
+  355/397px; and onboarding gains the Secrets step (4 of 7; the app
+  still reads 4 of 6).
+
 ## Patterns not adopted
 
 Every board pattern the app leaves out or draws differently, with
