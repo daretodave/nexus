@@ -6,7 +6,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import { FILE, SEEN, author, drop, main, parse, post, reboot, unread } from '../announce.mjs';
+import {
+  FILE, SEEN, STEERED, addressee, author, claim, delivered, drop, forMe, identities, main, parse, post, postTo, reboot, steerable, unread,
+} from '../announce.mjs';
 
 describe('the board text', () => {
   it('numbers each post past the highest, and a drop never frees its number', () => {
@@ -83,5 +85,100 @@ describe('the CLI', () => {
     run(['list']);
     assert.match(said.join('\n'), /news from a session/);
     assert.equal(run(['drop', 'x']), 1);
+  });
+});
+
+describe('a line to one session', () => {
+  let root;
+  let said;
+  const run = (argv, env = {}) => {
+    said = [];
+    return main(argv, { env, root, out: (s) => said.push(s), err: (s) => said.push(s) });
+  };
+  const ledger = (l) => {
+    fs.mkdirSync(path.join(root, '.nexus/sessions'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.nexus/sessions', `${l.id}.json`), JSON.stringify(l));
+  };
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-announce-to-'));
+  });
+  afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  it('is stored as @<session> and parsed back', () => {
+    const { text } = post('', 'switch to the docs first', 'owner', '2026-10-21T10:00Z', 'aaaa1111-2222');
+    const [a] = parse(text);
+    assert.equal(a.text, '@aaaa1111-2222 switch to the docs first');
+    assert.equal(addressee(a), 'aaaa1111-2222');
+    assert.equal(addressee(parse(post('', 'to everyone', 'owner').text)[0]), null);
+    assert.throws(() => post('', 'x', 'owner', undefined, 'no spaces allowed'), /--to takes/);
+    assert.throws(() => post('', '   ', 'owner', undefined, 'vega'), /say something/);
+  });
+
+  it('answers to its own ids and the star of its own held ledger, never an ended one', () => {
+    const ledgers = [
+      { id: 'aaaa1111', star: 'vega', state: 'live' },
+      { id: 'bbbb2222', star: 'sirius', state: 'live' },
+      { id: 'cccc3333', star: 'polaris', state: 'ended' },
+      { id: 'gui-1', star: 'rigel', state: 'parked', claude: 'dddd4444' },
+    ];
+    assert.deepEqual([...identities(['aaaa1111'], ledgers)].sort(), ['aaaa1111', 'vega']);
+    assert.deepEqual([...identities(['cccc3333'], ledgers)], ['cccc3333']);
+    assert.deepEqual([...identities(['dddd4444'], ledgers)].sort(), ['dddd4444', 'gui-1', 'rigel']);
+    assert.deepEqual([...identities([], ledgers)], []);
+  });
+
+  it('steers only owner lines addressed to this session, not yet handed over', () => {
+    let t = post('', 'to everyone', 'owner').text;
+    t = post(t, 'to vega', 'owner', undefined, 'vega').text;
+    t = post(t, 'to sirius', 'owner', undefined, 'sirius').text;
+    t = post(t, '@vega a session cannot steer another', 'session bbbb2222').text;
+    const lines = parse(t);
+    const vega = new Set(['aaaa1111', 'vega']);
+    assert.deepEqual(steerable(lines, vega).map((a) => a.n), [2]);
+    assert.deepEqual(steerable(lines, vega, new Set([2])), []);
+    assert.deepEqual(lines.filter((a) => forMe(a, vega)).map((a) => a.n), [1, 2, 4]);
+  });
+
+  it('claims a line once per session, and one session claiming never marks another', () => {
+    assert.equal(claim(root, 'aaaa1111', 7), true);
+    assert.equal(claim(root, 'aaaa1111', 7), false);
+    assert.equal(claim(root, 'bbbb2222', 7), true);
+    assert.deepEqual([...delivered(root, ['aaaa1111'])], [7]);
+    assert.deepEqual([...delivered(root, ['nobody'])], []);
+    assert.ok(fs.existsSync(path.join(root, STEERED, 'aaaa1111', '7')));
+  });
+
+  it('posts --to from the CLI, shows it to that session once, and never to another or the terminal', () => {
+    ledger({ id: 'aaaa1111', star: 'vega', state: 'live' });
+    ledger({ id: 'bbbb2222', star: 'sirius', state: 'live' });
+    assert.equal(run(['--to', 'vega', '--owner', 'stop after this chunk']), 0);
+    assert.match(said[0], /posted 1 as owner to vega/);
+    assert.equal(run(['--to'], {}), 1);
+    assert.equal(run(['--to', 'bad name', 'x']), 1);
+    run(['for', 'everyone']);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'bbbb2222' });
+    assert.doesNotMatch(said.join('\n'), /stop after this chunk/);
+    assert.match(said.join('\n'), /1 new/);
+    run(['read'], {});
+    assert.doesNotMatch(said.join('\n'), /stop after this chunk/);
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' });
+    assert.match(said.join('\n'), /@vega stop after this chunk {3}\(to one session only\)/);
+    assert.deepEqual([...delivered(root, ['aaaa1111'])], [1]);
+    run(['list']);
+    assert.match(said.join('\n'), /@vega stop/);
+  });
+
+  it('does not show a line the steer hook already handed over, nor hide the broadcast after it', () => {
+    run(['--to', 'aaaa1111', 'look at the spec again']);
+    run(['and', 'everyone', 'reads', 'this']);
+    claim(root, 'aaaa1111', 1); // what the hook does when it delivers line 1
+    run(['read'], { CLAUDE_CODE_SESSION_ID: 'aaaa1111' });
+    assert.doesNotMatch(said.join('\n'), /look at the spec/);
+    assert.match(said.join('\n'), /and everyone reads this/);
+  });
+
+  it('postTo writes a line for the GUI', () => {
+    assert.equal(postTo(root, 'answer: keep the default', { to: 'aaaa1111' }), 1);
+    assert.equal(addressee(parse(fs.readFileSync(path.join(root, FILE), 'utf8'))[0]), 'aaaa1111');
   });
 });

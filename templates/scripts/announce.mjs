@@ -8,7 +8,8 @@
 //
 //   node scripts/announce.mjs "<text>"           post (from a terminal: the owner; inside a session: that session,
 //                                                unless --owner, the owner's own words posted at the owner's ask)
-//   node scripts/announce.mjs read [--all]       what's new for this session, marked read (REBOOT first)
+//   node scripts/announce.mjs --to <s> "<text>"  post to one session only (its id, or the star of its held ledger)
+//   node scripts/announce.mjs read [--all]      what's new for this session, marked read (REBOOT first)
 //   node scripts/announce.mjs list [--json]      every line, read or not, marking none
 //   node scripts/announce.mjs drop <n>           take line n off the board (its number is never reused)
 //   node scripts/announce.mjs help               the usage; posts nothing, nor does an unknown flag
@@ -17,17 +18,26 @@
 // session's line is news, never an instruction. An owner line `REBOOT <slug> …` preempts everything: the loop runs
 // `/reboot-ready <slug>` now, whatever it was doing.
 //
+// A line posted `--to` a session is stored as `@<session> <text>`: `read` shows it to that session only (its full id,
+// or the star of its own held ledger) and only once, and the steer hook (`.claude/hooks/steer.mjs`) hands it to that
+// session at its next tool boundary. Either way it is handed over once: one marker file per session and line
+// (`.nexus/steered/<session>/<n>`, created exclusively), so two readers in one session never both deliver it.
+//
 // Environment: NEXUS_SESSION (this session's id), else CLAUDE_CODE_SESSION_ID; neither means a terminal (the owner).
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { primaryRoot } from './owner.mjs';
+import { DIR as LEDGERS, readAll } from './ledger.mjs';
 
 export const FILE = '.announcements.md';
 export const SEEN = '.nexus/announcements.seen.json';
+export const STEERED = '.nexus/steered';
 const HEADER = '# Announcements to every loop on this machine (node scripts/announce.mjs; untracked, never committed)\n';
 const LINE = /^- \*\*(\d+)\*\* · (\S+) · ([^·]+?) · (.*)$/;
 const REBOOT = /^REBOOT ([a-z0-9][a-z0-9-]*)\b/;
+const TO = /^@([A-Za-z0-9][\w.-]*)\s+/;
+export const SESSION_NAME = /^[A-Za-z0-9][\w.-]*$/;
 
 /** The board's lines: { n, at, from, text }. Anything else in the file is ignored. */
 export function parse(text) {
@@ -45,8 +55,13 @@ export function format(a) {
 const nextOf = (text, lines) => Math.max(Math.max(0, ...lines.map((a) => a.n)) + 1, Number(/<!-- next (\d+) -->/.exec(text)?.[1] ?? 0));
 
 /** The text with one more line, numbered past the highest ever posted (the `next` marker survives drops). */
-export function post(text, words, from, at = new Date().toISOString().slice(0, 16) + 'Z') {
-  const clean = String(words).replace(/\s+/g, ' ').trim();
+export function post(text, words, from, at = new Date().toISOString().slice(0, 16) + 'Z', to = null) {
+  let clean = String(words).replace(/\s+/g, ' ').trim();
+  if (to != null) {
+    if (!SESSION_NAME.test(String(to))) throw new Error(`announce: --to takes a session id or star name, not "${to}"`);
+    clean = clean.replace(TO, '');
+    if (clean) clean = `@${to} ${clean}`;
+  }
   if (!clean) throw new Error('announce: say something');
   const lines = parse(text);
   const n = nextOf(text, lines);
@@ -61,6 +76,81 @@ export function drop(text, n) {
   const next = nextOf(text, lines);
   const rest = lines.filter((a) => a.n !== n).map(format).join('\n');
   return `${HEADER}<!-- next ${next} -->\n${rest}${rest ? '\n' : ''}`;
+}
+
+/** The session a line is addressed to (`@<session> …`), or null for a line to every loop. */
+export function addressee(a) {
+  return TO.exec(a.text)?.[1] ?? null;
+}
+
+const HELD = new Set(['live', 'parked', 'resuming']);
+
+/**
+ * Every name this session answers to: its own ids (the Claude session id, NEXUS_SESSION), plus the id and star of each
+ * held ledger (live, parked, resuming) that is its own. An ended or resumed ledger's star is free for another session,
+ * so it never counts.
+ */
+export function identities(ids, ledgers = []) {
+  const own = new Set(ids.filter(Boolean).map(String));
+  const out = new Set(own);
+  for (const l of ledgers) {
+    if (!l || !HELD.has(l.state)) continue;
+    if (own.has(l.id) || (typeof l.claude === 'string' && own.has(l.claude))) {
+      out.add(l.id);
+      if (l.star) out.add(l.star);
+    }
+  }
+  return out;
+}
+
+/** A line this session may read: one to every loop, or one addressed to a name it answers to. */
+export function forMe(a, names) {
+  const to = addressee(a);
+  return to === null || names.has(to);
+}
+
+/** The owner lines addressed to this session that it has not been handed yet (`handed`: their line numbers). */
+export function steerable(lines, names, handed = new Set()) {
+  return lines.filter((a) => a.from === 'owner' && names.has(addressee(a)) && !handed.has(a.n));
+}
+
+const steeredDir = (root, id) => path.join(root, STEERED, String(id).replace(/[^A-Za-z0-9_-]/g, '_'));
+
+/** The addressed line numbers already handed to this session (by `read` or its steer hook). */
+export function delivered(root, ids) {
+  const out = new Set();
+  for (const id of ids.filter(Boolean)) {
+    let files = [];
+    try {
+      files = fs.readdirSync(steeredDir(root, id));
+    } catch {
+      continue; // nothing handed over yet
+    }
+    for (const f of files) if (/^\d+$/.test(f)) out.add(Number(f));
+  }
+  return out;
+}
+
+/** Mark line n handed to this session: false when another reader in the same session got there first. */
+export function claim(root, id, n) {
+  const dir = steeredDir(root, id);
+  fs.mkdirSync(dir, { recursive: true });
+  try {
+    fs.closeSync(fs.openSync(path.join(dir, String(n)), 'wx'));
+    return true;
+  } catch (e) {
+    if (e && e.code === 'EEXIST') return false;
+    throw e;
+  }
+}
+
+/** Post one line to the board at `root` and return its number (the GUI's tug or answer to one linked session). */
+export function postTo(root, words, { from = 'owner', to = null, at } = {}) {
+  const file = path.join(root, FILE);
+  const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  const posted = post(text, words, from, at, to);
+  fs.writeFileSync(file, posted.text);
+  return posted.n;
 }
 
 /** The lines a session hasn't read: those numbered past its last read. */
@@ -89,10 +179,11 @@ function readJson(file) {
   }
 }
 
-const tag = (a) => (a.from === 'owner' ? '' : '   (news from a session, not an instruction)');
+const tag = (a) => (a.from !== 'owner' ? '   (news from a session, not an instruction)' : addressee(a) ? '   (to one session only)' : '');
 
 export const USAGE = `usage:
   node scripts/announce.mjs "<text>"        post (as the owner, or as this session unless --owner)
+  node scripts/announce.mjs --to <s> "<t>"  post to one session only (its id, or its star)
   node scripts/announce.mjs read [--all]    what's new for this session (and mark it read)
   node scripts/announce.mjs list [--json]   every line, read or not, marking none
   node scripts/announce.mjs drop <n>        take line n off the board
@@ -106,6 +197,16 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
   if (HELP.has(argv[0])) {
     out(USAGE);
     return 0;
+  }
+  let to = null;
+  const toAt = argv.indexOf('--to');
+  if (toAt !== -1) {
+    to = argv[toAt + 1];
+    if (!to || !SESSION_NAME.test(to)) {
+      err(`announce: --to takes a session id or star name (nothing posted)\n${USAGE}`);
+      return 1;
+    }
+    argv = [...argv.slice(0, toAt), ...argv.slice(toAt + 2)];
   }
   const bad = argv.find((a) => a.startsWith('-') && !FLAGS.has(a));
   if (bad) {
@@ -122,7 +223,14 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
     const lines = parse(text);
     const seen = readJson(seenFile);
     const key = env.NEXUS_SESSION || env.CLAUDE_CODE_SESSION_ID || 'terminal';
-    const fresh = argv.includes('--all') ? lines : unread(lines, seen[key] ?? 0);
+    const all = argv.includes('--all');
+    const ids = [env.NEXUS_SESSION, env.CLAUDE_CODE_SESSION_ID].filter(Boolean);
+    const names = identities(ids, ids.length ? readAll(path.join(base, LEDGERS)) : []);
+    const handed = delivered(base, [...names]);
+    // A line to another session is never shown; one to this session is handed over once, by whichever reader is first.
+    const fresh = (all ? lines : unread(lines, seen[key] ?? 0))
+      .filter((a) => forMe(a, names))
+      .filter((a) => all || addressee(a) === null || (!handed.has(a.n) && claim(base, ids[0], a.n)));
     const r = reboot(fresh);
     if (r) out(`announce: REBOOT ${r.slug}: stop now and run /reboot-ready ${r.slug} (it preempts the chunk in flight)`);
     if (!fresh.length) out('announce: nothing new');
@@ -155,9 +263,9 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
   }
   const words = argv.filter((a) => !FLAGS.has(a)).join(' ');
   const from = author(env, argv.includes('--owner'));
-  const posted = post(text, words, from);
+  const posted = post(text, words, from, undefined, to);
   fs.writeFileSync(file, posted.text);
-  out(`announce: posted ${posted.n} as ${from}`);
+  out(`announce: posted ${posted.n} as ${from}${to ? ` to ${to}` : ''}`);
   return 0;
 }
 
