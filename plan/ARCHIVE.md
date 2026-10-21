@@ -116,3 +116,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 42.3 · secrets run supplies values; the guard and a gate leg keep them out · 5f55b49d..751f7add
 - 2026-10-21 · 43.2 · /design prompt and addendum draft numbered prompts from the plan · 31b37052..8a09ae8f
 - 2026-10-21 · 42.7 · the GUI server lists secret names, stores values, masks transcripts · f2b03bdb..7612b013
+- 2026-10-21 · 43.3 · /design ingest writes a dated handoff with a manifest and plots the port · 71f213de..3de80eb0

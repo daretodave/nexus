@@ -85,9 +85,6 @@ What exists today (2026-10-21):
 
 ## Acceptance
 
-- **A3** `/design ingest` takes an artifact link or a folder,
-  writes `design/handoff/<date>/` with a manifest and README,
-  and plots the port chunk.
 - **A4** The board renderer and the screenshot compare live in
   `templates/scripts/design/` with tests, and nexus's own
   41.3 handoff renders through them.
@@ -105,13 +102,11 @@ What exists today (2026-10-21):
 they are in the Claude Design flow, by giving a link.)
 
 ## Chunks
-Measure: 5 open · 2 closed · next A8
+Measure: 4 open · 3 closed · next A8
 
-- [ ] **43.3** `/design ingest`: artifact link or folder in,
-  handoff and port chunk out · M · closes A3 · needs —
 - [ ] **43.4** The board renderer and screenshot compare,
-  promoted from the scratchpad · M · closes A4 · needs 43.3
+  promoted from the scratchpad · M · closes A4 · needs —
 - [ ] **43.5** The port recipe as a Workflow, and the
   fidelity leg · M · closes A5, A6 · needs 43.4
 - [ ] **43.6** "Hand off a design" and the board gallery in
-  the GUI · M · closes A7 · needs 43.3, 43.5
+  the GUI · M · closes A7 · needs 43.5
