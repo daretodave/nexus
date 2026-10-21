@@ -497,6 +497,7 @@ nexus/
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
 │   ├── ledger.mjs                     # npm run ledger: each session's live ledger (star names; a crash resumes like a reboot)
 │   ├── worktree.mjs                   # npm run worktree: close a worktree without deleting through its links; list for /tidy
+│   ├── design/ingest.mjs              # /design ingest: a Claude Design export into design/handoff/<date>/ with a manifest (the template's twin)
 │   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
 │   ├── secrets.mjs                    # npm run secrets: status, set, import, names, check, push, audit, request, run, scan; never a value (+ plan/secrets-manifest.mjs, secrets-vault.mjs, secrets-keychain.mjs, secrets-sinks.mjs, secrets-audit.mjs, secrets-run.mjs, secrets-scan.mjs; twins)
 │   ├── design/prompt.mjs              # /design prompt and /design addendum: the Claude Design paste prompt drafted from the plan (the template's twin)
@@ -676,6 +677,7 @@ nexus/
     │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env
     │   ├── cloud/tick.mjs             # PR-mode tick: pick + claim, fence, land the PR, release
     │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
+    │   ├── design/ingest.mjs          # /design ingest: an export folder -> design/handoff/<date>/ + manifest.json (sha256 per file) + README; check, rehash
     │   ├── upgrade-plan.mjs           # v1 to v2: shipped phases -> archive lines, pending -> spec stubs, blocked -> Held; dry run by default
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
@@ -705,6 +707,7 @@ nexus/
     │   ├── __tests__/secrets-run.test.mjs # secrets run and the diff scan: declared values only, masked output, hits by name
     │   ├── __tests__/secrets-scan-run.test.mjs # secrets scan end to end in a scratch git repo (opt-in)
     │   ├── __tests__/design-prompt.test.mjs # scope, the prompt's numbering, the addendum continuing it, the item-hash diff
+    │   ├── __tests__/design-ingest.test.mjs # the ingest over a fixture export: manifest, README, check, rehash
     │   ├── __tests__/bootstrap.test.mjs # bootstrap's cloud-loop plan, pure
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
