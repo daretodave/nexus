@@ -68,8 +68,6 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
   and deep links; a second launch reuses it.
 - **A2** The fleet home shows every session (GUI and terminal)
   by star name, and a fallen one resumes from its tile.
-- **A3** The plan board's two views, sorts and % done match
-  `order.mjs` and `/next status`.
 - **A4** Chunks without a description show a cached, marked
   AI summary; the plan is never written.
 - **A5** The claims panel groups by person and session, and
@@ -94,16 +92,14 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 (None.)
 
 ## Chunks
-Measure: 11 open · 1 closed · next A13
+Measure: 10 open · 2 closed · next A13
 
 - [ ] **40.1** One server, many sessions, deep links, a reused
   launch · M · closes A1 · needs —
 - [ ] **40.2** The fleet home: star tiles, merged inbox,
   Resume · M · closes A2 · needs 40.1
-- [ ] **40.3** The plan board: all chunks and specs, sorted by
-  order.mjs · M · closes A3 · needs —
 - [ ] **40.4** Cached AI one-liners for undescribed chunks ·
-  S · closes A4 · needs 40.3
+  S · closes A4 · needs —
 - [ ] **40.5** The claims panel: group, hold, assign, request
   · M · closes A5 · needs 40.1
 - [ ] **40.6** Git per session and the repo's worktree panel ·
@@ -120,6 +116,6 @@ Measure: 11 open · 1 closed · next A13
     cockpit's run-mode menu writes prefs directly; both move
     to `ui/run-mode.js` over `/api/local`.
 - [ ] **40.12** The board's grip reorders; Reassign picks a
-  target · M · closes A12 · needs 40.3, 40.5
+  target · M · closes A12 · needs 40.5
   - The grip is drawn but inert in 41.3. A reorder lands as a
     pending edit in contributor mode.

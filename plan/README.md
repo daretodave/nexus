@@ -37,7 +37,7 @@ line goes):
 | 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 2 left |
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 1 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 1 left |
-| 40 | GUI: the fleet, the plan board, git and Actions | [40-gui-fleet-and-board.md](40-gui-fleet-and-board.md) | planned · priority 2 | 11 left |
+| 40 | GUI: the fleet, the plan board, git and Actions | [40-gui-fleet-and-board.md](40-gui-fleet-and-board.md) | planned · priority 2 | 10 left |
 | 41 | GUI: steering, tugs, the design, the release | [41-gui-steering-design-release.md](41-gui-steering-design-release.md) | planned | 5 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33

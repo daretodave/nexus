@@ -87,3 +87,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 40.9 · npx @usenexus/cli run answers one prompt headless · 91beab70..e903967c
 - 2026-10-21 · 36.4 · ledger and notice board survive concurrent writers · f12d1f67..e7a43ff2
 - 2026-10-21 · 36 · spec complete: scripts behave the same from a spaced path, under concurrent sessions and on Windows; every suite runs in the gate or scripts-ci · 1637f034..e7a43ff2
+- 2026-10-21 · 40.3 · the plan board reads order.mjs and progress.mjs · 13b5666c..9d9bf4bf
