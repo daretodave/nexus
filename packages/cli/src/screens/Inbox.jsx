@@ -8,8 +8,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ViewFrame, ViewHead, ViewTitle, ChoiceButtons, LoopStatus, Icon, Orb, SessTag, Empty, ToastHost, cx, useShell,
+  ViewFrame, ViewHead, ViewTitle, ChoiceButtons, LoopStatus, Icon, Orb, Ring, SessTag, Empty, ToastHost, cx, useShell,
 } from '../ui/index.js';
+import { countdown } from '../../shared/times.mjs';
 import { api, server, useCloudLoop, useInbox, useOversight } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { collect, clock, names } from './headsdown-inbox/inboxModel.js';
@@ -34,6 +35,22 @@ function Tag({ x }) {
 }
 
 /** "Other…": a typed answer, sent on Enter (or the button, where one is drawn). */
+/**
+ * The pending tug's timer (Tug board): a live question counts down to the default its session takes (shared/times.mjs
+ * ASK_DEFAULT_MS), ticking each second; one without a deadline shows its age.
+ */
+function DefaultIn({ deadline, age }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!deadline) return undefined;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [deadline]);
+  const c = deadline ? countdown(deadline, now) : null;
+  if (c) return <span className="tug-timer"><Ring size="s" color="var(--st-blocked)" value={c.pct} />default in {c.left}</span>;
+  return age ? <span className="tug-timer">{age}</span> : null;
+}
+
 function Other({ onSend, placeholder = 'Other…', button }) {
   const [v, setV] = useState('');
   const send = () => { const t = v.trim(); if (t) { onSend(t); setV(''); } };
@@ -319,7 +336,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt }) {
     const perm = x.src === 'perm';
     card = (
       <div className="tug is-pending" role="group" aria-label={`Question from ${x.who}`}>
-        <div className="tug-head"><Orb state="blocked" size="s" /><span><span className="tug-who">{x.who}</span> {src ? <span className="tug-src">· {src}</span> : null}</span>{x.age ? <span className="tug-timer">{x.age}</span> : null}</div>
+        <div className="tug-head"><Orb state="blocked" size="s" /><span><span className="tug-who">{x.who}</span> {src ? <span className="tug-src">· {src}</span> : null}</span><DefaultIn deadline={x.deadline} age={x.age} /></div>
         <p className="tug-q">{x.q}</p>
         <Opts x={x} onPick={(o) => settle(x, o, 'answered')} />
         {x.why ? <p className="tug-why"><Icon name="rays8" size={14} style={{ marginTop: 3, color: 'var(--st-blocked)' }} /><span><b>{perm ? 'Why it asks:' : 'Why the default:'}</b> {x.why}</span></p> : null}

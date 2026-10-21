@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { LogRow, MsgYou, Orb, Tug, toolGlyph } from '../../ui/index.js';
 import { server } from '../../data/client.js';
 import { agentState, convoItems, mmss, toolDur } from './model.js';
+import { countdown } from '../../../shared/times.mjs';
 
 /**
  * A .log row as the board draws it, with the board's tool glyph; opens to show the full call. Its diffstat comes from
@@ -56,6 +57,8 @@ const REC = /\s*\(recommended\)\s*$/i;
 /** A live AskUserQuestion: one pending tug per question; the answers go back together. */
 function AskTugs({ ask, who }) {
   const [picked, setPicked] = useState({});
+  // The countdown to the default the session takes on its own (shared/times.mjs ASK_DEFAULT_MS).
+  const timer = countdown(ask.deadline, useTick(!!ask.deadline));
   const [err, setErr] = useState('');
   const qs = ask.questions || [];
   const send = async (next) => {
@@ -74,7 +77,7 @@ function AskTugs({ ask, who }) {
       <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <Tug
           who={who} src={q.header} question={q.question}
-          options={opts} why={rec?.desc}
+          options={opts} why={rec?.desc} timer={timer}
           onPick={(label) => pick(q, label)}
           onOther={(text) => pick(q, text)}
           onDefault={rec ? () => pick(q, rec.label) : undefined}

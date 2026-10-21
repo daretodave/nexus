@@ -11,7 +11,8 @@
 //
 // An item: { id, kind: 'now'|'parked'|'cloud', src: 'inbox'|'ask'|'perm'|'durable',
 //   session: { name, kind } | null, sessionId, run, who, chunk, chunkT, phase,
-//   age, at, q, opts: [label], why, hasDefault, freeText, raw }
+//   age, at, deadline (a live question: when its session takes the default), q, opts: [label], why, hasDefault,
+//   freeText, raw }
 
 const label = (o) => (typeof o === 'string' ? o : o?.label || '');
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -44,7 +45,7 @@ export function fromInbox(data, now) {
   return rows.map((x) => {
     const tag = (item) => ({ ...item, session: sessionOf(x.session), sessionId: x.sessionId || x.session?.id || null, chunk: x.chunk || item.chunk });
     if (x.src === 'ask' && x.askId) {
-      const [one] = fromAsks([{ id: x.askId, agent: x.agent, at: x.at, questions: [{ question: x.qText, options: x.options || [] }] }], { now });
+      const [one] = fromAsks([{ id: x.askId, agent: x.agent, at: x.at, deadline: x.deadline, questions: [{ question: x.qText, options: x.options || [] }] }], { now });
       return tag({ ...one, id: String(x.id), q: x.question || one.q, opts: (x.options || []).map(label).filter(Boolean), why: x.why || '', raw: x });
     }
     if (x.src === 'perm' && x.perm) return tag(fromPermissions([x.perm], { now })[0]);
@@ -104,6 +105,7 @@ export function fromAsks(asks = [], { stage, chunk, now } = {}) {
         phase: '',
         age: a.at ? `asked ${ago(a.at, now)}` : '',
         at: a.at ? clock(a.at) : '',
+        deadline: a.deadline ?? null,
         q: q.question || q.header || '',
         opts,
         why: typeof first === 'object' && first?.description ? first.description : '',

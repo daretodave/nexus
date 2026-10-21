@@ -16,6 +16,7 @@ import { createProvider } from './provider.mjs';
 import { txFromMessage, newTxContext } from './normalize.mjs';
 import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
 import { createTugLog } from './tugs.mjs';
+import { ASK_DEFAULT_MS, askDefaults } from '../shared/times.mjs';
 
 /**
  * @param {object} o
@@ -28,8 +29,9 @@ import { createTugLog } from './tugs.mjs';
  * @param {() => string} [o.permissionMode]
  * @param {boolean} [o.listed]        shown in the session list before it has run (started from the GUI)
  * @param {string} [o.resume]        a Claude Code session id its first turn resumes (Recover: a Workflow run's own)
+ * @param {number} [o.askDefaultMs]   how long a live question waits before the session takes its default (0: never)
  */
-export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, resume = null, now = () => Date.now() }) {
+export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS }) {
   const hub = createHub();
   const asks = new Map();
   const permissions = new Map();
@@ -60,21 +62,38 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     }
   };
 
+  // A live question waits askDefaultMs for an answer, then the session takes its defaults (the recommended option,
+  // else the first) and says so in the conversation; `deadline` is when, for the countdown. One with no options waits.
   const onAsk = ({ id: askId, agent, questions, signal }) => new Promise((resolve) => {
-    const view = { id: askId, agent, questions, at: Date.now(), session: id };
-    asks.set(askId, { view, resolve });
+    const at = now();
+    const defaults = askDefaultMs > 0 ? askDefaults(questions) : null;
+    const view = { id: askId, agent, questions, at, deadline: defaults ? at + askDefaultMs : null, session: id };
+    const timer = defaults ? setTimeout(() => takeDefaults(askId), askDefaultMs) : null;
+    timer?.unref?.();
+    asks.set(askId, { view, resolve, timer, defaults });
     // The SDK's agentID is a subagent's own id, not the tool_use id the stage
     // draws it under, so stage beats attach questions to the session orb.
     hub.beat({ k: 'oversight', p: 'ask', id: askId, agent: MAIN });
     publishAsks();
     signal?.addEventListener('abort', () => {
       if (!asks.has(askId)) return;
+      clearTimeout(asks.get(askId).timer);
       asks.delete(askId);
       hub.beat({ k: 'oversight', p: 'answer', id: askId });
       publishAsks();
       resolve(null);
     });
   });
+
+  function takeDefaults(askId) {
+    const entry = asks.get(askId);
+    if (!entry) return;
+    asks.delete(askId);
+    hub.beat({ k: 'oversight', p: 'answer', id: askId });
+    hub.tx({ kind: 'system', text: `default taken after ${Math.round(askDefaultMs / 60000)} min: ${Object.values(entry.defaults).join(' · ')}`, at: now() });
+    publishAsks();
+    entry.resolve(entry.defaults);
+  }
 
   const onPermission = ({ id: reqId, agent, tool, input, suggestions, reason, signal }) => new Promise((resolve) => {
     const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
@@ -164,6 +183,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     answerAsk(askId, answers) {
       const entry = asks.get(askId);
       if (!entry) return false;
+      clearTimeout(entry.timer);
       asks.delete(askId);
       hub.beat({ k: 'oversight', p: 'answer', id: askId });
       publishAsks();
@@ -183,6 +203,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
       return !!key && (key === id || key === claude || (!!name && key === name));
     },
     async close() {
+      for (const a of asks.values()) clearTimeout(a.timer);
       await provider.stop?.();
       hub.close();
     },

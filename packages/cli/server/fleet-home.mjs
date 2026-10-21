@@ -95,6 +95,8 @@ export function inboxItems({ hosted = [], ledgers = [], durable = [], now = Date
           session, sessionId: h.id, agent: a.agent || 'main', chunk: chunkOf(h.id),
           question: q.question || q.header || '', options: opts, default: opts[0], why: typeof first === 'object' && first?.description ? first.description : '',
           at: a.at ? new Date(a.at).toISOString() : null,
+          // When its session takes the default (session.mjs): the inbox counts down to it.
+          deadline: a.deadline ? new Date(a.deadline).toISOString() : null,
         });
       });
     }

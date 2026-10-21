@@ -108,3 +108,47 @@ test('the cockpit counts a chunk\'s elapsed time from the start the server saw',
   const rows = ctxLayers({ ledger: { chunk: { id: '12.3', title: 'Conflicts', startedAt: '2026-10-21T02:00:00Z' } }, owner: true, phase: 'working', stage: null, info: {}, sessionName: 'vega', now });
   assert.equal(rows.find((r) => r.k === 'Now').m, '18:42');
 });
+
+// ---- the tug's default deadline ---------------------------------------------------------
+
+const { createSession } = await import('../server/session.mjs');
+const { askDefaults, countdown, ASK_DEFAULT_MS } = await import('../shared/times.mjs');
+
+test('a live question takes its recommended default when its wait runs out, and says so', async () => {
+  let hooks;
+  let t = 5000;
+  const s = await createSession({ id: 's1', cwd: '.', now: () => t, askDefaultMs: 30, provider: (h) => { hooks = h; return { kind: 'fake', send() {}, async stop() {} }; } });
+  try {
+    const answer = hooks.onAsk({ id: 'q1', agent: 'main', questions: [{ question: 'Tie?', options: [{ label: 'Server wins' }, { label: 'Keep both (recommended)' }] }] });
+    const view = [...s.asks.values()][0].view;
+    assert.equal(view.deadline, 5030);
+    assert.deepEqual(await answer, { 'Tie?': 'Keep both' });
+    assert.equal(s.asks.size, 0);
+    assert.match(s.hub.transcript.at(-1).text, /^default taken after 0 min: Keep both$/);
+    // An answer before the deadline wins and the timer never fires.
+    const early = hooks.onAsk({ id: 'q2', questions: [{ question: 'Size?', options: ['S', 'M'] }] });
+    s.answerAsk('q2', { 'Size?': 'M' });
+    assert.deepEqual(await early, { 'Size?': 'M' });
+    // A question with no options has no default: no deadline, it waits.
+    hooks.onAsk({ id: 'q3', questions: [{ question: 'Name it', options: [] }] });
+    assert.equal(s.asks.get('q3').view.deadline, null);
+  } finally {
+    await s.close();
+  }
+});
+
+test('the countdown reads like the Tug board: 4:48 left of 6 minutes is 80%', () => {
+  assert.equal(ASK_DEFAULT_MS, 360000);
+  assert.deepEqual(countdown(1000 + 288000, 1000), { left: '4:48', pct: 80 });
+  assert.equal(countdown(1000, 2000), null);
+  assert.equal(countdown(null, 1000), null);
+  assert.deepEqual(askDefaults([{ question: 'a', options: ['x', 'y'] }, { question: 'b', options: [{ label: 'p' }, { label: 'q (Recommended)' }] }]), { a: 'x', b: 'q' });
+  assert.equal(askDefaults([{ question: 'a', options: [] }]), null);
+});
+
+test('the inbox carries a live question\'s deadline to its tug', async () => {
+  const { fromInbox } = await import('../src/screens/headsdown-inbox/inboxModel.js');
+  const [x] = fromInbox([{ id: 'q1:0', src: 'ask', askId: 'q1', kind: 'now', qText: 'Tie?', question: 'Tie?', options: ['A', 'B'], at: '2026-10-21T03:00:00Z', deadline: '2026-10-21T03:06:00Z', session: { name: 'vega' } }], Date.parse('2026-10-21T03:01:12Z'));
+  assert.equal(x.deadline, '2026-10-21T03:06:00Z');
+  assert.deepEqual(countdown(x.deadline, Date.parse('2026-10-21T03:01:12Z')), { left: '4:48', pct: 80 });
+});
