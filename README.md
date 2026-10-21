@@ -513,6 +513,7 @@ nexus/
 │   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
 │   ├── upgrade.md                     # an older plan shape → specs + chunks; pin with plan/nexus.lock
 │   ├── owner-mode.md                  # how work lands: .owner pushes main + settles, else next/<id> PRs; rulesets
+│   ├── design-handoff.md              # the Claude Design round trip: prompt, addenda, link, ingest, port, skip list
 │   ├── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos
 │   └── workspace.md                   # variant: un-versioned root + org-per-project, past two repos
 ├── concepts/
@@ -520,7 +521,8 @@ nexus/
 │   ├── loop-shapes.md                 # the genus: dispatcher, night shift, heartbeat, concierge, pollinator, lanes, meta-loop
 │   ├── plan-shape.md                  # specs, chunks, acceptance IDs: the plan only shrinks
 │   ├── skills-anatomy.md              # how to read/write a skill file
-│   └── asking-well.md                 # the question-shape convention
+│   ├── asking-well.md                 # the question-shape convention
+│   └── design-round-trip.md           # Claude Design in, the repo's handoff as source of truth; vs. the in-repo session
 ├── customization/
 │   ├── verify-gate.md                 # composing the right pre-commit checks
 │   ├── hermetic-e2e.md                # the e2e leg — patterns, alt-port DB seeding, smoke walker

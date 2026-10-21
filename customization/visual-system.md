@@ -79,9 +79,28 @@ consumes it. The loop does not block on design.
 
 ---
 
+## Two paths to a design
+
+| Path | Where the design is made | How it reaches the repo | Read |
+|---|---|---|---|
+| **In-repo session** | a fresh Claude Code session in a working copy | the session commits `design/` (`design: visual system v1`) | the next section; [`../templates/design-prompt.md`](../templates/design-prompt.md) |
+| **Claude Design round trip** (opt-in) | Claude Design, on a canvas of boards, from a paste prompt and its addenda | the owner shares the artifact link; the session ingests the export into `design/handoff/` and a port chunk adopts it as drawn | [`../concepts/design-round-trip.md`](../concepts/design-round-trip.md), [`../playbooks/design-handoff.md`](../playbooks/design-handoff.md) |
+
+Both land a design the build chunks consume rather than
+reinvent. The in-repo session suits a system the chunks
+extend piece by piece; the round trip suits an owner who wants
+to see and steer whole screens first. In the round trip the
+handoff folder plays the role `design/` plays below: it is the
+source of truth, and a screen that differs from its board is a
+bug in the screen. nexus's own GUI took the round trip
+(`packages/cli/design/handoff/`).
+
+---
+
 ## How to commission a visual system
 
-Use [`../templates/design-prompt.md`](../templates/design-prompt.md)
+This is the in-repo session. Use
+[`../templates/design-prompt.md`](../templates/design-prompt.md)
 as the seed. Customize the working name, the audience, and
 the mood notes, then paste into a *separate* Claude Code
 session (or any agent that can read repo state + write
@@ -254,6 +273,11 @@ For a project that wants the system layer:
 - [`../templates/design-prompt.md`](../templates/design-prompt.md)
   — generic prompt skeleton for the design commission
   session.
+- [`../concepts/design-round-trip.md`](../concepts/design-round-trip.md)
+  — the other path: Claude Design's artifact, ingested and
+  ported as drawn.
+- [`../playbooks/design-handoff.md`](../playbooks/design-handoff.md)
+  — that round trip, step by step.
 - [`../templates/plan/bearings.md`](../templates/plan/bearings.md)
   — "Visual & tonal defaults" section pins the
   `design/`-vs-bearings precedence.
