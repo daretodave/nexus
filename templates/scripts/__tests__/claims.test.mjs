@@ -182,6 +182,42 @@ describe('the CLI', () => {
     assert.equal(run(a, ['nope']).code, 2);
   });
 
+  it("tags a claim with the session's ledger star, shows it in whoami and list, and never orphans an older tag", () => {
+    const ledger = (id, star, state = 'live') => {
+      const d = path.join(a, '.nexus', 'sessions');
+      fs.mkdirSync(d, { recursive: true });
+      fs.writeFileSync(path.join(d, `${id}.json`), JSON.stringify({ id, star, state, claims: id.slice(0, 8) }));
+    };
+    const tag = (id) => fetchClaims(a).map[id].split('|')[4];
+    // No ledger yet: today's tag, no star.
+    assert.equal(JSON.parse(run(a, ['whoami', '--json']).out).star, '');
+    assert.equal(run(a, ['claim', '16.1']).code, 0);
+    assert.equal(tag('16.1'), 's:cli-s1');
+    // The ledger names this session vega: whoami and a new claim carry it, and the older claim stays this session's.
+    ledger('cli-s1', 'vega');
+    const who = JSON.parse(run(a, ['whoami', '--json']).out);
+    assert.deepEqual([who.session, who.star], ['cli-s1', 'vega']);
+    assert.match(run(a, ['whoami']).out, /session cli-s1~vega/);
+    assert.equal(run(a, ['release', '16.1']).code, 0);
+    assert.equal(run(a, ['claim', '16.1']).code, 0);
+    assert.equal(tag('16.1'), 's:cli-s1~vega');
+    const rows = JSON.parse(run(a, ['list', '--json']).out);
+    assert.deepEqual(rows.map((x) => [x.id, x.session, x.star, x.mine]), [['16.1', 'cli-s1', 'vega', true]]);
+    assert.match(run(b, ['list']).out, /cli-s1~vega/);
+    // An older tag (written before the star) renews and releases by the id alone; the renew gives it the star.
+    run(a, ['claim', '16.3'], { NEXUS_SESSION: 'cli-s2' });
+    ledger('cli-s2', 'sirius');
+    assert.equal(tag('16.3'), 's:cli-s2');
+    assert.deepEqual(JSON.parse(run(a, ['renew', '--json'], { NEXUS_SESSION: 'cli-s2' }).out).renewed, ['16.3']);
+    assert.equal(tag('16.3'), 's:cli-s2~sirius');
+    assert.deepEqual(JSON.parse(run(a, ['release', '16.3', '--json'], { NEXUS_SESSION: 'cli-s2' }).out), { released: ['16.3'], kept: [] });
+    // The Claude Code session finds its ledger by the full id; --session finds one by its claims id.
+    ledger('abcdef123456', 'polaris');
+    assert.equal(JSON.parse(run(a, ['whoami', '--json'], { NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: 'abcdef123456' }).out).star, 'polaris');
+    assert.equal(JSON.parse(run(a, ['whoami', '--json', '--session', 'abcdef12']).out).star, 'polaris');
+    assert.equal(JSON.parse(run(a, ['whoami', '--json', '--session', 'nobody']).out).star, '');
+  });
+
   it('takes the session from NEXUS_SESSION, then the Claude Code session, and dispatches no board unless asked', () => {
     assert.equal(sessionId({ NEXUS_SESSION: 'x1' }), 'x1');
     assert.equal(sessionId({ CLAUDE_CODE_SESSION_ID: 'abcdef123456' }), 'abcdef12');

@@ -47,12 +47,16 @@ and holds `claims.json` (and a README the first claim
 writes). Each entry maps a chunk id to one string:
 
 ```
-"16.3": "sam|10.0.0.2|sam-pc|2026-10-20T14:02:11.000Z|s:9f2c41aa|pr:42|b:next/16"
+"16.3": "sam|10.0.0.2|sam-pc|2026-10-20T14:02:11.000Z|s:9f2c41aa~vega|pr:42|b:next/16"
 ```
 
 `who | ip | host | when`, then `s:<session>`, and optionally
 `pr:<n>`, `held:<github login>` and `b:<base branch>` (omitted
-when it is main).
+when it is main). A session that keeps a ledger
+([`sessions.md`](sessions.md#the-live-ledger)) carries its
+star name in the tag, `s:<session>~<star>` (`s:9f2c41aa~vega`);
+one with no ledger writes `s:<session>` alone, and a tag
+written before the star keeps parsing.
 
 - **Compare-and-swap.** A claim builds a commit on the tip it
   just fetched, with plumbing (`hash-object`, `mktree`,
@@ -84,7 +88,9 @@ when it is main).
   chunk, and one loop's renew or release never touches
   another's. A claim with a PR is also its author's on that
   machine in any session, so a later session can carry the
-  review.
+  review. A session is matched by its id alone, never its
+  star: a claim made before the session took a star is still
+  its own, and its next `renew` adds the star.
 - **24 hours.** A claim lives 24 h from its time; `renew`
   restarts the clock. A stale claim may be reclaimed by
   anyone, except a privileged (owner's) claim, which only the
@@ -116,8 +122,8 @@ when it is main).
 ## The commands
 
 ```
-node scripts/claims.mjs whoami                  # owner or contributor, who, session (warns on a pid), host
-node scripts/claims.mjs list                    # every claim: state live|stale|pr|held, mine?
+node scripts/claims.mjs whoami                  # owner or contributor, who, session~star (warns on a pid), host
+node scripts/claims.mjs list                    # every claim: state live|stale|pr|held, session~star, mine?
 node scripts/claims.mjs free 16.3               # may I claim it? (exit 1 when not)
 node scripts/claims.mjs claim 16.3              # claim (all or nothing); --base <b>, --force (owner)
 node scripts/claims.mjs claim 16.3 16.4 --package   # a contributor's heads-down package

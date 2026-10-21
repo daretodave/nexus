@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // scripts/claims.mjs: who builds what. The `claims` branch on origin is an orphan branch holding one file,
-// claims.json, that maps a chunk id to "<who>|<ip>|<host>|<ISO time>|s:<session>[|pr:<n>][|held:<login>][|b:<base>]"
+// claims.json, that maps a chunk id to "<who>|<ip>|<host>|<ISO time>|s:<session>[~<star>][|pr:<n>][|held:<login>][|b:<base>]"
 // (the rules: scripts/claims-codec.mjs). Anyone with push access writes it at any time, with no checks (a pre-push hook
 // skips this ref; a branch ruleset refuses only a force push or a deletion): a claim is a compare-and-swap, a commit
 // built on the tip just fetched and pushed without force, so two machines racing for one chunk can't both win. Nothing
@@ -14,6 +14,8 @@
 //
 // A claim belongs to the session that made it (--session, else NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID): two loops
 // of one person, the owner's included, never share a chunk, and one loop's renew or release never touches another's.
+// A session that keeps a ledger (scripts/ledger.mjs, .nexus/sessions/ at the primary checkout) tags its claims with its
+// star name, `s:<session>~<star>`; a session is matched by its id alone, so a claim made before the star still counts.
 // A claim with a PR also belongs to its author on that machine, so a later session can carry the PR's review. The
 // owner takes over any claim with --force (a crashed loop's). A crash never releases a claim: it stays until its TTL.
 //
@@ -33,21 +35,23 @@
 // (this machine's GitHub login; else asked of gh), NEXUS_CLAIMS_REMOTE (default origin), NEXUS_MAIN_BRANCH (default
 // main), NEXUS_CLAIMS_BOARD (a workflow file to dispatch after any write, e.g. claims-board.yml; off when unset).
 import { execFileSync, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import os from 'node:os';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { pendingArchiveLines, pendingAtRef } from './plan/pending.mjs';
-import { isOwner } from './owner.mjs';
-import { BRANCH, CHUNK_ID as ID, FILE, PRIVILEGED, TTL_MS, claimInto, decide, format, idsProblem, mine, parse, pushRefusal, readMap, releaseFrom, renewIn, serialize, state } from './claims-codec.mjs';
+import { isOwner, primaryRoot } from './owner.mjs';
+import { BRANCH, CHUNK_ID as ID, FILE, PRIVILEGED, STAR, TTL_MS, claimInto, decide, format, idsProblem, mine, parse, pushRefusal, readMap, releaseFrom, renewIn, serialize, state } from './claims-codec.mjs';
 
 export { BRANCH, FILE, PRIVILEGED, TTL_MS, decide, format, mine, parse, state };
 export const TRIES = 8;
 const README = `# claims
 
 Who is building which chunk of plan/. Written only by \`node scripts/claims.mjs\`, never by hand. Each entry:
-\`"<chunk>": "<who>|<ip>|<host>|<ISO time>|s:<session>[|pr:<n>][|held:<login>][|b:<base>]"\`. A claim lives 24 h unless
+\`"<chunk>": "<who>|<ip>|<host>|<ISO time>|s:<session>[~<star>][|pr:<n>][|held:<login>][|b:<base>]"\`. A claim lives 24 h unless
 renewed; one with a PR lives until the PR is merged or closed; one \`held:\` for a person (the owner's \`assign\`) lives
 until they or the owner release it. \`b:\` names the branch it builds on, when not main. \`privileged_agent_session\` is
-the owner's.
+the owner's. \`~<star>\` after a session is its star name (vega, sirius, ...), when the session keeps a ledger.
 `;
 
 function git(args, opts = {}) {
@@ -75,8 +79,37 @@ export function whoami(cwd = process.cwd(), env = process.env) {
   try {
     name = git(['config', 'user.name'], { cwd }).trim();
   } catch {}
-  return { owner, who: owner ? PRIVILEGED : name || os.userInfo().username, ip: lanIp(), host: os.hostname(), session: sessionId(env) };
+  const session = sessionId(env);
+  return { owner, who: owner ? PRIVILEGED : name || os.userInfo().username, ip: lanIp(), host: os.hostname(), session, star: starOf(cwd, session, env) };
 }
+
+/**
+ * This session's star name from its ledger (.nexus/sessions/*.json at the primary checkout, scripts/ledger.mjs): the
+ * ledger whose id is this session's full id (NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID) or `session` itself, or whose
+ * claims id is `session`; one still held (not resumed or ended) first. '' when none says: the tag stays `s:<session>`.
+ */
+export function starOf(cwd, session, env = process.env) {
+  if (!session) return '';
+  const ledgers = [];
+  try {
+    const dir = path.join(primaryRoot(cwd), '.nexus', 'sessions');
+    for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.json'))) {
+      try {
+        const l = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+        if (l && typeof l.id === 'string' && typeof l.star === 'string' && STAR.test(l.star)) ledgers.push(l);
+      } catch {} // a half-written ledger: skipped
+    }
+  } catch {
+    return ''; // no ledgers here
+  }
+  const full = sessionId(env) === session ? env.NEXUS_SESSION || env.CLAUDE_CODE_SESSION_ID || '' : '';
+  const hits = ledgers.filter((l) => (full && l.id === full) || l.id === session || (l.claims ?? l.id.slice(0, 8)) === session);
+  const held = hits.filter((l) => l.state !== 'resumed' && l.state !== 'ended');
+  return (held[0] ?? hits[0])?.star ?? '';
+}
+
+/** A session as people read it: `<session>~<star>`, the session alone, or '-'. */
+const tagOf = (c) => `${c.session || '-'}${c.session && c.star ? `~${c.star}` : ''}`;
 
 /** This machine's GitHub login through gh (NEXUS_GH_LOGIN overrides; '' when gh can't say): a held claim's match. */
 export function ghLogin(env = process.env) {
@@ -225,7 +258,7 @@ export function assign(cwd, ids, me, { to, login, base = '', remote, force = fal
         const prev = map[id] ? parse(map[id]) : null;
         const theirs = prev && prev.who === to ? prev : null;
         const held = login.replace(/^@/, '');
-        map[id] = format({ who: to, ip: theirs?.ip || '-', host: theirs?.host || '-', at, session: theirs?.session ?? '', pr: theirs?.pr ?? null, held, base: base || theirs?.base || '' });
+        map[id] = format({ who: to, ip: theirs?.ip || '-', host: theirs?.host || '-', at, session: theirs?.session ?? '', star: theirs?.star ?? '', pr: theirs?.pr ?? null, held, base: base || theirs?.base || '' });
       }
       return { map, message: `assign ${ids.join(', ')} to ${to} · ${me.who}@${me.host}` };
     },
@@ -410,14 +443,14 @@ export function main(argv, { cwd = process.cwd(), env = process.env, out = conso
   const json = flags.has('--json');
   const say = (value, text) => out(json ? JSON.stringify(value, null, 2) : text);
   const me = whoami(cwd, env);
-  if (session) me.session = session;
+  if (session) Object.assign(me, { session, star: starOf(cwd, session, env) });
   // A held claim is its person's by GitHub login too (mine()); the owner's claims are never held for the owner.
   if (!me.owner && cmd !== 'whoami') me.login = ghLogin(env);
   const now = Date.now();
   switch (cmd) {
     case 'whoami':
       if (!me.owner) me.login = ghLogin(env);
-      say(me, `${me.owner ? 'owner' : 'contributor'} · claims as ${me.who}${me.login ? ` (@${me.login})` : ''} · session ${me.session} · ${me.host} · ${me.ip}`);
+      say(me, `${me.owner ? 'owner' : 'contributor'} · claims as ${me.who}${me.login ? ` (@${me.login})` : ''} · session ${tagOf(me)} · ${me.host} · ${me.ip}`);
       // A pid session dies with this shell: a later terminal can't renew or release what it claims.
       if (!session && !env.NEXUS_SESSION && !env.CLAUDE_CODE_SESSION_ID) err(`claims: session ${me.session} is this shell's parent process, so a later terminal can't renew its claims; set NEXUS_SESSION (any name you'll reuse) to keep one.`);
       return 0;
@@ -426,7 +459,7 @@ export function main(argv, { cwd = process.cwd(), env = process.env, out = conso
       const rows = Object.entries(map).map(([id, v]) => row(id, parse(v), me, now));
       if (json) say(rows);
       else if (!rows.length) out('no claims');
-      else for (const r of rows) out(`${r.id.padEnd(8)} ${r.state.padEnd(5)} ${r.who} · ${r.host} · ${r.session || '-'} · ${r.at}${r.pr ? ` · PR #${r.pr}` : ''}${r.held ? ` · held for @${r.held}` : ''}${r.base ? ` · on ${r.base}` : ''}${r.mine ? (r.held ? ' · yours' : ' · this session') : ''}`);
+      else for (const r of rows) out(`${r.id.padEnd(8)} ${r.state.padEnd(5)} ${r.who} · ${r.host} · ${tagOf(r)} · ${r.at}${r.pr ? ` · PR #${r.pr}` : ''}${r.held ? ` · held for @${r.held}` : ''}${r.base ? ` · on ${r.base}` : ''}${r.mine ? (r.held ? ' · yours' : ' · this session') : ''}`);
       return 0;
     }
     case 'free': {
@@ -462,7 +495,7 @@ export function main(argv, { cwd = process.cwd(), env = process.env, out = conso
     case 'audit': {
       const r = audit(cwd, me, { doRelease: flags.has('--release') });
       const rows = r.rows.map((x) => ({ ...row(x.id, x.c, me, now), why: x.why }));
-      const lines = r.rows.map((x) => `${x.id.padEnd(8)} ${(x.why ?? 'keep').padEnd(9)} ${x.c.who} · ${x.c.host} · ${x.c.session || '-'} · ${x.c.at}${x.c.pr ? ` · PR #${x.c.pr}` : ''}`);
+      const lines = r.rows.map((x) => `${x.id.padEnd(8)} ${(x.why ?? 'keep').padEnd(9)} ${x.c.who} · ${x.c.host} · ${tagOf(x.c)} · ${x.c.at}${x.c.pr ? ` · PR #${x.c.pr}` : ''}`);
       if (flags.has('--release')) lines.push(`released: ${r.released.join(', ') || 'nothing'}`);
       say({ rows, released: r.released }, lines.join('\n'));
       return 0;
