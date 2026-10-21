@@ -99,3 +99,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 40.6 · every session and the repo show git; tidy dry run lists idle trees · 6d4ca0c6..5e4c0711
 - 2026-10-21 · 40.10 · Recover reads a Workflow run folder and resumes the run · cf3546a3..97209d2a
 - 2026-10-21 · 41.8 · fleet idle curves, the orphan's tidy link, one switcher rule · ce67d9e2..1d222f64
+- 2026-10-21 · 40.5 · claims panel groups, claims, releases, holds, assigns, requests · 4b28490e..bfb03e87
