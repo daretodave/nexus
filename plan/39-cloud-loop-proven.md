@@ -43,7 +43,6 @@ What exists today (2026-10-20): `templates/.github/workflows/
 
 - **A1** One PR-mode tick ran on GitHub end to end; what broke
   is fixed in the templates.
-- **A4** nexus releases a closed contributor PR's claims.
 - **A5** The optional claims-board workflow exists and is
   documented in `customization/claims.md`.
 
@@ -52,11 +51,8 @@ What exists today (2026-10-20): `templates/.github/workflows/
 (None.)
 
 ## Chunks
-Measure: 3 open · 2 closed · next A6
+Measure: 2 open · 3 closed · next A6
 
-- [ ] **39.2** nexus gains pr-flow.yml for contributor PRs ·
-  S · closes A4 · needs —
-  - Touches `.github/workflows/`: ship it from a local session.
 - [ ] **39.3** The optional claims-board workflow · M ·
   closes A5 · needs —
 - [ ] **39.4** One real PR-mode tick in a scratch adopter repo

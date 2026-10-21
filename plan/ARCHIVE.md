@@ -74,3 +74,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 32 · spec complete: the heartbeat alarms once per unarmed scheduled workflow (never re-enables one) and checks cadence per workflow, march 14h and night 48h · b6acc842..fe136587
 - 2026-10-21 · 39.1 · bootstrap sets the loop mode; pr-resolve follows DEFAULT_BRANCH · d9c843bd..d9c843bd
 - 2026-10-21 · 35.7 · adopt-dryrun walks new-project 3 and runs on Windows · a1caba9a..920626c3
+- 2026-10-21 · 39.2 · nexus releases a closed contributor PR's claims · 0aded94a..b726e0b8
