@@ -5,7 +5,7 @@
 import {
   AiGlyph, SizeTag, Icon, Moon, Grip, Star, Pct, ChunkIt, CkQ, CRail, CrPerson, CrSess, CrClaim, ReqPop, ChoiceButtons, cx,
 } from '../../ui/index.js';
-import { CS, GH_LOGIN } from './model.js';
+import { CS, GH_LOGIN, ownerLead } from './model.js';
 
 /** The row's claim badge (.claim): a star session, the cloud loop, a hold, or a neutral initial. */
 export function ClaimBadge({ cl, whole }) {
@@ -126,7 +126,7 @@ export function BoardRow({ r, on, repo, ownerName, busy, grip = null, pick = nul
       </div>
       {r.showPop ? (
         <ReqPop onSend={() => on.sendRequest(r.id)} onCancel={on.closePop}>
-          <span><b>Claims are protected in {repo}.</b> The claims branch only takes pushes from {ownerName}, so nexus sends a request instead. {ownerName} gets a one-tap yes or no; most come back in minutes.</span>
+          <span><b>Claims are protected in {repo}.</b> The claims branch only takes pushes from {ownerName}, so nexus sends a request instead. {ownerLead(ownerName)} gets a one-tap yes or no; most come back in minutes.</span>
           <span>Until then <b>{r.id}</b> stays unclaimed, and /next keeps offering it to everyone.</span>
         </ReqPop>
       ) : null}

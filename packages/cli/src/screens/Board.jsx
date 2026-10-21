@@ -19,7 +19,7 @@ import { api, server, usePlan, useClaims, useSummaries, useSessions, useLocalSet
 import { PATHS, lastSession } from '../routes.js';
 import {
   normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, railPeople, hhmm,
-  gripKey, dragOrder, moveOf, inOrder, gripSays, reassignTargets, reassignBody,
+  gripKey, dragOrder, moveOf, inOrder, gripSays, reassignTargets, reassignBody, ownerLead,
 } from './board/model.js';
 import { BoardRow, BoardSpec, ClaimsRail, PlanPr } from './board/parts.jsx';
 
@@ -242,7 +242,7 @@ export default function Board() {
         pill: landed ? 'on main' : 'open',
         note: landed
           ? `You own ${repo}, so chunked and plotted work lands straight on main. No plan PR to wait for.`
-          : `${ownerName} reviews it; until then ${made.length === 2 ? 'both chunks show' : made.length === 1 ? 'the chunk shows' : 'the chunks show'} as just plotted.`,
+          : `${ownerLead(ownerName)} reviews it; until then ${made.length === 2 ? 'both chunks show' : made.length === 1 ? 'the chunk shows' : 'the chunks show'} as just plotted.`,
       });
       setCk(null);
       planR.reload();

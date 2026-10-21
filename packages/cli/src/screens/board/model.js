@@ -412,3 +412,6 @@ export function reassignBody(id, target, login = '') {
   if (!GH_LOGIN.test(l)) return null;
   return { id, login: l, ...(target.to ? { to: target.to } : null) };
 }
+
+/** ownerName at the start of a sentence: the fallbacks ('the owner', 'you') take a capital, a login never does. */
+export const ownerLead = (name) => (name === 'the owner' || name === 'you' ? name[0].toUpperCase() + name.slice(1) : name);

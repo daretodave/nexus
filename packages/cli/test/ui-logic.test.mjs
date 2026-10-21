@@ -8,7 +8,7 @@ import {
 import { parsePick, themeFor } from '../src/ui/theme-pick.js';
 import { nextRunMode, prefsFromRunMode, runModeFromPrefs } from '../src/ui/run-mode.js';
 import {
-  normalizePlan, claimView, indexClaims, withClaim, rowModel, lanes, specProgress, specKey, specOf, meWhoFrom, railPeople,
+  normalizePlan, claimView, indexClaims, withClaim, rowModel, lanes, specProgress, specKey, specOf, meWhoFrom, railPeople, ownerLead,
 } from '../src/screens/board/model.js';
 import { norm, summary, trainOf } from '../src/screens/fleet/model.js';
 
@@ -336,4 +336,10 @@ test('the plan board reads progress.mjs\'s % done and a claimed chunk from it', 
   // a claimed chunk with its session's claim reads as building, as a ready one does
   const claims = { chunk: { '07.2': { kind: 'sess', person: 'you', sess: { chunk: '07.2' } } }, spec: {} };
   assert.equal(withClaim(p.chunks[1], claims).state, 'building');
+});
+
+test('ownerLead capitalizes the fallback owner name at a sentence start, never a login', () => {
+  assert.equal(ownerLead('the owner'), 'The owner');
+  assert.equal(ownerLead('you'), 'You');
+  assert.equal(ownerLead('daretodave'), 'daretodave');
 });
