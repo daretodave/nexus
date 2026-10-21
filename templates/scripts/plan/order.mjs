@@ -11,7 +11,9 @@
 //
 //   node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--json]
 //
-// --mark flags chunks as "just plotted" (/plot's after picture); --ref reads the plan at a ref instead of the files.
+// --mark flags chunks as "just plotted" (/plot's after picture); --ref reads the plan at a ref instead of the files;
+// --limit (a whole number from 1, 12 when left out) caps the next-up list the text view prints. Anything else after
+// --limit (a word, 0, a negative, a fraction, nothing) prints usage and exits 64, never an empty list.
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -126,6 +128,14 @@ export function simulate({ readme, specs, closed = new Set(), claims = {}, base 
   return { inFlight, next, blocked, unchunked };
 }
 
+export const USAGE = 'usage: node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--json]';
+
+/** `--limit`'s value as a whole number from 1 (12 when the flag is absent), or null when it is anything else. */
+export function parseLimit(value) {
+  if (value === undefined) return 12;
+  return typeof value === 'string' && /^\d+$/.test(value) && Number(value) >= 1 ? Number(value) : null;
+}
+
 const pad = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s.padEnd(n, ' '));
 
 /** The ASCII picture: in flight, then next (numbered, with the running estimate), then blocked. */
@@ -190,7 +200,11 @@ async function main(argv) {
   };
   const ref = val('--ref');
   const mark = new Set((val('--mark') ?? '').split(',').map((s) => s.trim()).filter(Boolean));
-  const limit = Number(val('--limit') ?? 12);
+  const limit = parseLimit(argv.includes('--limit') ? (val('--limit') ?? null) : undefined);
+  if (limit === null) {
+    console.error(USAGE);
+    return 64;
+  }
   const cwd = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
   const plan = await load(path.resolve(cwd), ref);
   const sim = simulate(plan);

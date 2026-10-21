@@ -1,11 +1,15 @@
 // order.mjs (the simulated pick order): the Asap lane first, then priority rows, then table order; a pick counts as
 // done for the chunks that need it; held, plan-only and other-base specs, held chunks, chunks others claim and needs
-// nothing will close are listed apart; a pending close counts as closed; the render marks just-plotted chunks.
-// node:test, no deps, no git.
+// nothing will close are listed apart; a pending close counts as closed; the render marks just-plotted chunks; a bad
+// --limit prints usage.
+// node:test, no deps, no git (the usage test runs the script, which stops before git).
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import os from 'node:os';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { parseSpec } from '../plan-check.mjs';
-import { lanes, render, rows, simulate } from '../plan/order.mjs';
+import { lanes, parseLimit, render, rows, simulate } from '../plan/order.mjs';
 
 const readme = (asap = '- (none)', held = '- (none)', extra = '') => [
   '## Lanes', '', '**Asap** (built before the table):', '', asap, '', '**Held** (waits):', '', held, '', '## Specs', '',
@@ -82,5 +86,27 @@ describe('the simulated order', () => {
     const out = render(simulate({ readme: readme(), specs: specs() }), { mark: new Set(['07.1', '07.3']), limit: 3 });
     assert.match(out, /3 {2}07\.1 .*<-- just plotted/);
     assert.match(out, /… 2 more \(07\.3 at 5: just plotted\)/);
+  });
+});
+
+describe('the --limit flag', () => {
+  it('takes a positive whole number, and 12 when the flag is absent', () => {
+    assert.equal(parseLimit(undefined), 12);
+    assert.equal(parseLimit('3'), 3);
+    assert.equal(parseLimit('40'), 40);
+  });
+
+  it('refuses a word, zero, a negative, a fraction, a missing value or another flag', () => {
+    for (const bad of ['abc', '0', '-2', '2.5', '1e2', '', '--json', null]) assert.equal(parseLimit(bad), null, String(bad));
+  });
+
+  it('prints usage and exits non-zero on a bad limit, before reading the plan', () => {
+    const script = fileURLToPath(new URL('../plan/order.mjs', import.meta.url));
+    for (const args of [['--limit', 'abc'], ['--limit', '0'], ['--limit']]) {
+      const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', cwd: os.tmpdir() });
+      assert.equal(r.status, 64, args.join(' '));
+      assert.equal(r.stdout, '');
+      assert.match(r.stderr, /usage: node scripts\/plan\/order\.mjs/);
+    }
   });
 });
