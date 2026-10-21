@@ -93,7 +93,8 @@ const RULES = [
       /\bgit\b[^|;&\n]*\bpush\b[^|;&\n]*\s\+\S/.test(cmd),
     message:
       'guard: force-push is forbidden (agents.md standing rule 5). ' +
-      'If the push was rejected, run git pull --ff-only and re-apply. ' +
+      'If the push was rejected, git pull --rebase (your own unpushed ' +
+      'commits only), rerun the gate, and push again. ' +
       'If history is genuinely wrong, stop and file [needs-user-call] ' +
       'per your skill\'s failure modes.',
   },

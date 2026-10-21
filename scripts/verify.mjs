@@ -508,6 +508,7 @@ const PURE_SUITES = [
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
   'templates/scripts/__tests__/claims.test.mjs',
+  'templates/scripts/__tests__/push-policy-hook.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run

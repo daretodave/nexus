@@ -96,6 +96,7 @@ templates/
 │   ├── __tests__/settle-run.test.mjs  (settle end to end in a scratch git repo; slower, offline)
 │   ├── __tests__/claims-codec.test.mjs  (the claims rules, pure)
 │   ├── __tests__/push-policy.test.mjs  (the push policy, pure)
+│   ├── __tests__/push-policy-hook.test.mjs  (the pre-push hook end to end in a scratch git repo; slower, offline)
 │   └── __tests__/claims.test.mjs      (claims over git in scratch repos; slower, offline)
 ├── env/
 │   └── env.example                    → repo's .env.example

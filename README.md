@@ -545,6 +545,7 @@ nexus/
     │   ├── __tests__/settle-run.test.mjs # settle end to end in a scratch repo (offline)
     │   ├── __tests__/claims-codec.test.mjs # the claims rules
     │   ├── __tests__/push-policy.test.mjs # the push policy, pure
+    │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)
     ├── env/
     │   └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.

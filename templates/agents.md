@@ -30,7 +30,9 @@ How work lands depends on the checkout, never on the skill
   (`node scripts/plan/settle.mjs`).
 - **Contributor mode** — no `.owner`; what every fresh clone
   gets. Never push `<DEFAULT_BRANCH>`. Each chunk lands on its
-  own branch `next/<id>`, pushed, as a pull request. Stack at
+  own branch `next/<id>`, pushed, as a pull request (a
+  `/heads-down` package: one `pkg/<slug>` branch and one pull
+  request; a plot: `plot/<slug>`). Stack at
   most two deep (a branch off an open PR's branch, its PR onto
   that branch). Review fixes are new commits: never amend or
   force-push a pushed branch. Plan changes go only through
@@ -136,7 +138,9 @@ and logs each one it took (the commit body, the PR description,
 the close). A question that outlives the run (a product call, a
 taste call, a default the owner should confirm) goes to the
 `/oversight` queue as a `[needs-user-call]` row in
-`plan/AUDIT.md`, and the work continues. `/oversight` remains
+`plan/AUDIT.md` (a contributor, who never edits shared plan
+files, lists it in the pull request description for the owner
+to queue), and the work continues. `/oversight` remains
 the skill that asks anything, any time.
 
 ---

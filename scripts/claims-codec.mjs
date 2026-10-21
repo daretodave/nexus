@@ -15,6 +15,17 @@ export const TTL_MS = 24 * 60 * 60 * 1000;
 /** A chunk (06.24, 17.4c3d) or a spec being chunked (06). */
 export const CHUNK_ID = /^\d{2,}(\.\d+[a-z0-9]*)?$/;
 
+/**
+ * Why the host refused a claims push, from git's stderr: 'protected' (a branch ruleset or protection restricts
+ * updates to the owner: protected claims), 'race' (origin moved: fetch and redo), or 'other' (access, a hook).
+ */
+export function pushRefusal(stderr) {
+  const s = String(stderr);
+  if (/GH013|GH006|repository rule violations|protected branch|cannot update this protected ref|not allowed to push/i.test(s)) return 'protected';
+  if (/\[rejected\]|non-fast-forward|fetch first|stale info|cannot lock ref/i.test(s)) return 'race';
+  return 'other';
+}
+
 /** "who|ip|host|at|s:session|pr:n|held:login|b:base" → its parts. */
 export function parse(value) {
   const [who = '', ip = '', host = '', at = '', ...rest] = String(value).split('|');

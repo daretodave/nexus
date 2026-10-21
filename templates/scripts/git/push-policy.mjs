@@ -15,7 +15,7 @@
 // The hook (written by scripts/install-hooks.mjs) runs this only when the file exists: a checkout without it skips
 // the step.
 import fs from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { BRANCH } from '../claims-codec.mjs';
 import { isOwner } from '../owner.mjs';
 
@@ -60,4 +60,13 @@ export function main({ stdin = fs.readFileSync(0, 'utf8'), env = process.env, ow
   return 0;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) process.exit(main());
+// Run as a script: compare real paths, so a repo reached through a symlink (macOS /tmp, a junction) still runs the
+// policy instead of skipping it silently (an import-only no-op would let every push through).
+const realOrNull = (p) => {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    return null;
+  }
+};
+if (process.argv[1] && realOrNull(process.argv[1]) === realOrNull(fileURLToPath(import.meta.url))) process.exit(main());

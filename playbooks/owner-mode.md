@@ -131,8 +131,9 @@ repo has only the leg trip):
 - **`claims`:** no force push, no deletion, nothing else, so
   anyone who can push may claim (open claims, the default).
   To protect claims, add "restrict updates" with the same
-  admin bypass: a contributor's claim push is then rejected,
-  and claiming becomes the owner's (ask the owner).
+  admin bypass: a contributor's claim then fails with "claims
+  are protected: ask the owner", and claiming becomes the
+  owner's (`assign` a chunk to a contributor's login).
 
 Write the two rule sets, then post them (`<REPO_SLUG>` is
 `owner/repo`):

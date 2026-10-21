@@ -25,7 +25,8 @@ lands depends on the checkout (`npm run claims -- whoami`;
   (`npm run settle`).
 - **Contributor mode** (no `.owner`: any other clone, or the
   owner's switched off). Never push main: each chunk lands on
-  `next/<id>` as a pull request, stacked at most two deep,
+  `next/<id>` as a pull request (a `/heads-down` package on
+  `pkg/<slug>`, a plot on `plot/<slug>`), stacked at most two deep,
   review fixes as new commits, plan changes only through
   `plan/pending/<id>.md`.
 

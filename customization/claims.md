@@ -58,6 +58,13 @@ when it is main).
 - **No force, ever.** Protect the branch with a ruleset that
   refuses force pushes and deletions, and nothing else. A
   pre-push hook that checks branches should skip `claims`.
+- **Open or protected.** Open is the default: anyone who can
+  push the `claims` branch claims and releases. Protected is
+  an option: the owner's ruleset also restricts updates, with
+  the owner's bypass, and a contributor's claim then fails
+  cleanly with "claims are protected: ask the owner" (ask
+  through an issue; the owner `assign`s). Both rulesets are in
+  [`owner-mode.md`](../playbooks/owner-mode.md) Step 3.
 
 ## The rules
 

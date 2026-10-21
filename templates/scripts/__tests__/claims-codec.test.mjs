@@ -111,4 +111,16 @@ describe('the claims codec', () => {
     assert.throws(() => codec.readMap('[]'), /not a map/);
     assert.throws(() => codec.readMap('null'), /not a map/);
   });
+
+  it('tells a lost race from protected claims from any other refusal', () => {
+    assert.equal(codec.pushRefusal(' ! [rejected]        abc -> claims (fetch first)'), 'race');
+    assert.equal(codec.pushRefusal(' ! [rejected]        abc -> claims (non-fast-forward)'), 'race');
+    assert.equal(
+      codec.pushRefusal('remote: error: GH013: Repository rule violations found for refs/heads/claims.\nremote: - Cannot update this protected ref.\n ! [remote rejected] abc -> claims (push declined due to repository rule violations)'),
+      'protected',
+    );
+    assert.equal(codec.pushRefusal('remote: error: GH006: Protected branch update failed for refs/heads/claims.'), 'protected');
+    assert.equal(codec.pushRefusal(' ! [remote rejected] abc -> claims (pre-receive hook declined)'), 'other');
+    assert.equal(codec.pushRefusal('fatal: Authentication failed'), 'other');
+  });
 });

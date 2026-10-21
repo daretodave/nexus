@@ -37,7 +37,7 @@ import os from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { pendingArchiveLines, pendingAtRef } from './plan/pending.mjs';
 import { isOwner } from './owner.mjs';
-import { BRANCH, CHUNK_ID as ID, FILE, PRIVILEGED, TTL_MS, claimInto, decide, format, idsProblem, mine, parse, readMap, releaseFrom, renewIn, serialize, state } from './claims-codec.mjs';
+import { BRANCH, CHUNK_ID as ID, FILE, PRIVILEGED, TTL_MS, claimInto, decide, format, idsProblem, mine, parse, pushRefusal, readMap, releaseFrom, renewIn, serialize, state } from './claims-codec.mjs';
 
 export { BRANCH, FILE, PRIVILEGED, TTL_MS, decide, format, mine, parse, state };
 export const TRIES = 8;
@@ -151,7 +151,8 @@ export function redrawBoard({ env = process.env, run = spawnSync, log = console.
 
 /**
  * Build a commit of `map` on `parent` and push it without force. True when origin took it, false when the push lost a
- * race (origin moved); any other refusal (a hook, access) throws with git's words, never retried.
+ * race (origin moved); any other refusal throws with git's words, never retried: a ruleset restricting the branch
+ * (protected claims) as "claims are protected: ask the owner", anything else (a hook, access) as it came.
  */
 export function pushClaims(cwd, parent, map, message, remote = remoteOf()) {
   const blob = writeObject(cwd, serialize(map));
@@ -160,7 +161,9 @@ export function pushClaims(cwd, parent, map, message, remote = remoteOf()) {
   const commit = git(['commit-tree', tree, ...(parent ? ['-p', parent] : []), '-m', message], { cwd }).trim();
   const res = spawnSync('git', ['push', '-q', remote, `${commit}:refs/heads/${BRANCH}`], { cwd, encoding: 'utf8' });
   if (res.status === 0) return (pushes++, true);
-  if (/\[rejected\]|non-fast-forward|fetch first|stale info|cannot lock ref/i.test(res.stderr)) return false;
+  const why = pushRefusal(res.stderr);
+  if (why === 'race') return false;
+  if (why === 'protected') throw new Error(`claims are protected: ask the owner (the host refused a write to ${BRANCH}: ${res.stderr.trim()})`);
   throw new Error(`claims: origin refused the push: ${res.stderr.trim()}`);
 }
 
