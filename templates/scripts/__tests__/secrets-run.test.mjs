@@ -11,7 +11,7 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { masker, runWithSecrets } from '../secrets-run.mjs';
-import { MIN_SECRET, addedLines, describeHit, findValues, maskText, scanDiff, scanRepo, vaultValues } from '../secrets-scan.mjs';
+import { MIN_SECRET, addedLines, isSecretShaped, describeHit, findValues, maskText, scanDiff, scanRepo, vaultValues } from '../secrets-scan.mjs';
 import { openVault } from '../secrets-vault.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -180,6 +180,12 @@ describe('the diff scan', () => {
     assert.deepEqual(scanDiff('+++ b/a\n@@ -0,0 +1 @@\n+fake\n', values), []);
     assert.deepEqual(findValues(`x ${A} y`, values), ['A_TOKEN']);
     assert.equal(maskText(`${A}/${B}`, values), '[secret A_TOKEN]/[secret B_TOKEN]');
+  });
+
+  it('skips a value shaped like configuration: one plain word, a number, a localhost URL', () => {
+    for (const v of ['production', 'development', '12345678', 'http://localhost:3000', 'https://127.0.0.1/', 'short']) assert.equal(isSecretShaped(v), false, v);
+    for (const v of ['ghp_fake0000', 'postgres://u:fake-pass@db/x', 'fakeword1', 'two words']) assert.equal(isSecretShaped(v), true, v);
+    assert.deepEqual(scanDiff('+++ b/a\n@@ -0,0 +1 @@\n+NODE_ENV=production\n', new Map([['NODE_ENV', 'production']])), []);
   });
 
   it('scans the working tree and untracked files, or the staged diff only, through git', () => {

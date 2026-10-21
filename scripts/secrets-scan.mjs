@@ -4,19 +4,25 @@
 //
 // The gate runs it on the working tree against HEAD plus the untracked files (what the next commit can hold);
 // `--staged` scans only what is staged. A value shorter than MIN_SECRET characters isn't scanned (or masked by
-// `secrets run`): too likely to match ordinary text, and no real token is that short. No vault, nothing to scan.
+// `secrets run`, or refused on a command line by the guard hook), nor is a value shaped like configuration: one plain
+// word (production), a number, a localhost URL. Each is too likely to match ordinary text, and no real token looks
+// like one. No vault, nothing to scan.
 // The command line: `node scripts/secrets.mjs scan [--staged]`; the how: nexus/customization/secrets.md.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
 export const MIN_SECRET = 8;
+const PLAIN = /^(?:[A-Za-z]+|\d+|https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\/?)$/;
+
+/** A value worth scanning for: MIN_SECRET characters or more, and not shaped like configuration. */
+export const isSecretShaped = (v) => typeof v === 'string' && v.length >= MIN_SECRET && !PLAIN.test(v);
 const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 const MAX_FILE = 2 * 1024 * 1024;
 
 /** The values worth scanning for, longest first (so a value inside another is named by the longer one). */
 export function scannable(values) {
-  return [...values].filter(([, v]) => typeof v === 'string' && v.length >= MIN_SECRET).sort((a, b) => b[1].length - a[1].length);
+  return [...values].filter(([, v]) => isSecretShaped(v)).sort((a, b) => b[1].length - a[1].length);
 }
 
 /** The names whose value appears in a text. */
