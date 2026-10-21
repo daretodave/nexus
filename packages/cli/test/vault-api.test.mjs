@@ -308,3 +308,36 @@ test('a secret request is open in the Inbox and the Vault alike, whatever the se
     if (had) process.env.VERCEL_TOKEN = was; else delete process.env.VERCEL_TOKEN;
   }
 });
+
+test('the oversight fallback marks a secret request like the inbox, and its answer route refuses one', async () => {
+  const { repo } = vaultRepo();
+  request(repo, '07.1', ['VERCEL_TOKEN']);
+  request(repo, '07.3', ['GH_TOKEN']);
+  fs.writeFileSync(path.join(repo, 'plan', 'pending', 'q.md'), '## Notes\n- [needs-user-call] Should 07.1 deploy on push?\n');
+  const sent = [];
+  const provider = () => ({ kind: 'fake', send(t) { sent.push(t); }, async interrupt() {}, async stop() {}, async fresh() {} });
+  const app = await startServer({ repo, provider, pollRuns: false, dist: NO_DIST, ghLogin: async () => '', secrets: { run: fakeRun().run } });
+  const headers = { 'x-nexus-token': app.token };
+  const post = { ...headers, 'content-type': 'application/json', origin: `http://127.0.0.1:${app.port}` };
+  const call = async (method, pathname, body) => {
+    const r = await req(app.port, { method, pathname, headers: method === 'GET' ? headers : post, body: body === undefined ? undefined : JSON.stringify(body) });
+    return { status: r.status, json: JSON.parse(r.data) };
+  };
+  try {
+    assert.equal((await call('POST', '/api/secrets/GH_TOKEN', { value: GH })).status, 200);
+    const { durable } = (await call('GET', '/api/oversight')).json;
+    const asks = durable.filter((d) => parseRequest(d.text));
+    assert.deepEqual(asks.map((d) => d.secret), [{ chunk: '07.1', names: ['VERCEL_TOKEN'], missing: ['VERCEL_TOKEN'] }], 'marked, and the one already set has left');
+    const row = asks[0];
+    const r = await call('POST', '/api/oversight/answer', { answers: [{ file: row.file, line: row.line, text: row.text, answer: 'PASTED_VALUE_xyz123' }] });
+    assert.ok(r.status >= 400 && r.status < 500, JSON.stringify(r.json));
+    // The same row with its text dropped or changed: refused by where it sits in the plan.
+    const r2 = await call('POST', '/api/oversight/answer', { answers: [{ file: row.file, line: row.line, text: 'ok', answer: 'PASTED_VALUE_xyz123' }] });
+    assert.ok(r2.status >= 400 && r2.status < 500, JSON.stringify(r2.json));
+    assert.ok(!sent.some((t) => String(t).includes('PASTED_VALUE_xyz123')), 'the value never reached a session');
+    const plain = durable.find((d) => !parseRequest(d.text));
+    assert.equal((await call('POST', '/api/oversight/answer', { answers: [{ file: plain.file, line: plain.line, text: plain.text, answer: 'yes' }] })).status, 200);
+  } finally {
+    await app.close();
+  }
+});

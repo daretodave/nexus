@@ -159,7 +159,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         }
         case 'GET /api/sessions': return send(res, 200, world.rows());
         case 'GET /api/inbox': return send(res, 200, inboxWithSecret());
-        case 'GET /api/oversight': return send(res, 200, { live: world.asks(), durable: world.durable() });
+        case 'GET /api/oversight': { const row = vault.mark(DEMO_REQUEST.durable); return send(res, 200, { live: world.asks(), durable: [...world.durable(), ...(row && local?.effective !== false ? [row] : [])] }); }
         case 'GET /api/plan': return send(res, 200, planWithSecret());
         case 'GET /api/secrets': { const { status, ...r } = vault.status(); return send(res, 200, r); }
         case 'GET /api/secrets/audit': return send(res, 200, vault.audit());

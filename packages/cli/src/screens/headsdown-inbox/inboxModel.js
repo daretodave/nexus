@@ -183,9 +183,16 @@ function fromSecretRequest(d) {
   }));
 }
 
-/** Durable questions in plan/ -> items answered in words, landing in the plan (a secret request: key items). */
+/** A secret request row's shape (server/secrets.mjs REQUEST_ROW): `secret request <chunk>: set A, B ...`. */
+const SECRET_REQUEST = /secret request \S+?:\s*set\s+[A-Z][A-Z0-9_]*/;
+
+/**
+ * Durable questions in plan/ -> items answered in words, landing in the plan (a secret request: key items). A secret
+ * request the server did not mark (an older server, a vault it could not read) is dropped, never drawn as a
+ * free-text question: its answer would go to a session, and a value never goes through one.
+ */
 export function fromDurable(rows = []) {
-  return rows.flatMap((d) => (d.secret ? fromSecretRequest(d) : [{
+  return rows.flatMap((d) => (d.secret ? fromSecretRequest(d) : SECRET_REQUEST.test(String(d.text || '')) ? [] : [{
     id: `plan:${d.id}`,
     kind: 'cloud',
     src: 'durable',

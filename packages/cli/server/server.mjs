@@ -26,7 +26,7 @@ import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
 import { claimsAction, listClaims, SESSION as CLAIMS_SESSION } from './claims.mjs';
 import { createStepWatch, sessionTimes } from './session-times.mjs';
 import { tonightStart } from '../shared/times.mjs';
-import { createMask, createSecrets } from './secrets.mjs';
+import { createMask, createSecrets, parseRequest } from './secrets.mjs';
 import { readDesign } from './design.mjs';
 import { artifactLink } from '../shared/design-link.mjs';
 
@@ -352,8 +352,24 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   /** GET /api/inbox: every session's questions, tagged by star, and the plan's. */
   async function inbox() {
     // A secret request carries its chunk and the names still missing; one whose names are all set has left (secrets.mjs).
-    const durable = await secrets.markRequests(repoMod.durableQuestions(repo)).catch(() => repoMod.durableQuestions(repo));
-    return inboxItems({ hosted: hostedLive(), ledgers: readLedgers(await primaryRoot(repo)), durable });
+    return inboxItems({ hosted: hostedLive(), ledgers: readLedgers(await primaryRoot(repo)), durable: await planQuestions() });
+  }
+
+  /**
+   * The plan's questions with each secret request marked (secrets.mjs markRequests), for GET /api/inbox and its
+   * fallback GET /api/oversight alike. If marking fails, the requests are dropped rather than served unmarked: an
+   * unmarked one would draw as a free-text question whose answer goes to a session.
+   */
+  async function planQuestions() {
+    const durable = repoMod.durableQuestions(repo);
+    return secrets.markRequests(durable).catch(() => durable.filter((d) => !parseRequest(d.text)));
+  }
+
+  /** A secret request is answered by the vault's key card only: a row that is one, by its text or by where it sits. */
+  function secretRequestRow(a) {
+    if (parseRequest(a.text)) return true;
+    const at = `${a.file}:${a.line}`;
+    return repoMod.durableQuestions(repo).some((d) => `${d.file}:${d.line}` === at && parseRequest(d.text));
   }
 
   /** POST /api/inbox/:id { answer, how }: a parked question (to its session, off its ledger) or a permission. */
@@ -412,11 +428,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           return send(res, 200, { ok: true, session: s.id });
         }
         case 'POST /api/sessions': { const r = await startSession(await body(req)); return send(res, r.status, r); }
-        case 'GET /api/oversight': return send(res, 200, { live: [...sessions.values()].flatMap((s) => [...s.asks.values()].map((a) => a.view)), durable: repoMod.durableQuestions(repo) });
+        case 'GET /api/oversight': return send(res, 200, { live: [...sessions.values()].flatMap((s) => [...s.asks.values()].map((a) => a.view)), durable: await planQuestions() });
         case 'POST /api/oversight/answer': {
           const b = await body(req);
           const rows = (Array.isArray(b.answers) ? b.answers : []).filter((a) => a && a.file && a.answer && String(a.answer).trim());
           if (!rows.length) return send(res, 400, { error: 'no answers' });
+          // A value never goes through a session: a secret request is set in the Vault (POST /api/secrets/:name).
+          if (rows.some(secretRequestRow)) return send(res, 409, { error: 'a secret request is answered in the Vault, never in a session: set the value there or in your terminal' });
           const prompt = repoMod.answersPrompt(rows.map((a) => ({ file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer) })), repoMod.isOwner(repo));
           if (b.session) {
             // Aimed at one linked session: it reaches that session's next turn, and only that session.

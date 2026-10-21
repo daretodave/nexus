@@ -166,6 +166,20 @@ test('the inbox: a secret request is one key item per missing name, with no defa
   assert.equal(fromDurable([{ id: 'q', file: 'plan/a.md', line: 1, text: 'A plain question?' }])[0].secret, undefined);
 });
 
+test('the inbox fallback: an unmarked secret request is never a free-text question, loading or not', async () => {
+  const { fromDurable, collect } = await import('../src/screens/headsdown-inbox/inboxModel.js');
+  const raw = { id: 'plan/pending/secrets-3.2.md:6', file: 'plan/pending/secrets-3.2.md', line: 6, source: 'needs-user-call', text: 'secret request 3.2: set SMTP_PASSWORD in your terminal or the GUI vault (never in a session)' };
+  const plain = { id: 'plan/a.md:1', file: 'plan/a.md', line: 1, source: 'needs-user-call', text: 'A plain question?' };
+  assert.deepEqual(fromDurable([raw, plain]).map((i) => i.q), ['A plain question?'], 'dropped, never freeText');
+  for (const inbox of [{ status: 'loading' }, { status: 'error' }]) {
+    const { items } = collect({ inbox, live: {}, oversight: { status: 'ready', data: { durable: [raw, plain] } } });
+    assert.ok(!items.some((i) => i.freeText && /secret request/.test(i.q)), inbox.status);
+  }
+  const marked = { ...raw, secret: { chunk: '3.2', names: ['SMTP_PASSWORD'], missing: ['SMTP_PASSWORD'] } };
+  const { items } = collect({ inbox: { status: 'loading' }, live: {}, oversight: { status: 'ready', data: { durable: [marked] } } });
+  assert.deepEqual(items.map((i) => [i.secret, i.freeText, i.hasDefault]), [['SMTP_PASSWORD', false, false]], 'a marked one is the key card');
+});
+
 test('Launch\'s secrets row: the vault by name, a skip, or a contributor\'s none', async () => {
   const { secretsLine } = await import('../src/screens/vault/model.js');
   assert.equal(secretsLine(STATUS, 'imp'), '3 names in the vault · values in .env and CI');
