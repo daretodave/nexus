@@ -30,15 +30,20 @@
 // due until it is handed over, whatever `read` has seen. Only the owner sends an owner line to one session: a
 // session's `--owner --to` is refused.
 //
+// Concurrent writers: a post, a drop and a read (its seen file, its hand-over markers) each read and write under one
+// exclusive lock (`.nexus/announcements.lock`, ledger.mjs `withLock`), and the board lands whole through a temp file and
+// a rename, so two posts at once both land and a reader (the steer hook) never sees half a board.
+//
 // Environment: NEXUS_SESSION (this session's id), else CLAUDE_CODE_SESSION_ID; neither means a terminal (the owner).
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { primaryRoot } from './owner.mjs';
-import { DIR as LEDGERS, readAll } from './ledger.mjs';
+import { DIR as LEDGERS, readAll, renameRetry, withLock } from './ledger.mjs';
 
 export const FILE = '.announcements.md';
 export const SEEN = '.nexus/announcements.seen.json';
+export const LOCK = '.nexus/announcements.lock';
 export const STEERED = '.nexus/steered';
 const HEADER = '# Announcements to every loop on this machine (node scripts/announce.mjs; untracked, never committed)\n';
 const LINE = /^- \*\*(\d+)\*\* · (\S+) · ([^·]+?) · (.*)$/;
@@ -188,11 +193,21 @@ export function claim(root, id, a) {
 
 /** Post one line to the board at `root` and return its number (the GUI's tug or answer to one linked session). */
 export function postTo(root, words, { from = 'owner', to = null, at } = {}) {
-  const file = path.join(root, FILE);
-  const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  const posted = post(text, words, from, at, to);
-  fs.writeFileSync(file, posted.text);
-  return posted.n;
+  return withLock(path.join(root, LOCK), () => {
+    const file = path.join(root, FILE);
+    const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+    const posted = post(text, words, from, at, to);
+    whole(root, file, posted.text);
+    return posted.n;
+  });
+}
+
+/** Write `file` whole: a temp file under `.nexus/`, then a rename (retried while Windows reports it busy). */
+function whole(root, file, text) {
+  const tmp = path.join(root, '.nexus', `${path.basename(file)}.${process.pid}.tmp`);
+  fs.mkdirSync(path.dirname(tmp), { recursive: true });
+  fs.writeFileSync(tmp, text);
+  renameRetry(tmp, file);
 }
 
 /** The lines a session hasn't read: those numbered past its last read. */
@@ -256,6 +271,12 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
     return 1;
   }
   const base = root ?? primaryRoot();
+  // Every command but `list` writes (the board, the seen file, a hand-over marker): it reads and writes under the lock.
+  const act = () => board(argv, to, base, { env, out, err });
+  return argv[0] === 'list' ? act() : withLock(path.join(base, LOCK), act);
+}
+
+function board(argv, to, base, { env, out, err }) {
   const file = path.join(base, FILE);
   const seenFile = path.join(base, SEEN);
   const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
@@ -292,8 +313,7 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
       for (const a of fresh) out(`${format(a)}${tag(a)}`);
     }
     if (lines.length) {
-      fs.mkdirSync(path.dirname(seenFile), { recursive: true });
-      fs.writeFileSync(seenFile, `${JSON.stringify({ ...seen, [key]: Math.max(...lines.map((a) => a.n)) }, null, 2)}\n`);
+      whole(base, seenFile, `${JSON.stringify({ ...seen, [key]: Math.max(...lines.map((a) => a.n)) }, null, 2)}\n`);
     }
     return 0;
   }
@@ -310,7 +330,7 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
       err(`announce: drop takes a line number\n${USAGE}`);
       return 1;
     }
-    fs.writeFileSync(file, drop(text, n));
+    whole(base, file, drop(text, n));
     out(`announce: dropped ${n}`);
     return 0;
   }
@@ -326,7 +346,7 @@ export function main(argv, { env = process.env, root, out = console.log, err = c
     return 1;
   }
   const posted = post(text, words, from, undefined, to);
-  fs.writeFileSync(file, posted.text);
+  whole(base, file, posted.text);
   out(`announce: posted ${posted.n} as ${from}${to ? ` to ${to}` : ''}`);
   return 0;
 }

@@ -70,6 +70,12 @@ node scripts/announce.mjs drop 3
 - **REBOOT preempts.** An owner line `REBOOT <slug> …` makes
   the loop stop the chunk in flight and run `/reboot-ready
   <slug>` now. `read` prints it first.
+- **Posts at once all land.** A post, a drop and a `read`
+  (which writes the seen file) each read and write under one
+  lock, `.nexus/announcements.lock` (the ledger's kind:
+  created exclusively, broken when stale), and the board lands
+  whole through a temp file and a rename. Two loops posting at
+  once both land; the steer hook never reads half a board.
 
 The GUI writes owner lines here too, which makes the board the
 channel for a tug on every loop at once.

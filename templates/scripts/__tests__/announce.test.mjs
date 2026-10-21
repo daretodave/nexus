@@ -1,13 +1,15 @@
 // announce.mjs (the notice board): lines parse and number past every line ever posted, a drop never frees a number,
-// a session sees a line once, an owner REBOOT line preempts, and `help` or an unknown flag posts nothing. node:test, no
-// deps, no git (the CLI runs against a scratch folder in the temp dir).
+// a session sees a line once, an owner REBOOT line preempts, `help` or an unknown flag posts nothing, and
+// posts made at once (real child processes) all land. node:test, no deps, no git (the CLI runs against a scratch
+// folder in the temp dir).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import {
-  FILE, HOOKED, SEEN, STEERED, addressee, author, claim, delivered, drop, forMe, identities, lineKey, main, parse, post, postTo, reboot, steerable,
+  FILE, HOOKED, LOCK, SEEN, STEERED, addressee, author, claim, delivered, drop, forMe, identities, lineKey, main, parse, post, postTo, reboot, steerable,
   unread,
 } from '../announce.mjs';
 
@@ -275,5 +277,46 @@ describe('a line to one session', () => {
   it('postTo writes a line for the GUI', () => {
     assert.equal(postTo(root, 'answer: keep the default', { to: 'aaaa1111' }), 1);
     assert.equal(addressee(parse(fs.readFileSync(path.join(root, FILE), 'utf8'))[0]), 'aaaa1111');
+  });
+});
+
+describe('concurrent posts', () => {
+  let root;
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-announce-'));
+  });
+  afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  it('lands every one of the posts made at once, each under its own number', async () => {
+    const N = 6;
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-race-'));
+    const go = path.join(dir, 'go');
+    const mod = new URL('../announce.mjs', import.meta.url).href;
+    // Each child waits on a go file once all are ready, then half post through the CLI and half through postTo (the GUI).
+    const code = `import fs from 'node:fs'; import { main, postTo } from ${JSON.stringify(mod)};
+const job = JSON.parse(process.env.RACE_JOB);
+fs.writeFileSync(job.ready, '');
+while (!fs.existsSync(job.go)) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2);
+if (job.gui) postTo(job.root, job.words);
+else process.exitCode = main([job.words], { root: job.root, env: {}, out: () => {}, err: () => {} });`;
+    const kids = Array.from({ length: N }, (_, i) => {
+      const ready = path.join(dir, `ready-${i}`);
+      const job = { root, go, ready, gui: i % 2 === 1, words: `line from writer ${i}` };
+      const kid = spawn(process.execPath, ['--input-type=module', '-e', code], { env: { ...process.env, RACE_JOB: JSON.stringify(job) }, stdio: ['ignore', 'ignore', 'pipe'] });
+      let stderr = '';
+      kid.stderr.on('data', (d) => (stderr += d));
+      return { ready, done: new Promise((resolve) => kid.on('close', (exit) => resolve({ exit, stderr }))) };
+    });
+    const until = Date.now() + 30_000;
+    while (!kids.every((k) => fs.existsSync(k.ready)) && Date.now() < until) await new Promise((r) => setTimeout(r, 10));
+    fs.writeFileSync(go, '');
+    const results = await Promise.all(kids.map((k) => k.done));
+    fs.rmSync(dir, { recursive: true, force: true });
+    for (const r of results) assert.equal(r.exit, 0, r.stderr);
+    const lines = parse(fs.readFileSync(path.join(root, FILE), 'utf8'));
+    assert.deepEqual(lines.map((a) => a.text).sort(), Array.from({ length: N }, (_, i) => `line from writer ${i}`).sort());
+    assert.deepEqual(lines.map((a) => a.n).sort((a, b) => a - b), Array.from({ length: N }, (_, i) => i + 1));
+    assert.equal(fs.existsSync(path.join(root, LOCK)), false);
+    assert.deepEqual(fs.readdirSync(path.join(root, '.nexus')).filter((f) => f.endsWith('.tmp')), []);
   });
 });
