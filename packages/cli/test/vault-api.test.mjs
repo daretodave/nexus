@@ -290,3 +290,21 @@ test('the vault keeps every value: Add a secret and the import declare local eve
     await app.close();
   }
 });
+
+test('a secret request is open in the Inbox and the Vault alike, whatever the server\'s own environment holds', async () => {
+  const { repo } = vaultRepo();
+  request(repo, '07.1', ['VERCEL_TOKEN']);
+  const had = Object.prototype.hasOwnProperty.call(process.env, 'VERCEL_TOKEN');
+  const was = process.env.VERCEL_TOKEN;
+  process.env.VERCEL_TOKEN = 'x';
+  const { app, call } = await serve(repo, fakeRun().run);
+  try {
+    const st = (await call('GET', '/api/secrets')).json;
+    assert.deepEqual(st.requests.map((r) => [r.chunk, r.missing]), [['07.1', ['VERCEL_TOKEN']]]);
+    const rows = (await call('GET', '/api/inbox')).json;
+    assert.equal(rows.filter((x) => x.src === 'durable' && x.durable.secret).length, 1);
+  } finally {
+    await app.close();
+    if (had) process.env.VERCEL_TOKEN = was; else delete process.env.VERCEL_TOKEN;
+  }
+});

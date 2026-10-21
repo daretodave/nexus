@@ -291,7 +291,9 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
         const v = k.m.vault.openVault({ root, settings: k.m.owner.localSettings(root), ...vaultOpts });
         const names = [...new Set(durable.flatMap((d) => parseRequest(d.text)?.names ?? []))];
         const set = new Set(v.status(names).filter((r) => r.rings.length).map((r) => r.name));
-        has = (n) => set.has(n) || !!process.env[n];
+        // The vault's rings only, as GET /api/secrets reads them: a name in the server's own environment (a GH_TOKEN
+        // exported in the launching shell) is not in the vault, so the request stays open in both places.
+        has = (n) => set.has(n);
       }
     } catch { /* a vault that cannot be read: every name reads missing */ }
     const out = [];
