@@ -73,7 +73,11 @@ You need no API key.
   the plan leaves without words gets a one-line summary from Claude
   Haiku, marked as AI, cached in `.nexus/cache/` and never written to
   the plan (one batched call per board load, on your Claude Code
-  login; Settings turns it off).
+  login; Settings turns it off). In the spec view a chunk's grip reorders it
+  within its spec (drag it, or focus it, arrow up or down, Enter): the move
+  lands as one pending file, `plan/pending/reorder-<spec>-<stamp>.md`, in
+  either mode, so the spec file changes only when the owner settles. The
+  owner's Reassign picks from the people holding claims, or the owner.
 - **Cloud loop**: pause and resume the loop workflow (`gh workflow
   disable|enable`), run one pass now (`gh workflow run`), and each live
   run's current step, with a step running over 30 minutes (or a job

@@ -4,9 +4,12 @@
 // request run from the rows; an empty spec offers Chunk it. Owner mode
 // (effective: .owner and not switched off) lands plan changes on main and
 // may release or reassign anyone's claim; a contributor in a repo with
-// protected claims requests instead. Pieces: screens/board/parts.jsx; the
-// rules: screens/board/model.js.
-import { useMemo, useState, useCallback } from 'react';
+// protected claims requests instead. In the spec view the grip reorders an
+// open chunk within its spec (drag, or arrow keys then Enter): one pending
+// file on the server in either mode (POST /api/plan/reorder). Reassign opens
+// a picker of the claimants and the owner. Pieces: screens/board/parts.jsx;
+// the rules: screens/board/model.js.
+import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ViewFrame, ViewHead, ViewTitle, InboxBtn, LoopStatus, Seg, ChoiceButtons, Icon, Protect, PbSec, PbFold,
@@ -16,6 +19,7 @@ import { api, server, usePlan, useClaims, useSummaries, useSessions, useLocalSet
 import { PATHS, lastSession } from '../routes.js';
 import {
   normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, railPeople, hhmm,
+  gripKey, dragOrder, moveOf, inOrder, gripSays, reassignTargets, reassignBody,
 } from './board/model.js';
 import { BoardRow, BoardSpec, ClaimsRail, PlanPr } from './board/parts.jsx';
 
@@ -31,6 +35,9 @@ const FILTERS = [
   { value: 'held', label: 'held' },
 ];
 const VERB = { claim: 'claim', hold: 'hold', unhold: 'unhold', reassign: 'reassign', request: 'request', release: 'release' };
+
+/** Read by a screen reader only: the grip's place as it moves. */
+const SR_ONLY = { position: 'absolute', width: 1, height: 1, margin: -1, padding: 0, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 const reduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 
@@ -57,6 +64,21 @@ export default function Board() {
   const [busy, setBusy] = useState(null);
   const [protLive, setProtLive] = useState(false);
   const [toasts, setToasts] = useState([]);
+  // The grip (spec 40 A12): grab is the chunk being moved and its spec's preview order; moved keeps a placed order
+  // until the plan reloads with it; drag is the HTML drag in flight. pick: Reassign's picker, on a row or the rail.
+  const [grab, setGrab] = useState(null);
+  const [moved, setMoved] = useState({});
+  const [pick, setPick] = useState(null);
+  const drag = useRef(null);
+  const grabRef = useRef(null);
+  grabRef.current = grab;
+  useEffect(() => { setMoved({}); }, [planR.data]);
+  // A keyed row that moves in the DOM can lose focus: the moving chunk's grip keeps it while the keys move it.
+  useLayoutEffect(() => {
+    if (!grab || drag.current) return;
+    const el = [...document.querySelectorAll('button.grip[data-grip]')].find((b) => b.dataset.grip === grab.id);
+    if (el && document.activeElement !== el) el.focus();
+  }, [grab]);
 
   const toast = useCallback((t) => {
     const id = `${Date.now()}-${Math.random()}`;
@@ -128,14 +150,42 @@ export default function Board() {
     }
   }, [claimsR, toast, rows, ctx.meWho, ownerName]);
 
-  /** Reassign: the person's GitHub login (the target picker is 40.12's); their claims name when a hold already carries it. */
-  const reassign = useCallback((id) => {
-    let login = '';
-    try { login = (window.prompt(`Reassign ${id} to whom? Their GitHub login:`) || '').trim().replace(/^@/, ''); } catch { /* no prompt: nothing to do */ }
-    if (!login) return;
-    const known = rows.find((r) => r.held && String(r.held).toLowerCase() === login.toLowerCase());
-    act('reassign', id, { login, ...(known?.who ? { to: known.who } : null) });
-  }, [rows, act]);
+  /** Reassign opens the picker (the owner, then the claimants): on the row (`at: 'row'`) or the rail's claim. */
+  const openPick = useCallback((id, at) => setPick((p) => (p && p.id === id && p.at === at ? null : { id, at, chosen: null, login: '' })), []);
+  const sendPick = useCallback((target, login = '') => {
+    const p = pick;
+    const b = p ? reassignBody(p.id, target, login) : null;
+    if (!b) return;
+    setPick(null);
+    const { id, ...extra } = b;
+    act('reassign', id, extra);
+  }, [pick, act]);
+  const pickFor = (at) => (id) => {
+    if (!pick || pick.at !== at || String(pick.id) !== String(id)) return null;
+    return {
+      id: pick.id, targets: reassignTargets(rows, ctx, pick.id), chosen: pick.chosen, login: pick.login,
+      onChoose: (t) => (t.owner || t.login ? sendPick(t) : setPick((p) => (p ? { ...p, chosen: t } : p))),
+      onLogin: (login) => setPick((p) => (p ? { ...p, login } : p)),
+      onSend: () => sendPick(pick.chosen, pick.login),
+      onCancel: () => setPick(null),
+    };
+  };
+
+  /** A placed grip move: one pending file on the server (POST /api/plan/reorder), in either mode. */
+  const reorder = useCallback(async (spec, mv) => {
+    if (!mv) return;
+    setBusy(mv.id);
+    try {
+      const res = await api('/api/plan/reorder', mv);
+      if (Array.isArray(res.order)) setMoved((m) => ({ ...m, [spec]: res.order }));
+      toast({ kind: 'info', title: `Moved ${mv.id}${mv.after ? ` after ${mv.after}` : ' to the top of its spec'}`, body: res.note || '' });
+      planR.reload();
+    } catch (e) {
+      toast({ kind: 'error', title: `Couldn't move ${mv.id}`, body: e.status === 404 && !/listed|spec/.test(e.message) ? "This server can't reorder the plan yet." : e.message });
+    } finally {
+      setBusy(null);
+    }
+  }, [planR, toast]);
 
   const openSpec = useCallback((spec) => {
     setView('spec');
@@ -153,7 +203,7 @@ export default function Board() {
     release: (id) => act('release', id),
     hold: (id) => act('hold', id),
     unhold: (id) => act('unhold', id),
-    reassign,
+    reassign: (id) => openPick(id, 'row'),
     open: openSpec,
   };
 
@@ -228,13 +278,15 @@ export default function Board() {
   const items = plan ? lanes(plan, chunks, sort, f, claims.spec) : [];
   const closedList = chunks.filter((c) => c.state === 'closed');
   const specs = (plan?.specs || []).map((s) => {
-    const list = chunks.filter((c) => c.spec === s.id);
+    const list = inOrder(chunks.filter((c) => c.spec === s.id), moved[s.id]);
     const sc = claims.spec[s.id] || null;
     const prog = specProgress(list, s);
+    // The open chunks as listed: what a grip moves among (a closed one never moves).
+    const ids = list.filter((c) => c.state !== 'closed').map((c) => c.id);
     return {
-      id: s.id, title: s.title, file: s.file, prog, claim: sc, empty: list.length === 0,
+      id: s.id, title: s.title, file: s.file, prog, claim: sc, empty: list.length === 0, ids,
       open: openOv[s.id] ?? specOpenDefault(s.id),
-      rows: list.filter((c) => {
+      rows: inOrder(list, grab && grab.spec === s.id ? grab.order : null).filter((c) => {
         const cover = sc && c.state !== 'closed' && !c.claim ? sc : null;
         return !anyF || (f.mine && (c.claim || cover)?.person === 'you') || (f.unclaimed && !(c.claim || cover) && c.state !== 'closed') || (f.held && (c.claim || cover)?.kind === 'held');
       }).map((c) => rowModel(c, sc && c.state !== 'closed' && !c.claim ? sc : null, ui)),
@@ -242,7 +294,62 @@ export default function Board() {
   });
   const people = railPeople(rows, ctx, byId, specById);
 
+  // The grip, live in the spec view on an open chunk with no filter on (a filtered list hides the neighbours a move
+  // is named by). Keys move the preview (gripKey); a drag previews over each row and places on drop.
+  const gripFor = (s, r) => {
+    if (r.closed || anyF || !s.ids.includes(r.id)) return null;
+    const mine = grab && grab.spec === s.id ? grab : null;
+    return {
+      moving: !!mine && mine.id === r.id,
+      onKeyDown: (e) => {
+        const x = gripKey(mine, e.key, s.ids, r.id);
+        if (!x.handled) return;
+        e.preventDefault();
+        setGrab(x.st ? { ...x.st, spec: s.id } : null);
+        if (x.commit) reorder(s.id, x.commit);
+      },
+      // Focus leaving the grip puts the chunk back; a blur from the row's own move in the DOM is refocused above.
+      onBlur: () => {
+        if (drag.current) return;
+        setTimeout(() => {
+          if (document.activeElement?.dataset?.grip === r.id) return;
+          setGrab((g) => (g && g.id === r.id && !drag.current ? null : g));
+        }, 0);
+      },
+      onDragStart: (e) => {
+        try {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', r.id);
+          const row = e.currentTarget.closest('.crow');
+          if (row) e.dataTransfer.setDragImage(row, 12, 18);
+        } catch { /* the browser's own drag image */ }
+        drag.current = { spec: s.id, id: r.id };
+        setGrab({ spec: s.id, id: r.id, order: s.ids });
+      },
+      onDragEnd: () => { if (drag.current) { drag.current = null; setGrab(null); } },
+      onDragOver: (e) => {
+        const d = drag.current;
+        if (!d || d.spec !== s.id) return;
+        e.preventDefault();
+        const box = e.currentTarget.getBoundingClientRect();
+        const below = e.clientY > box.top + box.height / 2;
+        setGrab((g) => (g && g.spec === s.id ? { ...g, order: dragOrder(g.order, g.id, r.id, below) } : g));
+      },
+      onDrop: (e) => {
+        const d = drag.current;
+        if (!d || d.spec !== s.id) return;
+        e.preventDefault();
+        drag.current = null;
+        const g = grabRef.current;
+        setGrab(null);
+        if (g) reorder(s.id, moveOf(s.ids, g.order, g.id));
+      },
+    };
+  };
+
   const planPr = madePr || (plan?.planPr ? fromPlanPr(plan.planPr, byId) : null);
+
+  const rowPick = pickFor('row');
 
   // ---- render ----------------------------------------------------------------
   const sub = plan ? subLine(repo, plan, owner) : repo;
@@ -271,7 +378,7 @@ export default function Board() {
         {nothing && !anyF ? <PbSec title="Nothing open" d="every chunk in the plan is closed" /> : null}
         {items.map((sec) => [
           <PbSec key={`s-${sec.title}`} asap={sec.asap} title={sec.title} n={sec.rows.length} d={sec.d} />,
-          ...sec.rows.map(([c, cover]) => <BoardRow key={c.id} r={rowModel(c, cover, ui)} on={rowOn} repo={repo} ownerName={ownerName} busy={busy} />),
+          ...sec.rows.map(([c, cover]) => <BoardRow key={c.id} r={rowModel(c, cover, ui)} on={rowOn} repo={repo} ownerName={ownerName} busy={busy} pick={rowPick(c.id)} />),
         ])}
         {!anyF && closedList.length ? (
           <PbFold open={showClosed} onClick={() => setShowClosed((x) => !x)}>
@@ -285,7 +392,7 @@ export default function Board() {
     main = specs.length ? (
       <div className="specs">
         {specs.map((s) => (
-          <BoardSpec key={s.id} s={s} on={specOn} rowOn={rowOn} repo={repo} ownerName={ownerName} busy={busy} prot={prot} owner={owner}
+          <BoardSpec key={s.id} s={s} on={specOn} rowOn={rowOn} repo={repo} ownerName={ownerName} busy={busy} prot={prot} owner={owner} gripFor={gripFor} pickFor={rowPick}
             ck={ck && ck.spec === s.id ? ck : null}
             note={owner ? 'They land on main as soon as you make them.' : `They go up as a plan PR for ${ownerName} to review.`} />
         ))}
@@ -334,9 +441,10 @@ export default function Board() {
           {planPr ? <PlanPr pr={planPr} /> : null}
           <ClaimsRail people={people} owner={owner} busy={busy} note={claimsNote}
             empty="Nobody holds a claim. Every open chunk is free to take."
-            onRelease={(id) => act('release', id)} onReassign={reassign} />
+            onRelease={(id) => act('release', id)} onReassign={(id) => openPick(id, 'rail')} pickFor={pickFor('rail')} />
         </aside>
       </div>
+      <span role="status" aria-live="polite" style={SR_ONLY}>{gripSays(grab)}</span>
       <ToastHost toasts={toasts.map((t) => ({ ...t, onDismiss: () => setToasts((l) => l.filter((x) => x.id !== t.id)) }))} />
     </ViewFrame>
   );

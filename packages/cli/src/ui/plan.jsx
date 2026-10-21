@@ -155,13 +155,14 @@ export function CrSess({ session, title, state, children }) {
   );
 }
 
-/** .cr-claim: id, title, expiry (held | stale | gone), and hover actions. */
-export function CrClaim({ id, t, exp, expKind, gone, hover, acts }) {
+/** .cr-claim: id, title, expiry (held | stale | gone), and hover actions; pop: a popover on it (Reassign's picker). */
+export function CrClaim({ id, t, exp, expKind, gone, hover, acts, pop }) {
   return (
     <div className={cx('cr-claim', gone && 'is-gone', hover && 'is-hover')}>
       <span className="id">{id}</span><span className="t">{t}</span>
       <span className={cx('exp', expKind && `is-${expKind}`)}>{exp}</span>
       <div className="cr-acts">{acts}</div>
+      {pop || null}
     </div>
   );
 }

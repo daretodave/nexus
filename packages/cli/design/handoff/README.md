@@ -130,9 +130,9 @@ the reason (the 41.3 close carries the same list):
   default after six minutes, the board's own 4:48 at 80%) and
   CloudLoop's "PRs opened" (PRs created while a loop run was
   going). A value nobody saw draws blank or a dash.
-- **Inert or reduced interactions:** the Board's drag grip (no
-  reorder action), Reassign (no target picker in the design: it asks
-  for a GitHub login until 40.12's picker), Hold for a contributor
+- **Inert or reduced interactions:** the Board's drag grip in the
+  all-chunks view and under a filter (it reorders only within a spec,
+  in the spec view), Hold for a contributor
   (a hold is the owner's `claims assign`, so only the owner sees it), the
   orphaned worktree's "open" link (the board's `#rigel-3`: a
   worktree no session holds opens `/git?tidy=<branch>`, the panel's
@@ -164,7 +164,10 @@ the reason (the 41.3 close carries the same list):
   under a routed `/plot`, Recover's "No recent runs yet" and its
   "Resume it yourself" note (the command and prompt to paste when
   the server cannot resume a run), the not-signed-in, checking,
-  red-run and skipped-cloud states.
+  red-run and skipped-cloud states; the Board's moving row (the plotted
+  row's accent edge: no board draws a dragging `.crow`) and Reassign's
+  picker (the Composer board's `.menu`, placed as `.req-pop` is, with a
+  `.field` for the login of a person no hold names).
 - **The stage's tug states** (41.2): each tug's path from the inbox
   to the session reuses the Cockpit board's `.fil.is-tug` (its pulse
   while sent) and the question line's dash once seen; applied draws

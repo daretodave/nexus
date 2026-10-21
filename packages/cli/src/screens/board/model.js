@@ -305,3 +305,110 @@ export function sessionWord(s) {
   const p = s.phase || s.state || '';
   return p ? p[0].toUpperCase() + p.slice(1) : '';
 }
+
+// ---- the grip: reorder within a spec (spec 40 A12) ------------------------------
+// A move is relative: { id, after } puts chunk `id` just after open chunk `after` (null: first). The server lands it
+// as a pending edit (server/reorder.mjs, POST /api/plan/reorder); these rules only shape the preview and the call.
+
+/** `list` with `id` moved to index `to` (clamped). */
+export function moveTo(list, id, to) {
+  const rest = list.filter((x) => x !== id);
+  if (rest.length === list.length) return list.slice();
+  rest.splice(Math.max(0, Math.min(rest.length, to)), 0, id);
+  return rest;
+}
+
+/** The call a new order makes for chunk `id`: { id, after }, or null when nothing moved (or more than `id` did). */
+export function moveOf(before, after, id) {
+  if (!id || before.join() === after.join()) return null;
+  const without = (l) => l.filter((x) => x !== id).join();
+  if (without(before) !== without(after) || before.length !== after.length) return null;
+  const i = after.indexOf(id);
+  return i < 0 ? null : { id, after: i ? after[i - 1] : null };
+}
+
+/**
+ * A key on a focused grip. st: { id, order } while a chunk is being moved, else null; list: the spec's open chunk ids
+ * as listed. Arrow up and down (Home, End) move it in the preview; Enter or Space places it (commit: { id, after });
+ * Escape puts it back. handled: the key was the grip's (the caller prevents its default).
+ */
+export function gripKey(st, key, list, id) {
+  const cur = st && st.id === id ? st.order : list;
+  const i = cur.indexOf(id);
+  if (i < 0) return { st, handled: false };
+  const to = key === 'ArrowUp' ? i - 1 : key === 'ArrowDown' ? i + 1 : key === 'Home' ? 0 : key === 'End' ? cur.length - 1 : null;
+  if (to !== null) return { st: { id, order: moveTo(cur, id, to) }, handled: true };
+  if (key === 'Enter' || key === ' ') return { st: null, commit: st && st.id === id ? moveOf(list, st.order, id) : null, handled: true };
+  if (key === 'Escape') return { st: null, handled: !!st };
+  return { st, handled: false };
+}
+
+/** The preview while dragging `id` over `over`: before it, or after it when the pointer is on its lower half. */
+export function dragOrder(list, id, over, below) {
+  if (!list.includes(id) || !list.includes(over) || id === over) return list.slice();
+  const rest = list.filter((x) => x !== id);
+  rest.splice(rest.indexOf(over) + (below ? 1 : 0), 0, id);
+  return rest;
+}
+
+/** Rows (anything with an id) with the ids `order` names filling their own slots in that order; the rest stay put. */
+export function inOrder(rows, order) {
+  if (!order) return rows;
+  const at = new Map(order.map((id, i) => [id, i]));
+  const named = rows.filter((r) => at.has(r.id)).sort((a, b) => at.get(a.id) - at.get(b.id));
+  let k = 0;
+  return rows.map((r) => (at.has(r.id) ? named[k++] : r));
+}
+
+/** What the grip says to a screen reader while a chunk moves. */
+export function gripSays(st) {
+  if (!st) return '';
+  const n = st.order.indexOf(st.id) + 1;
+  return `${st.id}: place ${n} of ${st.order.length}. Enter places it, Escape puts it back.`;
+}
+
+// ---- Reassign's picker (spec 40 A12) ---------------------------------------------------
+
+/** A GitHub login, with or without its @. */
+export const GH_LOGIN = /^@?[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+
+/**
+ * Who a claim can go to: the owner (a hold, never expires), then everyone else who holds a claim, by name. Each
+ * target: { key, name, desc, owner?, to?, login? }; a person whose GitHub login no claim carries (only a hold
+ * names one) gets `login: ''` and the picker asks for it; so does the last row, Someone else. The chunk's current
+ * holder is left out; so is the cloud loop.
+ */
+export function reassignTargets(rows, ctx, id) {
+  const cur = (rows || []).find((r) => String(r.id) === String(id));
+  const people = new Map();
+  for (const r of rows || []) {
+    if (!r.who || r.who === PRIVILEGED || String(r.session || '').startsWith('cloud-')) continue;
+    if (!people.has(r.who)) people.set(r.who, { who: r.who, login: '', where: new Set(), n: 0 });
+    const p = people.get(r.who);
+    if (r.held && typeof r.held === 'string' && !p.login) p.login = r.held.replace(/^@/, '');
+    if (!r.held && (r.star || r.session)) p.where.add(r.star || String(r.session).slice(0, 8));
+    p.n++;
+  }
+  const out = [];
+  if (!cur || cur.who !== PRIVILEGED) {
+    const name = ctx.owner ? 'you' : (ctx.ownerName || 'the owner');
+    out.push({ key: 'owner', owner: true, name, desc: 'the owner · held, never expires' });
+  }
+  const list = [...people.values()].filter((p) => !cur || p.who !== cur.who).sort((a, b) => a.who.localeCompare(b.who));
+  for (const p of list) {
+    const where = [...p.where];
+    const desc = [p.login ? `@${p.login}` : 'GitHub login needed', `${p.n} claim${p.n === 1 ? '' : 's'}`, where.length ? where.join(', ') : ''].filter(Boolean).join(' · ');
+    out.push({ key: `p:${p.who}`, name: p.who, to: p.who, login: p.login, desc });
+  }
+  out.push({ key: 'other', name: 'Someone else', login: '', desc: 'by their GitHub login' });
+  return out;
+}
+
+/** POST /api/claims/reassign's body for a target (and a typed login when it has none), or null when a login is missing. */
+export function reassignBody(id, target, login = '') {
+  if (!target) return null;
+  if (target.owner) return { id, owner: true };
+  const l = String(target.login || login || '').trim().replace(/^@/, '');
+  if (!GH_LOGIN.test(l)) return null;
+  return { id, login: l, ...(target.to ? { to: target.to } : null) };
+}

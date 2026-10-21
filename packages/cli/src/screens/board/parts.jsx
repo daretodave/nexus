@@ -5,7 +5,7 @@
 import {
   AiGlyph, SizeTag, Icon, Moon, Grip, Star, Pct, ChunkIt, CkQ, CRail, CrPerson, CrSess, CrClaim, ReqPop, ChoiceButtons, cx,
 } from '../../ui/index.js';
-import { CS } from './model.js';
+import { CS, GH_LOGIN } from './model.js';
 
 /** The row's claim badge (.claim): a star session, the cloud loop, a hold, or a neutral initial. */
 export function ClaimBadge({ cl, whole }) {
@@ -34,16 +34,75 @@ function Act({ icon, ghost, children, onClick, busy, ...rest }) {
   );
 }
 
+/** The moving row's mark: the plotted row's accent edge, from nexus.css tokens. */
+const MOVING = { background: 'color-mix(in oklab, var(--accent) 7%, transparent)', boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--accent) 34%, transparent)' };
+
+/**
+ * The live grip (spec 40 A12): the board's .grip as a button. Drag it, or focus it and use the arrow keys (Home, End),
+ * then Enter to place or Escape to put back. g: { moving, onKeyDown, onBlur, onDragStart, onDragEnd }.
+ */
+function GripBtn({ id, g }) {
+  return (
+    <button className="grip" type="button" draggable data-grip={id} aria-label={`Move ${id} within its spec`} aria-pressed={g.moving ? 'true' : 'false'}
+      title="Drag, or arrow keys then Enter, to reorder within the spec"
+      style={{ background: 'transparent', border: 0, padding: 0, color: g.moving ? 'var(--accent)' : undefined }}
+      onKeyDown={g.onKeyDown} onBlur={g.onBlur} onDragStart={g.onDragStart} onDragEnd={g.onDragEnd}>
+      <Icon name="grip" size={12} />
+    </button>
+  );
+}
+
+/**
+ * Reassign's picker (spec 40 A12): the board's popover (.menu, placed as .req-pop is) listing the claimants.
+ * p: { id, targets, chosen, login, onChoose(target), onLogin(text), onSend(), onCancel() }. A target with no
+ * GitHub login asks for one under the list; the others go at one click.
+ */
+export function ReassignPop({ p, style }) {
+  const need = p.chosen && !p.chosen.owner && !p.chosen.login;
+  const ok = !!need && GH_LOGIN.test(String(p.login || '').trim());
+  return (
+    <div className="menu" role="dialog" aria-label={`Reassign ${p.id}`}
+      style={{ position: 'absolute', zIndex: 8, right: 6, top: 'calc(100% + 6px)', maxWidth: 'calc(100vw - 32px)', ...style }}
+      onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); p.onCancel(); } }}>
+      <div className="menu-head"><span className="t-caps c-2">Reassign {p.id} to</span></div>
+      {p.targets.map((t, i) => [
+        t.key === 'other' && i ? <div className="menu-sep" key="sep" /> : null,
+        <button key={t.key} className={cx('menu-item', p.chosen?.key === t.key && 'is-active')} type="button" aria-pressed={p.chosen?.key === t.key ? 'true' : 'false'}
+          autoFocus={i === 0} onClick={() => p.onChoose(t)}>
+          <Icon name={t.owner ? 'lockOne' : t.key === 'other' ? 'plus' : 'contribOne'} />
+          <span>{t.name}<span className="d">{t.desc}</span></span>
+          <span />
+        </button>,
+      ])}
+      {need ? (
+        <form style={{ display: 'flex', gap: 8, padding: '6px 4px 2px' }} onSubmit={(e) => { e.preventDefault(); if (ok) p.onSend(); }}>
+          <input className="field" style={{ minHeight: 32, padding: '5px 10px', fontSize: 13 }} autoFocus value={p.login} placeholder="their GitHub login"
+            aria-label={p.chosen.key === 'other' ? 'Their GitHub login' : `${p.chosen.name}'s GitHub login`} onChange={(e) => p.onLogin(e.target.value)} />
+          <button className="btn btn-s btn-primary" type="submit" disabled={!ok}>Reassign</button>
+        </form>
+      ) : null}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 4px 2px' }}>
+        <button className="btn btn-s btn-ghost" type="button" onClick={p.onCancel}>Not now</button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * .crow: one chunk. r is a rowModel; on: { claim, request, sendRequest,
  * closePop, release, hold, unhold, reassign, open } handlers by id.
+ * grip (spec view, an open chunk): GripBtn's handlers plus the row's
+ * { onDragOver, onDrop }; null leaves the board's inert grip. pick: the
+ * Reassign picker's model when it is open on this row.
  */
-export function BoardRow({ r, on, repo, ownerName, busy }) {
+export function BoardRow({ r, on, repo, ownerName, busy, grip = null, pick = null }) {
   const cl = r.claim;
   const b = busy === r.id;
+  const style = { ...(r.delay != null ? { '--d': `${r.delay}ms` } : null), ...(grip?.moving ? MOVING : null) };
   return (
-    <div className={cx('crow', CS[r.state], r.closed && 'is-closed', r.plotted && 'is-plotted', r.covered && 'is-covered', r.hover && 'is-hover', r.bloom && 'is-bloom')} style={r.delay != null ? { '--d': `${r.delay}ms` } : undefined} role="listitem">
-      <Grip />
+    <div className={cx('crow', CS[r.state], r.closed && 'is-closed', r.plotted && 'is-plotted', r.covered && 'is-covered', (r.hover || pick) && 'is-hover', r.bloom && 'is-bloom')}
+      style={Object.keys(style).length ? style : undefined} role="listitem" onDragOver={grip?.onDragOver} onDrop={grip?.onDrop}>
+      {grip ? <GripBtn id={r.id} g={grip} /> : <Grip />}
       <Moon state={r.state === 'closed' ? 'settled' : r.state} />
       <span className="chunk-id">{r.id}</span>
       <span className="crow-t">
@@ -60,7 +119,7 @@ export function BoardRow({ r, on, repo, ownerName, busy }) {
         {r.canRelease ? <Act icon="release" ghost busy={b} onClick={() => on.release(r.id)}>Release</Act> : null}
         {r.canHold ? <Act icon="hold" ghost busy={b} onClick={() => on.hold(r.id)}>Hold</Act> : null}
         {r.canUnhold ? <Act icon="hold" ghost busy={b} onClick={() => on.unhold(r.id)}>Unhold</Act> : null}
-        {r.canReassign ? <Act icon="swap" ghost busy={b} onClick={() => on.reassign(r.id)}>Reassign</Act> : null}
+        {r.canReassign ? <Act icon="swap" ghost busy={b} onClick={() => on.reassign(r.id)} aria-expanded={pick ? 'true' : 'false'}>Reassign</Act> : null}
         <a className="btn btn-s btn-ghost btn-icon" href={`#spec-${r.spec}`} aria-label={`Open ${r.id} in its spec`} onClick={(e) => { e.preventDefault(); on.open(r.spec); }}>
           <Icon name="external" size={14} />
         </a>
@@ -71,6 +130,7 @@ export function BoardRow({ r, on, repo, ownerName, busy }) {
           <span>Until then <b>{r.id}</b> stays unclaimed, and /next keeps offering it to everyone.</span>
         </ReqPop>
       ) : null}
+      {pick ? <ReassignPop p={pick} /> : null}
     </div>
   );
 }
@@ -100,7 +160,7 @@ export function ChunkFlow({ qs, answers, onPick, onMake, onCancel, note, making 
  * .spec: a spec with its chunks nested. s: { id, title, file, prog, open,
  * claim, rows, empty }. ck: this spec's Chunk it state, or null.
  */
-export function BoardSpec({ s, on, rowOn, repo, ownerName, busy, ck, prot, owner, note }) {
+export function BoardSpec({ s, on, rowOn, repo, ownerName, busy, ck, prot, owner, note, gripFor = () => null, pickFor = () => null }) {
   const sc = s.claim;
   const title = `${s.id} · ${s.title}`;
   const canClaim = !sc && !s.empty && s.prog.done < s.prog.total;
@@ -122,7 +182,7 @@ export function BoardSpec({ s, on, rowOn, repo, ownerName, busy, ck, prot, owner
       </div>
       {s.open && !s.empty ? (
         <div className="spec-body" role="list" aria-label={`Chunks of ${title}`}>
-          {s.rows.map((r) => <BoardRow key={r.id} r={r} on={rowOn} repo={repo} ownerName={ownerName} busy={busy} />)}
+          {s.rows.map((r) => <BoardRow key={r.id} r={r} on={rowOn} repo={repo} ownerName={ownerName} busy={busy} grip={gripFor(s, r)} pick={pickFor(r.id)} />)}
         </div>
       ) : null}
       {s.open && s.empty && !asking ? <ChunkIt onClick={() => on.startChunk(s.id)} /> : null}
@@ -152,7 +212,7 @@ export function PlanPr({ pr }) {
 }
 
 /** The claims rail (.crail): by person, then session; actions on hover per mode. */
-export function ClaimsRail({ people, owner, onRelease, onReassign, busy, note, empty }) {
+export function ClaimsRail({ people, owner, onRelease, onReassign, busy, note, empty, pickFor = () => null }) {
   return (
     <CRail cap={owner ? 'you can release or reassign any claim' : 'your own claims show actions'}>
       {note ? <span className="t-body-s c-3">{note}</span> : null}
@@ -169,11 +229,12 @@ export function ClaimsRail({ people, owner, onRelease, onReassign, busy, note, e
                 const acts = canRelease || canReassign ? (
                   <>
                     {canRelease ? <button className="btn btn-ghost" type="button" disabled={busy === c.rawId} onClick={() => onRelease(c.rawId)}>Release</button> : null}
-                    {canReassign ? <button className="btn btn-ghost" type="button" disabled={busy === c.rawId} onClick={() => onReassign(c.rawId)}>Reassign</button> : null}
+                    {canReassign ? <button className="btn btn-ghost" type="button" disabled={busy === c.rawId} aria-expanded={pickFor(c.rawId) ? 'true' : 'false'} onClick={() => onReassign(c.rawId)}>Reassign</button> : null}
                   </>
                 ) : <span className="exp" style={{ visibility: 'visible' }}>{cl.exp}</span>;
                 return (
-                  <CrClaim key={c.id} id={c.id} t={c.t} exp={cl.exp} expKind={cl.kind === 'held' ? 'held' : cl.stale ? 'stale' : undefined} gone={c.gone} acts={acts} />
+                  <CrClaim key={c.id} id={c.id} t={c.t} exp={cl.exp} expKind={cl.kind === 'held' ? 'held' : cl.stale ? 'stale' : undefined} gone={c.gone} acts={acts}
+                    hover={!!pickFor(c.rawId)} pop={pickFor(c.rawId) ? <ReassignPop p={pickFor(c.rawId)} style={{ right: 0 }} /> : null} />
                 );
               })}
             </CrSess>
