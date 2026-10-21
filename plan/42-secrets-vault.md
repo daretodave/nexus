@@ -137,13 +137,6 @@ the vault arrives):
   self-tests.
 - **A7** A gate leg refuses a staged diff that contains a
   vault value, with tests.
-- **A10** `/next` parks a chunk whose secret is missing and
-  files a secret request in the oversight queue; `/heads-down`
-  moves on.
-- **A11** A contributor's `/next` never picks a chunk with a
-  `secrets` field.
-- **A12** The audit log records set, push and rotation by name
-  only, and a secret older than 90 days gets a nudge.
 - **A13** The GUI server lists names and status, takes a value
   through a masked POST into the vault and sinks, and masks
   vault values in every transcript it serves or logs.
@@ -158,19 +151,17 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 8 open · 7 closed · next A16
+Measure: 5 open · 10 closed · next A16
 
 - [ ] **42.3** `nexus secrets run` and the rails · M ·
   closes A5, A6, A7 · needs —
   - The run wrapper, the guard hook rules with self-tests,
     and the gate leg that scans a staged diff for vault
     values.
-- [ ] **42.6** `/next` parks and asks; contributors skip; the
-  audit log · M · closes A10, A11, A12 · needs —
 - [ ] **42.7** The GUI server's secrets API and transcript
   masking · M · closes A13 · needs 42.3
 - [ ] **42.8** The vault in the GUI, from the design export ·
-  L · closes A14 · needs 42.6, 42.7
+  L · closes A14 · needs 42.7
   - The export arrived 2026-10-21 (the handoff's second
     revision): Vault, VaultImport, VaultContributor,
     VaultKit, Secrets and SecretsContributor (onboarding step

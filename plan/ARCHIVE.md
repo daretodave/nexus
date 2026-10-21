@@ -112,3 +112,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 42.5 · secrets push sets Vercel and Cloudflare secrets through stdin · e3609fad..bf1dfa2d
 - 2026-10-21 · 44.2 · npm run record turns a demo scenario into a GIF and a poster · b72bdae5..46ac8e58
 - 2026-10-21 · 43.1 · the Claude Design round trip has a concept doc and a playbook · bedb4c36..bedb4c36
+- 2026-10-21 · 42.6 · a missing secret parks its chunk and files a names-only request · fb1b1981..91e48734
