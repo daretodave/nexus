@@ -102,7 +102,7 @@ Measure: 12 open · 0 closed · next A13
 - [ ] **40.2** The fleet home: star tiles, merged inbox,
   Resume · M · closes A2 · needs 40.1, 37.1
 - [ ] **40.3** The plan board: all chunks and specs, sorted by
-  order.mjs · M · closes A3 · needs 36.3
+  order.mjs · M · closes A3 · needs —
 - [ ] **40.4** Cached AI one-liners for undescribed chunks ·
   S · closes A4 · needs 40.3
 - [ ] **40.5** The claims panel: group, hold, assign, request
