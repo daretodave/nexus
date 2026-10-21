@@ -35,7 +35,7 @@ line goes):
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 4 left |
+| 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 3 left |
 | 36 | Script hardening: paths, races, tests | [36-script-hardening.md](36-script-hardening.md) | planned · priority 1 | 2 left |
 | 37 | Sessions carry their names; every skill lands per owner mode | [37-sessions-and-landing.md](37-sessions-and-landing.md) | planned · priority 3 | 3 left |
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 1 left |
