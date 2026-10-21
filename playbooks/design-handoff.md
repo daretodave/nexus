@@ -31,7 +31,7 @@ Skip it too when the product has no screens worth a canvas.
 | Prompt | `/design prompt [<scope>]` | 43.2 | the command (`scripts/design/prompt.mjs`) |
 | Addendum | `/design addendum` | 43.2 | the command |
 | Ingest | `/design ingest <link or folder>` | 43.3 | the command (`scripts/design/ingest.mjs`) |
-| Board renderer, screenshot compare | `templates/scripts/design/` | 43.4 | a session's own scratch scripts |
+| Board renderer, screenshot compare | `scripts/design/render.mjs`, `compare.mjs` | 43.4 | the commands (`skills/design/render.md`) |
 | Port | the port recipe Workflow | 43.5 | a Workflow written for the chunk |
 | Fidelity leg | an opt-in gate leg | 43.5 | the handoff README, by review |
 | GUI | "Hand off a design", the board gallery | 43.6 | none |
@@ -140,9 +140,13 @@ Run it as a Workflow, not one long session. The 41.3 run:
    shows the design's empty state or a dim dash, never the
    boards' demo values; list those endpoints in one place.
 4. **Fidelity, one reviewer per theme.** Render every board
-   (a stand-in for the design tool's runtime) and every
-   screen with fixtures, screenshot both, compare element by
-   element. nexus's night pass found the stylesheet's own
+   (`node scripts/design/render.mjs <handoff> --theme night
+   --out <scratch>`, a stand-in for the design tool's runtime
+   in the installed Chrome), screenshot every screen with
+   fixtures at the board's size, and run
+   `node scripts/design/compare.mjs <board.png> <app.png>
+   --out <diff.png>`: the red in the diff says where to compare
+   element by element ([`../skills/design/render.md`](../skills/design/render.md)). nexus's night pass found the stylesheet's own
    cascade bug and missing box-drawing glyphs; the dawn pass
    found five slips any theme shared (a font the CSP
    refused, four copy and layout misses).
@@ -150,8 +154,7 @@ Run it as a Workflow, not one long session. The 41.3 run:
    handoff README carries it too.
 
 The kit Workflow (43.5) runs these five steps from the skill,
-with the renderer and the compare from
-`templates/scripts/design/` (43.4).
+with the renderer and the compare above.
 
 A live pass after the port is worth a chunk of its own: drive
 the built app in a browser in both themes for hover,

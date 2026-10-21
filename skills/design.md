@@ -21,6 +21,7 @@ This is not the in-repo design session
 that one is a Claude Code session working in a copy of the
 repo. `playbooks/design-handoff.md` is the round trip
 step by step; `concepts/design-round-trip.md` is the why.
+`design/render.md` renders the boards and compares the app.
 
 ## 2. Invocation
 
@@ -138,6 +139,8 @@ node scripts/design/prompt.mjs addendum [--write]
 #   --dir design/prompts  --plan plan  --date YYYY-MM-DD
 node scripts/design/ingest.mjs <folder> --artifact <link> --version <v> --chunk <id>
 node scripts/design/ingest.mjs check|rehash <handoff>   # --into packages/cli/design/handoff
+node scripts/design/render.mjs <handoff> --out <dir> [--theme night|dawn] [--board <name>]
+node scripts/design/compare.mjs <board.png> <app.png> [--threshold 0.1] --out diff.png
 
 # Writes
 design/prompts/NNN-<date>.md          # one per prompt or addendum

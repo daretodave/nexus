@@ -552,7 +552,7 @@ nexus/
 │   ├── plot.md                        # /plot — a task into the plan with its place in line (+ bug.md: /bug)
 │   ├── messy.md                       # /messy — a raw dump into specs (the GUI's explode)
 │   ├── tidy.md                        # /tidy — clear dead claims, close idle worktrees (worktree.mjs)
-│   ├── design.md                      # /design — the Claude Design prompt, addenda and ingest (scripts/design/; + design/ingest.md)
+│   ├── design.md                      # /design — the Claude Design prompt, addenda and ingest (scripts/design/; + design/ingest.md, design/render.md)
 │   ├── rebooting.md                   # /rebooting, /reboot-ready, /reboot-resume — the reboot train
 │   ├── march.md                       # + ship-a-chunk (/next's build steps), iterate, critique,
 │   │                                  #   triage, expand, oversight, jot
@@ -607,6 +607,7 @@ nexus/
     │   ├── moderate.md                 # omit unless UGC (see customization/moderation-loop.md)
     │   ├── design.md                   # omit unless you design in Claude Design: prompt, addendum, ingest
     │   ├── design/ingest.md            # /design ingest in full: Artifact calls, manifest, port chunk, --into
+    │   ├── design/render.md            # the boards rendered in Chrome, the app compared against them
     │   ├── plan-a-spec.md
     │   ├── iterate.md
     │   ├── critique.md
