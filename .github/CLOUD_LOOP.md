@@ -77,6 +77,19 @@ settles and lands as the owner (nexus's cloud loop is owner
 mode; adopters can run theirs as pull requests:
 [`templates/.github/CLOUD_LOOP.md`](../templates/.github/CLOUD_LOOP.md)).
 
+## Contributor pull requests
+
+A contributor lands each chunk as a pull request, its claim
+carrying the PR number (`npm run claims -- pr <id> <n>`).
+`workflows/pr-flow.yml` (the template, byte for byte) runs
+when any PR closes, merged or not, and runs
+`node scripts/claims.mjs prune` from main with the workflow's
+own token: every claim whose PR is closed leaves the `claims`
+branch. No model and no secret. The owner settles the merged
+PR's `plan/pending/` file afterwards. nexus carries no
+`pr-resolve.yml`: the loop runs in owner mode and contributor
+PRs are rare, so a conflicted one is rebased by hand.
+
 ## The trailer carve-out
 
 `agents.md` rule 2 (plain commit bodies) has exactly one
