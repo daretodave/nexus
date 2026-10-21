@@ -20,7 +20,7 @@ Reach for polyrepo when **two or more** of these are true:
   public. One `plan/` repo, visibility set once, instead of a
   private-mirror hack per product repo.
 - Plan history and product history diverge in cadence. A
-  `plan: phase 4 shipped` commit doesn't belong in the same
+  `plan: close 04.2` commit doesn't belong in the same
   history as the product's own commits, and squash-friendly
   product repos don't want the loop's bookkeeping noise.
 
@@ -95,18 +95,18 @@ not:
 either stops the tick per the standing rule; there is no
 partial-sync state.
 
-**The atomic act spans two repos, in order.** A phase tick
+**The atomic act spans two repos, in order.** A chunk tick
 still ends in one atomic commit-and-push act, but it's now two
 commits across two repos, pushed in a fixed order:
 
 1. **Product repo first** — the actual shipped work (docs,
    code, templates).
-2. **Plan repo last** — the tick (phase ticked `[x]`, AUDIT
-   row moved to Done, whatever state changed).
+2. **Plan repo last** — the tick (chunk closed to an archive
+   line, AUDIT row moved to Done, whatever state changed).
 
 This order is the whole rule: **the ledger never references
 unpushed work.** If the plan repo's commit landed first and the
-product push then failed, the ledger would claim a phase
+product push then failed, the ledger would claim a chunk
 shipped that the world can't see yet. Product-first means the
 worst case is a ledger that's one tick *behind* reality —
 recoverable — never one tick *ahead* of it.

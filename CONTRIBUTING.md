@@ -131,7 +131,7 @@ Templates are tested by **applying them**:
 
 - Spin up a small repo (any stack, any provider).
 - Apply your changed template per the playbook.
-- Confirm the loop ships at least one phase end-to-end.
+- Confirm the loop ships at least one chunk end-to-end.
 - Document the test in your PR body.
 
 Concept docs are tested by **reading them cold**:

@@ -20,7 +20,7 @@ starting.
 
 - You have a working name and a 1–2 sentence pitch.
 - You have **no** `spec.md` yet, or only scratch notes.
-- The next thing you want to do is `/ship-a-chunk` on the
+- The next thing you want to do is `/next` on the
   adoption — but `new-project.md` requires a spec, and
   you don't have one.
 
@@ -101,7 +101,7 @@ Then:
        ../nexus/playbooks/new-project.md step 10).
   6. Then stop. Point me at ../nexus/playbooks/new-project.md
      and the TL;DR adoption prompt. Don't invoke
-     /ship-a-chunk.
+     /next.
 
 Standing rules:
   - Commit and push as a single atomic act per batch.

@@ -27,7 +27,7 @@
 
 - You want the loop to keep ticking nights, weekends, and
   while you're away from your laptop.
-- Your project has steady backlog (phases, audit findings,
+- Your project has steady backlog (chunks, audit findings,
   data backfills) that benefits from low-cadence
   unattended progress.
 - Your hosting provider deploys on push automatically — the
@@ -150,7 +150,7 @@ In `.github/workflows/march.yml`, replace:
 - `<PROJECT>` → your project name (matches `agents.md`)
 - `<PROJECT_PKG_PREFIX>` (in `.github/actions/setup/action.yml`,
   with the rest of your toolchain) → your package scope (e.g.,
-  `@thock`) or drop the Playwright steps entirely if you
+  `@acme`) or drop the Playwright steps entirely if you
   don't have an e2e workspace
 - `<DEFAULT_BRANCH>` → typically `main`
 
@@ -179,7 +179,7 @@ Conservative starting cadences:
 - **Weekdays off-peak only** — `0 */2 * * 1-5` (Mon-Fri).
 
 Don't go below every 2h on the first run. The ceiling
-defaults to 12 weighted-budget points / 24h (a phase-shipping
+defaults to 12 weighted-budget points / 24h (a chunk-shipping
 commit costs 3, a churn commit costs 1 — see
 `.github/CLOUD_LOOP.md` "The daily ceiling"); cadence above
 what the ceiling can spend just wastes invocations.
@@ -254,7 +254,7 @@ Watch the steps live. The first run you should see:
 The agent's behavior on this first tick depends on what's
 queued. Most likely outcomes:
 
-- **A clean tick** that ships a phase / data record /
+- **A clean tick** that ships a chunk / data record /
   iterate finding. Watch for the new commit on `main` and
   confirm the deploy went green.
 - **A no-op tick** ("nothing to do this tick") — fine. The
@@ -417,6 +417,5 @@ dispatch-only, never on a recurring trigger.)
 nexus runs this exact pattern on itself — the ouroboros. See
 this repo's own `.github/` (`workflows/march.yml` +
 `CLOUD_LOOP.md`) for the live workflow + operator's guide as
-it currently exists on a working autonomous-loop repo. Secondary
-reference: `thock` runs the same pattern in production, see
-https://github.com/daretodave/thock/tree/main/.github.
+it currently exists on a working autonomous-loop repo.
+Sibling adopters run the same pattern in production.

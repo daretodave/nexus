@@ -108,7 +108,7 @@ $ /march
       3   Tests:  12 unit, 2 e2e
       4   pnpm verify   ·  typecheck · test · validate · build · e2e   ✓
       5   Close 08.3 + commit + push  (a3f1e2c)
-      6   pnpm deploy:check  ·  ready ✓  →  https://thock.xyz
+      6   pnpm deploy:check  ·  ready ✓  →  https://acme.dev
 
   08.3 archived. Spec 08: 2 chunks left. Next tick picks 08.4.
 ```
@@ -484,7 +484,7 @@ nexus/
 │   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams
 │   ├── diagrams.mjs                   # writes every assets/*.svg from one style table; --check is the gate's diagrams leg
 │   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
-│   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
+│   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
 │   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
@@ -627,7 +627,7 @@ nexus/
     │   ├── deploy-check.mjs           # multi-provider deploy gate
     │   ├── loop-issue.mjs             # GitHub issue mirror (findings + specs)
     │   ├── notify.mjs                 # the pager — blocked is loud
-    │   ├── pulse.mjs                  # offline instrument panel: queue/build-plan/candidate counts, no network
+    │   ├── pulse.mjs                  # offline instrument panel: queue/plan/candidate counts, no network
     │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
     │   ├── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
     │   ├── refresh-critique-session.mjs # Pattern B session refresh (omit unless Auth: is set)

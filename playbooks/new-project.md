@@ -2,7 +2,7 @@
 
 > Adopt the autonomous-loop methodology in a fresh repo with a
 > spec but little or no code. Estimated time: **2–3 hours** of
-> setup before your first `/ship-a-chunk` invocation, worked
+> setup before your first `/next` invocation, worked
 > manually, section by section, at human reading pace. An
 > autonomous agent delegated the whole playbook in one paste
 > (README's TL;DR) has no read-and-decide pauses and typically
@@ -21,7 +21,7 @@
 > - 2–4 sub-agent definitions
 > - A working verify gate (locally)
 > - A working deploy gate (post-push)
-> - `/ship-a-chunk` ready to run
+> - `/next` ready to run
 
 ---
 
@@ -67,7 +67,7 @@ section in brackets.
 7. Wire the deploy gate [20 min]
 8. Author 2–4 sub-agents [15 min]
 9. (Optional) Run `/bootstrap` to provision external services [10–20 min]
-10. Smoke-test by running `/ship-a-chunk` once [15 min]
+10. Smoke-test by running `/next` once [15 min]
 11. Ratchet up the autonomy [variable]
 
 ---
@@ -115,9 +115,9 @@ Copy-Item ..\nexus\templates\plan\bearings.md plan\bearings.md
 Replace these placeholders:
 
 - `<PROJECT>` → your product name (lowercase if applicable, e.g.
-  `thock`)
+  `acme`)
 - `<PROJECT_TAGLINE>` → one-line description
-- `<HOSTING_URL>` → e.g. `https://thock.xyz`
+- `<HOSTING_URL>` → e.g. `https://acme.dev`
 - `<HOSTING_PROVIDER>` → Netlify / Vercel / etc.
 - `<DEFAULT_BRANCH>` → usually `main`
 
@@ -306,14 +306,14 @@ Now do a global search-and-replace across the copied files:
 
 | Find | Replace with |
 |---|---|
-| `<PROJECT>` | your project name (e.g. `thock`) |
+| `<PROJECT>` | your project name (e.g. `acme`) |
 | `<PROJECT_LOWER>` | lowercase variant if different |
 | `<PROJECT_TAGLINE>` | one-line description |
 | `<HOSTING_URL>` | `https://your-site.netlify.app` |
 | `<HOSTING_PROVIDER>` | `Netlify` / `Vercel` / etc. |
 | `<REPO_SLUG>` | `your-org/your-repo` |
 | `<DEFAULT_BRANCH>` | usually `main` |
-| `<PROJECT_PKG_PREFIX>` | workspace package prefix, e.g. `@thock` (empty if not a monorepo) |
+| `<PROJECT_PKG_PREFIX>` | workspace package prefix, e.g. `@acme` (empty if not a monorepo) |
 
 A one-liner that replaces all eight, bash/zsh/WSL/macOS.
 Uses `-i.bak` (suffix attached, no space) rather than bare
@@ -327,14 +327,14 @@ both BSD and GNU sed accept identically, so the trailing
 grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>\|<PROJECT_PKG_PREFIX>' \
     ./skills ./.claude ./plan ./agents.md ./scripts ./.env.example ./data \
   2>/dev/null | xargs sed -i.bak \
-      -e 's/<PROJECT_LOWER>/thock/g' \
-      -e 's/<PROJECT>/thock/g' \
+      -e 's/<PROJECT_LOWER>/acme/g' \
+      -e 's/<PROJECT>/acme/g' \
       -e 's/<PROJECT_TAGLINE>/keyboards, deeply./g' \
-      -e 's/<HOSTING_URL>/https:\/\/thock.xyz/g' \
+      -e 's/<HOSTING_URL>/https:\/\/acme.dev/g' \
       -e 's/<HOSTING_PROVIDER>/Netlify/g' \
-      -e 's/<REPO_SLUG>/you\/thock/g' \
+      -e 's/<REPO_SLUG>/you\/acme/g' \
       -e 's/<DEFAULT_BRANCH>/main/g' \
-      -e 's/<PROJECT_PKG_PREFIX>/@thock/g' \
+      -e 's/<PROJECT_PKG_PREFIX>/@acme/g' \
   && find . -name '*.bak' -delete
 ```
 
@@ -344,14 +344,14 @@ this pairs with):
 
 ```powershell
 $repl = @{
-  '<PROJECT>'             = 'thock'
-  '<PROJECT_LOWER>'       = 'thock'
+  '<PROJECT>'             = 'acme'
+  '<PROJECT_LOWER>'       = 'acme'
   '<PROJECT_TAGLINE>'     = 'keyboards, deeply.'
-  '<HOSTING_URL>'         = 'https://thock.xyz'
+  '<HOSTING_URL>'         = 'https://acme.dev'
   '<HOSTING_PROVIDER>'    = 'Netlify'
-  '<REPO_SLUG>'           = 'you/thock'
+  '<REPO_SLUG>'           = 'you/acme'
   '<DEFAULT_BRANCH>'      = 'main'
-  '<PROJECT_PKG_PREFIX>'  = '@thock'
+  '<PROJECT_PKG_PREFIX>'  = '@acme'
 }
 Get-ChildItem -Recurse -File .\skills, .\.claude, .\plan, .\agents.md, .\scripts, .\.env.example, .\data -ErrorAction SilentlyContinue |
   ForEach-Object {
@@ -687,7 +687,7 @@ touched this file. Sweep it the same way before running
 `/bootstrap`:
 
 ```bash
-sed -i.bak -e 's/<PROJECT_LOWER>/thock/g' -e 's/<PROJECT>/thock/g' \
+sed -i.bak -e 's/<PROJECT_LOWER>/acme/g' -e 's/<PROJECT>/acme/g' \
   setup/bootstrap.local.json && rm -f setup/bootstrap.local.json.bak
 ```
 
@@ -695,7 +695,7 @@ The PowerShell twin:
 
 ```powershell
 (Get-Content setup\bootstrap.local.json -Raw) `
-  -replace '<PROJECT_LOWER>', 'thock' -replace '<PROJECT>', 'thock' |
+  -replace '<PROJECT_LOWER>', 'acme' -replace '<PROJECT>', 'acme' |
   Set-Content setup\bootstrap.local.json -NoNewline
 ```
 
@@ -707,26 +707,28 @@ doesn't break anything; the rest of nexus works the same.
 Run:
 
 ```
-/ship-a-chunk
+/next
 ```
 
-(In Claude Code. Or read `skills/ship-a-chunk.md` and follow
-the procedure manually if using a different tool.)
+(In Claude Code. Or read `skills/next.md` and follow the
+procedure manually if using a different tool; its builder
+follows `skills/ship-a-chunk.md`.)
 
 Expected:
 
 1. Reads `plan/README.md`, picks chunk 01.1 (the first ready
-   chunk).
-2. Reads `plan/01-bootstrap.md`.
-3. Builds the slice per the spec.
-4. Runs `pnpm verify` — fails the first time, iterates.
-5. Closes the chunk: its line and A-IDs out, the Measure line
-   fixed, one line in `plan/ARCHIVE.md`.
-6. Commits and pushes.
-7. Runs `pnpm deploy:check` — may be red the first time
+   chunk) and claims it.
+2. A builder reads `plan/01-bootstrap.md` and builds the
+   slice per the spec, in a worktree.
+3. Runs `pnpm verify` — fails the first time, iterates.
+4. Closes the chunk through a pending file: its line and A-IDs
+   out, the Measure line fixed, one line in `plan/ARCHIVE.md`.
+5. Lands per owner mode: the owner's checkout commits and
+   pushes; any other lands a pull request.
+6. Runs `pnpm deploy:check` — may be red the first time
    (Netlify rebuilds the workspace; expected if the previous
    state was a stub).
-8. Reports done.
+7. Releases the claim and reports done.
 
 If any step misbehaves: stop, read the relevant skill file
 section, fix the spec or the gate, retry. **Don't soldier on
@@ -738,7 +740,7 @@ through a wonky bootstrap.** It poisons every later chunk.
 
 Once the bootstrap spec ships green:
 
-- Run `/ship-a-chunk` manually for the next few chunks. Watch
+- Run `/next` manually for the next few chunks. Watch
   the agent work.
 - At the canonical sibling spec, spend extra care — every
   later page family copies its structure.
@@ -780,7 +782,7 @@ The progression is days, not minutes. Don't skip levels.
 
 ## You're ready when (the Day 1 checklist)
 
-This is the "you're about to invoke `/ship-a-chunk` for the
+This is the "you're about to invoke `/next` for the
 first time on a fresh adoption — here's what should be true"
 checklist. Distinct from the Level-4 pre-flight (see
 [`../intervention-spectrum.md`](../intervention-spectrum.md)),
@@ -818,7 +820,8 @@ which assumes a working loop and is about leaving for 80 hours.
       key, with a comment pointing back to the `setup/`
       runbook section that emits it.
 - [ ] Sub-agents are in `.claude/agents/` and tested.
-- [ ] You've read `skills/ship-a-chunk.md` end to end.
+- [ ] You've read `skills/next.md` and
+      `skills/ship-a-chunk.md` end to end.
 - [ ] **Optional, pick up once the loop's been running a
       while:** once the project accumulates real recurring
       lessons (not day-1 setup), copy
@@ -836,5 +839,4 @@ which assumes a working loop and is about leaving for 80 hours.
       [`../skills/lessons-pr.md`](../skills/lessons-pr.md)).
       The methodology improves with every honest application.
 
-When all checks pass: invoke `/ship-a-chunk` for the first
-time.
+When all checks pass: invoke `/next` for the first time.

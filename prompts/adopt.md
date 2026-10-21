@@ -110,7 +110,7 @@ Then:
     Push it: owner pushes main; contributor pushes a branch
     and opens the pull request (the pre-push hook refuses
     main).
-  - Then stop. Do not invoke /ship-a-chunk yourself; let the
+  - Then stop. Do not invoke /next yourself; let the
     user do that as the first conscious step.
 
 Standing rules carried from agents.md:

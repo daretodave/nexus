@@ -46,7 +46,7 @@ commit).
 `prn`). A stray `> nul` redirect (copied from a bash
 `> /dev/null` habit) creates a literal file named `nul` that
 `git add -A` happily stages — and that most POSIX tooling
-can't even delete cleanly later. Seen twice in `../semilayer`.
+can't even delete cleanly later. Seen twice in a sibling adopter.
 
 Add to `.gitignore` on every Windows-adopted repo:
 
