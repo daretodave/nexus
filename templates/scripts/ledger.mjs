@@ -67,7 +67,8 @@ export function withLock(file, fn, { staleMs = 10_000, waitMs = 15_000 } = {}) {
     try {
       fd = fs.openSync(file, 'wx');
     } catch (e) {
-      if (!e || e.code !== 'EEXIST') throw e;
+      // Windows answers EPERM (or EACCES/EBUSY) while another writer's lock is being deleted: busy, not broken.
+      if (!e || !['EEXIST', 'EPERM', 'EACCES', 'EBUSY'].includes(e.code)) throw e;
     }
     if (fd !== null) {
       try {
