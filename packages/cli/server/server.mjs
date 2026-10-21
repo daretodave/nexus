@@ -19,6 +19,7 @@ import { createSummaries } from './summaries.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
 import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
+import { createGitView } from './git.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -52,8 +53,9 @@ function readPrompt(name) {
  * @param {string} [o.claudeHome]    Claude Code's config folder (sessions under projects/); tests point it elsewhere
  * @param {function} [o.ghRun]       run(cmd, args, opts) for every gh call (tests inject a fake gh; never PATH)
  * @param {() => Promise<string>} [o.ghLogin]  how to learn the gh login once (tests stub it; default asks gh)
+ * @param {object} [o.git]          createGitView overrides (tests: claims, ttl)
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, git: gitOpts } = {}) {
   const ghOpts = ghRun ? { run: ghRun } : {};
   let prefs = await repoMod.readPrefs(repo);
   // Run mode moved to .nexus/local.json (A11): carry an older GUI's prefs copy over once.
@@ -135,6 +137,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     home: claudeHome,
   });
 
+  // Git per session and the repo panel (spec 40 A6): read-only, gh through the injected ghRun.
+  // Under an injected provider (tests) with no ghRun, gh reads as missing: a test never reaches the real one.
+  const noGh = async () => ({ ok: false, code: -1, stdout: '', stderr: 'gh is not stubbed in this test', missing: true });
+  const gitView = createGitView({ repo, root: () => primaryRoot(repo), sessions: () => steering.list(), run: ghRun || (injected ? noGh : undefined), ...gitOpts });
+
   async function sessionDetail(id) {
     const h = sessionOf(id);
     const s = await steering.find(id) || (h && withHosted([], [{ ...hostedRows().find((x) => x.id === h.id), listed: true }])[0]);
@@ -148,6 +155,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       if (p.state !== 'run') Object.assign(out, { state: p.state, pausedAt: p.at, held: p.held });
       Object.assign(out, { hosted: true, cwd: run.cwd, worktree: run.place.worktree || '', branch: run.place.branch || out.git?.branch || '' });
     }
+    out.git = await gitView.forSession(out);
     return out;
   }
 
@@ -308,8 +316,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           await sendPrompt(prompt);
           return send(res, 200, { ok: true });
         }
-        case 'GET /api/sessions': return send(res, 200, await sessionList());
+        case 'GET /api/sessions': return send(res, 200, await gitView.withGit(await sessionList()));
         case 'GET /api/inbox': return send(res, 200, await inbox());
+        case 'GET /api/git': return send(res, 200, await gitView.repoGit());
+        case 'GET /api/git/tidy': { const r = await gitView.tidyDry(); return send(res, r.available ? 200 : 404, r); }
+        case 'POST /api/git/fetch': { await body(req); const r = await gitView.fetchNow(); return send(res, r.ok ? 200 : 502, r); }
         case 'POST /api/announce': { const b = await body(req); const r = await steering.announce(b.text); return send(res, r.status, r); }
         case 'GET /api/claims': return send(res, 200, await repoMod.claims(repo));
         case 'POST /api/claims/release': { const b = await body(req); return send(res, 200, await repoMod.releaseClaim(repo, String(b.id || ''))); }
