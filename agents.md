@@ -55,7 +55,7 @@ node scripts/verify.mjs
 
 Legs: `links → tree → discover → placeholders → anatomy →
 emoji → dualshell → chunks → scripts → workflows → diagrams →
-secrets`
+gifs → secrets`
 (plus the opt-in `adopt-dryrun`, `scripts-git` and `design`). Every leg is a hard gate; red = blocked
 commit. Run it
 **foreground and wait** — never `run_in_background`. No
@@ -138,6 +138,7 @@ plan/                nexus's OWN state files (roadmap, specs, archive, queues).
 scripts/             The kit's verify gate (verify.mjs), the
                      diagram generator (diagrams.mjs).
 assets/              Generated SVG diagrams; never hand-edited.
+                     gifs/ holds the README's recorded GUI GIFs.
 .claude/             nexus's OWN Claude Code config (commands,
                      settings.json allowlist, guard hook).
 .github/             nexus's OWN cloud loop (march.yml).

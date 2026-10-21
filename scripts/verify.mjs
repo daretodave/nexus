@@ -64,6 +64,11 @@
 //                 memory; a hand edit, a missing or a stray SVG is
 //                 red, naming the file), plus the generator's own
 //                 node:test suite
+//   gifs          every GIF README.md shows exists, parses, runs 5
+//                 to 8 s, weighs at most 3 MB, has alt text and a
+//                 linked .png poster (scripts/gifs.mjs; bytes are
+//                 never compared: recordings are not byte-stable),
+//                 plus the checker's own node:test suite
 //   secrets       no vault value in what the next commit can hold:
 //                 the working tree vs HEAD plus the untracked files,
 //                 scanned for every value in the vault (.env at the
@@ -709,6 +714,17 @@ async function legDiagrams() {
   return { failures: [...check(), ...suite.failures], note: `${Object.keys(DIAGRAMS).length} SVGs match scripts/diagrams.mjs; ${suite.note}` }
 }
 
+// --- leg: gifs ----------------------------------------------------------------
+// The README's GIFs are recorded from demo scenarios (packages/cli,
+// npm run record); each must fit the budget and carry its poster.
+
+async function legGifs() {
+  const { check } = await import(pathToFileURL(path.join(ROOT, 'scripts/gifs.mjs')).href)
+  const { problems, gifs } = check()
+  const suite = runSuites(['scripts/__tests__/gifs.test.mjs'], 'checker')
+  return { failures: [...problems, ...suite.failures], note: `${gifs.length} README GIF${gifs.length === 1 ? '' : 's'} within 5-8 s and 3 MB, each with its poster; ${suite.note}` }
+}
+
 // --- leg: secrets -------------------------------------------------------------
 // The rail behind "the model sees names, never values": a value that
 // reaches a diff would reach git history. The vault is the primary
@@ -768,6 +784,7 @@ const LEGS = {
   scripts: () => legScripts(),
   workflows: () => legWorkflows(),
   diagrams: () => legDiagrams(),
+  gifs: () => legGifs(),
   secrets: () => legSecrets(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),

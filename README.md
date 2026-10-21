@@ -33,6 +33,15 @@ repo is new, then opens a live cockpit per session
 `npx @usenexus/cli run "<prompt>"` answers one prompt headless
 and prints JSON.
 
+#### The GUI in motion
+
+![The nexus GUI in seven seconds: four star-named sessions breathe on the fleet; a click flies into vega's cockpit; vega asks how to break ties on points, the stage hushes and the question pulls into the conversation; the owner picks goal difference; the stage wakes, chunk 12.4 lands on main and drops into the shipped river, and vega claims 12.5](./assets/gifs/fleet-to-tug.gif)
+
+Prefer less motion? The [still frame](./assets/gifs/fleet-to-tug.png).
+Recorded from the GUI's own `fleet-to-tug` demo, a fictional
+project, and re-shot whenever the UI changes
+([how](./packages/cli/README.md#recording-a-gif-of-a-demo)).
+
 ### 2. Any other agent? Give it this prompt.
 
 Paste it at your project's root, in Cursor, Codex, Claude Code
@@ -484,10 +493,14 @@ nexus/
 ├── package.json                       # the kit's own verify gate wiring
 ├── nexus.secrets.json                 # nexus's own secrets by name, never a value (customization/secrets.md)
 ├── assets/                            # generated SVG diagrams (scripts/diagrams.mjs); hand edits fail the gate
+│   ├── gifs/fleet-to-tug.gif          # the GUI in motion, recorded from a demo scenario (npm run record in packages/cli)
+│   └── gifs/fleet-to-tug.png          # its still poster, for readers who ask for less motion
 ├── scripts/
-│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams · secrets (opt-in: scripts-git · adopt-dryrun · design)
+│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams · gifs · secrets (opt-in: scripts-git · adopt-dryrun · design)
 │   ├── diagrams.mjs                   # writes every assets/*.svg from one style table; --check is the gate's diagrams leg
 │   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
+│   ├── gifs.mjs                       # every GIF the README shows: exists, 5-8 s, 3 MB at most, alt text, its poster (the gifs leg)
+│   ├── __tests__/gifs.test.mjs        # the checker's own suite (run by the gifs leg)
 │   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
@@ -790,13 +803,14 @@ adapt them.
 This repo eats its own dogfood — it is an adopted nexus
 project. The ouroboros, concretely:
 
-- **Its own verify gate.** `node scripts/verify.mjs` — twelve
+- **Its own verify gate.** `node scripts/verify.mjs` — thirteen
   hermetic legs (every relative link resolves, the kit tree
   matches disk, no orphaned doc, placeholder vocabulary
   enforced, skill anatomy enforced, no emojis, dual-shell
   parity checked, the plan shape true, the plan and claims
   scripts' own suites green, the workflows linted, every
-  diagram under `assets/` what its generator draws, no vault
+  diagram under `assets/` what its generator draws, every
+  README GIF within budget beside its poster, no vault
   value in the next commit). On its
   first ever run it caught five real defects in this repo.
   The gate works.
