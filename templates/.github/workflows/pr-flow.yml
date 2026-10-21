@@ -39,6 +39,7 @@ jobs:
       - name: Release the closed PR's claims
         env:
           GH_TOKEN: ${{ github.token }}
+          NEXUS_GH_LOGIN: nexus-claims
           GIT_AUTHOR_NAME: nexus-claims
           GIT_AUTHOR_EMAIL: nexus-claims@users.noreply.github.com
           GIT_COMMITTER_NAME: nexus-claims

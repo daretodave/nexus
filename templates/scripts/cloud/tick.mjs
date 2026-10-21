@@ -205,6 +205,7 @@ function land(cwd, argv, env) {
 
 function release(cwd, [id], env) {
   if (!CHUNK.test(id ?? '')) throw new Error(`tick: release needs a chunk id`);
+  identity(cwd, env);
   const r = claims(cwd, ['release', id], env);
   console.log(r.ok ? `tick: released ${id}` : `tick: ${id} not released (${r.err.split('\n')[0]})`);
   return r.ok ? 0 : 1;

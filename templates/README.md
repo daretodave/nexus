@@ -131,6 +131,7 @@ templates/
 │   ├── __tests__/workflow-lint.test.mjs  (the workflow rules, pure)
 │   ├── __tests__/tick.test.mjs        (the PR-mode tick: fence, candidates, PR text; pure)
 │   ├── __tests__/resolve.test.mjs     (the resolver's pure parts)
+│   ├── __tests__/tick-run.test.mjs    (the PR-mode tick's pick, release and fence over git; slower, offline)
 │   ├── __tests__/worktree.test.mjs    (worktree close and list in scratch repos; slower, offline)
 │   ├── __tests__/push-policy-hook.test.mjs  (the pre-push hook end to end in a scratch git repo; slower, offline)
 │   └── __tests__/claims.test.mjs      (claims over git in scratch repos; slower, offline)

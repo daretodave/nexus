@@ -600,6 +600,7 @@ nexus/
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver
+    │   ├── __tests__/tick-run.test.mjs # the PR-mode tick over git (offline)
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)
