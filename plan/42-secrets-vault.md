@@ -137,8 +137,6 @@ the vault arrives):
   self-tests.
 - **A7** A gate leg refuses a staged diff that contains a
   vault value, with tests.
-- **A8** The GitHub Actions sink sets a secret through stdin
-  and records the push.
 - **A9** The Vercel and Cloudflare sinks do the same.
 - **A10** `/next` parks a chunk whose secret is missing and
   files a secret request in the oversight queue; `/heads-down`
@@ -164,21 +162,19 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 11 open · 4 closed · next A16
+Measure: 10 open · 5 closed · next A16
 
 - [ ] **42.3** `nexus secrets run` and the rails · M ·
   closes A5, A6, A7 · needs —
   - The run wrapper, the guard hook rules with self-tests,
     and the gate leg that scans a staged diff for vault
     values.
-- [ ] **42.4** The GitHub Actions sink · S · closes A8 ·
-  needs —
 - [ ] **42.5** The Vercel and Cloudflare sinks · S · closes
-  A9 · needs 42.4
+  A9 · needs —
 - [ ] **42.6** `/next` parks and asks; contributors skip; the
   audit log · M · closes A10, A11, A12 · needs —
 - [ ] **42.7** The GUI server's secrets API and transcript
-  masking · M · closes A13 · needs 42.3, 42.4
+  masking · M · closes A13 · needs 42.3
 - [ ] **42.8** The vault in the GUI, from the design export ·
   L · closes A14 · needs 42.6, 42.7
   - The export arrived 2026-10-21 (the handoff's second
