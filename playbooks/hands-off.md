@@ -40,8 +40,8 @@ The short version:
 1. Copy `templates/claude/settings.json` → `.claude/settings.json`.
    Replace `<DEFAULT_BRANCH>`. Read every `allow` line — it's
    your loop's standing power of attorney.
-2. Copy `templates/claude/hooks/guard.mjs` →
-   `.claude/hooks/guard.mjs`. Run
+2. Copy `templates/claude/hooks/guard.mjs` and `steer.mjs` →
+   `.claude/hooks/`. Run
    `node .claude/hooks/guard.mjs self-test` — must print green.
 3. Copy `templates/claude/CLAUDE.md` → repo root `CLAUDE.md`.
 4. Commit all three: `chore: adopt harness enforcement layer`.

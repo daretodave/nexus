@@ -408,7 +408,8 @@ disk.
 - `scripts/stack-lifecycle.mjs` — remove unless hermetic e2e
   uses Pattern B.
 - `.claude/settings.json` + `.claude/hooks/guard.mjs` +
-  `.claude/CLAUDE.md` + `scripts/notify.mjs` — remove unless
+  `.claude/hooks/steer.mjs` + `.claude/CLAUDE.md` +
+  `scripts/notify.mjs` — remove unless
   you're running the loop on Claude Code and want unattended
   levels 3-4 (pre-approved permissions, hook-enforced hard
   rules, a pager). Root `CLAUDE.md` stays either way — Claude
@@ -445,7 +446,8 @@ rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
       scripts/refresh-critique-session.mjs scripts/check-secrets-liveness.mjs \
       scripts/stack-lifecycle.mjs scripts/upgrade-plan.mjs \
       scripts/__tests__/upgrade-plan.test.mjs scripts/__tests__/upgrade-plan-run.test.mjs \
-      .claude/settings.json .claude/hooks/guard.mjs .claude/CLAUDE.md \
+      .claude/settings.json .claude/hooks/guard.mjs .claude/hooks/steer.mjs \
+      .claude/CLAUDE.md \
       scripts/notify.mjs \
       .claude/commands/ship-data.md .claude/commands/ship-migration.md \
       .claude/commands/ship-asset.md .claude/commands/moderate.md \
@@ -468,7 +470,7 @@ Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migra
   scripts\refresh-critique-session.mjs, scripts\check-secrets-liveness.mjs, `
   scripts\stack-lifecycle.mjs, scripts\upgrade-plan.mjs, `
   scripts\__tests__\upgrade-plan.test.mjs, scripts\__tests__\upgrade-plan-run.test.mjs, `
-  .claude\settings.json, .claude\hooks\guard.mjs, .claude\CLAUDE.md, `
+  .claude\settings.json, .claude\hooks\guard.mjs, .claude\hooks\steer.mjs, .claude\CLAUDE.md, `
   scripts\notify.mjs, `
   .claude\commands\ship-data.md, .claude\commands\ship-migration.md, `
   .claude\commands\ship-asset.md, .claude\commands\moderate.md, `

@@ -494,7 +494,8 @@ methodology:
       `<DEFAULT_BRANCH>` replaced.
 - [ ] `templates/claude/hooks/guard.mjs` copied to
       `.claude/hooks/guard.mjs`; ran `node .claude/hooks/guard.mjs
-      self-test` green.
+      self-test` green; `templates/claude/hooks/steer.mjs` copied
+      beside it (the template `settings.json` wires it).
 - [ ] `templates/scripts/notify.mjs` copied to
       `scripts/notify.mjs`; `NOTIFY_NTFY_TOPIC` or
       `NOTIFY_WEBHOOK_URL` in `.env`; test ping received on
