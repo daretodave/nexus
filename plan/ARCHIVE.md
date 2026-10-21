@@ -103,3 +103,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 41.7 · boards draw durations, diffstats, times, estimates from real data · a37caf1c..8957c92d
 - 2026-10-21 · 40.12 · the board's grip reorders a spec's chunks; Reassign picks a claimant · 5a86bc41..cad98343
 - 2026-10-21 · 40 · spec complete: the GUI hosts many sessions with a fleet home, merged inbox and Resume, a plan board on order.mjs with AI one-liners and a reordering grip, claims, git and Actions panels, recovery and headless run · 91beab70..cad98343
+- 2026-10-21 · 42.1 · nexus.secrets.json declares names; plan-check refuses undeclared ones · 8efdf581..da5cc180

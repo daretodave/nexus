@@ -130,10 +130,6 @@ the vault arrives):
 
 ## Acceptance
 
-- **A1** `nexus.secrets.json` has a documented shape, a
-  template, and an import from `.env.example`.
-- **A2** A chunk line's `secrets` field parses, and
-  plan-check refuses a name the manifest doesn't declare.
 - **A3** The vault reads and writes `.env` and
   `.env.workspace` (two rings), and a `.env` import writes
   names only into the manifest.
@@ -173,15 +169,10 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 15 open · 0 closed · next A16
+Measure: 13 open · 2 closed · next A16
 
-- [ ] **42.1** The manifest and a chunk's `secrets` field ·
-  S · closes A1, A2 · needs —
-  - `nexus.secrets.json` shape, `templates/` copy, import
-    from `.env.example`; plan-check and `order.mjs` parse the
-    field (template and nexus copy).
 - [ ] **42.2** The vault: `.env` files, two rings, the
-  keychain, import · M · closes A3, A4 · needs 42.1
+  keychain, import · M · closes A3, A4 · needs —
   - `scripts/secrets.mjs` (`get`, `set`, `status`, `import`),
     names-only output by default; absorbs the two-ring
     candidate into `customization/` docs.
@@ -195,7 +186,7 @@ Measure: 15 open · 0 closed · next A16
 - [ ] **42.5** The Vercel and Cloudflare sinks · S · closes
   A9 · needs 42.4
 - [ ] **42.6** `/next` parks and asks; contributors skip; the
-  audit log · M · closes A10, A11, A12 · needs 42.1, 42.2
+  audit log · M · closes A10, A11, A12 · needs 42.2
 - [ ] **42.7** The GUI server's secrets API and transcript
   masking · M · closes A13 · needs 42.3, 42.4
 - [ ] **42.8** The vault in the GUI, from the design export ·
