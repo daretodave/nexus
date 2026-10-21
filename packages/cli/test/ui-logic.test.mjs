@@ -255,3 +255,21 @@ test('the fonts are never inlined, so the page CSP (font-src self) loads every s
   assert.equal(inline('x/fira-sans-latin-400-normal.woff'), false);
   assert.equal(inline('x/icon.svg'), undefined);
 });
+
+test('the plan board reads progress.mjs\'s % done and a claimed chunk from it', () => {
+  const p = normalizePlan({
+    specs: [{ id: '07', title: 'Search', percent: 33, counts: { closed: 1, claimed: 1, open: 1, total: 3 }, chunks: [
+      { id: '07.1', title: 'Box', state: 'closed' }, { id: '07.2', title: 'List', size: 'M', state: 'claimed' }, { id: '07.3', title: 'Empty', size: 'S', state: 'ready' },
+    ] }],
+    order: ['07.3'],
+  });
+  const s = p.specs[0];
+  assert.deepEqual([s.percent, s.counts.total], [33, 3]);
+  // the spec's own counts win over a recount, so the bar says what /next status says
+  assert.deepEqual(specProgress(p.chunks.slice(0, 2), s), { total: 3, done: 1, pct: 33, text: '1 of 3' });
+  assert.deepEqual(specProgress(p.chunks.slice(0, 2)), { total: 2, done: 1, pct: 50, text: '1 of 2' });
+  assert.equal(p.chunks[1].state, 'claimed');
+  // a claimed chunk with its session's claim reads as building, as a ready one does
+  const claims = { chunk: { '07.2': { kind: 'sess', person: 'you', sess: { chunk: '07.2' } } }, spec: {} };
+  assert.equal(withClaim(p.chunks[1], claims).state, 'building');
+});

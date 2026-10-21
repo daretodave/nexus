@@ -146,9 +146,15 @@ export default function Board() {
       setCk({ spec, phase: 'asking', qs, answers: {} });
     } catch (e) {
       setCk(null);
-      toast(e.status === 404
-        ? { kind: 'info', title: "This server can't chunk a spec yet", body: `Run it from a terminal for now: /next chunk ${spec}` }
-        : { kind: 'error', title: `Couldn't start chunking spec ${spec}`, body: e.message });
+      if (e.status === 404) {
+        // No in-page chunking yet: start /next chunk in this server's session, as the GUI starts every skill (server.send).
+        try {
+          await server.send(`/next chunk ${spec}`);
+          toast({ kind: 'info', title: `Started /next chunk ${spec}`, body: 'The session chunks it; the new chunks show here once they land.' });
+        } catch (err) {
+          toast({ kind: 'info', title: `Couldn't start /next chunk ${spec}`, body: `Run it from a terminal: /next chunk ${spec}${err?.message ? ` (${err.message})` : ''}` });
+        }
+      } else toast({ kind: 'error', title: `Couldn't start chunking spec ${spec}`, body: e.message });
     }
   };
   const makeChunks = async (spec) => {
@@ -205,7 +211,7 @@ export default function Board() {
   const specs = (plan?.specs || []).map((s) => {
     const list = chunks.filter((c) => c.spec === s.id);
     const sc = claims.spec[s.id] || null;
-    const prog = specProgress(list);
+    const prog = specProgress(list, s);
     return {
       id: s.id, title: s.title, file: s.file, prog, claim: sc, empty: list.length === 0,
       open: openOv[s.id] ?? specOpenDefault(s.id),
@@ -230,7 +236,9 @@ export default function Board() {
 
   let main;
   if (planR.status === 'loading') main = null;
-  else if (planR.status === 'missing') {
+  else if (planR.status === 'ready' && planR.data?.available === false) {
+    main = <Empty sky="none" title="No plan to show yet" body={planR.data.note || 'This repo has no plan scripts yet.'} />;
+  } else if (planR.status === 'missing') {
     main = <Empty sky="none" title="No plan to show yet" body="This nexus server doesn't serve the plan yet. Claims still show on the right, live." />;
   } else if (planR.status === 'error') {
     main = <Err title="Couldn't read the plan" body="Nothing changed in the repo. The plan files are where they were." detail={planR.error} actions={<button className="btn btn-s" type="button" onClick={planR.reload}>Try again</button>} />;

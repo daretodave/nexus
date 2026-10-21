@@ -36,14 +36,18 @@ You need no API key.
 - **Oversight**: every open question across sessions, live
   (`AskUserQuestion` as buttons, tool permissions) and durable (from
   `plan/`). Answers land per owner mode.
-- **Plan**: all chunks or by spec, sorted by next up, with claims by
-  person and session. Claim, hold and release from the row.
+- **Plan**: all chunks in the order `/next` would build them (the
+  repo's `scripts/plan/order.mjs`), or by spec with % done as `/next
+  status` reads it (`progress.mjs`, pending closes counted). Sort by
+  next up, spec, size or claimed; just-plotted chunks are marked. Chunk
+  it on an unchunked spec starts `/next chunk NN`. Claims show by
+  person and session; claim, hold and release from the row.
 - **Cloud loop**, **Git** (worktrees, main, open PRs, a `/tidy` dry
   run), **Recover** (a workflow folder as a timeline) and **Settings**
   (owner mode, run mode, night or dawn).
 
 Some of this waits on server endpoints that are not built yet (the
-plan, the merged inbox). Until they land, those
+merged inbox, chunking in the page). Until they land, those
 screens show the design's empty state, never made-up data.
 
 Using another agent? The Welcome step quotes the canonical prompt

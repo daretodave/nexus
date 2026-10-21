@@ -7,7 +7,7 @@
 //   plan:   { repo?, ownerName?, protected?, specs: [{ id|num, title|name, file, open?, unchunked?,
 //             chunks?: [chunk] }], chunks?: [chunk], order?: [id] | next?: [{ id }], asap?: [id], held?: [id],
 //             planPr?: { number?, state?, title?, adds?, note?, landed? } }
-//   chunk:  { id, spec?, title|t, size, state?: 'ready'|'building'|'review'|'closed', closed?, asap?,
+//   chunk:  { id, spec?, title|t, size, state?: 'ready'|'claimed'|'building'|'review'|'closed', closed?, asap?,
 //             plotted?: 'main' | '#151' | true, landed?, ai? }
 //   claims: [{ id, who, host, at, session, pr, held, state: 'live'|'stale'|'pr'|'held', mine }]
 //   sessions (optional): [{ id, name, kind: 'local'|'terminal'|'other', state, phase, chunk, claimsSession? }]
@@ -47,7 +47,7 @@ export function normalizePlan(plan) {
   const chunks = [];
   for (const s of plan.specs || []) {
     const id = specKey(s.id ?? s.num ?? s.n);
-    specs.push({ id, title: s.title ?? s.name ?? '', file: s.file ?? '', open: s.open, unchunked: !!s.unchunked });
+    specs.push({ id, title: s.title ?? s.name ?? '', file: s.file ?? '', open: s.open, unchunked: !!s.unchunked, percent: s.percent ?? null, counts: s.counts ?? null });
     for (const c of s.chunks || []) chunks.push({ ...c, spec: specKey(c.spec ?? id) });
   }
   for (const c of plan.chunks || []) if (!chunks.some((k) => k.id === c.id)) chunks.push({ ...c, spec: specKey(c.spec ?? specOf(c.id)) });
@@ -140,7 +140,7 @@ export function withClaim(c, claims) {
   let state = c.state;
   if (cl && cl.kind !== 'held') {
     if (cl.pr) state = 'review';
-    else if (state === 'ready') state = cl.sess && cl.sess.chunk === c.id ? 'building' : 'claimed';
+    else if (state === 'ready' || state === 'claimed') state = cl.sess && cl.sess.chunk === c.id ? 'building' : 'claimed';
   }
   return { ...c, state, claim: cl };
 }
@@ -227,11 +227,16 @@ export function lanes(plan, chunks, sort, flt, specClaims) {
   return out;
 }
 
-/** % done per spec: closed (pending closes count as closed) over total. */
-export function specProgress(list) {
-  const total = list.length;
-  const done = list.filter((c) => c.state === 'closed').length;
-  return { total, done, pct: total ? Math.round((done / total) * 100) : 0, text: total ? `${done} of ${total}` : 'no chunks yet' };
+/**
+ * % done per spec: closed (pending closes count as closed) over total. A spec carrying progress.mjs's own counts and
+ * percent (GET /api/plan) reads those, so the bar says what `/next status` says.
+ */
+export function specProgress(list, spec) {
+  const given = !!(spec && spec.counts && Number.isFinite(spec.percent));
+  const total = given ? spec.counts.total : list.length;
+  const done = given ? spec.counts.closed : list.filter((c) => c.state === 'closed').length;
+  const pct = given ? spec.percent : total ? Math.round((done / total) * 100) : 0;
+  return { total, done, pct, text: total ? `${done} of ${total}` : 'no chunks yet' };
 }
 
 /** The view's sub line: "tidepool · 4 specs · 18 chunks · 6 closed · claims expire after 24h unless held". */

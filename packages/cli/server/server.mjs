@@ -13,6 +13,7 @@ import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
 import { preflight } from './preflight.mjs';
 import * as repoMod from './repo.mjs';
 import * as gh from './gh.mjs';
+import { readPlan } from './plan.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem } from './sessions.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -211,6 +212,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/sessions': return send(res, 200, await steering.list());
         case 'GET /api/claims': return send(res, 200, await repoMod.claims(repo));
         case 'POST /api/claims/release': { const b = await body(req); return send(res, 200, await repoMod.releaseClaim(repo, String(b.id || ''))); }
+        case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
         case 'GET /api/actions': return send(res, 200, await gh.actionsSetup(repo));
         case 'POST /api/actions/workflow': { const b = await body(req); return send(res, 200, await gh.setWorkflow(repo, b.id, !!b.enabled)); }

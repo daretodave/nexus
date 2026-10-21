@@ -83,7 +83,6 @@ export const MISSING = [
   { endpoint: 'POST /api/sessions/:id/(pause|resume|close)', hook: 'sessionAction', for: 'pause after this step, resume a fallen session (Resume / relight), close it' },
   { endpoint: 'POST /api/train', hook: 'trainAction', for: 'Pause all, the reboot train, and Resume all' },
   { endpoint: 'GET /api/inbox', hook: 'useInbox', for: 'Oversight inbox: open and parked questions across every session and the cloud loop, tagged by session' },
-  { endpoint: 'GET /api/plan', hook: 'usePlan', for: 'Plan board: lanes, specs, chunks (id, title, size, state, needs), % done, next-up order, just-plotted rows' },
   { endpoint: 'POST /api/claims/(claim|hold|unhold|reassign|request)', hook: 'claimAction', for: 'row actions on chunks and specs (only release exists today)' },
   { endpoint: 'GET /api/summaries', hook: 'useSummaries', for: 'AI one-line chunk summaries cached in .nexus/cache/' },
   { endpoint: 'GET /api/git', hook: 'useGitRepo', for: 'Git panel: worktrees (idle/orphaned), recent main commits, open PRs with CI, the primary checkout, a /tidy dry run' },
@@ -114,7 +113,7 @@ export const useSession = (id) => useResource(id ? `/api/sessions/${encodeURICom
 /** GET /api/inbox -> [{ id, session, kind: 'now'|'parked'|'cloud', question, options, default, chunk, at, settled }]. Shape: screens/headsdown-inbox/inboxModel.js. */
 export const useInbox = (poll = 5000) => useResource('/api/inbox', { poll });
 
-/** GET /api/plan -> { lanes, specs: [{ n, name, file, chunks: [...] }], order }. */
+/** GET /api/plan (served): order.mjs --json and progress.mjs --json joined -> { available, specs: [{ id, title, file, unchunked, percent, counts, chunks }], order, next, asap, held, unchunked, mark }. Shape: server/plan.mjs. */
 export const usePlan = () => useResource('/api/plan');
 
 /** GET /api/summaries -> { [chunkId]: { text, ai: true } }. */
