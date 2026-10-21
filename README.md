@@ -617,6 +617,7 @@ nexus/
     │   ├── workflows/march.yml        # the dispatcher: owner job, or PR mode (pick/build/land/release)
     │   ├── workflows/pr-flow.yml      # PR mode: a closed PR's claims are released
     │   ├── workflows/pr-resolve.yml   # PR mode: main merged into conflicted PRs
+    │   ├── workflows/claims-board.yml # optional: one issue showing the live claims (NEXUS_CLAIMS_BOARD)
     │   ├── actions/setup/action.yml   # the project's toolchain, shared by every tick job
     │   ├── workflows/night.yml        # the night shift: /digest + breadth checks
     │   ├── workflows/heartbeat.yml    # the immune system: model-free watchdog
@@ -647,6 +648,7 @@ nexus/
     │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
     │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
     │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
+    │   ├── claims-board.mjs           # the claims board: one issue, created or edited from the claims branch
     │   ├── announce.mjs               # the notice board: owner lines outrank the command; REBOOT preempts
     │   ├── ledger.mjs                 # each session's live ledger (.nexus/sessions/), star names, fallen = stale beat
     │   ├── worktree.mjs               # close a worktree safely (links unlinked first); list for /tidy
@@ -660,6 +662,7 @@ nexus/
     │   ├── __tests__/settle.test.mjs  # settle's pure functions
     │   ├── __tests__/settle-run.test.mjs # settle end to end in a scratch repo (offline)
     │   ├── __tests__/claims-codec.test.mjs # the claims rules
+    │   ├── __tests__/claims-board.test.mjs # the board's table and issue (fake gh)
     │   ├── __tests__/push-policy.test.mjs # the push policy, pure
     │   ├── __tests__/progress.test.mjs # the progress view, pure
     │   ├── __tests__/progress-run.test.mjs # progress main() from a spaced path, over git (offline)

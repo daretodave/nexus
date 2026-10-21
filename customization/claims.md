@@ -157,7 +157,7 @@ anyone's. A held claim is never `stale`.
 | `NEXUS_GH_LOGIN` | This machine's GitHub login; else asked of `gh`. |
 | `NEXUS_CLAIMS_REMOTE` | The remote holding `claims` (default `origin`). |
 | `NEXUS_MAIN_BRANCH` | The branch the audit reads by default (default `main`). |
-| `NEXUS_CLAIMS_BOARD` | A workflow file to dispatch after any write (a board that redraws the claims as a chart); off when unset. |
+| `NEXUS_CLAIMS_BOARD` | A workflow file to dispatch after any write (`claims-board.yml`, [the board](#the-board-optional)); off when unset. |
 
 ## Where the loop calls it
 
@@ -174,6 +174,38 @@ anyone's. A held claim is never `stale`.
 - **Tidy.** `audit --release` clears what is done; run it
   before picking when the list looks crowded.
 
+## The board (optional)
+
+One issue, titled `Claims board`, that shows the live claims
+to anyone on the repo: a table of chunk, state, who,
+session~star, since, PR and base, redrawn from the `claims`
+branch. It is a view; `claims.json` stays the truth, and an
+edit made in the issue is overwritten at the next redraw.
+
+| File | What it is |
+|---|---|
+| `.github/workflows/claims-board.yml` | Redraws the board hourly and on dispatch. Model-free, no secrets: the job's own token, `contents: read` and `issues: write`. |
+| `scripts/claims-board.mjs` | Draws the table (a pure function) and creates or edits the one open issue with its title. With no flag it prints the table and touches nothing. |
+
+Adopt it when people outside the loop want to see who builds
+what without running the CLI. Copy both from
+`nexus/templates/`, then turn it on with one value used twice:
+
+1. **The repo variable** `NEXUS_CLAIMS_BOARD` =
+   `claims-board.yml`. The job runs only while it is set, so
+   the hourly schedule costs nothing until then.
+2. **Each claimant's environment** sets the same
+   `NEXUS_CLAIMS_BOARD=claims-board.yml`, so every write
+   (claim, renew, release, prune) dispatches a redraw at once.
+   It needs a `gh` that may run workflows; without one, the
+   claim still lands and the hourly run catches up.
+
+A push to `claims` can't start the workflow itself: the orphan
+branch holds no workflows. That is why the board redraws on a
+dispatch and on a schedule, never on the push. Preview the
+table locally with `node scripts/claims-board.mjs`; give the
+issue another title with `--title`.
+
 ## Adoption checklist
 
 - [ ] The four scripts copied; `node scripts/claims.mjs whoami`
@@ -186,6 +218,9 @@ anyone's. A held claim is never `stale`.
       [`owner-mode.md`](../playbooks/owner-mode.md)).
 - [ ] The build skill claims before its first write, renews,
       and releases (owner) or attaches the PR (contributor).
+- [ ] Optional: the board copied, and `NEXUS_CLAIMS_BOARD` set
+      to `claims-board.yml` as a repo variable and in each
+      claimant's environment.
 
 ## See also
 

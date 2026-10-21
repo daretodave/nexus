@@ -1,0 +1,46 @@
+name: claims-board
+
+# The claims board (optional): one issue showing who is building
+# which chunk right now, redrawn from the claims branch by
+# scripts/claims-board.mjs. Off until the repo variable
+# NEXUS_CLAIMS_BOARD is set; set it to this file's name,
+# claims-board.yml, the same value a claimant's environment uses
+# to ask for a redraw after each write (scripts/claims.mjs).
+#
+# A push to the claims branch can't start this: the orphan branch
+# holds no workflows. So it redraws on that dispatch, and hourly
+# to catch any write that didn't send one. Model-free, no secrets:
+# the job's own token reads the claims branch and edits one issue.
+
+on:
+  schedule:
+    - cron: '7 * * * *'      # hourly, off the hour
+  workflow_dispatch:
+
+concurrency:
+  group: claims-board
+  cancel-in-progress: true   # the newest redraw is the only one that matters
+
+permissions:
+  contents: read             # the claims branch
+  issues: write              # the board issue
+
+jobs:
+  board:
+    if: vars.NEXUS_CLAIMS_BOARD != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Redraw the board issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/claims-board.mjs --issue

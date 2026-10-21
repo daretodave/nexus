@@ -77,6 +77,7 @@ templates/
 │   ├── workflows/march.yml            (the dispatcher: owner job, or PR mode's pick/build/land/release by NEXUS_LOOP_MODE)
 │   ├── workflows/pr-flow.yml          (PR mode: a closed PR's claims leave the claims branch)
 │   ├── workflows/pr-resolve.yml       (PR mode: main merged into conflicted PRs; union driver, then a model)
+│   ├── workflows/claims-board.yml     (optional: one issue showing the live claims, behind NEXUS_CLAIMS_BOARD)
 │   ├── actions/setup/action.yml       (the project's toolchain, one place for every tick job)
 │   ├── workflows/night.yml            (the night shift — /digest daily)
 │   ├── workflows/heartbeat.yml        (model-free watchdog for the other two)
@@ -111,6 +112,7 @@ templates/
 │   ├── plan/order.mjs                 (the plan in /next's pick order, simulated: /plot's before and after, the GUI's next up)
 │   ├── claims-codec.mjs               (the claims rules as pure functions: any claimant imports them)
 │   ├── claims.mjs                     (who builds what: the orphan claims branch, compare-and-swap; --json)
+│   ├── claims-board.mjs               (the claims board: draws the table, creates or edits its one issue; claims-board.yml runs it)
 │   ├── announce.mjs                   (the notice board: .announcements.md; owner lines outrank the command, REBOOT preempts)
 │   ├── ledger.mjs                     (each session's live ledger in .nexus/sessions/: star names; a stale beat reads fallen)
 │   ├── worktree.mjs                   (close a worktree without deleting through its links; list them for /tidy)
@@ -124,6 +126,7 @@ templates/
 │   ├── __tests__/settle.test.mjs      (settle's pure functions)
 │   ├── __tests__/settle-run.test.mjs  (settle end to end in a scratch git repo; slower, offline)
 │   ├── __tests__/claims-codec.test.mjs  (the claims rules, pure)
+│   ├── __tests__/claims-board.test.mjs  (the board's table and its one issue, with a fake gh; pure)
 │   ├── __tests__/push-policy.test.mjs  (the push policy, pure)
 │   ├── __tests__/progress.test.mjs    (the progress view, pure)
 │   ├── __tests__/progress-run.test.mjs  (progress main(), text and --json, from a path with a space; over git, offline)
@@ -225,6 +228,7 @@ the corresponding capability:
 | `skills/digest.md` + `claude/commands/digest.md` + `.github/workflows/night.yml` + `.github/workflows/heartbeat.yml` | The cloud loop is live and you want the rest of the genus: a daily morning briefing (`plan/DIGEST.md`), nightly breadth checks, and a model-free watchdog. See `nexus/concepts/loop-shapes.md`. |
 | `skills/bootstrap.md` + `claude/commands/bootstrap.md` + `scripts/bootstrap.mjs` | You plan to run `/bootstrap` as the setup executor (tokens-in to deployed app + ticking cloud loop). See `nexus/customization/bootstrap-automation.md`. |
 | `.github/workflows/pr-flow.yml` + `.github/workflows/pr-resolve.yml` + `scripts/cloud/tick.mjs` + `scripts/pr/resolve.mjs` | The cloud loop lands as pull requests (`NEXUS_LOOP_MODE` unset): ticks claim one chunk as `cloud-<run id>`, build with no token, land a PR; a closed PR's claims are released and conflicted PRs get main merged in. Needs the claims module. See `.github/CLOUD_LOOP.md` "Owner mode or pull requests" and `nexus/playbooks/cloud-loop-existing-actions.md`. |
+| `.github/workflows/claims-board.yml` + `scripts/claims-board.mjs` | More than the loop's builders want to see who builds what: one issue shows the live claims, redrawn hourly and on each claims write. Off until the repo variable `NEXUS_CLAIMS_BOARD` is `claims-board.yml`. Needs the claims module. See `nexus/customization/claims.md` "The board (optional)". |
 | `.github/workflows/nightly-smoke.yml` | Hermetic e2e is adopted and `night.yml` doesn't already run `SMOKE_SAMPLE=full` as its breadth step — run one or the other, never both. See `nexus/customization/hermetic-e2e.md` + `nexus/concepts/loop-shapes.md`. |
 | `workspace/CLAUDE.md` + `workspace/AGENTS.md` + `workspace/README.md` + `workspace/REPOS.md` | You've outgrown polyrepo into a 3+-repo workspace (an un-versioned local root holding `plan/` and every product as siblings). Copy all four to the workspace root, not into any single repo. See `nexus/playbooks/workspace.md`. |
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
