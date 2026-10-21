@@ -843,21 +843,21 @@ a mirror issue, every cloud commit carries its run URL.
 
 ## Provenance
 
-This methodology evolved across:
+This methodology was distilled from several real projects of
+different shapes, each of which added a layer:
 
-- **tickpedia** (~2025) — A data-heavy site with structured
-  records, page families, and weekly automation. Established
-  the **`ship-a-chunk` + `plan/`** pattern.
-- **thock** (~2026) — An editorial content hub. Added
+- **A data-heavy site** with structured records, page families
+  and weekly automation established the **`ship-a-chunk` +
+  `plan/`** pattern: a written plan, built one chunk at a time.
+- **An editorial content hub** added the autonomous family:
   **`/ship-data`, `/critique`, `/triage`, `/oversight`,
-  `/march`** — the full autonomous family.
-- **semilayer** (~2026) — A database intelligence layer; the
-  proto-nexus ancestor (numbered steps, checkbox roadmap,
-  hermetic-e2e doctrine).
+  `/march`**.
+- **A database service** was the proto-nexus ancestor: numbered
+  steps, a checkbox roadmap, and the hermetic-e2e doctrine.
 
-If you're working with one of those repos, you'll see this kit's
-patterns there directly. If you're applying it to a fresh repo,
-this kit is the distilled set.
+Lessons from projects that run the loop still flow back into
+the kit. If you're applying it to a fresh repo, this kit is the
+distilled set.
 
 The templates here are **opinionated**: they encode a specific
 working style (commit-and-push as one act, no `Co-Authored-By`,
