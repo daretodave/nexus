@@ -15,7 +15,10 @@
 // finding: record it in the commit body or plan/AUDIT.md.
 //
 // Modes:
-//   pre-bash    check a Bash tool call against the forbidden list
+//   pre-bash    mark this session as hooked (.nexus/hooks/<session id>
+//               at the primary checkout, which scripts/claims.mjs
+//               requires inside Claude Code), then check a Bash tool
+//               call against the forbidden list
 //   stop        warn (or block, with NEXUS_STRICT_STOP=1) when a
 //               turn ends with a dirty tree / unpushed commits
 //   self-test   run canned commands through the matcher; exit 1
@@ -27,6 +30,7 @@
 
 import { execSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 
 const DEFAULT_BRANCH = 'main'
@@ -186,8 +190,80 @@ function readStdinJson() {
   }
 }
 
+// --- the hooked-session marker --------------------------------------
+
+// The primary checkout's root (a worktree's too): the folder holding
+// the common .git. Read from the files, not by spawning git: this
+// runs on every Bash call. null outside a checkout.
+function primaryRootOf(start) {
+  let dir = path.resolve(start)
+  for (;;) {
+    const dotGit = path.join(dir, '.git')
+    let st = null
+    try {
+      st = fs.statSync(dotGit)
+    } catch {
+      /* not here: look up */
+    }
+    if (st?.isDirectory()) return dir
+    if (st) {
+      const m = fs.readFileSync(dotGit, 'utf-8').match(/^gitdir:\s*(.+?)\s*$/m)
+      if (!m) return null
+      const gitdir = path.resolve(dir, m[1])
+      let common = gitdir
+      try {
+        common = path.resolve(gitdir, fs.readFileSync(path.join(gitdir, 'commondir'), 'utf-8').trim())
+      } catch {
+        /* no commondir: the gitdir is the common dir */
+      }
+      return path.dirname(common)
+    }
+    const up = path.dirname(dir)
+    if (up === dir) return null
+    dir = up
+  }
+}
+
+// Touch .nexus/hooks/<session id> at the primary checkout of every
+// folder this call could run in: scripts/claims.mjs refuses a Claude
+// Code session without a fresh one (customization/claims.md), so a
+// session that loaded no hooks can't claim and build unguarded.
+// Best-effort and silent: a marker that can't be written only means
+// a claim refuses, never that this call is blocked.
+function markHooked(input, env = process.env) {
+  const ids = new Set([input?.session_id, env.CLAUDE_CODE_SESSION_ID].filter((x) => typeof x === 'string' && x))
+  if (!ids.size) return []
+  const roots = new Set()
+  for (const start of [input?.cwd, env.CLAUDE_PROJECT_DIR, process.cwd()]) {
+    if (typeof start !== 'string' || !start) continue
+    try {
+      const root = primaryRootOf(start)
+      if (root) roots.add(root)
+    } catch {
+      /* unreadable .git: skip */
+    }
+  }
+  const written = []
+  const stamp = new Date().toISOString() + '\n'
+  for (const root of roots) {
+    const dir = path.join(root, '.nexus', 'hooks')
+    try {
+      fs.mkdirSync(dir, { recursive: true })
+      for (const id of ids) {
+        const file = path.join(dir, id.replace(/[^\w.-]/g, '_'))
+        fs.writeFileSync(file, stamp)
+        written.push(file)
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
+  return written
+}
+
 function preBash() {
   const input = readStdinJson()
+  markHooked(input)
   const cmd = String(input?.tool_input?.command ?? '')
   if (!cmd) return 0
   if (backgroundedGate(input)) {
@@ -349,7 +425,7 @@ function selfTest() {
     ['git log -n 5', null],
     ['pnpm verify', null],
   ]
-  let failed = 0
+  let failed = markerSelfTest()
   for (const [cmd, expected] of cases) {
     const hit = RULES.find((r) => r.test(cmd))?.name ?? null
     const ok = hit === expected
@@ -360,6 +436,33 @@ function selfTest() {
   }
   process.stdout.write(failed ? `\nself-test: ${failed} FAILED\n` : '\nself-test: green.\n')
   return failed ? 1 : 0
+}
+
+// The marker lands at the primary checkout whether the call runs
+// there or in a worktree of it (a .git file naming a gitdir whose
+// commondir leads back), and nothing is written without a session id.
+function markerSelfTest() {
+  let ok = false
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-marker-'))
+  try {
+    const primary = path.join(tmp, 'repo')
+    const wt = path.join(tmp, 'wt', 'one')
+    const gitdir = path.join(primary, '.git', 'worktrees', 'one')
+    fs.mkdirSync(gitdir, { recursive: true })
+    fs.mkdirSync(path.join(wt, 'sub'), { recursive: true })
+    fs.writeFileSync(path.join(gitdir, 'commondir'), '../..\n')
+    fs.writeFileSync(path.join(wt, '.git'), `gitdir: ${gitdir}\n`)
+    const written = markHooked({ session_id: 'self/test', cwd: path.join(wt, 'sub') }, {})
+    const want = path.join(primary, '.nexus', 'hooks', 'self_test')
+    ok = written.includes(want) && fs.existsSync(want) && markHooked({ cwd: wt }, {}).length === 0
+  } catch {
+    ok = false
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true })
+  }
+  const label = 'marker: worktree call marks the primary checkout'
+  process.stdout.write(`  ${ok ? 'ok  ' : 'FAIL'}  ${label.padEnd(60)} → .nexus/hooks/<id>\n`)
+  return ok ? 0 : 1
 }
 
 // --- entry ---------------------------------------------------------------
