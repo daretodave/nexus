@@ -13,6 +13,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+
 import { __test } from '../loop-issue.mjs'
 
 const {
@@ -27,6 +30,14 @@ const {
   VALID_SEVERITY,
   VALID_CATEGORY,
   VALID_SOURCE,
+  MIRROR_KINDS,
+  resolveSubcommand,
+  specTitlePrefix,
+  isSpecMatch,
+  buildMirrorTitle,
+  buildMirrorResumeCommentBody,
+  buildMirrorShippedCommentBody,
+  isMainModule,
 } = __test
 
 test('parseArgs parses standard flag/value pairs', () => {
@@ -148,4 +159,91 @@ test('VALID_* enums match the documented brief', () => {
     ['a11y', 'bug', 'content', 'data', 'docs', 'enhancement', 'perf', 'seo'],
   )
   assert.deepEqual([...VALID_SOURCE].sort(), ['audit', 'external', 'reader', 'user'])
+})
+
+// --- spec-open / spec-close (the v2 mirror verbs) ---------------------
+
+test('resolveSubcommand maps spec-open/spec-close to the spec kind', () => {
+  assert.deepEqual(resolveSubcommand('spec-open'), { action: 'open', kind: 'spec', deprecated: false })
+  assert.deepEqual(resolveSubcommand('spec-close'), { action: 'close', kind: 'spec', deprecated: false })
+})
+
+test('resolveSubcommand keeps phase-open/phase-close as deprecated aliases', () => {
+  assert.deepEqual(resolveSubcommand('phase-open'), { action: 'open', kind: 'phase', deprecated: true })
+  assert.deepEqual(resolveSubcommand('phase-close'), { action: 'close', kind: 'phase', deprecated: true })
+  assert.equal(resolveSubcommand('open'), null)
+  assert.equal(resolveSubcommand('spec-reopen'), null)
+})
+
+test('MIRROR_KINDS: spec reads --spec, titles "Spec NN — ", labels loop:spec', () => {
+  assert.equal(MIRROR_KINDS.spec.flag, 'spec')
+  assert.equal(MIRROR_KINDS.spec.word, 'Spec')
+  assert.equal(MIRROR_KINDS.spec.label, 'loop:spec')
+  assert.equal(MIRROR_KINDS.phase.flag, 'phase')
+  assert.equal(MIRROR_KINDS.phase.label, 'loop:phase')
+  assert.match(LABEL_PALETTE['loop:spec'].color, /^[0-9a-f]{6}$/)
+})
+
+test('spec-open args parse to the spec id, title, and body file', () => {
+  const flags = parseArgs(['--spec', '35', '--title', 'finish v2', '--body-file', 'b.md'])
+  assert.equal(flags[MIRROR_KINDS.spec.flag], '35')
+  assert.equal(flags.title, 'finish v2')
+  assert.equal(flags['body-file'], 'b.md')
+})
+
+test('specTitlePrefix is "Spec NN — " and isSpecMatch is anchored', () => {
+  assert.equal(specTitlePrefix('35'), 'Spec 35 — ')
+  assert.equal(isSpecMatch('Spec 35 — finish v2', '35'), true)
+  assert.equal(isSpecMatch('Spec 35 — finish v2', '3'), false)
+  assert.equal(isSpecMatch('Spec 3 — x', '35'), false)
+  assert.equal(isSpecMatch('Phase 35 — finish v2', '35'), false)
+})
+
+test('buildMirrorTitle prefixes a bare title and keeps an already-prefixed one', () => {
+  assert.equal(buildMirrorTitle('spec', '35', 'finish v2'), 'Spec 35 — finish v2')
+  assert.equal(buildMirrorTitle('spec', '35', 'Spec 35 — finish v2'), 'Spec 35 — finish v2')
+  assert.equal(buildMirrorTitle('phase', '16a', 'Phase 16a — E2E'), 'Phase 16a — E2E')
+  assert.equal(buildMirrorTitle('phase', '16a', 'E2E'), 'Phase 16a — E2E')
+})
+
+test('buildMirrorResumeCommentBody names the spec and the resume time', () => {
+  const body = buildMirrorResumeCommentBody({ kind: 'spec', id: '35' })
+  assert.match(body, /^Spec 35 work resumed at \d{4}-\d{2}-\d{2}T/)
+})
+
+test('buildMirrorShippedCommentBody names the spec, commit, and URL', () => {
+  const body = buildMirrorShippedCommentBody({
+    kind: 'spec',
+    id: '35',
+    commit: 'c429be9',
+    deployUrl: 'https://example.com',
+  })
+  assert.match(body, /^Spec 35 shipped in c429be9\./)
+  assert.match(body, /https:\/\/example\.com/)
+  assert.match(body, /Closes #N/)
+})
+
+test('phase builders stay byte-compatible through the alias', () => {
+  assert.equal(
+    buildPhaseShippedCommentBody({ phaseId: '7', commit: 'abc', deployUrl: 'u' }),
+    buildMirrorShippedCommentBody({ kind: 'phase', id: '7', commit: 'abc', deployUrl: 'u' }),
+  )
+})
+
+// --- entry-point detection --------------------------------------------
+
+test('isMainModule matches the script path, including Windows paths', () => {
+  const script = path.resolve('scripts', 'loop-issue.mjs')
+  const url = pathToFileURL(script).href
+  assert.equal(isMainModule(url, script), true)
+})
+
+test('isMainModule rejects a different file that shares the basename', () => {
+  const script = path.resolve('scripts', 'loop-issue.mjs')
+  const other = path.resolve('elsewhere', 'loop-issue.mjs')
+  assert.equal(isMainModule(pathToFileURL(script).href, other), false)
+})
+
+test('isMainModule is false when argv[1] is missing (imported by a runner)', () => {
+  assert.equal(isMainModule('file:///x/loop-issue.mjs', undefined), false)
 })
