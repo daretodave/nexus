@@ -66,3 +66,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 35.1 · both plan READMEs name /plot, /messy and priority rows · 826fbef0..826fbef0
 - 2026-10-21 · 35.4 · neither guard knows a phases verb · 1cd9a3d5..1cd9a3d5
 - 2026-10-21 · 35.6 · upgrade-plan.mjs converts a v1 plan; upgrade.md Step 4 runs it · ca603e2f..03772a15
+- 2026-10-21 · 38.1 · adoption asks owner or contributor and arms the hooks · c4fddf0b..c4fddf0b

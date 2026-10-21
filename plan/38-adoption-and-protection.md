@@ -44,8 +44,6 @@ scripts).
 
 ## Acceptance
 
-- **A1** `prompts/adopt.md` asks the mode before writing and
-  sets up `.owner`, `.gitignore` and the hooks to match.
 - **A3** The nexus repo carries the `main` and `claims`
   rulesets, the cloud token bypassing `main`'s.
 
@@ -54,9 +52,7 @@ scripts).
 (None.)
 
 ## Chunks
-Measure: 2 open · 3 closed · next A6
+Measure: 1 open · 4 closed · next A6
 
-- [ ] **38.1** Adoption asks owner or contributor and arms the
-  hooks · S · closes A1 · needs —
 - [ ] **38.3** Post the main and claims rulesets on nexus ·
   S · closes A3 · needs —
