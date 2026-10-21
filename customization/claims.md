@@ -118,6 +118,20 @@ written before the star keeps parsing.
   claims until they go stale; its resume renews them. Only an
   explicit `release`, `prune` or `audit --release` frees a
   chunk early.
+- **No hooks, no claim.** Inside a Claude Code session
+  (`CLAUDECODE` or `CLAUDE_CODE_SESSION_ID` set), `whoami` and
+  `claim` refuse unless that session loaded the project's
+  hooks. The guard hook (`.claude/hooks/guard.mjs pre-bash`,
+  wired in `.claude/settings.json`) touches
+  `.nexus/hooks/<session id>` at the primary checkout on every
+  Bash call, so the call that runs `claims` marks itself; a
+  worktree reads the same marker. No marker fresher than an
+  hour means no guard, and a build that skips the guard can
+  run a bare `git worktree remove` unnoticed. The fix: start
+  Claude Code at the repo root (`/hooks` shows what loaded),
+  run any Bash command, claim again. A human terminal, CI and a
+  cloud tick without those variables never check.
+  `NEXUS_NO_HOOK_CHECK=1` skips it.
 
 ## The commands
 
@@ -158,6 +172,7 @@ anyone's. A held claim is never `stale`.
 | `NEXUS_CLAIMS_REMOTE` | The remote holding `claims` (default `origin`). |
 | `NEXUS_MAIN_BRANCH` | The branch the audit reads by default (default `main`). |
 | `NEXUS_CLAIMS_BOARD` | A workflow file to dispatch after any write (`claims-board.yml`, [the board](#the-board-optional)); off when unset. |
+| `NEXUS_NO_HOOK_CHECK=1` | Claim in a Claude Code session that loaded no hooks (the escape hatch for a harness that can't run them). |
 
 ## Where the loop calls it
 
@@ -212,6 +227,10 @@ issue another title with `--title`.
       prints owner on the owner's checkout.
 - [ ] `.owner` and `.nexus/` are gitignored; the owner's
       checkout has `.owner`.
+- [ ] On Claude Code, `.claude/settings.json` wires
+      `guard.mjs pre-bash` as a PreToolUse hook on Bash (it
+      writes the marker `claim` needs), or the sessions set
+      `NEXUS_NO_HOOK_CHECK=1`.
 - [ ] A ruleset on `claims`: no force push, no deletion.
 - [ ] Any pre-push hook skips the `claims` ref
       (`scripts/git/push-policy.mjs` drops it; see

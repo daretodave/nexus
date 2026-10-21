@@ -11,7 +11,8 @@ import { after, beforeEach, describe, it } from 'node:test';
 import { fetchClaims, parse } from '../claims.mjs';
 import { main } from '../cloud/tick.mjs';
 
-const ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
+// A runner, not a Claude Code session: drop this shell's session vars too, or claims would ask for its hook marker.
+const ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_') && k !== 'CLAUDECODE' && k !== 'CLAUDE_CODE_SESSION_ID'));
 for (const k of Object.keys(process.env)) if (k.startsWith('GIT_')) delete process.env[k];
 const dirs = [];
 after(() => {

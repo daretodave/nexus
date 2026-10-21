@@ -9,7 +9,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, beforeEach, describe, it } from 'node:test';
-import { PRIVILEGED, TTL_MS, assign, attachPr, audit, claim, fetchClaims, main, parse, prune, pushCount, redrawBoard, release, renew, sessionId, verdict } from '../claims.mjs';
+import { fileURLToPath } from 'node:url';
+import { HOOKS_DIR, HOOK_FRESH_MS, PRIVILEGED, TTL_MS, assign, attachPr, audit, claim, fetchClaims, hookProblem, main, parse, prune, pushCount, redrawBoard, release, renew, sessionId, verdict } from '../claims.mjs';
 
 // A git hook's GIT_DIR or GIT_WORK_TREE would point these commands at the real repository: never inherit them.
 const ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
@@ -153,7 +154,8 @@ describe('the claims branch', () => {
 });
 
 describe('the CLI', () => {
-  const env = (extra = {}) => ({ ...ENV, NEXUS_SESSION: 'cli-s1', NEXUS_GH_LOGIN: '', NEXUS_CONTRIBUTOR: '', ...extra });
+  // The hook check is off here (this suite may itself run inside a Claude Code session); its own case turns it on.
+  const env = (extra = {}) => ({ ...ENV, NEXUS_SESSION: 'cli-s1', NEXUS_GH_LOGIN: '', NEXUS_CONTRIBUTOR: '', NEXUS_NO_HOOK_CHECK: '1', ...extra });
   const run = (cwd, argv, extra) => {
     const out = [];
     const code = main(argv, { cwd, env: env(extra), out: (t) => out.push(t), err: (t) => out.push(t) });
@@ -248,5 +250,39 @@ describe('the CLI', () => {
     assert.deepEqual(say({}).err, []);
     assert.deepEqual(say({ NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: 'abcdef123456' }).err, []);
     assert.deepEqual(say({ NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: '' }, ['whoami', '--session', 'mine']).err, []);
+  });
+  it("refuses whoami and claim in a Claude Code session that loaded no hooks; the guard hook's marker, worktree or not, lets it", () => {
+    const SID = 'f00dfeed-0000-4000-8000-000000000001';
+    const cc = { NEXUS_NO_HOOK_CHECK: '', CLAUDECODE: '1', CLAUDE_CODE_SESSION_ID: SID, NEXUS_SESSION: '' };
+    // No marker: whoami and claim refuse, naming the fix and the override; nothing is claimed; list still reads.
+    assert.throws(() => run(a, ['whoami'], cc), /loaded no project hooks.*\.claude\/settings\.json.*NEXUS_NO_HOOK_CHECK=1/s);
+    assert.throws(() => run(a, ['claim', '16.1'], cc), /loaded no project hooks/);
+    assert.equal(fetchClaims(a).tip, null);
+    assert.equal(run(a, ['list'], cc).code, 0);
+    // The guard hook, fired in the primary checkout with the session id on stdin, writes the marker there.
+    const guard = fileURLToPath(new URL('../../claude/hooks/guard.mjs', import.meta.url));
+    const input = JSON.stringify({ session_id: SID, cwd: a, tool_input: { command: 'ls' } });
+    const hook = spawnSync(process.execPath, [guard, 'pre-bash'], { cwd: a, input, encoding: 'utf8', env: { ...ENV, CLAUDE_CODE_SESSION_ID: '', CLAUDE_PROJECT_DIR: '' } });
+    assert.equal(hook.status, 0, hook.stderr);
+    assert.ok(fs.existsSync(path.join(a, HOOKS_DIR, SID)), 'the guard wrote the marker');
+    assert.equal(JSON.parse(run(a, ['whoami', '--json'], cc).out).session, SID.slice(0, 8));
+    // A worktree of that checkout reads the same marker (the primary checkout's .nexus/).
+    const wt = path.join(dir, 'wt-a');
+    git(a, 'worktree', 'add', '-q', '--detach', wt);
+    assert.equal(hookProblem(wt, cc), '');
+    assert.equal(run(wt, ['claim', '16.1'], cc).code, 0);
+    // Another session's marker is not this one's; a stale marker refuses until the hook touches it again.
+    assert.match(hookProblem(a, { ...cc, CLAUDE_CODE_SESSION_ID: 'other-session' }), /other-session/);
+    const old = (Date.now() - HOOK_FRESH_MS - 60_000) / 1000;
+    fs.utimesSync(path.join(a, HOOKS_DIR, SID), old, old);
+    assert.match(hookProblem(wt, cc), /loaded no project hooks/);
+    // CLAUDECODE with no session id: any fresh marker will do.
+    assert.match(hookProblem(a, { ...cc, CLAUDE_CODE_SESSION_ID: '' }), /loaded no project hooks/);
+    fs.writeFileSync(path.join(a, HOOKS_DIR, 'some-session'), new Date().toISOString());
+    assert.equal(hookProblem(a, { ...cc, CLAUDE_CODE_SESSION_ID: '' }), '');
+    // The override, and any shell outside Claude Code, skip the check.
+    assert.equal(hookProblem(b, { ...cc, NEXUS_NO_HOOK_CHECK: '1' }), '');
+    assert.equal(hookProblem(b, { CLAUDECODE: '', CLAUDE_CODE_SESSION_ID: '' }), '');
+    assert.equal(run(b, ['claim', '16.3'], { ...cc, CLAUDECODE: '', CLAUDE_CODE_SESSION_ID: '', NEXUS_SESSION: 'term-1' }).code, 0);
   });
 });

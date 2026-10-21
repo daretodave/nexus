@@ -25,7 +25,7 @@ files, and lets the owner steer them all at once.
 | `scripts/announce.mjs` | The notice board: `.announcements.md` at the primary checkout's root, read by every loop. |
 | `scripts/ledger.mjs` | The live ledger: `.nexus/sessions/<id>.json`, rewritten at every beat. Star names. |
 | `scripts/worktree.mjs` | Closes a worktree without deleting through its links; lists worktrees for `/tidy`. |
-| `.claude/hooks/guard.mjs` | Its `bare-worktree-remove` rule refuses a plain `git worktree remove`. |
+| `.claude/hooks/guard.mjs` | Its `bare-worktree-remove` rule refuses a plain `git worktree remove`; it marks each session it runs in, and claims refuse a Claude Code session it never marked ([`claims.md`](claims.md#the-rules)). |
 | `skills/tidy.md` | `/tidy`: clear dead claims, offer to close idle worktrees and merged branches. |
 | `skills/rebooting.md`, `reboot-ready.md`, `reboot-resume.md` | The reboot train. |
 

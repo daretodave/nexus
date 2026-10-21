@@ -33,7 +33,8 @@
 //
 // Environment: NEXUS_SESSION (this session's claims id), NEXUS_CONTRIBUTOR=1 (run as a contributor), NEXUS_GH_LOGIN
 // (this machine's GitHub login; else asked of gh), NEXUS_CLAIMS_REMOTE (default origin), NEXUS_MAIN_BRANCH (default
-// main), NEXUS_CLAIMS_BOARD (a workflow file to dispatch after any write, e.g. claims-board.yml; off when unset).
+// main), NEXUS_CLAIMS_BOARD (a workflow file to dispatch after any write, e.g. claims-board.yml; off when unset),
+// NEXUS_NO_HOOK_CHECK=1 (claim in a Claude Code session that loaded no hooks: whoami and claim refuse one otherwise).
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -71,6 +72,48 @@ function lanIp() {
 /** This session's claims id: NEXUS_SESSION, else the Claude Code session (first 8), else the parent process. */
 export function sessionId(env = process.env) {
   return env.NEXUS_SESSION || (env.CLAUDE_CODE_SESSION_ID ?? '').slice(0, 8) || `pid${process.ppid}`;
+}
+
+/** Where the guard hook (.claude/hooks/guard.mjs pre-bash) marks a session that loaded it, at the primary checkout. */
+export const HOOKS_DIR = path.join('.nexus', 'hooks');
+/** A marker older than this no longer proves the hooks run (the hook touches it on every Bash call, this one's too). */
+export const HOOK_FRESH_MS = 60 * 60 * 1000;
+const markerName = (id) => String(id).replace(/[^\w.-]/g, '_');
+
+/**
+ * Inside a Claude Code session (CLAUDECODE or CLAUDE_CODE_SESSION_ID set), why claiming must stop when that session
+ * loaded no project hooks: the guard hook writes .nexus/hooks/<session id> at the primary checkout on every Bash call,
+ * so no fresh marker means no guard. With no session id, any fresh marker will do. '' when fine, outside Claude Code,
+ * or with NEXUS_NO_HOOK_CHECK=1.
+ */
+export function hookProblem(cwd, env = process.env, now = Date.now()) {
+  if (env.NEXUS_NO_HOOK_CHECK === '1') return '';
+  const id = env.CLAUDE_CODE_SESSION_ID || '';
+  if (!id && !env.CLAUDECODE) return '';
+  let dir;
+  try {
+    dir = path.join(primaryRoot(cwd), HOOKS_DIR);
+  } catch {
+    return ''; // not a git checkout: the claim fails on its own
+  }
+  const fresh = (name) => {
+    try {
+      return now - fs.statSync(path.join(dir, name)).mtimeMs < HOOK_FRESH_MS;
+    } catch {
+      return false;
+    }
+  };
+  let ok = false;
+  try {
+    ok = id ? fresh(markerName(id)) : fs.readdirSync(dir).some(fresh);
+  } catch {}
+  if (ok) return '';
+  return (
+    `claims: this Claude Code session (${id || 'no session id'}) loaded no project hooks: no fresh marker in ${dir}, so ` +
+    'the guard hook (.claude/hooks/guard.mjs) is not running and nothing stops a bare `git worktree remove` or a ' +
+    'force push. Fix: start Claude Code at the repo root, where .claude/settings.json wires the guard as a PreToolUse ' +
+    'hook on Bash (check with /hooks), then run any Bash command and claim again. NEXUS_NO_HOOK_CHECK=1 skips this check.'
+  );
 }
 
 export function whoami(cwd = process.cwd(), env = process.env) {
@@ -442,6 +485,9 @@ export function main(argv, { cwd = process.cwd(), env = process.env, out = conso
   const args = rest.filter((a) => !a.startsWith('--'));
   const json = flags.has('--json');
   const say = (value, text) => out(json ? JSON.stringify(value, null, 2) : text);
+  // A Claude Code session without the guard hook claims nothing: the worktree guard can't be bypassed silently.
+  const unhooked = cmd === 'whoami' || cmd === 'claim' ? hookProblem(cwd, env) : '';
+  if (unhooked) throw new Error(unhooked);
   const me = whoami(cwd, env);
   if (session) Object.assign(me, { session, star: starOf(cwd, session, env) });
   // A held claim is its person's by GitHub login too (mine()); the owner's claims are never held for the owner.
