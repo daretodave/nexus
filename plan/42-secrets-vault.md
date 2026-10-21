@@ -152,9 +152,6 @@ the vault arrives):
   the import, the contributor view, the onboarding step, the
   board's key badge and the audit timeline from the owner's
   Claude Design export.
-- **A15** A contributor keeps their own local-only keys: the
-  vault and import work in a contributor checkout, every sink
-  refuses there, and no chunk can require them.
 
 ## Open questions
 
@@ -162,7 +159,7 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 10 open · 5 closed · next A16
+Measure: 9 open · 6 closed · next A16
 
 - [ ] **42.3** `nexus secrets run` and the rails · M ·
   closes A5, A6, A7 · needs —
@@ -191,5 +188,3 @@ Measure: 10 open · 5 closed · next A16
     loop's `CLAUDE_CODE_OAUTH_TOKEN` is the loop's sign-in,
     not a project secret; GitHub Actions, Vercel and
     Cloudflare are named only as vault destinations.
-- [ ] **42.9** A contributor's own local keys · S · closes
-  A15 · needs —
