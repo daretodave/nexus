@@ -102,17 +102,34 @@ table are new). Leave the Asap and Held lanes empty for now.
 
 ## Step 4 — convert the build plan
 
-Walk `plan/steps/01_build_plan.md` top to bottom:
+`templates/scripts/upgrade-plan.mjs` does the mechanical half.
+From your repo root, read what it would write, then write it:
+
+```bash
+node ../nexus/templates/scripts/upgrade-plan.mjs
+node ../nexus/templates/scripts/upgrade-plan.mjs --write
+```
+
+Both run the same in PowerShell. It is a dry run unless you
+pass `--write`; it runs `plan-check` over the result first and
+writes nothing if that is red; it never deletes the v1 files
+(Step 5 does) and a second run adds nothing. It walks
+`plan/steps/01_build_plan.md` top to bottom like this:
 
 | v1 row | becomes |
 |---|---|
-| `[x] Phase N — <title> (commit <sha>)` | one `plan/ARCHIVE.md` line: `- <date> · <NN> · <title, ≤ 10 words> · <sha>` (the date from `git show -s --format=%as <sha>`; `NN` is N zero-padded to two digits) |
-| `[ ] Phase N — <title>` with a brief | a spec `plan/<NN>-<slug>.md` (see below), and a row in the roadmap |
-| `[ ] Phase N — <title>` with no brief | a spec with its Why, a few acceptance IDs, and `Not chunked yet.` |
+| `[x] Phase N — <title> (commit <sha>)` | one `plan/ARCHIVE.md` line: `- <date> · <NN> · <title, ≤ 10 words> · <sha>` (the date from `git show -s --format=%as <sha>`; a `(this commit)` row takes the commit that ticked it; `NN` is N zero-padded to two digits). A `[-]` partial row too. |
+| `[ ] Phase N — <title>` with a brief | a stub spec `plan/<NN>-<slug>.md` (the brief folded into Design, one acceptance ID, `Not chunked yet.`) and a roadmap row; refine it as below |
+| `[ ] Phase N — <title>` with no brief | a stub spec with its Why (from the build plan's per-phase scope), one acceptance ID, and `Not chunked yet.` |
 | `[blocked: <reason> <date>] Phase N` | a spec as above, plus a Held line `- **<NN>** · blocked: <reason> <date>` |
 | `[skipped] Phase N` | one archive line `- <date> · <NN> · dropped: <reason> · (this commit)` |
-| Carry-overs / known gaps | an acceptance ID in the spec it belongs to, or a `plan/AUDIT.md` row |
-| Phase log | nothing: the archive lines replace it |
+| Carry-overs / known gaps | by hand: an acceptance ID in the spec it belongs to, or a `plan/AUDIT.md` row |
+| Phase log | an archive line for any phase the status block lacks; otherwise its shas date the rows above |
+
+What it leaves to you is in its warnings: carry-overs, a `[-]`
+partial row's gaps, and a shipped row whose commit it could
+not find (archived as `unknown`; put the sha in). Then refine
+each stub spec it wrote, as below.
 
 Keep the phase number as the spec number, so history lines up:
 phase 12's spec is `plan/12-<slug>.md` and its chunks are
