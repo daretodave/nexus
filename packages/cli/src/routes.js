@@ -4,6 +4,7 @@ export const PATHS = {
   cockpit: (id) => `/s/${encodeURIComponent(id)}`,
   onboarding: (step = 'welcome') => `/onboarding/${step}`,
   heads: '/heads-down',
+  headsFor: (id) => (id ? `/heads-down?s=${encodeURIComponent(id)}` : '/heads-down'),
   inbox: '/inbox',
   board: '/board',
   cloud: '/cloud',

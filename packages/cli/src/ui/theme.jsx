@@ -4,24 +4,24 @@
 // paint, so the page never flashes the wrong sky.
 import { useEffect, useSyncExternalStore } from 'react';
 import { Seg } from './controls.jsx';
+import { parsePick, themeFor } from './theme-pick.js';
 
 const KEY = 'nexus-theme';
 const listeners = new Set();
 
 function readPick() {
   try {
-    const v = localStorage.getItem(KEY);
-    return v === 'dark' || v === 'light' ? v : 'system';
+    return parsePick(localStorage.getItem(KEY));
   } catch { return 'system'; }
 }
 
-function systemTheme() {
-  try { return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { return 'dark'; }
+function systemLight() {
+  try { return window.matchMedia('(prefers-color-scheme: light)').matches; } catch { return false; }
 }
 
 /** The theme in force for a pick: dark | light. */
 export function resolveTheme(pick = readPick()) {
-  return pick === 'system' ? systemTheme() : pick;
+  return themeFor(pick, parsePick(pick) === 'system' && systemLight());
 }
 
 export function applyTheme(pick = readPick()) {

@@ -13,3 +13,5 @@ export * from './plan.jsx';
 export * from './feedback.jsx';
 export * from './shell.jsx';
 export * from './theme.jsx';
+export * from './run-mode.js';
+export { parsePick, themeFor } from './theme-pick.js';

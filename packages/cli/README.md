@@ -13,27 +13,37 @@ You need no API key.
 
 ## What you get
 
-- **Start**: a preflight (Claude Code installed and logged in, `gh`,
-  git remote, whether nexus is already adopted). You choose owner mode
-  (push straight to main) or contributor mode (pull requests), and how
-  `/next` builds (sub-agents, workflows). Then adopt in one click, or
-  "explode" a dump of messy thoughts into `/messy`.
-- **Cockpit**: a 50/50 split. On the left are the transcript and a
-  composer with slash autocomplete. Free text routes itself: a bug goes
-  to `/bug`, a feature or task to `/plot`, and a question is answered
-  in place. On the right is the agent stage: the session is an orb,
-  sub-agents bloom out on filaments, and a question from an agent pulls
-  toward you.
-- **Heads down**: the repo's own `progress.mjs` output as ASCII, plus
-  "go heads down" and "pause all".
-- **Oversight**: live questions (`AskUserQuestion` rendered as
-  buttons) and durable questions from `plan/`. Your answers are applied
-  by `/oversight` and land per owner mode.
-- **Claims**: who builds what, from `claims list --json`.
-- **Cloud loop**: a GitHub Actions checklist, one checkbox per
-  workflow, and live runs.
+- **Onboarding**: six steps. Welcome; Detect (Claude Code installed
+  and signed in, `gh`, the git remote, whether nexus is adopted);
+  Shape (owner or contributor checkout, and how `/next` builds: by
+  size, sub-agents, workflows); Plot (a dump of messy thoughts, sent
+  to `/messy`); the cloud loop; and Launch, which opens the first
+  session's cockpit.
+- **Fleet**: every session as a live tile with its star name (vega,
+  sirius, deneb, altair; terminal sessions show read-only), its phase,
+  chunk and git strip. Pause all runs the reboot train, and a fallen
+  session resumes from its tile.
+- **Cockpit** (`/s/<id>`): the session's phase track (Questions,
+  Working, Questions, Package). On the left are the conversation and a
+  composer. Free text routes itself: a bug goes to `/bug`, a feature or
+  task to `/plot`, and a question is answered in place. On the right
+  is the agent stage: the session is an orb, sub-agents bloom out on
+  filaments, and a question from an agent pulls toward you.
+- **Heads-down**: the session as a 120-column terminal view.
+- **Oversight**: every open question across sessions, live
+  (`AskUserQuestion` as buttons, tool permissions) and durable (from
+  `plan/`). Answers land per owner mode.
+- **Plan**: all chunks or by spec, sorted by next up, with claims by
+  person and session. Claim, hold and release from the row.
+- **Cloud loop**, **Git** (worktrees, main, open PRs, a `/tidy` dry
+  run), **Recover** (a workflow folder as a timeline) and **Settings**
+  (owner mode, run mode, night or dawn).
 
-Using another agent? The Start screen quotes the canonical prompt
+Some of this waits on server endpoints that are not built yet (the
+session list, the plan, the merged inbox). Until they land, those
+screens show the design's empty state, never made-up data.
+
+Using another agent? The Welcome step quotes the canonical prompt
 from nexus `prompts/`, ready to paste.
 
 ## Options
@@ -50,7 +60,7 @@ NEXUS_PROVIDER=cli               use `claude -p` stream-json instead of the Agen
 ```
 cd packages/cli
 npm ci
-npm test          # node --test: beat reducer, routing, hub, server guards
+npm test          # node --test: beat reducer, routing, hub, server guards, UI rules
 npm run build     # bundles prompts/ and builds the UI into dist/
 npm start         # serve this checkout's GUI
 ```
@@ -58,8 +68,13 @@ npm start         # serve this checkout's GUI
 The UI is the Claude Design handoff in `design/handoff/` (the source
 of truth; fidelity reviews diff against it). `src/styles/nexus.css`
 is its stylesheet, verbatim: every token and component class.
-`src/ui/` holds one React file per component family, `src/screens/`
-one file per route, and `src/data/` the server client and its hooks.
+`src/ui/` holds one React file per component family, plus the pure
+rules they share (`stars.js`: session names, colours and places;
+`theme-pick.js`; `run-mode.js`). `src/screens/` has one file per route,
+with a folder per screen family for its parts and its pure view model,
+and `src/data/` the server client and its hooks. Where the server does
+not serve an endpoint yet, a screen shows the design's empty state;
+`MISSING` in `src/data/hooks.js` lists those endpoints.
 The agent stage moves only on structured beats
 (`shared/beats.mjs`). Its pure reducer gives the same state whether
 the page was opened mid-run, refreshed, or watched from the start.

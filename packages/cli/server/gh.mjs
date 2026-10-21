@@ -56,7 +56,7 @@ export async function setWorkflow(repo, id, enabled) {
 }
 
 export async function listRuns(repo) {
-  const r = await run('gh', ['run', 'list', '-L', '20', '--json', 'databaseId,displayTitle,workflowName,status,conclusion,createdAt,updatedAt,url,event'], { cwd: repo });
+  const r = await run('gh', ['run', 'list', '-L', '20', '--json', 'databaseId,number,displayTitle,workflowName,status,conclusion,createdAt,updatedAt,url,event'], { cwd: repo });
   if (!r.ok) return { ok: false, runs: [], error: (r.stderr || '').trim().slice(0, 300) };
   return { ok: true, runs: (json(r.stdout) || []).map((x) => markStall(x, Date.now())) };
 }

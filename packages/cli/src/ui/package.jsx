@@ -3,7 +3,7 @@
 // ready, opening, opened, merged), .stack (stacked PRs), .retarget,
 // .planpr (a plot as a contribution), .basin (the package forming on stage).
 import { Icon, Moon } from './icons.jsx';
-import { cx } from './controls.jsx';
+import { cx, NavA } from './controls.jsx';
 
 /**
  * The phase track. phases: [{ key: 'q' | 'w' | 'p', name, meta, state: 'done' | 'now' | undefined,
@@ -26,7 +26,7 @@ export function Phases({ phases, end, style, label = 'Session phases' }) {
         );
         const st = p.flex ? { flex: p.flex } : p.style;
         return p.href
-          ? <a key={i} className={cls} href={p.href} style={st} aria-current={p.state === 'now' ? 'step' : undefined}>{body}</a>
+          ? <NavA key={i} className={cls} href={p.href} style={st} aria-current={p.state === 'now' ? 'step' : undefined}>{body}</NavA>
           : <div key={i} className={cls} style={st}>{body}</div>;
       })}
       {end ? <span className="ph-end"><Icon name="commit" size={14} />{end}</span> : null}

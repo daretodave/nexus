@@ -93,16 +93,28 @@ export const MISSING = [
   { endpoint: 'GET /api/recover?dir=', hook: 'useRecover', for: 'Recover: a workflow folder read as a timeline (journal.jsonl), and recent runs' },
   { endpoint: 'POST /api/recover/resume', hook: 'recoverAction', for: 'resume a workflow from a chosen step (resumeFromRunId + scriptPath)' },
   { endpoint: 'GET|POST /api/local', hook: 'useLocalSettings', for: 'effective owner mode (.owner and .nexus/local.json ownerMode), run mode, phase length' },
-  { endpoint: 'POST /api/pin', hook: 'pinNote', for: 'a pinned note every agent reads on its next step' },
+  { endpoint: 'POST /api/pin', hook: 'pinNote', for: 'a pinned note every agent reads on its next step ({ session, text })' },
+  { endpoint: 'POST /api/sessions/:id/questions', hook: 'cockpit', for: 'answer a start question ({ index, answer, how }) or take every default ({ defaults: true })' },
+  { endpoint: 'POST /api/sessions/:id/start', hook: 'cockpit', for: 'leave the start questions and begin working' },
+  { endpoint: 'POST /api/sessions/:id/parked', hook: 'cockpit', for: 'settle a parked question ({ index, action: approve|change, pick }) or approve the rest' },
+  { endpoint: 'POST /api/sessions/:id/package', hook: 'cockpit', for: 'open the package PR ({ action: "open" }) or save its description' },
+  { endpoint: 'POST /api/inbox/:id', hook: 'Inbox', for: 'settle an inbox item from any session or the cloud loop ({ answer, how })' },
+  { endpoint: 'POST /api/plan/chunk', hook: 'Board', for: 'Chunk it: { spec } returns questions, { spec, answers } writes the chunks' },
+  { endpoint: 'POST /api/git/fetch', hook: 'GitPanel', for: 'git fetch --prune for the panel' },
+  { endpoint: 'GET|POST /api/git/tidy', hook: 'GitPanel', for: 'the /tidy dry run (GET) and the tidy itself (POST)' },
+  { endpoint: 'POST /api/explode', hook: 'Onboarding Plot', for: 'split messy text into idea cards ({ text, team } -> { ideas, spec })' },
+  { endpoint: 'POST /api/plot', hook: 'Onboarding Plot', for: 'write the kept ideas into the plan as chunks' },
+  { endpoint: 'POST /api/cloud/(workflow|run|schedule)', hook: 'CloudSetup, CloudLoop', for: 'add the loop workflow, dispatch one pass, save the schedule' },
+  { endpoint: 'POST /api/pick-folder', hook: 'Recover', for: 'optional: an OS folder picker, since a browser cannot hand back an absolute path' },
 ];
 
-/** GET /api/sessions -> [{ id, name, kind: 'local'|'terminal'|'other', state, phase, chunk, git, claims, parked, beat }]. */
+/** GET /api/sessions -> [{ id, name, kind: 'local'|'terminal'|'other', state, phase, chunk, git, claims, parked, beat }]. Full shape: screens/fleet/model.js. */
 export const useSessions = (poll = 4000) => useResource('/api/sessions', { poll });
 
-/** GET /api/sessions/:id -> the session ledger. */
+/** GET /api/sessions/:id -> the session ledger. Shape: screens/cockpit/model.js (cockpit), screens/headsdown-inbox/headsModel.js (heads-down). */
 export const useSession = (id) => useResource(id ? `/api/sessions/${encodeURIComponent(id)}` : null, { skip: !id });
 
-/** GET /api/inbox -> [{ id, session, kind: 'now'|'parked'|'cloud', question, options, default, chunk, at }]. */
+/** GET /api/inbox -> [{ id, session, kind: 'now'|'parked'|'cloud', question, options, default, chunk, at, settled }]. Shape: screens/headsdown-inbox/inboxModel.js. */
 export const useInbox = (poll = 5000) => useResource('/api/inbox', { poll });
 
 /** GET /api/plan -> { lanes, specs: [{ n, name, file, chunks: [...] }], order }. */

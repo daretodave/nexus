@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ShellContext, Err } from './ui/index.js';
-import { useAppState, useEvents } from './data/index.js';
+import { useAppState, useEvents, useInbox } from './data/index.js';
+import { fromInbox } from './screens/headsdown-inbox/inboxModel.js';
 import { PATHS } from './routes.js';
 import Fleet from './screens/Fleet.jsx';
 import Cockpit from './screens/Cockpit.jsx';
@@ -33,6 +34,7 @@ function Home({ app }) {
 function Shell() {
   const app = useAppState();
   const live = useEvents();
+  const inbox = useInbox();
   if (app.status === 'error' && !app.data) {
     return (
       <div className="ob" style={{ justifyContent: 'center' }}>
@@ -47,7 +49,12 @@ function Shell() {
     );
   }
   const info = app.data?.info || {};
-  const shell = { inbox: live.asks.length + live.permissions.length, owner: !!info.owner, repo: info.name || '', app, live };
+  // The Oversight badge: the merged inbox once the server serves it (so it
+  // matches the Inbox's "All N"), else today's live questions and permissions.
+  const open = inbox.status === 'ready' && inbox.data
+    ? fromInbox(inbox.data).filter((x) => !x.settled).length
+    : live.asks.length + live.permissions.length;
+  const shell = { inbox: open, owner: !!info.owner, repo: info.name || '', app, live };
   return (
     <ShellContext.Provider value={shell}>
       <Routes>

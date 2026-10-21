@@ -1,7 +1,7 @@
 // Feedback (Feedback board): .stepper, .ring, .toast, .empty, .err, and the
 // heads-down .tui frame. Calm: says what is safe before what broke.
 import { Icon } from './icons.jsx';
-import { cx } from './controls.jsx';
+import { cx, NavA } from './controls.jsx';
 
 /** The six onboarding steps, in order. */
 export const STEPS = [
@@ -26,9 +26,9 @@ export function Stepper({ steps = STEPS, current, done = [], skipped = [], hrefF
       {steps.map((s) => {
         const state = s.id === current ? 'is-current' : skipped.includes(s.id) ? 'is-skipped' : done.includes(s.id) ? 'is-done' : '';
         return (
-          <a key={s.id} className={cx('stp', state)} href={hrefFor ? hrefFor(s.id) : `#${s.id}`} aria-current={s.id === current ? 'step' : undefined}>
+          <NavA key={s.id} className={cx('stp', state)} href={hrefFor ? hrefFor(s.id) : `#${s.id}`} aria-current={s.id === current ? 'step' : undefined}>
             <span className="stp-star" /><span className="stp-label">{skipped.includes(s.id) ? 'Skipped' : s.label}</span>
-          </a>
+          </NavA>
         );
       })}
     </nav>

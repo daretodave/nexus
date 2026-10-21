@@ -49,14 +49,14 @@ export function ChunkGhost({ children, style }) {
  * holder: { kind: 'local' | 'terminal' (a session), 'cloud', 'held', 'other', name, initial }
  * state: undefined | 'stale' | 'releasing'.
  */
-export function Claim({ holder = {}, who, since, state, onRelease, releaseHover, className }) {
+export function Claim({ holder = {}, who, since, state, onRelease, releaseHover, className, cloudIcon = 'cloud2' }) {
   const k = holder.kind;
   const sess = k === 'local' || k === 'terminal' ? holder : null;
   const cls = cx('claim', sess && sessClass(sess), k === 'cloud' && 'is-cloud', k === 'held' && 'is-held', k === 'other' && 'is-other', state && `is-${state}`, className);
   let av;
   if (state === 'releasing') av = <span className="spin" style={{ width: 10, height: 10, borderWidth: 1.5 }} />;
   else if (sess) av = <SessionGlyph session={sess} style={{ width: 11, height: 11 }} />;
-  else if (k === 'cloud') av = <Icon name="cloud2" />;
+  else if (k === 'cloud') av = <Icon name={cloudIcon} />;
   else if (k === 'held') av = <Icon name="hold" style={{ width: 11, height: 11 }} />;
   else if (k === 'other') av = <span>{holder.initial || (holder.name || '?').slice(0, 1)}</span>;
   return (
@@ -99,17 +99,31 @@ export function Diff({ file, stat, lines = [] }) {
   );
 }
 
+/** The cockpit board's tool glyphs (its TI table), verbatim; aliases share a glyph. */
+export const TOOL_GLYPH = {
+  Read: 'M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8zM14 3.5V8h4.5',
+  Edit: 'M5 19.5l1-4.5L15.8 5.2a2.1 2.1 0 0 1 3 3L9 18z',
+  Grep: 'M11 5a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM20 20l-4.5-4.5',
+  Task: 'M12 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM18 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM12 8.2v3.3M12 11.5 6.8 16M12 11.5l5.2 4.5',
+  Bash: 'M5.5 4.5h13A2.5 2.5 0 0 1 21 7v10a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V7a2.5 2.5 0 0 1 2.5-2.5zM7 9.5l3 2.5-3 2.5M12.5 15H17',
+};
+const GLYPH_ALIAS = { Write: 'Edit', MultiEdit: 'Edit', NotebookEdit: 'Edit', Glob: 'Grep', Agent: 'Task' };
+/** The board glyph for a tool name (Read's for any tool it does not draw). */
+export const toolGlyph = (tool) => TOOL_GLYPH[tool] || TOOL_GLYPH[GLYPH_ALIAS[tool]] || TOOL_GLYPH.Read;
+
 /** Tool name to its log icon. */
 export const TOOL_ICON = { Read: 'file', Edit: 'pen', Write: 'pen', MultiEdit: 'pen', Task: 'runMode', Agent: 'runMode', Grep: 'eye', Glob: 'eye' };
 
 /**
  * .log row: a tool call. state: undefined | 'running' | 'failed'.
- * `open` shows the body (a Diff, usually).
+ * `open` shows the body (a Diff, usually). `d` draws a raw glyph path (the
+ * cockpit board's tool glyphs, TOOL_GLYPH) in place of a named icon.
  */
-export function LogRow({ tool, args, meta, dur, state, open, onToggle, icon, hover, children }) {
+export function LogRow({ tool, args, meta, dur, state, open, onToggle, icon, d, hover, children }) {
   const ic = state === 'running' ? <span className="spin" aria-hidden="true" />
     : state === 'failed' ? <Icon name="xSmall" size={14} className="log-ic" />
-      : <Icon name={icon || TOOL_ICON[tool] || 'prompt'} size={14} className="log-ic" />;
+      : d ? <Icon d={d} size={14} className="log-ic" />
+        : <Icon name={icon || TOOL_ICON[tool] || 'prompt'} size={14} className="log-ic" />;
   return (
     <div className={cx('log', open && 'is-open', state && `is-${state}`, hover && 'is-hover')}>
       <button className="log-row" type="button" aria-expanded={!!open} onClick={onToggle}>

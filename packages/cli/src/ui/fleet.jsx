@@ -6,7 +6,7 @@ import { Icon } from './icons.jsx';
 import { SessionGlyph, sessClass } from './session.jsx';
 import { CiDot } from './work.jsx';
 import { Orb } from './agent.jsx';
-import { cx } from './controls.jsx';
+import { cx, NavA } from './controls.jsx';
 
 /**
  * The session tile. state: live | asking | observing | fallen (resuming and
@@ -19,7 +19,7 @@ export function Tile({ session, state = 'live', href, repo, badge, stage, stageS
     <div className={cx('tile', sessClass(session), state === 'asking' && 'is-asking', state === 'observing' && 'is-observing', state === 'fallen' && 'is-fallen', hover && 'is-hover', className)}>
       <div className="tile-head">
         <SessionGlyph session={session} />
-        <a className="tile-name" href={href} style={{ color: state === 'observing' && session?.kind === 'terminal' ? undefined : 'var(--text)', ...nameStyle }}>{session?.name}</a>
+        <NavA className="tile-name" href={href} style={{ color: state === 'observing' && session?.kind === 'terminal' ? undefined : 'var(--text)', ...nameStyle }}>{session?.name}</NavA>
         {repo ? <span className="tile-repo">{repo}</span> : null}
         <span className="tb-spacer" />
         {badge}
@@ -78,17 +78,24 @@ export function TileEvent({ children, flexNone }) {
 
 /**
  * .git: the git strip. git: { branch, worktree, up, down, behind, dirty,
- * dirtyLabel, pr: { num, ci: 'green' | 'red' | 'running' | 'queued' }, noPr,
- * claims }. `open` shows .git-pop with commits [{ sha, m, w }].
+ * dirtyLabel (its accessible name, never visible), pr: { num, ci: 'green' |
+ * 'red' | 'running' | 'queued' }, noPr, claims }. `open` shows .git-pop with
+ * commits [{ sha, m, w }]. variant 'kit' draws FleetKit's icons (branch,
+ * worktree, 96px); 'fleet' the Fleet board's tile foot (git, worktree2, 104px).
+ * Other props (onMouseEnter, onFocus, tabIndex...) go on the strip.
  */
-export function GitStrip({ git = {}, open, commits, brMax = 96, long, onToggle }) {
+const GIT_ICONS = { kit: ['branch', 'worktree', 96], fleet: ['git', 'worktree2', 104] };
+export function GitStrip({ git = {}, open, commits, brMax, long, onToggle, variant = 'kit', ...rest }) {
   const l = long ? 'tb-long' : undefined;
+  const [brIcon, wtIcon, brDefault] = GIT_ICONS[variant] || GIT_ICONS.kit;
+  const max = brMax === undefined ? brDefault : brMax;
+  const clean = git.dirty ? 'uncommitted changes' : 'clean';
   return (
-    <span className={cx('git', open && 'is-open')} aria-label="Git state" onClick={onToggle}>
-      <span><Icon name="branch" /><span className="br" style={brMax ? { maxWidth: brMax } : undefined}>{git.branch}</span></span>
-      {git.worktree ? <span className={l} aria-label="worktree"><Icon name="worktree" /></span> : null}
+    <span className={cx('git', open && 'is-open')} aria-label="Git state" onClick={onToggle} {...rest}>
+      <span><Icon name={brIcon} /><span className="br" style={max ? { maxWidth: max } : undefined}>{git.branch}</span></span>
+      {git.worktree ? <span className={l} aria-label="worktree" title={typeof git.worktree === 'string' ? git.worktree : undefined}><Icon name={wtIcon} /></span> : null}
       <span className="ab"><span className="up">↑{git.up ?? 0}</span> <span className={cx('dn', git.behind && 'is-behind')}>↓{git.down ?? 0}</span></span>
-      <span aria-label={git.dirty ? 'uncommitted changes' : 'clean'}><i className={cx('dirty', !git.dirty && 'is-clean')} />{git.dirtyLabel}</span>
+      <span aria-label={git.dirtyLabel || clean}><i className={cx('dirty', !git.dirty && 'is-clean')} /></span>
       {git.pr ? <span className={`ci-${git.pr.ci || 'queued'}`}><CiDot state={git.pr.ci} /><span className="pr">{git.pr.num}</span></span> : git.noPr ? <span className={cx('c-3', l)}>{git.noPr}</span> : null}
       {git.claims != null ? <span className={l} aria-label={`${git.claims} claims`}><Icon name="flag" />{git.claims}</span> : null}
       {open && commits ? (
@@ -117,16 +124,21 @@ export function Switcher({ session, others = [], open, onClick }) {
 }
 
 /** .sw-item: a session in the switcher menu. */
-export function SwItem({ session, current, d, end, href, onClick }) {
+export function SwItem({ session, current, d, end, href, onClick, role }) {
   const body = <><SessionGlyph session={session} /><span>{session?.name}{d ? <span className="d">{d}</span> : null}</span>{end ?? <span />}</>;
   const cls = cx('sw-item', current && 'is-current', sessClass(session));
-  return href ? <a className={cls} href={href} onClick={onClick} style={{ textDecoration: 'none' }}>{body}</a> : <div className={cls} onClick={onClick}>{body}</div>;
+  return href
+    ? <NavA className={cls} href={href} onClick={onClick} role={role} aria-current={current ? 'page' : undefined} style={{ textDecoration: 'none' }}>{body}</NavA>
+    : <div className={cls} onClick={onClick} role={role}>{body}</div>;
 }
 
-/** .train: pause all, the reboot train. cars: [{ session, state: 'pausing' | 'paused' | 'skipped', text }]. */
-export function Train({ cars = [], label = 'Pausing all sessions' }) {
+/**
+ * .train: pause all, the reboot train. cars: [{ session, state: 'pausing' | 'paused' | 'skipped', text }].
+ * `bare` drops its own live region, for a train inside a TrainDock (which is the status).
+ */
+export function Train({ cars = [], label = 'Pausing all sessions', bare }) {
   return (
-    <div className="train" role="status" aria-label={label}>
+    <div className="train" role={bare ? undefined : 'status'} aria-label={bare ? undefined : label}>
       {cars.map((c) => (
         <div key={c.session.name} className={cx('car', c.state === 'paused' && 'is-paused', c.state === 'skipped' && 'is-skipped', sessClass(c.session))}>
           <span className="car-name"><SessionGlyph session={c.session} size={c.session.kind === 'terminal' ? 14 : undefined} />{c.session.name}</span>
@@ -219,7 +231,7 @@ export function Wt({ session, who, branch, path, act, age, flag, dirty, pr, href
       <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
         {dirty ? <span aria-label="uncommitted changes" title="uncommitted changes"><i className="dirty" /></span> : null}
         {pr ? <span className={`ci-${pr.ci || 'queued'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span className="ci-dot" style={{ width: 10, height: 10 }}>{pr.ci === 'green' ? <Icon name="check" /> : pr.ci === 'red' ? <Icon name="x" /> : null}</span><span className="t-mono-xs">{pr.num}</span></span> : null}
-        {href ? <a className="btn btn-ghost btn-s btn-icon" href={href} aria-label={`Open ${branch}`}><Icon name="external" size={14} /></a> : null}
+        {href ? <NavA className="btn btn-ghost btn-s btn-icon" href={href} aria-label={`Open ${branch}`}><Icon name="external" size={14} /></NavA> : null}
       </span>
     </div>
   );

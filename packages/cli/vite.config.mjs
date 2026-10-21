@@ -5,7 +5,9 @@ import react from '@vitejs/plugin-react';
 // serves it as static files. No runtime bundler, no CDN.
 export default defineConfig({
   root: 'src',
-  base: './',
+  // Absolute asset paths, so reloading a deep link (/s/vega, /onboarding/detect)
+  // still finds /assets/*; the server answers every extensionless path with index.html.
+  base: '/',
   plugins: [react()],
   build: {
     outDir: '../dist',

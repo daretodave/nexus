@@ -1,19 +1,27 @@
-// STUB (41.3 foundation). Screen agent: build the six steps from
-// design/handoff/Welcome (+ WelcomeAgent), Detect (+ DetectMissing),
-// Shape (+ ShapeContributor), Plot, CloudSetup, Launch (+ Light) with Ob,
-// Stepper, OwnerPick, Switch, Panel. Data: usePreflight(), usePrompts(),
-// server.setPrefs / setOwner / adopt.
+// Onboarding: the six steps of design/handoff Welcome (+ WelcomeAgent),
+// Detect (+ DetectMissing), Shape (+ ShapeContributor), Plot, CloudSetup
+// and Launch, each with its Light board through the tokens alone. One
+// draft of the answers is shared across the steps (screens/onboarding/).
 import { useParams } from 'react-router-dom';
-import { Ob, Wordmark, Stepper, STEPS, Empty } from '../ui/index.js';
-import { PATHS } from '../routes.js';
+import { STEPS } from '../ui/index.js';
+import { DraftContext, useDraftStore } from './onboarding/draft.js';
+import Welcome from './onboarding/Welcome.jsx';
+import Detect from './onboarding/Detect.jsx';
+import Shape from './onboarding/Shape.jsx';
+import Plot from './onboarding/Plot.jsx';
+import CloudSetup from './onboarding/CloudSetup.jsx';
+import Launch from './onboarding/Launch.jsx';
+
+const SCREENS = { welcome: Welcome, detect: Detect, shape: Shape, plot: Plot, cloud: CloudSetup, launch: Launch };
 
 export default function Onboarding() {
   const { step } = useParams();
+  const draft = useDraftStore();
   const current = STEPS.some((s) => s.id === step) ? step : 'welcome';
-  const at = STEPS.findIndex((s) => s.id === current);
+  const Screen = SCREENS[current];
   return (
-    <Ob top={<><Wordmark /><Stepper current={current} done={STEPS.slice(0, at).map((s) => s.id)} hrefFor={PATHS.onboarding} /></>}>
-      <Empty sky="waiting" title={STEPS[at].label} body="This step arrives with the onboarding screens." />
-    </Ob>
+    <DraftContext.Provider value={draft}>
+      <Screen />
+    </DraftContext.Provider>
   );
 }

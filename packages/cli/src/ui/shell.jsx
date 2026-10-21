@@ -200,14 +200,15 @@ export function AuroraField({ rays = true }) {
   );
 }
 
-/** .ob: the onboarding frame. top: wordmark + stepper; foot: back/next. */
-export function Ob({ top, foot, children, aurora = true }) {
+/** .ob: the onboarding frame. aurora and starfield behind; header: wordmark + stepper; footer: back/next. */
+export function Ob({ top, foot, children, aurora = true, mainStyle, onTopClick }) {
   return (
     <div className="ob">
       {aurora ? <AuroraField /> : null}
-      {top ? <div className="ob-top">{top}</div> : null}
-      <main className="ob-main">{children}</main>
-      {foot ? <div className="ob-foot">{foot}</div> : null}
+      <div className="starfield" aria-hidden="true" />
+      {top ? <header className="ob-top" onClick={onTopClick}>{top}</header> : null}
+      <main className="ob-main" style={mainStyle}>{children}</main>
+      {foot ? <footer className="ob-foot">{foot}</footer> : null}
     </div>
   );
 }

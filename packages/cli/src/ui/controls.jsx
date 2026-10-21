@@ -2,9 +2,23 @@
 // .owner, .mode-chip, .chip, .tip, .menu, .pause-btn, .loop-status.
 // Class names are the design's; props only pick which classes apply.
 import { useId } from 'react';
+import { Link, useInRouterContext } from 'react-router-dom';
 import { Icon } from './icons.jsx';
 
 export const cx = (...a) => a.flat().filter(Boolean).join(' ');
+
+/**
+ * A link that stays in the app: an in-app path ("/s/vega") renders a router
+ * <Link>, so a click never reloads the page; anything else (an external URL,
+ * "#id", or no router around it) is a plain <a>.
+ */
+export function NavA({ href, children, ...rest }) {
+  const inRouter = useInRouterContext();
+  if (inRouter && typeof href === 'string' && href.startsWith('/') && !href.startsWith('//')) {
+    return <Link to={href} {...rest}>{children}</Link>;
+  }
+  return <a href={href} {...rest}>{children}</a>;
+}
 
 /**
  * .btn. variant: primary | ghost | warn | danger; size: s | l | xl.
@@ -12,7 +26,7 @@ export const cx = (...a) => a.flat().filter(Boolean).join(' ');
  */
 export function Btn({ variant, size, icon, href, className, type = 'button', children, ...rest }) {
   const cls = cx('btn', variant && `btn-${variant}`, size && `btn-${size}`, icon && 'btn-icon', className);
-  if (href) return <a className={cls} href={href} {...rest}>{children}</a>;
+  if (href) return <NavA className={cls} href={href} {...rest}>{children}</NavA>;
   return <button className={cls} type={type} {...rest}>{children}</button>;
 }
 
@@ -107,11 +121,11 @@ export function BadgeDef({ children }) {
   return <span className="badge-def">{children}</span>;
 }
 
-/** The ⓘ button that opens a tip. */
-export function InfoBtn({ label, open, onClick }) {
+/** The ⓘ button that opens a tip; it keeps its hover look while the tip is open. */
+export function InfoBtn({ label, open, onClick, icon = 'info' }) {
   return (
-    <button className="info-btn" type="button" aria-label={label} aria-expanded={open} onClick={onClick}>
-      <Icon name="info2" />
+    <button className={cx('info-btn', open && 'is-hover')} type="button" aria-label={label} aria-expanded={!!open} onClick={onClick}>
+      <Icon name={icon} />
     </button>
   );
 }

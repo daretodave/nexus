@@ -61,7 +61,8 @@ export async function setOwner(repo, on) {
   return true;
 }
 
-const DEFAULT_PREFS = { agents: true, workflows: false, permissionMode: 'default', onboarded: false };
+// Run mode "by size" (decision 2): no --agents or --workflow override until the person picks one.
+const DEFAULT_PREFS = { agents: false, workflows: false, permissionMode: 'default', onboarded: false };
 
 export async function readPrefs(repo) {
   const file = await gitPath(repo, 'nexus-gui.json');

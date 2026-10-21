@@ -4,10 +4,10 @@
 import { Icon, Moon } from './icons.jsx';
 import { CHUNK_WORD, Grip } from './work.jsx';
 import { SessionGlyph, sessClass } from './session.jsx';
-import { cx } from './controls.jsx';
+import { cx, NavA } from './controls.jsx';
 
 export function SizeTag({ size }) {
-  return <span className="size-tag">{size}</span>;
+  return <span className="size-tag" aria-label={`size ${size}`}>{size}</span>;
 }
 
 /** .plotted-tag: "just plotted · plan PR #151"; fades after 40s. */
@@ -35,7 +35,7 @@ export function CRow({ id, title, size, state = 'ready', word, claim, free = 'un
       <Grip />
       <Moon state={state} />
       <span className="chunk-id">{id}</span>
-      <span className="crow-t"><span className="tt">{title}</span>{plotted ? <PlottedTag>{plotted}</PlottedTag> : null}{ai ? <AiGlyph /> : null}</span>
+      <span className="crow-t"><span className="tt">{title}</span>{ai ? <AiGlyph /> : null}{plotted ? <PlottedTag>{plotted}</PlottedTag> : null}</span>
       <SizeTag size={size} />
       <span className="crow-state">{word ?? CHUNK_WORD[state]}</span>
       {claim ?? <span className="crow-free">{free}</span>}
@@ -48,7 +48,7 @@ export function CRow({ id, title, size, state = 'ready', word, claim, free = 'un
 /** A row action button (.crow-acts .btn): icon + label, ghost unless primary-ish. */
 export function RowAct({ icon, children, ghost = true, href, label, onClick }) {
   const cls = cx('btn btn-s', ghost && 'btn-ghost', !children && 'btn-icon');
-  if (href) return <a className={cls} href={href} aria-label={label}><Icon name={icon} size={14} />{children}</a>;
+  if (href) return <NavA className={cls} href={href} aria-label={label}><Icon name={icon} size={14} />{children}</NavA>;
   return <button className={cls} type="button" onClick={onClick} aria-label={label}>{icon ? <Icon name={icon} size={14} /> : null}{children}</button>;
 }
 
@@ -74,12 +74,13 @@ export function Pct({ pct, n }) {
 /**
  * .spec: a spec with its chunks. `open` turns the chevron; `claimed` rings it.
  * acts: header action nodes; children: the .spec-body rows (or Chunk it).
+ * id ("spec-04") makes it a scroll target; the section and toggle are named for it.
  */
-export function Spec({ name, file, pct, n, open, claimed, acts, onToggle, children }) {
+export function Spec({ id, name, file, pct, n, open, claimed, acts, onToggle, children }) {
   return (
-    <section className={cx('spec', open && 'is-open', claimed && 'is-claimed')}>
+    <section id={id} className={cx('spec', open && 'is-open', claimed && 'is-claimed')} aria-label={name}>
       <div className="spec-h">
-        <button className="spec-tog" type="button" aria-label="Toggle" aria-expanded={!!open} onClick={onToggle}><Icon name="chevronRight" size={14} /></button>
+        <button className="spec-tog" type="button" aria-label={`${open ? 'Hide' : 'Show'} chunks of ${name}`} aria-expanded={!!open} onClick={onToggle}><Icon name="chevronRight" size={14} /></button>
         <div className="spec-name"><b>{name}</b>{file ? <span>{file}</span> : null}</div>
         <Pct pct={pct} n={n} />
         <div className="spec-acts">{acts}</div>
@@ -104,8 +105,8 @@ export function ChunkIt({ onClick, text = 'No chunks yet. nexus asks three short
   );
 }
 
-/** .chunkit-flow: the questions before the chunks. children: CkQ rows. */
-export function ChunkItFlow({ title, onMake, onCancel, children }) {
+/** .chunkit-flow: the questions before the chunks. children: CkQ rows; `note` trails the buttons. */
+export function ChunkItFlow({ title, onMake, onCancel, note, children }) {
   return (
     <div className="chunkit-flow">
       <span className="t-caps c-2">{title}</span>
@@ -113,6 +114,7 @@ export function ChunkItFlow({ title, onMake, onCancel, children }) {
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <button className="btn btn-primary btn-s" type="button" onClick={onMake}><Icon name="rays8" size={14} />Make the chunks</button>
         <button className="btn btn-ghost btn-s" type="button" onClick={onCancel}>Cancel</button>
+        {note ? <span className="t-body-s c-3">{note}</span> : null}
       </div>
     </div>
   );
