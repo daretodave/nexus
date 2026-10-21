@@ -36,7 +36,7 @@ line goes):
 | 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 2 left |
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 1 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 1 left |
-| 46 | `## Add`, finished: settle order, archive ranges, triage | [46-add-finished.md](46-add-finished.md) | planned | 4 left |
+| 46 | `## Add`, finished: settle order, archive ranges, triage | [46-add-finished.md](46-add-finished.md) | planned | 3 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the

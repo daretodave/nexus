@@ -63,9 +63,6 @@ and their template twins; `skills/triage.md` and
 
 ## Acceptance
 
-- **A1** Within one settle run, adding files settle before
-  same-date closes, and a close of a chunk added in the same
-  run resolves after it is numbered, with tests.
 - **A2** Back-to-back closes in one worktree get archive
   ranges that don't overlap, and the plot commit is in
   neither, with tests.
@@ -82,13 +79,11 @@ and their template twins; `skills/triage.md` and
 (None.)
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 3 open · 1 closed · next A5
 
-- [ ] **46.1** Plots settle before same-date closes · S ·
-  closes A1 · needs —
 - [ ] **46.2** Archive ranges that don't cross · S · closes
   A2 · needs —
 - [ ] **46.3** The last refusals: section Chunks and
   Acceptance, footgun placeholders · S · closes A3 · needs —
 - [ ] **46.4** `/triage` extends the spec an issue belongs
-  to · M · closes A4 · needs 46.1
+  to · M · closes A4 · needs —
