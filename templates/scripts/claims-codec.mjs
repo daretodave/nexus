@@ -1,5 +1,6 @@
 // scripts/claims-codec.mjs: the rules of the `claims` branch's claims.json, which maps a chunk id to
-//   "<who>|<ip>|<host>|<ISO time>|s:<session>[|pr:<n>][|held:<login>][|b:<base>]"
+//   "<who>|<ip>|<host>|<ISO time>|s:<session>[~<star>][|pr:<n>][|held:<login>][|b:<base>]"
+// (~<star>: the session's ledger star name, when it has one; a session is matched by its id alone, never its star)
 // scripts/claims.mjs (a loop's claims, over git) imports it, and so can anything else that claims over another
 // transport (a team bot over the host's API, the local GUI), so every claimant obeys exactly a loop's rules: a claim
 // lives 24 h, a PR's claim lives until it merges, a held claim never goes stale, a spec and its chunks exclude each
@@ -14,6 +15,8 @@ export const PRIVILEGED = 'privileged_agent_session';
 export const TTL_MS = 24 * 60 * 60 * 1000;
 /** A chunk (06.24, 17.4c3d) or a spec being chunked (06). */
 export const CHUNK_ID = /^\d{2,}(\.\d+[a-z0-9]*)?$/;
+/** A ledger star name (vega, vega-2): what may follow ~ in a session tag. */
+export const STAR = /^[a-z]+(-\d+)?$/;
 
 /**
  * Why the host refused a claims push, from git's stderr: 'protected' (a branch ruleset or protection restricts
@@ -26,17 +29,21 @@ export function pushRefusal(stderr) {
   return 'other';
 }
 
-/** "who|ip|host|at|s:session|pr:n|held:login|b:base" → its parts. */
+/** "who|ip|host|at|s:session~star|pr:n|held:login|b:base" → its parts. An older tag with no ~star reads star ''. */
 export function parse(value) {
   const [who = '', ip = '', host = '', at = '', ...rest] = String(value).split('|');
   const field = (re) => rest.map((r) => re.exec(r)?.[1]).find(Boolean);
   const pr = field(/^pr:(\d+)$/);
-  return { who, ip, host, at, session: field(/^s:(.+)$/) ?? '', pr: pr ? Number(pr) : null, held: field(/^held:(.+)$/) ?? '', base: field(/^b:(.+)$/) ?? '' };
+  const tag = field(/^s:(.+)$/) ?? '';
+  const cut = tag.lastIndexOf('~');
+  const star = cut > 0 && STAR.test(tag.slice(cut + 1)) ? tag.slice(cut + 1) : '';
+  const session = star ? tag.slice(0, cut) : tag;
+  return { who, ip, host, at, session, star, pr: pr ? Number(pr) : null, held: field(/^held:(.+)$/) ?? '', base: field(/^b:(.+)$/) ?? '' };
 }
 
 export function format(c) {
   const extra = [
-    ...(c.session ? [`s:${c.session}`] : []),
+    ...(c.session ? [`s:${c.session}${c.star && STAR.test(c.star) ? `~${c.star}` : ''}`] : []),
     ...(c.pr ? [`pr:${c.pr}`] : []),
     ...(c.held ? [`held:${c.held}`] : []),
     ...(c.base && c.base !== 'main' ? [`b:${c.base}`] : []),
@@ -53,7 +60,7 @@ export function state(c, now = Date.now()) {
 }
 
 /**
- * Whether `me` holds this claim: the same claimant in the same session. A PR'd claim is also its author's on that
+ * Whether `me` holds this claim: the same claimant in the same session (by its id alone: a star never decides). A PR'd claim is also its author's on that
  * machine in any session (a later session carries the review); a claim with no session is its host's. A held claim is
  * its person's in any session on any machine: by their git name, or by their GitHub login (`me.login`), so the owner
  * can hold work for someone before knowing what their git name will be.
@@ -155,7 +162,10 @@ export function claimInto(map, ids, me, now, { force = false, base = '' } = {}) 
   return { ok: true, results, next: { map: next, message: `claim ${ids.join(', ')} · ${me.who}@${me.host}` } };
 }
 
-/** Restart the clock on these (or, with none named, all) of `me`'s claims: which, and `next` or null for none. */
+/**
+ * Restart the clock on these (or, with none named, all) of `me`'s claims: which, and `next` or null for none. A claim
+ * of this very session takes its star (one made before the session had a star gains it); any other keeps its own.
+ */
 export function renewIn(map, ids, me, now) {
   const next = { ...map };
   const done = [];
@@ -164,7 +174,7 @@ export function renewIn(map, ids, me, now) {
     if (ids.length && !ids.includes(id)) continue;
     const c = parse(v);
     if (!mine(c, me)) continue;
-    next[id] = format({ ...c, ip: me.ip, at });
+    next[id] = format({ ...c, ip: me.ip, at, star: (c.session === me.session && me.star) || c.star });
     done.push(id);
   }
   return { done, next: done.length ? { map: next, message: `renew ${done.join(', ')} · ${me.who}@${me.host}` } : null };

@@ -61,7 +61,40 @@ describe('the claims codec', () => {
     const c = { who: 'a|b', ip: '10.0.0.2', host: 'pc', at: at(1), session: 's1', pr: 7, held: 'x', base: 'main' };
     const v = codec.format(c);
     assert.equal(v, `a/b|10.0.0.2|pc|${at(1)}|s:s1|pr:7|held:x`);
-    assert.deepEqual(codec.parse(v), { ...c, who: 'a/b', base: '' });
+    assert.deepEqual(codec.parse(v), { ...c, who: 'a/b', base: '', star: '' });
+  });
+
+  it('carries the star name in the session tag; an old tag without one still parses', () => {
+    const c = { who: 'a', ip: '10.0.0.2', host: 'pc', at: at(1), session: '9f2c41aa', star: 'vega', pr: null, held: '', base: '' };
+    const v = codec.format(c);
+    assert.equal(v, `a|10.0.0.2|pc|${at(1)}|s:9f2c41aa~vega`);
+    assert.deepEqual(codec.parse(v), c);
+    const old = codec.parse(`a|ip|pc|${at(1)}|s:9f2c41aa|pr:3`);
+    assert.deepEqual([old.session, old.star, old.pr], ['9f2c41aa', '', 3]);
+    assert.equal(codec.parse(`a|ip|pc|${at(1)}|s:x1~vega-2|held:z`).star, 'vega-2');
+    // A session name of the user's own with a ~ in it stays whole when what follows is no star name.
+    const own = codec.parse(`a|ip|pc|${at(1)}|s:sam~1`);
+    assert.deepEqual([own.session, own.star], ['sam~1', '']);
+    assert.equal(codec.format({ ...c, star: '' }), `a|10.0.0.2|pc|${at(1)}|s:9f2c41aa`);
+  });
+
+  it('matches a session by its id alone, so a star appearing later never orphans a claim', () => {
+    const plain = dev('alex');
+    const starred = { ...plain, star: 'vega' };
+    const old = { '44.4': entry(plain, 5), '44.5': entry(dev('sam'), 5) };
+    assert.equal(codec.mine(codec.parse(old['44.4']), starred), true);
+    assert.equal(codec.mine(codec.parse(entry(starred, 5)), plain), true);
+    assert.equal(codec.mine(codec.parse(entry(starred, 5)), { ...starred, session: 'other' }), false);
+    assert.deepEqual(codec.claimInto({ ...old }, ['44.4'], starred, NOW).results.map((r) => r.why), ['yours']);
+    assert.equal(codec.parse(codec.claimInto({}, ['44.6'], starred, NOW).next.map['44.6']).star, 'vega');
+    const r = codec.renewIn({ ...old }, [], starred, NOW);
+    assert.deepEqual(r.done, ['44.4']);
+    const renewed = codec.parse(r.next.map['44.4']);
+    assert.deepEqual([renewed.session, renewed.star], ['alex-s1', 'vega']);
+    assert.deepEqual(codec.releaseFrom({ ...old }, ['44.4', '44.5'], starred).gone, ['44.4']);
+    // A PR's claim carried by a later session keeps the star of the session that made it.
+    const pr = { '44.7': entry({ ...plain, session: 'old-s', star: 'rigel' }, 5, { pr: 4 }) };
+    assert.equal(codec.parse(codec.renewIn(pr, [], starred, NOW).next.map['44.7']).star, 'rigel');
   });
 
   it('is live for 24 h, then stale; a PR or a hold never goes stale', () => {
