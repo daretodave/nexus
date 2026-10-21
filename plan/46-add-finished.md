@@ -69,21 +69,15 @@ and their template twins; `skills/triage.md` and
 - **A3** Settle refuses `section Chunks` and `section
   Acceptance`, and checks and numbers placeholders in
   `## Footguns` lines, with tests.
-- **A4** `/triage` (nexus's and the template) files an issue
-  inside an open spec as an `## Add` to it, says "Already in
-  PR #N" when an open PR covers it, and routes the rest as
-  before.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 3 open · 1 closed · next A5
+Measure: 2 open · 2 closed · next A5
 
 - [ ] **46.2** Archive ranges that don't cross · S · closes
   A2 · needs —
 - [ ] **46.3** The last refusals: section Chunks and
   Acceptance, footgun placeholders · S · closes A3 · needs —
-- [ ] **46.4** `/triage` extends the spec an issue belongs
-  to · M · closes A4 · needs —

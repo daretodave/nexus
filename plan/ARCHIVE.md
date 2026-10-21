@@ -133,3 +133,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 42.8 · the vault, its key cards, import and onboarding step drawn in the GUI · bba54560..85799bdb
 - 2026-10-21 · 42 · spec complete: secrets declared by name in nexus.secrets.json, kept in a two-ring or keychain vault, run and pushed through stdin, guarded in hook and gate, parked and requested by /next, and drawn in the GUI's vault · da5cc180..85799bdb
 - 2026-10-21 · 46.1 · plots settle before same-date closes; a close waits for its Add · d81f96ce..ab067f4c
+- 2026-10-21 · 46.4 · /triage files an issue inside an open spec as an ## Add to it · c07cdb20..2057bc24
