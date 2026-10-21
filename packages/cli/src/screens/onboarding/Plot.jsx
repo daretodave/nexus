@@ -172,7 +172,8 @@ export default function Plot() {
           {showText ? (
             <textarea
               className="thoughts" aria-label="Your messy thoughts" autoFocus={editing}
-              style={{ border: 0, resize: 'none', font: 'inherit', fontSize: 14, lineHeight: '23px', color: 'var(--text)' }}
+              // The Plot board's thoughts box is ~440px tall; keep that size before any idea cards stretch the row.
+              style={{ border: 0, resize: 'none', font: 'inherit', fontSize: 14, lineHeight: '23px', color: 'var(--text)', minHeight: 'min(440px, 48vh)' }}
               value={thoughts} onChange={(e) => patch({ thoughts: e.target.value })}
               onBlur={() => { if (ideas.length) setEditing(false); }}
               placeholder="ideas, bugs, half-plans, in any order"

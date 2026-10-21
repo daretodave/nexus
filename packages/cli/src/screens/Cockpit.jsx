@@ -210,7 +210,7 @@ export default function Cockpit() {
       />
     );
   } else {
-    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} /> : (
+    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} pinned={ledger?.pinned?.text} /> : (
       <div className="convo" aria-live="polite">
         <Empty sky="quiet" title="Quiet so far" body="What this session says and does shows up here as it works. Nudge it below, or type / for commands." />
       </div>

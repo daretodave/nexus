@@ -114,7 +114,8 @@ export function Composer({
   if (slash.length) hint = <><Kbd>esc</Kbd>close</>;
   else if (pin) hint = <><Kbd>⏎</Kbd>pin</>;
   else if (meta) hint = <><Kbd>⏎</Kbd>{route === 'plot' && plotMode === 'do' ? 'plan it and do it' : meta.hint}</>;
-  else if (!paused && !text) hint = <><Kbd>/</Kbd>commands<Kbd>⏎</Kbd>send</>;
+  // Docked in the cockpit the idle hint is just / commands (Cockpit board); the Composer board's free-standing one adds ⏎ send.
+  else if (!paused && !text) hint = dock ? <><Kbd>/</Kbd>commands</> : <><Kbd>/</Kbd>commands<Kbd>⏎</Kbd>send</>;
 
   return (
     <div className={cx('composer', focus && 'is-focus', pin && 'is-pin', paused && 'is-disabled', dock && hasRoute && 'has-route')}>
@@ -146,7 +147,7 @@ export function Composer({
           </>
         )}
         <span className="spacer" />
-        {hint ? <span className="composer-hint">{hint}</span> : null}
+        {hint ? <span className={cx('composer-hint', dock && 'tb-long')}>{hint}</span> : null}
         {paused && onResume ? <button className="btn btn-s" type="button" onClick={onResume}><Icon name="play" size={14} />Resume</button> : null}
         <button className="send" type="button" aria-label={pin ? 'Pin note' : 'Send'} disabled={paused || !text.trim()} onClick={send}><Icon name="arrowUp" /></button>
       </div>

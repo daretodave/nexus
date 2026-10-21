@@ -90,7 +90,7 @@ function PermissionTug({ req, who }) {
   );
 }
 
-export default function Working({ live }) {
+export default function Working({ live, pinned }) {
   const { stage, transcript, asks, permissions, status } = live;
   const items = convoItems(transcript, stage);
   const busy = status?.state === 'running';
@@ -107,7 +107,7 @@ export default function Working({ live }) {
   return (
     <div className="convo" aria-live="polite">
       {items.map((m) => (m.you
-        ? <MsgYou key={m.key} time={m.time || ''} text={m.text} />
+        ? <MsgYou key={m.key} time={m.time || ''} text={m.text} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
         : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} />))}
       {asks.map((a) => <AskTugs key={a.id} ask={a} who={nameOf(a.agent)} />)}
       {permissions.map((p) => <PermissionTug key={p.id} req={p} who={nameOf(p.agent)} />)}

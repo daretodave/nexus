@@ -102,7 +102,11 @@ export function headsRows(m) {
   const stage = live?.stage || { agents: {}, order: [], chunks: {}, chunkOrder: [] };
   const transcript = live?.transcript || [];
   const name = L0.name || 'session';
-  const mode = info.owner ? 'owner' : 'contributor';
+  // The ledger's own mode and repo win, as in the cockpit (isOwner): a session can run
+  // contributor-style in an owner checkout when owner mode is switched off.
+  const owner = L0.mode ? L0.mode === 'owner' : !!info.owner;
+  const mode = owner ? 'owner' : 'contributor';
+  const repoName = L0.repo || info.name || 'repo';
   const git = L0.git || {};
   const chunk = L0.chunk || (stage.current ? { id: stage.current } : null);
   const chunkTitle = chunk ? (chunk.title || titles[chunk.id] || '') : '';
@@ -113,7 +117,7 @@ export function headsRows(m) {
     const r = row();
     r.fill(0, WIDTH, '─', 'b');
     r.seq(0, [['b', '╭─ '], ['a', 'nexus'], ['k', ' heads-down'], ['b', ' ']]);
-    const right = [['a', name], ['d', ' · '], ['k', info.name || 'repo'], ['d', ' · '], ['k', mode], ['d', ' · '], ['h', clock(now)], ['b', ' ─╮']];
+    const right = [['a', name], ['d', ' · '], ['k', repoName], ['d', ' · '], ['k', mode], ['d', ' · '], ['h', clock(now)], ['b', ' ─╮']];
     const w = right.reduce((n, s) => n + len(s[1]), 0);
     r.put(WIDTH - w - 1, ' ', 'b');
     r.seq(WIDTH - w, right);
@@ -170,7 +174,7 @@ export function headsRows(m) {
     r.seq(PHASE_COL[1], segs.map((s) => [s[0], s[1]]));
     const parkedN = L0.parked?.length;
     r.put(PHASE_COL[2], parkedN != null ? `${parkedN} parked` : DASH, parkedN ? 'ask' : 'd');
-    const pkg = L0.package?.stacksOn ? `stacks on #${L0.package.stacksOn}` : info.owner ? 'lands on main' : 'one PR';
+    const pkg = L0.package?.stacksOn ? `stacks on #${L0.package.stacksOn}` : owner ? 'lands on main' : 'one PR';
     r.put(PHASE_COL[3], pkg, 'd');
     rows.push(r);
   }

@@ -241,3 +241,17 @@ test('the nexus.css cascade repair wraps exactly the two element resets', async 
   assert.ok(!out.includes('.nx button, .nx input, .nx textarea, .nx select {'));
   assert.equal(out.length - css.length, ':where(.nx) :where(button, input, textarea, select) {'.length - '.nx button, .nx input, .nx textarea, .nx select {'.length + ':where(.nx) :focus-visible {'.length - '.nx :focus-visible {'.length);
 });
+
+test('a note you pinned keeps its pinned flag in the conversation', async () => {
+  const { convoItems } = await import('../src/screens/cockpit/model.js');
+  const items = convoItems([{ kind: 'user', text: 'keep merge.ts pure', pinned: true }, { kind: 'user', text: 'and fast' }], null);
+  assert.deepEqual(items.map((m) => m.pinned), [true, false]);
+});
+
+test('the fonts are never inlined, so the page CSP (font-src self) loads every subset', async () => {
+  const cfg = (await import('../vite.config.mjs')).default;
+  const inline = cfg.build.assetsInlineLimit;
+  assert.equal(inline('x/jetbrains-mono-vietnamese-400-normal.woff2'), false);
+  assert.equal(inline('x/fira-sans-latin-400-normal.woff'), false);
+  assert.equal(inline('x/icon.svg'), undefined);
+});

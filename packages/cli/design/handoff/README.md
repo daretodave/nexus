@@ -63,3 +63,26 @@ its own render shows, both found in the night fidelity review:
   heads-down canvas's 120-column rows off their frame.
   `src/styles/mono-symbols.css` serves only those ranges from the full
   JetBrains Mono webfonts (`jetbrains-mono@1.0.6`, OFL-1.1).
+
+## The dawn fidelity review
+
+The paper-at-dawn pass rendered every board with `theme="light"` and
+every screen in light with fixtures standing in for the missing
+endpoints, then compared text, type and contrast element by element.
+`nexus.css`'s light tokens are the only theme difference in the
+handoff, and they ship verbatim, so the dawn render matched: every
+low-contrast run of text in the app (the 11px `c-3` captions, the
+skipped train cars) is the same ratio in the boards. What it fixed is
+theme-agnostic:
+
+- **Fonts and the CSP.** Vite inlined JetBrains Mono's small
+  cyrillic-ext and vietnamese subsets as `data:` URIs, which the
+  page's `font-src 'self'` refused. Fonts are never inlined now.
+- **The docked composer** reads `/ commands` (with `.tb-long`) as the
+  Cockpit board draws it; the free-standing Composer keeps `⏎ send`.
+- **A pinned note** in the conversation carries the board's
+  "Pinned · read on the next step" tag.
+- **Heads-down** names the session's own repo and mode from its
+  ledger, as the cockpit does.
+- **Plot's empty thoughts box** keeps the board's ~440px height
+  instead of collapsing to two lines before any idea card exists.
