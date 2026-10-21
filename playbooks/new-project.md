@@ -392,7 +392,7 @@ table:
   other shapes"; step 4 never copies `.github/`, so only the
   skill + command file are at stake here).
 - `skills/bootstrap.md` + `.claude/commands/bootstrap.md` +
-  `scripts/bootstrap.mjs` — remove unless you plan to run
+  `scripts/bootstrap.mjs` (and its test) — remove unless you plan to run
   `/bootstrap` as the setup executor.
 
 For every one of the six above you remove, also strip its row
@@ -441,6 +441,7 @@ including their `agents.md` rows:
 rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
       skills/ship-asset.md .claude/agents/brander.md skills/moderate.md \
       skills/digest.md skills/bootstrap.md scripts/bootstrap.mjs \
+      scripts/__tests__/bootstrap.test.mjs \
       scripts/refresh-critique-session.mjs scripts/check-secrets-liveness.mjs \
       scripts/stack-lifecycle.mjs scripts/upgrade-plan.mjs \
       scripts/__tests__/upgrade-plan.test.mjs scripts/__tests__/upgrade-plan-run.test.mjs \
@@ -463,6 +464,7 @@ sed -i.bak \
 Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migration.md, `
   scripts\lint-migration.mjs, skills\ship-asset.md, .claude\agents\brander.md, skills\moderate.md, `
   skills\digest.md, skills\bootstrap.md, scripts\bootstrap.mjs, `
+  scripts\__tests__\bootstrap.test.mjs, `
   scripts\refresh-critique-session.mjs, scripts\check-secrets-liveness.mjs, `
   scripts\stack-lifecycle.mjs, scripts\upgrade-plan.mjs, `
   scripts\__tests__\upgrade-plan.test.mjs, scripts\__tests__\upgrade-plan-run.test.mjs, `
