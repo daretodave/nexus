@@ -130,9 +130,6 @@ the vault arrives):
 
 ## Acceptance
 
-- **A13** The GUI server lists names and status, takes a value
-  through a masked POST into the vault and sinks, and masks
-  vault values in every transcript it serves or logs.
 - **A14** The GUI draws the vault, the secret request card,
   the import, the contributor view, the onboarding step, the
   board's key badge and the audit timeline from the owner's
@@ -144,12 +141,10 @@ the vault arrives):
 on 2026-10-21; the keychain is opt-in.)
 
 ## Chunks
-Measure: 2 open · 13 closed · next A16
+Measure: 1 open · 14 closed · next A16
 
-- [ ] **42.7** The GUI server's secrets API and transcript
-  masking · M · closes A13 · needs —
 - [ ] **42.8** The vault in the GUI, from the design export ·
-  L · closes A14 · needs 42.7
+  L · closes A14 · needs —
   - The export arrived 2026-10-21 (the handoff's second
     revision): Vault, VaultImport, VaultContributor,
     VaultKit, Secrets and SecretsContributor (onboarding step
