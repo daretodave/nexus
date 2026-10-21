@@ -202,7 +202,7 @@ const REVERSE_CHECK_DIRS = [
   'templates/claude/commands', 'templates/claude/agents',
   'templates/plan', 'templates/workspace',
   'templates/.github', 'templates/data',
-  'templates/setup', 'templates/env',
+  'templates/setup', 'templates/env', 'templates/identity',
 ]
 
 function legTree() {
@@ -551,7 +551,7 @@ const DOGFOOD_TWINS = [
   'plan/progress.mjs', 'plan/order.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
 ]
 
-function legScripts() {
+async function legScripts() {
   const failures = []
   const text = (rel) => fs.existsSync(path.join(ROOT, rel)) ? fs.readFileSync(path.join(ROOT, rel), 'utf-8').replace(/\r\n/g, '\n') : null
   for (const f of DOGFOOD_TWINS) {
@@ -559,6 +559,13 @@ function legScripts() {
     const own = text(`scripts/${f}`)
     if (kit === null || own === null) failures.push(`scripts/${f} and templates/scripts/${f}: both must exist (nexus dogfoods the template)`)
     else if (kit !== own) failures.push(`scripts/${f} differs from templates/scripts/${f}: copy the template over it (or the fix into both)`)
+  }
+  // The footgun lists (the template adopters copy, and nexus's own)
+  // stay in the format and budget settle enforces.
+  const { lintFootguns } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/footguns.mjs')).href)
+  for (const f of ['templates/identity/footguns.md', 'identity/footguns.md']) {
+    if (!fs.existsSync(path.join(ROOT, f))) failures.push(`${f}: missing (the identity layer's footgun list)`)
+    else failures.push(...lintFootguns(read(f), f))
   }
   // The guard hook (nexus's own and the template) is a gate too: its
   // self-test runs every rule against canned commands.
@@ -570,7 +577,7 @@ function legScripts() {
     }
   }
   const suites = runSuites(PURE_SUITES, 'pure')
-  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length} dogfood twins match; 2 guard self-tests green` }
+  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length} dogfood twins match; 2 guard self-tests green; 2 footgun lists lint clean` }
 }
 
 function runSuites(suites, label) {

@@ -459,7 +459,8 @@ nexus/
 │   ├── external-services.md           # the setup/ paradigm — pre-flight every dashboard
 │   ├── bootstrap-automation.md        # the executor that drives provider CLIs end-to-end (paired with external-services.md)
 │   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
-│   └── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
+│   ├── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
+│   └── identity-layer.md              # identity/ + the footgun ladder (seen twice -> automate); the alternative
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
 │   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md)
 │   ├── heads-down.md                  # /heads-down — ask up front, then loop /next for hours
@@ -472,6 +473,7 @@ nexus/
 │   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
 ├── plan/                              # nexus's OWN state files (roadmap, specs + chunks, archive, queues)
+├── identity/                          # nexus's OWN identity layer: footguns.md (the ladder) + decisions/
 ├── .claude/                           # nexus's OWN commands + settings.json + guard hook
 ├── .github/                           # nexus's OWN cloud loop (march.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml
 ├── packages/
@@ -494,6 +496,12 @@ nexus/
     │   ├── reflexes.md                # ≤50-line always-read core (adopt-by-need)
     │   ├── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
     │   └── CURRENT-STATE.md           # brownfield retrofit only (adopt-by-need)
+    ├── identity/                      # → repo's identity/ (adopt-by-need): what outlives the plan
+    │   ├── README.md                  # the rules: principles, decisions, glossary, footgun ladder
+    │   ├── principles.md              # P# promises
+    │   ├── decisions/README.md        # D# format (settle writes decisions/<year>.md)
+    │   ├── glossary.md
+    │   └── footguns.md                # Open / Watch / Guarded; seen twice -> automate
     ├── skills/                        # → repo's skills/
     │   ├── next.md                     # one chunk, done fully: claim, delegated build, gate, pending close, land
     │   ├── next/build.md               # /next's build detail: worktree, builder brief, Workflow shape

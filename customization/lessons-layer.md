@@ -17,6 +17,11 @@
 
 ## When to adopt
 
+(The alternative for a team, or for traps that should become
+automation rather than prose:
+[`identity-layer.md`](./identity-layer.md), `identity/` and
+the footgun ladder. Adopt one or the other.)
+
 You want this when a project has run its loop long enough to
 accumulate real lessons (post-incident learnings, "the gate
 should have caught this," recurring taste corrections) and

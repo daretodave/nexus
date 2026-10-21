@@ -214,6 +214,7 @@ verbs — a docs kit ships docs, not pages.
 | Who builds which chunk | `npm run claims -- list` (`customization/claims.md`) |
 | What already shipped | `plan/ARCHIVE.md` (one line per chunk; phases 1–33 too) |
 | The plan shape | `concepts/plan-shape.md`; `plan/nexus.lock` |
+| Traps hit building the kit | `identity/footguns.md` (Open lines, before building; `customization/identity-layer.md`) |
 | Open findings | `plan/AUDIT.md` |
 | Critique queue | `plan/CRITIQUE.md` |
 | Phase candidates | `plan/PHASE_CANDIDATES.md` |

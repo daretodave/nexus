@@ -25,6 +25,12 @@ templates/
 │   ├── reflexes.md                    (omit unless the lessons layer is adopted; see below)
 │   ├── lessons.md                     (omit unless the lessons layer is adopted; see below)
 │   └── CURRENT-STATE.md               (brownfield retrofit only; see existing-project.md)
+├── identity/                          → repo's identity/ (adopt-by-need: the identity layer + footgun ladder)
+│   ├── README.md                      (the rules: principles, decisions, glossary, the footgun ladder)
+│   ├── principles.md                  (P# promises, ≤ 40 active)
+│   ├── decisions/README.md            (the D# format; settle writes decisions/<year>.md)
+│   ├── glossary.md                    (the project's words)
+│   └── footguns.md                    (Open / Watch / Guarded, one line per trap; merge=union)
 ├── skills/                            → repo's skills/
 │   ├── next.md                        (one chunk, done fully: pick, claim, delegated build, gate, pending close, land per owner mode)
 │   ├── next/build.md                  (/next's delegated build: worktree, builder brief, Workflow shape, harvest)
@@ -209,6 +215,7 @@ the corresponding capability:
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 | `scripts/install-hooks.mjs` | You want `pnpm verify` to run automatically on hand commits made outside the loop, and (with `scripts/git/push-policy.mjs`) a push to main refused outside owner mode. Opt-in — run it once per checkout (`node scripts/install-hooks.mjs`; `--only pre-push` for just the policy) to arm the `pre-commit` and `pre-push` hooks; `--uninstall` removes them. See `nexus/customization/verify-gate.md` + `nexus/playbooks/owner-mode.md`. |
 | `scripts/announce.mjs` + `scripts/ledger.mjs` + `scripts/worktree.mjs` + `skills/tidy.md` + `skills/rebooting.md` + `skills/reboot-ready.md` + `skills/reboot-resume.md` (+ their commands) | More than one session runs on one machine (two `/heads-down` loops, the GUI): a notice board, a live ledger per session, safe worktree closes. See `nexus/customization/sessions.md`. |
+| `identity/` (all five files) + `identity/footguns.md merge=union` in `.gitattributes` | Specs close often and more than one person or loop builds: lasting rules need a home, and a trap seen twice should become automation (settle runs the ladder). The alternative to `plan/reflexes.md` + `plan/lessons.md`; adopt one. See `nexus/customization/identity-layer.md`. |
 | `plan/reflexes.md` + `plan/lessons.md` | The loop has run long enough to accumulate real recurring lessons and a single `NEXUS_LESSONS.md` scratch file no longer scales. See `nexus/customization/lessons-layer.md`. |
 
 If your `bearings.md` declares `Surface: service / library /
