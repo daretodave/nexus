@@ -418,6 +418,8 @@ export function main(argv, { cwd = process.cwd(), env = process.env, out = conso
     case 'whoami':
       if (!me.owner) me.login = ghLogin(env);
       say(me, `${me.owner ? 'owner' : 'contributor'} · claims as ${me.who}${me.login ? ` (@${me.login})` : ''} · session ${me.session} · ${me.host} · ${me.ip}`);
+      // A pid session dies with this shell: a later terminal can't renew or release what it claims.
+      if (!session && !env.NEXUS_SESSION && !env.CLAUDE_CODE_SESSION_ID) err(`claims: session ${me.session} is this shell's parent process, so a later terminal can't renew its claims; set NEXUS_SESSION (any name you'll reuse) to keep one.`);
       return 0;
     case 'list': {
       const { map } = fetchClaims(cwd);

@@ -192,4 +192,25 @@ describe('the CLI', () => {
     assert.equal(redrawBoard({ env: { NEXUS_CLAIMS_BOARD: 'board.yml' }, run: (...x) => (calls.push(x), { status: 0 }) }), true);
     assert.deepEqual(calls[0][1], ['workflow', 'run', 'board.yml', '--ref', 'main']);
   });
+
+  it('whoami warns on stderr, in one line naming NEXUS_SESSION, when the session falls back to the parent pid', () => {
+    const say = (extra, argv = ['whoami']) => {
+      const out = [];
+      const err = [];
+      const code = main(argv, { cwd: a, env: env(extra), out: (t) => out.push(t), err: (t) => err.push(t) });
+      return { code, out: out.join('\n'), err };
+    };
+    const bare = say({ NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: '' });
+    assert.equal(bare.code, 0);
+    assert.match(bare.out, /session pid\d+/);
+    assert.equal(bare.err.length, 1);
+    assert.doesNotMatch(bare.err[0], /\n/);
+    assert.match(bare.err[0], /NEXUS_SESSION/);
+    const json = say({ NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: '' }, ['whoami', '--json']);
+    assert.match(JSON.parse(json.out).session, /^pid\d+$/);
+    assert.equal(json.err.length, 1);
+    assert.deepEqual(say({}).err, []);
+    assert.deepEqual(say({ NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: 'abcdef123456' }).err, []);
+    assert.deepEqual(say({ NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: '' }, ['whoami', '--session', 'mine']).err, []);
+  });
 });
