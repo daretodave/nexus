@@ -180,6 +180,7 @@ invoke a skill that does the right thing end-to-end.
 | `bug` | `skills/bug.md` | Reproduce; fix now through `/plot asap … and do` (planned, built, archived), or plot it. |
 | `messy` | `skills/messy.md` | A raw dump (kept untracked in `plan/messy/`) clustered into themes and refined into specs through a pending file; the GUI's explode. |
 | `tidy` | `skills/tidy.md` | Clear claims nobody works on; offer idle worktrees and merged branches in one question. |
+| `design` | `skills/design.md` | Opt-in: the Claude Design paste prompt from the plan, and addenda numbered on (`scripts/design/prompt.mjs`). |
 | `rebooting` | `skills/rebooting.md` | The reboot train, from the owner's terminal: announce, ack, one resume line per loop. |
 | `reboot-ready` | `skills/reboot-ready.md` | Inside a loop: park now (children stopped, work and claims kept, ledger written). |
 | `reboot-resume` | `skills/reboot-resume.md` | Pick a parked or fallen loop up from its ledger and carry on. |

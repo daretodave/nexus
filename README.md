@@ -271,6 +271,7 @@ them:
 |---|---|
 | `/ship-asset` | Render and ship one brand asset (OG image, favicon, social card, SVG → PNG, wordmark variant), for `Surface: site` / `hybrid` (see [`customization/branding.md`](./customization/branding.md)). Demand-pull only — drains asset findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. Omit the file if not adopting. |
 | `/moderate` | Drain the four moderation queues (`held`/`flagged`/`new-account`/`appeal`) one item per tick — approve/hide is loop-drainable, delete/ban always escalates to `/oversight`. Adopt only for UGC projects (see [`customization/moderation-loop.md`](./customization/moderation-loop.md)); omit the file otherwise. |
+| `/design` | The Claude Design round trip: `prompt` writes the paste prompt from the plan (design system first, screens, states, roles), `addendum` only what changed since, numbered on. Opt-in: only when the owner designs in Claude Design (see [`playbooks/design-handoff.md`](./playbooks/design-handoff.md)); omit the file otherwise. |
 
 Plus specialist sub-agents the main agent delegates to: `scout`
 (open-web research), `reader` (live-site observer), `brander`
@@ -548,6 +549,7 @@ nexus/
 │   ├── plot.md                        # /plot — a task into the plan with its place in line (+ bug.md: /bug)
 │   ├── messy.md                       # /messy — a raw dump into specs (the GUI's explode)
 │   ├── tidy.md                        # /tidy — clear dead claims, close idle worktrees (worktree.mjs)
+│   ├── design.md                      # /design — the Claude Design prompt and addenda (scripts/design/prompt.mjs)
 │   ├── rebooting.md                   # /rebooting, /reboot-ready, /reboot-resume — the reboot train
 │   ├── march.md                       # + ship-a-chunk (/next's build steps), iterate, critique,
 │   │                                  #   triage, expand, oversight, jot
@@ -600,6 +602,7 @@ nexus/
     │   ├── ship-migration.md           # omit unless Structured data: pure-db / hybrid-with-managed-postgres
     │   ├── ship-asset.md               # omit unless Surface: site / hybrid
     │   ├── moderate.md                 # omit unless UGC (see customization/moderation-loop.md)
+    │   ├── design.md                   # omit unless you design in Claude Design: prompt, addendum
     │   ├── plan-a-spec.md
     │   ├── iterate.md
     │   ├── critique.md
