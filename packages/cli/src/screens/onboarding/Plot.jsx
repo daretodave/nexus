@@ -3,7 +3,10 @@
 // the kept ones as planned chunks on the right, each with a place in line.
 // The explode and plot calls are not served yet: until they are, the
 // middle column says so and offers /messy, which plots the same thoughts
-// in a session instead. Nothing here is planned until it is written.
+// in a session instead, and renders its themes as cards as its report
+// streams in, each with its /plot line as the action (themes.js reads the
+// report; /messy's Step 6 pins its shape). Nothing here is planned until
+// it is written.
 import { useMemo, useState } from 'react';
 import { Icon, Kbd, ChoiceButtons, SizeTag, useShell } from '../../ui/index.js';
 import { server } from '../../data/index.js';
@@ -11,6 +14,7 @@ import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls, notServed } from './calls.js';
+import { messyReport } from './themes.js';
 
 const PLACES = [
   { value: 'asap', label: 'asap', asap: true },
@@ -61,7 +65,7 @@ function planFrom(ideas, place, specN) {
 }
 
 export default function Plot() {
-  const { owner } = useShell();
+  const { owner, live } = useShell();
   const [d, patch] = useDraft();
   const [merging, setMerging] = useState(null);
   const [again, setAgain] = useState(false);
@@ -69,6 +73,9 @@ export default function Plot() {
   const [state, setState] = useState(null); // null | 'missing' | { error }
   const [editing, setEditing] = useState(false);
   const [plotErr, setPlotErr] = useState(null);
+  const [plotted, setPlotted] = useState({}); // theme plot line -> 'sending' | 'sent' | { error }
+  const report = useMemo(() => (d.messy ? messyReport(live?.transcript || []) : { sent: false, done: false, themes: [] }), [d.messy, live?.transcript]);
+  const themes = report.themes;
 
   const thoughts = d.thoughts ?? d.building ?? '';
   const ideas = d.ideas || [];
@@ -121,6 +128,17 @@ export default function Plot() {
       setState({ error: e.message });
     } finally {
       setBusy(false);
+    }
+  };
+
+  const plotTheme = async (t) => {
+    if (plotted[t.plot]) return;
+    setPlotted((p) => ({ ...p, [t.plot]: 'sending' }));
+    try {
+      await server.send(t.plot);
+      setPlotted((p) => ({ ...p, [t.plot]: 'sent' }));
+    } catch (e) {
+      setPlotted((p) => ({ ...p, [t.plot]: { error: e.message } }));
     }
   };
 
@@ -194,9 +212,9 @@ export default function Plot() {
 
         <div className="plot-col">
           <div className="plot-col-h">
-            <span className="t-title-s">{ideas.length} ideas</span>
+            <span className="t-title-s">{d.messy && !ideas.length ? `${themes.length} themes` : `${ideas.length} ideas`}</span>
             <span className="tb-spacer" style={{ flex: 1 }} />
-            <span className="cap">{counts}</span>
+            <span className="cap">{d.messy && !ideas.length ? (report.done ? 'from /messy' : report.sent ? '/messy is working' : '') : counts}</span>
           </div>
           {merging ? <div className="t-body-s" style={{ color: 'var(--accent)' }}>Pick the card to merge “{mergingT}” into.</div> : null}
           {state === 'missing' && !d.messy ? (
@@ -211,7 +229,31 @@ export default function Plot() {
           {d.messy ? (
             <div className="lands" role="status">
               <Icon name="check" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--st-done)' }} />
-              <span><b>Sent to /messy.</b> Your thoughts are saved raw and plotted in the session. Its specs and chunks show up on the plan board as they land.</span>
+              <span><b>Sent to /messy.</b> Your thoughts are saved raw and plotted in the session. {themes.length ? 'Each theme is a card below: plot it to give it its place in line.' : 'Its themes show up here as cards, and its specs on the plan board as they land.'}</span>
+            </div>
+          ) : null}
+          {d.messy && themes.length ? (
+            <div className="ideas">
+              {themes.map((t, i) => {
+                const st = plotted[t.plot];
+                const tag = st === 'sent' ? 'sent to /plot' : t.kind === 'built' ? 'already built' : t.kind === 'extends' ? `extends ${t.spec || 'a spec'}` : t.spec ? `spec ${t.spec}` : (t.became || '');
+                return (
+                  <div key={`${t.title}
+${t.plot}`} className={st === 'sent' ? 'idea is-kept' : t.kind === 'built' ? 'idea is-merged' : 'idea'} style={{ '--d': `${i * 70}ms` }}>
+                    <div className="idea-t">{t.title}</div>
+                    <div className="idea-q" title={t.became ? `${t.became} · ${t.plot}` : t.plot}><code>{t.plot}</code></div>
+                    {st?.error ? <div className="t-body-s" role="alert" style={{ color: 'var(--st-blocked)' }}>Not sent: {st.error}</div> : null}
+                    <div className="idea-acts">
+                      {st === 'sent' ? null : (
+                        <button className="btn btn-ghost" type="button" onClick={() => plotTheme(t)} disabled={st === 'sending'} aria-busy={st === 'sending' || undefined} aria-label={`Plot ${t.title}`}>
+                          <Icon name="arrowRight" size={14} />Plot it
+                        </button>
+                      )}
+                      <span className="idea-tag">{tag}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : null}
           {state?.error ? <div className="t-body-s" role="alert" style={{ color: 'var(--st-blocked)' }}>That did not work: {state.error}</div> : null}

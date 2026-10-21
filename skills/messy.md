@@ -91,11 +91,15 @@ main (or the PR) holds the specs; close the worktree with
 
 ### Step 6 — Report
 
-Per theme, one line: what it became (spec NN, an extension of
-NN, already built at <path>), and a ready `/plot` line to slot
-it (`/plot asap "…"`): the GUI renders each theme as a card
-with that action. Then the top 3 decisions recommended, and
-the open questions only the owner can answer.
+Per theme, one line in this shape: the GUI parses each into a
+card with its `/plot` line as the action.
+
+```
+- **<theme>** · <spec NN | extends NN | built at <path>> · `/plot asap "…"`
+```
+
+Then the top 3 decisions recommended, and the open questions
+only the owner can answer.
 
 ## 4. Hard rules
 

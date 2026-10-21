@@ -1,0 +1,16 @@
+Saved raw to plan/messy/2026-10-21-onboarding-gripes.md and landed plan/pending/messy-onboarding-gripes.md.
+
+Four themes:
+
+- **Faster first run** · spec 44 · `/plot asap "cut the first-run wait under ten seconds"`
+- **Dark mode flicker** · extends 40 · `/plot anytime "stop the dawn flash on load"`
+- **Export the board** · built at packages/cli/src/screens/board/ · `/plot "export the plan board as markdown"`
+1. Offline docs: spec 45 (plan only) — `/plot worked out "bundle the docs for offline reading"`
+- **Faster first run** · spec 44 · `/plot asap "cut the first-run wait under ten seconds"`
+
+Top 3 decisions recommended:
+1. Ship 44 first; it unblocks the rest.
+2. Keep `/plot` lines short.
+3. Leave export alone.
+
+Open questions: should offline docs ship in the npm package?

@@ -17,8 +17,10 @@ You need no API key.
   and signed in, `gh`, the git remote, whether nexus is adopted);
   Shape (owner or contributor checkout, and how `/next` builds: by
   size, sub-agents, workflows); Plot (a dump of messy thoughts, sent
-  to `/messy`); the cloud loop; and Launch, which opens the first
-  session's cockpit.
+  to `/messy`, which the GUI calls explode: its themes come back as
+  cards, each with the `/plot` line from its report, one click to
+  send); the cloud loop; and Launch, which opens the first session's
+  cockpit.
 - **Fleet**: every live session on this machine as a tile with its
   star name (vega, sirius, deneb, altair), its phase, chunk and git
   strip: the session ledgers plus Claude Code's own session files for
