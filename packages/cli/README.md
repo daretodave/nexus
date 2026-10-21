@@ -47,6 +47,10 @@ You need no API key.
   hook handed it over: the line dashes) and applied (the session's
   next reply or ledger beat after that: a quiet line, for ten
   minutes). Each open question shows its age and the session's star.
+  A live question waits six minutes, counting down on its tug, then
+  the session takes its default (the recommended option, else the
+  first) and says so. Tool rows show their diffstat and how long they
+  took, and a Workflow call draws the junction its agents hang from.
 - **Heads-down**: the session as a 120-column terminal view.
 - **Oversight**: every open question across sessions in one inbox,
   each tagged with its session's star (`GET /api/inbox`): live
@@ -73,7 +77,8 @@ You need no API key.
 - **Cloud loop**: pause and resume the loop workflow (`gh workflow
   disable|enable`), run one pass now (`gh workflow run`), and each live
   run's current step, with a step running over 30 minutes (or a job
-  waiting over 2 for a runner) marked stalled. The checks ask for least
+  waiting over 2 for a runner) marked stalled. Tonight's PRs opened
+  counts the PRs created while a loop run was going. The checks ask for least
   privilege: write on the repo to pause and run (a fine-grained token
   needs only Actions: read and write), and a read-only workflow token
   default is fine when the loop workflow declares its own permissions,

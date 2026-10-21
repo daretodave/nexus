@@ -113,16 +113,23 @@ the reason (the 41.3 close carries the same list):
   offline with `@fontsource`.
 - **Cockpit1024 and every Light board** have no code of their own:
   `nexus.css`'s breakpoints and `data-theme` tokens produce them.
-- **Data the stream does not carry yet:** tool-row durations and
-  diffstats, message times, the workflow junction node and its
-  dashed lines, stage captions with a tool's result (the tool's
-  name shows), "3 tonight" (reads "this session"), heads-down's
-  time bar and phase-track marks, the Inbox tug countdown
-  ("default in 4:48"), CloudLoop's run sentences, PR and parked
-  chips, "PRs opened" count and the topbar "next 03:30" line, run
-  mode's locked state and the owner-mode confirm while a session
-  runs, the Board rail's star names (an 8-character id until
-  GET /api/sessions exists).
+- **Data the stream does not carry yet:** stage captions with a
+  tool's result (the tool's name shows), "3 tonight" (reads "this
+  session"), CloudLoop's run sentences, PR and parked chips and the
+  topbar "next 03:30" line, run mode's locked state and the
+  owner-mode confirm while a session runs, the Board rail's star
+  names (an 8-character id until GET /api/sessions exists).
+- **Drawn from real data since 41.7:** tool-row durations (the
+  call's tool_use to its tool_result) and diffstats (an Edit's own
+  old and new text; a Write shows only what it adds), message times
+  (when the server read them), the workflow junction (a Workflow
+  call) and its dashed lines, heads-down's time bar (the chunk's
+  size against the plan's hours table) and the phase track's marks
+  (closes and parked questions, dated by the stream or by the
+  ledger's step), the tug countdown (a live question takes its
+  default after six minutes, the board's own 4:48 at 80%) and
+  CloudLoop's "PRs opened" (PRs created while a loop run was
+  going). A value nobody saw draws blank or a dash.
 - **Inert or reduced interactions:** the Board's drag grip (no
   reorder action), Reassign (no target picker in the design: it asks
   for a GitHub login until 40.12's picker), Hold for a contributor
