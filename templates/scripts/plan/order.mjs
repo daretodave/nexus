@@ -11,12 +11,19 @@
 // and chunks show before they settle. Each chunk in `--json` carries the parsed line (plan-check's parseChunk), so its
 // `secrets` (the names it needs, never values; [] when none) ride along for /next and the GUI.
 //
-//   node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--json]
+// The secret gate: a chunk with a `secrets` field is the owner's alone, so a contributor checkout lists it apart as
+// `owner only`. In the owner's, a chunk whose secret the vault lacks (no ring holds it and the environment doesn't set
+// it: a cloud tick gets its secrets as env) parks as `needs secret <names>` (`needsSecret` in --json) until the owner
+// sets it; `node scripts/secrets.mjs request <id>` files the ask. Names only: the vault is asked where a name is set,
+// never what it is. `--no-vault` skips the vault check (the contributor rule stays).
+//
+//   node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--no-vault] [--json]
 //
 // --mark flags chunks as "just plotted" (/plot's after picture); --ref reads the plan at a ref instead of the files;
 // --limit (a whole number from 1, 12 when left out) caps the next-up list the text view prints. Anything else after
 // --limit (a word, 0, a negative, a fraction, nothing) prints usage and exits 64, never an empty list.
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { SPEC_FILE, parseSpec } from '../plan-check.mjs';
@@ -62,9 +69,10 @@ export function rows(readme) {
 /**
  * The simulated pick order. `specs` are parseSpec results; `closed` the ids a pending close already closes; `claims`
  * maps an id to { who, mine } for live claims. Returns { inFlight, next, blocked }: `next` in build order with a
- * running estimate in hours, `blocked` with why.
+ * running estimate in hours, `blocked` with why. `secrets` is the secret gate, { contributor, missing(names) -> the
+ * names not set } (null: no gate).
  */
-export function simulate({ readme, specs, closed = new Set(), claims = {}, base = null }) {
+export function simulate({ readme, specs, closed = new Set(), claims = {}, base = null, secrets = null }) {
   const { asap, held } = lanes(readme);
   const table = rows(readme);
   const bySpec = new Map(specs.map((s) => [s.num, s]));
@@ -87,7 +95,12 @@ export function simulate({ readme, specs, closed = new Set(), claims = {}, base 
     if (claim && !claim.mine) inFlight.push({ ...c, who: claim.who });
     else if (held.includes(c.id)) blocked.push({ ...c, why: 'held' });
     else if (skipSpec.has(c.spec)) blocked.push({ ...c, why: skipSpec.get(c.spec) });
-    else pool.push(c);
+    else if (secrets && c.secrets?.length && secrets.contributor) blocked.push({ ...c, why: `owner only (secrets ${c.secrets.join(', ')})` });
+    else {
+      const lacking = secrets?.missing && c.secrets?.length ? secrets.missing(c.secrets) : [];
+      if (lacking.length) blocked.push({ ...c, why: `needs secret ${lacking.join(', ')}`, needsSecret: lacking });
+      else pool.push(c);
+    }
   }
   const taken = new Set(inFlight.map((c) => c.id));
   const ready = (c) => (c.needs ?? []).every((n) => done(n) || taken.has(n));
@@ -131,7 +144,32 @@ export function simulate({ readme, specs, closed = new Set(), claims = {}, base 
   return { inFlight, next, blocked, unchunked };
 }
 
-export const USAGE = 'usage: node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--json]';
+export const USAGE = 'usage: node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--no-vault] [--json]';
+
+/** The vault's answer as missing(names): the names no ring holds and the environment doesn't set. Names only. */
+export function secretsMissing(vault, env = process.env) {
+  return (names) => {
+    const set = new Set(vault.status(names).filter((r) => r.rings.length).map((r) => r.name));
+    return names.filter((n) => !set.has(n) && !env[n]);
+  };
+}
+
+/** The secret gate for a checkout: its mode from owner.mjs, the vault from secrets-vault.mjs. A repo without
+ * owner.mjs gets no gate (null); without the vault (or with --no-vault), only the contributor rule. */
+export async function secretGate(cwd, { vault = true, env = process.env } = {}) {
+  let owner;
+  try {
+    owner = await import(new URL('../owner.mjs', import.meta.url).href);
+  } catch {
+    return null;
+  }
+  if (!owner.isOwner(cwd, env)) return { contributor: true, missing: null };
+  const file = new URL('../secrets-vault.mjs', import.meta.url);
+  if (!vault || !fs.existsSync(file)) return { contributor: false, missing: null };
+  const { openVault } = await import(file.href);
+  const root = owner.primaryRoot(cwd);
+  return { contributor: false, missing: secretsMissing(openVault({ root, settings: owner.localSettings(root) }), env) };
+}
 
 /** `--limit`'s value as a whole number from 1 (12 when the flag is absent), or null when it is anything else. */
 export function parseLimit(value) {
@@ -167,7 +205,7 @@ export function render({ inFlight, next, blocked, unchunked = [] }, { mark = new
 }
 
 /** Read the plan (working tree through the settled view, or a ref) and simulate it. */
-export async function load(cwd, ref) {
+export async function load(cwd, ref, { vault = true } = {}) {
   const reader = planReader(cwd, ref);
   let read = (n) => reader.read(n);
   if (!ref) {
@@ -194,7 +232,8 @@ export async function load(cwd, ref) {
   } catch {
     // no claims module, no network or no claims branch: nothing is in flight
   }
-  return { readme, specs, closed, claims };
+  const secrets = specs.some((s) => s.chunks.some((c) => c.secrets?.length)) ? await secretGate(cwd, { vault }) : null;
+  return { readme, specs, closed, claims, secrets };
 }
 
 async function main(argv) {
@@ -210,7 +249,7 @@ async function main(argv) {
     return 64;
   }
   const cwd = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
-  const plan = await load(path.resolve(cwd), ref);
+  const plan = await load(path.resolve(cwd), ref, { vault: !argv.includes('--no-vault') });
   const sim = simulate(plan);
   if (argv.includes('--json')) console.log(JSON.stringify({ ...sim, mark: [...mark] }, null, 2));
   else console.log(render(sim, { mark, limit }));

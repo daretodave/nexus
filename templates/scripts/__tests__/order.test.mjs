@@ -1,7 +1,8 @@
 // order.mjs (the simulated pick order): the Asap lane first, then priority rows, then table order; a pick counts as
 // done for the chunks that need it; held, plan-only and other-base specs, held chunks, chunks others claim and needs
 // nothing will close are listed apart; a pending close counts as closed; the render marks just-plotted chunks; a bad
-// --limit prints usage.
+// --limit prints usage; a chunk whose secret the vault lacks parks (the owner), and one naming any secret is the
+// owner's alone (a contributor skips it).
 // node:test, no deps, no git (the usage test runs the script, which stops before git).
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -9,7 +10,7 @@ import os from 'node:os';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parseSpec } from '../plan-check.mjs';
-import { lanes, parseLimit, render, rows, simulate } from '../plan/order.mjs';
+import { lanes, parseLimit, render, rows, secretsMissing, simulate } from '../plan/order.mjs';
 
 const readme = (asap = '- (none)', held = '- (none)', extra = '') => [
   '## Lanes', '', '**Asap** (built before the table):', '', asap, '', '**Held** (waits):', '', held, '', '## Specs', '',
@@ -120,5 +121,46 @@ describe('a chunk that needs a secret', () => {
     const sim = simulate({ readme: readme(), specs: withSecret });
     assert.deepEqual(sim.next.map((c) => [c.id, c.secrets]), [['07.1', ['VERCEL_TOKEN', 'CF_API_TOKEN']], ['07.2', []]]);
     assert.deepEqual(JSON.parse(JSON.stringify(sim)).next[0].secrets, ['VERCEL_TOKEN', 'CF_API_TOKEN']);
+  });
+});
+
+describe('the secret gate (A10, A11)', () => {
+  const withSecret = () => [spec('07', ['- [ ] **07.1** Deploy · S · closes A1 · needs — · secrets VERCEL_TOKEN, CF_API_TOKEN', '- [ ] **07.2** Results · M · closes A1 · needs 07.1', '- [ ] **07.3** Box · S · closes A1 · needs —'])];
+
+  it("parks the owner's chunk whose secret the vault lacks, and what needs it, and picks the rest", () => {
+    const sim = simulate({ readme: readme(), specs: withSecret(), secrets: { contributor: false, missing: (names) => names.filter((n) => n !== 'VERCEL_TOKEN') } });
+    assert.deepEqual(ids(sim.next), ['07.3']);
+    assert.deepEqual(sim.blocked.map((c) => `${c.id}:${c.why}`), ['07.1:needs secret CF_API_TOKEN', '07.2:needs 07.1']);
+    assert.deepEqual(sim.blocked[0].needsSecret, ['CF_API_TOKEN']);
+  });
+
+  it('is ready again once every secret is set', () => {
+    const sim = simulate({ readme: readme(), specs: withSecret(), secrets: { contributor: false, missing: () => [] } });
+    assert.deepEqual(ids(sim.next), ['07.1', '07.2', '07.3']);
+  });
+
+  it("never gives a contributor a chunk with a secrets field, set or not, nor asks the vault", () => {
+    let asked = false;
+    const sim = simulate({ readme: readme('- 07.1'), specs: withSecret(), secrets: { contributor: true, missing: () => { asked = true; return []; } } });
+    assert.deepEqual(ids(sim.next), ['07.3']);
+    assert.deepEqual(sim.blocked.map((c) => `${c.id}:${c.why}`), ['07.1:owner only (secrets VERCEL_TOKEN, CF_API_TOKEN)', '07.2:needs 07.1']);
+    assert.equal(asked, false);
+  });
+
+  it('leaves a held reason ahead of the secret, and a chunk naming no secret alone', () => {
+    const sim = simulate({ readme: readme('- (none)', '- 07.1'), specs: withSecret(), secrets: { contributor: true, missing: (n) => n } });
+    assert.equal(sim.blocked.find((c) => c.id === '07.1').why, 'held');
+    assert.ok(sim.next.some((c) => c.id === '07.3'));
+  });
+
+  it('reads the vault by name: a name set in a ring or in the environment is not missing', () => {
+    const vault = { status: (names) => names.map((name) => ({ name, rings: name === 'A_TOKEN' ? ['local'] : [] })) };
+    const missing = secretsMissing(vault, { B_TOKEN: 'fake-env-0001', C_TOKEN: '' });
+    assert.deepEqual(missing(['A_TOKEN', 'B_TOKEN', 'C_TOKEN', 'D_TOKEN']), ['C_TOKEN', 'D_TOKEN']);
+  });
+
+  it('renders the parked chunk with its reason', () => {
+    const out = render(simulate({ readme: readme(), specs: withSecret(), secrets: { contributor: false, missing: (n) => n } }));
+    assert.match(out, /07\.1 .*needs secret VERCEL_TOKEN, CF_API_TOKEN/);
   });
 });
