@@ -31,24 +31,26 @@ export function lanes(readme) {
     else if (/^(##|\*\*)/.test(line)) lane = null;
     else if (lane && /^\s*- /.test(line) && !/\(none/.test(line)) {
       const ids = line.match(ID) ?? [];
-      const specs = ids.length ? [] : (line.match(/\b\d{2,}\b/g) ?? []).slice(0, 1);
+      // A line naming no chunk names a spec (`- 9 (waits on the owner, 2026-10-20)`): its number, as files spell it.
+      const specs = ids.length ? [] : (line.match(/\b\d+\b/g) ?? []).slice(0, 1).map((n) => n.padStart(2, '0'));
       out[lane].push(...ids, ...specs);
     }
   }
   return out;
 }
 
-/** The roadmap table's rows: { num, file, priority, planOnly, base }, in table order. */
+/** The roadmap table's rows: { num, file, priority, planOnly, base }, in table order. The number is the linked
+ * file's (`01-bootstrap.md`), since the # column may spell it `1`. */
 export function rows(readme) {
   const out = [];
   for (const line of readme.split(/\r?\n/)) {
-    const m = /^\|\s*(\d{2,})\s*\|.*?\]\(([^)]+\.md)\)/.exec(line);
+    const m = /^\|\s*\d+\s*\|.*?\]\(((\d{2,})-[^)]+\.md)\)/.exec(line);
     if (!m) continue;
     // The status column (# | Initiative | Spec | Status | Progress) carries the markers, never the initiative's words.
     const status = line.split('|')[4] ?? '';
     const pr = /\bpriority (\d+)\b/i.exec(status);
     const base = /\bbase ([\w./-]+)/.exec(status);
-    out.push({ num: m[1].padStart(2, '0'), file: m[2], priority: pr ? Number(pr[1]) : null, planOnly: /\bplan only\b/i.test(status), base: base ? base[1] : null });
+    out.push({ num: m[2], file: m[1], priority: pr ? Number(pr[1]) : null, planOnly: /\bplan only\b/i.test(status), base: base ? base[1] : null });
   }
   return out;
 }
@@ -97,8 +99,9 @@ export function simulate({ readme, specs, closed = new Set(), claims = {}, base 
   for (;;) {
     let pick = null;
     for (const id of asap) {
-      const c = listed.get(id);
-      if (c && left.has(id) && ready(c)) {
+      // A lane entry is a chunk id, or a spec number standing for that spec's first ready chunk.
+      const c = listed.has(id) ? listed.get(id) : bySpec.get(id)?.chunks.find((x) => left.has(x.id) && ready(x));
+      if (c && left.has(c.id) && ready(c)) {
         pick = [c, 'asap'];
         break;
       }

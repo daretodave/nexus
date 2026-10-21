@@ -318,7 +318,11 @@ export function verdict(id, c, plan, { now = Date.now(), prState = () => 'UNKNOW
   if (plan.archive.includes(` · ${id} · `)) return 'archived';
   const spec = id.split('.')[0];
   if (id.includes('.') && !plan.specs.some((s) => s.includes(`**${id}**`))) return 'gone';
-  if (!id.includes('.') && !plan.specs.some((s) => s.includes(`**${spec}.`)) && !plan.names.some((n) => n.startsWith(`plan/${spec}-`))) return 'gone';
+  // A bare number no spec holds yet is /plot's reservation of a new spec's number, landing soon: it goes only once
+  // stale, so a /tidy mid-plot never frees the number for a second plot to take.
+  if (!id.includes('.') && !plan.specs.some((s) => s.includes(`**${spec}.`)) && !plan.names.some((n) => n.startsWith(`plan/${spec}-`))) {
+    return c.held || state(c, now) !== 'stale' ? null : 'gone';
+  }
   if (c.pr) {
     const s = prState(c.pr);
     return s === 'MERGED' || s === 'CLOSED' ? 'pr-closed' : null;

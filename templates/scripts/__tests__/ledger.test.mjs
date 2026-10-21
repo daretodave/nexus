@@ -90,6 +90,13 @@ describe('the CLI', () => {
     assert.equal(run(['take', 'aaaa1111'], B), 0);
   });
 
+  it('refuses to take a session that ended its loop', () => {
+    run(['end'], A);
+    clock = T0 + 30 * 60_000;
+    assert.equal(run(['take', 'aaaa1111'], B), 1);
+    assert.match(said[0], /ended its loop/);
+  });
+
   it('keeps no ledger without a session id, and says so', () => {
     assert.throws(() => run(['beat'], {}), /no session id/);
     assert.equal(run(['list'], {}), 0);

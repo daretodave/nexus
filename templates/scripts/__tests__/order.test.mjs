@@ -33,7 +33,24 @@ describe('reading the roadmap', () => {
   });
 });
 
+describe('a template-shaped roadmap', () => {
+  it('reads a row whose # column says 1 by its linked file, 01', () => {
+    const r = rows('| 1 | Bootstrap | [01-bootstrap.md](01-bootstrap.md) | planned | 3 left |');
+    assert.deepEqual(r.map((x) => [x.num, x.file]), [['01', '01-bootstrap.md']]);
+  });
+
+  it('takes a lane spec number as written or unpadded', () => {
+    assert.deepEqual(lanes(readme('- 9 (billing first)', '- 7 (waits, 2026-10-20)')), { asap: ['09'], held: ['07'] });
+  });
+});
+
 describe('the simulated order', () => {
+  it('builds an Asap spec number from its first ready chunk on', () => {
+    const sim = simulate({ readme: readme('- 07'), specs: specs() });
+    assert.deepEqual(ids(sim.next), ['07.1', '07.2', '09.1', '09.2', '07.3']);
+    assert.equal(sim.next[1].lane, 'asap');
+  });
+
   it('builds priority rows before table order, a pick unblocking what needs it', () => {
     const sim = simulate({ readme: readme(), specs: specs() });
     assert.deepEqual(ids(sim.next), ['09.1', '09.2', '07.1', '07.2', '07.3']);

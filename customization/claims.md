@@ -127,7 +127,9 @@ Exit codes: 0 done, 1 refused (nothing written), 2 usage.
 `audit` reads each claim against its base's plan on origin: a
 chunk with an archive line, or a close waiting in
 `plan/pending/`, is `archived`; a chunk no spec lists is
-`gone`; a spec claim is gone only when its file is. With
+`gone`; a spec claim is gone only when its file is, and a bare
+number no spec holds yet (`/plot`'s reservation of a new spec's
+number) only once it is also stale. With
 `--release` it drops what may go that is this session's, this
 machine's owner claims, or (archived, gone, pr-closed)
 anyone's. A held claim is never `stale`.

@@ -218,6 +218,10 @@ export function main(argv, { env = process.env, root, now = () => new Date(), ou
     if (!o.pos[0]) throw new Error(`ledger: ${cmd} needs a session id or star\n${USAGE}`);
     const l = target(o.pos[0]);
     if (cmd === 'take') {
+      if (l.state === 'ended') {
+        err(`ledger: ${l.star} ended its loop: nothing to resume`);
+        return 1;
+      }
       if (l.state === 'resuming' || l.state === 'resumed') {
         err(`ledger: ${l.star} is already ${l.state}${l.resumed_by ? ` by ${l.resumed_by.slice(0, 8)}` : ''}: another session has it`);
         return 1;

@@ -145,6 +145,10 @@ describe('the claims branch', () => {
     assert.deepEqual(Object.keys(fetchClaims(a).map), ['16.1']);
     const held = { who: 'x', host: 'h', at: new Date(0).toISOString(), session: '', pr: null, held: 'x', base: '' };
     assert.equal(verdict('16.1', held, { archive: '', specs: ['**16.1**'], names: [] }), null);
+    // A bare number no spec holds yet is a new spec's reservation (/plot): kept while fresh, gone once stale.
+    const fresh = { ...held, held: null, at: new Date().toISOString() };
+    assert.equal(verdict('77', fresh, { archive: '', specs: [], names: [] }), null);
+    assert.equal(verdict('77', { ...fresh, at: new Date(0).toISOString() }, { archive: '', specs: [], names: [] }), 'gone');
   });
 });
 

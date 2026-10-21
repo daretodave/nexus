@@ -81,7 +81,7 @@ function commitVerb(message) {
 const WORKTREE_REMOVE = /(^|[\s;&|(`'"])git(\.exe)?(\s+(-[Cc]\s+\S+|--[\w-]+(=\S+)?))*\s+worktree\s+remove\b/
 const RUNS_QUOTED = /\s-(c|Command|e)\s+["']/
 function maskQuoted(cmd) {
-  return cmd.replace(/'[^']*'|"[^"]*"/g, (q) => q[0] + '_'.repeat(q.length - 2) + q[q.length - 1])
+  return cmd.replace(/'[^']*'|"(?:[^"\\]|\\.)*"/g, (q) => q[0] + '_'.repeat(q.length - 2) + q[q.length - 1])
 }
 
 // --- forbidden-command rules ------------------------------------------
@@ -327,6 +327,8 @@ function selfTest() {
     ['node scripts/worktree.mjs close ../wt/07.1', null],
     ['git worktree add --detach ../wt/07.1 abc123', null],
     ['git worktree prune', null],
+    // an escaped quote inside a double-quoted string does not end it
+    ['echo "a \\" b" && git worktree remove x "y"', 'bare-worktree-remove'],
     // allowed commands — must NOT match any rule
     ['git push origin main', null],
     ['git commit -m "feat: ship phase 8"', null],

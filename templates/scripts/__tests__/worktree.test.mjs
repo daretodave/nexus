@@ -79,6 +79,24 @@ describe('worktree.mjs', () => {
     assert.equal(kept(), KEPT);
   });
 
+  it('closes a worktree holding a committed symlink (unlinked, yet not called modified)', (t) => {
+    git(repo, 'config', 'core.symlinks', 'true');
+    try {
+      fs.symlinkSync('a.txt', path.join(repo, 'link'), 'file');
+    } catch {
+      return t.skip('this machine cannot make a file symlink');
+    }
+    git(repo, 'add', 'link');
+    git(repo, 'commit', '-q', '-m', 'a committed symlink');
+    const wt = worktree('wt-link', 'next/01.5');
+    assert.ok(fs.lstatSync(path.join(wt, 'link')).isSymbolicLink());
+    const res = run(['close', wt]);
+    assert.equal(res.code, 0, res.err);
+    assert.match(res.out, /unlinked 3 links; removed; deleted branch next\/01\.5/);
+    assert.equal(fs.existsSync(wt), false);
+    assert.equal(kept(), KEPT);
+  });
+
   it('keeps a branch main does not hold, and names it', () => {
     const wt = worktree('wt-two', 'next/01.2');
     fs.writeFileSync(path.join(wt, 'b.txt'), 'b\n');

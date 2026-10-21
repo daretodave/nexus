@@ -108,16 +108,23 @@ export function close(target, repo) {
   const home = all[0].path;
   const said = [];
   let unlinked = 0;
+  let forced = false;
   if (fs.existsSync(wt.path)) {
     const st = git(wt.path, 'status', '--porcelain', '--untracked-files=all');
     if (!st.ok) throw new Error(`${wt.path}: git status failed: ${st.err}`);
     if (st.out) throw new Error(`${wt.path}: holds work git doesn't (commit or drop it first):\n${st.out}`);
+    // A link git tracks (a committed symlink) is unlinked too, which leaves it deleted in git's eyes: git would then
+    // refuse the remove as modified. The status above was clean, so --force forgives exactly those deletions.
+    const tracked = new Set(
+      git(wt.path, 'ls-files', '-s', '-z').out.split('\0').filter((e) => e.startsWith('120000 ')).map((e) => e.split('\t')[1]),
+    );
     const found = links(wt.path);
     for (const p of found) fs.unlinkSync(p);
     unlinked = found.length;
+    forced = found.some((p) => tracked.has(path.relative(wt.path, p).split(path.sep).join('/')));
     said.push(`unlinked ${unlinked} link${unlinked === 1 ? '' : 's'}`);
   }
-  const removed = git(home, 'worktree', 'remove', wt.path);
+  const removed = git(home, 'worktree', 'remove', ...(forced ? ['--force'] : []), wt.path);
   git(home, 'worktree', 'prune');
   if (worktrees(repo).some((w) => norm(w.path) === norm(wt.path))) {
     throw new Error(`${wt.path}: git kept it (${removed.err}); its ${unlinked} links are unlinked (npm install puts npm's back)`);
