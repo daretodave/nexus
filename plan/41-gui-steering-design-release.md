@@ -62,9 +62,6 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
 
 ## Acceptance
 
-- **A6** Hover, focus, popover and motion states match their
-  boards in a live browser, in both themes, and the button
-  ink the cascade repair chose is confirmed or reverted.
 - **A10** The boards the second handoff (2026-10-21) changed
   outside the vault match the app again: sheet clipping,
   the owner cockpit's composer, value styling, and the
@@ -79,18 +76,8 @@ running tool call can't be killed, so the next tool boundary
 is the interrupt point.)
 
 ## Chunks
-Measure: 2 open · 8 closed · next A11
+Measure: 1 open · 9 closed · next A11
 
-- [ ] **41.6** Live fidelity pass: hover, popovers, motion,
-  both themes · S · closes A6 · needs —
-  - The 41.3 reviews compared static renders; check live the
-    tile hover and glow, the git-pop, the train dock, the
-    tidy and request popovers, the cockpit's tug and tether
-    lines (`--tray-y`), heads-down's 120 columns at narrow
-    widths, Plot below ~800px of height, dawn contrast.
-  - The boards draw `<button class="btn-primary">` with
-    `--text` ink (the reset outranks it); the app draws
-    on-accent ink (`repairCascade`). Default: keep the repair.
 - [ ] **41.10** Re-port what the second handoff changed
   outside the vault · M · closes A10 · needs —
   - `packages/cli/design/handoff/` was refreshed on

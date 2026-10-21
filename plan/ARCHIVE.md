@@ -107,3 +107,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 44.1 · nexus --demo plays fixture scenarios with no repo or network · cf7c55c4..6da228fb
 - 2026-10-21 · 42.2 · the vault keeps values in .env, .env.workspace or the OS keychain · 7b165b1b..b3c9df94
 - 2026-10-21 · 42.4 · secrets push sets a GitHub Actions secret through stdin · bdfdd702..a2b5c560
+- 2026-10-21 · 41.6 · live pass in both themes; five fixes; on-accent button ink kept · b66171a7..422f5872
