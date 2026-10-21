@@ -61,8 +61,6 @@ What exists today (2026-10-20): `fileURLToPath` in
 - **A5** Two concurrent `announce` posts both land.
 - **A6** The guard refuses `git --git-dir <x> worktree remove`;
   `worktree.mjs list` reports a dead lock's pid as dead.
-- **A8** Settle leaves no empty Acceptance heading; its
-  fixtures use neutral numbers and dates.
 - **A9** workflow-lint reads any indentation and composite
   actions.
 - **A10** `scripts-ci.yml` has run green on both runners with
@@ -73,7 +71,7 @@ What exists today (2026-10-20): `fileURLToPath` in
 (None.)
 
 ## Chunks
-Measure: 8 open · 2 closed · next A11
+Measure: 7 open · 3 closed · next A11
 
 - [ ] **36.1** fileURLToPath everywhere, and the gate refuses
   URL.pathname · S · closes A1 · needs —
@@ -83,8 +81,6 @@ Measure: 8 open · 2 closed · next A11
   writers · M · closes A4, A5 · needs —
 - [ ] **36.5** Guard sees --git-dir; worktree list checks the
   lock's pid · S · closes A6 · needs —
-- [ ] **36.7** Settle's empty heading; neutral test fixtures ·
-  S · closes A8 · needs —
 - [ ] **36.8** workflow-lint: any indentation, composite
   actions · S · closes A9 · needs —
 - [ ] **36.9** First scripts-ci runs watched; timeout sized ·

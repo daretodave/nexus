@@ -54,3 +54,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 36.3 · order refuses bad --limit; progress --json prints spec data · 1637f034..1431cccd
 - 2026-10-21 · 34.1 · diagrams.mjs draws three SVGs; the gate catches drift · 662485d0..662485d0
 - 2026-10-21 · 36.6 · whoami warns on the pid fallback; docs lead NEXUS_SESSION · f1721b98..65891b54
+- 2026-10-21 · 36.7 · settle drops an emptied Acceptance heading; neutral fixtures · b0812060..593c8d28
