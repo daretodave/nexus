@@ -62,8 +62,6 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
 
 ## Acceptance
 
-- **A2** The stage shows each tug's path and state and each
-  question's age and session.
 - **A6** Hover, focus, popover and motion states match their
   boards in a live browser, in both themes, and the button
   ink the cascade repair chose is confirmed or reverted.
@@ -84,10 +82,8 @@ running tool call can't be killed, so the next tool boundary
 is the interrupt point.)
 
 ## Chunks
-Measure: 5 open · 4 closed · next A10
+Measure: 4 open · 5 closed · next A10
 
-- [ ] **41.2** Oversight tugs, visualized: path, state, age ·
-  M · closes A2 · needs —
 - [ ] **41.6** Live fidelity pass: hover, popovers, motion,
   both themes · S · closes A6 · needs —
   - The 41.3 reviews compared static renders; check live the
