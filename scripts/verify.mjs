@@ -31,9 +31,11 @@
 //   chunks        the plan shape holds in plan/ and templates/plan/:
 //                 Measure lines true, chunk lines parse, every A-ID
 //                 covered, needs resolve, the roadmap links every
-//                 spec, and (vs HEAD) a chunk that left the plan has
+//                 spec (and no gone one; lanes and `N left` true),
+//                 and (vs HEAD) a chunk that left the plan has
 //                 its archive line. Runs templates/scripts/plan-check.mjs
-//                 so adopters and the kit share one implementation
+//                 so adopters and the kit share one implementation,
+//                 plus that script's own node:test suite
 //   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
 //                 copy + placeholder-sweep + prune blocks. Skipped by
 //                 the default no-argument run; opt in with
@@ -467,6 +469,15 @@ async function legChunks() {
     const { failures: f, note } = runCheck({ repoAbs: ROOT, dirRel, since: 'HEAD' })
     failures.push(...f)
     notes.push(`${dirRel}: ${note}`)
+  }
+  // The checker's own unit tests (node:test, no deps, well under a
+  // second): a gate whose rules regress silently is no gate.
+  try {
+    execSync('node --test templates/scripts/__tests__/plan-check.test.mjs', { cwd: ROOT, encoding: 'utf-8', stdio: 'pipe' })
+    notes.push('plan-check tests pass')
+  } catch (err) {
+    const out = `${err.stdout || ''}${err.stderr || ''}`
+    failures.push('templates/scripts/__tests__/plan-check.test.mjs failed:', ...out.split(/\r?\n/).filter((l) => /^\s*(✖|not ok|Error|AssertionError)/.test(l)).slice(0, 20))
   }
   return { failures, note: notes.join('; ') }
 }

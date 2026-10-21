@@ -194,9 +194,9 @@ judgment call precisely so this archaeology is possible.
 3. Unwind the divergent work: `git revert` the span (fine even
    for dozens of commits — revert in reverse order or as one
    `git revert <first>^..<last>`), or where reverting fights
-   later good work, re-ship corrected via ordinary phases.
+   later good work, re-ship corrected via ordinary chunks.
    Both paths keep history and gates intact.
-4. Re-queue what was lost: `[ ]` rows / audit findings for the
+4. Re-queue what was lost: chunk lines / audit findings for the
    legitimate work entangled in the revert.
 
 **Prevent.** Drift-catchers running *during* the window

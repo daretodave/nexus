@@ -16,11 +16,15 @@
 //     every A-ID is covered by some chunk
 //   - every `needs` names a chunk (or a whole spec) still in the plan
 //   - a spec with nothing left is flagged: absorb it and delete it
-//   - plan/README.md links every spec; ARCHIVE.md lines parse
+//   - plan/README.md links every spec, links no spec that is gone,
+//     its `N left` counts match, and its Asap/Held lanes name only
+//     chunks (or specs) still in the plan; ARCHIVE.md lines parse
 //
 // With `--since <ref>` it also checks history against that ref:
 // a chunk that left the plan has an archive line (or a pending
-// close in plan/pending/), a deleted spec has its "spec complete"
+// close in plan/pending/, or was split into `<id>a`, `<id>b`, …
+// children), an unresolvable ref is a failure (never a silent
+// skip), a deleted spec has its "spec complete"
 // line, and no spec's `next A#` or closed count went backwards or
 // reused an A-ID. The plan only shrinks.
 //
@@ -35,6 +39,7 @@
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export const SPEC_FILE = /^(\d{2,})-[a-z0-9][a-z0-9-]*\.md$/
 const MEASURE = /^Measure: (\d+) open · (\d+) closed · next A(\d+)\s*$/
@@ -166,12 +171,8 @@ export function checkPlan({ specs, readme, archive }) {
       if (!covered.has(a.id)) failures.push(`${s.file}:${a.n}: ${a.id} is closed or partialed by no chunk`)
     }
   }
-  if (specs.length > 0) {
-    if (readme === null) failures.push('plan/README.md missing: the roadmap must list every spec')
-    else for (const s of specs) {
-      if (!readme.includes(`](${path.basename(s.file)})`)) failures.push(`plan/README.md: no link to ${path.basename(s.file)}`)
-    }
-  }
+  if (specs.length > 0 && readme === null) failures.push('plan/README.md missing: the roadmap must list every spec')
+  if (readme !== null) failures.push(...checkRoadmap(specs, readme, chunkIds, specNums))
   if (archive !== null) {
     let fenced = false
     archive.split(/\r?\n/).forEach((line, i) => {
@@ -180,6 +181,38 @@ export function checkPlan({ specs, readme, archive }) {
       if (!ARCHIVE_LINE.test(line)) failures.push(`ARCHIVE.md:${i + 1}: expected "- YYYY-MM-DD · <id> · <what now works> · <commits>"`)
     })
   }
+  return failures
+}
+
+// The roadmap: every spec linked, no link to a spec that is gone,
+// each row's `N left` true, and the Asap/Held lanes naming only
+// chunks (or whole specs) still in the plan.
+function checkRoadmap(specs, readme, chunkIds, specNums) {
+  const failures = []
+  const byName = new Map(specs.map((s) => [path.basename(s.file), s]))
+  for (const name of byName.keys()) {
+    if (!readme.includes(`](${name})`)) failures.push(`plan/README.md: no link to ${name}`)
+  }
+  let fenced = false
+  let lane = null
+  readme.split(/\r?\n/).forEach((line, i) => {
+    if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; return }
+    if (fenced) return
+    const at = `plan/README.md:${i + 1}`
+    for (const m of line.matchAll(/\]\((\d{2,}-[a-z0-9][a-z0-9-]*\.md)\)/g)) {
+      const s = byName.get(m[1])
+      if (!s) { failures.push(`${at}: links ${m[1]}, which is not in the plan (a finished spec leaves the table)`); continue }
+      const left = line.startsWith('|') && line.match(/\b(\d+) left\b/)
+      if (left && !s.unchunked && +left[1] !== s.chunks.length) failures.push(`${at}: says ${left[1]} left, ${m[1]} lists ${s.chunks.length}`)
+    }
+    const head = line.match(/^\*\*(Asap|Held)\*\*/)
+    if (head) { lane = head[1]; return }
+    if (/^(\*\*|#|\|)/.test(line)) { lane = null; return }
+    const entry = lane && line.match(/^- \*\*([^*]+)\*\*/)
+    if (entry && !chunkIds.has(entry[1]) && !specNums.has(entry[1])) {
+      failures.push(`${at}: the ${lane} lane names ${entry[1]}, which no spec lists (a closed chunk leaves the lanes)`)
+    }
+  })
   return failures
 }
 
@@ -192,9 +225,18 @@ export function checkHistory(before, after, archive, pendingIds = new Set()) {
   const failures = []
   const nowChunks = new Set(after.flatMap((s) => s.chunks.map((c) => c.id)))
   const nowSpecs = new Map(after.map((s) => [s.num, s]))
+  const accounted = (id) => nowChunks.has(id) || pendingIds.has(id) || archived(archive, id)
+  // A split keeps the parent's id as a prefix (07.3 → 07.3a, 07.3b):
+  // the parent is accounted for while any child is.
+  const splitInto = (id) => {
+    const esc = id.replace(/\./g, '\\.')
+    const child = new RegExp(`^${esc}[a-z]+$`)
+    const archivedChild = new RegExp(`^- \\d{4}-\\d{2}-\\d{2} · ${esc}[a-z]+(?: \\([^)]*\\))? · `, 'm')
+    return [...nowChunks, ...pendingIds].some((x) => child.test(x)) || archivedChild.test(archive || '')
+  }
   for (const s of before) {
     for (const c of s.chunks) {
-      if (nowChunks.has(c.id) || pendingIds.has(c.id) || archived(archive, c.id)) continue
+      if (accounted(c.id) || splitInto(c.id)) continue
       failures.push(`chunk ${c.id} left the plan with no ARCHIVE.md line (or plan/pending/${c.id}.md)`)
     }
     const now = nowSpecs.get(s.num)
@@ -233,6 +275,15 @@ export function loadPlanDir(dirAbs, label = 'plan') {
 
 export function loadPlanAtRef(repoAbs, ref, dirRel, label = dirRel) {
   const git = (...args) => execFileSync('git', args, { cwd: repoAbs, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] })
+  // A typo'd ref must not read as "no plan then" (that would skip
+  // every history rule and pass). Only an unborn HEAD (a repo with
+  // no commit yet) has no history to check.
+  try { git('rev-parse', '--verify', '--quiet', `${ref}^{commit}`) } catch {
+    let unborn = false
+    try { git('rev-parse', '--verify', '--quiet', 'HEAD') } catch { unborn = ref === 'HEAD' }
+    if (unborn) return []
+    throw new Error(`--since ${ref}: not a commit in this repo`)
+  }
   let names
   try { names = git('ls-tree', '--name-only', `${ref}:${dirRel}`).split(/\r?\n/).filter(Boolean) } catch { return [] }
   return names.filter((f) => SPEC_FILE.test(f)).map((f) => parseSpec(`${label}/${f}`, git('show', `${ref}:${dirRel}/${f}`)))
@@ -242,7 +293,9 @@ export function runCheck({ repoAbs, dirRel = 'plan', since = null }) {
   const label = dirRel.replace(/\\/g, '/')
   const now = loadPlanDir(path.join(repoAbs, dirRel), label)
   const failures = checkPlan(now)
-  if (since) failures.push(...checkHistory(loadPlanAtRef(repoAbs, since, label), now.specs, now.archive, now.pendingIds))
+  if (since) {
+    try { failures.push(...checkHistory(loadPlanAtRef(repoAbs, since, label), now.specs, now.archive, now.pendingIds)) } catch (err) { failures.push(err.message) }
+  }
   const chunks = now.specs.reduce((n, s) => n + s.chunks.length, 0)
   return { failures, note: `${now.specs.length} specs, ${chunks} chunks` }
 }
@@ -261,4 +314,7 @@ function main() {
   process.exit(1)
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'))) main()
+// fileURLToPath, not URL.pathname: a checkout path with a space
+// (or any percent-encoded character) must still run main(), or the
+// gate exits 0 having checked nothing.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()

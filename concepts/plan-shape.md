@@ -139,11 +139,15 @@ verify composition) makes the shape mechanical:
   `Measure:` line;
 - every chunk line parses, belongs to its spec, and names only
   A-IDs the spec lists; every A-ID is covered;
-- every `needs` resolves; the roadmap links every spec;
-  `ARCHIVE.md` lines parse;
+- every `needs` resolves; the roadmap links every spec and no
+  spec that is gone, each row's `N left` is true, and the
+  Asap/Held lanes name only chunks (or specs) still in the
+  plan; `ARCHIVE.md` lines parse;
 - with `--since <ref>`: a chunk that left the plan has its
-  archive line, a deleted spec has its spec-complete line, and
-  no `next` or `closed` count went backwards.
+  archive line (or was split into suffixed children), a
+  deleted spec has its spec-complete line, and no `next` or
+  `closed` count went backwards. A ref that does not resolve
+  is a failure, never a skipped check.
 
 nexus runs the same script on its own plan as the `chunks` leg
 of `node scripts/verify.mjs`.

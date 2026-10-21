@@ -110,8 +110,8 @@ cloud volume from local work. Nothing else — no
   actual scope. Apply the change from a local `/oversight`
   session instead, which pushes with normal repo-write
   credentials.
-- **Ticks no-op forever** — the plan may be out of `[ ]` rows
-  and the queues drained (a good problem: run `/oversight`
+- **Ticks no-op forever** — the plan may be out of ready chunks
+  (or every one is in the Held lane) and the queues drained (a good problem: run `/oversight`
   locally and promote candidates), or GitHub paused the cron
   after 60 days without repo activity (push anything or re-run
   manually to revive).

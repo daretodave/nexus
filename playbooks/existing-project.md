@@ -156,7 +156,9 @@ writes your first spec from the current state; the shape is in
 [`concepts/plan-shape.md`](../concepts/plan-shape.md), and
 `../nexus/templates/plan/02-canonical-sibling.md` is a good
 starting point to copy and edit. Delete `plan/ARCHIVE.md`'s
-example lines.
+example lines, and replace the two starter rows in
+`plan/README.md`'s spec table with your own specs:
+`plan-check` fails on a row whose spec file is missing.
 
 Search-and-replace placeholders (see
 [`new-project.md`](./new-project.md) §4 for the mapping table
