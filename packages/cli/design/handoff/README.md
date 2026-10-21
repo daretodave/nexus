@@ -165,6 +165,12 @@ the reason (the 41.3 close carries the same list):
   tokens keeps them.
 - **Shared Tug props** (`whyIcon`, why-label, result line): the
   Inbox keeps its own markup that matches its board.
-- **The cockpit switcher** also shows terminal sessions (the
-  terminal glyph); the board shows local stars only, and FleetKit
-  does not settle it.
+- **The cockpit switcher's rule for terminal sessions** (FleetKit
+  draws local stars only and leaves terminals open): the menu lists
+  the local stars first, as the board does; terminal sessions follow
+  under a `.menu-sep`, each with the terminal glyph and its line
+  ("terminal · linked" or "terminal · read-only until linked", then
+  its chunk), and each opens its cockpit, where sending links and
+  steers it. The button's small stars are the other local stars
+  only. Someone else's session never appears
+  (`src/screens/cockpit/switcher.js`).

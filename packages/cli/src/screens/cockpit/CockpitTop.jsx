@@ -7,6 +7,7 @@ import {
   Flag, GitStrip, Icon, LoopStatus, Menu, ModeChip, ParkedBadge, PauseBtn, SessionGlyph, Switcher, Topbar, Wordmark, cx, sessClass,
 } from '../../ui/index.js';
 import { PATHS } from '../../routes.js';
+import { switcherMenu, swDesc } from './switcher.js';
 
 /** Close a popover on an outside click or Escape. */
 export function useDismiss(open, close) {
@@ -22,13 +23,9 @@ export function useDismiss(open, close) {
   return ref;
 }
 
-const PHASE_WORD = { start: 'Questions', working: 'Working', review: 'Questions', package: 'Package' };
-
 /** One row of the switcher menu, as FleetKit draws it. */
 function SwRow({ s, current, onPick }) {
-  const d = s.state === 'fallen'
-    ? `fell over${s.chunk ? ` in ${s.chunk}` : ''}`
-    : [PHASE_WORD[s.phase] || 'Working', s.mode === 'owner' ? 'owner' : '', s.phase === 'start' && s.waiting ? `${s.waiting} waiting` : s.chunk].filter(Boolean).join(' · ');
+  const d = swDesc(s);
   const end = s.state === 'fallen' ? <Flag kind="fallen" style={{ height: 20 }}>fallen</Flag>
     : s.parked ? <ParkedBadge style={{ height: 20 }}>{s.parked}</ParkedBadge> : <span />;
   return (
@@ -75,19 +72,22 @@ export default function CockpitTop({
     return () => document.removeEventListener('keydown', key);
   }, [nav]);
 
-  const others = (sessions || []).filter((s) => s.id !== session.id && s.kind !== 'other');
+  // Local stars, then terminal sessions under a divider; the button shows the other stars only (switcher.js).
+  const menu = switcherMenu(sessions, session);
   const mode = RUN_MODES.find((m) => m.key === runMode) || RUN_MODES[0];
 
   return (
     <Topbar>
       <Wordmark label="nexus, back to the fleet" />
       <span ref={swRef} style={{ position: 'relative', display: 'inline-flex' }}>
-        <Switcher session={session} others={others} open={sw} onClick={() => setSw((o) => !o)} />
+        <Switcher session={session} others={menu.others} open={sw} onClick={() => setSw((o) => !o)} />
         {sw ? (
           <div className="menu" role="menu" aria-label="Sessions" style={{ position: 'absolute', zIndex: 9, top: 'calc(100% + 8px)', left: 0, width: 330 }}>
-            {(sessions && sessions.length ? sessions.filter((s) => s.kind !== 'other') : [session]).map((s) => (
-              <SwRow key={s.id} s={s} current={s.id === session.id} onPick={() => setSw(false)} />
-            ))}
+            {menu.stars.map((s) => <SwRow key={s.id} s={s} current={s.id === session.id} onPick={() => setSw(false)} />)}
+            {menu.terminals.length ? <>
+              {menu.stars.length ? <div className="menu-sep" /> : null}
+              {menu.terminals.map((s) => <SwRow key={s.id} s={s} current={s.id === session.id} onPick={() => setSw(false)} />)}
+            </> : null}
             <div className="menu-sep" />
             <Link className="sw-item" to={PATHS.fleet} role="menuitem" onClick={() => setSw(false)} style={{ textDecoration: 'none' }}>
               <Icon name="fleetRound" /><span>Back to the fleet<span className="d">all sessions</span></span><span className="kbd">G F</span>
