@@ -82,7 +82,6 @@ export const MISSING = [
   { endpoint: 'POST /api/train', hook: 'trainAction', for: 'Pause all, the reboot train, and Resume all' },
   { endpoint: 'GET /api/inbox', hook: 'useInbox', for: 'Oversight inbox: open and parked questions across every session and the cloud loop, tagged by session' },
   { endpoint: 'POST /api/claims/(claim|hold|unhold|reassign|request)', hook: 'claimAction', for: 'row actions on chunks and specs (only release exists today)' },
-  { endpoint: 'GET /api/summaries', hook: 'useSummaries', for: 'AI one-line chunk summaries cached in .nexus/cache/' },
   { endpoint: 'GET /api/git', hook: 'useGitRepo', for: 'Git panel: worktrees (idle/orphaned), recent main commits, open PRs with CI, the primary checkout, a /tidy dry run' },
   { endpoint: 'GET /api/cloud', hook: 'useCloudLoop', for: 'Cloud loop: schedule, next tick, paused state, runs as a timeline (today: /api/actions + /api/runs)' },
   { endpoint: 'GET /api/recover?dir=', hook: 'useRecover', for: 'Recover: a workflow folder read as a timeline (journal.jsonl), and recent runs' },
@@ -114,7 +113,7 @@ export const useInbox = (poll = 5000) => useResource('/api/inbox', { poll });
 /** GET /api/plan (served): order.mjs --json and progress.mjs --json joined -> { available, specs: [{ id, title, file, unchunked, percent, counts, chunks }], order, next, asap, held, unchunked, mark }. Shape: server/plan.mjs. */
 export const usePlan = () => useResource('/api/plan');
 
-/** GET /api/summaries -> { [chunkId]: { text, ai: true } }. */
+/** GET /api/summaries (served) -> { [chunkId]: { text, ai: true } }: Haiku one-liners for undescribed chunks, cached in .nexus/cache/, {} when Settings turns them off. Shape: server/summaries.mjs. */
 export const useSummaries = () => useResource('/api/summaries');
 
 /** GET /api/git -> { worktrees, main, prs, primary }. */

@@ -79,7 +79,8 @@ export default function Board() {
     const sum = sums.status === 'ready' ? sums.data || {} : {};
     return plan.chunks.map((c) => {
       const s = sum[c.id];
-      const named = !c.t && s ? { t: s.text ?? String(s), ai: true } : null;
+      // The server sends a line only for a chunk the plan leaves without words (server/summaries.mjs).
+      const named = s ?{ t: s.text ?? String(s), ai: true } : null;
       const b = bloom[c.id];
       return withClaim({ ...c, ...named, ...(b != null ? { bloom: true, delay: b, plotted: c.plotted || 'main' } : null) }, claims);
     });

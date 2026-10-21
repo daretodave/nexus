@@ -5,7 +5,8 @@
 // loop, appearance. Saved as you change them: owner mode, run mode and the
 // working phase go to the checkout's local settings (POST /api/local,
 // .nexus/local.json); the cloud loop pause is the loop workflow's enabled
-// state through gh; the theme is per browser.
+// state through gh; AI one-liners on the plan board are a GUI pref
+// (POST /api/prefs aiSummaries, on by default); the theme is per browser.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { RUN_MODES, nextRunMode, prefsFromRunMode, runModeFromPrefs, Icon, InfoBtn, Check, BadgeDef, BadgeAuto, Tip, Switch, Seg, ThemeSeg, useShell } from '../ui/index.js';
@@ -86,6 +87,15 @@ export default function Settings() {
     } catch (e) {
       setSave(e.status === 404 ? 'missing' : { error: e.message });
     }
+  };
+
+  // AI one-liners on the plan board: a GUI pref (POST /api/prefs), on unless turned off.
+  const [aiMine, setAiMine] = useState(null);
+  const ai = aiMine ?? app?.data?.prefs?.aiSummaries !== false;
+  const changeAi = async (on) => {
+    setAiMine(on);
+    setSave('saving');
+    try { await api('/api/prefs', { aiSummaries: on }); app?.reload?.(); setSave('saved'); } catch (e) { setSave({ error: e.message }); }
   };
 
   const [tip, setTip] = useState(false);
@@ -192,6 +202,18 @@ export default function Settings() {
                   <span className="t-body-s c-2" style={LABEL}>Chunk target</span>
                   <span className="t-body-s c-1">30 to 40 minutes each</span>
                   <span className="t-body-s c-3">heads-down shows elapsed against it</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="set-sec" style={SEC}>
+            <div><h2 className="set-h">Plan board</h2><p className="set-d">A chunk the plan leaves without words gets a one-line summary from Claude Haiku, marked as AI.</p></div>
+            <div style={{ minWidth: 0 }}>
+              <div className="set-row">
+                <Switch checked={ai} onChange={changeAi} title="AI one-liners" sub={ai ? 'On · cached, asked again only when a chunk or its spec changes' : 'Off · undescribed chunks show their id alone'} iconOn="sparkle" iconOff="xSmall" />
+                <div className="explain">
+                  Summaries are kept in <span className="file-tag">.nexus/cache/</span> on this machine and never written to the plan. They run on your own Claude Code login, one small batch per board load.
                 </div>
               </div>
             </div>
