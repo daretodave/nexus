@@ -56,11 +56,6 @@ Decisions made upfront (do not ask):
 
 ## Acceptance
 
-- **A1** `scripts/diagrams.mjs` writes the first three SVGs
-  under `assets/` from one style table; both themes legible.
-- **A2** The verify gate fails when a committed SVG differs
-  from the generator's output; `assets/` and the script are
-  in the README tree.
 - **A3** The README opens with the three doors (GUI via
   `npx @usenexus/cli`, the agent prompt, manual), embeds the
   diagrams, and carries no v1 phase vocabulary.
@@ -70,9 +65,7 @@ Decisions made upfront (do not ask):
 (None.)
 
 ## Chunks
-Measure: 3 open · 0 closed · next A4
+Measure: 1 open · 2 closed · next A4
 
-- [ ] **34.1** Diagram generator, one art style, and its gate
-  leg · M · closes A1, A2 · needs —
 - [ ] **34.2** The README's three doors, with the diagrams ·
-  M · closes A3 · needs 34.1
+  M · closes A3 · needs —
