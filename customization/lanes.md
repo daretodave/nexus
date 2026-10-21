@@ -115,6 +115,15 @@ Standing worktrees rot (stale deps, drifted state files).
 
 ## The lane board
 
+> **Chunk work claims through the claims module now:**
+> [`claims.md`](./claims.md). Each lane is a session, and
+> `node scripts/claims.mjs claim <chunk>` is its claim: an
+> orphan `claims` branch written by compare-and-swap, scoped to
+> the session, stale after 24 h, so two lanes can't both win a
+> chunk and a crashed lane's claim ages out on its own. Keep
+> the hand-kept board below only for path claims on work that
+> isn't a plan chunk (an audit fix, a data drain).
+
 `.scratch/lane-board.md` — gitignored, because it's live
 coordination state, not history. Every lane **claims before
 touching and releases on landing**:
@@ -236,6 +245,8 @@ guess about senior code.
 
 ## See also
 
+- [`claims.md`](./claims.md) — the claims module: who builds
+  which chunk, for lanes, loops and teammates alike.
 - [`../playbooks/hands-off.md`](../playbooks/hands-off.md) —
   the *unattended* counterpart; its "one writer" rule is why
   lanes are attended-only.

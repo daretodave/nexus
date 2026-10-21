@@ -499,9 +499,11 @@ async function legChunks() {
 const PURE_SUITES = [
   'templates/scripts/__tests__/pending.test.mjs',
   'templates/scripts/__tests__/settle.test.mjs',
+  'templates/scripts/__tests__/claims-codec.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
+  'templates/scripts/__tests__/claims.test.mjs',
 ]
 
 function runSuites(suites, label) {

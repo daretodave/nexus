@@ -441,6 +441,7 @@ nexus/
 │   ├── data-layer.md                  # gh-as-db / hybrid-with-managed-postgres / pure-db / saas-cms / none
 │   ├── sub-agents.md                  # designing your specialists
 │   ├── lanes.md                       # alpha/beta/gamma — three agents, one branch (attended fan-out)
+│   ├── claims.md                      # who builds which chunk: orphan claims branch, CAS, session-scoped, 24h TTL
 │   ├── claude-code.md                 # the Claude Code layer — permissions, guard hooks, pager, model routing
 │   ├── branding.md                    # opt-in /ship-asset + brander agent (Surface-gated)
 │   ├── visual-system.md               # design system layer (upstream of branding/assets)
@@ -530,11 +531,15 @@ nexus/
     │   ├── plan/settled.mjs           # the plan as it reads once pending edits settle
     │   ├── plan/config.mjs            # per-repo settle config (plan/settle.json)
     │   ├── plan/footguns.mjs          # footgun list format + budget lint
+    │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
+    │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
     │   ├── __tests__/pending.test.mjs # pending files, config, settled view
     │   ├── __tests__/settle.test.mjs  # settle's pure functions
-    │   └── __tests__/settle-run.test.mjs # settle end to end in a scratch repo (offline)
+    │   ├── __tests__/settle-run.test.mjs # settle end to end in a scratch repo (offline)
+    │   ├── __tests__/claims-codec.test.mjs # the claims rules
+    │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)
     ├── env/
     │   └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
     └── workspace/                      # → workspace root, not any repo (adopt-by-need)

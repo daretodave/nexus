@@ -86,11 +86,15 @@ templates/
 │   ├── plan/settled.mjs               (the plan as it reads once pending edits settle, in memory)
 │   ├── plan/config.mjs                (what settle may differ on per repo; overrides in plan/settle.json)
 │   ├── plan/footguns.mjs              (the footgun list's format and budget lint)
+│   ├── claims-codec.mjs               (the claims rules as pure functions: any claimant imports them)
+│   ├── claims.mjs                     (who builds what: the orphan claims branch, compare-and-swap; --json)
 │   ├── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
 │   ├── __tests__/plan-check.test.mjs  (unit tests for plan-check.mjs)
 │   ├── __tests__/pending.test.mjs     (pending files, the config, the settled view)
 │   ├── __tests__/settle.test.mjs      (settle's pure functions)
-│   └── __tests__/settle-run.test.mjs  (settle end to end in a scratch git repo; slower, offline)
+│   ├── __tests__/settle-run.test.mjs  (settle end to end in a scratch git repo; slower, offline)
+│   ├── __tests__/claims-codec.test.mjs  (the claims rules, pure)
+│   └── __tests__/claims.test.mjs      (claims over git in scratch repos; slower, offline)
 ├── env/
 │   └── env.example                    → repo's .env.example
 └── workspace/                          → workspace ROOT, not any repo (adopt-by-need; see below)
