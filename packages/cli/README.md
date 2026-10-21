@@ -26,8 +26,12 @@ You need no API key.
   strip: the session ledgers plus Claude Code's own session files for
   the repo. Link a terminal session and a tug or an answer sent to it
   reaches its next tool call, and only that session (the steer hook;
-  nexus `customization/sessions.md`). Pause all runs the reboot train,
-  and a fallen session resumes from its tile. Every owner line the
+  nexus `customization/sessions.md`). Each tile shows the session's
+  phase track, its progress through the chunks it claimed, and its
+  orb; a terminal session is read-only. Pause all runs the reboot
+  train. A fallen session resumes from its tile: a new session starts
+  here on `/reboot-resume <star>`, takes its ledger, claims and
+  worktree, and restarts its loop. Every owner line the
   GUI posts (a tug, an answer, a line to every loop: `POST
   /api/announce`) goes through the repo's own `scripts/announce.mjs`
   (its `postTo`: the board's lock and whole-file write); a repo
@@ -44,9 +48,12 @@ You need no API key.
   next reply or ledger beat after that: a quiet line, for ten
   minutes). Each open question shows its age and the session's star.
 - **Heads-down**: the session as a 120-column terminal view.
-- **Oversight**: every open question across sessions, live
-  (`AskUserQuestion` as buttons, tool permissions) and durable (from
-  `plan/`). Answers land per owner mode.
+- **Oversight**: every open question across sessions in one inbox,
+  each tagged with its session's star (`GET /api/inbox`): live
+  (`AskUserQuestion` as buttons, tool permissions) from the sessions
+  this server runs, parked (each session's ledger, terminal ones too)
+  and durable (from `plan/`). The Oversight badge counts the same list.
+  Answers land per owner mode.
 - **Plan**: all chunks in the order `/next` would build them (the
   repo's `scripts/plan/order.mjs`), or by spec with % done as `/next
   status` reads it (`progress.mjs`, pending closes counted). Sort by
@@ -72,7 +79,7 @@ You need no API key.
   `/api/local` by Settings and the cockpit alike.
 
 Some of this waits on server endpoints that are not built yet (the
-merged inbox, chunking in the page). Until they land, those
+reboot train's Pause all, chunking in the page). Until they land, those
 screens show the design's empty state, never made-up data.
 
 Using another agent? The Welcome step quotes the canonical prompt

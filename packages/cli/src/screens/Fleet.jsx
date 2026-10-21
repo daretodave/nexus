@@ -4,9 +4,10 @@
 // train) docked over the grid while it runs.
 //
 // Data: GET /api/sessions (useSessions). Actions: POST /api/sessions (start),
-// POST /api/sessions/:id/resume, POST /api/train { action: pause|cancel|resume }.
-// Until the server serves them, the grid shows only the start tile and an
-// action says plainly that it is not wired up yet; nothing is invented.
+// POST /api/sessions/:id/resume (a hosted one resumes; a fallen one is taken
+// by a new hosted session on /reboot-resume <star>), POST /api/train
+// { action: pause|cancel|resume }. An action the server does not serve yet
+// says plainly that it is not wired up; nothing is invented.
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -90,6 +91,8 @@ export default function Fleet() {
       else push({ kind: 'error', title: `Couldn't resume ${s.name}`, body: r.error });
       return;
     }
+    // A fallen session is picked up by a new one on /reboot-resume; one this server runs just resumes.
+    if (r.data?.resumes) push({ kind: 'info', title: `Resuming ${s.name} as ${r.data.name}`, body: `${r.data.name} runs ${r.data.prompt}: it takes the ledger, the claims and the worktree, and restarts the loop.` });
     sessions.reload();
   }
 
