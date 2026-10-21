@@ -55,7 +55,9 @@ One paste prompt for Claude Design, written from the plan:
 what each screen must show, its states, the roles that see it
 (owner or contributor), design system first, no emoji. nexus's
 was written on 2026-10-20 by hand. `/design prompt [<scope>]`
-(43.2) writes it from the plan's specs.
+(43.2) writes it from the plan's specs and stores it in
+`design/prompts/`, numbered, so the addenda know where it left
+off.
 
 ### 2. Addenda
 

@@ -28,8 +28,8 @@ Skip it too when the product has no screens worth a canvas.
 
 | Step | Command | Lands in | Today |
 |---|---|---|---|
-| Prompt | `/design prompt [<scope>]` | 43.2 | by hand |
-| Addendum | `/design addendum` | 43.2 | by hand |
+| Prompt | `/design prompt [<scope>]` | 43.2 | the command (`scripts/design/prompt.mjs`) |
+| Addendum | `/design addendum` | 43.2 | the command |
 | Ingest | `/design ingest <link or folder>` | 43.3 | by hand, through the Artifact tool |
 | Board renderer, screenshot compare | `templates/scripts/design/` | 43.4 | a session's own scratch scripts |
 | Port | the port recipe Workflow | 43.5 | a Workflow written for the chunk |
@@ -52,8 +52,17 @@ Write one paste prompt from the plan. In order:
 
 Number the sections; addenda continue the numbering. Keep the
 prompt in the repo beside where the handoff will live, so the
-next addendum knows where it left off. `/design prompt` (43.2)
-writes it from the specs.
+next addendum knows where it left off.
+
+`/design prompt` writes it from the specs. Its script,
+`scripts/design/prompt.mjs`, drafts the mechanical part and
+stores it as `design/prompts/NNN-<date>.md` (NNN counts every
+prompt and addendum); the model fills the design system and
+turns plan wording into what each screen shows. The scope picks
+the specs: numbers (`41,42`), a keyword (`vault`), or nothing,
+for every Design bullet and Acceptance line that names UI work.
+The file's front matter records the scope, the plan commit, the
+last section number and a hash per plan item it drew from.
 
 ## Step 2 — addenda, as the plan moves
 
@@ -62,7 +71,11 @@ only what changed since the last prompt, numbered to continue
 it, and paste it on top of the running Claude Design session.
 nexus's vault screens and a contributor's local keys reached
 the canvas this way, as two later deliveries of the same
-artifact. `/design addendum` (43.2) writes them.
+artifact. `/design addendum` writes them: it diffs the plan's
+items against the newest stored file's hashes, writes the new
+and changed ones and names the dropped ones, numbers its
+sections on from that file's last, and writes nothing when
+nothing changed.
 
 ## Step 3 — the artifact link
 
