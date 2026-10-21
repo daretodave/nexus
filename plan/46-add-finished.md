@@ -63,9 +63,6 @@ and their template twins; `skills/triage.md` and
 
 ## Acceptance
 
-- **A2** Back-to-back closes in one worktree get archive
-  ranges that don't overlap, and the plot commit is in
-  neither, with tests.
 - **A3** Settle refuses `section Chunks` and `section
   Acceptance`, and checks and numbers placeholders in
   `## Footguns` lines, with tests.
@@ -75,9 +72,7 @@ and their template twins; `skills/triage.md` and
 (None.)
 
 ## Chunks
-Measure: 2 open · 2 closed · next A5
+Measure: 1 open · 3 closed · next A5
 
-- [ ] **46.2** Archive ranges that don't cross · S · closes
-  A2 · needs —
 - [ ] **46.3** The last refusals: section Chunks and
   Acceptance, footgun placeholders · S · closes A3 · needs —
