@@ -87,4 +87,4 @@ Measure: 3 open · 0 closed · next A4
 - [ ] **44.2** The recorder: Playwright frames to a GIF,
   pure JavaScript · M · closes A2 · needs 44.1
 - [ ] **44.3** Fleet to tug (and optionally bug to archive),
-  recorded and placed in the README · M · closes A3 · needs 44.2, 41.6
+  recorded and placed in the README · M · closes A3 · needs 44.2, 41.6, 41.10
