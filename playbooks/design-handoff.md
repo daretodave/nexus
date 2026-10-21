@@ -30,7 +30,7 @@ Skip it too when the product has no screens worth a canvas.
 |---|---|---|---|
 | Prompt | `/design prompt [<scope>]` | 43.2 | the command (`scripts/design/prompt.mjs`) |
 | Addendum | `/design addendum` | 43.2 | the command |
-| Ingest | `/design ingest <link or folder>` | 43.3 | by hand, through the Artifact tool |
+| Ingest | `/design ingest <link or folder>` | 43.3 | the command (`scripts/design/ingest.mjs`) |
 | Board renderer, screenshot compare | `templates/scripts/design/` | 43.4 | a session's own scratch scripts |
 | Port | the port recipe Workflow | 43.5 | a Workflow written for the chunk |
 | Fidelity leg | an opt-in gate leg | 43.5 | the handoff README, by review |
@@ -98,13 +98,26 @@ What lands, nexus's shape:
 | `*.dc.html` | one board each; a light board may only re-import its dark one |
 | `README.md` | names the folder the source of truth; logs each delivery |
 
-`/design ingest` (43.3) writes it to `design/handoff/<date>/`
-with a manifest (boards, pages, a sha256 per file) and plots
-the port as an L chunk. nexus's own handoff predates the
-command and sits flat in `packages/cli/design/handoff/`.
+`/design ingest` does this step: it fetches the files into a
+scratch folder, and `node scripts/design/ingest.mjs <folder>`
+copies them byte for byte to `design/handoff/<date>/` with
+`manifest.json` (the artifact link and version, the pages, the
+boards, a sha256 per file) and the README. It writes nothing
+when the canvas names a board the folder lacks;
+`node scripts/design/ingest.mjs check <handoff>` confirms the
+files still match. It then plots the port as an L chunk
+through `/plot`.
 
-Edit a delivered file only to keep a gate green, and log the
-edit in a was/now table. nexus swapped two glyphs with emoji
+A package's UI keeps its handoff beside its code: `--into
+packages/<name>/design/handoff` lands it in
+`packages/<name>/design/handoff/<date>/`. nexus's own first
+three deliveries predate the command and sit flat in
+`packages/cli/design/handoff/`; they stay there, and the next
+delivery lands in a dated folder beside them.
+
+Edit a delivered file only to keep a gate green, log the edit
+in a was/now table, and rehash
+(`node scripts/design/ingest.mjs rehash <handoff>`). nexus swapped two glyphs with emoji
 presentations for look-alikes; everything else stayed byte for
 byte.
 
