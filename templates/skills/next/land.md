@@ -11,8 +11,9 @@ git ls-tree --name-only origin/<DEFAULT_BRANCH> plan/pending/
 ```
 
 More than `README.md` → in a fresh detached worktree of
-`origin/<DEFAULT_BRANCH>`: `node scripts/plan/settle.mjs`
-(it commits), the gate, `git push origin HEAD:<DEFAULT_BRANCH>`.
+`origin/<DEFAULT_BRANCH>`: `node scripts/plan/settle.mjs --no-commit`,
+the gate, commit with the message it printed, `git push
+origin HEAD:<DEFAULT_BRANCH>`.
 
 - Exit 1 names a pending file it skipped and why (an edit whose
   old text main has moved): fix that file against main in the
@@ -21,9 +22,10 @@ More than `README.md` → in a fresh detached worktree of
   the message it printed.
 - A rejected push: `git fetch`, `git reset --keep
   origin/<DEFAULT_BRANCH>`, settle again.
-- A spec that "lists no chunk now": absorb it (its lasting
-  rules into `identity/` or `plan/bearings.md`, the file
-  deleted, the spec-complete archive line), as its own commit.
+- A spec that "lists no chunk now": absorb it before the gate
+  (its lasting rules into `identity/` or `plan/bearings.md`,
+  the file and its roadmap row deleted, the archive's
+  `· NN · spec complete: …` line), in the settle's commit.
 
 ## 2. The pending file
 
@@ -61,11 +63,15 @@ From the run's detached worktree:
 ```bash
 git fetch origin
 git rebase origin/<DEFAULT_BRANCH>
-node scripts/plan/settle.mjs          # folds this close (and any other) in, commits
-pnpm verify                           # the gate, foreground
+node scripts/plan/settle.mjs --no-commit   # folds this close (and any other) in, staged
+pnpm verify                                # the gate, foreground
+git commit -m "plan: settle <ids>"         # the message settle printed
 git push origin HEAD:<DEFAULT_BRANCH>
 ```
 
+- Settle says "spec NN lists no chunk now": absorb it before
+  the gate (§1's last bullet) and commit that with the settle;
+  the gate stays red on an empty spec until then.
 - Rejected (another session landed first): `git fetch`,
   `git reset --keep HEAD~1` (drops only the settle commit),
   rebase, settle, gate, push. Three rejections → stop, report.
