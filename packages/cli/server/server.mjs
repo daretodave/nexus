@@ -22,6 +22,7 @@ import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, parseParkedId, resuma
 import { createGitView } from './git.mjs';
 import { readRun, recentRuns } from './recover.mjs';
 import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
+import { claimsAction, listClaims, SESSION as CLAIMS_SESSION } from './claims.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -245,6 +246,17 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return { status: 200, id: s.id, closed: true, worktree: s.place.worktree || '', note: s.place.worktree ? 'its worktree stays: close it with /tidy' : undefined };
   }
 
+  /**
+   * The claims CLI's acting session: a session this server runs (by id, Claude Code id or star; none is home), else a
+   * terminal session's own claims id (the CLI still matches the person, so it never reaches another's claims), plus
+   * the gh login the server asked once. server/claims.mjs strips Claude Code's variables from the child's environment.
+   */
+  async function claimsCtx(key) {
+    const s = sessionOf(key);
+    const session = s ? s.id : CLAIMS_SESSION.test(String(key || '')) ? String(key) : home.id;
+    return { session, login: await login() };
+  }
+
   // Resume from a fallen tile (A2): a new hosted session takes the ledger through /reboot-resume. One resumer per
   // ledger while this server runs; the ledger's own `take` refuses a second one from anywhere else.
   const resumers = new Map();
@@ -356,8 +368,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/git/tidy': { const r = await gitView.tidyDry(); return send(res, r.available ? 200 : 404, r); }
         case 'POST /api/git/fetch': { await body(req); const r = await gitView.fetchNow(); return send(res, r.ok ? 200 : 502, r); }
         case 'POST /api/announce': { const b = await body(req); const r = await steering.announce(b.text); return send(res, r.status, r); }
-        case 'GET /api/claims': return send(res, 200, await repoMod.claims(repo));
-        case 'POST /api/claims/release': { const b = await body(req); return send(res, 200, await repoMod.releaseClaim(repo, String(b.id || ''))); }
+        case 'GET /api/claims': return send(res, 200, await listClaims(repo, await claimsCtx(url.searchParams.get('session'))));
         case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));
         case 'GET /api/summaries': return send(res, 200, await summaries.get());
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
@@ -371,6 +382,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo, ghOpts));
         case 'GET /api/recover': { const r = await recoverRead(url.searchParams.get('dir') || ''); return send(res, r.status, r); }
         case 'POST /api/recover/resume': { const r = await recoverResume(await body(req)); return send(res, r.status, r); }
+      }
+      // The claims panel (spec 40 A5): each verb is one run of the repo's claims CLI as the acting session (claims.mjs).
+      const cv = /^POST \/api\/claims\/([a-z]+)$/.exec(route);
+      if (cv) {
+        const b = await body(req);
+        const r = await claimsAction(repo, cv[1], b, { ...(await claimsCtx(b.session)), ghRun });
+        return send(res, r.status, r);
       }
       const ask = /^POST \/api\/ask\/([\w-]+)$/.exec(route);
       if (ask) {

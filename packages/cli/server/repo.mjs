@@ -120,23 +120,7 @@ export function findScript(repo, names) {
 export const CLAIMS_SCRIPTS = ['scripts/claims.mjs', 'scripts/dev/claims.mjs', 'scripts/plan/claims.mjs', 'scripts/git/claims.mjs'];
 export const PROGRESS_SCRIPTS = ['scripts/progress.mjs', 'scripts/dev/progress.mjs', 'scripts/plan/progress.mjs'];
 
-export async function claims(repo) {
-  const script = findScript(repo, CLAIMS_SCRIPTS);
-  if (!script) return { available: false, rows: [], note: 'No claims module in this repo yet.' };
-  const r = await run('node', [script, 'list', '--json'], { cwd: repo, timeout: 30000 });
-  const rows = json(r.stdout);
-  if (!r.ok || !Array.isArray(rows)) return { available: true, rows: [], error: (r.stderr || r.stdout).trim().slice(0, 400) };
-  return { available: true, rows, script };
-}
-
-export async function releaseClaim(repo, id) {
-  if (!CHUNK_ID.test(id)) return { ok: false, error: 'bad chunk id' };
-  if (!isOwner(repo)) return { ok: false, error: 'Releasing a claim needs owner mode.' };
-  const script = findScript(repo, CLAIMS_SCRIPTS);
-  if (!script) return { ok: false, error: 'no claims module' };
-  const r = await run('node', [script, 'release', id, '--force'], { cwd: repo, timeout: 60000 });
-  return { ok: r.ok, out: (r.stdout + r.stderr).trim() };
-}
+// The claims list and its writes: server/claims.mjs (the repo's claims CLI as the acting session).
 
 export async function progress(repo, spec) {
   const script = findScript(repo, PROGRESS_SCRIPTS);
