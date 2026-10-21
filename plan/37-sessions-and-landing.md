@@ -49,7 +49,6 @@ committed; the guard hook.
 
 ## Acceptance
 
-- **A2** Claims session tags carry the star name.
 - **A3** Claims refuse in a session that loaded no hooks.
 - **A4** No committing template skill pushes main directly;
   each lands per owner mode.
@@ -63,10 +62,8 @@ committed; the guard hook.
 (None.)
 
 ## Chunks
-Measure: 6 open · 1 closed · next A8
+Measure: 5 open · 2 closed · next A8
 
-- [ ] **37.2** The star name rides in the claims session tag ·
-  S · closes A2 · needs —
 - [ ] **37.3** Claims refuse a session with no hooks loaded ·
   S · closes A3 · needs —
 - [ ] **37.4** Every committing skill lands per owner mode;

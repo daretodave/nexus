@@ -68,3 +68,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 35.6 · upgrade-plan.mjs converts a v1 plan; upgrade.md Step 4 runs it · ca603e2f..03772a15
 - 2026-10-21 · 38.1 · adoption asks owner or contributor and arms the hooks · c4fddf0b..c4fddf0b
 - 2026-10-21 · 35.3 · loop-issue spec-open/spec-close; ship-a-chunk mirrors specs · 7c514a9a..93e24315
+- 2026-10-21 · 37.2 · claims session tags carry the star name · 0db3ec1b..8e90d882
