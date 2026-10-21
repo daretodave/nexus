@@ -64,8 +64,6 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 
 ## Acceptance
 
-- **A2** The fleet home shows every session (GUI and terminal)
-  by star name, and a fallen one resumes from its tile.
 - **A5** The claims panel groups by person and session, and
   claims, releases, holds, assigns and requests.
 - **A6** Every session and the repo show their git state, and
@@ -80,10 +78,8 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 (None.)
 
 ## Chunks
-Measure: 5 open · 7 closed · next A13
+Measure: 4 open · 8 closed · next A13
 
-- [ ] **40.2** The fleet home: star tiles, merged inbox,
-  Resume · M · closes A2 · needs —
 - [ ] **40.5** The claims panel: group, hold, assign, request
   · M · closes A5 · needs —
 - [ ] **40.6** Git per session and the repo's worktree panel ·

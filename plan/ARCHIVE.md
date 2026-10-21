@@ -95,3 +95,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 40.4 · undescribed chunks show a cached, marked AI one-liner · 53ccdc43..29ab0197
 - 2026-10-21 · 41.9 · screens load per route under 500 kB; fonts ship latin only · 448e249f..3c0aaa50
 - 2026-10-21 · 40.11 · run mode and owner mode live in .nexus/local.json via /api/local · 8c379d20..85391147
+- 2026-10-21 · 40.2 · fleet home tiles by star, a merged inbox, Resume on a fallen tile · ec219710..1f1a1629
