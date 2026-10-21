@@ -29,6 +29,7 @@ only asks for one once a chunk names a secret.
 | `.env` | The local ring: values, untracked, at the primary checkout. |
 | `.env.workspace` | The workspace ring: values several repos share, at the workspace root, outside every repo. |
 | `.nexus/secrets-audit.jsonl` | The push record: which name went where, and when. Untracked, at the primary checkout. Never a value. |
+| `.nexus/secrets-local.json` | A contributor's own local key names (never values), untracked, at the primary checkout. |
 
 `nexus secrets run`, and the Vercel and Cloudflare sinks,
 extend `scripts/secrets.mjs` with more; this page grows with
@@ -213,6 +214,40 @@ The other settings, all optional, in the same `secrets` object:
 | `keychainService` | `nexus/<repo folder>` | The keychain service the items file under. |
 | `workspace` | `..` | The workspace root, relative to the checkout (or absolute). |
 
+### A contributor's local keys
+
+Project secrets are the owner's: contributors never need one.
+Some still keep their own keys to run the app (a dev API key,
+a local database URL), and the vault holds those too. A
+contributor checkout is any checkout not in effective owner
+mode ([`playbooks/owner-mode.md`](../playbooks/owner-mode.md)):
+no `.owner`, owner mode switched off, or `NEXUS_CONTRIBUTOR=1`.
+There:
+
+```bash
+node scripts/secrets.mjs set DEV_API_KEY             # -> local (this machine only)
+node scripts/secrets.mjs import my.env --store       # values into the vault, names kept on this machine
+node scripts/secrets.mjs status                      # "No project secrets needed", then your local keys
+```
+
+| | Owner | Contributor |
+|---|---|---|
+| `set`, `import --store` | any ring | `local` or `keychain`; the `workspace` ring is refused (it is shared with sibling repos) |
+| The names | into `nexus.secrets.json` (import) | into the untracked `.nexus/secrets-local.json`, never the manifest |
+| A sink (`push`) | pushes | refused, with one message |
+| `status` | every declared name and where it is set | "No project secrets needed", then "Your local keys (this machine only)" |
+
+- Because the names never reach the manifest, `plan-check.mjs`
+  refuses a chunk that names one: no chunk can require a
+  contributor's key.
+- `.nexus/secrets-local.json` holds names only. It is the
+  record `status` reads, since the keychain can't be listed.
+- Setting a name the manifest declares works (the value stays
+  on this machine), with a note that the owner provides it.
+- `status --json` carries `mode` (`owner` or `contributor`),
+  `projectSecretsNeeded` (`0` for a contributor) and
+  `localKeys` (each name and its rings) for the GUI's Vault.
+
 ## Push: the sinks
 
 A sink pushes a value from the vault to where it is needed, so
@@ -239,7 +274,7 @@ node scripts/secrets.mjs push GH_TOKEN --repo me/other-repo   # another repo tha
 - `push` runs in owner mode only
   ([`playbooks/owner-mode.md`](../playbooks/owner-mode.md)).
   A contributor's keys are local-only: every sink refuses
-  there.
+  there ([A contributor's local keys](#a-contributors-local-keys)).
 - Each push that lands is one line in
   `.nexus/secrets-audit.jsonl` at the primary checkout:
 
@@ -284,7 +319,8 @@ field.
   (set it as the cloud-loop setup says).
 - **A contributor's own local keys** (a dev API key, a local
   database URL) stay theirs, in their own vault, never in the
-  manifest and never required by a chunk.
+  manifest and never required by a chunk
+  ([A contributor's local keys](#a-contributors-local-keys)).
 
 nexus runs this on itself: its `nexus.secrets.json` declares
 `GH_TOKEN` and `ACTIONS_PAT` (`agents.md`, "Operational
