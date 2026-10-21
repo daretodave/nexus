@@ -747,10 +747,16 @@ function closesAt(cwd, h, file) {
   }
 }
 
+/** Whether commit `h` writes a pending file that closes a chunk (`names`: the files it touches, when already read). */
+function closesIn(cwd, h, names = git(['show', '--name-only', '--format=', h], cwd).split('\n').filter(Boolean)) {
+  return names.some((n) => n.startsWith('plan/pending/') && n !== 'plan/pending/README.md' && closesAt(cwd, h, n));
+}
+
 /**
  * The chunk's own commits as the archive writes them (`first..last`, 8 characters): through a pull request, the merge's
  * branch side; pushed straight to main, the first-parent run back from the pending file's commit to the last merge,
- * settle or other pending close. The pending file's own commit counts only when nothing else does.
+ * settle, other pending close or archive write (a close made before the repo settled, so a first settle never reaches
+ * back across old history). The pending file's own commit counts when it carries work too, or when nothing else does.
  */
 export function commitRange(cwd, file) {
   const c = git(['log', '-1', '--diff-filter=A', '--format=%H', '--', file], cwd);
@@ -759,8 +765,20 @@ export function commitRange(cwd, file) {
   const firstParent = new Set(git(['rev-list', '--first-parent', 'HEAD'], cwd).split('\n'));
   let list = [];
   if (!firstParent.has(c)) {
-    const merge = git(['rev-list', '--first-parent', '--merges', '--ancestry-path', `${c}..HEAD`], cwd).split('\n').filter(Boolean).at(-1);
-    if (merge) list = git(['rev-list', '--no-merges', '--reverse', `${merge}^1..${merge}^2`], cwd).split('\n').filter(Boolean);
+    // The first merge on main's first-parent line that brought c in. (`--first-parent` with `--ancestry-path` lists
+    // nothing for a commit off the first-parent line, so the two lists are crossed instead.)
+    const brought = new Set(git(['rev-list', '--merges', '--ancestry-path', `${c}..HEAD`], cwd).split('\n').filter(Boolean));
+    const merge = git(['rev-list', '--first-parent', '--merges', 'HEAD'], cwd).split('\n').filter((h) => brought.has(h)).at(-1);
+    if (merge) list = git(['rev-list', '--no-merges', '--topo-order', '--reverse', `${merge}^1..${merge}^2`], cwd).split('\n').filter(Boolean);
+    // A package (one pull request, several closes): this chunk's run is the commits after the close before it, through
+    // its own close, plus the review fixes after it when it is the branch's last close.
+    const closes = list.map((h, i) => [h, i]).filter(([h]) => h !== c && closesIn(cwd, h));
+    const at = list.indexOf(c);
+    if (at >= 0 && closes.length) {
+      const before = closes.filter(([, i]) => i < at).at(-1)?.[1] ?? -1;
+      const after = closes.find(([, i]) => i > at)?.[1];
+      list = list.slice(before + 1, after === undefined ? list.length : at + 1);
+    }
   } else {
     // A root commit has nothing before it to read.
     const rootCommit = git(['rev-list', '--max-parents=0', 'HEAD'], cwd).split('\n').includes(c);
@@ -769,14 +787,18 @@ export function commitRange(cwd, file) {
       const shown = git(['show', '-s', '--format=%P%x09%s', h], cwd);
       const [parents, subject] = shown.includes('\t') ? shown.split('\t') : ['', shown];
       if (parents.includes(' ') || subject.startsWith('plan: settle')) break;
+      const names = git(['show', '--name-only', '--format=', h], cwd).split('\n').filter(Boolean);
+      // A close written straight into the archive (before the repo settled) bounds the run as a settle does.
+      if (names.includes('plan/ARCHIVE.md')) break;
       // Another chunk's close bounds the run; a lone pending file (a decision, a footgun, an archive fix) is this run's.
-      const pending = git(['show', '--name-only', '--format=', h], cwd).split('\n').filter((n) => n.startsWith('plan/pending/') && n !== 'plan/pending/README.md');
-      if (pending.some((n) => closesAt(cwd, h, n))) break;
+      if (closesIn(cwd, h, names)) break;
       list.unshift(h);
     }
+    // The close's own commit is work too when it touches more than plan/pending/ (the work and its close in one).
+    list.push(c);
   }
   const touches = (h) => git(['show', '--name-only', '--format=', h], cwd).split('\n').filter(Boolean);
-  const work = list.filter((h) => h !== c && !touches(h).every((n) => n.startsWith('plan/pending/')));
+  const work = list.filter((h) => !touches(h).every((n) => n.startsWith('plan/pending/')));
   const pick = work.length ? work : [c];
   return `${short(pick[0])}..${short(pick.at(-1))}`;
 }

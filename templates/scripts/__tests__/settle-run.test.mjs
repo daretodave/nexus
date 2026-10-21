@@ -196,6 +196,45 @@ describe('the settle run', () => {
     assert.match(res.out, /no identity\/footguns\.md to settle its footguns into/);
   });
 
+  it('archives the right commits: an old archive write bounds the run; work and its close in one commit count', async () => {
+    const r = repo();
+    const { commitRange } = await import(pathToFileURL(SETTLE).href);
+    // An unrelated commit before the work, then a close written straight into the archive (the v1 way).
+    r.put('old.txt', 'old\n');
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'feat: old work');
+    r.put('plan/ARCHIVE.md', '# Archive\n\n- 2026-01-01 · 01 · an old close · abc\n');
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: archive 01');
+    r.put('src.txt', 'more work\n');
+    r.put('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2026-10-15\nsays: One commit\n---\n');
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'feat: work and close at once');
+    const one = r.git('rev-parse', 'HEAD').slice(0, 8);
+    assert.equal(commitRange(r.dir, 'plan/pending/07.4.md'), `${one}..${one}`);
+  });
+
+  it('archives each close of a package pull request with its own commits', async () => {
+    const r = repo();
+    const { commitRange } = await import(pathToFileURL(SETTLE).href);
+    r.git('checkout', '-q', '-b', 'pkg/s1');
+    const step = (file, text, msg) => {
+      r.put(file, text);
+      r.git('add', '-A');
+      r.git('commit', '-q', '-m', msg);
+      return r.git('rev-parse', 'HEAD').slice(0, 8);
+    };
+    const a1 = step('a.txt', 'a\n', 'feat: a');
+    step('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2026-10-15\nsays: A\n---\n', 'plan: close 07.4');
+    const b1 = step('b.txt', 'b\n', 'feat: b');
+    step('plan/pending/07.5.md', '---\nclose: 07.5\ndate: 2026-10-15\nsays: B\n---\n', 'plan: close 07.5');
+    const fix = step('b.txt', 'b fixed\n', 'fix: review');
+    r.git('checkout', '-q', 'main');
+    r.git('merge', '-q', '--no-ff', '-m', 'Merge pkg/s1', 'pkg/s1');
+    assert.equal(commitRange(r.dir, 'plan/pending/07.4.md'), `${a1}..${a1}`);
+    assert.equal(commitRange(r.dir, 'plan/pending/07.5.md'), `${b1}..${fix}`);
+  });
+
   it('sees a worktree of the owner\'s checkout as the owner\'s', async () => {
     const r = repo();
     r.put('.owner', '');
@@ -207,5 +246,8 @@ describe('the settle run', () => {
     assert.equal(isOwner(wt, { NEXUS_CONTRIBUTOR: '1' }), false);
     const res = spawnSync(process.execPath, [SETTLE], { cwd: wt, encoding: 'utf8', env: ENV });
     assert.equal(res.status, 0, `${res.stdout}${res.stderr}`);
+    // A committed .owner counts for no one.
+    r.git('add', '-f', '.owner');
+    assert.equal(isOwner(r.dir, {}), false);
   });
 });

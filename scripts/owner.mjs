@@ -6,7 +6,8 @@
 //   - the owner can switch it off for a session in the untracked local settings, `.nexus/local.json`
 //     (`{ "ownerMode": false }`), and get contributor behavior (PRs, packages);
 //   - `NEXUS_CONTRIBUTOR=1` does the same for one command (to rehearse the PR path).
-// With no `.owner`, owner mode is not an option at all: the setting is ignored.
+// With no `.owner`, owner mode is not an option at all: the setting is ignored. A `.owner` committed to the repo
+// counts for no one (it would make every clone the owner's): gitignore it.
 //
 // The owner's sessions claim as `privileged_agent_session`, may claim many chunks at once, land on main and settle
 // plan/pending/. A contributor could make the file too: the pre-push refusal of main is a leg trip, and the host's
@@ -40,7 +41,9 @@ export function isOwner(cwd = process.cwd(), env = process.env) {
   try {
     const root = primaryRoot(cwd);
     if (!fs.existsSync(path.join(root, OWNER_FILE))) return false;
-    return localSettings(root).ownerMode !== false;
+    if (localSettings(root).ownerMode === false) return false;
+    // A committed `.owner` would make every clone the owner's: only an untracked one counts.
+    return execFileSync('git', ['ls-files', '--', OWNER_FILE], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim() === '';
   } catch {
     return false;
   }

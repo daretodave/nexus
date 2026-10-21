@@ -1,0 +1,36 @@
+name: scripts-ci
+
+# The plan and claims scripts adopters copy (templates/scripts/) end
+# to end in scratch git repos: the gate's opt-in `scripts-git` leg,
+# too slow for every local commit, run here on both shells' homes
+# so a script that breaks on posix or on Windows goes red.
+
+on:
+  push:
+    branches: [main]
+    paths: ['templates/scripts/**', 'scripts/**', '.github/workflows/scripts-ci.yml']
+  pull_request:
+    paths: ['templates/scripts/**', 'scripts/**', '.github/workflows/scripts-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scripts-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  git-suites:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/verify.mjs scripts
+      - run: node scripts/verify.mjs scripts-git

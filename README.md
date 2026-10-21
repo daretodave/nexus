@@ -459,7 +459,7 @@ nexus/
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
 ├── plan/                              # nexus's OWN state files (roadmap, specs + chunks, archive, queues)
 ├── .claude/                           # nexus's OWN commands + settings.json + guard hook
-├── .github/                           # nexus's OWN cloud loop (march.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml
+├── .github/                           # nexus's OWN cloud loop (march.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml
 ├── packages/
 │   └── cli/                           # @usenexus/cli — npx GUI for Claude Code (React+Vite; publish.yml ships it, cli-ci.yml tests it)
 └── templates/
