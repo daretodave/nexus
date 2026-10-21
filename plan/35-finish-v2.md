@@ -70,8 +70,6 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
   to one `plan-check` passes; `upgrade.md` Step 4 runs it.
 - **A6** adopt-dryrun covers `new-project.md` §3 and runs on
   Windows.
-- **A7** Both plan READMEs describe `/plot`, `/messy` and
-  priority rows.
 - **A8** `CLAUDE.md` points at the v2 pick order.
 - **A9** `v2.0.0` is tagged; both lock files and
   `plan-shape.md` say so.
@@ -81,10 +79,8 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
 (None.)
 
 ## Chunks
-Measure: 9 open · 0 closed · next A10
+Measure: 8 open · 1 closed · next A10
 
-- [ ] **35.1** Both plan READMEs name /plot, /messy and
-  priority rows · S · closes A7 · needs —
 - [ ] **35.2** Vocabulary sweep: phase words and a sibling's
   name out of public docs · M · closes A1 · needs —
 - [ ] **35.3** loop-issue spec-open/spec-close; ship-a-chunk
