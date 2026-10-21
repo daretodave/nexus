@@ -45,6 +45,13 @@
 //                 pure, no git, no network, about a second; and
 //                 nexus's own copies in scripts/ match them byte
 //                 for byte (the kit dogfoods what it ships)
+//   workflows     every workflow in .github/workflows/ and
+//                 templates/.github/workflows/ keeps the cloud-loop
+//                 rules (templates/scripts/workflow-lint.mjs): a
+//                 secret runs on hosted runners only, run-name and
+//                 env blocks read only the contexts GitHub allows
+//                 there and never a secret or token, and no run
+//                 script interpolates outsider text
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds). Opt in with
@@ -537,6 +544,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/announce.test.mjs',
   'templates/scripts/__tests__/ledger.test.mjs',
   'templates/scripts/__tests__/order.test.mjs',
+  'templates/scripts/__tests__/workflow-lint.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
@@ -593,6 +601,16 @@ function runSuites(suites, label) {
   }
 }
 
+// --- leg: workflows -----------------------------------------------------------
+// The cloud loop's workflow files (nexus's own and the templates)
+// are checked by the same script adopters add to their gate.
+
+async function legWorkflows() {
+  const { lintDirs } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/workflow-lint.mjs')).href)
+  const { problems, files } = lintDirs(['.github/workflows', 'templates/.github/workflows'].map((d) => path.join(ROOT, d)))
+  return { failures: problems.map((p) => normalize(path.relative(ROOT, p.split(':')[0])) + p.slice(p.indexOf(':'))), note: `${files} workflows: hosted runners for secrets, contexts, no outsider text in run scripts` }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -620,6 +638,7 @@ const LEGS = {
   dualshell: (files) => legDualshell(files),
   chunks: () => legChunks(),
   scripts: () => legScripts(),
+  workflows: () => legWorkflows(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
 }

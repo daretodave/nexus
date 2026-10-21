@@ -25,7 +25,8 @@ jobs:
     timeout-minutes: 60    # the full walk is the long pole
     env:
       SMOKE_SAMPLE: full
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # No token here: the e2e walk runs the project's own code,
+      # so only the alarm step holds one.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,6 +50,8 @@ jobs:
 
       - name: Open issue on failure
         if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           existing=$(gh issue list --search 'in:title "Nightly smoke failed" state:open' --json number --jq 'length')
           if [ "$existing" -eq 0 ]; then

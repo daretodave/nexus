@@ -574,6 +574,7 @@ nexus/
     │   ├── announce.mjs               # the notice board: owner lines outrank the command; REBOOT preempts
     │   ├── ledger.mjs                 # each session's live ledger (.nexus/sessions/), star names, fallen = stale beat
     │   ├── worktree.mjs               # close a worktree safely (links unlinked first); list for /tidy
+    │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
     │   ├── __tests__/pending.test.mjs # pending files, config, settled view
@@ -585,6 +586,7 @@ nexus/
     │   ├── __tests__/announce.test.mjs # the notice board
     │   ├── __tests__/ledger.test.mjs  # the live ledger
     │   ├── __tests__/order.test.mjs   # the simulated pick order
+    │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)

@@ -21,10 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
+      # The token sits on each step, never here: a job's env is
+      # handed to every step (scripts/workflow-lint.mjs).
     steps:
       - name: Cancel wedged runs (in_progress > 2h)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           now=$(date -u +%s)
           for wf in march night; do
@@ -46,6 +49,8 @@ jobs:
           done
 
       - name: Alarm if march has not succeeded a tick in 14h
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # --status success, not completed: a failed run still
           # counts as "completed", so a loop failing every tick
