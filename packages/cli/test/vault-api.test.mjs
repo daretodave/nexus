@@ -248,3 +248,45 @@ test('a contributor\'s inbox never carries a secret request', async () => {
     await app.close();
   }
 });
+
+test('import: replacing a declared name goes to its own places; an undeclared place is refused before anything is stored', async () => {
+  const { repo } = vaultRepo();
+  const sink = fakeRun();
+  const { app, call, seen } = await serve(repo, sink.run);
+  const NEW = 'vrc_TESTONLY_v4ult_new_77xx66';
+  try {
+    assert.equal((await call('POST', '/api/secrets/VERCEL_TOKEN', { value: VERCEL })).status, 200);
+    const text = `VERCEL_TOKEN=${NEW}\n`;
+    const r = await call('POST', '/api/secrets/import', { text, confirm: true, names: ['VERCEL_TOKEN'], destinations: { VERCEL_TOKEN: ['local', 'github-actions'] } });
+    assert.equal(r.status, 400, JSON.stringify(r.json));
+    assert.match(r.json.error, /VERCEL_TOKEN does not go to github-actions/);
+    assert.deepEqual(sink.calls, [], 'nothing pushed');
+    const man = JSON.parse(fs.readFileSync(path.join(repo, 'nexus.secrets.json'), 'utf8'));
+    assert.deepEqual(man.secrets.find((e) => e.name === 'VERCEL_TOKEN').destinations, ['local', 'vercel'], 'the manifest is untouched');
+    assert.ok(!fs.readFileSync(path.join(repo, DOTENV), 'utf8').includes(NEW), 'the old value stays');
+    const ok = await call('POST', '/api/secrets/import', { text, confirm: true, names: ['VERCEL_TOKEN'], destinations: { VERCEL_TOKEN: ['local', 'vercel'] } });
+    assert.equal(ok.status, 200, JSON.stringify(ok.json));
+    assert.deepEqual(ok.json.pushed.map((p) => [p.name, p.destination, p.ok]), [['VERCEL_TOKEN', 'vercel', true]]);
+    assert.ok(!sink.calls.some((c) => c.cmd === 'gh'), 'never Actions');
+    noValues(seen, [VERCEL, NEW]);
+  } finally {
+    await app.close();
+  }
+});
+
+test('the vault keeps every value: Add a secret and the import declare local even when it is unticked', async () => {
+  const { repo } = vaultRepo();
+  const { app, call } = await serve(repo, fakeRun().run);
+  try {
+    assert.equal((await call('POST', '/api/secrets/NEW_KEY', { value: GH, declare: true, local: false, destinations: ['github-actions'] })).status, 200);
+    let man = JSON.parse(fs.readFileSync(path.join(repo, 'nexus.secrets.json'), 'utf8'));
+    assert.deepEqual(man.secrets.find((e) => e.name === 'NEW_KEY').destinations, ['local', 'github-actions']);
+    const st = (await call('GET', '/api/secrets')).json;
+    assert.equal(st.secrets.find((s) => s.name === 'NEW_KEY').destinations[0].state, 'set', 'the table draws Local set');
+    assert.equal((await call('POST', '/api/secrets/import', { text: `OTHER_KEY=${DB}\n`, confirm: true, names: ['OTHER_KEY'], destinations: { OTHER_KEY: ['github-actions'] } })).status, 200);
+    man = JSON.parse(fs.readFileSync(path.join(repo, 'nexus.secrets.json'), 'utf8'));
+    assert.deepEqual(man.secrets.find((e) => e.name === 'OTHER_KEY').destinations, ['local', 'github-actions']);
+  } finally {
+    await app.close();
+  }
+});

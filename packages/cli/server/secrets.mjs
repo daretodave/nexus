@@ -375,10 +375,11 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     if (typeof value !== 'string' || value === '') return { status: 400, error: `${name}: a value is a non-empty string` };
     const root = await vroot();
     const dests = destList(b.destinations);
-    // Add a secret (the Vault's form): the owner declares the name and the places ticked before it is stored.
+    // Add a secret (the Vault's form): the owner declares the name and the places ticked before it is stored. `set`
+    // writes the vault whatever is ticked (each sink pushes from it), so local is always declared.
     if (b.declare === true) {
       if (!owner()) return { status: 403, error: k.m.vault.sinkRefusal('push') };
-      const why = declareIn(k, root, name, { for: b.for, destinations: [...(b.local === false ? [] : ['local']), ...dests] });
+      const why = declareIn(k, root, name, { for: b.for, destinations: ['local', ...dests] });
       if (why) return scrub({ status: 400, error: why });
     }
     const no = pushable(k, root, name, dests);
@@ -430,6 +431,13 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     // Owner: where each picked name goes, { NAME: ['local', 'github-actions', ...] } (the import's checkboxes).
     const toOf = (n) => (b.destinations && typeof b.destinations === 'object' && Array.isArray(b.destinations[n]) ? [...new Set(b.destinations[n].map(String))] : null);
     if (!isOwner && picked.some(([n]) => (toOf(n) || []).some((d) => d !== 'local'))) return scrub({ status: 403, error: k.m.vault.sinkRefusal('push') });
+    // A declared name goes only where the manifest sends it: an import replaces its value, never its places (those
+    // change in the manifest or through Add a secret). A place it does not name refuses the import before any store.
+    if (isOwner) {
+      const decl = new Map((man?.manifest?.secrets ?? []).map((e) => [e.name, e.destinations]));
+      const wrong = picked.map(([n]) => [n, decl.get(n), destList(toOf(n))]).filter(([, has, to]) => has && to.some((d) => !has.includes(d)));
+      if (wrong.length) return scrub({ status: 400, error: wrong.map(([n, has, to]) => `${n} does not go to ${to.filter((d) => !has.includes(d)).join(', ')} (${has.join(', ')}): untick it, or add the place to ${k.m.manifest.MANIFEST} first`).join('; ') });
+    }
     const stored = [];
     const failures = [];
     try {
@@ -445,14 +453,14 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
       if (isOwner && stored.length) {
         const imported = k.m.manifest.importEnvExample(text).filter((e) => stored.includes(e.name));
         const merged = k.m.manifest.mergeImport(man ? man.manifest : k.m.manifest.emptyManifest(), imported);
-        // The places ticked replace an added name's default (local) and join a declared name's own.
+        // The places ticked replace an added name's default; the vault keeps every value, so local is always one. A
+        // declared name keeps its own places (checked above).
         for (const e of merged.manifest.secrets) {
           const to = toOf(e.name);
-          if (!to || !stored.includes(e.name)) continue;
-          const known = to.filter((d) => ['local', ...Object.keys(SINK_FLAGS)].includes(d));
-          e.destinations = merged.added.includes(e.name) ? (known.length ? known : ['local']) : [...new Set([...e.destinations, ...known])];
+          if (!to || !stored.includes(e.name) || !merged.added.includes(e.name)) continue;
+          e.destinations = ['local', ...destList(to).filter((d) => d in SINK_FLAGS)];
         }
-        if (merged.added.length || !man || stored.some((n) => toOf(n))) fs.writeFileSync(path.join(root, k.m.manifest.MANIFEST), k.m.manifest.serialize(merged.manifest));
+        if (merged.added.length || !man) fs.writeFileSync(path.join(root, k.m.manifest.MANIFEST), k.m.manifest.serialize(merged.manifest));
         ({ added, kept } = merged);
         for (const n of stored) {
           const sinks = destList(toOf(n));

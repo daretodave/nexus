@@ -296,11 +296,43 @@ export function importRows(preview, status, { owner = true } = {}) {
     else if (req) { note = `new \u00b7 answers the request from ${req.chunk}`; tone = 'is-match'; }
     else note = 'new';
     const declared = known.get(n.name);
-    const places = declared ? (declared.destinations || []).map((x) => x.destination) : ['local', 'github-actions'];
+    const places = declared ? ['local', ...(declared.destinations || []).map((x) => x.destination).filter((d) => d !== 'local')] : ['local', 'github-actions'];
     const dests = Object.fromEntries(DESTS.map((d) => [d, keep && owner && places.includes(d)]));
-    if (keep && owner && !dests.local) dests.local = true;
-    return { name: n.name, exists, look, note, tone, keep, dests, for: declared?.for || '' };
+    return { name: n.name, exists, look, note, tone, keep, dests, places, declared: !!declared, for: declared?.for || '' };
   });
+}
+
+/** The vault keeps every value (each sink pushes from it), so Local is ticked and locked wherever a value is stored. */
+export const LOCAL_LOCKED = 'The vault keeps every value; pushes read it from there.';
+
+/**
+ * The patch the import's Keep box makes: unticking keeps the row's places for later; ticking brings them back, or the
+ * places the manifest names (Local and Actions for a new name) when none is ticked. Never a place a declared name
+ * does not go to.
+ */
+export function keepToggle(row) {
+  if (row.keep) return { keep: false };
+  const any = DESTS.some((d) => d !== 'local' && row.dests[d]);
+  const places = row.places || ['local', 'github-actions'];
+  return { keep: true, dests: Object.fromEntries(DESTS.map((d) => [d, d === 'local' || (any ? !!row.dests[d] && places.includes(d) : places.includes(d))])) };
+}
+
+/** One of an import row's place boxes: Local locked on, a place a declared name does not go to locked off. */
+export function importTick(row, d) {
+  if (d === 'local') return { checked: true, disabled: true, title: LOCAL_LOCKED };
+  if (row.declared && !(row.places || []).includes(d)) return { checked: false, disabled: true, title: `${row.name} does not go to ${SHORT[d] || d} in nexus.secrets.json` };
+  return { checked: !!row.dests[d], disabled: !row.keep, title: undefined };
+}
+
+/** One of Add a secret's place boxes: Local locked on. */
+export function addTick(nw, d) {
+  if (d === 'local') return { checked: true, disabled: true, title: LOCAL_LOCKED };
+  return { checked: !!nw.dests[d], disabled: false, title: undefined };
+}
+
+/** What Add a secret sends: the name declared, the value, and the sinks ticked (the vault always keeps it). */
+export function addBody(nw) {
+  return { value: nw.value, declare: true, for: nw.for, destinations: DESTS.filter((d) => d !== 'local' && nw.dests[d]) };
 }
 
 /** A row's note once ticked or unticked: an existing name ticked replaces its value. */
@@ -313,7 +345,7 @@ export function importNote(row, owner = true) {
 export function importBody(rows, source, { owner = true } = {}) {
   const kept = rows.filter((r) => r.keep);
   const body = { ...source, confirm: true, names: kept.map((r) => r.name) };
-  if (owner) body.destinations = Object.fromEntries(kept.map((r) => [r.name, DESTS.filter((d) => r.dests[d])]));
+  if (owner) body.destinations = Object.fromEntries(kept.map((r) => [r.name, DESTS.filter((d) => d === 'local' || (r.dests[d] && (!r.declared || (r.places || []).includes(d))))]));
   return body;
 }
 

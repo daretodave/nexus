@@ -173,3 +173,30 @@ test('Launch\'s secrets row: the vault by name, a skip, or a contributor\'s none
   assert.equal(secretsLine({ owner: false, secrets: [] }), 'no project secrets needed · local keys stay on this machine');
   assert.equal(secretsLine(null), null);
 });
+
+test('the import: ticking an existing name replaces it where the manifest sends it, and only there; Local stays on', async () => {
+  const { keepToggle, importTick } = await import('../src/screens/vault/model.js');
+  const status = { ...STATUS, secrets: [...STATUS.secrets, { name: 'DEPLOY_HOOK', for: 'Deploys', set: true, rings: ['local'], destinations: [{ destination: 'local', state: 'set' }, { destination: 'vercel', state: 'pushed' }] }] };
+  const rows = importRows({ names: [{ name: 'DEPLOY_HOOK', looks: 'secret', rings: ['local'] }, { name: 'NEW_KEY', looks: 'secret', rings: [] }, { name: 'PUBLIC_URL', looks: 'public', rings: [] }] }, status, { owner: true });
+  const [hook, fresh, pub] = rows;
+  assert.equal(hook.keep, false);
+  const ticked = { ...hook, ...keepToggle(hook) };
+  assert.deepEqual(ticked.dests, { local: true, 'github-actions': false, vercel: true, cloudflare: false }, 'the declared places, not Actions');
+  assert.deepEqual(importBody([ticked], { text: 'x' }).destinations, { DEPLOY_HOOK: ['local', 'vercel'] });
+  assert.deepEqual(importTick(ticked, 'github-actions'), { checked: false, disabled: true, title: 'DEPLOY_HOOK does not go to Actions in nexus.secrets.json' });
+  assert.deepEqual(importTick(ticked, 'local'), { checked: true, disabled: true, title: 'The vault keeps every value; pushes read it from there.' });
+  assert.equal(importTick(ticked, 'vercel').disabled, false);
+  // a new name ticks local and Actions; a public-looking one ticked comes back with the same defaults
+  assert.deepEqual({ ...pub, ...keepToggle(pub) }.dests, { local: true, 'github-actions': true, vercel: false, cloudflare: false });
+  assert.deepEqual(keepToggle(fresh), { keep: false });
+  // Local cannot be unticked away: the body always names it
+  assert.deepEqual(importBody([{ ...fresh, dests: { ...fresh.dests, local: false } }], { text: 'x' }).destinations, { NEW_KEY: ['local', 'github-actions'] });
+});
+
+test('Add a secret: Local is locked on, and the body names only the sinks', async () => {
+  const { addBody, addTick } = await import('../src/screens/vault/model.js');
+  const nw = { name: 'NEW_KEY', for: 'x', value: 'v', dests: { local: false, 'github-actions': true, vercel: false, cloudflare: false } };
+  assert.deepEqual(addBody(nw), { value: 'v', declare: true, for: 'x', destinations: ['github-actions'] });
+  assert.deepEqual(addTick(nw, 'local'), { checked: true, disabled: true, title: 'The vault keeps every value; pushes read it from there.' });
+  assert.deepEqual(addTick(nw, 'vercel'), { checked: false, disabled: false, title: undefined });
+});

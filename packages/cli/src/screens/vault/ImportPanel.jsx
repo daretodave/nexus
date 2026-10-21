@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon, TickBox, EnvFile, KeyOrb, MASK_DOTS, cx } from '../../ui/index.js';
 import { server } from '../../data/index.js';
-import { DESTS, SHORT, importBody, importLine, importNote, importRows } from './model.js';
+import { DESTS, SHORT, importBody, importLine, importNote, importRows, importTick, keepToggle } from './model.js';
 
 /** A picked or dropped file's text (the browser reads it; nothing is uploaded until the preview call). */
 export const readText = (file) => new Promise((resolve, reject) => {
@@ -119,14 +119,13 @@ export default function ImportPanel({ status, onClose, onDone, toast }) {
             <div className="env-head" role="row"><span /><span>Name</span><span>Value</span><span>Notes</span>{DESTS.map((d) => <span key={d} className="dest">{d === 'local' ? 'Local' : SHORT[d]}</span>)}</div>
             {imp.rows.map((e, i) => {
               const n = importNote(e, true);
-              const toggleKeep = () => imp.setRow(i, DESTS.some((d) => e.dests[d]) || e.keep ? { keep: !e.keep } : { keep: true, dests: { ...e.dests, local: true, 'github-actions': true } });
               return (
                 <div key={e.name} className={cx('env-row', !e.keep && 'is-off')} role="row">
-                  <TickBox checked={e.keep} onChange={toggleKeep} label={`Keep ${e.name}`} />
+                  <TickBox checked={e.keep} onChange={() => imp.setRow(i, keepToggle(e))} label={`Keep ${e.name}`} />
                   <span className="sec-name"><b>{e.name}</b></span>
                   <span className="mask">{MASK_DOTS}</span>
                   <span className={n.cls}>{n.note}</span>
-                  {DESTS.map((d) => <TickBox key={d} checked={e.dests[d]} disabled={!e.keep} label={`${e.name} to ${SHORT[d]}`} onChange={() => imp.setRow(i, { dests: { ...e.dests, [d]: !e.dests[d] } })} />)}
+                  {DESTS.map((d) => { const t = importTick(e, d); return <TickBox key={d} checked={t.checked} disabled={t.disabled} title={t.title} label={`${e.name} to ${SHORT[d]}`} onChange={() => imp.setRow(i, { dests: { ...e.dests, [d]: !e.dests[d] } })} />; })}
                 </div>
               );
             })}

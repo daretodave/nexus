@@ -430,10 +430,18 @@ age and draws blank.
 
 **Adapted, with the reason:**
 
-- **The Local tick is locked on** in the key card, and in the add form
-  it declares the `local` destination rather than skipping the vault:
+- **The Local tick is locked on** in the key card, the add form and
+  both imports' Local column (the boards let it be unticked), and the
+  server declares the `local` destination whatever the body says:
   every value is stored in the vault, because each sink pushes from
-  it.
+  it, so an unticked Local would draw "not used there" over a value
+  sitting in `.env`.
+- **An import replaces a declared name only where the manifest sends
+  it**: ticking an existing name ticks its declared places, a place it
+  does not go to is locked off in the row, and the server refuses one
+  before anything is stored (the boards' rows tick Local and Actions
+  for every name; the manifest or Add a secret changes a name's
+  places).
 - **Sync** also covers a destination a set value never reached (it
   draws missing): it is as far behind the vault as an out-of-sync one.
 - **An empty vault** opens on the import's dropzone (VaultKit: "also

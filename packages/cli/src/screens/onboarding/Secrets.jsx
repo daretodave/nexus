@@ -11,7 +11,7 @@ import { ObFrame, Back } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { useImport, useFilePick } from '../vault/ImportPanel.jsx';
 import LocalKeys from '../vault/LocalKeys.jsx';
-import { importNote, waitingOn } from '../vault/model.js';
+import { importNote, importTick, keepToggle, waitingOn } from '../vault/model.js';
 import { useToasts } from '../fleet/toasts.js';
 
 const PICKS = [
@@ -139,15 +139,16 @@ export default function Secrets() {
                   <div className="env-head" role="row"><span /><span>Name</span><span>Value</span><span>Notes</span><span className="dest">Local</span><span className="dest">Actions</span></div>
                   {imp.rows.map((e, i) => {
                     const n = importNote(e, true);
-                    const toggleKeep = () => imp.setRow(i, e.keep ? { keep: false } : { keep: true, dests: { ...e.dests, local: e.dests.local || !e.dests['github-actions'] } });
+                    const local = importTick(e, 'local');
+                    const actions = importTick(e, 'github-actions');
                     return (
                       <div key={e.name} className={cx('env-row', !e.keep && 'is-off')} role="row">
-                        <TickBox checked={e.keep} onChange={toggleKeep} label={`Keep ${e.name}`} />
+                        <TickBox checked={e.keep} onChange={() => imp.setRow(i, keepToggle(e))} label={`Keep ${e.name}`} />
                         <span className="sec-name"><b>{e.name}</b></span>
                         <span className="mask">{MASK_DOTS}</span>
                         <span className={n.cls}>{n.note}</span>
-                        <TickBox checked={e.dests.local} disabled={!e.keep} label={`${e.name} in your vault`} onChange={() => imp.setRow(i, { dests: { ...e.dests, local: !e.dests.local } })} />
-                        <TickBox checked={e.dests['github-actions']} disabled={!e.keep} label={`${e.name} to GitHub Actions`} onChange={() => imp.setRow(i, { dests: { ...e.dests, 'github-actions': !e.dests['github-actions'] } })} />
+                        <TickBox checked={local.checked} disabled={local.disabled} title={local.title} label={`${e.name} in your vault`} />
+                        <TickBox checked={actions.checked} disabled={actions.disabled} title={actions.title} label={`${e.name} to GitHub Actions`} onChange={() => imp.setRow(i, { dests: { ...e.dests, 'github-actions': !e.dests['github-actions'] } })} />
                       </div>
                     );
                   })}

@@ -19,7 +19,7 @@ import ImportPanel from './vault/ImportPanel.jsx';
 import LocalKeys from './vault/LocalKeys.jsx';
 import { useKeyCards } from './vault/useKeyCards.js';
 import {
-  DESTS, SHORT, HEAD_TITLE, auditRows, destRows, keyCards, nameInput, staleList, subLine, validName, vaultRows, waitingOn,
+  DESTS, SHORT, HEAD_TITLE, addBody, addTick, auditRows, destRows, keyCards, nameInput, staleList, subLine, validName, vaultRows, waitingOn,
 } from './vault/model.js';
 
 const NEW_DESTS = { local: true, 'github-actions': true, vercel: false, cloudflare: false };
@@ -101,8 +101,7 @@ function OwnerVault({ st, repo, reload, toast }) {
     reload();
   }, 'Sync stopped');
   const addSecret = () => run(async () => {
-    const picked = DESTS.filter((d) => nw.dests[d]);
-    const out = await server.storeSecret(nw.name, { value: nw.value, declare: true, for: nw.for, local: !!nw.dests.local, destinations: picked.filter((d) => d !== 'local') });
+    const out = await server.storeSecret(nw.name, addBody(nw));
     setAdding(false);
     setFresh(new Set([nw.name]));
     setNw({ name: '', for: '', value: '', dests: NEW_DESTS });
@@ -142,7 +141,7 @@ function OwnerVault({ st, repo, reload, toast }) {
                     <MaskField value={nw.value} onChange={(v) => setNw({ ...nw, value: v })} label="Value" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                       <span className="t-label c-2">Store it</span>
-                      {DESTS.map((d) => <TickLabel key={d} checked={nw.dests[d]} onChange={(on) => setNw({ ...nw, dests: { ...nw.dests, [d]: on } })}>{NEW_LABEL[d]}</TickLabel>)}
+                      {DESTS.map((d) => { const t = addTick(nw, d); return <TickLabel key={d} checked={t.checked} disabled={t.disabled} title={t.title} onChange={(on) => setNw({ ...nw, dests: { ...nw.dests, [d]: on } })}>{NEW_LABEL[d]}</TickLabel>; })}
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <button className="btn btn-s btn-primary" type="button" onClick={addSecret} disabled={!validName(nw.name) || !nw.value || busy}>Add to the vault</button>
