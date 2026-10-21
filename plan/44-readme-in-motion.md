@@ -66,8 +66,6 @@ What exists today (2026-10-21):
 
 ## Acceptance
 
-- **A1** `nexus --demo <scenario>` serves fixtures and a timed
-  beat script with no repo, session or network, with tests.
 - **A2** One command records a scenario to a 5–8 second GIF
   and a poster frame, pure JavaScript, within budget.
 - **A3** Fleet to tug (and optionally bug to archive) is
@@ -80,11 +78,9 @@ What exists today (2026-10-21):
 (None.)
 
 ## Chunks
-Measure: 3 open · 0 closed · next A4
+Measure: 2 open · 1 closed · next A4
 
-- [ ] **44.1** Demo scenarios: fixtures and a timed beat
-  script · M · closes A1 · needs —
 - [ ] **44.2** The recorder: Playwright frames to a GIF,
-  pure JavaScript · M · closes A2 · needs 44.1
+  pure JavaScript · M · closes A2 · needs —
 - [ ] **44.3** Fleet to tug (and optionally bug to archive),
   recorded and placed in the README · M · closes A3 · needs 44.2, 41.6, 41.10
