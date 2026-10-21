@@ -63,7 +63,9 @@ verbatim when regenerating the audit block.
    templates/scripts/loop-issue.mjs open --severity <…>
    --category docs --source audit --title "<…>" --body-file
    "$(mktemp)"` — reuse `- issue: #N` if the row has one.
-5. **Ship:** the fix, per the finding's `next`.
+5. **Ship:** the fix, per the finding's `next`. The audit
+   sweep, and any agent it dispatches, stays foreground in a
+   cloud tick (`run_in_background: false`).
 6. **Gate:** `node scripts/verify.mjs` foreground.
 7. **Commit + push:** `fix|docs|templates: <subject>`, body
    cites the finding, `Closes #N` when mirrored.

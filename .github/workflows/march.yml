@@ -6,7 +6,14 @@ name: march
 #
 # See .github/CLOUD_LOOP.md for setup (two secrets), pausing,
 # and debugging. The generic template this instantiates lives
-# at templates/.github/workflows/march.yml.
+# at templates/.github/workflows/march.yml (its owner mode:
+# nexus's cloud loop pushes main, as the owner's checkout does).
+#
+# The plan is chunks (concepts/plan-shape.md): a tick's chunk
+# step is /next top -- one chunk claimed as cloud-<run_id>,
+# built by a foreground builder, gated, closed with a pending
+# file, settled and pushed. The owner pauses this workflow with
+# gh workflow disable march; editing this file never re-arms it.
 
 on:
   schedule:
@@ -20,7 +27,7 @@ on:
         required: false
         type: choice
         default: march
-        options: [march, critique, iterate, ship-a-chunk, expand, triage, digest]
+        options: [march, next, critique, iterate, expand, triage, digest]
 
 concurrency:
   group: march
@@ -85,6 +92,14 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # The runner's checkout is the owner's for this tick: the
+      # untracked .owner (gitignored) makes scripts/claims.mjs
+      # claim as privileged_agent_session, scripts/plan/settle.mjs
+      # settle and the push policy pass main (playbooks/owner-mode.md).
+      - name: Owner mode for this checkout
+        if: steps.ceiling.outputs.skip != 'true'
+        run: touch .owner
+
       # Git author identity is set via GIT_AUTHOR_* /
       # GIT_COMMITTER_* env vars on the action step below, NOT via
       # `git config`: the action runs its own internal git config
@@ -137,23 +152,32 @@ jobs:
             4. The verify gate (node scripts/verify.mjs) is non-negotiable
                and runs FOREGROUND — never run_in_background. There is no
                deploy gate (agents.md rule 4): the push is the deploy.
-            5. The git author is already configured via GIT_AUTHOR_* /
+            5. Every subagent dispatch (the Agent tool, a Workflow) passes
+               run_in_background: false explicitly. Leaving it out is a
+               background dispatch, not a neutral default: the job is a
+               single-shot process, so the tick would end its turn, exit
+               clean, and the builder's work would never land.
+            6. This checkout is in owner mode (.owner, untracked) and the
+               claims session is NEXUS_SESSION (cloud-<run id>): /next
+               claims, settles and lands on main as the owner does.
+            7. The git author is already configured via GIT_AUTHOR_* /
                GIT_COMMITTER_* env vars. Do not run git config user.* —
                the env vars win at commit time anyway.
-            6. EVERY commit you ship this tick MUST end with this exact
+            8. EVERY commit you ship this tick MUST end with this exact
                trailer (blank line before it, trailer on its own line):
 
                   Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
                This is how the ceiling counts cloud commits. agents.md rule 2
                has an explicit carve-out for this single trailer.
-            7. If the tick cannot ship cleanly, do NOT half-commit: exit with
+            9. If the tick cannot ship cleanly, do NOT half-commit: exit with
                a one-line note in this log, or open an unlabeled issue via
                gh issue create (the next /triage classifies it).
 
             Dispatch order per skills/march.md: triage → critique →
-            ship-a-chunk → expand → iterate. Issues labeled loop:do jump
-            the queue (march step 1 - the concierge lane).
+            /next top (the chunk step: one chunk, done fully) → expand →
+            iterate. Issues labeled loop:do jump the queue (march step 1 -
+            the concierge lane).
 
             Requested verb: ${{ inputs.verb || 'march' }}. If it is not
             'march', skip dispatch and execute skills/<verb>.md directly -
@@ -165,6 +189,8 @@ jobs:
           # ACTIONS_PAT (not GITHUB_TOKEN) so the agent's gh calls
           # and pushes identify as the nexus author, not the bot.
           GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
+          # This tick's claims session (scripts/claims.mjs).
+          NEXUS_SESSION: cloud-${{ github.run_id }}
           # Author identity: display name "nexus", attributed to the
           # PAT's account via its noreply email. The Cloud-Run:
           # trailer (not the author) is the ceiling discriminator,

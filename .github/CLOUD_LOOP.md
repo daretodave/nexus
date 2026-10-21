@@ -66,10 +66,16 @@ re-set, nothing else to repair.
 
 `skills/march.md` dispatch: unlabeled issues → `/triage`;
 critique due → `/critique` (the dry-run adoption — it runs
-fully in CI); ready chunk → `/ship-a-chunk`; expand due →
+fully in CI); ready chunk → `/next top` (one chunk: claimed as
+`cloud-<run id>`, built by a foreground builder, gated, closed
+with a pending file, settled, pushed); expand due →
 `/expand`; else `/iterate`. Every shipping path runs
 `node scripts/verify.mjs` foreground and ends with an
-`/oversight audit` briefing in the run log.
+`/oversight audit` briefing in the run log. The runner's
+checkout gets an untracked `.owner` first, so the tick claims,
+settles and lands as the owner (nexus's cloud loop is owner
+mode; adopters can run theirs as pull requests:
+[`templates/.github/CLOUD_LOOP.md`](../templates/.github/CLOUD_LOOP.md)).
 
 ## The trailer carve-out
 
@@ -110,6 +116,13 @@ cloud volume from local work. Nothing else — no
   actual scope. Apply the change from a local `/oversight`
   session instead, which pushes with normal repo-write
   credentials.
+- **Green run, no commit, and the log shows a background or
+  async agent launch just before the end** — a subagent was
+  dispatched without `run_in_background: false`. The job is
+  single-shot: the tick's turn ended, the job exited clean, and
+  the builder's work never landed. Re-run; the prompt's rule 5
+  keeps every dispatch foreground (a workflow edit may have
+  dropped it).
 - **Ticks no-op forever** — the plan may be out of ready chunks
   (or every one is in the Held lane) and the queues drained (a good problem: run `/oversight`
   locally and promote candidates), or GitHub paused the cron
