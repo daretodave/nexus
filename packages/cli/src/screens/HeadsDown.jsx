@@ -17,6 +17,12 @@ const SKY = {
   boxSizing: 'border-box',
   height: '100vh',
   minHeight: 0,
+  // The board's canvas is 1440 wide. Below ~760px the 120 columns (at the type's 10px floor) outgrow the window:
+  // centred with overflow hidden, both ends were cut and the left one unreachable. Safe centring keeps the frame's
+  // start in view and the rest scrolls.
+  overflow: 'auto',
+  justifyContent: 'safe center',
+  alignItems: 'safe center',
   background: 'radial-gradient(64% 42% at 50% -4%, var(--sky-a), transparent 72%), radial-gradient(40% 30% at 92% 104%, var(--sky-b), transparent 70%), var(--bg)',
 };
 
