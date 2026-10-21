@@ -634,7 +634,7 @@ nexus/
     │   ├── check-secrets-liveness.mjs # GH_TOKEN + CRITIQUE_* liveness probe (omit unless Auth: is set)
     │   ├── stack-lifecycle.mjs        # Pattern B port/health/state helpers (omit unless hermetic e2e is Pattern B)
     │   ├── new-skill.mjs              # skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md
-    │   ├── install-hooks.mjs          # opt-in: arms pnpm verify (pre-commit) + the push policy (pre-push)
+    │   ├── install-hooks.mjs          # adoption runs it: pnpm verify (pre-commit) + the push policy (pre-push)
     │   ├── plan-check.mjs             # the plan-shape gate: Measure lines, chunk lines, A-ID coverage, archive
     │   ├── owner.mjs                  # effective owner mode (.owner + .nexus/local.json)
     │   ├── git/push-policy.mjs        # pre-push: refuses main on origin/upstream outside owner mode; claims ref passes unchecked

@@ -182,8 +182,22 @@ need — see [`new-project.md`](./new-project.md) §4 "Prune
 adopt-by-need files" for the mapping and worked `rm` /
 `Remove-Item` commands.
 
+Set the mode you chose before the first write, owner or
+contributor (the adopt prompt asks it; owner is the default
+when you own the repo): either way, add `.owner` and
+`.nexus/` to `.gitignore` if missing; the owner's checkout
+also gets an untracked `.owner`. Keep
+`scripts/install-hooks.mjs` through the prune: it is not
+adopt-by-need.
+
 Commit the overlay as one commit: `chore: nexus methodology
-overlay (no source changes)`.
+overlay (no source changes)`. Then, before the first push,
+run `node scripts/install-hooks.mjs` in either mode: it arms
+the verify gate as pre-commit and the push policy as
+pre-push, and rewrites a hook it wrote before with the
+current body. A team that already lands through pull
+requests is in contributor mode on every checkout but the
+owner's ([`owner-mode.md`](./owner-mode.md)).
 
 ---
 
@@ -453,7 +467,8 @@ the work is known but the time isn't there.
       green (or known-red with a Hard Rule).
 - [ ] `pnpm deploy:check` reads your existing provider's deploy
       state.
-- [ ] You've decided on PR-or-trunk strategy and documented it.
+- [ ] The mode is set (`node scripts/claims.mjs whoami`) and
+      `node scripts/install-hooks.mjs` has armed the hooks.
 - [ ] Sub-agents are tuned for your domain.
 - [ ] You've smoke-tested with one chunk.
 

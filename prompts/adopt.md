@@ -66,8 +66,30 @@ Then:
     URL/API/CLI contract if it cannot be inferred, (d)
     confirmation of the topology guess above — single-repo,
     polyrepo (`plan/` split into a sibling repo), or workspace
-    (3+ sibling repos under one un-versioned root). For
-    everything else, decide.
+    (3+ sibling repos under one un-versioned root), (e) the
+    mode: owner (this checkout pushes main and settles the
+    plan) or contributor (every change lands as a pull
+    request); owner (Recommended) when the person owns the
+    repo (`gh repo view --json viewerPermission` says ADMIN,
+    or the remote's owner is theirs), contributor otherwise.
+    Ask them all before your first write, in one batch
+    shaped per ../nexus/concepts/asking-well.md (two batches
+    if more than four apply, both before the first write).
+    For everything else, decide.
+  - Set up the mode (../nexus/playbooks/owner-mode.md):
+    either way, add `.owner` and `.nexus/` to `.gitignore` if
+    missing; for owner, also create an empty, untracked
+    `.owner` at the repo root (never commit it). Then, either
+    way, run `node scripts/install-hooks.mjs` after the
+    adoption commit, before the push: it arms the verify
+    gate as pre-commit and the push policy as pre-push (a
+    push to main on origin or upstream is refused outside
+    owner mode). Rerun it where hooks exist already: it
+    rewrites a hook it wrote before with the current body.
+    Check with
+    `node scripts/claims.mjs whoami` (it prints owner or
+    contributor). Hooks aren't cloned: every other checkout
+    runs install-hooks itself.
   - Adapt bearings.md to reflect the actual stack present in
     this repo. Do not assume Next.js, Tailwind, or any
     specific framework — read package.json / Cargo.toml /
@@ -84,7 +106,10 @@ Then:
   - At the end: produce a single commit titled
     "chore: adopt nexus methodology" with a body listing every
     file added/modified, every placeholder you resolved, and
-    every [needs-user-call] you logged. Push.
+    every [needs-user-call] you logged, and the mode chosen.
+    Push it: owner pushes main; contributor pushes a branch
+    and opens the pull request (the pre-push hook refuses
+    main).
   - Then stop. Do not invoke /ship-a-chunk yourself; let the
     user do that as the first conscious step.
 

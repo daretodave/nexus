@@ -184,9 +184,15 @@ are universal:
 6. Ask before the first write, or not at all; loops take
    defaults and log them.
 
-Choose the mode now: the owner's checkout gets an untracked
-`.owner` (and `.owner` plus `.nexus/` go in `.gitignore`); with
-no `.owner` the repo runs in pull-request mode for everyone.
+Choose the mode now, owner or contributor, before the first
+write (the adopt prompt asks it with its other questions;
+owner is the default when you own the repo). Either way,
+`.owner` and `.nexus/` go in `.gitignore`; the owner's
+checkout also gets an untracked `.owner`. With no `.owner`,
+every change lands as a pull request. Before the first push
+(§4 copies the script), run `node scripts/install-hooks.mjs`
+in either mode to arm the hooks
+([`owner-mode.md`](./owner-mode.md) Step 2).
 
 Add project-specific ones (e.g. "site name lowercase", "content
 stays in MDX").
@@ -408,11 +414,12 @@ disk.
   rules, a pager). Root `CLAUDE.md` stays either way — Claude
   Code only auto-loads it from the repo root, not `.claude/`,
   and it doubles as plain project docs for any other agent.
-- `scripts/install-hooks.mjs` — remove unless you want `pnpm
-  verify` auto-armed as a pre-commit hook for hand commits made
-  outside the loop, or the push policy armed as a pre-push hook
-  (contributors land through pull requests; see
-  [`owner-mode.md`](./owner-mode.md)).
+
+`scripts/install-hooks.mjs` (with `scripts/owner.mjs` and
+`scripts/git/push-policy.mjs`) stays in every mode: adoption
+runs it to arm `pnpm verify` as pre-commit and the push
+policy as pre-push (§2's mode choice;
+[`owner-mode.md`](./owner-mode.md)).
 
 Each command file opens with "Read `skills/<name>.md` end to
 end before touching anything else" — leaving it behind after
@@ -421,9 +428,9 @@ presence-is-misleading problem as leaving the skill itself.
 
 Example for a `Surface: service` project with `Structured data:
 none`, no UGC, no cloud loop, no `/bootstrap`, `Auth: none`, no
-hermetic e2e, not running the loop on Claude Code, and no
-outside-the-loop pre-commit hook wanted — none of the ten apply,
-so remove them all, including their `agents.md` rows:
+hermetic e2e, and not running the loop on Claude Code — none
+of the nine apply, so remove them all, including their
+`agents.md` rows:
 
 ```bash
 rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
@@ -432,7 +439,7 @@ rm -f skills/ship-data.md skills/ship-migration.md scripts/lint-migration.mjs \
       scripts/refresh-critique-session.mjs scripts/check-secrets-liveness.mjs \
       scripts/stack-lifecycle.mjs \
       .claude/settings.json .claude/hooks/guard.mjs .claude/CLAUDE.md \
-      scripts/notify.mjs scripts/install-hooks.mjs \
+      scripts/notify.mjs \
       .claude/commands/ship-data.md .claude/commands/ship-migration.md \
       .claude/commands/ship-asset.md .claude/commands/moderate.md \
       .claude/commands/digest.md .claude/commands/bootstrap.md
@@ -453,7 +460,7 @@ Remove-Item -ErrorAction SilentlyContinue skills\ship-data.md, skills\ship-migra
   scripts\refresh-critique-session.mjs, scripts\check-secrets-liveness.mjs, `
   scripts\stack-lifecycle.mjs, `
   .claude\settings.json, .claude\hooks\guard.mjs, .claude\CLAUDE.md, `
-  scripts\notify.mjs, scripts\install-hooks.mjs, `
+  scripts\notify.mjs, `
   .claude\commands\ship-data.md, .claude\commands\ship-migration.md, `
   .claude\commands\ship-asset.md, .claude\commands\moderate.md, `
   .claude\commands\digest.md, .claude\commands\bootstrap.md
@@ -794,6 +801,9 @@ which assumes a working loop and is about leaving for 80 hours.
       one) is either committed or has a written brief. See
       [`../customization/visual-system.md`](../customization/visual-system.md).
 - [ ] `pnpm verify` runs (may fail; runs).
+- [ ] The mode is set: `node scripts/claims.mjs whoami`
+      prints the one you chose, and `node
+      scripts/install-hooks.mjs` has armed both hooks.
 - [ ] `pnpm deploy:check` runs and reads your provider's state.
 - [ ] `.env` has all secrets. `.env.example` documents every
       key, with a comment pointing back to the `setup/`

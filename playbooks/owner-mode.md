@@ -39,8 +39,13 @@ prints `owner` or `contributor`.
 
 ## Step 1 — choose at onboarding
 
-Contributor mode needs nothing: it is what a fresh clone
-gets. To make this checkout the owner's:
+Adoption asks it before its first write
+([`prompts/adopt.md`](../prompts/adopt.md); owner is the
+default when you own the repo), then sets it up as below and
+runs Step 2 in either mode. Contributor mode needs nothing on
+the checkout: it is what a fresh clone gets, though the
+`.gitignore` lines go in either way. To make this checkout
+the owner's:
 
 ```bash
 printf '.owner\n.nexus/\n' >> .gitignore   # once per repo, if missing

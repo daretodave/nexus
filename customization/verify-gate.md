@@ -23,8 +23,10 @@ outside the loop has to remember. The template at
 [`templates/scripts/install-hooks.mjs`](../templates/scripts/install-hooks.mjs)
 arms the same rule locally: `node scripts/install-hooks.mjs`
 writes a `.git/hooks/pre-commit` that runs `pnpm verify`
-(`--uninstall` removes it). Opt-in — nothing runs it for you
-until you do.
+(`--uninstall` removes it). Adoption runs it once in the
+adopting checkout ([`prompts/adopt.md`](../prompts/adopt.md));
+every other checkout runs it itself, since hooks aren't
+cloned.
 
 The canonical composition (`agents.md` rule 3) is `typecheck →
 test:run → data:validate → build → e2e`, with two variance
