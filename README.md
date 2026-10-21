@@ -454,7 +454,7 @@ nexus/
 │   │                                  #   triage, expand, oversight, jot
 │   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
 │   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
-├── plan/                              # nexus's OWN state files (build plan, queues, briefs)
+├── plan/                              # nexus's OWN state files (roadmap, specs + chunks, archive, queues)
 ├── .claude/                           # nexus's OWN commands + settings.json + guard hook
 ├── .github/                           # nexus's OWN cloud loop (march.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml
 ├── packages/

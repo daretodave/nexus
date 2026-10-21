@@ -12,7 +12,7 @@ Pick the right verb each tick:
 ```
 unlabeled issues exist            →  /triage
 ELSE critique due (rate-limited)  →  /critique
-ELSE pending phase                →  /ship-a-phase
+ELSE ready chunk                  →  /ship-a-chunk
 ELSE expand due + bold posture    →  /expand
 ELSE                              →  /iterate
 ```
@@ -66,16 +66,17 @@ Read the metadata header of `plan/CRITIQUE.md`
 (`> Last pass:` / `> Pass count:`). Dispatch to `/critique`
 iff **any** of these holds — ≥12 commits since last pass, OR
 >72h since last pass, OR `Last pass` is **never** and at
-least one phase has shipped (docs cadence is slower than
+least one chunk has an archive line (docs cadence is slower than
 product cadence) — and no pending HIGH critique row is
 already queued. Then read `skills/critique.md`, execute,
 return.
 
 ### Step 3 — Dispatch (first match wins)
 
-- **3a. Pending phase?** First `[ ]` row in
-  `plan/steps/01_build_plan.md` — skipping `[skipped]` and
-  `[blocked: …]` rows → `skills/ship-a-phase.md`.
+- **3a. Ready chunk?** The first ready chunk in
+  `plan/README.md`'s pick order (Asap lane, then the spec
+  table; every `needs` done; nothing in the Held lane), or an
+  unchunked spec ahead of it → `skills/ship-a-chunk.md`.
 - **3b. Expand due?** Posture `bold` (see
   `plan/bearings.md`) AND (≥20 commits or >7 days since
   `plan/PHASE_CANDIDATES.md` last pass) AND at least one
@@ -97,8 +98,9 @@ succeeds.
 ## 5. Failure modes
 
 1. **`git pull` divergence.** Stop and report.
-2. **State files corrupted or missing** (`plan/steps/01_build_plan.md`,
-   `plan/AUDIT.md`, `plan/CRITIQUE.md`). Stop — never
+2. **State files corrupted or missing** (`plan/README.md`,
+   `plan/AUDIT.md`, `plan/CRITIQUE.md`), or the gate's
+   `chunks` leg red on a clean checkout. Stop — never
    reconstruct silently; recovery is
    `nexus/playbooks/recovery.md` §G, run by a human.
 
@@ -107,7 +109,8 @@ Everything else is inherited from the dispatched skill.
 ## 6. Quick reference
 
 ```bash
-plan/steps/01_build_plan.md          # pending phases
+plan/README.md                       # lanes + spec table: the chunk queue
+plan/<NN>-<slug>.md                  # each spec's chunks
 plan/AUDIT.md                        # iterate queue
 plan/CRITIQUE.md                     # critique queue + rate-limit metadata
 plan/PHASE_CANDIDATES.md             # expand output + rate-limit metadata

@@ -285,7 +285,7 @@ Next session would pick up:
   <follow-up if obvious; "nothing" if not>
 ```
 
-Then stop. **Do not invoke `/ship-a-phase`, `/march`, or
+Then stop. **Do not invoke `/ship-a-chunk`, `/march`, or
 any other nexus skill** against the nexus repo. Nexus is a
 methodology repo, not a built product; it has no
 application-level work to ship.
@@ -367,7 +367,7 @@ git commit -m "<message>"
 git push origin <DEFAULT_BRANCH>
 
 # Stop
-# Do NOT invoke /ship-a-phase, /march, etc.
+# Do NOT invoke /ship-a-chunk, /march, etc.
 ```
 
 ---

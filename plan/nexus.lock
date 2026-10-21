@@ -1,0 +1,8 @@
+# plan/nexus.lock: the nexus kit version this repo follows.
+# Skills read `shape:` before they read the plan. Upgrading is a
+# deliberate act: see nexus/playbooks/upgrade.md.
+kit: nexus
+version: 2.0.0-pre
+ref: main
+shape: chunks
+adopted: 2026-10-20

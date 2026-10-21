@@ -20,7 +20,7 @@ on:
         required: false
         type: choice
         default: march
-        options: [march, critique, iterate, ship-a-phase, expand, triage, digest]
+        options: [march, critique, iterate, ship-a-chunk, expand, triage, digest]
 
 concurrency:
   group: march
@@ -60,24 +60,24 @@ jobs:
           # mandates it). The ceiling bounds *cloud volume* in 24h —
           # local commits don't count toward it.
           #
-          # The count is weighted, not flat: a phase-shipping commit
-          # (ship-a-phase — new docs, templates, a gate leg) costs more
+          # The count is weighted, not flat: a chunk-shipping commit
+          # (ship-a-chunk — new docs, templates, a gate leg) costs more
           # runway than a churn commit (iterate/critique/triage/digest
           # — one finding, one file). Discriminator: does the commit
-          # tick a `[ ]` -> `[x]` row in the build plan? That's the one
-          # thing only ship-a-phase Step 8 does.
+          # add a line to plan/ARCHIVE.md? That's the one thing only
+          # a chunk close (ship-a-chunk Step 6) does.
           since="$(date -u -d '24 hours ago' '+%Y-%m-%d %H:%M:%S')"
           ceiling=8
           budget=0
           for sha in $(git log --since="$since" --grep='Cloud-Run:' --format='%H'); do
-            if git diff-tree --no-commit-id --name-only -r "$sha" | grep -qx 'plan/steps/01_build_plan.md' \
-               && git show "$sha" -- plan/steps/01_build_plan.md | grep -q '^+.*\[x\]'; then
-              budget=$((budget + 3))   # phase-shipping commit
+            if git diff-tree --no-commit-id --name-only -r "$sha" | grep -qx 'plan/ARCHIVE.md' \
+               && git show "$sha" -- plan/ARCHIVE.md | grep -q '^+- '; then
+              budget=$((budget + 3))   # chunk-shipping commit
             else
               budget=$((budget + 1))   # churn commit
             fi
           done
-          echo "Cloud-shipped weighted budget in last 24h: $budget / $ceiling (phase=3, churn=1)"
+          echo "Cloud-shipped weighted budget in last 24h: $budget / $ceiling (chunk=3, churn=1)"
           if [ "$budget" -ge "$ceiling" ]; then
             echo "Cloud ceiling reached ($ceiling weighted budget/24h). Exiting cleanly — no work this tick."
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -152,7 +152,7 @@ jobs:
                gh issue create (the next /triage classifies it).
 
             Dispatch order per skills/march.md: triage → critique →
-            ship-a-phase → expand → iterate. Issues labeled loop:do jump
+            ship-a-chunk → expand → iterate. Issues labeled loop:do jump
             the queue (march step 1 - the concierge lane).
 
             Requested verb: ${{ inputs.verb || 'march' }}. If it is not

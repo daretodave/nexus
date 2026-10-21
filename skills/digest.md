@@ -59,7 +59,7 @@ Never dispatched by `/march` — it is its own loop shape (see
    ≥5 candidates are pending >21 days or the oldest pending
    candidate exceeds 45 days — a line reading "oversight
    needed: candidate queue silting (N pending >21d, oldest
-   Xd)"), `Today's intent` (next `[ ]` phase + top audit
+   Xd)"), `Today's intent` (next ready chunk + top audit
    finding), `Tuning proposals` (see step 4, or "none").
 4. **Meta-loop, within rails:** if the pulse shows a mistuned
    gate (critique gate never opening, ceiling hibernating

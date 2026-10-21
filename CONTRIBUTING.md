@@ -111,11 +111,11 @@ Same bar as skills: real-world use first.
 Templates and concept docs should be:
 
 - **Decisive.** Skills say "do X" not "you might consider
-  doing X." Briefs say "DO NOT ASK" and resolve every
+  doing X." Specs say "DO NOT ASK" and resolve every
   ambiguity. See `concepts/skills-anatomy.md`.
 - **Concrete.** File paths, bash commands, exact output
   examples. Not "the relevant file" but
-  `plan/phases/phase_<N>_<topic>.md`.
+  `plan/<NN>-<slug>.md`.
 - **Terse.** Prefer 1 sentence over 3. Bullets over prose
   where possible. The agent reads cold; padding is tax.
 - **No emojis.** Anywhere.

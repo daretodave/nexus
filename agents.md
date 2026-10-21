@@ -98,7 +98,7 @@ playbooks/           Adoption + operations runbooks.
 customization/       Opt-in layers per project shape.
 templates/           THE PRODUCT — files adopters copy.
 skills/              nexus's OWN skills (the loop that ships the kit).
-plan/                nexus's OWN state files (build plan, queues).
+plan/                nexus's OWN state files (roadmap, specs, archive, queues).
 scripts/             The kit's verify gate (verify.mjs).
 .claude/             nexus's OWN Claude Code config (commands,
                      settings.json allowlist, guard hook).
@@ -113,8 +113,8 @@ verbs — a docs kit ships docs, not pages.
 
 | Skill | Source of truth | What it does |
 |---|---|---|
-| `march` | `skills/march.md` | Dispatch: triage → critique → phase → expand → iterate. |
-| `ship-a-phase` | `skills/ship-a-phase.md` | Ship one phase of the kit's build plan. |
+| `march` | `skills/march.md` | Dispatch: triage → critique → chunk → expand → iterate. |
+| `ship-a-chunk` | `skills/ship-a-chunk.md` | Ship one chunk of the kit's plan and close it. |
 | `iterate` | `skills/iterate.md` | Audit the kit, ship one improvement. |
 | `critique` | `skills/critique.md` | Dry-run adoption as a stranger; file friction findings. |
 | `triage` | `skills/triage.md` | Route incoming GitHub issues. |
@@ -165,7 +165,10 @@ verbs — a docs kit ships docs, not pages.
 |---|---|
 | What nexus is | `README.md` |
 | Conventions, voice, contracts | `plan/bearings.md` |
-| What ships next | `plan/steps/01_build_plan.md` |
+| What ships next | `plan/README.md` (lanes + specs; the first ready chunk) |
+| What a chunk must do | `plan/<NN>-<slug>.md` (Design, Acceptance, Chunks) |
+| What already shipped | `plan/ARCHIVE.md` (one line per chunk; phases 1–33 too) |
+| The plan shape | `concepts/plan-shape.md`; `plan/nexus.lock` |
 | Open findings | `plan/AUDIT.md` |
 | Critique queue | `plan/CRITIQUE.md` |
 | Phase candidates | `plan/PHASE_CANDIDATES.md` |

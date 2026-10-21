@@ -7,7 +7,7 @@
 // pure-functional pieces (argv parsing, body builders, URL → number
 // extraction, phase title prefix matching) and label palette
 // invariants. The full open/close + phase find-or-reopen flow is
-// verified live on the first /iterate / /ship-a-phase tick after
+// verified live on the first /iterate / /ship-a-chunk tick after
 // merge.
 
 import { test } from 'node:test'

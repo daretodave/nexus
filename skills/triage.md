@@ -9,7 +9,7 @@
 Issues are the kit's inbox: adopters reporting friction,
 lessons from real projects, the loop's own crash reports.
 Triage classifies and routes them so `/iterate` and
-`/ship-a-phase` drain them as ordinary queue rows.
+`/ship-a-chunk` drain them as ordinary queue rows.
 
 ## 2. Invocation
 

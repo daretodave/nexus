@@ -10,7 +10,7 @@
 ## 1. Purpose
 
 The loop decides everything else; this is where the human
-steers. Promote candidates, unblock phases, set bias, prune
+steers. Promote candidates, unblock chunks, set bias, prune
 queues, answer `[needs-user-call]` rows.
 
 ## 2. Invocation
@@ -37,7 +37,8 @@ misconfiguration (§6).
    aggregate count can't carry.
 1. `git log --oneline -20` — velocity + verb mix.
 2. `git status --short` — uncommitted anything.
-3. Build plan status block — pending / `[blocked:]` rows.
+3. `plan/README.md` — the Held lane (with reasons) and the
+   spec table (`N left`).
 4. `plan/AUDIT.md` — pending count, durable rows, bias.
 5. `plan/CRITIQUE.md` — pending count + last pass age.
 6. `plan/PHASE_CANDIDATES.md` — pending candidates.
@@ -45,7 +46,7 @@ misconfiguration (§6).
 
 ## 4. The briefing (~20 lines)
 
-Shipping (phases since last oversight, verbs mix) · Queues
+Shipping (chunks archived since last oversight, verbs mix) · Queues
 (AUDIT n / CRITIQUE n / candidates n / needs-user n) · Blocked
 rows with reasons · Flags (anything unusual: fix-streaks,
 stale critique, gate additions). Plain text, no questions yet.
@@ -57,11 +58,14 @@ stale critique, gate additions). Plain text, no questions yet.
 3. Build 1–4 questions **computed from the flags** (multiple
    choice, recommended option first, last question free-form).
    Ask via the client's question mechanism.
-4. Apply answers: promote candidate (move to Promoted + append
-   build-plan row) · unblock (`[blocked: …]` → `[ ]`, brief
-   amended per the answer) · skip (`[skipped]` + reason) ·
-   bias (`> Bias: <dim>` in AUDIT) · prune (delete named
-   rows) · answer `[needs-user-call]` rows inline.
+4. Apply answers: promote candidate (move to Promoted, write
+   `plan/<NN>-<slug>.md` with the next free number, A-IDs and
+   `Not chunked yet.`, add its roadmap row) · unhold (remove
+   the Held line, spec amended per the answer) · drop (chunk
+   and its A-IDs out, Measure fixed, archive line `dropped:
+   <reason>`) · bias (`> Bias: <dim>` in AUDIT) · prune
+   (delete named rows) · answer `[needs-user-call]` rows
+   inline.
 5. `node scripts/verify.mjs` → single commit
    `oversight: <summary>` with the literal Q&A in the body →
    push.
@@ -86,7 +90,7 @@ stale critique, gate additions). Plain text, no questions yet.
 
 ```bash
 node scripts/pulse.mjs               # the fast aggregate
-plan/steps/01_build_plan.md          # promote/unblock/skip targets
+plan/README.md + plan/<NN>-*.md      # promote (new spec), unhold, split, drop targets
 plan/AUDIT.md                        # bias line + durable rows
 plan/PHASE_CANDIDATES.md             # promotion source
 gh issue list --label triage:needs-user

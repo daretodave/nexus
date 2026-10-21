@@ -50,8 +50,8 @@ re-set, nothing else to repair.
   `gh workflow run march` whenever curious.
 - **Ceiling:** 8 weighted points per 24h, counted by the
   `Cloud-Run:` trailer. The count is weighted, not flat: a
-  phase-shipping commit (one that ticks a `[ ]` to `[x]` in
-  `plan/steps/01_build_plan.md`) costs 3, a churn commit
+  chunk-shipping commit (one that adds a line to
+  `plan/ARCHIVE.md`) costs 3, a churn commit
   (`/iterate`, `/critique`, `/triage`, `/digest`) costs 1.
   Local commits don't count.
 - **Model:** `claude-sonnet-5` (set in the workflow; ids age —
@@ -66,7 +66,7 @@ re-set, nothing else to repair.
 
 `skills/march.md` dispatch: unlabeled issues → `/triage`;
 critique due → `/critique` (the dry-run adoption — it runs
-fully in CI); pending phase → `/ship-a-phase`; expand due →
+fully in CI); ready chunk → `/ship-a-chunk`; expand due →
 `/expand`; else `/iterate`. Every shipping path runs
 `node scripts/verify.mjs` foreground and ends with an
 `/oversight audit` briefing in the run log.

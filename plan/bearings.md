@@ -23,7 +23,7 @@ projects use `site | service | library | cli | hybrid`.)
 |---|---|---|
 | Content | Markdown, hard-wrapped ~62–64 cols | Tables exempt from wrap |
 | Scripts | Node ≥18, zero dependencies, ESM `.mjs` | No `node_modules`, no lockfile |
-| Verify gate | `node scripts/verify.mjs` | 7 legs; see `agents.md` rule 3 |
+| Verify gate | `node scripts/verify.mjs` | 8 legs; see `agents.md` rule 3 |
 | Deploy gate | none — push is the deploy | `npm run deploy:check` = symmetry no-op |
 | Issue mirror | `node templates/scripts/loop-issue.mjs` | The kit dogfoods its own template in place |
 
@@ -81,8 +81,8 @@ else at commit time; a block firing is itself a finding
 | `docs` | doc-only edit, no new capability |
 | `templates` | `templates/` content only |
 | `playbook` | new/edited `playbooks/*.md` |
-| `phases` | `plan/phases/phase_<N>_*.md` briefs |
-| `plan` | `plan/steps/`, `plan/PHASE_CANDIDATES.md` state changes |
+| `phases` | retired with the v1 plan shape (kept in the guard for history) |
+| `plan` | `plan/README.md`, specs, `plan/ARCHIVE.md`, `plan/PHASE_CANDIDATES.md` state changes |
 | `ci` | `.github/workflows/` only |
 | `cloud` | cloud-loop-specific code/doc changes |
 

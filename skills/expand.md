@@ -65,8 +65,8 @@ still >3). **Cap 3 candidates per pass.**
 
 ## 6. Hard rules
 
-1. Candidates only — never write to the build plan (promotion
-   is `/oversight`'s).
+1. Candidates only — never write a spec or the roadmap
+   (promotion into a spec is `/oversight`'s).
 2. Every candidate cites its signals; no vibes-only phases.
 3. Respect the cap; a 10-candidate dump is noise.
 4. No candidate that breaks template API without a migration
