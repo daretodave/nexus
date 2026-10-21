@@ -559,6 +559,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
+  'templates/scripts/__tests__/loop-issue.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
 ]
 const GIT_SUITES = [
