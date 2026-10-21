@@ -56,7 +56,7 @@ node scripts/verify.mjs
 Legs: `links → tree → discover → placeholders → anatomy →
 emoji → dualshell → chunks → scripts → workflows → diagrams →
 secrets`
-(plus the opt-in `adopt-dryrun` and `scripts-git`). Every leg is a hard gate; red = blocked
+(plus the opt-in `adopt-dryrun`, `scripts-git` and `design`). Every leg is a hard gate; red = blocked
 commit. Run it
 **foreground and wait** — never `run_in_background`. No
 `--no-verify`, ever. When a change introduces a new invariant

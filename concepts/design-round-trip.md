@@ -38,7 +38,7 @@ crosses into the repo.
 | **How it lands** | the design session commits `design: visual system v1` | the build side reads the artifact link and keeps the export in `design/handoff/` |
 | **Who turns it into the app** | build chunks, as they go | one port chunk (L), then re-port chunks per delivery |
 | **Changes later** | a new design session | an addendum pasted into the running Claude Design session, then a new delivery |
-| **Fidelity** | `/iterate`'s visual-system finding | per-theme fidelity reviews against rendered boards; an opt-in gate leg (43.5) |
+| **Fidelity** | `/iterate`'s visual-system finding | per-theme fidelity reviews against rendered boards; the port map's check, an opt-in gate leg |
 
 Pick the in-repo session when the design is a system the build
 chunks extend piece by piece. Pick the round trip when the
@@ -101,9 +101,11 @@ The port is a Workflow, not one long session:
 5. **Land:** every board pattern the app leaves out or draws
    differently goes in the close, with its reason.
 
-The recipe becomes a kit Workflow in 43.5, with the board
-renderer and the screenshot compare in
-`templates/scripts/design/` (43.4). In the GUI, "Hand off a
+The recipe is a kit Workflow, `scripts/design/port.workflow.js`,
+with the board renderer and the screenshot compare beside it in
+`templates/scripts/design/`; the handoff's `port.json` records
+where each board went, and its check keeps every board ported,
+skipped with a reason, or pending a chunk. In the GUI, "Hand off a
 design" takes the link and shows each board's port status
 (43.6).
 

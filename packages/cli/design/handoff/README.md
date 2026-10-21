@@ -11,6 +11,12 @@ differs from its board is a bug in the screen, not in the board.
   change both together, or neither.
 - `canvas.json`: the index of boards, grouped into pages
   (design system, fleet, cockpit, views, onboarding).
+- `port.json`: the port map, each board's file in the app, its
+  skip with the reason, or the chunk it waits on (the vault's
+  boards: 42.8, which maps them when it lands).
+  `node scripts/verify.mjs design` checks it; this folder
+  predates ingest and has no manifest, so its files are not
+  hashed (`skills/design/port.md` §5).
 - `*.dc.html`: one board each. A `*Light.dc.html` board only
   re-imports its dark board with `theme="light"`.
 

@@ -100,7 +100,7 @@ step by step; `nexus/concepts/design-round-trip.md` is the why.
 3. `check` passes; commit `docs: ingest the design handoff of
    <date>`, plot the L port chunk, land as `/plot` does.
 
-`design/ingest.md` has each step in full.
+`design/ingest.md` has each step in full; `design/port.md`, the port.
 
 ## 7. Hard rules
 
@@ -134,15 +134,16 @@ design/prompts/NNN-<date>.md          # the newest stored file's front matter
 
 # Commands
 node scripts/design/prompt.mjs prompt [<scope>] [--write]
-node scripts/design/prompt.mjs addendum [--write]
-#   --dir design/prompts  --plan plan  --date YYYY-MM-DD
+node scripts/design/prompt.mjs addendum [--write]   # --dir design/prompts --plan plan --date YYYY-MM-DD
 node scripts/design/ingest.mjs <folder> --artifact <link> --version <v> --chunk <id>
 node scripts/design/ingest.mjs check|rehash <handoff>   # --into packages/<name>/design/handoff
 node scripts/design/render.mjs <handoff> --out <dir> [--theme night|dawn] [--board <name>]
 node scripts/design/compare.mjs <board.png> <app.png> [--threshold 0.1] --out diff.png
+node scripts/design/port-map.mjs check|status [<handoff>]   # every board mapped, skipped or pending
+Workflow({ scriptPath: "scripts/design/port.workflow.js", args: { handoff, worktree, chunk } })
 
 # Writes
 design/prompts/NNN-<date>.md          # one per prompt or addendum
-design/handoff/<date>/                # one per delivery: the files, manifest.json, README.md
+design/handoff/<date>/                # one per delivery: the files, manifest.json, README.md, port.json
 git commit -m "docs: design prompt NNN"   # then land per owner mode (next/land.md §6)
 ```

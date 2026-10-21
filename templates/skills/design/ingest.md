@@ -51,7 +51,8 @@ It copies every file byte for byte into
 day), writes `manifest.json` (pages, boards, a sha256 per file)
 and `README.md` (the source of truth, the boards by page, the
 revision log, the edit table, the skip list the port fills),
-and prints the boards per page. It writes nothing when the
+`port.json` (every board pending the port's chunk, the map the
+port fills in: `design/port.md`) and prints the boards per page. It writes nothing when the
 canvas names a board the folder lacks: fetch the rest, rerun.
 
 A package's UI takes its handoff beside its code:

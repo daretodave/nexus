@@ -73,7 +73,9 @@ The shape, one agent per phase, all in the run's worktree:
 
 At most two verify rounds. `batch`: one Workflow per chunk,
 each in its own worktree, only for chunks whose paths are
-disjoint; landing stays serial, one chunk at a time.
+disjoint; landing stays serial, one chunk at a time. A design
+handoff's port chunk runs the kit's own script instead,
+`scripts/design/port.workflow.js` (`design/port.md`).
 
 While a Workflow runs, the lead sends it nothing (a message
 can start a second copy in the same worktree); a requirement

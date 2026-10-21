@@ -32,8 +32,8 @@ Skip it too when the product has no screens worth a canvas.
 | Addendum | `/design addendum` | 43.2 | the command |
 | Ingest | `/design ingest <link or folder>` | 43.3 | the command (`scripts/design/ingest.mjs`) |
 | Board renderer, screenshot compare | `scripts/design/render.mjs`, `compare.mjs` | 43.4 | the commands (`skills/design/render.md`) |
-| Port | the port recipe Workflow | 43.5 | a Workflow written for the chunk |
-| Fidelity leg | an opt-in gate leg | 43.5 | the handoff README, by review |
+| Port | the port recipe Workflow | 43.5 | the script (`scripts/design/port.workflow.js`, `skills/design/port.md`) |
+| Fidelity leg | an opt-in gate leg | 43.5 | the check (`scripts/design/port-map.mjs check`; nexus: `node scripts/verify.mjs design`) |
 | GUI | "Hand off a design", the board gallery | 43.6 | none |
 
 ## Step 1 — prompt out (20 min)
@@ -153,8 +153,13 @@ Run it as a Workflow, not one long session. The 41.3 run:
 5. **Land.** The close carries the skip list (below), and the
    handoff README carries it too.
 
-The kit Workflow (43.5) runs these five steps from the skill,
-with the renderer and the compare above.
+The kit Workflow runs these five steps from the skill, with the
+renderer and the compare above: the chunk's lead calls the
+Workflow tool with `scripts/design/port.workflow.js` and the
+handoff, the worktree and the chunk
+([`../skills/design/port.md`](../skills/design/port.md)). Its
+agents never commit; the lead gates, commits and closes with the
+skip list it returns.
 
 A live pass after the port is worth a chunk of its own: drive
 the built app in a browser in both themes for hover,
@@ -177,8 +182,11 @@ with its reason. nexus's categories, a fair starting set:
 - authoring slips not copied;
 - departures from the delivered render, with the repair.
 
-The fidelity leg (43.5) will check that every board is either
-mapped to a route or component or listed here with a reason.
+The handoff's `port.json` says the same per board: the file
+that draws it, `{ "skip": "<reason>" }`, or `{ "pending":
+"<chunk>" }` for a later chunk. `node scripts/design/port-map.mjs
+check` (nexus's opt-in `design` leg) fails on a board with no
+entry, a skip with no reason, or a mapped file that is gone.
 
 ## Step 7 — the next delivery
 
