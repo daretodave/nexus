@@ -80,6 +80,8 @@ export const server = {
   pushSecret: (name, destinations) => api(`/api/secrets/${encodeURIComponent(name)}/push`, { destinations }),
   /** POST /api/secrets/import { text | file, confirm?, names?, destinations? }: a names-only preview, or the store. */
   importSecrets: (body) => api('/api/secrets/import', body),
+  /** POST /api/secrets/manifest: an empty manifest (onboarding's Start empty); one that exists stays. */
+  startManifest: () => api('/api/secrets/manifest', {}),
 };
 
 const EMPTY = { connected: false, stage: initialState(), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [] };

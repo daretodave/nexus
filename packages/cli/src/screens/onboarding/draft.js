@@ -1,4 +1,4 @@
-// The onboarding draft: what the person answered across the six steps,
+// The onboarding draft: what the person answered across the seven steps,
 // kept for this tab (sessionStorage) so a reload or a Back keeps it.
 // Durable choices are written to the server as they are made (owner mode,
 // run mode) or at Launch (onboarded); the rest only shapes the first work.
@@ -18,6 +18,7 @@ export const DEFAULT_DRAFT = {
   place: {}, // Plot: idea id -> 'asap' | 'anytime' | 'auto'
   messy: false, // Plot: the thoughts went to /messy instead
   plotted: false, // Plot: the planned chunks were written
+  vault: 'imp', // Secrets: 'imp' | 'empty' | 'skip' (an owner's start; a contributor has nothing to pick)
   sched: 'night', // Cloud: 'night' | 'two' | 'demand'
   cloud: null, // Cloud: null (not decided) | 'on' | 'skipped'
   cloudSaved: null, // Cloud: the schedule call answered (true) or did not (false)

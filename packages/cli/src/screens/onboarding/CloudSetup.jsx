@@ -1,4 +1,4 @@
-// Step 5 · Cloud loop, optional (boards CloudSetup, CloudSetupLight). Four
+// Step 6 · Cloud loop, optional (boards CloudSetup, CloudSetupLight). Four
 // steps read from GET /api/actions and GET /api/runs: the loop workflow,
 // the one secret, one real pass, and a schedule. Writing the workflow,
 // dispatching a pass and saving the schedule are not served yet; each says

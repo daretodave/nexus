@@ -456,6 +456,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/secrets': { const { status, ...r } = await secrets.status(); return send(res, status, r); }
         case 'GET /api/secrets/audit': { const { status, ...r } = await secrets.audit(); return send(res, status, r); }
         case 'POST /api/secrets/import': { const { status, ...r } = await secrets.importEnv(await body(req)); return send(res, status, r); }
+        case 'POST /api/secrets/manifest': { await body(req); const { status, ...r } = await secrets.startManifest(); return send(res, status, r); }
       }
       const secPush = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/push$/.exec(route);
       if (secPush) {

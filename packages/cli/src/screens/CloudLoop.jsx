@@ -62,7 +62,7 @@ function RunRow({ u, now }) {
 }
 
 export default function CloudLoop() {
-  const { repo } = useShell();
+  const { repo, owner } = useShell();
   const loop = useLoop();
   const claims = useClaims();
   const inbox = useInbox();
@@ -186,7 +186,7 @@ export default function CloudLoop() {
           </div>
           {loop.secret ? (
             <div className="side-card">
-              <span className="t-caps c-2">Secret</span>
+              <span className="t-caps c-2">Sign-in</span>
               <div className="secret" style={{ background: 'transparent', padding: 0 }}>
                 <span className="secret-name">{loop.secret.name || 'CLAUDE_CODE_OAUTH_TOKEN'}</span>
                 {loop.secret.ok
@@ -196,7 +196,7 @@ export default function CloudLoop() {
                     : <span className="chk-state is-warn"><Icon name="warn" size={14} />missing</span>}
                 <span className="secret-d">
                   {loop.secret.ok
-                    ? <>{loop.secret.added ? <>Added {loop.secret.added} with <code>claude setup-token</code>. </> : null}Runs stop and park a question if it ever expires.</>
+                    ? <>The loop&apos;s own sign-in{loop.secret.added ? <>, added {loop.secret.added} with <code>claude setup-token</code></> : null}. It is not a project secret: {owner ? <>project secrets live in the <Link to={PATHS.vault}>vault</Link>.</> : 'this loop opens PRs and never deploys, so deploy keys stay with the owner.'} Runs stop and park a question if it ever expires.</>
                     : loop.secret.ok == null ? loop.secret.detail : loop.secret.fix}
                 </span>
               </div>

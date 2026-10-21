@@ -65,6 +65,8 @@ export default function Settings() {
   const loop = useLoop();
   const secrets = useSecrets();
   const counts = secretCounts(secrets.status === 'ready' ? secrets.data : null);
+  // What the plan has asked the vault for (42.8): each name an open secret request still waits on.
+  const asked = (secrets.status === 'ready' ? secrets.data?.requests || [] : []).flatMap((r) => (r.missing || []).map((name) => ({ name, chunk: r.chunk })));
   const [rotate, setRotate] = useState('r90');
 
   // Local settings: what the server holds, then what this page changed.
@@ -256,6 +258,7 @@ export default function Settings() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     <span className="t-body-s c-1">
                       {counts.names == null ? <>Secret names live in </> : <><b>{namesLabel(counts.names)}</b> in </>}<code className="t-mono-s c-2">{MANIFEST}</code>
+                      {asked.length ? <> · <span style={{ color: 'var(--st-blocked)', fontWeight: 600 }}>{asked.length} requested</span>, <code className="t-mono-s c-2">{asked[0].name}</code> for {asked[0].chunk}</> : null}
                     </span>
                     <Link className="btn btn-s" to={PATHS.vault}><Icon name="key" size={14} />Open the vault</Link>
                   </div>

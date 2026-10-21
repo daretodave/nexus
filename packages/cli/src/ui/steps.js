@@ -2,13 +2,14 @@
 
 /**
  * The onboarding steps, in order. The second handoff puts Secrets fourth
- * (4 of 7, after Shape); that step is 42.8's port, and every counter, kicker
- * and Back or Continue link reads this list, so adding it here renumbers them.
+ * (4 of 7, after Shape; 42.8's port), and every counter, kicker and Back or
+ * Continue link reads this list.
  */
 export const STEPS = [
   { id: 'welcome', label: 'Welcome' },
   { id: 'detect', label: 'Detect' },
   { id: 'shape', label: 'Shape' },
+  { id: 'secrets', label: 'Secrets' },
   { id: 'plot', label: 'Plot' },
   { id: 'cloud', label: 'Cloud loop' },
   { id: 'launch', label: 'Launch' },

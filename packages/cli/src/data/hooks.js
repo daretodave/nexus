@@ -105,7 +105,6 @@ export const MISSING = [
   { endpoint: 'POST /api/explode', hook: 'Onboarding Plot', for: 'split messy text into idea cards ({ text, team } -> { ideas, spec })' },
   { endpoint: 'POST /api/plot', hook: 'Onboarding Plot', for: 'write the kept ideas into the plan as chunks' },
   { endpoint: 'POST /api/cloud/(workflow|schedule)', hook: 'CloudSetup', for: 'add the loop workflow, save the schedule (POST /api/cloud/run, one pass now, is served)' },
-  { endpoint: 'GET /api/secrets', hook: 'useSecrets', for: "the vault's names (Settings' Secrets section, the Vault rail item's view): secrets.mjs status --json, 42.7's" },
   { endpoint: 'POST /api/pick-folder', hook: 'Recover', for: 'optional: an OS folder picker, since a browser cannot hand back an absolute path' },
 ];
 

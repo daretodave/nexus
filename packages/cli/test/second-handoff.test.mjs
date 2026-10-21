@@ -39,20 +39,18 @@ test('every onboarding counter, kicker and link reads the step list', () => {
   assert.equal(stepNo('plot'), STEPS.findIndex((s) => s.id === 'plot') + 1);
   assert.equal(stepBefore('welcome'), null);
   assert.equal(stepAfter('launch'), null);
-  assert.equal(stepAfter('shape'), 'plot');
-  assert.equal(stepBefore('plot'), 'shape');
   // with the Secrets step in the list (42.8), the board's numbers fall out
-  const seven = [...STEPS.slice(0, 3), { id: 'secrets', label: 'Secrets' }, ...STEPS.slice(3)];
-  assert.equal(stepCount('welcome', seven), '1 of 7');
-  assert.equal(stepCount('plot', seven), '5 of 7');
-  assert.equal(stepCount('cloud', seven), '6 of 7');
-  assert.equal(stepCount('launch', seven), '7 of 7');
-  assert.equal(stepAfter('shape', seven), 'secrets');
-  assert.equal(stepBefore('plot', seven), 'secrets');
+  assert.equal(stepCount('welcome'), '1 of 7');
+  assert.equal(stepCount('secrets'), '4 of 7');
+  assert.equal(stepCount('plot'), '5 of 7');
+  assert.equal(stepCount('cloud'), '6 of 7');
+  assert.equal(stepCount('launch'), '7 of 7');
+  assert.equal(stepAfter('shape'), 'secrets');
+  assert.equal(stepBefore('plot'), 'secrets');
 });
 
 test('no onboarding step writes its number by hand', () => {
-  for (const f of ['Welcome', 'Detect', 'Shape', 'Plot', 'CloudSetup', 'Launch']) {
+  for (const f of ['Welcome', 'Detect', 'Shape', 'Secrets', 'Plot', 'CloudSetup', 'Launch']) {
     const src = read(`../src/screens/onboarding/${f}.jsx`);
     assert.doesNotMatch(src, /ob-count">\d/, `${f}: the count comes from stepCount`);
     assert.doesNotMatch(src, /kicker">step \d/, `${f}: the kicker's number comes from stepNo`);
@@ -73,8 +71,8 @@ test('Settings\' secret counts: names and local keys from secrets.mjs status --j
   assert.equal(MANIFEST, 'nexus.secrets.json');
 });
 
-test('MISSING lists GET /api/secrets until the server serves it', () => {
+test('MISSING no longer lists GET /api/secrets: 42.7 serves it and the vault (42.8) draws it', () => {
   const hooks = read('../src/data/hooks.js');
   const at = hooks.indexOf('export const MISSING');
-  assert.match(hooks.slice(at, hooks.indexOf('];', at)), /GET \/api\/secrets/);
+  assert.doesNotMatch(hooks.slice(at, hooks.indexOf('];', at)), /GET \/api\/secrets/);
 });

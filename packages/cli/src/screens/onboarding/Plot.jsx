@@ -1,4 +1,4 @@
-// Step 4 · Plot (boards Plot, PlotLight). Messy thoughts on the left,
+// Step 5 · Plot (boards Plot, PlotLight). Messy thoughts on the left,
 // exploded into idea cards in the middle (keep, merge, discard, undo), and
 // the kept ones as planned chunks on the right, each with a place in line.
 // The explode and plot calls are not served yet: until they are, the

@@ -490,7 +490,19 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     return null;
   }
 
-  return { mask, refresh, status, audit, store, importEnv, push, markRequests };
+  /** POST /api/secrets/manifest: start an empty manifest (onboarding's "Start empty"), owner only; one that exists stays. */
+  async function startManifest() {
+    const k = await kit();
+    if (!k.ok) return unavailable(k);
+    if (!owner()) return { status: 403, error: "the manifest is the owner's: a contributor needs no project secrets" };
+    const root = await vroot();
+    const file = path.join(root, k.m.manifest.MANIFEST);
+    if (fs.existsSync(file)) return { status: 200, ok: true, created: false, manifest: k.m.manifest.MANIFEST };
+    fs.writeFileSync(file, k.m.manifest.serialize(k.m.manifest.emptyManifest()));
+    return { status: 200, ok: true, created: true, manifest: k.m.manifest.MANIFEST };
+  }
+
+  return { mask, refresh, status, audit, store, importEnv, push, markRequests, startManifest };
 }
 
 /** The mask for one repo, fed once (headless `nexus run`): identity when the repo has no vault. */

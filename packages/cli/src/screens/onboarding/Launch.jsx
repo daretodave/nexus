@@ -1,4 +1,4 @@
-// Step 6 · Launch (boards Launch, LaunchLight). Everything set up gathers
+// Step 7 · Launch (boards Launch, LaunchLight). Everything set up gathers
 // into one star: the summary of the answers, the collapse into the first
 // session (its star name is the first one free), and the way into its
 // cockpit. Opening it saves the run mode and marks setup done.

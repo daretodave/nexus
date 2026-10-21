@@ -164,6 +164,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         case 'GET /api/secrets': { const { status, ...r } = vault.status(); return send(res, 200, r); }
         case 'GET /api/secrets/audit': return send(res, 200, vault.audit());
         case 'POST /api/secrets/import': { const { status, ...r } = vault.importEnv(await body(req)); return send(res, status, r); }
+        case 'POST /api/secrets/manifest': await body(req); return send(res, 200, { ok: true, created: false, manifest: 'nexus.secrets.json' });
         case 'GET /api/claims': return send(res, 200, world.claims());
         case 'GET /api/summaries': return send(res, 200, {});
         case 'POST /api/send': {

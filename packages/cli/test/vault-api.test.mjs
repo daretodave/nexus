@@ -214,3 +214,25 @@ test('inbox: a secret request is a key row with its chunk and names, and leaves 
     await app.close();
   }
 });
+
+test('Start empty writes an empty manifest once (owner only); one that exists stays', async () => {
+  const { repo } = vaultRepo({ manifest: null });
+  const { app, call } = await serve(repo, fakeRun().run);
+  try {
+    const r = await call('POST', '/api/secrets/manifest', {});
+    assert.equal(r.status, 200, JSON.stringify(r.json));
+    assert.equal(r.json.created, true);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(repo, 'nexus.secrets.json'), 'utf8')).secrets, []);
+    assert.equal((await call('POST', '/api/secrets/manifest', {})).json.created, false);
+  } finally {
+    await app.close();
+  }
+  const c = vaultRepo({ owner: false, manifest: null });
+  const s2 = await serve(c.repo, fakeRun().run);
+  try {
+    assert.equal((await s2.call('POST', '/api/secrets/manifest', {})).status, 403);
+    assert.equal(fs.existsSync(path.join(c.repo, 'nexus.secrets.json')), false);
+  } finally {
+    await s2.app.close();
+  }
+});
