@@ -381,6 +381,7 @@ function globDir(rel) {
 const LINE_BUDGETS = {
   'next.md': 200, 'next/': 120, 'heads-down.md': 150, 'plot.md': 200, 'bug.md': 150, 'messy.md': 150,
   'tidy.md': 150, 'rebooting.md': 150, 'reboot-ready.md': 150, 'reboot-resume.md': 150,
+  'design.md': 150,
 }
 
 async function legAnatomy() {
@@ -586,6 +587,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/secrets-sinks.test.mjs',
   'templates/scripts/__tests__/secrets-audit.test.mjs',
   'templates/scripts/__tests__/secrets-run.test.mjs',
+  'templates/scripts/__tests__/design-prompt.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
 ]
@@ -611,6 +613,7 @@ const DOGFOOD_TWINS = [
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',
   'secrets-run.mjs', 'secrets-scan.mjs',
+  'design/prompt.mjs',
 ]
 // The steer hook runs in nexus's own sessions from .claude/hooks/, byte for byte the one adopters copy.
 const HOOK_TWINS = ['steer.mjs']

@@ -498,6 +498,7 @@ nexus/
 │   ├── worktree.mjs                   # npm run worktree: close a worktree without deleting through its links; list for /tidy
 │   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
 │   ├── secrets.mjs                    # npm run secrets: status, set, import, names, check, push, audit, request, run, scan; never a value (+ plan/secrets-manifest.mjs, secrets-vault.mjs, secrets-keychain.mjs, secrets-sinks.mjs, secrets-audit.mjs, secrets-run.mjs, secrets-scan.mjs; twins)
+│   ├── design/prompt.mjs              # /design prompt and /design addendum: the Claude Design paste prompt drafted from the plan (the template's twin)
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's plan starters + copy + placeholder-sweep + prune steps (Git Bash on Windows)
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
 │   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs (pre-commit) + the push policy (pre-push)
@@ -662,6 +663,7 @@ nexus/
     │   ├── secrets-audit.mjs          # set and rotate in that record, by name; the 90-day rotation nudge
     │   ├── secrets-run.mjs            # secrets run: a command with the declared values in its env only, its output masked
     │   ├── secrets-scan.mjs           # secrets scan: a diff that adds a vault value is refused, by file, line and name
+    │   ├── design/prompt.mjs          # the Claude Design prompt and addenda from the plan; design/prompts/NNN-<date>.md, numbered on
     │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
     │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
     │   ├── claims-board.mjs           # the claims board: one issue, created or edited from the claims branch
@@ -699,6 +701,7 @@ nexus/
     │   ├── __tests__/secrets-audit.test.mjs # set and rotate by name only, the rotation nudge, the secret request
     │   ├── __tests__/secrets-run.test.mjs # secrets run and the diff scan: declared values only, masked output, hits by name
     │   ├── __tests__/secrets-scan-run.test.mjs # secrets scan end to end in a scratch git repo (opt-in)
+    │   ├── __tests__/design-prompt.test.mjs # scope, the prompt's numbering, the addendum continuing it, the item-hash diff
     │   ├── __tests__/bootstrap.test.mjs # bootstrap's cloud-loop plan, pure
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
