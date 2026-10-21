@@ -100,7 +100,7 @@ Measure: 12 open · 0 closed · next A13
 - [ ] **40.1** One server, many sessions, deep links, a reused
   launch · M · closes A1 · needs —
 - [ ] **40.2** The fleet home: star tiles, merged inbox,
-  Resume · M · closes A2 · needs 40.1, 37.1
+  Resume · M · closes A2 · needs 40.1
 - [ ] **40.3** The plan board: all chunks and specs, sorted by
   order.mjs · M · closes A3 · needs —
 - [ ] **40.4** Cached AI one-liners for undescribed chunks ·

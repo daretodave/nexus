@@ -60,3 +60,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 36.8 · workflow-lint reads any indentation and composite actions · 4435f921..6c06de42
 - 2026-10-21 · 36.1 · scripts resolve ROOT with fileURLToPath; the gate refuses pathname · c2df3b02..c2df3b02
 - 2026-10-21 · 36.5 · guard sees worktree remove behind git options; list checks pids · 8edaa751..13c0923c
+- 2026-10-21 · 37.1 · heads-down beats the ledger, wears its star, records its loop · def103d2..dca827b6

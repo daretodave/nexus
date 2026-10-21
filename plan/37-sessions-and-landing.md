@@ -49,8 +49,6 @@ committed; the guard hook.
 
 ## Acceptance
 
-- **A1** `/heads-down` (template and nexus) beats the ledger at
-  every step, shows its star name, and records its loop.
 - **A2** Claims session tags carry the star name.
 - **A3** Claims refuse in a session that loaded no hooks.
 - **A4** No committing template skill pushes main directly;
@@ -65,12 +63,10 @@ committed; the guard hook.
 (None.)
 
 ## Chunks
-Measure: 7 open · 0 closed · next A8
+Measure: 6 open · 1 closed · next A8
 
-- [ ] **37.1** /heads-down beats the ledger and wears its star
-  name · M · closes A1 · needs —
 - [ ] **37.2** The star name rides in the claims session tag ·
-  S · closes A2 · needs 37.1
+  S · closes A2 · needs —
 - [ ] **37.3** Claims refuse a session with no hooks loaded ·
   S · closes A3 · needs —
 - [ ] **37.4** Every committing skill lands per owner mode;

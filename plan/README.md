@@ -22,7 +22,6 @@ needs are done):
 
 - **41.1** magical steering: answers reach a terminal session at once
 - **41.2** the tugs, readable at a glance
-- **37.1** a crashed overnight loop resumes from its ledger
 
 **Held** (waits on the owner's word; never picked until the
 line goes):
@@ -39,7 +38,7 @@ line goes):
 | 32 | Heartbeat watches armed-ness of every scheduled workflow, and night's cadence | [32-workflow-disable-watch.md](32-workflow-disable-watch.md) | planned (local session: workflow files) | 2 left |
 | 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 9 left |
 | 36 | Script hardening: paths, races, tests | [36-script-hardening.md](36-script-hardening.md) | planned · priority 1 | 3 left |
-| 37 | Sessions carry their names; every skill lands per owner mode | [37-sessions-and-landing.md](37-sessions-and-landing.md) | planned · priority 3 | 5 left |
+| 37 | Sessions carry their names; every skill lands per owner mode | [37-sessions-and-landing.md](37-sessions-and-landing.md) | planned · priority 3 | 4 left |
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 3 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 4 left |
 | 40 | GUI: the fleet, the plan board, git and Actions | [40-gui-fleet-and-board.md](40-gui-fleet-and-board.md) | planned · priority 2 | 12 left |
