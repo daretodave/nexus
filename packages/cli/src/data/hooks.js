@@ -133,6 +133,9 @@ export const useCloudLoop = () => useResource('/api/cloud');
 /** GET /api/recover?dir= (served) -> { run, agents, resume, recent }: a Workflow run folder read as a timeline (journal.jsonl), and this repo's recent runs. POST /api/recover/resume { dir } resumes it in a hosted session. Shape: server/recover.mjs. */
 export const useRecover = (dir) => useResource(`/api/recover${dir ? `?dir=${encodeURIComponent(dir)}` : ''}`);
 
+/** GET /api/design (served) -> { available, script, note, handoffs: [{ id, ok, problems, pages, boards }] }: every design handoff and each board's port status, from the repo's scripts/design/port-map.mjs. POST /api/design/handoff { link, session? } runs /design ingest. Shape: server/design.mjs. */
+export const useDesign = () => useResource('/api/design');
+
 /** GET /api/local (served) -> { owner, ownerMode, effective, runMode, phase }: .nexus/local.json at the primary checkout (POST /api/local writes it; server/local.mjs). */
 export const useLocalSettings = () => useResource('/api/local');
 

@@ -415,6 +415,7 @@ export default function Board() {
         <ViewTitle title={<h1 className="t-title-l">Plan</h1>} sub={sub} />
         <div className="view-acts">
           <Seg name="pbview" label="View" value={v} onChange={(x) => { setView(x); setPop(null); }} options={[{ value: 'all', label: 'All chunks' }, { value: 'spec', label: 'By spec' }]} />
+          <Link className="btn" to={PATHS.design}><Icon name="image" size={14} />Design</Link>
           <Link className="btn" to={plotTo}><Icon name="plus" size={14} />Plot something</Link>
         </div>
       </ViewHead>

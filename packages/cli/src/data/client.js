@@ -70,6 +70,8 @@ export const server = {
   /** "Run one pass now": gh workflow run on the loop workflow (its id, or the loop file the server finds). */
   dispatchWorkflow: (id) => api('/api/cloud/run', id == null ? {} : { id }),
   runs: () => api('/api/runs'),
+  /** POST /api/design/handoff { link, session?: 'new' }: /design ingest <link> in the home session, or a new one. */
+  designHandoff: (link, session) => api('/api/design/handoff', { link, ...(session ? { session } : {}) }),
 };
 
 const EMPTY = { connected: false, stage: initialState(), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [] };

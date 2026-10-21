@@ -22,6 +22,7 @@ const SCREENS = {
   Recover: () => import('./screens/Recover.jsx'),
   GitPanel: () => import('./screens/GitPanel.jsx'),
   Vault: () => import('./screens/Vault.jsx'),
+  Design: () => import('./screens/Design.jsx'),
 };
 const Fleet = lazy(SCREENS.Fleet);
 const Cockpit = lazy(SCREENS.Cockpit);
@@ -34,6 +35,7 @@ const Settings = lazy(SCREENS.Settings);
 const Recover = lazy(SCREENS.Recover);
 const GitPanel = lazy(SCREENS.GitPanel);
 const Vault = lazy(SCREENS.Vault);
+const Design = lazy(SCREENS.Design);
 
 function usePrefetchScreens() {
   useEffect(() => {
@@ -100,6 +102,7 @@ function Shell() {
         <Route path="/recover" element={<Recover />} />
         <Route path="/git" element={<GitPanel />} />
         <Route path="/vault" element={<Vault />} />
+        <Route path="/design" element={<Design />} />
         <Route path="*" element={<Navigate to={PATHS.fleet} replace />} />
       </Routes>
       </Suspense>
