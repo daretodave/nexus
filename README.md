@@ -497,7 +497,7 @@ nexus/
 │   ├── ledger.mjs                     # npm run ledger: each session's live ledger (star names; a crash resumes like a reboot)
 │   ├── worktree.mjs                   # npm run worktree: close a worktree without deleting through its links; list for /tidy
 │   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
-│   ├── secrets.mjs                    # npm run secrets: import names into nexus.secrets.json, names, check (+ plan/secrets-manifest.mjs; twins)
+│   ├── secrets.mjs                    # npm run secrets: status, set, import, names, check; never a value (+ plan/secrets-manifest.mjs, secrets-vault.mjs, secrets-keychain.mjs; twins)
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's plan starters + copy + placeholder-sweep + prune steps (Git Bash on Windows)
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
 │   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs (pre-commit) + the push policy (pre-push)
@@ -653,7 +653,9 @@ nexus/
     │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h); --json: the same as data
     │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
     │   ├── plan/secrets-manifest.mjs  # nexus.secrets.json's shape + the .env.example import (plan-check reads it)
-    │   ├── secrets.mjs                # secrets by name: import from .env.example, names, check; never a value
+    │   ├── secrets.mjs                # secrets by name: status, set (stdin), import (--store a real .env), names, check; never a value
+    │   ├── secrets-vault.mjs          # the vault: .env (local), .env.workspace (workspace root), the keychain; get/resolve for code only
+    │   ├── secrets-keychain.mjs       # the opt-in OS keychain: security, PowerShell's PasswordVault, secret-tool; values on stdin only
     │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
     │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
     │   ├── claims-board.mjs           # the claims board: one issue, created or edited from the claims branch
@@ -686,6 +688,7 @@ nexus/
     │   ├── __tests__/upgrade-plan-run.test.mjs # the converter over git, dry run and --write (offline)
     │   ├── __tests__/plot-run.test.mjs # a plot: settle, plan-check and order agree (offline)
     │   ├── __tests__/secrets.test.mjs # the secrets manifest: shape, import, CLI (names only)
+    │   ├── __tests__/secrets-vault.test.mjs # the vault: both rings, the keychain (stubbed runner), the CLI never prints a value
     │   ├── __tests__/bootstrap.test.mjs # bootstrap's cloud-loop plan, pure
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)

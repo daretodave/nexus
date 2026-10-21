@@ -7,6 +7,7 @@ Thumbs.db
 
 # never commit local secrets if anyone ends up populating them
 .env
+.env.workspace
 .env.local
 .env.*.local
 
