@@ -302,3 +302,13 @@ test('POST /api/git/fetch prunes remote refs at the primary checkout, nothing el
     await app.close();
   }
 });
+
+test('MISSING no longer lists the git endpoints the server serves; the tidy itself stays a terminal job', () => {
+  // hooks.js reads the page's token on import, so its MISSING list is read as text here.
+  const src = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'hooks.js'), 'utf8');
+  const block = src.slice(src.indexOf('export const MISSING'), src.indexOf('];', src.indexOf('export const MISSING')));
+  const eps = [...block.matchAll(/endpoint: '([^']+)'/g)].map((m) => m[1]);
+  for (const served of ['GET /api/git', 'POST /api/git/fetch']) assert.ok(!eps.some((e) => e === served || e.includes(`${served} `)), served);
+  assert.ok(!eps.some((e) => /GET\b[^,]*\/api\/git\/tidy/.test(e)), 'the dry run is served');
+  assert.ok(eps.includes('POST /api/git/tidy'), 'the tidy itself is not served from the GUI');
+});

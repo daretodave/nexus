@@ -2,14 +2,16 @@
 // worktree with its session, the root checkout, main's recent commits,
 // open pull requests with CI, and the /tidy dry run as a popover.
 //
-// Data: GET /api/git (useGitRepo) ->
-//   { repo, root: { path, branch, up, down, dirty, pulled },
-//     worktrees: [{ sessionId, session: { name, kind } | null, who, branch, path, act, age,
-//                   flag: 'active'|'idle'|'orphaned'|'fallen', dirty, pr: { num, ci }, run }],
-//     main: { ahead, behind, commits: [{ sha, m, w }] },
-//     prs: [{ num, title, desc, ci: 'green'|'red'|'running'|'queued' }] }
-// Actions: POST /api/git/fetch, GET /api/git/tidy (dry run) ->
-//   { worktrees: [{ branch, why }], branches: [..], prune, keep, keepNote }, POST /api/git/tidy.
+// Data: GET /api/git (useGitRepo; server/git.mjs) ->
+//   { repo, worktreeScript, root: { path, branch, up, down, upstream, dirty, staged, pulled },
+//     worktrees: [{ sessionId, session: { name, kind } | null, who, branch, path, head, act, age,
+//                   flag: 'active'|'idle'|'orphaned'|'fallen', verdict, exists, locked, pid, pidAlive,
+//                   dirty, ahead, pr: { num, ci, url }, run }],
+//     main: { base, ahead, behind, commits: [{ sha, m, w }] },
+//     prs: [{ num, title, desc, branch, url, ci: 'green'|'red'|'running'|'queued'|null }], gh, ghNote }
+// Actions: POST /api/git/fetch, GET /api/git/tidy (the dry run: it lists, never removes) ->
+//   { worktrees: [{ branch, path, why }], branches: [..], remote: [..], keep, keepNote, holds }.
+// The tidy itself (POST /api/git/tidy) is not served: /tidy runs it in a terminal and asks first.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -56,7 +58,7 @@ function TidyPop({ plan, done, onRun, onClose, running }) {
   const p = plan?.data || {};
   const wts = p.worktrees || [];
   const brs = p.branches || [];
-  const nothing = !missing && plan?.data && !wts.length && !brs.length && !p.prune;
+  const nothing = !missing && plan?.data && !wts.length && !brs.length && !(p.remote || []).length && !p.prune;
   return (
     <div className="tidy-pop" role="dialog" aria-label="Tidy, dry run">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -64,13 +66,16 @@ function TidyPop({ plan, done, onRun, onClose, running }) {
       </div>
       <div className="tidy-list">
         {!plan ? <div className="tidy-item"><span className="spin" style={{ width: 14, height: 14 }} /><span>Working out what would go…</span></div> : null}
-        {missing ? <div className="tidy-item"><Icon name="info" size={14} style={{ color: 'var(--text-3)' }} /><span><b>This server can't run the dry run yet.</b> Run <code>/tidy</code> in a terminal to see it.</span></div> : null}
+        {missing ? <div className="tidy-item"><Icon name="info" size={14} style={{ color: 'var(--text-3)' }} /><span><b>This repo has no dry run here.</b> {plan.note || ''} Run <code>/tidy dry</code> in a terminal to see it.</span></div> : null}
         {plan?.error ? <div className="tidy-item"><Icon name="x" size={14} style={{ color: 'var(--st-failed)' }} /><span><b>The dry run failed.</b> {plan.error}</span></div> : null}
         {wts.length ? (
           <div className="tidy-item"><Icon name="trash" size={14} style={{ color: 'var(--st-blocked)' }} /><span><b>Would remove {plural(wts.length, 'worktree')}:</b> <Codes list={wts.map((w) => w.branch)} />.{wts.length === 1 && wts[0].why ? ` ${wts[0].why}` : ''}</span></div>
         ) : null}
         {brs.length ? (
           <div className="tidy-item"><Icon name="git" size={14} style={{ color: 'var(--st-blocked)' }} /><span><b>Would delete {plural(brs.length, 'merged branch', 'merged branches')}:</b> <Codes list={brs} />.</span></div>
+        ) : null}
+        {(p.remote || []).length ? (
+          <div className="tidy-item"><Icon name="git" size={14} style={{ color: 'var(--st-blocked)' }} /><span><b>Would delete {plural(p.remote.length, 'remote branch', 'remote branches')}</b> of closed pull requests: <Codes list={p.remote} />.</span></div>
         ) : null}
         {p.prune ? <div className="tidy-item"><Icon name="refresh" size={14} style={{ color: 'var(--text-3)' }} /><span><b>Would prune {plural(p.prune, 'stale remote ref')}</b> left by deleted PR branches.</span></div> : null}
         {nothing ? <div className="tidy-item"><Icon name="check" size={14} style={{ color: 'var(--st-done)' }} /><span><b>Nothing to tidy.</b></span></div> : null}
@@ -107,14 +112,14 @@ export default function GitPanel() {
     setTidyOpen(true);
     setPlan(null);
     setDone('');
-    try { setPlan({ data: await api('/api/git/tidy') }); } catch (e) { setPlan(e.status === 404 ? { missing: true } : { error: e.message }); }
+    try { setPlan({ data: await api('/api/git/tidy') }); } catch (e) { setPlan(e.status === 404 ? { missing: true, note: e.message } : { error: e.message }); }
   }
 
   async function runTidy() {
     setRunning(true);
     const r = await act('/api/git/tidy', {});
     setRunning(false);
-    if (!r.ok) { push({ kind: 'error', title: r.missing ? 'Tidy is not wired up yet' : "Tidy didn't run", body: r.missing ? 'Run /tidy in a terminal.' : r.error }); return; }
+    if (!r.ok) { push({ kind: 'error', title: r.missing ? 'Tidy runs in a terminal' : "Tidy didn't run", body: r.missing ? 'Run /tidy there: it asks before it closes anything. This panel only shows the dry run.' : r.error }); return; }
     const w = r.data?.removed?.worktrees ?? (plan?.data?.worktrees || []).length;
     const b = r.data?.removed?.branches ?? (plan?.data?.branches || []).length;
     setDone(`Done. ${plural(w, 'worktree')} and ${plural(b, 'branch', 'branches')} removed.`);
@@ -212,10 +217,10 @@ export default function GitPanel() {
                   <div className="pr-row" key={p.num}>
                     <span className="num">{prNum(p.num)}</span>
                     <span className="t"><b>{p.title}</b>{p.desc ? <span>{p.desc}</span> : null}</span>
-                    <CiPill state={p.ci || 'queued'} />
+                    {p.ci ? <CiPill state={p.ci} /> : <span className="cap">no checks</span>}
                   </div>
                 ))}
-                {!prs.length ? <span className="t-body-s c-3" style={{ padding: '4px 8px 6px' }}>No open pull requests.</span> : null}
+                {!prs.length ? <span className="t-body-s c-3" style={{ padding: '4px 8px 6px' }}>{d?.gh === false ? `Open pull requests come from gh. ${d.ghNote || 'gh is not signed in.'}` : 'No open pull requests.'}</span> : null}
               </div>
             </div>
           </div>

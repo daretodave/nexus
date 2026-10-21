@@ -72,11 +72,19 @@ You need no API key.
   needs only Actions: read and write), and a read-only workflow token
   default is fine when the loop workflow declares its own permissions,
   as the kit's do.
-- **Git** (worktrees, main, open PRs, a `/tidy` dry run), **Recover**
-  (a workflow folder as a timeline) and **Settings** (owner mode, run
-  mode, AI one-liners, night or dawn). Owner mode and run mode live in
-  the checkout's untracked `.nexus/local.json`, read and written through
-  `/api/local` by Settings and the cockpit alike.
+- **Git**: every session's strip (in its tile, cockpit and heads-down
+  view) shows its branch, worktree, ahead and behind, uncommitted and
+  staged files, the last five commits, its pull request with checks,
+  and the claims it holds. The repo panel lists every worktree from the
+  repo's own `scripts/worktree.mjs list --json` (active, idle,
+  orphaned, fallen; a lock's pid alive or dead), the primary checkout,
+  main's recent commits and open pull requests, and a `/tidy` dry run
+  that only lists: closing a worktree stays `/tidy`'s job, in a
+  terminal.
+- **Recover** (a workflow folder as a timeline) and **Settings**
+  (owner mode, run mode, AI one-liners, night or dawn). Owner mode and
+  run mode live in the checkout's untracked `.nexus/local.json`, read
+  and written through `/api/local` by Settings and the cockpit alike.
 
 Some of this waits on server endpoints that are not built yet (the
 reboot train's Pause all, chunking in the page). Until they land, those

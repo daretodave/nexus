@@ -80,7 +80,6 @@ export const useRuns = (poll) => useResource('/api/runs', { poll });
 export const MISSING = [
   { endpoint: 'POST /api/train', hook: 'trainAction', for: 'Pause all, the reboot train, and Resume all' },
   { endpoint: 'POST /api/claims/(claim|hold|unhold|reassign|request)', hook: 'claimAction', for: 'row actions on chunks and specs (only release exists today)' },
-  { endpoint: 'GET /api/git', hook: 'useGitRepo', for: 'Git panel: worktrees (idle/orphaned), recent main commits, open PRs with CI, the primary checkout, a /tidy dry run' },
   { endpoint: 'GET /api/cloud', hook: 'useCloudLoop', for: 'Cloud loop: schedule, next tick, paused state, runs as a timeline (today: /api/actions + /api/runs)' },
   { endpoint: 'GET /api/recover?dir=', hook: 'useRecover', for: 'Recover: a workflow folder read as a timeline (journal.jsonl), and recent runs' },
   { endpoint: 'POST /api/recover/resume', hook: 'recoverAction', for: 'resume a workflow from a chosen step (resumeFromRunId + scriptPath)' },
@@ -89,8 +88,7 @@ export const MISSING = [
   { endpoint: 'POST /api/sessions/:id/start', hook: 'cockpit', for: 'leave the start questions and begin working' },
   { endpoint: 'POST /api/sessions/:id/package', hook: 'cockpit', for: 'open the package PR ({ action: "open" }) or save its description' },
   { endpoint: 'POST /api/plan/chunk', hook: 'Board', for: 'Chunk it: { spec } returns questions, { spec, answers } writes the chunks' },
-  { endpoint: 'POST /api/git/fetch', hook: 'GitPanel', for: 'git fetch --prune for the panel' },
-  { endpoint: 'GET|POST /api/git/tidy', hook: 'GitPanel', for: 'the /tidy dry run (GET) and the tidy itself (POST)' },
+  { endpoint: 'POST /api/git/tidy', hook: 'GitPanel', for: 'the tidy itself (GET /api/git/tidy, the dry run, is served; /tidy closes worktrees in a terminal)' },
   { endpoint: 'POST /api/explode', hook: 'Onboarding Plot', for: 'split messy text into idea cards ({ text, team } -> { ideas, spec })' },
   { endpoint: 'POST /api/plot', hook: 'Onboarding Plot', for: 'write the kept ideas into the plan as chunks' },
   { endpoint: 'POST /api/cloud/(workflow|schedule)', hook: 'CloudSetup', for: 'add the loop workflow, save the schedule (POST /api/cloud/run, one pass now, is served)' },
@@ -112,7 +110,7 @@ export const usePlan = () => useResource('/api/plan');
 /** GET /api/summaries (served) -> { [chunkId]: { text, ai: true } }: Haiku one-liners for undescribed chunks, cached in .nexus/cache/, {} when Settings turns them off. Shape: server/summaries.mjs. */
 export const useSummaries = () => useResource('/api/summaries');
 
-/** GET /api/git -> { worktrees, main, prs, primary }. */
+/** GET /api/git (served) -> { repo, root, worktrees, main, prs, gh }: every worktree from worktree.mjs list --json with its session and flag, the primary checkout, main's recent commits, open PRs with CI. GET /api/git/tidy is the /tidy dry run; POST /api/git/fetch prunes remote refs. Shape: server/git.mjs. Each session's own git rides on GET /api/sessions. */
 export const useGitRepo = () => useResource('/api/git');
 
 /** GET /api/cloud -> { live, paused, schedule, next, runs }. */
