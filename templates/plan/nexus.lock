@@ -2,7 +2,7 @@
 # Skills read `shape:` before they read the plan. Upgrading is a
 # deliberate act: see nexus/playbooks/upgrade.md.
 kit: nexus
-version: 2.0.0-pre
-ref: main
+version: 2.0.0
+ref: v2.0.0
 shape: chunks
 adopted: YYYY-MM-DD

@@ -60,17 +60,13 @@ both `guard.mjs` copies, `plan/PHASE_CANDIDATES.md`, and
 ## Acceptance
 
 - **A8** `CLAUDE.md` points at the v2 pick order.
-- **A9** `v2.0.0` is tagged; both lock files and
-  `plan-shape.md` say so.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 2 open · 7 closed · next A10
+Measure: 1 open · 8 closed · next A10
 
 - [ ] **35.8** CLAUDE.md points at the v2 pick order · S ·
   closes A8 · needs —
-- [ ] **35.9** Tag v2.0.0 and point both lock files at it ·
-  S · closes A9 · needs —

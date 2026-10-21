@@ -137,3 +137,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 46.2 · a plot commit bounds archive ranges and sits in none · bc724c5c..bc724c5c
 - 2026-10-21 · 46.3 · settle refuses section Chunks/Acceptance; footgun placeholders numbered · 31f277c6..31f277c6
 - 2026-10-21 · 46 · spec complete: plots settle before same-date closes, a plot commit bounds archive ranges, settle refuses the last silent appends and numbers footgun placeholders, and /triage extends the spec an issue belongs to · d81f96ce..31f277c6
+- 2026-10-21 · 35.9 · v2.0.0 is tagged and both lock files and plan-shape point at it · plan only

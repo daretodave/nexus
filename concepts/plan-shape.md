@@ -227,14 +227,15 @@ each adopter records which one it follows:
 ```
 # plan/nexus.lock: the nexus kit version this repo follows.
 kit: nexus
-version: 2.0.0-pre
-ref: main
+version: 2.0.0
+ref: v2.0.0
 shape: chunks
 adopted: 2026-10-20
 ```
 
-(`ref:` becomes the `v2.0.0` tag once v2 is released; until
-then v2 adopters follow `main`.)
+(`ref:` names the kit tag the repo reads: `v2.0.0` for
+chunks. Following `main` instead is allowed, and means taking
+unreleased changes.)
 
 A repo with no lock file is on v1 (phases). Skills read the
 lock's `shape:` before they read the plan; to stay on v1, pin

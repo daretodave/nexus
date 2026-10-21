@@ -25,7 +25,6 @@ needs are done):
 line goes):
 
 - **35.8** `CLAUDE.md` is the owner's configuration
-- **35.9** a release: the owner tags v2.0.0
 - **38.3** rulesets on the owner's repo
 - **39.4** creates a scratch repo on the owner's account
 
@@ -33,7 +32,7 @@ line goes):
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 2 left |
+| 35 | Finish the v2 move, then tag it | [35-finish-v2.md](35-finish-v2.md) | planned · priority 4 | 1 left |
 | 38 | Adoption asks the mode; the repo is actually locked | [38-adoption-and-protection.md](38-adoption-and-protection.md) | planned · priority 5 | 1 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 1 left |
 
