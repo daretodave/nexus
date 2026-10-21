@@ -51,8 +51,6 @@ What exists today (2026-10-20): `fileURLToPath` in
 
 ## Acceptance
 
-- **A1** No script resolves ROOT through `URL.pathname`; the
-  gate refuses it.
 - **A2** loop-issue's suite runs in the gate; progress's
   `main()` is tested from a path with a space.
 - **A4** Two concurrent ledger beats never share a star name;
@@ -69,12 +67,10 @@ What exists today (2026-10-20): `fileURLToPath` in
 (None.)
 
 ## Chunks
-Measure: 6 open · 4 closed · next A11
+Measure: 5 open · 5 closed · next A11
 
-- [ ] **36.1** fileURLToPath everywhere, and the gate refuses
-  URL.pathname · S · closes A1 · needs —
 - [ ] **36.2** loop-issue tests in the gate; progress main()
-  from a spaced path · S · closes A2 · needs 36.1
+  from a spaced path · S · closes A2 · needs —
 - [ ] **36.4** Ledger and notice board survive concurrent
   writers · M · closes A4, A5 · needs —
 - [ ] **36.5** Guard sees --git-dir; worktree list checks the
