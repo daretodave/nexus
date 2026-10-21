@@ -55,18 +55,13 @@ What exists today (2026-10-20): `fileURLToPath` in
   two concurrent `take` calls never both win; a busy rename
   retries.
 - **A5** Two concurrent `announce` posts both land.
-- **A10** `scripts-ci.yml` has run green on both runners with
-  a sized `timeout-minutes`.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 3 open · 7 closed · next A11
+Measure: 2 open · 8 closed · next A11
 
 - [ ] **36.4** Ledger and notice board survive concurrent
   writers · M · closes A4, A5 · needs —
-- [ ] **36.9** First scripts-ci runs watched; timeout sized ·
-  S · closes A10 · needs —
-  - Touches `.github/workflows/`: ship it from a local session.

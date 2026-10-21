@@ -83,3 +83,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 41.1 · a linked terminal session takes an owner line at its next tool · 240b8f36..388c17b9
 - 2026-10-21 · 37.4 · every committing skill lands per owner mode; cloud-tick note · 4ee6bbdc..95eb2efb
 - 2026-10-21 · 37 · spec complete: heads-down beats its ledger and wears its star, claims carry the star and refuse a session with no hooks, every committing skill lands per owner mode, and the plan gate reads the settled view · def103d2..95eb2efb
+- 2026-10-21 · 36.9 · scripts-ci runs green on both runners, timeout ten minutes · 889e8e82..4ce0154e
