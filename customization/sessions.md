@@ -31,14 +31,15 @@ files, and lets the owner steer them all at once.
 
 Copy them from `nexus/templates/` (the scripts need
 `scripts/owner.mjs`; the skills need `scripts/claims.mjs`).
-Everything they write is untracked. Add to `.gitignore`:
+Everything they write is untracked (and so are `/messy`'s raw
+dumps in `plan/messy/`). Add to `.gitignore`:
 
 ```bash
-printf '.owner\n.nexus/\n.announcements.md\n' >> .gitignore   # once per repo, if missing
+printf '.owner\n.nexus/\n.announcements.md\nplan/messy/\n' >> .gitignore   # once per repo, if missing
 ```
 
 ```powershell
-Add-Content .gitignore ".owner`n.nexus/`n.announcements.md"     # once per repo, if missing
+Add-Content .gitignore ".owner`n.nexus/`n.announcements.md`nplan/messy/"     # once per repo, if missing
 ```
 
 ## The notice board

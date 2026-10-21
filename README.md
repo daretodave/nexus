@@ -464,6 +464,7 @@ nexus/
 │   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md)
 │   ├── heads-down.md                  # /heads-down — ask up front, then loop /next for hours
 │   ├── plot.md                        # /plot — a task into the plan with its place in line (+ bug.md: /bug)
+│   ├── messy.md                       # /messy — a raw dump into specs (the GUI's explode)
 │   ├── tidy.md                        # /tidy — clear dead claims, close idle worktrees (worktree.mjs)
 │   ├── rebooting.md                   # /rebooting, /reboot-ready, /reboot-resume — the reboot train
 │   ├── march.md                       # + ship-a-chunk, iterate, critique (dry-run adoption),
@@ -500,6 +501,7 @@ nexus/
     │   ├── heads-down.md               # ask up front, claim a list, loop /next on defaults, ASCII progress
     │   ├── plot.md                     # a task into the plan with its slot (asap|anytime|auto|peek; and do)
     │   ├── bug.md                      # reproduce; fix now via /plot … and do, or plot it
+    │   ├── messy.md                    # raw dump -> untracked plan/messy/, themes -> specs via a pending file
     │   ├── tidy.md                     # clear dead claims; offer idle worktrees + merged branches
     │   ├── rebooting.md                # reboot train: announce, ack, one resume line per loop
     │   ├── reboot-ready.md             # reboot train: park this loop (children, work, claims, ledger)

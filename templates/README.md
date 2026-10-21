@@ -32,6 +32,7 @@ templates/
 │   ├── heads-down.md                  (ask up front, claim a list, loop /next assuming defaults, ASCII progress)
 │   ├── plot.md                        (a task into the plan with its place in line; `and do` builds it now)
 │   ├── bug.md                         (reproduce, then fix now via /plot … and do, or plot it)
+│   ├── messy.md                       (a raw dump, saved untracked, clustered and refined into specs via a pending file; the GUI's explode)
 │   ├── tidy.md                        (clear dead claims; offer idle worktrees and merged branches in one question)
 │   ├── rebooting.md                   (reboot train, owner's terminal: announce, ack, one resume line per loop)
 │   ├── reboot-ready.md                (reboot train, inside a loop: stop children, keep work and claims, park the ledger)
