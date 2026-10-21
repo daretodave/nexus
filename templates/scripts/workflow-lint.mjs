@@ -14,8 +14,12 @@
 //   3. Injection. A `run:` script never interpolates text a pull request or an issue author wrote
 //      (`${{ github.event.pull_request.title }}`, `${{ github.head_ref }}`, …): pass it through `env:` and read the
 //      variable, or read the event payload file.
+//   4. Composite actions (.github/actions/<name>/action.yml) keep rule 3 for their own run scripts, and read no
+//      secret: a composite action has no secrets context, so the secret comes in as an input.
 //
-//   node scripts/workflow-lint.mjs [dir …]     (default .github/workflows) → exit 1 and one line per problem
+// Indentation is read, not assumed: a job's keys sit wherever the file puts them (two spaces or four).
+//
+//   node scripts/workflow-lint.mjs [dir …]     (default .github/workflows .github/actions) → exit 1 and one line per problem
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -50,19 +54,39 @@ function blockUnder(lines, i) {
   return out;
 }
 
-/** Each place the context rule covers: run-name, the workflow's own `env:`, and each job's `env:`. */
+const indentOf = (line) => /^(\s*)/.exec(line)[1].length;
+const isContent = (line) => line.trim() !== '' && !/^\s*#/.test(line);
+
+/**
+ * Each place the context rule covers: run-name, the workflow's own `env:`, and each job's `env:`. A job id sits at the
+ * indent of the first line under `jobs:`, and its keys at the indent of the first line under the id, whatever both are.
+ */
 export function placesIn(yml) {
   const lines = yml.split(/\r?\n/);
   const places = [];
   let inJobs = false;
+  let jobIndent = null;
+  let keyIndent = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const rn = /^run-name:\s*(.*)$/.exec(line);
     if (rn) places.push({ where: 'run-name', text: rn[1] });
     if (/^env:\s*$/.test(line)) places.push({ where: 'env', text: blockUnder(lines, i).join('\n') });
-    if (/^jobs:\s*$/.test(line)) inJobs = true;
-    else if (/^\S/.test(line)) inJobs = false;
-    if (inJobs && /^ {4}env:\s*$/.test(line)) places.push({ where: 'jobs.<id>.env', text: blockUnder(lines, i).join('\n') });
+    if (!isContent(line)) continue;
+    if (/^\S/.test(line)) {
+      inJobs = /^jobs:\s*$/.test(line);
+      jobIndent = keyIndent = null;
+      continue;
+    }
+    if (!inJobs) continue;
+    const indent = indentOf(line);
+    if (jobIndent === null) jobIndent = indent;
+    if (indent <= jobIndent) {
+      keyIndent = null;
+      continue;
+    }
+    if (keyIndent === null) keyIndent = indent;
+    if (indent === keyIndent && /^\s*env:\s*$/.test(line)) places.push({ where: 'jobs.<id>.env', text: blockUnder(lines, i).join('\n') });
   }
   return places;
 }
@@ -105,6 +129,13 @@ export function lintWorkflow(name, text) {
       }
     }
   }
+  problems.push(...injections(name, text));
+  return problems;
+}
+
+/** Rule 3: each run script that interpolates outsider text, one line each. */
+function injections(name, text) {
+  const problems = [];
   for (const script of runScripts(text)) {
     for (const expr of expressions(script)) {
       if (UNTRUSTED.test(expr)) problems.push(`${name}: a run script interpolates \${{${expr}}} (outsider text: pass it through env: instead)`);
@@ -113,25 +144,45 @@ export function lintWorkflow(name, text) {
   return problems;
 }
 
-/** Lint every .yml/.yaml file in each directory; a missing directory has nothing to say. */
+/** What's wrong with one composite action (rule 4): its run scripts keep rule 3, and it reads no secret. */
+export function lintAction(name, text) {
+  const problems = [];
+  for (const expr of expressions(text)) {
+    if (contextsIn(expr).includes('secrets')) problems.push(`${name}: reads secrets in \${{${expr}}} (a composite action has no secrets context: pass it in as an input)`);
+  }
+  problems.push(...injections(name, text));
+  return problems;
+}
+
+const ACTION_FILE = /^action\.ya?ml$/;
+
+/**
+ * Lint each directory: an action.yml/action.yaml at any depth as a composite action, any other .yml/.yaml directly in
+ * it as a workflow. A missing directory has nothing to say; `files` counts both kinds.
+ */
 export function lintDirs(dirs) {
   const problems = [];
   let files = 0;
-  for (const dir of dirs) {
-    if (!fs.existsSync(dir)) continue;
-    for (const f of fs.readdirSync(dir).filter((x) => /\.ya?ml$/.test(x)).sort()) {
-      files++;
-      const rel = path.join(dir, f).split(path.sep).join('/');
-      problems.push(...lintWorkflow(rel, fs.readFileSync(path.join(dir, f), 'utf8')));
+  const walk = (dir, top) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) walk(full, false);
+      else if (/\.ya?ml$/.test(e.name) && (top || ACTION_FILE.test(e.name))) {
+        files++;
+        const rel = full.split(path.sep).join('/');
+        const text = fs.readFileSync(full, 'utf8');
+        problems.push(...(ACTION_FILE.test(e.name) ? lintAction(rel, text) : lintWorkflow(rel, text)));
+      }
     }
-  }
+  };
+  for (const dir of dirs) if (fs.existsSync(dir)) walk(dir, true);
   return { problems, files };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const dirs = process.argv.slice(2);
-  const { problems, files } = lintDirs(dirs.length ? dirs : ['.github/workflows']);
+  const { problems, files } = lintDirs(dirs.length ? dirs : ['.github/workflows', '.github/actions']);
   for (const p of problems) console.error(p);
-  console.log(`workflow-lint: ${files} workflow(s), ${problems.length} problem(s)`);
+  console.log(`workflow-lint: ${files} file(s), ${problems.length} problem(s)`);
   process.exit(problems.length ? 1 : 0);
 }

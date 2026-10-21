@@ -1,8 +1,12 @@
 // workflow-lint.mjs: a secret runs on hosted runners only; run-name and env blocks read only the contexts that exist
-// there, and never a secret or a token; a run script never interpolates outsider text. node:test, no deps, no git.
+// there, and never a secret or a token; a run script (a workflow's or a composite action's) never interpolates outsider
+// text. node:test, no deps, no git (one temp dir for the directory walk).
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { RUNNER_VAR, contextsIn, lintWorkflow, placesIn, runScripts } from '../workflow-lint.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { RUNNER_VAR, contextsIn, lintAction, lintDirs, lintWorkflow, placesIn, runScripts } from '../workflow-lint.mjs';
 
 const job = (runsOn, extra = '') => `jobs:\n  a:\n    runs-on: ${runsOn}\n    steps:\n      - run: echo hi${extra}\n`;
 
@@ -78,5 +82,47 @@ describe('injection', () => {
     assert.equal(lintWorkflow('w.yml', step('git push origin ${{ github.head_ref }}')).length, 1);
     assert.equal(lintWorkflow('w.yml', step('echo ${{ github.event.head_commit.message }}')).length, 1);
     assert.deepEqual(lintWorkflow('w.yml', step('echo ${{ github.run_id }} ${{ github.event.pull_request.number }} "$TITLE"')), []);
+  });
+});
+
+describe('indentation', () => {
+  it('finds a job env at any indentation (4-space jobs, 8-space keys)', () => {
+    const yml = 'jobs:\n    j:\n        runs-on: ubuntu-latest\n        env:\n            T: ${{ secrets.T }}\n        steps:\n            - run: echo\n              env:\n                  S: ${{ secrets.S }}\n';
+    assert.deepEqual(placesIn(yml).map((p) => p.where), ['jobs.<id>.env']);
+    assert.match(lintWorkflow('w.yml', yml).join('\n'), /jobs\.<id>\.env reads secrets/);
+    assert.equal(lintWorkflow('w.yml', yml).length, 1);
+  });
+
+  it('finds each job env in a 4-space workflow, and only job-level ones', () => {
+    const yml = 'on: push\njobs:\n\n    # a comment\n    a:\n        env:\n            A: ${{ runner.temp }}\n    b:\n        container:\n            env:\n                X: ${{ secrets.X }}\n        env:\n            B: ${{ vars.B }}\n';
+    assert.deepEqual(placesIn(yml).map((p) => p.where), ['jobs.<id>.env', 'jobs.<id>.env']);
+    assert.equal(lintWorkflow('w.yml', yml).length, 1);
+  });
+});
+
+describe('composite actions', () => {
+  const action = (s) => `name: x\nruns:\n  using: composite\n  steps:\n    - shell: bash\n      run: |\n        ${s}\n`;
+
+  it('flags outsider text in a composite action run script', () => {
+    assert.match(lintAction('a/action.yml', action('echo "${{ github.event.issue.title }}"'))[0], /a\/action\.yml: a run script interpolates/);
+    assert.deepEqual(lintAction('a/action.yml', action('echo ${{ inputs.x }} ${{ runner.os }}')), []);
+  });
+
+  it('flags a secret read in a composite action (inputs carry it in)', () => {
+    assert.match(lintAction('a/action.yml', action('echo ${{ secrets.T }}'))[0], /secrets/);
+  });
+
+  it('lints .github/actions/*/action.yml beside the workflows', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wl-'));
+    try {
+      fs.mkdirSync(path.join(root, 'actions', 'setup'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'actions', 'setup', 'action.yml'), action('git push origin ${{ github.head_ref }}'));
+      const { problems, files } = lintDirs([path.join(root, 'workflows'), path.join(root, 'actions')]);
+      assert.equal(files, 1);
+      assert.equal(problems.length, 1);
+      assert.match(problems[0], /actions\/setup\/action\.yml: a run script interpolates/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

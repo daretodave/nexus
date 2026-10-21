@@ -52,7 +52,10 @@
 //                 secret runs on hosted runners only, run-name and
 //                 env blocks read only the contexts GitHub allows
 //                 there and never a secret or token, and no run
-//                 script interpolates outsider text
+//                 script interpolates outsider text; each
+//                 composite action in .github/actions/ and
+//                 templates/.github/actions/ keeps the run-script
+//                 rule and reads no secret
 //   diagrams      every assets/*.svg is byte-identical to what
 //                 scripts/diagrams.mjs generates (regenerated in
 //                 memory; a hand edit, a missing or a stray SVG is
@@ -619,8 +622,8 @@ function runSuites(suites, label) {
 
 async function legWorkflows() {
   const { lintDirs } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/workflow-lint.mjs')).href)
-  const { problems, files } = lintDirs(['.github/workflows', 'templates/.github/workflows'].map((d) => path.join(ROOT, d)))
-  return { failures: problems.map((p) => normalize(path.relative(ROOT, p.split(':')[0])) + p.slice(p.indexOf(':'))), note: `${files} workflows: hosted runners for secrets, contexts, no outsider text in run scripts` }
+  const { problems, files } = lintDirs(['.github/workflows', '.github/actions', 'templates/.github/workflows', 'templates/.github/actions'].map((d) => path.join(ROOT, d)))
+  return { failures: problems.map((p) => normalize(path.relative(ROOT, p.split(':')[0])) + p.slice(p.indexOf(':'))), note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts` }
 }
 
 // --- leg: diagrams ------------------------------------------------------------
