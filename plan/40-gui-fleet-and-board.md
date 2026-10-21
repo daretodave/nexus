@@ -72,9 +72,6 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
   the tidy dry run lists idle worktrees.
 - **A10** The GUI resumes a Workflow from its transcript
   folder.
-- **A11** Run mode and owner mode live in
-  `.nexus/local.json`, read and written through
-  `/api/local` by Settings and the cockpit alike.
 - **A12** The board's grip reorders chunks within a spec,
   and Reassign picks its target from the claimants.
 
@@ -83,7 +80,7 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 (None.)
 
 ## Chunks
-Measure: 6 open · 6 closed · next A13
+Measure: 5 open · 7 closed · next A13
 
 - [ ] **40.2** The fleet home: star tiles, merged inbox,
   Resume · M · closes A2 · needs —
@@ -93,11 +90,6 @@ Measure: 6 open · 6 closed · next A13
   M · closes A6 · needs —
 - [ ] **40.10** Recover from a Workflow transcript folder · M
   · closes A10 · needs —
-- [ ] **40.11** `/api/local`: run mode and owner mode, one
-  writer · S · closes A11 · needs —
-  - Settings reads run mode through `/api/prefs` today and the
-    cockpit's run-mode menu writes prefs directly; both move
-    to `ui/run-mode.js` over `/api/local`.
 - [ ] **40.12** The board's grip reorders; Reassign picks a
   target · M · closes A12 · needs 40.5
   - The grip is drawn but inert in 41.3. A reorder lands as a
