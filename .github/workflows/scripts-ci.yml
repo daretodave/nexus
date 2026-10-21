@@ -27,6 +27,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    # Observed: ubuntu 0.1-0.2 min, windows 0.8-1.8 min a job (13 runs,
+    # 2026-10-21). Ten minutes is about five times the slowest: room for
+    # a cold runner, short enough that a hung git spawn fails fast.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
