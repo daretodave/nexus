@@ -58,6 +58,8 @@ export const server = {
   progress: (spec) => api(`/api/progress${spec ? `?spec=${encodeURIComponent(spec)}` : ''}`),
   actions: () => api('/api/actions'),
   setWorkflow: (id, enabled) => api('/api/actions/workflow', { id, enabled }),
+  /** "Run one pass now": gh workflow run on the loop workflow (its id, or the loop file the server finds). */
+  dispatchWorkflow: (id) => api('/api/cloud/run', id == null ? {} : { id }),
   runs: () => api('/api/runs'),
 };
 

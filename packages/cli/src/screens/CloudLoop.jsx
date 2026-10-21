@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, PauseBtn, InboxBtn, Empty, Err, cx, useShell } from '../ui/index.js';
-import { api, useClaims, useInbox } from '../data/index.js';
+import { server, useClaims, useInbox } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { useLoop, hhmm, inWords, clock, tonightStart } from './cloud-settings/loop.js';
 import { Frame, LoopDot, andList } from './cloud-settings/parts.jsx';
@@ -86,7 +86,7 @@ export default function CloudLoop() {
     setRunErr(null);
     const at = Date.now();
     try {
-      await api('/api/cloud/run', {});
+      await server.dispatchWorkflow(loop.wf?.id);
       setAsk({ at });
       loop.reload();
     } catch (e) {
@@ -187,11 +187,13 @@ export default function CloudLoop() {
                 <span className="secret-name">{loop.secret.name || 'CLAUDE_CODE_OAUTH_TOKEN'}</span>
                 {loop.secret.ok
                   ? <span className="chk-state is-ok"><Icon name="check" size={14} />set</span>
-                  : <span className="chk-state is-warn"><Icon name="warn" size={14} />missing</span>}
+                  : loop.secret.ok == null
+                    ? <span className="chk-state is-wait">unknown</span>
+                    : <span className="chk-state is-warn"><Icon name="warn" size={14} />missing</span>}
                 <span className="secret-d">
                   {loop.secret.ok
                     ? <>{loop.secret.added ? <>Added {loop.secret.added} with <code>claude setup-token</code>. </> : null}Runs stop and park a question if it ever expires.</>
-                    : loop.secret.fix}
+                    : loop.secret.ok == null ? loop.secret.detail : loop.secret.fix}
                 </span>
               </div>
             </div>

@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../../ui/index.js';
-import { useActions, useRuns } from '../../data/index.js';
+import { server, useActions, useRuns } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, useCopy, CopyFace } from './frame.jsx';
 import { useDraft } from './draft.js';
@@ -210,7 +210,7 @@ export default function CloudSetup() {
                   {secret
                     ? (secret.ok
                       ? <span className="chk-state is-ok"><Icon name="check" size={14} />set</span>
-                      : <span className="chk-state is-warn">not set</span>)
+                      : secret.ok == null ? <span className="chk-state is-wait">unknown</span> : <span className="chk-state is-warn">not set</span>)
                     : <span className="chk-state is-wait">{ghOk || actions.status === 'loading' ? 'checking' : 'unknown'}</span>}
                   <span className="secret-d">Run <code>claude setup-token</code> on this machine. It prints a long-lived token for CI; store it in the repo's secrets under this name. It never passes through nexus.</span>
                 </div>
@@ -221,7 +221,7 @@ export default function CloudSetup() {
                   <button className="btn btn-s" type="button" onClick={() => copy(2, 'gh secret set CLAUDE_CODE_OAUTH_TOKEN')}>
                     <CopyFace copied={copied === 2} icon="terminal" doneColor={false}>Or set it with <code>gh secret set</code></CopyFace>
                   </button>
-                  {secret && !secret.ok ? <button className="btn btn-s btn-ghost" type="button" onClick={actions.reload}><Icon name="refresh" size={14} />Check again</button> : null}
+                  {secret && secret.ok === false ? <button className="btn btn-s btn-ghost" type="button" onClick={actions.reload}><Icon name="refresh" size={14} />Check again</button> : null}
                 </div>
               </div>
             </div>
@@ -242,7 +242,7 @@ export default function CloudSetup() {
                   <div className="run-line"><span>One real pass on CI, so you see it work before you schedule it.</span></div>
                 )}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button className="btn btn-s" type="button" onClick={() => act('run', onboardingCalls.runOnce, runs.reload)} disabled={!wf || running || pending.run === 'busy'}>
+                  <button className="btn btn-s" type="button" onClick={() => act('run', () => server.dispatchWorkflow(wf?.id), runs.reload)} disabled={!wf || running || pending.run === 'busy'}>
                     <Icon name="play" size={14} />{running ? 'Running' : last ? 'Run again' : 'Run one pass'}
                   </button>
                   {last?.url

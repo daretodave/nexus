@@ -18,8 +18,6 @@ export const onboardingCalls = {
   startSession: (name) => api('/api/sessions', { name }),
   /** POST /api/cloud/workflow {} -> { path, sha }: write the loop workflow and commit it */
   addWorkflow: () => api('/api/cloud/workflow', {}),
-  /** POST /api/cloud/run {} -> { id, url }: dispatch one pass of the loop workflow */
-  runOnce: () => api('/api/cloud/run', {}),
   /** POST /api/cloud/schedule { schedule, cron } -> { cron, next } */
   setSchedule: (schedule, cron) => api('/api/cloud/schedule', { schedule, cron }),
 };

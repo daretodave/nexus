@@ -100,7 +100,7 @@ export const MISSING = [
   { endpoint: 'GET|POST /api/git/tidy', hook: 'GitPanel', for: 'the /tidy dry run (GET) and the tidy itself (POST)' },
   { endpoint: 'POST /api/explode', hook: 'Onboarding Plot', for: 'split messy text into idea cards ({ text, team } -> { ideas, spec })' },
   { endpoint: 'POST /api/plot', hook: 'Onboarding Plot', for: 'write the kept ideas into the plan as chunks' },
-  { endpoint: 'POST /api/cloud/(workflow|run|schedule)', hook: 'CloudSetup, CloudLoop', for: 'add the loop workflow, dispatch one pass, save the schedule' },
+  { endpoint: 'POST /api/cloud/(workflow|schedule)', hook: 'CloudSetup', for: 'add the loop workflow, save the schedule (POST /api/cloud/run, one pass now, is served)' },
   { endpoint: 'POST /api/pick-folder', hook: 'Recover', for: 'optional: an OS folder picker, since a browser cannot hand back an absolute path' },
 ];
 

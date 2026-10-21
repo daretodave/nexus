@@ -207,7 +207,7 @@ export default function Settings() {
                     <span className="t-body-s c-1">{loop.schedule?.label ? `${loop.schedule.label}${loop.schedule.window ? `, ${loop.schedule.window}` : ''}` : loop.wf.name}</span>
                     <span className="t-body-s c-3">
                       {loop.schedule?.cron ? <>cron <code className="t-mono-s c-2">{loop.schedule.cron}</code></> : <>workflow <code className="t-mono-s c-2">{loop.wf.path}</code></>}
-                      {loop.secret ? <> · secret <code className="t-mono-s c-2">{loop.secret.name || 'CLAUDE_CODE_OAUTH_TOKEN'}</code> {loop.secret.ok ? 'set' : 'missing'}</> : null}
+                      {loop.secret ? <> · secret <code className="t-mono-s c-2">{loop.secret.name || 'CLAUDE_CODE_OAUTH_TOKEN'}</code> {loop.secret.ok ? 'set' : loop.secret.ok == null ? 'unknown' : 'missing'}</> : null}
                     </span>
                     <Link className="t-body-s" to={PATHS.cloud}>Open the cloud loop and its runs</Link>
                   </div>

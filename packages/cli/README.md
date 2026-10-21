@@ -47,9 +47,17 @@ You need no API key.
   next up, spec, size or claimed; just-plotted chunks are marked. Chunk
   it on an unchunked spec starts `/next chunk NN`. Claims show by
   person and session; claim, hold and release from the row.
-- **Cloud loop**, **Git** (worktrees, main, open PRs, a `/tidy` dry
-  run), **Recover** (a workflow folder as a timeline) and **Settings**
-  (owner mode, run mode, night or dawn).
+- **Cloud loop**: pause and resume the loop workflow (`gh workflow
+  disable|enable`), run one pass now (`gh workflow run`), and each live
+  run's current step, with a step running over 30 minutes (or a job
+  waiting over 2 for a runner) marked stalled. The checks ask for least
+  privilege: write on the repo to pause and run (a fine-grained token
+  needs only Actions: read and write), and a read-only workflow token
+  default is fine when the loop workflow declares its own permissions,
+  as the kit's do.
+- **Git** (worktrees, main, open PRs, a `/tidy` dry run), **Recover**
+  (a workflow folder as a timeline) and **Settings** (owner mode, run
+  mode, night or dawn).
 
 Some of this waits on server endpoints that are not built yet (the
 merged inbox, chunking in the page). Until they land, those
