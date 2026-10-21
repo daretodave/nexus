@@ -18,6 +18,7 @@ import { readPlan } from './plan.mjs';
 import { createSummaries } from './summaries.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
+import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -190,7 +191,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   async function sessionAction(key, action) {
     const s = sessionOf(key);
     if (!s) {
-      return { status: 409, error: action === 'resume' ? 'that session is not running here: a fallen one resumes through /reboot-resume' : 'only a session this server runs pauses, resumes or closes here' };
+      if (action === 'resume') return resumeFallen(key);
+      return { status: 409, error: 'only a session this server runs pauses, resumes or closes here' };
     }
     if (action === 'pause') return { status: 200, id: s.id, pause: s.pauseAfterStep() };
     if (action === 'resume') return { status: 200, id: s.id, pause: await s.resume() };
@@ -199,6 +201,59 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     sessions.delete(s.id);
     if (s.listed) endLedger(await primaryRoot(repo), s.id);
     return { status: 200, id: s.id, closed: true, worktree: s.place.worktree || '', note: s.place.worktree ? 'its worktree stays: close it with /tidy' : undefined };
+  }
+
+  // Resume from a fallen tile (A2): a new hosted session takes the ledger through /reboot-resume. One resumer per
+  // ledger while this server runs; the ledger's own `take` refuses a second one from anywhere else.
+  const resumers = new Map();
+  async function resumeFallen(key) {
+    const root = await primaryRoot(repo);
+    const l = ledgerFor(readLedgers(root), key);
+    const by = l && resumers.get(l.id);
+    if (by && sessions.has(by.id)) return { status: 409, error: `${l.star} is already resuming as ${by.name}`, id: by.id, name: by.name };
+    const ok = resumable(l);
+    if (!ok.ok) return ok;
+    if (!hasResumeSkill(root)) return { status: 409, error: 'this repo has no /reboot-resume (copy it from the nexus templates): nothing started' };
+    const prompt = resumePrompt(l);
+    const r = await startSession({ worktree: false, prompt });
+    if (r.status !== 200) return r;
+    resumers.set(l.id, { id: r.id, name: r.name });
+    return { status: 200, id: r.id, name: r.name, resumes: l.id, star: l.star, prompt, loop: !!l.loop };
+  }
+
+  /** The hosted sessions as the fleet and the inbox read them. */
+  const hostedLive = () => [...sessions.values()].map((s) => ({
+    id: s.id, claude: s.claude, name: s.name, busy: s.busy,
+    asks: [...s.asks.values()].map((a) => a.view), permissions: [...s.permissions.values()].map((p) => p.view),
+  }));
+
+  /** GET /api/sessions: the session list with each tile's phase, progress, asks and resume. */
+  async function sessionList() {
+    const list = await steering.list();
+    const hosted = hostedLive().map((h) => ({ ...h, asks: h.asks.length }));
+    return fleetRows(list, { ledgers: readLedgers(await primaryRoot(repo)), hosted, resumers, owner: repoMod.isOwner(repo) });
+  }
+
+  /** GET /api/inbox: every session's questions, tagged by star, and the plan's. */
+  async function inbox() {
+    return inboxItems({ hosted: hostedLive(), ledgers: readLedgers(await primaryRoot(repo)), durable: repoMod.durableQuestions(repo) });
+  }
+
+  /** POST /api/inbox/:id { answer, how }: a parked question (to its session, off its ledger) or a permission. */
+  async function settleInbox(id, b) {
+    const answer = b.answer == null ? '' : String(b.answer);
+    if (id.startsWith('perm:')) {
+      const ok = answerPermission(id.slice(5), { allow: answer !== 'Deny', always: answer === 'Always allow' });
+      return ok ? { status: 200, ok: true } : { status: 404, error: 'no such request' };
+    }
+    const ref = parseParkedId(id);
+    if (!ref) return { status: 409, error: 'answer an ask through POST /api/ask/:id, a plan question through POST /api/oversight/answer' };
+    const l = readLedgers(await primaryRoot(repo)).find((x) => x.id === ref.ledger);
+    const raw = l && Array.isArray(l.parked) ? l.parked[ref.index] : undefined;
+    const q = raw === undefined ? null : parkedItem(raw).q;
+    if (q == null || !sameParked(ref, q)) return { status: 409, error: 'the parked list changed; reload and try again' };
+    const action = b.how === 'approved' || b.how === 'default' ? 'approve' : 'change';
+    return steering.settleParked(ref.ledger, { index: ref.index, q, action, answer: answer || undefined });
   }
 
   const answerAsk = (askId, answers) => [...sessions.values()].some((s) => s.answerAsk(askId, answers));
@@ -253,7 +308,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           await sendPrompt(prompt);
           return send(res, 200, { ok: true });
         }
-        case 'GET /api/sessions': return send(res, 200, await steering.list());
+        case 'GET /api/sessions': return send(res, 200, await sessionList());
+        case 'GET /api/inbox': return send(res, 200, await inbox());
         case 'POST /api/announce': { const b = await body(req); const r = await steering.announce(b.text); return send(res, r.status, r); }
         case 'GET /api/claims': return send(res, 200, await repoMod.claims(repo));
         case 'POST /api/claims/release': { const b = await body(req); return send(res, 200, await repoMod.releaseClaim(repo, String(b.id || ''))); }
@@ -275,6 +331,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         const answers = b.answers && typeof b.answers === 'object' ? Object.fromEntries(Object.entries(b.answers).map(([k, v]) => [String(k), String(v)])) : null;
         if (!answerAsk(ask[1], answers)) return send(res, 404, { error: 'no such question (already answered or expired)' });
         return send(res, 200, { ok: true });
+      }
+      const ibx = /^POST \/api\/inbox\/([\w.%:-]+)$/.exec(route);
+      if (ibx) {
+        const r = await settleInbox(decodeURIComponent(ibx[1]), await body(req));
+        return send(res, r.status, r);
       }
       const one = /^GET \/api\/sessions\/([\w.%-]+)$/.exec(route);
       if (one) {

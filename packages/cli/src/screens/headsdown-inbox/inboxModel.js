@@ -1,7 +1,8 @@
 // The oversight inbox's items, from whatever the server serves today.
 //
-//   GET /api/inbox (when served): every open and parked question across
-//   sessions and the cloud loop, already tagged. Until it is served:
+//   GET /api/inbox (served since 40.2): every open and parked question across
+//   sessions and the plan, already tagged by star (server/fleet-home.mjs).
+//   An older server without it falls back to:
 //   - live asks (AskUserQuestion), one row per question   -> Waiting now
 //   - live permission requests                            -> Waiting now
 //   - durable questions in plan/ ([needs-user-call], open questions)
@@ -32,36 +33,52 @@ function sessionOf(s) {
   return { name: s.name, kind: s.kind || 'local', id: s.id };
 }
 
-/** GET /api/inbox rows -> items. */
+/**
+ * GET /api/inbox rows -> items. The server tags each row with its session's star and says where it came from
+ * (`src`): an ask, a permission and a plan question keep their own answer paths (POST /api/ask/:id,
+ * /api/permission/:id, /api/oversight/answer), so they go through the same builders as the live ones below; a
+ * parked question (src inbox) answers through POST /api/inbox/:id.
+ */
 export function fromInbox(data, now) {
   const rows = Array.isArray(data) ? data : data?.items || [];
   return rows.map((x) => {
-    const opts = (x.options || x.opts || []).map(label).filter(Boolean);
-    const def = x.default != null ? label(x.default) : opts[0];
-    const ordered = def && opts.includes(def) ? [def, ...opts.filter((o) => o !== def)] : opts;
-    const session = sessionOf(x.session);
-    return {
-      id: String(x.id),
-      kind: x.kind === 'parked' || x.kind === 'cloud' ? x.kind : 'now',
-      src: 'inbox',
-      session: x.kind === 'cloud' ? null : session,
-      sessionId: x.sessionId || session?.id || null,
-      run: x.run ? `#${String(x.run).replace(/^#/, '')}` : '',
-      who: x.who || x.agent || 'main',
-      chunk: x.chunk || '',
-      chunkT: x.chunkTitle || x.chunkT || '',
-      phase: x.phase || '',
-      age: x.at ? `asked ${ago(x.at, now)}` : '',
-      at: x.at ? clock(x.at) : '',
-      q: x.question || x.q || '',
-      opts: ordered,
-      why: x.why || '',
-      hasDefault: ordered.length > 0,
-      freeText: true,
-      settled: x.settled || null,
-      raw: x,
-    };
+    const tag = (item) => ({ ...item, session: sessionOf(x.session), sessionId: x.sessionId || x.session?.id || null, chunk: x.chunk || item.chunk });
+    if (x.src === 'ask' && x.askId) {
+      const [one] = fromAsks([{ id: x.askId, agent: x.agent, at: x.at, questions: [{ question: x.qText, options: x.options || [] }] }], { now });
+      return tag({ ...one, id: String(x.id), q: x.question || one.q, opts: (x.options || []).map(label).filter(Boolean), why: x.why || '', raw: x });
+    }
+    if (x.src === 'perm' && x.perm) return tag(fromPermissions([x.perm], { now })[0]);
+    if (x.src === 'durable' && x.durable) return fromDurable([x.durable])[0];
+    return fromInboxRow(x, now);
   });
+}
+
+function fromInboxRow(x, now) {
+  const opts = (x.options || x.opts || []).map(label).filter(Boolean);
+  const def = x.default != null ? label(x.default) : opts[0];
+  const ordered = def && opts.includes(def) ? [def, ...opts.filter((o) => o !== def)] : opts;
+  const session = sessionOf(x.session);
+  return {
+    id: String(x.id),
+    kind: x.kind === 'parked' || x.kind === 'cloud' ? x.kind : 'now',
+    src: 'inbox',
+    session: x.kind === 'cloud' ? null : session,
+    sessionId: x.sessionId || session?.id || null,
+    run: x.run ? `#${String(x.run).replace(/^#/, '')}` : '',
+    who: x.who || x.agent || 'main',
+    chunk: x.chunk || '',
+    chunkT: x.chunkTitle || x.chunkT || '',
+    phase: x.phase || '',
+    age: x.at ? `asked ${ago(x.at, now)}` : '',
+    at: x.at ? clock(x.at) : '',
+    q: x.question || x.q || '',
+    opts: ordered,
+    why: x.why || '',
+    hasDefault: ordered.length > 0,
+    freeText: true,
+    settled: x.settled || null,
+    raw: x,
+  };
 }
 
 /** Live AskUserQuestion requests -> one item per question. */
@@ -105,7 +122,7 @@ function permTarget(summary) {
   try {
     const o = JSON.parse(summary);
     const v = o.command || o.file_path || o.path || o.url || o.pattern || Object.values(o).find((x) => typeof x === 'string');
-    return v ? String(v).replace(/s+/g, ' ').slice(0, 160) : '';
+    return v ? String(v).replace(/\s+/g, ' ').slice(0, 160) : '';
   } catch { return String(summary).slice(0, 160); }
 }
 

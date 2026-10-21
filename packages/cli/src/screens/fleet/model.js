@@ -41,7 +41,8 @@ export function bar(s) {
 export function norm(raw) {
   const s = { ...raw };
   s.kind = s.kind || 'local';
-  if (s.kind === 'terminal') s.state = 'observing';
+  // A terminal session is read-only (observing) while it runs; fallen, it offers Resume like any other.
+  if (s.kind === 'terminal' && !['fallen', 'resuming', 'resumed', 'resume-failed'].includes(s.state)) s.state = 'observing';
   s.state = s.state || 'live';
   s.mode = s.mode || 'contributor';
   s.git = s.git || {};
