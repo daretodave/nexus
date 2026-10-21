@@ -52,18 +52,13 @@ committed; the guard hook.
 - **A4** No committing template skill pushes main directly;
   each lands per owner mode.
 - **A5** `next/land.md` says how a no-token cloud tick ends.
-- **A6** `plan-check` passes a contributor's unsettled plot.
-- **A7** One test proves settle, plan-check and order agree on
-  a plot.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 4 open · 3 closed · next A8
+Measure: 2 open · 5 closed · next A8
 
 - [ ] **37.4** Every committing skill lands per owner mode;
   the cloud-tick note · M · closes A4, A5 · needs —
-- [ ] **37.5** plan-check reads the settled view; a plot
-  integration test · S · closes A6, A7 · needs —
