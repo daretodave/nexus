@@ -125,3 +125,6 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 44 · spec complete: nexus --demo plays fixture scenarios, a pure-JS recorder makes the GIF, and fleet to tug plays in the README with a gate leg holding its budget · 567d168f..5f424fb1
 - 2026-10-21 · 45.1 · an ## Add numbers new spec work at settle · b1c9b54e..eb902373
 - 2026-10-21 · 45.2 · plan-check and order read pending Adds as settled · 85041378..85041378
+- 2026-10-21 · 45.3 · /plot extends before it adds, through ## Add · 8e7dfb3a..4bc5178e
+- 2026-10-21 · 45.4 · /plot spots a spec an open PR extends · c156c6b3..c156c6b3
+- 2026-10-21 · 45 · spec complete: an ## Add extends a spec without quoting it, numbered and placed at settle in merge order; the settled view, plan-check and order --mark read it; /plot extends before it adds and spots a spec an open PR extends · b1c9b54e..c156c6b3
