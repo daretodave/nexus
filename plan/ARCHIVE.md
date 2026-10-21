@@ -138,3 +138,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 46.3 · settle refuses section Chunks/Acceptance; footgun placeholders numbered · 31f277c6..31f277c6
 - 2026-10-21 · 46 · spec complete: plots settle before same-date closes, a plot commit bounds archive ranges, settle refuses the last silent appends and numbers footgun placeholders, and /triage extends the spec an issue belongs to · d81f96ce..31f277c6
 - 2026-10-21 · 35.9 · v2.0.0 is tagged and both lock files and plan-shape point at it · plan only
+- 2026-10-21 · 38.3 · main needs a PR except for the owner and the loop; claims never force-pushed · plan only
+- 2026-10-21 · 38 · spec complete: adoption asks owner or contributor and arms the hooks, push-policy guards main on origin and upstream only, the owner's checkout is armed for overnight runs, and nexus's main and claims carry their rulesets · c4fddf0b..9357324e
