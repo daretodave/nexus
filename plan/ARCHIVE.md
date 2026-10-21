@@ -120,3 +120,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 41.10 · the second and third handoffs re-ported outside the vault · 01779662..3c899851
 - 2026-10-21 · 41 · spec complete: a linked terminal session takes an owner line at its next tool, tugs and real data drawn on the stage, the Claude Design handoffs ported and re-ported at fidelity, a lighter package · 240b8f36..3c899851
 - 2026-10-21 · 43.4 · design render draws a handoff's boards; compare scores the app · b5a67eb9..a3127926
+- 2026-10-21 · 43.5 · the port recipe runs as a Workflow; an opt-in leg checks the port map · d638c51a..466a05db

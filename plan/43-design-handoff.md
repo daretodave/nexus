@@ -85,11 +85,6 @@ What exists today (2026-10-21):
 
 ## Acceptance
 
-- **A5** The port recipe runs as a Workflow from the skill:
-  foundation, screens per page, integrate, per-theme fidelity,
-  land with the skip list.
-- **A6** An opt-in gate leg checks the handoff against its
-  manifest and every board's mapping or skip.
 - **A7** The GUI takes an artifact link and shows the
   handoff's boards with their port status.
 
@@ -99,9 +94,7 @@ What exists today (2026-10-21):
 they are in the Claude Design flow, by giving a link.)
 
 ## Chunks
-Measure: 3 open · 4 closed · next A8
+Measure: 1 open · 6 closed · next A8
 
-- [ ] **43.5** The port recipe as a Workflow, and the
-  fidelity leg · M · closes A5, A6 · needs —
 - [ ] **43.6** "Hand off a design" and the board gallery in
-  the GUI · M · closes A7 · needs 43.5
+  the GUI · M · closes A7 · needs —
