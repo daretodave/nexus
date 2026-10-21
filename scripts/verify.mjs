@@ -589,6 +589,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/steer.test.mjs',
   'templates/scripts/__tests__/ledger.test.mjs',
   'templates/scripts/__tests__/order.test.mjs',
+  'templates/scripts/__tests__/triage-match.test.mjs',
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
@@ -626,7 +627,7 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs', 'plan/order.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
+  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',
   'secrets-run.mjs', 'secrets-scan.mjs',

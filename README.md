@@ -505,6 +505,7 @@ nexus/
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
 │   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
+│   ├── plan/triage-match.mjs          # /triage: which open spec an issue belongs to, and the open PR already covering it (twin)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── git/push-policy.mjs            # pre-push: main on origin/upstream is the owner's checkout's alone (owner mode)
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
@@ -679,6 +680,7 @@ nexus/
     │   ├── plan/footguns.mjs          # footgun list format + budget lint
     │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h); --json: the same as data
     │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
+    │   ├── plan/triage-match.mjs      # /triage: an issue scored against the open specs, open PRs' pending files read (gh read only)
     │   ├── plan/secrets-manifest.mjs  # nexus.secrets.json's shape + the .env.example import (plan-check reads it)
     │   ├── secrets.mjs                # secrets by name: status, set (stdin), import (--store a real .env), names, check, push (owner mode), audit, request; never a value
     │   ├── secrets-vault.mjs          # the vault: .env (local), .env.workspace (workspace root), the keychain; get/resolve for code only
@@ -717,6 +719,7 @@ nexus/
     │   ├── __tests__/steer.test.mjs   # the steer hook: one session only, once
     │   ├── __tests__/ledger.test.mjs  # the live ledger
     │   ├── __tests__/order.test.mjs   # the simulated pick order
+    │   ├── __tests__/triage-match.test.mjs  # an issue to its spec, ambiguous, none, already in PR #N
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver
