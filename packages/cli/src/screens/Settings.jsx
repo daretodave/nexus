@@ -7,12 +7,16 @@
 // .nexus/local.json); the cloud loop pause is the loop workflow's enabled
 // state through gh; AI one-liners on the plan board are a GUI pref
 // (POST /api/prefs aiSummaries, on by default); the theme is per browser.
+// Secrets (the second and third handoffs): names only, from GET /api/secrets
+// once the server serves it (42.7); the rotate nudge has no store yet, so a
+// change there says it lasts until the page reloads.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { nextRunMode, localRunMode, saveRunMode, Icon, InfoBtn, Check, BadgeDef, BadgeAuto, Tip, Switch, Seg, ThemeSeg, useShell } from '../ui/index.js';
-import { api, useLocalSettings } from '../data/index.js';
+import { api, useLocalSettings, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { useLoop, hhmm } from './cloud-settings/loop.js';
+import { MANIFEST, secretCounts, namesLabel, localKeysLabel } from './cloud-settings/secrets.js';
 import { Frame, LoopDot } from './cloud-settings/parts.jsx';
 
 const SEC = { padding: '18px 26px', gap: 28 };
@@ -20,6 +24,7 @@ const LABEL = { width: 120 };
 
 
 const PHASES = ['short', 'std', 'night'];
+const ROTATE = [{ value: 'r60', label: '60 days' }, { value: 'r90', label: '90 days' }, { value: 'rnever', label: 'Never' }];
 
 /** ~/code/lantern from /Users/x/code/lantern or C:\Users\x\code\lantern. */
 function tildePath(p) {
@@ -38,9 +43,9 @@ function remoteOwner(url) {
 /** The view-acts "saved" mark, honest about what happened. */
 function Saved({ state }) {
   if (state === 'saving') return <span className="t-body-s c-3" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>saving</span>;
-  if (state === 'missing') {
+  if (state === 'missing' || state?.missing) {
     return (
-      <span className="t-body-s c-3" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="This server has no /api/local yet; changes last until the page reloads.">
+      <span className="t-body-s c-3" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title={state?.missing || 'This server has no /api/local yet; changes last until the page reloads.'}>
         <Icon name="warn" size={14} style={{ color: 'var(--st-blocked)' }} />not saved · this page only
       </span>
     );
@@ -58,6 +63,9 @@ export default function Settings() {
   // .owner at the primary checkout (a worktree's Settings sees it too), as /api/local reads it.
   const owner = local.status === 'ready' ? !!local.data?.owner : !!info.owner;
   const loop = useLoop();
+  const secrets = useSecrets();
+  const counts = secretCounts(secrets.status === 'ready' ? secrets.data : null);
+  const [rotate, setRotate] = useState('r90');
 
   // Local settings: what the server holds, then what this page changed.
   const [mine, setMine] = useState({});
@@ -226,7 +234,7 @@ export default function Settings() {
                     <span className="t-body-s c-1">{loop.schedule?.label ? `${loop.schedule.label}${loop.schedule.window ? `, ${loop.schedule.window}` : ''}` : loop.wf.name}</span>
                     <span className="t-body-s c-3">
                       {loop.schedule?.cron ? <>cron <code className="t-mono-s c-2">{loop.schedule.cron}</code></> : <>workflow <code className="t-mono-s c-2">{loop.wf.path}</code></>}
-                      {loop.secret ? <> · secret <code className="t-mono-s c-2">{loop.secret.name || 'CLAUDE_CODE_OAUTH_TOKEN'}</code> {loop.secret.ok ? 'set' : loop.secret.ok == null ? 'unknown' : 'missing'}</> : null}
+                      {loop.secret ? <> · sign-in <code className="t-mono-s c-2">{loop.secret.name || 'CLAUDE_CODE_OAUTH_TOKEN'}</code> {loop.secret.ok ? 'set' : loop.secret.ok == null ? 'unknown' : 'missing'}</> : null}
                     </span>
                     <Link className="t-body-s" to={PATHS.cloud}>Open the cloud loop and its runs</Link>
                   </div>
@@ -239,6 +247,43 @@ export default function Settings() {
               )}
             </div>
           </section>
+
+          {owner ? (
+            <section className="set-sec" style={SEC}>
+              <div><h2 className="set-h">Secrets</h2><p className="set-d">nexus agents see names, not values. Values live in your keychain and the places you sync them to.</p></div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <span className="t-body-s c-1">
+                      {counts.names == null ? <>Secret names live in </> : <><b>{namesLabel(counts.names)}</b> in </>}<code className="t-mono-s c-2">{MANIFEST}</code>
+                    </span>
+                    <Link className="btn btn-s" to={PATHS.vault}><Icon name="key" size={14} />Open the vault</Link>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                    <span className="t-body-s c-2" style={LABEL}>Nudge to rotate</span>
+                    <Seg label="Nudge to rotate after" name="rot" value={rotate} options={ROTATE} onChange={(v) => { setRotate(v); setSave({ missing: 'The rotate nudge has no store on this server yet; the choice lasts until the page reloads.' }); }} />
+                    <span className="t-body-s c-3">a soft rotate? next to the age, never a block</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : (
+            <section className="set-sec" style={SEC}>
+              <div><h2 className="set-h">Secrets</h2><p className="set-d">No project secrets needed: contributors open PRs; the owner's loop deploys.</p></div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <span className="t-body-s c-1"><b>{localKeysLabel(counts.localKeys)}</b> for running {repo || 'this repo'} on this machine · <span className="c-3">never on the plan board</span></span>
+                    <Link className="btn btn-s" to={PATHS.vault}><Icon name="key" size={14} />Your local keys</Link>
+                  </div>
+                  <div className="secret-wait" style={{ maxWidth: 600 }}>
+                    <span className="key-orb is-quiet"><Icon name="lockOne" /></span>
+                    <span>Local keys never leave this machine, and no chunk can ask for them. When a chunk needs a project secret, the plan board marks it <b>needs secret</b> and {who || 'the owner'} adds it. Your cloud loop signs in with its own token; that is a sign-in, not a project secret.</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
 
           <section className="set-sec" style={SEC}>
             <div><h2 className="set-h">Appearance</h2><p className="set-d">Motion always respects your system's reduced-motion setting.</p></div>

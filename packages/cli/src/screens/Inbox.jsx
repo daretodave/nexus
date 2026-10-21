@@ -104,6 +104,8 @@ export default function Inbox() {
   const openItems = items.filter((x) => !isDone(x));
 
   const cloudNext = cloud?.next ? clock(cloud.next) : '';
+  // A cloud run names its repo's loop ("tidepool loop"), as the board does now that loops span repos.
+  const loopName = shell.repo ? `${shell.repo} loop` : 'cloud loop';
   const loopAt = cloudNext ? `the ${cloudNext} loop` : 'the next loop';
 
   const submit = useCallback(async (entries, nextDone) => {
@@ -214,7 +216,7 @@ export default function Inbox() {
     if (settled) { meta = HOW_META[d.how] || 'answered: '; metaB = d.a; }
     else if (r.src === 'durable') meta = `${r.raw.file}:${r.raw.line}`;
     else if (r.kind === 'now') meta = [r.who, r.chunk, r.age].filter(Boolean).join(' · ');
-    else { meta = `${[r.who, r.chunk, r.at].filter(Boolean).join(' · ')}${r.hasDefault ? ' · assumed ' : ''}`; metaB = r.hasDefault ? r.opts[0] : ''; }
+    else { meta = `${[r.kind === 'cloud' ? loopName : r.who, r.chunk, r.at].filter(Boolean).join(' · ')}${r.hasDefault ? ' · assumed ' : ''}`; metaB = r.hasDefault ? r.opts[0] : ''; }
     return (
       <div key={r.id} className={cx('ibx-row', x?.id === r.id && 'is-selected', settled && 'is-settled')}>
         <span className={cx('urg', settled ? 'is-done' : KIND_CLS[r.kind])} />
@@ -254,7 +256,7 @@ export default function Inbox() {
   return (
     <ViewFrame current="inbox" title="Oversight" sub={openLine} label="Oversight inbox" actions={actions}>
       <ViewHead>
-        <ViewTitle title={<h1 className="t-title-l">Oversight</h1>} sub="Every open question from your sessions and the cloud loop. Answer here and it unblocks the agent, or lands in the plan for the next loop." />
+        <ViewTitle title={<h1 className="t-title-l">Oversight</h1>} sub="Every open question from your sessions and cloud loops. Answer here and it unblocks the agent, or lands in the plan for the next loop." />
         <div className="view-acts">
           <ChoiceButtons
             label="Show"
@@ -295,7 +297,7 @@ export default function Inbox() {
                 <span><b>{batch} settled with defaults.</b> {batchLine()}.</span>
               </div>
             ) : null}
-            {x ? <Detail x={x} d={done[x.id]} items={g.now} done={done} settle={settle} reopen={reopen} effect={effect(x)} loopAt={loopAt} /> : null}
+            {x ? <Detail x={x} d={done[x.id]} items={g.now} done={done} settle={settle} reopen={reopen} effect={effect(x)} loopAt={loopAt} repo={shell.repo} /> : null}
           </aside>
         </div>
       )}
@@ -305,10 +307,10 @@ export default function Inbox() {
 }
 
 /** The selected question: a pending tug, a parked card, or the settled tug; then its context. */
-function Detail({ x, d, items, done, settle, reopen, effect, loopAt }) {
+function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo }) {
   const sess = sessName(x);
   const src = x.kind === 'cloud'
-    ? (x.src === 'durable' ? `${x.raw.file}:${x.raw.line}` : [`cloud run ${x.run}`, x.chunk].filter(Boolean).join(' · '))
+    ? (x.src === 'durable' ? `${x.raw.file}:${x.raw.line}` : [`${repo ? `${repo} loop` : 'cloud run'}${x.run ? ` ${x.run}` : ''}`, x.chunk].filter(Boolean).join(' · '))
     : [sess, x.chunk, x.kind === 'now' ? (x.phase === 'start' ? 'Questions (start)' : x.src === 'perm' ? 'permission' : '') : `parked ${x.at}`].filter(Boolean).join(' · ');
   const group = items.filter((o) => groupKey(o) === groupKey(x));
   const answered = group.filter((o) => done[o.id]).length;
@@ -372,7 +374,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt }) {
     );
   }
 
-  const from = x.src === 'durable' ? `${x.raw.file}, line ${x.raw.line}` : x.kind === 'cloud' ? `cloud loop run ${x.run}${x.at ? ` at ${x.at}` : ''}` : `${sess ? `${sess}, ` : ''}agent ${x.who}`;
+  const from = x.src === 'durable' ? `${x.raw.file}, line ${x.raw.line}` : x.kind === 'cloud' ? `${repo ? `${repo} cloud loop, run` : 'cloud loop run'} ${x.run}${x.at ? ` at ${x.at}` : ''}` : `${sess ? `${sess}, ` : ''}agent ${x.who}`;
   return (
     <>
       {card}

@@ -105,13 +105,16 @@ export default function CloudLoop() {
     return out.concat(loop.runs);
   }, [ask, loop.paused, loop.next, loop.runs, loop.cloud, now]);
 
-  // Tonight: from 18:00 local. Counts the server gives (PRs, parked) or derived from the runs; a dash when unknown.
+  // Tonight: from 18:00 local. Counts the server gives (PRs, parked, secrets requested) or derived from the runs; a dash when unknown.
   const since = tonightStart(new Date(now)).getTime();
   const tonightRuns = loop.runs.filter((r) => Date.parse(r.startedAt) >= since);
   const t = loop.cloud?.tonight || {};
   const parkedFromInbox = inbox.status === 'ready' && Array.isArray(inbox.data) ? inbox.data.filter((q) => q.kind === 'cloud').length : null;
   const parked = t.parked ?? parkedFromInbox;
   const stat = (v) => (v == null ? '–' : String(v));
+  // Red runs moved out of the grid to a line under it; the grid's fourth stat is the secrets runs asked for
+  // (tonight.secrets), a dash until /api/cloud counts them.
+  const red = tonightRuns.filter((r) => r.state === 'red').length;
 
   const held = claims.status === 'ready' ? (claims.data?.rows || []).filter((r) => !/^cloud/.test(r.session || '') && r.state !== 'stale').map((r) => r.id) : [];
 
@@ -160,9 +163,10 @@ export default function CloudLoop() {
             <div className="stat-grid">
               <div className="stat"><b>{tonightRuns.length}</b><span>runs</span></div>
               <div className="stat"><b>{stat(t.prs)}</b><span>PRs opened</span></div>
-              <div className="stat"><b>{stat(parked)}</b><span>questions parked</span></div>
-              <div className="stat"><b>{tonightRuns.filter((r) => r.state === 'red').length}</b><span>red runs</span></div>
+              <div className="stat"><b>{stat(parked)}</b><span>{parked === 1 ? 'question parked' : 'questions parked'}</span></div>
+              <div className="stat"><b>{stat(t.secrets)}</b><span>{t.secrets === 1 ? 'secret requested' : 'secrets requested'}</span></div>
             </div>
+            <span className="t-body-s c-3">{red ? `${red} red run${red > 1 ? 's' : ''} tonight.` : 'No red runs tonight.'}</span>
             {parked ? <Link className="t-body-s" to={PATHS.inbox}>{parked} question{parked > 1 ? 's' : ''} from the loop {parked > 1 ? 'are' : 'is'} in your inbox</Link> : null}
           </div>
           <div className="side-card">
