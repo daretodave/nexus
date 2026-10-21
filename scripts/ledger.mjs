@@ -19,6 +19,11 @@
 //   node scripts/ledger.mjs done <id | star>                 the resume finished (state resumed)
 //   node scripts/ledger.mjs end                              this session finished its loop (state ended)
 //
+// Concurrent writers: every command that writes (beat, park, end, take, done) reads and writes under one exclusive
+// lock (`.nexus/sessions/.lock`, `withLock`), so two sessions starting at once never take the same star and two `take`
+// calls never both win. A ledger lands whole through a temp file and a rename, retried while Windows holds the file
+// busy (`renameRetry`). The notice board (announce.mjs) posts under the same kind of lock.
+//
 // `--set a.b=v` writes a dotted key (a value that parses as JSON is stored as JSON); `--set-file k=<path>` stores a
 // file's text verbatim (the `/heads-down` loop prompt: its quotes never meet a shell); `--add k=v` appends to a list
 // (`defaults`, `parked`, `claimed`, `done`). Environment: NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID (the session's id);
@@ -35,6 +40,90 @@ export const STARS = Object.freeze([
 ]);
 export const STATES = Object.freeze(['live', 'parked', 'resuming', 'resumed', 'ended']);
 const FREE_AFTER = new Set(['resumed', 'ended']);
+
+export const LOCK = '.lock';
+
+const nap = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+const alive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return !!e && e.code === 'EPERM'; // EPERM: it runs, as someone else
+  }
+};
+
+/**
+ * Run `fn` holding the exclusive lock `file` (created with `wx`: one holder at a time), and release it after. A lock
+ * whose holder is gone (its pid no longer runs) or older than `staleMs` is broken: a crash mid-write never wedges every
+ * session. Past `waitMs` it throws rather than write unlocked. Synchronous, like the scripts that call it.
+ */
+export function withLock(file, fn, { staleMs = 10_000, waitMs = 15_000 } = {}) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const until = Date.now() + waitMs;
+  for (let pause = 2; ; pause = Math.min(pause * 2, 50)) {
+    let fd = null;
+    try {
+      fd = fs.openSync(file, 'wx');
+    } catch (e) {
+      if (!e || e.code !== 'EEXIST') throw e;
+    }
+    if (fd !== null) {
+      try {
+        fs.writeSync(fd, `${process.pid} ${new Date().toISOString()}
+`);
+      } finally {
+        fs.closeSync(fd);
+      }
+      try {
+        return fn();
+      } finally {
+        fs.rmSync(file, { force: true });
+      }
+    }
+    breakStale(file, staleMs);
+    if (Date.now() > until) throw new Error(`${path.basename(file)}: ${file} stayed locked for ${waitMs / 1000}s (another writer, or a stale lock: delete it if no session is writing)`);
+    nap(pause + Math.floor(Math.random() * pause));
+  }
+}
+
+/** Remove the lock at `file` when its holder no longer runs or it is older than `staleMs`; true when it did. */
+export function breakStale(file, staleMs = 10_000, now = Date.now()) {
+  let held;
+  let age;
+  try {
+    held = fs.readFileSync(file, 'utf8');
+    age = now - fs.statSync(file).mtimeMs;
+  } catch {
+    return false; // released meanwhile
+  }
+  const pid = Number(held.split(' ')[0]);
+  // A lock with no pid yet is a holder between its create and its write: only its age breaks it.
+  const gone = Number.isInteger(pid) && pid > 0 && pid !== process.pid && !alive(pid);
+  if (!gone && age <= staleMs) return false;
+  try {
+    if (fs.readFileSync(file, 'utf8') !== held) return false; // a new holder took it meanwhile
+    fs.rmSync(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const BUSY = new Set(['EPERM', 'EBUSY', 'EACCES']);
+
+/** `fs.renameSync`, retried with a short backoff while the target is busy (Windows: a reader holds it open). */
+export function renameRetry(from, to, { tries = 8, rename = fs.renameSync } = {}) {
+  for (let i = 1; ; i++) {
+    try {
+      return rename(from, to);
+    } catch (e) {
+      if (!e || !BUSY.has(e.code) || i >= tries) throw e;
+      nap(Math.min(10 * 2 ** (i - 1), 200));
+    }
+  }
+}
 
 /** The first star no held ledger (live, parked, resuming) uses; past the list, `<star>-2`, `-3`, … */
 export function nextStar(ledgers) {
@@ -151,7 +240,7 @@ function write(dir, l) {
   const file = path.join(dir, `${l.id.replace(/[^A-Za-z0-9_-]/g, '_')}.json`);
   const tmp = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, `${JSON.stringify(l, null, 2)}\n`);
-  fs.renameSync(tmp, file); // a reader never sees half a ledger
+  renameRetry(tmp, file); // a reader never sees half a ledger
   return file;
 }
 
@@ -201,6 +290,12 @@ export function main(argv, { env = process.env, root, now = () => new Date(), ou
   }
   const o = opts(rest);
   const dir = path.join(root ?? primaryRoot(), DIR);
+  // A writer reads the ledgers under the lock, so its star and its take see every other writer's.
+  if (['beat', 'park', 'end', 'take', 'done'].includes(cmd)) return withLock(path.join(dir, LOCK), () => run(cmd, o, dir, { env, now, out, err }));
+  return run(cmd, o, dir, { env, now, out, err });
+}
+
+function run(cmd, o, dir, { env, now, out, err }) {
   const all = readAll(dir);
   const staleMin = Number(env.NEXUS_LEDGER_STALE_MIN) || 15;
   const me = env.NEXUS_SESSION || env.CLAUDE_CODE_SESSION_ID || '';

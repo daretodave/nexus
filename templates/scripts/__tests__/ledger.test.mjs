@@ -1,12 +1,15 @@
 // ledger.mjs (the live session ledger): star names go to the first free one, a live session past its stale window
 // reads fallen, --set/--add/--clear shape the JSON, park and take and done move the state, and a second take is
-// refused. node:test, no deps, no git (the CLI runs against a scratch folder in the temp dir).
+// refused; sessions that beat or take at once (real child processes) never share a star or both win, a stale lock
+// breaks and a busy rename retries. node:test, no deps, no git (the CLI runs against a scratch folder in the temp dir).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import { DIR, STARS, apply, find, fresh, main, nextStar, readAll, status } from '../ledger.mjs';
+import { spawn, spawnSync } from 'node:child_process';
+
+import { DIR, LOCK, STARS, apply, breakStale, find, fresh, main, nextStar, readAll, renameRetry, status, withLock } from '../ledger.mjs';
 
 const T0 = Date.parse('2026-10-20T12:00:00Z');
 
@@ -114,5 +117,121 @@ describe('the CLI', () => {
     assert.throws(() => run(['beat'], {}), /no session id/);
     assert.equal(run(['list'], {}), 0);
     assert.deepEqual(said, ['ledger: no sessions']);
+  });
+});
+
+// N child processes start together (each waits on a go file once all are ready) and run the CLI against one root.
+async function race(jobs) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-race-'));
+  const go = path.join(dir, 'go');
+  const mod = new URL('../ledger.mjs', import.meta.url).href;
+  const code = `import fs from 'node:fs'; import { main } from ${JSON.stringify(mod)};
+const job = JSON.parse(process.env.RACE_JOB);
+fs.writeFileSync(job.ready, '');
+while (!fs.existsSync(job.go)) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2);
+const said = [];
+try {
+  process.exitCode = main(job.argv, { root: job.root, env: job.env, out: (s) => said.push(s), err: (s) => said.push(s) });
+} finally {
+  fs.writeFileSync(job.ready + '.out', JSON.stringify(said));
+}`;
+  const kids = jobs.map((job, i) => {
+    const ready = path.join(dir, `ready-${i}`);
+    const kid = spawn(process.execPath, ['--input-type=module', '-e', code], {
+      env: { ...process.env, RACE_JOB: JSON.stringify({ ...job, ready, go }) }, stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    let stderr = '';
+    kid.stderr.on('data', (d) => (stderr += d));
+    return { ready, done: new Promise((resolve) => kid.on('close', (exit) => resolve({ exit, stderr }))) };
+  });
+  const until = Date.now() + 30_000;
+  while (!kids.every((k) => fs.existsSync(k.ready)) && Date.now() < until) await new Promise((r) => setTimeout(r, 10));
+  fs.writeFileSync(go, '');
+  const results = await Promise.all(kids.map(async (k) => ({ ...(await k.done), out: JSON.parse(fs.readFileSync(`${k.ready}.out`, 'utf8')).join('\n') })));
+  fs.rmSync(dir, { recursive: true, force: true });
+  return results;
+}
+
+describe('concurrent writers', () => {
+  let root;
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-ledger-'));
+  });
+  afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
+  const N = 6;
+
+  it('gives sessions that beat at once a star each, never one twice', async () => {
+    const results = await race(Array.from({ length: N }, (_, i) => ({ root, argv: ['beat'], env: { NEXUS_SESSION: `race${i}-session` } })));
+    for (const r of results) assert.equal(r.exit, 0, r.stderr);
+    const stars = readAll(path.join(root, DIR)).map((l) => l.star);
+    assert.equal(stars.length, N);
+    assert.deepEqual([...stars].sort(), [...STARS.slice(0, N)].sort());
+    assert.equal(fs.existsSync(path.join(root, DIR, LOCK)), false);
+  });
+
+  it('lets exactly one of the sessions that take a fallen ledger at once win', async () => {
+    const dir = path.join(root, DIR);
+    fs.mkdirSync(dir, { recursive: true });
+    const fallen = { ...fresh('fallen0-session', 'vega', new Date(T0)), state: 'live' };
+    fs.writeFileSync(path.join(dir, 'fallen0-session.json'), JSON.stringify(fallen));
+    const results = await race(Array.from({ length: N }, (_, i) => ({ root, argv: ['take', 'vega'], env: { NEXUS_SESSION: `taker${i}-session` } })));
+    const won = results.filter((r) => r.exit === 0);
+    assert.equal(won.length, 1, results.map((r) => r.out || r.stderr).join('\n'));
+    const l = readAll(dir).find((x) => x.id === 'fallen0-session');
+    assert.equal(l.state, 'resuming');
+    assert.equal(JSON.parse(won[0].out).resumed_by, l.resumed_by);
+  });
+});
+
+describe('the lock and the rename', () => {
+  let root;
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-lock-'));
+  });
+  afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  it('retries a rename the OS reports busy, and gives up on anything else', () => {
+    const from = path.join(root, 'a.tmp');
+    const to = path.join(root, 'a.json');
+    fs.writeFileSync(from, '{}');
+    let calls = 0;
+    const flaky = (a, b) => {
+      if (++calls < 3) throw Object.assign(new Error('busy'), { code: calls === 1 ? 'EPERM' : 'EBUSY' });
+      fs.renameSync(a, b);
+    };
+    renameRetry(from, to, { rename: flaky });
+    assert.equal(calls, 3);
+    assert.equal(fs.readFileSync(to, 'utf8'), '{}');
+    calls = 0;
+    const gone = () => {
+      calls++;
+      throw Object.assign(new Error('gone'), { code: 'ENOENT' });
+    };
+    assert.throws(() => renameRetry(from, to, { rename: gone }), /gone/);
+    assert.equal(calls, 1);
+    calls = 0;
+    const stuck = () => {
+      calls++;
+      throw Object.assign(new Error('stuck'), { code: 'EPERM' });
+    };
+    assert.throws(() => renameRetry(from, to, { rename: stuck, tries: 3 }), /stuck/);
+    assert.equal(calls, 3);
+  });
+
+  it('breaks a lock whose holder is gone or that outlived its window, and waits out a live one', () => {
+    const lock = path.join(root, 'x.lock');
+    const dead = spawnSync(process.execPath, ['-e', '0']).pid;
+    fs.writeFileSync(lock, `${dead} 2026-10-20T12:00:00Z\n`);
+    assert.equal(withLock(lock, () => 'ran'), 'ran');
+    assert.equal(fs.existsSync(lock), false);
+    fs.writeFileSync(lock, `${process.ppid} 2026-10-20T12:00:00Z\n`);
+    assert.equal(breakStale(lock, 10_000), false);
+    assert.throws(() => withLock(lock, () => 'ran', { waitMs: 100 }), /stayed locked/);
+    assert.equal(breakStale(lock, 10_000, Date.now() + 60_000), true);
+    assert.equal(withLock(lock, () => 'ran'), 'ran');
+    assert.throws(() => withLock(lock, () => {
+      throw new Error('inside');
+    }), /inside/);
+    assert.equal(fs.existsSync(lock), false);
   });
 });

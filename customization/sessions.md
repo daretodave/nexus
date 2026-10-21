@@ -177,6 +177,14 @@ node scripts/ledger.mjs list              # star, state, chunk, step, last beat
 - **Beat when the step changes**: claim, worktree cut, builder
   dispatched, gate, close, land. A beat is one small file
   write; nothing reads it but the resume and the GUI.
+- **Concurrent writers are safe.** Every write (beat, park,
+  end, take, done) reads and writes under one lock,
+  `.nexus/sessions/.lock` (created exclusively; broken when
+  its holder's pid is gone or it is 10 s old): two sessions
+  starting at once never share a star, and two `take` calls
+  on one ledger never both win. A ledger lands whole through a
+  temp file and a rename, retried while Windows reports the
+  file busy.
 
 ## Worktrees, always
 
