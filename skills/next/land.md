@@ -15,20 +15,17 @@ More than `README.md` → in a fresh detached worktree of
 the gate, commit with the message it printed, `git push
 origin HEAD:main`.
 
-- Exit 1 names a pending file it skipped and why (an edit whose
-  old text main has moved): fix that file against main in the
-  same push.
+- Exit 1 names a pending file it skipped (old text main has
+  moved): fix that file against main in the same push.
 - Exit 2 names lines it couldn't tidy: fix them, commit with
   the message it printed.
 - A rejected push: `git fetch`, `git reset --keep
   origin/main`, settle again.
 - A spec that "lists no chunk now": absorb it before the gate
-  (its lasting rules into `identity/` or `plan/bearings.md`,
-  the file and its roadmap row deleted, the archive's
-  `· NN · spec complete: …` line), in the settle's commit:
-  `git add` it, then commit everything staged with settle's
-  message. Drop the printed command's `-- <paths>`: it would
-  leave the absorb out of the commit.
+  (lasting rules into `identity/` or `plan/bearings.md`, the
+  file and its roadmap row deleted, the archive's `· NN · spec
+  complete: …` line): `git add` it, commit all that is staged
+  with settle's message, minus its `-- <paths>`.
 
 ## 2. The pending file
 
@@ -47,13 +44,11 @@ footguns: guard-test-noop
 - `says`: ≤ 10 words, what now works (the archive line).
 - `footguns:` sightings of traps this run hit that have a line.
 - `## Edit <path>` (exact old text, found once at settle) only
-  for a requirement a later chunk now carries or a chunk this
-  one moots.
+  for a need a later chunk carries, or one this chunk moots.
 - `## Decisions` (`D?<slug>`, numbered at settle) for a lasting
   choice; `## Footguns` for a new trap (≤ 500 bytes: one
   sentence of trap, one of rule).
-- Defaults taken under a loop are listed in the commit body of
-  the close, one line each.
+- Defaults taken under a loop: one line each in the close's body.
 
 The format: `plan/pending/README.md`. Every reader counts the
 pending close as closed from the moment it is on main (or on
@@ -72,9 +67,8 @@ git commit -m "plan: settle <ids>"         # the message settle printed
 git push origin HEAD:main
 ```
 
-- Settle says "spec NN lists no chunk now": absorb it before
-  the gate (§1's last bullet) and commit that with the settle;
-  the gate stays red on an empty spec until then.
+- "Spec NN lists no chunk now": absorb it in the settle's
+  commit (§1's last bullet); the gate is red until then.
 - Rejected (another session landed first): `git fetch`,
   `git reset --keep HEAD~1` (drops only the settle commit),
   rebase, settle, gate, push. Three rejections → stop, report.
@@ -93,21 +87,34 @@ node scripts/claims.mjs pr <id> <number>
 
 - An open PR for `next/<id>` already (`gh pr list --head
   next/<id>`): push to it, never open a second.
-- A need still in review: stack on its branch
-  (`--base next/<need>`), at most two deep. GitHub retargets
-  the PR when the one under it merges.
-- Review fixes are new commits, never a rewrite.
-- Never settle; the owner's settle folds the pending file in
-  after the merge.
+- A need still in review: stack on its branch (`--base
+  next/<need>`), at most two deep; GitHub retargets it later.
+- Review fixes are new commits, never a rewrite. Never
+  settle: the owner's settle folds the pending file in.
 - **In a `/heads-down` package:** commit on `pkg/<slug>`, push
   it, no PR: `/heads-down` opens one PR for the package at the
   end (`skills/heads-down.md` Step 5).
 
 ## 5. A run that stops early
 
-- Work worth resuming on its branch: keep the claim, push the
-  branch, say where it stands.
-- Nothing worth keeping: release the claim, close the
-  worktree, say why.
-- A crash never releases a claim: it stays held until its TTL
-  (24 h), so another session never takes half-built work.
+Worth resuming: keep the claim, push the branch, say where it
+stands. Nothing worth keeping: release the claim, close the
+worktree, say why. A crash holds its claim to the TTL (24 h).
+
+## 6. Every other committing skill
+
+`/iterate`, `/triage`, `/jot` and the rest land by this file.
+Owner: `git push origin main` right after the
+commit (rejected: `git pull --rebase`, the gate, push again;
+three times → stop). Contributor: its own branch as a pull
+request (§4), plan changes only as pending files; never main.
+
+## 7. A cloud tick with no token
+
+nexus's own loop runs owner mode. An adopter's pull-request
+mode (`NEXUS_LOOP_MODE` not `owner`) runs `/next` on
+`nexus/<run id>` with no token: commit, then stop. No push, no
+`gh` write, no claims, announce or settle call; the workflow's
+`pick` holds the claim, `land` fences, pushes and opens the PR,
+`release` frees a claim with no commit behind it
+(`templates/scripts/cloud/tick.mjs`). Uncommitted edits die.
