@@ -61,11 +61,6 @@ Decisions made upfront (do not ask):
 
 ## Acceptance
 
-- **A1** Both heartbeat files alarm, deduped per workflow, when
-  `march`, `night` or `heartbeat` is in any state but
-  `active`.
-- **A2** Both heartbeat files check cadence through one
-  `check_cadence` function: march at 14h, night at 48h.
 - **A3** `concepts/loop-shapes.md` §3 and
   `.github/CLOUD_LOOP.md`'s heartbeat bullet describe the
   armed-ness check and night's cadence check.
@@ -75,15 +70,7 @@ Decisions made upfront (do not ask):
 (None.)
 
 ## Chunks
-Measure: 3 open · 0 closed · next A4
+Measure: 1 open · 2 closed · next A4
 
-- [ ] **32.1** Armed-ness step and check_cadence in both
-  heartbeat files · M · closes A1, A2 · needs —
-  - Touches `.github/workflows/`: ship it from a local session
-    (the cloud token can't push workflow files).
-  - Decide in the build: while the owner pauses `march` by
-    hand, the flatline alarm keeps reopening its issue. Default:
-    a `disabled_manually` march is reported by the armed-ness
-    check once and skips the cadence check.
 - [ ] **32.2** Loop-shapes and CLOUD_LOOP describe the new
-  checks · S · closes A3 · needs 32.1
+  checks · S · closes A3 · needs —

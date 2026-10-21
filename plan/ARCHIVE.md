@@ -69,3 +69,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 38.1 · adoption asks owner or contributor and arms the hooks · c4fddf0b..c4fddf0b
 - 2026-10-21 · 35.3 · loop-issue spec-open/spec-close; ship-a-chunk mirrors specs · 7c514a9a..93e24315
 - 2026-10-21 · 37.2 · claims session tags carry the star name · 0db3ec1b..8e90d882
+- 2026-10-21 · 32.1 · heartbeat alarms on unarmed workflows; check_cadence per workflow · b6acc842..b6acc842

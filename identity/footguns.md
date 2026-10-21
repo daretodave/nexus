@@ -15,6 +15,7 @@ merges with git's `union` driver):
 
 ## Open (a rule, not yet automated)
 
+- **fake-gh-path** · a Windows path (C:/...) put on PATH in Git Bash splits at its colon, so a fake gh never shadows the real one and a test files a real issue → prepend the POSIX form (/c/...) and run `command -v gh` before any test that stubs it · seen 1× · last 2026-10-21 · open
 ## Watch (seen once: searched before adding a line, not read before building)
 
 ## Guarded (automated: the line says by what)
