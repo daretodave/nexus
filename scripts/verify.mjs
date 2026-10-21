@@ -83,6 +83,14 @@
 //                 the default no-argument run; opt in with
 //                 `node scripts/verify.mjs adopt-dryrun` or
 //                 `NEXUS_VERIFY_ADOPT_DRYRUN=1 node scripts/verify.mjs`
+//   design        opt-in — every design handoff (design/handoff/,
+//                 packages/*/design/handoff/) still matches its
+//                 manifest, and its port.json maps every board to
+//                 the file that draws it, skips it with a reason, or
+//                 names the chunk it waits on
+//                 (scripts/design/port-map.mjs). Opt in with
+//                 `node scripts/verify.mjs design` or
+//                 `NEXUS_VERIFY_DESIGN=1 node scripts/verify.mjs`
 //
 // Exit 0 = green. Exit 1 = at least one leg red. No dependencies,
 // no network — hermetic by construction (adopt-dryrun forks a
@@ -591,6 +599,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/design-ingest.test.mjs',
   'templates/scripts/__tests__/design-compare.test.mjs',
   'templates/scripts/__tests__/design-render.test.mjs',
+  'templates/scripts/__tests__/design-port.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
 ]
@@ -619,6 +628,7 @@ const DOGFOOD_TWINS = [
   'design/prompt.mjs',
   'design/ingest.mjs',
   'design/png.mjs', 'design/compare.mjs', 'design/render.mjs', 'design/board-runtime.js',
+  'design/port-map.mjs', 'design/port.workflow.js',
 ]
 // The steer hook runs in nexus's own sessions from .claude/hooks/, byte for byte the one adopters copy.
 const HOOK_TWINS = ['steer.mjs']
@@ -734,6 +744,16 @@ function legAdoptDryrun() {
   }
 }
 
+// --- leg: design -------------------------------------------------------------
+// Opt-in, like adopt-dryrun: the handoff and its port map change only
+// with a delivery or a port, so the default pass skips the hashing.
+
+async function legDesign() {
+  const { checkAll } = await import(pathToFileURL(path.join(ROOT, 'scripts/design/port-map.mjs')).href)
+  const res = checkAll(ROOT)
+  return { failures: res.problems, note: res.note }
+}
+
 // --- runner ------------------------------------------------------------------
 
 const LEGS = {
@@ -751,13 +771,14 @@ const LEGS = {
   secrets: () => legSecrets(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
+  design: () => legDesign(),
 }
 
 // Opt-in legs run only when named explicitly or env-gated on —
 // excluded from the default no-argument pass so the gate stays
 // fast (agents.md rule 3: foreground, every commit).
-const OPT_IN_LEGS = new Set(['adopt-dryrun', 'scripts-git'])
-const OPT_IN_ENV = { 'adopt-dryrun': 'NEXUS_VERIFY_ADOPT_DRYRUN', 'scripts-git': 'NEXUS_VERIFY_GIT_TESTS' }
+const OPT_IN_LEGS = new Set(['adopt-dryrun', 'scripts-git', 'design'])
+const OPT_IN_ENV = { 'adopt-dryrun': 'NEXUS_VERIFY_ADOPT_DRYRUN', 'scripts-git': 'NEXUS_VERIFY_GIT_TESTS', design: 'NEXUS_VERIFY_DESIGN' }
 
 async function main() {
   const only = process.argv[2]

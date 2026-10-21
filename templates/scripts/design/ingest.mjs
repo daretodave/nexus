@@ -7,9 +7,10 @@
 //     delivery on the same day gets `<date>-2`, then `-3`), skipping dotfiles;
 //   - writes `manifest.json`: the artifact link and version, the pages, the boards (every .html file, in the canvas
 //     index's order when the folder has a `canvas.json`) and every file with its size and sha256;
-//   - writes `README.md`, naming the folder the source of truth, listing the boards by page and opening the revision log.
+//   - writes `README.md`, naming the folder the source of truth, listing the boards by page and opening the revision log;
+//   - writes `port.json`, the port map: every board pending the port's chunk (scripts/design/port-map.mjs checks it).
 // Nothing is written when the canvas index names a board the folder lacks (a fetch that stopped short), or when the
-// export carries its own README.md or manifest.json.
+// export carries its own README.md, manifest.json or port.json.
 //
 //   node scripts/design/ingest.mjs <folder> [--into <dir>] [--date YYYY-MM-DD] [--artifact <url>] [--version <v>] [--chunk <id>] [--json]
 //   node scripts/design/ingest.mjs check <handoff> [--json]    the files still match the manifest (exit 1 if not)
@@ -25,7 +26,8 @@ export const DEFAULT_INTO = 'design/handoff';
 export const MANIFEST = 'manifest.json';
 export const README = 'README.md';
 export const INDEX = 'canvas.json';
-const OWN = new Set([MANIFEST, README]);
+export const PORT = 'port.json';
+const OWN = new Set([MANIFEST, README, PORT]);
 const USAGE = [
   'usage: node scripts/design/ingest.mjs <folder> [--into <dir>] [--date YYYY-MM-DD] [--artifact <url>] [--version <v>] [--chunk <id>] [--json]',
   '       node scripts/design/ingest.mjs check <handoff> [--json]',
@@ -124,6 +126,8 @@ export function renderReadme(m, { into = DEFAULT_INTO } = {}) {
     '  sha256. The files stay byte for byte as delivered: edit one only to keep',
     '  a gate green, log it under "Edits to the export", then run',
     `  \`node scripts/design/ingest.mjs rehash ${into}/${path.posix.basename(m.dir ?? m.date)}\`.`,
+    `- \`${PORT}\`: the port map, each board's file in the app, its skip with the`,
+    '  reason, or the chunk it waits on (`node scripts/design/port-map.mjs check`).',
     '- The boards are the design tool\'s documents, not app code: the port',
     '  translates their runtime tags and support script, and never ships them.',
     '',
@@ -152,6 +156,19 @@ export function renderReadme(m, { into = DEFAULT_INTO } = {}) {
     '',
   );
   return lines.join('\n');
+}
+
+/** The app folder a handoff's port lives in, from where it was ingested: packages/x/design/handoff -> packages/x. */
+export function appFor(into) {
+  const m = /^(.*)\/design\/handoff\/?$/.exec(posix(into));
+  return m && m[1] ? m[1] : '.';
+}
+
+/** A fresh port map: every board pending the port (its chunk when known). The port fills it in. */
+export function seedPort(manifest, { chunk = null, app = '.' } = {}) {
+  const boards = {};
+  for (const b of manifest.boards) boards[b.name] = { pending: chunk || 'the port' };
+  return { port: 1, app, boards };
 }
 
 /** `<date>`, or `<date>-2`, `-3`… when a delivery already landed that day. */
@@ -186,6 +203,7 @@ export function ingest({ from, root = process.cwd(), into = DEFAULT_INTO, date =
   }
   fs.writeFileSync(path.join(dir, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
   fs.writeFileSync(path.join(dir, README), renderReadme({ ...manifest, dir: slot, chunk }, { into: posix(into).replace(/\/$/, '') }));
+  fs.writeFileSync(path.join(dir, PORT), `${JSON.stringify(seedPort(manifest, { chunk, app: appFor(into) }), null, 2)}\n`);
   return { problems: [], dir, slot, manifest };
 }
 

@@ -60,7 +60,7 @@ describe('design ingest', () => {
       assert.deepEqual(res.problems, []);
       const dir = path.join(fx.root, 'design', 'handoff', '2026-10-21');
       assert.equal(res.dir, dir);
-      assert.deepEqual(listFiles(dir), ['FleetLight.dc.html', 'Fleet.dc.html', 'README.md', 'Tokens.dc.html', 'app.css', 'canvas.json', 'fonts/mono.txt', 'manifest.json'].sort());
+      assert.deepEqual(listFiles(dir), ['FleetLight.dc.html', 'Fleet.dc.html', 'README.md', 'Tokens.dc.html', 'app.css', 'canvas.json', 'fonts/mono.txt', 'manifest.json', 'port.json'].sort());
       for (const [f, body] of Object.entries(BOARDS)) assert.equal(fs.readFileSync(path.join(dir, f), 'utf8'), body);
       const m = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
       assert.equal(m.date, '2026-10-21');

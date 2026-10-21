@@ -1,0 +1,191 @@
+{
+  "port": 1,
+  "app": "packages/cli",
+  "boards": {
+    "Main": {
+      "skip": "a documentation board (colour, type, space, motion, tokens): it documents the design and has no app UI; nexus.css still ships its classes verbatim"
+    },
+    "Type": {
+      "skip": "a documentation board (colour, type, space, motion, tokens): it documents the design and has no app UI; nexus.css still ships its classes verbatim"
+    },
+    "Space": {
+      "skip": "a documentation board (colour, type, space, motion, tokens): it documents the design and has no app UI; nexus.css still ships its classes verbatim"
+    },
+    "Motion": {
+      "skip": "a documentation board (colour, type, space, motion, tokens): it documents the design and has no app UI; nexus.css still ships its classes verbatim"
+    },
+    "Tokens": {
+      "skip": "a documentation board (colour, type, space, motion, tokens): it documents the design and has no app UI; nexus.css still ships its classes verbatim"
+    },
+    "Composer": "src/ui/composer.jsx",
+    "Controls": "src/ui/controls.jsx",
+    "AgentNode": "src/ui/agent.jsx",
+    "Tug": "src/ui/tug.jsx",
+    "WorkUnits": "src/ui/work.jsx",
+    "Package": "src/ui/package.jsx",
+    "FleetKit": "src/ui/fleet.jsx",
+    "Feedback": "src/ui/feedback.jsx",
+    "ComposerLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "ControlsLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "AgentNodeLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "TugLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "WorkUnitsLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "PackageLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "FleetKitLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "FeedbackLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "CockpitStart": "src/screens/cockpit/QuestionsStart.jsx",
+    "Cockpit": "src/screens/cockpit/Working.jsx",
+    "CockpitReview": "src/screens/cockpit/QuestionsEnd.jsx",
+    "CockpitPackage": "src/screens/cockpit/PackageView.jsx",
+    "CockpitOwner": "src/screens/Cockpit.jsx",
+    "Cockpit1024": {
+      "skip": "the narrow cockpit: nexus.css's breakpoints draw it from the Working board; no code of its own"
+    },
+    "CockpitStartLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "CockpitLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "CockpitReviewLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "CockpitPackageLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "CockpitOwnerLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "Cockpit1024Light": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "Fleet": "src/screens/Fleet.jsx",
+    "FleetTrain": [
+      "src/screens/Fleet.jsx",
+      "src/ui/fleet.jsx"
+    ],
+    "Recover": "src/screens/Recover.jsx",
+    "GitPanel": "src/screens/GitPanel.jsx",
+    "FleetLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "RecoverLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "GitPanelLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "HeadsDown": "src/screens/HeadsDown.jsx",
+    "Inbox": "src/screens/Inbox.jsx",
+    "Board": "src/screens/Board.jsx",
+    "BoardOwner": "src/screens/Board.jsx",
+    "CloudLoop": "src/screens/CloudLoop.jsx",
+    "Settings": "src/screens/Settings.jsx",
+    "SettingsContributor": "src/screens/Settings.jsx",
+    "HeadsDownLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "InboxLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "BoardLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "BoardOwnerLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "CloudLoopLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "SettingsLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "SettingsContributorLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "Welcome": "src/screens/onboarding/Welcome.jsx",
+    "WelcomeAgent": "src/screens/onboarding/Welcome.jsx",
+    "Detect": "src/screens/onboarding/Detect.jsx",
+    "DetectMissing": "src/screens/onboarding/Detect.jsx",
+    "Shape": "src/screens/onboarding/Shape.jsx",
+    "ShapeContributor": "src/screens/onboarding/Shape.jsx",
+    "Plot": "src/screens/onboarding/Plot.jsx",
+    "CloudSetup": "src/screens/onboarding/CloudSetup.jsx",
+    "Launch": "src/screens/onboarding/Launch.jsx",
+    "WelcomeLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "DetectLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "ShapeLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "PlotLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "CloudSetupLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "LaunchLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "PlanKit": "src/ui/plan.jsx",
+    "PlanKitLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "Vault": {
+      "pending": "42.8"
+    },
+    "VaultImport": {
+      "pending": "42.8"
+    },
+    "VaultContributor": {
+      "pending": "42.8"
+    },
+    "VaultLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "VaultImportLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "VaultContributorLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "VaultKit": {
+      "pending": "42.8"
+    },
+    "VaultKitLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "BoardOwnerAll": "src/screens/Board.jsx",
+    "BoardOwnerAllLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "Secrets": {
+      "pending": "42.8"
+    },
+    "SecretsLight": {
+      "skip": "a dawn twin: it only re-imports its night board with theme=\"light\", and nexus.css's data-theme tokens produce it; no code of its own"
+    },
+    "SecretsContributor": {
+      "pending": "42.8"
+    }
+  }
+}

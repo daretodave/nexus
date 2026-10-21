@@ -485,7 +485,7 @@ nexus/
 ├── nexus.secrets.json                 # nexus's own secrets by name, never a value (customization/secrets.md)
 ├── assets/                            # generated SVG diagrams (scripts/diagrams.mjs); hand edits fail the gate
 ├── scripts/
-│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams · secrets
+│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams · secrets (opt-in: scripts-git · adopt-dryrun · design)
 │   ├── diagrams.mjs                   # writes every assets/*.svg from one style table; --check is the gate's diagrams leg
 │   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
 │   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, no network
@@ -500,6 +500,8 @@ nexus/
 │   ├── design/ingest.mjs              # /design ingest: a Claude Design export into design/handoff/<date>/ with a manifest (the template's twin)
 │   ├── design/render.mjs              # a handoff's boards as PNGs through the installed Chrome, with board-runtime.js (twins)
 │   ├── design/compare.mjs             # a board PNG against the app's: percent differing, a diff PNG; png.mjs reads both (twins)
+│   ├── design/port-map.mjs            # a handoff's port.json: every board ported, skipped with a reason, or pending; the opt-in design leg (twin)
+│   ├── design/port.workflow.js        # the port recipe as a Workflow script: foundation, pages, integrate, fidelity per theme, land (twin)
 │   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
 │   ├── secrets.mjs                    # npm run secrets: status, set, import, names, check, push, audit, request, run, scan; never a value (+ plan/secrets-manifest.mjs, secrets-vault.mjs, secrets-keychain.mjs, secrets-sinks.mjs, secrets-audit.mjs, secrets-run.mjs, secrets-scan.mjs; twins)
 │   ├── design/prompt.mjs              # /design prompt and /design addendum: the Claude Design paste prompt drafted from the plan (the template's twin)
@@ -684,6 +686,8 @@ nexus/
     │   ├── design/ingest.mjs          # /design ingest: an export folder -> design/handoff/<date>/ + manifest.json (sha256 per file) + README; check, rehash
     │   ├── design/render.mjs          # a handoff's boards as PNGs at their size, night or dawn, via the installed Chrome (+ board-runtime.js)
     │   ├── design/compare.mjs         # a board PNG against the app's: the percent that differs, a diff PNG (+ png.mjs)
+    │   ├── design/port-map.mjs        # port.json: every board ported, skipped with a reason, or pending a chunk; check, status
+    │   ├── design/port.workflow.js    # the port recipe as a Workflow script (run through the Workflow tool's scriptPath)
     │   ├── upgrade-plan.mjs           # v1 to v2: shipped phases -> archive lines, pending -> spec stubs, blocked -> Held; dry run by default
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
@@ -716,6 +720,7 @@ nexus/
     │   ├── __tests__/design-ingest.test.mjs # the ingest over a fixture export: manifest, README, check, rehash
     │   ├── __tests__/design-compare.test.mjs # the PNG round trip, the diff math on synthetic images
     │   ├── __tests__/design-render.test.mjs # the board index, imports, theme twins, finding Chrome (+ -run: in Chrome)
+    │   ├── __tests__/design-port.test.mjs # the port map over fixture handoffs; the Workflow's meta, module parse and steps
     │   ├── __tests__/bootstrap.test.mjs # bootstrap's cloud-loop plan, pure
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
