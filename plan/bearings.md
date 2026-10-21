@@ -25,6 +25,7 @@ projects use `site | service | library | cli | hybrid`.)
 | Scripts | Node ≥18, zero dependencies, ESM `.mjs` | No `node_modules`, no lockfile; paths through `fileURLToPath` (the gate refuses `URL.pathname`); shared `.nexus/` state written under a lock, renamed into place |
 | Verify gate | `node scripts/verify.mjs` | 11 legs, 2 opt-in more; see `agents.md` rule 3 |
 | Diagrams | `node scripts/diagrams.mjs` | SVG under `assets/`, one style table; never hand-drawn; `--check` (the `diagrams` leg) fails on drift |
+| GUI | `packages/cli` (`@usenexus/cli`) | One server, many sessions; it runs the repo's own scripts (claims, plan, announce, worktree), never reimplements them; plan changes only as `plan/pending/` files; tests reach gh and the model only through injected seams |
 | Deploy gate | none — push is the deploy | `npm run deploy:check` = symmetry no-op |
 | Issue mirror | `node templates/scripts/loop-issue.mjs` | The kit dogfoods its own template in place |
 
