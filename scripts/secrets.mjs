@@ -9,6 +9,14 @@
 //   node scripts/secrets.mjs names                            # the declared names, one per line
 //   node scripts/secrets.mjs check                            # the manifest keeps its shape (plan-check runs this too)
 //   node scripts/secrets.mjs push NAME [--to D] [--repo O/R]  # the value to its destinations through a sink (owner mode)
+//   node scripts/secrets.mjs audit [--json]                   # every set, push and rotation by name; rotation nudges
+//   node scripts/secrets.mjs request <chunk>                  # a missing secret's ask, into the oversight queue
+//
+// The owner's `set` and `import --store` record each name in the audit record (scripts/secrets-audit.mjs: `set` for
+// a first value, `rotate` for a replaced one); `status` and `audit` nudge a secret last set over 90 days ago.
+// `request <chunk>` is what /next runs when a chunk's secret is missing: plan/pending/secrets-<chunk>.md, a
+// `[needs-user-call]` note naming each missing secret, what it is for, where to get it and where it goes, never a
+// value; once per chunk.
 //
 // There is no `get`: a value goes from the vault to code (scripts/secrets-vault.mjs's get and resolve: the run
 // wrapper, a sink, the GUI server), never to a terminal, where the model would read it. The vault: `.env` at the
@@ -30,9 +38,12 @@ import { isOwner, localSettings, primaryRoot } from './owner.mjs';
 import { MANIFEST, NAME, emptyManifest, importEnvExample, mergeImport, readManifest, serialize } from './plan/secrets-manifest.mjs';
 import { CONTRIBUTOR_RINGS, RINGS, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
 import { pushSecret, recordAudit, sinkFor, spawnRunner } from './secrets-sinks.mjs';
+import { ROTATE_DAYS, ageDays, lastSet, nudgeLine, readAudit, recordSets, rotationNudges } from './secrets-audit.mjs';
+import { loadPlanDir } from './plan-check.mjs';
 
-export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check | push NAME [--to D] [--repo O/R] [--env E,E] [--worker W]   [--root <dir>]';
-const COMMANDS = ['status', 'set', 'import', 'names', 'check', 'push'];
+export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check | push NAME [--to D] [--repo O/R] [--env E,E] [--worker W] | audit [--json] | request <chunk>   [--root <dir>]';
+const COMMANDS = ['status', 'set', 'import', 'names', 'check', 'push', 'audit', 'request'];
+export const REQUEST = (id) => `secret request ${id}:`;
 const SINK_DESTINATIONS = ['github-actions', 'vercel', 'cloudflare'];
 
 function topLevel() {
@@ -91,17 +102,17 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     return 64;
   }
   const bad = !COMMANDS.includes(cmd) || extra.length || rootArg === '' || ring === '' || (ring && !RINGS.includes(ring))
-    || (arg && !['import', 'set', 'push'].includes(cmd)) || (['set', 'push'].includes(cmd) && !arg)
+    || (arg && !['import', 'set', 'push', 'request'].includes(cmd)) || (['set', 'push', 'request'].includes(cmd) && !arg)
     || ((to !== null || repo !== null) && cmd !== 'push') || (to !== null && !SINK_DESTINATIONS.includes(to)) || repo === '' || (ring && cmd !== 'set' && !store)
     || ((env !== null || worker !== null) && cmd !== 'push') || env === '' || worker === ''
-    || ((store || dry) && cmd !== 'import') || (store && (dry || !arg)) || (json && cmd !== 'status');
+    || ((store || dry) && cmd !== 'import') || (store && (dry || !arg)) || (json && !['status', 'audit'].includes(cmd));
   if (bad) { err(USAGE); return 64; }
   const root = path.resolve(rootArg ?? topLevel());
   const vroot = rootArg ? root : vaultRoot(root);
   const open = () => openVault({ root: vroot, settings: localSettings(vroot), ...vaultOpts });
   const manifestFile = path.join(root, MANIFEST);
   const current = readManifest(manifestFile);
-  if (current && current.problems.length && !['names', 'set'].includes(cmd)) {
+  if (current && current.problems.length && !['names', 'set', 'audit'].includes(cmd)) {
     for (const p of current.problems) out(`  ${MANIFEST}: ${p}`);
     out(`secrets ${cmd}: ${MANIFEST} is RED (${current.problems.length}); fix it first`);
     return 1;
@@ -122,11 +133,14 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     return 1;
   }
   try {
-    if (cmd === 'status') return status(open(), current, { out, json, owner: ownerHere(), localKeys: readLocalKeys(vroot) });
+    if (cmd === 'status') return status(open(), current, { out, json, owner: ownerHere(), localKeys: readLocalKeys(vroot), log: readAudit(vroot) });
+    if (cmd === 'audit') return audit(open(), readAudit(vroot), { out, json });
+    if (cmd === 'request') return request(open(), current, { root, id: arg, out, err });
     if (cmd === 'set') {
       if (!NAME.test(arg)) { err(`secrets set: ${arg} is not an env-var name (A-Z, 0-9 and _, starting with a letter)`); return 1; }
       const vault = open();
       const value = await input(`${arg} (hidden; Enter to save): `);
+      const had = new Set(vault.status([arg]).filter((r) => r.rings.length).map((r) => r.name));
       const done = vault.set([[arg, value]], ring ?? undefined);
       if (contributor) {
         recordLocalKeys(vroot, [arg]);
@@ -136,7 +150,7 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
       }
       out(`secrets set: ${arg} -> ${done.ring}`);
       if (!current || !current.names.has(arg)) out(`  ${arg} is not declared in ${MANIFEST}: a local-only key, or add its entry (import, or by hand)`);
-      return 0;
+      return record(vroot, done, had, err);
     }
   } catch (e) {
     err(`secrets ${cmd}: ${e.message}`);
@@ -154,7 +168,8 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
       const oneLine = entries.filter(([, v]) => !/[\r\n\0]/.test(v));
       const skipped = entries.filter(([, v]) => /[\r\n\0]/.test(v)).map(([n]) => n);
       const same = picked !== 'keychain' && path.resolve(source) === path.resolve(picked === 'local' ? vault.config.local : vault.config.workspace);
-      stored = same ? { ring: picked, names: [], same: true, skipped } : { ...vault.set(oneLine, picked), skipped };
+      const had = new Set(vault.status(oneLine.map(([n]) => n)).filter((r) => r.rings.length).map((r) => r.name));
+      stored = same ? { ring: picked, names: [], same: true, skipped } : { ...vault.set(oneLine, picked), skipped, had };
       if (contributor) {
         const mine = same ? oneLine.map(([n]) => n) : stored.names;
         recordLocalKeys(vroot, mine);
@@ -185,7 +200,70 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
   }
   out(`secrets import: added ${added.length}${list}; ${kept.length} already declared -> ${MANIFEST}`);
   if (added.length) out(`  each new entry goes to local, provided by the owner: edit its for, where and destinations in ${MANIFEST}`);
+  return stored && !stored.same ? record(vroot, stored, stored.had, err) : 0;
+}
+
+/** Record the names a set or import stored (set, or rotate for a name the vault held); a failed write is loud. */
+function record(root, done, had, err) {
+  if (!done.names.length) return 0;
+  try {
+    recordSets(root, { names: done.names, ring: done.ring, had });
+    return 0;
+  } catch (e) {
+    err(`secrets audit: not recorded (${e.message}); the value is stored`);
+    return 1;
+  }
+}
+
+/** Every event, oldest first, then the rotation nudges for names the vault still holds. */
+function audit(vault, log, { out, json }) {
+  const names = [...lastSet(log).keys()];
+  const held = new Set(vault.status(names).filter((r) => r.rings.length).map((r) => r.name));
+  const nudges = rotationNudges(log, { held: (n) => held.has(n) });
+  if (json) { out(JSON.stringify({ events: log, nudges, rotateDays: ROTATE_DAYS }, null, 2)); return 0; }
+  out(`secrets audit: ${log.length} event${log.length === 1 ? '' : 's'} (names only, never a value)`);
+  const name = (e) => String(e.name ?? (Array.isArray(e.names) ? e.names.join(', ') : '?'));
+  const dest = (e) => String(e.destination ?? (Array.isArray(e.destinations) ? e.destinations.join(', ') : '-'));
+  const width = Math.max(0, ...log.map((e) => name(e).length));
+  for (const e of log) out(`  ${String(e.time ?? '').slice(0, 19).replace('T', ' ')}  ${String(e.action).padEnd(6)}  ${name(e).padEnd(width)}  -> ${dest(e)}${e.ring ? ` (${e.ring})` : ''}`);
+  for (const x of nudges) out(nudgeLine(x));
   return 0;
+}
+
+/** A chunk's missing secrets as one `[needs-user-call]` note in plan/pending/secrets-<id>.md, once. */
+function request(vault, current, { root, id, out, err }) {
+  const chunk = loadPlanDir(path.join(root, 'plan')).specs.flatMap((s) => s.chunks).find((c) => c.id === id);
+  if (!chunk) { err(`secrets request: no open chunk ${id} in plan/`); return 1; }
+  const set = new Set(vault.status(chunk.secrets).filter((r) => r.rings.length).map((r) => r.name));
+  const missing = chunk.secrets.filter((n) => !set.has(n) && !process.env[n]);
+  if (!missing.length) { out(`secrets request: nothing to ask: ${chunk.secrets.length ? `every secret ${id} needs is set` : `${id} names no secret`}`); return 0; }
+  const asked = durableAsk(root, REQUEST(id));
+  if (asked) { out(`secrets request: already asked in ${asked}`); return 0; }
+  const entries = new Map((current ? current.manifest.secrets : []).map((e) => [e.name, e]));
+  const lines = [`- [needs-user-call] ${REQUEST(id)} set ${missing.join(', ')} in your terminal or the GUI's vault (never in a session), and ${id} is ready again. Then delete this row.`];
+  for (const n of missing) {
+    const e = entries.get(n);
+    lines.push(e ? `  - ${n}: ${e.for} Get it: ${e.where ?? 'no link in the manifest'}. Goes to: ${e.destinations.join(', ')}. Set it: \`node scripts/secrets.mjs set ${n}\`.` : `  - ${n}: not declared in ${MANIFEST} (declare it first).`);
+  }
+  const rel = `plan/pending/secrets-${id}.md`;
+  fs.mkdirSync(path.join(root, 'plan', 'pending'), { recursive: true });
+  fs.writeFileSync(path.join(root, rel), `---\ndate: ${new Date().toISOString().slice(0, 10)}\n---\n## Notes\n${lines.join('\n')}\n`);
+  out(`secrets request: ${id} waits on ${missing.join(', ')} -> ${rel} (commit it as plan: secret request ${id}, then pick again)`);
+  return 0;
+}
+
+/** The plan file (relative) already holding a row with `marker`, or null. */
+function durableAsk(root, marker) {
+  const walk = (dir) => {
+    let names;
+    try { names = fs.readdirSync(dir, { withFileTypes: true }); } catch { return null; }
+    for (const e of names) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) { if (e.name !== 'messy') { const hit = walk(p); if (hit) return hit; } } else if (e.name.endsWith('.md') && fs.readFileSync(p, 'utf8').includes(marker)) return path.relative(root, p).split(path.sep).join('/');
+    }
+    return null;
+  };
+  return walk(path.join(root, 'plan'));
 }
 
 function push({ name, to, repo, env, worker, root, vroot, current, open, out, err, run, owner }) {
@@ -215,11 +293,16 @@ function push({ name, to, repo, env, worker, root, vroot, current, open, out, er
   return failed ? 1 : 0;
 }
 
-function status(vault, current, { out, json, owner = true, localKeys = [] }) {
+function status(vault, current, { out, json, owner = true, localKeys = [], log = [] }) {
   const entries = current ? current.manifest.secrets : [];
   const declared = entries.map((e) => e.name);
   const dest = new Map(entries.map((e) => [e.name, e.destinations]));
-  const rows = vault.status(declared).map((r) => ({ ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [] }));
+  const last = lastSet(log);
+  const rows = vault.status(declared).map((r) => {
+    const age = r.rings.length && last.has(r.name) ? ageDays(last.get(r.name)) : null;
+    return { ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [], age, rotate: age !== null && age > ROTATE_DAYS };
+  });
+  const nudges = rotationNudges(log, { held: (n) => rows.some((r) => r.name === n && r.rotate) });
   // A contributor's local keys: the names recorded for this checkout plus any name its .env holds; this machine only.
   const inEnv = owner ? [] : vault.status([]).filter((r) => r.rings.includes('local')).map((r) => r.name);
   const names = [...new Set([...localKeys, ...inEnv])].sort();
@@ -238,7 +321,8 @@ function status(vault, current, { out, json, owner = true, localKeys = [] }) {
   const places = [vault.config.local, vault.config.workspace, ...(vault.config.keychain ? [`keychain ${vault.config.service}`] : [])].join(', ');
   out(`secrets status: ${declared.length} declared · ${set} set · ${declared.length - set} missing (vault: ${places})`);
   const width = Math.max(0, ...rows.map((r) => r.name.length));
-  for (const r of rows) out(`  ${r.name.padEnd(width)}  ${where(r.rings).padEnd(28)}  ${r.declared ? `-> ${r.destinations.join(', ')}` : `(not declared in ${MANIFEST})`}`);
+  for (const r of rows) out(`  ${r.name.padEnd(width)}  ${where(r.rings).padEnd(28)}  ${r.declared ? `-> ${r.destinations.join(', ')}` : `(not declared in ${MANIFEST})`}${r.age !== null ? `  set ${r.age} d ago` : ''}`);
+  for (const x of nudges) out(nudgeLine(x));
   return 0;
 }
 
