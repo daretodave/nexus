@@ -344,11 +344,19 @@ const PLACEHOLDER_VOCABULARY = new Set([
   '<COMMUNITY_HUB_1>',
   // generic fill-ins used in examples
   '<N>', '<M>', '<K>', '<L>', '<H>', '<X>', '<Y>', '<URL>', '<REPO>',
-  '<NAME>', '<STATUS>', '<ISO>', '<MOOD>', '<REFERENCE>', '<PHASE_N>',
-  '<PHASE_M>', '<SEV>',
+  '<NAME>', '<STATUS>', '<ISO>', '<MOOD>', '<REFERENCE>', '<SPEC_N>',
+  '<SPEC_M>', '<SEV>',
   // plan shape (concepts/plan-shape.md)
   '<NN>',
 ])
+
+// Renamed placeholders: the old name may appear only in the upgrade
+// playbook's rename note (old → new), never in a template.
+const RETIRED_PLACEHOLDERS = new Map([
+  ['<PHASE_N>', '<SPEC_N>'],
+  ['<PHASE_M>', '<SPEC_M>'],
+])
+const RETIRED_PLACEHOLDER_HOME = 'playbooks/upgrade.md'
 
 function legPlaceholders(files) {
   const failures = []
@@ -360,7 +368,13 @@ function legPlaceholders(files) {
       let m
       while ((m = tokenRe.exec(line)) !== null) {
         seen++
-        if (!PLACEHOLDER_VOCABULARY.has(m[0])) {
+        if (RETIRED_PLACEHOLDERS.has(m[0])) {
+          if (file.replace(/\\/g, '/') !== RETIRED_PLACEHOLDER_HOME) {
+            failures.push(
+              `${file}:${i + 1}: ${m[0]} was renamed ${RETIRED_PLACEHOLDERS.get(m[0])} — only ${RETIRED_PLACEHOLDER_HOME} may name the old one`,
+            )
+          }
+        } else if (!PLACEHOLDER_VOCABULARY.has(m[0])) {
           failures.push(
             `${file}:${i + 1}: unknown placeholder ${m[0]} — typo, or add it to PLACEHOLDER_VOCABULARY in scripts/verify.mjs`,
           )

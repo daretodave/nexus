@@ -211,6 +211,11 @@ eight in one pass, see
 copy-paste from there rather than hand-rolling a partial
 version here.
 
+`setup/00_files.md`'s index also carries two fill-ins, `<SPEC_N>`
+and `<SPEC_M>`: the numbers of the specs that touch a service
+(its "Specs that touch it" column). v1 used other names
+([`playbooks/upgrade.md`](../playbooks/upgrade.md) Step 2).
+
 ### Workspace placeholders (adopt-by-need)
 
 `workspace/` is copied separately from the eight above — see

@@ -44,14 +44,14 @@ run any time, including inside `/oversight`.
 
 ## Index
 
-| # | Service | Runbook | Status | Phases that touch it |
+| # | Service | Runbook | Status | Specs that touch it |
 |---|---|---|---|---|
 | 01 | GitHub | `01_github.md` | `STUB` | substrate, all (push), `/triage` (issues), cloud loop |
-| 02 | <HOSTING_PROVIDER> | `02_<hosting>.md` | `STUB` | phase 1 (deploy gate), all (deploys), Preview env |
-| 03 | <DB_PROVIDER> | `03_<db>.md` | `STUB` | phase 1 (client), <PHASE_N> (writes), <PHASE_M> (RLS) |
-| 04 | <AUTH_PROVIDER> | `04_<auth>.md` | `STUB` | phase <N> (auth), <N+1> (tiers), <N+2> (RBAC) |
-| 05 | <EMAIL_PROVIDER> | `05_<email>.md` | `STUB` | phase <N> (magic link delivery) |
-| 06 | <AI_PROVIDER> | `06_<ai>.md` | `STUB` | phase <N> (moderation pre-filter) |
+| 02 | <HOSTING_PROVIDER> | `02_<hosting>.md` | `STUB` | spec 1 (deploy gate), all (deploys), Preview env |
+| 03 | <DB_PROVIDER> | `03_<db>.md` | `STUB` | spec 1 (client), spec <SPEC_N> (writes), spec <SPEC_M> (RLS) |
+| 04 | <AUTH_PROVIDER> | `04_<auth>.md` | `STUB` | spec <N> (auth), <N+1> (tiers), <N+2> (RBAC) |
+| 05 | <EMAIL_PROVIDER> | `05_<email>.md` | `STUB` | spec <N> (magic link delivery) |
+| 06 | <AI_PROVIDER> | `06_<ai>.md` | `STUB` | spec <N> (moderation pre-filter) |
 |  | <add more rows as the build plan grows> |  |  |  |
 
 > Drop any row that doesn't apply to this project. Renumber

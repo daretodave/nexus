@@ -93,6 +93,12 @@ previous copy shows what those were). Sweep the eight
 placeholders over the new files exactly as
 [`new-project.md`](./new-project.md) §4 does.
 
+Two fill-ins were renamed: `<PHASE_N>` → `<SPEC_N>` and
+`<PHASE_M>` → `<SPEC_M>`, in `setup/00_files.md`'s index, whose
+"Phases that touch it" column is now "Specs that touch it". If
+your copy still holds either old name, rename it (or fill in the
+spec number).
+
 ## Step 3 — write the roadmap
 
 Replace `plan/README.md` with the v2 roadmap,
