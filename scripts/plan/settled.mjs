@@ -1,15 +1,15 @@
 // scripts/plan/settled.mjs: the plan as it reads once plan/pending/ settles. Each pending file's `## Edit` and `## Add`
-// sections are applied in memory, in settle's order (date, then name), the files on disk untouched. A /plot writes its
-// new spec directly and its roadmap rows (and any spec it extends) as pending changes, which settle applies only on
-// main after the merge, so a check reading the files as they stand would fail every plot's pull request by
-// construction. Plan checks read this view instead; a close's own work (the chunk out of its spec, ARCHIVE.md) still
+// sections are applied in memory, in settle's order (settleOrder: date, then what adds before the closes, then name),
+// the files on disk untouched. A /plot writes its new spec directly and its roadmap rows (and any spec it extends) as
+// pending changes, which settle applies only on main after the merge, so a check reading the files as they stand
+// would fail every plot's pull request by construction. Plan checks read this view instead; a close's own work (the chunk out of its spec, ARCHIVE.md) still
 // waits for settle, and readers count the close as closed through pendingArchiveLines / pendingCloses
 // (scripts/plan/pending.mjs).
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig } from './config.mjs';
 import { parsePending, pendingFiles } from './pending.mjs';
-import { applyPlanChanges } from './settle.mjs';
+import { applyPlanChanges, settleOrder } from './settle.mjs';
 
 /**
  * The settled view of the checkout at `root`: `read(rel)` gives a repo-relative file's text (\r\n read as \n) with
@@ -36,8 +36,7 @@ export function settledView(root, { only = () => true, cfg = loadConfig(root) } 
       problems.push(e.message);
     }
   }
-  parsed.sort((a, b) => a.date.localeCompare(b.date) || a.file.localeCompare(b.file));
-  for (const p of parsed) {
+  for (const p of settleOrder(parsed)) {
     // One file's changes land together or not at all, as settle's transaction does.
     const tx = new Map();
     try {

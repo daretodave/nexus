@@ -292,3 +292,60 @@ describe('a settle run over several ## Add files at once', () => {
     assert.doesNotMatch(r.read('plan/07-search.md'), /\?d/);
   });
 });
+
+describe('a plot and the close of the chunk it adds, in one settle run', () => {
+  /** A `/plot … and do` run: the plot adds 07.?fix (07.6) with an Asap lane entry, and the build closes 07.6. */
+  function plotAndDo(r, { plotDate, closeDate }) {
+    r.put('.owner', '');
+    r.git('rm', '-q', 'plan/pending/07.3.md');
+    const plot = ['---', `date: ${plotDate}`, '---', '## Add plan/07-search.md', '~~~ acceptance', '- **A?fix** The fix works.', '~~~', '~~~ chunks', '- [ ] **07.?fix** The fix · S · closes A?fix · needs —', '~~~', '## Edit plan/README.md', '~~~ old', '- **07.3** · the resolver first.', '~~~', '~~~ new', '- **07.3** · the resolver first.', '- **07.?fix** · the fix.', '~~~', ''];
+    r.put('plan/pending/plot-fix.md', plot.join('\n'));
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: plot the fix');
+    r.put('fix.txt', 'fixed\n');
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'fix: the fix');
+    r.put('plan/pending/07.6.md', `---\nclose: 07.6\ndate: ${closeDate}\nsays: The fix works\n---\n`);
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: close 07.6');
+  }
+
+  const settledClean = (r, res) => {
+    assert.equal(res.code, 0, res.out);
+    assert.doesNotMatch(res.out, /skipped/);
+    const spec = r.read('plan/07-search.md');
+    assert.doesNotMatch(spec, /07\.6|A9\b|\?fix/);
+    assert.match(spec, /^Measure: 3 open · 6 closed · next A10$/m);
+    const readme = r.read('plan/README.md');
+    assert.match(readme, /\| 3 left \|/);
+    assert.doesNotMatch(readme, /07\.6|\?fix/);
+    assert.match(r.read('plan/ARCHIVE.md'), / · 07\.6 · The fix works · /);
+    assert.equal(r.git('status', '--porcelain'), '');
+  };
+
+  it('settles the plot first on the same date (07.6.md sorts before plot-fix.md by name)', () => {
+    const r = repo();
+    plotAndDo(r, { plotDate: '2000-10-21', closeDate: '2000-10-21' });
+    settledClean(r, r.run());
+    assert.equal(r.git('log', '-1', '--format=%s'), 'plan: settle plot-fix, 07.6');
+  });
+
+  it('holds a close dated before the plot until the plot numbers its chunk', () => {
+    const r = repo();
+    plotAndDo(r, { plotDate: '2000-10-22', closeDate: '2000-10-21' });
+    settledClean(r, r.run());
+    assert.equal(r.git('log', '-1', '--format=%s'), 'plan: settle plot-fix, 07.6');
+  });
+
+  it('still skips a close no spec lists once nothing left to settle adds it', () => {
+    const r = repo();
+    r.put('.owner', '');
+    r.put('plan/pending/07.8.md', '---\nclose: 07.8\ndate: 2000-10-13\nsays: Nothing\n---\n');
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: close 07.8');
+    const res = r.run();
+    assert.equal(res.code, 1, res.out);
+    assert.match(res.out, /settle: skipped plan\/pending\/07\.8\.md: plan\/07-search\.md doesn't list 07\.8/);
+    assert.equal(r.git('log', '-1', '--format=%s'), 'plan: settle 07.3');
+  });
+});

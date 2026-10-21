@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/plan/settle.mjs: settle the plan. Turn plan/pending/'s files (scripts/plan/pending.mjs) into the edits they
 // stand for, on main, one run at a time, so no branch ever writes a shared plan file. Only the owner settles
-// (scripts/owner.mjs). For each pending file, oldest date first:
+// (scripts/owner.mjs). For each pending file, oldest date first, what adds work before its date's closes (settleOrder):
 //   - a close takes its chunk out of its spec (the chunk line, its sub-bullets, the A-IDs it closes, the chunk in other
 //     chunks' needs), keeps the Measure line true, sets the roadmap row's "N left", drops the chunk from the Asap lane,
 //     the roadmap rows and the build queue (when the config names one), and appends its ARCHIVE.md line with the
@@ -875,6 +875,19 @@ export function applyPlanChanges(p, read, write, only = () => true) {
   return numbers;
 }
 
+/** Whether a pending file adds work: a plot, an `## Add`, or an edit of the roadmap (a lane entry). */
+export function addsWork(p) {
+  return /^plot-/.test(path.basename(p.file)) || (p.adds ?? []).length > 0 || p.edits.some((e) => e.path === 'plan/README.md');
+}
+
+/**
+ * The order settle takes pending files in: date first; within a date, what adds work before the rest (the closes), so
+ * a close of a chunk a plot of the same day adds finds it numbered; then the name.
+ */
+export function settleOrder(parsed) {
+  return [...parsed].sort((a, b) => a.date.localeCompare(b.date) || Number(addsWork(b)) - Number(addsWork(a)) || a.file.localeCompare(b.file));
+}
+
 // ---- the run (git and the files) ----
 
 function git(args, cwd) {
@@ -1015,122 +1028,158 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
       skipped.push(e.message);
     }
   }
-  parsed.sort((a, b) => a.date.localeCompare(b.date) || a.file.localeCompare(b.file));
+  const order = settleOrder(parsed);
 
   const settled = [];
   const notes = [];
   const leftovers = [];
   const renumbers = new Map();
-  for (const p of parsed) {
+  // A close whose chunk isn't listed (yet): a file still to settle may add it.
+  const unlisted = (message) => Object.assign(new Error(message), { unlisted: true });
+  // One pending file into the cache, or an error and nothing written: its notes and numbers count only once it settles.
+  const settleOne = (p) => {
     const tx = new Map();
     const r = (q) => (tx.has(q) ? tx.get(q) : read(q));
     const w = (q, t) => tx.set(q, t);
     const queueOf = () => (cfg.queue ? r(cfg.queue) : null);
-    try {
-      // A pending file's edits are written against main as it was, before its close: applied first, so a close that
-      // rewrites a line (a later chunk's `needs`, the measure) never moves an edit's anchor out from under it.
-      const numbered = applyPlanChanges(p, r, w);
-      notes.push(...[...numbered].map(([k, v]) => `${k} is ${v}`));
-      // The numbers go into the file's own notes and decisions too (a decision naming the chunk it set up).
-      const given = (t) => t.replace(PLACEHOLDER, (k) => numbered.get(k) ?? k);
-      p.notes = p.notes.map(given);
-      p.decisions = p.decisions.map(given);
-      if (p.close) {
-        const specFile = specOf(p.close);
-        const archive = r('plan/ARCHIVE.md') ?? '';
-        if (archive.includes(` · ${p.close} · `) && !(specFile && listedChunks(r(specFile)).includes(p.close))) {
-          notes.push(`${p.close}: already archived; its pending file goes`);
-        } else {
-          if (!specFile) throw new Error(`${p.file}: no spec plan/${specNum(p.close)}-*.md lists ${p.close}`);
-          const done = closeChunk(r(specFile), p.close);
-          if (!done) throw new Error(`${p.file}: ${specFile} doesn't list ${p.close}`);
-          w(specFile, done.text);
-          for (const f of specFiles().filter((x) => x !== specFile)) {
-            const before = r(f);
-            if (before === null) continue;
-            const after = dropNeeds(before, p.close);
-            if (after !== before) {
-              w(f, after);
-              notes.push(`${p.close} left the needs in ${f}`);
-            }
-          }
-          const listed = allListed().filter((x) => x !== p.close);
-          if (r('plan/README.md') !== null) {
-            w('plan/README.md', setLeft(r('plan/README.md'), path.basename(specFile), listedChunks(done.text).length));
-            const t = tidyAhead(r('plan/README.md'), queueOf(), p.close, listed, cfg);
-            w('plan/README.md', t.readme);
-            if (cfg.queue && t.queue !== null) w(cfg.queue, t.queue);
-            notes.push(...t.changed.map((c) => `${p.close} tidied ${c}`));
-            leftovers.push(...stillNamed(t.readme, t.queue, p.close, cfg).map((where) => `${where} still names ${p.close}: take it out by hand`));
-          }
-          if (listedChunks(done.text).length) {
-            // Chunks left: nothing more.
-          } else if (specFile === ladderFile) {
-            // The ladder's home holds nothing of its own to absorb: settle takes it and its rows out, and opens it
-            // again when the next trap is seen twice.
-            w(ladderFile, null);
-            const rows = closeLadderRows({ readme: r('plan/README.md'), queue: queueOf(), root: r('README.md') }, cfg);
-            for (const [file, text] of [['plan/README.md', rows.readme], [cfg.queue, rows.queue], ['README.md', rows.root]]) {
-              if (file && text !== null && text !== r(file)) w(file, text);
-            }
-            notes.push(`spec ${cfg.ladder.spec} lists no chunk now: settle removed it and its rows (the next trap seen twice opens it again)`);
-          } else notes.push(`spec ${specNum(p.close)} lists no chunk now: absorb and delete it`);
-          const range = p.commits ?? commitRange(root, p.file) ?? 'plan only';
-          w('plan/ARCHIVE.md', `${archive.replace(/\n*$/, '\n')}- ${p.date} · ${p.close} · ${p.says} · ${range}\n`);
-        }
-      }
-      if (p.notes.length) w(cfg.notes, addNotes(r(cfg.notes) ?? '', p.notes));
-      if (p.decisions.length) {
-        const year = `${cfg.decisions}/${p.date.slice(0, 4)}.md`;
-        const before = r(year) ?? '';
-        const maxNow = Math.max(decisionMax(), ...[...renumbers.values()].map((d) => Number(d.slice(1))));
-        const out = numberDecisions(before, p.decisions, maxNow);
-        w(year, out.text);
-        for (const [k, v] of out.numbers) renumbers.set(k, v);
-        notes.push(...[...out.numbers].map(([k, v]) => `${k} is ${v}`));
-      }
-      const fgBefore = read(cfg.footguns);
-      if (fgBefore === null) {
-        if (p.footguns.length || p.newFootguns.length) throw new Error(`${p.file}: no ${cfg.footguns} to settle its footguns into (adopt the footgun list first)`);
+    const said = [];
+    const left = [];
+    const gave = new Map();
+    // A pending file's edits are written against main as it was, before its close: applied first, so a close that
+    // rewrites a line (a later chunk's `needs`, the measure) never moves an edit's anchor out from under it.
+    const numbered = applyPlanChanges(p, r, w);
+    said.push(...[...numbered].map(([k, v]) => `${k} is ${v}`));
+    // The numbers go into the file's own notes and decisions too (a decision naming the chunk it set up).
+    const given = (t) => t.replace(PLACEHOLDER, (k) => numbered.get(k) ?? k);
+    p.notes = p.notes.map(given);
+    p.decisions = p.decisions.map(given);
+    if (p.close) {
+      const specFile = specOf(p.close);
+      const archive = r('plan/ARCHIVE.md') ?? '';
+      if (archive.includes(` · ${p.close} · `) && !(specFile && listedChunks(r(specFile)).includes(p.close))) {
+        said.push(`${p.close}: already archived; its pending file goes`);
       } else {
-        let fg;
-        try {
-          fg = settleFootguns(r(cfg.footguns), { add: p.newFootguns, footguns: p.footguns, date: p.date, today }, cfg);
-        } catch (e) {
-          throw new Error(`${p.file}: ${e.message}`);
-        }
-        const footguns = fg.text;
-        for (const { slug, seen } of fg.ladder) {
-          const taken = [...(r('plan/ARCHIVE.md') ?? '').matchAll(new RegExp(`· (${esc(cfg.ladder.spec)}\\.\\w+) ·`, 'g'))].map((m) => m[1]);
-          // Gone (absorbed, or emptied by its last close): settle opens it again, its ids carrying on past the archive's.
-          const had = r(ladderFile);
-          const add = ladderChunk(had ?? ladderSpec(nextLadderNumber(taken, cfg), cfg), slug, seen, taken, cfg);
-          if (!add) continue;
-          w(ladderFile, add.text);
-          if (had === null) {
-            const rows = openLadderRows({ readme: r('plan/README.md'), queue: queueOf(), root: r('README.md') }, cfg);
-            if (rows.readme !== null && rows.readme !== r('plan/README.md')) w('plan/README.md', rows.readme);
-            if (cfg.queue && rows.queue !== null && rows.queue !== queueOf()) w(cfg.queue, rows.queue);
-            if (rows.root !== null && rows.root !== r('README.md')) w('README.md', rows.root);
-            notes.push(`spec ${cfg.ladder.spec} opened for the ladder, with its rows`);
+        if (!specFile) throw unlisted(`${p.file}: no spec plan/${specNum(p.close)}-*.md lists ${p.close}`);
+        const done = closeChunk(r(specFile), p.close);
+        if (!done) throw unlisted(`${p.file}: ${specFile} doesn't list ${p.close}`);
+        w(specFile, done.text);
+        for (const f of specFiles().filter((x) => x !== specFile)) {
+          const before = r(f);
+          if (before === null) continue;
+          const after = dropNeeds(before, p.close);
+          if (after !== before) {
+            w(f, after);
+            said.push(`${p.close} left the needs in ${f}`);
           }
-          if (r('plan/README.md') !== null) {
-            w('plan/README.md', laneEntry(setLeft(r('plan/README.md'), cfg.ladder.file, listedChunks(add.text).length), add.id, slug, seen, cfg));
-          }
-          notes.push(`footgun ${slug} seen ${seen}×: ${add.id} automates it (Asap lane)`);
         }
-        // A safety net: settle keeps Open in budget (or over it only with lines seen twice), so the lint has nothing
-        // new. Measured from the list before this pending file, so its own `## Edit` of a footgun line is held to it too.
-        const refusal = footgunsRefusal(fgBefore, footguns, cfg);
-        if (refusal) throw new Error(`${p.file}: ${refusal}`);
-        notes.push(...fg.notes);
-        if (footguns !== fgBefore) w(cfg.footguns, footguns);
+        const listed = allListed().filter((x) => x !== p.close);
+        if (r('plan/README.md') !== null) {
+          w('plan/README.md', setLeft(r('plan/README.md'), path.basename(specFile), listedChunks(done.text).length));
+          const t = tidyAhead(r('plan/README.md'), queueOf(), p.close, listed, cfg);
+          w('plan/README.md', t.readme);
+          if (cfg.queue && t.queue !== null) w(cfg.queue, t.queue);
+          said.push(...t.changed.map((c) => `${p.close} tidied ${c}`));
+          left.push(...stillNamed(t.readme, t.queue, p.close, cfg).map((where) => `${where} still names ${p.close}: take it out by hand`));
+        }
+        if (listedChunks(done.text).length) {
+          // Chunks left: nothing more.
+        } else if (specFile === ladderFile) {
+          // The ladder's home holds nothing of its own to absorb: settle takes it and its rows out, and opens it
+          // again when the next trap is seen twice.
+          w(ladderFile, null);
+          const rows = closeLadderRows({ readme: r('plan/README.md'), queue: queueOf(), root: r('README.md') }, cfg);
+          for (const [file, text] of [['plan/README.md', rows.readme], [cfg.queue, rows.queue], ['README.md', rows.root]]) {
+            if (file && text !== null && text !== r(file)) w(file, text);
+          }
+          said.push(`spec ${cfg.ladder.spec} lists no chunk now: settle removed it and its rows (the next trap seen twice opens it again)`);
+        } else said.push(`spec ${specNum(p.close)} lists no chunk now: absorb and delete it`);
+        const range = p.commits ?? commitRange(root, p.file) ?? 'plan only';
+        w('plan/ARCHIVE.md', `${archive.replace(/\n*$/, '\n')}- ${p.date} · ${p.close} · ${p.says} · ${range}\n`);
       }
-      for (const [q, t] of tx) cache.set(q, t);
-      settled.push(p);
+    }
+    if (p.notes.length) w(cfg.notes, addNotes(r(cfg.notes) ?? '', p.notes));
+    if (p.decisions.length) {
+      const year = `${cfg.decisions}/${p.date.slice(0, 4)}.md`;
+      const before = r(year) ?? '';
+      const maxNow = Math.max(decisionMax(), ...[...renumbers.values()].map((d) => Number(d.slice(1))));
+      const out = numberDecisions(before, p.decisions, maxNow);
+      w(year, out.text);
+      for (const [k, v] of out.numbers) gave.set(k, v);
+      said.push(...[...out.numbers].map(([k, v]) => `${k} is ${v}`));
+    }
+    const fgBefore = read(cfg.footguns);
+    if (fgBefore === null) {
+      if (p.footguns.length || p.newFootguns.length) throw new Error(`${p.file}: no ${cfg.footguns} to settle its footguns into (adopt the footgun list first)`);
+    } else {
+      let fg;
+      try {
+        fg = settleFootguns(r(cfg.footguns), { add: p.newFootguns, footguns: p.footguns, date: p.date, today }, cfg);
+      } catch (e) {
+        throw new Error(`${p.file}: ${e.message}`);
+      }
+      const footguns = fg.text;
+      for (const { slug, seen } of fg.ladder) {
+        const taken = [...(r('plan/ARCHIVE.md') ?? '').matchAll(new RegExp(`· (${esc(cfg.ladder.spec)}\\.\\w+) ·`, 'g'))].map((m) => m[1]);
+        // Gone (absorbed, or emptied by its last close): settle opens it again, its ids carrying on past the archive's.
+        const had = r(ladderFile);
+        const add = ladderChunk(had ?? ladderSpec(nextLadderNumber(taken, cfg), cfg), slug, seen, taken, cfg);
+        if (!add) continue;
+        w(ladderFile, add.text);
+        if (had === null) {
+          const rows = openLadderRows({ readme: r('plan/README.md'), queue: queueOf(), root: r('README.md') }, cfg);
+          if (rows.readme !== null && rows.readme !== r('plan/README.md')) w('plan/README.md', rows.readme);
+          if (cfg.queue && rows.queue !== null && rows.queue !== queueOf()) w(cfg.queue, rows.queue);
+          if (rows.root !== null && rows.root !== r('README.md')) w('README.md', rows.root);
+          said.push(`spec ${cfg.ladder.spec} opened for the ladder, with its rows`);
+        }
+        if (r('plan/README.md') !== null) {
+          w('plan/README.md', laneEntry(setLeft(r('plan/README.md'), cfg.ladder.file, listedChunks(add.text).length), add.id, slug, seen, cfg));
+        }
+        said.push(`footgun ${slug} seen ${seen}×: ${add.id} automates it (Asap lane)`);
+      }
+      // A safety net: settle keeps Open in budget (or over it only with lines seen twice), so the lint has nothing
+      // new. Measured from the list before this pending file, so its own `## Edit` of a footgun line is held to it too.
+      const refusal = footgunsRefusal(fgBefore, footguns, cfg);
+      if (refusal) throw new Error(`${p.file}: ${refusal}`);
+      said.push(...fg.notes);
+      if (footguns !== fgBefore) w(cfg.footguns, footguns);
+    }
+    for (const [q, t] of tx) cache.set(q, t);
+    notes.push(...said);
+    leftovers.push(...left);
+    for (const [k, v] of gave) renumbers.set(k, v);
+    settled.push(p);
+  };
+  const skip = (e) => {
+    if (process.env.NEXUS_DEBUG) console.error(e.stack);
+    skipped.push(e.message);
+  };
+  // Date order, adds before closes within a date (settleOrder). A close whose chunk isn't listed waits while a file
+  // that adds work is still to settle, and tries again after each one: a plot dated after the close numbers it first.
+  let waiting = [];
+  for (let i = 0; i < order.length; i++) {
+    const more = order.slice(i + 1).some(addsWork);
+    const attempt = (p, held) => {
+      try {
+        settleOne(p);
+        return true;
+      } catch (e) {
+        if (e.unlisted && more) held.push(p);
+        else skip(e);
+        return false;
+      }
+    };
+    if (!attempt(order[i], waiting) || !addsWork(order[i])) continue;
+    const again = waiting;
+    waiting = [];
+    for (const p of again) attempt(p, waiting);
+  }
+  // Held for an adding file that then failed to settle: the close's own error says why.
+  for (const p of waiting) {
+    try {
+      settleOne(p);
     } catch (e) {
-      if (process.env.NEXUS_DEBUG) console.error(e.stack);
-      skipped.push(e.message);
+      skip(e);
     }
   }
 

@@ -3,6 +3,7 @@
 // (the run itself is settle-run.test.mjs). node:test, no deps.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { makeConfig } from '../plan/config.mjs';
@@ -10,6 +11,7 @@ import { lintFootguns } from '../plan/footguns.mjs';
 import { parsePending } from '../plan/pending.mjs';
 import {
   applyEdits,
+  addsWork,
   applyPlanChanges,
   bumpFootgun,
   closeChunk,
@@ -27,6 +29,7 @@ import {
   renumber,
   setLeft,
   settleFootguns,
+  settleOrder,
   stillNamed,
   tidyAhead,
   tidyLine,
@@ -449,8 +452,40 @@ describe('## Add: new work for a spec, numbered at settle', () => {
 
   it("applies a file's edits and adds before its close, in settle's loop", () => {
     const src = readFileSync(fileURLToPath(new URL('../plan/settle.mjs', import.meta.url)), 'utf8');
-    const loop = src.slice(src.indexOf('for (const p of parsed)'));
+    const loop = src.slice(src.indexOf('const settleOne = (p) =>'));
     assert.ok(loop.indexOf('applyPlanChanges(p, r, w)') > 0);
     assert.ok(loop.indexOf('applyPlanChanges(p, r, w)') < loop.indexOf('closeChunk(r(specFile), p.close)'));
+  });
+});
+
+describe('settle order: what adds goes before the closes of its date', () => {
+  const head = (date, close = '') => `---\n${close ? `close: ${close}\nsays: It works\n` : ''}date: ${date}\n---\n`;
+  const add = '## Add plan/07-search.md\n~~~ chunks\n- [ ] **07.?x** X · S · needs —\n~~~\n';
+  const lane = '## Edit plan/README.md\n~~~ old\n- (none)\n~~~\n~~~ new\n- 07.4 first\n~~~\n';
+  const decision = '## Decisions\n- **D?d** · 2026-10-21 · A call.\n';
+  const p = (file, text) => ({ ...parsePending(text, file), file });
+
+  it('settles a plot, an Add or a lane entry before the closes of the same date; dates still lead', () => {
+    const files = [
+      p('plan/pending/07.3.md', head('2026-10-21', '07.3')),
+      p('plan/pending/07.4.md', head('2026-10-20', '07.4')),
+      p('plan/pending/lone.md', head('2026-10-21') + decision),
+      p('plan/pending/plot-x.md', head('2026-10-21') + add),
+      p('plan/pending/plot-late.md', head('2026-10-22') + add.replace('?x', '?y')),
+      p('plan/pending/b-lane.md', head('2026-10-21') + lane),
+      p('plan/pending/07.5.md', head('2026-10-21', '07.5') + add.replace('?x', '?z')),
+    ];
+    assert.deepEqual(
+      settleOrder(files).map((f) => path.basename(f.file, '.md')),
+      ['07.4', '07.5', 'b-lane', 'plot-x', '07.3', 'lone', 'plot-late'],
+    );
+  });
+
+  it('knows what adds: an Add, a README edit (a lane entry), a plot; not a lone close or decision', () => {
+    assert.equal(addsWork(p('plan/pending/plot-x.md', head('2026-10-21') + add)), true);
+    assert.equal(addsWork(p('plan/pending/b-lane.md', head('2026-10-21') + lane)), true);
+    assert.equal(addsWork(p('plan/pending/plot-d.md', head('2026-10-21') + decision)), true);
+    assert.equal(addsWork(p('plan/pending/07.3.md', head('2026-10-21', '07.3'))), false);
+    assert.equal(addsWork(p('plan/pending/lone.md', head('2026-10-21') + decision)), false);
   });
 });
