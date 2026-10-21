@@ -81,3 +81,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 35.5 · plan/CANDIDATES.md replaces PHASE_CANDIDATES.md everywhere · 4cb343fd..4cb343fd
 - 2026-10-21 · 37.5 · plan-check reads the settled view; a plot test proves agreement · f6c33541..1fad223e
 - 2026-10-21 · 41.1 · a linked terminal session takes an owner line at its next tool · 240b8f36..388c17b9
+- 2026-10-21 · 37.4 · every committing skill lands per owner mode; cloud-tick note · 4ee6bbdc..95eb2efb
+- 2026-10-21 · 37 · spec complete: heads-down beats its ledger and wears its star, claims carry the star and refuse a session with no hooks, every committing skill lands per owner mode, and the plan gate reads the settled view · def103d2..95eb2efb
