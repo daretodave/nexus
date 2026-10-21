@@ -68,9 +68,6 @@ placeholder; `publish.yml` publishing on `cli-v*` tags
 - **A7** The cockpit, heads-down and inbox draw the boards'
   durations, diffstats, message times, estimates, phase marks
   and countdowns from real data.
-- **A8** The fleet's last board details are drawn: each
-  star's own idle curve, the orphaned worktree's link, and
-  one rule for terminal sessions in the switcher.
 
 ## Open questions
 
@@ -80,7 +77,7 @@ running tool call can't be killed, so the next tool boundary
 is the interrupt point.)
 
 ## Chunks
-Measure: 3 open · 6 closed · next A10
+Measure: 2 open · 7 closed · next A10
 
 - [ ] **41.6** Live fidelity pass: hover, popovers, motion,
   both themes · S · closes A6 · needs —
@@ -98,5 +95,3 @@ Measure: 3 open · 6 closed · next A10
     diffstats, message times, the workflow junction, chunk
     estimates and phase marks, the tug's default deadline;
     CloudLoop counts "PRs opened" from `/api/cloud`.
-- [ ] **41.8** The fleet's last details: idle curves, orphan
-  link, switcher rule · S · closes A8 · needs —
