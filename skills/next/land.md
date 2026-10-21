@@ -25,7 +25,10 @@ origin HEAD:main`.
 - A spec that "lists no chunk now": absorb it before the gate
   (its lasting rules into `identity/` or `plan/bearings.md`,
   the file and its roadmap row deleted, the archive's
-  `· NN · spec complete: …` line), in the settle's commit.
+  `· NN · spec complete: …` line), in the settle's commit:
+  `git add` it, then commit everything staged with settle's
+  message. Drop the printed command's `-- <paths>`: it would
+  leave the absorb out of the commit.
 
 ## 2. The pending file
 
@@ -98,7 +101,7 @@ node scripts/claims.mjs pr <id> <number>
   after the merge.
 - **In a `/heads-down` package:** commit on `pkg/<slug>`, push
   it, no PR: `/heads-down` opens one PR for the package at the
-  end (`skills/heads-down.md` §5).
+  end (`skills/heads-down.md` Step 5).
 
 ## 5. A run that stops early
 

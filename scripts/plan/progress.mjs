@@ -181,7 +181,9 @@ async function main(argv) {
   let events = [];
   let session = '';
   try {
-    const mod = await import(pathToFileURL(path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', 'claims.mjs')).href);
+    // Resolved as a URL, never through .pathname: that stays percent-encoded, so a checkout under a path with a space
+    // never found the module and every claim read as "not claimed yet".
+    const mod = await import(new URL('../claims.mjs', import.meta.url).href);
     const { map } = mod.fetchClaims(cwd);
     claims = Object.fromEntries(Object.entries(map).map(([id, v]) => [id, mod.parse(v)]));
     session = mod.sessionId();
@@ -227,4 +229,11 @@ async function main(argv) {
   return 0;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) process.exit(await main(process.argv.slice(2)));
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  // A bad --ref (a typo, a branch not fetched) is one line, not a stack.
+  const code = await main(process.argv.slice(2)).catch((e) => {
+    console.error(`progress: ${String(e?.stderr || e?.message || e).trim().split(/\r?\n/)[0]}`);
+    return 1;
+  });
+  process.exit(code);
+}
