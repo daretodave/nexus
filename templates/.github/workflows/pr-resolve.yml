@@ -70,8 +70,9 @@ jobs:
           GIT_AUTHOR_EMAIL: nexus-resolve@users.noreply.github.com
           GIT_COMMITTER_NAME: nexus-resolve
           GIT_COMMITTER_EMAIL: nexus-resolve@users.noreply.github.com
+        # The resolver hands git the token per fetch and push, never in
+        # .git/config, where the model (it may Read) could find it.
         run: |
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           echo "::add-mask::$auth"
-          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $auth"
           node "$RUNNER_TEMP/tools/pr/resolve.mjs" $PR

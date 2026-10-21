@@ -11,10 +11,11 @@
 //   node scripts/cloud/tick.mjs pick [--chunk <id>] [--limit <n>]
 //       The first ready, unclaimed chunk in /next's pick order on origin (scripts/plan/order.mjs), claimed for this
 //       session; `id=<chunk>` on $GITHUB_OUTPUT (empty: nothing to build, or `--limit` loop PRs already open).
-//   node scripts/cloud/tick.mjs fence <base> <head> [--allow <path,…>]
+//   node scripts/cloud/tick.mjs fence <base> <head> [--allow <path,…>] [--only <path,…>]
 //       Exit 1 naming each change a loop PR may not make: a shared plan or identity file edited or deleted (pending
-//       files and new spec files are fine; --allow adds exact paths, e.g. the night shift's plan/DIGEST.md), anything
-//       under .github/workflows/ or .github/actions/, .owner, .nexus/ or plan/messy/.
+//       files and new spec files are fine; --allow adds exact paths), anything under .github/workflows/ or
+//       .github/actions/, .owner, .nexus/ or plan/messy/. --only allows those exact paths and nothing else, code
+//       included (the night shift writes its digest files, never a fix).
 //   node scripts/cloud/tick.mjs land <branch> [--chunk <id>]
 //       Push <branch> (never forced), open its PR onto the main branch, attach the PR to the chunk's claim.
 //   node scripts/cloud/tick.mjs release <id>
@@ -89,9 +90,13 @@ export function candidates(sim, n = 3) {
  * Shared plan surfaces change only through settle, on main, by the owner: a branch adds pending files (and a new spec
  * file, which conflicts with nothing). Workflow and action files change from a person's session.
  */
-export function fenceProblems(changes, { allow = [] } = {}) {
+export function fenceProblems(changes, { allow = [], only = null } = {}) {
   const problems = [];
   for (const { status, path: p } of changes) {
+    if (only) {
+      if (!only.includes(p)) problems.push(`${p}: outside the files this tick may write (${only.join(', ')})`);
+      continue;
+    }
     if (allow.includes(p)) continue;
     if (p.startsWith('.github/workflows/') || p.startsWith('.github/actions/')) problems.push(`${p}: workflow and action files change from a person's session, never a loop's PR`);
     else if (p === '.owner' || p.startsWith('.nexus/')) problems.push(`${p}: per-checkout state, never committed`);
@@ -123,7 +128,9 @@ async function pick(cwd, argv, env) {
     return i >= 0 ? argv[i + 1] : undefined;
   };
   identity(cwd, env);
-  const limit = Number(val('--limit') ?? env.NEXUS_PR_LIMIT ?? 3);
+  // A limit that isn't a whole number (a typo in NEXUS_PR_LIMIT) falls back to 3, never to "no limit".
+  const raw = Number(val('--limit') || env.NEXUS_PR_LIMIT || 3);
+  const limit = Number.isInteger(raw) && raw >= 0 ? raw : 3;
   let open = 0;
   try {
     open = loopPrCount(JSON.parse(execFileSync('gh', ['pr', 'list', '--state', 'open', '--limit', '100', '--json', 'headRefName'], { cwd, encoding: 'utf8' })));
@@ -161,9 +168,14 @@ async function pick(cwd, argv, env) {
 
 function fence(cwd, argv) {
   const [base, head] = argv;
-  const i = argv.indexOf('--allow');
-  const allow = i >= 0 ? (argv[i + 1] ?? '').split(',').map((s) => s.trim()).filter(Boolean) : [];
-  if (!base || !head) throw new Error('tick: fence needs <base> <head>');
+  const list = (flag) => {
+    const i = argv.indexOf(flag);
+    return i >= 0 ? (argv[i + 1] ?? '').split(',').map((s) => s.trim()).filter(Boolean) : null;
+  };
+  const allow = list('--allow') ?? [];
+  const only = list('--only');
+  if (!base || !head || base.startsWith('--') || head.startsWith('--')) throw new Error('tick: fence needs <base> <head>');
+  if (only && !only.length) throw new Error('tick: --only needs at least one path');
   const changes = git(['diff', '--name-status', '--no-renames', `${base}...${head}`], { cwd })
     .split('\n')
     .filter(Boolean)
@@ -171,7 +183,7 @@ function fence(cwd, argv) {
       const [status, ...rest] = l.split('\t');
       return { status: status[0], path: rest.join('\t') };
     });
-  const problems = fenceProblems(changes, { allow });
+  const problems = fenceProblems(changes, { allow, only });
   for (const p of problems) console.error(`fence: ${p}`);
   console.log(`fence: ${changes.length} changed path(s), ${problems.length} outside the fence`);
   return problems.length ? 1 : 0;
@@ -223,7 +235,7 @@ export async function main(argv, { cwd = process.cwd(), env = process.env } = {}
     case 'release':
       return release(cwd, rest, env);
     default:
-      console.error('usage: node scripts/cloud/tick.mjs pick [--chunk <id>] [--limit <n>] | fence <base> <head> [--allow <paths>] | land <branch> [--chunk <id>] | release <id>');
+      console.error('usage: node scripts/cloud/tick.mjs pick [--chunk <id>] [--limit <n>] | fence <base> <head> [--allow <paths>] [--only <paths>] | land <branch> [--chunk <id>] | release <id>');
       return 2;
   }
 }

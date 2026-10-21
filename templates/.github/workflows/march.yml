@@ -32,7 +32,7 @@ on:
   workflow_dispatch:
     inputs:
       verb:
-        description: 'Concierge lane: run this verb instead of dispatching'
+        description: 'Concierge lane: run this verb instead of dispatching (owner mode; pull-request mode builds one chunk on march or next, nothing on another verb)'
         required: false
         type: choice
         default: march
@@ -139,7 +139,9 @@ jobs:
       # pass <DEFAULT_BRANCH> (nexus/playbooks/owner-mode.md).
       - name: Owner mode for this checkout
         if: steps.ceiling.outputs.skip != 'true'
-        run: touch .owner
+        # .git/info/exclude too, so a repo whose .gitignore lacks it
+        # never commits the marker.
+        run: touch .owner && echo .owner >> .git/info/exclude
 
       - name: Run /march (cloud mode)
         id: run_march
@@ -261,7 +263,8 @@ jobs:
   # contributor. Four jobs, so the agent's job holds no token.
   # ═════════════════════════════════════════════════════════════
   pick:
-    if: vars.NEXUS_LOOP_MODE != 'owner'
+    # A scheduled tick, or a dispatch asking for march or next.
+    if: vars.NEXUS_LOOP_MODE != 'owner' && (inputs.verb == '' || inputs.verb == 'march' || inputs.verb == 'next')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -345,8 +348,9 @@ jobs:
           1. The workflow already holds this chunk's claim (the session in
              NEXUS_SESSION) and will push, open the pull request and attach
              it to the claim. Skip every claims.mjs call, the announce board,
-             settle, and Step 5. Never push: you hold no token, so a push or
-             a gh write fails anyway.
+             settle, and Step 5. Skip git fetch and git pull too: this
+             checkout is fresh and holds no credential. Never push: you hold
+             no token, so a push or a gh write fails anyway.
           2. Build in this checkout, on the current branch (nexus/<run id>).
              It is a disposable runner checkout, not a person's primary one:
              do not cut a worktree.

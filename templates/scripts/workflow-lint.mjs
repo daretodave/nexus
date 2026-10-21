@@ -82,7 +82,8 @@ export function runScripts(yml) {
 /** What's wrong with one workflow file, one line per problem. */
 export function lintWorkflow(name, text) {
   const problems = [];
-  const secrets = /\bsecrets\./.test(text);
+  // A token is a secret too, and `secrets: inherit` hands a called workflow every one.
+  const secrets = /\bsecrets\.|\bgithub\.token\b|^\s*secrets:\s*inherit\b/m.test(text);
   for (const m of text.matchAll(/^\s*runs-on:(.*)$/gm)) {
     const label = m[1].trim();
     if (HOSTED.test(label)) continue;

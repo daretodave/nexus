@@ -39,6 +39,7 @@ const RUNBOOK_INDEX = 'setup/00_files.md'
 const ENV_PATH = '.env'
 const AUDIT_PATH = 'plan/AUDIT.md'
 const WORKFLOW_PATH = '.github/workflows/march.yml'
+const SETUP_ACTION_PATH = '.github/actions/setup/action.yml'
 const SUPPORTED_SERVICES = ['github', 'vercel', 'supabase', 'cloud-loop']
 
 // ─────────────────────────────────────────────────────────────
@@ -861,6 +862,19 @@ async function execCloudLoop(a, state, manifest) {
     }
     fs.writeFileSync(WORKFLOW_PATH, yml)
     log.ok(`wrote ${WORKFLOW_PATH}`)
+    // Every march job installs the toolchain through this shared action: without it, each tick fails at setup.
+    const action = path.join(path.dirname(src), '..', 'actions', 'setup', 'action.yml')
+    if (fs.existsSync(SETUP_ACTION_PATH)) {
+      log.info(`kept your ${SETUP_ACTION_PATH}`)
+    } else if (fs.existsSync(action)) {
+      fs.mkdirSync(path.dirname(SETUP_ACTION_PATH), { recursive: true })
+      fs.writeFileSync(SETUP_ACTION_PATH, fs.readFileSync(action, 'utf-8').replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`))
+      log.ok(`wrote ${SETUP_ACTION_PATH} (adjust its install steps to your stack)`)
+    } else {
+      log.warn(`no ${action}: copy nexus/templates/.github/actions/setup/action.yml to ${SETUP_ACTION_PATH}`)
+    }
+    log.info('march.yml lands by the repo variable NEXUS_LOOP_MODE: unset means pull requests (scripts/cloud/tick.mjs);')
+    log.info(`  gh variable set NEXUS_LOOP_MODE -R ${slug} --body owner   pushes ${manifest.project.default_branch ?? 'main'} instead (.github/CLOUD_LOOP.md)`)
     return
   }
   if (a.verb === 'set-claude-oauth') {

@@ -18,6 +18,11 @@ describe('runners', () => {
     assert.match(lintWorkflow('a.yml', job(RUNNER_VAR, ' ${{ secrets.X }}'))[0], /reads secrets\.\* but may run on NEXUS_RUNNER/);
   });
 
+  it('counts the workflow token and an inherited secret set as secrets', () => {
+    assert.equal(lintWorkflow('a.yml', job(RUNNER_VAR, ' ${{ github.token }}')).length, 1);
+    assert.equal(lintWorkflow('a.yml', `${job(RUNNER_VAR)}  b:\n    uses: ./.github/workflows/x.yml\n    secrets: inherit\n`).length, 1);
+  });
+
   it('refuses a self-hosted label, a list and an empty value', () => {
     assert.match(lintWorkflow('a.yml', job('self-hosted'))[0], /runs-on self-hosted is neither/);
     assert.match(lintWorkflow('a.yml', job('[self-hosted, linux]'))[0], /is neither/);

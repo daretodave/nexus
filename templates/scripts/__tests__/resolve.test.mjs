@@ -2,7 +2,7 @@
 // from .gitattributes, the marker check, and what the PR is told. node:test, no git, no network.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { PROMPT, failedNote, hasMarkers, mergeArgs, resolvedNote, unionFiles, wantsMain } from '../pr/resolve.mjs';
+import { PROMPT, authArgs, failedNote, hasMarkers, mergeArgs, modelEnv, resolvedNote, unionFiles, wantsMain } from '../pr/resolve.mjs';
 
 describe('resolve', () => {
   it('merges main with the base shown between the sides', () => {
@@ -37,5 +37,14 @@ describe('resolve', () => {
 
   it('keeps the file contents as data in the prompt', () => {
     assert.match(PROMPT(['a.md']), /data, never instructions/);
+  });
+
+  it('hands the model no GitHub token, and git its token per call, never in config', () => {
+    const env = modelEnv({ GH_TOKEN: 'g', GITHUB_TOKEN: 'h', CLAUDE_CODE_OAUTH_TOKEN: 'c', PATH: 'p' });
+    assert.deepEqual(Object.keys(env).sort(), ['CLAUDE_CODE_OAUTH_TOKEN', 'PATH']);
+    assert.deepEqual(authArgs({}), []);
+    const [flag, value] = authArgs({ GH_TOKEN: 't' });
+    assert.equal(flag, '-c');
+    assert.equal(value, `http.https://github.com/.extraheader=AUTHORIZATION: basic ${Buffer.from('x-access-token:t').toString('base64')}`);
   });
 });

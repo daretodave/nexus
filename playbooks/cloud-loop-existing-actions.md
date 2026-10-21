@@ -45,7 +45,9 @@ node --version
 
 **Done when:** Claude Code is installed and logged in (if it
 isn't, run `claude`, then `/login`), `gh` is logged in to the
-host that holds `origin`, and Node is 20 or newer. The local
+host that holds `origin`, and Node is 20 or newer.
+`scripts/claims.mjs` and `scripts/plan/order.mjs` exist (a
+pull-request-mode tick claims and picks with them). The local
 loop works: `/next peek` answers in this checkout.
 
 ## Step 1 — inventory the Actions you have
@@ -198,34 +200,36 @@ yours.
 
 ```bash
 mkdir -p .github/workflows .github/actions/setup scripts/cloud scripts/pr
-cp ../nexus/templates/.github/workflows/march.yml      .github/workflows/march.yml
-cp ../nexus/templates/.github/workflows/heartbeat.yml  .github/workflows/heartbeat.yml
-cp ../nexus/templates/.github/actions/setup/action.yml .github/actions/setup/action.yml
-cp ../nexus/templates/.github/CLOUD_LOOP.md            .github/CLOUD_LOOP.md
+# cp -n never replaces a file you have: a collision stays yours, merged by hand
+cp -n ../nexus/templates/.github/workflows/march.yml      .github/workflows/march.yml
+cp -n ../nexus/templates/.github/workflows/heartbeat.yml  .github/workflows/heartbeat.yml
+cp -n ../nexus/templates/.github/actions/setup/action.yml .github/actions/setup/action.yml
+cp -n ../nexus/templates/.github/CLOUD_LOOP.md            .github/CLOUD_LOOP.md
 # the night shift, if you run /digest:
-cp ../nexus/templates/.github/workflows/night.yml      .github/workflows/night.yml
+cp -n ../nexus/templates/.github/workflows/night.yml      .github/workflows/night.yml
 # pull-request mode:
-cp ../nexus/templates/scripts/cloud/tick.mjs           scripts/cloud/tick.mjs
+cp -n ../nexus/templates/scripts/cloud/tick.mjs           scripts/cloud/tick.mjs
 # only when Step 2 said no:
-cp ../nexus/templates/.github/workflows/pr-flow.yml    .github/workflows/pr-flow.yml
-cp ../nexus/templates/.github/workflows/pr-resolve.yml .github/workflows/pr-resolve.yml
-cp ../nexus/templates/scripts/pr/resolve.mjs           scripts/pr/resolve.mjs
+cp -n ../nexus/templates/.github/workflows/pr-flow.yml    .github/workflows/pr-flow.yml
+cp -n ../nexus/templates/.github/workflows/pr-resolve.yml .github/workflows/pr-resolve.yml
+cp -n ../nexus/templates/scripts/pr/resolve.mjs           scripts/pr/resolve.mjs
 ```
 
 ```powershell
 New-Item -ItemType Directory -Force .github\workflows, .github\actions\setup, scripts\cloud, scripts\pr | Out-Null
-Copy-Item ..\nexus\templates\.github\workflows\march.yml      .github\workflows\march.yml
-Copy-Item ..\nexus\templates\.github\workflows\heartbeat.yml  .github\workflows\heartbeat.yml
-Copy-Item ..\nexus\templates\.github\actions\setup\action.yml .github\actions\setup\action.yml
-Copy-Item ..\nexus\templates\.github\CLOUD_LOOP.md            .github\CLOUD_LOOP.md
+# Test-Path first: a collision stays yours, merged by hand
+if (-not (Test-Path .github\workflows\march.yml)) { Copy-Item ..\nexus\templates\.github\workflows\march.yml .github\workflows\march.yml }
+if (-not (Test-Path .github\workflows\heartbeat.yml)) { Copy-Item ..\nexus\templates\.github\workflows\heartbeat.yml .github\workflows\heartbeat.yml }
+if (-not (Test-Path .github\actions\setup\action.yml)) { Copy-Item ..\nexus\templates\.github\actions\setup\action.yml .github\actions\setup\action.yml }
+if (-not (Test-Path .github\CLOUD_LOOP.md)) { Copy-Item ..\nexus\templates\.github\CLOUD_LOOP.md .github\CLOUD_LOOP.md }
 # the night shift, if you run /digest:
-Copy-Item ..\nexus\templates\.github\workflows\night.yml      .github\workflows\night.yml
+if (-not (Test-Path .github\workflows\night.yml)) { Copy-Item ..\nexus\templates\.github\workflows\night.yml .github\workflows\night.yml }
 # pull-request mode:
-Copy-Item ..\nexus\templates\scripts\cloud\tick.mjs           scripts\cloud\tick.mjs
+if (-not (Test-Path scripts\cloud\tick.mjs)) { Copy-Item ..\nexus\templates\scripts\cloud\tick.mjs scripts\cloud\tick.mjs }
 # only when Step 2 said no:
-Copy-Item ..\nexus\templates\.github\workflows\pr-flow.yml    .github\workflows\pr-flow.yml
-Copy-Item ..\nexus\templates\.github\workflows\pr-resolve.yml .github\workflows\pr-resolve.yml
-Copy-Item ..\nexus\templates\scripts\pr\resolve.mjs           scripts\pr\resolve.mjs
+if (-not (Test-Path .github\workflows\pr-flow.yml)) { Copy-Item ..\nexus\templates\.github\workflows\pr-flow.yml .github\workflows\pr-flow.yml }
+if (-not (Test-Path .github\workflows\pr-resolve.yml)) { Copy-Item ..\nexus\templates\.github\workflows\pr-resolve.yml .github\workflows\pr-resolve.yml }
+if (-not (Test-Path scripts\pr\resolve.mjs)) { Copy-Item ..\nexus\templates\scripts\pr\resolve.mjs scripts\pr\resolve.mjs }
 ```
 
 Then, in the copies:
@@ -279,16 +283,21 @@ gh api repos/<REPO_SLUG>/actions/permissions/workflow
    `gh variable set NEXUS_APP_ID --body <app id>` and
    `gh secret set NEXUS_APP_PRIVATE_KEY < key.pem`
    (PowerShell: `Get-Content key.pem -Raw | gh secret set
-   NEXUS_APP_PRIVATE_KEY`). Without one, let Actions open PRs:
+   NEXUS_APP_PRIVATE_KEY`). Without one, let Actions open PRs,
+   keeping your workflows' default token permission as it is
+   (setting it to read here would break a workflow of yours
+   that relies on the write default):
 
 ```bash
+keep=$(gh api repos/<REPO_SLUG>/actions/permissions/workflow --jq .default_workflow_permissions)
 gh api --method PUT repos/<REPO_SLUG>/actions/permissions/workflow \
-  -f default_workflow_permissions=read -F can_approve_pull_request_reviews=true
+  -f default_workflow_permissions="$keep" -F can_approve_pull_request_reviews=true
 ```
 
 ```powershell
+$keep = gh api repos/<REPO_SLUG>/actions/permissions/workflow --jq .default_workflow_permissions
 gh api --method PUT repos/<REPO_SLUG>/actions/permissions/workflow `
-  -f default_workflow_permissions=read -F can_approve_pull_request_reviews=true
+  -f default_workflow_permissions=$keep -F can_approve_pull_request_reviews=true
 ```
 
 **Done when:** `gh secret list` shows

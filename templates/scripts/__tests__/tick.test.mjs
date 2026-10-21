@@ -28,6 +28,14 @@ describe('the fence', () => {
     assert.equal(fenceProblems(ch([['M', 'plan/DIGEST.md'], ['M', 'plan/README.md']]), { allow: ['plan/DIGEST.md'] }).length, 1);
   });
 
+  it('takes --only as the whole list: code and pending files outside it are refused too', () => {
+    const only = ['plan/DIGEST.md', 'plan/AUDIT.md'];
+    assert.deepEqual(fenceProblems(ch([['M', 'plan/DIGEST.md']]), { only }), []);
+    const p = fenceProblems(ch([['M', 'plan/DIGEST.md'], ['M', 'src/app.ts'], ['A', 'plan/pending/07.3.md'], ['M', '.github/workflows/march.yml']]), { only });
+    assert.equal(p.length, 3);
+    assert.match(p[0], /src\/app\.ts: outside/);
+  });
+
   it('treats a file added in a plan subfolder other than pending as shared', () => {
     assert.equal(fenceProblems(ch([['A', 'plan/specs/x.md']])).length, 1);
   });
