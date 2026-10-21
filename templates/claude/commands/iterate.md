@@ -23,7 +23,7 @@ Be bold about delegating:
 `plan/AUDIT.md` `> Bias: <category>` line (set by `/oversight`)
 weights that category 1.5x.
 
-After commit + push + deploy:check, return cleanly. Don't stop
+After commit + land + deploy:check, return cleanly. Don't stop
 unless §6 (failure modes) applies.
 
 Argument: $ARGUMENTS

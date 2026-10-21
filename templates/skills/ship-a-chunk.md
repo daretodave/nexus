@@ -16,7 +16,7 @@
 `plan/README.md` lists <PROJECT>'s specs; each spec
 (`plan/NN-<slug>.md`) ends in chunks sized S, M or L, where L
 is one session at most. A chunk is one self-contained slice
-that ships end-to-end: code + unit tests + e2e + commit + push
+that ships end-to-end: code + unit tests + e2e + commit + land
 (deploy follows), and in the same commit it leaves the plan as
 one line in `plan/ARCHIVE.md`. The shape is in
 `nexus/concepts/plan-shape.md`.
@@ -39,7 +39,7 @@ chunks.
 ```
 
 When invoked from `/loop` or `/march`, **do not pause for
-review**. After commit + push + deploy:check, return cleanly.
+review**. After commit + land + deploy:check, return cleanly.
 
 ## 3. Autonomy contract
 
@@ -281,7 +281,7 @@ The plan only shrinks. In the spec and the roadmap:
 
 Then run `node scripts/plan-check.mjs --since HEAD`.
 
-### Step 10 — Commit + push (atomic)
+### Step 10 — Commit + land (atomic)
 
 Stage explicitly. Conventional subject; body in 4–8 bullets
 describing what shipped + what the user can now do. Add
@@ -306,7 +306,7 @@ Decisions:
 Closes #<spec-issue-number>   (only on the spec's last chunk)
 EOF
 )"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 **No `Co-Authored-By:` trailer. No emojis.**
@@ -407,7 +407,7 @@ loop is unsafe to continue) end the tick entirely.
 **Chunk-shaped** failures (this one chunk can't ship; the rest
 of the plan is fine) additionally add the chunk to the **Held**
 lane in `plan/README.md` as `- **<NN.k>** · blocked: <short
-reason> <ISO-date>`, commit + push that state change, and
+reason> <ISO-date>`, commit + land that state change, and
 return cleanly. The next `/march` tick picks past it into
 still-shippable work, and `/oversight` owns unblocking.
 
@@ -456,11 +456,11 @@ spec.md                                      # product spec
 Agent({ subagent_type: "scout", prompt: "..." })
 # + your domain specialists
 
-# Verify + close + commit + push + deploy
+# Verify + close + commit + land + deploy
 pnpm verify
 node scripts/plan-check.mjs --since HEAD
 git add <explicit files>
 git commit -m "<subject>"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 pnpm deploy:check
 ```

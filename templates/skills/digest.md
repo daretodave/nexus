@@ -77,8 +77,8 @@ its own cadence.
    numbers. **Never edit gates, cadences, ceilings, or rules
    directly** — proposals only; `/oversight` promotes. The
    loop does not vote on its own constraints.
-6. **Gate + commit + push:** `pnpm verify`, then one commit
-   `digest: <YYYY-MM-DD>` and push. Cloud ticks confirm the
+6. **Gate + commit + land:** `pnpm verify`, then one commit
+   `digest: <YYYY-MM-DD>` and land. Cloud ticks confirm the
    deploy per the standing rules if the digest commit
    triggers one.
 
@@ -114,5 +114,5 @@ node scripts/pulse.mjs               # local queue/plan numbers
 gh run list --workflow march -L 20   # the invisible no-ops
 SMOKE_SAMPLE=full pnpm e2e           # the nightly breadth leg
 pnpm verify
-git commit -m "digest: <YYYY-MM-DD>" && git push origin <DEFAULT_BRANCH>
+git commit -m "digest: <YYYY-MM-DD>"   # then land per owner mode (next/land.md §6)
 ```

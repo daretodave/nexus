@@ -29,6 +29,6 @@ Sub-agents: `scout` for external research; domain specialists
 for prose / schema work.
 
 When invoked under `/loop`, the user is not present. After
-commit + push + deploy:check, return cleanly.
+commit + land + deploy:check, return cleanly.
 
 Argument: $ARGUMENTS

@@ -24,6 +24,6 @@ escalate to `/oversight`. Every action (auto or escalated) gets
 an audit row in `plan/MOD_AUDIT.md`.
 
 When invoked under `/loop`, the user is not present. After
-commit + push + deploy:check, return cleanly.
+commit + land + deploy:check, return cleanly.
 
 Argument: $ARGUMENTS

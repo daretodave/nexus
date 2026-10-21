@@ -27,7 +27,7 @@ Hard rules:
   `/oversight` and `/bootstrap`) stands.
 - **No verify gate, no deploy gate.** No code change; nothing
   to verify or deploy.
-- **Atomic commit + push.** Otherwise the cloud loop can't
+- **Atomic commit + land.** Otherwise the cloud loop can't
   see the new finding.
 - **`source: user` on the row.** Never spoof for non-user
   entries.

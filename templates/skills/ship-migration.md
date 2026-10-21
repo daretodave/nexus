@@ -120,7 +120,7 @@ pnpm verify
 Typecheck + unit + build + the `db:test` leg (RLS tests) against
 the local DB.
 
-### Step 9 — Commit + push
+### Step 9 — Commit + land
 
 ```bash
 git add supabase/migrations/NNNN_<name>.sql supabase/tests/<name>.test.sql
@@ -128,7 +128,7 @@ git commit -m "migration: <name>
 
 <one-line summary of the schema change and its RLS policy>
 "
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 The push triggers the deploy provider's migration pipeline.
@@ -204,7 +204,7 @@ git pull --ff-only
 node scripts/lint-migration.mjs supabase/migrations/NNNN_<name>.sql
 pnpm db:migrate:test
 pnpm verify
-git add <explicit files> && git commit && git push origin <DEFAULT_BRANCH>
+git add <explicit files> && git commit   # then land per owner mode (next/land.md §6)
 ```
 
 ## See also

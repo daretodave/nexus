@@ -112,12 +112,12 @@ pnpm deploy:check   # or the project's verify gate equivalent
 Runs even for DB-only changes (no code touched) — confirms no
 regression, per moderation-loop.md hard rule 4.
 
-### Step 7 — Commit + push
+### Step 7 — Commit + land
 
 ```bash
 git add plan/MOD_AUDIT.md <queue file, if file-backed>
 git commit -m "mod: <action> <item-id> — <reason>"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 Commit body carries the audit row(s) added this tick.
@@ -168,7 +168,7 @@ plan/MOD_AUDIT.md                      # append-only audit trail
 # Commands
 git pull --ff-only
 pnpm deploy:check
-git add <explicit files> && git commit && git push origin <DEFAULT_BRANCH>
+git add <explicit files> && git commit   # then land per owner mode (next/land.md §6)
 ```
 
 ## See also

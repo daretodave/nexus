@@ -27,6 +27,6 @@ Procedure: §6 of `skills/expand.md`. Hard rules: §7. Failure
 modes: §8.
 
 When invoked under `/loop` or `/march`, the user is not present.
-After commit + push + deploy:check, return cleanly.
+After commit + land + deploy:check, return cleanly.
 
 Argument: $ARGUMENTS

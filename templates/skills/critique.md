@@ -184,7 +184,7 @@ After assessment, **3–6 findings**, not 8.
 
 Update metadata header.
 
-### Step 5 — Commit + push
+### Step 5 — Commit + land
 
 ```bash
 git add plan/CRITIQUE.md
@@ -196,7 +196,7 @@ Findings filed to plan/CRITIQUE.md Pending.
 Address loop: /iterate will pick the highest-scoring finding.
 EOF
 )"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 If **zero** findings (rare): still update metadata, commit
@@ -279,7 +279,7 @@ plan/bearings.md                     # voice, URL contract, Auth: field
 # Commands
 git pull --ff-only                   # Step 0
 pnpm deploy:check                    # green-deploy precondition
-git commit && git push               # single critique: <summary> commit
+git commit                           # single critique: <summary> commit; land per owner mode
 ```
 
 If the site sits behind a login wall, the reader needs an auth

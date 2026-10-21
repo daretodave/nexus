@@ -29,7 +29,7 @@ mechanically before every commit.
 Every new RLS policy ships with a test in the same chunk.
 
 When invoked under `/loop`, the user is not present. After
-commit + push, return cleanly — the loop never applies a
+commit + land, return cleanly — the loop never applies a
 migration to production directly.
 
 Argument: $ARGUMENTS

@@ -160,7 +160,7 @@ covered by verify automatically.
 If verify fails: read the log, patch (likely the wiring, not
 the asset), re-run. Up to 3 same-root-cause iterations.
 
-### Step 6 — Commit + push
+### Step 6 — Commit + land
 
 ```bash
 git add <asset path> <asset>.json <wiring file if any>
@@ -170,7 +170,7 @@ Brief: <one-line summary>
 Source: <source path>
 Provenance: <generated_by, source, commit-at-render>
 "
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 **Always commit the provenance JSON in the same commit** as
@@ -287,10 +287,10 @@ design/<template>.jsx       # render templates if present
 <public-asset-path>.json    # provenance sibling
 <wiring-file>               # opengraph-image.tsx, layout metadata, etc.
 
-# Validate + commit + push + deploy
+# Validate + commit + land + deploy
 pnpm verify
 git add <explicit files>
 git commit -m "asset: ..."
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 pnpm deploy:check
 ```

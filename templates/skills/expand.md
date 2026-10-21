@@ -232,7 +232,7 @@ yet.`, plus a row in `plan/README.md`. Run `node
 scripts/plan-check.mjs --since HEAD`. Document in the commit
 body that this was autonomous (not via oversight).
 
-### Step 5 — Commit + push
+### Step 5 — Commit + land
 
 ```bash
 git add plan/CANDIDATES.md
@@ -247,7 +247,7 @@ Source signals: <brief — audit / critique / triage / spec / design / data / co
 Posture: bold. Promotion gated by /oversight.
 EOF
 )"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 (If autonomous posture: subject is `expand: pass <N> — <K>
@@ -354,9 +354,9 @@ gh issue list --repo $GH_REPO --label "triage:loop-queued" --json number,title
 plan/CANDIDATES.md                      # bold posture
 plan/<NN>-<slug>.md + plan/README.md          # autonomous posture only
 
-# Commit + push + confirm
+# Commit + land + confirm
 git add <files>
 git commit -m "expand: pass <N> — ..."
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 pnpm deploy:check
 ```

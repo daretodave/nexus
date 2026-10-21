@@ -27,6 +27,6 @@ placement, naming — **resolve and ship**.
 Sub-agents: `brander` renders; the main agent wires and commits.
 
 When invoked under `/loop`, the user is not present. After
-commit + push + deploy:check, return cleanly.
+commit + land + deploy:check, return cleanly.
 
 Argument: $ARGUMENTS

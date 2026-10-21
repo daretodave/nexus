@@ -28,6 +28,6 @@ domain specialists for prose / schema work. Main agent's job is
 wiring + decisions.
 
 When invoked under `/loop` or `/march`, the user is not present.
-After commit + push + deploy:check, return cleanly.
+After commit + land + deploy:check, return cleanly.
 
 Argument: $ARGUMENTS

@@ -50,7 +50,7 @@ Examples:
 
 - **Never ask questions.** The user provided the input;
   decide the rest.
-- **Always commit and push.** Atomic. Otherwise the cloud loop
+- **Always commit and land.** Atomic. Otherwise the cloud loop
   can't see the new finding.
 - **Never run the verify gate.** No code change; nothing to
   verify.
@@ -119,12 +119,12 @@ Append to the **Pending** block of `plan/CRITIQUE.md`.
 If `plan/CRITIQUE.md` doesn't exist yet, create it with the
 standard header and a Pending block before appending.
 
-### Step 3 — Commit + push
+### Step 3 — Commit + land
 
 ```bash
 git add plan/CRITIQUE.md
 git commit -m "jot: <one-line observation summary, ≤ 70 chars>"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 Commit body: leave empty. The CRITIQUE.md row carries the
@@ -220,7 +220,7 @@ plan/CRITIQUE.md              # appends one row to Pending
 git pull --ff-only
 git add plan/CRITIQUE.md
 git commit -m "jot: ..."
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 
 # What it does NOT run
 pnpm verify                   # no code change

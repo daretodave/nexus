@@ -168,7 +168,7 @@ gh issue close "$NUM" --repo "$GH_REPO" --reason "not planned"
 - [ ] <action> (issue #<N> — <one-line context>)
 ```
 
-### Step 5 — Commit + push (if any backlog changes)
+### Step 5 — Commit + land (if any backlog changes)
 
 ```bash
 git add plan/AUDIT.md data/BACKLOG.md plan/README.md plan/[0-9]*-*.md
@@ -182,7 +182,7 @@ triage: <K> issues processed (<L> queued, <M> user-call, <N> closed)
 Labels applied. Comments posted on each.
 EOF
 )"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 If no file changes (all `triage:closed` or `triage:reviewed`),
@@ -285,6 +285,6 @@ gh label create "triage:..." --repo "$GH_REPO" --color "..." 2>/dev/null || true
 # Commit
 git add <files>
 git commit -m "triage: ..."
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 pnpm deploy:check
 ```

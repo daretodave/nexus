@@ -178,7 +178,7 @@ Pattern A:
 ```bash
 git add data/<entity>/<slug>.json [+ schema if changed]
 git commit -m "data: add <entity> <slug>"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 Pattern B (external DB):
@@ -193,7 +193,7 @@ git commit -m "data: schema <entity> + insert <slug>
 Record inserted to DB. Migration: <file>.
 DB ID: <id>.
 "
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 The actual record lives in the DB; the commit captures intent
@@ -208,7 +208,7 @@ git commit -m "data: synced <entity> <slug> to <provider>
 
 External ID: <id>.
 "
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 Pattern D: combine.
@@ -310,11 +310,11 @@ data/schemas/<entity>.schema.json
 data/<entity>/<slug>.json
 <schema-package>/src/schemas/<entity>.ts  # only if extending schema
 
-# Validate + commit + push + deploy
+# Validate + commit + land + deploy
 pnpm data:validate
 git add <explicit files>
 git commit -m "..."
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 pnpm deploy:check
 ```
 

@@ -291,7 +291,7 @@ outside the helper need to do it themselves.
 ```bash
 git add <explicit files>
 git commit -m "<category>: <subject>"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 ### Step 6 — Tick the audit
@@ -303,7 +303,7 @@ For external-critique findings, also move row Pending → Done in
 ```bash
 git add plan/AUDIT.md plan/CRITIQUE.md
 git commit -m "audit: finding [<id>] addressed"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 ### Step 7 — Confirm deploy
@@ -383,11 +383,11 @@ data/                                    # GitHub-as-DB
 Agent({ subagent_type: "<content-curator>", prompt: "..." })
 Agent({ subagent_type: "scout", prompt: "..." })
 
-# Verify + commit + push + deploy
+# Verify + commit + land + deploy
 pnpm verify
 git add <explicit files>
 git commit -m "<category>: <subject>"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 pnpm deploy:check
 
 # Issue mirror

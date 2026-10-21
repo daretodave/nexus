@@ -227,7 +227,7 @@ For each answer:
   plan edit, apply. If ambiguous, write to `plan/AUDIT.md` as
   `[needs-user-call]` and tell the user.
 
-### Step 6 — Commit + push
+### Step 6 — Commit + land
 
 ```bash
 git add <modified files>
@@ -240,7 +240,7 @@ User answers:
 - Q: <question> → <answer>
 EOF
 )"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 If only adjustment was "everything looks good" with no edits,
@@ -315,6 +315,6 @@ plan/<NN>-<slug>.md                # new specs, via /plan-a-spec
 
 # Commit
 git commit -m "oversight: <one-line>"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 pnpm deploy:check
 ```

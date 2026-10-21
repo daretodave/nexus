@@ -15,7 +15,7 @@ You delegate by reading the relevant skill file and following
 its procedure end-to-end. The march skill itself is the
 dispatcher.
 
-This command is **designed for `/loop`**. After commit + push +
+This command is **designed for `/loop`**. After commit + land +
 deploy:check, return cleanly.
 
 Argument: $ARGUMENTS

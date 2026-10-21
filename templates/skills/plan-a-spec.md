@@ -153,7 +153,7 @@ plan: chunk spec <NN> — <title>
 - Design export: <yes / pending>.
 EOF
 )"
-git push origin <DEFAULT_BRANCH>
+# land per owner mode: skills/next/land.md §6
 ```
 
 ### Step 7 — Done
@@ -212,5 +212,5 @@ plan/README.md                       # the row's N left; a new row for a new spe
 # Commands
 git pull --ff-only                   # Step 0
 node scripts/plan-check.mjs --since HEAD
-git commit && git push               # plan-only commit
+git commit                           # plan-only commit; land per owner mode
 ```
