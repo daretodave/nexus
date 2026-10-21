@@ -8,7 +8,7 @@
 // by a new hosted session on /reboot-resume <star>), POST /api/train
 // { action: pause|cancel|resume }. An action the server does not serve yet
 // says plainly that it is not wired up; nothing is invented.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   AppFrame, Topbar, Wordmark, TbSep, TbTitle, TbSpacer, InboxBtn, ViewHead, ChoiceButtons,
@@ -24,6 +24,23 @@ import { useToasts } from './fleet/toasts.js';
 
 const PLAY = 'M8 5.5v13l10-6.5z';
 const PAUSE = 'M9 6v12M15 6v12';
+
+// The train dock floats over the grid's foot (FleetTrain board). The board's view clips; the app's grid scrolls, so
+// while the dock is up the grid gets room under its last row to scroll clear of it.
+function useDockRoom(active) {
+  const ref = useRef(null);
+  const [room, setRoom] = useState(0);
+  useLayoutEffect(() => {
+    const dock = active ? ref.current?.querySelector('.train-dock') : null;
+    if (!dock) { setRoom(0); return undefined; }
+    const measure = () => setRoom(dock.offsetHeight + (parseFloat(getComputedStyle(dock).bottom) || 0));
+    measure();
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    ro?.observe(dock);
+    return () => ro?.disconnect();
+  }, [active]);
+  return [ref, room];
+}
 
 function useNow(ms = 30000) {
   const [now, setNow] = useState(() => Date.now());
@@ -68,6 +85,7 @@ export default function Fleet() {
   const c = counts(list);
   const shown = list.filter(FILTERS.find((f) => f.value === filter)?.test || (() => true));
   const train = trainOf(list, trainOn);
+  const [viewRef, dockRoom] = useDockRoom(train.active);
   const repos = [...new Set(list.map((s) => s.repo).filter(Boolean))];
   const where = (repos.length ? repos : [repo].filter(Boolean)).join(' and ');
 
@@ -132,7 +150,7 @@ export default function Fleet() {
 
   return (
     <AppFrame topbar={topbar} current="fleet">
-      <main className="view" aria-label="Fleet">
+      <main className="view" aria-label="Fleet" ref={viewRef}>
         <ViewHead style={{ alignItems: 'center' }}>
           <ChoiceButtons label="Show sessions" options={options} value={filter} onChange={setFilter} />
           <span className="view-sub" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -142,7 +160,7 @@ export default function Fleet() {
         {sessions.status === 'error' && !sessions.data ? (
           <Err title="Couldn't read the sessions" body="The tiles come back on their own once the server answers again." detail={sessions.error} actions={<button className="btn btn-s" type="button" onClick={sessions.reload}>Try again</button>} />
         ) : null}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', margin: '-8px -28px 0', padding: '8px 28px 24px' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', margin: '-8px -28px 0', padding: `8px 28px ${24 + dockRoom}px` }}>
           <div className="fleet-grid">
             {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} onResume={() => resume(s)} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
             {sessions.status !== 'loading' && filter === 'all' ? (
