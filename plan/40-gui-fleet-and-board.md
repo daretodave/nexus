@@ -66,8 +66,6 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 
 - **A5** The claims panel groups by person and session, and
   claims, releases, holds, assigns and requests.
-- **A6** Every session and the repo show their git state, and
-  the tidy dry run lists idle worktrees.
 - **A10** The GUI resumes a Workflow from its transcript
   folder.
 - **A12** The board's grip reorders chunks within a spec,
@@ -78,12 +76,10 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 (None.)
 
 ## Chunks
-Measure: 4 open · 8 closed · next A13
+Measure: 3 open · 9 closed · next A13
 
 - [ ] **40.5** The claims panel: group, hold, assign, request
   · M · closes A5 · needs —
-- [ ] **40.6** Git per session and the repo's worktree panel ·
-  M · closes A6 · needs —
 - [ ] **40.10** Recover from a Workflow transcript folder · M
   · closes A10 · needs —
 - [ ] **40.12** The board's grip reorders; Reassign picks a

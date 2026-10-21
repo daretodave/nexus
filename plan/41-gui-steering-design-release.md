@@ -99,4 +99,4 @@ Measure: 3 open · 6 closed · next A10
     estimates and phase marks, the tug's default deadline;
     CloudLoop counts "PRs opened" from `/api/cloud`.
 - [ ] **41.8** The fleet's last details: idle curves, orphan
-  link, switcher rule · S · closes A8 · needs 40.6
+  link, switcher rule · S · closes A8 · needs —
