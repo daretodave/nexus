@@ -82,7 +82,8 @@ the empty copy (locked in Design)
   when the spec's list is) and `~~~ section <Heading>` (text for
   the end of that `## ` section; a new one before
   `## Acceptance` when it's absent). At settle, in merge order
-  (date, then name), `A?<slug>` takes the Measure line's next
+  (date, then what adds before closes, then name),
+  `A?<slug>` takes the Measure line's next
   A-ID and `NN.?<slug>` the next chunk number past the spec and
   `ARCHIVE.md`, in this file, its `## Edit` texts (an Asap
   lane entry), notes and decisions; each part goes at the end

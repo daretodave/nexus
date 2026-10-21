@@ -6,7 +6,7 @@
 //
 // Each edit's old text is one whole chunk block, so it is found exactly once while that chunk is listed. A chunk a
 // pending file already closes is never moved and never an anchor: its close may settle first and take its line.
-// Moves are relative ("B after A"), so reorders applied in settle's order (date, then name) give what the board
+// Moves are relative ("B after A"), so reorders applied in settle's order (date, adds before closes, then name) give what the board
 // showed; the stamp in the name keeps that order, and keeps two branches' files apart.
 import fs from 'node:fs';
 import path from 'node:path';
