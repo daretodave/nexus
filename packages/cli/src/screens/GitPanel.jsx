@@ -12,8 +12,10 @@
 // Actions: POST /api/git/fetch, GET /api/git/tidy (the dry run: it lists, never removes) ->
 //   { worktrees: [{ branch, path, why }], branches: [..], remote: [..], keep, keepNote, holds }.
 // The tidy itself (POST /api/git/tidy) is not served: /tidy runs it in a terminal and asks first.
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+// A worktree no session holds (orphaned, or idle) opens /git?tidy=<branch>: the dry run, with
+// what it does to that branch (fleet/worktree-link.js).
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   AppFrame, Topbar, Wordmark, TbSep, TbTitle, TbSpacer, Icon, WtHead, Wt, Commit, CiPill,
   Empty, Err, ToastHost, cx, useShell,
@@ -23,6 +25,7 @@ import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
 import { act, hhmm, plural, prNum } from './fleet/util.js';
 import { useToasts } from './fleet/toasts.js';
+import { wtHref, tidyVerdict } from './fleet/worktree-link.js';
 
 // Ages and commit times may come as display strings ("2h 19m", "03:15") or as
 // timestamps; a timestamp is drawn the way the board writes it.
@@ -39,12 +42,6 @@ const when = (v) => (isStamp(v) ? hhmm(v) : v);
 
 const FLAG = { active: 'active', idle: 'idle', orphaned: 'orphan', orphan: 'orphan', fallen: 'fallen' };
 
-function wtHref(w) {
-  if (!w.sessionId) return undefined;
-  if (w.flag === 'fallen') return w.run ? `${PATHS.recover}?dir=${encodeURIComponent(w.run)}` : PATHS.recover;
-  return PATHS.cockpit(w.sessionId);
-}
-
 function syncText(main = {}) {
   if (main.behind) return `main ${main.behind} behind origin`;
   if (main.ahead) return `main ${main.ahead} ahead of origin`;
@@ -53,12 +50,13 @@ function syncText(main = {}) {
 
 const Codes = ({ list }) => list.map((b, i) => <span key={b}>{i ? ', ' : ''}<code>{b}</code></span>);
 
-function TidyPop({ plan, done, onRun, onClose, running }) {
+function TidyPop({ plan, done, onRun, onClose, running, focus }) {
   const missing = plan?.missing;
   const p = plan?.data || {};
   const wts = p.worktrees || [];
   const brs = p.branches || [];
   const nothing = !missing && plan?.data && !wts.length && !brs.length && !(p.remote || []).length && !p.prune;
+  const verdict = tidyVerdict(plan?.data, focus);
   return (
     <div className="tidy-pop" role="dialog" aria-label="Tidy, dry run">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -68,6 +66,9 @@ function TidyPop({ plan, done, onRun, onClose, running }) {
         {!plan ? <div className="tidy-item"><span className="spin" style={{ width: 14, height: 14 }} /><span>Working out what would go…</span></div> : null}
         {missing ? <div className="tidy-item"><Icon name="info" size={14} style={{ color: 'var(--text-3)' }} /><span><b>This repo has no dry run here.</b> {plan.note || ''} Run <code>/tidy dry</code> in a terminal to see it.</span></div> : null}
         {plan?.error ? <div className="tidy-item"><Icon name="x" size={14} style={{ color: 'var(--st-failed)' }} /><span><b>The dry run failed.</b> {plan.error}</span></div> : null}
+        {verdict ? (
+          <div className="tidy-item"><Icon name={verdict.go ? 'trash' : 'check'} size={14} style={{ color: verdict.go ? 'var(--st-blocked)' : 'var(--st-done)' }} /><span><b>{verdict.text}</b></span></div>
+        ) : null}
         {wts.length ? (
           <div className="tidy-item"><Icon name="trash" size={14} style={{ color: 'var(--st-blocked)' }} /><span><b>Would remove {plural(wts.length, 'worktree')}:</b> <Codes list={wts.map((w) => w.branch)} />.{wts.length === 1 && wts[0].why ? ` ${wts[0].why}` : ''}</span></div>
         ) : null}
@@ -100,6 +101,8 @@ export default function GitPanel() {
   const [done, setDone] = useState('');
   const [running, setRunning] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const focus = params.get('tidy');
 
   const d = git.status === 'ready' ? git.data || {} : null;
   const name = d?.repo || repo;
@@ -107,8 +110,16 @@ export default function GitPanel() {
   const prs = d?.prs || [];
   const tidyBranches = new Set((plan?.data?.worktrees || []).map((w) => w.branch));
 
-  async function openTidy() {
-    if (tidyOpen) { setTidyOpen(false); return; }
+  // A worktree's link (or a shared /git?tidy=<branch>) opens the dry run for that branch.
+  useEffect(() => { if (focus) openTidy(true); }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function closeTidy() {
+    setTidyOpen(false);
+    if (focus) setParams((p) => { const n = new URLSearchParams(p); n.delete('tidy'); return n; }, { replace: true });
+  }
+
+  async function openTidy(keep) {
+    if (tidyOpen && !keep) { closeTidy(); return; }
     setTidyOpen(true);
     setPlan(null);
     setDone('');
@@ -160,7 +171,7 @@ export default function GitPanel() {
           </div>
           <div className="view-acts">
             <button className="btn btn-ghost" type="button" onClick={fetchNow} disabled={fetching} aria-busy={fetching || undefined}><Icon name="refresh" size={14} />Fetch</button>
-            <button className="btn" type="button" onClick={openTidy} aria-expanded={tidyOpen ? 'true' : 'false'}><Icon name="trash" size={14} />Tidy (dry run)</button>
+            <button className="btn" type="button" onClick={() => openTidy()} aria-expanded={tidyOpen ? 'true' : 'false'}><Icon name="trash" size={14} />Tidy (dry run)</button>
           </div>
         </div>
         {git.status === 'loading' ? null : git.status === 'missing' ? (
@@ -225,7 +236,7 @@ export default function GitPanel() {
             </div>
           </div>
         )}
-        {tidyOpen ? <TidyPop plan={plan} done={done} running={running} onRun={runTidy} onClose={() => setTidyOpen(false)} /> : null}
+        {tidyOpen ? <TidyPop plan={plan} done={done} running={running} onRun={runTidy} onClose={closeTidy} focus={focus} /> : null}
       </main>
       <ToastHost toasts={toasts} />
     </AppFrame>

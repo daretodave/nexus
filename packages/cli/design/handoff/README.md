@@ -125,11 +125,14 @@ the reason (the 41.3 close carries the same list):
   GET /api/sessions exists).
 - **Inert or reduced interactions:** the Board's drag grip (no
   reorder action), Reassign (no target picker in the design), the
-  orphaned worktree's "open" link (no page for it), Recover's "Pick
-  a folder" (focuses the path field: a browser cannot return an
-  absolute path), and Recover's "Resume from here", offered on the
-  first unfinished step only (the Workflow tool resumes a run there,
-  replaying every finished agent; it has no "from step N").
+  orphaned worktree's "open" link (the board's `#rigel-3`: a
+  worktree no session holds opens `/git?tidy=<branch>`, the panel's
+  dry run saying whether /tidy would close it and why; closing it
+  stays /tidy's job), Recover's "Pick a folder" (focuses the path
+  field: a browser cannot return an absolute path), and Recover's
+  "Resume from here", offered on the first unfinished step only
+  (the Workflow tool resumes a run there, replaying every finished
+  agent; it has no "from step N").
 - **Fleet:** each star seats its agents as its board draws it
   (vega on the four quadrants, deneb on its own seats, altair's one
   helper up and left; a star no board draws working takes the
