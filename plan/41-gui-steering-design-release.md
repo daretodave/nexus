@@ -95,7 +95,7 @@ Measure: 4 open · 5 closed · next A10
     `--text` ink (the reset outranks it); the app draws
     on-accent ink (`repairCascade`). Default: keep the repair.
 - [ ] **41.7** Boards' times, durations, diffstats and marks
-  from real data · M · closes A7 · needs 40.1
+  from real data · M · closes A7 · needs —
   - The stream and ledger carry tool durations and
     diffstats, message times, the workflow junction, chunk
     estimates and phase marks, the tug's default deadline;

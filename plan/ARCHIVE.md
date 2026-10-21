@@ -91,3 +91,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 41.2 · the stage draws each tug's path, state and age · 0cdb2ebd..991b2aad
 - 2026-10-21 · 40.7 · Actions panel pauses, runs a pass, shows stalls, least privilege · 3c533099..40612240
 - 2026-10-21 · 40.8 · owner lines post through announce.mjs; explode draws theme cards · 6682ccf4..fa249fa5
+- 2026-10-21 · 40.1 · one server hosts many sessions; deep links; a second launch reuses it · 6c992c1b..d3330711

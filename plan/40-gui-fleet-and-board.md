@@ -64,8 +64,6 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 
 ## Acceptance
 
-- **A1** One server hosts N sessions with their own channels
-  and deep links; a second launch reuses it.
 - **A2** The fleet home shows every session (GUI and terminal)
   by star name, and a fallen one resumes from its tile.
 - **A4** Chunks without a description show a cached, marked
@@ -87,22 +85,20 @@ and actions; `scripts/ledger.mjs`, `announce.mjs`,
 (None.)
 
 ## Chunks
-Measure: 8 open · 4 closed · next A13
+Measure: 7 open · 5 closed · next A13
 
-- [ ] **40.1** One server, many sessions, deep links, a reused
-  launch · M · closes A1 · needs —
 - [ ] **40.2** The fleet home: star tiles, merged inbox,
-  Resume · M · closes A2 · needs 40.1
+  Resume · M · closes A2 · needs —
 - [ ] **40.4** Cached AI one-liners for undescribed chunks ·
   S · closes A4 · needs —
 - [ ] **40.5** The claims panel: group, hold, assign, request
-  · M · closes A5 · needs 40.1
+  · M · closes A5 · needs —
 - [ ] **40.6** Git per session and the repo's worktree panel ·
-  M · closes A6 · needs 40.1
+  M · closes A6 · needs —
 - [ ] **40.10** Recover from a Workflow transcript folder · M
-  · closes A10 · needs 40.1
+  · closes A10 · needs —
 - [ ] **40.11** `/api/local`: run mode and owner mode, one
-  writer · S · closes A11 · needs 40.1
+  writer · S · closes A11 · needs —
   - Settings reads run mode through `/api/prefs` today and the
     cockpit's run-mode menu writes prefs directly; both move
     to `ui/run-mode.js` over `/api/local`.
