@@ -84,11 +84,13 @@ the empty copy (locked in Design)
   `## Acceptance` when it's absent). At settle, in merge order
   (date, then name), `A?<slug>` takes the Measure line's next
   A-ID and `NN.?<slug>` the next chunk number past the spec and
-  `ARCHIVE.md`, in this file and in its `## Edit` texts (an
-  Asap lane entry); each part goes at the end of its section,
-  and the Measure line and the roadmap's `N left` count again.
-  A placeholder no Add defines is refused. `## Edit` of a spec
-  is for rewriting its existing text only.
+  `ARCHIVE.md`, in this file, its `## Edit` texts (an Asap
+  lane entry), notes and decisions; each part goes at the end
+  of its section, and the Measure line and the roadmap's
+  `N left` count again. A placeholder no Add defines is
+  refused, and so is a line outside the parts or a `#` or `##`
+  heading inside one. `## Edit` of a spec is for rewriting its
+  existing text only.
 - Two limits: a rewrite still quotes its old text, so two
   branches rewriting one paragraph still collide; and a new
   chunk can't `needs` a chunk still in another open pull

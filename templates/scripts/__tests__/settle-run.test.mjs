@@ -275,4 +275,20 @@ describe('a settle run over several ## Add files at once', () => {
     assert.equal(r.git('status', '--porcelain'), '');
     assert.equal(r.git('log', '-1', '--format=%s'), 'plan: settle plot-a, plot-b, plot-c');
   });
+
+  it("writes the numbers into the file's own notes and decisions", () => {
+    const r = repo();
+    r.put('.owner', '');
+    r.put('plan/notes.md', '# Notes\n\n## Inbox\n\n');
+    r.git('rm', '-q', 'plan/pending/07.3.md');
+    const add = ['---', 'date: 2000-10-21', '---', '## Add plan/07-search.md', '~~~ chunks', '- [ ] **07.?d** D · S · needs —', '~~~', '## Notes', '- 07.?d waits on the vendor.', '## Decisions', '- **D?vendor** · 2000-10-21 · 07.?d uses the vendor.', ''];
+    r.put('plan/pending/plot-d.md', add.join('\n'));
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: plot d');
+    const res = r.run();
+    assert.equal(res.code, 0, res.out);
+    assert.match(r.read('plan/notes.md'), /^- 07\.6 waits on the vendor\.$/m);
+    assert.match(r.read('identity/decisions/2000.md'), /^- \*\*D5\*\* · 2000-10-21 · 07\.6 uses the vendor\.$/m);
+    assert.doesNotMatch(r.read('plan/07-search.md'), /\?d/);
+  });
 });

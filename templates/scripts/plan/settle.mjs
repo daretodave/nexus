@@ -1031,6 +1031,10 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
       // rewrites a line (a later chunk's `needs`, the measure) never moves an edit's anchor out from under it.
       const numbered = applyPlanChanges(p, r, w);
       notes.push(...[...numbered].map(([k, v]) => `${k} is ${v}`));
+      // The numbers go into the file's own notes and decisions too (a decision naming the chunk it set up).
+      const given = (t) => t.replace(PLACEHOLDER, (k) => numbered.get(k) ?? k);
+      p.notes = p.notes.map(given);
+      p.decisions = p.decisions.map(given);
       if (p.close) {
         const specFile = specOf(p.close);
         const archive = r('plan/ARCHIVE.md') ?? '';

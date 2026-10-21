@@ -125,7 +125,8 @@ export function parsePending(raw, name, cfg = DEFAULTS) {
     }
   }
   const slugs = new Set(adds.flatMap((a) => [...a.acceptance, ...a.chunks].map(slugOf)));
-  for (const ref of new Set([...JSON.stringify({ edits, adds }).matchAll(PLACEHOLDER)].map((m) => m[0]))) {
+  // Settle fills the numbers into the file's notes and decisions too, so a placeholder there must be defined as well.
+  for (const ref of new Set([...JSON.stringify({ edits, adds, notes, decisions }).matchAll(PLACEHOLDER)].map((m) => m[0]))) {
     if (!slugs.has(ref)) throw new Error(`${name}: ${ref} is used but no "## Add" part defines it`);
   }
   if (!meta.close && !edits.length && !adds.length && !decisions.length && !newFootguns.length && !footguns.length && !notes.length) throw new Error(`${name}: nothing to settle`);
@@ -151,7 +152,13 @@ function parseAdd(file, body, name, earlier, cfg) {
   const parts = [...body.matchAll(ADD_PART)];
   if (!parts.length) throw new Error(`${name}: "## Add ${file}" holds no ~~~ acceptance / chunks / questions / section part`);
   const where = `"## Add ${file}"`;
+  // Anything outside the parts (a misspelt fence, `~~~ chunk`, or a line under none) would be dropped without a word.
+  const stray = parts.reduce((rest, p) => rest.replace(p[0], ''), body).split('\n').find((l) => l.trim());
+  if (stray !== undefined) throw new Error(`${name}: "## Add ${file}": only ~~~ acceptance / chunks / questions / section <Heading> parts go here; read "${stray}"`);
   for (const [, kind, text] of parts) {
+    // A heading in a part would open a section of its own in the spec (a second ## Chunks, say): `### ` and below only.
+    const heading = text.split('\n').find((l) => /^#{1,2} /.test(l));
+    if (heading) throw new Error(`${name}: "## Add ${file}": a part holds no # or ## heading (### and below only); read "${heading}"`);
     if (kind === 'acceptance') add.acceptance.push(...entries(text, /^- \*\*A\?[a-z0-9-]+\*\* \S/, `${name}: ${where}: an acceptance entry starts "- **A?<slug>** "`, DEEP));
     else if (kind === 'chunks') add.chunks.push(...entries(text, new RegExp(`^- \\[ \\] \\*\\*${spec}\\.\\?[a-z0-9-]+\\*\\* \\S`), `${name}: ${where}: a chunk starts "- [ ] **${spec}.?<slug>** "`, DEEP));
     else if (kind === 'questions') add.questions.push(...entries(text, /^- \S/, `${name}: ${where}: a question starts "- "`, DEEP));

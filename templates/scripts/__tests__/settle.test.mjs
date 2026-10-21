@@ -287,7 +287,7 @@ describe('## Add: new work for a spec, numbered at settle', () => {
     '',
     '- **A17** The offline index.',
     '- **A18** Search by voice',
-    '  on a phone.',
+    '  in the browser.',
     '',
     '## Open questions',
     '',
@@ -344,7 +344,7 @@ describe('## Add: new work for a spec, numbered at settle', () => {
     assert.match(spec, /^Measure: 15 open · 16 closed · next A32$/m);
     assert.doesNotMatch(spec, /\?bug/);
     // The acceptance entries follow A18's wrapped line, in order, before Open questions.
-    assert.ok(spec.includes('  on a phone.\n- **A19** Bug 1 works.\n- **A20** Bug 2'));
+    assert.ok(spec.includes('  in the browser.\n- **A19** Bug 1 works.\n- **A20** Bug 2'));
     assert.ok(spec.indexOf('**A31**') < spec.indexOf('## Open questions'));
     // The chunks follow 07.8's sub-bullet, each with its own lines at their depth.
     assert.ok(spec.includes('  - Every browser.\n- [ ] **07.10** Bug 1 · S · closes A19 · needs —\n  - Retest it.\n    A wrapped line'));
@@ -403,6 +403,18 @@ describe('## Add: new work for a spec, numbered at settle', () => {
     assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ acceptance\n- **A?x** One\n- **A?x** Two\n~~~\n`, 'c.md'), /defines A\?x twice/);
     assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ chunks\n~~~\n`, 'd.md'), /adds nothing/);
     assert.throws(() => parsePending(`${head}## Add plan/README.md\n~~~ questions\n- Q\n~~~\n`, 'e.md'), /an Add names a spec/);
+    // A placeholder in the file's notes or decisions gets its number too, so it must be defined there as well.
+    assert.throws(() => parsePending(`${head}## Add plan/07-search.md\n~~~ questions\n- Q\n~~~\n## Notes\n- see 07.?gone\n`, 'f.md'), /07\.\?gone is used but no "## Add" part defines it/);
+  });
+
+  it('refuses what an Add would drop or misplace: a misspelt part, a stray line, a heading inside a part', () => {
+    const head = '---\ndate: 2026-10-21\n---\n## Add plan/07-search.md\n';
+    const ok = '~~~ chunks\n- [ ] **07.?b** B · S\n~~~\n';
+    assert.throws(() => parsePending(`${head}~~~ chunk\n- [ ] **07.?a** A · S\n~~~\n${ok}`, 'a.md'), /only ~~~ acceptance \/ chunks \/ questions \/ section <Heading> parts go here; read "~~~ chunk"/);
+    assert.throws(() => parsePending(`${head}${ok}- [ ] **07.?c** Outside any part · S\n`, 'b.md'), /parts go here; read "- \[ \] \*\*07\.\?c\*\*/);
+    assert.throws(() => parsePending(`${head}~~~ section Findings\nfoo\n## Chunks\nbar\n~~~\n`, 'c.md'), /a part holds no # or ## heading \(### and below only\); read "## Chunks"/);
+    const deep = parsePending(`${head}\n~~~ section Findings\n### Root cause\nThe clock.\n~~~\n\n${ok}`, 'd.md');
+    assert.equal(deep.adds[0].sections[0].text, '### Root cause\nThe clock.');
   });
 
   it('refuses a spec with no Measure line before writing anything', () => {
