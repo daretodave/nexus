@@ -11,6 +11,7 @@ export const PATHS = {
   settings: '/settings',
   recover: '/recover',
   git: '/git',
+  vault: '/vault',
 };
 
 const LAST = 'nexus-last-session';

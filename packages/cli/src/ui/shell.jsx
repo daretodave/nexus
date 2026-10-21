@@ -2,12 +2,13 @@
 // .tb-*), .shell, .rail, .view, .panes (.pane-left/.pane-right), .convo +
 // .msg, .dock, .ctx layers, .lp, the onboarding frame (.ob + .aurora-field)
 // and the heads-down frame (.tui-wrap).
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useLayoutEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from './icons.jsx';
 import { Orb } from './agent.jsx';
 import { cx } from './controls.jsx';
 import { PATHS, lastSession } from '../routes.js';
+import { trayY, vaultRail } from './shell-rules.js';
 
 /** What every frame shows from live data: the inbox badge, owner mode, the loop line. */
 export const ShellContext = createContext({ inbox: 0, owner: false, repo: '' });
@@ -38,6 +39,7 @@ const RAIL = [
   { id: 'board', label: 'Plan', icon: 'list', cockpitIcon: 'list2' },
   { id: 'cloud', label: 'Cloud', icon: 'cloud', cockpitIcon: 'cloud2' },
   { id: 'git', label: 'Git', icon: 'git', cockpitIcon: 'branch' },
+  { id: 'vault', label: 'Vault', icon: 'key', cockpitIcon: 'key', vault: true },
   null,
   { id: 'settings', label: 'Settings', icon: 'sliders', cockpitIcon: 'sliders2' },
 ];
@@ -52,10 +54,11 @@ function railHref(id) {
 export function Rail({ current, badge, variant }) {
   const shell = useShell();
   const n = badge ?? shell.inbox;
+  const vault = vaultRail(shell.owner);
   return (
     <nav className="rail" aria-label="Views">
       {RAIL.map((r, i) => (r === null ? <span className="rail-spacer" key={`sp${i}`} /> : (
-        <Link key={r.id} className={cx('rail-item', current === r.id && 'is-current')} to={railHref(r.id)} aria-current={current === r.id ? 'page' : undefined}>
+        <Link key={r.id} className={cx('rail-item', r.vault && vault.quiet && 'is-quiet', current === r.id && 'is-current')} to={railHref(r.id)} title={r.vault ? vault.tip : undefined} aria-current={current === r.id ? 'page' : undefined}>
           <Icon name={variant === 'cockpit' ? r.cockpitIcon : r.icon} /><span>{r.label}</span>
           {r.badge && n > 0 ? <span className="rail-badge">{n}</span> : null}
         </Link>
@@ -111,9 +114,28 @@ export function ViewTitle({ title, sub }) {
   return <div className="view-title">{title}{sub ? <span className="view-sub">{sub}</span> : null}</div>;
 }
 
-/** .panes: the cockpit's two halves. hasRoute moves the tray tether up with a routed composer. */
+/** .panes: the cockpit's two halves. hasRoute moves the tray tether up with a routed composer; --tray-y follows the tray. */
 export function Panes({ hasRoute, children }) {
-  return <div className={cx('panes', hasRoute && 'has-route')}>{children}</div>;
+  const ref = useRef(null);
+  const measure = () => {
+    const el = ref.current;
+    if (!el) return;
+    const y = trayY(el.querySelector('.pane-left'), el.querySelector('.pane-left .dock > .tray'));
+    if (y == null) el.style.removeProperty('--tray-y');
+    else if (el.style.getPropertyValue('--tray-y') !== `${y}px`) el.style.setProperty('--tray-y', `${y}px`);
+  };
+  // Every render (typing grows the composer), and on any resize of the panes or the dock.
+  useLayoutEffect(measure);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    const dock = el.querySelector('.pane-left .dock');
+    if (dock) ro.observe(dock);
+    return () => ro.disconnect();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return <div ref={ref} className={cx('panes', hasRoute && 'has-route')}>{children}</div>;
 }
 
 export function PaneLeft({ children, label = 'Conversation and context', tether }) {
