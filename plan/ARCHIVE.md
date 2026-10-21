@@ -70,3 +70,5 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 35.3 · loop-issue spec-open/spec-close; ship-a-chunk mirrors specs · 7c514a9a..93e24315
 - 2026-10-21 · 37.2 · claims session tags carry the star name · 0db3ec1b..8e90d882
 - 2026-10-21 · 32.1 · heartbeat alarms on unarmed workflows; check_cadence per workflow · b6acc842..b6acc842
+- 2026-10-21 · 32.2 · loop-shapes and CLOUD_LOOP describe the heartbeat checks · fe136587..fe136587
+- 2026-10-21 · 32 · spec complete: the heartbeat alarms once per unarmed scheduled workflow (never re-enables one) and checks cadence per workflow, march 14h and night 48h · b6acc840..fe136580
