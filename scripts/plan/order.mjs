@@ -8,7 +8,8 @@
 // running estimate from their sizes (S 1 h, M 2.5 h, L 5 h). What can't be reached (a need nothing will close, a held
 // spec) is listed after, with why. A pending close counts as closed; reading the working tree, a pending file's
 // `## Edit` of the roadmap or a spec counts as applied (the settled view, as plan-check reads it), so a plot's own rows
-// and chunks show before they settle.
+// and chunks show before they settle. Each chunk in `--json` carries the parsed line (plan-check's parseChunk), so its
+// `secrets` (the names it needs, never values; [] when none) ride along for /next and the GUI.
 //
 //   node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--json]
 //

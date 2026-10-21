@@ -216,7 +216,10 @@ When the project decides to adopt a new service:
    you go. The runbook is the audit trail.
 5. **Wire env vars to `.env.example`.** Every env var the
    runbook produces lands in `.env.example` with a comment
-   pointing back to the runbook section that emits it.
+   pointing back to the runbook section that emits it. Once
+   the repo keeps a `nexus.secrets.json`, each secret gets an
+   entry there too, by name only
+   ([`secrets.md`](./secrets.md)).
 6. **Propagate to deploy environments.** Section H of the
    runbook covers Production, Preview, Development. Walk
    each.

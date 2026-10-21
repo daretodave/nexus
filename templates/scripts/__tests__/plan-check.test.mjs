@@ -230,3 +230,43 @@ test('a contributor\'s unsettled plot passes: the roadmap is read with its pendi
     assert.doesNotMatch(runCheck({ repoAbs: dir, dirRel: 'other/plan' }).failures.join('\n'), /plot-maps/)
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })
+
+// A chunk's `secrets` field names the secrets it needs (never a
+// value); nexus.secrets.json, beside plan/, must declare each one.
+test('parseChunk reads a secrets field, comma or space separated, and refuses a name that is not an env var', () => {
+  assert.deepEqual(parseChunk('- [ ] **07.2** Deploy · S · closes A1 · needs — · secrets VERCEL_TOKEN, CF_API_TOKEN GH_TOKEN').secrets, ['VERCEL_TOKEN', 'CF_API_TOKEN', 'GH_TOKEN'])
+  assert.deepEqual(parseChunk('- [ ] **07.2** x · S · closes A1 · needs —').secrets, [])
+  assert.deepEqual(parseChunk('- [ ] **07.2** x · S · closes A1 · needs — · secrets —').secrets, [])
+  assert.match(parseChunk('- [ ] **07.2** x · S · closes A1 · needs — · secrets vercel-token').error, /vercel-token.*not an env-var name/)
+})
+
+test('checkPlan refuses a secret the manifest does not declare, and any secret with no manifest', () => {
+  const s = spec(GOOD.replace('closes A3 · needs 07.2', 'closes A3 · needs 07.2 · secrets VERCEL_TOKEN'))
+  assert.deepEqual(s.chunks[1].secrets, ['VERCEL_TOKEN'])
+  assert.deepEqual(checkPlan({ specs: [s], readme: README, archive: null }), [], 'no manifest argument: not checked')
+  assert.deepEqual(checkPlan({ specs: [s], readme: README, archive: null, manifest: new Set(['VERCEL_TOKEN']) }), [])
+  assert.match(checkPlan({ specs: [s], readme: README, archive: null, manifest: new Set(['GH_TOKEN']) }).join('\n'), /07\.3 needs secret VERCEL_TOKEN, which nexus\.secrets\.json does not declare/)
+  assert.match(checkPlan({ specs: [s], readme: README, archive: null, manifest: null }).join('\n'), /07\.3 needs secret VERCEL_TOKEN, but there is no nexus\.secrets\.json/)
+  assert.deepEqual(checkPlan({ specs: [spec(GOOD)], readme: README, archive: null, manifest: null }), [], 'no secrets field: no manifest needed')
+})
+
+test('runCheck reads nexus.secrets.json beside plan/, and reports a manifest that breaks its shape', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-secrets-'))
+  const put = (rel, text) => { fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); fs.writeFileSync(path.join(dir, rel), text) }
+  const entry = { name: 'VERCEL_TOKEN', for: 'Deploys the site.', where: 'https://vercel.com/account/tokens', destinations: ['local', 'github-actions'], provider: 'owner', chunk: '07.3' }
+  try {
+    put('plan/07-search.md', `# 07 — Search\n\n${GOOD.replace('needs 07.2', 'needs 07.2 · secrets VERCEL_TOKEN')}`)
+    put('plan/README.md', `${README}\n`)
+    assert.match(runCheck({ repoAbs: dir }).failures.join('\n'), /no nexus\.secrets\.json/)
+    put('nexus.secrets.json', JSON.stringify({ version: 1, secrets: [entry] }))
+    assert.deepEqual(runCheck({ repoAbs: dir }).failures, [])
+    put('nexus.secrets.json', JSON.stringify({ version: 1, secrets: [{ ...entry, name: 'CF_API_TOKEN' }] }))
+    assert.match(runCheck({ repoAbs: dir }).failures.join('\n'), /VERCEL_TOKEN, which nexus\.secrets\.json does not declare/)
+    put('nexus.secrets.json', JSON.stringify({ version: 1, secrets: [{ ...entry, value: 'fake-not-a-secret' }] }))
+    const red = runCheck({ repoAbs: dir }).failures.join('\n')
+    assert.match(red, /nexus\.secrets\.json: VERCEL_TOKEN: a manifest never holds a value/)
+    assert.doesNotMatch(red, /fake-not-a-secret/)
+    put('nexus.secrets.json', '{ not json')
+    assert.match(runCheck({ repoAbs: dir }).failures.join('\n'), /nexus\.secrets\.json: not JSON/)
+  } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})

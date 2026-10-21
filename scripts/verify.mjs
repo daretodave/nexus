@@ -574,6 +574,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/loop-issue.test.mjs',
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
   'templates/scripts/__tests__/bootstrap.test.mjs',
+  'templates/scripts/__tests__/secrets.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
 ]
@@ -595,7 +596,7 @@ const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
   'plan/progress.mjs', 'plan/order.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
-  'upgrade-plan.mjs',
+  'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs',
 ]
 // The steer hook runs in nexus's own sessions from .claude/hooks/, byte for byte the one adopters copy.
 const HOOK_TWINS = ['steer.mjs']
@@ -622,6 +623,12 @@ async function legScripts() {
     if (!fs.existsSync(path.join(ROOT, f))) failures.push(`${f}: missing (the identity layer's footgun list)`)
     else failures.push(...lintFootguns(read(f), f))
   }
+  // The secrets manifest adopters copy keeps the shape plan-check
+  // enforces (nexus's own nexus.secrets.json is checked by the chunks leg).
+  const { readManifest } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/secrets-manifest.mjs')).href)
+  const kitManifest = readManifest(path.join(ROOT, 'templates/env/nexus.secrets.json'))
+  if (!kitManifest) failures.push('templates/env/nexus.secrets.json: missing (the secrets manifest template)')
+  else failures.push(...kitManifest.problems.map((p) => `templates/env/nexus.secrets.json: ${p}`))
   // The guard hook (nexus's own and the template) is a gate too: its
   // self-test runs every rule against canned commands.
   for (const g of ['.claude/hooks/guard.mjs', 'templates/claude/hooks/guard.mjs']) {

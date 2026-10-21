@@ -14,7 +14,8 @@
     "order": "node scripts/plan/order.mjs",
     "announce": "node scripts/announce.mjs",
     "ledger": "node scripts/ledger.mjs",
-    "worktree": "node scripts/worktree.mjs"
+    "worktree": "node scripts/worktree.mjs",
+    "secrets": "node scripts/secrets.mjs"
   },
   "engines": {
     "node": ">=20"

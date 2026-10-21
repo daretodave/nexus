@@ -204,6 +204,9 @@ verbs — a docs kit ships docs, not pages.
   Publishing (OIDC, provenance automatic) on a `cli-v*` tag.
   Never add an `NPM_TOKEN`.
 - No other secrets. The kit's gate is hermetic and offline.
+- The names live in `nexus.secrets.json` (`GH_TOKEN`,
+  `ACTIONS_PAT`; the loop's sign-in is not a project secret),
+  values never (`customization/secrets.md`).
 
 ## Where to look
 

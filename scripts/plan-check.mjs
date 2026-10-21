@@ -17,6 +17,10 @@
 //   - every A-ID a chunk names exists, and once a spec is chunked
 //     every A-ID is covered by some chunk
 //   - every `needs` names a chunk (or a whole spec) still in the plan
+//   - a chunk's optional `secrets` field (`· secrets VERCEL_TOKEN,
+//     CF_API_TOKEN`: names, never values) names only secrets that
+//     nexus.secrets.json (beside plan/) declares, and that manifest
+//     keeps its shape (scripts/plan/secrets-manifest.mjs)
 //   - a spec with nothing left is flagged: absorb it and delete it
 //   - plan/README.md links every spec, links no spec that is gone,
 //     its `N left` counts match, and its Asap/Held lanes name only
@@ -52,6 +56,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PENDING_DIR } from './plan/pending.mjs'
 import { settledView } from './plan/settled.mjs'
+import { MANIFEST, NAME as SECRET_NAME, readManifest } from './plan/secrets-manifest.mjs'
 
 export const SPEC_FILE = /^(\d{2,})-[a-z0-9][a-z0-9-]*\.md$/
 const MEASURE = /^Measure: (\d+) open · (\d+) closed · next A(\d+)\s*$/
@@ -98,7 +103,7 @@ export function parseChunk(text) {
   if (!m) return { error: 'not a chunk line' }
   if (m[1] === 'x') return { id: m[2], error: 'ticked chunk: a finished chunk leaves the spec (archive line instead)' }
   const fields = m[3].split(' · ')
-  const chunk = { id: m[2], title: fields[0], size: null, closes: [], partial: [], needs: null }
+  const chunk = { id: m[2], title: fields[0], size: null, closes: [], partial: [], needs: null, secrets: [] }
   for (const f of fields.slice(1)) {
     if (/^(S|M|L)$/.test(f)) chunk.size = f
     else if (f.startsWith('closes ')) chunk.closes.push(...idList(f.slice(7)))
@@ -106,11 +111,18 @@ export function parseChunk(text) {
     else if (f.startsWith('needs ')) {
       const v = f.slice(6).trim()
       chunk.needs = v === '—' || v === '-' ? [] : idList(v)
+    } else if (f.startsWith('secrets ')) {
+      // Secret names, comma or space separated (`—` for none): the
+      // manifest says what each is for and where it goes.
+      const v = f.slice(8).trim()
+      if (v !== '—' && v !== '-') chunk.secrets.push(...v.split(/[\s,]+/).filter(Boolean))
     }
   }
   if (!chunk.size) return { ...chunk, error: 'no size (S, M or L)' }
   if (chunk.closes.length + chunk.partial.length === 0) return { ...chunk, error: 'closes or partials no A-ID' }
   if (chunk.needs === null) return { ...chunk, error: 'no `needs` field (write `needs —` when there are none)' }
+  const bad = chunk.secrets.filter((n) => !SECRET_NAME.test(n))
+  if (bad.length) return { ...chunk, error: `secrets names ${bad.join(', ')}, which is not an env-var name (A-Z, 0-9 and _)` }
   return chunk
 }
 
@@ -142,7 +154,9 @@ export function parseSpec(file, text) {
   return spec
 }
 
-export function checkPlan({ specs, readme, archive }) {
+// `manifest`: the names nexus.secrets.json declares (a Set), null when
+// there is no manifest, or left out to skip the secrets check.
+export function checkPlan({ specs, readme, archive, manifest }) {
   const failures = []
   const chunkIds = new Map()
   for (const s of specs) for (const c of s.chunks) {
@@ -182,6 +196,10 @@ export function checkPlan({ specs, readme, archive }) {
     }
     if (s.chunks.length > 0) for (const a of s.acceptance) {
       if (!covered.has(a.id)) failures.push(`${s.file}:${a.n}: ${a.id} is closed or partialed by no chunk`)
+    }
+    if (manifest !== undefined) for (const c of s.chunks) for (const name of c.secrets || []) {
+      if (manifest === null) failures.push(`${s.file}:${c.n}: chunk ${c.id} needs secret ${name}, but there is no ${MANIFEST} (declare it there: node scripts/secrets.mjs import)`)
+      else if (!manifest.has(name)) failures.push(`${s.file}:${c.n}: chunk ${c.id} needs secret ${name}, which ${MANIFEST} does not declare`)
     }
   }
   if (specs.length > 0 && readme === null) failures.push('plan/README.md missing: the roadmap must list every spec')
@@ -318,7 +336,11 @@ export function runCheck({ repoAbs, dirRel = 'plan', since = null }) {
   const settled = path.posix.normalize(label) === path.posix.dirname(PENDING_DIR)
   const view = settled ? settledView(repoAbs, { only: (p) => p.startsWith(`${label}/`) }) : null
   const now = loadPlanDir(path.join(repoAbs, dirRel), label, view && ((f) => view.read(`${label}/${f}`)))
-  const failures = [...(view ? view.problems : []), ...checkPlan(now)]
+  // The secrets manifest sits beside the plan folder (the repo root
+  // for plan/): its shape problems are gate failures too.
+  const manifestRel = path.posix.join(path.posix.dirname(label), MANIFEST)
+  const read = readManifest(path.join(repoAbs, manifestRel))
+  const failures = [...(view ? view.problems : []), ...(read ? read.problems.map((p) => `${manifestRel}: ${p}`) : []), ...checkPlan({ ...now, manifest: read ? read.names : null })]
   if (since) {
     try { failures.push(...checkHistory(loadPlanAtRef(repoAbs, since, label), now.specs, now.archive, now.pendingIds)) } catch (err) { failures.push(err.message) }
   }

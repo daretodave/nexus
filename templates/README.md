@@ -111,6 +111,8 @@ templates/
 │   ├── plan/footguns.mjs              (the footgun list's format and budget lint)
 │   ├── plan/progress.mjs              (ASCII progress per spec: the bar, closed struck, <--- [here], ETAs from sizes; --json for a GUI)
 │   ├── plan/order.mjs                 (the plan in /next's pick order, simulated: /plot's before and after, the GUI's next up)
+│   ├── plan/secrets-manifest.mjs      (nexus.secrets.json's shape and the .env.example import; plan-check imports it)
+│   ├── secrets.mjs                    (secrets by name: import names from .env.example, list, check; never prints a value)
 │   ├── claims-codec.mjs               (the claims rules as pure functions: any claimant imports them)
 │   ├── claims.mjs                     (who builds what: the orphan claims branch, compare-and-swap; --json)
 │   ├── claims-board.mjs               (the claims board: draws the table, creates or edits its one issue; claims-board.yml runs it)
@@ -142,12 +144,14 @@ templates/
 │   ├── __tests__/upgrade-plan.test.mjs  (the v1 to v2 converter, pure)
 │   ├── __tests__/upgrade-plan-run.test.mjs  (the converter over git: dry run writes nothing, --write passes plan-check; slower, offline)
 │   ├── __tests__/plot-run.test.mjs    (a plot unsettled and settled: settle, plan-check and order agree; slower, offline)
+│   ├── __tests__/secrets.test.mjs     (the secrets manifest: its shape, the import, the CLI; names only, pure)
 │   ├── __tests__/bootstrap.test.mjs   (bootstrap's cloud-loop plan: the loop mode, the PR-mode files, the placeholders; pure)
 │   ├── __tests__/worktree.test.mjs    (worktree close and list in scratch repos; slower, offline)
 │   ├── __tests__/push-policy-hook.test.mjs  (the pre-push hook end to end in a scratch git repo; slower, offline)
 │   └── __tests__/claims.test.mjs      (claims over git in scratch repos; slower, offline)
 ├── env/
-│   └── env.example                    → repo's .env.example
+│   ├── env.example                    → repo's .env.example
+│   └── nexus.secrets.json             → repo root (secrets by name, never a value; nexus/customization/secrets.md)
 └── workspace/                          → workspace ROOT, not any repo (adopt-by-need; see below)
     ├── CLAUDE.md                       (agent-facing root pointer)
     ├── AGENTS.md                       (same content, non-Claude-Code agents)

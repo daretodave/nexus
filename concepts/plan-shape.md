@@ -90,6 +90,7 @@ always holds, and the gate checks it.
 | size | `S` (about an hour), `M` (a few hours), `L` (one full session at most). Bigger → split into vertical slices that each ship something runnable and tested. |
 | `closes` / `partial` | The A-IDs it finishes or advances. Splitting a chunk divides its IDs among the children. Once a spec is chunked, every A-ID is covered by some chunk. |
 | `needs` | Exact chunk ids (or a whole spec's number) that must be done first, or `—`. A need is done when its line is gone from every spec. |
+| `secrets` | Optional, after `needs`: the secrets the chunk needs, by name only (`· secrets VERCEL_TOKEN, CF_API_TOKEN`, comma or space separated). Each must be declared in `nexus.secrets.json` ([`customization/secrets.md`](../customization/secrets.md)). |
 | sub-bullets | Only real requirements carried from work already done. Not history, not a diary. |
 
 A spec that is written but not yet chunked says `Not chunked
@@ -180,7 +181,9 @@ verify composition) makes the shape mechanical:
   `Measure:` line;
 - every chunk line parses, belongs to its spec, and names only
   A-IDs the spec lists; every A-ID is covered;
-- every `needs` resolves; the roadmap links every spec and no
+- every `needs` resolves; every `secrets` name is declared in
+  `nexus.secrets.json` (beside `plan/`), which keeps its shape;
+  the roadmap links every spec and no
   spec that is gone, each row's `N left` is true, and the
   Asap/Held lanes name only chunks (or specs) still in the
   plan; `ARCHIVE.md` lines parse;

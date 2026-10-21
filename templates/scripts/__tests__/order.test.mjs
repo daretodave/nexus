@@ -113,3 +113,12 @@ describe('the --limit flag', () => {
     }
   });
 });
+
+describe('a chunk that needs a secret', () => {
+  it('carries its secret names (never values) into the simulated order, [] when it names none', () => {
+    const withSecret = [spec('07', ['- [ ] **07.1** Deploy · S · closes A1 · needs — · secrets VERCEL_TOKEN, CF_API_TOKEN', '- [ ] **07.2** Results · M · closes A1 · needs 07.1'])];
+    const sim = simulate({ readme: readme(), specs: withSecret });
+    assert.deepEqual(sim.next.map((c) => [c.id, c.secrets]), [['07.1', ['VERCEL_TOKEN', 'CF_API_TOKEN']], ['07.2', []]]);
+    assert.deepEqual(JSON.parse(JSON.stringify(sim)).next[0].secrets, ['VERCEL_TOKEN', 'CF_API_TOKEN']);
+  });
+});

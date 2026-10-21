@@ -481,6 +481,7 @@ nexus/
 │   ├── adopt.md                       # the full "Adopt nexus" agent prompt
 │   └── pitch.md                       # the full pitch-to-adopted agent prompt
 ├── package.json                       # the kit's own verify gate wiring
+├── nexus.secrets.json                 # nexus's own secrets by name, never a value (customization/secrets.md)
 ├── assets/                            # generated SVG diagrams (scripts/diagrams.mjs); hand edits fail the gate
 ├── scripts/
 │   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams
@@ -496,6 +497,7 @@ nexus/
 │   ├── ledger.mjs                     # npm run ledger: each session's live ledger (star names; a crash resumes like a reboot)
 │   ├── worktree.mjs                   # npm run worktree: close a worktree without deleting through its links; list for /tidy
 │   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
+│   ├── secrets.mjs                    # npm run secrets: import names into nexus.secrets.json, names, check (+ plan/secrets-manifest.mjs; twins)
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's plan starters + copy + placeholder-sweep + prune steps (Git Bash on Windows)
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
 │   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs (pre-commit) + the push policy (pre-push)
@@ -535,6 +537,7 @@ nexus/
 │   ├── bootstrap-automation.md        # the executor that drives provider CLIs end-to-end (paired with external-services.md)
 │   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
 │   ├── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
+│   ├── secrets.md                     # nexus.secrets.json: secrets by name, never value; a chunk's secrets field
 │   └── identity-layer.md              # identity/ + the footgun ladder (seen twice -> automate); the alternative
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
 │   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md)
@@ -649,6 +652,8 @@ nexus/
     │   ├── plan/footguns.mjs          # footgun list format + budget lint
     │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h); --json: the same as data
     │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
+    │   ├── plan/secrets-manifest.mjs  # nexus.secrets.json's shape + the .env.example import (plan-check reads it)
+    │   ├── secrets.mjs                # secrets by name: import from .env.example, names, check; never a value
     │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
     │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
     │   ├── claims-board.mjs           # the claims board: one issue, created or edited from the claims branch
@@ -680,12 +685,14 @@ nexus/
     │   ├── __tests__/upgrade-plan.test.mjs # the v1 to v2 converter, pure
     │   ├── __tests__/upgrade-plan-run.test.mjs # the converter over git, dry run and --write (offline)
     │   ├── __tests__/plot-run.test.mjs # a plot: settle, plan-check and order agree (offline)
+    │   ├── __tests__/secrets.test.mjs # the secrets manifest: shape, import, CLI (names only)
     │   ├── __tests__/bootstrap.test.mjs # bootstrap's cloud-loop plan, pure
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
     │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
     │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)
     ├── env/
-    │   └── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
+    │   ├── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
+    │   └── nexus.secrets.json         # → repo root: secrets by name, never a value (customization/secrets.md)
     └── workspace/                      # → workspace root, not any repo (adopt-by-need)
         ├── CLAUDE.md
         ├── AGENTS.md
