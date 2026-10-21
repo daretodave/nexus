@@ -40,6 +40,15 @@ jobs:
             echo "tag $GITHUB_REF_NAME does not match packages/cli version $have"
             exit 1
           fi
+      - name: install
+        working-directory: packages/cli
+        run: npm ci
+      - name: test
+        working-directory: packages/cli
+        run: npm test
+      - name: build (prebuilt UI ships in dist/)
+        working-directory: packages/cli
+        run: npm run build
       - name: publish
         working-directory: packages/cli
         run: npm publish --access public

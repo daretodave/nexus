@@ -22,7 +22,7 @@
 //                 pointers carry frontmatter + $ARGUMENTS; skills
 //                 and command pointers pair 1:1
 //   emoji         no pictographic emoji anywhere in tracked docs,
-//                 nor in packages/cli source (js/ts/tsx/json/css/html)
+//                 nor in packages/cli source (js/jsx/ts/tsx/json/css/html)
 //                 (✓ and ❌ dingbats are fine; 🤖 is not)
 //   dualshell     every playbooks/*.md ```bash fence that leans on a
 //                 POSIX-only tool (sed, grep, xargs, mkdir, cp, rm, …)
@@ -383,7 +383,7 @@ const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{FE0F}\u{2705}\u{2728}\u{26A0}-\u{26FF}\
 // the scan. Tracked files only; no npm install, no build.
 function trackedCliSource() {
   const out = execSync('git ls-files packages/cli', { cwd: ROOT, encoding: 'utf-8' })
-  return out.trim().split(/\r?\n/).filter((f) => /\.(m?js|cjs|ts|tsx|json|css|html)$/.test(f))
+  return out.trim().split(/\r?\n/).filter((f) => /\.(m?js|cjs|jsx|ts|tsx|json|css|html)$/.test(f))
 }
 
 function legEmoji(mdFiles) {

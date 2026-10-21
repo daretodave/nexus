@@ -1,0 +1,36 @@
+name: cli-ci
+
+# Tests and builds packages/cli (@usenexus/cli). Deliberately separate
+# from scripts/verify.mjs: the kit's gate never installs packages.
+
+on:
+  push:
+    branches: [main]
+    paths: ['packages/cli/**', '.github/workflows/cli-ci.yml']
+  pull_request:
+    paths: ['packages/cli/**', '.github/workflows/cli-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: package contents
+        run: npm pack --dry-run
