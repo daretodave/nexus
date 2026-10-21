@@ -130,10 +130,16 @@ the reason (the 41.3 close carries the same list):
   absolute path), and Recover's "Resume from here", offered on the
   first unfinished step only (the Workflow tool resumes a run there,
   replaying every finished agent; it has no "from step N").
-- **Fleet:** deneb's custom idle curve (the four quadrant paths
-  stand in); the grid scrolls where the board's `.view` clips;
-  there is no "no sessions" board, so only the start tile shows.
-  CloudLoop's `.view` scrolls for the same reason.
+- **Fleet:** each star seats its agents as its board draws it
+  (vega on the four quadrants, deneb on its own seats, altair's one
+  helper up and left; a star no board draws working takes the
+  quadrants), and a known idle agent draws its idle curve, deneb's
+  `M0 0C40 0 60 100 100 100` bent to the seat's own end points
+  (`src/screens/fleet/sky.js`). The agents and their states are the
+  session's own; an agent with no state gets no idle curve. The
+  grid scrolls where the board's `.view` clips; there is no "no
+  sessions" board, so only the start tile shows. CloudLoop's
+  `.view` scrolls for the same reason.
 - **Reader-only copy:** Launch's "collapse 1.6s..." caption (the
   motion is kept); the Welcome prompt and CloudSetup preview show
   the real prompt and workflow, not `npx @usenexus/cli readme` and

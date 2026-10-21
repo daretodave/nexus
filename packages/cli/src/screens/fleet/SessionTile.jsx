@@ -10,33 +10,25 @@ import { PATHS } from '../../routes.js';
 import FleetGit from './FleetGit.jsx';
 import { phaseItems, bar } from './model.js';
 import { hhmm, ago } from './util.js';
+import { QUADS, seatsFor, filFor } from './sky.js';
 
-/** Satellite agents around the main orb, and the filament box to each (board geometry). */
-const SATS = [
-  { x: '24%', y: '24%', fil: { l: '24%', t: '24%', w: '26%', h: '22%', d: 'M100 100C100 50 0 50 0 0' } },
-  { x: '76%', y: '26%', fil: { l: '50%', t: '26%', w: '26%', h: '20%', d: 'M0 100C0 50 100 50 100 0' } },
-  { x: '28%', y: '76%', fil: { l: '28%', t: '46%', w: '22%', h: '30%', d: 'M100 0C100 50 0 50 0 100' } },
-  { x: '74%', y: '74%', fil: { l: '50%', t: '46%', w: '24%', h: '28%', d: 'M0 0C0 50 100 50 100 100' } },
-];
 // A session waiting on its start questions seats its idle agents in a triangle,
 // and a terminal session its one helper up and left (Fleet board: sirius, polaris).
 const ASK_SATS = [{ x: '22%', y: '30%' }, { x: '78%', y: '30%' }, { x: '50%', y: '82%' }];
 const OBS_SATS = [{ x: '30%', y: '30%', fil: { l: '30%', t: '30%', w: '20%', h: '16%', d: 'M100 100C100 50 0 50 0 0' } }];
-const ACTIVE = new Set(['thinking', 'tool', 'writing']);
 
 function SkyStage({ s }) {
   const asking = s.state === 'asking';
   const observing = s.state === 'observing';
   const main = asking ? 'blocked' : s.orb || (s.state === 'resumed' ? 'thinking' : 'tool');
-  const seats = asking ? ASK_SATS : observing ? [...OBS_SATS, ...SATS.slice(1)] : SATS;
+  const seats = asking ? ASK_SATS : observing ? [...OBS_SATS, ...QUADS.slice(1)] : seatsFor(s.name);
   const agents = (s.agents || []).slice(0, seats.length);
   return (
     <>
       {!asking ? agents.map((a, i) => {
-        const g = seats[i].fil;
-        if (a.workflow) return <Fil key={`f${i}`} l={g.l} t={g.t} w={g.w} h={g.h} d={g.d} kind="flow" />;
-        const quiet = observing || a.state === 'idle';
-        return <Fil key={`f${i}`} l={g.l} t={g.t} w={g.w} h={g.h} d={g.d} kind={quiet ? 'quiet' : undefined} flow={!quiet && ACTIVE.has(a.state)} />;
+        // Each star's own seats; a known idle agent draws its idle curve (Fleet board: deneb).
+        const f = filFor(seats[i], a, { observing });
+        return <Fil key={`f${i}`} l={f.l} t={f.t} w={f.w} h={f.h} d={f.d} kind={f.kind} flow={f.flow || undefined} />;
       }) : null}
       <SNode x="50%" y="46%">
         <Orb state={main} px={observing ? 30 : 34} main={!observing} />
