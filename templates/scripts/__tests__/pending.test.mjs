@@ -235,3 +235,38 @@ describe('a pending ## Add', () => {
     assert.throws(() => parsePending(twice, 't.md'), /twice \(one section per spec\)/);
   });
 });
+
+describe('the settled view of an ## Add', () => {
+  const SPEC = ['# 07 — Search', '', '## Acceptance', '', '- **A1** One.', '', '## Chunks', 'Measure: 1 open · 0 closed · next A2', '', '- [ ] **07.1** One · S · closes A1 · needs —', ''].join('\n');
+  const add = (date, slug) => `---\ndate: ${date}\n---\n## Add plan/07-search.md\n~~~ acceptance\n- **A?${slug}** ${slug}.\n~~~\n~~~ chunks\n- [ ] **07.?${slug}** ${slug} · S · closes A?${slug} · needs —\n~~~\n`;
+
+  it('numbers the adds in date-then-name order, places them, and returns the numbers', () => {
+    const root = tmp();
+    write(root, 'plan/07-search.md', SPEC);
+    write(root, 'plan/README.md', '| 07 | Search | [07-search.md](07-search.md) | planned | 1 left |\n');
+    write(root, 'plan/ARCHIVE.md', '- 2026-10-01 · 07.2 · Two · a..b\n');
+    write(root, 'plan/pending/plot-b.md', add('2026-10-20', 'b'));
+    write(root, 'plan/pending/plot-a.md', add('2026-10-21', 'a'));
+    write(root, 'plan/pending/plot-c.md', add('2026-10-20', 'c'));
+    const view = settledView(root);
+    assert.deepEqual(view.problems, []);
+    assert.deepEqual(Object.fromEntries(view.numbers), { 'A?b': 'A2', '07.?b': '07.3', 'A?c': 'A3', '07.?c': '07.4', 'A?a': 'A4', '07.?a': '07.5' });
+    const spec = view.read('plan/07-search.md');
+    assert.match(spec, /^Measure: 4 open · 0 closed · next A5$/m);
+    assert.deepEqual([...spec.matchAll(/\*\*(07\.\d+)\*\* (\w+)/g)].map((m) => `${m[1]}=${m[2]}`), ['07.1=One', '07.3=b', '07.4=c', '07.5=a']);
+    assert.match(view.read('plan/README.md'), /\| 4 left \|/);
+    assert.equal(fs.readFileSync(path.join(root, 'plan/07-search.md'), 'utf8'), SPEC);
+  });
+
+  it('names a broken Add as a problem and applies none of that file', () => {
+    const root = tmp();
+    write(root, 'plan/07-search.md', SPEC.replace(/^Measure:.*$/m, ''));
+    write(root, 'plan/pending/plot-a.md', add('2026-10-21', 'a'));
+    write(root, 'plan/pending/plot-u.md', '---\ndate: 2026-10-21\n---\n## Edit plan/README.md\n~~~ old\nx\n~~~\n~~~ new\n07.?gone\n~~~\n');
+    const view = settledView(root);
+    assert.equal(view.problems.length, 2);
+    assert.match(view.problems.join('\n'), /plot-a\.md: Add plan\/07-search\.md: no "Measure: /);
+    assert.match(view.problems.join('\n'), /07\.\?gone is used but no "## Add" part defines it/);
+    assert.equal(view.numbers.size, 0);
+  });
+});

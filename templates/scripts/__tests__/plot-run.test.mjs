@@ -213,3 +213,72 @@ it('settle, plan-check and order --mark agree on a plot, before and after it set
   assert.equal(after.check.out, before.check.out);
   assert.deepEqual(after, { ...before, check: after.check });
 });
+
+// The same plot with its chunk for spec 07 as an `## Add`: no line of 07 quoted, numbered at settle, so a second
+// branch adding to 07 at the same time never collides with it.
+const PLOT_ADD = [
+  '---',
+  'date: 2000-10-21',
+  '---',
+  '## Add plan/07-search.md',
+  '~~~ acceptance',
+  '- **A?zip** Search by zip.',
+  '~~~',
+  '~~~ chunks',
+  '- [ ] **07.?zip** Search by zip · S · closes A?zip · needs 07.3',
+  '~~~',
+  '',
+  '## Edit plan/README.md',
+  '~~~ old',
+  '**Asap** (built before the table):',
+  '',
+  '- (none)',
+  '~~~',
+  '~~~ new',
+  '**Asap** (built before the table):',
+  '',
+  '- **08.1** · the map first.',
+  '~~~',
+  '',
+  '## Edit plan/README.md',
+  '~~~ old',
+  '| 07 | Search | [07-search.md](07-search.md) | in progress | 2 left |',
+  '~~~',
+  '~~~ new',
+  '| 07 | Search | [07-search.md](07-search.md) | in progress | 2 left |',
+  '| 08 | Maps | [08-maps.md](08-maps.md) | planned | 2 left |',
+  '~~~',
+  '',
+].join('\n');
+
+it('reads a plot that extends a spec with an ## Add as settled: plan-check, --mark with its placeholder, then settle', () => {
+  const r = repo();
+  r.put('plan/08-maps.md', SPEC_08);
+  r.put('plan/pending/plot-maps.md', PLOT_ADD);
+  r.git('add', '-A');
+  r.git('commit', '-q', '-m', 'plan: plot maps');
+
+  // Unsettled: 07 on disk is untouched, the view has 07.5, A3, the Measure line and "3 left".
+  assert.equal(r.read('plan/07-search.md'), SPEC_07);
+  const view = settledView(r.dir);
+  assert.deepEqual(view.problems, []);
+  assert.deepEqual(Object.fromEntries(view.numbers), { 'A?zip': 'A3', '07.?zip': '07.5' });
+  assert.match(view.read('plan/07-search.md'), /^Measure: 3 open · 0 closed · next A4$/m);
+  assert.match(view.read('plan/README.md'), /\| 07 \| Search \| \[07-search\.md\]\(07-search\.md\) \| in progress \| 3 left \|/);
+  const check = r.node('plan-check.mjs', '--since', 'HEAD~1');
+  assert.equal(check.code, 0, check.out);
+  assert.match(check.out, /plan-check: green \(2 specs, 5 chunks\)/);
+  const text = r.node('plan/order.mjs', '--mark', '07.?zip,08.1');
+  assert.equal(text.code, 0, text.out);
+  assert.deepEqual(text.out.split('\n').filter((l) => l.includes('<-- just plotted')).map((l) => l.trim().split(/\s+/)[1]), ['08.1', '07.5']);
+
+  // Settled on main: the files read as the view did.
+  r.put('.owner', '');
+  const settle = r.node('plan/settle.mjs');
+  assert.equal(settle.code, 0, settle.out);
+  assert.match(settle.out, /07\.\?zip is 07\.5/);
+  assert.equal(r.git('status', '--porcelain'), '');
+  for (const f of ['plan/README.md', 'plan/07-search.md']) assert.equal(r.read(f), view.read(f), f);
+  const after = r.node('plan-check.mjs', '--since', 'HEAD~1');
+  assert.equal(after.code, 0, after.out);
+});

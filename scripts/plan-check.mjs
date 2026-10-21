@@ -28,11 +28,13 @@
 //
 // plan/ is read as it will read once plan/pending/ settles (the
 // settled view, scripts/plan/settled.mjs): each pending file's
-// `## Edit` sections applied in memory, so a contributor's plot
-// (its new spec written directly, its roadmap row and lane entry
-// a pending edit) passes before the owner settles it. A pending
-// file settle would skip (it doesn't parse, or an old text isn't
-// there exactly once) is a failure.
+// `## Edit` and `## Add` sections applied in memory, so a
+// contributor's plot (its new spec written directly, its roadmap
+// row and lane entry a pending edit, its new chunks for an open
+// spec an Add, numbered as settle will) passes before the owner
+// settles it. A pending file settle would skip (it doesn't parse,
+// an old text isn't there exactly once, an Add's spec has no
+// Measure line) is a failure.
 //
 // With `--since <ref>` it also checks history against that ref:
 // a chunk that left the plan has an archive line (or a pending

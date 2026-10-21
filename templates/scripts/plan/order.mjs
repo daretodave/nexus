@@ -7,7 +7,7 @@
 // picks, counts the pick as done, and picks again, so the list reads as the order the chunks get built in, with a
 // running estimate from their sizes (S 1 h, M 2.5 h, L 5 h). What can't be reached (a need nothing will close, a held
 // spec) is listed after, with why. A pending close counts as closed; reading the working tree, a pending file's
-// `## Edit` of the roadmap or a spec counts as applied (the settled view, as plan-check reads it), so a plot's own rows
+// `## Edit` or `## Add` of the roadmap or a spec counts as applied (the settled view, as plan-check reads it), so a plot's own rows
 // and chunks show before they settle. Each chunk in `--json` carries the parsed line (plan-check's parseChunk), so its
 // `secrets` (the names it needs, never values; [] when none) ride along for /next and the GUI.
 //
@@ -19,9 +19,10 @@
 //
 //   node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--no-vault] [--json]
 //
-// --mark flags chunks as "just plotted" (/plot's after picture); --ref reads the plan at a ref instead of the files;
-// --limit (a whole number from 1, 12 when left out) caps the next-up list the text view prints. Anything else after
-// --limit (a word, 0, a negative, a fraction, nothing) prints usage and exits 64, never an empty list.
+// --mark flags chunks as "just plotted" (/plot's after picture; a pending `## Add`'s `07.?slug` reads as the number it
+// settles as); --ref reads the plan at a ref instead of the files; --limit (a whole number from 1, 12 when left out)
+// caps the next-up list the text view prints. Anything else after --limit (a word, 0, a negative, a fraction,
+// nothing) prints usage and exits 64, never an empty list.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -208,10 +209,12 @@ export function render({ inFlight, next, blocked, unchunked = [] }, { mark = new
 export async function load(cwd, ref, { vault = true } = {}) {
   const reader = planReader(cwd, ref);
   let read = (n) => reader.read(n);
+  let numbers = new Map();
   if (!ref) {
     const { settledView } = await import('./settled.mjs');
     const view = settledView(cwd);
     read = (n) => view.read(`plan/${n}`) ?? '';
+    numbers = view.numbers;
   }
   const readme = read('README.md');
   const specs = reader
@@ -233,7 +236,7 @@ export async function load(cwd, ref, { vault = true } = {}) {
     // no claims module, no network or no claims branch: nothing is in flight
   }
   const secrets = specs.some((s) => s.chunks.some((c) => c.secrets?.length)) ? await secretGate(cwd, { vault }) : null;
-  return { readme, specs, closed, claims, secrets };
+  return { readme, specs, closed, claims, secrets, numbers };
 }
 
 async function main(argv) {
@@ -242,7 +245,7 @@ async function main(argv) {
     return i >= 0 ? argv[i + 1] : undefined;
   };
   const ref = val('--ref');
-  const mark = new Set((val('--mark') ?? '').split(',').map((s) => s.trim()).filter(Boolean));
+  const marked = (val('--mark') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   const limit = parseLimit(argv.includes('--limit') ? (val('--limit') ?? null) : undefined);
   if (limit === null) {
     console.error(USAGE);
@@ -250,6 +253,8 @@ async function main(argv) {
   }
   const cwd = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
   const plan = await load(path.resolve(cwd), ref, { vault: !argv.includes('--no-vault') });
+  // A placeholder a pending `## Add` gives (`07.?strip`) marks the chunk it settles as.
+  const mark = new Set(marked.map((id) => plan.numbers?.get(id) ?? id));
   const sim = simulate(plan);
   if (argv.includes('--json')) console.log(JSON.stringify({ ...sim, mark: [...mark] }, null, 2));
   else console.log(render(sim, { mark, limit }));
