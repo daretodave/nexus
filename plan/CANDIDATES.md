@@ -172,7 +172,7 @@ kit + sibling surveys.
 - conflicts: pairs with the README conversion pass below —
   promote together or sequence prompts/ first.
 
-### [ ] [score 8.5] Two-ring secrets topology (.env vs .env.workspace)
+### [x] [score 8.5] Two-ring secrets topology (.env vs .env.workspace) (absorbed into spec 42, 2026-10-21)
 - proposed: 2026-07-03
 - source signals: both mature adoptions run the same secrets
   layering the kit says nothing about — per-repo `.env` for the
