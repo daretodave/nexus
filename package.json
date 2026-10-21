@@ -7,7 +7,9 @@
     "verify": "node scripts/verify.mjs",
     "verify:adopt-dryrun": "node scripts/adopt-dryrun.mjs",
     "pulse": "node scripts/pulse.mjs",
-    "deploy:check": "node -e \"console.log('deploy:check · kit repo — push to GitHub IS the deploy; nothing to poll. ok.')\""
+    "deploy:check": "node -e \"console.log('deploy:check · kit repo — push to GitHub IS the deploy; nothing to poll. ok.')\"",
+    "settle": "node scripts/plan/settle.mjs",
+    "claims": "node scripts/claims.mjs"
   },
   "engines": {
     "node": ">=20"

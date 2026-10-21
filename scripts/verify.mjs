@@ -38,7 +38,9 @@
 //                 plus that script's own node:test suite
 //   scripts       the node:test suites of the plan and claims scripts
 //                 adopters copy (templates/scripts/plan/, claims):
-//                 pure, no git, no network, about a second
+//                 pure, no git, no network, about a second; and
+//                 nexus's own copies in scripts/ match them byte
+//                 for byte (the kit dogfoods what it ships)
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds). Opt in with
@@ -506,6 +508,27 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/claims.test.mjs',
 ]
 
+// nexus runs these scripts on its own plan (npm run settle, npm run
+// claims) from byte copies in scripts/: a fix lands in both or the
+// gate goes red, so the kit never runs a version adopters don't get.
+const DOGFOOD_TWINS = [
+  'owner.mjs', 'claims.mjs', 'claims-codec.mjs',
+  'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
+]
+
+function legScripts() {
+  const failures = []
+  const text = (rel) => fs.existsSync(path.join(ROOT, rel)) ? fs.readFileSync(path.join(ROOT, rel), 'utf-8').replace(/\r\n/g, '\n') : null
+  for (const f of DOGFOOD_TWINS) {
+    const kit = text(`templates/scripts/${f}`)
+    const own = text(`scripts/${f}`)
+    if (kit === null || own === null) failures.push(`scripts/${f} and templates/scripts/${f}: both must exist (nexus dogfoods the template)`)
+    else if (kit !== own) failures.push(`scripts/${f} differs from templates/scripts/${f}: copy the template over it (or the fix into both)`)
+  }
+  const suites = runSuites(PURE_SUITES, 'pure')
+  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length} dogfood twins match` }
+}
+
 function runSuites(suites, label) {
   try {
     execSync(`node --test ${suites.join(' ')}`, { cwd: ROOT, encoding: 'utf-8', stdio: 'pipe' })
@@ -542,7 +565,7 @@ const LEGS = {
   emoji: (files) => legEmoji(files),
   dualshell: (files) => legDualshell(files),
   chunks: () => legChunks(),
-  scripts: () => runSuites(PURE_SUITES, 'pure'),
+  scripts: () => legScripts(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
 }

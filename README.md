@@ -414,6 +414,8 @@ nexus/
 ├── scripts/
 │   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts
 │   ├── pulse.mjs                      # offline instrument panel: queue/build-plan/candidate counts, no network
+│   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
+│   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's copy + placeholder-sweep + prune steps
 │   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
 │   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs as a pre-commit hook

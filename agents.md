@@ -168,6 +168,8 @@ verbs — a docs kit ships docs, not pages.
 | Conventions, voice, contracts | `plan/bearings.md` |
 | What ships next | `plan/README.md` (lanes + specs; the first ready chunk) |
 | What a chunk must do | `plan/<NN>-<slug>.md` (Design, Acceptance, Chunks) |
+| Plan changes waiting to settle | `plan/pending/` (`npm run settle`, owner only; `concepts/plan-shape.md`) |
+| Who builds which chunk | `npm run claims -- list` (`customization/claims.md`) |
 | What already shipped | `plan/ARCHIVE.md` (one line per chunk; phases 1–33 too) |
 | The plan shape | `concepts/plan-shape.md`; `plan/nexus.lock` |
 | Open findings | `plan/AUDIT.md` |

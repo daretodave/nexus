@@ -19,3 +19,7 @@ node_modules/
 .scratch/
 
 .token
+
+# owner mode (scripts/owner.mjs): the owner's marker and local settings, per checkout
+.owner
+.nexus/
