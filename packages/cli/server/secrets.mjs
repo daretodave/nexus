@@ -6,7 +6,8 @@
 // process: `status --json` and `audit --json` for the reads, `set NAME` (the value handed to its stdin seam, never
 // argv) for a store, `push NAME --to D` for a sink. So the repo's rails hold here too: a contributor's checkout keeps
 // its keys local and every sink refuses there (sinkRefusal), a push records itself in the audit log, a set records
-// set or rotate. A repo without the scripts, or with ones too old, gets a 409 that says which.
+// set or rotate. A repo with ones too old gets a 409 that says which. A repo without them is not a failure: GET answers
+// vaultState 'missing' (with the root dotenv's name count) and POST /api/secrets/setup lands them (vault-setup.mjs).
 //
 // A value arrives in one place only, a POST body (POST /api/secrets/:name, POST /api/secrets/import with confirm), and
 // leaves only into the vault and a sink's stdin. No response, header, error or log carries it: each answer of those
@@ -24,6 +25,7 @@ import { pathToFileURL } from 'node:url';
 import { primaryRoot } from './sessions.mjs';
 import { isOwner as effectiveOwner } from './local.mjs';
 import { durableQuestions } from './repo.mjs';
+import { setupVault, DOCS } from './vault-setup.mjs';
 
 /** The repo's scripts the API runs, each with the exports it needs. `audit` (42.6) is optional. */
 const FILES = {
@@ -128,7 +130,7 @@ function scrubber(values) {
 async function loadKit(repo) {
   const dir = path.join(repo, 'scripts');
   if (!fs.existsSync(path.join(dir, FILES.vault[0]))) {
-    return { ok: false, error: 'this repo has no secrets vault (scripts/secrets-vault.mjs): copy the secrets scripts from the kit\'s templates/scripts (nexus/customization/secrets.md)' };
+    return { ok: false, missing: true, error: 'this repo has no secrets vault yet: set it up from the Vault' };
   }
   const m = {};
   const load = async (key, [file, names], optional) => {
@@ -148,6 +150,21 @@ async function loadKit(repo) {
 
 const mtime = (f) => { try { return fs.statSync(f).mtimeMs; } catch { return 0; } };
 
+/** The names a dotenv's text sets (live lines only), in order, never a value: the vault's own line shape. */
+export function envNames(text) {
+  const out = [];
+  for (const line of String(text || '').replace(/\r\n/g, '\n').split('\n')) {
+    const m = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line);
+    if (m && !out.includes(m[1])) out.push(m[1]);
+  }
+  return out;
+}
+
+/** The root dotenv's names (the vault's local ring once the vault is here), or null when there is none. */
+function rootEnvNames(root) {
+  try { return envNames(fs.readFileSync(path.join(root, '.env'), 'utf8')); } catch { return null; }
+}
+
 /**
  * The secrets API for one served repo.
  * @param {object} o
@@ -156,8 +173,10 @@ const mtime = (f) => { try { return fs.statSync(f).mtimeMs; } catch { return 0; 
  * @param {object} [o.vault]             openVault overrides (tests: git, keychain seams)
  * @param {() => boolean} [o.owner]      effective owner mode (default: server/local.mjs's check)
  * @param {object} [o.mask]              the mask to keep fed (default: a new one)
+ * @param {object} [o.setup]             setupVault overrides (tests: { gh } a fake pull request opener, { source })
+ * @param {function} [o.setupFn]         replaces setupVault entirely (tests)
  */
-export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => effectiveOwner(repo), mask = createMask() } = {}) {
+export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => effectiveOwner(repo), mask = createMask(), setup: setupOpts, setupFn } = {}) {
   let rootP = null;
   const vroot = () => (rootP ||= primaryRoot(repo).catch(() => repo));
   let kitP = null;
@@ -199,6 +218,14 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
   }
 
   const unavailable = (k) => ({ status: 409, available: false, error: k.error });
+
+  /** The root dotenv by count: { exists, names } (and, given the manifest's names, how many it does not declare yet). */
+  function rootEnvOf(root, declared) {
+    const names = rootEnvNames(root);
+    if (!names) return { exists: false, names: 0 };
+    const valid = names.filter((n) => NAME.test(n));
+    return { exists: true, names: names.length, ...(declared ? { undeclared: valid.filter((n) => !declared.has(n)).length } : {}) };
+  }
   const failed = (r, status = 409) => ({ status, error: [...r.err, ...r.out].join('\n').trim() || `exited ${r.code}` });
 
   /** The last push of each name to each destination, from the audit log: Map `${name}\0${destination}` -> event. */
@@ -211,6 +238,12 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
   /** GET /api/secrets: names and status (where set, each destination's last push, the chunk that asked, age), never a value. */
   async function status() {
     const k = await kit();
+    if (!k.ok && k.missing) {
+      // No vault scripts at all: not a failure, an empty state with a way forward (Set up the vault).
+      const root = await vroot();
+      const isOwner = !!owner();
+      return { status: 200, available: false, vaultState: 'missing', mode: isOwner ? 'owner' : 'contributor', owner: isOwner, manifest: fs.existsSync(path.join(root, 'nexus.secrets.json')), rootEnv: rootEnvOf(root), docs: DOCS };
+    }
     if (!k.ok) return unavailable(k);
     const root = await vroot();
     const r = await cli(k, ['status', '--json', '--root', root]);
@@ -255,6 +288,9 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
       sinks: Object.keys(SINK_FLAGS).filter((d) => k.m.sinks.sinkFor(d)),
       requests: requestsIn(durableQuestions(repo), (n) => isSet.has(n)),
       envFiles: envFilesAt(root),
+      vaultState: 'ready',
+      rootEnv: rootEnvOf(root, man?.names ?? new Set()),
+      docs: DOCS,
     };
   }
 
@@ -502,19 +538,48 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     return null;
   }
 
-  /** POST /api/secrets/manifest: start an empty manifest (onboarding's "Start empty"), owner only; one that exists stays. */
-  async function startManifest() {
+  /**
+   * POST /api/secrets/manifest { fromEnv? }: start an empty manifest (onboarding's "Start empty"), owner only; one that
+   * exists stays. With fromEnv, the root dotenv is already the vault: its names (never a value, never a comment) go
+   * into the manifest, each local, and a name already declared is kept as written.
+   */
+  async function startManifest(b = {}) {
     const k = await kit();
     if (!k.ok) return unavailable(k);
     if (!owner()) return { status: 403, error: "the manifest is the owner's: a contributor needs no project secrets" };
     const root = await vroot();
     const file = path.join(root, k.m.manifest.MANIFEST);
+    if (b && b.fromEnv === true) {
+      const names = (rootEnvNames(root) || []).filter((n) => NAME.test(n));
+      if (!names.length) return { status: 400, error: 'the root .env names nothing to declare' };
+      let man;
+      try { man = k.m.manifest.readManifest(file); } catch (e) { return { status: 409, error: `${k.m.manifest.MANIFEST} did not read (${String(e.message || e).split('\n')[0]}): fix it first` }; }
+      const imported = names.map((name) => ({ name, for: `${name} (in the vault's .env: say what it is for)`, where: null }));
+      const merged = k.m.manifest.mergeImport(man ? man.manifest : k.m.manifest.emptyManifest(), imported);
+      if (merged.added.length || !man) fs.writeFileSync(file, k.m.manifest.serialize(merged.manifest));
+      await refresh({ force: true });
+      return { status: 200, ok: true, created: !man, added: merged.added, kept: merged.kept, manifest: k.m.manifest.MANIFEST };
+    }
     if (fs.existsSync(file)) return { status: 200, ok: true, created: false, manifest: k.m.manifest.MANIFEST };
     fs.writeFileSync(file, k.m.manifest.serialize(k.m.manifest.emptyManifest()));
     return { status: 200, ok: true, created: true, manifest: k.m.manifest.MANIFEST };
   }
 
-  return { mask, refresh, status, audit, store, importEnv, push, markRequests, startManifest };
+  /**
+   * POST /api/secrets/setup: land the vault's scripts per owner mode (vault-setup.mjs): the owner's commit on main, a
+   * contributor's pull request. One at a time.
+   */
+  let settingUp = null;
+  async function setup() {
+    const k = await kit();
+    if (k.ok) return { status: 200, ok: true, already: true, here: true, note: 'The vault is here already.' };
+    if (!k.missing) return unavailable(k);
+    if (settingUp) return { status: 409, error: 'the vault is being set up already' };
+    settingUp = (setupFn || setupVault)({ repo, owner: !!owner(), ...(setupOpts || {}) });
+    try { return await settingUp; } finally { settingUp = null; kitP = null; }
+  }
+
+  return { mask, refresh, status, audit, store, importEnv, push, markRequests, startManifest, setup };
 }
 
 /** The mask for one repo, fed once (headless `nexus run`): identity when the repo has no vault. */

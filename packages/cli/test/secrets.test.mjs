@@ -104,13 +104,15 @@ test('the mask replaces each secret-shaped value by name, deep, and leaves short
   assert.deepEqual(m.deep({ list: [{ text: `token ${GH}` }], [GH]: 1, n: 3, ok: true, none: null }), { list: [{ text: 'token [secret GH_TOKEN]' }], '[secret GH_TOKEN]': 1, n: 3, ok: true, none: null });
 });
 
-test('a repo without the secrets scripts answers 409 with a reason, and the mask stays empty', async () => {
+test('a repo without the secrets scripts reads as a missing vault (not a failure), its writes answer 409, and the mask stays empty', async () => {
   const { repo } = vaultRepo({ scripts: false });
   const { app, call } = await serve(repo, fakeRun().run);
   try {
     const r = await call('GET', '/api/secrets');
-    assert.equal(r.status, 409);
-    assert.match(r.json.error, /no secrets vault \(scripts\/secrets-vault\.mjs\)/);
+    assert.equal(r.status, 200);
+    assert.equal(r.json.available, false);
+    assert.equal(r.json.vaultState, 'missing');
+    assert.doesNotMatch(JSON.stringify(r.json), /templates\/scripts/, 'no kit path in the answer');
     assert.equal((await call('POST', '/api/secrets/GH_TOKEN', { value: GH })).status, 409);
     assert.equal((await call('POST', '/api/secrets/import', { text: `GH_TOKEN=${GH}\n` })).status, 409);
     assert.ok(!fs.existsSync(path.join(repo, '.env')), 'nothing stored');

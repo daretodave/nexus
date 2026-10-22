@@ -66,7 +66,7 @@ function readPrompt(name) {
  * @param {() => Promise<string>} [o.ghLogin]  how to learn the gh login once (tests stub it; default asks gh)
  * @param {object} [o.git]          createGitView overrides (tests: claims, ttl)
  * @param {function|false} [o.explodeQuery]  the SDK's query() for POST /api/explode (tests); under an injected provider none is loaded
- * @param {object} [o.secrets]      the secrets API's seams (tests): { run } a sink's runner, { vault } openVault overrides
+ * @param {object} [o.secrets]      the secrets API's seams (tests): { run } a sink's runner, { vault } openVault overrides, { setup } setupVault overrides
  */
 export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, git: gitOpts, secrets: secretsOpts = {} } = {}) {
   const ghOpts = ghRun ? { run: ghRun } : {};
@@ -85,7 +85,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   // current values. Under an injected provider (tests) a sink runs only through the injected runner, never a real tool.
   const mask = createMask();
   const noSink = () => ({ status: 127, missing: true });
-  const secrets = createSecrets({ repo, mask, run: secretsOpts.run || (injected ? noSink : undefined), vault: secretsOpts.vault, ...(secretsOpts.owner ? { owner: secretsOpts.owner } : {}) });
+  const secrets = createSecrets({ repo, mask, run: secretsOpts.run || (injected ? noSink : undefined), vault: secretsOpts.vault, ...(secretsOpts.owner ? { owner: secretsOpts.owner } : {}), setup: secretsOpts.setup || (injected ? { gh: async () => ({ ok: false, out: '', err: 'no gh under a test provider' }) } : undefined) });
   await secrets.refresh().catch(() => null);
   const refreshMask = setInterval(() => { secrets.refresh().catch(() => null); }, 5000);
   refreshMask.unref?.();
@@ -498,7 +498,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/secrets': { const { status, ...r } = await secrets.status(); return send(res, status, r); }
         case 'GET /api/secrets/audit': { const { status, ...r } = await secrets.audit(); return send(res, status, r); }
         case 'POST /api/secrets/import': { const { status, ...r } = await secrets.importEnv(await body(req)); return send(res, status, r); }
-        case 'POST /api/secrets/manifest': { await body(req); const { status, ...r } = await secrets.startManifest(); return send(res, status, r); }
+        case 'POST /api/secrets/manifest': { const { status, ...r } = await secrets.startManifest(await body(req)); return send(res, status, r); }
+        // Set up the vault (47.3): the CLI's own copy of the secrets scripts, landed per owner mode (vault-setup.mjs).
+        case 'POST /api/secrets/setup': { await body(req); const { status, ...r } = await secrets.setup(); return send(res, status, r); }
       }
       const secPush = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/push$/.exec(route);
       if (secPush) {
