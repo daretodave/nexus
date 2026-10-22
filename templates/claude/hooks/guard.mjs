@@ -2,9 +2,9 @@
 // .claude/hooks/guard.mjs — mechanical enforcement of the
 // standing rules in agents.md. Wired via .claude/settings.json:
 //
-//   PreToolUse (matcher: Bash)  → node .claude/hooks/guard.mjs pre-bash
-//   PreToolUse (matcher: Read|Grep) → node .claude/hooks/guard.mjs pre-read
-//   Stop                        → node .claude/hooks/guard.mjs stop
+//   PreToolUse (matcher: Bash)  → node "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.mjs pre-bash
+//   PreToolUse (matcher: Read|Grep) → node "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.mjs pre-read
+//   Stop                        → node "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.mjs stop
 //
 // Exit-code contract (Claude Code hooks):
 //   0  allow / no opinion

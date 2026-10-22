@@ -176,20 +176,20 @@ Two of them carry this layer. The template ships one script —
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "node .claude/hooks/guard.mjs pre-bash" }
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-bash" }
         ]
       },
       {
         "matcher": "Read|Grep",
         "hooks": [
-          { "type": "command", "command": "node .claude/hooks/guard.mjs pre-read" }
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-read" }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "node .claude/hooks/guard.mjs stop" }
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs stop" }
         ]
       }
     ]

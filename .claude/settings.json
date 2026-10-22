@@ -137,7 +137,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/guard.mjs pre-bash"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-bash"
           }
         ]
       },
@@ -146,7 +146,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/guard.mjs pre-read"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-read"
           }
         ]
       },
@@ -165,7 +165,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/guard.mjs stop"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs stop"
           }
         ]
       }
