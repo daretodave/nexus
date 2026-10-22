@@ -382,3 +382,20 @@ test('49.4: the header counts declared names; an undeclared vault name says so, 
   assert.match(src, /server\.startManifest\(\{ fromEnv: true, names: \[name\] \}\)/, 'Declare writes through the manifest route, names only');
   assert.match(src, /r\.canDeclare \? <button[^\n]*>Declare<\/button>/);
 });
+
+test('49.6: an optional secret that is not set reads "optional · not set", with no missing dot anywhere', async () => {
+  const { OPTIONAL_UNSET, shownState } = await import('../src/screens/vault/model.js');
+  const opt = { name: 'GH_TOKEN', for: 'Optional locally.', chunk: null, declared: true, optional: true, set: false, rings: [], destinations: [{ destination: 'local', state: 'missing' }, { destination: 'github-actions', state: 'not pushed' }], setAt: null, age: null, rotate: false };
+  const st = { ...STATUS, requests: [], secrets: [opt] };
+  const [r] = vaultRows(st, { now: NOW });
+  assert.equal(OPTIONAL_UNSET, 'optional · not set');
+  assert.equal(r.mask, 'optional · not set');
+  assert.equal(r.age, '', 'no "never set" for an optional secret');
+  assert.deepEqual(r.dots.map((d) => d.cls), ['dd is-none', 'dd is-none', 'dd is-none', 'dd is-none'], 'no missing dot');
+  assert.equal(r.dots[0].title, 'local: optional · not set');
+  assert.equal(r.canAdd, true, 'a value can still be added');
+  assert.ok(destRows(st).every((g) => !/missing/.test(g.count) && g.dot !== 'dd is-missing'), 'Where values go warns of nothing');
+  assert.equal(shownState({ ...opt, optional: false }, 'local'), 'missing', 'a required one still reads missing');
+  const set = vaultRows({ ...st, secrets: [{ ...opt, set: true, rings: ['local'], destinations: [{ destination: 'local', state: 'set' }] }] }, { now: NOW })[0];
+  assert.equal(set.mask, MASK);
+});

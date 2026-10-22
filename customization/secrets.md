@@ -65,8 +65,9 @@ only asks for one once a chunk names a secret.
 | `destinations` | One or more of `local` (the vault), `github-actions`, `vercel`, `cloudflare`. Each once. |
 | `provider` | `owner`. Contributors never need project secrets: the owner is the sysadmin, and the owner's loop deploys. |
 | `chunk` | The chunk that first asked for it (`07.3`), or `null` (imported, or there before the plan). |
+| `optional` | Optional key. `true` for a secret the repo runs without (a token `gh auth login` stands in for locally). Unset, it reads `optional · not set` in `status` and the GUI, never `missing`, and no warning. Leave it out otherwise. |
 
-Nothing else. A `value` key is refused outright, and so is any
+Nothing else (`optional` is the one key an entry may leave out). A `value` key is refused outright, and so is any
 key the shape doesn't name, so a value can't slip in under
 another word. The check's messages name the entry and never
 quote what it holds.
@@ -156,7 +157,8 @@ node scripts/secrets.mjs import incoming.env --store          # a real .env: val
 - `--ring` is `local`, `workspace` or `keychain`. The default
   is the keychain when it is on, else `local`.
 - `status` lists every declared name with the rings that hold
-  it (or `missing`) and its destinations, then any name the
+  it (or `missing`; `optional · not set` for an `optional`
+  one) and its destinations, then any name the
   `.env` files hold that the manifest doesn't. `--json` gives
   the same as data (for the GUI). Never a value.
 - `import FILE --store` takes a `.env` someone handed you: each

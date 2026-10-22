@@ -267,7 +267,7 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
         const stale = !!(p && setAt && time < setAt);
         return { destination: d, state: p ? 'pushed' : 'not pushed', at: p ? time : null, ...(stale ? { stale } : {}), ...(p ? { detail } : {}) };
       });
-      return { name: s.name, for: e.for ?? null, where: e.where ?? null, chunk: e.chunk ?? null, declared: !!s.declared, set: s.rings.length > 0, rings: s.rings, destinations, age: s.age ?? null, setAt, rotate: !!s.rotate };
+      return { name: s.name, for: e.for ?? null, where: e.where ?? null, chunk: e.chunk ?? null, declared: !!s.declared, ...(e.optional === true ? { optional: true } : {}), set: s.rings.length > 0, rings: s.rings, destinations, age: s.age ?? null, setAt, rotate: !!s.rotate };
     });
     const isSet = new Set(secrets.filter((s) => s.set).map((s) => s.name));
     for (const lk of st.localKeys ?? []) if (lk.rings?.length) isSet.add(lk.name);

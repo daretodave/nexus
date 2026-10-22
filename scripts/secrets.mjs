@@ -85,7 +85,7 @@ export async function readSecretInput(prompt) {
   });
 }
 
-const where = (rings) => (rings.length ? `set · ${rings.join(', ')}` : 'missing');
+const where = (rings, optional = false) => (rings.length ? `set · ${rings.join(', ')}` : optional ? 'optional · not set' : 'missing');
 
 export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), input = readSecretInput, vault: vaultOpts = {}, owner, run = spawnRunner } = {}) {
   // Everything after `--` is run's command: its flags are the command's, never this script's.
@@ -334,10 +334,11 @@ function status(vault, current, { out, json, owner = true, localKeys = [], log =
   const entries = current ? current.manifest.secrets : [];
   const declared = entries.map((e) => e.name);
   const dest = new Map(entries.map((e) => [e.name, e.destinations]));
+  const optional = new Set(entries.filter((e) => e.optional === true).map((e) => e.name));
   const last = lastSet(log);
   const rows = vault.status(declared).map((r) => {
     const age = r.rings.length && last.has(r.name) ? ageDays(last.get(r.name)) : null;
-    return { ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [], age, rotate: age !== null && age > ROTATE_DAYS };
+    return { ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [], ...(optional.has(r.name) ? { optional: true } : {}), age, rotate: age !== null && age > ROTATE_DAYS };
   });
   const nudges = rotationNudges(log, { held: (n) => rows.some((r) => r.name === n && r.rotate) });
   // A contributor's local keys: the names recorded for this checkout plus any name its .env holds; this machine only.
@@ -355,10 +356,12 @@ function status(vault, current, { out, json, owner = true, localKeys = [], log =
     return 0;
   }
   const set = rows.filter((r) => r.declared && r.rings.length).length;
+  // An optional secret that is not set is not missing: the repo runs without it.
+  const unsetOptional = rows.filter((r) => r.declared && r.optional && !r.rings.length).length;
   const places = [vault.config.local, vault.config.workspace, ...(vault.config.keychain ? [`keychain ${vault.config.service}`] : [])].join(', ');
-  out(`secrets status: ${declared.length} declared · ${set} set · ${declared.length - set} missing (vault: ${places})`);
+  out(`secrets status: ${declared.length} declared · ${set} set · ${declared.length - set - unsetOptional} missing${unsetOptional ? ` · ${unsetOptional} optional, not set` : ''} (vault: ${places})`);
   const width = Math.max(0, ...rows.map((r) => r.name.length));
-  for (const r of rows) out(`  ${r.name.padEnd(width)}  ${where(r.rings).padEnd(28)}  ${r.declared ? `-> ${r.destinations.join(', ')}` : `(not declared in ${MANIFEST})`}${r.age !== null ? `  set ${r.age} d ago` : ''}`);
+  for (const r of rows) out(`  ${r.name.padEnd(width)}  ${where(r.rings, r.optional).padEnd(28)}  ${r.declared ? `-> ${r.destinations.join(', ')}` : `(not declared in ${MANIFEST})`}${r.age !== null ? `  set ${r.age} d ago` : ''}`);
   for (const x of nudges) out(nudgeLine(x));
   return 0;
 }

@@ -230,3 +230,19 @@ test('49.4: Declare adds only the names listed, names only; a name the root .env
     await c.app.close();
   }
 });
+
+test('49.6: GET /api/secrets carries a manifest entry\'s optional: true; an entry without it carries none', async () => {
+  const { repo } = mature({ scripts: true, dotenv: '' });
+  fs.writeFileSync(path.join(repo, 'nexus.secrets.json'), `${JSON.stringify({ version: 1, secrets: [
+    { name: 'GH_TOKEN', for: 'Optional locally.', where: null, destinations: ['local'], provider: 'owner', chunk: null, optional: true },
+    { name: 'ACTIONS_PAT', for: 'The cloud loop.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+  ] }, null, 2)}\n`);
+  const { app, call } = await serve(repo);
+  try {
+    const st = await call('GET', '/api/secrets');
+    assert.equal(st.status, 200, JSON.stringify(st.json));
+    assert.deepEqual(st.json.secrets.map((s) => [s.name, s.optional === true, s.set]), [['GH_TOKEN', true, false], ['ACTIONS_PAT', false, false]]);
+  } finally {
+    await app.close();
+  }
+});

@@ -23,8 +23,10 @@ export const LABEL = { local: 'Local', 'github-actions': 'GitHub Actions', verce
 /** The column heads' titles. */
 export const HEAD_TITLE = { local: 'this checkout\'s vault', 'github-actions': 'GitHub Actions secrets', vercel: 'Vercel environment variables', cloudflare: 'Cloudflare secrets' };
 /** A dot per state. */
-export const DOT = { set: 'dd is-set', stale: 'dd is-stale', missing: 'dd is-missing', none: 'dd is-none' };
-const WORD = { set: 'set', stale: 'out of sync', missing: 'missing', none: 'not used' };
+export const DOT = { set: 'dd is-set', stale: 'dd is-stale', missing: 'dd is-missing', none: 'dd is-none', optional: 'dd is-none' };
+const WORD = { set: 'set', stale: 'out of sync', missing: 'missing', none: 'not used', optional: 'optional · not set' };
+/** What an optional secret that is not set reads (spec 49, A6): never missing, no warning. */
+export const OPTIONAL_UNSET = 'optional \u00b7 not set';
 
 const DAY = 86_400_000;
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -78,6 +80,12 @@ export function destState(s, d) {
   return 'missing';
 }
 
+/** destState as the table and the cards show it: an optional secret that is not set reads optional, never missing. */
+export function shownState(s, d) {
+  const st = destState(s, d);
+  return st === 'missing' && s.optional && !s.set ? 'optional' : st;
+}
+
 /** Where the vault keeps values on this machine, in words. */
 export function vaultPlace(vault) {
   if (vault?.keychain) return 'the keychain on this machine';
@@ -99,7 +107,8 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
   const asked = requestedNames(status);
   return (status?.secrets || []).map((s) => {
     if (s.declared === false) return undeclaredRow(s, { fresh });
-    const states = Object.fromEntries(DESTS.map((d) => [d, destState(s, d)]));
+    const states = Object.fromEntries(DESTS.map((d) => [d, shownState(s, d)]));
+    const optionalUnset = !!s.optional && !s.set;
     // What Sync pushes: a place holding an older value, or one the value never reached (a set value, missing there).
     const stale = s.set ? DESTS.filter((d) => d !== 'local' && (states[d] === 'stale' || states[d] === 'missing')) : [];
     const where = DESTS.filter((d) => states[d] === 'set' || states[d] === 'stale').map((d) => SHORT[d]);
@@ -111,13 +120,14 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
       for: s.for || '',
       set: !!s.set,
       requested: !!req && !s.set,
+      optional: !!s.optional,
       editing: edit === s.name,
       fresh: fresh.has(s.name),
-      mask: s.set ? MASK : 'no value',
-      maskAria: s.set ? 'value hidden' : 'no value yet',
+      mask: s.set ? MASK : optionalUnset ? OPTIONAL_UNSET : 'no value',
+      maskAria: s.set ? 'value hidden' : optionalUnset ? OPTIONAL_UNSET : 'no value yet',
       dots: DESTS.map((d) => ({ d, cls: DOT[states[d]], title: `${SHORT[d]}: ${WORD[states[d]]}` })),
       chunk,
-      age: ageText(s, now),
+      age: optionalUnset ? '' : ageText(s, now),
       old: !!s.rotate,
       canAdd: !s.set,
       canSync: !!s.set && stale.length > 0,
@@ -186,7 +196,7 @@ export function destRows(status, { repo = '' } = {}) {
     cloudflare: 'worker secrets',
   };
   return DESTS.map((d) => {
-    const n = (w) => secrets.filter((s) => destState(s, d) === w).length;
+    const n = (w) => secrets.filter((s) => shownState(s, d) === w).length;
     const set = n('set');
     const stale = n('stale');
     const miss = n('missing');

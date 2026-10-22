@@ -363,3 +363,36 @@ describe('a contributor checkout', () => {
     }
   });
 });
+
+describe('an optional secret (spec 49, A6)', () => {
+  const MANIFEST_TEXT = JSON.stringify({ version: 1, secrets: [
+    { name: 'GH_TOKEN', for: 'Optional locally.', where: null, destinations: ['local'], provider: 'owner', chunk: null, optional: true },
+    { name: 'ACTIONS_PAT', for: 'The cloud loop.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+  ] }, null, 2);
+
+  it('reads "optional · not set", never missing, and does not count as missing; set, it reads set', async () => {
+    const t = workspace();
+    try {
+      fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), MANIFEST_TEXT);
+      const lines = [];
+      const io = { out: (s) => lines.push(s), err: (s) => lines.push(s), owner: () => true, vault: { git: notRepo } };
+      assert.equal(await main(['status', '--root', t.repo], io), 0);
+      const text = lines.join('\n');
+      assert.match(text, /2 declared · 0 set · 1 missing · 1 optional, not set/);
+      assert.match(text, /GH_TOKEN\s+optional · not set/);
+      assert.match(text, /ACTIONS_PAT\s+missing/);
+      lines.length = 0;
+      assert.equal(await main(['status', '--json', '--root', t.repo], io), 0);
+      const json = JSON.parse(lines.join('\n'));
+      assert.deepEqual(json.secrets.map((s) => [s.name, s.optional === true]), [['GH_TOKEN', true], ['ACTIONS_PAT', false]]);
+      fs.writeFileSync(path.join(t.repo, '.env'), `GH_TOKEN=${FAKES[0]}\n`);
+      lines.length = 0;
+      assert.equal(await main(['status', '--root', t.repo], io), 0);
+      assert.match(lines.join('\n'), /2 declared · 1 set · 1 missing \(/);
+      assert.match(lines.join('\n'), /GH_TOKEN\s+set · local/);
+      assert.ok(!lines.join('\n').includes(FAKES[0]));
+    } finally {
+      t.done();
+    }
+  });
+});

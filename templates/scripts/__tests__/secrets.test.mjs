@@ -74,6 +74,16 @@ describe('the manifest shape', () => {
     assert.match(problems, /F_TOKEN: for: say what it is for/);
   });
 
+  it('takes optional: true or false (spec 49, A6), refuses anything else, and writes it only when true', () => {
+    assert.deepEqual(validateManifest({ version: 1, secrets: [entry({ optional: true }), entry({ name: 'GH_TOKEN', optional: false })] }), []);
+    assert.match(validateManifest({ version: 1, secrets: [entry({ optional: 'yes' })] }).join('\n'), /VERCEL_TOKEN: optional: true or false/);
+    const text = serialize({ version: 1, secrets: [entry({ optional: true }), entry({ name: 'GH_TOKEN', optional: false }), entry({ name: 'X_TOKEN' })] });
+    const back = JSON.parse(text).secrets;
+    assert.deepEqual(Object.keys(back[0]), ['name', 'for', 'where', 'destinations', 'provider', 'chunk', 'optional']);
+    assert.ok(!('optional' in back[1]) && !('optional' in back[2]), 'false or absent is left out');
+    assert.deepEqual(parseManifest(text).problems, []);
+  });
+
   it('refuses a wrong version and a missing list, and reports text that is not JSON', () => {
     assert.match(validateManifest({ version: 2, secrets: [] }).join('\n'), /version: 1/);
     assert.match(validateManifest({ version: 1 }).join('\n'), /secrets: a list/);

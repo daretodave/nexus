@@ -1,7 +1,8 @@
 // scripts/plan/secrets-manifest.mjs: nexus.secrets.json, the tracked contract that names a repo's secrets.
 //
 // The rule: the model sees names, never values. The manifest holds one entry per secret (its name, what it is for,
-// where to get it, where it goes, who provides it, and the chunk that first asked for it) and never a value: a
+// where to get it, where it goes, who provides it, the chunk that first asked for it, and optionally `optional: true`
+// for one the repo runs without) and never a value: a
 // `value` key is refused outright, so is any key the shape doesn't name. Values live in the vault (local, untracked);
 // the manifest is what the plan, the gate and the GUI read. Shape, rules and the import:
 // nexus/customization/secrets.md.
@@ -28,6 +29,8 @@ export const PROVIDERS = ['owner']
 /** An environment variable's name, as a chunk line and the manifest write it. */
 export const NAME = /^[A-Z][A-Z0-9_]*$/
 const KEYS = ['name', 'for', 'where', 'destinations', 'provider', 'chunk']
+/** Keys an entry may carry besides KEYS: `optional` (true: unset reads "optional · not set", never missing). */
+const OPTIONAL_KEYS = ['optional']
 const TOP_KEYS = ['version', 'about', 'secrets']
 const CHUNK_ID = /^\d{2,}\.\d+[a-z0-9]*$/
 const LINK = /^https?:\/\/\S+$/
@@ -51,7 +54,7 @@ export function validateManifest(m) {
     else seen.add(e.name)
     for (const k of Object.keys(e)) {
       if (k === 'value' || k === 'values') problems.push(`${who}: a manifest never holds a value (values live in the vault)`)
-      else if (!KEYS.includes(k)) problems.push(`${who}: unknown key ${k} (an entry has ${KEYS.join(', ')})`)
+      else if (!KEYS.includes(k) && !OPTIONAL_KEYS.includes(k)) problems.push(`${who}: unknown key ${k} (an entry has ${KEYS.join(', ')}, and optionally ${OPTIONAL_KEYS.join(', ')})`)
     }
     if (typeof e.for !== 'string' || !e.for.trim()) problems.push(`${who}: for: say what it is for`)
     if (e.where !== null && !(typeof e.where === 'string' && LINK.test(e.where))) problems.push(`${who}: where: a link (https://…) or null`)
@@ -62,6 +65,7 @@ export function validateManifest(m) {
     }
     if (!PROVIDERS.includes(e.provider)) problems.push(`${who}: provider ${e.provider} is not one of ${PROVIDERS.join(', ')}`)
     if (e.chunk !== null && !(typeof e.chunk === 'string' && CHUNK_ID.test(e.chunk))) problems.push(`${who}: chunk: a chunk id (NN.k) or null`)
+    if (e.optional !== undefined && typeof e.optional !== 'boolean') problems.push(`${who}: optional: true or false, or leave it out`)
   })
   return problems
 }
@@ -84,9 +88,10 @@ export function readManifest(file) {
   return parseManifest(text)
 }
 
-/** The manifest as written: two-space JSON, one trailing newline, each entry's keys in the documented order. */
+/** The manifest as written: two-space JSON, one trailing newline, each entry's keys in the documented order
+ * (`optional` last, and only when true). */
 export function serialize(m) {
-  const secrets = m.secrets.map((e) => Object.fromEntries(KEYS.map((k) => [k, e[k] ?? null])))
+  const secrets = m.secrets.map((e) => ({ ...Object.fromEntries(KEYS.map((k) => [k, e[k] ?? null])), ...(e.optional === true ? { optional: true } : {}) }))
   return `${JSON.stringify({ ...m, secrets }, null, 2)}\n`
 }
 
