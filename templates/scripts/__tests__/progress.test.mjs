@@ -151,7 +151,7 @@ describe('the view', () => {
 });
 
 describe('the data (--json)', () => {
-  const closed = [{ id: '07.1', day: '2026-10-20', text: 'Search box renders' }];
+  const closed = [{ id: '07.1', day: '2026-10-20', text: 'Search box renders', commit: 'ec8af4d' }];
   const open = [
     { id: '07.2', text: 'Results page', size: 'M' },
     { id: '07.3', text: 'Empty state', size: 'S' },
@@ -171,8 +171,14 @@ describe('the data (--json)', () => {
 
   it('lists every chunk with its state: closed, claimed (live claim or PR) or open (none, or a stale claim)', () => {
     assert.deepEqual(data.chunks.map((c) => `${c.id}:${c.state}`), ['07.1:closed', '07.2:claimed', '07.3:claimed', '07.4:open', '07.5:claimed', '07.6:open']);
-    assert.deepEqual(byId['07.1'], { id: '07.1', title: 'Search box renders', size: null, state: 'closed', hours: null, closedOn: '2026-10-20', claim: null, underWay: null, comingUpIn: null });
+    assert.deepEqual(byId['07.1'], { id: '07.1', title: 'Search box renders', size: null, state: 'closed', hours: null, closedOn: '2026-10-20', closedBy: 'ec8af4d', claim: null, underWay: null, comingUpIn: null });
     assert.equal(byId['07.6'].claim, null);
+  });
+
+  it("gives a closed chunk its closing commit from the archive's range, none for plan only", () => {
+    const archive = '- 2026-10-21 · 39.4 · x · plan only\n- 2026-10-22 · 39.5 · y · a1b2c3d..ec8af4d\n- 2026-10-22 · 39.6 · z · (this commit)';
+    const d = specData({ spec: '39', closed: closedChunks(archive, '39'), open: [], now });
+    assert.deepEqual(d.chunks.map((c) => [c.id, c.closedOn, c.closedBy]), [['39.4', '2026-10-21', null], ['39.5', '2026-10-22', 'ec8af4d'], ['39.6', '2026-10-22', null]]);
   });
 
   it('counts, percent, the estimate left and the chunk under way', () => {

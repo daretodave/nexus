@@ -8,7 +8,7 @@
 //             chunks?: [chunk] }], chunks?: [chunk], order?: [id] | next?: [{ id }], asap?: [id], held?: [id],
 //             planPr?: { number?, state?, title?, adds?, note?, landed? } }
 //   chunk:  { id, spec?, title|t, size, state?: 'ready'|'claimed'|'building'|'review'|'closed', closed?, asap?,
-//             plotted?: 'main' | '#151' | true, landed?, ai? }
+//             plotted?: 'main' | '#151' | true, landed?, closedOn?, closedBy?, ai? }
 //   claims: [{ id, who, host, at, session, star?, pr, held, state: 'live'|'stale'|'pr'|'held', mine }]  (claims.mjs list --json;
 //           star is the session's star name from its tag, s:<session>~<star>)
 //   sessions (optional): [{ id, name, kind: 'local'|'terminal'|'other', state, phase, chunk, claimsSession? }]
@@ -41,6 +41,16 @@ export function dur(ms) {
 
 // ---- the plan ---------------------------------------------------------------
 
+/**
+ * A closed chunk's claim column (spec 49, A8): its close date and closing commit from the archive's fields,
+ * `10-22 · ec8af4d`; the date alone when the range names no commit (`plan only`); null when neither is known.
+ */
+export function closedLabel(closedOn, closedBy) {
+  const day = /^\d{4}-(\d{2}-\d{2})/.exec(String(closedOn || ''))?.[1] || '';
+  const sha = closedBy ? String(closedBy).slice(0, 7) : '';
+  return [day, sha].filter(Boolean).join(' · ') || null;
+}
+
 /** Flatten the plan to { specs, chunks, order, asap, held } with one spelling. */
 export function normalizePlan(plan) {
   if (!plan) return null;
@@ -66,7 +76,7 @@ export function normalizePlan(plan) {
       state: closed ? 'closed' : (c.state && LAB[c.state] ? c.state : 'ready'),
       asap: !!c.asap || asapIds.has(String(c.id)) || asapIds.has(c.spec),
       laneHeld: heldIds.has(String(c.id)) || heldIds.has(c.spec),
-      plotted: c.plotted === true ? 'main' : (c.plotted || null), landed: c.landed || null, ai: !!c.ai,
+      plotted: c.plotted === true ? 'main' : (c.plotted || null), landed: c.landed || (closed ? closedLabel(c.closedOn, c.closedBy) : null), ai: !!c.ai,
       // The secret gate (spec 42): the names a chunk waits on; it parks as needs secret until they are set.
       needsSecret: !closed && Array.isArray(c.needsSecret) ? c.needsSecret.map(String) : [],
     };

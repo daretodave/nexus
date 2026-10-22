@@ -13,7 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import { boardFrom, readPlan, specNumbers, planKitDir, planKitFiles, oneLine } from '../server/plan.mjs';
-import { normalizePlan, lanes, specProgress, subLine, orderMeta, rowModel } from '../src/screens/board/model.js';
+import { normalizePlan, lanes, specProgress, subLine, orderMeta, rowModel, closedLabel } from '../src/screens/board/model.js';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'templates', 'scripts');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -176,6 +176,22 @@ test('a closed chunk shows no made-up size (spec 49, A7)', () => {
   const plan = normalizePlan(boardFrom({}, progress));
   const ui = { owner: true, prot: false, ownerName: 'Dave' };
   assert.deepEqual(plan.chunks.map((c) => [c.id, rowModel(c, null, ui).size]), [['39.5', null], ['39.6', 'S'], ['39.7', 'M'], ['39.8', 'L']]);
+});
+
+test("a closed chunk's claim column shows its close date and closing commit (spec 49, A8)", () => {
+  const dir = fixtureRepo();
+  fs.appendFileSync(path.join(dir, 'plan', 'ARCHIVE.md'), [
+    '- 2026-10-21 · 09.0 · one tick ran end to end in a scratch repo · plan only',
+    '- 2026-10-22 · 09.3 · The board reads fields · abc1234..ec8af4d1',
+    '- 2026-10-22 · 09.4 · Lands next · (this commit)', '',
+  ].join('\n'));
+  const progress = node(dir, ['scripts/plan/progress.mjs', '07', '09', '--json']);
+  const plan = normalizePlan(boardFrom({}, progress));
+  const ui = { owner: true, prot: false, ownerName: 'Dave' };
+  const label = (id) => rowModel(plan.chunks.find((c) => c.id === id), null, ui).freeLabel;
+  assert.deepEqual(['07.1', '09.0', '09.3', '09.4', '09.1'].map(label), ['10-01 · abc1234', '10-21', '10-22 · ec8af4d', '10-22', 'unclaimed']);
+  assert.equal(closedLabel(null, null), null);
+  assert.equal(rowModel(normalizePlan({ specs: [{ id: '05', chunks: [{ id: '05.1', state: 'closed' }] }] }).chunks[0], null, ui).freeLabel, 'closed');
 });
 
 

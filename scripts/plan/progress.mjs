@@ -190,13 +190,14 @@ const round2 = (h) => Math.round(h * 100) / 100;
 
 /**
  * One spec's progress as data, for `--json` (the GUI): what render draws, every closed chunk included. Each chunk is
- * { id, title, size, state: closed | claimed | open, hours, closedOn, claim, underWay, comingUpIn }: `hours` is its
- * size's estimate (null when closed), `claim` { who, mine, pr, held, wholeSpec } or null, `underWay` { since, hours,
- * left } on the chunk marked here, `comingUpIn` hours on the ones the same loop holds after it. A chunk is claimed
+ * { id, title, size, state: closed | claimed | open, hours, closedOn, closedBy, claim, underWay, comingUpIn }: `hours`
+ * is its size's estimate (null when closed), `closedOn` the close date and `closedBy` the closing commit (the archive
+ * range's last sha; null for `plan only` or `(this commit)`), `claim` { who, mine, pr, held, wholeSpec } or null,
+ * `underWay` { since, hours, left } on the chunk marked here, `comingUpIn` hours on the ones the same loop holds after it. A chunk is claimed
  * when a live claim, an open PR or a hold names it (or holds its whole spec); a stale claim leaves it open.
  */
 export function specData({ spec, title = '', file = null, closed, open, claims = {}, events = [], now = Date.now(), mine = () => false }) {
-  const chunks = closed.map((c) => ({ id: c.id, title: c.text, size: null, state: 'closed', hours: null, closedOn: c.day, claim: null, underWay: null, comingUpIn: null }));
+  const chunks = closed.map((c) => ({ id: c.id, title: c.text, size: null, state: 'closed', hours: null, closedOn: c.day, closedBy: c.commit ?? null, claim: null, underWay: null, comingUpIn: null }));
   for (const w of walk({ spec, open, claims, events, now, mine })) {
     const { c, claim } = w;
     const live = Boolean(claim && (claim.held || claimState(claim, now) !== 'stale'));
@@ -207,6 +208,7 @@ export function specData({ spec, title = '', file = null, closed, open, claims =
       state: live ? 'claimed' : 'open',
       hours: HOURS[c.size] ?? HOURS.M,
       closedOn: null,
+      closedBy: null,
       claim: live ? { who: claim.who, mine: mine(claim), pr: claim.pr ?? null, held: claim.held || null, wholeSpec: Boolean(w.wholeSpec) } : null,
       underWay: w.kind === 'here' ? { since: w.since ? new Date(w.since).toISOString() : null, hours: round2(w.spent), left: round2(w.left) } : null,
       comingUpIn: w.kind === 'coming' ? round2(w.in) : null,

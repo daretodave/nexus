@@ -23,7 +23,7 @@
 //     order: [id], next: [{ id, lane, eta, spec }], asap: [id], held: [id], inFlight: [{ id, who }],
 //     blocked: [{ id, why }], unchunked: [spec], mark: [id], at, hours,
 //     sources: { order: { script, bundled }, progress: { script, bundled } } }
-//   chunk: { id, title, size, state: 'ready'|'claimed'|'closed', closedOn, claim, plotted: 'main'|null, why?,
+//   chunk: { id, title, size, state: 'ready'|'claimed'|'closed', closedOn, closedBy, claim, plotted: 'main'|null, why?,
 //            secrets?: [name], needsSecret?: [name], ownerOnly? }  (secretsOf: the secret gate, names only)
 // A chunk with no words of its own is where the AI one-liner (GET /api/summaries,
 // server/summaries.mjs) fills in.
@@ -168,7 +168,7 @@ export function boardFrom(order, progress, { repo = '' } = {}) {
       return {
         id: String(c.id), title: c.state === 'closed' ? closedTitle(c.title) : c.title || '', size: c.size ?? o?.size ?? null,
         state: c.state === 'closed' ? 'closed' : c.state === 'claimed' ? 'claimed' : 'ready',
-        closedOn: c.closedOn ?? null, claim: c.claim ?? null,
+        closedOn: c.closedOn ?? null, closedBy: c.closedBy ?? null, claim: c.claim ?? null,
         plotted: marked.has(String(c.id)) ? 'main' : null,
         ...(why.has(String(c.id)) ? { why: why.get(String(c.id)) } : null),
         ...secretsOf(o),
