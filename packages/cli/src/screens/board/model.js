@@ -389,7 +389,8 @@ export function sessionWord(s) {
 
 // ---- the grip: reorder within a spec (spec 40 A12) ------------------------------
 // A move is relative: { id, after } puts chunk `id` just after open chunk `after` (null: first). The server lands it
-// as a pending edit (server/reorder.mjs, POST /api/plan/reorder); these rules only shape the preview and the call.
+// as a pending edit, committed from a worktree of main (server/reorder.mjs, POST /api/plan/reorder); these rules only
+// shape the preview, the call, and what the board says while and after it lands.
 
 /** `list` with `id` moved to index `to` (clamped). */
 export function moveTo(list, id, to) {
@@ -439,6 +440,29 @@ export function inOrder(rows, order) {
   const named = rows.filter((r) => at.has(r.id)).sort((a, b) => at.get(a.id) - at.get(b.id));
   let k = 0;
   return rows.map((r) => (at.has(r.id) ? named[k++] : r));
+}
+
+/** A move in words: `07.2 after 07.4`, `07.5 to the top`. */
+const moveWords = (mv) => `${mv.id}${mv.after ? ` after ${mv.after}` : ' to the top'}`;
+
+/**
+ * What a spec says while its move lands (47 A11): the server commits it in a worktree of main, then settles and
+ * pushes it (owner) or opens a pull request (contributor). The preview order shows meanwhile, marked as not yet landed.
+ */
+export function landingSays(mv, owner) {
+  return `Moving ${moveWords(mv)}: ${owner ? 'committing it to main and pushing' : 'opening a pull request'}…`;
+}
+
+/**
+ * The toast a move gets once the server answers: what landed (`Reordered on main`, `Opened PR #7`), never a bare
+ * "moved" for a move that only sits somewhere. keep: whether the board keeps showing the new order (it is on main;
+ * a pull request's order shows once it merges).
+ */
+export function landedToast(mv, res = {}) {
+  if (res.landed === 'main') return { kind: 'shipped', title: `Reordered on ${res.branch || 'main'}`, body: res.note || `${moveWords(mv)}.`, keep: true };
+  if (res.landed === 'pr') return { kind: 'info', title: res.pr ? `Opened PR #${res.pr}` : 'Opened a pull request', body: res.note || `${moveWords(mv)}.`, url: res.url || null, keep: false };
+  // A server from before the landing wrote a pending file into this checkout: say so, it is not on main.
+  return { kind: 'info', title: `${moveWords(mv)} waits in ${res.file || 'a pending file'}`, body: res.note || 'Not landed yet: commit and push it, or update the GUI.', keep: true };
 }
 
 /** What the grip says to a screen reader while a chunk moves. */

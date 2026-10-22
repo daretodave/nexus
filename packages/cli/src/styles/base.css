@@ -32,3 +32,9 @@ body { background: var(--bg); }
 .cr-claim.cr-run-h .exp { align-self: flex-start; padding-left: 16px; white-space: normal; }
 .cr-claim.cr-run-h:hover .exp, .cr-claim.cr-run-h:focus-within .exp { visibility: visible; }
 .cr-run-rows { display: flex; flex-direction: column; gap: 1px; margin-left: 16px; }
+
+/* A board reorder while the server lands it (spec 47 A11): the spec says so under
+   its header, and its rows read dimmed until the answer comes. */
+.spec-landing { display: flex; align-items: center; gap: 8px; margin: 0 16px 6px 42px; font-size: 12px; color: var(--text-2); }
+.spec-landing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: nx-breathe 900ms var(--ease-breathe) infinite alternate; }
+.spec-body.is-landing { opacity: .72; }

@@ -93,3 +93,20 @@ test('the reassign call: the owner by flag, a person by login, nothing without o
   assert.deepEqual(reassignBody('07.2', other, 'kim'), { id: '07.2', login: 'kim' });
   assert.equal(reassignBody('07.2', null), null);
 });
+
+test('a move says it is landing, then what landed: on main, a pull request, or a pending file that is not on main', async () => {
+  const { landingSays, landedToast } = await import('../src/screens/board/model.js');
+  assert.equal(landingSays({ id: '07.2', after: '07.4' }, true), 'Moving 07.2 after 07.4: committing it to main and pushing…');
+  assert.equal(landingSays({ id: '07.5', after: null }, false), 'Moving 07.5 to the top: opening a pull request…');
+  const main = landedToast({ id: '07.2', after: '07.4' }, { landed: 'main', branch: 'main', note: 'Reordered on main: 07.2 after 07.4.' });
+  assert.equal(main.title, 'Reordered on main');
+  assert.equal(main.keep, true, 'on main: the board keeps the new order');
+  const pr = landedToast({ id: '07.2', after: null }, { landed: 'pr', pr: 7, url: 'https://github.com/o/r/pull/7' });
+  assert.equal(pr.title, 'Opened PR #7');
+  assert.equal(pr.url, 'https://github.com/o/r/pull/7');
+  assert.equal(pr.keep, false, 'a pull request: the listed order stays until it merges');
+  // an older server that only wrote a pending file never reads as landed
+  const old = landedToast({ id: '07.2', after: null }, { file: 'plan/pending/reorder-07-x.md' });
+  assert.match(old.title, /waits in plan\/pending\/reorder-07-x\.md/);
+  assert.doesNotMatch(old.title, /Reordered|Opened/);
+});

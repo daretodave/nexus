@@ -185,8 +185,9 @@ export function BoardSpec({ s, on, rowOn, repo, ownerName, busy, ck, prot, owner
           {sc && (owner || sc.person === 'you') && sc.kind !== 'cloud' ? <Act icon="release" ghost busy={busy === `spec ${s.id}`} onClick={() => on.release(s.id)}>Release</Act> : null}
         </div>
       </div>
+      {s.landing ? <div className="spec-landing" role="status" aria-live="polite"><span className="spec-landing-dot" aria-hidden="true" />{s.landing}</div> : null}
       {s.open && !s.empty ? (
-        <div className="spec-body" role="list" aria-label={`Chunks of ${title}`}>
+        <div className={cx('spec-body', s.landing && 'is-landing')} role="list" aria-label={`Chunks of ${title}`} aria-busy={s.landing ? 'true' : undefined}>
           {s.rows.map((r) => <BoardRow key={r.id} r={r} on={rowOn} repo={repo} ownerName={ownerName} busy={busy} grip={gripFor(s, r)} pick={pickFor(r.id)} />)}
         </div>
       ) : null}

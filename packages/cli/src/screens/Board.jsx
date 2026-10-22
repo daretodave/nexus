@@ -6,7 +6,9 @@
 // may release or reassign anyone's claim; a contributor in a repo with
 // protected claims requests instead. In the spec view the grip reorders an
 // open chunk within its spec (drag, or arrow keys then Enter): one pending
-// file on the server in either mode (POST /api/plan/reorder). Reassign opens
+// file the server lands from a worktree of main (POST /api/plan/reorder):
+// the owner's is settled and pushed, a contributor's opens a pull request;
+// the spec says so while it lands, and the toast says what landed. Reassign opens
 // a picker of the claimants and the owner. Pieces: screens/board/parts.jsx;
 // the rules: screens/board/model.js.
 import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
@@ -19,7 +21,7 @@ import { api, server, usePlan, useClaims, useSummaries, useSessions, useLocalSet
 import { PATHS, lastSession } from '../routes.js';
 import {
   normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, railPeople, hhmm, waits,
-  gripKey, dragOrder, moveOf, inOrder, gripSays, reassignTargets, reassignBody, ownerLead,
+  gripKey, dragOrder, moveOf, inOrder, gripSays, landingSays, landedToast, reassignTargets, reassignBody, ownerLead,
 } from './board/model.js';
 import { BoardRow, BoardSpec, ClaimsRail, PlanPr } from './board/parts.jsx';
 
@@ -70,6 +72,8 @@ export default function Board() {
   // until the plan reloads with it; drag is the HTML drag in flight. pick: Reassign's picker, on a row or the rail.
   const [grab, setGrab] = useState(null);
   const [moved, setMoved] = useState({});
+  // landing: the move the server is landing now ({ spec, id, after, owner }); the grips wait for it.
+  const [landing, setLanding] = useState(null);
   const [pick, setPick] = useState(null);
   const drag = useRef(null);
   const grabRef = useRef(null);
@@ -174,21 +178,36 @@ export default function Board() {
     };
   };
 
-  /** A placed grip move: one pending file on the server (POST /api/plan/reorder), in either mode. */
-  const reorder = useCallback(async (spec, mv) => {
+  /**
+   * A placed grip move (47 A11): the server lands it from a worktree of main (POST /api/plan/reorder), which can take
+   * minutes when the repo's hook runs its gate. Meanwhile the spec shows the new order marked as landing; then the
+   * toast says what landed. A pull request's order, or a refused move, goes back to the order as listed.
+   */
+  const reorder = useCallback(async (spec, mv, order) => {
     if (!mv) return;
     setBusy(mv.id);
+    setLanding({ spec, ...mv, owner });
+    if (Array.isArray(order)) setMoved((m) => ({ ...m, [spec]: order }));
+    const back = () => setMoved((m) => { const { [spec]: _, ...rest } = m; return rest; });
     try {
       const res = await api('/api/plan/reorder', mv);
-      if (Array.isArray(res.order)) setMoved((m) => ({ ...m, [spec]: res.order }));
-      toast({ kind: 'info', title: `Moved ${mv.id}${mv.after ? ` after ${mv.after}` : ' to the top of its spec'}`, body: res.note || '' });
-      planR.reload();
+      const t = landedToast(mv, res);
+      if (t.keep && Array.isArray(res.order)) setMoved((m) => ({ ...m, [spec]: res.order }));
+      else back();
+      toast({
+        kind: t.kind, title: t.title, body: t.body,
+        actions: t.url ? <a className="btn btn-s btn-ghost" href={t.url} target="_blank" rel="noreferrer">Open the pull request</a> : undefined,
+      });
+      // Kept on main: this checkout reads the old order until it is pulled, so the board keeps the new one.
+      if (!t.keep) planR.reload();
     } catch (e) {
-      toast({ kind: 'error', title: `Couldn't move ${mv.id}`, body: e.status === 404 && !/listed|spec/.test(e.message) ? "This server can't reorder the plan yet." : e.message });
+      back();
+      toast({ kind: 'error', title: `${mv.id} did not move`, body: e.status === 404 && !/listed|spec/.test(e.message) ? "This server can't reorder the plan yet." : e.message });
     } finally {
+      setLanding(null);
       setBusy(null);
     }
-  }, [planR, toast]);
+  }, [planR, toast, owner]);
 
   const openSpec = useCallback((spec) => {
     setView('spec');
@@ -289,6 +308,7 @@ export default function Board() {
     return {
       id: s.id, title: s.title, file: s.file, prog, claim: sc, empty: list.length === 0, ids, needsN: list.filter(waits).length,
       open: openOv[s.id] ?? specOpenDefault(s.id),
+      landing: landing && landing.spec === s.id ? landingSays(landing, landing.owner) : null,
       rows: inOrder(list, grab && grab.spec === s.id ? grab.order : null).filter((c) => {
         const cover = sc && c.state !== 'closed' && !c.claim ? sc : null;
         return !anyF || (f.mine && (c.claim || cover)?.person === 'you') || (f.unclaimed && !(c.claim || cover) && c.state !== 'closed' && !waits(c)) || (f.held && (c.claim || cover)?.kind === 'held');
@@ -300,7 +320,7 @@ export default function Board() {
   // The grip, live in the spec view on an open chunk with no filter on (a filtered list hides the neighbours a move
   // is named by). Keys move the preview (gripKey); a drag previews over each row and places on drop.
   const gripFor = (s, r) => {
-    if (r.closed || anyF || !s.ids.includes(r.id)) return null;
+    if (r.closed || anyF || landing || !s.ids.includes(r.id)) return null;
     const mine = grab && grab.spec === s.id ? grab : null;
     return {
       moving: !!mine && mine.id === r.id,
@@ -309,7 +329,7 @@ export default function Board() {
         if (!x.handled) return;
         e.preventDefault();
         setGrab(x.st ? { ...x.st, spec: s.id } : null);
-        if (x.commit) reorder(s.id, x.commit);
+        if (x.commit) reorder(s.id, x.commit, mine && mine.order);
       },
       // Focus leaving the grip puts the chunk back; a blur from the row's own move in the DOM is refocused above.
       onBlur: () => {
@@ -345,7 +365,7 @@ export default function Board() {
         drag.current = null;
         const g = grabRef.current;
         setGrab(null);
-        if (g) reorder(s.id, moveOf(s.ids, g.order, g.id));
+        if (g) reorder(s.id, moveOf(s.ids, g.order, g.id), g.order);
       },
     };
   };
