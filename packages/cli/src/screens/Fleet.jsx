@@ -3,7 +3,7 @@
 // tile, a filter row, "start another session", and Pause all (the reboot
 // train) docked over the grid while it runs.
 //
-// Data: GET /api/sessions (useSessions). Actions: POST /api/sessions (start),
+// Data: GET /api/sessions (useSessions), GET /api/claims (a claim holder no tile stands for gets a dim tile). Actions: POST /api/sessions (start),
 // POST /api/sessions/:id/resume (a hosted one resumes; a fallen one is taken
 // by a new hosted session on /reboot-resume <star>), POST /api/train
 // { action: pause|cancel|resume }. An action the server does not serve yet
@@ -14,11 +14,12 @@ import {
   AppFrame, Topbar, Wordmark, TbSep, TbTitle, TbSpacer, InboxBtn, ViewHead, ChoiceButtons,
   TileNew, TrainDock, Train, ToastHost, Err, Icon, cx, useShell,
 } from '../ui/index.js';
-import { useSessions, usePlan } from '../data/index.js';
+import { useSessions, usePlan, useClaims } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
-import SessionTile from './fleet/SessionTile.jsx';
-import { norm, FILTERS, counts, summary, trainOf } from './fleet/model.js';
+import SessionTile, { ClaimedTile } from './fleet/SessionTile.jsx';
+import { norm, FILTERS, counts, summary, trainOf, claimHolders, chunkTitle } from './fleet/model.js';
+import '../styles/fleet-honest.css';
 import { act, hhmm } from './fleet/util.js';
 import { useToasts } from './fleet/toasts.js';
 
@@ -71,6 +72,7 @@ export default function Fleet() {
   const now = useNow();
   const sessions = useSessions();
   const plan = usePlan();
+  const claims = useClaims(15000);
   const { toasts, push } = useToasts();
   const [filter, setFilter] = useState('all');
   const [trainOn, setTrainOn] = useState(false);
@@ -82,6 +84,12 @@ export default function Fleet() {
     return raw.map(norm).filter((s) => s.state !== 'closed').map((s) => (resuming[s.id] && s.state === 'fallen' ? { ...s, state: 'resuming' } : s));
   }, [sessions.status, sessions.data, resuming]);
 
+  // Every claim holder no tile stands for: matched against every session the server lists, closed or not.
+  const holders = useMemo(() => {
+    const rows = claims.status === 'ready' && Array.isArray(claims.data?.rows) ? claims.data.rows : [];
+    const all = sessions.status === 'ready' && Array.isArray(sessions.data) ? sessions.data : [];
+    return claimHolders(rows, all);
+  }, [claims.status, claims.data, sessions.status, sessions.data]);
   const c = counts(list);
   const shown = list.filter(FILTERS.find((f) => f.value === filter)?.test || (() => true));
   const train = trainOf(list, trainOn);
@@ -114,6 +122,16 @@ export default function Fleet() {
     sessions.reload();
   }
 
+  // Close a session that ended with the server: its star frees and its worktree closes.
+  async function close(s) {
+    setResuming((m) => ({ ...m, [s.id]: true }));
+    const r = await act(`/api/sessions/${encodeURIComponent(s.id)}/close`, {});
+    setResuming((m) => { const n = { ...m }; delete n[s.id]; return n; });
+    if (!r.ok) push({ kind: 'error', title: `Couldn't close ${s.name}`, body: r.error });
+    else if (r.data?.worktree && !r.data.worktree.closed) push({ kind: 'info', title: `Closed ${s.name}`, body: `Its star is free. Its worktree stays: ${r.data.worktree.note}` });
+    sessions.reload();
+  }
+
   // Link a terminal session: from then on a tug or an answer aimed at it lands at its next tool call (the steer hook).
   async function link(s, on) {
     const r = await act(`/api/sessions/${encodeURIComponent(s.id)}/link`, { on });
@@ -138,7 +156,7 @@ export default function Fleet() {
     <Topbar>
       <Wordmark />
       <TbSep />
-      <TbTitle title="Fleet" sub={summary(list)} />
+      <TbTitle title="Fleet" sub={summary(list, holders.length)} />
       <TbSpacer />
       <InboxBtn />
       <LoopLine />
@@ -162,7 +180,8 @@ export default function Fleet() {
         ) : null}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', margin: '-8px -28px 0', padding: `8px 28px ${24 + dockRoom}px` }}>
           <div className="fleet-grid">
-            {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} onResume={() => resume(s)} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
+            {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} title={chunkTitle(plan.data, s.chunk?.id)} onResume={() => resume(s)} onClose={s.ended ? () => close(s) : undefined} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
+            {filter === 'all' ? holders.map((h) => <ClaimedTile key={h.key} h={h} now={now} />) : null}
             {sessions.status !== 'loading' && filter === 'all' ? (
               <TileNew>
                 <span className="cstar is-neutral" />

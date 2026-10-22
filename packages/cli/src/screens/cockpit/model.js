@@ -87,6 +87,24 @@ export function identity(id, ledger) {
   return { id, name, kind: ledger?.kind || 'local' };
 }
 
+/**
+ * The last identity the server gave session `id` (its star, kind and branch), kept across a read that has none: a
+ * session that idles past its session file, or a poll that misses, still shows its star and branch, never its raw id.
+ * prev: the kept record (or null); row: the detail or the fleet row read now (or null).
+ */
+export function rememberIdentity(prev, id, row) {
+  const kept = prev && prev.id === id ? prev : null;
+  if (!row) return kept;
+  const named = row.name && row.name !== id && row.name !== String(id).slice(0, 8);
+  const branch = row.git?.branch || row.branch || '';
+  return {
+    id,
+    name: named ? row.name : kept?.name || row.name || id,
+    kind: row.kind || kept?.kind || 'local',
+    branch: branch || kept?.branch || '',
+  };
+}
+
 /** Owner mode: the ledger's word when there is one, else the checkout's. */
 export function isOwner(ledger, shellOwner) {
   if (ledger?.mode) return ledger.mode === 'owner';

@@ -106,6 +106,22 @@ export default function Launch() {
 
   const live = Array.isArray(sessions.data) ? sessions.data.filter((s) => s.kind !== 'other' && s.state !== 'closed') : [];
   const name = nextSessionName(live);
+  // Sessions that ended with an earlier server and left nothing behind still hold their stars until closed: offer to
+  // close them here (POST /api/sessions/:id/close frees the star and closes the worktree), not only on the fleet.
+  const ended = live.filter((s) => s.ended);
+  const [closing, setClosing] = useState(false);
+  const [closeErr, setCloseErr] = useState(null);
+  const closeEnded = useCallback(async () => {
+    setClosing(true);
+    setCloseErr(null);
+    const failed = [];
+    for (const s of ended) {
+      try { await api(`/api/sessions/${encodeURIComponent(s.id)}/close`, {}); } catch (e) { failed.push(`${s.name}: ${e.message}`); }
+    }
+    if (failed.length) setCloseErr(`Couldn't close ${failed.join('; ')}`);
+    setClosing(false);
+    sessions.reload();
+  }, [ended, sessions]);
   const owner = !!info.owner;
   const effectiveOwner = owner && d.ownerMode !== false;
   const rm = d.runMode ?? (prefs?.onboarded && local.status === 'ready' ? localRunMode(local.data) : 'size');
@@ -165,7 +181,11 @@ export default function Launch() {
               <span className="v" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 {name
                   ? <><SessTag session={{ name, kind: 'local' }} /><span className="c-3" style={{ fontWeight: 400 }}>its own star, color and worktree</span></>
-                  : <span className="c-3" style={{ fontWeight: 400 }}>All four stars are in use. Close a session on the fleet to free one.</span>}
+                  : ended.length
+                    ? <><span className="c-3" style={{ fontWeight: 400 }}>All four stars are in use, {ended.length} by {ended.length === 1 ? 'a session' : 'sessions'} that ended with the server.</span>
+                      <button className="btn btn-s" type="button" onClick={closeEnded} disabled={closing} aria-busy={closing || undefined}>Close {ended.length} ended {ended.length === 1 ? 'session' : 'sessions'}</button>
+                      {closeErr ? <span className="t-body-s" role="alert" style={{ color: 'var(--st-blocked)' }}>{closeErr}</span> : null}</>
+                    : <span className="c-3" style={{ fontWeight: 400 }}>All four stars are in use. Close a session on the fleet to free one.</span>}
               </span>
             </div>
             <div><span className="k">repo</span><span className="v"><code>{info.name || shell.repo}</code>{info.branch ? <> on <code>{info.branch}</code></> : null}</span></div>

@@ -4,7 +4,7 @@
 // while working, the parked questions at the end, the package) over the
 // dock. Right: the agent stage. The phase track across the top links to
 // each phase's page (?phase=), the session's own phase when none is named.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AppFrame, Empty, Err, Panes, Phases, ToastHost, localRunMode, prefsFromRunMode, saveRunMode, useShell } from '../ui/index.js';
 import { api, server, useCloudLoop, useEvents, useLocalSettings, useReloadOn, chunkStagesOf, useResource, useSessions } from '../data/index.js';
@@ -19,7 +19,8 @@ import StageView from './cockpit/StageView.jsx';
 import Working from './cockpit/Working.jsx';
 import { questionMarks, tugFils, tugMarks } from './cockpit/tugs.js';
 import {
-  PHASES, basinItems, clock, ctxLayers, identity, isOwner, liveChunks, liveStage, packageStage, phaseTrack, reviewStage, sessionPhase, startStage,
+  PHASES, basinItems, clock, ctxLayers, identity, isOwner, liveChunks, liveStage, packageStage, phaseTrack, rememberIdentity, reviewStage, sessionPhase,
+  startStage,
 } from './cockpit/model.js';
 
 const ARRIVING_MS = 60000;
@@ -64,8 +65,12 @@ export default function Cockpit() {
   const info = shell.app?.data?.info || {};
   const prefs = shell.app?.data?.prefs || {};
 
-  const listed = sessions?.find((s) => s.id === id);
-  const session = identity(id, ledger || listed);
+  // A session is listed under its ledger id; a cockpit opened by its Claude Code id finds it too.
+  const listed = sessions?.find((s) => s.id === id || s.claude === id);
+  // Its star and branch survive a read that has none (spec 47 A10): idle, it never falls back to the raw id.
+  const known = useRef(null);
+  known.current = rememberIdentity(known.current, id, ledger || listed);
+  const session = identity(id, known.current);
   const terminal = (ledger || listed)?.kind === 'terminal';
   const owner = isOwner(ledger || listed, shell.owner);
   const phase = sessionPhase(ledger || listed, owner);
@@ -255,7 +260,7 @@ export default function Cockpit() {
   const topbar = (
     <CockpitTop
       session={session} sessions={sessions} repo={ledger?.repo || listed?.repo || info.name || shell.repo} git={ledger?.git || listed?.git || null}
-      branch={info.branch} owner={owner} runMode={runMode} onRunMode={setRunMode} loop={loop} pause={pause} onPause={togglePause}
+      branch={known.current?.branch || info.branch} owner={owner} runMode={runMode} onRunMode={setRunMode} loop={loop} pause={pause} onPause={togglePause}
     />
   );
 
