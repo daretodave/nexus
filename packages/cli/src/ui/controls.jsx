@@ -186,11 +186,11 @@ export function ModeChip({ owner, compact, long = true }) {
   );
 }
 
-/** .chip: an attached file. state: undefined | 'loading' | 'error'. */
-export function FileChip({ name, meta, state, icon = 'file', onRemove }) {
+/** .chip: an attached file (an image shows `thumb`, its preview). state: undefined | 'loading' | 'error'. */
+export function FileChip({ name, meta, state, icon = 'file', thumb, title, onRemove }) {
   return (
-    <span className={cx('chip', state && `is-${state}`)}>
-      <Icon name={icon} />
+    <span className={cx('chip', state && `is-${state}`, thumb && 'has-thumb')} title={title}>
+      {thumb ? <img className="chip-thumb" src={thumb} alt="" /> : <Icon name={icon} />}
       <span className="chip-name">{name}</span>
       {meta ? <span className="chip-meta">{meta}</span> : null}
       {onRemove ? <button className="chip-x" type="button" aria-label={`Remove ${name}`} onClick={onRemove}><Icon name="x" size={12} /></button> : null}

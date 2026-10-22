@@ -5,6 +5,8 @@
 // from its menu is armed and shows as the .route chip.
 import { useMemo, useRef, useState } from 'react';
 import '../styles/route-suggest.css';
+import '../styles/attachments.css';
+import { clipboardImages } from '../../shared/attachments.mjs';
 import { Icon } from './icons.jsx';
 import { Choice, FileChip, Kbd, Menu, cx } from './controls.jsx';
 
@@ -94,6 +96,22 @@ export function SlashList({ items, active = 0, typed = '/', onPick }) {
   );
 }
 
+/** Does a drag carry files (not text being moved)? */
+const hasFiles = (dt) => [...(dt?.types || [])].includes('Files');
+
+/**
+ * A paste into the composer: the images on the clipboard (a screenshot) go to onFiles. The paste's own text, if it
+ * has any, still lands in the text box; with images only, the browser's default (nothing useful) is stopped.
+ */
+export function pasteFiles(e, onFiles) {
+  const imgs = clipboardImages(e.clipboardData);
+  if (!imgs.length) return false;
+  const types = [...(e.clipboardData?.types || [])];
+  if (!types.includes('text/plain')) e.preventDefault();
+  onFiles(imgs);
+  return true;
+}
+
 /** Commands matching a draft like "/he" (no space yet). */
 export function matchCommands(draft, commands = COMMANDS) {
   const m = /^\/([\w:-]*)$/.exec(String(draft || ''));
@@ -111,14 +129,19 @@ export function matchCommands(draft, commands = COMMANDS) {
  * mode: 'normal' | 'pin' | 'paused' | 'forming'. `dock` gives it the fixed dock height
  * (.dock .composer, plus .has-route while a route shows). 'forming' holds it
  * like 'paused' while the session's worktree is made, `formingText` saying why.
+ *
+ * Attachments (spec 51): `onFiles(files)` takes what is picked, pasted (an image on the clipboard, a screenshot) or
+ * dropped on the composer; `chips` shows them; `attached` (ready ones) lets a message with no text send; `note` is a
+ * plain message over the chips (a message over its size), and while it shows nothing sends.
  */
 export function Composer({
   value, onChange, onSend, route, onRoute, suggest, onDismissSuggest, why, plotMode = 'plan', onPlotMode,
-  chips, onAttach, attached = 0, mode = 'normal', onTogglePin, pausedText, onResume, formingText,
+  chips, onAttach, onFiles, note, attached = 0, mode = 'normal', onTogglePin, pausedText, onResume, formingText,
   placeholder = 'Nudge the run, or type / for commands', commands = COMMANDS, dock, rows = 2, focus,
 }) {
   const [menu, setMenu] = useState(false);
   const [active, setActive] = useState(0);
+  const [over, setOver] = useState(false);
   const area = useRef(null);
   const forming = mode === 'forming';
   // Held: paused (notes wait for resume) or forming (no worktree to work in yet). Nothing sends either way.
@@ -130,7 +153,8 @@ export function Composer({
   const meta = hasRoute ? ROUTE_META[route] : null;
   const guess = !route && !!suggest && !!text.trim() && !slash.length && !pin && !paused && ROUTE_META[suggest] ? suggest : null;
 
-  const send = () => { if (text.trim() && !paused) onSend?.(text); };
+  const ready = (!!text.trim() || attached > 0) && !note;
+  const send = () => { if (ready && !paused) onSend?.(text); };
   const accept = () => { if (guess && text.trim()) { setMenu(false); onSend?.(text, guess); } };
   const keyDown = (e) => {
     if (slash.length) {
@@ -151,15 +175,23 @@ export function Composer({
   // Docked in the cockpit the idle hint is just / commands (Cockpit board); the Composer board's free-standing one adds ⏎ send.
   else if (!paused && !text) hint = dock ? <><Kbd>/</Kbd>commands</> : <><Kbd>/</Kbd>commands<Kbd>⏎</Kbd>send</>;
 
+  const paste = (e) => { if (onFiles && !paused) pasteFiles(e, onFiles); };
+  const drag = onFiles && !paused ? {
+    onDragOver: (e) => { if (hasFiles(e.dataTransfer)) { e.preventDefault(); setOver(true); } },
+    onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); },
+    onDrop: (e) => { setOver(false); const f = [...(e.dataTransfer?.files || [])]; if (f.length) { e.preventDefault(); onFiles(f); } },
+  } : {};
+
   return (
-    <div className={cx('composer', focus && 'is-focus', pin && 'is-pin', paused && 'is-disabled', dock && (hasRoute || guess) && 'has-route')}>
+    <div className={cx('composer', focus && 'is-focus', pin && 'is-pin', paused && 'is-disabled', dock && (hasRoute || guess) && 'has-route', over && 'is-drop')} {...drag}>
       {slash.length ? <SlashList items={slash} active={Math.min(active, slash.length - 1)} typed={text} onPick={(c) => { onChange?.(`/${c.name} `); area.current?.focus(); }} /> : null}
       {pin ? <div className="composer-pinhead"><Icon name="pinNote" size={14} />Pinned note · every agent reads this on its next step</div> : null}
-      {chips && chips.length ? <div className="composer-chips">{chips.map((c) => <FileChip key={c.name} {...c} />)}</div> : null}
+      {note ? <div className="composer-note" role="alert">{note}</div> : null}
+      {chips && chips.length ? <div className="composer-chips">{chips.map(({ key, ...c }) => <FileChip key={key || c.name} {...c} />)}</div> : null}
       <textarea
         ref={area} rows={rows} aria-label={pin ? 'Pinned note' : 'Message the session'} value={text} disabled={paused}
         placeholder={forming ? 'Its worktree is forming. You can write once it is ready.' : paused ? (pausedText ? 'Paused. Notes you write now wait until you resume.' : placeholder) : placeholder}
-        onChange={(e) => { onChange?.(e.target.value); setActive(0); }} onKeyDown={keyDown}
+        onChange={(e) => { onChange?.(e.target.value); setActive(0); }} onKeyDown={keyDown} onPaste={paste}
       />
       {meta ? (
         <div className="route-slot" style={{ position: 'relative' }}>
@@ -191,7 +223,7 @@ export function Composer({
         <span className="spacer" />
         {hint ? <span className={cx('composer-hint', dock && 'tb-long')}>{hint}</span> : null}
         {paused && !forming && onResume ? <button className="btn btn-s" type="button" onClick={onResume}><Icon name="play" size={14} />Resume</button> : null}
-        <button className="send" type="button" aria-label={pin ? 'Pin note' : 'Send'} disabled={paused || !text.trim()} onClick={send}><Icon name="arrowUp" /></button>
+        <button className="send" type="button" aria-label={pin ? 'Pin note' : 'Send'} disabled={paused || !ready} onClick={send}><Icon name="arrowUp" /></button>
       </div>
     </div>
   );

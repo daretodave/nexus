@@ -10,6 +10,7 @@ import { cx } from './controls.jsx';
 import { Markdown } from './markdown.jsx';
 import { PATHS, lastSession } from '../routes.js';
 import { trayY, vaultRail } from './shell-rules.js';
+import '../styles/attachments.css';
 
 /** What every frame shows from live data: the inbox badge, owner mode, the loop line. */
 export const ShellContext = createContext({ inbox: 0, owner: false, repo: '' });
@@ -167,12 +168,22 @@ export function Msg({ state = 'thinking', name, time, text, tools }) {
 }
 
 /** .msg-you: your note, right-aligned; `pinned` adds the tag. */
-export function MsgYou({ time, text, pinned }) {
+export function MsgYou({ time, text, pinned, images, files }) {
+  const pics = (images || []).filter((i) => i && i.src);
   return (
     <div className="msg-you">
       <div className="msg-meta" style={{ margin: 0 }}><b>you</b><span>{time}</span></div>
+      {/* What came with it (spec 51): each image a thumbnail that opens full size, each text file by name. */}
+      {pics.length || (files && files.length) ? (
+        <div className="msg-attach">
+          {pics.map((i, n) => (
+            <a key={`i${n}`} className="msg-thumb" href={i.src} target="_blank" rel="noreferrer" title={i.name}><img src={i.src} alt={i.name || 'image'} /></a>
+          ))}
+          {(files || []).map((f, n) => <span key={`f${n}`} className="chip"><Icon name="file" /><span className="chip-name">{f}</span></span>)}
+        </div>
+      ) : null}
       {/* The person's own markdown: newlines, lists and a pasted fence keep their shape. */}
-      <Markdown className="bubble" text={text} />
+      {String(text || '').trim() ? <Markdown className="bubble" text={text} /> : null}
       {pinned ? <span className="pinned-tag"><Icon name="pinNote" size={12} />Pinned · read on the next step</span> : null}
     </div>
   );

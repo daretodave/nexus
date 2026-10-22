@@ -6,13 +6,16 @@ import { Icon, LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph } from '.
 import { PlotCard } from '../../ui/plot-card.jsx';
 import { PermissionCard } from '../../ui/permission-card.jsx';
 import { extractPlotReport } from '../../ui/plot-report.js';
-import { server } from '../../data/client.js';
+import { server, TOKEN } from '../../data/client.js';
 import { agentState, convoItems, mmss, toolDur } from './model.js';
 import { countdown } from '../../../shared/times.mjs';
 import { pinAfterScroll, stickTarget } from './stick.js';
 import '../../styles/convo-scroll.css';
 import '../../styles/plot-card.css';
 import '../../styles/permission-card.css';
+
+/** The images in your own message, each served back by the server (GET /api/uploads, spec 51) with the launch token. */
+const uploadSrcs = (images) => (images || []).map((i) => ({ name: i.name, src: i.url ? `${i.url}?t=${encodeURIComponent(TOKEN)}` : null }));
 
 /**
  * A .log row as the board draws it, with the board's tool glyph; opens to show the full call. Its diffstat comes from
@@ -199,7 +202,7 @@ export default function Working({ live, pinned, onSend }) {
     <div className="convo-wrap">
       <div className="convo is-scroll" aria-live="polite" ref={scroller.ref} onScroll={scroller.onScroll}>
         {items.map((m) => (m.you
-          ? <MsgYou key={m.key} time={m.time || ''} text={m.text} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
+          ? <MsgYou key={m.key} time={m.time || ''} text={m.text} images={uploadSrcs(m.images)} files={m.files} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
           : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} onSend={onSend} />))}
         {asks.map((a) => <AskTugs key={a.id} ask={a} who={nameOf(a.agent)} />)}
         {permissions.map((p) => <PermissionTug key={p.id} req={p} who={nameOf(p.agent)} />)}

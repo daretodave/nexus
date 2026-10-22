@@ -45,7 +45,7 @@ export const server = {
   setPrefs: (patch) => api('/api/prefs', patch),
   setOwner: (on) => api('/api/owner', { on }),
   // `session` names a session this server runs (id, Claude Code session id or star); none is the home session.
-  send: (text, session) => api('/api/send', { text, ...(session ? { session } : {}) }),
+  send: (text, session, attachments) => api('/api/send', { text, ...(session ? { session } : {}), ...(attachments && attachments.length ? { attachments } : {}) }),
   adopt: () => api('/api/adopt', {}),
   interrupt: (session) => api('/api/interrupt', session ? { session } : {}),
   stop: (session) => api('/api/stop', session ? { session } : {}),

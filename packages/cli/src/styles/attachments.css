@@ -1,0 +1,15 @@
+/* Attachments (spec 51, A2): an image chip in the composer shows its thumbnail
+   where the handoff's .chip shows its file icon; a drag over the composer rings
+   it; a message over its size says so plainly above the chips; your bubble
+   shows the images you sent (each opens full size) and the files by name.
+   Built from the handoff's .chip and .composer; tokens only, so both themes
+   follow nexus.css. */
+.chip.has-thumb { padding-left: 3px; }
+.chip-thumb { width: 22px; height: 22px; flex: none; border-radius: 5px; object-fit: cover; background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
+.composer.is-drop { border-style: dashed; border-color: color-mix(in oklab, var(--accent) 70%, transparent); background: color-mix(in oklab, var(--accent) 6%, var(--surface-solid)); }
+.composer-note { font-size: 12px; line-height: 16px; color: var(--st-failed); }
+.msg-attach { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.msg-thumb { display: block; width: 120px; height: 90px; border-radius: 10px; overflow: hidden; background: var(--well); border: 1px solid var(--line); }
+.msg-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.msg-thumb:hover { border-color: color-mix(in oklab, var(--accent) 60%, transparent); }
+.msg-thumb:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

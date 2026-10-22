@@ -19,6 +19,8 @@ import StageView from './cockpit/StageView.jsx';
 import Working from './cockpit/Working.jsx';
 import { questionMarks, tugFils, tugMarks } from './cockpit/tugs.js';
 import { formWords } from '../../shared/forming.mjs';
+import { withFiles } from '../../shared/attachments.mjs';
+import { wireOf } from '../ui/attachments.js';
 import {
   PHASES, basinItems, clock, ctxLayers, identity, isOwner, liveChunks, liveStage, packageStage, phaseTrack, rememberIdentity, reviewStage, sessionPhase,
   startStage,
@@ -120,9 +122,18 @@ export default function Cockpit() {
   // opts.line: one exact line from the transcript (a /plot card's action), sent as its own text; the draft, its
   // route chip, plot mode and pin mode are the composer's and stay as they are. opts.as: the suggestion accepted.
   // Plain text never picks up a route here: only an armed route or an accepted suggestion adds one.
+  // files: the composer's ready attachments (spec 51): images go to a session this server runs as images, text
+  // files as text. A pinned note and a terminal session take text only, and say so rather than drop an image.
   const send = async (text, files, opts = {}) => {
     const line = !!opts.line;
-    const attachments = (files || []).map((f) => `\n\nAttached: ${f.name}\n\`\`\`\n${f.text}\n\`\`\``).join('');
+    const att = line ? [] : files || [];
+    const images = att.filter((f) => f.kind === 'image');
+    const texts = att.filter((f) => f.kind !== 'image');
+    const pinning = (pinMode && !line) || (!line && route === 'pin' && !opts.as);
+    if (images.length && (pinning || terminal)) {
+      toast({ kind: 'error', title: 'Not sent', body: pinning ? 'A pinned note is text only. Remove the image, or send it as a message.' : `${session.name} runs in a terminal: a line reaches it as text only. Remove the image, or send it from a session this GUI runs.` });
+      return false;
+    }
     try {
       if (pinMode && !line) {
         await api('/api/pin', { session: id, text });
@@ -135,12 +146,12 @@ export default function Cockpit() {
             // A terminal session: sending from its own cockpit aims at it, so link it and steer it. The line reaches
             // its next tool call (the steer hook), and only this session.
             if (!listed?.linked) await api(`${base}/link`, { on: true });
-            const sent = await api(`${base}/steer`, { text: prompt + attachments });
+            const sent = await api(`${base}/steer`, { text: withFiles(prompt, texts) });
             toast(sent?.waits
               ? { kind: 'info', title: `Queued for ${session.name}`, body: sent.note || 'It is not running: the line waits.' }
               : { kind: 'info', title: `Sent to ${session.name}`, body: 'It reads it at its next tool call, or with its next prompt if it is idle.' });
             sessionsRes.reload();
-          } else await server.send(prompt + attachments, id);
+          } else await server.send(prompt, id, wireOf(att));
         }
       }
       if (!line) { setDraft(''); setOverride(null); setPlotMode('plan'); setDismissed(false); }

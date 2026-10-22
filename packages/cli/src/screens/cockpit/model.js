@@ -308,7 +308,7 @@ export function convoItems(transcript, stage, limit = 40) {
   const name = (agent) => (!agent || agent === MAIN ? 'main' : stage?.agents?.[agent]?.label || 'agent');
   const failed = new Set((transcript || []).filter((t) => t.kind === 'tool-error').map((t) => t.id));
   for (const t of transcript || []) {
-    if (t.kind === 'user') { out.push({ you: true, text: t.text, pinned: !!t.pinned, time: clock(t.at), key: `u${out.length}` }); continue; }
+    if (t.kind === 'user') { out.push({ you: true, text: t.text, pinned: !!t.pinned, time: clock(t.at), key: `u${out.length}`, ...(t.images?.length ? { images: t.images } : {}), ...(t.files?.length ? { files: t.files } : {}) }); continue; }
     if (t.kind === 'text' || t.kind === 'delta') {
       const m = { agent: t.agent || MAIN, name: name(t.agent), text: t.text, tools: [], time: clock(t.at), key: t.id || `t${out.length}` };
       out.push(m); lastOf[m.agent] = m; continue;
