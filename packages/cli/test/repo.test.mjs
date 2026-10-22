@@ -53,6 +53,9 @@ test('durable questions: an item is read whole, its wrapped and indented lines j
     [9, 'A numbered one that wraps.'],
   ]);
   assert.deepEqual(q[0].spec, { n: '07', title: 'Site launch' });
+  // A spec titled with a middle dot (`# 15 · Title`) loses the separator too.
+  const dotted = questionsIn('# 15 · Head start\n\n## Open questions\n\n- Which?\n', 'plan/15-head-start.md');
+  assert.deepEqual(dotted[0].spec, { n: '15', title: 'Head start' });
 });
 
 test('durable questions: settled items are skipped, each prefix', () => {

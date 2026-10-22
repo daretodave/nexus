@@ -175,7 +175,7 @@ export function questionsIn(text, rel) {
   const lines = String(text || '').split(/\r?\n/);
   const n = specNumber(rel);
   const h1 = lines.find((l) => /^#\s+\S/.test(l));
-  const spec = n ? { n, title: h1 ? h1.replace(/^#\s+/, '').replace(/^(?:spec\s+)?\d+(?:\s*[-:.\u2014\u2013]+)?\s+/i, '').trim() : '' } : null;
+  const spec = n ? { n, title: h1 ? h1.replace(/^#\s+/, '').replace(/^(?:spec\s+)?\d+(?:\s*[-:.\u2014\u2013\u00b7|]+)?\s+/i, '').trim() : '' } : null;
   let inOpen = false;
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
