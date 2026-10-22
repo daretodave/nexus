@@ -1,5 +1,5 @@
-// Onboarding's own calls. Explode and plot are served (server/explode.mjs);
-// the cloud calls are not yet. Each goes through the data layer's api(), so
+// Onboarding's own calls, all served: explode and plot (server/explode.mjs),
+// the cloud workflow and schedule (server/cloud.mjs). Each goes through the data layer's api(), so
 // a 404 comes back as ApiError with status 404 and a step whose call is not
 // served shows its designed state for "not yet" instead of pretending.
 import { api } from '../../data/index.js';
@@ -13,8 +13,8 @@ export const onboardingCalls = {
   plot: (body) => api('/api/plot', body),
   /** POST /api/local { ownerMode } -> { owner, ownerMode, effective, runMode, phase } (.nexus/local.json; served) */
   setLocal: (patch) => api('/api/local', patch),
-  /** POST /api/cloud/workflow {} -> { path, sha }: write the loop workflow and commit it */
+  /** POST /api/cloud/workflow {} -> { path, sha, written, branch, pr?, setup?, mode? } (served: the kit's march.yml, landed per owner mode; already there writes nothing; 409 { error, fix } when the gh token lacks the workflow scope) */
   addWorkflow: () => api('/api/cloud/workflow', {}),
-  /** POST /api/cloud/schedule { schedule, cron } -> { cron, next } */
+  /** POST /api/cloud/schedule { schedule: 'night'|'two'|'demand', cron } -> { cron, next, path, written, sha, pr? } (served: changes only the cron line, demand takes the schedule out; next is ISO UTC or null) */
   setSchedule: (schedule, cron) => api('/api/cloud/schedule', { schedule, cron }),
 };

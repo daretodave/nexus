@@ -1,16 +1,18 @@
 // Step 6 · Cloud loop, optional (boards CloudSetup, CloudSetupLight). Four
 // steps read from GET /api/actions and GET /api/runs: the loop workflow,
-// the one secret, one real pass, and a schedule. Writing the workflow,
-// dispatching a pass and saving the schedule are not served yet; each says
-// so where it would act, and nothing claims to be done that is not.
+// the one secret, one real pass, and a schedule. Add it writes the kit's
+// march.yml (POST /api/cloud/workflow), Run one pass dispatches it (POST
+// /api/cloud/run) and Turn on saves the schedule (POST /api/cloud/schedule);
+// each lands per owner mode (owner: committed to the default branch;
+// contributor: a pull request), and nothing claims to be done that is not.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
+import { Icon, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { server, useActions, useRuns } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, useCopy, CopyFace } from './frame.jsx';
 import { useDraft } from './draft.js';
-import { onboardingCalls, notServed } from './calls.js';
+import { onboardingCalls } from './calls.js';
 
 const LOOP_FILE = /(?:^|\/)(nexus-loop|march)\.ya?ml$/;
 const NIGHT_HOURS = [1, 2, 3, 4, 5, 6];
@@ -66,18 +68,16 @@ function clock(since) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-/** The note shown where an action is not served yet. */
-function NotYet({ children }) {
-  return <span className="t-body-s c-3">{children}</span>;
-}
-
 export default function CloudSetup() {
   const actions = useActions();
   const runs = useRuns(8000);
   const [d, patch] = useDraft();
   const [preview, setPreview] = useState(false);
   const [copied, copy] = useCopy();
-  const [pending, setPending] = useState({}); // action -> 'busy' | 'missing' | error text
+  const [pending, setPending] = useState({}); // action -> 'busy' | error text
+  const [added, setAdded] = useState(null); // POST /api/cloud/workflow's answer: { path, sha, written, branch, pr? }
+  const { owner } = useShell();
+  const ownerLands = !!owner && d.ownerMode !== false;
   const [, tick] = useState(0);
 
   const a = actions.data;
@@ -100,11 +100,11 @@ export default function CloudSetup() {
   const act = async (key, fn, after) => {
     setPending((p) => ({ ...p, [key]: 'busy' }));
     try {
-      await fn();
+      const r = await fn();
       setPending((p) => ({ ...p, [key]: null }));
-      after?.();
+      after?.(r);
     } catch (e) {
-      setPending((p) => ({ ...p, [key]: notServed(e) ? 'missing' : e.message }));
+      setPending((p) => ({ ...p, [key]: e.message }));
     }
   };
 
@@ -114,14 +114,13 @@ export default function CloudSetup() {
 
   const turnOn = () => {
     patch({ cloud: 'on', cloudSaved: null });
-    // Not served yet: Launch says the schedule still needs saving in Cloud loop.
+    // Lands per owner mode; a failure leaves Launch saying the schedule still needs saving in Cloud loop.
     onboardingCalls.setSchedule(sched, cron).then(() => patch({ cloudSaved: true }), () => patch({ cloudSaved: false }));
   };
   const skip = () => patch({ cloud: 'skipped' });
 
-  const note = (key, text) => {
+  const note = (key) => {
     const v = pending[key];
-    if (v === 'missing') return <NotYet>{text}</NotYet>;
     if (v && v !== 'busy') return <span className="t-body-s" style={{ color: 'var(--st-blocked)' }}>{v}</span>;
     return null;
   };
@@ -173,13 +172,16 @@ export default function CloudSetup() {
                   : !a ? (actions.error || 'Could not read this repo’s CI.')
                     : !ghOk ? <>{a.note} The cloud loop is set up through <code>gh</code>.</>
                       : wf ? <>It is in your CI folder at <code>{wf.path}</code>{wf.enabled ? '.' : ', switched off.'}</>
-                        : <>nexus writes it to your CI folder and commits it to main.</>}
+                        : added?.pr ? <>Written to <code>{added.path}</code> in a pull request: <a href={added.pr} target="_blank" rel="noreferrer">review and merge it</a> to switch it on.</>
+                          : added ? <>Committed to {added.branch || 'main'} at <code>{added.path}</code>; GitHub lists it in a moment.</>
+                            : ownerLands ? <>nexus writes it to your CI folder and commits it to the default branch.</>
+                              : <>nexus writes it to your CI folder and opens a pull request with it.</>}
               </div>
-              {ghOk && !wf ? (
+              {ghOk && !wf && !added ? (
                 <div className="cl-body">
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button className="btn btn-s" type="button" disabled={pending.wf === 'busy'} onClick={() => act('wf', onboardingCalls.addWorkflow, actions.reload)}><Icon name="plus" size={14} />Add it</button>
-                    {note('wf', 'This server cannot write it yet. Copy march.yml from the nexus templates into .github/workflows/.')}
+                    <button className="btn btn-s" type="button" disabled={pending.wf === 'busy'} onClick={() => act('wf', onboardingCalls.addWorkflow, (r) => { setAdded(r); actions.reload(); })}><Icon name="plus" size={14} />{pending.wf === 'busy' ? 'Adding' : 'Add it'}</button>
+                    {note('wf')}
                   </div>
                 </div>
               ) : null}
@@ -248,7 +250,7 @@ export default function CloudSetup() {
                   {last?.url
                     ? <a className="btn btn-ghost btn-s" href={last.url} target="_blank" rel="noreferrer">Open the run log<Icon name="arrowRight" size={14} /></a>
                     : <Link className="btn btn-ghost btn-s" to={PATHS.cloud}>Open the run log<Icon name="arrowRight" size={14} /></Link>}
-                  {note('run', 'This server cannot start a pass yet. Use Run workflow on the workflow’s Actions page.')}
+                  {note('run')}
                 </div>
               </div>
             </div>

@@ -102,7 +102,6 @@ export const MISSING = [
   { endpoint: 'POST /api/sessions/:id/package', hook: 'cockpit', for: 'open the package PR ({ action: "open" }) or save its description' },
   { endpoint: 'POST /api/plan/chunk', hook: 'Board', for: 'Chunk it: { spec } returns questions, { spec, answers } writes the chunks' },
   { endpoint: 'POST /api/git/tidy', hook: 'GitPanel', for: 'the tidy itself (GET /api/git/tidy, the dry run, is served; /tidy closes worktrees in a terminal)' },
-  { endpoint: 'POST /api/cloud/(workflow|schedule)', hook: 'CloudSetup', for: 'add the loop workflow, save the schedule (POST /api/cloud/run, one pass now, is served)' },
   { endpoint: 'POST /api/pick-folder', hook: 'Recover', for: 'optional: an OS folder picker, since a browser cannot hand back an absolute path' },
 ];
 

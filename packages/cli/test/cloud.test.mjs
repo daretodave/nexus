@@ -311,3 +311,15 @@ test('POST /api/cloud/workflow and /api/cloud/schedule are served, per owner mod
     assert.deepEqual([s.body.cron, s.body.next, s.body.pr], [null, null, 'https://example.com/pr/1']);
   });
 });
+
+test('the Cloud step calls the served routes: MISSING no longer lists them, and no "not on this server" fallback is left', () => {
+  const src = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src');
+  // hooks.js reads the page's token on import, so its MISSING list is read as text.
+  const hooks = fs.readFileSync(path.join(src, 'data', 'hooks.js'), 'utf8');
+  const at = hooks.indexOf('export const MISSING');
+  assert.doesNotMatch(hooks.slice(at, hooks.indexOf('];', at)), /\/api\/cloud\/\(?(?:workflow|schedule)/);
+  const step = fs.readFileSync(path.join(src, 'screens', 'onboarding', 'CloudSetup.jsx'), 'utf8');
+  assert.doesNotMatch(step, /notServed|NotYet|cannot write it yet|cannot start a pass yet/);
+  assert.match(step, /onboardingCalls\.addWorkflow/);
+  assert.match(step, /onboardingCalls\.setSchedule/);
+});
