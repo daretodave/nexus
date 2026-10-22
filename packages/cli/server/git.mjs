@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
-import { run as shRun, json } from './sh.mjs';
+import { run as shRun, json, track } from './sh.mjs';
 import { findScript, kitScripts } from './repo.mjs';
 import { listClaims as readClaims } from './claims.mjs';
 
@@ -21,9 +21,9 @@ const US = '\x1f';
 /** git in `cwd`, no shell: { ok, out }. */
 export function git(cwd, args, { timeout = 20000 } = {}) {
   return new Promise((resolve) => {
-    execFile('git', args, { cwd, timeout, windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (err, stdout, stderr) => {
+    track(execFile('git', args, { cwd, timeout, windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (err, stdout, stderr) => {
       resolve({ ok: !err, out: String(stdout || '').trim(), err: String(stderr || (err && err.message) || '').trim() });
-    });
+    }));
   });
 }
 
@@ -138,7 +138,7 @@ export async function listWorktrees(root) {
   const script = findScript(root, WORKTREE_SCRIPTS);
   if (script) {
     const rows = await new Promise((resolve) => {
-      execFile(process.execPath, [script, 'list', '--json', '--repo', root], { cwd: root, timeout: 60000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => resolve(err ? null : json(String(stdout))));
+      track(execFile(process.execPath, [script, 'list', '--json', '--repo', root], { cwd: root, timeout: 60000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => resolve(err ? null : json(String(stdout)))));
     });
     if (Array.isArray(rows)) return { script, rows };
   }

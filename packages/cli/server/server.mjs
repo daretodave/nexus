@@ -24,7 +24,7 @@ import { addWorkflow, saveSchedule } from './cloud.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, transcriptActivity, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
 import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, markEnded, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
-import { run as shRun } from './sh.mjs';
+import { run as shRun, settle as settleChildren } from './sh.mjs';
 import { createGitView } from './git.mjs';
 import { readRun, recentRuns } from './recover.mjs';
 import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
@@ -697,6 +697,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       }
       elsewhere.close();
       await new Promise((r) => server.close(r));
+      // What it started and is still running (a git status a list asked for, a claims read) ends with it: on Windows
+      // a program left running holds the repo's folder.
+      await settleChildren();
     },
   };
 }

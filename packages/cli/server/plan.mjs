@@ -32,7 +32,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { json } from './sh.mjs';
+import { json, track } from './sh.mjs';
 import { gitEnv } from './cloud.mjs';
 import { findScript, kitScripts, PROGRESS_SCRIPTS, CHUNK_ID } from './repo.mjs';
 import { listedIds, settledPlan, specFile } from './reorder.mjs';
@@ -90,9 +90,9 @@ export function planKitFiles(dir) {
 /** node on a script, no shell: { ok, code, stdout, stderr }. The environment carries no GIT_* a parent git leaked. */
 export function execNode(_cmd, args, { cwd, timeout = 60000, env } = {}) {
   return new Promise((resolve) => {
-    execFile(process.execPath, args, { cwd, timeout, env: env || gitEnv(), windowsHide: true, maxBuffer: 64 * 1024 * 1024 }, (e, stdout, stderr) => {
+    track(execFile(process.execPath, args, { cwd, timeout, env: env || gitEnv(), windowsHide: true, maxBuffer: 64 * 1024 * 1024 }, (e, stdout, stderr) => {
       resolve({ ok: !e, code: e ? (typeof e.code === 'number' ? e.code : -1) : 0, stdout: String(stdout || ''), stderr: String(stderr || (e && !stderr ? e.message : '') || '') });
-    });
+    }));
   });
 }
 

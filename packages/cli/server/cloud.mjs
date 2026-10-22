@@ -20,7 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { run as shRun, json } from './sh.mjs';
+import { run as shRun, json, track } from './sh.mjs';
 import { LOOP_FILE } from './gh.mjs';
 import { MAIN } from './git.mjs';
 import { primaryRoot } from './local.mjs';
@@ -236,7 +236,7 @@ export function runClean(cmd, args, { cwd, timeout = GIT_TIMEOUT_MS, env = proce
   return new Promise((resolve) => {
     let child;
     try {
-      child = spawn(cmd, args, { cwd, env: gitEnv(env), windowsHide: true, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'] });
+      child = track(spawn(cmd, args, { cwd, env: gitEnv(env), windowsHide: true, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'] }));
     } catch (e) {
       resolve({ ok: false, code: -1, out: '', err: String(e.message || e), timedOut: false });
       return;

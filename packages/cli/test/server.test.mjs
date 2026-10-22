@@ -111,3 +111,35 @@ test('owner mode writes an excluded .owner file', async () => {
     await app.close();
   }
 });
+
+test('closing waits for what the server started, then kills what still runs as a tree (a timeout too)', async () => {
+  const { run, settle } = await import('../server/sh.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-cli-settle-'));
+  const slash = (p) => p.split(path.sep).join('/');
+  // A program that starts its own child (a shell's git, a script's git) and outlives the server's patience.
+  const script = path.join(dir, 'tree.mjs');
+  fs.writeFileSync(script, `
+    import { spawn } from 'node:child_process';
+    import fs from 'node:fs';
+    const kid = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' });
+    fs.writeFileSync(process.argv[2], String(kid.pid));
+    setInterval(() => {}, 1000);
+  `);
+  const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+  const kidOf = async (file) => { while (!fs.existsSync(file) || !fs.readFileSync(file, 'utf8')) await new Promise((r) => setTimeout(r, 25)); return Number(fs.readFileSync(file, 'utf8')); };
+  const gone = async (pid) => { for (const end = Date.now() + 10000; alive(pid) && Date.now() < end;) await new Promise((r) => setTimeout(r, 50)); return !alive(pid); };
+  try {
+    const held = run('node', [slash(script), slash(path.join(dir, 'a.pid'))], { cwd: dir, timeout: 600000 });
+    const a = await kidOf(path.join(dir, 'a.pid'));
+    assert.equal(await settle({ ms: 200 }), 1, 'one program was still running');
+    assert.equal((await held).ok, false);
+    assert.ok(await gone(a), 'its child went with it');
+
+    const timed = await run('node', [slash(script), slash(path.join(dir, 'b.pid'))], { cwd: dir, timeout: 1500 });
+    assert.match(timed.stderr, /timed out/);
+    assert.ok(await gone(Number(fs.readFileSync(path.join(dir, 'b.pid'), 'utf8'))), 'a timeout kills the whole tree');
+    assert.equal(await settle({ ms: 100 }), 0, 'nothing left');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+  }
+});

@@ -11,7 +11,7 @@
 // or claim under that session's id. NEXUS_SESSION names the claim's owner; nothing else does.
 import { execFile } from 'node:child_process';
 import { CHUNK_ID, CLAIMS_SCRIPTS, findScript } from './repo.mjs';
-import { run as shRun, json } from './sh.mjs';
+import { run as shRun, json, track } from './sh.mjs';
 
 export const VERBS = Object.freeze(['claim', 'release', 'hold', 'unhold', 'assign', 'reassign', 'request']);
 /** The claims CLI's owner identity (scripts/claims-codec.mjs PRIVILEGED). */
@@ -41,9 +41,9 @@ export function validName(name) {
 /** node <script> ...args, no shell (a git name may hold spaces); resolves { code, stdout, stderr }. */
 function runNode(repo, script, args, env, timeout = 60000) {
   return new Promise((resolve) => {
-    execFile(process.execPath, [script, ...args], { cwd: repo, env, timeout, windowsHide: true, maxBuffer: 4 * 1024 * 1024 }, (err, stdout, stderr) => {
+    track(execFile(process.execPath, [script, ...args], { cwd: repo, env, timeout, windowsHide: true, maxBuffer: 4 * 1024 * 1024 }, (err, stdout, stderr) => {
       resolve({ code: err ? (typeof err.code === 'number' ? err.code : 1) : 0, stdout: String(stdout || ''), stderr: String(stderr || '') });
-    });
+    }));
   });
 }
 
