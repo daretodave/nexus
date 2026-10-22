@@ -146,3 +146,4 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 39.5 · Template script tests pass once copied into a fresh adopter · ec8af4d1..ec8af4d1
 - 2026-10-22 · 47.14 · Interactive builders run in the background; REBOOT reaches the lead · ecab3306..ecab3306
 - 2026-10-22 · 47.13 · Claims cuts a full --session id; settle credits its own range · c3fc3ec5..5f1bd9de
+- 2026-10-22 · 47.1 · Onboarding explodes thoughts and starts a real /plot · 0cc74244..6467277f

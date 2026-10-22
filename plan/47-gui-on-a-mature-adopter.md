@@ -61,7 +61,6 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 
 ## Acceptance
 
-- **A1** `/api/explode`, `/api/plot`, `/api/cloud/workflow` and `/api/cloud/schedule` are served, owner and contributor paths tested; onboarding's Plot and Cloud steps work with no "not on this server" fallback.
 - **A2** The secrets step reads a repo whose root `.env` is already the vault as "already the vault: N names" with an offer to write the manifest, and a repo with no vault scripts says so before a file is picked.
 - **A3** Onboarding copy and chrome fit an adopted repo: Detect shows the lock's version, the Plot step names the next spec number (never "the first spec"), error toasts sit clear of the footer and link docs, and the orb glyphs (thinking dots, `?`) are centred and coloured to the orb.
 - **A4** Open the cockpit navigates at once; the worktree is created behind it with a visible forming state; worktrees go under the repo's configured worktree root.
@@ -72,16 +71,15 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A9** The claims rail folds consecutive chunks of one session into one expandable line, names the session's star when it has one, and scrolls in its own panel.
 - **A10** Fleet shows one tile per session, idle as idle, a dim tile for a claim holder that is not attached, and each tile's last message and chunk.
 - **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
+- **A15** The session onboarding's Plot step starts reaches the person: a permission it waits on shows on the Plot, Cloud and Launch steps with Allow inline, and Launch opens that session's cockpit when it is still working.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 11 open · 3 closed · next A15
+Measure: 11 open · 4 closed · next A16
 
-- [ ] **47.1** Explode and plot served for onboarding · M · closes A1 · needs —
-  - Reuse `/messy`'s clustering for explode and `/plot`'s pending-file shape for plot; owner lands settled, contributor opens a PR.
 - [ ] **47.2** Cloud workflow and schedule served for onboarding · M · closes A1 · needs —
   - Write `march.yml` from the template with the chosen cron; commit per owner mode.
 - [ ] **47.3** The secrets step knows an existing vault and a missing one · S · closes A2 · needs —
@@ -95,3 +93,5 @@ Measure: 11 open · 3 closed · next A15
 - [ ] **47.10** The claims rail folds a session's run · S · closes A9 · needs —
 - [ ] **47.11** Fleet tiles are one per session and honest · M · closes A10 · needs —
 - [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
+- [ ] **47.15** Onboarding's plot session's asks reach the person · S · closes A15 · needs —
+  - Found checking 47.1 in a scratch repo: the /plot session blocked on its first Bash permission while the person had moved on to the Cloud step.
