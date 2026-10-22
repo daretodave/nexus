@@ -56,13 +56,14 @@ would. The chunks below fix them.
 - **A13** When a close empties a spec, settle absorbs it (spec deleted, its roadmap row gone, a "spec complete" archive line) or stops with the exact steps; it never dies with a stack trace because the commit hook refused.
 - **A14** The gate's placeholder check reads pending files as settled, as the chunks check does, so a pending Add with an unknown placeholder fails before it settles.
 - **A15** A merged loop PR's `nexus/<run>` branch is deleted (pr-flow, or the adoption sets the repository's delete-on-merge).
+- **A16** Adopting a repo with no GitHub remote yet works literally: new-project.md creates or confirms the remote before adopt.md asks owner or contributor, and adopt.md's recommendation falls back to owner when `gh repo view` finds no remote.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 10 open · 5 closed · next A16
+Measure: 11 open · 5 closed · next A17
 
 - [ ] **39.5** Template script tests pass in a fresh adopter · S · closes A6 · needs —
   - steer.test.mjs:12,14,162 and claims.test.mjs:263 assume the kit's `claude/` layout.
@@ -78,3 +79,5 @@ Measure: 10 open · 5 closed · next A16
   - Seen in the scratch adopter: the pre-commit gate refused "spec 01 lists no chunk now" and settle threw from `git commit`. The roadmap row there read `| 1 |`, not `| 01 |`.
 - [ ] **39.13** The placeholder check reads the settled view · S · closes A14 · needs —
 - [ ] **39.14** Merged loop branches are deleted · S · closes A15 · needs —
+- [ ] **39.15** Adoption works before a GitHub remote exists · S · closes A16 · needs —
+  - From critique pass 28 (2026-10-22): `gh repo view --json viewerPermission` exits 1 with "no git remotes found" in a `git init`-only repo, so adopt.md's ask-list item (e) has no recommendation.

@@ -11,7 +11,7 @@ path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
 
-### [ ] [MED] prompts/adopt.md:89 — owner/contributor heuristic errors with no fallback on a repo with no git remote yet
+### [x] [MED] prompts/adopt.md:89 — owner/contributor heuristic errors with no fallback on a repo with no git remote yet — routed to 39.15
 - category: instruction-drift
 - observation: adopt.md's ask-list item (e) computes its
   recommended default for the owner/contributor question via
