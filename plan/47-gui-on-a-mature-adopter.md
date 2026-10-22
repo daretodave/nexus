@@ -62,7 +62,6 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 ## Acceptance
 
 - **A3** Onboarding copy and chrome fit an adopted repo: Detect shows the lock's version, the Plot step names the next spec number (never "the first spec"), error toasts sit clear of the footer and link docs, and the orb glyphs (thinking dots, `?`) are centred and coloured to the orb.
-- **A4** Open the cockpit navigates at once; the worktree is created behind it with a visible forming state; worktrees go under the repo's configured worktree root.
 - **A15** The session onboarding's Plot step starts reaches the person: a permission it waits on shows on the Plot, Cloud and Launch steps with Allow inline, and Launch opens that session's cockpit when it is still working.
 
 ## Open questions
@@ -70,9 +69,8 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 (None.)
 
 ## Chunks
-Measure: 3 open · 14 closed · next A18
+Measure: 2 open · 15 closed · next A18
 
 - [ ] **47.4** Onboarding fits an adopted repo · S · closes A3 · needs —
-- [ ] **47.5** The cockpit opens at once; worktrees follow the repo · M · closes A4 · needs —
 - [ ] **47.15** Onboarding's plot session's asks reach the person · S · closes A15 · needs —
   - Found checking 47.1 in a scratch repo: the /plot session blocked on its first Bash permission while the person had moved on to the Cloud step.
