@@ -74,14 +74,13 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
 - **A12** `claims.mjs` cuts a full session id given to `--session` to the stored form, so renew and release match it.
 - **A13** Settle credits a chunk only the commits in its own range: it stops at what origin already holds and passes over a plot commit that only adds a pending file.
-- **A14** `/next`'s builder runs in the background so a reboot line reaches the lead; `skills/next.md` and the loop prompts say so.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 14 open · 0 closed · next A15
+Measure: 13 open · 1 closed · next A15
 
 - [ ] **47.1** Explode and plot served for onboarding · M · closes A1 · needs —
   - Reuse `/messy`'s clustering for explode and `/plot`'s pending-file shape for plot; owner lands settled, contributor opens a PR.
@@ -99,4 +98,3 @@ Measure: 14 open · 0 closed · next A15
 - [ ] **47.11** Fleet tiles are one per session and honest · M · closes A10 · needs —
 - [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
 - [ ] **47.13** Claims cuts a full --session id; settle credits its own range · S · closes A12, A13 · needs —
-- [ ] **47.14** Builders run in the background so a reboot reaches the lead · S · closes A14 · needs —
