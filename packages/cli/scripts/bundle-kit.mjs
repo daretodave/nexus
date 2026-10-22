@@ -18,12 +18,6 @@ if (!fs.existsSync(src)) {
   console.log('bundle-kit: no ../../templates (outside the nexus repo); keeping what is there');
   process.exit(0);
 }
-for (const [bundled, templ] of Object.values(KIT_FILES)) {
-  const out = path.join(pkg, 'kit', bundled);
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.copyFileSync(path.join(src, templ), out);
-}
-console.log(`bundle-kit: copied ${Object.values(KIT_FILES).map(([, t]) => t).join(', ')} -> kit/`);
 
 const scriptsSrc = path.join(src, 'scripts');
 const planFiles = planKitFiles(scriptsSrc);
@@ -44,3 +38,20 @@ for (const f of vault) {
   fs.copyFileSync(path.join(vaultSrc, ...f.split('/')), out);
 }
 console.log(`bundle-kit: copied ${vault.length} vault scripts -> kit/secrets/`);
+
+// The cloud loop's files go last: kit/scripts/ is wiped and refilled for the plan scripts above, and bootstrap.mjs
+// lives there too (it went missing from 0.4.0-0.4.3 when this ran first).
+for (const [bundled, templ] of Object.values(KIT_FILES)) {
+  const out = path.join(pkg, 'kit', bundled);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.copyFileSync(path.join(src, templ), out);
+}
+console.log(`bundle-kit: copied ${Object.values(KIT_FILES).map(([, t]) => t).join(', ')} -> kit/`);
+
+// Every file a server route loads from kit/ must be there, or the build fails here rather than for a user.
+const want = [...Object.values(KIT_FILES).map(([b]) => b), ...planFiles.map((f) => `scripts/${f}`), ...vault.map((f) => `secrets/${f}`)];
+const lost = want.filter((f) => !fs.existsSync(path.join(pkg, 'kit', ...f.split('/'))));
+if (lost.length) {
+  console.error(`bundle-kit: missing from kit/ after bundling: ${lost.join(', ')}`);
+  process.exit(1);
+}
