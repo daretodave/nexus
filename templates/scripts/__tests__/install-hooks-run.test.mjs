@@ -14,7 +14,7 @@ import { after, describe, it } from 'node:test';
 const SCRIPTS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = path.resolve(SCRIPTS, '..', '..');
 const INSTALLERS = { template: path.join(SCRIPTS, 'install-hooks.mjs'), nexus: path.join(ROOT, 'scripts', 'install-hooks.mjs') };
-const UNSET = 'unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX';
+const UNSET = 'unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT';
 // This test's own git calls never inherit a hook's GIT_* (it may itself run under one).
 const ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
 

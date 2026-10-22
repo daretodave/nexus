@@ -215,7 +215,7 @@ export function scheduleRequest(b = {}) {
 export const HOOK_TIMEOUT_MS = 10 * 60 * 1000;
 const GIT_TIMEOUT_MS = 60000;
 /** Variables a parent git (a hook this server runs under) would hand down; with them git works on another repo. */
-export const GIT_LEAKS = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_PREFIX', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY'];
+export const GIT_LEAKS = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_PREFIX', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT'];
 export const gitEnv = (env = process.env) => Object.fromEntries(Object.entries(env).filter(([k]) => !GIT_LEAKS.includes(k)));
 
 /** Kill a process and everything it started (a hook's shell and the gate under it). */

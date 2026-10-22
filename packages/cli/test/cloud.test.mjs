@@ -427,6 +427,12 @@ test('an old hook with no unset still runs, wrapped, and its gate\'s scratch rep
     "import path from 'node:path'",
     "const d = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-gate-scratch-'))",
     "execFileSync('git', ['init', '-q', '--bare'], { cwd: d })",
+    // A gate's own test commits in its own scratch repo: our -c core.hooksPath must not follow it there
+    // (git hands -c settings to children as GIT_CONFIG_PARAMETERS), or this hook would run again inside it.
+    "const t = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-gate-commit-'))",
+    "execFileSync('git', ['init', '-q'], { cwd: t })",
+    "execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'x'], { cwd: t })",
+    "fs.rmSync(t, { recursive: true, force: true })",
     "fs.rmSync(d, { recursive: true, force: true })",
     `fs.writeFileSync('${marker}', 'ran')`,
     '',
@@ -456,7 +462,7 @@ test('safeHooks wraps each hook the repo has, honouring core.hooksPath', async (
       const names = fs.readdirSync(h.dir);
       assert.deepEqual(names, [want]);
       const text = fs.readFileSync(path.join(h.dir, want), 'utf8');
-      assert.match(text, /^#!\/bin\/sh\nunset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY\nexec "[^"]+" "\$@"\n$/);
+      assert.match(text, /^#!\/bin\/sh\nunset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT\nexec "[^"]+" "\$@"\n$/);
       assert.equal(fs.realpathSync(text.match(/exec "([^"]+)"/)[1]), fs.realpathSync(real));
       assert.deepEqual(h.args, ['-c', `core.hooksPath=${h.dir.split(path.sep).join('/')}`]);
     } finally {

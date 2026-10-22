@@ -35,7 +35,7 @@ const MARKER = '# nexus:install-hooks'
 // scratch repos (`git init --bare` for a fake origin) would inherit them and write into this repository (its
 // core.bare set true, the checkout broken). Every hook drops them first: its cwd is already the worktree root, so
 // git finds the same repository and index again.
-const UNSET = 'unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX'
+const UNSET = 'unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT'
 const HOOKS = {
   'pre-commit': `node scripts/verify.mjs
 `,
