@@ -1,0 +1,4 @@
+/* A Fleet tile's bar fits its tile (spec 49, A3): the cells give way to the space left, the label never does. The
+   brackets and "15 of 15 chunks" are text the flex row keeps whole; only the filled and empty runs shrink, clipped. */
+.tile-bar { display: flex; align-items: baseline; min-width: 0; }
+.tile-bar .f, .tile-bar .e { min-width: 0; overflow: hidden; flex: 0 1 auto; }

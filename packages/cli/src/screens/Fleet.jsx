@@ -20,6 +20,7 @@ import LoopLine from './fleet/LoopLine.jsx';
 import SessionTile, { ClaimedTile } from './fleet/SessionTile.jsx';
 import { norm, FILTERS, counts, summary, trainOf, claimHolders, chunkTitle } from './fleet/model.js';
 import '../styles/fleet-honest.css';
+import '../styles/tile-bar-fit.css';
 import { act, hhmm } from './fleet/util.js';
 import { useToasts } from './fleet/toasts.js';
 

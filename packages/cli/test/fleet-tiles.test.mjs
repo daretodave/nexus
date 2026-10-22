@@ -129,3 +129,15 @@ test('a progress.mjs bar a session printed is drawn as the tile bar, never shown
   const ledger = norm({ id: 't', name: 'polaris', progress: { done: 1, total: 4, pct: 25, label: '1 of 4 chunks' }, last: { kind: 'text', text: printed } });
   assert.equal(bar(ledger).label, '1 of 4 chunks');
 });
+
+test('the tile bar gives way at the cells, never the label: only .f and .e shrink and clip (49.3)', async () => {
+  const fs = await import('node:fs');
+  const css = fs.readFileSync(new URL('../src/styles/tile-bar-fit.css', import.meta.url), 'utf8');
+  assert.match(css, /\.tile-bar \{ display: flex;[^}]*min-width: 0;/);
+  assert.match(css, /\.tile-bar \.f, \.tile-bar \.e \{ min-width: 0; overflow: hidden; flex: 0 1 auto; \}/);
+  const fleet = fs.readFileSync(new URL('../src/screens/Fleet.jsx', import.meta.url), 'utf8');
+  assert.match(fleet, /import '\.\.\/styles\/tile-bar-fit\.css';/);
+  // The label stays a text run of the bar itself, outside the cells that shrink.
+  const ui = fs.readFileSync(new URL('../src/ui/fleet.jsx', import.meta.url), 'utf8');
+  assert.match(ui, /<span className="e">\{'░'\.repeat\(empty\)\}<\/span>\] \{label\}<\/div>/);
+});
