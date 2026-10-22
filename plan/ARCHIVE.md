@@ -148,3 +148,4 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 47.13 · Claims cuts a full --session id; settle credits its own range · c3fc3ec5..5f1bd9de
 - 2026-10-22 · 47.1 · Onboarding explodes thoughts and starts a real /plot · 0cc74244..6467277f
 - 2026-10-22 · 47.10 · The claims rail folds a session run, names stars, scrolls · 6fa97420..9b218b1c
+- 2026-10-22 · 47.6 · The transcript renders markdown and highlights commands; it scrolls · 5b9a2ed5..837e31b0

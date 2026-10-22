@@ -64,7 +64,6 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A2** The secrets step reads a repo whose root `.env` is already the vault as "already the vault: N names" with an offer to write the manifest, and a repo with no vault scripts says so before a file is picked.
 - **A3** Onboarding copy and chrome fit an adopted repo: Detect shows the lock's version, the Plot step names the next spec number (never "the first spec"), error toasts sit clear of the footer and link docs, and the orb glyphs (thinking dots, `?`) are centred and coloured to the orb.
 - **A4** Open the cockpit navigates at once; the worktree is created behind it with a visible forming state; worktrees go under the repo's configured worktree root.
-- **A5** Every agent message renders markdown; fenced blocks keep their spacing in monospace; tool-row commands are syntax-highlighted from theme tokens in both themes.
 - **A6** A `/plot` report renders as a card: the chunk, the before/after order with the new chunk lit, open questions as answer cards with defaults chosen, and one-click Plot / Plot asap / Plot and build now.
 - **A7** Oversight lists only real questions (spec Open questions and `[needs-user-call]` rows, read whole, settled items skipped), grouped by source and spec, with markdown rendered.
 - **A8** The Plan board works in a repo with no vendored `order.mjs` (the CLI runs its bundled copy), and an unreadable plan shows an honest state, not zeros.
@@ -78,7 +77,7 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 (None.)
 
 ## Chunks
-Measure: 11 open · 5 closed · next A17
+Measure: 10 open · 6 closed · next A17
 
 - [ ] **47.2** Cloud workflow and schedule served for onboarding · M · closes A16 · needs —
   - Write `march.yml` from the template with the chosen cron; commit per owner mode.
@@ -86,9 +85,8 @@ Measure: 11 open · 5 closed · next A17
   - The Vault screen too: a repo with no vault scripts gets an empty state with "Set up the vault" (the CLI's bundled scripts, landed per owner mode), not a red error naming a kit path.
 - [ ] **47.4** Onboarding fits an adopted repo · S · closes A3 · needs —
 - [ ] **47.5** The cockpit opens at once; worktrees follow the repo · M · closes A4 · needs —
-- [ ] **47.6** Markdown and highlighted commands in the transcript · M · closes A5 · needs —
-- [ ] **47.7** The /plot report card · M · closes A6 · needs 47.6
-- [ ] **47.8** Oversight lists real questions, whole and grouped · S · closes A7 · needs 47.6
+- [ ] **47.7** The /plot report card · M · closes A6 · needs —
+- [ ] **47.8** Oversight lists real questions, whole and grouped · S · closes A7 · needs —
 - [ ] **47.9** The Plan board runs the kit's bundled order script · S · closes A8 · needs —
 - [ ] **47.11** Fleet tiles are one per session and honest · M · closes A10 · needs —
 - [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
