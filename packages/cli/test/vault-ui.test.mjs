@@ -287,3 +287,39 @@ test('Settings\' Secrets section follows the effective mode, as the Vault does: 
   assert.match(src, /secretsSide\(/);
   assert.doesNotMatch(src, /\{owner \? \(\s*<section className="set-sec" style=\{SEC\}>\s*<div><h2 className="set-h">Secrets/, 'the Secrets section is not chosen by the .owner file alone');
 });
+
+// ---- a mature repo's vault (spec 47, A2) ---------------------------------------------------------------------------
+
+test('secretsStep: missing before any file is picked, the root .env as the vault already, else the import', async () => {
+  const { secretsStep, alreadyCopy, missingCopy, setupToast, secretsLine, vaultMissing, WAITS_FOR_VAULT } = await import('../src/screens/vault/model.js');
+  assert.deepEqual(secretsStep(null), { kind: 'unknown' });
+  assert.deepEqual(secretsStep({ available: false, vaultState: 'missing', rootEnv: { exists: true, names: 5 } }), { kind: 'missing', envNames: 5 });
+  assert.deepEqual(secretsStep({ available: false, vaultState: 'missing', rootEnv: { exists: false, names: 0 } }), { kind: 'missing', envNames: 0 });
+  assert.deepEqual(secretsStep({ ...STATUS, vaultState: 'ready', rootEnv: { exists: true, names: 4, undeclared: 2 } }), { kind: 'already', names: 4, undeclared: 2 });
+  assert.deepEqual(secretsStep({ ...STATUS, vaultState: 'ready', rootEnv: { exists: true, names: 0, undeclared: 0 } }), { kind: 'import' });
+  assert.deepEqual(secretsStep({ ...STATUS, vaultState: 'ready', rootEnv: { exists: false, names: 0 } }), { kind: 'import' });
+  assert.ok(vaultMissing({ available: false }) && !vaultMissing(STATUS) && !vaultMissing(null));
+  assert.match(WAITS_FOR_VAULT, /set it up/);
+
+  const all = alreadyCopy({ names: 4, undeclared: 4 });
+  assert.equal(all.title, 'Your .env is already the vault · 4 names');
+  assert.equal(all.action, 'Write the manifest');
+  assert.match(all.line, /name them in nexus\.secrets\.json, names only/);
+  assert.match(alreadyCopy({ names: 4, undeclared: 1 }).line, /the 1 not named yet/);
+  assert.equal(alreadyCopy({ names: 1, undeclared: 0 }).action, null, 'nothing to write');
+  assert.equal(alreadyCopy({ names: 1, undeclared: 0 }).title, 'Your .env is already the vault · 1 name');
+  assert.equal(alreadyCopy({ names: 3, undeclared: 3 }, { owner: false }).action, null, 'a contributor sees the owner keeps secrets');
+
+  const o = missingCopy({ owner: true, envNames: 3 });
+  assert.equal(o.title, 'This repo has no vault yet');
+  assert.equal(o.action, 'Set up the vault');
+  assert.match(o.body, /Your \.env \(3 names\) becomes the vault's own file/);
+  const c = missingCopy({ owner: false });
+  assert.equal(c.action, 'Propose it in a pull request');
+  for (const x of [o, c, all]) assert.doesNotMatch(JSON.stringify(x), /templates|nexus\/customization|scripts\//, 'no kit path in the copy');
+
+  assert.equal(setupToast({ landed: 'main', here: true }).title, 'The vault is set up');
+  assert.equal(setupToast({ landed: 'main', here: false, note: 'pull main' }).body, 'pull main');
+  assert.equal(setupToast({ landed: 'branch', pr: 'https://x/pull/1' }).body, 'https://x/pull/1');
+  assert.equal(secretsLine({ available: false, vaultState: 'missing', owner: true }), 'no vault yet · set it up from the Vault');
+});

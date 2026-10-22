@@ -18,8 +18,9 @@ import { useToasts } from './fleet/toasts.js';
 import ImportPanel from './vault/ImportPanel.jsx';
 import LocalKeys from './vault/LocalKeys.jsx';
 import { useKeyCards } from './vault/useKeyCards.js';
+import VaultSetup from './vault/VaultSetup.jsx';
 import {
-  DESTS, SHORT, HEAD_TITLE, addBody, addTick, auditRows, destRows, keyCards, nameInput, staleList, subLine, validName, vaultRows, waitingOn,
+  DESTS, SHORT, HEAD_TITLE, addBody, addTick, auditRows, destRows, keyCards, nameInput, staleList, subLine, validName, vaultMissing, vaultRows, waitingOn,
 } from './vault/model.js';
 
 const NEW_DESTS = { local: true, 'github-actions': true, vercel: false, cloudflare: false };
@@ -36,8 +37,11 @@ export default function Vault() {
   const actions = <><LoopLine /><InboxBtn /></>;
   let body;
   if (res.status === 'loading' && !st) body = null;
-  else if (!st) {
-    body = <Err title="The vault is not here yet" body={res.error || 'GET /api/secrets did not answer.'} detail={null} actions={<button className="btn btn-s" type="button" onClick={res.reload}>Check again</button>} />;
+  else if (vaultMissing(st)) {
+    // No vault scripts here: an empty state with the way forward, not an error (spec 47, A2).
+    body = <div className="vault-scroll"><div style={{ marginTop: 56 }}><VaultSetup owner={owner} envNames={st.rootEnv?.exists ? st.rootEnv.names : 0} reload={res.reload} toast={toast} /></div></div>;
+  } else if (!st) {
+    body = <Err title="The vault did not answer" body={res.error || 'GET /api/secrets did not answer.'} detail={null} actions={<button className="btn btn-s" type="button" onClick={res.reload}>Check again</button>} />;
   } else if (owner) body = <OwnerVault st={st} repo={repo} reload={res.reload} toast={toast} />;
   else body = <ContributorVault st={st} repo={repo} reload={res.reload} toast={toast} />;
 

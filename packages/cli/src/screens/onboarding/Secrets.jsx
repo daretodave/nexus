@@ -1,7 +1,9 @@
 // Step 4 · Secrets, optional (boards Secrets, SecretsContributor, SecretsLight). An owner starts the vault: import a
 // dotenv (the one found at the root, or a picked file; names come in, the values go to the vault and the places
 // ticked), start an empty manifest, or skip. A contributor (4b) reads "No project secrets needed", what a chunk that
-// needs one looks like on the board, and may add their own local keys for this machine.
+// needs one looks like on the board, and may add their own local keys for this machine. A repo with no vault scripts
+// says so first, with Set up the vault (VaultSetup); a root .env in a ready vault is the vault already, N names, with
+// Write the manifest (spec 47, A2).
 import { Fragment, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, TickBox, EnvFile, KeyNote, VaultNote, KeyBadge, KeyMoon, MASK_DOTS, ToastHost, cx, useShell, stepNo, stepCount, stepBefore, stepAfter } from '../../ui/index.js';
@@ -11,7 +13,8 @@ import { ObFrame, Back } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { useImport, useFilePick } from '../vault/ImportPanel.jsx';
 import LocalKeys from '../vault/LocalKeys.jsx';
-import { importNote, importTick, keepToggle, waitingOn } from '../vault/model.js';
+import VaultSetup from '../vault/VaultSetup.jsx';
+import { WAITS_FOR_VAULT, alreadyCopy, importNote, importTick, keepToggle, secretsStep, waitingOn } from '../vault/model.js';
 import { useToasts } from '../fleet/toasts.js';
 
 const PICKS = [
@@ -27,7 +30,26 @@ export default function Secrets() {
   const res = useSecrets();
   const st = res.data;
   const [d, patch] = useDraft();
-  const pick = d.vault || 'imp';
+  // A repo with no vault scripts says so before any file is picked (spec 47, A2): the import and an empty manifest
+  // wait for the vault, Skip stays. A root .env in a ready vault is the vault's own file, never an import.
+  const step = secretsStep(st);
+  const missing = step.kind === 'missing';
+  const already = step.kind === 'already' ? alreadyCopy(step, { owner }) : null;
+  const pick = missing ? 'skip' : (d.vault || 'imp');
+  const [writing, setWriting] = useState(false);
+  const writeManifest = async () => {
+    setWriting(true);
+    try {
+      const r = await server.startManifest({ fromEnv: true });
+      const n = (r.added || []).length;
+      toast({ kind: 'shipped', title: n ? `nexus.secrets.json names ${n} ${n === 1 ? 'secret' : 'secrets'}` : 'The manifest already names them', body: 'Names only; the values stay in your .env.' });
+      res.reload();
+    } catch (e) {
+      toast({ kind: 'error', title: 'The manifest was not written', body: e.message });
+    } finally {
+      setWriting(false);
+    }
+  };
   const nav = useNavigate();
   const { toasts, push: toast } = useToasts();
   const [busy, setBusy] = useState(false);
@@ -39,12 +61,12 @@ export default function Secrets() {
 
   // The found dotenv is read for its names as soon as the step knows of it (owner, Import picked).
   useEffect(() => {
-    if (owner && pick === 'imp' && found.length && imp.phase === 'empty' && !imp.busy) imp.fromRoot(found[0]);
-  }, [owner, pick, found.join(), imp.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (owner && !missing && pick === 'imp' && found.length && imp.phase === 'empty' && !imp.busy) imp.fromRoot(found[0]);
+  }, [owner, missing, pick, found.join(), imp.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const next = PATHS.onboarding(stepAfter('secrets'));
   const go = async () => {
-    if (!owner || pick === 'skip') { nav(next); return; }
+    if (!owner || missing || pick === 'skip') { nav(next); return; }
     setBusy(true);
     try {
       if (pick === 'imp' && imp.kept) await imp.confirm();
@@ -92,11 +114,12 @@ export default function Secrets() {
               <div className="sched sched-col" role="radiogroup" aria-label="Start the vault with">
                 {PICKS.map((p) => (
                   <Fragment key={p.k}>
-                    <input type="radio" name="vstart" id={`vs-${p.k}`} checked={pick === p.k} onChange={() => patch({ vault: p.k })} />
+                    <input type="radio" name="vstart" id={`vs-${p.k}`} checked={pick === p.k} disabled={missing && p.k !== 'skip'} onChange={() => patch({ vault: p.k })} />
                     <label htmlFor={`vs-${p.k}`}>
-                      <b>{p.label}{p.rec ? <> <span className="badge-def">recommended</span></> : null}</b>
+                      <b>{p.label}{p.rec && !missing ? <> <span className="badge-def">recommended</span></> : null}</b>
                       <span>
-                        {p.k === 'imp' ? (found.length ? `found ${found[0]} in ${repo} · names come in, values go to your vault` : 'pick a file · names come in, values go to your vault')
+                        {missing && p.k !== 'skip' ? WAITS_FOR_VAULT
+                          : p.k === 'imp' ? (already ? `your .env is already the vault · ${step.names} ${step.names === 1 ? 'name' : 'names'}` : found.length ? `found ${found[0]} in ${repo} · names come in, values go to your vault` : 'pick a file · names come in, values go to your vault')
                           : p.k === 'empty' ? 'an empty manifest; chunks ask for a name when they need one'
                             : 'nothing written; the vault is in the rail whenever you want it'}
                       </span>
@@ -134,6 +157,11 @@ export default function Secrets() {
 
         {owner && pick === 'imp' ? (
           <div className="panel" style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {already ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <EnvFile name={already.title} line={already.line} action={already.action ? <button className="btn btn-s btn-primary" type="button" onClick={writeManifest} disabled={writing}>{writing ? 'Writing…' : already.action}</button> : null} />
+              </div>
+            ) : null}
             {imp.phase === 'loaded' ? (
               <>
                 <EnvFile name={imp.name} line={`found in ${repo} · ${(imp.preview?.names || []).length} entries · values stay masked`} action={<button className="btn btn-ghost btn-s" type="button" onClick={pickFile}>Choose another</button>} />
@@ -157,10 +185,10 @@ export default function Secrets() {
                 </div>
               </>
             ) : (
-              <div className="dropzone" style={{ minHeight: 168 }}>
+              <div className="dropzone" style={{ minHeight: already ? 120 : 168 }}>
                 <Icon name="fileOne" style={{ width: 28, height: 28, color: 'var(--accent)' }} />
-                <span className="t-title-s">{imp.busy ? 'Reading the names…' : 'No .env found here'}</span>
-                <span className="t-body-s c-2">Pick one and nexus reads its names; the values never reach a session.</span>
+                <span className="t-title-s">{imp.busy ? 'Reading the names…' : already ? 'Another file to bring in?' : 'No .env found here'}</span>
+                <span className="t-body-s c-2">{already ? 'Pick one and its values join the vault; nexus reads only the names.' : 'Pick one and nexus reads its names; the values never reach a session.'}</span>
                 <button className="btn btn-s" type="button" onClick={pickFile} disabled={imp.busy}><Icon name="fileOne" size={14} />Pick a file</button>
               </div>
             )}
@@ -181,7 +209,12 @@ export default function Secrets() {
             </div>
           </div>
         ) : null}
-        {owner && pick === 'skip' ? (
+        {missing ? (
+          <div className="panel" style={{ padding: '12px 22px' }}>
+            <VaultSetup owner={owner} envNames={step.envNames} reload={res.reload} toast={toast} />
+          </div>
+        ) : null}
+        {owner && pick === 'skip' && !missing ? (
           <div className="panel" style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             <span className="t-caps c-2">Nothing written</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -191,7 +224,7 @@ export default function Secrets() {
             <span className="t-body-s c-3">A chunk that needs a secret still asks for it, and shows needs secret on the plan board until it has one.</span>
           </div>
         ) : null}
-        {!owner ? (
+        {!owner && !missing ? (
           <div className="panel" style={{ padding: '18px 20px' }}>
             <LocalKeys status={st} repo={shell.repo} reload={res.reload} toast={toast} bare />
           </div>

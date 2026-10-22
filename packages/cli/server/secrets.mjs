@@ -135,11 +135,11 @@ async function loadKit(repo) {
   const m = {};
   const load = async (key, [file, names], optional) => {
     const abs = path.join(dir, file);
-    if (!fs.existsSync(abs)) return optional ? null : `this repo has no scripts/${file}: update its secrets scripts from the kit's templates/scripts`;
+    if (!fs.existsSync(abs)) return optional ? null : `this repo has no scripts/${file}: update its secrets scripts (${DOCS})`;
     let mod;
     try { mod = await import(`${pathToFileURL(abs).href}?v=${fs.statSync(abs).mtimeMs}`); } catch (e) { return `scripts/${file} did not load (${String(e.message || e).split('\n')[0]})`; }
     const gone = names.filter((n) => !(n in mod));
-    if (gone.length) return optional ? null : `this repo's scripts/${file} is older than the GUI needs (no ${gone.join(', ')}): update it from the kit's templates/scripts`;
+    if (gone.length) return optional ? null : `this repo's scripts/${file} is older than the GUI needs (no ${gone.join(', ')}): update the repo's secrets scripts (${DOCS})`;
     m[key] = mod;
     return null;
   };
@@ -249,7 +249,7 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     const r = await cli(k, ['status', '--json', '--root', root]);
     if (r.code !== 0) return failed(r);
     let st;
-    try { st = JSON.parse(r.out.join('\n')); } catch { return { status: 409, error: 'this repo\'s scripts/secrets.mjs has no status --json: update it from the kit\'s templates/scripts' }; }
+    try { st = JSON.parse(r.out.join('\n')); } catch { return { status: 409, error: 'this repo\'s scripts/secrets.mjs has no status --json: update the repo\'s secrets scripts (' + DOCS + ')' }; }
     const man = k.m.manifest.readManifest(path.join(root, k.m.manifest.MANIFEST));
     const entries = new Map((man?.manifest?.secrets ?? []).map((e) => [e.name, e]));
     const events = k.m.sinks.readAudit(root);

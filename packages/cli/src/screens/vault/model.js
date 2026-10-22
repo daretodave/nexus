@@ -421,10 +421,80 @@ export function writeSkipped(set) {
  */
 export function secretsLine(status, pick) {
   if (!status) return null;
+  if (vaultMissing(status)) return 'no vault yet · set it up from the Vault';
   if (!status.owner) return 'no project secrets needed · local keys stay on this machine';
   if (pick === 'skip' && !(status.secrets || []).length) return 'skipped · the vault is in the rail';
   const n = (status.secrets || []).length;
   const ci = (status.secrets || []).some((s) => (s.destinations || []).some((x) => x.state === 'pushed'));
   const where = status.vault?.keychain ? 'your keychain' : '.env';
   return `${n} ${n === 1 ? 'name' : 'names'} in the vault · values in ${where}${ci ? ' and CI' : ''}`;
+}
+
+// ---- a mature repo's vault (spec 47, A2) ---------------------------------------------------------------------------
+
+/** The docs page the vault's empty states link to. */
+export const VAULT_DOCS = 'https://github.com/daretodave/nexus/blob/main/customization/secrets.md';
+
+/** True when GET /api/secrets says the repo has no vault scripts yet (an empty state, never an error). */
+export const vaultMissing = (status) => !!status && (status.vaultState === 'missing' || status.available === false);
+
+const nameCount = (n) => `${n} ${n === 1 ? 'name' : 'names'}`;
+
+/**
+ * What onboarding's Secrets step draws, from GET /api/secrets: { kind, ... }.
+ *   'unknown'  the vault has not answered
+ *   'missing'  no vault scripts: say so before any file is picked; the import and an empty manifest wait for it
+ *   'already'  the root .env is the vault's own file: N names, and how many the manifest does not declare yet
+ *   'import'   a ready vault and no root .env with names: the import as before
+ */
+export function secretsStep(status) {
+  if (!status) return { kind: 'unknown' };
+  const env = status.rootEnv || { exists: false, names: 0 };
+  if (vaultMissing(status)) return { kind: 'missing', envNames: env.exists ? env.names : 0 };
+  if (env.exists && env.names > 0) return { kind: 'already', names: env.names, undeclared: env.undeclared ?? 0 };
+  return { kind: 'import' };
+}
+
+/** "Your .env is already the vault · 4 names", the line under it, and the owner's action (or null). */
+export function alreadyCopy(step, { owner = true } = {}) {
+  const title = `Your .env is already the vault · ${nameCount(step.names)}`;
+  if (!owner) return { title, line: 'The owner keeps the project\'s secrets and their manifest.', action: null };
+  if (step.undeclared > 0) {
+    const which = step.undeclared === step.names ? 'them' : `the ${step.undeclared} not named yet`;
+    return { title, line: `Its values stay where they are. Write the manifest to name ${which} in nexus.secrets.json, names only.`, action: 'Write the manifest' };
+  }
+  return { title, line: 'nexus.secrets.json names every one of them. Nothing to write.', action: null };
+}
+
+/**
+ * The missing vault's empty state, for the step and the Vault screen alike: { title, body, action, note }. The owner
+ * sets it up (a commit on main); a contributor reads that the vault is the owner's, and may propose it as a PR.
+ */
+export function missingCopy({ owner = true, envNames = 0 } = {}) {
+  if (owner) {
+    const env = envNames ? ` Your .env (${nameCount(envNames)}) becomes the vault's own file as it is.` : '';
+    return {
+      title: 'This repo has no vault yet',
+      body: `Set it up and nexus adds its secrets scripts in one commit on main: values stay in your .env, agents see names only.${env}`,
+      action: 'Set up the vault',
+      note: null,
+    };
+  }
+  return {
+    title: 'This repo has no vault yet',
+    body: 'The owner sets up the vault; until then there is nowhere to keep local keys. Nothing here asks you for a project secret.',
+    action: 'Propose it in a pull request',
+    note: 'A pull request adds the vault; it lands when the owner merges it.',
+  };
+}
+
+/** Why the import and an empty manifest are off in the step while the vault is missing (their radios' line). */
+export const WAITS_FOR_VAULT = 'waits for the vault: set it up first';
+
+/** The toast after Set up the vault: { kind, title, body }. */
+export function setupToast(r) {
+  if (!r) return null;
+  if (r.landed === 'branch') return { kind: 'shipped', title: r.already ? 'The vault\'s pull request is open already' : 'A pull request adds the vault', body: r.pr || r.note || '' };
+  if (r.here) return { kind: 'shipped', title: r.already ? 'The vault is here' : 'The vault is set up', body: r.already ? '' : 'One commit on main: feat: add the nexus secrets vault.' };
+  return { kind: 'info', title: 'The vault is on main', body: r.note || 'Pull main into this checkout to use it here.' };
 }
