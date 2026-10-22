@@ -4,7 +4,7 @@
 // allow" from here); a question opens the cockpit, where its options are.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon, SessTag } from '../../ui/index.js';
+import { Icon, SessTag, ToolArgs } from '../../ui/index.js';
 import { server, useEvents } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { pendingAsk } from './plotAsk.js';
@@ -32,7 +32,10 @@ export function PlotAskStrip({ session, live, answer = server.answerPermission }
     <div className="plot-ask" role="status" aria-live="polite">
       <span className="park-mark" aria-hidden="true" />
       <span className="plot-ask-text">
-        {who} <span className="plot-ask-lead">is waiting for you:</span> <span className="plot-ask-what">{ask.line}</span>
+        {who} <span className="plot-ask-lead">is waiting for you:</span>{' '}
+        {ask.kind === 'perm'
+          ? <span className="plot-ask-what" title={ask.full || undefined}>{ask.tool ? <span className="plot-ask-tool">{ask.tool}</span> : null}<ToolArgs tool={ask.tool} args={ask.args} /></span>
+          : <span className="plot-ask-q" title={ask.full || undefined}>{ask.line}</span>}
         {err ? <span className="plot-ask-err" role="alert">{err}</span> : null}
       </span>
       <span className="plot-ask-acts">

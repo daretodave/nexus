@@ -17,6 +17,7 @@ import { txFromMessage, newTxContext } from './normalize.mjs';
 import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
 import { createTugLog } from './tugs.mjs';
 import { ASK_DEFAULT_MS, askDefaults } from '../shared/times.mjs';
+import { toolArg } from '../shared/tool-arg.mjs';
 
 /**
  * @param {object} o
@@ -102,7 +103,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   }
 
   const onPermission = ({ id: reqId, agent, tool, input, suggestions, reason, signal }) => new Promise((resolve) => {
-    const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
+    const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), args: toolArg(tool, input).slice(0, 4000), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
     permissions.set(reqId, { view, resolve });
     if (!agent || agent === MAIN) hub.beat({ k: 'agent', p: 'wait', id: MAIN });
     publishPerms();

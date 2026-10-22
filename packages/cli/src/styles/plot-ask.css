@@ -6,7 +6,9 @@
 .plot-ask > .park-mark { flex: none; }
 .plot-ask-text { flex: 1 1 280px; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; line-height: 20px; color: var(--text); }
 .plot-ask-lead { color: var(--text-2); }
-.plot-ask-what { min-width: 0; font-family: var(--font-mono); font-size: 12px; color: var(--text); overflow-wrap: anywhere; font-variant-ligatures: none; }
+.plot-ask-what { flex: 1 1 200px; min-width: 0; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-mono); font-size: 12px; color: var(--syn-text, var(--text-2)); font-variant-ligatures: none; }
+.plot-ask-what > .plot-ask-tool { margin-right: 8px; color: var(--text); font-weight: 600; }
+.plot-ask-q { min-width: 0; color: var(--text); overflow-wrap: anywhere; }
 .plot-ask-err { flex-basis: 100%; color: var(--st-failed); }
 .plot-ask-acts { display: flex; align-items: center; gap: 6px; flex: none; }
 @media (max-width: 760px) {
