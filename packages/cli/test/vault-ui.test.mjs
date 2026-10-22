@@ -353,3 +353,32 @@ test('49.2: with a manifest present, the card names what it lacks with Add it / 
   const nexus = fs.readFileSync(new URL('../src/styles/nexus.css', import.meta.url), 'utf8');
   assert.equal(nexus, fs.readFileSync(new URL('../design/handoff/nexus.css', import.meta.url), 'utf8'), 'nexus.css stays the handoff\'s');
 });
+
+test('49.4: the header counts declared names; an undeclared vault name says so, Local set, with Declare only', async () => {
+  const { subLine, declaredSecrets } = await import('../src/screens/vault/model.js');
+  const st = {
+    ...STATUS,
+    secrets: [
+      ...STATUS.secrets.slice(0, 2).map((s) => ({ ...s, declared: true })),
+      { name: 'GITHUB_TOKEN', for: null, where: null, chunk: null, declared: false, set: true, rings: ['local'], destinations: [], age: null, setAt: null, rotate: false },
+    ],
+  };
+  assert.equal(subLine(st), '2 secrets in nexus.secrets.json', 'the undeclared name is not counted');
+  assert.deepEqual(declaredSecrets(st).map((s) => s.name), ['VERCEL_TOKEN', 'GH_TOKEN']);
+  const rows = vaultRows(st, { now: NOW });
+  const u = rows[2];
+  assert.equal(u.name, 'GITHUB_TOKEN');
+  assert.equal(u.for, 'in .env, not in the manifest');
+  assert.equal(u.undeclared, true);
+  assert.equal(u.mask, MASK);
+  assert.deepEqual(u.dots.map((d) => d.cls), ['dd is-set', 'dd is-none', 'dd is-none', 'dd is-none'], 'Local reads set where it is set');
+  assert.equal(u.dots[0].title, 'local: set');
+  assert.deepEqual([u.canDeclare, u.canAdd, u.canSync, u.canReplace], [true, false, false, false]);
+  assert.ok(!rows[0].canDeclare && !rows[1].canDeclare, 'a declared row offers no Declare');
+  const ws = vaultRows({ secrets: [{ name: 'X_KEY', declared: false, set: true, rings: ['workspace'], destinations: [] }] })[0];
+  assert.equal(ws.for, 'in .env.workspace, not in the manifest');
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(new URL('../src/screens/Vault.jsx', import.meta.url), 'utf8');
+  assert.match(src, /server\.startManifest\(\{ fromEnv: true, names: \[name\] \}\)/, 'Declare writes through the manifest route, names only');
+  assert.match(src, /r\.canDeclare \? <button[^\n]*>Declare<\/button>/);
+});

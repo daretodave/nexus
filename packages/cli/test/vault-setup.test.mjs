@@ -197,3 +197,36 @@ test('Set up the vault, contributor: a branch and a pull request, main untouched
     await app.close();
   }
 });
+
+test('49.4: Declare adds only the names listed, names only; a name the root .env does not set is refused; a contributor is refused', async () => {
+  const { repo } = mature({ scripts: true });
+  fs.writeFileSync(path.join(repo, 'nexus.secrets.json'), `${JSON.stringify({ version: 1, secrets: [{ name: 'API_KEY', for: 'The app.', where: null, destinations: ['local'], provider: 'owner', chunk: null }] }, null, 2)}\n`);
+  const { app, call, seen } = await serve(repo);
+  try {
+    const st = await call('GET', '/api/secrets');
+    const db = st.json.secrets.find((s) => s.name === 'DB_URL');
+    assert.equal(db.declared, false, 'an undeclared vault name is listed, marked');
+    assert.equal(db.set, true);
+    assert.equal(st.json.secrets.filter((s) => s.declared).length, 1);
+    const bad = await call('POST', '/api/secrets/manifest', { fromEnv: true, names: ['NOPE_KEY'] });
+    assert.equal(bad.status, 400);
+    assert.match(bad.json.error, /NOPE_KEY: not a name the root \.env sets/);
+    const w = await call('POST', '/api/secrets/manifest', { fromEnv: true, names: ['DB_URL'] });
+    assert.equal(w.status, 200);
+    assert.deepEqual(w.json.added, ['DB_URL']);
+    const man = fs.readFileSync(path.join(repo, 'nexus.secrets.json'), 'utf8');
+    assert.ok(!man.includes(SENTINEL), 'names only');
+    assert.deepEqual(JSON.parse(man).secrets.map((e) => e.name), ['API_KEY', 'DB_URL']);
+    assert.equal((await call('GET', '/api/secrets')).json.secrets.find((s) => s.name === 'DB_URL').declared, true);
+    noSentinel(seen);
+  } finally {
+    await app.close();
+  }
+  fs.rmSync(path.join(repo, '.owner'));
+  const c = await serve(repo);
+  try {
+    assert.equal((await c.call('POST', '/api/secrets/manifest', { fromEnv: true, names: ['API_KEY'] })).status, 403);
+  } finally {
+    await c.app.close();
+  }
+});

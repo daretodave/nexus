@@ -98,6 +98,7 @@ export function requestedNames(status) {
 export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.now() } = {}) {
   const asked = requestedNames(status);
   return (status?.secrets || []).map((s) => {
+    if (s.declared === false) return undeclaredRow(s, { fresh });
     const states = Object.fromEntries(DESTS.map((d) => [d, destState(s, d)]));
     // What Sync pushes: a place holding an older value, or one the value never reached (a set value, missing there).
     const stale = s.set ? DESTS.filter((d) => d !== 'local' && (states[d] === 'stale' || states[d] === 'missing')) : [];
@@ -132,6 +133,48 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
     };
   });
 }
+
+/** Where an undeclared name sits, in words: "in .env", "in .env.workspace", "in the keychain". */
+const UNDECLARED_RING = { local: 'in .env', workspace: 'in .env.workspace', keychain: 'in the keychain' };
+
+/**
+ * A name the vault holds that nexus.secrets.json does not declare (spec 49, A4): marked "in .env, not in the
+ * manifest", its Local dot truthful (set where it is set), no other place (the manifest names none), and Declare only.
+ */
+function undeclaredRow(s, { fresh }) {
+  const local = s.set || (s.rings || []).length > 0;
+  const where = (s.rings || []).map((r) => UNDECLARED_RING[r]).filter(Boolean)[0] || 'in .env';
+  return {
+    name: s.name,
+    for: `${where}, not in the manifest`,
+    set: local,
+    undeclared: true,
+    requested: false,
+    editing: false,
+    fresh: fresh.has(s.name),
+    mask: local ? MASK : 'no value',
+    maskAria: local ? 'value hidden' : 'no value yet',
+    dots: DESTS.map((d) => {
+      const st = d === 'local' ? (local ? 'set' : 'missing') : 'none';
+      return { d, cls: DOT[st], title: `${SHORT[d]}: ${WORD[st]}` };
+    }),
+    chunk: '',
+    age: '',
+    old: false,
+    canAdd: false,
+    canSync: false,
+    canReplace: false,
+    canDeclare: true,
+    stale: [],
+    sinks: [],
+    pushTo: [],
+    placeholder: '',
+    editNote: '',
+  };
+}
+
+/** The names nexus.secrets.json declares (the Vault's count; an undeclared vault name is not one of them). */
+export const declaredSecrets = (status) => (status?.secrets || []).filter((s) => s.declared !== false);
 
 /** The "Where values go" card: one row per destination, with its count and its worst dot. */
 export function destRows(status, { repo = '' } = {}) {
@@ -208,9 +251,9 @@ export function auditRows(status, { now = Date.now(), limit = 8, fresh = new Set
   }));
 }
 
-/** The view's sub line: "6 secrets in nexus.secrets.json". */
+/** The view's sub line: "6 secrets in nexus.secrets.json", declared names only (spec 49, A4). */
 export function subLine(status) {
-  const n = (status?.secrets || []).length;
+  const n = declaredSecrets(status).length;
   return `${n} ${n === 1 ? 'secret' : 'secrets'} in nexus.secrets.json`;
 }
 

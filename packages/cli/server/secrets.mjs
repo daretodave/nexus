@@ -539,9 +539,10 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
   }
 
   /**
-   * POST /api/secrets/manifest { fromEnv? }: start an empty manifest (onboarding's "Start empty"), owner only; one that
-   * exists stays. With fromEnv, the root dotenv is already the vault: its names (never a value, never a comment) go
-   * into the manifest, each local, and a name already declared is kept as written.
+   * POST /api/secrets/manifest { fromEnv?, names? }: start an empty manifest (onboarding's "Start empty"), owner only;
+   * one that exists stays. With fromEnv, the root dotenv is already the vault: its names (never a value, never a
+   * comment) go into the manifest, each local, and a name already declared is kept as written. `names` narrows that to
+   * the ones listed (the Vault's Declare on an undeclared row, spec 49 A4); a name the root dotenv does not set is refused.
    */
   async function startManifest(b = {}) {
     const k = await kit();
@@ -550,7 +551,13 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     const root = await vroot();
     const file = path.join(root, k.m.manifest.MANIFEST);
     if (b && b.fromEnv === true) {
-      const names = (rootEnvNames(root) || []).filter((n) => NAME.test(n));
+      let names = (rootEnvNames(root) || []).filter((n) => NAME.test(n));
+      if (Array.isArray(b.names)) {
+        const want = [...new Set(b.names.map(String))];
+        const absent = want.filter((n) => !names.includes(n));
+        if (absent.length) return { status: 400, error: `${absent.join(', ')}: not a name the root .env sets` };
+        names = want;
+      }
       if (!names.length) return { status: 400, error: 'the root .env names nothing to declare' };
       let man;
       try { man = k.m.manifest.readManifest(file); } catch (e) { return { status: 409, error: `${k.m.manifest.MANIFEST} did not read (${String(e.message || e).split('\n')[0]}): fix it first` }; }

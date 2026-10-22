@@ -104,6 +104,13 @@ function OwnerVault({ st, repo, reload, toast }) {
     setFresh(new Set(stale.map((x) => x.name)));
     reload();
   }, 'Sync stopped');
+  // Declare (spec 49, A4): an undeclared vault name joins nexus.secrets.json, names only, through the manifest route.
+  const declare = (name) => run(async () => {
+    await server.startManifest({ fromEnv: true, names: [name] });
+    setFresh(new Set([name]));
+    toast({ kind: 'shipped', title: `nexus.secrets.json declares ${name}`, body: 'Names only; say what it is for in the manifest.' });
+    reload();
+  }, `${name} was not declared`);
   const addSecret = () => run(async () => {
     const out = await server.storeSecret(nw.name, addBody(nw));
     setAdding(false);
@@ -168,6 +175,7 @@ function OwnerVault({ st, repo, reload, toast }) {
                       {r.canAdd ? <button className="btn btn-s btn-primary" type="button" onClick={() => { setDraft(''); setAdding(false); setEdit(r.name); }}><Icon name="key" size={14} />Add value</button> : null}
                       {r.canSync ? <button className="btn btn-s" type="button" onClick={() => sync(r.name, r.stale)} disabled={busy}><Icon name="refresh" size={14} />Sync</button> : null}
                       {r.canReplace ? <button className="btn btn-s btn-ghost" type="button" onClick={() => { setDraft(''); setAdding(false); setEdit(r.name); }}>Replace</button> : null}
+                      {r.canDeclare ? <button className="btn btn-s" type="button" onClick={() => declare(r.name)} disabled={busy}><Icon name="plus" size={14} />Declare</button> : null}
                     </span>
                     {r.editing ? (
                       <div className="vt-edit">

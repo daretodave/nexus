@@ -80,7 +80,7 @@ export const server = {
   pushSecret: (name, destinations) => api(`/api/secrets/${encodeURIComponent(name)}/push`, { destinations }),
   /** POST /api/secrets/import { text | file, confirm?, names?, destinations? }: a names-only preview, or the store. */
   importSecrets: (body) => api('/api/secrets/import', body),
-  /** POST /api/secrets/manifest { fromEnv? }: an empty manifest (onboarding's Start empty), or the root .env's names when it is already the vault; one that exists stays. */
+  /** POST /api/secrets/manifest { fromEnv?, names? }: an empty manifest (onboarding's Start empty), or the root .env's names (all, or those listed: the Vault's Declare) when it is already the vault; one that exists stays. */
   startManifest: (body = {}) => api('/api/secrets/manifest', body),
   /** POST /api/secrets/setup: land the vault's scripts per owner mode -> { ok, landed: 'main' | 'branch', here?, pr?, branch?, note }. */
   setupVault: () => api('/api/secrets/setup', {}),
