@@ -65,7 +65,6 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A4** Open the cockpit navigates at once; the worktree is created behind it with a visible forming state; worktrees go under the repo's configured worktree root.
 - **A8** The Plan board works in a repo with no vendored `order.mjs` (the CLI runs its bundled copy), and an unreadable plan shows an honest state, not zeros.
 - **A10** Fleet shows one tile per session, idle as idle, a dim tile for a claim holder that is not attached, and each tile's last message and chunk.
-- **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
 - **A15** The session onboarding's Plot step starts reaches the person: a permission it waits on shows on the Plot, Cloud and Launch steps with Allow inline, and Launch opens that session's cockpit when it is still working.
 
 ## Open questions
@@ -73,12 +72,11 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 (None.)
 
 ## Chunks
-Measure: 6 open · 11 closed · next A18
+Measure: 5 open · 12 closed · next A18
 
 - [ ] **47.4** Onboarding fits an adopted repo · S · closes A3 · needs —
 - [ ] **47.5** The cockpit opens at once; worktrees follow the repo · M · closes A4 · needs —
 - [ ] **47.9** The Plan board runs the kit's bundled order script · S · closes A8 · needs —
 - [ ] **47.11** Fleet tiles are one per session and honest · M · closes A10 · needs —
-- [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
 - [ ] **47.15** Onboarding's plot session's asks reach the person · S · closes A15 · needs —
   - Found checking 47.1 in a scratch repo: the /plot session blocked on its first Bash permission while the person had moved on to the Cloud step.
