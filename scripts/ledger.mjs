@@ -15,7 +15,7 @@
 //   node scripts/ledger.mjs show [<id | star>] [--json]
 //   node scripts/ledger.mjs list [--train <slug>] [--json]   every session: star, state, chunk, step, last beat
 //   node scripts/ledger.mjs park <slug> [--set key=value …]  state parked for reboot train <slug>
-//   node scripts/ledger.mjs take <id | star>                 this session resumes that ledger (state resuming)
+//   node scripts/ledger.mjs take <id | star>                 this session resumes that ledger (state resuming, runner)
 //   node scripts/ledger.mjs done <id | star>                 the resume finished (state resumed)
 //   node scripts/ledger.mjs end                              this session finished its loop (state ended)
 //
@@ -23,6 +23,10 @@
 // lock (`.nexus/sessions/.lock`, `withLock`), so two sessions starting at once never take the same star and two `take`
 // calls never both win. A ledger lands whole through a temp file and a rename, retried while Windows holds the file
 // busy (`renameRetry`). The notice board (announce.mjs) posts under the same kind of lock.
+//
+// A take records the taker as the ledger's `runner` (its claims id, `runnerId`) and `runnerSince`: from then on that
+// session's beat, park and end write the ledger it took (not a fresh one of its own), so the loop it resumed keeps one
+// star and one Fleet tile, and a second crash resumes it again.
 //
 // `--set a.b=v` writes a dotted key (a value that parses as JSON is stored as JSON); `--set-file k=<path>` stores a
 // file's text verbatim (the `/heads-down` loop prompt: its quotes never meet a shell); `--add k=v` appends to a list
@@ -203,11 +207,23 @@ export function fresh(id, star, now = new Date()) {
   };
 }
 
+/** A session's claims id, the way claims.mjs names it: NEXUS_SESSION, else the Claude Code session id cut to 8. */
+export function runnerId(env = process.env) {
+  return env.NEXUS_SESSION || (env.CLAUDE_CODE_SESSION_ID ?? '').slice(0, 8);
+}
+
+/** The ledger this session runs because it took it (the newest take; never an ended one), or null. */
+export function runs(ledgers, runner) {
+  if (!runner) return null;
+  const hits = ledgers.filter((l) => l.runner === runner && l.state !== 'ended');
+  return hits.sort((a, b) => String(b.runnerSince ?? '').localeCompare(String(a.runnerSince ?? '')))[0] ?? null;
+}
+
 /** One line for `list`. */
 export function line(l, now = Date.now(), staleMin = 15) {
   const ago = Math.round((now - Date.parse(l.beat ?? l.started ?? 0)) / 60_000);
   const where = l.chunk ? `${l.chunk}${l.step ? ` · ${l.step}` : ''}` : 'between chunks';
-  return `${(l.star ?? '?').padEnd(11)} ${status(l, now, staleMin).padEnd(8)} ${l.id.slice(0, 8)}  ${where}  (beat ${ago}m ago)${l.train ? `  train ${l.train}` : ''}`;
+  return `${(l.star ?? '?').padEnd(11)} ${status(l, now, staleMin).padEnd(8)} ${l.id.slice(0, 8)}  ${where}  (beat ${ago}m ago)${l.train ? `  train ${l.train}` : ''}${l.runner ? `  run by ${l.runner}` : ''}`;
 }
 
 export function readAll(dir) {
@@ -272,8 +288,8 @@ function opts(argv) {
       o.text.push(`${kv.slice(0, eq)}=${fs.readFileSync(file, 'utf8').replace(/\r?\n$/, '')}`);
     } else if (a === '--add') o.add.push(val());
     else if (a === '--clear') o.clear.push(val());
-    else if (a === '--chunk') o.set.push(`chunk=${val()}`);
-    else if (a === '--step') o.set.push(`step=${val()}`);
+    else if (a === '--chunk') o.text.push(`chunk=${val()}`); // verbatim: chunk 60.10 is never the number 60.1
+    else if (a === '--step') o.text.push(`step=${val()}`);
     else if (a === '--train') o.train = val();
     else if (a === '--json') o.json = true;
     else if (a.startsWith('-')) throw new Error(`ledger: unknown flag ${a}\n${USAGE}`);
@@ -300,12 +316,14 @@ function run(cmd, o, dir, { env, now, out, err }) {
   const all = readAll(dir);
   const staleMin = Number(env.NEXUS_LEDGER_STALE_MIN) || 15;
   const me = env.NEXUS_SESSION || env.CLAUDE_CODE_SESSION_ID || '';
+  const runner = runnerId(env);
   const mine = () => {
     if (!me) throw new Error('ledger: no session id (NEXUS_SESSION or CLAUDE_CODE_SESSION_ID): only a session keeps a ledger');
-    return all.find((l) => l.id === me) ?? fresh(me, nextStar(all), now());
+    // A session that took a ledger runs it: its beats keep that ledger (one star, one tile), not a fresh one.
+    return runs(all, runner) ?? all.find((l) => l.id === me) ?? fresh(me, nextStar(all), now());
   };
   const target = (key) => {
-    const l = find(all, key ?? me);
+    const l = key == null ? runs(all, runner) ?? find(all, me) : find(all, key);
     if (!l) throw new Error(`ledger: no session "${key ?? me}" in ${DIR}`);
     return l;
   };
@@ -336,12 +354,15 @@ function run(cmd, o, dir, { env, now, out, err }) {
         err(`ledger: ${l.star} is already ${l.state}${l.resumed_by ? ` by ${l.resumed_by.slice(0, 8)}` : ''}: another session has it`);
         return 1;
       }
-      if (status(l, now().getTime(), staleMin) === 'live' && l.id !== me) {
+      if (status(l, now().getTime(), staleMin) === 'live' && l.id !== me && !(runner && l.runner === runner)) {
         err(`ledger: ${l.star} is live (beat within ${staleMin}m): it is still running, not fallen`);
         return 1;
       }
     }
-    const next = { ...l, state: cmd === 'take' ? 'resuming' : 'resumed', resumed_by: me || 'terminal', [cmd === 'take' ? 'taken_at' : 'resumed_at']: now().toISOString() };
+    const at = now().toISOString();
+    const next = { ...l, state: cmd === 'take' ? 'resuming' : 'resumed', resumed_by: me || 'terminal', [cmd === 'take' ? 'taken_at' : 'resumed_at']: at };
+    // The taker runs it from now on (its claims id); a take from a bare terminal names no runner.
+    if (cmd === 'take' && runner) Object.assign(next, { runner, runnerSince: at });
     write(dir, next);
     out(cmd === 'take' ? JSON.stringify(next, null, 2) : `ledger: ${l.star} resumed by ${(me || 'terminal').slice(0, 8)}`);
     return 0;

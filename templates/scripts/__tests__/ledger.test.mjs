@@ -82,6 +82,37 @@ describe('the CLI', () => {
     assert.equal(readAll(path.join(root, DIR)).find((l) => l.star === 'vega').state, 'resumed');
   });
 
+  it('records the taker as the runner, whose beats keep the ledger it took', () => {
+    const C = { CLAUDE_CODE_SESSION_ID: 'cccc5555-6666-7777' };
+    run(['beat', '--chunk', '60.10', '--step', 'building'], A);
+    clock = T0 + 30 * 60_000;
+    assert.equal(run(['take', 'vega'], C), 0);
+    const taken = JSON.parse(said[0]);
+    assert.equal(taken.runner, 'cccc5555');
+    assert.equal(taken.runnerSince, new Date(clock).toISOString());
+    assert.equal(run(['show'], C), 0);
+    assert.match(said[0], /^vega\s+resuming .*run by cccc5555/);
+    clock += 60_000;
+    assert.equal(run(['beat', '--step', 'gating'], C), 0);
+    assert.match(said[0], /^ledger: vega \(aaaa1111\) live · 60.10 · gating/);
+    const ls = readAll(path.join(root, DIR));
+    assert.equal(ls.length, 1, 'no fresh ledger for the runner');
+    assert.equal(ls[0].runner, 'cccc5555');
+    assert.equal(run(['done', 'vega'], C), 0);
+    run(['beat'], C);
+    assert.equal(readAll(path.join(root, DIR)).length, 1);
+    // A NEXUS_SESSION names the runner whole, as claims.mjs does.
+    run(['end'], C);
+    clock += 60 * 60_000;
+    run(['beat'], B);
+    clock += 60 * 60_000;
+    assert.equal(run(['take', 'bbbb3333'], { NEXUS_SESSION: 'gui-7' }), 0);
+    assert.equal(readAll(path.join(root, DIR)).find((l) => l.id === B.CLAUDE_CODE_SESSION_ID).runner, 'gui-7');
+    // An ended ledger is no longer run: the runner's next beat starts its own.
+    run(['beat'], C);
+    assert.equal(readAll(path.join(root, DIR)).length, 3);
+  });
+
   it('refuses to take a live session, and takes a fallen one', () => {
     run(['beat', '--chunk', '09.1'], A);
     clock = T0 + 5 * 60_000;
