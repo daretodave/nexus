@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-19
+# Kit audit — 2026-10-22
 
 > Bias: none
 
@@ -2318,22 +2318,30 @@ unchanged and still accurate; no fresh sweep run.
   32 from `[blocked: ...]` to `[x]` in
   `plan/steps/01_build_plan.md`.
 
-### [D/A, 2.7, low confidence] playbooks/new-project.md:705 "Common pitfalls" narrows the phase-count target to 12-17 without explaining why it differs from the canonical "10-20" stated three times elsewhere
-- category: voice/doc-drift
-- impact: 3, ease: 9
-- evidence: `playbooks/new-project.md` lines 15, 228, and 744
-  all say "Aim for **10–20 phases total**." Line 705 (Common
-  pitfalls) instead says "If your plan is only 6 phases,
-  you'll run out of work in 2 days. Aim for **12–17**." — a
-  narrower sub-range with no stated rationale for why pitfalls
-  uses a tighter band than the canonical guidance repeated
-  three times elsewhere.
-- next: either change line 705 to match the canonical "10–20",
-  or add a one-clause reason for the narrower practical
-  sweet-spot. Low confidence: this could be deliberate nuance
-  (a tighter practical range inside a wider stated ceiling)
-  rather than drift — a human judgment call before spending a
-  tick on it.
+### [B, 5.6] README.md's "What you get" section has zero prose entry point for the secrets vault
+- category: completeness
+- impact: 7, ease: 8
+- evidence: spec 42 shipped a full secrets subsystem — `npm run
+  secrets` (status/set/import/names/check/push/audit/request/
+  run/scan), a two-ring vault (`.env`/`.env.workspace`/OS
+  keychain), sinks (gh/vercel/wrangler), a GUI vault panel —
+  documented at `customization/secrets.md`. But README.md's
+  customization-layer doc list (the prose rows for
+  `data-layer.md`, `bootstrap-automation.md`, `branding.md`,
+  `moderation-loop.md`, `hermetic-e2e.md`, `claude-code.md`)
+  never names `secrets.md`, and that file is linked only from
+  two narrow playbook asides (`playbooks/workspace.md:85`,
+  `playbooks/new-project.md:670`'s gitignore note) — never
+  from README prose. The only README mentions are generated
+  file-tree code comments (lines ~494, 563, 749) and the
+  generic "Customize per the docs in `customization/`" line
+  (~780), neither of which an adopter scanning for features
+  would read as feature discovery.
+- next: add a bullet (or table row) to README's
+  customization-layer doc list pointing at
+  `customization/secrets.md`, or fold a one-line mention into
+  the `/bootstrap` row (which already says "propagating
+  secrets").
 
 
 ## Done
