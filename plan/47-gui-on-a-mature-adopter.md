@@ -67,14 +67,13 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A10** Fleet shows one tile per session, idle as idle, a dim tile for a claim holder that is not attached, and each tile's last message and chunk.
 - **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
 - **A15** The session onboarding's Plot step starts reaches the person: a permission it waits on shows on the Plot, Cloud and Launch steps with Allow inline, and Launch opens that session's cockpit when it is still working.
-- **A17** Plain text in the composer goes to the session as typed; a guessed route (/bug, /plot) shows as a chip the person can accept, never a command silently prefixed to their words.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 7 open · 10 closed · next A18
+Measure: 6 open · 11 closed · next A18
 
 - [ ] **47.4** Onboarding fits an adopted repo · S · closes A3 · needs —
 - [ ] **47.5** The cockpit opens at once; worktrees follow the repo · M · closes A4 · needs —
@@ -83,5 +82,3 @@ Measure: 7 open · 10 closed · next A18
 - [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
 - [ ] **47.15** Onboarding's plot session's asks reach the person · S · closes A15 · needs —
   - Found checking 47.1 in a scratch repo: the /plot session blocked on its first Bash permission while the person had moved on to the Cloud step.
-- [ ] **47.16** The composer suggests a route, never prefixes one · S · closes A17 · needs —
-  - Seen checking 47.6 and 47.7: a rendering request went out as `/bug ...` and a plain multi-line message as `/plot ...`.

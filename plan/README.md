@@ -30,7 +30,7 @@ line goes):
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 47 | The GUI on a mature adopter | [47-gui-on-a-mature-adopter.md](47-gui-on-a-mature-adopter.md) | planned · priority 5 | 7 left |
+| 47 | The GUI on a mature adopter | [47-gui-on-a-mature-adopter.md](47-gui-on-a-mature-adopter.md) | planned · priority 5 | 6 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 9 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
