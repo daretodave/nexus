@@ -14,6 +14,7 @@
 //     turn: 'working'|'idle' (absent: unknown), last: { kind: 'text', text, at } | { kind: 'tool', tool, arg, at },
 //     lastPrompt, claimsSession, ended: <a hosted session that died with its server and left nothing behind> }
 import { foldClaims, sessionOf } from '../board/model.js';
+import { isProgressLine, progressLine } from '../../../shared/progress-line.mjs';
 
 /** States a session runs in; an idle one (its turn ended, nothing queued) is shown idle, not working. */
 const RUNNING = ['live', 'observing', 'resumed'];
@@ -59,6 +60,12 @@ export function norm(raw) {
   s.session = { name: s.name, kind: s.kind };
   // Idle: its turn ended and nothing waits (the server says so); its orb rests.
   s.idle = s.turn === 'idle' && RUNNING.includes(s.state);
+  // A session with no ledger progress that printed a progress bar (progress.mjs) as its last word: that bar is its
+  // progress, drawn as the tile's bar, never as the raw `[####]` text (49.3).
+  if (!s.progress && s.last?.kind === 'text') {
+    const p = s.last.progress || progressLine(s.last.text);
+    if (p) s.progress = p;
+  }
   if (s.idle) s.orb = 'idle';
   return s;
 }
@@ -77,6 +84,8 @@ export function lastLine(s, max = 160) {
   if (!l) return null;
   const cut = (t) => { const x = String(t || '').replace(/\s+/g, ' ').trim(); return x.length > max ? `${x.slice(0, max - 3)}...` : x; };
   if (l.kind === 'tool') return { kind: 'tool', tool: l.tool || 'tool', arg: cut(l.arg), at: l.at || null };
+  // A progress bar line is drawn as the tile's bar (norm, bar), not repeated here as characters.
+  if (isProgressLine(l.text)) return null;
   const text = cut(l.text);
   return text ? { kind: 'text', text, at: l.at || null } : null;
 }

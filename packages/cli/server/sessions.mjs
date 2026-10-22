@@ -16,6 +16,7 @@ import { pathToFileURL } from 'node:url';
 import { run } from './sh.mjs';
 import { ANNOUNCE_SCRIPTS, findScript } from './repo.mjs';
 import { summarize } from './normalize.mjs';
+import { progressLine } from '../shared/progress-line.mjs';
 
 export const LEDGERS = '.nexus/sessions';
 export const STALE_MIN = 15;
@@ -94,6 +95,12 @@ export function tailEntries(file, bytes = 262144) {
   }
 }
 
+/** A last word that is text: its first line, and the progress bar line it prints, if any (49.3: the tile draws it). */
+const textLast = (text, at) => {
+  const p = progressLine(text);
+  return { kind: 'text', text: oneLine(text), at, ...(p ? { progress: p } : {}) };
+};
+
 const oneLine = (t, max = 200) => {
   const line = String(t || '').split(/\r?\n/).map((l) => l.trim()).find(Boolean) || '';
   return line.length > max ? `${line.slice(0, max - 3)}...` : line;
@@ -118,7 +125,7 @@ export function promptText(content) {
  * What a Claude Code session file says of its session, read from its tail (newest last):
  *   turn        'working' while a turn runs (a prompt or a tool result awaits the model, or a tool call its result),
  *               'idle' once the main thread's last word ended its turn; null when the tail cannot tell
- *   last        the main thread's last word: { kind: 'text', text, at } or { kind: 'tool', tool, arg, at }
+ *   last        the main thread's last word: { kind: 'text', text, at, progress? (a bar line it printed) } or { kind: 'tool', tool, arg, at }
  *   lastPrompt  the last prompt typed (a slash command as `/plot peek`)
  *   cwd, branch where it worked last
  * Subagent (sidechain) lines never move the turn or the last word.
@@ -148,7 +155,7 @@ export function sessionActivity(entries = []) {
       if (!last && Array.isArray(content)) {
         for (let j = content.length - 1; j >= 0 && !last; j--) {
           const b = content[j];
-          if (b?.type === 'text' && oneLine(b.text)) last = { kind: 'text', text: oneLine(b.text), at: e.timestamp || null };
+          if (b?.type === 'text' && oneLine(b.text)) last = textLast(b.text, e.timestamp || null);
           else if (b?.type === 'tool_use') last = { kind: 'tool', tool: b.name || 'tool', arg: summarize(b.name, b.input || {}), at: e.timestamp || null };
         }
       }
@@ -171,7 +178,7 @@ export function transcriptActivity(transcript = [], { busy = false, held = 0 } =
     const t = transcript[i];
     if (!t) continue;
     const main = !t.agent || t.agent === 'main';
-    if (!last && main && t.kind === 'text' && oneLine(t.text)) last = { kind: 'text', text: oneLine(t.text), at: t.at ?? null };
+    if (!last && main && t.kind === 'text' && oneLine(t.text)) last = textLast(t.text, t.at ?? null);
     else if (!last && main && t.kind === 'tool') last = { kind: 'tool', tool: t.name || 'tool', arg: oneLine(t.summary || '', 140), at: t.at ?? null };
     else if (!lastPrompt && t.kind === 'user') lastPrompt = promptText(t.text);
   }

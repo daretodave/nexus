@@ -98,3 +98,34 @@ test('the cockpit keeps a session\'s star and branch when a read has none', () =
   assert.equal(kept.branch, 'nexus/sirius-1');
   assert.equal(rememberIdentity(kept, 'other', null), null, 'another session starts clean');
 });
+
+// ---- a ledger progress line drawn as the tile's bar (49.3) -------------------------------
+
+test('a progress.mjs bar a session printed is drawn as the tile bar, never shown as raw `#` text', async () => {
+  const { bar } = await import('../src/screens/fleet/model.js');
+  const { progressLine, isProgressLine } = await import('../shared/progress-line.mjs');
+  const { sessionActivity, transcriptActivity } = await import('../server/sessions.mjs');
+  const printed = '[########################] 15 of 15 chunks · 100%';
+  assert.deepEqual(progressLine(printed), { done: 15, total: 15, pct: 100, label: '15 of 15 chunks' });
+  assert.deepEqual(progressLine('Spec 49 · The walk\n`[###########.............] 5 of 11 chunks · 45%`\n- 49.1'), { done: 5, total: 11, pct: 45, label: '5 of 11 chunks' });
+  assert.equal(progressLine('[######] 15 of 15 chunks').label, '15 of 15 chunks', 'the shape the owner saw');
+  assert.equal(progressLine('we closed 3 of 5 chunks today'), null, 'words alone are not a bar');
+  assert.ok(isProgressLine('[███░░] 3 of 5 chunks'));
+
+  // The server: a session's last word carries the bar it printed, wherever in the text it sits.
+  const asst = (text) => ({ type: 'assistant', message: { content: [{ type: 'text', text }], stop_reason: 'end_turn' }, timestamp: '2026-10-22T10:00:00Z' });
+  assert.deepEqual(sessionActivity([asst(`Spec 49 · The walk\n${printed}`)]).last.progress, { done: 15, total: 15, pct: 100, label: '15 of 15 chunks' });
+  assert.equal(sessionActivity([asst('All closed.')]).last.progress, undefined);
+  assert.equal(transcriptActivity([{ kind: 'text', text: printed, at: 1 }]).last.progress.done, 15);
+
+  // The tile: a terminal session with no ledger progress takes the printed one; the bar is cells plus the label.
+  const s = norm({ id: 't', name: 'polaris', kind: 'terminal', state: 'live', last: { kind: 'text', text: printed, at: 'x' } });
+  assert.deepEqual(bar(s), { filled: 17, empty: 0, label: '15 of 15 chunks' });
+  assert.equal(lastLine(s), null, 'the bar line is not repeated as characters under the stage');
+  const half = norm({ id: 't', name: 'polaris', kind: 'terminal', last: { kind: 'text', text: 'Spec 49', progress: { done: 5, total: 11, pct: 45, label: '5 of 11 chunks' } } });
+  assert.deepEqual(bar(half), { filled: 8, empty: 9, label: '5 of 11 chunks' });
+  assert.equal(lastLine(half).text, 'Spec 49');
+  // Ledger progress (claimed and done) stays first.
+  const ledger = norm({ id: 't', name: 'polaris', progress: { done: 1, total: 4, pct: 25, label: '1 of 4 chunks' }, last: { kind: 'text', text: printed } });
+  assert.equal(bar(ledger).label, '1 of 4 chunks');
+});
