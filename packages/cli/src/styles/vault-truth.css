@@ -6,3 +6,7 @@
 /* A sink the vault reads back but cannot ask now (github-actions with no gh, no sign-in or no permission, A5): a
    dashed ring in the muted text tone, never the missing ring's warning colour. */
 .dd.is-unknown { box-shadow: none; background: none; border: 1.5px dashed var(--text-3); box-sizing: border-box; }
+
+/* A value cell with nothing wrong in it (an optional secret not set, A6): the empty cell's sans words, in the muted
+   text tone instead of the warning colour. */
+.mask.is-empty.is-quiet { color: var(--text-3); }

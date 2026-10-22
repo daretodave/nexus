@@ -419,3 +419,17 @@ test('49.5: the Actions column follows what GitHub lists; unknown when gh cannot
   assert.match(fs.readFileSync(new URL('../src/styles/vault-truth.css', import.meta.url), 'utf8'), /\.dd\.is-unknown \{[^}]*dashed var\(--text-3\)/, 'a muted dashed ring, theme tokens only');
   assert.match(fs.readFileSync(new URL('../src/screens/Vault.jsx', import.meta.url), 'utf8'), /dd is-unknown" \/>unknown: gh can&apos;t tell/);
 });
+
+test('49.6 follow-up: an optional secret not set reads in the muted tone, never the warning colour', async () => {
+  const fs = await import('node:fs');
+  const opt = { name: 'GH_TOKEN', declared: true, optional: true, set: false, rings: [], destinations: [{ destination: 'local', state: 'missing' }] };
+  const [r] = vaultRows({ secrets: [opt] }, { now: NOW });
+  assert.equal(r.maskTone, 'quiet');
+  assert.deepEqual(r.dots.map((d) => d.cls), ['dd is-none', 'dd is-none', 'dd is-none', 'dd is-none'], 'no dot');
+  assert.equal(vaultRows({ secrets: [{ ...opt, optional: false }] }, { now: NOW })[0].maskTone, 'empty', 'a required one still warns');
+  assert.equal(vaultRows(STATUS, { now: NOW })[1].maskTone, '', 'a set value: the dots');
+  const src = fs.readFileSync(new URL('../src/screens/Vault.jsx', import.meta.url), 'utf8');
+  assert.match(src, /cx\('mask', r\.maskTone && 'is-empty', r\.maskTone === 'quiet' && 'is-quiet'\)/);
+  const css = fs.readFileSync(new URL('../src/styles/vault-truth.css', import.meta.url), 'utf8');
+  assert.match(css, /\.mask\.is-empty\.is-quiet \{ color: var\(--text-3\); \}/);
+});

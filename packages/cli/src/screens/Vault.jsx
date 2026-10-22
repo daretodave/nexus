@@ -164,7 +164,7 @@ function OwnerVault({ st, repo, reload, toast }) {
                 {rows.map((r) => (
                   <div key={r.name} className={cx('vt-row', r.requested && 'is-requested', r.editing && 'is-editing', r.fresh && 'is-fresh')} role="row">
                     <span className="sec-name" role="cell"><b>{r.name}</b><span>{r.for}</span></span>
-                    <span className={cx('mask', !r.set && 'is-empty')} role="cell" aria-label={r.maskAria}>{r.mask}</span>
+                    <span className={cx('mask', r.maskTone && 'is-empty', r.maskTone === 'quiet' && 'is-quiet')} role="cell" aria-label={r.maskAria}>{r.mask}</span>
                     {r.dots.map((x) => <span key={x.d} className={x.cls} role="img" aria-label={x.title} title={x.title} />)}
                     <span role="cell">{r.chunk ? <span className="chunk-id">{r.chunk}</span> : <span className="t-body-s c-3">—</span>}</span>
                     <span className="vt-age" role="cell">

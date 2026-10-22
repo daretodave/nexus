@@ -132,6 +132,8 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
       editing: edit === s.name,
       fresh: fresh.has(s.name),
       mask: s.set ? MASK : optionalUnset ? OPTIONAL_UNSET : 'no value',
+      // The value cell's tone: '' (the dots), 'empty' (no value: the warning), 'quiet' (nothing wrong: muted).
+      maskTone: s.set ? '' : optionalUnset ? 'quiet' : 'empty',
       maskAria: s.set ? 'value hidden' : optionalUnset ? OPTIONAL_UNSET : 'no value yet',
       dots: DESTS.map((d) => ({ d, cls: DOT[states[d]], title: `${SHORT[d]}: ${WORD[states[d]]}` })),
       chunk,
@@ -171,6 +173,7 @@ function undeclaredRow(s, { fresh }) {
     editing: false,
     fresh: fresh.has(s.name),
     mask: local ? MASK : 'no value',
+    maskTone: local ? '' : 'empty',
     maskAria: local ? 'value hidden' : 'no value yet',
     dots: DESTS.map((d) => {
       const st = d === 'local' ? (local ? 'set' : 'missing') : 'none';
