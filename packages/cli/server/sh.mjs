@@ -60,7 +60,7 @@ export function run(cmd, args = [], { cwd, timeout = 20000, input } = {}) {
       // Joined by hand on Windows: every argument passed SAFE_ARG above.
       child = WIN
         ? spawn([cmd, ...args].join(' '), { cwd, shell: true, windowsHide: true, env: process.env })
-        : spawn(cmd, args, { cwd, windowsHide: true, env: process.env });
+        : spawn(cmd, args, { cwd, windowsHide: true, env: process.env, detached: true }); // its own group, so killTree's -pid reaches its children
     } catch (e) {
       return resolve({ ok: false, code: -1, stdout: '', stderr: String(e.message || e), missing: true });
     }
