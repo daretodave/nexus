@@ -31,10 +31,11 @@ line goes):
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 9 left |
+| 49 | The GUI tells the truth on the owner's walk (0.4.2) | [49-gui-walk-fixes.md](49-gui-walk-fixes.md) | planned | 11 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
-plan moved to chunks on 2026-10-20). The next new spec is 49.
+plan moved to chunks on 2026-10-20). The next new spec is 50.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is

@@ -88,7 +88,7 @@ What exists today (2026-10-22):
   remote, the state reads "unknown", never "missing". The
   gate stays offline: tests stub `gh`.
 - **Optional secrets:** the manifest takes `optional: true`
-  (proposed decision `D?secret-optional`). An optional secret
+  (proposed decision `D3`). An optional secret
   that is not set reads "optional · not set", with no
   warning. nexus's own `GH_TOKEN` line sets it.
 - **Plan board, the archive's fields:** an archive line is
@@ -107,7 +107,7 @@ What exists today (2026-10-22):
   `bypassPermissions`. Allow everything carries a plain
   warning: the agent runs every tool with no prompt, on a
   machine that holds real tokens. `nexus run` keeps refusing
-  it (proposed decision `D?gui-bypass`). A running session
+  it (proposed decision `D4`). A running session
   keeps the mode it started with.
 - **Permission card:** the card's title is the input's
   `description` when it has one, else the tool. Its body is
