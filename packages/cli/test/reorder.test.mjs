@@ -130,20 +130,15 @@ test('writeReorder: the pending file settles cleanly, plan-check passes the sett
   const dir = fixtureRepo();
   try {
     assert.equal(run(dir, ['scripts/plan-check.mjs']).status, 0, 'the fixture plan passes before');
-    const r = await writeReorder(dir, { id: '07.2', after: '07.4' }, { owner: true, now: NOW });
-    assert.equal(r.ok, true);
+    const r = await writeReorder(dir, { id: '07.2', after: '07.4' }, { now: NOW });
     assert.equal(r.file, 'plan/pending/reorder-07-20201021-153012.md');
     assert.deepEqual(r.order, ['07.3', '07.4', '07.2', '07.5']);
-    assert.equal(r.mode, 'owner');
-    assert.match(r.note, /waits for settle/);
     // the spec file itself is never written
     assert.equal(fs.readFileSync(path.join(dir, 'plan', '07-search.md'), 'utf8'), SPEC);
 
-    // a second move reads the first through the settled view (a contributor's note this time)
-    const r2 = await writeReorder(dir, { id: '07.5', after: null }, { owner: false, now: new Date(NOW.getTime() + 1000) });
+    // a second move reads the first through the settled view
+    const r2 = await writeReorder(dir, { id: '07.5', after: null }, { now: new Date(NOW.getTime() + 1000) });
     assert.deepEqual(r2.order, ['07.5', '07.3', '07.4', '07.2']);
-    assert.equal(r2.mode, 'contributor');
-    assert.match(r2.note, /rides your next pull request/);
 
     // the repo's own settled view applies both with no problem, in the board's order
     const { settledView } = await imp(dir, 'scripts/plan/settled.mjs');
@@ -161,29 +156,22 @@ test('writeReorder: the pending file settles cleanly, plan-check passes the sett
     assert.match(dry.stdout, /reorder-07-20201021-153013\.md/);
     assert.doesNotMatch(dry.stdout + dry.stderr, /skip/i);
 
-    // GET /api/plan lists the spec's chunks in the settled order; POST /api/plan/reorder writes one more
+    // GET /api/plan lists the spec's chunks in the settled order
     const app = await startServer({ repo: dir, provider: FAKE, pollRuns: false, dist: NO_DIST });
     try {
       const plan = await call(app, 'GET', '/api/plan');
       assert.equal(plan.status, 200);
       const s07 = plan.body.specs.find((s) => s.id === '07');
       assert.deepEqual(s07.chunks.filter((c) => c.state !== 'closed').map((c) => c.id), ['07.5', '07.3', '07.4', '07.2']);
-      const post = await call(app, 'POST', '/api/plan/reorder', { id: '07.2', after: '07.5' });
-      assert.equal(post.status, 200, JSON.stringify(post.body));
-      assert.deepEqual(post.body.order, ['07.5', '07.2', '07.3', '07.4']);
-      assert.equal(post.body.mode, 'owner');
-      const refused = await call(app, 'POST', '/api/plan/reorder', { id: '07.2', after: '09.1' });
-      assert.equal(refused.status, 400);
-      assert.match(refused.body.error, /within its spec/);
     } finally {
       await app.close();
     }
 
-    // the owner's settle applies all three on main: the spec reads in the board's order, and the gate still passes
+    // the owner's settle applies both on main: the spec reads in the board's order, and the gate still passes
     const settle = run(dir, ['scripts/plan/settle.mjs', '--no-commit']);
     assert.equal(settle.status, 0, settle.stdout + settle.stderr);
     const after = fs.readFileSync(path.join(dir, 'plan', '07-search.md'), 'utf8').replace(/\r\n/g, '\n');
-    assert.deepEqual(listedIds(after), ['07.5', '07.2', '07.3', '07.4']);
+    assert.deepEqual(listedIds(after), ['07.5', '07.3', '07.4', '07.2']);
     assert.match(after, /\*\*07\.2\*\* Results list · M · closes A1 · needs —\n {2}- Keep the page size at 20\./);
     assert.match(after, /\*\*07\.3\*\* Empty state for a query long enough to\n {2}wrap · S · closes A2 · needs 07\.2/);
     assert.equal(after.length, SPEC.length);
@@ -194,7 +182,7 @@ test('writeReorder: the pending file settles cleanly, plan-check passes the sett
   }
 });
 
-test('writeReorder: a pending close is never moved; a repo with no settle gets a refusal, not a hand edit', async () => {
+test('writeReorder: a pending close is never moved, nor an anchor', async () => {
   const dir = fixtureRepo();
   try {
     fs.writeFileSync(path.join(dir, 'plan', 'pending', '07.4.md'), '---\nclose: 07.4\ndate: 2020-01-01\nsays: Paging works\n---\n');
@@ -207,9 +195,6 @@ test('writeReorder: a pending close is never moved; a repo with no settle gets a
     // the close settles first (its date is earlier): the reorder, which never quotes 07.4, still applies
     const pc = run(dir, ['scripts/plan-check.mjs']);
     assert.equal(pc.status, 0, pc.stdout + pc.stderr);
-
-    fs.rmSync(path.join(dir, 'scripts', 'plan', 'settle.mjs'));
-    await assert.rejects(writeReorder(dir, { id: '07.3', after: null }, { now: NOW }), (e) => e.status === 409 && /by hand/.test(e.message));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

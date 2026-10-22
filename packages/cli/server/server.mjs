@@ -15,7 +15,7 @@ import * as repoMod from './repo.mjs';
 import * as local from './local.mjs';
 import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
-import { writeReorder } from './reorder.mjs';
+import { landReorder } from './reorder.mjs';
 import { createSummaries } from './summaries.mjs';
 import { explode, plotPrompt, plotRequest } from './explode.mjs';
 import { addWorkflow, saveSchedule } from './cloud.mjs';
@@ -163,6 +163,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   // Git per session and the repo panel (spec 40 A6): read-only, gh through the injected ghRun.
   // Under an injected provider (tests) with no ghRun, gh reads as missing: a test never reaches the real one.
   const noGh = async () => ({ ok: false, code: -1, stdout: '', stderr: 'gh is not stubbed in this test', missing: true });
+  // A reorder's pull request (47 A11): gh through the injected ghRun; null runs the real gh, never under a test.
+  const reorderGh = ghRun ? (args, o) => ghRun('gh', args, o) : injected ? noGh : null;
   const gitView = createGitView({ repo, root: () => primaryRoot(repo), sessions: () => steering.list(), run: ghRun || (injected ? noGh : undefined), ...gitOpts });
   // The boards' times (41.7): ledgers watched across reads, and the plan's titles, sizes and hours, read at most once a
   // minute (the cockpit polls the detail every few seconds).
@@ -470,7 +472,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/announce': { const b = await body(req); const r = await steering.announce(b.text); return send(res, r.status, r); }
         case 'GET /api/claims': return send(res, 200, await listClaims(repo, await claimsCtx(url.searchParams.get('session'))));
         case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));
-        case 'POST /api/plan/reorder': { const b = await body(req); return send(res, 200, await writeReorder(repo, b, { owner: (await local.localView(repo)).effective })); }
+        case 'POST /api/plan/reorder': { const b = await body(req); return send(res, 200, await landReorder(repo, b, { owner: (await local.localView(repo)).effective, gh: reorderGh })); }
         case 'GET /api/summaries': return send(res, 200, await summaries.get());
         // Onboarding's Plot step (spec 47, A1; explode.mjs): split thoughts into ideas (no write), and plot the kept ones.
         case 'POST /api/explode': { const b = await body(req); const { status, ...r } = await explode({ repo, text: b.text, team: b.team, query: explodeQuery ?? summaryQuery ?? (injected ? false : undefined) }); return send(res, status, r); }

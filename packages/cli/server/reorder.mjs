@@ -1,18 +1,22 @@
-// POST /api/plan/reorder (spec 40 A12): the board's grip moves one chunk within its spec. A plan file is never written
-// here: in both modes the move lands as one pending file, `plan/pending/reorder-<spec>-<stamp>.md`, whose `## Edit`
+// POST /api/plan/reorder (spec 40 A12, 47 A11): the board's grip moves one chunk within its spec. A plan file is never
+// written here: in both modes the move is one pending file, `plan/pending/reorder-<spec>-<stamp>.md`, whose `## Edit`
 // takes the chunk's block out (its line, wrapped lines and sub-bullets) and puts it back after the open chunk it now
-// follows (or before the spec's first open chunk). Settle (the repo's scripts/plan/settle.mjs) applies it on main;
-// until then order.mjs and plan-check read it through the settled view, and so does the board (plan.mjs).
+// follows (or before the spec's first open chunk). It is written and landed in a temporary worktree of origin's default
+// branch, never the checkout the GUI runs from (landReorder, below): the owner's commit is settled and pushed, a
+// contributor's opens a pull request. Until settle applies it, order.mjs and plan-check read it through the settled
+// view, and so does the board (plan.mjs).
 //
 // Each edit's old text is one whole chunk block, so it is found exactly once while that chunk is listed. A chunk a
 // pending file already closes is never moved and never an anchor: its close may settle first and take its line.
 // Moves are relative ("B after A"), so reorders applied in settle's order (date, adds before closes, then name) give what the board
 // showed; the stamp in the name keeps that order, and keeps two branches' files apart.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { findKitScript } from './repo.mjs';
 
-export const SETTLE_SCRIPT = 'scripts/plan/settle.mjs';
 const PENDING = 'plan/pending';
 /** A listed (open) chunk line: `- [ ] **07.3** …`. */
 const CHUNK = /^- \[ \] \*\*(\d{2,}\.\w+)\*\*/;
@@ -129,7 +133,7 @@ export function specFile(repo, spec) {
 }
 
 /**
- * The plan as it reads once settled, through the repo's own scripts/plan/settled.mjs and pending.mjs (never a copy
+ * The plan as it reads once settled, through the repo's own settled.mjs and pending.mjs (scripts/plan/) (never a copy
  * of their rules): { read(rel), closed: Set }. A repo without them reads its files as they stand, with no closes.
  */
 export async function settledPlan(repo) {
@@ -137,51 +141,226 @@ export async function settledPlan(repo) {
     const f = path.join(repo, rel);
     return fs.existsSync(f) ? fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n') : null;
   };
-  const mod = async (rel) => {
-    const f = path.join(repo, rel);
-    return fs.existsSync(f) ? import(pathToFileURL(f).href) : null;
+  const mod = async (name) => {
+    const rel = findKitScript(repo, name, { home: 'scripts/plan' });
+    return rel ? import(pathToFileURL(path.join(repo, rel)).href) : null;
   };
   let read = raw;
   let closed = new Set();
   try {
-    const s = await mod('scripts/plan/settled.mjs');
+    const s = await mod('settled.mjs');
     if (s?.settledView) read = s.settledView(repo).read;
   } catch { /* read the files as they stand */ }
   try {
-    const p = await mod('scripts/plan/pending.mjs');
+    const p = await mod('pending.mjs');
     if (p?.pendingCloses && p?.pendingFiles) closed = p.pendingCloses(p.pendingFiles(repo));
   } catch { /* no pending closes known */ }
   return { read, closed };
 }
 
 /**
- * Write the reorder's pending file. body: { id, after }. owner: whether owner mode is on (GET /api/local effective);
- * it only changes the note: the pending file is the same in both modes.
+ * Write the reorder's pending file into `root` (the landing's temporary worktree, never the person's checkout), the
+ * move read through root's settled view. body: { id, after }. Returns { id, after, spec, file, order }.
  */
-export async function writeReorder(repo, body = {}, { owner = false, now = new Date(), plan } = {}) {
-  if (!fs.existsSync(path.join(repo, SETTLE_SCRIPT))) {
-    throw bad(`This repo has no ${SETTLE_SCRIPT}, so a reorder has no pending file to land in. Move the chunk line in its spec by hand.`, 409);
-  }
+export async function writeReorder(root, body = {}, { now = new Date(), plan } = {}) {
   const id = String(body.id ?? '');
   if (!ID.test(id)) throw bad('bad chunk id');
   const spec = specOf(id);
-  const file = specFile(repo, spec);
+  const file = specFile(root, spec);
   if (!file) throw bad(`no spec file for spec ${spec}`, 404);
-  const { read, closed } = plan || (await settledPlan(repo));
+  const { read, closed } = plan || (await settledPlan(root));
   const text = read(file);
   if (text == null) throw bad(`no spec file for spec ${spec}`, 404);
   const r = reorderEdits(text, { id, after: body.after ?? null }, closed);
   const { date, stamp } = clock(now);
-  const dir = path.join(repo, PENDING);
+  const dir = path.join(root, PENDING);
   fs.mkdirSync(dir, { recursive: true });
   const name = pendingName(spec, stamp, new Set(fs.readdirSync(dir)));
   const out = `${PENDING}/${name}`;
-  fs.writeFileSync(path.join(repo, out), pendingText(file, r.edits, date), { flag: 'wx' });
-  const after = body.after ? String(body.after) : null;
-  return {
-    ok: true, id, after, spec, file: out, order: r.order, mode: owner ? 'owner' : 'contributor',
-    note: owner
-      ? `${id} now follows ${after || 'nothing (first)'} in the plan's order. ${out} waits for settle (npm run settle, or /next's orient).`
-      : `${id} now follows ${after || 'nothing (first)'} in the plan's order. ${out} rides your next pull request; the owner's settle applies it.`,
-  };
+  fs.writeFileSync(path.join(root, out), pendingText(file, r.edits, date), { flag: 'wx' });
+  return { id, after: body.after ? String(body.after) : null, spec, file: out, order: r.order, stamp };
+}
+
+// --- landing -----------------------------------------------------------------------------------------------------
+// A reorder lands the way /next lands a close (skills/next/land.md): in a temporary worktree of origin/<default>, so
+// the person's checkout (its HEAD, its edits, its untracked files) is never touched. Owner: commit the pending file,
+// settle it in (the repo's settle --no-commit, then the commit it printed), push HEAD:<default>. Contributor: a branch
+// nexus/reorder-<stamp>, pushed, and a pull request. Every git (and settle) child gets an environment without the
+// GIT_* variables a hook or a parent git may have set, and runs its hooks through wrappers that unset them again: git
+// sets an absolute GIT_DIR for a hook in a linked worktree, and a gate that runs `git init` under it would write the
+// person's repo.
+
+/** The variables that point git at one repository: never inherited by a git we spawn, nor by its hooks. */
+export const GIT_SCRUB = Object.freeze(['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_PREFIX', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY']);
+
+/** `base` without GIT_SCRUB (any case: Windows keys are case-blind). */
+export function cleanEnv(base = process.env) {
+  const env = { ...base };
+  for (const k of Object.keys(env)) if (GIT_SCRUB.includes(k.toUpperCase())) delete env[k];
+  return env;
+}
+
+/**
+ * A program, no shell: { ok, code, stdout, stderr }. Resolves only once the child has exited, a timed-out one too
+ * (killed, then waited for), so nothing still runs in a folder the caller removes next.
+ */
+export function exec(cmd, args, { cwd, env = cleanEnv(), timeout = 60000 } = {}) {
+  return new Promise((resolve) => {
+    let child;
+    try {
+      child = spawn(cmd, args, { cwd, env, windowsHide: true });
+    } catch (e) {
+      resolve({ ok: false, code: -1, stdout: '', stderr: String(e.message || e) });
+      return;
+    }
+    let stdout = '';
+    let stderr = '';
+    let late = false;
+    const timer = setTimeout(() => { late = true; child.kill(); }, timeout);
+    child.stdout.on('data', (d) => { stdout += d; });
+    child.stderr.on('data', (d) => { stderr += d; });
+    child.on('error', (e) => { stderr += String(e.message || e); });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ ok: code === 0 && !late, code: code ?? -1, stdout, stderr: late ? `${stderr}\ntimed out after ${timeout} ms` : stderr });
+    });
+    child.stdin.end();
+  });
+}
+
+const shQuote = (s) => `"${String(s).replace(/[\\"$`]/g, (c) => `\\${c}`)}"`;
+
+/**
+ * Wrapper hooks for a git run in a temporary worktree of `repo`: { dir, cleanup }. `dir` holds one `#!/bin/sh` per
+ * hook the repo has (its core.hooksPath, or its hooks folder) that unsets GIT_SCRUB and execs the real hook; pass it
+ * as `-c core.hooksPath=<dir>`. With no hooks, dir is an empty folder (git then runs none, as the repo would).
+ */
+export async function safeHooks(repo, { run = exec } = {}) {
+  const env = cleanEnv();
+  let real = null;
+  const set = await run('git', ['config', '--get', 'core.hooksPath'], { cwd: repo, env });
+  if (set.ok && set.stdout.trim()) {
+    const top = await run('git', ['rev-parse', '--show-toplevel'], { cwd: repo, env });
+    real = path.resolve(top.ok ? top.stdout.trim() : repo, set.stdout.trim());
+  } else {
+    const gp = await run('git', ['rev-parse', '--git-path', 'hooks'], { cwd: repo, env });
+    if (gp.ok) real = path.resolve(repo, gp.stdout.trim());
+  }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-hooks-'));
+  const names = [];
+  if (real && fs.existsSync(real)) {
+    for (const e of fs.readdirSync(real, { withFileTypes: true })) {
+      if (!e.isFile() || e.name.endsWith('.sample')) continue;
+      const hook = path.join(real, e.name);
+      if (process.platform !== 'win32' && !(fs.statSync(hook).mode & 0o111)) continue;
+      const target = hook.split(path.sep).join('/');
+      fs.writeFileSync(path.join(dir, e.name), `#!/bin/sh\nunset ${GIT_SCRUB.join(' ')}\nexec ${shQuote(target)} "$@"\n`, { mode: 0o755 });
+      names.push(e.name);
+    }
+  }
+  return { dir, hooks: names, cleanup: () => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) };
+}
+
+/** A git command line as settle prints it (`git commit -q -m "plan: settle 07" -- plan/x.md`), split into its args. */
+export function splitArgs(line) {
+  const out = [];
+  const re = /"((?:[^"\\]|\\.)*)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(line))) out.push(m[1] !== undefined ? m[1].replace(/\\(.)/g, '$1') : m[2]);
+  return out;
+}
+
+/** The last lines of a child's output: what a refusal says. */
+const tailOf = (r, n = 12) => `${r.stdout || ''}\n${r.stderr || ''}`.trim().split(/\r?\n/).slice(-n).join('\n');
+
+/** The default branch: origin/HEAD's, else NEXUS_MAIN_BRANCH, else main. */
+async function defaultBranch(repo, run) {
+  const r = await run('git', ['symbolic-ref', '--short', '-q', 'refs/remotes/origin/HEAD'], { cwd: repo });
+  const b = r.ok ? r.stdout.trim().replace(/^origin\//, '') : '';
+  return b || process.env.NEXUS_MAIN_BRANCH || 'main';
+}
+
+export const COMMIT_TIMEOUT = 30 * 60 * 1000; // a pre-commit hook may run the repo's whole gate
+const PUSH_TIMEOUT = 10 * 60 * 1000;
+
+/**
+ * Land a reorder (POST /api/plan/reorder). body: { id, after }. owner: effective owner mode. `run` is every child
+ * (git, node, gh) as exec's signature; tests wrap it. Returns what landed:
+ *   owner        { landed: 'main', commit, settled, ... }   (settled false: the pending file waits for the next settle)
+ *   contributor  { landed: 'pr', branch, pr, url, ... }
+ * Throws { status, message }: 400/404 a refused move, 409 a hook's refusal or a rejected push (nothing landed), 502 git
+ * or gh failing.
+ */
+export async function landReorder(repo, body = {}, { owner = false, now = new Date(), run = exec, gh = null } = {}) {
+  const origin = await run('git', ['remote', 'get-url', 'origin'], { cwd: repo });
+  if (!origin.ok) throw bad('this repo has no origin remote: a reorder lands on origin, so nothing moved', 409);
+  const branch = await defaultBranch(repo, run);
+  const fetched = await run('git', ['fetch', '-q', 'origin', branch], { cwd: repo, timeout: PUSH_TIMEOUT });
+  if (!fetched.ok) throw bad(`git fetch origin ${branch} failed, nothing moved:\n${tailOf(fetched)}`, 502);
+
+  const { stamp } = clock(now);
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-reorder-'));
+  const tmp = path.join(work, 'wt');
+  const prBranch = owner ? null : `nexus/reorder-${stamp}`;
+  const add = await run('git', ['worktree', 'add', '-q', ...(owner ? ['--detach'] : ['--no-track', '-b', prBranch]), tmp, `origin/${branch}`], { cwd: repo });
+  if (!add.ok) {
+    fs.rmSync(work, { recursive: true, force: true });
+    throw bad(`could not open a worktree of origin/${branch}, nothing moved:\n${tailOf(add)}`, 502);
+  }
+  let hooks = null;
+  try {
+    const w = await writeReorder(tmp, body, { now });
+    hooks = await safeHooks(repo, { run });
+    const git = (args, o = {}) => run('git', ['-c', `core.hooksPath=${hooks.dir}`, ...args], { cwd: tmp, ...o });
+    const what = `${w.id} ${w.after ? `after ${w.after}` : `to the top of spec ${w.spec}`}`;
+    const subject = `plan: reorder ${what}`;
+    const base = { ok: true, id: w.id, after: w.after, spec: w.spec, file: w.file, order: w.order, mode: owner ? 'owner' : 'contributor', branch };
+
+    const staged = await git(['add', '--', w.file]);
+    if (!staged.ok) throw bad(`git add failed, nothing moved:\n${tailOf(staged)}`, 502);
+    const c = await git(['commit', '-q', '-m', subject], { timeout: COMMIT_TIMEOUT });
+    if (!c.ok) throw bad(`the commit was refused (a hook said no), nothing moved:\n${tailOf(c)}`, 409);
+
+    if (!owner) {
+      const p = await git(['push', '-q', '-u', 'origin', prBranch], { timeout: PUSH_TIMEOUT });
+      if (!p.ok) throw bad(`git push ${prBranch} was refused, nothing moved:\n${tailOf(p)}`, 409);
+      const ghRun = gh || ((args, o) => run('gh', args, o));
+      const bodyText = `${what}, from the nexus GUI's board. One pending file (${w.file}); the owner's settle applies it.`;
+      const pr = await ghRun(['pr', 'create', '--base', branch, '--head', prBranch, '--title', subject, '--body', bodyText], { cwd: tmp, timeout: PUSH_TIMEOUT });
+      if (!pr.ok) throw bad(`${prBranch} is pushed, but gh pr create failed (open the pull request by hand):\n${tailOf(pr)}`, 502);
+      const url = (/(https?:\/\/\S+\/pull\/(\d+))/.exec(pr.stdout) || [])[1] || null;
+      const n = url ? Number(/\/pull\/(\d+)/.exec(url)[1]) : null;
+      return { ...base, landed: 'pr', branch: prBranch, base: branch, pr: n, url, note: `Opened PR${n ? ` #${n}` : ''}: ${what}. The order changes once it merges and the owner settles.` };
+    }
+
+    // Owner: settle folds the pending file in, the way /next's orient does.
+    let settled = false;
+    let settleNote = '';
+    const settle = findKitScript(tmp, 'settle.mjs', { home: 'scripts/plan' });
+    if (settle) {
+      const s = await run(process.execPath, [settle, '--no-commit'], { cwd: tmp, timeout: PUSH_TIMEOUT });
+      const how = /then: git (.+)$/m.exec(s.stdout || '');
+      if (s.code === 0 && how) {
+        const sc = await git(splitArgs(how[1]), { timeout: COMMIT_TIMEOUT });
+        if (!sc.ok) throw bad(`settle's commit was refused (a hook said no), nothing moved:\n${tailOf(sc)}`, 409);
+        settled = true;
+      } else {
+        await git(['reset', '-q', '--hard', 'HEAD']);
+        settleNote = ` Settle could not fold it in here (${tailOf(s, 3).replace(/\s+/g, ' ')}): the pending file waits on ${branch} for the next settle.`;
+      }
+    } else {
+      settleNote = ` This repo has no settle script: the pending file waits on ${branch} for a settle to fold it in.`;
+    }
+    const p = await git(['push', '-q', 'origin', `HEAD:${branch}`], { timeout: PUSH_TIMEOUT });
+    if (!p.ok) throw bad(`the push to ${branch} was refused (another landing got there first?), nothing moved: move it again.\n${tailOf(p)}`, 409);
+    const head = await git(['rev-parse', '--short', 'HEAD']);
+    return { ...base, landed: 'main', commit: head.stdout.trim(), settled, note: `Reordered on ${branch}: ${what}.${settleNote} Pull to see it in this checkout.` };
+  } finally {
+    // Every child above was awaited to its exit: nothing runs in the worktree now.
+    if (hooks) hooks.cleanup();
+    await run('git', ['worktree', 'remove', '--force', tmp], { cwd: repo });
+    if (prBranch) await run('git', ['branch', '-D', '-q', prBranch], { cwd: repo });
+    fs.rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    await run('git', ['worktree', 'prune'], { cwd: repo });
+  }
 }
