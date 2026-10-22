@@ -126,7 +126,7 @@ export function nextSpec(repo) {
   // ARCHIVE.md: `- <date> · <spec or chunk id> · ...`; a chunk id 12.3 counts for spec 12.
   for (const m of readText(path.join(plan, 'ARCHIVE.md')).matchAll(/^\s*[-*]\s+[^\n·]*·\s*(\d+)(?:\.\d+[a-z]?)?\s*·/gm)) note('archive', Number(m[1]) + 1);
   let pend = [];
-  try { pend = fs.readdirSync(path.join(plan, 'pending')).filter((f) => f.endsWith('.md')); } catch { /* no pending files */ }
+  try { pend = fs.readdirSync(path.join(plan, 'pending')).filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md'); } catch { /* no pending files */ }
   for (const f of pend) for (const m of readText(path.join(plan, 'pending', f)).matchAll(/plan\/(?:specs\/)?(\d+)-[\w.-]+\.md/g)) note('pending', Number(m[1]) + 1);
   const said = /next new spec is\s+(?:spec\s+)?\**(\d+)\**/i.exec(readText(path.join(plan, 'README.md')));
   if (said) note('readme', Number(said[1]));

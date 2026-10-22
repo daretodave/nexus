@@ -89,6 +89,10 @@ test('the next spec: one above every spec file, archive id and pending addition;
   const files = tmpRepo({ 'plan/03-search.md': '# 03', 'plan/12-export.md': '# 12', 'plan/README.md': '# Plan\n' });
   assert.equal(nextSpec(files).n, 13);
 
+  // plan/pending/README.md documents the format with an example spec path; it is not a pending addition.
+  const documented = tmpRepo({ 'plan/pending/README.md': '## Add plan/07-search.md\n' });
+  assert.equal(nextSpec(documented).n, 1);
+
   // The archive holds a higher spec than any open file (specs close into it), as a spec line and a chunk line.
   const archived = tmpRepo({
     'plan/12-export.md': '# 12',
