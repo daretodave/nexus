@@ -16,7 +16,7 @@ import { createProvider } from './provider.mjs';
 import { txFromMessage, newTxContext } from './normalize.mjs';
 import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
 import { createTugLog } from './tugs.mjs';
-import { ASK_DEFAULT_MS, askDefaults } from '../shared/times.mjs';
+import { ASK_DEFAULT_MS, askDefaults, completeAnswers } from '../shared/times.mjs';
 import { toolArg, toolTitle } from '../shared/tool-arg.mjs';
 import { messageContent, withFiles } from '../shared/attachments.mjs';
 
@@ -218,6 +218,10 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
       beatCtx = newBeatContext();
       hub.reset();
     },
+    /**
+     * Answer a live ask. A partial set is made whole (shared/times.mjs completeAnswers): each question left out takes
+     * its default, so one answer given is enough to send (spec 51, A1); the conversation says which took a default.
+     */
     answerAsk(askId, answers) {
       const entry = asks.get(askId);
       if (!entry) return false;
@@ -225,7 +229,12 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
       asks.delete(askId);
       hub.beat({ k: 'oversight', p: 'answer', id: askId });
       publishAsks();
-      entry.resolve(answers);
+      if (!answers) { entry.resolve(answers); return true; }
+      const done = completeAnswers(entry.view.questions, answers);
+      if (done.taken.length) {
+        hub.tx({ kind: 'system', text: `${done.taken.length} took ${done.taken.length === 1 ? 'its default' : 'their defaults'}: ${done.taken.map((k) => done.answers[k]).join(' · ')}`, at: now() });
+      }
+      entry.resolve(done.answers);
       return true;
     },
     answerPermission(reqId, decision) {

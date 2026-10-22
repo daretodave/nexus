@@ -33,6 +33,7 @@ import { createStepWatch, sessionTimes } from './session-times.mjs';
 import { tonightStart } from '../shared/times.mjs';
 import { createMask, createSecrets, parseRequest } from './secrets.mjs';
 import { readDesign } from './design.mjs';
+import { clearDraftsWith, readDrafts, writeDrafts } from './drafts.mjs';
 import { artifactLink } from '../shared/design-link.mjs';
 import { MAX_SEND_BODY, readAttachments } from '../shared/attachments.mjs';
 import { saveUploads, uploadFile } from './uploads.mjs';
@@ -146,8 +147,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return null;
   }
 
-  async function body(req, max = MAX_BODY) {
-    if (!/^application\/json\b/.test(req.headers['content-type'] || '')) throw Object.assign(new Error('json only'), { status: 415 });
+  // `max`: the body cap (POST /api/send takes images, so it passes a larger one). `beacon`: navigator.sendBeacon
+  // posts a string as text/plain; the drafts route takes that JSON too (its token rides in ?t=, as a beacon cannot
+  // set a header). A number is read as { max } (the send route's call).
+  async function body(req, opts = {}) {
+    const { max = MAX_BODY, beacon = false } = typeof opts === 'number' ? { max: opts } : opts;
+    const type = req.headers['content-type'] || '';
+    if (!/^application\/json/.test(type) && !(beacon && /^text\/plain/.test(type))) throw Object.assign(new Error('json only'), { status: 415 });
     let size = 0;
     const chunks = [];
     for await (const c of req) {
@@ -548,6 +554,14 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         }
         case 'GET /api/sessions': return send(res, 200, markEnded(await gitView.withGit(await sessionList())));
         case 'GET /api/inbox': return send(res, 200, await inbox());
+        // Answers saved as they are typed (spec 51, A1; drafts.mjs). POST is the same as PUT, for sendBeacon.
+        case 'GET /api/drafts': return send(res, 200, { drafts: readDrafts(repo) });
+        case 'PUT /api/drafts':
+        case 'POST /api/drafts': {
+          const b = await body(req, { beacon: true });
+          if (!b.drafts || typeof b.drafts !== 'object' || Array.isArray(b.drafts)) return send(res, 400, { error: 'drafts: { key: text | null }' });
+          return send(res, 200, { ok: true, drafts: writeDrafts(repo, b.drafts) });
+        }
         case 'GET /api/git': return send(res, 200, await gitView.repoGit());
         case 'GET /api/git/tidy': { const r = await gitView.tidyDry(); return send(res, r.available ? 200 : 404, r); }
         case 'POST /api/git/fetch': { await body(req); const r = await gitView.fetchNow(); return send(res, r.ok ? 200 : 502, r); }
@@ -616,6 +630,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         const b = await body(req);
         const answers = b.answers && typeof b.answers === 'object' ? Object.fromEntries(Object.entries(b.answers).map(([k, v]) => [String(k), String(v)])) : null;
         if (!answerAsk(ask[1], answers)) return send(res, 404, { error: 'no such question (already answered or expired)' });
+        try { clearDraftsWith(repo, `${ask[1]}:`); } catch { /* a draft left behind is only a draft */ }
         return send(res, 200, { ok: true });
       }
       const ibx = /^POST \/api\/inbox\/([\w.%:-]+)$/.exec(route);

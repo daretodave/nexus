@@ -64,3 +64,32 @@ export function countdown(deadline, now, total = ASK_DEFAULT_MS) {
   const s = Math.ceil(ms / 1000);
   return { left: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, pct: Math.max(0, Math.min(100, Math.round((ms / total) * 100))) };
 }
+
+/** One question's default: its "(recommended)" option (without the mark), else its first; null with no options. */
+export function askDefault(q) {
+  const labels = (q?.options || []).map((o) => String(typeof o === 'string' ? o : o?.label || '')).filter(Boolean);
+  if (!labels.length) return null;
+  return (labels.find((l) => REC.test(l)) || labels[0]).replace(REC, '');
+}
+
+/** What an unanswered question with no default sends, so the agent proceeds rather than waits (spec 51, A1). */
+export const NO_ANSWER = '(no answer: use your recommended default)';
+
+/**
+ * A partial set of answers made whole (spec 51, A1): AskUserQuestion takes one answers object for the whole ask,
+ * keyed by question text. Each answered question keeps its answer; each other takes its default, or NO_ANSWER when
+ * it has none. Pure; `taken` lists the questions that took a default (or NO_ANSWER).
+ */
+export function completeAnswers(questions = [], given = {}) {
+  const answers = {};
+  const taken = [];
+  for (const q of questions) {
+    const key = q?.question;
+    if (key == null) continue;
+    const a = given && given[key] != null ? String(given[key]) : '';
+    if (a.trim()) { answers[key] = a; continue; }
+    answers[key] = askDefault(q) ?? NO_ANSWER;
+    taken.push(key);
+  }
+  return { answers, taken };
+}
