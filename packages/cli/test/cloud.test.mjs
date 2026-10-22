@@ -46,13 +46,14 @@ function fixture({ owner = true } = {}) {
 }
 
 /** gh stubbed: variables, pull requests. `prs` is the open PR list it reports. */
-function fakeGh({ vars = [], prs = [] } = {}) {
+function fakeGh({ vars = [], prs = [], enable = true } = {}) {
   const calls = [];
   const run = async (cmd, args) => {
     calls.push(args.join(' '));
     const ok = (stdout) => ({ ok: true, code: 0, stdout, stderr: '' });
     if (args[0] === 'variable' && args[1] === 'list') return ok(JSON.stringify(vars));
     if (args[0] === 'variable' && args[1] === 'set') { vars.push({ name: args[2], value: args[4] }); return ok(''); }
+    if (args[0] === 'workflow' && args[1] === 'enable') return enable ? ok('') : { ok: false, code: 1, stdout: '', stderr: 'HTTP 403: Resource not accessible by integration' };
     if (args[0] === 'pr' && args[1] === 'list') return ok(JSON.stringify(prs));
     if (args[0] === 'pr' && args[1] === 'create') { prs.push({ url: 'https://example.com/pr/1', number: 1 }); return ok('https://example.com/pr/1\n'); }
     return { ok: false, code: 1, stdout: '', stderr: `unexpected: gh ${args.join(' ')}` };
@@ -410,7 +411,7 @@ test('the Cloud step\'s Turn on and Add it go through landThenGo, not a Link tha
   const step = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'screens', 'onboarding', 'CloudSetup.jsx'), 'utf8');
   assert.doesNotMatch(step, /<Link[^>]*onClick=\{turnOn\}/, 'Turn on is not a Link');
   assert.match(step, /landThenGo\(fn, \{/);
-  assert.match(step, /act\('sched', \(\) => onboardingCalls\.setSchedule/);
+  assert.match(step, /act\('sched', \(\) => turnOnCloud\(\{ setSchedule: onboardingCalls\.setSchedule/);
   assert.match(step, /act\('wf', onboardingCalls\.addWorkflow/);
   assert.match(step, /nav\(PATHS\.onboarding\(stepAfter\('cloud'\)\)\)/, 'Launch only once it answered');
   assert.match(step, /BUSY_NOTE/);
@@ -470,4 +471,41 @@ test('safeHooks wraps each hook the repo has, honouring core.hooksPath', async (
     }
     assert.equal(fs.existsSync(h.dir), false);
   }
+});
+
+// ---- Turn on enables the loop ------------------------------------------------------
+
+test('Turn on saves the schedule, then enables a loop workflow that is switched off; a refusal stops it there', async () => {
+  const { turnOnCloud } = await import('../src/screens/onboarding/cloudFlow.js');
+  const fx = fixture({ owner: true });
+  const gh = fakeGh();
+  await withServer(fx.root, gh, async (post) => {
+    const call = async (p, b) => { const r = await post(p, b); if (r.status !== 200) throw Object.assign(new Error(r.body?.error || `HTTP ${r.status}`), { status: r.status }); return r.body; };
+    const calls = { setSchedule: (s, c) => call('/api/cloud/schedule', { schedule: s, cron: c }), setWorkflow: (id, on) => call('/api/actions/workflow', { id, enabled: on }) };
+    const off = { id: 77, path: WORKFLOW_PATH, enabled: false };
+    const r = await turnOnCloud(calls, { sched: 'demand', cron: '', wf: off });
+    assert.equal(r.enabled, true);
+    assert.deepEqual(gh.calls.filter((c) => c.startsWith('workflow')), ['workflow enable 77'], 'gh workflow enable, after the schedule landed');
+    assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), []);
+
+    // Already on: nothing to enable. Not listed yet (just added): a new workflow starts enabled.
+    gh.calls.length = 0;
+    await turnOnCloud(calls, { sched: 'demand', cron: '', wf: { ...off, enabled: true } });
+    await turnOnCloud(calls, { sched: 'demand', cron: '', wf: null });
+    assert.deepEqual(gh.calls.filter((c) => c.startsWith('workflow')), []);
+  });
+  const refuse = fakeGh({ enable: false });
+  await withServer(fx.root, refuse, async (post) => {
+    const call = async (p, b) => { const r = await post(p, b); if (r.status !== 200) throw new Error(r.body?.error); return r.body; };
+    const calls = { setSchedule: (s, c) => call('/api/cloud/schedule', { schedule: s, cron: c }), setWorkflow: (id, on) => call('/api/actions/workflow', { id, enabled: on }) };
+    await assert.rejects(turnOnCloud(calls, { sched: 'two', cron: '0 */2 * * *', wf: { id: 77, enabled: false } }), /could not switch the loop workflow on.*403/s);
+  });
+  // A contributor's schedule waits in a pull request: nothing to enable until it is merged.
+  const pending = { setSchedule: async () => ({ cron: null, pr: 'https://example.com/pr/1' }), setWorkflow: async () => { throw new Error('not called'); } };
+  assert.equal((await turnOnCloud(pending, { sched: 'demand', cron: '', wf: { id: 77, enabled: false } })).enabled, false);
+});
+
+test('the Cloud step\'s Turn on goes through turnOnCloud with the listed workflow', () => {
+  const step = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'screens', 'onboarding', 'CloudSetup.jsx'), 'utf8');
+  assert.match(step, /act\('sched', \(\) => turnOnCloud\(\{ setSchedule: onboardingCalls\.setSchedule, setWorkflow: server\.setWorkflow \}, \{ sched, cron, wf \}\)/);
 });

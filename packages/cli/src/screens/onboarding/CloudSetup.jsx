@@ -13,7 +13,7 @@ import { PATHS } from '../../routes.js';
 import { ObFrame, Back, useCopy, CopyFace } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
-import { landThenGo, BUSY_NOTE } from './cloudFlow.js';
+import { landThenGo, turnOnCloud, BUSY_NOTE } from './cloudFlow.js';
 
 const LOOP_FILE = /(?:^|\/)(nexus-loop|march)\.ya?ml$/;
 const NIGHT_HOURS = [1, 2, 3, 4, 5, 6];
@@ -112,7 +112,7 @@ export default function CloudSetup() {
   const cron = cronFor(sched);
 
   // Saving the schedule commits (the repo's checks run): Launch comes only once it landed; an error stays here.
-  const turnOn = () => act('sched', () => onboardingCalls.setSchedule(sched, cron), () => patch({ cloud: 'on', cloudSaved: true }), () => nav(PATHS.onboarding(stepAfter('cloud'))));
+  const turnOn = () => act('sched', () => turnOnCloud({ setSchedule: onboardingCalls.setSchedule, setWorkflow: server.setWorkflow }, { sched, cron, wf }), () => patch({ cloud: 'on', cloudSaved: true }), () => nav(PATHS.onboarding(stepAfter('cloud'))));
   const busy = Object.values(pending).includes('busy');
   const skip = () => patch({ cloud: 'skipped' });
 
