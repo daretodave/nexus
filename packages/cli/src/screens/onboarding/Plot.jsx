@@ -9,8 +9,9 @@
 // offers /messy, which plots the same thoughts in a session instead, and
 // renders its themes as cards as its report streams in, each with its /plot
 // line as the action (themes.js reads the report; /messy's Step 6 pins its
-// shape). Nothing here is planned until it is written.
-import { useMemo, useState } from 'react';
+// shape). Nothing here is planned until it is written. On a repo nexus is not in yet the kept ideas wait in the
+// draft: the step offers Adopt now and plots them once adoption lands (plotGate.js; spec 52, A1).
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, Kbd, ChoiceButtons, SessTag, SizeTag, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { server, useAppState } from '../../data/index.js';
@@ -20,6 +21,7 @@ import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
 import { messyReport } from './themes.js';
 import { usePlotLive, PlotAskStrip } from './PlotAsk.jsx';
+import { nexusIn, plotGate, plotKeptLabel, needsAdopt } from './plotGate.js';
 import '../../styles/plot-fit.css';
 
 const PLACES = [
@@ -51,17 +53,19 @@ function Marked({ text, quotes }) {
 
 /**
  * How the Lands note names the spec: the file explode named, else the next spec number this repo would take
- * (GET /api/state info.nextSpec), and "the first spec" only in a repo with no spec at all.
+ * (GET /api/state info.nextSpec), and "the first spec" only in a repo with no spec at all. A repo nexus is not in
+ * yet has no plan to number from: "the first spec, once nexus is in" (`nexus` false; nexusIn in plotGate.js).
  * @returns {{ code: string|null, words: string }}
  */
-export function specWords(specFile, next) {
+export function specWords(specFile, next, nexus = true) {
+  if (nexus === false) return { code: null, words: 'the first spec, once nexus is in' };
   if (specFile) return { code: specFile, words: '' };
   if (next && !next.fresh && next.n) return { code: `${next.prefix || `plan/${next.n}-`}…`, words: 'a new spec, ' };
   return { code: null, words: 'the first spec' };
 }
 
-function SpecName({ specFile, next }) {
-  const w = specWords(specFile, next);
+function SpecName({ specFile, next, nexus }) {
+  const w = specWords(specFile, next, nexus);
   return <>{w.words}{w.code ? <code>{w.code}</code> : null}</>;
 }
 
@@ -86,6 +90,48 @@ function planFrom(ideas, place, specN) {
   return { chunks, idOf };
 }
 
+/** The adoption gate's note in the Planned column (plotGate.js): adopt first, adopting, or plot the held ideas. */
+export function AdoptGate({ gate, kept, held, err, plotting, onAdopt, onPlot }) {
+  if (gate === 'adopt' || gate === 'adopting') {
+    const adopting = gate === 'adopting';
+    const ideas = kept === 1 ? 'kept idea' : `${kept} kept ideas`;
+    return (
+      <div className="lands" role="status" data-gate={gate}>
+        <Icon name="rays8" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--accent)' }} />
+        <span style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+          <span>
+            <b>nexus isn't in this repo yet.</b> <code>/plot</code> needs its plan and skills, so adopt it first.{' '}
+            {held ? `Your ${ideas} wait here and plot as soon as it lands.` : `Your ${ideas} stay here meanwhile.`}
+          </span>
+          {adopting ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span className="t-body-s c-3" aria-live="polite">Adopting in the home session...</span>
+              <Link className="btn btn-s btn-ghost" to={PATHS.cockpit('main')}><Icon name="arrowRight" size={14} />Watch it</Link>
+            </span>
+          ) : (
+            <button className="btn btn-s btn-primary" type="button" onClick={onAdopt}><Icon name="arrowRight" size={14} />Adopt now</button>
+          )}
+          {err ? <span className="t-body-s" role="alert" style={{ color: 'var(--st-blocked)' }}>Adopt did not start: {err}</span> : null}
+        </span>
+      </div>
+    );
+  }
+  if (gate === 'landed' || gate === 'auto') {
+    return (
+      <div className="lands" role="status" data-gate={gate}>
+        <Icon name="check" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--st-done)' }} />
+        <span style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+          <span><b>nexus is in.</b> {gate === 'auto' ? 'Plotting your held ideas now.' : 'Your kept ideas are ready to plot.'}</span>
+          {gate === 'landed' ? (
+            <button className="btn btn-s btn-primary" type="button" onClick={onPlot} disabled={plotting} aria-busy={plotting || undefined}><Icon name="arrowRight" size={14} />{plotKeptLabel(kept)}</button>
+          ) : null}
+        </span>
+      </div>
+    );
+  }
+  return null;
+}
+
 export default function Plot() {
   const { owner, live } = useShell();
   const [d, patch] = useDraft();
@@ -106,10 +152,13 @@ export default function Plot() {
   const ideas = d.ideas || [];
   const app = useAppState();
   const next = app.data?.info?.nextSpec || null;
+  const nexus = nexusIn(app.data?.info);
   const specN = d.spec?.n || next?.n || 1;
-  const specFile = d.spec?.file || null;
+  const specFile = nexus === false ? null : d.spec?.file || null;
   const { chunks, idOf } = useMemo(() => planFrom(ideas, d.place || {}, specN), [ideas, d.place, specN]);
   const showText = !ideas.length || editing;
+  const gate = plotGate({ nexus, adopt: d.adopt, kept: chunks.length, plotted: d.plotted, held: d.plotHeld });
+  const [adoptErr, setAdoptErr] = useState(null);
 
   const setIdeas = (fn) => patch((cur) => ({ ideas: fn(cur.ideas || []), plotted: false }));
   const setIdea = (id, p) => setIdeas((all) => all.map((x) => {
@@ -169,23 +218,52 @@ export default function Plot() {
     }
   };
 
-  // Continue waits for the plot call: a link would leave before an error could show.
+  // Continue waits for the plot call: a link would leave before an error could show. A repo nexus is not in holds
+  // the kept ideas (plotHeld) until adoption lands; the server refuses it too (409 { adopt: true }).
   const writePlan = async (e) => {
     if (!chunks.length || d.plotted) return;
-    e.preventDefault();
+    e?.preventDefault();
     if (plotting) return;
+    if (gate === 'adopt' || gate === 'adopting') { patch({ plotHeld: true }); return; }
     setPlotting(true);
     setPlotErr(null);
     try {
       const r = await onboardingCalls.plot({ spec: specFile, thoughts, chunks: chunks.map((c) => ({ id: c.id, title: c.t, size: c.size, place: c.place, from: c.from })) });
-      patch({ plotted: true, plotSession: r.session ? { id: r.session, name: r.star || '' } : null });
+      patch({ plotted: true, plotHeld: false, plotSession: r.session ? { id: r.session, name: r.star || '' } : null });
       nav(PATHS.onboarding(stepAfter('plot')));
     } catch (err) {
-      setPlotErr(err.message);
+      if (needsAdopt(err)) { patch({ plotHeld: true }); app.reload(); } else setPlotErr(err.message);
     } finally {
       setPlotting(false);
     }
   };
+
+  // Adopt now: the home session adopts nexus (POST /api/adopt, as Launch does); the kept ideas stay in the draft.
+  const adoptNow = async () => {
+    setAdoptErr(null);
+    try {
+      await server.adopt();
+      patch({ adopt: 'sent' });
+    } catch (err) {
+      setAdoptErr(err.message);
+    }
+  };
+
+  // While the home session adopts, read the state until it says nexus is in.
+  const reloadState = app.reload;
+  useEffect(() => {
+    if (gate !== 'adopting') return undefined;
+    const t = setInterval(reloadState, 3000);
+    return () => clearInterval(t);
+  }, [gate, reloadState]);
+
+  // Adoption landed after the person asked to plot: plot the held ideas as Next would have, once.
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (gate !== 'auto' || autoRan.current) return;
+    autoRan.current = true;
+    writePlan();
+  }, [gate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const n = (st) => ideas.filter((x) => x.st === st).length;
   const counts = ideas.length ? [`${n('kept')} kept`, `${n('merged')} merged`, `${n('discarded')} discarded`, `${n('new')} to decide`].join(' · ') : '';
@@ -197,7 +275,7 @@ export default function Plot() {
       <span className="ob-count">{stepCount('plot')}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {plotErr ? <span className="t-body-s" style={{ color: 'var(--st-blocked)' }}>Not planned yet: {plotErr}</span> : null}
-        <span className="t-body-s c-3" aria-live="polite">{plotting ? 'Starting /plot...' : `${chunks.length} chunks planned`}</span>
+        <span className="t-body-s c-3" aria-live="polite">{plotting ? 'Starting /plot...' : gate === 'adopt' || gate === 'adopting' ? `${chunks.length} chunks held until nexus is in` : `${chunks.length} chunks planned`}</span>
         <Next to={PATHS.onboarding(stepAfter('plot'))} onClick={writePlan} />
       </div>
     </>
@@ -322,7 +400,7 @@ ${t.plot}`} className={st === 'sent' ? 'idea is-kept' : t.kind === 'built' ? 'id
           <div className="plot-col-h">
             <span className="t-title-s">Planned</span>
             <span className="tb-spacer" style={{ flex: 1 }} />
-            <span className="cap">{specFile || ''}</span>
+            <span className="cap">{specFile || (nexus === false ? 'nexus not in yet' : '')}</span>
           </div>
           <div className="planned">
             {chunks.map((c) => (
@@ -341,6 +419,7 @@ ${t.plot}`} className={st === 'sent' ? 'idea is-kept' : t.kind === 'built' ? 'id
             ))}
           </div>
           {!chunks.length ? <div className="lands">Keep an idea and it lands here as a chunk.</div> : null}
+          <AdoptGate gate={gate} kept={chunks.length} held={!!d.plotHeld} err={adoptErr} plotting={plotting} onAdopt={adoptNow} onPlot={writePlan} />
           {d.plotted && d.plotSession?.id ? (
             <div className="lands" role="status">
               <Icon name="check" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--st-done)' }} />
@@ -353,12 +432,12 @@ ${t.plot}`} className={st === 'sent' ? 'idea is-kept' : t.kind === 'built' ? 'id
           {owner ? (
             <div className="lands">
               <Icon name="lockOne" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--owner)' }} />
-              <span><b>Lands on main</b> as <SpecName specFile={specFile} next={next} /> with {chunks.length} chunks. You own this checkout, so there is no plan PR to wait for.</span>
+              <span><b>Lands on main</b> as <SpecName specFile={specFile} next={next} nexus={nexus} /> with {chunks.length} chunks. You own this checkout, so there is no plan PR to wait for.</span>
             </div>
           ) : (
             <div className="lands">
               <Icon name="contribOne" size={14} style={{ marginTop: 3, flex: 'none' }} />
-              <span><b>Opens a plan PR</b> with <SpecName specFile={specFile} next={next} /> and {chunks.length} chunks, so the owner reviews your plan like code.</span>
+              <span><b>Opens a plan PR</b> with <SpecName specFile={specFile} next={next} nexus={nexus} /> and {chunks.length} chunks, so the owner reviews your plan like code.</span>
             </div>
           )}
         </div>

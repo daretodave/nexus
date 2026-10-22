@@ -67,6 +67,14 @@ export function isAdopted(repo) {
   return fs.existsSync(agents) && fs.existsSync(path.join(repo, 'plan')) && fs.existsSync(path.join(repo, '.claude', 'commands'));
 }
 
+/**
+ * Is nexus in this repo, enough for /plot to run: adopted (as Detect reads it) or pinned by plan/nexus.lock. POST
+ * /api/plot refuses a repo where it is not (spec 52, A1); the Plot step asks the same of GET /api/state's info.
+ */
+export function nexusIn(repo) {
+  return isAdopted(repo) || !!kitLock(repo);
+}
+
 /** Owner mode on: write `.owner` and keep it out of git via info/exclude. */
 export async function setOwner(repo, on) {
   const file = path.join(repo, '.owner');

@@ -122,6 +122,9 @@ function req(port, { method = 'GET', pathname, headers = {}, body }) {
 
 test('the Plot step\'s sessions and Launch\'s session start in the mode chosen at step 2', async () => {
   const repo = tmpRepo();
+  // /plot runs only where nexus is in (spec 52, A1): a plan/nexus.lock pin is enough.
+  fs.mkdirSync(path.join(repo, 'plan'));
+  fs.writeFileSync(path.join(repo, 'plan', 'nexus.lock'), 'version: 2.0.0\n');
   const seen = []; // { text, mode }: the mode each conversation reads as it starts
   const provider = (h) => ({ kind: 'fake', active: false, send(text) { seen.push({ text, mode: h.permissionMode() }); }, async interrupt() {}, async stop() {}, async fresh() {} });
   const app = await startServer({ repo, provider, pollRuns: false, ghLogin: async () => '', dist: path.join(os.tmpdir(), 'nexus-cli-no-dist') });

@@ -268,9 +268,34 @@ test('POST /api/explode is served: the model\'s ideas, or the rule split when it
   });
 });
 
+// A repo nexus is in, as Detect reads it: the rule book, the plan and the commands (spec 52, A1: /plot needs them).
+const ADOPTED = { 'agents.md': '# rules\n', 'plan/README.md': '# plan\n', '.claude/commands/next.md': 'next\n' };
+
+test('POST /api/plot refuses a repo nexus is not in: 409 with the adopt flag, no session, nothing sent', async () => {
+  const fresh = tmpRepo({ 'README.md': 'hello\n' });
+  await withServer(fresh, {}, async ({ app, post, sent }) => {
+    const before = app.sessions.size;
+    const r = await post('/api/plot', BODY);
+    assert.equal(r.status, 409);
+    assert.equal(r.data.adopt, true);
+    assert.match(r.data.error, /nexus isn't in this repo yet/);
+    assert.deepEqual(sent, [], 'no /plot prompt went anywhere');
+    assert.equal(app.sessions.size, before, 'no session started');
+    assert.equal((await post('/api/plot', { chunks: [] })).status, 400, 'a bad body is still a 400 first');
+    // Explode writes nothing and still works before adoption.
+    assert.equal((await post('/api/explode', { text: 'fix the login redirect' })).status, 200);
+  });
+  // Half an adoption is not enough: agents.md alone still refuses.
+  const half = tmpRepo({ 'agents.md': '# rules\n' });
+  await withServer(half, {}, async ({ post }) => assert.equal((await post('/api/plot', BODY)).status, 409));
+  // A plan/nexus.lock pin counts as in, as does the full adoption below.
+  const pinned = tmpRepo({ 'plan/nexus.lock': 'version: 2.0.0\n' });
+  await withServer(pinned, {}, async ({ post }) => assert.equal((await post('/api/plot', BODY)).status, 200));
+});
+
 test('POST /api/plot is served: a /plot run in a new session, landing settled for the owner and as a PR for a contributor', async () => {
   // Contributor: no .owner in the checkout.
-  const contrib = tmpRepo();
+  const contrib = tmpRepo(ADOPTED);
   await withServer(contrib, {}, async ({ app, post, sent }) => {
     assert.equal((await post('/api/plot', { chunks: [] })).status, 400);
     assert.deepEqual(sent, []);
@@ -288,10 +313,10 @@ test('POST /api/plot is served: a /plot run in a new session, landing settled fo
     assert.ok(app.sessions.has(r.data.session), 'the session is hosted here, so its cockpit opens');
     assert.equal(app.sessions.get(r.data.session).place.worktree, undefined, 'no worktree of its own: /plot cuts one');
   });
-  assert.ok(!fs.existsSync(path.join(contrib, 'plan')), 'the server writes no plan file');
+  assert.deepEqual(fs.readdirSync(path.join(contrib, 'plan')), ['README.md'], 'the server writes no plan file');
 
   // Owner: an untracked .owner at the root.
-  const owner = tmpRepo({ '.owner': 'owner\n' });
+  const owner = tmpRepo({ ...ADOPTED, '.owner': 'owner\n' });
   await withServer(owner, {}, async ({ post, sent }) => {
     const r = await post('/api/plot', BODY);
     assert.equal(r.status, 200);

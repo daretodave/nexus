@@ -18,11 +18,12 @@ function readToken() {
 
 export const TOKEN = readToken();
 
-/** An error that carries the HTTP status, so callers can tell "not built yet" (404) from "broke". */
+/** An error that carries the HTTP status, so callers can tell "not built yet" (404) from "broke", and the answer's body. */
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, data = null) {
     super(message);
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -33,7 +34,7 @@ export async function api(path, body) {
     : { method: 'POST', headers: { 'x-nexus-token': TOKEN, 'content-type': 'application/json' }, body: JSON.stringify(body) };
   const res = await fetch(path, init);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(data.error || `HTTP ${res.status}`, res.status);
+  if (!res.ok) throw new ApiError(data.error || `HTTP ${res.status}`, res.status, data);
   return data;
 }
 

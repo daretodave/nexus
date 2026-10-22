@@ -352,11 +352,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   /**
    * POST /api/plot { spec, thoughts, chunks }: onboarding's kept ideas go to a /plot run in a new hosted session (no
    * worktree of its own: /plot cuts one), which researches, writes the pending file and lands per owner mode. The
-   * answer comes at once; the session does the work (explode.mjs plotPrompt).
+   * answer comes at once; the session does the work (explode.mjs plotPrompt). A repo nexus is not in yet answers 409
+   * { error, adopt: true }: /plot has no skill, scripts or plan there, so the Plot step adopts first (spec 52, A1).
    */
   async function plotKept(b) {
     const r = plotRequest(b);
     if (r.error) return { status: 400, error: r.error };
+    if (!repoMod.nexusIn(repo)) return { status: 409, error: 'nexus isn\'t in this repo yet: adopt it first (POST /api/adopt), then plot', adopt: true };
     const owner = (await local.localView(repo)).effective;
     const prompt = plotPrompt(r, owner);
     const s = await startSession({ worktree: false, prompt });

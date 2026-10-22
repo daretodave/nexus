@@ -19,6 +19,8 @@ export const DEFAULT_DRAFT = {
   messy: false, // Plot: the thoughts went to /messy instead
   plotted: false, // Plot: the planned chunks went to /plot (POST /api/plot)
   plotSession: null, // Plot: { id, name } the session /plot runs in
+  adopt: null, // Plot: 'sent' once Adopt now sent the adopt prompt (a repo nexus is not in yet; spec 52, A1)
+  plotHeld: false, // Plot: the person asked to plot before nexus was in; plot once adoption lands
   vault: 'imp', // Secrets: 'imp' | 'empty' | 'skip' (an owner's start; a contributor has nothing to pick)
   sched: null, // Cloud: null (not picked: the step selects the workflow's own schedule, else 'night') | 'current' | 'night' | 'two' | 'demand'
   schedLabel: null, // Cloud: the kept schedule in words, when 'current' was turned on
