@@ -377,3 +377,36 @@ test('a hook slower than the commit timeout is killed, tree and all, before the 
   await new Promise((res) => setTimeout(res, 9000 - (Date.now() - t0)));
   assert.equal(fs.existsSync(marker), false, 'the hook\'s child was killed, not left running');
 });
+
+// ---- the Cloud step waits for the server --------------------------------------------
+
+test('landThenGo: busy while the server works, advances only once it answered, an error stays put', async () => {
+  const { landThenGo, BUSY_NOTE } = await import('../src/screens/onboarding/cloudFlow.js');
+  assert.match(BUSY_NOTE, /^Committing: your repo's checks are running/);
+  const log = [];
+  let settle;
+  const call = () => new Promise((res, rej) => { settle = { res, rej }; });
+  const hooks = { busy: () => log.push('busy'), done: (r) => log.push(`done ${r.cron}`), failed: (m) => log.push(`failed ${m}`), go: () => log.push('go') };
+  const p = landThenGo(call, hooks);
+  await new Promise((r) => setTimeout(r, 10));
+  assert.deepEqual(log, ['busy'], 'nothing advances while the call is out');
+  settle.res({ cron: '0 */2 * * *' });
+  assert.equal(await p, true);
+  assert.deepEqual(log, ['busy', 'done 0 */2 * * *', 'go']);
+
+  log.length = 0;
+  const q = landThenGo(call, hooks);
+  settle.rej(Object.assign(new Error('your repo\'s checks refused the commit'), { status: 409 }));
+  assert.equal(await q, false);
+  assert.deepEqual(log, ['busy', 'failed your repo\'s checks refused the commit'], 'an error stays on the step');
+});
+
+test('the Cloud step\'s Turn on and Add it go through landThenGo, not a Link that leaves at once', () => {
+  const step = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'screens', 'onboarding', 'CloudSetup.jsx'), 'utf8');
+  assert.doesNotMatch(step, /<Link[^>]*onClick=\{turnOn\}/, 'Turn on is not a Link');
+  assert.match(step, /landThenGo\(fn, \{/);
+  assert.match(step, /act\('sched', \(\) => onboardingCalls\.setSchedule/);
+  assert.match(step, /act\('wf', onboardingCalls\.addWorkflow/);
+  assert.match(step, /nav\(PATHS\.onboarding\(stepAfter\('cloud'\)\)\)/, 'Launch only once it answered');
+  assert.match(step, /BUSY_NOTE/);
+});

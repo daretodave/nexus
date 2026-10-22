@@ -6,13 +6,14 @@
 // each lands per owner mode (owner: committed to the default branch;
 // contributor: a pull request), and nothing claims to be done that is not.
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Icon, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { server, useActions, useRuns } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, useCopy, CopyFace } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
+import { landThenGo, BUSY_NOTE } from './cloudFlow.js';
 
 const LOOP_FILE = /(?:^|\/)(nexus-loop|march)\.ya?ml$/;
 const NIGHT_HOURS = [1, 2, 3, 4, 5, 6];
@@ -97,31 +98,28 @@ export default function CloudSetup() {
     return () => clearInterval(t);
   }, [running]);
 
-  const act = async (key, fn, after) => {
-    setPending((p) => ({ ...p, [key]: 'busy' }));
-    try {
-      const r = await fn();
-      setPending((p) => ({ ...p, [key]: null }));
-      after?.(r);
-    } catch (e) {
-      setPending((p) => ({ ...p, [key]: e.message }));
-    }
-  };
+  const nav = useNavigate();
+  const set = (key, v) => setPending((p) => ({ ...p, [key]: v }));
+  const act = (key, fn, after, go) => landThenGo(fn, {
+    busy: () => set(key, 'busy'),
+    done: (r) => { set(key, null); after?.(r); },
+    failed: (m) => set(key, m),
+    go,
+  });
 
   const sched = d.sched || 'night';
   const pick = (k) => patch({ sched: k });
   const cron = cronFor(sched);
 
-  const turnOn = () => {
-    patch({ cloud: 'on', cloudSaved: null });
-    // Lands per owner mode; a failure leaves Launch saying the schedule still needs saving in Cloud loop.
-    onboardingCalls.setSchedule(sched, cron).then(() => patch({ cloudSaved: true }), () => patch({ cloudSaved: false }));
-  };
+  // Saving the schedule commits (the repo's checks run): Launch comes only once it landed; an error stays here.
+  const turnOn = () => act('sched', () => onboardingCalls.setSchedule(sched, cron), () => patch({ cloud: 'on', cloudSaved: true }), () => nav(PATHS.onboarding(stepAfter('cloud'))));
+  const busy = Object.values(pending).includes('busy');
   const skip = () => patch({ cloud: 'skipped' });
 
   const note = (key) => {
     const v = pending[key];
-    if (v && v !== 'busy') return <span className="t-body-s" style={{ color: 'var(--st-blocked)' }}>{v}</span>;
+    if (v === 'busy') return key === 'run' ? null : <span className="t-body-s c-3" role="status">{BUSY_NOTE}</span>;
+    if (v) return <span className="t-body-s" role="alert" style={{ color: 'var(--st-blocked)', whiteSpace: 'pre-line' }}>{v}</span>;
     return null;
   };
 
@@ -130,8 +128,9 @@ export default function CloudSetup() {
       <Back to={stepBefore('cloud')} />
       <span className="ob-count">{stepCount('cloud')} · optional</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {note('sched')}
         <Link className="btn btn-ghost" to={PATHS.onboarding(stepAfter('cloud'))} onClick={skip}>Skip</Link>
-        <Link className="btn btn-primary btn-l" to={PATHS.onboarding(stepAfter('cloud'))} onClick={turnOn}>Turn on the cloud loop<Icon name="arrowRight" size={14} /></Link>
+        <button className="btn btn-primary btn-l" type="button" disabled={busy} aria-busy={pending.sched === 'busy' || undefined} onClick={turnOn}>{pending.sched === 'busy' ? 'Committing' : 'Turn on the cloud loop'}<Icon name="arrowRight" size={14} /></button>
       </div>
     </>
   );
@@ -180,7 +179,7 @@ export default function CloudSetup() {
               {ghOk && !wf && !added ? (
                 <div className="cl-body">
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button className="btn btn-s" type="button" disabled={pending.wf === 'busy'} onClick={() => act('wf', onboardingCalls.addWorkflow, (r) => { setAdded(r); actions.reload(); })}><Icon name="plus" size={14} />{pending.wf === 'busy' ? 'Adding' : 'Add it'}</button>
+                    <button className="btn btn-s" type="button" disabled={busy} onClick={() => act('wf', onboardingCalls.addWorkflow, (r) => { setAdded(r); actions.reload(); })}><Icon name="plus" size={14} />{pending.wf === 'busy' ? 'Committing' : 'Add it'}</button>
                     {note('wf')}
                   </div>
                 </div>
