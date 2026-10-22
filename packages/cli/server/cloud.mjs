@@ -1,0 +1,408 @@
+// Onboarding's Cloud step served (spec 47, A16): POST /api/cloud/workflow and POST /api/cloud/schedule.
+//
+// The workflow is the kit's own templates/.github/workflows/march.yml, filled by the kit installer's own
+// substitution (templates/scripts/bootstrap.mjs fillPlaceholders: <PROJECT>, <DEFAULT_BRANCH>,
+// <PROJECT_PKG_PREFIX>), with the shared toolchain action beside it when the repo has none (every march job uses
+// it). The CLI ships both files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
+// templates/ directly. Which way a tick lands is the repo variable NEXUS_LOOP_MODE, not a line in the file: in owner
+// mode an unset variable is set to owner (best effort), as bootstrap's set-loop-mode does.
+//
+// The schedule changes only the `- cron:` line(s) under `on.schedule`; "On demand" takes the schedule block out
+// (workflow_dispatch stays). Everything else in the file is kept byte for byte.
+//
+// Nothing touches the person's checkout or working tree. Each write lands from a temporary worktree of
+// origin/<default branch>, per owner mode: owner commits and pushes the default branch; contributor commits on
+// nexus/cloud-loop (one branch for the workflow and its schedule), pushes it and opens (or reuses) its pull request.
+// A workflow already there, or a schedule equal to the current one, writes nothing. A push GitHub refuses for want
+// of the token's `workflow` scope answers 409 with the fix, never a stack.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { run as shRun, json } from './sh.mjs';
+import { LOOP_FILE } from './gh.mjs';
+import { MAIN } from './git.mjs';
+import { primaryRoot } from './local.mjs';
+
+const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+export const WORKFLOW_PATH = '.github/workflows/march.yml';
+export const SETUP_ACTION_PATH = '.github/actions/setup/action.yml';
+export const CLOUD_BRANCH = 'nexus/cloud-loop';
+export const SCOPE_FIX = 'gh auth refresh -s workflow';
+
+/** The kit files the CLI needs: published path under kit/, and the same file in the nexus repo's templates/. */
+export const KIT_FILES = {
+  march: ['workflows/march.yml', '.github/workflows/march.yml'],
+  setup: ['actions/setup/action.yml', '.github/actions/setup/action.yml'],
+  bootstrap: ['scripts/bootstrap.mjs', 'scripts/bootstrap.mjs'],
+};
+
+/** A kit file's path: the CLI's bundled copy first, then the nexus repo's templates (development). Null when neither. */
+export function kitFile(name, { pkg = PKG } = {}) {
+  const [bundled, templ] = KIT_FILES[name];
+  for (const f of [path.join(pkg, 'kit', bundled), path.resolve(pkg, '..', '..', 'templates', templ)]) {
+    if (fs.existsSync(f)) return f;
+  }
+  return null;
+}
+
+/** The installer's own substitution (bootstrap.mjs fillPlaceholders), loaded from the kit, never a second copy. */
+export async function installerFill() {
+  const f = kitFile('bootstrap');
+  if (!f) throw Object.assign(new Error('this nexus CLI has no copy of the kit installer (scripts/bootstrap.mjs)'), { status: 500 });
+  return (await import(pathToFileURL(f).href)).fillPlaceholders;
+}
+
+/** A kit template filled for this repo, LF line ends. */
+export async function fillTemplate(text, { name, branch }) {
+  const fill = await installerFill();
+  return fill(String(text).replace(/\r\n/g, '\n'), { project: { name, default_branch: branch } });
+}
+
+// ---- cron ----------------------------------------------------------------------
+
+const FIELDS = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 6]];
+const CRON_CHARS = /^[\d*,/-]+$/;
+
+function field(text, [lo, hi], dow) {
+  if (!CRON_CHARS.test(text)) return null;
+  const out = new Set();
+  for (const part of text.split(',')) {
+    const m = /^(\*|\d+(?:-\d+)?)(?:\/(\d+))?$/.exec(part);
+    if (!m) return null;
+    const step = m[2] == null ? 1 : Number(m[2]);
+    if (!(step >= 1)) return null;
+    let a; let b;
+    if (m[1] === '*') { a = lo; b = hi; } else {
+      const [x, y] = m[1].split('-').map(Number);
+      a = x;
+      // `a/n` runs from a to the field's end.
+      b = y == null ? (m[2] == null ? x : (dow ? 6 : hi)) : y;
+    }
+    // Day of week takes 7 for Sunday too.
+    if (m[1] === '*' && dow) b = 6;
+    if (a < lo || b > (dow ? 7 : hi) || a > b) return null;
+    for (let v = a; v <= b; v += step) out.add(dow && v === 7 ? 0 : v);
+  }
+  return [...out].sort((x, y) => x - y);
+}
+
+/** A 5-field cron parsed: { min, hour, dom, mon, dow, domAny, dowAny }, or null when it is not one this reads. */
+export function parseCron(cron) {
+  const parts = String(cron ?? '').trim().split(/\s+/);
+  if (parts.length !== 5) return null;
+  const v = parts.map((p, i) => field(p, FIELDS[i], i === 4));
+  if (v.some((x) => !x || !x.length)) return null;
+  return { min: v[0], hour: v[1], dom: v[2], mon: v[3], dow: v[4], domAny: parts[2] === '*', dowAny: parts[4] === '*' };
+}
+
+/**
+ * The next time a cron fires after `from` (UTC, as GitHub runs it), or null when it never does (or is not a cron).
+ * Day of month and day of week both restricted means either one, as cron has it.
+ */
+export function cronNext(cron, from = new Date()) {
+  const c = parseCron(cron);
+  if (!c) return null;
+  const start = Math.floor(new Date(from).getTime() / 60000) * 60000 + 60000;
+  const s = new Date(start);
+  for (let d = 0; d < 366 * 5; d++) {
+    const day = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate() + d));
+    if (!c.mon.includes(day.getUTCMonth() + 1)) continue;
+    const domOk = c.dom.includes(day.getUTCDate());
+    const dowOk = c.dow.includes(day.getUTCDay());
+    if (!(c.domAny && c.dowAny ? true : c.domAny ? dowOk : c.dowAny ? domOk : domOk || dowOk)) continue;
+    for (const h of c.hour) {
+      for (const m of c.min) {
+        const t = day.getTime() + (h * 60 + m) * 60000;
+        if (t >= start) return new Date(t);
+      }
+    }
+  }
+  return null;
+}
+
+// ---- the schedule in a workflow ------------------------------------------------
+
+const CRON_LINE = /^(\s*-\s*cron:\s*)(['"]?)([^'"#]*?)\2(\s*(?:#.*)?)$/;
+const indentOf = (l) => /^\s*/.exec(l)[0].length;
+const blank = (l) => !l.trim();
+
+function lines(text) {
+  const eol = /\r\n/.test(text) ? '\r\n' : '\n';
+  return { eol, ls: String(text).split(eol) };
+}
+
+/** The `on:` block and the schedule block inside it: { ls, eol, on, child, sched: [start, end) | null }; null when no block `on:`. */
+function scheduleBlock(text) {
+  const { eol, ls } = lines(text);
+  const on = ls.findIndex((l) => /^(?:on|"on"|'on'):\s*(?:#.*)?$/.test(l));
+  if (on < 0) return null;
+  let end = on + 1;
+  while (end < ls.length && (blank(ls[end]) || /^\s/.test(ls[end]) || /^#/.test(ls[end]))) end++;
+  const firstChild = ls.slice(on + 1, end).find((l) => !blank(l) && !/^\s*#/.test(l));
+  const child = firstChild ? indentOf(firstChild) : 2;
+  let sched = null;
+  for (let i = on + 1; i < end; i++) {
+    if (indentOf(ls[i]) === child && /^\s*schedule:\s*(?:#.*)?$/.test(ls[i])) {
+      let j = i + 1;
+      while (j < end && (blank(ls[j]) || indentOf(ls[j]) > child)) j++;
+      while (j > i + 1 && blank(ls[j - 1])) j--;
+      sched = [i, j];
+      break;
+    }
+  }
+  return { ls, eol, on, child, sched };
+}
+
+/** The crons a workflow's `on.schedule` lists, in order (empty when it has none). */
+export function readCrons(text) {
+  const b = scheduleBlock(text);
+  if (!b?.sched) return [];
+  return b.ls.slice(b.sched[0] + 1, b.sched[1]).map((l) => CRON_LINE.exec(l)).filter(Boolean).map((m) => m[3].trim());
+}
+
+/**
+ * The workflow with its schedule set to one cron (or taken out, cron null). Only the schedule's cron lines change:
+ * the first keeps its indent, quotes and comment, the others go; a workflow with no schedule gets one under `on:`.
+ * Throws a 409-shaped error when the file has no block `on:` to put it in.
+ */
+export function setCron(text, cron) {
+  const b = scheduleBlock(text);
+  if (!b) throw Object.assign(new Error('the loop workflow has no `on:` block this can edit; change its schedule by hand'), { status: 409 });
+  const { ls, eol, on, child, sched } = b;
+  if (cron == null) {
+    if (!sched) return text;
+    return [...ls.slice(0, sched[0]), ...ls.slice(sched[1])].join(eol);
+  }
+  if (!sched) {
+    const pad = ' '.repeat(child);
+    return [...ls.slice(0, on + 1), `${pad}schedule:`, `${pad}${pad}- cron: '${cron}'`, ...ls.slice(on + 1)].join(eol);
+  }
+  const out = [];
+  let done = false;
+  ls.forEach((l, i) => {
+    const m = i > sched[0] && i < sched[1] ? CRON_LINE.exec(l) : null;
+    if (!m) { out.push(l); return; }
+    if (done) return;
+    done = true;
+    out.push(`${m[1]}${m[2] || '\''}${cron}${m[2] || '\''}${m[4]}`);
+  });
+  if (!done) out.splice(sched[0] + 1, 0, `${' '.repeat(child * 2)}- cron: '${cron}'`);
+  return out.join(eol);
+}
+
+export const SCHEDULES = {
+  night: 'overnight',
+  two: 'every 2 hours',
+  demand: 'on demand',
+};
+
+/** POST /api/cloud/schedule's body checked: { schedule, cron (null: on demand), human } or { error }. */
+export function scheduleRequest(b = {}) {
+  const schedule = b.schedule == null ? null : String(b.schedule);
+  if (schedule != null && !SCHEDULES[schedule]) return { error: `schedule is one of ${Object.keys(SCHEDULES).join(', ')}` };
+  if (schedule === 'demand') return { schedule, cron: null, human: SCHEDULES.demand };
+  const cron = String(b.cron ?? '').trim().replace(/\s+/g, ' ');
+  if (!cron) return { error: 'cron is required (or schedule: demand)' };
+  if (!parseCron(cron)) return { error: `"${cron.slice(0, 60)}" is not a five-field cron this reads` };
+  return { schedule, cron, human: schedule ? `${SCHEDULES[schedule]} (cron ${cron})` : `on cron ${cron}` };
+}
+
+// ---- landing -------------------------------------------------------------------
+
+/** git with no shell and no trimming (file contents keep their bytes): { ok, out, err }. */
+function gitRaw(cwd, args, { timeout = 60000 } = {}) {
+  return new Promise((resolve) => {
+    execFile('git', args, { cwd, timeout, windowsHide: true, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+      resolve({ ok: !err, out: String(stdout || ''), err: String(stderr || (err && err.message) || '').trim() });
+    });
+  });
+}
+const gitT = async (cwd, args) => { const r = await gitRaw(cwd, args); return { ...r, out: r.out.trim() }; };
+const tail = (s, n = 400) => String(s || '').trim().split(/\r?\n/).slice(-6).join('\n').slice(-n);
+const fail = (status, error, extra = {}) => ({ status, error, ...extra });
+
+/** Whether a push was refused for want of the token's `workflow` scope (GitHub's words for it). */
+export const scopeRefused = (stderr) => /workflow.{0,40}scope|scope.{0,40}workflow|refusing to allow an? (?:OAuth|GitHub) App to (?:create or update|update|create) workflow/i.test(String(stderr || ''));
+
+/** The default branch: origin/HEAD, else what origin says HEAD is, else NEXUS_MAIN_BRANCH (main). */
+export async function defaultBranch(repo) {
+  const sym = await gitT(repo, ['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD']);
+  if (sym.ok && sym.out.startsWith('origin/')) return sym.out.slice('origin/'.length);
+  const ls = await gitT(repo, ['ls-remote', '--symref', 'origin', 'HEAD']);
+  const m = ls.ok ? /^ref:\s+refs\/heads\/(\S+)\s+HEAD/m.exec(ls.out) : null;
+  return m ? m[1] : MAIN;
+}
+
+/**
+ * Where a write starts and where it lands: { branch, base, head } (head: the branch pushed; the default branch in
+ * owner mode). Contributor work builds on nexus/cloud-loop while its pull request is open (not yet in the default
+ * branch), so the workflow and its schedule ride one PR; a merged one starts a fresh branch from the default.
+ */
+export async function landingPlace(repo, owner, { now = new Date() } = {}) {
+  const branch = await defaultBranch(repo);
+  const f = await gitT(repo, ['fetch', '-q', 'origin', `+refs/heads/${branch}:refs/remotes/origin/${branch}`]);
+  if (!f.ok) return fail(502, `could not fetch origin/${branch}: ${tail(f.err, 200)}`);
+  const base = `origin/${branch}`;
+  if (owner) return { branch, base, head: branch };
+  const c = await gitT(repo, ['fetch', '-q', 'origin', `+refs/heads/${CLOUD_BRANCH}:refs/remotes/origin/${CLOUD_BRANCH}`]);
+  if (!c.ok) return { branch, base, head: CLOUD_BRANCH };
+  const merged = (await gitT(repo, ['merge-base', '--is-ancestor', `origin/${CLOUD_BRANCH}`, base])).ok;
+  if (!merged) return { branch, base: `origin/${CLOUD_BRANCH}`, head: CLOUD_BRANCH };
+  const stamp = now.toISOString().replace(/\D/g, '').slice(0, 12);
+  return { branch, base, head: `${CLOUD_BRANCH}-${stamp}` };
+}
+
+/** A file at a ref, bytes kept, or null. */
+async function showFile(repo, ref, rel) {
+  const r = await gitRaw(repo, ['show', `${ref}:${rel}`]);
+  return r.ok ? r.out : null;
+}
+
+/** The loop workflow at a ref: its path, or null. */
+async function loopAt(repo, ref) {
+  const r = await gitT(repo, ['ls-tree', '--name-only', `${ref}`, '.github/workflows/']);
+  if (!r.ok) return null;
+  const files = r.out.split(/\r?\n/).filter((f) => LOOP_FILE.test(f));
+  return files.find((f) => /march\.ya?ml$/.test(f)) || files[0] || null;
+}
+
+const lastSha = async (repo, ref, rel) => (await gitT(repo, ['log', '-1', '--format=%H', ref, '--', rel])).out || null;
+
+/** The open pull request from `head`, or one opened now: { pr, note? }. */
+async function pullRequest(cwd, { head, branch }, run) {
+  const l = await run('gh', ['pr', 'list', '--head', head, '--state', 'open', '--json', 'url,number'], { cwd });
+  const open = l.ok ? (json(l.stdout) || [])[0] : null;
+  if (open?.url) return { pr: open.url };
+  const c = await run('gh', ['pr', 'create', '--head', head, '--base', branch, '--fill'], { cwd, timeout: 60000 });
+  const url = /https?:\/\/\S+/.exec(c.stdout || '')?.[0];
+  if (c.ok && url) return { pr: url };
+  return { pr: null, note: `pushed ${head}; gh could not open its pull request (${tail(c.stderr || c.stdout, 200) || 'no reason given'}). Open it with: gh pr create --head ${head} --base ${branch} --fill` };
+}
+
+/**
+ * Commit `files` ({ rel: text }) on `place.base` in a temporary worktree and land it per owner mode. The person's
+ * checkout and working tree are never touched. Answers { status: 200, sha, branch, pr? } or { status, error, fix? }.
+ */
+export async function landFiles(repo, place, files, message, { owner, run = shRun } = {}) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-cloud-'));
+  const wt = path.join(tmp, 'wt');
+  const add = await gitT(repo, ['worktree', 'add', '-q', '--detach', wt, place.base]);
+  if (!add.ok) { fs.rmSync(tmp, { recursive: true, force: true }); return fail(502, `could not make a worktree of ${place.base}: ${tail(add.err, 200)}`); }
+  try {
+    for (const [rel, text] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(path.join(wt, rel)), { recursive: true });
+      fs.writeFileSync(path.join(wt, rel), text);
+    }
+    const st = await gitT(wt, ['add', '--', ...Object.keys(files)]);
+    if (!st.ok) return fail(502, `git add failed: ${tail(st.err, 200)}`);
+    const c = await gitT(wt, ['commit', '-q', '-m', message]);
+    if (!c.ok) return fail(409, `the commit was refused: ${tail(c.err || c.out)}`);
+    const sha = (await gitT(wt, ['rev-parse', 'HEAD'])).out;
+    const p = await gitT(wt, ['push', '-q', 'origin', `HEAD:refs/heads/${place.head}`]);
+    if (!p.ok) {
+      if (scopeRefused(p.err)) {
+        return fail(409, `GitHub refused the push: your gh token cannot change workflow files. Run \`${SCOPE_FIX}\`, then try again.`, { fix: SCOPE_FIX });
+      }
+      if (/\[rejected\]|non-fast-forward|fetch first/i.test(p.err)) return fail(409, `origin/${place.head} moved while this was writing: try again.`);
+      return fail(502, `the push to origin/${place.head} failed: ${tail(p.err)}`);
+    }
+    await gitT(repo, ['fetch', '-q', 'origin', `+refs/heads/${place.head}:refs/remotes/origin/${place.head}`]);
+    if (owner) return { status: 200, sha, branch: place.head };
+    return { status: 200, sha, branch: place.head, ...(await pullRequest(wt, place, run)) };
+  } finally {
+    await gitT(repo, ['worktree', 'remove', '--force', wt]);
+    fs.rmSync(tmp, { recursive: true, force: true });
+    await gitT(repo, ['worktree', 'prune']);
+  }
+}
+
+/** The project's name for <PROJECT>: package.json's (its scope dropped), else the checkout's folder. */
+async function projectName(repo, ref) {
+  const pkg = json(await showFile(repo, ref, 'package.json') || '');
+  const n = typeof pkg?.name === 'string' ? pkg.name.replace(/^@[^/]+\//, '').trim() : '';
+  return n || path.basename(primaryRoot(repo));
+}
+
+/** Owner mode wants owner ticks: set NEXUS_LOOP_MODE=owner when it is unset. Best effort; says what it found. */
+async function ownerLoopMode(repo, run) {
+  const l = await run('gh', ['variable', 'list', '--json', 'name,value'], { cwd: repo });
+  const vars = l.ok ? json(l.stdout) : null;
+  if (!Array.isArray(vars)) return { mode: null, note: 'could not read the repo variable NEXUS_LOOP_MODE; set it to owner for owner ticks: gh variable set NEXUS_LOOP_MODE --body owner' };
+  const v = vars.find((x) => x.name === 'NEXUS_LOOP_MODE');
+  if (v) return { mode: v.value };
+  const s = await run('gh', ['variable', 'set', 'NEXUS_LOOP_MODE', '--body', 'owner'], { cwd: repo });
+  return s.ok ? { mode: 'owner', set: true } : { mode: null, note: 'could not set NEXUS_LOOP_MODE (that needs admin on the repo): gh variable set NEXUS_LOOP_MODE --body owner' };
+}
+
+/** The workflow (and the toolchain action when missing) filled for this repo: { rel: text }, cron applied when given. */
+async function workflowFiles(repo, place, cron) {
+  const tpl = kitFile('march');
+  if (!tpl) throw Object.assign(new Error('this nexus CLI has no copy of the kit\'s march.yml'), { status: 500 });
+  const name = await projectName(repo, place.base);
+  const v = { name, branch: place.branch };
+  let yml = await fillTemplate(fs.readFileSync(tpl, 'utf8'), v);
+  if (cron !== undefined) yml = setCron(yml, cron);
+  const files = { [WORKFLOW_PATH]: yml };
+  const setup = kitFile('setup');
+  if (setup && await showFile(repo, place.base, SETUP_ACTION_PATH) == null) files[SETUP_ACTION_PATH] = await fillTemplate(fs.readFileSync(setup, 'utf8'), v);
+  return files;
+}
+
+/**
+ * POST /api/cloud/workflow: write the loop workflow from the kit template and land it per owner mode.
+ * -> { status, path, sha, written, branch, pr?, setup?, mode?, note? }. Already there: its path and last sha, nothing written.
+ */
+export async function addWorkflow(repo, { owner = false, run = shRun, now } = {}) {
+  try {
+    const place = await landingPlace(repo, owner, { now });
+    if (place.error) return place;
+    const have = await loopAt(repo, place.base);
+    if (have) return { status: 200, path: have, sha: await lastSha(repo, place.base, have), written: false, branch: place.head };
+    const files = await workflowFiles(repo, place);
+    const r = await landFiles(repo, place, files, 'ci: add the nexus cloud loop', { owner, run });
+    if (r.status !== 200) return r;
+    const out = { ...r, path: WORKFLOW_PATH, written: true, ...(files[SETUP_ACTION_PATH] ? { setup: SETUP_ACTION_PATH } : {}) };
+    if (owner) Object.assign(out, await ownerLoopMode(repo, run));
+    return out;
+  } catch (e) {
+    return fail(e.status || 500, String(e.message || e));
+  }
+}
+
+/**
+ * POST /api/cloud/schedule { schedule, cron }: set the loop workflow's cron (or take the schedule out: on demand)
+ * and land it per owner mode. A repo with no loop workflow gets it, with this schedule, in the same commit.
+ * -> { status, cron, next (ISO, UTC; null on demand), path, written, sha?, pr? }.
+ */
+export async function saveSchedule(repo, body, { owner = false, run = shRun, now = new Date() } = {}) {
+  const q = scheduleRequest(body);
+  if (q.error) return fail(400, q.error);
+  const next = q.cron ? cronNext(q.cron, now)?.toISOString() ?? null : null;
+  try {
+    const place = await landingPlace(repo, owner, { now });
+    if (place.error) return place;
+    const have = await loopAt(repo, place.base);
+    let files;
+    let message;
+    if (have) {
+      const text = await showFile(repo, place.base, have);
+      const crons = readCrons(text);
+      const same = q.cron == null ? crons.length === 0 : crons.length === 1 && crons[0] === q.cron;
+      if (same) return { status: 200, cron: q.cron, next, path: have, written: false, sha: await lastSha(repo, place.base, have), branch: place.head };
+      files = { [have]: setCron(text, q.cron) };
+      message = `ci: the cloud loop runs ${q.human}`;
+    } else {
+      files = await workflowFiles(repo, place, q.cron);
+      message = `ci: add the nexus cloud loop, run ${q.human}`;
+    }
+    const r = await landFiles(repo, place, files, message, { owner, run });
+    if (r.status !== 200) return r;
+    const out = { ...r, cron: q.cron, next, path: have || WORKFLOW_PATH, written: true };
+    if (!have && owner) Object.assign(out, await ownerLoopMode(repo, run));
+    return out;
+  } catch (e) {
+    return fail(e.status || 500, String(e.message || e));
+  }
+}

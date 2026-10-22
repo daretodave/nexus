@@ -13,6 +13,7 @@
     "shared",
     "dist",
     "prompts",
+    "kit",
     "README.md",
     "LICENSE"
   ],
@@ -20,7 +21,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "node scripts/bundle-prompts.mjs && vite build && node scripts/check-bundle.mjs",
+    "build": "node scripts/bundle-prompts.mjs && node scripts/bundle-kit.mjs && vite build && node scripts/check-bundle.mjs",
     "test": "node --test \"test/*.test.mjs\"",
     "start": "node bin/nexus.mjs",
     "record": "node scripts/record.mjs",

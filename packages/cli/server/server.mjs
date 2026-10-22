@@ -18,6 +18,7 @@ import { readPlan } from './plan.mjs';
 import { writeReorder } from './reorder.mjs';
 import { createSummaries } from './summaries.mjs';
 import { explode, plotPrompt, plotRequest } from './explode.mjs';
+import { addWorkflow, saveSchedule } from './cloud.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
 import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
@@ -483,6 +484,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           cloudRead.p = null;
           return send(res, r.ok ? 200 : r.status || 400, r);
         }
+        // Onboarding's Cloud step (spec 47, A16; cloud.mjs): write the loop workflow, set its schedule; each lands per owner mode.
+        case 'POST /api/cloud/workflow': { await body(req); const { status, ...r } = await addWorkflow(repo, { owner: (await local.localView(repo)).effective, run: ghRun || (injected ? noGh : undefined) }); cloudRead.p = null; return send(res, status, r); }
+        case 'POST /api/cloud/schedule': { const b = await body(req); const { status, ...r } = await saveSchedule(repo, b, { owner: (await local.localView(repo)).effective, run: ghRun || (injected ? noGh : undefined) }); cloudRead.p = null; return send(res, status, r); }
         case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo, ghOpts));
         case 'GET /api/recover': { const r = await recoverRead(url.searchParams.get('dir') || ''); return send(res, r.status, r); }
         case 'POST /api/recover/resume': { const r = await recoverResume(await body(req)); return send(res, r.status, r); }
