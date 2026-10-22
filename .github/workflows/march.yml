@@ -75,7 +75,7 @@ jobs:
           # add a line to plan/ARCHIVE.md? That's the one thing only
           # a chunk close (ship-a-chunk Step 6) does.
           since="$(date -u -d '24 hours ago' '+%Y-%m-%d %H:%M:%S')"
-          ceiling=8
+          ceiling=20
           budget=0
           for sha in $(git log --since="$since" --grep='Cloud-Run:' --format='%H'); do
             if git diff-tree --no-commit-id --name-only -r "$sha" | grep -qx 'plan/ARCHIVE.md' \

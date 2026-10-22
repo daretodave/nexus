@@ -51,7 +51,7 @@ the failure mode of the thing it watches.
 
 - **Cadence:** 02:00 / 08:00 / 14:00 / 20:00 UTC, plus manual
   `gh workflow run march` whenever curious.
-- **Ceiling:** 8 weighted points per 24h, counted by the
+- **Ceiling:** 20 weighted points per 24h, counted by the
   `Cloud-Run:` trailer. The count is weighted, not flat: a
   chunk-shipping commit (one that adds a line to
   `plan/ARCHIVE.md`) costs 3, a churn commit
