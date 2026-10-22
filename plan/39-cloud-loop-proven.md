@@ -46,7 +46,6 @@ would. The chunks below fix them.
 
 ## Acceptance
 
-- **A6** Every template script test passes in a fresh adopter: hook imports use `.claude/hooks/`, and the steer settings check reads `<repo>/.claude/settings.json`.
 - **A7** new-project.md copies `plan/pending/README.md`, writes `.gitattributes` (`eol=lf`, `plan/ARCHIVE.md merge=union`) and a `.gitignore`, and its prune text agrees with its example.
 - **A8** Every angle-bracket placeholder in the templates is documented and swept, or the gate flags an unswept one in an adopter.
 - **A9** A library with no deploy host adopts cleanly: agents.md rules 1 and 4 and bearings.md have a "no deploy gate" path.
@@ -63,10 +62,8 @@ would. The chunks below fix them.
 (None.)
 
 ## Chunks
-Measure: 11 open · 5 closed · next A17
+Measure: 10 open · 6 closed · next A17
 
-- [ ] **39.5** Template script tests pass in a fresh adopter · S · closes A6 · needs —
-  - steer.test.mjs:12,14,162 and claims.test.mjs:263 assume the kit's `claude/` layout.
 - [ ] **39.6** new-project.md copies everything a v2 plan needs · S · closes A7 · needs —
 - [ ] **39.7** Every template placeholder documented, swept or flagged · M · closes A8 · needs —
   - Undocumented today: `<CONTENT_LOCATION>`, `<DATA_LOCATION>`, `<PROVIDER_AUTH_TOKEN>`, `<DEPLOY_URL>`, `<DOMAIN_SPECIALIST>`, `<SPECIALIST_NAME>`, `<CANONICAL SIBLING>`, `<PROJECT-SPECIFIC RULES…>`.

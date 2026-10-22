@@ -143,3 +143,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 35.8 · CLAUDE.md names the v2 pick order, priority rows included · plan only
 - 2026-10-21 · 35 · spec complete: the v2 move is finished: plan READMEs and public docs speak chunks, the guard and candidates file are renamed, upgrade-plan converts a v1 plan, spec mirrors replace phase mirrors, CLAUDE.md names the v2 pick order, and v2.0.0 is tagged · 826fbef0..7554eed0
 - 2026-10-21 · 39.4 · one PR-mode tick ran end to end in a scratch adopter · plan only
+- 2026-10-22 · 39.5 · Template script tests pass once copied into a fresh adopter · ec8af4d1..ec8af4d1
