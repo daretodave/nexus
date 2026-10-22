@@ -56,9 +56,21 @@ context). It names only values checked in the code:
    file and test that meets it, the defaults it took, and any
    defect or idea it saw outside its scope.
 
-Dispatch it with the Agent tool, foreground
-(`run_in_background: false`): a background dispatch in a
-cloud tick dies with the job.
+Dispatch it with the Agent tool, and beat the ledger with
+its id (`--set builder=<agent id>`):
+
+- **Interactive** (`/next`, `/heads-down`, `/plot ... and do`):
+  in the background (`run_in_background: true`), so the lead
+  stays free while it builds. The harness notifies the lead
+  when the builder returns; the lead never polls its output.
+  Meanwhile, on each notice and between checks, the lead reads
+  the board (`node scripts/announce.mjs read`): `REBOOT <slug>`
+  means `/reboot-ready <slug>` now, which stops the builder,
+  keeps its worktree and the claims, and parks the ledger so
+  `/reboot-resume` harvests the builder by its id.
+- **Cloud tick** (march.yml or any CI job; `CI` or
+  `GITHUB_ACTIONS` set): foreground (`run_in_background:
+  false`). A background agent dies with the job.
 
 ## 3. Workflows (L chunks, `--workflow`, `batch`)
 

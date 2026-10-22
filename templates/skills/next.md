@@ -109,16 +109,17 @@ The lead cuts the worktree (`next/build.md` §1), then:
 
 | Size | Default | Override |
 |---|---|---|
-| S, M | one builder subagent (Agent tool, foreground) | `--workflow` |
+| S, M | one builder subagent (Agent tool; background, but foreground in a cloud tick) | `--workflow` |
 | L | a Workflow: build, then adversarial verify, then fix | `--agents` |
 | `batch` | one Workflow per chunk, disjoint paths | owner only |
 
 The brief (`next/build.md` §2) carries the worktree path, the
-base sha, the chunk line, its A-IDs, the spec, and the rules
-the builder must keep. The builder commits slices in the
-worktree, runs only the tests it touched, never edits shared
-plan files, never pushes. No Agent or Workflow tool in this
-harness: build inline in the worktree and say so in the close.
+base sha, the chunk line, its A-IDs, the spec and the builder's
+rules: commit slices in the worktree, run only the tests it
+touched, never edit shared plan files, never push. While it
+runs, the lead acts on a `REBOOT` board line and waits for the
+harness's notice, never polling it (build §2). No Agent or
+Workflow tool in this harness: build inline, say so in the close.
 
 The lead reads the returned diff against every A-ID; a miss
 goes back once, then the lead finishes it.
@@ -157,9 +158,8 @@ Re-read the board first (`announce.mjs read`). Then (`next/land.md` §3-4):
    `## Footguns`. A lesson becomes a test, hook or lint where
    one can catch it; this file grows only by removing as much.
    Nothing to learn: "retro: clean".
-3. Report: what works now (1-3 lines), the defaults taken, what
-   the retro changed, what `/next` picks next, and the
-   progress output as it is.
+3. Report: what works now (1-3 lines), the defaults, what the
+   retro changed, the next pick, and the progress as it is.
 
 ## 5. Loops
 

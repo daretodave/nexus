@@ -47,9 +47,8 @@ run for everyone, and owner mode decides how work lands.
    someone else claims or holds (`claims.mjs list`), chunks a
    pending file already closes. A chunk whose needs aren't done
    stays: the loop takes it once they are.
-4. Contributor package cap: the estimates (S 1 h, M 2.5 h,
-   L 5 h) add up to about 4 h; the rest waits for the next
-   package.
+4. Contributor package cap: S 1 h, M 2.5 h, L 5 h, adding up
+   to about 4 h; the rest waits for the next package.
 
 ### Step 2 — The question gate (before any write)
 
@@ -96,10 +95,11 @@ Then invoke the `loop` skill (no interval) with it:
 > "Build on pkg/<slug> in one worktree, one commit series and
 > one pending file per chunk; push the branch; never push main,
 > never settle, no PR until the package ends."> Delegate each
-> build by size (S/M one builder, L a Workflow). The lead runs
-> the gate. Beat the ledger (`node scripts/ledger.mjs beat`) at
-> every step: `--chunk <id> --step <step>` and the worktree as
-> `/next` says, `--set builder=<agent id>` or `--set
+> build by size (S/M one background builder, L a Workflow); act
+> on a board `REBOOT` line meanwhile, never polling. The lead
+> runs the gate. Beat the ledger (`node scripts/ledger.mjs
+> beat`) at every step: `--chunk <id> --step <step>` and the
+> worktree as `/next` says, `--set builder=<agent id>` or `--set
 > workflow.runId=<id> --set workflow.scriptPath=<path>` at
 > dispatch, `--add defaults=<…>` per default taken, `--add
 > parked=<…>` per question parked, `--add done=<id>` per close.

@@ -22,9 +22,11 @@ Argument handling:
 - Anything else → that text is the run's work.
 
 The lead never builds: S and M chunks go to one builder
-subagent, L chunks to a Workflow (build, adversarial verify,
-fix). The lead runs the gate, writes the pending close, lands
-per owner mode, releases the claim and runs the retro.
+subagent, in the background (foreground in a cloud tick), L
+chunks to a Workflow (build, adversarial verify, fix). While
+a builder runs, the lead acts on a board `REBOOT` line. The
+lead runs the gate, writes the pending close, lands per owner
+mode, releases the claim and runs the retro.
 
 Under `/loop`, `/march` or `/heads-down` the user is not
 present: never ask, take the recommended default and list each
