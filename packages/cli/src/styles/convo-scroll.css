@@ -17,3 +17,9 @@
   animation: nx-settle-in var(--dur-settle) var(--ease-settle) both;
 }
 @media (prefers-reduced-motion: reduce) { .jump-latest { animation: none; } }
+
+/* The handoff fixes the context strip's height (.dock .ctx: 171px, 159px under 800px of height) so the tray's tether
+   met a constant --tray-y. The app measures the tray instead (shell-rules.js trayY, on every dock resize), so beside
+   the scroller the strip fits its layers: with a row or two, the scroller reaches down to them and the last layer
+   sits right on the composer, no empty band between. */
+.pane-left:has(> .convo-wrap > .convo.is-scroll) .dock .ctx { height: auto; }
