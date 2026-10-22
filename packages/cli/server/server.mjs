@@ -17,6 +17,7 @@ import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
 import { writeReorder } from './reorder.mjs';
 import { createSummaries } from './summaries.mjs';
+import { explode, plotPrompt, plotRequest } from './explode.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
 import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
@@ -63,9 +64,10 @@ function readPrompt(name) {
  * @param {function} [o.ghRun]       run(cmd, args, opts) for every gh call (tests inject a fake gh; never PATH)
  * @param {() => Promise<string>} [o.ghLogin]  how to learn the gh login once (tests stub it; default asks gh)
  * @param {object} [o.git]          createGitView overrides (tests: claims, ttl)
+ * @param {function|false} [o.explodeQuery]  the SDK's query() for POST /api/explode (tests); under an injected provider none is loaded
  * @param {object} [o.secrets]      the secrets API's seams (tests): { run } a sink's runner, { vault } openVault overrides
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, git: gitOpts, secrets: secretsOpts = {} } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, git: gitOpts, secrets: secretsOpts = {} } = {}) {
   const ghOpts = ghRun ? { run: ghRun } : {};
   let prefs = await repoMod.readPrefs(repo);
   // Run mode moved to .nexus/local.json (A11): carry an older GUI's prefs copy over once.
@@ -289,6 +291,21 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return { status: 200, ok: true, session: home.id, name: home.name || '', link: l.link, command };
   }
 
+  /**
+   * POST /api/plot { spec, thoughts, chunks }: onboarding's kept ideas go to a /plot run in a new hosted session (no
+   * worktree of its own: /plot cuts one), which researches, writes the pending file and lands per owner mode. The
+   * answer comes at once; the session does the work (explode.mjs plotPrompt).
+   */
+  async function plotKept(b) {
+    const r = plotRequest(b);
+    if (r.error) return { status: 400, error: r.error };
+    const owner = (await local.localView(repo)).effective;
+    const prompt = plotPrompt(r, owner);
+    const s = await startSession({ worktree: false, prompt });
+    if (s.status !== 200) return s;
+    return { status: 200, file: r.spec?.file || null, chunks: r.chunks.map((c) => c.id).filter(Boolean), session: s.id, star: s.name, owner, prompt };
+  }
+
   /** POST /api/sessions/:id/(pause|resume|close) for a session this server runs. */
   async function sessionAction(key, action) {
     const s = sessionOf(key);
@@ -454,6 +471,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));
         case 'POST /api/plan/reorder': { const b = await body(req); return send(res, 200, await writeReorder(repo, b, { owner: (await local.localView(repo)).effective })); }
         case 'GET /api/summaries': return send(res, 200, await summaries.get());
+        // Onboarding's Plot step (spec 47, A1; explode.mjs): split thoughts into ideas (no write), and plot the kept ones.
+        case 'POST /api/explode': { const b = await body(req); const { status, ...r } = await explode({ repo, text: b.text, team: b.team, query: explodeQuery ?? summaryQuery ?? (injected ? false : undefined) }); return send(res, status, r); }
+        case 'POST /api/plot': { const { status, ...r } = await plotKept(await body(req)); return send(res, status, r); }
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
         case 'GET /api/actions': return send(res, 200, await gh.actionsSetup(repo, ghOpts));
         case 'POST /api/actions/workflow': { const b = await body(req); const r = await gh.setWorkflow(repo, b.id, !!b.enabled, ghOpts); cloudRead.p = null; return send(res, 200, r); }

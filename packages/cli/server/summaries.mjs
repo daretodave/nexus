@@ -194,7 +194,7 @@ export function parseReply(text, ids) {
   return out;
 }
 
-async function loadQuery() {
+export async function loadQuery() {
   if (process.env.NEXUS_PROVIDER === 'cli') return null;
   try {
     return (await import('@anthropic-ai/claude-agent-sdk')).query;
