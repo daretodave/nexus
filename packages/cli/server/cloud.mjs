@@ -252,6 +252,35 @@ function gitRaw(cwd, args, { timeout = GIT_TIMEOUT_MS } = {}) {
   });
 }
 const gitT = async (cwd, args, o) => { const r = await gitRaw(cwd, args, o); return { ...r, out: r.out.trim() }; };
+const slash = (p) => String(p).split(path.sep).join('/');
+const shQuote = (p) => `"${String(p).replace(/(["\$`])/g, '\$1')}"`;
+
+/**
+ * The repo's hooks, made safe to run from a linked worktree. git hands a hook run there an absolute GIT_DIR (the
+ * worktree's own git dir), and a hook installed before the kit's `unset` line passes it on: a gate whose tests make
+ * scratch repos then writes into the real one (core.bare set true). Each wrapper drops the variables and execs the
+ * real hook, so the repo's own checks still run, for old hooks and new. The real hooks dir honours core.hooksPath.
+ * -> { dir, args: ['-c', 'core.hooksPath=<dir>'] to put before a git command, cleanup() }. Reused by every landing
+ * from a temporary worktree.
+ */
+export async function safeHooks(repo) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-hooks-'));
+  const r = await gitT(repo, ['rev-parse', '--path-format=absolute', '--git-path', 'hooks']);
+  const real = r.ok && r.out ? path.resolve(repo, r.out) : null;
+  let names = [];
+  try { names = real ? fs.readdirSync(real, { withFileTypes: true }).filter((e) => e.isFile() && !e.name.endsWith('.sample')).map((e) => e.name) : []; } catch { /* no hooks dir: nothing to wrap */ }
+  for (const n of names) {
+    const f = path.join(dir, n);
+    fs.writeFileSync(f, `#!/bin/sh\nunset ${GIT_LEAKS.join(' ')}\nexec ${shQuote(slash(path.join(real, n)))} "$@"\n`, { mode: 0o755 });
+    fs.chmodSync(f, 0o755);
+  }
+  return {
+    dir,
+    args: ['-c', `core.hooksPath=${slash(dir)}`],
+    cleanup: () => { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* the OS still holds it */ } },
+  };
+}
+
 const tail = (s, n = 400) => String(s || '').trim().split(/\r?\n/).slice(-6).join('\n').slice(-n);
 const fail = (status, error, extra = {}) => ({ status, error, ...extra });
 
@@ -322,6 +351,7 @@ export async function landFiles(repo, place, files, message, { owner, run = shRu
   const wt = path.join(tmp, 'wt');
   const add = await gitT(repo, ['worktree', 'add', '-q', '--detach', wt, place.base]);
   if (!add.ok) { fs.rmSync(tmp, { recursive: true, force: true }); return fail(502, `could not make a worktree of ${place.base}: ${tail(add.err, 200)}`); }
+  const hooks = await safeHooks(repo);
   try {
     for (const [rel, text] of Object.entries(files)) {
       fs.mkdirSync(path.dirname(path.join(wt, rel)), { recursive: true });
@@ -330,12 +360,12 @@ export async function landFiles(repo, place, files, message, { owner, run = shRu
     const st = await gitT(wt, ['add', '--', ...Object.keys(files)]);
     if (!st.ok) return fail(502, `git add failed: ${tail(st.err, 200)}`);
     // The repo's own pre-commit hook runs here (its gate before commit): awaited to the end, never cut short silently.
-    const c = await gitT(wt, ['commit', '-q', '-m', message], { timeout: commitTimeoutMs });
+    const c = await gitT(wt, [...hooks.args, 'commit', '-q', '-m', message], { timeout: commitTimeoutMs });
     if (c.timedOut) return fail(504, `your repo's checks took longer than ${Math.round(commitTimeoutMs / 1000)} s on the commit, so nothing landed. Run them, then try again.`);
     if (!c.ok) return fail(409, `your repo's checks refused the commit, so nothing landed:
 ${tail(c.err || c.out)}`);
     const sha = (await gitT(wt, ['rev-parse', 'HEAD'])).out;
-    const p = await gitT(wt, ['push', '-q', 'origin', `HEAD:refs/heads/${place.head}`], { timeout: commitTimeoutMs });
+    const p = await gitT(wt, [...hooks.args, 'push', '-q', 'origin', `HEAD:refs/heads/${place.head}`], { timeout: commitTimeoutMs });
     if (p.timedOut) return fail(504, `the push to origin/${place.head} took longer than ${Math.round(commitTimeoutMs / 1000)} s, so nothing landed.`);
     if (!p.ok) {
       if (scopeRefused(p.err)) {
@@ -348,6 +378,7 @@ ${tail(c.err || c.out)}`);
     if (owner) return { status: 200, sha, branch: place.head };
     return { status: 200, sha, branch: place.head, ...(await pullRequest(wt, place, run)) };
   } finally {
+    hooks.cleanup();
     // Every git this started has exited (gitRaw answers on close, after killing a tree that ran over).
     const rm = await gitT(repo, ['worktree', 'remove', '--force', wt]);
     try { fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* a temp dir the OS still holds */ }

@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import {
@@ -365,17 +365,22 @@ test('the commit runs the repo\'s pre-commit hook; a refusal answers 409 with it
 test('a hook slower than the commit timeout is killed, tree and all, before the worktree is removed', async () => {
   const fx = fixture({ owner: true });
   const head = sh(fx.root, 'rev-parse', 'HEAD');
-  const marker = path.join(fx.base, 'hook-finished').split(path.sep).join('/');
-  hook(fx, 'pre-commit', `node -e "setTimeout(() => require('fs').writeFileSync('${marker}', 'late'), 8000)"\n`);
-  const t0 = Date.now();
+  const late = path.join(fx.base, 'hook-finished').split(path.sep).join('/');
+  const started = path.join(fx.base, 'hook-started').split(path.sep).join('/');
+  // The hook marks its start, then its child would mark the end 10 s later unless it is killed.
+  hook(fx, 'pre-commit', `echo > '${started}'
+node -e "setTimeout(() => require('fs').writeFileSync('${late}', 'late'), 10000)"
+`);
   const r = await addWorkflow(fx.root, { owner: true, run: fakeGh().run, commitTimeoutMs: 1500 });
+  const answered = Date.now();
   assert.equal(r.status, 504, r.error);
   assert.match(r.error, /checks took longer than/);
-  assert.ok(Date.now() - t0 < 8000, 'answered without waiting for the hook');
+  const t0 = fs.statSync(started).mtimeMs;
+  assert.ok(answered - t0 < 10000, 'answered without waiting for the hook');
   assert.equal(sh(fx.origin, 'rev-list', '--count', 'main'), '1');
   untouched(fx, head);
-  await new Promise((res) => setTimeout(res, 9000 - (Date.now() - t0)));
-  assert.equal(fs.existsSync(marker), false, 'the hook\'s child was killed, not left running');
+  await new Promise((res) => setTimeout(res, Math.max(0, t0 + 11000 - Date.now())));
+  assert.equal(fs.existsSync(late), false, 'the hook\'s child was killed, not left running');
 });
 
 // ---- the Cloud step waits for the server --------------------------------------------
@@ -409,4 +414,54 @@ test('the Cloud step\'s Turn on and Add it go through landThenGo, not a Link tha
   assert.match(step, /act\('wf', onboardingCalls\.addWorkflow/);
   assert.match(step, /nav\(PATHS\.onboarding\(stepAfter\('cloud'\)\)\)/, 'Launch only once it answered');
   assert.match(step, /BUSY_NOTE/);
+});
+
+test('an old hook with no unset still runs, wrapped, and its gate\'s scratch repo never reaches the real one', async () => {
+  const fx = fixture({ owner: true });
+  const head = sh(fx.root, 'rev-parse', 'HEAD');
+  const marker = path.join(fx.base, 'gate-ran').split(path.sep).join('/');
+  const gate = [
+    "import { execFileSync } from 'node:child_process'",
+    "import fs from 'node:fs'",
+    "import os from 'node:os'",
+    "import path from 'node:path'",
+    "const d = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-gate-scratch-'))",
+    "execFileSync('git', ['init', '-q', '--bare'], { cwd: d })",
+    "fs.rmSync(d, { recursive: true, force: true })",
+    `fs.writeFileSync('${marker}', 'ran')`,
+    '',
+  ].join('\n');
+  const gateFile = path.join(fx.base, 'gate.mjs');
+  write(gateFile, gate);
+  // The pre-commit an older install-hooks wrote: no unset line.
+  hook(fx, 'pre-commit', `# nexus:install-hooks — do not edit by hand; regenerate with\n# node scripts/install-hooks.mjs (--uninstall to remove).\nnode "${gateFile.split(path.sep).join('/')}"\n`);
+  const r = await addWorkflow(fx.root, { owner: true, run: fakeGh().run });
+  assert.equal(r.status, 200, r.error);
+  assert.ok(fs.existsSync(marker), 'the repo\'s own hook ran');
+  assert.equal(spawnSync('git', ['config', '--get', 'core.bare'], { cwd: fx.root, encoding: 'utf8' }).stdout.trim(), 'false', 'core.bare untouched');
+  assert.equal(sh(fx.root, 'rev-parse', '--is-inside-work-tree'), 'true');
+  untouched(fx, head);
+});
+
+test('safeHooks wraps each hook the repo has, honouring core.hooksPath', async () => {
+  const { safeHooks } = await import('../server/cloud.mjs');
+  const fx = fixture({ owner: true });
+  hook(fx, 'pre-commit', 'exit 0\n');
+  const custom = path.join(fx.root, 'githooks');
+  write(path.join(custom, 'pre-push'), '#!/bin/sh\nexit 0\n');
+  for (const [repoHooks, want, real] of [[null, 'pre-commit', path.join(fx.root, '.git', 'hooks', 'pre-commit')], ['githooks', 'pre-push', path.join(custom, 'pre-push')]]) {
+    if (repoHooks) sh(fx.root, 'config', 'core.hooksPath', repoHooks);
+    const h = await safeHooks(fx.root);
+    try {
+      const names = fs.readdirSync(h.dir);
+      assert.deepEqual(names, [want]);
+      const text = fs.readFileSync(path.join(h.dir, want), 'utf8');
+      assert.match(text, /^#!\/bin\/sh\nunset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY\nexec "[^"]+" "\$@"\n$/);
+      assert.equal(fs.realpathSync(text.match(/exec "([^"]+)"/)[1]), fs.realpathSync(real));
+      assert.deepEqual(h.args, ['-c', `core.hooksPath=${h.dir.split(path.sep).join('/')}`]);
+    } finally {
+      h.cleanup();
+    }
+    assert.equal(fs.existsSync(h.dir), false);
+  }
 });
