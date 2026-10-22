@@ -23,8 +23,8 @@ export const LABEL = { local: 'Local', 'github-actions': 'GitHub Actions', verce
 /** The column heads' titles. */
 export const HEAD_TITLE = { local: 'this checkout\'s vault', 'github-actions': 'GitHub Actions secrets', vercel: 'Vercel environment variables', cloudflare: 'Cloudflare secrets' };
 /** A dot per state. */
-export const DOT = { set: 'dd is-set', stale: 'dd is-stale', missing: 'dd is-missing', none: 'dd is-none', optional: 'dd is-none' };
-const WORD = { set: 'set', stale: 'out of sync', missing: 'missing', none: 'not used', optional: 'optional · not set' };
+export const DOT = { set: 'dd is-set', stale: 'dd is-stale', missing: 'dd is-missing', none: 'dd is-none', optional: 'dd is-none', unknown: 'dd is-unknown' };
+const WORD = { set: 'set', stale: 'out of sync', missing: 'missing', none: 'not used', optional: 'optional · not set', unknown: 'unknown (gh can\'t tell)' };
 /** What an optional secret that is not set reads (spec 49, A6): never missing, no warning. */
 export const OPTIONAL_UNSET = 'optional \u00b7 not set';
 
@@ -71,11 +71,19 @@ export function ageText(s, now = Date.now()) {
   return '';
 }
 
-/** One destination's state for one secret: set, stale (out of sync), missing, or none (not used there). */
+/**
+ * One destination's state for one secret: set, stale (out of sync), missing, unknown, or none (not used there). A
+ * destination the kit reads back (github-actions: `gh secret list`, names only; spec 49 A5) answers from what it holds:
+ * listed is set (stale when the vault's value is newer than its last push), not listed is missing, and unknown when
+ * gh can't tell, never missing. Without that read, the audit log's last push says.
+ */
 export function destState(s, d) {
   const e = (s.destinations || []).find((x) => x.destination === d);
   if (!e) return 'none';
   if (d === 'local') return e.state === 'set' ? 'set' : 'missing';
+  if (e.remote === 'set') return e.state === 'pushed' && e.stale ? 'stale' : 'set';
+  if (e.remote === 'not set') return 'missing';
+  if (e.remote === 'unknown') return 'unknown';
   if (e.state === 'pushed') return e.stale ? 'stale' : 'set';
   return 'missing';
 }
@@ -135,7 +143,7 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
       stale,
       sinks: ticks,
       // Save pushes a replaced value where the old one lives, and a first value to every place the manifest names.
-      pushTo: DESTS.filter((d) => d !== 'local' && (s.set ? states[d] === 'set' || states[d] === 'stale' : states[d] !== 'none')),
+      pushTo: DESTS.filter((d) => d !== 'local' && (s.set ? ['set', 'stale', 'unknown'].includes(states[d]) : states[d] !== 'none')),
       placeholder: s.set ? 'Paste the new value' : 'Paste the value',
       editNote: s.set
         ? `Saving replaces it in ${andList(where.length ? where : ['the vault'])}. The old value is gone for good.`
@@ -200,11 +208,13 @@ export function destRows(status, { repo = '' } = {}) {
     const set = n('set');
     const stale = n('stale');
     const miss = n('missing');
+    const unknown = n('unknown');
     const bits = [];
     if (set) bits.push(`${set} set`);
     if (stale) bits.push(`${stale} out of sync`);
     if (miss) bits.push(`${miss} missing`);
-    return { d, label: LABEL[d], what: what[d], count: bits.join(' · ') || 'none', stale, dot: miss ? DOT.missing : stale ? DOT.stale : set ? DOT.set : DOT.none };
+    if (unknown) bits.push(`${unknown} unknown`);
+    return { d, label: LABEL[d], what: what[d], count: bits.join(' · ') || 'none', stale, dot: miss ? DOT.missing : stale ? DOT.stale : unknown ? DOT.unknown : set ? DOT.set : DOT.none };
   });
 }
 

@@ -4,12 +4,13 @@
 // value below is a fake, and each one is searched for in every byte the CLI prints and the audit holds.
 // node:test, no deps.
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { main } from '../secrets.mjs';
-import { AUDIT, SINKS, VERCEL_ENVIRONMENTS, pushSecret, readAudit, recordAudit, sinkFor } from '../secrets-sinks.mjs';
+import { AUDIT, SINKS, VERCEL_ENVIRONMENTS, actionsSecretNames, pushSecret, readAudit, recordAudit, sinkFor } from '../secrets-sinks.mjs';
 
 const FAKES = ['fake-gh-0001', 'fake "quoted" $(not run) 0002'];
 
@@ -268,6 +269,77 @@ describe('secrets push', () => {
       assert.equal(staging.code, 1);
       assert.match(staging.text, /staging: a Vercel environment/);
       assert.equal(audit(t), '', 'nothing was pushed, so nothing was recorded');
+    } finally {
+      t.done();
+    }
+  });
+});
+
+describe('the Actions sink, read back (spec 49, A5)', () => {
+  const MAN = JSON.stringify({ version: 1, secrets: [
+    { name: 'ACTIONS_PAT', for: 'The cloud loop.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+    { name: 'GH_TOKEN', for: 'The issue mirror.', where: null, destinations: ['local', 'github-actions'], provider: 'owner', chunk: null },
+    { name: 'LOCAL_TOKEN', for: 'Local only.', where: null, destinations: ['local'], provider: 'owner', chunk: null },
+  ] });
+  const listing = (names) => recorder((cmd, args) => (cmd === 'gh' && args[0] === 'secret' && args[1] === 'list' ? { status: 0, stdout: JSON.stringify(names.map((name) => ({ name }))) } : { status: 0 }));
+
+  it('asks gh secret list for names only, and reads unknown when gh cannot tell', () => {
+    const r = listing(['ACTIONS_PAT', 'lower']);
+    const ok = actionsSecretNames({ run: r.run, cwd: '/w/repo' });
+    assert.equal(ok.known, true);
+    assert.deepEqual([...ok.names], ['ACTIONS_PAT'], 'names only, env-var shaped');
+    assert.deepEqual(r.calls.map((c) => [c.cmd, c.args, c.capture, c.input]), [['gh', ['secret', 'list', '--json', 'name'], true, undefined]], 'only the name field, no value on stdin');
+    assert.deepEqual(actionsSecretNames({ run: () => ({ status: 127, missing: true }) }), { known: false, why: 'gh is not installed' });
+    assert.equal(actionsSecretNames({ run: () => ({ status: 4 }) }).why, 'gh exited 4', 'not signed in');
+    assert.equal(actionsSecretNames({ run: () => ({ status: 0, stdout: 'HTTP 403' }) }).known, false, 'no permission or no list');
+    assert.equal(actionsSecretNames({ run: () => ({ status: 0 }) }).known, false, 'a runner with no output');
+    assert.equal(actionsSecretNames({ run: () => { throw new Error('boom'); } }).known, false);
+  });
+
+  async function status(t, run, { json = false } = {}) {
+    const lines = [];
+    const out = (s) => lines.push(s);
+    const code = await main(['status', ...(json ? ['--json'] : []), '--root', t.repo], { out, err: out, owner: () => true, run, vault: { git: () => ({ status: 0, stdout: '' }) } });
+    return { code, text: lines.join('\n') };
+  }
+  function gitRepo(t, remote) {
+    if (spawnSync('git', ['init', '-q', t.repo]).status !== 0) return false;
+    if (remote) spawnSync('git', ['-C', t.repo, 'remote', 'add', 'origin', remote]);
+    fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), MAN);
+    return true;
+  }
+
+  it('status: a name gh lists reads set at github-actions; one it does not, not set; in the sink only, not missing', async () => {
+    const t = workspace();
+    try {
+      if (!gitRepo(t, 'https://github.com/me/app.git')) return;
+      const r = listing(['ACTIONS_PAT']);
+      const { code, text } = await status(t, r.run);
+      assert.equal(code, 0, text);
+      assert.match(text, /3 declared · 0 set · 2 missing · 1 in a sink only/);
+      assert.match(text, /ACTIONS_PAT\s+in github-actions only\s+-> github-actions \(set\)/);
+      assert.match(text, /GH_TOKEN\s+missing\s+-> local, github-actions \(not set\)/);
+      assert.match(text, /LOCAL_TOKEN\s+missing\s+-> local$/m);
+      assert.equal(r.calls.length, 1, 'gh is asked once per status');
+      const j = await status(t, listing(['ACTIONS_PAT']).run, { json: true });
+      assert.deepEqual(JSON.parse(j.text).secrets.map((s) => [s.name, s.remote ?? null]), [['ACTIONS_PAT', { 'github-actions': 'set' }], ['GH_TOKEN', { 'github-actions': 'not set' }], ['LOCAL_TOKEN', null]]);
+    } finally {
+      t.done();
+    }
+  });
+
+  it('status: gh unable to tell, or no GitHub remote, reads unknown, never missing at github-actions; a contributor never asks', async () => {
+    const t = workspace();
+    try {
+      if (!gitRepo(t, 'https://github.com/me/app.git')) return;
+      const { text } = await status(t, () => ({ status: 1 }));
+      assert.match(text, /ACTIONS_PAT\s+missing\s+-> github-actions \(unknown\)/);
+      assert.match(text, /github-actions: unknown \(gh exited 1\)/);
+      spawnSync('git', ['-C', t.repo, 'remote', 'remove', 'origin']);
+      const none = await status(t, never);
+      assert.match(none.text, /github-actions: unknown \(no GitHub remote\)/, 'gh is not run without a GitHub remote');
+      const lines = [];
+      assert.equal(await main(['status', '--root', t.repo], { out: (s) => lines.push(s), err: (s) => lines.push(s), owner: () => false, run: never, vault: { git: () => ({ status: 0, stdout: '' }) } }), 0);
     } finally {
       t.done();
     }

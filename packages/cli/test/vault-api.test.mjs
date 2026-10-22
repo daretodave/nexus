@@ -341,3 +341,49 @@ test('the oversight fallback marks a secret request like the inbox, and its answ
     await app.close();
   }
 });
+
+test('49.5: the Actions column is read from gh secret list (names only), kept briefly, asked again after a push; unknown when gh cannot tell', async () => {
+  const { repo } = vaultRepo({ manifest: { version: 1, secrets: [
+    MANIFEST.secrets[0],
+    { name: 'ACTIONS_PAT', for: 'The cloud loop.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+  ] } });
+  execFileSync('git', ['remote', 'add', 'origin', 'https://github.com/me/app.git'], { cwd: repo });
+  fs.writeFileSync(path.join(repo, DOTENV), `GH_TOKEN=${GH}\n`);
+  const calls = [];
+  let answer = { status: 0, stdout: JSON.stringify([{ name: 'ACTIONS_PAT' }]) };
+  const run = (cmd, args, opts = {}) => {
+    calls.push({ cmd, args: args.join(' '), input: opts.input });
+    return cmd === 'gh' && args[1] === 'list' ? answer : { status: 0 };
+  };
+  const { app, call, seen } = await serve(repo, run);
+  const lists = () => calls.filter((c) => c.args.startsWith('secret list')).length;
+  const actions = (st, n) => st.json.secrets.find((x) => x.name === n).destinations.find((d) => d.destination === 'github-actions');
+  try {
+    let s = await call('GET', '/api/secrets');
+    assert.equal(s.status, 200, JSON.stringify(s.json));
+    assert.equal(actions(s, 'ACTIONS_PAT').remote, 'set', 'GitHub lists it: set, though the vault never pushed it');
+    assert.equal(actions(s, 'GH_TOKEN').remote, 'not set');
+    assert.equal(calls.find((c) => c.args.startsWith('secret list')).args, 'secret list --json name', 'names only');
+    assert.ok(calls.filter((c) => c.args.startsWith('secret list')).every((c) => !c.input), 'no value goes to a list');
+    await call('GET', '/api/secrets');
+    assert.equal(lists(), 1, 'kept briefly: the vault polls');
+
+    answer = { status: 0, stdout: JSON.stringify([{ name: 'ACTIONS_PAT' }, { name: 'GH_TOKEN' }]) };
+    assert.equal((await call('POST', '/api/secrets/GH_TOKEN/push', { destinations: ['github-actions'] })).status, 200);
+    s = await call('GET', '/api/secrets');
+    assert.equal(lists(), 2, 'a push asks GitHub again');
+    assert.equal(actions(s, 'GH_TOKEN').remote, 'set');
+    noValues(seen, [GH]);
+  } finally {
+    await app.close();
+  }
+
+  answer = { status: 4 };
+  const again = await serve(repo, run);
+  try {
+    const s = await again.call('GET', '/api/secrets');
+    assert.equal(actions(s, 'ACTIONS_PAT').remote, 'unknown', 'gh not signed in: unknown, never missing');
+  } finally {
+    await again.app.close();
+  }
+});

@@ -40,6 +40,8 @@ const OPTIONAL = { audit: ['secrets-audit.mjs', ['rotationNudges', 'ROTATE_DAYS'
 const NAME = /^[A-Z][A-Z0-9_]*$/;
 const SINK_FLAGS = { 'github-actions': 'repo', vercel: 'environments', cloudflare: 'worker' };
 const KEYCHAIN_MS = 60000;
+/** How long the GUI keeps `gh secret list`'s answer (names only): GET /api/secrets runs on every poll. */
+const GH_LIST_MS = 60000;
 
 /** A secret request row (scripts/secrets.mjs request): `secret request <chunk>: set A, B in your terminal ...`. */
 const REQUEST_ROW = /secret request (\S+?):\s*set\s+([A-Z][A-Z0-9_]*(?:\s*,\s*[A-Z][A-Z0-9_]*)*)/;
@@ -169,7 +171,8 @@ function rootEnvNames(root) {
  * The secrets API for one served repo.
  * @param {object} o
  * @param {string} o.repo                the served repo (its scripts are the ones run)
- * @param {function} [o.run]             a sink's runner (cmd, args, { input, cwd }) -> { status } (tests: a fake; never gh)
+ * @param {function} [o.run]             a sink's runner (cmd, args, { input, cwd, capture }) -> { status, stdout? }, also
+ *                                       status's `gh secret list` read, kept GH_LIST_MS (tests: a fake; never gh)
  * @param {object} [o.vault]             openVault overrides (tests: git, keychain seams)
  * @param {() => boolean} [o.owner]      effective owner mode (default: server/local.mjs's check)
  * @param {object} [o.mask]              the mask to keep fed (default: a new one)
@@ -186,6 +189,22 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     const sig = kitSignature();
     if (!kitP || sig !== kitSig) { kitSig = sig; kitP = loadKit(repo); }
     return kitP;
+  }
+
+  // `gh secret list` (the kit's status reads the Actions sink's names, spec 49 A5), kept briefly: the vault polls.
+  let ghList = { at: 0, key: '', r: null };
+  const forgetGhList = () => { ghList = { at: 0, key: '', r: null }; };
+  function cachedRun(k) {
+    const base = run || k.m.sinks.spawnRunner;
+    if (typeof base !== 'function') return undefined;
+    return (cmd, args, opts = {}) => {
+      if (cmd !== 'gh' || args[0] !== 'secret' || args[1] !== 'list') return base(cmd, args, opts);
+      const key = `${opts.cwd || ''}\0${args.join(' ')}`;
+      if (ghList.r && ghList.key === key && Date.now() - ghList.at < GH_LIST_MS) return ghList.r;
+      const r = base(cmd, args, opts);
+      ghList = { at: Date.now(), key, r };
+      return r;
+    };
   }
 
   /** Run the repo's secrets command line in process: { code, out: [lines], err: [lines] }. */
@@ -246,7 +265,8 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     }
     if (!k.ok) return unavailable(k);
     const root = await vroot();
-    const r = await cli(k, ['status', '--json', '--root', root]);
+    const listRun = cachedRun(k);
+    const r = await cli(k, ['status', '--json', '--root', root], listRun ? { run: listRun } : {});
     if (r.code !== 0) return failed(r);
     let st;
     try { st = JSON.parse(r.out.join('\n')); } catch { return { status: 409, error: 'this repo\'s scripts/secrets.mjs has no status --json: update the repo\'s secrets scripts (' + DOCS + ')' }; }
@@ -265,7 +285,9 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
         const { time, action, name, destination, ...detail } = p || {};
         // A push older than the value's last set or rotation: the destination still holds the old value.
         const stale = !!(p && setAt && time < setAt);
-        return { destination: d, state: p ? 'pushed' : 'not pushed', at: p ? time : null, ...(stale ? { stale } : {}), ...(p ? { detail } : {}) };
+        // What the sink itself holds, when the kit reads it (github-actions: gh secret list): set, not set, unknown.
+        const remote = s.remote && typeof s.remote[d] === 'string' ? s.remote[d] : null;
+        return { destination: d, state: p ? 'pushed' : 'not pushed', at: p ? time : null, ...(stale ? { stale } : {}), ...(remote ? { remote } : {}), ...(p ? { detail } : {}) };
       });
       return { name: s.name, for: e.for ?? null, where: e.where ?? null, chunk: e.chunk ?? null, declared: !!s.declared, ...(e.optional === true ? { optional: true } : {}), set: s.rings.length > 0, rings: s.rings, destinations, age: s.age ?? null, setAt, rotate: !!s.rotate };
     });
@@ -384,6 +406,7 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
 
   /** Push one stored name to each destination through the repo's own `push` (owner mode, stdin, the audit line). */
   async function pushAll(k, root, name, dests, b) {
+    forgetGhList();
     const out = [];
     for (const d of dests) {
       const flag = SINK_FLAGS[d];

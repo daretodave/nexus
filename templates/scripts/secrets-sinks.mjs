@@ -18,6 +18,10 @@
 // Append-only, written under `.nexus/secrets-audit.lock`; a `value` key is refused outright and every field is a
 // string, so a value can't slip in under another word. recordAudit and readAudit are the seam set and rotation
 // extend. `run` is the seam tests stub: no test runs a sink's real tool.
+//
+// What a sink holds, read back: actionsSecretNames asks `gh secret list --json name` for the repo's GitHub Actions
+// secret names (names only: gh never prints a secret's value, and only the name field is asked for). It says "unknown"
+// (known: false) when gh can't tell: not installed, not signed in, no permission, no GitHub remote.
 // The command line: scripts/secrets.mjs push; the how: nexus/customization/secrets.md.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -31,11 +35,29 @@ const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$|^[A-Za-z0-9.-]+\/[A-Za-z0-9_.-]
 const WORKER = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 export const VERCEL_ENVIRONMENTS = ['production', 'preview', 'development'];
 
-/** The real runner: (cmd, args, { input, cwd }) -> { status }. Its output is dropped, never echoed. */
-export function spawnRunner(cmd, args, { input = '', cwd } = {}) {
-  const r = spawnSync(cmd, args, { input, cwd, stdio: ['pipe', 'ignore', 'ignore'], windowsHide: true });
+/**
+ * The real runner: (cmd, args, { input, cwd, capture }) -> { status, stdout? }. Its output is dropped, never echoed;
+ * with `capture` (a names-only read such as actionsSecretNames) stdout comes back to the caller, never to a terminal.
+ */
+export function spawnRunner(cmd, args, { input = '', cwd, capture = false } = {}) {
+  const r = spawnSync(cmd, args, { input, cwd, stdio: ['pipe', capture ? 'pipe' : 'ignore', 'ignore'], windowsHide: true, ...(capture ? { encoding: 'utf8', timeout: 15000 } : {}) });
   if (r.error) return { status: 127, missing: r.error.code === 'ENOENT' };
-  return { status: r.status };
+  return capture ? { status: r.status, stdout: r.stdout ?? '' } : { status: r.status };
+}
+
+/**
+ * The repo's GitHub Actions secret names: `gh secret list --json name` (names only, never a value). { known: true,
+ * names: Set } or { known: false, why } when gh can't tell (not installed, not signed in, no permission, no remote).
+ */
+export function actionsSecretNames({ run = spawnRunner, cwd, repo } = {}) {
+  if (repo && !REPO.test(repo)) return { known: false, why: `${repo}: a repo is OWNER/REPO or HOST/OWNER/REPO` };
+  let r;
+  try { r = run('gh', ['secret', 'list', '--json', 'name', ...(repo ? ['--repo', repo] : [])], { cwd, capture: true }); } catch { r = null; }
+  if (!r || r.status !== 0) return { known: false, why: r && r.missing ? 'gh is not installed' : `gh exited ${r ? r.status : 'without a status'}` };
+  let list;
+  try { list = JSON.parse(String(r.stdout ?? '')); } catch { return { known: false, why: 'gh did not answer with a list' }; }
+  if (!Array.isArray(list)) return { known: false, why: 'gh did not answer with a list' };
+  return { known: true, names: new Set(list.map((x) => (x && typeof x.name === 'string' ? x.name : null)).filter((n) => n && NAME.test(n))) };
 }
 
 /** Where a value can be pushed, by manifest destination. */

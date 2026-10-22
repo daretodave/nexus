@@ -190,6 +190,7 @@ function OwnerVault({ st, repo, reload, toast }) {
               </div>
               <div className="dd-legend">
                 <span><i className="dd is-set" />set</span><span><i className="dd is-stale" />out of sync</span><span><i className="dd is-missing" />missing</span><span><i className="dd is-none" />not used there</span>
+                {rows.some((r) => r.dots.some((x) => x.cls === 'dd is-unknown')) ? <span><i className="dd is-unknown" />unknown: gh can&apos;t tell</span> : null}
                 <span className="tb-spacer" style={{ flex: 1 }} />
                 <span>Rotate nudges after {st.rotateDays || 90} days.</span>
               </div>

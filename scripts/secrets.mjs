@@ -2,7 +2,7 @@
 // scripts/secrets.mjs: the secrets command line. The rule: the model sees names, never values, so nothing here ever
 // prints a value.
 //
-//   node scripts/secrets.mjs status [--json]                  # each name: where it is set, where it goes
+//   node scripts/secrets.mjs status [--json]                  # each name: where it is set, where it goes (Actions: gh)
 //   node scripts/secrets.mjs set NAME [--ring R]              # the value from stdin (or a hidden prompt), never argv
 //   node scripts/secrets.mjs import [file] [--dry-run]        # names + comments from .env.example into nexus.secrets.json
 //   node scripts/secrets.mjs import FILE --store [--ring R]   # a real .env: values into the vault, names into the manifest
@@ -39,7 +39,7 @@ import { fileURLToPath } from 'node:url';
 import { isOwner, localSettings, primaryRoot } from './owner.mjs';
 import { MANIFEST, NAME, emptyManifest, importEnvExample, mergeImport, readManifest, serialize } from './plan/secrets-manifest.mjs';
 import { CONTRIBUTOR_RINGS, RINGS, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
-import { pushSecret, recordAudit, sinkFor, spawnRunner } from './secrets-sinks.mjs';
+import { actionsSecretNames, pushSecret, recordAudit, sinkFor, spawnRunner } from './secrets-sinks.mjs';
 import { runWithSecrets } from './secrets-run.mjs';
 import { describeHit, scanRepo, vaultValues } from './secrets-scan.mjs';
 import { ROTATE_DAYS, ageDays, lastSet, nudgeLine, readAudit, recordSets, rotationNudges } from './secrets-audit.mjs';
@@ -52,6 +52,11 @@ const SINK_DESTINATIONS = ['github-actions', 'vercel', 'cloudflare'];
 
 function topLevel() {
   try { return execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return process.cwd(); }
+}
+
+/** Does the checkout have a GitHub remote? gh is asked only then: no remote reads unknown, and nothing runs. */
+function githubRemote(root) {
+  try { return /github/i.test(execFileSync('git', ['-C', root, 'remote', '-v'], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] })); } catch { return false; }
 }
 
 function vaultRoot(fallback) {
@@ -85,7 +90,11 @@ export async function readSecretInput(prompt) {
   });
 }
 
-const where = (rings, optional = false) => (rings.length ? `set · ${rings.join(', ')}` : optional ? 'optional · not set' : 'missing');
+const where = (rings, optional = false, sinksOnly = null) => (rings.length ? `set · ${rings.join(', ')}` : sinksOnly ? `in ${sinksOnly} only` : optional ? 'optional · not set' : 'missing');
+/** A declared name the vault does not hold but every place it goes to does (the manifest sends it nowhere local, and
+ * GitHub lists it): its places, else null. Not missing: it is where it is needed. */
+const heldBySinks = (r) => (r.declared && !r.rings.length && r.destinations.length && !r.destinations.includes('local') && r.remote
+  && r.destinations.every((d) => r.remote[d] === 'set') ? r.destinations.join(', ') : null);
 
 export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), input = readSecretInput, vault: vaultOpts = {}, owner, run = spawnRunner } = {}) {
   // Everything after `--` is run's command: its flags are the command's, never this script's.
@@ -146,7 +155,7 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
   try {
     if (cmd === 'run') return await runCommand(open(), current, { command, only, err });
     if (cmd === 'scan') return scan(open(), current, { root, staged, out });
-    if (cmd === 'status') return status(open(), current, { out, json, owner: ownerHere(), localKeys: readLocalKeys(vroot), log: readAudit(vroot) });
+    if (cmd === 'status') return status(open(), current, { out, json, owner: ownerHere(), localKeys: readLocalKeys(vroot), log: readAudit(vroot), run, root });
     if (cmd === 'audit') return audit(open(), readAudit(vroot), { out, json });
     if (cmd === 'request') return request(open(), current, { root, id: arg, out, err });
     if (cmd === 'set') {
@@ -330,15 +339,24 @@ function push({ name, to, repo, env, worker, root, vroot, current, open, out, er
   return failed ? 1 : 0;
 }
 
-function status(vault, current, { out, json, owner = true, localKeys = [], log = [] }) {
+function status(vault, current, { out, json, owner = true, localKeys = [], log = [], run = spawnRunner, root }) {
   const entries = current ? current.manifest.secrets : [];
   const declared = entries.map((e) => e.name);
   const dest = new Map(entries.map((e) => [e.name, e.destinations]));
+  // A github-actions destination is read from GitHub (owner only, once, names only): set, not set, or unknown when gh
+  // can't tell. Never a value; the audit record stays what the vault pushed and when.
+  const wantsActions = owner && entries.some((e) => e.destinations.includes('github-actions'));
+  const actions = !wantsActions ? null : githubRemote(root) ? actionsSecretNames({ run, cwd: root }) : { known: false, why: 'no GitHub remote' };
+  const remoteOf = (name) => {
+    if (!actions || !(dest.get(name) ?? []).includes('github-actions')) return null;
+    return { 'github-actions': actions.known ? (actions.names.has(name) ? 'set' : 'not set') : 'unknown' };
+  };
   const optional = new Set(entries.filter((e) => e.optional === true).map((e) => e.name));
   const last = lastSet(log);
   const rows = vault.status(declared).map((r) => {
     const age = r.rings.length && last.has(r.name) ? ageDays(last.get(r.name)) : null;
-    return { ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [], ...(optional.has(r.name) ? { optional: true } : {}), age, rotate: age !== null && age > ROTATE_DAYS };
+    const remote = remoteOf(r.name);
+    return { ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [], ...(optional.has(r.name) ? { optional: true } : {}), ...(remote ? { remote } : {}), age, rotate: age !== null && age > ROTATE_DAYS };
   });
   const nudges = rotationNudges(log, { held: (n) => rows.some((r) => r.name === n && r.rotate) });
   // A contributor's local keys: the names recorded for this checkout plus any name its .env holds; this machine only.
@@ -357,11 +375,14 @@ function status(vault, current, { out, json, owner = true, localKeys = [], log =
   }
   const set = rows.filter((r) => r.declared && r.rings.length).length;
   // An optional secret that is not set is not missing: the repo runs without it.
-  const unsetOptional = rows.filter((r) => r.declared && r.optional && !r.rings.length).length;
+  const unsetOptional = rows.filter((r) => r.declared && r.optional && !r.rings.length && !heldBySinks(r)).length;
+  const sinksOnly = rows.filter((r) => heldBySinks(r)).length;
   const places = [vault.config.local, vault.config.workspace, ...(vault.config.keychain ? [`keychain ${vault.config.service}`] : [])].join(', ');
-  out(`secrets status: ${declared.length} declared · ${set} set · ${declared.length - set - unsetOptional} missing${unsetOptional ? ` · ${unsetOptional} optional, not set` : ''} (vault: ${places})`);
+  out(`secrets status: ${declared.length} declared · ${set} set · ${declared.length - set - unsetOptional - sinksOnly} missing${sinksOnly ? ` · ${sinksOnly} in a sink only` : ''}${unsetOptional ? ` · ${unsetOptional} optional, not set` : ''} (vault: ${places})`);
   const width = Math.max(0, ...rows.map((r) => r.name.length));
-  for (const r of rows) out(`  ${r.name.padEnd(width)}  ${where(r.rings, r.optional).padEnd(28)}  ${r.declared ? `-> ${r.destinations.join(', ')}` : `(not declared in ${MANIFEST})`}${r.age !== null ? `  set ${r.age} d ago` : ''}`);
+  const toward = (r) => r.destinations.map((d) => (r.remote && r.remote[d] ? `${d} (${r.remote[d]})` : d)).join(', ');
+  for (const r of rows) out(`  ${r.name.padEnd(width)}  ${where(r.rings, r.optional, heldBySinks(r)).padEnd(28)}  ${r.declared ? `-> ${toward(r)}` : `(not declared in ${MANIFEST})`}${r.age !== null ? `  set ${r.age} d ago` : ''}`);
+  if (actions && !actions.known) out(`  github-actions: unknown (${actions.why}): gh secret list could not tell`);
   for (const x of nudges) out(nudgeLine(x));
   return 0;
 }

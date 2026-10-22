@@ -399,3 +399,23 @@ test('49.6: an optional secret that is not set reads "optional · not set", with
   const set = vaultRows({ ...st, secrets: [{ ...opt, set: true, rings: ['local'], destinations: [{ destination: 'local', state: 'set' }] }] }, { now: NOW })[0];
   assert.equal(set.mask, MASK);
 });
+
+test('49.5: the Actions column follows what GitHub lists; unknown when gh cannot tell, never missing', async () => {
+  const actionsAt = (remote, extra = {}) => ({ name: 'ACTIONS_PAT', declared: true, set: false, rings: [], destinations: [{ destination: 'github-actions', state: 'not pushed', remote, ...extra }] });
+  assert.equal(destState(actionsAt('set'), 'github-actions'), 'set', 'listed by gh: set, though the vault never pushed it');
+  assert.equal(destState(actionsAt('not set'), 'github-actions'), 'missing');
+  assert.equal(destState(actionsAt('unknown'), 'github-actions'), 'unknown');
+  assert.equal(destState(actionsAt('unknown', { state: 'pushed' }), 'github-actions'), 'unknown', 'gh is what says; the audit log records pushes');
+  assert.equal(destState(actionsAt('set', { state: 'pushed', stale: true }), 'github-actions'), 'stale', 'listed, but the vault value is newer');
+  assert.equal(destState({ destinations: [{ destination: 'github-actions', state: 'pushed' }] }, 'github-actions'), 'set', 'an older kit: the audit log says');
+  const st = { secrets: [actionsAt('unknown'), { ...actionsAt('set'), name: 'B_TOKEN' }] };
+  const [u] = vaultRows(st, { now: NOW });
+  assert.equal(u.dots[1].cls, 'dd is-unknown');
+  assert.equal(u.dots[1].title, 'Actions: unknown (gh can\'t tell)');
+  const g = destRows(st).find((x) => x.d === 'github-actions');
+  assert.equal(g.count, '1 set · 1 unknown');
+  assert.equal(g.dot, 'dd is-unknown');
+  const fs = await import('node:fs');
+  assert.match(fs.readFileSync(new URL('../src/styles/vault-truth.css', import.meta.url), 'utf8'), /\.dd\.is-unknown \{[^}]*dashed var\(--text-3\)/, 'a muted dashed ring, theme tokens only');
+  assert.match(fs.readFileSync(new URL('../src/screens/Vault.jsx', import.meta.url), 'utf8'), /dd is-unknown" \/>unknown: gh can&apos;t tell/);
+});
