@@ -302,16 +302,20 @@ export async function landReorder(repo, body = {}, { owner = false, now = new Da
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-reorder-'));
   const tmp = path.join(work, 'wt');
   const prBranch = owner ? null : `nexus/reorder-${stamp}`;
-  const add = await run('git', ['worktree', 'add', '-q', ...(owner ? ['--detach'] : ['--no-track', '-b', prBranch]), tmp, `origin/${branch}`], { cwd: repo });
+  // The repo's hooks run through the wrappers from the first git that can fire one (worktree add: post-checkout).
+  const hooks = await safeHooks(repo, { run });
+  const hooked = ['-c', `core.hooksPath=${hooks.dir}`];
+  const add = await run('git', [...hooked, 'worktree', 'add', '-q', ...(owner ? ['--detach'] : ['--no-track', '-b', prBranch]), tmp, `origin/${branch}`], { cwd: repo, timeout: COMMIT_TIMEOUT });
   if (!add.ok) {
-    fs.rmSync(work, { recursive: true, force: true });
+    hooks.cleanup();
+    await run('git', ['worktree', 'prune'], { cwd: repo });
+    if (prBranch) await run('git', ['branch', '-D', '-q', prBranch], { cwd: repo });
+    fs.rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     throw bad(`could not open a worktree of origin/${branch}, nothing moved:\n${tailOf(add)}`, 502);
   }
-  let hooks = null;
   try {
     const w = await writeReorder(tmp, body, { now });
-    hooks = await safeHooks(repo, { run });
-    const git = (args, o = {}) => run('git', ['-c', `core.hooksPath=${hooks.dir}`, ...args], { cwd: tmp, ...o });
+    const git = (args, o = {}) => run('git', [...hooked, ...args], { cwd: tmp, ...o });
     const what = `${w.id} ${w.after ? `after ${w.after}` : `to the top of spec ${w.spec}`}`;
     const subject = `plan: reorder ${what}`;
     const base = { ok: true, id: w.id, after: w.after, spec: w.spec, file: w.file, order: w.order, mode: owner ? 'owner' : 'contributor', branch };
@@ -357,7 +361,7 @@ export async function landReorder(repo, body = {}, { owner = false, now = new Da
     return { ...base, landed: 'main', commit: head.stdout.trim(), settled, note: `Reordered on ${branch}: ${what}.${settleNote} Pull to see it in this checkout.` };
   } finally {
     // Every child above was awaited to its exit: nothing runs in the worktree now.
-    if (hooks) hooks.cleanup();
+    hooks.cleanup();
     await run('git', ['worktree', 'remove', '--force', tmp], { cwd: repo });
     if (prBranch) await run('git', ['branch', '-D', '-q', prBranch], { cwd: repo });
     fs.rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
