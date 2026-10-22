@@ -114,7 +114,7 @@ export function BoardRow({ r, on, repo, ownerName, busy, grip = null, pick = nul
         {r.plotted ? <span className="plotted-tag">{r.plottedLabel}</span> : null}
         {r.needsKey ? <KeyBadge>{r.needs}</KeyBadge> : null}
       </span>
-      <SizeTag size={r.size} />
+      {r.size ? <SizeTag size={r.size} /> : <span className="size-none" aria-hidden="true" />}
       <span className="crow-state">{r.stateLabel}</span>
       {cl ? <ClaimBadge cl={cl} /> : r.showAddKey ? <Link className="btn btn-s btn-warn crow-key" to={PATHS.vault}><Icon name="key" size={14} />Add secret</Link> : <span className="crow-free">{r.freeLabel}</span>}
       <div className="crow-acts">

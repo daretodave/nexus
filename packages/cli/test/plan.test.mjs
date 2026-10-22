@@ -13,7 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import { boardFrom, readPlan, specNumbers, planKitDir, planKitFiles, oneLine } from '../server/plan.mjs';
-import { normalizePlan, lanes, specProgress, subLine, orderMeta } from '../src/screens/board/model.js';
+import { normalizePlan, lanes, specProgress, subLine, orderMeta, rowModel } from '../src/screens/board/model.js';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'templates', 'scripts');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -164,6 +164,18 @@ test('a closed chunk carries no range field in its title (spec 49, A9)', () => {
     { id: '39.6', title: 'Open · plan only', state: 'open' },
   ] }] };
   assert.deepEqual(boardFrom({}, old).specs[0].chunks.map((c) => c.title), ['one PR-mode tick ran end to end in a scratch adopter', 'Spec complete', 'Open · plan only']);
+});
+
+test('a closed chunk shows no made-up size (spec 49, A7)', () => {
+  const progress = { specs: [{ spec: '39', chunks: [
+    { id: '39.5', title: 'Closed, size unknown', size: null, state: 'closed', closedOn: '2026-10-21' },
+    { id: '39.6', title: 'Closed, size known', size: 'S', state: 'closed', closedOn: '2026-10-21' },
+    { id: '39.7', title: 'Open, no size given', size: null, state: 'open' },
+    { id: '39.8', title: 'Open, sized', size: 'L', state: 'open' },
+  ] }] };
+  const plan = normalizePlan(boardFrom({}, progress));
+  const ui = { owner: true, prot: false, ownerName: 'Dave' };
+  assert.deepEqual(plan.chunks.map((c) => [c.id, rowModel(c, null, ui).size]), [['39.5', null], ['39.6', 'S'], ['39.7', 'M'], ['39.8', 'L']]);
 });
 
 

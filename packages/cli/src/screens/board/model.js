@@ -60,7 +60,9 @@ export function normalizePlan(plan) {
   const all = chunks.map((c) => {
     const closed = c.state === 'closed' || c.state === 'settled' || !!c.closed;
     return {
-      id: String(c.id), spec: c.spec, t: c.t ?? c.title ?? '', size: c.size || 'M',
+      id: String(c.id), spec: c.spec, t: c.t ?? c.title ?? '',
+      // A closed chunk keeps the size it was given, when one is known; never a made-up M (spec 49, A7).
+      size: c.size || (closed ? null : 'M'),
       state: closed ? 'closed' : (c.state && LAB[c.state] ? c.state : 'ready'),
       asap: !!c.asap || asapIds.has(String(c.id)) || asapIds.has(c.spec),
       laneHeld: heldIds.has(String(c.id)) || heldIds.has(c.spec),
