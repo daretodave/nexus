@@ -63,8 +63,13 @@ export function inputQueue() {
   };
 }
 
-export function userMessage(text) {
-  return { type: 'user', message: { role: 'user', content: text }, parent_tool_use_id: null, session_id: '' };
+/**
+ * An SDKUserMessage. `content` is the prompt string, or an array of Messages content blocks (an image a person sent
+ * beside their text, spec 51: shared/attachments.mjs messageContent). Both providers write the same shape: the SDK
+ * to its streaming input, the `claude -p` fallback as a stream-json line, which takes image blocks too.
+ */
+export function userMessage(content) {
+  return { type: 'user', message: { role: 'user', content }, parent_tool_use_id: null, session_id: '' };
 }
 
 async function loadSdk() {
@@ -156,10 +161,10 @@ export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatu
 
   return {
     kind: 'sdk',
-    send(text) {
+    send(content) {
       if (!session) session = start(lastSessionId);
-      session.sent.push(text);
-      session.queue.push(userMessage(text));
+      session.sent.push(content);
+      session.queue.push(userMessage(content));
       onStatus({ state: 'running', provider: 'sdk' });
     },
     async interrupt() {

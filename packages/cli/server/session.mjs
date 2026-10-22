@@ -18,6 +18,7 @@ import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
 import { createTugLog } from './tugs.mjs';
 import { ASK_DEFAULT_MS, askDefaults } from '../shared/times.mjs';
 import { toolArg, toolTitle } from '../shared/tool-arg.mjs';
+import { messageContent, withFiles } from '../shared/attachments.mjs';
 
 /**
  * @param {object} o
@@ -136,17 +137,24 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
 
   // A send while a turn is under way is a tug (steering mid-run); the
   // session itself stays open between turns, so "active" is not "busy".
-  async function deliver(text, steered = false) {
+  // Attachments (spec 51, A2): `images` [{ name, mediaType, data, url }] go to the SDK as image blocks beside the
+  // text, `files` [{ name, text }] are inlined into it; the transcript keeps the typed text, each image's url (not
+  // its data) and each file's name.
+  async function deliver(text, steered = false, { images = [], files = [] } = {}) {
     if (!extraEnv) extraEnv = await env();
     const running = busy;
     // A tug (or a steer aimed at this session) is drawn on the stage with its state (tugs.mjs).
     if (running || steered) tugLog.sent(text, { session: claude, busy: running });
     busy = true;
     sent += 1;
-    hub.tx({ kind: 'user', text, at: now() });
+    hub.tx({
+      kind: 'user', text, at: now(),
+      ...(images.length ? { images: images.map((i) => ({ name: i.name, mediaType: i.mediaType, url: i.url || null })) } : {}),
+      ...(files.length ? { files: files.map((f) => f.name) } : {}),
+    });
     if (running) hub.beat({ k: 'oversight', p: 'tug', agent: MAIN });
     else hub.beat({ k: 'agent', p: 'start', id: MAIN, label: 'session' });
-    provider.send(text);
+    provider.send(messageContent(withFiles(text, files), images));
   }
 
   return {
@@ -169,10 +177,11 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     get pause() { return { ...pause, held: held.length }; },
 
     /** Send a prompt (`steered`: a steer aimed at this session); a paused (or pausing) session holds it until resume. */
-    async send(text, { steered = false } = {}) {
-      if (!provider) { waiting.push({ text, steered }); return { held: true, forming: true }; }
-      if (pause.state !== 'run') { held.push({ text, steered }); return { held: true, pause: pause.state }; }
-      await deliver(text, steered);
+    async send(text, { steered = false, images = [], files = [] } = {}) {
+      const att = { images, files };
+      if (!provider) { waiting.push({ text, steered, att }); return { held: true, forming: true }; }
+      if (pause.state !== 'run') { held.push({ text, steered, att }); return { held: true, pause: pause.state }; }
+      await deliver(text, steered, att);
       return { held: false };
     },
     pauseAfterStep() {
@@ -184,7 +193,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
       pause = { state: 'run', at: null };
       publishPause();
       const queued = held.splice(0);
-      for (const q of queued) await deliver(q.text, q.steered);
+      for (const q of queued) await deliver(q.text, q.steered, q.att);
       return { ...this.pause, delivered: queued.length };
     },
     /** The worktree's form moved on (shared/forming.mjs formNext): the session's channel carries it. */
@@ -198,7 +207,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
       if (at) place = at;
       if (!provider) await makeProvider();
       const queued = waiting.splice(0);
-      for (const q of queued) await this.send(q.text, { steered: q.steered });
+      for (const q of queued) await this.send(q.text, { steered: q.steered, ...q.att });
       return { delivered: queued.length };
     },
     interrupt: () => provider?.interrupt(),

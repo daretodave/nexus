@@ -34,6 +34,8 @@ import { tonightStart } from '../shared/times.mjs';
 import { createMask, createSecrets, parseRequest } from './secrets.mjs';
 import { readDesign } from './design.mjs';
 import { artifactLink } from '../shared/design-link.mjs';
+import { MAX_SEND_BODY, readAttachments } from '../shared/attachments.mjs';
+import { saveUploads, uploadFile } from './uploads.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -144,13 +146,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return null;
   }
 
-  async function body(req) {
+  async function body(req, max = MAX_BODY) {
     if (!/^application\/json\b/.test(req.headers['content-type'] || '')) throw Object.assign(new Error('json only'), { status: 415 });
     let size = 0;
     const chunks = [];
     for await (const c of req) {
       size += c.length;
-      if (size > MAX_BODY) throw Object.assign(new Error('too large'), { status: 413 });
+      if (size > max) throw Object.assign(new Error('too large'), { status: 413 });
       chunks.push(c);
     }
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw Object.assign(new Error('bad json'), { status: 400 }); }
@@ -506,12 +508,17 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/local': return send(res, 200, await local.writeLocal(repo, await body(req)));
         case 'POST /api/owner': { const b = await body(req); return send(res, 200, { owner: await repoMod.setOwner(repo, !!b.on) }); }
         case 'POST /api/send': {
-          const b = await body(req);
+          // Images ride along as base64 (spec 51, A2): this route alone takes a body that big.
+          const b = await body(req, MAX_SEND_BODY);
           const text = String(b.text || '').trim();
-          if (!text) return send(res, 400, { error: 'empty prompt' });
+          const att = readAttachments(b.attachments);
+          if (att.error) return send(res, / up to /.test(att.error) ? 413 : 400, { error: att.error });
+          if (!text && !att.images.length && !att.files.length) return send(res, 400, { error: 'empty prompt' });
           const s = sessionOf(b.session);
           if (!s) return send(res, 404, { error: 'no such session on this server' });
-          return send(res, 200, { ok: true, session: s.id, ...(await s.send(text)) });
+          const refs = saveUploads(await primaryRoot(repo), s.id, att.images);
+          const images = att.images.map((img, i) => ({ ...img, ...refs[i] }));
+          return send(res, 200, { ok: true, session: s.id, ...(await s.send(text, { images, files: att.files })) });
         }
         case 'POST /api/adopt': await body(req); await sendPrompt(ADOPT_PASTE); return send(res, 200, { ok: true, session: home.id });
         case 'POST /api/interrupt':
@@ -578,6 +585,14 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/secrets/manifest': { const { status, ...r } = await secrets.startManifest(await body(req)); return send(res, status, r); }
         // Set up the vault (47.3): the CLI's own copy of the secrets scripts, landed per owner mode (vault-setup.mjs).
         case 'POST /api/secrets/setup': { await body(req); const { status, ...r } = await secrets.setup(); return send(res, status, r); }
+      }
+      // An image a person sent (uploads.mjs): the transcript's bubble shows it from here.
+      const up = /^GET \/api\/uploads\/([\w.-]+)\/([\w.-]+)$/.exec(route);
+      if (up) {
+        const f = uploadFile(await primaryRoot(repo), up[1], up[2]);
+        if (!f) return send(res, 404, { error: 'no such upload' });
+        res.writeHead(200, { 'content-type': f.type, 'cache-control': 'private, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' });
+        return fs.createReadStream(f.full).pipe(res);
       }
       const secPush = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/push$/.exec(route);
       if (secPush) {
