@@ -8,11 +8,13 @@ import path from 'node:path';
 import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { startServer } from '../server/server.mjs';
-import { fleetRows, inboxItems, parkedId, parseParkedId, phaseOf, progressOf, resumable, resumePrompt, sameParked } from '../server/fleet-home.mjs';
+import { fileURLToPath } from 'node:url';
+import { fleetRows, inboxItems, isEnded, markEnded, parkedId, parseParkedId, phaseOf, progressOf, resumable, resumePrompt, sameParked } from '../server/fleet-home.mjs';
 import { norm, FILTERS } from '../src/screens/fleet/model.js';
 import { fromInbox } from '../src/screens/headsdown-inbox/inboxModel.js';
 
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
+const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const OLD = '2026-01-01T00:00:00.000Z';
 
 function tmpRepo({ skill = true } = {}) {
@@ -276,5 +278,54 @@ test('Resume refuses a live session, an unknown one, and a repo without /reboot-
     assert.equal(r.status, 409);
     assert.match(r.json.error, /reboot-resume/);
     assert.equal(by.size, 1, 'nothing started past the home session');
+  });
+});
+
+// ---- spec 47 A10: a session that ended with its server ------------------------------------------------------------
+
+test('a GUI session that fell with its server and left nothing behind reads ended; one with work stays fallen', () => {
+  const dead = { id: 'dead0001', name: 'vega', gui: true, state: 'fallen', sources: ['ledger'], git: { ahead: 0, up: 0, dirty: 0, staged: 0, claims: 0 } };
+  assert.equal(isEnded(dead), true);
+  assert.equal(isEnded({ ...dead, git: { ...dead.git, ahead: 2, up: 2 } }), false, 'commits beyond its base');
+  assert.equal(isEnded({ ...dead, git: { ...dead.git, dirty: 1 } }), false, 'a dirty worktree');
+  assert.equal(isEnded({ ...dead, git: { ...dead.git, claims: 3 } }), false, 'claims');
+  assert.equal(isEnded({ ...dead, git: { ...dead.git, ahead: null } }), false, 'unknown git is never nothing');
+  assert.equal(isEnded({ ...dead, gui: false }), false, 'a terminal session is not the server\'s');
+  assert.equal(isEnded({ ...dead, hosted: true }), false, 'one this server runs is alive');
+  assert.equal(isEnded({ ...dead, state: 'live' }), false);
+  assert.equal(isEnded({ ...dead, sources: ['ledger', 'claude'] }), false, 'its session file still writes');
+  const marked = markEnded([dead, { ...dead, id: 'x', gui: false }]);
+  assert.equal(marked[0].ended, true);
+  assert.equal(marked[1].ended, undefined);
+  const tile = norm(marked[0]);
+  assert.equal(FILTERS.find((f) => f.value === 'fallen').test(tile), false, 'not counted as fell over');
+});
+
+test('an ended session closes from the fleet: its ledger ends (its star frees) and its worktree closes', async () => {
+  await withApp({}, async ({ dir, parent, app }) => {
+    fs.writeFileSync(path.join(dir, 'README.md'), '# r\n');
+    execFileSync('git', ['add', '.'], { cwd: dir });
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'init'], { cwd: dir });
+    const wt = path.join(parent, '.nexus-wt', 'vega-1');
+    execFileSync('git', ['worktree', 'add', '-q', '-b', 'nexus/vega-1', wt, 'HEAD'], { cwd: dir });
+    fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
+    fs.copyFileSync(path.join(KIT, 'scripts', 'worktree.mjs'), path.join(dir, 'scripts', 'worktree.mjs'));
+    ledger(dir, { id: 'dead0001', star: 'vega', gui: true, beat: OLD, worktree: wt, branch: 'nexus/vega-1' });
+    ledger(dir, { id: 'work0001', star: 'sirius', gui: true, beat: OLD, worktree: dir, branch: 'main' });
+    fs.writeFileSync(path.join(dir, 'scratch.txt'), 'work in progress\n');
+
+    const list = (await call(app, '/api/sessions')).json;
+    const by = Object.fromEntries(list.map((s) => [s.id, s]));
+    assert.equal(by.dead0001.ended, true);
+    assert.equal(by.work0001.ended, undefined, 'a dirty worktree is work: Resume and Inspect stay');
+
+    const refused = await call(app, '/api/sessions/work0001/close', {});
+    assert.equal(refused.status, 409);
+    const r = await call(app, '/api/sessions/dead0001/close', {});
+    assert.equal(r.status, 200);
+    assert.equal(r.json.worktree.closed, true);
+    assert.equal(readLedger(dir, 'dead0001').state, 'ended');
+    assert.equal(fs.existsSync(wt), false);
+    assert.ok(!(await call(app, '/api/sessions')).json.some((s) => s.id === 'dead0001'), 'its tile leaves and its star is free');
   });
 });

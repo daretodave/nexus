@@ -10,18 +10,28 @@
 //     event: { at, text }, beat, fell: { tool, chunk, at }, run: <workflow dir>,
 //     resume: { chunk, steps, files, done, total, at, text, error, recap },
 //     train: { state: 'pausing'|'paused', text },
-//     git: { branch, worktree, up, down, behind, dirty, pr: { num, ci }, noPr, claims, commits: [{ sha, m, w }] } }
+//     git: { branch, worktree, up, down, behind, dirty, pr: { num, ci }, noPr, claims, commits: [{ sha, m, w }] },
+//     turn: 'working'|'idle' (absent: unknown), last: { kind: 'text', text, at } | { kind: 'tool', tool, arg, at },
+//     lastPrompt, claimsSession, ended: <a hosted session that died with its server and left nothing behind> }
+import { foldClaims, sessionOf } from '../board/model.js';
+
+/** States a session runs in; an idle one (its turn ended, nothing queued) is shown idle, not working. */
+const RUNNING = ['live', 'observing', 'resumed'];
 
 /** Phase track for a tile: Q Working Q P (contributor) or Q Working Q (owner). */
 export function phaseItems(s) {
   const keys = s.mode === 'owner' ? ['q', 'w', 'q'] : ['q', 'w', 'q', 'p'];
   const labels = { q: 'Q', w: 'Working', p: 'P' };
-  const at = { questions: 0, working: 1, end: 2, package: 3 }[s.phase] ?? (s.state === 'asking' ? 0 : 1);
+  // Only a phase the session reports is drawn as now; an idle session has none running, and a session that reports
+  // none lights no segment rather than a made-up one.
+  const reported = { questions: 0, working: 1, end: 2, package: 3 }[s.phase] ?? (s.state === 'asking' ? 0 : null);
+  const at = s.idle && s.state !== 'asking' ? null : reported;
   return keys.map((key, i) => ({
     key,
     label: labels[key],
-    state: i < at ? 'done' : i === at ? (key === 'q' ? 'ask' : 'now') : undefined,
-    p: i === at && key === 'w' && s.progress?.pct != null ? `${Math.round(s.progress.pct)}%` : undefined,
+    state: at == null ? (reported != null && i < reported ? 'done' : undefined) : i < at ? 'done' : i === at ? (key === 'q' ? 'ask' : 'now') : undefined,
+    // The working segment fills to the reported progress; with none reported it fills nothing (no fake fraction).
+    p: at != null && i === at && key === 'w' ? (s.progress?.pct != null ? `${Math.round(s.progress.pct)}%` : '0%') : undefined,
   }));
 }
 
@@ -47,15 +57,77 @@ export function norm(raw) {
   s.mode = s.mode || 'contributor';
   s.git = s.git || {};
   s.session = { name: s.name, kind: s.kind };
+  // Idle: its turn ended and nothing waits (the server says so); its orb rests.
+  s.idle = s.turn === 'idle' && RUNNING.includes(s.state);
+  if (s.idle) s.orb = 'idle';
   return s;
+}
+
+/** The line an idle tile reads: "Done · last: /plot peek", or "Idle" when no prompt is known. */
+export function idleLine(s) {
+  return s.lastPrompt ? `Done · last: ${s.lastPrompt}` : 'Idle';
+}
+
+/**
+ * A tile's preview line: the session's last word (inline markdown, one line) or its last tool row (tool and a short
+ * argument). null when the session has said nothing yet.
+ */
+export function lastLine(s, max = 160) {
+  const l = s?.last;
+  if (!l) return null;
+  const cut = (t) => { const x = String(t || '').replace(/\s+/g, ' ').trim(); return x.length > max ? `${x.slice(0, max - 3)}...` : x; };
+  if (l.kind === 'tool') return { kind: 'tool', tool: l.tool || 'tool', arg: cut(l.arg), at: l.at || null };
+  const text = cut(l.text);
+  return text ? { kind: 'text', text, at: l.at || null } : null;
+}
+
+/** A chunk's title from GET /api/plan (its specs' chunks or its flat chunks), or ''. */
+export function chunkTitle(plan, id) {
+  if (!plan || id == null || id === '') return '';
+  const key = String(id);
+  const all = [...(plan.chunks || []), ...(plan.specs || []).flatMap((x) => x.chunks || []), ...[].concat(plan.next || [])];
+  const c = all.find((x) => x && String(x.id) === key);
+  return c ? String(c.t ?? c.title ?? '') : '';
+}
+
+/**
+ * Every claim holder no session tile stands for: a session tag (or, with none, a person) whose claims no listed
+ * session owns, as a dim "Claimed, not attached" tile. The cloud loop's claims and held claims are not sessions.
+ * rows: GET /api/claims rows; sessions: the fleet rows. -> [{ key, session, name, who, mine, n, lines, fold, at, stale }],
+ * the most claims first. `fold` is the rail's fold as one line: "59.10-59.49 · 39 chunks, 60.2".
+ */
+export function claimHolders(rows, sessions = []) {
+  const by = new Map();
+  for (const r of rows || []) {
+    const tag = String(r.session || '');
+    if (r.held || tag.startsWith('cloud-')) continue;
+    if (tag && sessionOf(sessions, tag)) continue;
+    const key = tag ? `s:${tag}` : `p:${r.who || 'someone'}`;
+    if (!by.has(key)) by.set(key, { key, session: tag, name: '', who: r.who || '', mine: false, claims: [], at: null, stale: true });
+    const h = by.get(key);
+    if (r.star && !h.name) h.name = r.star;
+    if (r.mine) h.mine = true;
+    if (r.state !== 'stale') h.stale = false;
+    const t = Date.parse(r.at);
+    if (Number.isFinite(t) && (h.at == null || t < h.at)) h.at = t;
+    h.claims.push({ id: String(r.id), rawId: String(r.id), t: '', v: { raw: r, pr: r.pr || null, stale: r.state === 'stale' } });
+  }
+  const out = [...by.values()].map((h) => {
+    const lines = foldClaims(h.claims, h.key);
+    const fold = lines.map((l) => (l.kind === 'run' ? `${l.from}-${l.to} · ${l.n} chunks` : l.c.id)).join(', ');
+    const name = h.name || (h.session ? h.session.slice(0, 8) : h.who || 'someone');
+    return { key: h.key, session: h.session, name, who: h.who, mine: h.mine, n: h.claims.length, lines, fold, at: h.at, stale: h.stale };
+  });
+  return out.sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
 }
 
 /** Filters on the view head, and the counts the topbar line reads. */
 export const FILTERS = [
   { value: 'all', label: 'All', test: () => true },
   { value: 'needs', label: 'Needs you', test: (s) => s.state === 'asking' },
-  { value: 'working', label: 'Working', test: (s) => ['live', 'observing', 'resuming', 'resumed'].includes(s.state) },
-  { value: 'fallen', label: 'Fell over', test: (s) => s.state === 'fallen' || s.state === 'resume-failed' },
+  { value: 'working', label: 'Working', test: (s) => !s.idle && ['live', 'observing', 'resuming', 'resumed'].includes(s.state) },
+  { value: 'idle', label: 'Idle', test: (s) => !!s.idle },
+  { value: 'fallen', label: 'Fell over', test: (s) => !s.ended && (s.state === 'fallen' || s.state === 'resume-failed') },
 ];
 
 export function counts(list) {
@@ -64,14 +136,18 @@ export function counts(list) {
   return c;
 }
 
-/** The topbar line: "5 sessions · 3 working · 1 needs you · 1 fell over". */
-export function summary(list) {
-  if (!list.length) return 'no sessions yet';
+/** The topbar line: "5 sessions · 3 working · 1 idle · 1 needs you · 1 fell over · 2 claimed, not attached". */
+export function summary(list, holders = 0) {
+  if (!list.length && !holders) return 'no sessions yet';
   const c = counts(list);
   const parts = [`${list.length} ${list.length === 1 ? 'session' : 'sessions'}`];
   if (c.working) parts.push(`${c.working} working`);
+  if (c.idle) parts.push(`${c.idle} idle`);
   if (c.needs) parts.push(`${c.needs} needs you`);
   if (c.fallen) parts.push(`${c.fallen} fell over`);
+  const ended = list.filter((s) => s.ended).length;
+  if (ended) parts.push(`${ended} ended with the server`);
+  if (holders) parts.push(`${holders} claimed, not attached`);
   return parts.join(' · ');
 }
 

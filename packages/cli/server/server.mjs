@@ -21,7 +21,8 @@ import { explode, plotPrompt, plotRequest } from './explode.mjs';
 import { addWorkflow, saveSchedule } from './cloud.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, transcriptActivity, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
-import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
+import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, markEnded, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
+import { run as shRun } from './sh.mjs';
 import { createGitView } from './git.mjs';
 import { readRun, recentRuns } from './recover.mjs';
 import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
@@ -317,6 +318,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const s = sessionOf(key);
     if (!s) {
       if (action === 'resume') return resumeFallen(key);
+      if (action === 'close') return closeEnded(key);
       return { status: 409, error: 'only a session this server runs pauses, resumes or closes here' };
     }
     if (action === 'pause') return { status: 200, id: s.id, pause: s.pauseAfterStep() };
@@ -337,6 +339,32 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const s = sessionOf(key);
     const session = s ? s.id : CLAIMS_SESSION.test(String(key || '')) ? String(key) : home.id;
     return { session, login: await login() };
+  }
+
+  /**
+   * Close a session that ended with its server (fleet-home.mjs isEnded, checked again now): its ledger ends, which
+   * frees its star, and its worktree closes through the repo's own scripts/worktree.mjs when it has one (never a bare
+   * `git worktree remove`). A fallen session with work is refused: resume or inspect it.
+   */
+  async function closeEnded(key) {
+    const list = markEnded(await gitView.withGit(await sessionList()));
+    const row = list.find((x) => x.id === key || x.claude === key);
+    if (!row) return { status: 404, error: 'no such session' };
+    if (!row.ended) return { status: 409, error: `${row.name} has work (commits, changes or claims) or is still running: resume or inspect it` };
+    const root = await primaryRoot(repo);
+    endLedger(root, row.id);
+    const wt = row.git?.worktree || '';
+    const script = path.join(root, 'scripts', 'worktree.mjs');
+    let worktree = null;
+    if (wt && fs.existsSync(wt)) {
+      if (!fs.existsSync(script)) worktree = { closed: false, note: 'no scripts/worktree.mjs here: close the worktree with /tidy' };
+      else {
+        const slash = (p) => p.replace(/\\/g, '/');
+        const r = await shRun('node', [slash(script), 'close', slash(wt), '--repo', slash(root)], { cwd: root, timeout: 60000 });
+        worktree = r.ok ? { closed: true } : { closed: false, note: (r.stderr || r.stdout || 'worktree.mjs close failed').trim().split('\n').pop() };
+      }
+    }
+    return { status: 200, id: row.id, closed: true, name: row.name, worktree };
   }
 
   // Resume from a fallen tile (A2): a new hosted session takes the ledger through /reboot-resume. One resumer per
@@ -467,7 +495,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           await sendPrompt(prompt);
           return send(res, 200, { ok: true });
         }
-        case 'GET /api/sessions': return send(res, 200, await gitView.withGit(await sessionList()));
+        case 'GET /api/sessions': return send(res, 200, markEnded(await gitView.withGit(await sessionList())));
         case 'GET /api/inbox': return send(res, 200, await inbox());
         case 'GET /api/git': return send(res, 200, await gitView.repoGit());
         case 'GET /api/git/tidy': { const r = await gitView.tidyDry(); return send(res, r.available ? 200 : 404, r); }

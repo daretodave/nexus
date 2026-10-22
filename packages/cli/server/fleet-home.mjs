@@ -44,6 +44,7 @@ export function fleetRows(list, { ledgers = [], hosted = [], resumers = new Map(
   return list.map((row) => {
     const l = byLedger.get(row.id) || ledgers.find((x) => x.claude && x.claude === row.claude) || {};
     const out = { ...row, mode: l.mode || (owner ? 'owner' : 'contributor') };
+    if (l.gui) out.gui = true;
     const phase = phaseOf(l.step);
     if (phase) out.phase = phase;
     const progress = progressOf(l);
@@ -60,6 +61,24 @@ export function fleetRows(list, { ledgers = [], hosted = [], resumers = new Map(
     return out;
   });
 }
+
+/**
+ * A session that ended with its server: one the GUI started (its ledger says `gui`), fallen, no longer run by this
+ * server nor writing its session file, and that left nothing behind: no commits past its base, a clean worktree and no
+ * claims. It shows as "Ended with the server" with a Close that frees its star; a fallen session with work keeps
+ * Resume and Inspect. Needs the row's git (gitView.withGit): unknown git is never "nothing behind".
+ */
+export function isEnded(row) {
+  if (!row || !row.gui || row.hosted || row.state !== 'fallen') return false;
+  if ((row.sources || []).includes('claude')) return false;
+  const g = row.git || {};
+  const ahead = 'ahead' in g ? g.ahead : g.up;
+  if (ahead == null) return false;
+  return ahead === 0 && !g.dirty && !g.staged && !(g.claims > 0);
+}
+
+/** The list with each ended session marked `ended: true`. */
+export const markEnded = (list) => (Array.isArray(list) ? list.map((s) => (isEnded(s) ? { ...s, ended: true } : s)) : list);
 
 const hash = (s) => crypto.createHash('sha1').update(String(s)).digest('hex').slice(0, 8);
 const label = (o) => (typeof o === 'string' ? o : o?.label || '');
