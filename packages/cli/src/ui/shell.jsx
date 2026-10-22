@@ -171,7 +171,8 @@ export function MsgYou({ time, text, pinned }) {
   return (
     <div className="msg-you">
       <div className="msg-meta" style={{ margin: 0 }}><b>you</b><span>{time}</span></div>
-      <div className="bubble">{text}</div>
+      {/* The person's own markdown: newlines, lists and a pasted fence keep their shape. */}
+      <Markdown className="bubble" text={text} />
       {pinned ? <span className="pinned-tag"><Icon name="pinNote" size={12} />Pinned · read on the next step</span> : null}
     </div>
   );

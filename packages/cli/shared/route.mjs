@@ -30,9 +30,9 @@ export function toPrompt(text, route = classify(text), flags = {}) {
   if (!t || !route) return '';
   let out;
   if (route === 'slash') {
-    const [head, ...rest] = t.split(/\s+/);
-    const cmd = ALIASES[head.toLowerCase()] || head;
-    out = [cmd, ...rest].join(' ');
+    // Only the command word is touched (an alias resolved); the rest keeps its newlines: a pasted report, a trace.
+    const [, head, rest] = /^(\S+)([\s\S]*)$/.exec(t);
+    out = (ALIASES[head.toLowerCase()] || head) + rest;
   } else if (route === 'bug') out = `/bug ${t}`;
   else if (route === 'plot') out = `/plot ${t}`;
   else out = t;
@@ -45,9 +45,13 @@ export function toPrompt(text, route = classify(text), flags = {}) {
  */
 export function withRunFlags(prompt, { agents = false, workflows = false } = {}) {
   if (!/^\/(next|heads-down)\b/.test(prompt)) return prompt;
-  if (/--(agents|workflow)\b/.test(prompt)) return prompt;
-  if (workflows) return `${prompt} --workflow`;
-  if (agents) return `${prompt} --agents`;
+  // The flag goes on the command's own line, ahead of any text pasted under it.
+  const nl = prompt.indexOf('\n');
+  const first = nl === -1 ? prompt : prompt.slice(0, nl);
+  const after = nl === -1 ? '' : prompt.slice(nl);
+  if (/--(agents|workflow)\b/.test(first)) return prompt;
+  if (workflows) return `${first} --workflow${after}`;
+  if (agents) return `${first} --agents${after}`;
   return prompt;
 }
 
