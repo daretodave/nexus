@@ -88,6 +88,7 @@ Measure: 14 open · 0 closed · next A15
 - [ ] **47.2** Cloud workflow and schedule served for onboarding · M · closes A1 · needs —
   - Write `march.yml` from the template with the chosen cron; commit per owner mode.
 - [ ] **47.3** The secrets step knows an existing vault and a missing one · S · closes A2 · needs —
+  - The Vault screen too: a repo with no vault scripts gets an empty state with "Set up the vault" (the CLI's bundled scripts, landed per owner mode), not a red error naming a kit path.
 - [ ] **47.4** Onboarding fits an adopted repo · S · closes A3 · needs —
 - [ ] **47.5** The cockpit opens at once; worktrees follow the repo · M · closes A4 · needs —
 - [ ] **47.6** Markdown and highlighted commands in the transcript · M · closes A5 · needs —
