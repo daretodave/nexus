@@ -157,3 +157,4 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 47.16 · Plain text goes as typed; a guessed route is a chip · e49428c6..792376ef
 - 2026-10-22 · 47.12 · A board reorder lands on main or as a PR · 0d930a92..1f825d1d
 - 2026-10-22 · 47.11 · Fleet shows one honest tile per session and claim holder · 8c6d2774..c55ea848
+- 2026-10-22 · 47.9 · The Plan board reads any repo, or says why it cannot · 7081b086..b48e9db7
