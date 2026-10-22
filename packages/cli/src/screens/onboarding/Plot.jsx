@@ -58,7 +58,7 @@ function Marked({ text, quotes }) {
  * @returns {{ code: string|null, words: string }}
  */
 export function specWords(specFile, next, nexus = true) {
-  if (nexus === false) return { code: null, words: 'the first spec, once nexus is in' };
+  if (nexus === false) return { code: null, words: 'the first spec (once nexus is in)' };
   if (specFile) return { code: specFile, words: '' };
   if (next && !next.fresh && next.n) return { code: `${next.prefix || `plan/${next.n}-`}…`, words: 'a new spec, ' };
   return { code: null, words: 'the first spec' };
@@ -101,7 +101,7 @@ export function AdoptGate({ gate, kept, held, err, plotting, onAdopt, onPlot }) 
         <span style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
           <span>
             <b>nexus isn't in this repo yet.</b> <code>/plot</code> needs its plan and skills, so adopt it first.{' '}
-            {held ? `Your ${ideas} wait here and plot as soon as it lands.` : `Your ${ideas} stay here meanwhile.`}
+            {held ? (kept === 1 ? `Your ${ideas} waits here and plots as soon as it lands.` : `Your ${ideas} wait here and plot as soon as it lands.`) : (kept === 1 ? `Your ${ideas} stays here meanwhile.` : `Your ${ideas} stay here meanwhile.`)}
           </span>
           {adopting ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -432,12 +432,12 @@ ${t.plot}`} className={st === 'sent' ? 'idea is-kept' : t.kind === 'built' ? 'id
           {owner ? (
             <div className="lands">
               <Icon name="lockOne" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--owner)' }} />
-              <span><b>Lands on main</b> as <SpecName specFile={specFile} next={next} nexus={nexus} /> with {chunks.length} chunks. You own this checkout, so there is no plan PR to wait for.</span>
+              <span><b>Lands on main</b> as <SpecName specFile={specFile} next={next} nexus={nexus} /> with {chunks.length === 1 ? "1 chunk" : `${chunks.length} chunks`}. You own this checkout, so there is no plan PR to wait for.</span>
             </div>
           ) : (
             <div className="lands">
               <Icon name="contribOne" size={14} style={{ marginTop: 3, flex: 'none' }} />
-              <span><b>Opens a plan PR</b> with <SpecName specFile={specFile} next={next} nexus={nexus} /> and {chunks.length} chunks, so the owner reviews your plan like code.</span>
+              <span><b>Opens a plan PR</b> for <SpecName specFile={specFile} next={next} nexus={nexus} />, with {chunks.length === 1 ? "1 chunk" : `${chunks.length} chunks`}, so the owner reviews your plan like code.</span>
             </div>
           )}
         </div>

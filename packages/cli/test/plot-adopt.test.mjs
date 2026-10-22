@@ -87,8 +87,8 @@ test('the Plot step says nexus isn\'t here, offers Adopt now, waits, then offers
 test('a repo with no plan names no plan file: "the first spec, once nexus is in"', async () => {
   const { specWords } = await import('../src/screens/onboarding/Plot.jsx');
   // explode proposes plan/01-... even with no plan; before adoption the step does not claim it.
-  assert.deepEqual(specWords('plan/01-fix-login.md', { n: 1, prefix: 'plan/01-', fresh: true }, false), { code: null, words: 'the first spec, once nexus is in' });
-  assert.deepEqual(specWords('plan/04-fix-login.md', { n: 4, prefix: 'plan/04-', fresh: false }, false), { code: null, words: 'the first spec, once nexus is in' });
+  assert.deepEqual(specWords('plan/01-fix-login.md', { n: 1, prefix: 'plan/01-', fresh: true }, false), { code: null, words: 'the first spec (once nexus is in)' });
+  assert.deepEqual(specWords('plan/04-fix-login.md', { n: 4, prefix: 'plan/04-', fresh: false }, false), { code: null, words: 'the first spec (once nexus is in)' });
   // Adopted, or not known yet: as before.
   assert.deepEqual(specWords('plan/48-x.md', null, true), { code: 'plan/48-x.md', words: '' });
   assert.deepEqual(specWords('plan/48-x.md', null, null), { code: 'plan/48-x.md', words: '' });
