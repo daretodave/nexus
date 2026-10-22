@@ -714,6 +714,7 @@ nexus/
     │   ├── __tests__/claims-codec.test.mjs # the claims rules
     │   ├── __tests__/claims-board.test.mjs # the board's table and issue (fake gh)
     │   ├── __tests__/push-policy.test.mjs # the push policy, pure
+    │   ├── __tests__/install-hooks-run.test.mjs # installed hooks unset GIT_DIR: a gate's scratch repo never writes the real one
     │   ├── __tests__/progress.test.mjs # the progress view, pure
     │   ├── __tests__/progress-run.test.mjs # progress main() from a spaced path, over git (offline)
     │   ├── __tests__/announce.test.mjs # the notice board
