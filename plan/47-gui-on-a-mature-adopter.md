@@ -1,0 +1,101 @@
+# 47 — The GUI on a mature adopter
+
+> `npx @usenexus/cli` run in a large, long-adopted repo reads
+> its plan, its questions and its sessions truthfully, every
+> onboarding button does what it says, and a session's report
+> reads as a designed page, not a wall of text.
+
+## Why
+
+The owner ran `@usenexus/cli` 0.3.0 end to end in a mature
+adopter (2026-10-22): a repo with 60+ specs, vendored kit
+scripts under its own paths, its own worktree convention, a
+long-running heads-down session holding ~40 claims, and a
+root `.env`. Onboarding, the cockpit, Oversight, Plan and
+Fleet were each walked. The cockpit's transcript worked; most
+other screens misread the repo or called a server route that
+does not exist. A review of the same adoption found three
+kit-script bugs the adopter had patched locally. The chunks
+below fix both.
+
+What exists today: `packages/cli/server/{repo,secrets,
+sessions,reorder}.mjs`, `packages/cli/src/screens/
+{onboarding/*,cockpit/*,Oversight,Plan,Fleet}.jsx`,
+`templates/scripts/{claims,plan/settle,plan/order}.mjs`,
+`skills/next.md`.
+
+## Design
+
+- **Every onboarding call is served.** `POST /api/explode`
+  (split thoughts into sized ideas, no write), `/api/plot`
+  (land kept ideas through a pending file per owner mode),
+  `/api/cloud/workflow` (write and commit the loop workflow)
+  and `/api/cloud/schedule` exist, each with a server test.
+- **The plan is read by the kit, not the adopter.** The CLI
+  bundles the kit's own `order.mjs` and runs it against the
+  repo, so a repo that never vendored it still gets a board;
+  a plan it cannot read says so, never "0 specs".
+- **Script lookups share one candidate list** (`scripts/`,
+  `scripts/dev/`, `scripts/plan/`) for claims, progress,
+  worktree and announce.
+- **Questions are questions:** list items under an "Open
+  questions" heading in a spec, plus `[needs-user-call]`
+  rows; wrapped items read whole; items that open with
+  Settled, Decided or Answered are skipped; each carries its
+  source (plan, session, cloud run).
+- **Messages render:** a markdown renderer for every agent
+  message (headings, lists, code, fenced blocks kept
+  monospace); a `/plot` report gets its own card (task,
+  built / not built / not planned, the chunk card, the build
+  order drawn with the new chunk lit, open questions as
+  answer cards, Plot / Plot asap / Plot and build now).
+  Shell commands in tool rows are syntax-highlighted from
+  theme tokens, day and night.
+- **Sessions are honest:** one tile per session, idle shown
+  as idle, claim holders shown even when not attached, a
+  tile's preview shows its last message and chunk; the
+  claims rail folds a session's run of chunks into one line.
+- **Launch is instant:** the cockpit opens at once and the
+  worktree is made behind it; worktrees go where the repo
+  keeps them (a configured root, else the kit default).
+
+## Acceptance
+
+- **A1** `/api/explode`, `/api/plot`, `/api/cloud/workflow` and `/api/cloud/schedule` are served, owner and contributor paths tested; onboarding's Plot and Cloud steps work with no "not on this server" fallback.
+- **A2** The secrets step reads a repo whose root `.env` is already the vault as "already the vault: N names" with an offer to write the manifest, and a repo with no vault scripts says so before a file is picked.
+- **A3** Onboarding copy and chrome fit an adopted repo: Detect shows the lock's version, the Plot step names the next spec number (never "the first spec"), error toasts sit clear of the footer and link docs, and the orb glyphs (thinking dots, `?`) are centred and coloured to the orb.
+- **A4** Open the cockpit navigates at once; the worktree is created behind it with a visible forming state; worktrees go under the repo's configured worktree root.
+- **A5** Every agent message renders markdown; fenced blocks keep their spacing in monospace; tool-row commands are syntax-highlighted from theme tokens in both themes.
+- **A6** A `/plot` report renders as a card: the chunk, the before/after order with the new chunk lit, open questions as answer cards with defaults chosen, and one-click Plot / Plot asap / Plot and build now.
+- **A7** Oversight lists only real questions (spec Open questions and `[needs-user-call]` rows, read whole, settled items skipped), grouped by source and spec, with markdown rendered.
+- **A8** The Plan board works in a repo with no vendored `order.mjs` (the CLI runs its bundled copy), and an unreadable plan shows an honest state, not zeros.
+- **A9** The claims rail folds consecutive chunks of one session into one expandable line, names the session's star when it has one, and scrolls in its own panel.
+- **A10** Fleet shows one tile per session, idle as idle, a dim tile for a claim holder that is not attached, and each tile's last message and chunk.
+- **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
+- **A12** `claims.mjs` cuts a full session id given to `--session` to the stored form, so renew and release match it.
+- **A13** Settle credits a chunk only the commits in its own range: it stops at what origin already holds and passes over a plot commit that only adds a pending file.
+- **A14** `/next`'s builder runs in the background so a reboot line reaches the lead; `skills/next.md` and the loop prompts say so.
+
+## Open questions
+
+(None.)
+
+## Chunks
+Measure: 14 open · 0 closed · next A15
+
+- [ ] **47.1** Explode and plot served for onboarding · M · closes A1 · needs —
+  - Reuse `/messy`'s clustering for explode and `/plot`'s pending-file shape for plot; owner lands settled, contributor opens a PR.
+- [ ] **47.2** Cloud workflow and schedule served for onboarding · M · closes A1 · needs —
+  - Write `march.yml` from the template with the chosen cron; commit per owner mode.
+- [ ] **47.3** The secrets step knows an existing vault and a missing one · S · closes A2 · needs —
+- [ ] **47.4** Onboarding fits an adopted repo · S · closes A3 · needs —
+- [ ] **47.5** The cockpit opens at once; worktrees follow the repo · M · closes A4 · needs —
+- [ ] **47.6** Markdown and highlighted commands in the transcript · M · closes A5 · needs —
+- [ ] **47.7** The /plot report card · M · closes A6 · needs 47.6
+- [ ] **47.8** Oversight lists real questions, whole and grouped · S · closes A7 · needs 47.6
+- [ ] **47.9** The Plan board runs the kit's bundled order script · S · closes A8 · needs —
+- [ ] **47.10** The claims rail folds a session's run · S · closes A9 · needs —
+- [ ] **47.11** Fleet tiles are one per session and honest · M · closes A10 · needs —
+- [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
+- [ ] **47.13** Claims cuts a full --session id; settle credits its own range · S · closes A12, A13 · needs —
+- [ ] **47.14** Builders run in the background so a reboot reaches the lead · S · closes A14 · needs —
