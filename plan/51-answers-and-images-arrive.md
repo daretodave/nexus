@@ -52,14 +52,12 @@ Reported by users of 0.4.x (2026-10-22, through the owner):
 ## Acceptance
 
 - **A1** An Oversight or cockpit answer is saved while typed (a reload or leaving shows it again), a plan or parked question sends as soon as it is answered, and a live session's questions send from the first answer with a Send button that names how many take defaults. Checked live against a scratch repo with a session asking several questions: answer one, Send, the session continues with the rest at their defaults; type a draft, reload, the draft is there.
-- **A2** An image attached, pasted or dropped in the composer reaches the session as an image: the agent describes it. Thumbnails show in the composer and the user's bubble; text files still arrive as text; an oversize file gets a plain message. Checked live against a scratch repo: paste a screenshot, ask what it shows, the agent answers from the image.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 2 open · 0 closed · next A3
+Measure: 1 open · 1 closed · next A3
 
 - [ ] **51.1** Answers save as typed and send as given · M · closes A1 · needs —
-- [ ] **51.2** Images reach the session: attach, paste, drop · M · closes A2 · needs —

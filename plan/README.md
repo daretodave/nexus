@@ -31,7 +31,7 @@ line goes):
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 52 | A fresh repo onboards cleanly | [52-fresh-repo-onboarding.md](52-fresh-repo-onboarding.md) | planned · priority 2 | 4 left |
-| 51 | Answers and images arrive | [51-answers-and-images-arrive.md](51-answers-and-images-arrive.md) | planned · priority 1 | 2 left |
+| 51 | Answers and images arrive | [51-answers-and-images-arrive.md](51-answers-and-images-arrive.md) | planned · priority 1 | 1 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 9 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
