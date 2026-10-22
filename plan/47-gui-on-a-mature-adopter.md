@@ -72,15 +72,16 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A10** Fleet shows one tile per session, idle as idle, a dim tile for a claim holder that is not attached, and each tile's last message and chunk.
 - **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
 - **A15** The session onboarding's Plot step starts reaches the person: a permission it waits on shows on the Plot, Cloud and Launch steps with Allow inline, and Launch opens that session's cockpit when it is still working.
+- **A16** `/api/cloud/workflow` and `/api/cloud/schedule` are served, owner and contributor paths tested; onboarding's Cloud step adds the workflow and saves the schedule with no "not on this server" fallback.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 11 open · 4 closed · next A16
+Measure: 12 open · 4 closed · next A17
 
-- [ ] **47.2** Cloud workflow and schedule served for onboarding · M · closes A1 · needs —
+- [ ] **47.2** Cloud workflow and schedule served for onboarding · M · closes A16 · needs —
   - Write `march.yml` from the template with the chosen cron; commit per owner mode.
 - [ ] **47.3** The secrets step knows an existing vault and a missing one · S · closes A2 · needs —
   - The Vault screen too: a repo with no vault scripts gets an empty state with "Set up the vault" (the CLI's bundled scripts, landed per owner mode), not a red error naming a kit path.
