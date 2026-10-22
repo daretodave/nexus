@@ -150,3 +150,4 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 47.10 · The claims rail folds a session run, names stars, scrolls · 6fa97420..9b218b1c
 - 2026-10-22 · 47.6 · The transcript renders markdown and highlights commands; it scrolls · 5b9a2ed5..837e31b0
 - 2026-10-22 · 39.6 · new-project.md copies pending/README, writes .gitattributes and .gitignore · b70c1845..b70c1845
+- 2026-10-22 · 47.8 · Oversight lists real questions, whole, grouped by spec · 38bfa2f9..eba3897d

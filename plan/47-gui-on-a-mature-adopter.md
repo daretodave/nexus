@@ -65,7 +65,6 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A3** Onboarding copy and chrome fit an adopted repo: Detect shows the lock's version, the Plot step names the next spec number (never "the first spec"), error toasts sit clear of the footer and link docs, and the orb glyphs (thinking dots, `?`) are centred and coloured to the orb.
 - **A4** Open the cockpit navigates at once; the worktree is created behind it with a visible forming state; worktrees go under the repo's configured worktree root.
 - **A6** A `/plot` report renders as a card: the chunk, the before/after order with the new chunk lit, open questions as answer cards with defaults chosen, and one-click Plot / Plot asap / Plot and build now.
-- **A7** Oversight lists only real questions (spec Open questions and `[needs-user-call]` rows, read whole, settled items skipped), grouped by source and spec, with markdown rendered.
 - **A8** The Plan board works in a repo with no vendored `order.mjs` (the CLI runs its bundled copy), and an unreadable plan shows an honest state, not zeros.
 - **A10** Fleet shows one tile per session, idle as idle, a dim tile for a claim holder that is not attached, and each tile's last message and chunk.
 - **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
@@ -77,7 +76,7 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 (None.)
 
 ## Chunks
-Measure: 10 open · 6 closed · next A17
+Measure: 9 open · 7 closed · next A17
 
 - [ ] **47.2** Cloud workflow and schedule served for onboarding · M · closes A16 · needs —
   - Write `march.yml` from the template with the chosen cron; commit per owner mode.
@@ -86,7 +85,6 @@ Measure: 10 open · 6 closed · next A17
 - [ ] **47.4** Onboarding fits an adopted repo · S · closes A3 · needs —
 - [ ] **47.5** The cockpit opens at once; worktrees follow the repo · M · closes A4 · needs —
 - [ ] **47.7** The /plot report card · M · closes A6 · needs —
-- [ ] **47.8** Oversight lists real questions, whole and grouped · S · closes A7 · needs —
 - [ ] **47.9** The Plan board runs the kit's bundled order script · S · closes A8 · needs —
 - [ ] **47.11** Fleet tiles are one per session and honest · M · closes A10 · needs —
 - [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
