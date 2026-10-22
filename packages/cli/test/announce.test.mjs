@@ -30,12 +30,13 @@ function req(port, token, method, pathname, body) {
   });
 }
 
-/** A git repo with the kit's notice board scripts (or `scripts` to write instead), its root resolved by git. */
-function fixture(scripts = ['announce.mjs', 'ledger.mjs', 'owner.mjs']) {
+/** A git repo with the kit's notice board scripts (or `scripts` to write instead) in `dir`, its root resolved by git. */
+function fixture(scripts = ['announce.mjs', 'ledger.mjs', 'owner.mjs'], dir = 'scripts') {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-cli-announce-'));
   execFileSync('git', ['init', '-q'], { cwd: repo });
   fs.mkdirSync(path.join(repo, 'scripts'));
-  for (const f of scripts) fs.copyFileSync(path.join(KIT, 'templates', 'scripts', f), path.join(repo, 'scripts', f));
+  fs.mkdirSync(path.join(repo, dir), { recursive: true });
+  for (const f of scripts) fs.copyFileSync(path.join(KIT, 'templates', 'scripts', f), path.join(repo, dir, f));
   const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: repo, encoding: 'utf8' }).trim();
   return { repo, root };
 }
@@ -112,6 +113,17 @@ test('a post waits for the board lock another writer holds, then lands; concurre
     assert.equal(lines.length, 9);
     assert.deepEqual(lines.map((a) => a.n).sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
     assert.ok(lines.every((a) => a.from === 'owner'));
+  });
+});
+
+test('a board kept under scripts/dev/ is found: the line posts through it', async () => {
+  const { repo, root } = fixture(undefined, 'scripts/dev');
+  await withServer(repo, async (call) => {
+    const r = await call('POST', '/api/announce', { text: 'from the dev folder' });
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.equal(r.data.line, 1);
+    const board = await import(`${pathToFileURL(path.join(root, 'scripts', 'dev', 'announce.mjs')).href}?t=${Date.now()}`);
+    assert.deepEqual(board.parse(fs.readFileSync(path.join(root, '.announcements.md'), 'utf8')).map((a) => a.text), ['from the dev folder']);
   });
 });
 

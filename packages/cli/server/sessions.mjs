@@ -14,6 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { run } from './sh.mjs';
+import { ANNOUNCE_SCRIPTS, findScript } from './repo.mjs';
 
 export const LEDGERS = '.nexus/sessions';
 export const STALE_MIN = 15;
@@ -201,13 +202,15 @@ export function withHosted(list, hosted = [], repoName = '') {
 }
 
 /**
- * The repo's notice board module (its own scripts/announce.mjs), or null when it has none that can post (`postTo`) or,
- * with `addressed` (the default), none that can address one session. The server never writes `.announcements.md`
- * itself: the repo's module owns the board's shape, its lock and its whole-file write.
+ * The repo's notice board module (its own announce.mjs, under scripts/ or scripts/dev/ as the kit lookup finds it),
+ * or null when it has none that can post (`postTo`) or, with `addressed` (the default), none that can address one
+ * session. The server never writes `.announcements.md` itself: the repo's module owns the board's shape, its lock and
+ * its whole-file write.
  */
 export async function boardOf(root, { addressed = true } = {}) {
-  const file = path.join(root, 'scripts', 'announce.mjs');
-  if (!fs.existsSync(file)) return null;
+  const rel = findScript(root, ANNOUNCE_SCRIPTS);
+  if (!rel) return null;
+  const file = path.join(root, rel);
   try {
     const m = await import(`${pathToFileURL(file).href}?v=${fs.statSync(file).mtimeMs}`);
     if (typeof m.postTo !== 'function') return null;
@@ -219,11 +222,11 @@ export async function boardOf(root, { addressed = true } = {}) {
 
 /** Why there is no board to post to: no announce.mjs at all, or one too old to post from the GUI. */
 function noBoard(root, addressed) {
-  const has = fs.existsSync(path.join(root, 'scripts', 'announce.mjs'));
-  if (!has) return { status: 409, error: 'this repo has no notice board (scripts/announce.mjs): nothing posted' };
+  const rel = findScript(root, ANNOUNCE_SCRIPTS);
+  if (!rel) return { status: 409, error: 'this repo has no notice board (scripts/announce.mjs): nothing posted' };
   return { status: 409, error: addressed
-    ? 'this repo has no notice board that can address one session (scripts/announce.mjs with --to): nothing posted'
-    : "this repo's scripts/announce.mjs has no postTo (update it from the kit's templates/scripts/announce.mjs): nothing posted" };
+    ? `this repo has no notice board that can address one session (${rel} with --to): nothing posted`
+    : `this repo's ${rel} has no postTo (update it from the kit's templates/scripts/announce.mjs): nothing posted` };
 }
 
 /** Write a ledger the way scripts/ledger.mjs does: whole, through a temp file and a rename. */

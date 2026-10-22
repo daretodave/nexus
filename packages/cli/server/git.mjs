@@ -11,10 +11,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { run as shRun, json } from './sh.mjs';
-import { findScript } from './repo.mjs';
+import { findScript, kitScripts } from './repo.mjs';
 import { listClaims as readClaims } from './claims.mjs';
 
-export const WORKTREE_SCRIPTS = ['scripts/worktree.mjs', 'scripts/git/worktree.mjs', 'scripts/dev/worktree.mjs'];
+export const WORKTREE_SCRIPTS = kitScripts('worktree.mjs');
 export const MAIN = process.env.NEXUS_MAIN_BRANCH || 'main';
 const US = '\x1f';
 

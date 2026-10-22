@@ -119,8 +119,23 @@ export function findScript(repo, names) {
   return null;
 }
 
-export const CLAIMS_SCRIPTS = ['scripts/claims.mjs', 'scripts/dev/claims.mjs', 'scripts/plan/claims.mjs', 'scripts/git/claims.mjs'];
-export const PROGRESS_SCRIPTS = ['scripts/progress.mjs', 'scripts/dev/progress.mjs', 'scripts/plan/progress.mjs'];
+// One list of where a kit script may live: scripts/, then scripts/dev/, scripts/plan/ and scripts/git/ (a repo that
+// keeps its own scripts at scripts/ moves the kit's under a folder). `home`, a kit script's own folder in the kit
+// (order.mjs and settle.mjs live in scripts/plan/), is looked at first. Every kit script lookup goes through it.
+export const KIT_DIRS = Object.freeze(['scripts', 'scripts/dev', 'scripts/plan', 'scripts/git']);
+
+/** Where kit script `name` may live, in the order looked at: ['scripts/<name>', 'scripts/dev/<name>', ...]. */
+export function kitScripts(name, { home = null } = {}) {
+  const dirs = home ? [home, ...KIT_DIRS.filter((d) => d !== home)] : KIT_DIRS;
+  return dirs.map((d) => `${d}/${name}`);
+}
+
+/** The first of kitScripts(name) the repo has, relative to it, or null. */
+export const findKitScript = (repo, name, opts) => findScript(repo, kitScripts(name, opts));
+
+export const CLAIMS_SCRIPTS = kitScripts('claims.mjs');
+export const PROGRESS_SCRIPTS = kitScripts('progress.mjs');
+export const ANNOUNCE_SCRIPTS = kitScripts('announce.mjs');
 
 // The claims list and its writes: server/claims.mjs (the repo's claims CLI as the acting session).
 

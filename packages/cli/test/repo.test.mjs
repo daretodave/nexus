@@ -188,3 +188,32 @@ test('a committed .owner counts for no one', () => {
     fs.rmSync(repo, { recursive: true, force: true });
   }
 });
+
+test('kit scripts: one lookup, scripts/ first, then scripts/dev/, scripts/plan/ and scripts/git/; a home folder first', async () => {
+  const { findKitScript, kitScripts, CLAIMS_SCRIPTS, PROGRESS_SCRIPTS, ANNOUNCE_SCRIPTS } = await import('../server/repo.mjs');
+  const { ORDER_SCRIPTS } = await import('../server/plan.mjs');
+  const { WORKTREE_SCRIPTS } = await import('../server/git.mjs');
+  assert.deepEqual(kitScripts('x.mjs'), ['scripts/x.mjs', 'scripts/dev/x.mjs', 'scripts/plan/x.mjs', 'scripts/git/x.mjs']);
+  assert.deepEqual(kitScripts('x.mjs', { home: 'scripts/plan' }), ['scripts/plan/x.mjs', 'scripts/x.mjs', 'scripts/dev/x.mjs', 'scripts/git/x.mjs']);
+  // every lookup the server makes is the one list
+  for (const [list, name] of [[CLAIMS_SCRIPTS, 'claims.mjs'], [PROGRESS_SCRIPTS, 'progress.mjs'], [ANNOUNCE_SCRIPTS, 'announce.mjs'], [WORKTREE_SCRIPTS, 'worktree.mjs']]) {
+    assert.deepEqual(list, kitScripts(name));
+  }
+  assert.deepEqual(ORDER_SCRIPTS, kitScripts('order.mjs', { home: 'scripts/plan' }));
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-kit-scripts-'));
+  try {
+    assert.equal(findKitScript(dir, 'claims.mjs'), null, 'absent: null');
+    fs.mkdirSync(path.join(dir, 'scripts', 'dev'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'scripts', 'dev', 'claims.mjs'), '');
+    assert.equal(findKitScript(dir, 'claims.mjs'), 'scripts/dev/claims.mjs');
+    fs.writeFileSync(path.join(dir, 'scripts', 'claims.mjs'), '');
+    assert.equal(findKitScript(dir, 'claims.mjs'), 'scripts/claims.mjs', 'scripts/ wins when both hold it');
+    fs.mkdirSync(path.join(dir, 'scripts', 'plan'));
+    fs.writeFileSync(path.join(dir, 'scripts', 'plan', 'order.mjs'), '');
+    fs.writeFileSync(path.join(dir, 'scripts', 'order.mjs'), '');
+    assert.equal(findKitScript(dir, 'order.mjs', { home: 'scripts/plan' }), 'scripts/plan/order.mjs');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

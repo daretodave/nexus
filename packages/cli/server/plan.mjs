@@ -19,10 +19,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { run, json } from './sh.mjs';
-import { findScript, PROGRESS_SCRIPTS, CHUNK_ID } from './repo.mjs';
+import { findScript, kitScripts, PROGRESS_SCRIPTS, CHUNK_ID } from './repo.mjs';
 import { listedIds, settledPlan, specFile } from './reorder.mjs';
 
-export const ORDER_SCRIPTS = ['scripts/plan/order.mjs', 'scripts/order.mjs', 'scripts/dev/order.mjs'];
+export const ORDER_SCRIPTS = kitScripts('order.mjs', { home: 'scripts/plan' });
 const SPEC_FILE = /^(\d{2,})-[a-z0-9][a-z0-9-]*\.md$/;
 const specOf = (id) => String(id).split('.')[0];
 
