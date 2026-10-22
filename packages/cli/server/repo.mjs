@@ -134,8 +134,11 @@ export async function progress(repo, spec) {
 }
 
 // --- durable questions -------------------------------------------------------
-// Questions that wait in files: `[needs-user-call]` rows anywhere in plan/,
-// and list items under an "Open questions" heading in a spec.
+// Questions that wait in files (spec 47, A7): `[needs-user-call]` rows anywhere
+// in plan/, and list items under an "Open questions" heading in a spec file
+// (plan/NN-*.md, plan/specs/NN-*.md; concepts/plan-shape.md). An item is read
+// whole (its wrapped and indented lines join it); a settled one is skipped.
+// Each: { id, file, line, text (markdown kept), source: 'plan'|'needs-user-call', spec?: { n, title } }.
 
 export function durableQuestions(repo) {
   const root = path.join(repo, 'plan');
@@ -150,21 +153,59 @@ export function durableQuestions(repo) {
   return out;
 }
 
+/** A spec file's number, from its path (plan/47-x.md, plan/specs/07-y.md), or null. */
+export function specNumber(rel) {
+  const m = /^plan\/(?:specs\/)?(\d{1,3})-[^/]+\.md$/.exec(rel || '');
+  return m ? m[1] : null;
+}
+
+/** An item that is not a question any more: settled, struck, checked, or "None". */
+export function settledItem(body) {
+  const t = String(body || '').trim();
+  if (/^\[x\]/i.test(t) || t.startsWith('~~')) return true;
+  const bare = t.replace(/[*_]/g, '').trimStart();
+  return /^(settled|decided|answered|resolved|done)\b/i.test(bare) || /^\(none/i.test(bare) || /^none\./i.test(bare) || /^(none|n\/a)\.?$/i.test(bare);
+}
+
+const ITEM = /^(\s*)(?:[-*+]|\d{1,9}[.)])\s+(?:\[ \]\s+)?(.*\S)\s*$/;
+const FLAG = /(^|[^`])\[needs-user(?:-call)?\]/i;
+
 export function questionsIn(text, rel) {
   const out = [];
-  const lines = text.split(/\r?\n/);
+  const lines = String(text || '').split(/\r?\n/);
+  const n = specNumber(rel);
+  const h1 = lines.find((l) => /^#\s+\S/.test(l));
+  const spec = n ? { n, title: h1 ? h1.replace(/^#\s+/, '').replace(/^(?:spec\s+)?\d+(?:\s*[-:.\u2014\u2013]+)?\s+/i, '').trim() : '' } : null;
   let inOpen = false;
-  lines.forEach((line, i) => {
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const start = i + 1;
     const h = /^(#{1,6})\s+(.*)$/.exec(line);
-    if (h) { inOpen = /\bopen questions?\b/i.test(h[2]); return; }
-    const item = /^\s*[-*]\s+(?:\[ \]\s+)?(.*\S)\s*$/.exec(line);
+    if (h) { inOpen = !!spec && /\bopen questions?\b/i.test(h[2]); continue; }
+    const item = ITEM.exec(line);
     // a row (list item or table row) carrying the flag, not a mention of it in prose or code
-    const flagged = /^\s*(?:[-*]|\d+\.|\|)\s/.test(line) && /(^|[^`])\[needs-user(?:-call)?\]/i.test(line);
-    if (flagged || (inOpen && item)) {
-      const body = (item ? item[1] : line).replace(/\[needs-user(?:-call)?\]\s*/i, '').trim();
-      if (body && !/^\[x\]/i.test(body) && !/^(none|n\/a)\.?$/i.test(body)) out.push({ id: `${rel}:${i + 1}`, file: rel, line: i + 1, text: body.slice(0, 600), source: flagged ? 'needs-user-call' : 'open-question' });
+    const flagged = /^\s*(?:[-*+]|\d+\.|\|)\s/.test(line) && FLAG.test(line);
+    if (!flagged && !(inOpen && item)) continue;
+    let body = item ? item[2] : line.trim();
+    if (item) {
+      // the item whole: following lines that are indented past its marker, or wrap it (not a new item, heading or blank)
+      const indent = item[1].length;
+      let j = i + 1;
+      for (; j < lines.length; j += 1) {
+        const next = lines[j];
+        if (!next.trim() || /^#{1,6}\s/.test(next) || /^\s*```/.test(next)) break;
+        const nextIndent = /^\s*/.exec(next)[0].length;
+        const isItem = ITEM.test(next);
+        if (isItem && nextIndent <= indent) break;
+        if (!isItem && nextIndent <= indent && /^\s*\|/.test(next)) break;
+        body += isItem ? `\n${next.slice(indent)}` : ` ${next.trim()}`;
+      }
+      i = j - 1;
     }
-  });
+    body = body.replace(/\[needs-user(?:-call)?\]\s*/i, '').trim();
+    if (!body || settledItem(body)) continue;
+    out.push({ id: `${rel}:${start}`, file: rel, line: start, text: body.slice(0, 2000), source: flagged ? 'needs-user-call' : 'plan', ...(spec ? { spec } : {}) });
+  }
   return out;
 }
 

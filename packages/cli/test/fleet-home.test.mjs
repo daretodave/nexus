@@ -182,7 +182,7 @@ test('GET /api/inbox merges every session\'s questions; POST /api/inbox/:id sett
     const perm = by.get(s.id).hooks.onPermission({ id: 'p_1', agent: 'main', tool: 'Bash', input: { command: 'ls' } });
     ledger(dir, { id: 'term0001', star: 'polaris', claude: 'claude-t', parked: [{ q: 'Keep the copy?', default: 'keep', alts: ['drop'] }] });
     fs.mkdirSync(path.join(dir, 'plan'));
-    fs.writeFileSync(path.join(dir, 'plan', 'x.md'), '# x\n\n## Open questions\n\n- Ship it?\n');
+    fs.writeFileSync(path.join(dir, 'plan', '01-x.md'), '# 01 — x\n\n## Open questions\n\n- Ship it?\n');
 
     const rows = (await call(app, '/api/inbox')).json;
     assert.deepEqual(rows.map((r) => [r.src, r.session?.name || null]), [['ask', s.name], ['perm', s.name], ['inbox', 'polaris'], ['durable', null]]);

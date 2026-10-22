@@ -4,12 +4,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { questionsIn, answersPrompt, isOwner, repoInfo } from '../server/repo.mjs';
+import { questionsIn, durableQuestions, settledItem, specNumber, answersPrompt, isOwner, repoInfo } from '../server/repo.mjs';
 import { runBeats, markStall, STALL_MS } from '../server/gh.mjs';
 
 test('durable questions: needs-user-call rows and Open questions lists', () => {
   const text = [
-    '# Spec 12',
+    '# 12 — Export',
     '- [ ] **12.1** build it · S',
     '## Open questions',
     '- Should export include archived rows?',
@@ -18,13 +18,93 @@ test('durable questions: needs-user-call rows and Open questions lists', () => {
     '- not a question',
     '- [ ] [needs-user-call] pick the default branch name',
     '  (prose that mentions [needs-user-call] rows is not one)',
+    '',
     '- skills answer `[needs-user-call]` rows inline',
   ].join('\n');
-  const q = questionsIn(text, 'plan/specs/12.md');
+  const q = questionsIn(text, 'plan/specs/12-export.md');
   assert.deepEqual(q.map((x) => [x.line, x.source, x.text]), [
-    [4, 'open-question', 'Should export include archived rows?'],
-    [8, 'needs-user-call', 'pick the default branch name'],
+    [4, 'plan', 'Should export include archived rows?'],
+    [8, 'needs-user-call', 'pick the default branch name (prose that mentions [needs-user-call] rows is not one)'],
   ]);
+  assert.deepEqual(q[0].spec, { n: '12', title: 'Export' });
+  assert.equal(q[0].id, 'plan/specs/12-export.md:4');
+});
+
+test('durable questions: an item is read whole, its wrapped and indented lines joined', () => {
+  const text = [
+    '# Spec 7: Site launch',
+    '## Open questions',
+    '- The site has no build step; should the deploy',
+    'run one, or stay static? (D37 and D38 were',
+    '  written before the move.)',
+    '- Which host?',
+    '  - Recommendation: keep the current one',
+    '  - the other costs more',
+    '1. A numbered one',
+    '   that wraps.',
+    '',
+    'Prose after a blank line is not part of it.',
+    '## Chunks',
+  ].join('\n');
+  const q = questionsIn(text, 'plan/07-site-launch.md');
+  assert.deepEqual(q.map((x) => [x.line, x.text]), [
+    [3, 'The site has no build step; should the deploy run one, or stay static? (D37 and D38 were written before the move.)'],
+    [6, 'Which host?\n  - Recommendation: keep the current one\n  - the other costs more'],
+    [9, 'A numbered one that wraps.'],
+  ]);
+  assert.deepEqual(q[0].spec, { n: '07', title: 'Site launch' });
+});
+
+test('durable questions: settled items are skipped, each prefix', () => {
+  const skipped = [
+    'Settled 2026-10-13: the accounts are both live.',
+    '**Decided:** go with the first.',
+    'Answered in 12.3.',
+    '_Resolved_ by the port.',
+    'Done: shipped.',
+    '[x] picked the name',
+    '~~Which name?~~ the first',
+    '(None.)',
+    '(none yet)',
+    'None. Nothing open.',
+    'none',
+  ];
+  const text = ['# 3 — X', '## Open questions', ...skipped.map((s) => `- ${s}`), '- Is this still open?'].join('\n');
+  assert.deepEqual(questionsIn(text, 'plan/03-x.md').map((x) => x.text), ['Is this still open?']);
+  for (const s of skipped) assert.equal(settledItem(s), true, s);
+  assert.equal(settledItem('Doneness of the export: what counts?'), false);
+});
+
+test('durable questions: Open questions count in spec files only; needs-user-call rows count anywhere', () => {
+  const text = [
+    '# Audit',
+    '## Open questions',
+    '- **Hosting:** the site is live on the main host.',
+    '| when | what |',
+    '|---|---|',
+    '| 10-12 | [needs-user-call] pick a release day |',
+  ].join('\n');
+  for (const rel of ['plan/AUDIT.md', 'plan/notes.md', 'plan/README.md', 'plan/specs/notes.md']) {
+    const q = questionsIn(text, rel);
+    assert.deepEqual(q.map((x) => [x.source, x.line]), [['needs-user-call', 6]], rel);
+    assert.equal(q[0].spec, undefined);
+  }
+  assert.equal(specNumber('plan/47-gui.md'), '47');
+  assert.equal(specNumber('plan/specs/03-x.md'), '03');
+  assert.equal(specNumber('plan/pending/47-x.md'), null);
+  assert.equal(specNumber('plan/AUDIT.md'), null);
+});
+
+test('durableQuestions walks plan/, skipping plan/messy/', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-q-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'plan', 'messy'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'plan', '05-a.md'), '# 05 — Alpha\n## Open questions\n- Real one?\n');
+    fs.writeFileSync(path.join(dir, 'plan', 'notes.md'), '## Open questions\n- a fact\n');
+    fs.writeFileSync(path.join(dir, 'plan', 'messy', '01-raw.md'), '## Open questions\n- raw?\n');
+    const q = durableQuestions(dir);
+    assert.deepEqual(q.map((x) => [x.file, x.text, x.spec?.title]), [['plan/05-a.md', 'Real one?', 'Alpha']]);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('answers prompt lands per owner mode', () => {
