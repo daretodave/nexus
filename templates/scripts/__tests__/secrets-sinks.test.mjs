@@ -288,7 +288,7 @@ describe('the Actions sink, read back (spec 49, A5)', () => {
     const ok = actionsSecretNames({ run: r.run, cwd: '/w/repo' });
     assert.equal(ok.known, true);
     assert.deepEqual([...ok.names], ['ACTIONS_PAT'], 'names only, env-var shaped');
-    assert.deepEqual(r.calls.map((c) => [c.cmd, c.args, c.capture, c.input]), [['gh', ['secret', 'list', '--json', 'name'], true, undefined]], 'only the name field, no value on stdin');
+    assert.deepEqual(r.calls.map((c) => [c.cmd, c.args, c.capture, c.input]), [['gh', ['secret', 'list', '--json', 'name,updatedAt'], true, undefined]], 'only names and dates, no value on stdin');
     assert.deepEqual(actionsSecretNames({ run: () => ({ status: 127, missing: true }) }), { known: false, why: 'gh is not installed' });
     assert.equal(actionsSecretNames({ run: () => ({ status: 4 }) }).why, 'gh exited 4', 'not signed in');
     assert.equal(actionsSecretNames({ run: () => ({ status: 0, stdout: 'HTTP 403' }) }).known, false, 'no permission or no list');
@@ -340,6 +340,32 @@ describe('the Actions sink, read back (spec 49, A5)', () => {
       assert.match(none.text, /github-actions: unknown \(no GitHub remote\)/, 'gh is not run without a GitHub remote');
       const lines = [];
       assert.equal(await main(['status', '--root', t.repo], { out: (s) => lines.push(s), err: (s) => lines.push(s), owner: () => false, run: never, vault: { git: () => ({ status: 0, stdout: '' }) } }), 0);
+    } finally {
+      t.done();
+    }
+  });
+});
+
+describe('a name held by GitHub only: its age from gh (spec 49, A5 follow-up)', () => {
+  it('reads updatedAt as a date per name, and status prints the age for a name in a sink only', async () => {
+    const at = new Date(Date.now() - 3 * 86400000).toISOString();
+    const r = recorder((cmd, args) => (args[1] === 'list' ? { status: 0, stdout: JSON.stringify([{ name: 'ACTIONS_PAT', updatedAt: at }, { name: 'B_TOKEN', updatedAt: 'not a date' }]) } : { status: 0 }));
+    const got = actionsSecretNames({ run: r.run });
+    assert.deepEqual([...got.updated], [['ACTIONS_PAT', at]], 'a date only, a bad one dropped');
+    const t = workspace();
+    try {
+      if (spawnSync('git', ['init', '-q', t.repo]).status !== 0) return;
+      spawnSync('git', ['-C', t.repo, 'remote', 'add', 'origin', 'https://github.com/me/app.git']);
+      fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), JSON.stringify({ version: 1, secrets: [
+        { name: 'ACTIONS_PAT', for: 'The cloud loop.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+      ] }));
+      const lines = [];
+      const io = { out: (s) => lines.push(s), err: (s) => lines.push(s), owner: () => true, run: r.run, vault: { git: () => ({ status: 0, stdout: '' }) } };
+      assert.equal(await main(['status', '--root', t.repo], io), 0);
+      assert.match(lines.join('\n'), /ACTIONS_PAT\s+in github-actions only\s+-> github-actions \(set\)\s+set 3 d ago \(GitHub\)/);
+      lines.length = 0;
+      assert.equal(await main(['status', '--json', '--root', t.repo], io), 0);
+      assert.deepEqual(JSON.parse(lines.join('\n')).secrets[0].remoteAt, { 'github-actions': at });
     } finally {
       t.done();
     }

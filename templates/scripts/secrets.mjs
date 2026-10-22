@@ -351,12 +351,18 @@ function status(vault, current, { out, json, owner = true, localKeys = [], log =
     if (!actions || !(dest.get(name) ?? []).includes('github-actions')) return null;
     return { 'github-actions': actions.known ? (actions.names.has(name) ? 'set' : 'not set') : 'unknown' };
   };
+  // When GitHub last had the name set (gh's updatedAt: a date, never a value), for the rotated column.
+  const remoteAtOf = (name) => {
+    const at = actions && actions.known && actions.updated && (dest.get(name) ?? []).includes('github-actions') ? actions.updated.get(name) : null;
+    return at ? { 'github-actions': at } : null;
+  };
   const optional = new Set(entries.filter((e) => e.optional === true).map((e) => e.name));
   const last = lastSet(log);
   const rows = vault.status(declared).map((r) => {
     const age = r.rings.length && last.has(r.name) ? ageDays(last.get(r.name)) : null;
     const remote = remoteOf(r.name);
-    return { ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [], ...(optional.has(r.name) ? { optional: true } : {}), ...(remote ? { remote } : {}), age, rotate: age !== null && age > ROTATE_DAYS };
+    const remoteAt = remoteAtOf(r.name);
+    return { ...r, declared: dest.has(r.name), destinations: dest.get(r.name) ?? [], ...(optional.has(r.name) ? { optional: true } : {}), ...(remote ? { remote } : {}), ...(remoteAt ? { remoteAt } : {}), age, rotate: age !== null && age > ROTATE_DAYS };
   });
   const nudges = rotationNudges(log, { held: (n) => rows.some((r) => r.name === n && r.rotate) });
   // A contributor's local keys: the names recorded for this checkout plus any name its .env holds; this machine only.
@@ -380,8 +386,15 @@ function status(vault, current, { out, json, owner = true, localKeys = [], log =
   const places = [vault.config.local, vault.config.workspace, ...(vault.config.keychain ? [`keychain ${vault.config.service}`] : [])].join(', ');
   out(`secrets status: ${declared.length} declared · ${set} set · ${declared.length - set - unsetOptional - sinksOnly} missing${sinksOnly ? ` · ${sinksOnly} in a sink only` : ''}${unsetOptional ? ` · ${unsetOptional} optional, not set` : ''} (vault: ${places})`);
   const width = Math.max(0, ...rows.map((r) => r.name.length));
+  // A name held by its sinks only: its age is when GitHub last had it set (the latest updatedAt of its places).
+  const ageOf = (r) => {
+    if (r.age !== null) return r.age;
+    if (!heldBySinks(r) || !r.remoteAt) return null;
+    const ats = r.destinations.map((d) => r.remoteAt[d]).filter(Boolean).sort();
+    return ats.length ? ageDays(ats[ats.length - 1]) : null;
+  };
   const toward = (r) => r.destinations.map((d) => (r.remote && r.remote[d] ? `${d} (${r.remote[d]})` : d)).join(', ');
-  for (const r of rows) out(`  ${r.name.padEnd(width)}  ${where(r.rings, r.optional, heldBySinks(r)).padEnd(28)}  ${r.declared ? `-> ${toward(r)}` : `(not declared in ${MANIFEST})`}${r.age !== null ? `  set ${r.age} d ago` : ''}`);
+  for (const r of rows) out(`  ${r.name.padEnd(width)}  ${where(r.rings, r.optional, heldBySinks(r)).padEnd(28)}  ${r.declared ? `-> ${toward(r)}` : `(not declared in ${MANIFEST})`}${ageOf(r) !== null ? `  set ${ageOf(r)} d ago${r.age === null ? ' (GitHub)' : ''}` : ''}`);
   if (actions && !actions.known) out(`  github-actions: unknown (${actions.why}): gh secret list could not tell`);
   for (const x of nudges) out(nudgeLine(x));
   return 0;

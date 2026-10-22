@@ -287,7 +287,9 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
         const stale = !!(p && setAt && time < setAt);
         // What the sink itself holds, when the kit reads it (github-actions: gh secret list): set, not set, unknown.
         const remote = s.remote && typeof s.remote[d] === 'string' ? s.remote[d] : null;
-        return { destination: d, state: p ? 'pushed' : 'not pushed', at: p ? time : null, ...(stale ? { stale } : {}), ...(remote ? { remote } : {}), ...(p ? { detail } : {}) };
+        // When the sink last had it set (gh's updatedAt: a date, never a value).
+        const remoteAt = s.remoteAt && typeof s.remoteAt[d] === 'string' ? s.remoteAt[d] : null;
+        return { destination: d, state: p ? 'pushed' : 'not pushed', at: p ? time : null, ...(stale ? { stale } : {}), ...(remote ? { remote } : {}), ...(remoteAt ? { remoteAt } : {}), ...(p ? { detail } : {}) };
       });
       return { name: s.name, for: e.for ?? null, where: e.where ?? null, chunk: e.chunk ?? null, declared: !!s.declared, ...(e.optional === true ? { optional: true } : {}), set: s.rings.length > 0, rings: s.rings, destinations, age: s.age ?? null, setAt, rotate: !!s.rotate };
     });

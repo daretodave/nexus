@@ -19,8 +19,8 @@
 // string, so a value can't slip in under another word. recordAudit and readAudit are the seam set and rotation
 // extend. `run` is the seam tests stub: no test runs a sink's real tool.
 //
-// What a sink holds, read back: actionsSecretNames asks `gh secret list --json name` for the repo's GitHub Actions
-// secret names (names only: gh never prints a secret's value, and only the name field is asked for). It says "unknown"
+// What a sink holds, read back: actionsSecretNames asks `gh secret list --json name,updatedAt` for the repo's GitHub
+// Actions secret names and when each was last set (names and dates only: gh never prints a secret's value). It says "unknown"
 // (known: false) when gh can't tell: not installed, not signed in, no permission, no GitHub remote.
 // The command line: scripts/secrets.mjs push; the how: nexus/customization/secrets.md.
 import { spawnSync } from 'node:child_process';
@@ -46,18 +46,21 @@ export function spawnRunner(cmd, args, { input = '', cwd, capture = false } = {}
 }
 
 /**
- * The repo's GitHub Actions secret names: `gh secret list --json name` (names only, never a value). { known: true,
- * names: Set } or { known: false, why } when gh can't tell (not installed, not signed in, no permission, no remote).
+ * The repo's GitHub Actions secret names: `gh secret list --json name,updatedAt` (names and dates, never a value).
+ * { known: true, names: Set, updated: Map name -> ISO date } or { known: false, why } when gh can't tell (not
+ * installed, not signed in, no permission, no remote).
  */
 export function actionsSecretNames({ run = spawnRunner, cwd, repo } = {}) {
   if (repo && !REPO.test(repo)) return { known: false, why: `${repo}: a repo is OWNER/REPO or HOST/OWNER/REPO` };
   let r;
-  try { r = run('gh', ['secret', 'list', '--json', 'name', ...(repo ? ['--repo', repo] : [])], { cwd, capture: true }); } catch { r = null; }
+  try { r = run('gh', ['secret', 'list', '--json', 'name,updatedAt', ...(repo ? ['--repo', repo] : [])], { cwd, capture: true }); } catch { r = null; }
   if (!r || r.status !== 0) return { known: false, why: r && r.missing ? 'gh is not installed' : `gh exited ${r ? r.status : 'without a status'}` };
   let list;
   try { list = JSON.parse(String(r.stdout ?? '')); } catch { return { known: false, why: 'gh did not answer with a list' }; }
   if (!Array.isArray(list)) return { known: false, why: 'gh did not answer with a list' };
-  return { known: true, names: new Set(list.map((x) => (x && typeof x.name === 'string' ? x.name : null)).filter((n) => n && NAME.test(n))) };
+  const rows = list.filter((x) => x && typeof x.name === 'string' && NAME.test(x.name));
+  const updated = new Map(rows.filter((x) => typeof x.updatedAt === 'string' && !Number.isNaN(Date.parse(x.updatedAt))).map((x) => [x.name, x.updatedAt]));
+  return { known: true, names: new Set(rows.map((x) => x.name)), updated };
 }
 
 /** Where a value can be pushed, by manifest destination. */

@@ -117,6 +117,9 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
     if (s.declared === false) return undeclaredRow(s, { fresh });
     const states = Object.fromEntries(DESTS.map((d) => [d, shownState(s, d)]));
     const optionalUnset = !!s.optional && !s.set;
+    // Held where it lives (spec 49, A5): not in the vault, every place it goes is remote and lists it. Set there.
+    const held = heldRemotely(s);
+    if (held) return heldRow(s, states, held, { edit, fresh, now, asked });
     // What Sync pushes: a place holding an older value, or one the value never reached (a set value, missing there).
     const stale = s.set ? DESTS.filter((d) => d !== 'local' && (states[d] === 'stale' || states[d] === 'missing')) : [];
     const where = DESTS.filter((d) => states[d] === 'set' || states[d] === 'stale').map((d) => SHORT[d]);
@@ -152,6 +155,50 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
         : `Saving stores it in ${andList(ticks.length ? ticks : ['the vault'])}${chunk ? `, then ${chunk} is ready again` : ''}.`,
     };
   });
+}
+
+/**
+ * A name the vault does not hold whose every destination is remote and lists it (github-actions read through gh):
+ * { places: ['GitHub Actions'], at: the latest updatedAt or null }, else null.
+ */
+export function heldRemotely(s) {
+  if (s.set || s.declared === false) return null;
+  const ds = s.destinations || [];
+  if (!ds.length || ds.some((x) => x.destination === 'local' || x.remote !== 'set')) return null;
+  const ats = ds.map((x) => x.remoteAt).filter((t) => typeof t === 'string' && !Number.isNaN(Date.parse(t))).sort();
+  return { places: ds.map((x) => LABEL[x.destination] || x.destination), at: ats.length ? ats[ats.length - 1] : null };
+}
+
+/** A row for a name held where it lives: "in GitHub Actions" (muted), its age from the sink, and Replace. */
+function heldRow(s, states, held, { edit, fresh, now, asked }) {
+  const req = asked.get(s.name);
+  const ticks = DESTS.filter((d) => states[d] !== 'none');
+  const where = `in ${andList(held.places)}`;
+  return {
+    name: s.name,
+    for: s.for || '',
+    set: true,
+    held: true,
+    requested: false,
+    optional: !!s.optional,
+    editing: edit === s.name,
+    fresh: fresh.has(s.name),
+    mask: where,
+    maskTone: 'quiet',
+    maskAria: `set ${where}`,
+    dots: DESTS.map((d) => ({ d, cls: DOT[states[d]], title: `${SHORT[d]}: ${WORD[states[d]]}` })),
+    chunk: s.chunk || req?.chunk || '',
+    age: held.at ? ageText({ set: true, setAt: held.at }, now) : '',
+    old: false,
+    canAdd: false,
+    canSync: false,
+    canReplace: true,
+    stale: [],
+    sinks: ticks.map((d) => SHORT[d]),
+    pushTo: ticks.filter((d) => d !== 'local'),
+    placeholder: 'Paste the new value',
+    editNote: `Saving replaces it in ${andList(ticks.map((d) => SHORT[d]))} and keeps it in the vault. The old value is gone for good.`,
+  };
 }
 
 /** Where an undeclared name sits, in words: "in .env", "in .env.workspace", "in the keychain". */

@@ -159,12 +159,13 @@ node scripts/secrets.mjs import incoming.env --store          # a real .env: val
 - `status` lists every declared name with the rings that hold
   it (or `missing`; `optional · not set` for an `optional`
   one) and its destinations. A `github-actions` destination is
-  read from GitHub: `gh secret list --json name`, names only,
-  never a value. It shows `(set)` when GitHub lists the name,
+  read from GitHub: `gh secret list --json name,updatedAt`,
+  names and dates only, never a value. It shows `(set)` when GitHub lists the name,
   `(not set)` when it doesn't, and `(unknown)` when gh can't
   tell (not installed, not signed in, no permission, no GitHub
   remote). A name only GitHub holds, and the manifest sends
-  nowhere else, reads `in github-actions only`, not `missing`.
+  nowhere else, reads `in github-actions only`, not `missing`,
+  with its age from GitHub's `updatedAt`.
   The audit log stays the record of what the vault pushed.
   Then come any names the `.env` files hold that the manifest
   doesn't. `--json` gives the same as data (for the GUI), with

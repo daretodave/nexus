@@ -363,7 +363,7 @@ test('49.5: the Actions column is read from gh secret list (names only), kept br
     assert.equal(s.status, 200, JSON.stringify(s.json));
     assert.equal(actions(s, 'ACTIONS_PAT').remote, 'set', 'GitHub lists it: set, though the vault never pushed it');
     assert.equal(actions(s, 'GH_TOKEN').remote, 'not set');
-    assert.equal(calls.find((c) => c.args.startsWith('secret list')).args, 'secret list --json name', 'names only');
+    assert.equal(calls.find((c) => c.args.startsWith('secret list')).args, 'secret list --json name,updatedAt', 'names and dates only');
     assert.ok(calls.filter((c) => c.args.startsWith('secret list')).every((c) => !c.input), 'no value goes to a list');
     await call('GET', '/api/secrets');
     assert.equal(lists(), 1, 'kept briefly: the vault polls');
@@ -385,5 +385,21 @@ test('49.5: the Actions column is read from gh secret list (names only), kept br
     assert.equal(actions(s, 'ACTIONS_PAT').remote, 'unknown', 'gh not signed in: unknown, never missing');
   } finally {
     await again.app.close();
+  }
+});
+
+test('49.5 follow-up: GET /api/secrets carries gh\'s updatedAt per destination, a date and never a value', async () => {
+  const { repo } = vaultRepo({ manifest: { version: 1, secrets: [
+    { name: 'ACTIONS_PAT', for: 'The cloud loop.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+  ] } });
+  execFileSync('git', ['remote', 'add', 'origin', 'https://github.com/me/app.git'], { cwd: repo });
+  const run = (cmd, args) => (cmd === 'gh' && args[1] === 'list' ? { status: 0, stdout: JSON.stringify([{ name: 'ACTIONS_PAT', updatedAt: '2026-08-23T10:00:00Z' }]) } : { status: 0 });
+  const { app, call } = await serve(repo, run);
+  try {
+    const s = await call('GET', '/api/secrets');
+    const d = s.json.secrets[0].destinations[0];
+    assert.deepEqual([d.remote, d.remoteAt], ['set', '2026-08-23T10:00:00Z']);
+  } finally {
+    await app.close();
   }
 });

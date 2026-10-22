@@ -433,3 +433,19 @@ test('49.6 follow-up: an optional secret not set reads in the muted tone, never 
   const css = fs.readFileSync(new URL('../src/styles/vault-truth.css', import.meta.url), 'utf8');
   assert.match(css, /\.mask\.is-empty\.is-quiet \{ color: var\(--text-3\); \}/);
 });
+
+test('49.5 follow-up: a name held where it lives reads "in GitHub Actions" (muted), its age from GitHub, and Replace', async () => {
+  const { heldRemotely } = await import('../src/screens/vault/model.js');
+  const pat = { name: 'ACTIONS_PAT', for: 'The cloud loop.', declared: true, set: false, rings: [], destinations: [{ destination: 'github-actions', state: 'not pushed', remote: 'set', remoteAt: day(3) }] };
+  assert.deepEqual(heldRemotely(pat), { places: ['GitHub Actions'], at: day(3) });
+  const [r] = vaultRows({ secrets: [pat] }, { now: NOW });
+  assert.equal(r.mask, 'in GitHub Actions');
+  assert.equal(r.maskTone, 'quiet');
+  assert.equal(r.age, '3 days ago', 'like other rotation dates');
+  assert.deepEqual([r.canAdd, r.canReplace, r.canSync], [false, true, false]);
+  assert.deepEqual(r.pushTo, ['github-actions'], 'Replace pushes where it lives');
+  assert.equal(r.dots[1].cls, 'dd is-set');
+  assert.equal(heldRemotely({ ...pat, destinations: [{ ...pat.destinations[0], remote: 'unknown' }] }), null, 'gh cannot tell: not held');
+  assert.equal(heldRemotely({ ...pat, destinations: [...pat.destinations, { destination: 'local', state: 'missing' }] }), null, 'a local place it lacks');
+  assert.equal(vaultRows({ secrets: [{ ...pat, destinations: [{ ...pat.destinations[0], remoteAt: undefined }] }] }, { now: NOW })[0].age, '', 'no date: nothing made up');
+});
