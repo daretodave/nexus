@@ -46,8 +46,6 @@ would. The chunks below fix them.
 
 ## Acceptance
 
-- **A1** One PR-mode tick ran on GitHub end to end; what broke
-  is fixed in the templates.
 - **A6** Every template script test passes in a fresh adopter: hook imports use `.claude/hooks/`, and the steer settings check reads `<repo>/.claude/settings.json`.
 - **A7** new-project.md copies `plan/pending/README.md`, writes `.gitattributes` (`eol=lf`, `plan/ARCHIVE.md merge=union`) and a `.gitignore`, and its prune text agrees with its example.
 - **A8** Every angle-bracket placeholder in the templates is documented and swept, or the gate flags an unswept one in an adopter.
@@ -55,16 +53,17 @@ would. The chunks below fix them.
 - **A10** The package manager is a placeholder end to end (install-hooks, the setup action, the march prompts, settings.json), and the setup action works without a lockfile.
 - **A11** Day one in an agent session works: the settings allowlist covers claims, plan-check and the plan scripts; `claims whoami` explains `NEXUS_NO_HOOK_CHECK`; the placeholder sweep doesn't need to read `.env.example`; existing-actions Step 9 dispatches after enabling.
 - **A12** templates/README says which kit script tests belong in an adopter's gate and what they cost, and the workflows use the Node 24 action majors.
+- **A13** When a close empties a spec, settle absorbs it (spec deleted, its roadmap row gone, a "spec complete" archive line) or stops with the exact steps; it never dies with a stack trace because the commit hook refused.
+- **A14** The gate's placeholder check reads pending files as settled, as the chunks check does, so a pending Add with an unknown placeholder fails before it settles.
+- **A15** A merged loop PR's `nexus/<run>` branch is deleted (pr-flow, or the adoption sets the repository's delete-on-merge).
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 8 open · 4 closed · next A13
+Measure: 10 open · 5 closed · next A16
 
-- [ ] **39.4** One real PR-mode tick in a scratch adopter repo
-  · M · closes A1 · needs —
 - [ ] **39.5** Template script tests pass in a fresh adopter · S · closes A6 · needs —
   - steer.test.mjs:12,14,162 and claims.test.mjs:263 assume the kit's `claude/` layout.
 - [ ] **39.6** new-project.md copies everything a v2 plan needs · S · closes A7 · needs —
@@ -75,3 +74,7 @@ Measure: 8 open · 4 closed · next A13
 - [ ] **39.10** Day one in an agent session needs no workaround · S · closes A11 · needs —
 - [ ] **39.11** The adopter gate's cost, and actions on Node 24 majors · S · closes A12 · needs —
   - checkout and setup-node v4 warn that they target the deprecated Node 20.
+- [ ] **39.12** Settle absorbs an emptied spec, or says how · S · closes A13 · needs —
+  - Seen in the scratch adopter: the pre-commit gate refused "spec 01 lists no chunk now" and settle threw from `git commit`. The roadmap row there read `| 1 |`, not `| 01 |`.
+- [ ] **39.13** The placeholder check reads the settled view · S · closes A14 · needs —
+- [ ] **39.14** Merged loop branches are deleted · S · closes A15 · needs —

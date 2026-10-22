@@ -24,13 +24,13 @@ needs are done):
 **Held** (waits on the owner's word; never picked until the
 line goes):
 
-- **39.4** creates a scratch repo on the owner's account
+- (none)
 
 ## Specs
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 8 left |
+| 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 10 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the

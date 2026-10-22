@@ -47,3 +47,5 @@
     question cards, inline "Edit description", the contributor
     /plot note, Recover's empty line, not-signed-in, checking,
     red-run and skipped-cloud states.
+
+- 39.4 in daretodave/nexus-scratch (private), 2026-10-21: march run 39696351110 (pick, build, land green; owner and release skipped as PR mode should) claimed 01.1 as cloud-39696351110, opened PR #1 with the fix and plan/pending/01.1.md only, and recorded pr:1 on the claim; the merge ran pr-flow (claims.json back to {}) and pr-resolve, both green; the owner's settle folded the close in. What broke went into spec 39 as 39.5 onward.
