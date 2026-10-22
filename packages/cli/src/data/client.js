@@ -118,12 +118,14 @@ const EVENT_TYPES = ['hello', 'beat', 'tx', 'status', 'asks', 'permissions', 'ru
  * replays from hello. `session` selects a session's own channel
  * (/api/events?session=<id>); none is the home session's. A session the
  * server does not run (a terminal one) gets a quiet channel whose status
- * says hosted: false, never another session's stream.
+ * says hosted: false, never another session's stream. `off` opens no
+ * channel at all (a screen that follows a session only once it has one).
  */
-export function useEvents(session) {
+export function useEvents(session, { off = false } = {}) {
   const [state, dispatch] = useReducer(storeReducer, EMPTY);
   const es = useRef(null);
   useEffect(() => {
+    if (off) return undefined;
     let closed = false;
     let retry = null;
     const open = () => {
@@ -140,6 +142,6 @@ export function useEvents(session) {
     };
     open();
     return () => { closed = true; clearTimeout(retry); es.current?.close(); };
-  }, [session]);
+  }, [session, off]);
   return state;
 }

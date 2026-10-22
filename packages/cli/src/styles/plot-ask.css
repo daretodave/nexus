@@ -1,0 +1,14 @@
+/* The plot session's asks on onboarding's later steps (spec 47, A15; screens/onboarding/PlotAsk.jsx). One strip
+   under the onboarding header, drawn as a pending tug is (the --e-tug ring, the parked diamond), so a session that
+   waits on the person reads the same here as in the cockpit, in both themes. */
+.ob-notice { position: relative; z-index: 3; display: flex; justify-content: center; padding: 14px 32px 0; }
+.plot-ask { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; max-width: min(980px, 100%); padding: 8px 10px 8px 14px; border-radius: 12px; background: var(--overlay); -webkit-backdrop-filter: var(--blur-2); backdrop-filter: var(--blur-2); box-shadow: var(--e-tug); }
+.plot-ask > .park-mark { flex: none; }
+.plot-ask-text { flex: 1 1 280px; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; line-height: 20px; color: var(--text); }
+.plot-ask-lead { color: var(--text-2); }
+.plot-ask-what { min-width: 0; font-family: var(--font-mono); font-size: 12px; color: var(--text); overflow-wrap: anywhere; font-variant-ligatures: none; }
+.plot-ask-err { flex-basis: 100%; color: var(--st-failed); }
+.plot-ask-acts { display: flex; align-items: center; gap: 6px; flex: none; }
+@media (max-width: 760px) {
+  .ob-notice { padding: 12px 16px 0; }
+}

@@ -14,6 +14,7 @@ import { ObFrame, Back, useCopy, CopyFace } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
 import { landThenGo, turnOnCloud, BUSY_NOTE } from './cloudFlow.js';
+import { usePlotLive, PlotAskStrip } from './PlotAsk.jsx';
 
 const LOOP_FILE = /(?:^|\/)(nexus-loop|march)\.ya?ml$/;
 const NIGHT_HOURS = [1, 2, 3, 4, 5, 6];
@@ -73,6 +74,7 @@ export default function CloudSetup() {
   const actions = useActions();
   const runs = useRuns(8000);
   const [d, patch] = useDraft();
+  const plot = usePlotLive(d);
   const [preview, setPreview] = useState(false);
   const [copied, copy] = useCopy();
   const [pending, setPending] = useState({}); // action -> 'busy' | error text
@@ -136,7 +138,7 @@ export default function CloudSetup() {
   );
 
   return (
-    <ObFrame step="cloud" foot={foot}>
+    <ObFrame step="cloud" foot={foot} notice={<PlotAskStrip session={d.plotSession} live={plot.live} />}>
       <div className="cloud-grid">
         <div className="ob-copy">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

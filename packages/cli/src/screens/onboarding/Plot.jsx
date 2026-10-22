@@ -19,6 +19,7 @@ import { ObFrame, Back, Next } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
 import { messyReport } from './themes.js';
+import { usePlotLive, PlotAskStrip } from './PlotAsk.jsx';
 import '../../styles/plot-fit.css';
 
 const PLACES = [
@@ -88,6 +89,7 @@ function planFrom(ideas, place, specN) {
 export default function Plot() {
   const { owner, live } = useShell();
   const [d, patch] = useDraft();
+  const plot = usePlotLive(d);
   const [merging, setMerging] = useState(null);
   const [again, setAgain] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -202,7 +204,7 @@ export default function Plot() {
   );
 
   return (
-    <ObFrame step="plot" foot={foot} mainStyle={{ maxWidth: 1360 }} mainClass="plot-main">
+    <ObFrame step="plot" foot={foot} notice={<PlotAskStrip session={d.plotSession} live={plot.live} />} mainStyle={{ maxWidth: 1360 }} mainClass="plot-main">
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 20 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span className="kicker">step {stepNo('plot')} · plot the first work</span>

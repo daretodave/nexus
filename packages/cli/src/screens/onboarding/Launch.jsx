@@ -11,6 +11,8 @@ import { PATHS } from '../../routes.js';
 import { ObFrame, Back, markOnboarded, useEnter } from './frame.jsx';
 import { useDraft, localRunMode, saveRunMode, RUN_MODE_LABEL, SCHED_SUMMARY } from './draft.js';
 import { onboardingCalls } from './calls.js';
+import { usePlotLive, PlotAskStrip } from './PlotAsk.jsx';
+import { launchTarget } from './plotAsk.js';
 
 const RIM = [
   [-232, -118, '', 0], [-158, -168, 'v', 37], [-58, -186, '', 74], [72, -172, 'n', 111],
@@ -96,6 +98,7 @@ export default function Launch() {
   const local = useLocalSettings();
   const sessions = useSessions(0);
   const [d] = useDraft();
+  const plot = usePlotLive(d);
   // The secrets row (Launch board): what the vault holds by name, or why there is nothing to hold.
   const secrets = useSecrets();
   const vaultLine = secretsLine(secrets.status === 'ready' ? secrets.data : null, d.vault);
@@ -124,6 +127,8 @@ export default function Launch() {
   }, [ended, sessions]);
   const owner = !!info.owner;
   const effectiveOwner = owner && d.ownerMode !== false;
+  // Open the cockpit opens the plot session while it still works, never a second session beside it (spec 47, A15).
+  const target = launchTarget({ adopted: !!info.adopted, plot: plot.id ? d.plotSession : null, live: plot.live });
   const rm = d.runMode ?? (prefs?.onboarded && local.status === 'ready' ? localRunMode(local.data) : 'size');
 
   const finish = useCallback(async () => {
@@ -139,7 +144,9 @@ export default function Launch() {
     try {
       await finish();
       let id = 'main';
-      if (!info.adopted) {
+      if (target.kind === 'plot') {
+        id = target.id;
+      } else if (target.kind === 'adopt') {
         // A new repo adopts nexus first, in the repo itself: the server's home session does it.
         await server.adopt();
       } else {
@@ -152,7 +159,7 @@ export default function Launch() {
       setErr(e.message);
       setBusy(false);
     }
-  }, [busy, finish, name, info.adopted, nav]);
+  }, [busy, finish, name, target.kind, target.id, nav]);
 
   useEnter(open);
 
@@ -167,7 +174,7 @@ export default function Launch() {
   );
 
   return (
-    <ObFrame step="launch" skipped={d.cloud === 'skipped' ? ['cloud'] : []} foot={foot}>
+    <ObFrame step="launch" skipped={d.cloud === 'skipped' ? ['cloud'] : []} foot={foot} notice={<PlotAskStrip session={d.plotSession} live={plot.live} />}>
       <div className="launch">
         <div className="ob-copy">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -179,7 +186,9 @@ export default function Launch() {
             <div>
               <span className="k">session</span>
               <span className="v" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {name
+                {target.kind === 'plot'
+                  ? <><SessTag session={{ name: target.name || 'plot', kind: 'local' }} /><span className="c-3" style={{ fontWeight: 400 }}>still plotting: its cockpit opens</span></>
+                  : name
                   ? <><SessTag session={{ name, kind: 'local' }} /><span className="c-3" style={{ fontWeight: 400 }}>its own star, color and worktree</span></>
                   : ended.length
                     ? <><span className="c-3" style={{ fontWeight: 400 }}>All four stars are in use, {ended.length} by {ended.length === 1 ? 'a session' : 'sessions'} that ended with the server.</span>
@@ -199,7 +208,7 @@ export default function Launch() {
             <div><span className="k">cloud loop</span><span className="v">{cloudLine(d)}</span></div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
-            <button className="btn btn-primary btn-xl" type="button" onClick={open} disabled={busy || !name} aria-busy={busy || undefined}>Open the cockpit<Icon name="arrowRight" /></button>
+            <button className="btn btn-primary btn-xl" type="button" onClick={open} disabled={busy || (!name && target.kind !== 'plot')} aria-busy={busy || undefined}>Open the cockpit<Icon name="arrowRight" /></button>
             <Link className="btn btn-ghost btn-l" to={PATHS.fleet} onClick={() => { finish(); }}><Icon name="fleet" size={14} />Go to the fleet</Link>
           </div>
           {err ? <span className="t-body-s" role="alert" style={{ color: 'var(--st-blocked)' }}>The session did not start: {err}. Your answers are saved; try again.</span> : null}

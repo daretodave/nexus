@@ -12,7 +12,7 @@ export function markOnboarded(extra) {
   return server.setPrefs({ onboarded: true, ...extra }).catch(() => null);
 }
 
-export function ObFrame({ step, skipped = [], foot, mainStyle, mainClass, children }) {
+export function ObFrame({ step, skipped = [], foot, notice, mainStyle, mainClass, children }) {
   const at = STEPS.findIndex((s) => s.id === step);
   const done = STEPS.slice(0, at).map((s) => s.id).filter((id) => !skipped.includes(id));
   const top = (
@@ -24,7 +24,7 @@ export function ObFrame({ step, skipped = [], foot, mainStyle, mainClass, childr
       </Link>
     </>
   );
-  return <Ob top={top} foot={foot ?? <span />} mainStyle={mainStyle} mainClass={mainClass}>{children}</Ob>;
+  return <Ob top={top} foot={foot ?? <span />} notice={notice} mainStyle={mainStyle} mainClass={mainClass}>{children}</Ob>;
 }
 
 /** The footer's Back link. */
