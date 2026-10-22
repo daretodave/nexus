@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-10-20
-> Pass count: 27
+> Last pass: 2026-10-22
+> Pass count: 28
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,61 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [ ] [MED] prompts/adopt.md:89 — owner/contributor heuristic errors with no fallback on a repo with no git remote yet
+- category: instruction-drift
+- observation: adopt.md's ask-list item (e) computes its
+  recommended default for the owner/contributor question via
+  `gh repo view --json viewerPermission` (ADMIN → recommend
+  owner). But `playbooks/new-project.md`'s Prerequisites only
+  requires a repo initialized with `git init` and a GitHub repo
+  existing somewhere — nothing in new-project.md or adopt.md
+  ever instructs creating the GitHub repo or wiring a remote
+  first. A literal walk from a freshly `git init`'d repo with no
+  remote hits this gap immediately: the heuristic command errors
+  before producing a recommendation, which also breaks
+  `concepts/asking-well.md` rule 2 ("if you genuinely don't have
+  a recommendation, you don't have a question yet"). Door 2's
+  prompt explicitly tells the agent "Do not skip steps or invent
+  scope beyond what it says," so a strict-literal agent has no
+  instructed path to resolve this.
+- evidence: in a scratch repo (`git init` only, no remote),
+  running the exact command adopt.md names —
+  `gh repo view --json viewerPermission` — fails with
+  "no git remotes found", exit 1.
+- suggested fix: either add a "create/confirm the GitHub remote"
+  sub-step to new-project.md's Prerequisites (or step 1) with the
+  `gh repo create` / `git remote add origin` commands, or have
+  adopt.md's ask-list fall back explicitly ("no remote yet →
+  recommend owner by default, since a solo greenfield repo has no
+  other contributor to be a contributor against") so the
+  heuristic degrades gracefully instead of erroring with no
+  guidance.
+- source: dry-run
+
+### [ ] [MED] playbooks/new-project.md:51 — Prerequisites claims GitLab support that nothing else in the kit delivers
+- category: instruction-drift
+- observation: the line reads "A GitHub repo (or GitLab/
+  equivalent) — push to `main` triggers deploy." A repo-wide
+  case-insensitive search for "gitlab" turns up exactly this one
+  line and nothing else — no GitLab CI deploy-gate wiring in
+  `playbooks/ci-providers.md`'s provider matrix, no GitLab
+  equivalent for `owner-mode.md`'s rulesets/`gh api` calls, no
+  GitLab issue support in `/triage`'s `gh`-CLI-based tooling, and
+  the cloud loop (`playbooks/cloud-loop.md`) is GitHub Actions
+  only. An adopter who takes this parenthetical at face value and
+  picks GitLab hits undocumented territory almost immediately
+  after adoption, with no playbook acknowledging the gap.
+- evidence: `grep -rni "gitlab" .` (excluding `.git/`) across the
+  whole repo returns exactly one hit: `playbooks/new-project.md:51`.
+- suggested fix: either drop the "(or GitLab/equivalent)"
+  parenthetical (state the real requirement as "a git host that
+  can push-to-deploy main" without naming a specific unsupported
+  competitor), or add a one-line caveat pointing at
+  `ci-providers.md`'s "Self-hosted" section as the actual
+  GitLab/other-host path, since today nothing names what
+  "equivalent" would mean in practice.
+- source: dry-run
 
 ## Done
 
