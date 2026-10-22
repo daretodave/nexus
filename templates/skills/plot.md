@@ -163,12 +163,12 @@ the run: stop doing, keep the plot, say what's left.
 
 ### Step 7 — Report and retro
 
-The before and after pictures (in flight, then next, the new
-chunks marked), then: the small version or a new flow and why;
-the chunks (id, size, closes, needs); when `/next` builds them
-and what could move that; the open questions; one line to move
-it (`/plot asap …`, or `/next <id>` to build it now). Retro as
-`/next` Step 6, briefly.
+Before/after pictures (new chunks marked); the small version or
+a new flow and why; the chunks (id, size, closes, needs); when
+`/next` builds them; open questions, each with a default; one
+line to move it; a brief retro (`/next` Step 6). End with the
+same report as a `nexus-plot` JSON block; a trailing `Answers:`
+on a later `/plot` answers its questions (`nexus/customization/plot-report.md`).
 
 ## 4. Hard rules
 

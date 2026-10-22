@@ -561,6 +561,7 @@ nexus/
 │   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
 │   ├── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
 │   ├── secrets.md                     # nexus.secrets.json: secrets by name, never value; a chunk's secrets field
+│   ├── plot-report.md                 # /plot's nexus-plot block: the report as data, drawn as a card in the cockpit
 │   └── identity-layer.md              # identity/ + the footgun ladder (seen twice -> automate); the alternative
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
 │   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md)
