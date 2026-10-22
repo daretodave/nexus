@@ -174,3 +174,6 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 49.4 · The vault counts declared names; undeclared ones say so · 25abb46b..25abb46b
 - 2026-10-22 · 49.5 · The Actions sink is read from GitHub, names only · 4eea6cb2..4eea6cb2
 - 2026-10-22 · 49.6 · An optional secret reads optional, not missing · d1437e77..d1437e77
+- 2026-10-22 · 49.1 · The cloud step keeps the schedule it finds · 7e3309fb..5e1af4bf
+- 2026-10-22 · 49.3 · A Fleet tile draws its progress as a bar · 35058559..35058559
+- 2026-10-22 · 49 · spec complete: the GUI tells the truth on the owner's walk: Settings sets the permission mode (Allow everything included), permission cards read like tool rows, the cloud step keeps a schedule it finds, the vault counts declared names and reads GitHub for its Actions sink, optional secrets read optional, closed chunks show their date and commit with no made-up size or range, and a tile draws its progress as a bar · 95b639e..3505855
