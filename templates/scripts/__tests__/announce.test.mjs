@@ -140,6 +140,15 @@ describe('a line to one session', () => {
     assert.deepEqual([...identities(['eeee5555'], ledgers)], ['eeee5555'], 'only the session that took it');
   });
 
+  it('keeps answering for a ledger it took and runs once its beats make it live again', () => {
+    const ledgers = [
+      { id: 'aaaa1111', star: 'vega', state: 'live', claude: 'cl-aaaa', resumed_by: 'bbbb2222', runner: 'bbbb2222' },
+      { id: 'cccc3333', star: 'polaris', state: 'ended', resumed_by: 'bbbb2222', runner: 'bbbb2222' },
+    ];
+    assert.deepEqual([...identities(['bbbb2222'], ledgers)].sort(), ['aaaa1111', 'bbbb2222', 'cl-aaaa', 'vega']);
+    assert.deepEqual([...identities(['aaaa1111'], ledgers)].sort(), ['aaaa1111', 'vega'], 'its old session still answers to its own ledger');
+  });
+
   it('steers only owner lines addressed to this session, not yet handed over', () => {
     let t = post('', 'to everyone', 'owner').text;
     t = post(t, 'to vega', 'owner', undefined, 'vega').text;

@@ -95,10 +95,12 @@ export function namesOf(ids, ledgers = []) {
       out.add(l.id);
       if (l.star) out.add(l.star);
     }
-    if (TAKEN.has(l.state) && typeof l.resumed_by === 'string' && own.has(l.resumed_by)) {
+    // A ledger it took and runs (`runner`, ledger.mjs take) stays its own once its beats make it live again.
+    const runs = typeof l.runner === 'string' && !!l.runner && HELD.has(l.state);
+    if ((TAKEN.has(l.state) || runs) && typeof l.resumed_by === 'string' && own.has(l.resumed_by)) {
       out.add(l.id);
       if (claude) out.add(claude);
-      if (l.star && l.state === 'resuming') out.add(l.star);
+      if (l.star && (l.state === 'resuming' || runs)) out.add(l.star);
     }
   }
   return out;

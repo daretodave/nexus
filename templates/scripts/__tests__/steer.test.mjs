@@ -204,6 +204,7 @@ describe('the process', () => {
       { id: 'old', star: 'sirius', state: 'ended' },
       { id: 'p1', star: 'deneb', state: 'resuming', claude: 'cl-p1', resumed_by: C },
       { id: 'p2', star: 'altair', state: 'resumed', resumed_by: C },
+      { id: 'p3', star: 'castor', state: 'live', claude: 'cl-p3', resumed_by: C, runner: 'cccc' },
       null,
     ];
     for (const ids of [[A], [B], [C], ['old'], [], [A, 'nexus-1']]) {
