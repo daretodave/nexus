@@ -303,6 +303,45 @@ describe('the settle run', () => {
     assert.equal(commitRange(r.dir, 'plan/pending/07.6.md'), `${z1}..${z1}`);
   });
 
+  it('stops a landing run at what origin already holds: a lone fix pushed by another session is not this chunk\'s', async () => {
+    const r = repo();
+    const { commitRange } = await import(pathToFileURL(SETTLE).href);
+    const step = (file, text, msg) => {
+      r.put(file, text);
+      r.git('add', '-A');
+      r.git('commit', '-q', '-m', msg);
+      return r.git('rev-parse', 'HEAD').slice(0, 8);
+    };
+    // Another session pushes a lone fix after the last close; this worktree builds 07.4 on top of it.
+    step('other.txt', 'fix\n', 'fix: a lone fix');
+    r.git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+    const w1 = step('a.txt', 'a\n', 'feat: a (07.4)');
+    const w2 = step('a.txt', 'a2\n', 'feat: a, more (07.4)');
+    step('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2000-10-15\nsays: A\n---\n', 'plan: close 07.4');
+    assert.equal(commitRange(r.dir, 'plan/pending/07.4.md'), `${w1}..${w2}`);
+    // No origin to ask: the run goes back to the last close, as before.
+    r.git('update-ref', '-d', 'refs/remotes/origin/main');
+    const wide = commitRange(r.dir, 'plan/pending/07.4.md');
+    assert.ok(wide.endsWith(`..${w2}`) && wide !== `${w1}..${w2}`, wide);
+  });
+
+  it('passes over a plot commit that only adds a pending file: the work before it is still the chunk\'s', async () => {
+    const r = repo();
+    const { commitRange } = await import(pathToFileURL(SETTLE).href);
+    const step = (file, text, msg) => {
+      r.put(file, text);
+      r.git('add', '-A');
+      r.git('commit', '-q', '-m', msg);
+      return r.git('rev-parse', 'HEAD').slice(0, 8);
+    };
+    const w1 = step('a.txt', 'a\n', 'feat: a (07.4)');
+    // The owner's answers edit the roadmap between the work and its close: a pending file alone.
+    step('plan/pending/plot-answers.md', '---\ndate: 2000-10-15\n---\n## Edit plan/README.md\n~~~ old\n- (none)\n~~~\n~~~ new\n- (none)\n- 07.9\n~~~\n', 'plan: plot the answers');
+    const w2 = step('a.txt', 'a2\n', 'fix: a (07.4)');
+    step('plan/pending/07.4.md', '---\nclose: 07.4\ndate: 2000-10-15\nsays: A\n---\n', 'plan: close 07.4');
+    assert.equal(commitRange(r.dir, 'plan/pending/07.4.md'), `${w1}..${w2}`);
+  });
+
   it('sees a worktree of the owner\'s checkout as the owner\'s', async () => {
     const r = repo();
     r.put('.owner', '');

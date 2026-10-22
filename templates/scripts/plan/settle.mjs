@@ -895,6 +895,25 @@ function git(args, cwd) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
+/** origin/`branch`'s commit, or null when this checkout has no such ref. */
+function upstreamOf(cwd, branch) {
+  try {
+    return git(['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}^{commit}`], cwd) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether commit `a` is `b` or one of its ancestors. */
+function isAncestor(cwd, a, b) {
+  try {
+    git(['merge-base', '--is-ancestor', a, b], cwd);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Whether pending file `file` as commit `h` left it closes a chunk (a file the commit deleted closes nothing). */
 function closesAt(cwd, h, file) {
   try {
@@ -930,10 +949,13 @@ function plotsIn(cwd, h, names = git(['show', '--name-only', '--format=', h], cw
  * branch side; pushed straight to main, the first-parent run back from the pending file's commit to the last merge,
  * settle, other pending close or archive write (a close made before the repo settled, so a first settle never reaches
  * back across old history). A plot commit (plotsIn) bounds the run as a close does and is in no chunk's range, so
- * back-to-back chunks in one worktree, and a `/plot ... and do`, never get ranges that cross. The pending file's own
- * commit counts when it carries work too, or when nothing else does.
+ * back-to-back chunks in one worktree, and a `/plot ... and do`, never get ranges that cross; a plot commit that is a
+ * pending file alone (answers editing the roadmap mid-chunk) is passed over like any lone pending file. A run landing
+ * from a worktree (its close not on origin/`branch` yet) stops at what origin/`branch` already holds: another
+ * session's commit pushed between two settles is not this chunk's. The pending file's own commit counts when it
+ * carries work too, or when nothing else does.
  */
-export function commitRange(cwd, file) {
+export function commitRange(cwd, file, { branch = 'main' } = {}) {
   const c = git(['log', '-1', '--diff-filter=A', '--format=%H', '--', file], cwd);
   if (!c) return null;
   const short = (h) => h.slice(0, 8);
@@ -957,7 +979,11 @@ export function commitRange(cwd, file) {
   } else {
     // A root commit has nothing before it to read.
     const rootCommit = git(['rev-list', '--max-parents=0', 'HEAD'], cwd).split('\n').includes(c);
+    // Settled on main after the push, origin holds the close too: no bound then, the run reads as before.
+    const upstream = upstreamOf(cwd, branch);
+    const landing = upstream !== null && !isAncestor(cwd, c, upstream);
     for (const h of rootCommit ? [] : git(['rev-list', '--first-parent', '-n', '60', `${c}^`], cwd).split('\n').filter(Boolean)) {
+      if (landing && isAncestor(cwd, h, upstream)) break;
       // A root commit's %P is empty, and the trim takes the tab with it: no tab, no parents.
       const shown = git(['show', '-s', '--format=%P%x09%s', h], cwd);
       const [parents, subject] = shown.includes('\t') ? shown.split('\t') : ['', shown];
@@ -967,8 +993,9 @@ export function commitRange(cwd, file) {
       if (names.includes('plan/ARCHIVE.md')) break;
       // Another chunk's close bounds the run; a lone pending file (a decision, a footgun, an archive fix) is this run's.
       if (closesIn(cwd, h, names)) break;
-      // A plot (its spec and pending file, a re-quote of its row) is no chunk's: it bounds the run as a close does.
-      if (plotsIn(cwd, h, names)) break;
+      // A plot (its spec and pending file, a re-quote of its row) is no chunk's: it bounds the run as a close does. One
+      // that is a pending file alone is passed over as any lone pending file is (and is never the range's first).
+      if (plotsIn(cwd, h, names) && !names.every((n) => n.startsWith('plan/pending/'))) break;
       list.unshift(h);
     }
     // The close's own commit is work too when it touches more than plan/pending/ (the work and its close in one).
@@ -1115,7 +1142,7 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
           }
           said.push(`spec ${cfg.ladder.spec} lists no chunk now: settle removed it and its rows (the next trap seen twice opens it again)`);
         } else said.push(`spec ${specNum(p.close)} lists no chunk now: absorb and delete it`);
-        const range = p.commits ?? commitRange(root, p.file) ?? 'plan only';
+        const range = p.commits ?? commitRange(root, p.file, { branch: cfg.branch }) ?? 'plan only';
         w('plan/ARCHIVE.md', `${archive.replace(/\n*$/, '\n')}- ${p.date} · ${p.close} · ${p.says} · ${range}\n`);
       }
     }
