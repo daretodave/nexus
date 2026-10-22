@@ -343,6 +343,8 @@ export function withHosted(list, hosted = [], repoName = '') {
       pause: h.pause?.state || 'run',
       sources: [...new Set([...(row.sources || []), 'server'])],
     });
+    // A worktree still forming (or failed to): the tile and the cockpit say so (shared/forming.mjs).
+    if (h.form && h.form.state !== 'ready') row.form = h.form;
     // The server knows whether its own session runs a turn: that, not the file's tail, says working or idle.
     if (h.activity) Object.assign(row, activityFields({ ...h.activity, last: h.activity.last || row.last, lastPrompt: h.activity.lastPrompt || row.lastPrompt }));
     if (!row.git?.worktree && h.place?.worktree) row.git = { ...row.git, worktree: h.place.worktree, branch: row.git?.branch || h.place.branch || '' };

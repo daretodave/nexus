@@ -31,8 +31,10 @@ import { ASK_DEFAULT_MS, askDefaults } from '../shared/times.mjs';
  * @param {string} [o.resume]        a Claude Code session id its first turn resumes (Recover: a Workflow run's own)
  * @param {object} [o.mask]         the server's vault mask (secrets.mjs): every frame this session's channel sends
  * @param {number} [o.askDefaultMs]   how long a live question waits before the session takes its default (0: never)
+ * @param {object} [o.form]          a worktree still forming (shared/forming.mjs): no provider yet, and what is sent
+ *                                   waits until formed({ cwd }) (POST /api/sessions answers before git has made it)
  */
-export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null }) {
+export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
   const hub = createHub({ mask });
   const asks = new Map();
   const permissions = new Map();
@@ -45,6 +47,9 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   const held = [];
   let extraEnv = null;
   const tugLog = createTugLog({ now });
+  let form = startForm;
+  let here = cwd;
+  const waiting = []; // sent while the worktree forms: delivered, in order, once it is ready
 
   const publishAsks = () => hub.set('asks', [...asks.values()].map((a) => a.view));
   const publishPerms = () => hub.set('permissions', [...permissions.values()].map((a) => a.view));
@@ -119,8 +124,14 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     permissionMode,
     ...(resume ? { resume } : {}),
   };
-  const provider = typeof injected === 'function' ? injected(hooks) : injected || await createProvider(hooks);
-  hub.setStatus({ state: 'idle', provider: provider.kind, pause: 'run' });
+  // A session whose worktree still forms starts its provider once it is ready, so the agent works in the worktree.
+  let provider = null;
+  const makeProvider = async () => {
+    provider = typeof injected === 'function' ? injected(hooks) : injected || await createProvider(hooks);
+    hub.setStatus({ provider: provider.kind });
+  };
+  hub.setStatus({ state: 'idle', pause: 'run', ...(form ? { form } : {}) });
+  if (!form || form.state === 'ready') await makeProvider();
 
   // A send while a turn is under way is a tug (steering mid-run); the
   // session itself stays open between turns, so "active" is not "busy".
@@ -140,11 +151,12 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   return {
     id,
     name,
-    cwd,
-    place,
+    get cwd() { return here; },
+    get place() { return place; },
+    get form() { return form; },
     at: new Date(now()).toISOString(),
     hub,
-    provider,
+    get provider() { return provider; },
     tugs: tugLog,
     asks,
     permissions,
@@ -157,6 +169,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
 
     /** Send a prompt (`steered`: a steer aimed at this session); a paused (or pausing) session holds it until resume. */
     async send(text, { steered = false } = {}) {
+      if (!provider) { waiting.push({ text, steered }); return { held: true, forming: true }; }
       if (pause.state !== 'run') { held.push({ text, steered }); return { held: true, pause: pause.state }; }
       await deliver(text, steered);
       return { held: false };
@@ -173,10 +186,24 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
       for (const q of queued) await deliver(q.text, q.steered);
       return { ...this.pause, delivered: queued.length };
     },
-    interrupt: () => provider.interrupt(),
-    stop: () => provider.stop(),
+    /** The worktree's form moved on (shared/forming.mjs formNext): the session's channel carries it. */
+    setForm(next) {
+      form = next;
+      hub.setStatus({ form });
+    },
+    /** The worktree is ready: the session works there from now on, and what was sent meanwhile goes, in order. */
+    async formed({ cwd: dir, place: at } = {}) {
+      if (dir) { here = dir; hooks.repo = dir; }
+      if (at) place = at;
+      if (!provider) await makeProvider();
+      const queued = waiting.splice(0);
+      for (const q of queued) await this.send(q.text, { steered: q.steered });
+      return { delivered: queued.length };
+    },
+    interrupt: () => provider?.interrupt(),
+    stop: () => provider?.stop(),
     async fresh() {
-      await provider.fresh();
+      await provider?.fresh();
       txCtx = newTxContext({ now });
       beatCtx = newBeatContext();
       hub.reset();
@@ -205,7 +232,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     },
     async close() {
       for (const a of asks.values()) clearTimeout(a.timer);
-      await provider.stop?.();
+      await provider?.stop?.();
       hub.close();
     },
   };

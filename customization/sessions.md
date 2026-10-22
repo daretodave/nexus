@@ -197,6 +197,20 @@ never in the primary checkout. The primary checkout only gets
 diligence: on main and clean, `git pull --ff-only` at a
 command's start; otherwise leave it and say so.
 
+Worktrees live beside the checkout, in `../<repo>-wt/` (the
+kit's default). A repo that keeps them elsewhere says so in
+the checkout's untracked `.nexus/local.json`:
+
+```json
+{ "worktreeRoot": "../trees" }
+```
+
+The path is relative to the checkout (or absolute). The GUI's
+sessions (`npx @usenexus/cli`) read it; with none set they use
+the folder most of the repo's linked worktrees already share
+(one inside the repo only when the repo ignores it), else the
+kit's default.
+
 Closing a worktree is where work gets lost. git for Windows
 follows a junction when it deletes a worktree (npm's
 workspace links are junctions): a plain `git worktree remove`

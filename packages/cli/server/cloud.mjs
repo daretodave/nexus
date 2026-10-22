@@ -229,9 +229,10 @@ function killTree(child) {
  * A program (git, node, gh) with no shell, no trimming (file contents keep their bytes) and none of a parent's GIT_*
  * variables: { ok, code, out, err, timedOut }. It answers only once the program and everything it started (git's
  * hooks, a gate under them) have exited: on timeout the whole tree is killed first, so a caller may then remove the
- * folder it ran in. `env` is the environment to start from; GIT_LEAKS never pass.
+ * folder it ran in. `env` is the environment to start from; GIT_LEAKS never pass. `onErr` sees stderr as it comes
+ * (a worktree being made streams its lines to the cockpit).
  */
-export function runClean(cmd, args, { cwd, timeout = GIT_TIMEOUT_MS, env = process.env } = {}) {
+export function runClean(cmd, args, { cwd, timeout = GIT_TIMEOUT_MS, env = process.env, onErr = null } = {}) {
   return new Promise((resolve) => {
     let child;
     try {
@@ -244,7 +245,7 @@ export function runClean(cmd, args, { cwd, timeout = GIT_TIMEOUT_MS, env = proce
     let err = '';
     let timedOut = false;
     child.stdout.on('data', (d) => { out += d; });
-    child.stderr.on('data', (d) => { err += d; });
+    child.stderr.on('data', (d) => { err += d; if (onErr) { try { onErr(String(d)); } catch { /* a listener's throw never stops the program */ } } });
     const timer = setTimeout(() => { timedOut = true; killTree(child); }, timeout);
     child.on('error', (e) => { err += String(e.message || e); });
     child.on('close', (code) => {

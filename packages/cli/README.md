@@ -199,8 +199,16 @@ event channel (`/api/events?session=<id>`) and a deep link
 (`/s/<id>`). Its environment carries `NEXUS_SESSION` (its claims and
 ledger id) and `NEXUS_GH_LOGIN`, asked of `gh` once per server. Start
 one from the fleet or the Launch step: it takes the next free star
-name, a worktree at `../.nexus-wt/<name>-<n>` on branch
-`nexus/<name>-<n>`, and a ledger in `.nexus/sessions/`. Pause waits
+name, a worktree at `<root>/<name>-<n>` on branch
+`nexus/<name>-<n>`, and a ledger in `.nexus/sessions/`. The cockpit
+opens at once: the worktree forms behind it ("A star is forming" on
+the agent stage, the composer held until it is ready, Retry if git
+refuses), through the repo's own hooks. The root is where the repo
+keeps its worktrees: `worktreeRoot` in the checkout's untracked
+`.nexus/local.json` (relative to the checkout, or absolute), else the
+folder most of its linked worktrees already share (a folder inside the
+repo counts only when the repo ignores it), else the kit's
+`../<repo>-wt/`. Pause waits
 for the turn in flight and holds what you send until you resume.
 Closing a session ends its ledger; its worktree stays for `/tidy`.
 

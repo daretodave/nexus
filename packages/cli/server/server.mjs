@@ -9,7 +9,9 @@ import { fileURLToPath } from 'node:url';
 import { createHub } from './hub.mjs';
 import { PERMISSION_MODES } from './provider.mjs';
 import { createSession } from './session.mjs';
-import { endLedger, ghLoginOnce, heldNames, newSessionId, nextName, openPlace, startLedger, validName, writeStartLedger } from './fleet.mjs';
+import { cleanGit, endLedger, formPlace, ghLoginOnce, heldNames, newSessionId, nextName, planPlace, startLedger, validName, writeStartLedger } from './fleet.mjs';
+import { safeHooks } from './cloud.mjs';
+import { formNext, formStart } from '../shared/forming.mjs';
 import { preflight } from './preflight.mjs';
 import * as repoMod from './repo.mjs';
 import * as local from './local.mjs';
@@ -68,8 +70,12 @@ function readPrompt(name) {
  * @param {object} [o.git]          createGitView overrides (tests: claims, ttl)
  * @param {function|false} [o.explodeQuery]  the SDK's query() for POST /api/explode (tests); under an injected provider none is loaded
  * @param {object} [o.secrets]      the secrets API's seams (tests): { run } a sink's runner, { vault } openVault overrides, { setup } setupVault overrides
+ * @param {object} [o.worktree]     a GUI session's worktree seams (tests): { git(cwd, args, o) } for every git it runs (a
+ *                                  delay stands in for a slow checkout), { hooks(repo) } for cloud.mjs safeHooks
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, git: gitOpts, secrets: secretsOpts = {} } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {} } = {}) {
+  const wtGit = wtOpts.git || cleanGit;
+  const wtHooks = wtOpts.hooks || safeHooks;
   const ghOpts = ghRun ? { run: ghRun } : {};
   let prefs = await repoMod.readPrefs(repo);
   // Run mode moved to .nexus/local.json (A11): carry an older GUI's prefs copy over once.
@@ -92,9 +98,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   refreshMask.unref?.();
   const send = (res, status, data) => sendJson(res, status, mask.deep(data));
   const sessions = new Map();
-  async function host({ id, name = '', cwd, place = {}, listed = false, resume = null }) {
+  async function host({ id, name = '', cwd, place = {}, listed = false, resume = null, form = null }) {
     const s = await createSession({
-      id, name, cwd, place, listed, resume,
+      id, name, cwd, place, listed, resume, form,
       env: async () => ({ NEXUS_SESSION: id, NEXUS_GH_LOGIN: await login() }),
       // An injected provider object serves the home session only; a factory serves every session (tests).
       provider: typeof injected === 'function' ? injected : sessions.size ? undefined : injected,
@@ -110,7 +116,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   /** The hosted session `key` names (id, Claude Code session id or star; none or `main`: home), or null. */
   const sessionOf = (key) => (!key || key === 'main' ? home : [...sessions.values()].find((s) => s.is(String(key))) || null);
   const hostedRows = () => [...sessions.values()].map((s) => ({
-    id: s.id, claude: s.claude, name: s.name, place: s.place, listed: s.listed, pause: s.pause, at: s.at,
+    id: s.id, claude: s.claude, name: s.name, place: s.place, listed: s.listed, pause: s.pause, at: s.at, form: s.form,
     activity: transcriptActivity(s.hub.transcript, { busy: s.busy, held: s.pause.held }),
   }));
   // A session this server does not run (a terminal one) gets a quiet channel: a hello with nothing in it, never
@@ -202,6 +208,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       // The cockpit reads `state` paused | pausing for its pause control.
       if (p.state !== 'run') Object.assign(out, { state: p.state, pausedAt: p.at, held: p.held });
       Object.assign(out, { hosted: true, cwd: run.cwd, worktree: run.place.worktree || '', branch: run.place.branch || out.git?.branch || '' });
+      if (run.form) out.form = run.form;
     }
     out.git = await gitView.forSession(out);
     const times = sessionTimes({
@@ -235,17 +242,49 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     name ||= nextName(taken);
     let place = {};
     let note = null;
+    let planned = null;
     if (b.worktree !== false) {
-      const p = await openPlace(root, name, ledgers);
-      if (p.error) note = `no worktree (${p.error}): it works in ${repo}`;
-      else place = { worktree: p.worktree, branch: p.branch };
+      // Only the place is picked now (a few quick git reads); the worktree forms after this answers (spec 47 A4).
+      planned = await planPlace(root, name, ledgers, { git: wtGit, local: local.readLocal(repo) });
+      if (planned.error) { note = `no worktree (${planned.error}): it works in ${repo}`; planned = null; } else place = { worktree: planned.worktree, branch: planned.branch };
     }
     const id = newSessionId();
     const cwd = place.worktree || repo;
     writeStartLedger(root, startLedger({ id, name, cwd, place }));
-    const s = await host({ id, name, cwd, place, listed: true });
+    const form = planned ? formStart(planned) : null;
+    const s = await host({ id, name, cwd, place, listed: true, form });
     if (b.prompt && String(b.prompt).trim()) await s.send(String(b.prompt).trim());
-    return { status: 200, id, name, cwd, worktree: place.worktree || '', branch: place.branch || '', ...(note ? { note } : {}) };
+    if (planned) formBehind(s, root);
+    return { status: 200, id, name, cwd, worktree: place.worktree || '', branch: place.branch || '', ...(form ? { form } : {}), ...(note ? { note } : {}) };
+  }
+
+  /**
+   * Make a session's planned worktree after its POST has answered: progress, then ready (its provider starts there and
+   * what it was sent goes) or failed (the cockpit offers Retry). One form at a time per session.
+   */
+  const forming = new Map(); // session id -> the promise of its form
+  function formBehind(s, root) {
+    if (forming.has(s.id)) return forming.get(s.id);
+    const job = (async () => {
+      const r = await formPlace(root, s.place, { git: wtGit, hooks: wtHooks, onLine: (line) => s.setForm(formNext(s.form, { type: 'progress', line })) })
+        .catch((e) => ({ error: String(e?.message || e) }));
+      if (!sessions.has(s.id)) return; // closed while it formed
+      if (r.error) { s.setForm(formNext(s.form, { type: 'fail', error: r.error })); return; }
+      s.setForm(formNext(s.form, { type: 'ready' }));
+      await s.formed({ cwd: s.place.worktree });
+    })().finally(() => forming.delete(s.id));
+    forming.set(s.id, job);
+    return job;
+  }
+
+  /** POST /api/sessions/:id/retry: form a failed worktree again, in the same place. */
+  async function retryForm(id) {
+    const s = sessionOf(id);
+    if (!s) return { status: 404, error: 'no session by that id runs here' };
+    if (s.form?.state !== 'failed') return { status: 409, error: s.form ? `its worktree is ${s.form.state}` : 'it has no worktree to form' };
+    s.setForm(formNext(s.form, { type: 'retry' }));
+    formBehind(s, await primaryRoot(repo));
+    return { status: 200, id: s.id, form: s.form };
   }
 
   // Recover (spec 40 A10; recover.mjs): read a Workflow run folder, and resume it in a hosted session that resumes
@@ -313,8 +352,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return { status: 200, file: r.spec?.file || null, chunks: r.chunks.map((c) => c.id).filter(Boolean), session: s.id, star: s.name, owner, prompt };
   }
 
-  /** POST /api/sessions/:id/(pause|resume|close) for a session this server runs. */
+  /** POST /api/sessions/:id/(pause|resume|close|retry) for a session this server runs. */
   async function sessionAction(key, action) {
+    if (action === 'retry') return retryForm(key);
     const s = sessionOf(key);
     if (!s) {
       if (action === 'resume') return resumeFallen(key);
@@ -578,7 +618,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
             : await steering.settleParked(id, { index: Number(b.index), q: b.q, action: b.action, pick: b.pick, answer: b.answer });
         return send(res, r.status, r);
       }
-      const life = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close)$/.exec(route);
+      const life = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close|retry)$/.exec(route);
       if (life) {
         await body(req);
         const r = await sessionAction(decodeURIComponent(life[1]), life[2]);

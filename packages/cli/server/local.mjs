@@ -2,7 +2,11 @@
 // it), untracked. The one writer of that file in the GUI; GET and POST /api/local go through here, and Settings,
 // the cockpit's run-mode menu and onboarding all reach it through src/ui/run-mode.js or /api/local.
 //
-//   { ownerMode?: boolean, runMode?: 'size'|'sub'|'wf'|'both', phase?: 'short'|'std'|'night', ...kept }
+//   { ownerMode?: boolean, runMode?: 'size'|'sub'|'wf'|'both', phase?: 'short'|'std'|'night', worktreeRoot?: string,
+//     ...kept }
+//
+// worktreeRoot is read only, by server/fleet.mjs: where a GUI session's worktree goes (relative to the primary
+// checkout, or absolute); none set, the repo's own convention or the kit's ../<repo>-wt/.
 //
 // Owner mode reads as nexus scripts/owner.mjs decides it: an untracked `.owner` at the primary root makes the
 // checkout the owner's, and `ownerMode: false` switches it off. This module never creates or removes `.owner`.

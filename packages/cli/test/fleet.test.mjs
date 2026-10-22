@@ -209,7 +209,11 @@ test('a session started from the GUI gets its own worktree and branch, and works
     const s = (await call(app, '/api/sessions', { name: 'deneb' })).json;
     assert.equal(s.name, 'deneb', 'a free name the screen picked is kept');
     assert.equal(s.branch, 'nexus/deneb-1');
-    assert.equal(path.resolve(s.worktree), path.resolve(parent, '.nexus-wt', 'deneb-1'));
+    // The kit's default root, beside the repo (47.5): ../<repo>-wt/
+    assert.equal(path.resolve(s.worktree), path.resolve(parent, 'repo-wt', 'deneb-1'));
+    // The worktree forms after the answer: wait for it on the session's own channel.
+    for (let i = 0; i < 200 && (await hello(app, s.id)).status.form?.state === 'forming'; i++) await wait(50);
+    assert.equal((await hello(app, s.id)).status.form.state, 'ready');
     assert.ok(fs.existsSync(path.join(s.worktree, 'README.md')));
     assert.equal(path.resolve(by.get(s.id).hooks.repo), path.resolve(s.worktree), 'the session works in its worktree');
     assert.equal(execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: s.worktree, encoding: 'utf8' }).trim(), 'nexus/deneb-1');
@@ -244,9 +248,9 @@ test('star names follow the handoff, then the ledger order', () => {
   assert.equal(nextName(LOCAL_STARS), 'polaris');
   assert.equal(nextName(LEDGER_STARS), 'vega-2');
   assert.deepEqual(heldNames([{ star: 'vega', state: 'ended' }, { star: 'sirius', state: 'parked' }], ['deneb']), ['sirius', 'deneb']);
-  const p = placeFor(path.resolve('/x/repo'), 'vega', 2);
+  const p = placeFor(path.resolve('/x/repo-wt'), 'vega', 2);
   assert.equal(p.branch, 'nexus/vega-2');
-  assert.equal(p.worktree, path.join(path.resolve('/x'), '.nexus-wt', 'vega-2'));
+  assert.equal(p.worktree, path.join(path.resolve('/x'), 'repo-wt', 'vega-2'));
 });
 
 test('the gh login is asked once, and an existing NEXUS_GH_LOGIN wins', async () => {
