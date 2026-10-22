@@ -177,3 +177,5 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 49.1 · The cloud step keeps the schedule it finds · 7e3309fb..5e1af4bf
 - 2026-10-22 · 49.3 · A Fleet tile draws its progress as a bar · 35058559..35058559
 - 2026-10-22 · 49 · spec complete: the GUI tells the truth on the owner's walk: Settings sets the permission mode (Allow everything included), permission cards read like tool rows, the cloud step keeps a schedule it finds, the vault counts declared names and reads GitHub for its Actions sink, optional secrets read optional, closed chunks show their date and commit with no made-up size or range, and a tile draws its progress as a bar · 95b639e..3505855
+- 2026-10-22 · 50.1 · Onboarding asks the permission mode first · fe03b707..fe03b707
+- 2026-10-22 · 50 · spec complete: onboarding asks the permission mode right after Welcome, so its plot session and every session after start in the chosen mode · 718591d..fe03b70
