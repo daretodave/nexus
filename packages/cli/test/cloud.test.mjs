@@ -14,6 +14,7 @@ import {
   addWorkflow, cronNext, fillTemplate, kitFile, parseCron, readCrons, saveSchedule, scheduleRequest, scopeRefused, setCron,
   SETUP_ACTION_PATH, WORKFLOW_PATH,
 } from '../server/cloud.mjs';
+import { removeTree } from './helpers/tmp.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const TEMPLATE = fs.readFileSync(path.join(KIT, 'templates', '.github', 'workflows', 'march.yml'), 'utf8').replace(/\r\n/g, '\n');
@@ -23,11 +24,7 @@ const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
 // after the git in it exits).
 const TEMPS = [];
 const tempDir = (prefix) => { const d = fs.mkdtempSync(path.join(os.tmpdir(), prefix)); TEMPS.push(d); return d; };
-after(() => {
-  for (const d of TEMPS) {
-    try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch { /* a killed child on Windows may still hold it */ }
-  }
-});
+after(() => removeTree(TEMPS));
 
 const sh = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const write = (f, text) => { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, text); };

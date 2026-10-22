@@ -12,6 +12,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { childEnv, claimsAction, listClaims, requestIssue, validName, PRIVILEGED } from '../server/claims.mjs';
 import { startServer } from '../server/server.mjs';
+import { removeTreeSync } from './helpers/tmp.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -52,7 +53,7 @@ function fixture() {
   const owner = clone('owner', 'Dave');
   fs.writeFileSync(path.join(owner, '.owner'), 'owner\n');
   const contrib = clone('contrib', 'Sam Lee');
-  return { dir, origin, owner, contrib, done: () => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) };
+  return { dir, origin, owner, contrib, done: () => removeTreeSync(dir) };
 }
 
 const claimsOn = (origin) => {
@@ -207,7 +208,7 @@ test('a repo with no claims module says so, and runs nothing', async () => {
     assert.equal(r.ok, false);
     assert.match(r.error, /No claims module/);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    removeTreeSync(dir);
   }
 });
 

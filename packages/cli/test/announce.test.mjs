@@ -11,6 +11,7 @@ import http from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from '../server/server.mjs';
+import { exited, removeTree, until } from './helpers/tmp.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -41,13 +42,12 @@ function fixture(scripts = ['announce.mjs', 'ledger.mjs', 'owner.mjs'], dir = 's
   return { repo, root };
 }
 
-async function withServer(repo, fn) {
+async function withServer(repo, fn, children = () => []) {
   const app = await startServer({ repo, pollRuns: false, dist: NO_DIST, provider: FAKE });
   try {
     return await fn((m, p, b) => req(app.port, app.token, m, p, b));
   } finally {
-    await app.close();
-    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(repo, { stop: [() => app.close()], children: children().filter(Boolean) });
   }
 }
 
@@ -80,22 +80,32 @@ test('an owner line posts through announce.mjs: its format, its numbering, no lo
 test('a post waits for the board lock another writer holds, then lands; concurrent writers all land', async () => {
   const { repo, root } = fixture();
   const lock = path.join(root, '.nexus', 'announcements.lock');
-  // Another writer (a live process, so its lock is not stale) holds the board for ~600ms.
-  const holder = spawn(process.execPath, ['-e', `
-    const fs = require('node:fs');
-    fs.mkdirSync(require('node:path').dirname(${JSON.stringify(lock)}), { recursive: true });
-    fs.writeFileSync(${JSON.stringify(lock)}, process.pid + ' ' + new Date().toISOString() + '\\n', { flag: 'wx' });
-    console.log('held');
-    setTimeout(() => { fs.rmSync(${JSON.stringify(lock)}); console.log('freed'); }, 600);
-  `], { stdio: ['ignore', 'pipe', 'inherit'] });
-  let out = '';
-  await new Promise((resolve) => holder.stdout.on('data', (d) => { out += d; if (out.includes('held')) resolve(); }));
+  const go = path.join(root, '.nexus', 'go');
+  let holder = null;
   await withServer(repo, async (call) => {
+    // Another writer (a live process, so its lock is not stale) holds the board until 2s after the test says go: its
+    // own clock, never the test's (a post blocks this process while it waits), so load only ever stretches the wait.
+    holder = spawn(process.execPath, ['-e', `
+      const fs = require('node:fs');
+      fs.mkdirSync(require('node:path').dirname(${JSON.stringify(lock)}), { recursive: true });
+      fs.writeFileSync(${JSON.stringify(lock)}, process.pid + ' ' + new Date().toISOString() + '\\n', { flag: 'wx' });
+      console.log('held');
+      const t = setInterval(() => {
+        if (!fs.existsSync(${JSON.stringify(go)})) return;
+        clearInterval(t);
+        setTimeout(() => { fs.rmSync(${JSON.stringify(lock)}); console.log('freed'); }, 2000);
+      }, 10);
+    `], { stdio: ['ignore', 'pipe', 'inherit'] });
+    let out = '';
+    holder.stdout.on('data', (d) => { out += d; });
+    await until(() => out.includes('held'), { ms: 60000, what: 'the holder to take the lock' });
+    assert.equal(fs.existsSync(lock), true);
+    fs.writeFileSync(go, '');
     const t0 = Date.now();
     const r = await call('POST', '/api/announce', { text: 'after the lock' });
-    assert.equal(r.status, 200);
-    assert.ok(Date.now() - t0 >= 300, 'the post waited for the holder');
-    await new Promise((resolve) => (holder.exitCode !== null ? resolve() : holder.on('exit', resolve)));
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.ok(Date.now() - t0 >= 1000, 'the post waited for the holder');
+    await exited(holder);
     assert.match(out, /freed/, 'the holder released its own lock: the post never broke a live one');
 
     // The CLI (a terminal, as the owner) and the GUI post at once: every line lands, each with its own number.
@@ -113,7 +123,7 @@ test('a post waits for the board lock another writer holds, then lands; concurre
     assert.equal(lines.length, 9);
     assert.deepEqual(lines.map((a) => a.n).sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
     assert.ok(lines.every((a) => a.from === 'owner'));
-  });
+  }, () => [holder]);
 });
 
 test('a board kept under scripts/dev/ is found: the line posts through it', async () => {

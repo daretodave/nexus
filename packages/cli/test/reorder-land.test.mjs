@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import { landReorder, listedIds, splitArgs } from '../server/reorder.mjs';
 import { GIT_LEAKS, gitEnv, runClean, safeHooks } from '../server/cloud.mjs';
+import { removeTreeSync } from './helpers/tmp.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'templates', 'scripts');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -68,7 +69,7 @@ function fixture({ owner = true, settle = true, hook = null } = {}) {
   }
   // the person's own work in progress: a dirty edit the landing must keep
   fs.appendFileSync(path.join(dir, 'plan', 'ARCHIVE.md'), 'my edit\n');
-  return { top, dir, origin, done: () => fs.rmSync(top, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }) };
+  return { top, dir, origin, done: () => removeTreeSync(top) };
 }
 
 /** What origin's main holds at `rel`. */

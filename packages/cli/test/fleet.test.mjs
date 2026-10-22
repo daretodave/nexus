@@ -6,6 +6,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { startServer } from '../server/server.mjs';
+import { removeTree, until } from './helpers/tmp.mjs';
 import { LEDGER_STARS, LOCAL_STARS, ghLoginOnce, heldNames, nextName, placeFor } from '../server/fleet.mjs';
 import { withHosted } from '../server/sessions.mjs';
 import { SESSIONS } from '../src/ui/stars.js';
@@ -130,8 +131,7 @@ test('one server hosts many sessions: each its own name, ledger, provider and ch
     assert.equal(d.chunk.estimate, null);
     assert.ok(d.startedAt);
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });
 
@@ -152,8 +152,7 @@ test('questions and permissions are answered across sessions, tagged', async () 
     assert.equal((await call(app, '/api/permission/p_1', { allow: true })).status, 200);
     assert.deepEqual(await perm, { allow: true, always: false });
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });
 
@@ -178,8 +177,7 @@ test('pause waits for the turn, holds what is sent, and resume hands it over', a
     assert.deepEqual(p.sent, ['work', 'later']);
     assert.equal((await call(app, '/api/sessions/terminal-only/pause', {})).status, 409, 'only a hosted session pauses here');
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });
 
@@ -196,8 +194,7 @@ test('close ends the ledger and frees the star; the home session stays', async (
     assert.equal((await call(app, '/api/sessions', { worktree: false })).json.name, 'vega', 'a closed session frees its star');
     assert.equal((await call(app, '/api/sessions/main/close', {})).status, 409);
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });
 
@@ -212,15 +209,14 @@ test('a session started from the GUI gets its own worktree and branch, and works
     // The kit's default root, beside the repo (47.5): ../<repo>-wt/
     assert.equal(path.resolve(s.worktree), path.resolve(parent, 'repo-wt', 'deneb-1'));
     // The worktree forms after the answer: wait for it on the session's own channel.
-    for (let i = 0; i < 200 && (await hello(app, s.id)).status.form?.state === 'forming'; i++) await wait(50);
+    await until(async () => (await hello(app, s.id)).status.form?.state !== 'forming', { ms: 120000, what: 'the worktree to form' });
     assert.equal((await hello(app, s.id)).status.form.state, 'ready');
     assert.ok(fs.existsSync(path.join(s.worktree, 'README.md')));
     assert.equal(path.resolve(by.get(s.id).hooks.repo), path.resolve(s.worktree), 'the session works in its worktree');
     assert.equal(execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: s.worktree, encoding: 'utf8' }).trim(), 'nexus/deneb-1');
     assert.equal((await call(app, '/api/sessions', { name: 'Bad Name' })).status, 400);
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });
 
@@ -235,8 +231,7 @@ test('a deep link serves the app, and urlFor carries the token', async () => {
     assert.equal(info.pid, process.pid);
     assert.equal(info.home, app.home);
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });
 
@@ -303,7 +298,6 @@ test('each hosted session keeps its own tug log, fed by its own stream; a steer 
     tugs = (await call(app, `/api/sessions/${a.id}`)).json.tugs;
     assert.equal(tugs[0].state, 'seen', 'taken at the next turn, from its own stream');
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });

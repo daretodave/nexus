@@ -11,6 +11,7 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from '../server/server.mjs';
+import { removeTree } from './helpers/tmp.mjs';
 import { claudeSlug, dropParked, mergeSessions, parkedAnswer, parkedItem, promptText, samePlace, sessionActivity, transcriptActivity, withHosted } from '../server/sessions.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -152,9 +153,7 @@ test('a tug reaches the linked terminal session only, and a GUI-owned session ta
     assert.equal((await call('POST', '/api/sessions/nobody-here/steer', { text: 'x' })).status, 404);
     assert.equal((await call('GET', '/api/sessions/nobody-here')).status, 404);
   } finally {
-    await app.close();
-    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
-    fs.rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree([repo, home], { stop: [() => app.close()] });
   }
 });
 
@@ -177,9 +176,7 @@ test('an answered parked question leaves the ledger and reaches its session', as
     assert.equal((await call('POST', `/api/sessions/${A}/parked`, { index: 0, action: 'approve' })).status, 200);
     assert.deepEqual(ledger().parked, []);
   } finally {
-    await app.close();
-    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
-    fs.rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree([repo, home], { stop: [() => app.close()] });
   }
 });
 
@@ -206,9 +203,7 @@ test('an answer to a parked session waits for the session that resumes it, and s
     assert.match(out.hookSpecificOutput.permissionDecisionReason, /Change to: no, postgres/);
     assert.match(out.hookSpecificOutput.permissionDecisionReason, /keep the old flag/);
   } finally {
-    await app.close();
-    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
-    fs.rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree([repo, home], { stop: [() => app.close()] });
   }
 });
 

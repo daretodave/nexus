@@ -6,6 +6,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { questionsIn, durableQuestions, settledItem, specNumber, answersPrompt, isOwner, repoInfo } from '../server/repo.mjs';
 import { runBeats, markStall, STALL_MS } from '../server/gh.mjs';
+import { removeTreeSync } from './helpers/tmp.mjs';
 
 test('durable questions: needs-user-call rows and Open questions lists', () => {
   const text = [
@@ -107,7 +108,7 @@ test('durableQuestions walks plan/, skipping plan/messy/', () => {
     fs.writeFileSync(path.join(dir, 'plan', 'messy', '01-raw.md'), '## Open questions\n- raw?\n');
     const q = durableQuestions(dir);
     assert.deepEqual(q.map((x) => [x.file, x.text, x.spec?.title]), [['plan/05-a.md', 'Real one?', 'Alpha']]);
-  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  } finally { removeTreeSync(dir); }
 });
 
 test('answers prompt lands per owner mode', () => {
@@ -160,7 +161,7 @@ test('isOwner is the effective owner mode: .owner present and not switched off i
     assert.equal(isOwner(repo), false, 'ownerMode: false switches it off');
     assert.equal((await repoInfo(repo)).owner, false);
   } finally {
-    fs.rmSync(repo, { recursive: true, force: true });
+    removeTreeSync(repo);
   }
 });
 
@@ -174,8 +175,8 @@ test('a worktree reads owner mode at the primary checkout: its .owner and its lo
     switchOff(repo);
     assert.equal(isOwner(wt), false, "the primary's local.json switches it off");
   } finally {
-    fs.rmSync(path.dirname(wt), { recursive: true, force: true });
-    fs.rmSync(repo, { recursive: true, force: true });
+    removeTreeSync(path.dirname(wt));
+    removeTreeSync(repo);
   }
 });
 
@@ -185,7 +186,7 @@ test('a committed .owner counts for no one', () => {
     execFileSync('git', ['add', '-f', '.owner'], { cwd: repo });
     assert.equal(isOwner(repo), false);
   } finally {
-    fs.rmSync(repo, { recursive: true, force: true });
+    removeTreeSync(repo);
   }
 });
 
@@ -214,6 +215,6 @@ test('kit scripts: one lookup, scripts/ first, then scripts/dev/, scripts/plan/ 
     fs.writeFileSync(path.join(dir, 'scripts', 'order.mjs'), '');
     assert.equal(findKitScript(dir, 'order.mjs', { home: 'scripts/plan' }), 'scripts/plan/order.mjs');
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTreeSync(dir);
   }
 });

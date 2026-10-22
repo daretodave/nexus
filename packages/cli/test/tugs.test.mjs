@@ -9,6 +9,7 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from '../server/server.mjs';
+import { removeTree, removeTreeSync } from './helpers/tmp.mjs';
 import { claudeSlug } from '../server/sessions.mjs';
 import { createTugLog, deriveTugs, handovers, lineKey, parseBoard, replyAfter, tugOf, tugState } from '../server/tugs.mjs';
 
@@ -62,7 +63,7 @@ test('the reply after a hand-over is the first main-thread assistant entry past 
     assert.equal(replyAfter(path.join(dir, 'missing.jsonl'), T0), null);
     assert.equal(replyAfter(file, null), null);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    removeTreeSync(dir);
   }
 });
 
@@ -96,7 +97,7 @@ test('every owner line to one session is a tug with its path and state; lines to
     assert.deepEqual(tugs.filter((t) => tugOf(t, sessions[0])).map((t) => t.n), [5, 1]);
     assert.deepEqual(tugs.filter((t) => tugOf(t, sessions[1])).map((t) => t.n), [2]);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    removeTreeSync(root);
   }
 });
 
@@ -190,8 +191,6 @@ test('GET /api/sessions/:id carries its tugs: sent, seen after the steer hook, a
     assert.equal((await tugs(G))[0].state, 'seen');
     assert.equal((await tugs(A)).length, 1, 'a stream tug never shows on a terminal session');
   } finally {
-    await app.close();
-    fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
-    fs.rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree([repo, home], { stop: [() => app.close()] });
   }
 });

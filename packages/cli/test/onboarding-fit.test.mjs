@@ -10,6 +10,7 @@ import path from 'node:path';
 import { createElement, Fragment } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { kitLock, nextSpecOf } from '../server/repo.mjs';
+import { removeTreeSync } from './helpers/tmp.mjs';
 
 // The data client reads its launch token from the page at import: a bare page for the screens imported here.
 globalThis.window ||= { location: { href: 'http://localhost/' }, history: { replaceState() {} } };
@@ -29,7 +30,7 @@ test('kitLock reads version and ref from plan/nexus.lock, tolerating a missing o
     assert.deepEqual(kitLock(dir), { version: null, ref: 'main' });
     fs.writeFileSync(path.join(dir, 'plan', 'nexus.lock'), '# nothing pinned\n');
     assert.equal(kitLock(dir), null);
-  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  } finally { removeTreeSync(dir); }
 });
 
 test('Detect names the lock version for an adopted repo, and stays plain without a lock', async () => {
@@ -51,7 +52,7 @@ test('nextSpecOf names the next spec number; fresh only when the repo has no spe
     fs.mkdirSync(path.join(dir, 'plan'));
     fs.writeFileSync(path.join(dir, 'plan', '46-something.md'), '# 46\n');
     assert.deepEqual(nextSpecOf(dir), { n: 47, prefix: 'plan/47-', fresh: false });
-  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  } finally { removeTreeSync(dir); }
 });
 
 test('the Plot step names the spec: explode\'s file, else the next number, and "the first spec" only in a fresh repo', async () => {

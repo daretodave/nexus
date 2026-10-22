@@ -7,11 +7,11 @@ import path from 'node:path';
 import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { startServer } from '../server/server.mjs';
+import { removeTree, until } from './helpers/tmp.mjs';
 import { cleanGit, worktreeRoot } from '../server/fleet.mjs';
 import { formNext, formReady, formStart, formWords, lastLine } from '../shared/forming.mjs';
 
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- the root ------------------------------------------------------------------------
 
@@ -137,13 +137,12 @@ function hello(app, session) {
   });
 }
 
-async function formOf(app, id, until) {
-  for (let i = 0; i < 200; i++) {
+// Polled against a generous deadline, never a count of naps: a loaded machine only stretches the wait.
+async function formOf(app, id, done) {
+  return until(async () => {
     const f = (await hello(app, id)).status.form;
-    if (f && until(f)) return f;
-    await wait(50);
-  }
-  throw new Error('the form never got there');
+    return f && done(f) ? f : null;
+  }, { ms: 120000, every: 50, what: 'the form to get there' });
 }
 
 /** git through runClean, with `worktree add` held until `gate` opens (a slow checkout), and every call recorded. */
@@ -191,7 +190,7 @@ test('POST /api/sessions answers before the worktree exists; it forms behind, th
     assert.ok(fs.existsSync(path.join(s.worktree, 'README.md')));
     const p = by.get(s.id);
     assert.equal(path.resolve(p.hooks.repo), path.resolve(s.worktree), 'the agent starts in its worktree');
-    for (let i = 0; i < 40 && p.sent.length < 2; i++) await wait(25);
+    await until(() => p.sent.length >= 2, { ms: 30000, what: 'the held prompts' }).catch(() => null);
     assert.deepEqual(p.sent, ['/heads-down', 'and then this'], 'held prompts go in order once it is ready');
     // The worktree add ran through the repo's hooks, made safe (cloud.mjs safeHooks).
     const add = g.calls.find((a) => a.includes('worktree') && a.includes('add'));
@@ -200,8 +199,7 @@ test('POST /api/sessions answers before the worktree exists; it forms behind, th
     assert.equal((await call(app, '/api/sessions')).json.find((x) => x.id === s.id).form, undefined, 'a ready form leaves the list');
   } finally {
     g.open();
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });
 
@@ -230,8 +228,7 @@ test('a worktree that fails to form says why, and Retry forms it in the same pla
     assert.equal(path.resolve(by.get(s.id).hooks.repo), path.resolve(s.worktree));
     assert.equal((await call(app, '/api/sessions/nope0000/retry', {})).status, 404);
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });
 
@@ -246,7 +243,6 @@ test('a configured worktreeRoot in .nexus/local.json places the worktree', async
     await formOf(app, s.id, (x) => x.state === 'ready');
     assert.ok(fs.existsSync(path.join(s.worktree, 'README.md')));
   } finally {
-    await app.close();
-    fs.rmSync(parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(parent, { stop: [() => app.close()] });
   }
 });

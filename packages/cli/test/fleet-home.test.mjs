@@ -8,6 +8,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { startServer } from '../server/server.mjs';
+import { removeTree } from './helpers/tmp.mjs';
 import { fileURLToPath } from 'node:url';
 import { fleetRows, inboxItems, isEnded, markEnded, parkedId, parseParkedId, phaseOf, progressOf, resumable, resumePrompt, sameParked } from '../server/fleet-home.mjs';
 import { norm, FILTERS } from '../src/screens/fleet/model.js';
@@ -70,8 +71,7 @@ async function withApp(opts, fn) {
   try {
     await fn({ ...t, ...f, app });
   } finally {
-    await app.close();
-    fs.rmSync(t.parent, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    await removeTree(t.parent, { stop: [() => app.close()] });
   }
 }
 

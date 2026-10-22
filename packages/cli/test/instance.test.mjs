@@ -7,9 +7,10 @@ import http from 'node:http';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { startServer } from '../server/server.mjs';
 import { FILE, findRunning, instanceFile, pidAlive, readInstance, removeInstance, writeInstance } from '../server/instance.mjs';
+import { removeTree, removeTreeSync } from './helpers/tmp.mjs';
 
-// Windows keeps a folder busy for a moment after the processes that used it exit: retry, bounded.
-const rm = (dir) => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+// Windows keeps a folder busy for a moment after the processes that used it exit: the shared teardown retries.
+const rm = (dir) => removeTreeSync(dir);
 
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
 const fake = () => ({ kind: 'fake', send() {}, async interrupt() {}, async stop() {}, async fresh() {} });
@@ -144,11 +145,7 @@ test('npx twice: the second launch prints the first one\'s link and exits', asyn
     assert.match(second.stdout, /already running/);
     assert.ok(second.stdout.includes(url), 'the same link, not a second server');
   } finally {
-    if (first.exitCode === null && first.signalCode === null) {
-      const gone = new Promise((r) => first.once('exit', r));
-      first.kill();
-      await gone;
-    }
-    rm(root);
+    // The launch and everything it started (its git, its claims reads), as a tree: a bare kill leaves them holding root.
+    await removeTree(root, { children: [first] });
   }
 });

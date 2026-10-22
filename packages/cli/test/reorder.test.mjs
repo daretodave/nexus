@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import { applyExact, chunkBlocks, listedIds, pendingName, pendingText, reorderEdits, settledPlan, writeReorder, clock } from '../server/reorder.mjs';
 import { inListedOrder } from '../server/plan.mjs';
+import { removeTreeSync } from './helpers/tmp.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'templates', 'scripts');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -178,7 +179,7 @@ test('writeReorder: the pending file settles cleanly, plan-check passes the sett
     assert.deepEqual(fs.readdirSync(path.join(dir, 'plan', 'pending')).filter((n) => n.startsWith('reorder-')), []);
     assert.equal(run(dir, ['scripts/plan-check.mjs']).status, 0);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTreeSync(dir);
   }
 });
 
@@ -196,7 +197,7 @@ test('writeReorder: a pending close is never moved, nor an anchor', async () => 
     const pc = run(dir, ['scripts/plan-check.mjs']);
     assert.equal(pc.status, 0, pc.stdout + pc.stderr);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeTreeSync(dir);
   }
 });
 
