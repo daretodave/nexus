@@ -7,3 +7,19 @@ body { background: var(--bg); }
 /* A tile clips its sky (overflow: hidden); while its git strip shows the last
    five commits (FleetKit: git strip, hovered), the .git-pop must spill out. */
 .tile:has(.git.is-open) { overflow: visible; z-index: 6; }
+
+/* The claims rail scrolls in its own panel (spec 47 A9): the board's height
+   bounds it as it bounds the chunk list, so a long rail never grows the page. */
+.pboard > aside.pb-main { max-height: 100%; overflow: auto; padding-bottom: 8px; scrollbar-width: thin; }
+
+/* A session's run of one spec's chunks, folded to one .cr-claim line with a
+   chevron (as .spec-tog turns); open, its rows sit under it. */
+.cr-run { display: flex; flex-direction: column; gap: 1px; }
+.cr-run-h { width: 100%; padding: 0; border: 0; border-radius: 6px; background: transparent; font: inherit; text-align: left; cursor: pointer; grid-template-columns: auto minmax(0, 1fr) auto; }
+.cr-run-h:hover { color: var(--text); }
+.cr-run-h .id { display: inline-flex; align-items: center; gap: 4px; }
+.cr-run-h .id .ic { color: var(--text-3); transition: transform var(--dur-settle) var(--ease-settle); }
+.cr-run.is-open > .cr-run-h .id .ic { transform: rotate(90deg); }
+.cr-run-h .t { color: var(--text-3); }
+.cr-claim.cr-run-h:hover .exp, .cr-claim.cr-run-h:focus-within .exp { visibility: visible; }
+.cr-run-rows { display: flex; flex-direction: column; gap: 1px; margin-left: 16px; }

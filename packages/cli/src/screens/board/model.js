@@ -103,7 +103,7 @@ export function claimView(row, ctx, now = Date.now()) {
     const name = heldMe ? 'you' : (typeof row.held === 'string' && row.held ? row.held : whoName);
     return { ...base, kind: 'held', person: name, label: `${name} · held`, since: 'never expires', exp: 'held · never expires' };
   }
-  const sess = (sessions || []).find((s) => s.id === row.session || s.claimsSession === row.session);
+  const sess = sessionOf(sessions, row.session);
   // A claim's tag names its session's star (s:<session>~<star>) even when no live session row does.
   const star = sess?.name || row.star || '';
   const exp = stale ? `stale · ${since}` : pr ? `in review · ${pr}` : `${since} · ${left} left`;
@@ -118,6 +118,19 @@ export function claimView(row, ctx, now = Date.now()) {
   }
   const sname = star || (row.session ? String(row.session).slice(0, 8) : '');
   return { ...base, kind: 'other', person: whoName, label: sname ? `${whoName} · ${sname}` : whoName, since: pr || since, exp, initial: whoName.slice(0, 1).toLowerCase() };
+}
+
+/**
+ * The session row a claim's session tag names: by id, Claude Code id or claims session, else (a tag of 8 or more
+ * characters, as the ledger's `claims` writes it) the session whose id starts with it.
+ */
+export function sessionOf(sessions, tag) {
+  const t = String(tag || '');
+  if (!t) return null;
+  const list = sessions || [];
+  return list.find((s) => s.id === t || s.claude === t || s.claimsSession === t)
+    || (t.length >= 8 ? list.find((s) => String(s.id || '').startsWith(t) || String(s.claude || '').startsWith(t)) : null)
+    || null;
 }
 
 /** Index the claims: chunk claims by id, spec claims (a bare number) by spec. */
@@ -282,15 +295,19 @@ export function railPeople(rows, ctx, chunkById, specById, now) {
     if (!p.sessions.has(skey)) {
       const s = v.sess;
       const star = v.kind === 'sess' ? v.who : '';
-      const name = v.kind === 'held' ? 'held' : v.kind === 'cloud' ? `run #${v.run}` : (s?.name || r.star || (v.session ? String(v.session).slice(0, 8) : 'no session'));
+      const name = v.kind === 'held' ? 'held' : v.kind === 'cloud' ? `run #${v.run}` : sessName(s || sessionOf(ctx.sessions, v.session), r, v);
       const d = v.kind === 'held' ? '' : s ? sessionWord(s) : v.kind === 'cloud' && r.at ? hhmm(r.at) : '';
-      p.sessions.set(skey, { key: skey, name, star, d, claims: [] });
+      p.sessions.set(skey, { key: skey, name, star, d, named: v.kind === 'held' || v.kind === 'cloud' || name !== idName(s || sessionOf(ctx.sessions, v.session), v), claims: [] });
     }
+    const ps = p.sessions.get(skey);
+    // A claim made before its session had a star reads the bare id; a later one of the same session names the star.
+    if (!ps.named && r.star) Object.assign(ps, { name: r.star, named: true });
+    if (!ps.star && v.kind === 'sess') ps.star = v.who;
     const isSpec = isSpecId(r.id);
     const t = isSpec ? (specById[specKey(r.id)]?.title || '') : (chunkById[String(r.id)]?.t || '');
     p.sessions.get(skey).claims.push({ id: isSpec ? `spec ${specKey(r.id)}` : String(r.id), rawId: String(r.id), t, v });
   }
-  const list = [...people.values()].map((p) => ({ ...p, sessions: [...p.sessions.values()] }));
+  const list = [...people.values()].map((p) => ({ ...p, sessions: [...p.sessions.values()].map((x) => ({ ...x, lines: foldClaims(x.claims, x.key) })) }));
   const you = list.filter((p) => p.you);
   const cloud = list.filter((p) => p.av === 'cloud');
   const rest = list.filter((p) => !p.you && p.av !== 'cloud').sort((a, b) => Number(b.owner) - Number(a.owner) || a.name.localeCompare(b.name));
@@ -301,6 +318,59 @@ export function railPeople(rows, ctx, chunkById, specById, now) {
   for (const p of rest) p.d = p.owner ? 'owner' : 'contributor';
   for (const p of cloud) p.d = ctx.cloudNext ? `next run ${ctx.cloudNext}` : '';
   return [...you, ...rest, ...cloud];
+}
+
+/** A session's name with no star: the live row's id-cut name (GET /api/sessions names a starless session by its 8-char id), else the tag's. */
+function idName(s, v) {
+  const live = s?.name && !String(s.id || '').startsWith(s.name) && !String(s.claude || '').startsWith(s.name) ? '' : s?.name;
+  return live || (v.session ? String(v.session).slice(0, 8) : 'no session');
+}
+
+/** A session's name in the rail: its star (the live row's, else the claim tag's ~star), else its 8-char id. */
+function sessName(s, r, v) {
+  const live = s?.name && idName(s, v) !== s.name ? s.name : '';
+  return live || r.star || idName(s, v);
+}
+
+/** Chunk ids in plan order: 59.9 before 59.10, a spec claim (59) before its chunks. */
+export const byChunkId = (a, b) => String(a).localeCompare(String(b), 'en', { numeric: true });
+
+/** A run of this many chunks of one spec, or more, folds into one line. */
+export const FOLD_MIN = 3;
+
+/**
+ * One session's claims as the rail lists them (spec 47 A9). Its chunk claims of one spec, FOLD_MIN or more, fold into
+ * one run line, gaps and all: first and last id, how many, and the age and time left once, from the oldest claim (the
+ * soonest to expire). Fewer, a spec claim, or a claim in review stay rows of their own. In chunk-id order.
+ * claims: railPeople's [{ id, rawId, t, v }] -> [{ kind: 'claim', c } | { kind: 'run', key, spec, from, to, n, exp, expKind, claims }]
+ */
+export function foldClaims(claims, sessKey = '') {
+  const sorted = [...(claims || [])].sort((a, b) => byChunkId(a.rawId, b.rawId));
+  const foldable = (c) => !isSpecId(c.rawId) && String(c.rawId).includes('.') && !c.v?.pr;
+  const bySpec = new Map();
+  for (const c of sorted) {
+    if (!foldable(c)) continue;
+    const sp = specOf(c.rawId);
+    if (!bySpec.has(sp)) bySpec.set(sp, []);
+    bySpec.get(sp).push(c);
+  }
+  const out = [];
+  const done = new Set();
+  for (const c of sorted) {
+    if (done.has(c)) continue;
+    const run = foldable(c) ? bySpec.get(specOf(c.rawId)) : null;
+    if (!run || run.length < FOLD_MIN) { out.push({ kind: 'claim', c }); continue; }
+    for (const x of run) done.add(x);
+    const at = (x) => { const t = Date.parse(x.v?.raw?.at); return Number.isFinite(t) ? t : Infinity; };
+    const oldest = run.reduce((o, x) => (at(x) < at(o) ? x : o), run[0]);
+    const ov = oldest.v || {};
+    const spec = specOf(c.rawId);
+    out.push({
+      kind: 'run', key: `${sessKey}|${spec}`, spec, from: run[0].id, to: run[run.length - 1].id, n: run.length,
+      exp: ov.exp || '', expKind: ov.kind === 'held' ? 'held' : ov.stale ? 'stale' : undefined, claims: run,
+    });
+  }
+  return out;
 }
 
 /** "02:30": a cloud run's start, local time. */

@@ -5,6 +5,7 @@
 import {
   AiGlyph, SizeTag, Icon, Moon, Grip, Star, Pct, ChunkIt, CkQ, CRail, CrPerson, CrSess, CrClaim, ReqPop, ChoiceButtons, KeyBadge, KeyMoon, cx,
 } from '../../ui/index.js';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PATHS } from '../../routes.js';
 import { CS, GH_LOGIN, ownerLead } from './model.js';
@@ -215,8 +216,29 @@ export function PlanPr({ pr }) {
   );
 }
 
-/** The claims rail (.crail): by person, then session; actions on hover per mode. */
+/**
+ * The claims rail (.crail): by person, then session; actions on hover per mode. A session's run of one spec's chunks
+ * is one folded line (spec 47 A9: model.js foldClaims) that opens to its rows; the rail scrolls in its own panel.
+ */
 export function ClaimsRail({ people, owner, onRelease, onReassign, busy, note, empty, pickFor = () => null }) {
+  const [open, setOpen] = useState(() => new Set());
+  const toggle = (key) => setOpen((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  const row = (pp, c) => {
+    const cl = c.v;
+    const isCloud = cl.kind === 'cloud';
+    const canRelease = (pp.you || owner) && !isCloud;
+    const canReassign = owner && !pp.you && !isCloud;
+    const acts = canRelease || canReassign ? (
+      <>
+        {canRelease ? <button className="btn btn-ghost" type="button" disabled={busy === c.rawId} onClick={() => onRelease(c.rawId)}>Release</button> : null}
+        {canReassign ? <button className="btn btn-ghost" type="button" disabled={busy === c.rawId} aria-expanded={pickFor(c.rawId) ? 'true' : 'false'} onClick={() => onReassign(c.rawId)}>Reassign</button> : null}
+      </>
+    ) : <span className="exp" style={{ visibility: 'visible' }}>{cl.exp}</span>;
+    return (
+      <CrClaim key={c.id} id={c.id} t={c.t} exp={cl.exp} expKind={cl.kind === 'held' ? 'held' : cl.stale ? 'stale' : undefined} gone={c.gone} acts={acts}
+        hover={!!pickFor(c.rawId)} pop={pickFor(c.rawId) ? <ReassignPop p={pickFor(c.rawId)} style={{ right: 0 }} /> : null} />
+    );
+  };
   return (
     <CRail cap={owner ? 'you can release or reassign any claim' : 'your own claims show actions'}>
       {note ? <span className="t-body-s c-3">{note}</span> : null}
@@ -225,20 +247,21 @@ export function ClaimsRail({ people, owner, onRelease, onReassign, busy, note, e
         <CrPerson key={pp.name} initial={pp.initial} av={pp.av} name={pp.name} d={pp.d}>
           {pp.sessions.map((x) => (
             <CrSess key={x.key} session={x.star ? { name: x.star, kind: 'local' } : null} title={x.name} state={x.d}>
-              {x.claims.map((c) => {
-                const cl = c.v;
-                const isCloud = cl.kind === 'cloud';
-                const canRelease = (pp.you || owner) && !isCloud;
-                const canReassign = owner && !pp.you && !isCloud;
-                const acts = canRelease || canReassign ? (
-                  <>
-                    {canRelease ? <button className="btn btn-ghost" type="button" disabled={busy === c.rawId} onClick={() => onRelease(c.rawId)}>Release</button> : null}
-                    {canReassign ? <button className="btn btn-ghost" type="button" disabled={busy === c.rawId} aria-expanded={pickFor(c.rawId) ? 'true' : 'false'} onClick={() => onReassign(c.rawId)}>Reassign</button> : null}
-                  </>
-                ) : <span className="exp" style={{ visibility: 'visible' }}>{cl.exp}</span>;
+              {(x.lines || x.claims.map((c) => ({ kind: 'claim', c }))).map((ln) => {
+                if (ln.kind === 'claim') return row(pp, ln.c);
+                // A row of the run with Reassign's picker on it keeps the run open.
+                const isOpen = open.has(ln.key) || ln.claims.some((c) => pickFor(c.rawId));
+                const label = `${ln.from}–${ln.to}`;
                 return (
-                  <CrClaim key={c.id} id={c.id} t={c.t} exp={cl.exp} expKind={cl.kind === 'held' ? 'held' : cl.stale ? 'stale' : undefined} gone={c.gone} acts={acts}
-                    hover={!!pickFor(c.rawId)} pop={pickFor(c.rawId) ? <ReassignPop p={pickFor(c.rawId)} style={{ right: 0 }} /> : null} />
+                  <div key={ln.key} className={cx('cr-run', isOpen && 'is-open')}>
+                    <button className="cr-claim cr-run-h" type="button" onClick={() => toggle(ln.key)} aria-expanded={isOpen ? 'true' : 'false'}
+                      aria-label={`${isOpen ? 'Fold' : 'Show'} ${ln.n} claimed chunks, ${label}`}>
+                      <span className="id"><Icon name="chevronRight" size={12} />{label}</span>
+                      <span className="t">{ln.n} chunks</span>
+                      <span className={cx('exp', ln.expKind && `is-${ln.expKind}`)}>{ln.exp}</span>
+                    </button>
+                    {isOpen ? <div className="cr-run-rows">{ln.claims.map((c) => row(pp, c))}</div> : null}
+                  </div>
                 );
               })}
             </CrSess>
