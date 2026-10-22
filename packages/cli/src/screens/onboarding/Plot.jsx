@@ -13,7 +13,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, Kbd, ChoiceButtons, SessTag, SizeTag, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
-import { server } from '../../data/index.js';
+import { server, useAppState } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next } from './frame.jsx';
 import { useDraft } from './draft.js';
@@ -46,6 +46,22 @@ function Marked({ text, quotes }) {
     rest = rest.slice(best.i + best.n);
   }
   return parts;
+}
+
+/**
+ * How the Lands note names the spec: the file explode named, else the next spec number this repo would take
+ * (GET /api/state info.nextSpec), and "the first spec" only in a repo with no spec at all.
+ * @returns {{ code: string|null, words: string }}
+ */
+export function specWords(specFile, next) {
+  if (specFile) return { code: specFile, words: '' };
+  if (next && !next.fresh && next.n) return { code: `${next.prefix || `plan/${next.n}-`}…`, words: 'a new spec, ' };
+  return { code: null, words: 'the first spec' };
+}
+
+function SpecName({ specFile, next }) {
+  const w = specWords(specFile, next);
+  return <>{w.words}{w.code ? <code>{w.code}</code> : null}</>;
 }
 
 /** Kept ideas become chunks in board order; merged ideas fold into theirs. */
@@ -86,7 +102,9 @@ export default function Plot() {
 
   const thoughts = d.thoughts ?? d.building ?? '';
   const ideas = d.ideas || [];
-  const specN = d.spec?.n || 1;
+  const app = useAppState();
+  const next = app.data?.info?.nextSpec || null;
+  const specN = d.spec?.n || next?.n || 1;
   const specFile = d.spec?.file || null;
   const { chunks, idOf } = useMemo(() => planFrom(ideas, d.place || {}, specN), [ideas, d.place, specN]);
   const showText = !ideas.length || editing;
@@ -333,12 +351,12 @@ ${t.plot}`} className={st === 'sent' ? 'idea is-kept' : t.kind === 'built' ? 'id
           {owner ? (
             <div className="lands">
               <Icon name="lockOne" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--owner)' }} />
-              <span><b>Lands on main</b> as {specFile ? <code>{specFile}</code> : 'the first spec'} with {chunks.length} chunks. You own this checkout, so there is no plan PR to wait for.</span>
+              <span><b>Lands on main</b> as <SpecName specFile={specFile} next={next} /> with {chunks.length} chunks. You own this checkout, so there is no plan PR to wait for.</span>
             </div>
           ) : (
             <div className="lands">
               <Icon name="contribOne" size={14} style={{ marginTop: 3, flex: 'none' }} />
-              <span><b>Opens a plan PR</b> with {specFile ? <code>{specFile}</code> : 'the first spec'} and {chunks.length} chunks, so the owner reviews your plan like code.</span>
+              <span><b>Opens a plan PR</b> with <SpecName specFile={specFile} next={next} /> and {chunks.length} chunks, so the owner reviews your plan like code.</span>
             </div>
           )}
         </div>

@@ -313,7 +313,7 @@ export default function Cockpit() {
           <StageView view={stageView} basin={basin} river={river} riverCap={river && river.length ? `${river.length} this session` : ''} drop={drop} marks={marks} forming={formingNow ? { form, now: tick, onRetry: retryForm, retrying } : null} />
         </section>
       </Panes>
-      <ToastHost toasts={toasts} />
+      <ToastHost toasts={toasts} clear="composer" />
     </AppFrame>
   );
 }

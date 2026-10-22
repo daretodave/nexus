@@ -1,0 +1,13 @@
+/* Where toasts sit (spec 47, A3; ui/feedback.jsx toastHostClass). Bottom right, never over a footer or the composer:
+   onboarding's foot row is 26px of padding plus a 44px button, so a toast there rides above it; the cockpit's dock
+   only sits under the toasts once the panes stack (max-width 760px), so it lifts there. Links in a toast take the
+   accent so a doc it names reads as one in both themes. */
+.toast-host { position: fixed; z-index: 20; right: 24px; bottom: 24px; display: flex; flex-direction: column; gap: 10px; max-width: calc(100vw - 32px); }
+.toast-host.is-clear-foot { bottom: 92px; }
+.toast-host .toast { max-width: 100%; }
+.toast-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .toast-host { right: 16px; }
+  .toast-host.is-clear-foot { bottom: 132px; }
+  .toast-host.is-clear-composer { bottom: 180px; }
+}

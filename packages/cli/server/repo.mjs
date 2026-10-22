@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { run, json } from './sh.mjs';
 import { isOwner as effectiveOwner } from './local.mjs';
+import { nextSpec } from './explode.mjs';
 
 export const CHUNK_ID = /^[0-9]{1,3}(?:\.[0-9a-z]+)?$/;
 
@@ -30,7 +31,29 @@ export async function repoInfo(repo) {
     lastCommit: head.ok ? head.stdout.trim() : null,
     owner: isOwner(repo),
     adopted: isAdopted(repo),
+    kit: kitLock(repo),
+    nextSpec: nextSpecOf(repo),
   };
+}
+
+/** The spec a new plot would write ({ n, prefix: 'plan/48-', fresh }); fresh means the repo has no spec at all yet. */
+export function nextSpecOf(repo) {
+  const { n, width, signals } = nextSpec(repo);
+  return { n, prefix: `plan/${String(n).padStart(width, '0')}-`, fresh: !Object.keys(signals).length };
+}
+
+/** The kit version plan/nexus.lock pins ({ version, ref }), or null with no readable lock. Names only. */
+export function kitLock(repo) {
+  let text;
+  try { text = fs.readFileSync(path.join(repo, 'plan', 'nexus.lock'), 'utf8'); } catch { return null; }
+  const field = (k) => {
+    const line = text.split(/\r?\n/).find((l) => l.startsWith(`${k}:`));
+    const v = line ? line.slice(k.length + 1).replace(/#.*$/, '').trim().replace(/^['"]|['"]$/g, '') : '';
+    return v || null;
+  };
+  const version = field('version');
+  const ref = field('ref');
+  return version || ref ? { version, ref } : null;
 }
 
 /** Effective owner mode (server/local.mjs): `.owner` at the primary root, not switched off in .nexus/local.json. */

@@ -4,6 +4,7 @@
 // .stage + .starfield, .river, .drop.
 import { Icon } from './icons.jsx';
 import { cx } from './controls.jsx';
+import '../styles/orb-glyph.css';
 
 /** The glyph inside each orb state; idle, fallen, never and relight carry none. */
 export const ORB_GLYPH = {

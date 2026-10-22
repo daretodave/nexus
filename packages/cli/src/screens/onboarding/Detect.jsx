@@ -10,6 +10,14 @@ import { ObFrame, Back, Next, useCopy, CopyFace } from './frame.jsx';
 
 const INSTALL = 'npm install -g @anthropic-ai/claude-code';
 
+/** The lock's pin as words: "2.0.0", or the ref when the lock names no version. */
+export function kitVersion(kit) {
+  return kit?.version || kit?.ref || null;
+}
+const kitShort = (kit) => (kitVersion(kit) ? `nexus ${kitVersion(kit)}` : null);
+/** ", nexus 2.0.0 (plan/nexus.lock)" for an adopted repo with a lock; nothing without one. */
+const kitLine = (kit) => (kitVersion(kit) ? <>, <code>nexus {kitVersion(kit)}</code> (plan/nexus.lock)</> : null);
+
 /** star: 'lit' | 'warn' | 'neutral' | 'wait'; state: 'ok' | 'warn' | 'new' | 'wait'. */
 export function rowsFrom(pf) {
   if (!pf) {
@@ -40,7 +48,7 @@ export function rowsFrom(pf) {
     ? { star: 'lit', state: 'ok', word: 'signed in', short: 'signed in', detail: <><code>gh</code> is signed in, so sessions can open pull requests.</> }
     : { star: 'neutral', state: 'new', word: 'optional', short: 'optional', detail: <>{c.gh?.detail || 'Not signed in.'} Only the cloud loop and pull requests need <code>gh</code>.</> };
   const nexus = info.adopted
-    ? { star: 'lit', state: 'ok', word: 'adopted', short: 'adopted', detail: 'Already adopted: agents.md, plan/ and .claude/commands are here.' }
+    ? { star: 'lit', state: 'ok', word: 'adopted', short: kitShort(info.kit) || 'adopted', detail: <>Already adopted{kitLine(info.kit)}: agents.md, plan/ and .claude/commands are here.</> }
     : { star: 'neutral', state: 'new', word: 'new here', short: 'not adopted yet', detail: 'Not adopted yet. The next steps set it up.' };
   return { claude, git, gh, nexus };
 }

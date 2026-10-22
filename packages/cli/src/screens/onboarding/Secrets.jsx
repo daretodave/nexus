@@ -230,7 +230,7 @@ export default function Secrets() {
           </div>
         ) : null}
       </div>
-      <ToastHost toasts={toasts} />
+      <ToastHost toasts={toasts} clear="foot" />
     </ObFrame>
   );
 }

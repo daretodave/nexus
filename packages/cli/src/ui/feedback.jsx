@@ -3,6 +3,7 @@
 import { Icon } from './icons.jsx';
 import { cx, NavA } from './controls.jsx';
 import { STEPS } from './steps.js';
+import '../styles/toast-host.css';
 
 /**
  * .stepper: a constellation. `current` is a step id; `done` and `skipped`
@@ -42,6 +43,41 @@ export function Ring({ value, size, color, num, indeterminate, label }) {
   );
 }
 
+const KIT_BLOB = 'https://github.com/daretodave/nexus/blob/main/';
+const DOC_RE = /https:\/\/github\.com\/daretodave\/nexus\/blob\/main\/([\w./-]+\.md)|\b(?:nexus\/)?((?:playbooks|concepts|customization|prompts|templates)\/[\w./-]+\.md)/g;
+
+/**
+ * A toast's text split so every kit doc it names is a link: a bare kit path (customization/secrets.md, or
+ * nexus/...) or the kit's own blob URL becomes { path, href }; the rest stays text.
+ * @returns {Array<string|{ path: string, href: string }>}
+ */
+export function docParts(text) {
+  if (typeof text !== 'string') return [text];
+  const out = [];
+  let at = 0;
+  for (const m of text.matchAll(DOC_RE)) {
+    if (m.index > at) out.push(text.slice(at, m.index));
+    const p = m[1] || m[2];
+    out.push({ path: p, href: KIT_BLOB + p });
+    at = m.index + m[0].length;
+  }
+  if (at < text.length) out.push(text.slice(at));
+  return out.length ? out : [text];
+}
+
+function DocText({ text }) {
+  if (typeof text !== 'string') return text;
+  return docParts(text).map((x, i) => (typeof x === 'string' ? x : <a key={i} href={x.href} target="_blank" rel="noreferrer">{x.path}</a>));
+}
+
+/**
+ * Where a ToastHost sits: bottom right, lifted clear of what a screen keeps at its foot. clear: 'foot' (onboarding's
+ * Back/Continue row) | 'composer' (the cockpit's dock, which sits under the toasts once the panes stack) | none.
+ */
+export function toastHostClass(clear) {
+  return `toast-host${clear === 'foot' ? ' is-clear-foot' : clear === 'composer' ? ' is-clear-composer' : ''}`;
+}
+
 const TOAST_ICON = { info: 'plot', shipped: 'commit', needs: null, error: 'warn' };
 
 /**
@@ -55,7 +91,7 @@ export function Toast({ kind = 'info', icon, title, body, actions, onDismiss }) 
       <span className="toast-ic">{kind === 'needs' && !icon ? <span className="park-mark" /> : <Icon name={ic} />}</span>
       <span>
         <span className="toast-title" style={{ display: 'block' }}>{title}</span>
-        {body ? <span className="toast-body">{body}</span> : null}
+        {body ? <span className="toast-body"><DocText text={body} /></span> : null}
         {actions ? <span className="toast-acts">{actions}</span> : null}
       </span>
       {onDismiss ? <button className="chip-x" type="button" aria-label="Dismiss" onClick={onDismiss}><Icon name="x" size={12} /></button> : <span />}
@@ -63,11 +99,11 @@ export function Toast({ kind = 'info', icon, title, body, actions, onDismiss }) 
   );
 }
 
-/** Where toasts live: bottom right, never more than two, never over the composer. */
-export function ToastHost({ toasts = [] }) {
+/** Where toasts live: bottom right, never more than two, never over the composer or a footer (toastHostClass). */
+export function ToastHost({ toasts = [], clear }) {
   if (!toasts.length) return null;
   return (
-    <div style={{ position: 'fixed', zIndex: 20, right: 24, bottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className={toastHostClass(clear)}>
       {toasts.slice(-2).map((t) => <div key={t.id} style={{ animation: 'nx-settle-in var(--dur-settle) var(--ease-settle) both' }}><Toast {...t} /></div>)}
     </div>
   );

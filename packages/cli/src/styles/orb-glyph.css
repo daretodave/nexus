@@ -1,0 +1,9 @@
+/* The glyph inside an orb stays in the orb (spec 47, A3). Art containers draw their own svg full-bleed
+   (.loop-art svg, .collapse svg, .const svg: position absolute, inset 0), and that rule also caught the orb's
+   glyph, so Welcome's thinking dots and Launch's ? sat at the orb's top left. An orb's own glyph is back in the
+   orb's grid, centred (.orb is place-items: center); .orb > .ic keeps its 44%.
+   Ink (onboarding's hero orbs): the glyph reads against its orb in both themes. Thinking's violet takes light ink; blocked keeps the
+   theme's orb ink, which is dark on the dark theme's yellow and light on the light theme's amber. */
+.orb > svg.ic { position: relative; inset: auto; }
+.ob .orb.st-thinking > svg.ic { color: var(--ink-50); filter: drop-shadow(0 0 1.5px color-mix(in oklab, var(--ink-900) 55%, transparent)); }
+.ob .orb.st-blocked > svg.ic { color: var(--orb-ink); }
