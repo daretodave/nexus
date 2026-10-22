@@ -5,8 +5,8 @@
 //
 //   fleet-to-tug    four star-named sessions breathing on the fleet; vega asks, everything hushes and the card
 //                   pulls into the conversation; the owner answers; the stage wakes and the chunk lands on main
-//   bug-to-archive  "the PDF export crashes on long seasons" goes to /bug; the chunk slots into the plan, is
-//                   claimed, built, gated and closed
+//   bug-to-archive  "the PDF export crashes on long seasons" shows a /bug chip; accepted, the chunk slots into
+//                   the plan, is claimed, built, gated and closed
 //   fall-and-resume deneb fell over mid-chunk; Resume on its tile picks it up and it finishes the chunk
 //   heads-down      altair works a claimed list of three chunks, one after another
 //
@@ -261,12 +261,14 @@ const BUG = 'the PDF export crashes on long seasons';
 export const bugToArchive = {
   name: 'bug-to-archive',
   title: 'Bug to archive',
-  summary: 'A bug typed in the composer goes to /bug; its chunk slots into the plan, is claimed, built, gated and closed.',
+  summary: 'A bug typed in the composer shows a /bug chip; accepted, its chunk slots into the plan, is claimed, built, gated and closed.',
   home: 'vega',
   shot: {
     start: 'vega',
     moves: [
-      { at: 400, type: 'textarea[aria-label="Message the session"]', keys: BUG, ms: 1200, enter: true, what: 'the composer' },
+      { at: 400, type: 'textarea[aria-label="Message the session"]', keys: BUG, ms: 1200, what: 'the composer' },
+      // Plain text goes as typed (A17): the /bug route is the suggestion chip, taken with a click.
+      { at: 2000, click: 'button.route-suggest-send', what: 'the /bug chip' },
     ],
   },
   fixtures: (ctx) => base(ctx),

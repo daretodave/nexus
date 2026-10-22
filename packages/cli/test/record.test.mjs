@@ -202,6 +202,9 @@ test('the shot: the scenario opens where it says and makes its moves in order; -
   assert.equal(bug.start, 'vega');
   const send = SCENARIOS['bug-to-archive'].script.find((s) => s.gate);
   assert.ok(bug.moves[0].at + bug.moves[0].ms < send.at + send.gate.auto, 'the line is sent before the script sends it');
+  assert.deepEqual(bug.moves.map((m) => m.click || m.type), ['textarea[aria-label="Message the session"]', 'button.route-suggest-send'], 'typed, then the /bug chip accepted (A17)');
+  assert.ok(!bug.moves[0].enter, 'Enter alone would send it as typed');
+  assert.ok(bug.moves[0].at + bug.moves[0].ms < bug.moves[1].at && bug.moves[1].at < send.at + send.gate.auto, 'the chip is taken before the script sends it');
   assert.deepEqual(shotFor(SCENARIOS['fleet-to-tug'], { session: 'sirius' }), { start: 'sirius', moves: [], seconds: null });
   assert.deepEqual(shotFor({ name: 'bare' }), { start: 'fleet', moves: [], seconds: null });
   assert.throws(() => shotFor({ name: 'bad', shot: { moves: [{ at: 100 }] } }), /bad: a shot move/);

@@ -40,8 +40,10 @@ You need no API key.
   without one gets a refusal, never a hand-written board.
 - **Cockpit** (`/s/<id>`): the session's phase track (Questions,
   Working, Questions, Package). On the left are the conversation and a
-  composer. Free text routes itself: a bug goes to `/bug`, a feature or
-  task to `/plot`, and a question is answered in place. On the right
+  composer. Text goes to the session as typed. When it reads like a bug
+  or a task, a chip suggests `/bug` or `/plot`; a click on it (or
+  Ctrl+Enter) sends it that way, and Enter alone never adds a command
+  to your words. On the right
   is the agent stage: the session is an orb, sub-agents bloom out on
   filaments, and a question from an agent pulls toward you. Each tug
   or answer you aim at the session draws its path from the inbox to
@@ -338,7 +340,7 @@ times, a click (`{ at, click, text }`) or a line typed into a field
 (`{ at, type, keys, ms, enter }`). `fleet-to-tug` opens on the fleet,
 clicks vega's tile and then the recommended answer, so the owner's turn
 is taken in the page, as the owner would; `bug-to-archive` types the bug
-into vega's composer. The pointer leaves after the last move, so the
+into vega's composer and clicks its `/bug` chip. The pointer leaves after the last move, so the
 poster shows the app alone. `--session <name>` opens that session's
 cockpit instead, with no moves.
 
