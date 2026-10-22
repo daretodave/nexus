@@ -149,7 +149,7 @@ test('inboxItems merges hosted asks, permissions, every held ledger\'s parked qu
     durable: [{ id: 'plan/a.md:3', file: 'plan/a.md', line: 3, text: 'Ship it?', source: 'open-question' }],
   });
   assert.deepEqual(items.map((x) => [x.src, x.kind, x.session?.name || null]), [
-    ['ask', 'now', 'vega'], ['ask', 'now', 'vega'], ['perm', 'now', 'vega'], ['inbox', 'parked', 'sirius'], ['durable', 'cloud', null],
+    ['ask', 'now', 'vega'], ['ask', 'now', 'vega'], ['perm', 'now', 'vega'], ['inbox', 'parked', 'sirius'], ['durable', 'plan', null],
   ]);
   const parked = items[3];
   assert.equal(parked.session.kind, 'terminal');

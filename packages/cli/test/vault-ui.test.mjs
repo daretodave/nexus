@@ -161,7 +161,7 @@ test('the inbox: a secret request is one key item per missing name, with no defa
   const { fromDurable, fromInbox } = await import('../src/screens/headsdown-inbox/inboxModel.js');
   const d = { id: 'plan/pending/secrets-07.1.md:5', file: 'plan/pending/secrets-07.1.md', line: 5, text: 'secret request 07.1: set A_KEY, B_KEY in your terminal', secret: { chunk: '07.1', names: ['A_KEY', 'B_KEY'], missing: ['B_KEY'] } };
   const items = fromDurable([d]);
-  assert.deepEqual(items.map((i) => [i.id, i.q, i.secret, i.hasDefault, i.kind]), [['plan:plan/pending/secrets-07.1.md:5:B_KEY', '07.1 needs B_KEY', 'B_KEY', false, 'cloud']]);
+  assert.deepEqual(items.map((i) => [i.id, i.q, i.secret, i.hasDefault, i.kind]), [['plan:plan/pending/secrets-07.1.md:5:B_KEY', '07.1 needs B_KEY', 'B_KEY', false, 'plan']]);
   assert.equal(fromInbox([{ id: 'plan:x', src: 'durable', durable: d }]).length, 1);
   assert.equal(fromDurable([{ id: 'q', file: 'plan/a.md', line: 1, text: 'A plain question?' }])[0].secret, undefined);
 });

@@ -1,0 +1,50 @@
+/* Oversight's plan questions (spec 47, A7), app glue beside nexus.css (which stays verbatim from the handoff).
+   Every value is a nexus.css token or derived from one, so both themes follow the tokens. The rows, groups,
+   panel and cards are the handoff's .ibx-* and .pcard; these classes add the per-spec grouping, the two-line
+   plan row, and the batch confirm. */
+
+/* A plan row has no tag column: the spec header above it says where it lives */
+.ibx-row.is-plan { grid-template-columns: 10px minmax(0, 1fr) auto; align-items: start; padding-top: 9px; padding-bottom: 9px; }
+.ibx-row.is-plan .urg { margin-top: 5px; }
+.ibx-row.is-plan .ibx-q {
+  white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  overflow: hidden; overflow-wrap: anywhere; text-wrap: pretty;
+}
+.ibx-row.is-plan .ibx-meta { margin-top: 2px; font-family: var(--font-mono); font-size: 11px; font-variant-ligatures: none; }
+.ibx-row.is-plan .ibx-meta b { font-family: var(--font-ui); font-size: 12px; }
+
+/* One spec's questions: a quiet header (number, title, open count), its rows under it */
+.ibx-spec { display: flex; flex-direction: column; gap: 5px; }
+.ibx-spec + .ibx-spec { margin-top: 8px; }
+.ibx-spec-h { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding: 2px 4px 0; }
+.ibx-spec-n { font-family: var(--font-mono); font-size: 12px; line-height: 16px; font-weight: 600; color: var(--accent); font-variant-ligatures: none; }
+.ibx-spec-t { min-width: 0; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibx-spec-t.is-file { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--text-2); font-variant-ligatures: none; }
+.ibx-spec-c { flex: none; margin-left: auto; font-size: 12px; line-height: 16px; color: var(--text-3); }
+
+/* The detail: the whole question, drawn */
+.pcard.is-plan .pcard-q { font-size: 14px; line-height: 21px; }
+.ibx-at { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-variant-ligatures: none; }
+.ibx-spec-link { color: var(--text); text-decoration: none; }
+.ibx-spec-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Batch-answer: the count on the button, and the list it would send */
+.ibx-batch { display: inline-flex; }
+.ibx-batch-n {
+  margin-left: 2px; padding: 0 6px; border-radius: var(--r-full);
+  background: color-mix(in oklab, var(--bg) 22%, transparent);
+  font-family: var(--font-mono); font-size: 11px; line-height: 16px; font-variant-ligatures: none;
+}
+.ibx-confirm {
+  display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 16px;
+  background: var(--surface-solid);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent), 0 0 30px -12px var(--glow);
+}
+.ibx-confirm-h { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 20px; color: var(--text); }
+.ibx-confirm-h b { font-weight: 600; }
+.ibx-confirm-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; margin: 0; padding: 0 0 0 18px; overflow: auto; }
+.ibx-confirm-list li { display: flex; flex-direction: column; gap: 1px; font-size: 13px; line-height: 19px; color: var(--text); }
+.ibx-confirm-list li::marker { color: var(--text-3); font-size: 12px; }
+.ibx-confirm-list .q { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.ibx-confirm-list .a { font-size: 12px; line-height: 16px; color: var(--text-3); }
+.ibx-confirm-list .a b { color: var(--text-2); font-weight: 600; }

@@ -5,11 +5,12 @@
 //   An older server without it falls back to:
 //   - live asks (AskUserQuestion), one row per question   -> Waiting now
 //   - live permission requests                            -> Waiting now
-//   - durable questions in plan/ ([needs-user-call], open questions)
-//                                                         -> From cloud runs
-//     (their answers land in the plan for the next loop, like a cloud run's)
+//   - durable questions in plan/ (a spec's Open questions, [needs-user-call] rows)
+//                                                         -> In the plan, grouped by spec
+//     (their answers land in the plan for the next loop or session)
+// "Cloud runs" holds only rows the server marks kind 'cloud' (a cloud run's parked oversight item); none do yet.
 //
-// An item: { id, kind: 'now'|'parked'|'cloud', src: 'inbox'|'ask'|'perm'|'durable',
+// An item: { id, kind: 'now'|'parked'|'cloud'|'plan', src: 'inbox'|'ask'|'perm'|'durable', spec ({ n, title }, a plan question in a spec),
 //   session: { name, kind } | null, sessionId, run, who, chunk, chunkT, phase,
 //   age, at, deadline (a live question: when its session takes the default), q, opts: [label], why, hasDefault,
 //   freeText, raw, secret? (a secret request: the name it waits on; answered by the key card, never by a default) }
@@ -160,17 +161,18 @@ function fromSecretRequest(d) {
   const { chunk = '', missing = [] } = d.secret || {};
   return missing.map((name) => ({
     id: `plan:${d.id}:${name}`,
-    kind: 'cloud',
+    kind: 'plan',
     src: 'durable',
     session: null,
     sessionId: null,
-    run: 'plan',
+    run: '',
     who: 'the plan',
     chunk,
     chunkT: '',
     phase: '',
     file: d.file,
     line: d.line,
+    spec: d.spec || null,
     age: '',
     at: '',
     q: `${chunk} needs ${name}`,
@@ -186,34 +188,89 @@ function fromSecretRequest(d) {
 /** A secret request row's shape (server/secrets.mjs REQUEST_ROW): `secret request <chunk>: set A, B ...`. */
 const SECRET_REQUEST = /secret request \S+?:\s*set\s+[A-Z][A-Z0-9_]*/;
 
+const bare = (s) => s.replace(/[*_`]/g, '').replace(/\s+/g, ' ').trim();
+
+/**
+ * The default a plan question names, or null: the words after "Recommendation:" or "Default:" (to the end of their
+ * sentence or line), or the option marked "(recommended)". Only a question that names one takes part in
+ * Batch-answer with defaults; the rest wait for a person's words.
+ */
+export function recommendedDefault(text) {
+  const t = String(text || '');
+  const named = /(?:^|[\s(*_-])(?:recommend(?:ation|ed)|default)\s*[*_]*\s*:\s*[*_]*\s*(.+)/im.exec(t);
+  if (named) {
+    const words = bare(named[1].split(/(?<=[.!?])\s|\n/)[0]).replace(/[.;]+$/, '');
+    if (words) return words;
+  }
+  const marked = /([^\n]*?)\s*\((?:recommended|the recommended default)\)/i.exec(t);
+  if (marked) {
+    const parts = marked[1].split(/[,;:?]|\bor\b|^\s*[-*+]\s|^\s*\d+[.)]\s|\s-\s/i);
+    const words = bare(parts[parts.length - 1] || '');
+    if (words) return words;
+  }
+  return null;
+}
+
 /**
  * Durable questions in plan/ -> items answered in words, landing in the plan (a secret request: key items). A secret
  * request the server did not mark (an older server, a vault it could not read) is dropped, never drawn as a
- * free-text question: its answer would go to a session, and a value never goes through one.
+ * free-text question: its answer would go to a session, and a value never goes through one. A question that names
+ * its recommended default carries it as its one option (hasDefault), so it can be approved or batch-answered.
  */
 export function fromDurable(rows = []) {
-  return rows.flatMap((d) => (d.secret ? fromSecretRequest(d) : SECRET_REQUEST.test(String(d.text || '')) ? [] : [{
-    id: `plan:${d.id}`,
-    kind: 'cloud',
-    src: 'durable',
-    session: null,
-    sessionId: null,
-    run: 'plan',
-    who: d.source === 'needs-user-call' ? 'needs-user-call' : 'open question',
-    chunk: '',
-    chunkT: '',
-    phase: '',
-    file: d.file,
-    line: d.line,
-    age: '',
-    at: '',
-    q: d.text,
-    opts: [],
-    why: '',
-    hasDefault: false,
-    freeText: true,
-    raw: d,
-  }]));
+  return rows.flatMap((d) => {
+    if (d.secret) return fromSecretRequest(d);
+    if (SECRET_REQUEST.test(String(d.text || ''))) return [];
+    const def = recommendedDefault(d.text);
+    return [{
+      id: `plan:${d.id}`,
+      kind: 'plan',
+      src: 'durable',
+      session: null,
+      sessionId: null,
+      run: '',
+      who: d.source === 'needs-user-call' ? 'needs-user-call' : 'open question',
+      chunk: '',
+      chunkT: '',
+      phase: '',
+      file: d.file,
+      line: d.line,
+      spec: d.spec || null,
+      age: '',
+      at: '',
+      q: d.text,
+      opts: def ? [def] : [],
+      why: '',
+      hasDefault: !!def,
+      freeText: true,
+      raw: d,
+    }];
+  });
+}
+
+/**
+ * The plan's questions in groups: one per spec (by number, "47 The GUI on a mature adopter"), then one per other
+ * file (its [needs-user-call] rows), each keeping the items' order. -> [{ key, n, title, file, items }]
+ */
+export function planGroups(items = []) {
+  const groups = new Map();
+  for (const x of items) {
+    const key = x.spec ? `spec:${x.spec.n}` : `file:${x.file || x.raw?.file || ''}`;
+    if (!groups.has(key)) groups.set(key, { key, n: x.spec?.n || '', title: x.spec?.title || '', file: x.file || x.raw?.file || '', items: [] });
+    groups.get(key).items.push(x);
+  }
+  return [...groups.values()].sort((a, b) => (a.n && b.n ? Number(a.n) - Number(b.n) : a.n ? -1 : b.n ? 1 : a.file.localeCompare(b.file)));
+}
+
+/** The open items Batch-answer with defaults may settle: each carries a default to take; a secret never does. */
+export function batchEligible(items = []) {
+  return items.filter((x) => x.hasDefault && !x.secret && x.opts.length > 0);
+}
+
+/** The batch button's title: what it will do, or why it cannot. */
+export function batchWhyLine(count) {
+  if (count) return `Answer ${count} ${count === 1 ? 'question' : 'questions'} with ${count === 1 ? 'its' : 'their'} default. You see the list before anything is sent.`;
+  return 'No open question carries a default. A plan question needs Recommendation:, Default: or (recommended) in its text; answer the rest one by one.';
 }
 
 /** Every item for the view: the inbox when served, else today's sources. */

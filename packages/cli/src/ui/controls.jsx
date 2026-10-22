@@ -87,7 +87,7 @@ export function ChoiceButtons({ options, value, onChange, label, multi }) {
   return (
     <div className="choice" role="group" aria-label={label}>
       {options.map((o) => (
-        <button key={o.value} type="button" className={cx(on(o.value) && 'is-on', o.asap && 'is-asap')} aria-pressed={on(o.value)} onClick={() => onChange?.(o.value)}>
+        <button key={o.value} type="button" title={o.title} className={cx(on(o.value) && 'is-on', o.asap && 'is-asap')} aria-pressed={on(o.value)} onClick={() => onChange?.(o.value)}>
           {o.icon ? <Icon name={o.icon} /> : null}{o.label}
         </button>
       ))}

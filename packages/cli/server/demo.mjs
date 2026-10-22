@@ -66,7 +66,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   const inboxWithSecret = () => {
     const row = vault.mark(DEMO_REQUEST.durable);
     const rest = world.inbox();
-    return row && local?.effective !== false ? [...rest, { id: `plan:${row.id}`, kind: 'cloud', src: 'durable', question: row.text, durable: row, at: null }] : rest;
+    return row && local?.effective !== false ? [...rest, { id: `plan:${row.id}`, kind: 'plan', src: 'durable', question: row.text, durable: row, at: null }] : rest;
   };
   let loopTimer = null;
   const begin = () => {

@@ -112,7 +112,7 @@ export const useSessions = (poll = 4000) => useResource('/api/sessions', { poll 
 /** GET /api/sessions/:id -> the session ledger. Shape: screens/cockpit/model.js (cockpit), screens/headsdown-inbox/headsModel.js (heads-down). */
 export const useSession = (id) => useResource(id ? `/api/sessions/${encodeURIComponent(id)}` : null, { skip: !id });
 
-/** GET /api/inbox (served): every session's questions, tagged by star -> [{ id, src: 'ask'|'perm'|'inbox'|'durable', session: { id, name, kind }, kind: 'now'|'parked'|'cloud', question, options, default, chunk, at }]; POST /api/inbox/:id { answer, how } settles a parked one (or a permission). Shapes: server/fleet-home.mjs, screens/headsdown-inbox/inboxModel.js. */
+/** GET /api/inbox (served): every session's questions, tagged by star -> [{ id, src: 'ask'|'perm'|'inbox'|'durable', session: { id, name, kind }, kind: 'now'|'parked'|'cloud'|'plan' (a plan question: src durable), question, options, default, chunk, at }]; POST /api/inbox/:id { answer, how } settles a parked one (or a permission). Shapes: server/fleet-home.mjs, screens/headsdown-inbox/inboxModel.js. */
 export const useInbox = (poll = 5000) => useResource('/api/inbox', { poll });
 
 /** GET /api/plan (served): order.mjs --json and progress.mjs --json joined -> { available, specs: [{ id, title, file, unchunked, percent, counts, chunks }], order, next, asap, held, unchunked, mark }. Shape: server/plan.mjs. */

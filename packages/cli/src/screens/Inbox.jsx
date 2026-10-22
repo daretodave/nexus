@@ -1,23 +1,29 @@
 // The oversight inbox (Inbox + InboxLight boards; the tug and parked card
-// from the Tug board). Every open question from the sessions and the cloud
-// loop: grouped rows (.ibx-group/.ibx-row) on the left, the selected
-// question in .ibx-panel on the right (a pending .tug, a parked .pcard, or
-// the answered tug), with .ibx-ctx under it. Filters, per-row defaults,
-// Approve all, and Batch-answer with defaults all work; answers go to the
-// server as they settle. Items come from headsdown-inbox/inboxModel.js.
+// from the Tug board). Every open question, grouped by where it really comes
+// from (spec 47, A7): Waiting now (a live session asks), Parked (a session took
+// a default), In the plan (a spec's Open questions and [needs-user-call] rows,
+// under a header per spec), and Cloud runs (only what a cloud run parked).
+// Rows (.ibx-group/.ibx-row) on the left, the selected question in .ibx-panel
+// on the right (a pending .tug, a parked or plan .pcard, or the answered tug),
+// with .ibx-ctx under it. Question text is markdown, drawn by ui/markdown.jsx.
+// Batch-answer with defaults confirms its list first and takes only questions
+// that carry a default. Items: headsdown-inbox/inboxModel.js; app glue CSS:
+// styles/oversight.css.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ViewFrame, ViewHead, ViewTitle, ChoiceButtons, LoopStatus, Icon, Orb, Ring, SessTag, Empty, ToastHost, KeyCard, KeyOrb, cx, useShell,
+  ViewFrame, ViewHead, ViewTitle, ChoiceButtons, LoopStatus, Icon, Orb, Ring, SessTag, Empty, ToastHost, KeyCard, KeyOrb, Markdown, cx, useShell,
 } from '../ui/index.js';
+import '../styles/oversight.css';
 import { countdown } from '../../shared/times.mjs';
 import { api, server, useCloudLoop, useInbox, useOversight, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
-import { collect, clock, names } from './headsdown-inbox/inboxModel.js';
+import { batchEligible, batchWhyLine, collect, clock, names, planGroups } from './headsdown-inbox/inboxModel.js';
 import { keyCard } from './vault/model.js';
 import { useKeyCards } from './vault/useKeyCards.js';
 
-const KIND_CLS = { now: 'is-now', parked: 'is-parked', cloud: 'is-cloud' };
+const KIND_CLS = { now: 'is-now', parked: 'is-parked', cloud: 'is-cloud', plan: 'is-cloud' };
+const KINDS = ['now', 'parked', 'plan', 'cloud'];
 const HOW_META = { approved: 'approved: ', default: 'default: ', answered: 'answered: ', changed: 'changed: ' };
 const HOW_LABEL = { approved: 'approved', default: 'default', answered: 'answered', changed: 'changed', set: 'set' };
 const CLOUD_TAG = { width: 12, height: 12, color: 'var(--accent)' };
@@ -28,9 +34,11 @@ const sessKey = (x) => x.sessionId || sessName(x) || 'live';
 /** The question set a row's progress counts against: its session, or the one ask it came in. */
 const groupKey = (x) => x.sessionId || sessName(x) || x.askId || 'live';
 
-/** The row's tag: a cloud run, a plan file, or the session (star + name). */
+/** A question's markdown on one line, for a row (its wrapped and nested lines run on). */
+const oneLine = (q) => String(q || '').replace(/\s*\n\s*/g, ' ');
+
+/** The row's tag: a cloud run or the session (star + name). A plan question has none: its group says where it lives. */
 function Tag({ x }) {
-  if (x.src === 'durable') return <span className="sess-tag" style={{ '--sess': 'var(--accent)' }}><Icon name="list" style={CLOUD_TAG} />plan</span>;
   if (x.kind === 'cloud') return <span className="sess-tag" style={{ '--sess': 'var(--accent)' }}><Icon name="cloud" style={CLOUD_TAG} />{x.run}</span>;
   if (x.session) return <SessTag session={x.session} />;
   return <span className="sess-tag">session</span>;
@@ -93,6 +101,7 @@ export default function Inbox() {
   const [filter, setFilter] = useState('all');
   const [done, setDone] = useState({});
   const [batch, setBatch] = useState(0);
+  const [confirm, setConfirm] = useState(false);
   const [errs, setErrs] = useState({});
   const doneRef = useRef(done);
   doneRef.current = done;
@@ -163,19 +172,24 @@ export default function Inbox() {
   const settle = (x, a, how) => settleMany([[x, a, how]]);
   const reopen = (x) => { setDone((d) => { const c = { ...d }; delete c[x.id]; return c; }); setSel(x.id); };
   const settleKind = (kind, how) => settleMany(openItems.filter((x) => x.kind === kind && x.hasDefault).map((x) => [x, x.opts[0], how]));
+  // Batch-answer with defaults: only the questions that carry a default (a live ask's first option, a parked
+  // default, a plan question that names its Recommendation:/Default:/(recommended)); the list shows before it sends.
+  const eligible = batchEligible(openItems);
   const batchAll = () => {
-    const entries = openItems.filter((x) => x.hasDefault).map((x) => [x, x.opts[0], x.kind === 'now' ? 'default' : 'approved']);
+    const entries = eligible.map((x) => [x, x.opts[0], x.kind === 'now' ? 'default' : 'approved']);
     settleMany(entries);
     setBatch(entries.length);
+    setConfirm(false);
   };
 
   // counts and filters
   const open = (k) => openItems.filter((x) => x.kind === k).length;
-  const n = { now: open('now'), parked: open('parked'), cloud: open('cloud') };
-  n.all = n.now + n.parked + n.cloud;
-  const show = { now: filter === 'all' || filter === 'now', parked: filter === 'all' || filter === 'parked', cloud: filter === 'all' || filter === 'cloud' };
-  const g = { now: items.filter((x) => x.kind === 'now'), parked: items.filter((x) => x.kind === 'parked'), cloud: items.filter((x) => x.kind === 'cloud') };
-  const batchable = openItems.filter((x) => x.hasDefault).length;
+  const n = Object.fromEntries(KINDS.map((k) => [k, open(k)]));
+  n.all = KINDS.reduce((t, k) => t + n[k], 0);
+  const show = Object.fromEntries(KINDS.map((k) => [k, filter === 'all' || filter === k]));
+  const g = Object.fromEntries(KINDS.map((k) => [k, items.filter((x) => x.kind === k)]));
+  const batchable = eligible.length;
+  const batchWhy = batchWhyLine(batchable);
 
   // keep a selection that exists
   const x = items.find((i) => i.id === sel) || openItems[0] || items[0] || null;
@@ -184,9 +198,9 @@ export default function Inbox() {
   // the top line: "4 open across 3 sessions and the cloud loop"
   const openLine = useMemo(() => {
     if (!n.all) return 'nothing open';
-    const sess = new Set(openItems.filter((i) => i.kind !== 'cloud').map(sessKey));
-    const hasCloud = openItems.some((i) => i.kind === 'cloud' && i.src !== 'durable');
-    const hasPlan = openItems.some((i) => i.src === 'durable');
+    const sess = new Set(openItems.filter((i) => i.kind === 'now' || i.kind === 'parked').map(sessKey));
+    const hasCloud = openItems.some((i) => i.kind === 'cloud');
+    const hasPlan = openItems.some((i) => i.kind === 'plan');
     const parts = [];
     if (sess.size) parts.push(sess.size === 1 ? '1 session' : `${sess.size} sessions`);
     if (hasCloud) parts.push('the cloud loop');
@@ -223,6 +237,7 @@ export default function Inbox() {
     if (g.now.length) parts.push(nowSess ? `${nowSess} ${nowStart ? 'can start working' : 'can go on'}` : 'the waiting agent can go on');
     const parkedSess = names(g.parked.map(sessName));
     if (g.parked.length) parts.push(`${parkedSess || 'the parked sessions'} keep going`);
+    if (g.plan.length) parts.push('the plan answers land where each question lives');
     if (g.cloud.length) parts.push(`the cloud answers land in the plan for ${loopAt}`);
     return names(parts);
   };
@@ -234,15 +249,15 @@ export default function Inbox() {
     let metaB = '';
     if (settled) { meta = d.how === 'set' ? `${r.secret} set · ` : HOW_META[d.how] || 'answered: '; metaB = d.a; }
     else if (r.secret) { meta = `plan · ${r.chunk} · `; metaB = 'needs a value, no default'; }
-    else if (r.src === 'durable') meta = `${r.raw.file}:${r.raw.line}`;
+    else if (r.src === 'durable') { meta = `${r.raw.file}:${r.raw.line}${r.age ? ` · ${r.age}` : ''}${r.hasDefault ? ' · recommends ' : ''}`; metaB = r.hasDefault ? r.opts[0] : ''; }
     else if (r.kind === 'now') meta = [r.who, r.chunk, r.age].filter(Boolean).join(' · ');
     else { meta = `${[r.kind === 'cloud' ? loopName : r.who, r.chunk, r.at].filter(Boolean).join(' · ')}${r.hasDefault ? ' · assumed ' : ''}`; metaB = r.hasDefault ? r.opts[0] : ''; }
     return (
-      <div key={r.id} className={cx('ibx-row', x?.id === r.id && 'is-selected', settled && 'is-settled')}>
+      <div key={r.id} className={cx('ibx-row', r.kind === 'plan' && 'is-plan', x?.id === r.id && 'is-selected', settled && 'is-settled')}>
         {r.secret ? <KeyOrb small state={settled ? (d.how === 'set' ? 'set' : 'quiet') : ''} icon="key" /> : <span className={cx('urg', settled ? 'is-done' : KIND_CLS[r.kind])} />}
-        <Tag x={r} />
-        <button className="ibx-open" type="button" onClick={() => setSel(r.id)} aria-label={`Open: ${r.q}`}>
-          <span className="ibx-q">{r.secret ? <>{r.chunk} needs <code className="secret-code">{r.secret}</code></> : r.q}</span>
+        {r.kind === 'plan' ? null : <Tag x={r} />}
+        <button className="ibx-open" type="button" onClick={() => setSel(r.id)} aria-label={`Open: ${oneLine(r.q)}`}>
+          <span className="ibx-q">{r.secret ? <>{r.chunk} needs <code className="secret-code">{r.secret}</code></> : <Markdown inline text={oneLine(r.q)} />}</span>
           <span className="ibx-meta">{meta}{metaB ? <b>{metaB}</b> : null}</span>
         </button>
         <div className="ibx-acts">
@@ -255,17 +270,21 @@ export default function Inbox() {
     );
   };
 
-  const group = (kind, title, label, line, head) => (show[kind] && g[kind].length ? (
+  const group = (kind, title, label, line, head, body) => (show[kind] && g[kind].length ? (
     <section className="ibx-group" aria-label={label}>
       <div className="ibx-gh">
         <span className="t-caps c-2">{title}</span><span className="n">{n[kind]}</span><span className="d">{line}</span><span className="tb-spacer" />
         {head}
       </div>
-      {g[kind].map(row)}
+      {body || g[kind].map(row)}
     </section>
   ) : null);
 
+  // In the plan: a header per spec (its number and title) over its questions, then each other file's [needs-user-call] rows
+  const planBody = <PlanGroups items={g.plan} row={row} isDone={isDone} />;
+
   const loading = !items.length && (oversight.status === 'loading' || inbox.status === 'loading');
+  const cloudEmpty = filter === 'cloud' && !g.cloud.length;
 
   const actions = (
     <>
@@ -287,14 +306,19 @@ export default function Inbox() {
               { value: 'all', label: `All ${n.all}` },
               { value: 'now', label: `Waiting now ${n.now}` },
               { value: 'parked', label: `Parked ${n.parked}` },
-              { value: 'cloud', label: `Cloud runs ${n.cloud}` },
+              { value: 'plan', label: `In the plan ${n.plan}` },
+              { value: 'cloud', label: `Cloud runs ${n.cloud}`, title: n.cloud ? undefined : 'No cloud run has parked a question' },
             ]}
           />
-          <button className="btn btn-primary" type="button" onClick={batchAll} disabled={!batchable}><Icon name="rays8" size={14} />Batch-answer with defaults</button>
+          <span className="ibx-batch" title={batchWhy}>
+            <button className="btn btn-primary" type="button" onClick={() => setConfirm(true)} disabled={!batchable} aria-label={`Batch-answer with defaults: ${batchWhy}`}><Icon name="rays8" size={14} />Batch-answer with defaults{batchable ? <span className="ibx-batch-n">{batchable}</span> : null}</button>
+          </span>
         </div>
       </ViewHead>
-      {!items.length ? (
-        loading ? null : <Empty sky="quiet" title="Nothing needs you" body="No open questions in any session. Parked ones will show up here at the end of each run." />
+      {!items.length || cloudEmpty ? (
+        loading ? null : cloudEmpty && items.length
+          ? <Empty sky="quiet" title="No cloud run has parked a question" body="Questions a cloud run parks show up here. The plan's own questions are under In the plan." />
+          : <Empty sky="quiet" title="Nothing needs you" body="No open questions in any session or in the plan's specs. Parked ones will show up here at the end of each run." />
       ) : (
         <div className="inbox">
           <div className="ibx-list">
@@ -307,11 +331,15 @@ export default function Inbox() {
             {group('parked', 'Parked', 'Parked', 'agents took a default and kept going', (
               n.parked > 0 ? <button className="btn btn-ghost btn-s" type="button" onClick={() => settleKind('parked', 'approved')}>Approve all</button> : null
             ))}
+            {group('plan', 'In the plan', 'In the plan', 'open questions in specs and [needs-user-call] rows; answers land where they live', (
+              g.plan.some((i) => !isDone(i) && i.hasDefault) ? <button className="btn btn-ghost btn-s" type="button" onClick={() => settleKind('plan', 'approved')}>Approve recommended</button> : null
+            ), planBody)}
             {group('cloud', 'From cloud runs', 'From cloud runs', 'answers land in the plan for the next loop', (
               g.cloud.some((i) => !isDone(i) && i.hasDefault) ? <button className="btn btn-ghost btn-s" type="button" onClick={() => settleKind('cloud', 'approved')}>Approve all</button> : null
             ))}
           </div>
           <aside className="ibx-panel" aria-label="Selected question">
+            {confirm && batchable ? <BatchConfirm items={eligible} onSend={batchAll} onCancel={() => setConfirm(false)} /> : null}
             {batch > 0 ? (
               <div className="ibx-done">
                 <Icon name="check" style={{ color: 'var(--st-done)', flex: 'none', marginTop: 2 }} />
@@ -330,8 +358,8 @@ export default function Inbox() {
 /** The selected question: a pending tug, a parked card, or the settled tug; then its context. */
 function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyProps, onKeyChange }) {
   const sess = sessName(x);
-  const src = x.kind === 'cloud'
-    ? (x.src === 'durable' ? `${x.raw.file}:${x.raw.line}` : [`${repo ? `${repo} loop` : 'cloud run'}${x.run ? ` ${x.run}` : ''}`, x.chunk].filter(Boolean).join(' · '))
+  const src = x.src === 'durable' ? `${x.raw.file}:${x.raw.line}` : x.kind === 'cloud'
+    ? [`${repo ? `${repo} loop` : 'cloud run'}${x.run ? ` ${x.run}` : ''}`, x.chunk].filter(Boolean).join(' · ')
     : [sess, x.chunk, x.kind === 'now' ? (x.phase === 'start' ? 'Questions (start)' : x.src === 'perm' ? 'permission' : '') : `parked ${x.at}`].filter(Boolean).join(' · ');
   const group = items.filter((o) => groupKey(o) === groupKey(x));
   const answered = group.filter((o) => done[o.id]).length;
@@ -354,7 +382,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
     card = (
       <div className="tug is-answered" role="group" aria-label="Settled question">
         <div className="tug-head"><Orb state="done" size="s" /><span><span className="tug-who">{x.who}</span> {src ? <span className="tug-src">· {src}</span> : null}</span></div>
-        <p className="tug-q" style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: '21px' }}>{x.q}</p>
+        <div className="tug-q" style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: '21px' }}><Markdown text={x.q} /></div>
         <div className="tug-result"><Icon name="check" style={{ color: 'var(--st-done)' }} /><span>{resultA}<b>{d.a}</b>{resultC}</span></div>
         {canReopen ? <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-ghost btn-s" type="button" onClick={() => reopen(x)}>Change answer</button></div> : null}
       </div>
@@ -364,7 +392,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
     card = (
       <div className="tug is-pending" role="group" aria-label={`Question from ${x.who}`}>
         <div className="tug-head"><Orb state="blocked" size="s" /><span><span className="tug-who">{x.who}</span> {src ? <span className="tug-src">· {src}</span> : null}</span><DefaultIn deadline={x.deadline} age={x.age} /></div>
-        <p className="tug-q">{x.q}</p>
+        <div className="tug-q"><Markdown text={x.q} /></div>
         <Opts x={x} onPick={(o) => settle(x, o, 'answered')} />
         {x.why ? <p className="tug-why"><Icon name="rays8" size={14} style={{ marginTop: 3, color: 'var(--st-blocked)' }} /><span><b>{perm ? 'Why it asks:' : 'Why the default:'}</b> {x.why}</span></p> : null}
         {!perm ? (
@@ -375,16 +403,35 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
         ) : null}
       </div>
     );
+  } else if (x.kind === 'plan') {
+    // A plan question: the whole of it, drawn; its recommendation (when it names one) to take, or your words.
+    card = (
+      <div className="pcard is-plan" role="group" aria-label="Plan question">
+        <div className="pcard-top">
+          <span className="ibx-at"><Icon name="list" size={14} /><span>{x.raw.file}:{x.raw.line}</span></span>
+          <span>{x.who}</span>
+        </div>
+        <Markdown className="pcard-q" text={x.q} />
+        {x.hasDefault ? (
+          <>
+            <div className="pcard-assumed"><Icon name="rays8" size={14} style={{ color: 'var(--st-blocked)' }} /><span>It recommends <b>{x.opts[0]}</b></span></div>
+            <div className="pcard-acts">
+              <button className="btn btn-s btn-primary" type="button" onClick={() => settle(x, x.opts[0], 'approved')}><Icon name="check" size={14} />Take the recommendation</button>
+            </div>
+          </>
+        ) : null}
+        <div className="tug-foot"><Other placeholder="Your answer…" button="Send answer" onSend={(t) => settle(x, t, 'answered')} /></div>
+      </div>
+    );
   } else {
     card = (
       <div className="pcard" role="group" aria-label="Parked question">
         <div className="pcard-top">
-          {x.src === 'durable' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="list" size={14} /><span>{x.raw.file}:{x.raw.line}</span></span>
-            : x.kind === 'cloud' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="cloud" size={14} /><span>cloud run {x.run}</span></span>
+          {x.kind === 'cloud' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="cloud" size={14} /><span>cloud run {x.run}</span></span>
               : x.session ? <SessTag session={x.session} /> : null}
           <span>{[x.who, x.chunk, x.at].filter(Boolean).join(' · ')}</span>
         </div>
-        <p className="pcard-q">{x.q}</p>
+        <Markdown className="pcard-q" text={x.q} />
         {x.hasDefault ? <div className="pcard-assumed"><Icon name="clock" size={14} style={{ color: 'var(--st-blocked)' }} /><span>{x.who} assumed <b>{x.opts[0]}</b></span></div> : null}
         {x.opts.length ? <Opts x={x} onPick={(o, i) => settle(x, o, i === 0 && x.hasDefault ? 'approved' : 'changed')} /> : null}
         {x.hasDefault ? (
@@ -405,6 +452,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
       {card}
       <div className="ibx-ctx">
         <div className="ibx-ctx-row"><span className="k">from</span><span className="v">{from}</span></div>
+        {x.spec ? <div className="ibx-ctx-row"><span className="k">spec</span><span className="v"><Link className="ibx-spec-link" to={PATHS.board} title={`See spec ${x.spec.n}'s chunks on the board`}><span className="chunk-id">{x.spec.n}</span> {x.spec.title || x.raw.file}</Link></span></div> : null}
         {x.chunk ? <div className="ibx-ctx-row"><span className="k">chunk</span><span className="v"><span className="chunk-id">{x.chunk}</span> {x.chunkT}</span></div> : null}
         <div className="ibx-ctx-row"><span className="k">when settled</span><span className="v">{effect}</span></div>
         {x.kind === 'now' && group.length ? (
@@ -418,5 +466,39 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
         ) : null}
       </div>
     </>
+  );
+}
+
+/** In the plan's body: a header per spec (number, title, open count) over its questions; other files after, by path. */
+function PlanGroups({ items, row, isDone }) {
+  return planGroups(items).map((pg) => (
+    <div key={pg.key} className="ibx-spec" role="group" aria-label={pg.n ? `Spec ${pg.n} ${pg.title}` : pg.file}>
+      <div className="ibx-spec-h">
+        {pg.n ? <><span className="ibx-spec-n">{pg.n}</span><span className="ibx-spec-t">{pg.title || pg.file}</span></> : <span className="ibx-spec-t is-file">{pg.file}</span>}
+        <span className="ibx-spec-c">{pg.items.filter((i) => !isDone(i)).length} open</span>
+      </div>
+      {pg.items.map(row)}
+    </div>
+  ));
+}
+
+/** Batch-answer, before it sends: the count and each question with the default it would take. */
+function BatchConfirm({ items, onSend, onCancel }) {
+  return (
+    <div className="ibx-confirm" role="dialog" aria-label="Batch-answer with defaults">
+      <div className="ibx-confirm-h"><Icon name="rays8" size={14} /><b>{items.length} {items.length === 1 ? 'question takes its' : 'questions take their'} default</b></div>
+      <ol className="ibx-confirm-list">
+        {items.map((i) => (
+          <li key={i.id}>
+            <span className="q"><Markdown inline text={oneLine(i.q)} /></span>
+            <span className="a">{i.kind === 'plan' ? 'recommended' : 'default'}: <b>{i.opts[0]}</b></span>
+          </li>
+        ))}
+      </ol>
+      <div className="pcard-acts">
+        <button className="btn btn-s btn-primary" type="button" onClick={onSend}><Icon name="check" size={14} />Send {items.length} {items.length === 1 ? 'answer' : 'answers'}</button>
+        <button className="btn btn-s btn-ghost" type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
   );
 }

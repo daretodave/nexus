@@ -117,7 +117,7 @@ export function inboxItems({ hosted = [], ledgers = [], durable = [], now = Date
       });
     });
   }
-  for (const d of durable) out.push({ id: `plan:${d.id}`, kind: 'cloud', src: 'durable', question: d.text, durable: d, at: null });
+  for (const d of durable) out.push({ id: `plan:${d.id}`, kind: 'plan', src: 'durable', question: d.text, durable: d, at: null });
   return out;
 }
 
