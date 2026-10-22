@@ -6,6 +6,7 @@ import { Icon } from './icons.jsx';
 import { Orb, ParkMark } from './agent.jsx';
 import { Ring } from './feedback.jsx';
 import { cx } from './controls.jsx';
+import { Markdown } from './markdown.jsx';
 
 /**
  * .tug. state: pending | answered | expired.
@@ -21,7 +22,7 @@ export function Tug({
     return (
       <div className={cx('tug is-answered', className)} role="group" aria-label={label || `Answered question from ${who}`} style={style}>
         <div className="tug-head"><Orb state="done" size="s" /><span><span className="tug-who">{who}</span> {src ? <span className="tug-src">· {src}</span> : null}</span>{at ? <span className="tug-timer">{at}</span> : null}</div>
-        <p className="tug-q" style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: '21px' }}>{question}</p>
+        <p className="tug-q" style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: '21px' }}><Markdown inline text={question} /></p>
         <div className="tug-result"><Icon name="check" style={{ color: 'var(--st-done)' }} /><span>You chose <b>{chosen}</b>. {who} resumed.</span></div>
         {onChange ? <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-ghost btn-s" type="button" onClick={onChange}>Change answer</button></div> : null}
       </div>
@@ -31,7 +32,7 @@ export function Tug({
     return (
       <div className={cx('tug is-expired', className)} role="group" aria-label={label || `Expired question from ${who}`} style={style}>
         <div className="tug-head"><Icon name="clock2" style={{ color: 'var(--text-3)' }} /><span><span className="tug-who">{who}</span> {src ? <span className="tug-src">· {src}</span> : null}</span></div>
-        <p className="tug-q" style={{ fontSize: 14, lineHeight: '21px' }}>{question}</p>
+        <p className="tug-q" style={{ fontSize: 14, lineHeight: '21px' }}><Markdown inline text={question} /></p>
         <div className="tug-result"><Icon name="arrowRight" style={{ color: 'var(--st-blocked)' }} /><span>{who} assumed the default: <b>{chosen}</b></span></div>
         {onRevisit ? <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><button className="btn btn-s" type="button" onClick={onRevisit}>Revisit</button><span className="hint">A different answer lands in the plan for the next loop.</span></div> : null}
       </div>
@@ -44,7 +45,7 @@ export function Tug({
         <span><span className="tug-who">{who}</span> {src ? <span className="tug-src">· {src}</span> : null}</span>
         {timer ? <span className="tug-timer"><Ring size="s" color="var(--st-blocked)" value={timer.pct} />default in {timer.left}</span> : null}
       </div>
-      <p className="tug-q" style={compact ? { fontSize: 14, lineHeight: '20px' } : undefined}>{question}</p>
+      <p className="tug-q" style={compact ? { fontSize: 14, lineHeight: '20px' } : undefined}><Markdown inline text={question} /></p>
       <div className="tug-opts">
         {options.map((o) => (
           <button key={o.label} className={cx('tug-opt', o.rec && 'is-rec', o.chosen && 'is-chosen')} type="button" onClick={() => onPick?.(o.label)}>

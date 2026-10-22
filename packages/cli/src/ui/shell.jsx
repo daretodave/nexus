@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from './icons.jsx';
 import { Orb } from './agent.jsx';
 import { cx } from './controls.jsx';
+import { Markdown } from './markdown.jsx';
 import { PATHS, lastSession } from '../routes.js';
 import { trayY, vaultRail } from './shell-rules.js';
 
@@ -158,7 +159,7 @@ export function Msg({ state = 'thinking', name, time, text, tools }) {
       <Orb state={state} size="s" style={{ marginTop: 1 }} />
       <div style={{ minWidth: 0 }}>
         <div className="msg-meta"><b>{name}</b><span>{time}</span></div>
-        {text ? <p className="msg-text">{text}</p> : null}
+        {text ? (typeof text === 'string' ? <Markdown className="msg-text" text={text} /> : <p className="msg-text">{text}</p>) : null}
         {tools ? <div className="msg-tools">{tools}</div> : null}
       </div>
     </div>

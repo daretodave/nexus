@@ -2,7 +2,7 @@
 // bottom, with each agent message's tool rows; your notes on the right; a
 // live question as a pending tug (the stage hushes while it waits).
 import { useEffect, useState } from 'react';
-import { LogRow, MsgYou, Orb, Tug, toolGlyph } from '../../ui/index.js';
+import { LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph } from '../../ui/index.js';
 import { server } from '../../data/client.js';
 import { agentState, convoItems, mmss, toolDur } from './model.js';
 import { countdown } from '../../../shared/times.mjs';
@@ -18,7 +18,7 @@ function ToolRow({ t, running, now }) {
   const time = running ? (t.at != null && now ? mmss(now - t.at) : '') : toolDur(t.ms);
   return (
     <LogRow
-      tool={t.tool} args={t.args} d={toolGlyph(t.tool)} dur={time}
+      tool={t.tool} args={<ToolArgs tool={t.tool} args={t.args} />} d={toolGlyph(t.tool)} dur={time}
       state={running ? 'running' : t.failed ? 'failed' : undefined}
       meta={(
         <span className="diffstat">
@@ -29,7 +29,7 @@ function ToolRow({ t, running, now }) {
       )}
       open={open} onToggle={() => setOpen((o) => !o)}
     >
-      <pre className="t-mono-xs c-2" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{t.args}</pre>
+      <pre className="t-mono-xs c-2" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}><ToolArgs tool={t.tool} args={t.args} /></pre>
       {t.error ? <pre className="t-mono-xs" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: '6px 0 0', color: 'var(--st-failed)' }}>{t.error}</pre> : null}
     </LogRow>
   );
@@ -41,7 +41,7 @@ function AgentMsg({ m, state, runningTool, now }) {
       <Orb state={m.error ? 'failed' : state} size="s" style={{ marginTop: 1 }} />
       <div style={{ minWidth: 0 }}>
         <div className="msg-meta"><b>{m.name}</b><span>{m.time || ''}</span></div>
-        {m.text ? <p className="msg-text">{m.text}</p> : null}
+        {m.text ? <Markdown className="msg-text" text={m.text} /> : null}
         {m.tools.length ? (
           <div className="msg-tools">
             {m.tools.map((t, i) => <ToolRow key={t.id || i} t={t} running={runningTool === t} now={now} />)}
