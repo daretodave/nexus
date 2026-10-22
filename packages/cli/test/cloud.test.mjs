@@ -1,7 +1,7 @@
 // Onboarding's Cloud step served (spec 47, A16): POST /api/cloud/workflow writes the kit's march.yml (filled by the
 // installer's own fillPlaceholders) and POST /api/cloud/schedule sets its cron, each landed per owner mode from a
 // temporary worktree. Fixture repos push to a bare origin in a temp dir; gh is stubbed through the injected run.
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -19,11 +19,21 @@ const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..
 const TEMPLATE = fs.readFileSync(path.join(KIT, 'templates', '.github', 'workflows', 'march.yml'), 'utf8').replace(/\r\n/g, '\n');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
 
+// Every temp dir a test makes goes in TEMPS and is removed when the file ends (retries: Windows holds a dir a moment
+// after the git in it exits).
+const TEMPS = [];
+const tempDir = (prefix) => { const d = fs.mkdtempSync(path.join(os.tmpdir(), prefix)); TEMPS.push(d); return d; };
+after(() => {
+  for (const d of TEMPS) {
+    try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch { /* a killed child on Windows may still hold it */ }
+  }
+});
+
 const sh = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const write = (f, text) => { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, text); };
 
 function fixture({ owner = true } = {}) {
-  const base = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-cloud-test-')));
+  const base = fs.realpathSync.native(tempDir('nexus-cloud-test-'));
   const origin = path.join(base, 'origin.git');
   const root = path.join(base, 'repo');
   execFileSync('git', ['init', '-q', '--bare', '-b', 'main', origin]);
@@ -279,7 +289,7 @@ function req(port, { method, pathname, headers, body }) {
 
 async function withServer(repo, gh, fn) {
   const provider = () => ({ kind: 'fake', send() {}, async interrupt() {}, async stop() {}, async fresh() {} });
-  const claudeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-cloud-claude-'));
+  const claudeHome = tempDir('nexus-cloud-claude-');
   const app = await startServer({ repo, provider, pollRuns: false, dist: NO_DIST, claudeHome, ghRun: gh.run, ghLogin: async () => '' });
   const headers = { 'x-nexus-token': app.token, 'content-type': 'application/json', origin: `http://127.0.0.1:${app.port}` };
   const post = (pathname, b) => req(app.port, { method: 'POST', pathname, headers, body: JSON.stringify(b) });
