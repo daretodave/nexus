@@ -170,3 +170,7 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 49.9 · Archive lines parse by field; no range in a title · d411d308..88763047
 - 2026-10-22 · 49.10 · Settings sets the permission mode for new sessions · 609bae66..2d8bc71b
 - 2026-10-22 · 49.11 · The permission card reads like a tool row · a84a4a7a..a84a4a7a
+- 2026-10-22 · 49.2 · The vault card names what the manifest lacks · 03d3ba7d..6d50c84e
+- 2026-10-22 · 49.4 · The vault counts declared names; undeclared ones say so · 25abb46b..25abb46b
+- 2026-10-22 · 49.5 · The Actions sink is read from GitHub, names only · 4eea6cb2..4eea6cb2
+- 2026-10-22 · 49.6 · An optional secret reads optional, not missing · d1437e77..d1437e77

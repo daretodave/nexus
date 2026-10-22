@@ -118,11 +118,7 @@ What exists today (2026-10-22):
 ## Acceptance
 
 - **A1** On a repo whose loop workflow has a cron, the cloud step selects "Current: ..." describing it, and Turn on leaves the cron untouched unless another option is picked. Checked live: read against nexus's checkout, Turn on against a scratch repo.
-- **A2** With a manifest present, the vault card says "N name(s) in .env isn't in nexus.secrets.json yet" with an Add action, and its title matches the surrounding sans headings. Checked live against nexus's checkout.
 - **A3** A Fleet tile's ledger progress is drawn as the design's `.tile-bar` (filled and empty cells plus the label), not raw ledger text. Checked live against nexus's checkout.
-- **A4** The vault header counts only declared names. An undeclared `.env` name is marked "in .env, not in the manifest", shows Local as set, and offers Declare. Checked live: read against nexus's checkout, Declare against a scratch repo.
-- **A5** For a `github-actions` sink, the GUI's Actions column and `secrets.mjs status` (kit and template) report a name set when `gh secret list` lists it, and "unknown" when gh can't tell. They never read a value. Checked live: read against nexus's checkout.
-- **A6** A manifest secret marked `optional: true` and not set reads "optional · not set" with no warning. The manifest gate accepts the key. Checked live against nexus's checkout.
 
 ## Open questions
 
@@ -133,16 +129,9 @@ What exists today (2026-10-22):
   passes it only when the mode is bypass.
 
 ## Chunks
-Measure: 6 open · 5 closed · next A12
+Measure: 2 open · 9 closed · next A12
 
 - [ ] **49.1** The cloud step keeps a schedule it finds · S · closes A1 · needs —
   - nexus's cron is `0 2,8,14,20 * * *` UTC; `/api/cloud` sends no cron today (`CloudLoop.jsx` already reads `loop.schedule.cron`).
-- [ ] **49.2** The vault card names what the manifest lacks · S · closes A2 · needs —
-  - `alreadyCopy` in `vault/model.js`, plus the lowercase twin in `onboarding/Secrets.jsx`.
 - [ ] **49.3** A Fleet tile draws its ledger progress as a bar · S · closes A3 · needs —
   - Owner saw `[######] 15 of 15 chunks`. `TileBar` draws `█`/`░`, so first find where the `#` text comes from (a ledger line shown verbatim, or a missing glyph).
-- [ ] **49.4** The vault counts declared names; undeclared ones say so · S · closes A4 · needs —
-- [ ] **49.5** The Actions sink is read from GitHub, names only · M · closes A5 · needs —
-  - Touches `templates/scripts/secrets.mjs` and its `scripts/` twin (product: same commit, same text).
-- [ ] **49.6** An optional secret reads optional, not missing · S · closes A6 · needs —
-  - The `optional` key changes the manifest contract: `secrets-manifest.mjs`, `customization/secrets.md`, nexus's `nexus.secrets.json`.
