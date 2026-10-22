@@ -1,4 +1,4 @@
-// The onboarding draft: what the person answered across the seven steps,
+// The onboarding draft: what the person answered across the eight steps,
 // kept for this tab (sessionStorage) so a reload or a Back keeps it.
 // Durable choices are written to the server as they are made (owner mode,
 // run mode) or at Launch (onboarded); the rest only shapes the first work.
