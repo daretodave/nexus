@@ -123,8 +123,6 @@ What exists today (2026-10-22):
 - **A4** The vault header counts only declared names. An undeclared `.env` name is marked "in .env, not in the manifest", shows Local as set, and offers Declare. Checked live: read against nexus's checkout, Declare against a scratch repo.
 - **A5** For a `github-actions` sink, the GUI's Actions column and `secrets.mjs status` (kit and template) report a name set when `gh secret list` lists it, and "unknown" when gh can't tell. They never read a value. Checked live: read against nexus's checkout.
 - **A6** A manifest secret marked `optional: true` and not set reads "optional · not set" with no warning. The manifest gate accepts the key. Checked live against nexus's checkout.
-- **A10** Settings sets "Permissions for new sessions" per checkout (Ask, Accept edits, Auto, Allow everything), default Ask, through `POST /api/prefs`. Allow everything shows a plain warning, a new session starts in the chosen mode, and `nexus run` still refuses bypass. Checked live against a scratch repo.
-- **A11** The cockpit's permission card shows the input's description as its title and the argument as a tool row shows it (a Bash command highlighted), never raw JSON. Checked live against a scratch repo.
 
 ## Open questions
 
@@ -135,7 +133,7 @@ What exists today (2026-10-22):
   passes it only when the mode is bypass.
 
 ## Chunks
-Measure: 8 open · 3 closed · next A12
+Measure: 6 open · 5 closed · next A12
 
 - [ ] **49.1** The cloud step keeps a schedule it finds · S · closes A1 · needs —
   - nexus's cron is `0 2,8,14,20 * * *` UTC; `/api/cloud` sends no cron today (`CloudLoop.jsx` already reads `loop.schedule.cron`).
@@ -148,5 +146,3 @@ Measure: 8 open · 3 closed · next A12
   - Touches `templates/scripts/secrets.mjs` and its `scripts/` twin (product: same commit, same text).
 - [ ] **49.6** An optional secret reads optional, not missing · S · closes A6 · needs —
   - The `optional` key changes the manifest contract: `secrets-manifest.mjs`, `customization/secrets.md`, nexus's `nexus.secrets.json`.
-- [ ] **49.10** Settings sets the permission mode for new sessions · S · closes A10 · needs —
-- [ ] **49.11** The permission card reads like a tool row · S · closes A11 · needs —

@@ -168,3 +168,5 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 49.7 · Closed chunks show no made-up size · 42b0ea0d..42b0ea0d
 - 2026-10-22 · 49.8 · A closed chunk shows its close date and commit · aadda5b8..aadda5b8
 - 2026-10-22 · 49.9 · Archive lines parse by field; no range in a title · d411d308..88763047
+- 2026-10-22 · 49.10 · Settings sets the permission mode for new sessions · 609bae66..2d8bc71b
+- 2026-10-22 · 49.11 · The permission card reads like a tool row · a84a4a7a..a84a4a7a
