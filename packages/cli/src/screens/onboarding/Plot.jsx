@@ -1,19 +1,23 @@
 // Step 5 · Plot (boards Plot, PlotLight). Messy thoughts on the left,
 // exploded into idea cards in the middle (keep, merge, discard, undo), and
 // the kept ones as planned chunks on the right, each with a place in line.
-// The explode and plot calls are not served yet: until they are, the
-// middle column says so and offers /messy, which plots the same thoughts
-// in a session instead, and renders its themes as cards as its report
-// streams in, each with its /plot line as the action (themes.js reads the
-// report; /messy's Step 6 pins its shape). Nothing here is planned until
-// it is written.
+// Explode (POST /api/explode, server/explode.mjs) splits the thoughts with
+// Haiku, or by rule when the model is not there, and writes nothing. Next
+// sends the kept chunks to POST /api/plot, which starts a /plot run in its
+// own session that lands them per owner mode; the column then names that
+// session and opens its cockpit. If exploding fails, the middle column
+// offers /messy, which plots the same thoughts in a session instead, and
+// renders its themes as cards as its report streams in, each with its /plot
+// line as the action (themes.js reads the report; /messy's Step 6 pins its
+// shape). Nothing here is planned until it is written.
 import { useMemo, useState } from 'react';
-import { Icon, Kbd, ChoiceButtons, SizeTag, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
+import { Link, useNavigate } from 'react-router-dom';
+import { Icon, Kbd, ChoiceButtons, SessTag, SizeTag, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { server } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next } from './frame.jsx';
 import { useDraft } from './draft.js';
-import { onboardingCalls, notServed } from './calls.js';
+import { onboardingCalls } from './calls.js';
 import { messyReport } from './themes.js';
 import '../../styles/plot-fit.css';
 
@@ -71,9 +75,11 @@ export default function Plot() {
   const [merging, setMerging] = useState(null);
   const [again, setAgain] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [state, setState] = useState(null); // null | 'missing' | { error }
+  const [state, setState] = useState(null); // null | { error }
   const [editing, setEditing] = useState(false);
   const [plotErr, setPlotErr] = useState(null);
+  const [plotting, setPlotting] = useState(false);
+  const nav = useNavigate();
   const [plotted, setPlotted] = useState({}); // theme plot line -> 'sending' | 'sent' | { error }
   const report = useMemo(() => (d.messy ? messyReport(live?.transcript || []) : { sent: false, done: false, themes: [] }), [d.messy, live?.transcript]);
   const themes = report.themes;
@@ -113,7 +119,7 @@ export default function Plot() {
       setState(null);
       if (ideas.length) setAgain((a) => !a);
     } catch (e) {
-      setState(notServed(e) ? 'missing' : { error: e.message });
+      setState({ error: e.message });
     } finally {
       setBusy(false);
     }
@@ -143,15 +149,21 @@ export default function Plot() {
     }
   };
 
+  // Continue waits for the plot call: a link would leave before an error could show.
   const writePlan = async (e) => {
     if (!chunks.length || d.plotted) return;
+    e.preventDefault();
+    if (plotting) return;
+    setPlotting(true);
+    setPlotErr(null);
     try {
-      await onboardingCalls.plot({ spec: specFile, thoughts, chunks: chunks.map((c) => ({ id: c.id, title: c.t, size: c.size, place: c.place, from: c.from })) });
-      patch({ plotted: true });
+      const r = await onboardingCalls.plot({ spec: specFile, thoughts, chunks: chunks.map((c) => ({ id: c.id, title: c.t, size: c.size, place: c.place, from: c.from })) });
+      patch({ plotted: true, plotSession: r.session ? { id: r.session, name: r.star || '' } : null });
+      nav(PATHS.onboarding(stepAfter('plot')));
     } catch (err) {
-      if (notServed(err)) return; // Launch says the plan is not written yet
-      e.preventDefault();
       setPlotErr(err.message);
+    } finally {
+      setPlotting(false);
     }
   };
 
@@ -165,7 +177,7 @@ export default function Plot() {
       <span className="ob-count">{stepCount('plot')}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {plotErr ? <span className="t-body-s" style={{ color: 'var(--st-blocked)' }}>Not planned yet: {plotErr}</span> : null}
-        <span className="t-body-s c-3">{chunks.length} chunks planned</span>
+        <span className="t-body-s c-3" aria-live="polite">{plotting ? 'Starting /plot...' : `${chunks.length} chunks planned`}</span>
         <Next to={PATHS.onboarding(stepAfter('plot'))} onClick={writePlan} />
       </div>
     </>
@@ -218,11 +230,11 @@ export default function Plot() {
             <span className="cap">{d.messy && !ideas.length ? (report.done ? 'from /messy' : report.sent ? '/messy is working' : '') : counts}</span>
           </div>
           {merging ? <div className="t-body-s" style={{ color: 'var(--accent)' }}>Pick the card to merge “{mergingT}” into.</div> : null}
-          {state === 'missing' && !d.messy ? (
+          {state?.error && !d.messy ? (
             <div className="lands" role="status">
               <Icon name="rays8" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--accent)' }} />
               <span style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
-                <span><b>Exploding into cards is not on this server yet.</b> <code>/messy</code> does the same work in a session: it saves your thoughts raw, clusters them and plots each theme as a spec with chunks.</span>
+                <span><b>Exploding into cards did not work this time.</b> <code>/messy</code> does the same work in a session: it saves your thoughts raw, clusters them and plots each theme as a spec with chunks.</span>
                 <button className="btn btn-s" type="button" onClick={toMessy} disabled={busy}><Icon name="arrowRight" size={14} />Send to /messy</button>
               </span>
             </div>
@@ -309,6 +321,15 @@ ${t.plot}`} className={st === 'sent' ? 'idea is-kept' : t.kind === 'built' ? 'id
             ))}
           </div>
           {!chunks.length ? <div className="lands">Keep an idea and it lands here as a chunk.</div> : null}
+          {d.plotted && d.plotSession?.id ? (
+            <div className="lands" role="status">
+              <Icon name="check" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--st-done)' }} />
+              <span style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+                <span><b>Plotting in</b> {d.plotSession.name ? <SessTag session={{ name: d.plotSession.name, kind: 'local' }} /> : 'its own session'}: <code>/plot</code> researches each chunk, writes the spec and lands it.</span>
+                <Link className="btn btn-s" to={PATHS.cockpit(d.plotSession.id)}><Icon name="arrowRight" size={14} />Open its cockpit</Link>
+              </span>
+            </div>
+          ) : null}
           {owner ? (
             <div className="lands">
               <Icon name="lockOne" size={14} style={{ marginTop: 3, flex: 'none', color: 'var(--owner)' }} />

@@ -73,7 +73,8 @@ function planLine(d, adopted) {
     const n = d.spec?.n || 1;
     const asap = chunks.findIndex((x) => (d.place || {})[x.id] === 'asap');
     const first = `${n}.${(asap >= 0 ? asap : 0) + 1}`;
-    return <>{d.spec?.file ? <><code>{d.spec.file}</code> · </> : null}{chunks.length} chunks · {first} goes first</>;
+    const s = d.plotSession;
+    return <>{d.spec?.file ? <><code>{d.spec.file}</code> · </> : null}{chunks.length} chunks · {first} goes first{s?.name ? <> · plotting in <Link to={PATHS.cockpit(s.id)}><SessTag session={{ name: s.name, kind: 'local' }} /></Link></> : null}</>;
   }
   if (chunks.length) return <>{chunks.length} chunks kept · not written to the plan yet</>;
   if (d.messy) return <>Sent to <code>/messy</code> · its specs land on the plan board</>;

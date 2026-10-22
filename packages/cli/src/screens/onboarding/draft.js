@@ -17,7 +17,8 @@ export const DEFAULT_DRAFT = {
   spec: null, // Plot: { file, n } the explode call proposes
   place: {}, // Plot: idea id -> 'asap' | 'anytime' | 'auto'
   messy: false, // Plot: the thoughts went to /messy instead
-  plotted: false, // Plot: the planned chunks were written
+  plotted: false, // Plot: the planned chunks went to /plot (POST /api/plot)
+  plotSession: null, // Plot: { id, name } the session /plot runs in
   vault: 'imp', // Secrets: 'imp' | 'empty' | 'skip' (an owner's start; a contributor has nothing to pick)
   sched: 'night', // Cloud: 'night' | 'two' | 'demand'
   cloud: null, // Cloud: null (not decided) | 'on' | 'skipped'
