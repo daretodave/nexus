@@ -6,12 +6,15 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import * as board from '../announce.mjs';
-import { keyOf, mayBeDue, namesOf, output, primaryRootOf, respond, scan } from '../../claude/hooks/steer.mjs';
 
-const HOOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../claude/hooks/steer.mjs');
+// This repo's own tree names it `claude/`; a copied-in adopter only has `.claude/`.
+const up2 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const HOOKS_DIRNAME = fs.existsSync(path.join(up2, 'claude')) ? 'claude' : '.claude';
+const HOOK = path.join(up2, HOOKS_DIRNAME, 'hooks', 'steer.mjs');
+const { keyOf, mayBeDue, namesOf, output, primaryRootOf, respond, scan } = await import(pathToFileURL(HOOK));
 const A = 'aaaa1111-0000-4000-8000-000000000001';
 const B = 'bbbb2222-0000-4000-8000-000000000002';
 const C = 'cccc3333-0000-4000-8000-000000000003';
@@ -159,7 +162,10 @@ describe('the process', () => {
     const sub = path.join(root, 'packages', 'deep');
     fs.mkdirSync(sub, { recursive: true });
     board.postTo(root, 'from a subfolder too', { to: A });
-    const settings = [path.join(repo, 'claude', 'settings.json'), path.join(repo, '..', '.claude', 'settings.json')].filter((f) => fs.existsSync(f));
+    // This repo's own run also dogfoods one level further up; an adopter only has the copied-in `.claude/settings.json`.
+    const settings = (fs.existsSync(path.join(repo, 'claude', 'settings.json'))
+      ? [path.join(repo, 'claude', 'settings.json'), path.join(repo, '..', '.claude', 'settings.json')]
+      : [path.join(repo, '.claude', 'settings.json')]).filter((f) => fs.existsSync(f));
     for (const file of settings) {
       const hooks = JSON.parse(fs.readFileSync(file, 'utf8')).hooks;
       const commands = Object.values(hooks).flat().flatMap((g) => g.hooks).map((h) => h.command).filter((c) => /steer\.mjs/.test(c));

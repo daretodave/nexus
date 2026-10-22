@@ -15,6 +15,10 @@ import { HOOKS_DIR, HOOK_FRESH_MS, PRIVILEGED, TTL_MS, assign, attachPr, audit, 
 // A git hook's GIT_DIR or GIT_WORK_TREE would point these commands at the real repository: never inherit them.
 const ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
 for (const k of Object.keys(process.env)) if (k.startsWith('GIT_')) delete process.env[k];
+
+// This repo's own tree names it `claude/`; a copied-in adopter only has `.claude/`.
+const up2 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const HOOKS_DIRNAME = fs.existsSync(path.join(up2, 'claude')) ? 'claude' : '.claude';
 const dirs = [];
 after(() => {
   for (const d of dirs) fs.rmSync(d, { recursive: true, force: true });
@@ -260,7 +264,7 @@ describe('the CLI', () => {
     assert.equal(fetchClaims(a).tip, null);
     assert.equal(run(a, ['list'], cc).code, 0);
     // The guard hook, fired in the primary checkout with the session id on stdin, writes the marker there.
-    const guard = fileURLToPath(new URL('../../claude/hooks/guard.mjs', import.meta.url));
+    const guard = path.join(up2, HOOKS_DIRNAME, 'hooks', 'guard.mjs');
     const input = JSON.stringify({ session_id: SID, cwd: a, tool_input: { command: 'ls' } });
     const hook = spawnSync(process.execPath, [guard, 'pre-bash'], { cwd: a, input, encoding: 'utf8', env: { ...ENV, CLAUDE_CODE_SESSION_ID: '', CLAUDE_PROJECT_DIR: '' } });
     assert.equal(hook.status, 0, hook.stderr);
