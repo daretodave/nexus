@@ -1,0 +1,9 @@
+/* The cockpit's permission card (spec 49, A11): the argument as a tool row draws it (the --syn-* runs from
+   markdown.css), wrapped in full, and the raw input behind a closed disclosure. Tokens only, so both themes follow. */
+.perm-card-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.perm-arg { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line); font-family: var(--font-mono); font-size: 12.5px; line-height: 19px; color: var(--syn-text, var(--text-2)); white-space: pre-wrap; word-break: break-word; font-variant-ligatures: none; max-height: 240px; overflow: auto; }
+.perm-raw { font-size: 12px; line-height: 16px; color: var(--text-3); }
+.perm-raw summary { cursor: pointer; width: max-content; }
+.perm-raw summary:hover { color: var(--text-2); }
+.perm-raw summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.perm-raw pre { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--well); font-family: var(--font-mono); font-size: 11.5px; line-height: 17px; color: var(--text-2); white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none; }

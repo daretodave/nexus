@@ -11,11 +11,12 @@ import { Markdown } from './markdown.jsx';
 /**
  * .tug. state: pending | answered | expired.
  * options: [{ label, rec?, chosen? }] (recommended first); `why` explains the
- * recommendation; `timer` { left: '4:48', pct: 80 } counts down to the default.
+ * recommendation; `timer` { left: '4:48', pct: 80 } counts down to the default;
+ * `body` (pending only) sits under the question (a permission card's argument).
  */
 export function Tug({
   state = 'pending', who, src, question, options = [], why, timer, at,
-  onPick, onOther, onDefault, chosen, onChange, onRevisit, label, compact, style, className,
+  onPick, onOther, onDefault, chosen, onChange, onRevisit, label, compact, style, className, body,
 }) {
   const [other, setOther] = useState('');
   if (state === 'answered') {
@@ -46,6 +47,7 @@ export function Tug({
         {timer ? <span className="tug-timer"><Ring size="s" color="var(--st-blocked)" value={timer.pct} />default in {timer.left}</span> : null}
       </div>
       <p className="tug-q" style={compact ? { fontSize: 14, lineHeight: '20px' } : undefined}><Markdown inline text={question} /></p>
+      {body || null}
       <div className="tug-opts">
         {options.map((o) => (
           <button key={o.label} className={cx('tug-opt', o.rec && 'is-rec', o.chosen && 'is-chosen')} type="button" onClick={() => onPick?.(o.label)}>

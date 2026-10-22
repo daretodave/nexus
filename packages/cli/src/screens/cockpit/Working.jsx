@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon, LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph } from '../../ui/index.js';
 import { PlotCard } from '../../ui/plot-card.jsx';
+import { PermissionCard } from '../../ui/permission-card.jsx';
 import { extractPlotReport } from '../../ui/plot-report.js';
 import { server } from '../../data/client.js';
 import { agentState, convoItems, mmss, toolDur } from './model.js';
@@ -11,6 +12,7 @@ import { countdown } from '../../../shared/times.mjs';
 import { pinAfterScroll, stickTarget } from './stick.js';
 import '../../styles/convo-scroll.css';
 import '../../styles/plot-card.css';
+import '../../styles/permission-card.css';
 
 /**
  * A .log row as the board draws it, with the board's tool glyph; opens to show the full call. Its diffstat comes from
@@ -114,18 +116,13 @@ function AskTugs({ ask, who }) {
   });
 }
 
-/** A tool waiting for permission, drawn as a pending tug (no board of its own). */
+/** A tool waiting for permission, drawn as a pending tug that reads like a tool row (ui/permission-card.jsx). */
 function PermissionTug({ req, who }) {
   const [err, setErr] = useState('');
   const answer = async (allow, always) => { try { await server.answerPermission(req.id, allow, always); } catch (e) { setErr(e.message); } };
-  const options = [{ label: 'Allow', rec: true }, ...(req.canAlways ? [{ label: 'Always allow' }] : []), { label: 'Deny' }];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <Tug
-        who={who} src={`wants to use ${req.tool}`} question={req.reason || req.summary}
-        options={options} compact
-        onPick={(label) => answer(label !== 'Deny', label === 'Always allow')}
-      />
+      <PermissionCard req={req} who={who} onAnswer={answer} />
       {err ? <span className="hint" style={{ color: 'var(--st-failed)' }}>{err}</span> : null}
     </div>
   );

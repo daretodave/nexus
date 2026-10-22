@@ -14,6 +14,12 @@ export function toolArg(tool, input) {
   return '';
 }
 
+/** A permission card's title (spec 49, A11): the input's own description when it has one, else the tool. */
+export function toolTitle(tool, input) {
+  const d = input && typeof input === 'object' && typeof input.description === 'string' ? input.description.trim() : '';
+  return d || String(tool || '');
+}
+
 /**
  * The same argument from a JSON summary that may be clipped mid-string (a permission's `summary` is the input's JSON
  * cut at 400 characters): parsed when it parses, else the first wanted field read up to where the text stops.
