@@ -153,3 +153,4 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 47.8 · Oversight lists real questions, whole, grouped by spec · 38bfa2f9..eba3897d
 - 2026-10-22 · 47.7 · A /plot report renders as a card with one-click actions · dffce230..b0b97f5c
 - 2026-10-22 · 47.2 · Onboarding adds the loop workflow and saves its schedule · 8071c630..6b81e849
+- 2026-10-22 · 47.3 · A root .env reads as the vault; a missing vault offers setup · 12983b34..4e2a6742

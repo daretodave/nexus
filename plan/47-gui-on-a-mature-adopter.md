@@ -61,7 +61,6 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 
 ## Acceptance
 
-- **A2** The secrets step reads a repo whose root `.env` is already the vault as "already the vault: N names" with an offer to write the manifest, and a repo with no vault scripts says so before a file is picked.
 - **A3** Onboarding copy and chrome fit an adopted repo: Detect shows the lock's version, the Plot step names the next spec number (never "the first spec"), error toasts sit clear of the footer and link docs, and the orb glyphs (thinking dots, `?`) are centred and coloured to the orb.
 - **A4** Open the cockpit navigates at once; the worktree is created behind it with a visible forming state; worktrees go under the repo's configured worktree root.
 - **A8** The Plan board works in a repo with no vendored `order.mjs` (the CLI runs its bundled copy), and an unreadable plan shows an honest state, not zeros.
@@ -75,10 +74,8 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 (None.)
 
 ## Chunks
-Measure: 8 open · 9 closed · next A18
+Measure: 7 open · 10 closed · next A18
 
-- [ ] **47.3** The secrets step knows an existing vault and a missing one · S · closes A2 · needs —
-  - The Vault screen too: a repo with no vault scripts gets an empty state with "Set up the vault" (the CLI's bundled scripts, landed per owner mode), not a red error naming a kit path.
 - [ ] **47.4** Onboarding fits an adopted repo · S · closes A3 · needs —
 - [ ] **47.5** The cockpit opens at once; worktrees follow the repo · M · closes A4 · needs —
 - [ ] **47.9** The Plan board runs the kit's bundled order script · S · closes A8 · needs —
