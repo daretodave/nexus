@@ -119,6 +119,12 @@ to the guard hook too.
    repo has simpler procedures than a product repo. Don't
    cargo-cult product steps (SEO, deploy confirmation) that
    have no meaning here.
+7. Anything the GUI commits for a person lands from a
+   temporary worktree of origin, never their checkout, and
+   runs the repo's own hooks through wrappers that unset the
+   GIT_* a linked worktree leaks (GIT_DIR, the index, and
+   GIT_CONFIG_PARAMETERS); kit hooks unset them too. A gate's
+   own scratch repos otherwise write the real one (spec 47).
 
 ## Hard rules
 
