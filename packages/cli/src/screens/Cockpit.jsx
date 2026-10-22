@@ -9,9 +9,9 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AppFrame, Empty, Err, Panes, Phases, ToastHost, localRunMode, prefsFromRunMode, saveRunMode, useShell } from '../ui/index.js';
 import { api, server, useCloudLoop, useEvents, useLocalSettings, useReloadOn, chunkStagesOf, useResource, useSessions } from '../data/index.js';
 import { PATHS, rememberSession } from '../routes.js';
-import { toPrompt } from '../../shared/route.mjs';
 import CockpitTop from './cockpit/CockpitTop.jsx';
-import Dock, { routeFor, routeShowing } from './cockpit/Dock.jsx';
+import Dock from './cockpit/Dock.jsx';
+import { promptFor, routeFor, routeShowing, suggestFor } from './cockpit/compose.js';
 import PackageView from './cockpit/PackageView.jsx';
 import QuestionsEnd from './cockpit/QuestionsEnd.jsx';
 import QuestionsStart from './cockpit/QuestionsStart.jsx';
@@ -98,12 +98,15 @@ export default function Cockpit() {
   const [override, setOverride] = useState(null);
   const [plotMode, setPlotMode] = useState('plan');
   const [pinMode, setPinMode] = useState(false);
-  const running = live.status?.state === 'running';
+  const [dismissed, setDismissed] = useState(false);
   const paused = ledger?.state === 'paused';
-  const route = routeFor(draft, override, running);
+  // `route` is armed by the person (the chip's menu); `suggested` is the classifier's guess, sent only if accepted.
+  const route = routeFor(draft, override);
+  const suggested = suggestFor(draft, override, dismissed);
   const cmode = paused ? 'paused' : pinMode ? 'pin' : 'normal';
-  // opts.line: one exact line from the transcript (a /plot card's action), routed by its own text; the draft, its
-  // route chip, plot mode and pin mode are the composer's and stay as they are.
+  // opts.line: one exact line from the transcript (a /plot card's action), sent as its own text; the draft, its
+  // route chip, plot mode and pin mode are the composer's and stay as they are. opts.as: the suggestion accepted.
+  // Plain text never picks up a route here: only an armed route or an accepted suggestion adds one.
   const send = async (text, files, opts = {}) => {
     const line = !!opts.line;
     const attachments = (files || []).map((f) => `\n\nAttached: ${f.name}\n\`\`\`\n${f.text}\n\`\`\``).join('');
@@ -112,11 +115,9 @@ export default function Cockpit() {
         await api('/api/pin', { session: id, text });
         setPinMode(false);
       } else {
-        const rt = line ? routeFor(text, null, running) : route;
-        const r = rt === 'nudge' ? 'ask' : rt === 'pin' ? null : (rt || 'slash');
-        if (rt === 'pin') { await api('/api/pin', { session: id, text }); } else {
-          let prompt = toPrompt(text, r, { ...prefs, ...prefsFromRunMode(runMode) });
-          if (!line && route === 'plot' && plotMode === 'do') prompt = `${prompt} and do`;
+        const rt = line ? null : route;
+        if (rt === 'pin' && !opts.as) { await api('/api/pin', { session: id, text }); } else {
+          const prompt = promptFor(text, { route: rt, as: line ? null : opts.as, plotMode, flags: { ...prefs, ...prefsFromRunMode(runMode) } });
           if (terminal) {
             // A terminal session: sending from its own cockpit aims at it, so link it and steer it. The line reaches
             // its next tool call (the steer hook), and only this session.
@@ -129,7 +130,7 @@ export default function Cockpit() {
           } else await server.send(prompt + attachments, id);
         }
       }
-      if (!line) { setDraft(''); setOverride(null); setPlotMode('plan'); }
+      if (!line) { setDraft(''); setOverride(null); setPlotMode('plan'); setDismissed(false); }
       ledgerRes.reload();
       return true;
     } catch (e) {
@@ -274,14 +275,15 @@ export default function Cockpit() {
 
   return (
     <AppFrame topbar={topbar} phases={phaseNav} current="cockpit" railVariant="cockpit" hushed={hushed}>
-      <Panes hasRoute={routeShowing(draft, route, cmode)}>
+      <Panes hasRoute={routeShowing(draft, route || suggested, cmode)}>
         <section className="pane-left" aria-label="Conversation and context">
           {left}
           <Dock
             tray={tray} inboxTo={PATHS.inbox} layers={layers} short={view !== 'working'}
             composer={{
-              value: draft, onChange: (v) => { setDraft(v); if (!v.trim()) setOverride(null); },
-              route, onRoute: (r) => { if (r === 'pin') { setPinMode(true); setOverride(null); } else setOverride(r); },
+              value: draft, onChange: (v) => { setDraft(v); if (!v.trim()) { setOverride(null); setDismissed(false); } },
+              route, onRoute: (r) => { if (r === 'pin') { setPinMode(true); setOverride(null); } else { setOverride(r); if (!r) setDismissed(true); } },
+              suggest: suggested, onDismissSuggest: () => setDismissed(true),
               plotMode, onPlotMode: setPlotMode,
               why: route === 'plot' ? (owner ? 'Owner checkout: the plan change lands on main directly.' : 'Contributor checkout: the plan change opens a plan PR for review.') : undefined,
               mode: cmode, onTogglePin: () => setPinMode((p) => !p),

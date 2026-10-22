@@ -1,11 +1,12 @@
 // Composer routing: what free text becomes before it reaches the session.
 //
 //   "/anything ..."           runs as typed (a slash command)
-//   "fix this bug please"     /bug <text>    reproduce, fix if small, else plot asap
-//   "add dark mode export"    /plot <text>   research, spec, chunk, slot in line
-//   "why is the gate red?"    asked inline   a plain question, answered in place
+//   anything else             goes as typed, always
 //
-// The UI shows the route before sending and lets the person override it.
+// The classifier only advises. For "fix this bug please" it suggests /bug, for
+// "add dark mode export" /plot; the composer shows that as a chip, and only a
+// click on the chip (or Ctrl+Enter) sends `/bug <text>`. A route the person
+// picks from the chip's menu is theirs and is kept; a guess is never applied.
 
 export const ROUTES = ['ask', 'bug', 'plot', 'slash'];
 
@@ -24,8 +25,24 @@ export function classify(text) {
   return 'plot';
 }
 
-/** The prompt actually sent for `text` under `route` (default: classify(text)). */
-export function toPrompt(text, route = classify(text), flags = {}) {
+/**
+ * The route the composer suggests for plain text: 'bug' or 'plot', else null.
+ * Advisory only; nothing is sent under it unless the person accepts it.
+ */
+export function suggest(text) {
+  const r = classify(text);
+  return r === 'bug' || r === 'plot' ? r : null;
+}
+
+/** The route text takes when nobody picked one: a slash command as typed, anything else as typed. */
+export function asTyped(text) {
+  const t = String(text || '').trim();
+  if (!t) return null;
+  return t.startsWith('/') ? 'slash' : 'ask';
+}
+
+/** The prompt actually sent for `text` under `route` (default: as typed, never a guess). */
+export function toPrompt(text, route = asTyped(text), flags = {}) {
   const t = String(text || '').trim();
   if (!t || !route) return '';
   let out;

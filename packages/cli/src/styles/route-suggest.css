@@ -1,0 +1,13 @@
+/* The composer's suggestion chip (A17): a guessed route, shown but never applied
+   on its own. Built from the handoff's .route chip; the dashed ring says "not
+   yet". Tokens only, so both themes follow nexus.css. */
+.route-suggest { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.route-suggest-lead { font-size: 12px; line-height: 16px; color: var(--text-3); }
+.route.route-suggest-send { background: transparent; box-shadow: none; outline: 1px dashed color-mix(in oklab, var(--accent) 55%, transparent); outline-offset: -1px; padding: 0 3px 0 8px; color: var(--text-2); cursor: pointer; }
+.route.route-suggest-send:hover { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--text); }
+.route.route-suggest-send:focus-visible { outline-style: solid; outline-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--focus) 18%, transparent); }
+.route-suggest-send .kbd { height: 18px; min-width: 18px; font-size: 10px; }
+.route-suggest-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text-3); cursor: pointer; }
+.route-suggest-icon .ic { width: 12px; height: 12px; }
+.route-suggest-icon:hover, .route-suggest-icon.is-open { background: color-mix(in oklab, var(--text) 7%, transparent); color: var(--text); }
+.route-suggest-icon:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }

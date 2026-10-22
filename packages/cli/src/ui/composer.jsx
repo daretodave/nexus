@@ -1,8 +1,10 @@
 // Composer (Composer board): .composer, .slash, .route, .choice, .chip,
 // .tool-btn, .send, and the re-route .menu. Large, multiline, always at the
-// bottom of the left pane. Free text shows a routing chip before it goes
-// anywhere; the chip is one click from being something else.
+// bottom of the left pane. Free text goes as typed. A guessed route shows as
+// a suggestion chip (.route-suggest) the person can accept; a route they pick
+// from its menu is armed and shows as the .route chip.
 import { useMemo, useRef, useState } from 'react';
+import '../styles/route-suggest.css';
 import { Icon } from './icons.jsx';
 import { Choice, FileChip, Kbd, Menu, cx } from './controls.jsx';
 
@@ -25,6 +27,29 @@ export const ROUTE_META = {
   nudge: { icon: 'nudge', cmd: 'Nudge', tail: 'this run', menuLabel: 'Nudge this run', desc: 'Read on the next step', hint: 'send as nudge', why: 'Read by the agents on their next step. No plan change.' },
   pin: { icon: 'pinNote', cmd: 'Pin', tail: 'for next step', menuLabel: 'Pin for next step', desc: 'Stays in context until unpinned', hint: 'pin', why: 'Every agent reads this on its next step.' },
 };
+
+/** What a suggestion chip leads with: the guess, said as a guess. */
+export const SUGGEST_LEAD = { bug: 'Looks like a bug', plot: 'Looks like a task to plan' };
+
+/**
+ * .route-suggest: the classifier's guess, never applied on its own. The chip
+ * sends as the route (Ctrl+Enter does the same); the chevron arms another
+ * route from the menu; the x dismisses it. Enter alone sends as typed.
+ */
+export function SuggestChip({ route, open, onAccept, onMenu, onDismiss }) {
+  const m = ROUTE_META[route];
+  if (!m) return null;
+  return (
+    <div className="route-suggest" role="group" aria-label="Suggested route">
+      <span className="route-suggest-lead">{SUGGEST_LEAD[route] || 'Suggested'}</span>
+      <button className="route route-suggest-send" type="button" onClick={onAccept} title={`Send as ${m.cmd} (Ctrl+Enter)`}>
+        <Icon name={m.icon} /><span>send as</span><span className="cmd">{m.cmd}</span><Kbd>Ctrl ⏎</Kbd>
+      </button>
+      {onMenu ? <button className={cx('route-suggest-icon', open && 'is-open')} type="button" aria-label="Route as something else" aria-haspopup="menu" aria-expanded={!!open} onClick={onMenu}><Icon name="chevronDown" /></button> : null}
+      {onDismiss ? <button className="route-suggest-icon" type="button" aria-label="Dismiss: send as typed" onClick={onDismiss}><Icon name="xSmall" /></button> : null}
+    </div>
+  );
+}
 
 /** The five-way re-route menu order (a separator before nudge). */
 export const ROUTE_ORDER = ['bug', 'plot', 'ask', null, 'nudge', 'pin'];
@@ -78,14 +103,16 @@ export function matchCommands(draft, commands = COMMANDS) {
 }
 
 /**
- * The composer. Controlled text; the route is whatever the caller decides
- * (shared/route.mjs classifies free text) and can be overridden from the chip.
+ * The composer. Controlled text, sent as typed. `route` is one the person
+ * armed (shown as the chip, Enter sends under it, its x un-arms it);
+ * `suggest` is the classifier's guess (shared/route.mjs), shown as a
+ * suggestion chip and sent under only when accepted: onSend(text, suggest).
  *
  * mode: 'normal' | 'pin' | 'paused'. `dock` gives it the fixed dock height
  * (.dock .composer, plus .has-route while a route shows).
  */
 export function Composer({
-  value, onChange, onSend, route, onRoute, why, plotMode = 'plan', onPlotMode,
+  value, onChange, onSend, route, onRoute, suggest, onDismissSuggest, why, plotMode = 'plan', onPlotMode,
   chips, onAttach, attached = 0, mode = 'normal', onTogglePin, pausedText, onResume,
   placeholder = 'Nudge the run, or type / for commands', commands = COMMANDS, dock, rows = 2, focus,
 }) {
@@ -98,8 +125,10 @@ export function Composer({
   const text = String(value || '');
   const hasRoute = !!route && !!text.trim() && !slash.length && !pin && !paused;
   const meta = hasRoute ? ROUTE_META[route] : null;
+  const guess = !route && !!suggest && !!text.trim() && !slash.length && !pin && !paused && ROUTE_META[suggest] ? suggest : null;
 
   const send = () => { if (text.trim() && !paused) onSend?.(text); };
+  const accept = () => { if (guess && text.trim()) { setMenu(false); onSend?.(text, guess); } };
   const keyDown = (e) => {
     if (slash.length) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => (a + 1) % slash.length); return; }
@@ -107,6 +136,7 @@ export function Composer({
       if (e.key === 'Escape') { e.preventDefault(); onChange?.(''); return; }
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onChange?.(`/${slash[Math.min(active, slash.length - 1)].name} `); setActive(0); return; }
     }
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && guess) { e.preventDefault(); accept(); return; }
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
@@ -114,11 +144,12 @@ export function Composer({
   if (slash.length) hint = <><Kbd>esc</Kbd>close</>;
   else if (pin) hint = <><Kbd>⏎</Kbd>pin</>;
   else if (meta) hint = <><Kbd>⏎</Kbd>{route === 'plot' && plotMode === 'do' ? 'plan it and do it' : meta.hint}</>;
+  else if (guess) hint = <><Kbd>⏎</Kbd>send as typed</>;
   // Docked in the cockpit the idle hint is just / commands (Cockpit board); the Composer board's free-standing one adds ⏎ send.
   else if (!paused && !text) hint = dock ? <><Kbd>/</Kbd>commands</> : <><Kbd>/</Kbd>commands<Kbd>⏎</Kbd>send</>;
 
   return (
-    <div className={cx('composer', focus && 'is-focus', pin && 'is-pin', paused && 'is-disabled', dock && hasRoute && 'has-route')}>
+    <div className={cx('composer', focus && 'is-focus', pin && 'is-pin', paused && 'is-disabled', dock && (hasRoute || guess) && 'has-route')}>
       {slash.length ? <SlashList items={slash} active={Math.min(active, slash.length - 1)} typed={text} onPick={(c) => { onChange?.(`/${c.name} `); area.current?.focus(); }} /> : null}
       {pin ? <div className="composer-pinhead"><Icon name="pinNote" size={14} />Pinned note · every agent reads this on its next step</div> : null}
       {chips && chips.length ? <div className="composer-chips">{chips.map((c) => <FileChip key={c.name} {...c} />)}</div> : null}
@@ -133,7 +164,13 @@ export function Composer({
           {route === 'plot' && onPlotMode ? (
             <Choice label="How far to take it" value={plotMode} onChange={onPlotMode} options={[{ value: 'plan', label: 'Plan it' }, { value: 'do', label: 'Plan it and do it' }]} />
           ) : <span className="route-why">{why ?? meta.why}</span>}
+          {onRoute ? <button className="route-suggest-icon" type="button" aria-label="Send as typed instead" onClick={() => { setMenu(false); onRoute(null); }}><Icon name="xSmall" /></button> : null}
           {menu ? <RouteMenu route={route} onPick={(r) => { setMenu(false); onRoute?.(r); }} style={{ position: 'absolute', zIndex: 6, left: 0, bottom: 'calc(100% + 8px)' }} /> : null}
+        </div>
+      ) : guess ? (
+        <div className="route-slot" style={{ position: 'relative' }}>
+          <SuggestChip route={guess} open={menu} onAccept={accept} onMenu={onRoute ? () => setMenu((m) => !m) : undefined} onDismiss={onDismissSuggest} />
+          {menu ? <RouteMenu route={null} onPick={(r) => { setMenu(false); onRoute?.(r); }} style={{ position: 'absolute', zIndex: 6, left: 0, bottom: 'calc(100% + 8px)' }} /> : null}
         </div>
       ) : null}
       {meta && route === 'plot' && onPlotMode ? <div className="route-why" style={{ paddingLeft: 2 }}>{why ?? meta.why}</div> : null}

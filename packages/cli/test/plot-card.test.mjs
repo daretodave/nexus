@@ -178,5 +178,7 @@ test('the transcript routes a message through the card, and the cockpit sends it
   assert.match(working, /import '\.\.\/\.\.\/styles\/plot-card\.css'/);
   const cockpit = fs.readFileSync(path.join(here, '..', 'src', 'screens', 'Cockpit.jsx'), 'utf8');
   assert.match(cockpit, /onSend=\{\(text\) => send\(text, \[\], \{ line: true \}\)\}/);
-  assert.match(cockpit, /line \? routeFor\(text, null, running\) : route/);
+  // A card's line goes as its own text: a slash command as typed, plain text never routed by a guess (A17).
+  assert.match(cockpit, /const rt = line \? null : route;/);
+  assert.match(cockpit, /as: line \? null : opts\.as/);
 });
