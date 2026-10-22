@@ -138,6 +138,14 @@ export function secretsOf(o) {
   return out;
 }
 
+/** An archive line's range field (progress.mjs RANGE): a sha, `sha..sha`, `(this commit)`, `plan only`, `deleted in <sha>`. */
+const RANGE_TAIL = / · (?:[0-9a-f]{7,40}(?:\.\.[0-9a-f]{7,40})?|\(this commit\)|plan only|deleted in [0-9a-f]{7,40})\s*$/;
+/**
+ * A closed chunk's title with no range field left on it. progress.mjs parses the archive by field (spec 49, A9), but a
+ * repo's own older copy left `· plan only` (and other ranges it did not know) in the title; the board drops it too.
+ */
+export const closedTitle = (t) => String(t || '').replace(RANGE_TAIL, '');
+
 /**
  * Join order.mjs's and progress.mjs's JSON into the board. Pure. Specs read in
  * pick order: by their first chunk /next would take (in flight first), then
@@ -158,7 +166,7 @@ export function boardFrom(order, progress, { repo = '' } = {}) {
       known.add(String(c.id));
       const o = fromOrder.get(String(c.id));
       return {
-        id: String(c.id), title: c.title || '', size: c.size ?? o?.size ?? null,
+        id: String(c.id), title: c.state === 'closed' ? closedTitle(c.title) : c.title || '', size: c.size ?? o?.size ?? null,
         state: c.state === 'closed' ? 'closed' : c.state === 'claimed' ? 'claimed' : 'ready',
         closedOn: c.closedOn ?? null, claim: c.claim ?? null,
         plotted: marked.has(String(c.id)) ? 'main' : null,

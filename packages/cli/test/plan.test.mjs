@@ -144,6 +144,28 @@ test('boardFrom: a pending chunk shows as just plotted; blocked and held keep wh
   assert.equal(plan.chunks.find((c) => c.id === '05.0').state, 'closed');
 });
 
+test('a closed chunk carries no range field in its title (spec 49, A9)', () => {
+  // the kit's progress.mjs parses the archive by field
+  const dir = fixtureRepo();
+  fs.appendFileSync(path.join(dir, 'plan', 'ARCHIVE.md'), [
+    '- 2026-10-21 · 09.0 · one tick ran end to end in a scratch repo · plan only',
+    '- 2026-10-22 · 09.3 · Kept: the cron · read by field · abc1234..ec8af4d',
+    '- 2026-10-22 · 09.4 · Lands next · (this commit)', '',
+  ].join('\n'));
+  const progress = node(dir, ['scripts/plan/progress.mjs', '07', '09', '--json']);
+  const titles = (b) => Object.fromEntries(b.specs.flatMap((s) => s.chunks).filter((c) => c.state === 'closed').map((c) => [c.id, c.title]));
+  assert.deepEqual(titles(boardFrom({}, progress)), {
+    '07.1': 'search box', '09.0': 'one tick ran end to end in a scratch repo', '09.3': 'Kept: the cron · read by field', '09.4': 'Lands next',
+  });
+  // a repo's own older copy left the range on: the board drops it
+  const old = { specs: [{ spec: '39', chunks: [
+    { id: '39.4', title: 'one PR-mode tick ran end to end in a scratch adopter · plan only', state: 'closed', closedOn: '2026-10-21' },
+    { id: '39.5', title: 'Spec complete · deleted in abc1234', state: 'closed', closedOn: '2026-10-21' },
+    { id: '39.6', title: 'Open · plan only', state: 'open' },
+  ] }] };
+  assert.deepEqual(boardFrom({}, old).specs[0].chunks.map((c) => c.title), ['one PR-mode tick ran end to end in a scratch adopter', 'Spec complete', 'Open · plan only']);
+});
+
 
 // ---- which order script, and an unreadable plan (spec 47, A8) ----------------------------------------------------
 

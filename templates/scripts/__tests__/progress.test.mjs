@@ -4,7 +4,7 @@
 // loop holds; the same as data for --json (states closed, claimed, open). node:test, no deps, no git.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { BAR, bar, claimEvents, closedChunks, hours, openChunks, render, short, specData, startedAt } from '../plan/progress.mjs';
+import { BAR, archiveLine, bar, claimEvents, closedChunks, hours, openChunks, render, short, specData, startedAt } from '../plan/progress.mjs';
 
 const H = 3_600_000;
 const now = Date.parse('2026-10-20T18:00:00Z');
@@ -48,6 +48,39 @@ describe('reading a spec', () => {
       '07.2:Results page lists hits',
       '07.3:Empty state shows',
       '07.4:From a pending file',
+    ]);
+  });
+
+  it('parses an archive line by field: no range shape ever reaches the says', () => {
+    const rows = [
+      ['- 2026-10-21 · 39.4 · one PR-mode tick ran end to end in a scratch adopter · plan only', '39.4', 'one PR-mode tick ran end to end in a scratch adopter', 'plan only', null],
+      ['- 2026-10-21 · 40.2 · The board reads order.mjs · 91beab70..cad98343', '40.2', 'The board reads order.mjs', '91beab70..cad98343', 'cad98343'],
+      ['- 2026-07-02 · 02 · The kit\'s own verify gate · 84ea179', '02', "The kit's own verify gate", '84ea179', '84ea179'],
+      ['- 2026-10-22 · 49.9 · The archive parses · (this commit)', '49.9', 'The archive parses', '(this commit)', null],
+      ['- 2026-10-22 · 49.1 · Kept: the cron · read by field · ec8af4d', '49.1', 'Kept: the cron · read by field', 'ec8af4d', 'ec8af4d'],
+      ['- 2026-10-22 · 49.2 · No range at all', '49.2', 'No range at all', null, null],
+      ['- 2026-10-22 · 49.3 · Ends on a word · not a range', '49.3', 'Ends on a word · not a range', null, null],
+      ['- 2026-10-21 · 34 · spec complete: three doors · 662485d0..3ef5002f', '34', 'spec complete: three doors', '662485d0..3ef5002f', '3ef5002f'],
+      ['- 2026-01-20 · 01 · spec complete: Bootstrap · absorbed into identity · deleted in 4d5e6f7', '01', 'spec complete: Bootstrap · absorbed into identity', 'deleted in 4d5e6f7', '4d5e6f7'],
+    ];
+    for (const [line, id, says, range, commit] of rows) {
+      const a = archiveLine(line);
+      assert.deepEqual([a.id, a.says, a.range, a.commit], [id, says, range, commit], line);
+      assert.ok(!/plan only|\(this commit\)|[0-9a-f]{7,}\.\.[0-9a-f]{7,}/.test(a.says), line);
+    }
+    assert.equal(archiveLine('Format: `- <date> · <chunk> · ...`'), null);
+    assert.equal(archiveLine('- 2026-10-22 · not an id · x'), null);
+  });
+
+  it("drops the range from a closed chunk's title, plan only included, and keeps the closing commit", () => {
+    const archive = [
+      '- 2026-10-21 · 39.4 · one PR-mode tick ran end to end in a scratch adopter · plan only',
+      '- 2026-10-22 · 39.5 · The tick lands · a1b2c3d..ec8af4d',
+      '- 2026-10-22 · 39 · spec complete: ticks · a1b2c3d..ec8af4d',
+    ].join('\r\n');
+    assert.deepEqual(closedChunks(archive, '39'), [
+      { id: '39.4', day: '2026-10-21', text: 'one PR-mode tick ran end to end in a scratch adopter', range: 'plan only', commit: null },
+      { id: '39.5', day: '2026-10-22', text: 'The tick lands', range: 'a1b2c3d..ec8af4d', commit: 'ec8af4d' },
     ]);
   });
 });

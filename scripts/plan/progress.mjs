@@ -50,14 +50,35 @@ export function short(text) {
   return head.length > 64 ? `${head.slice(0, 63).trimEnd()}...` : head;
 }
 
-/** ARCHIVE.md's lines for one spec's chunks: [{ id, day, text }] in order. */
+/**
+ * An archive line's range field, its last: a commit, a `sha..sha` range, `(this commit)` (a close not landed yet),
+ * `plan only` (a close with no code) or `deleted in <sha>` (a spec-complete line).
+ */
+export const RANGE = /^(?:[0-9a-f]{7,40}(?:\.\.[0-9a-f]{7,40})?|\(this commit\)|plan only|deleted in [0-9a-f]{7,40})$/;
+
+/**
+ * One ARCHIVE.md line read by field: `- <date> · <id> · <says> · <range>` as { day, id, says, range, commit }, or null
+ * when the line is not an archive line. The range is the last field when it has a range's shape (RANGE), else null;
+ * the says is everything between the id and the range, a `·` of its own kept. `commit` is the range's last sha (the
+ * closing commit), null for `plan only`, `(this commit)` or no range.
+ */
+export function archiveLine(line) {
+  const m = /^- (\d{4}-\d{2}-\d{2}) · (\d{2,}(?:\.\d+[a-z0-9]*)?) · (.*?)\s*$/.exec(line);
+  if (!m) return null;
+  const fields = m[3].split(' · ');
+  const range = RANGE.test(fields[fields.length - 1].trim()) ? fields.pop().trim() : null;
+  const commit = range ? (/([0-9a-f]{7,40})$/.exec(range)?.[1] ?? null) : null;
+  return { day: m[1], id: m[2], says: fields.join(' · ').trim(), range, commit };
+}
+
+/** ARCHIVE.md's lines for one spec's chunks: [{ id, day, text, range, commit }] in order (archiveLine's fields). */
 export function closedChunks(archive, spec) {
-  const re = new RegExp(`^- (\\d{4}-\\d{2}-\\d{2}) · (${spec}\\.\\d+[a-z0-9]*) · (.*?)\\s*$`, 'gm');
-  return [...archive.replace(/\r\n/g, '\n').matchAll(re)].map((m) => ({
-    id: m[2],
-    day: m[1],
-    text: m[3].replace(/ · [0-9a-f]{7,}(\.\.[0-9a-f]{7,})?$/, '').replace(/ · \(this commit\)$/, ''),
-  }));
+  const out = [];
+  for (const line of archive.replace(/\r\n/g, '\n').split('\n')) {
+    const a = archiveLine(line);
+    if (a && a.id.startsWith(`${spec}.`)) out.push({ id: a.id, day: a.day, text: a.says, range: a.range, commit: a.commit });
+  }
+  return out;
 }
 
 /** The claims branch's log (`%cI<TAB>%s` lines) as [{ at: ms, verb, ids }], newest first. */
