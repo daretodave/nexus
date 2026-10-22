@@ -2,7 +2,7 @@
 // bottom, with each agent message's tool rows; your notes on the right; a
 // live question as a pending tug (the stage hushes while it waits).
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Icon, LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph } from '../../ui/index.js';
+import { Icon, LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph, toolNameWidth } from '../../ui/index.js';
 import { PlotCard } from '../../ui/plot-card.jsx';
 import { PermissionCard } from '../../ui/permission-card.jsx';
 import { extractPlotReport } from '../../ui/plot-report.js';
@@ -245,9 +245,11 @@ export default function Working({ live, pinned, onSend }) {
   const now = useTick(!!runningTool);
   const scroller = useStick();
   const nameOf = (agent) => (!agent || agent === 'main' ? 'main' : stage.agents?.[agent]?.label || 'agent');
+  // Every tool row's name column fits the longest name shown, so "PowerShell" never runs into its argument (spec 52, A4).
+  const toolW = toolNameWidth(items.flatMap((m) => (m.tools || []).map((t) => t.tool)));
   return (
     <div className="convo-wrap">
-      <div className="convo is-scroll" aria-live="polite" ref={scroller.ref} onScroll={scroller.onScroll}>
+      <div className="convo is-scroll" aria-live="polite" ref={scroller.ref} onScroll={scroller.onScroll} style={{ '--log-tool': toolW }}>
         {items.map((m) => (m.you
           ? <MsgYou key={m.key} time={m.time || ''} text={m.text} images={uploadSrcs(m.images)} files={m.files} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
           : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} onSend={onSend} />))}

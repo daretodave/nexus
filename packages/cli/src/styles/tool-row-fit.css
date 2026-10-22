@@ -1,0 +1,7 @@
+/* Tool rows fit their names (spec 52, A4). The handoff's .log-row gives the tool name a 52px column, narrower than
+   "PowerShell", "ToolSearch" or "WebSearch" in the mono face, so the name ran into its argument. The column now
+   sizes to --log-tool, the longest name the transcript shows in ch (ui/work.jsx toolNameWidth, set on the
+   conversation), 7ch without it; a name longer than the column truncates, its full name in the title.
+   Layout only: the colours stay nexus.css's tokens, so both themes hold. */
+.log > .log-row.log-row-fit { grid-template-columns: 16px 16px auto minmax(0, 1fr) auto auto; }
+.log-row-fit .log-tool { width: var(--log-tool, 7ch); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

@@ -4,6 +4,7 @@
 import { Icon, Moon } from './icons.jsx';
 import { SessionGlyph, sessClass } from './session.jsx';
 import { cx } from './controls.jsx';
+import '../styles/tool-row-fit.css';
 
 /** Chunk states and their words. settled and closed share the full moon. */
 export const CHUNK_WORD = { ready: 'ready', claimed: 'claimed', building: 'building', review: 'in review', settled: 'closed', closed: 'closed', held: 'held' };
@@ -106,13 +107,32 @@ export const TOOL_GLYPH = {
   Grep: 'M11 5a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM20 20l-4.5-4.5',
   Task: 'M12 3.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM6 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM18 15.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4zM12 8.2v3.3M12 11.5 6.8 16M12 11.5l5.2 4.5',
   Bash: 'M5.5 4.5h13A2.5 2.5 0 0 1 21 7v10a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V7a2.5 2.5 0 0 1 2.5-2.5zM7 9.5l3 2.5-3 2.5M12.5 15H17',
+  // The web tools' globe (spec 52, A4): the board draws none, so it is drawn on the same 24 grid and stroke.
+  WebSearch: 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM3.5 12h17M12 3.5c2.3 2.3 3.5 5.1 3.5 8.5s-1.2 6.2-3.5 8.5M12 3.5C9.7 5.8 8.5 8.6 8.5 12s1.2 6.2 3.5 8.5',
 };
-const GLYPH_ALIAS = { Write: 'Edit', MultiEdit: 'Edit', NotebookEdit: 'Edit', Glob: 'Grep', Agent: 'Task' };
+/** Tools that share a glyph: PowerShell is a shell like Bash, ToolSearch searches like Grep, WebFetch is the web. */
+const GLYPH_ALIAS = { Write: 'Edit', MultiEdit: 'Edit', NotebookEdit: 'Edit', Glob: 'Grep', ToolSearch: 'Grep', Agent: 'Task', PowerShell: 'Bash', WebFetch: 'WebSearch' };
 /** The board glyph for a tool name (Read's for any tool it does not draw). */
 export const toolGlyph = (tool) => TOOL_GLYPH[tool] || TOOL_GLYPH[GLYPH_ALIAS[tool]] || TOOL_GLYPH.Read;
 
 /** Tool name to its log icon. */
-export const TOOL_ICON = { Read: 'file', Edit: 'pen', Write: 'pen', MultiEdit: 'pen', Task: 'runMode', Agent: 'runMode', Grep: 'eye', Glob: 'eye' };
+export const TOOL_ICON = {
+  Read: 'file', Edit: 'pen', Write: 'pen', MultiEdit: 'pen', Task: 'runMode', Agent: 'runMode', Grep: 'eye', Glob: 'eye',
+  Bash: 'terminal', PowerShell: 'terminal', ToolSearch: 'eye', WebSearch: 'orbit', WebFetch: 'orbit',
+};
+
+/** The widest tool name a row shows, in ch; longer names truncate with a tooltip. */
+export const TOOL_NAME_MAX = 16;
+
+/**
+ * The tool-name column's width for a set of rows: the longest name shown (spec 52, A4), at least the board's 7ch and
+ * at most TOOL_NAME_MAX. Set it as --log-tool on the rows' container so every row's column lines up.
+ */
+export function toolNameWidth(names) {
+  let n = 7;
+  for (const t of names) n = Math.max(n, String(t || '').length);
+  return `${Math.min(n, TOOL_NAME_MAX)}ch`;
+}
 
 /**
  * .log row: a tool call. state: undefined | 'running' | 'failed'.
@@ -126,9 +146,9 @@ export function LogRow({ tool, args, meta, dur, state, open, onToggle, icon, d, 
         : <Icon name={icon || TOOL_ICON[tool] || 'prompt'} size={14} className="log-ic" />;
   return (
     <div className={cx('log', open && 'is-open', state && `is-${state}`, hover && 'is-hover')}>
-      <button className="log-row" type="button" aria-expanded={!!open} onClick={onToggle}>
+      <button className="log-row log-row-fit" type="button" aria-expanded={!!open} onClick={onToggle}>
         <Icon name="chevronSmall" size={14} className="log-chev" />{ic}
-        <span className="log-tool">{tool}</span><span className="log-args">{args}</span>
+        <span className="log-tool" title={tool}>{tool}</span><span className="log-args">{args}</span>
         {meta ?? <span />}<span className="log-dur">{dur}</span>
       </button>
       {open && children ? <div className="log-body">{children}</div> : null}
