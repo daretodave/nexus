@@ -187,10 +187,11 @@ are universal:
 Choose the mode now, owner or contributor, before the first
 write (the adopt prompt asks it with its other questions;
 owner is the default when you own the repo). Either way,
-`.owner` and `.nexus/` go in `.gitignore`; the owner's
-checkout also gets an untracked `.owner`. With no `.owner`,
-every change lands as a pull request. Before the first push
-(§4 copies the script), run `node scripts/install-hooks.mjs`
+`.owner` and `.nexus/` go in `.gitignore` (step 3 writes it);
+the owner's checkout also gets an untracked `.owner`. With no
+`.owner`, every change lands as a pull request. Before the
+first push (§4 copies the script), run
+`node scripts/install-hooks.mjs`
 in either mode to arm the hooks
 ([`owner-mode.md`](./owner-mode.md) Step 2).
 
@@ -211,24 +212,71 @@ Copy the roadmap, the archive, the lock and the two starter
 specs in:
 
 ```bash
+mkdir -p plan/pending
 cp ../nexus/templates/plan/README.md ../nexus/templates/plan/ARCHIVE.md \
   ../nexus/templates/plan/nexus.lock \
   ../nexus/templates/plan/01-bootstrap.md \
   ../nexus/templates/plan/02-canonical-sibling.md plan/
+cp ../nexus/templates/plan/pending/README.md plan/pending/README.md
 ```
 
 The PowerShell twin, Windows native:
 
 ```powershell
+New-Item -ItemType Directory -Force plan\pending | Out-Null
 Copy-Item ..\nexus\templates\plan\README.md, ..\nexus\templates\plan\ARCHIVE.md, `
   ..\nexus\templates\plan\nexus.lock, `
   ..\nexus\templates\plan\01-bootstrap.md, `
   ..\nexus\templates\plan\02-canonical-sibling.md plan\
+Copy-Item ..\nexus\templates\plan\pending\README.md plan\pending\README.md
 ```
 
 Set `adopted:` in `plan/nexus.lock` to today's date: the lock
 records which kit version (and plan shape) this repo follows,
 and [`upgrade.md`](./upgrade.md) is how it ever changes.
+
+### Git plumbing: `.gitattributes` + `.gitignore`
+
+`plan/ARCHIVE.md` needs `merge=union` so concurrent chunk
+closes append rather than conflict (its own header says so);
+and a greenfield repo has no `.gitignore` yet either. Write
+both now, while you're already touching `plan/`:
+
+```bash
+cat > .gitattributes <<'EOF'
+* text=auto eol=lf
+plan/ARCHIVE.md merge=union
+EOF
+cat > .gitignore <<'EOF'
+node_modules/
+.env
+.env.workspace
+.env.local
+.env.*.local
+.owner
+.nexus/
+.announcements.md
+EOF
+```
+
+The PowerShell twin, Windows native:
+
+```powershell
+Set-Content .gitattributes @(
+  '* text=auto eol=lf'
+  'plan/ARCHIVE.md merge=union'
+)
+Set-Content .gitignore @(
+  'node_modules/'
+  '.env'
+  '.env.workspace'
+  '.env.local'
+  '.env.*.local'
+  '.owner'
+  '.nexus/'
+  '.announcements.md'
+)
+```
 
 `plan/README.md` is what the loop reads: its lanes (Asap,
 Held) and one row per spec, in build order. Specs group into:
@@ -423,9 +471,12 @@ policy as pre-push (§2's mode choice;
 [`owner-mode.md`](./owner-mode.md)).
 
 `scripts/upgrade-plan.mjs` + `scripts/__tests__/upgrade-plan.test.mjs`
-+ `scripts/__tests__/upgrade-plan-run.test.mjs` go in every new
-project: the script converts a v1 plan, which a new project never
-has, and [`upgrade.md`](./upgrade.md) runs it from nexus anyway.
++ `scripts/__tests__/upgrade-plan-run.test.mjs` come out of every
+new project: the script converts a v1 plan, which a new project's
+own plan never is, and when an existing repo needs the conversion,
+[`upgrade.md`](./upgrade.md) runs the script straight from the
+nexus checkout, not from a copy living in the adopter's own
+`scripts/`.
 
 Each command file opens with "Read `skills/<name>.md` end to
 end before touching anything else" — leaving it behind after
