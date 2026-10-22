@@ -68,7 +68,6 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A6** A `/plot` report renders as a card: the chunk, the before/after order with the new chunk lit, open questions as answer cards with defaults chosen, and one-click Plot / Plot asap / Plot and build now.
 - **A7** Oversight lists only real questions (spec Open questions and `[needs-user-call]` rows, read whole, settled items skipped), grouped by source and spec, with markdown rendered.
 - **A8** The Plan board works in a repo with no vendored `order.mjs` (the CLI runs its bundled copy), and an unreadable plan shows an honest state, not zeros.
-- **A9** The claims rail folds consecutive chunks of one session into one expandable line, names the session's star when it has one, and scrolls in its own panel.
 - **A10** Fleet shows one tile per session, idle as idle, a dim tile for a claim holder that is not attached, and each tile's last message and chunk.
 - **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
 - **A15** The session onboarding's Plot step starts reaches the person: a permission it waits on shows on the Plot, Cloud and Launch steps with Allow inline, and Launch opens that session's cockpit when it is still working.
@@ -79,7 +78,7 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 (None.)
 
 ## Chunks
-Measure: 12 open · 4 closed · next A17
+Measure: 11 open · 5 closed · next A17
 
 - [ ] **47.2** Cloud workflow and schedule served for onboarding · M · closes A16 · needs —
   - Write `march.yml` from the template with the chosen cron; commit per owner mode.
@@ -91,7 +90,6 @@ Measure: 12 open · 4 closed · next A17
 - [ ] **47.7** The /plot report card · M · closes A6 · needs 47.6
 - [ ] **47.8** Oversight lists real questions, whole and grouped · S · closes A7 · needs 47.6
 - [ ] **47.9** The Plan board runs the kit's bundled order script · S · closes A8 · needs —
-- [ ] **47.10** The claims rail folds a session's run · S · closes A9 · needs —
 - [ ] **47.11** Fleet tiles are one per session and honest · M · closes A10 · needs —
 - [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
 - [ ] **47.15** Onboarding's plot session's asks reach the person · S · closes A15 · needs —
