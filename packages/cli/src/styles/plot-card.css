@@ -1,0 +1,94 @@
+/* The /plot report card (spec 47, A6): app glue beside nexus.css, which stays verbatim from the handoff. It reuses
+   the handoff's pieces (.chunk, .size-tag, .file-tag, .choice, .btn) and adds only the card's frame, its three
+   tinted rows, the build-order lane with the new chunk lit, and the answer cards. Every colour is a handoff token,
+   so both themes hold. */
+
+.plotc {
+  display: flex; flex-direction: column; gap: 14px; margin-top: 10px; padding: 16px 18px; border-radius: 16px;
+  background: color-mix(in oklab, var(--accent) 4%, var(--surface-solid));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent), 0 0 40px -18px var(--glow);
+  min-width: 0;
+}
+.plotc.is-done { box-shadow: 0 0 0 1px color-mix(in oklab, var(--st-done) 36%, transparent); }
+.plotc code { font-family: var(--font-mono); font-size: .9em; padding: 1px 5px; border-radius: 5px; background: var(--well); font-variant-ligatures: none; }
+
+.plotc-head { display: flex; align-items: center; gap: 8px; }
+.plotc-kicker { font-family: var(--font-mono); font-size: 12px; line-height: 16px; color: var(--accent); font-variant-ligatures: none; }
+.plotc-mode {
+  display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: var(--r-full);
+  font-size: 10px; line-height: 14px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+  color: var(--text-2); background: color-mix(in oklab, var(--text) 9%, transparent);
+}
+.plotc-mode.is-plotted { color: var(--accent); background: color-mix(in oklab, var(--accent) 14%, transparent); }
+.plotc-mode.is-done { color: var(--st-done); background: color-mix(in oklab, var(--st-done) 14%, transparent); }
+.plotc-task { font-family: var(--font-display); font-size: 18px; line-height: 26px; font-weight: 600; color: var(--text); text-wrap: pretty; }
+
+/* Built / planned / not planned: three rows, each tinted with its state colour. */
+.plotc-rows { display: flex; flex-direction: column; gap: 6px; }
+.plotc-row {
+  --tint: var(--text-3);
+  display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 12px; align-items: start; padding: 8px 12px;
+  border-radius: 10px; background: color-mix(in oklab, var(--tint) 9%, var(--well));
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--tint) 70%, transparent);
+  font-size: 13px; line-height: 20px; color: var(--text);
+}
+.plotc-row.is-built { --tint: var(--st-done); }
+.plotc-row.is-planned { --tint: var(--st-blocked); }
+.plotc-row.is-new { --tint: var(--st-thinking); }
+.plotc-row-k { font-size: 11px; line-height: 20px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--tint); }
+.plotc-row ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.plotc-row li { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.plotc .file-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+.plotc-sec { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.plotc-sec-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.plotc-spec { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-2); }
+
+.plotc-chunks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.plotc-chunk { gap: 6px; box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 34%, transparent), 0 0 24px -12px var(--glow); }
+.plotc-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-family: var(--font-mono); font-size: 11px; line-height: 16px; color: var(--text-2); font-variant-ligatures: none; }
+.plotc-meta b { font-family: var(--font-ui); font-weight: 500; color: var(--text-3); margin-right: 2px; }
+.plotc-files { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* The build order: a lane of id pills, the new chunk lit. */
+.plotc-order { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--well); }
+.plotc-lane { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 4px 10px; align-items: center; }
+.plotc-lane-k { font-size: 11px; line-height: 16px; font-weight: 600; color: var(--text-3); }
+.plotc-lane-ids { display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: thin; padding: 4px 2px; }
+.plotc-arrow { flex: none; color: var(--text-off); font-size: 12px; }
+.plotc-id {
+  flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--r-full);
+  background: var(--surface-solid); border: 1px solid var(--line);
+  font-family: var(--font-mono); font-size: 11px; line-height: 16px; font-weight: 500; color: var(--text-2); white-space: nowrap; font-variant-ligatures: none;
+}
+.plotc-id.is-lit {
+  color: var(--on-accent); background: var(--aurora-grad); border-color: transparent; font-weight: 700;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent), 0 0 22px -2px var(--glow);
+}
+.plotc-lane-sub { grid-column: 2; font-size: 12px; line-height: 16px; color: var(--accent); font-weight: 500; }
+
+/* Open questions: small answer cards, the default chosen. */
+.plotc-qs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.plotc-q { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface); box-shadow: var(--e-1); min-width: 0; }
+.plotc-q-t { display: flex; gap: 8px; font-size: 13px; line-height: 19px; color: var(--text); text-wrap: pretty; }
+.plotc-q-n {
+  flex: none; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; border-radius: var(--r-full);
+  background: color-mix(in oklab, var(--st-blocked) 16%, transparent); color: var(--st-blocked); font-size: 11px; font-weight: 700;
+}
+.plotc-q .choice { flex-wrap: wrap; align-self: flex-start; max-width: 100%; }
+.plotc-q .choice button { white-space: normal; height: auto; min-height: 24px; text-align: left; }
+.plotc-def { font-size: 9px; line-height: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--st-blocked); }
+
+.plotc-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 2px; }
+.plotc-ans { font-size: 12px; line-height: 16px; color: var(--text-3); min-width: 0; overflow-wrap: anywhere; }
+.plotc-sent { font-size: 13px; line-height: 18px; color: var(--st-done); overflow-wrap: anywhere; }
+
+/* The prose a card replaces, behind a disclosure. */
+.plotc-full { display: inline-flex; align-self: flex-start; margin-top: 4px; }
+.plotc-full .ic { transition: transform var(--dur-snap) var(--ease-snap); }
+.plotc-full[aria-expanded="true"] .ic { transform: rotate(180deg); }
+
+@media (max-width: 560px) {
+  .plotc { padding: 14px; }
+  .plotc-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}

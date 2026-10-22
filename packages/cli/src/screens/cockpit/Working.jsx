@@ -1,13 +1,16 @@
 // Working (Cockpit board, phase "working"): the conversation, newest at the
 // bottom, with each agent message's tool rows; your notes on the right; a
 // live question as a pending tug (the stage hushes while it waits).
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon, LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph } from '../../ui/index.js';
+import { PlotCard } from '../../ui/plot-card.jsx';
+import { extractPlotReport } from '../../ui/plot-report.js';
 import { server } from '../../data/client.js';
 import { agentState, convoItems, mmss, toolDur } from './model.js';
 import { countdown } from '../../../shared/times.mjs';
 import { pinAfterScroll, stickTarget } from './stick.js';
 import '../../styles/convo-scroll.css';
+import '../../styles/plot-card.css';
 
 /**
  * A .log row as the board draws it, with the board's tool glyph; opens to show the full call. Its diffstat comes from
@@ -37,13 +40,34 @@ function ToolRow({ t, running, now }) {
   );
 }
 
-function AgentMsg({ m, state, runningTool, now }) {
+/**
+ * An agent's text: markdown, or, when it ends a /plot report with a valid nexus-plot block, the card, its prose
+ * folded behind "Full report". A block still streaming or invalid stays a code block in the markdown.
+ */
+function AgentText({ text, onSend }) {
+  const { prose, report } = useMemo(() => extractPlotReport(text), [text]);
+  const [open, setOpen] = useState(false);
+  if (!report) return <Markdown className="msg-text" text={text} />;
+  return (
+    <>
+      {prose ? (
+        <button className="btn btn-ghost btn-s plotc-full" type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          Full report<Icon name="chevronDown" size={14} />
+        </button>
+      ) : null}
+      {prose && open ? <Markdown className="msg-text" text={prose} /> : null}
+      <PlotCard report={report} onSend={onSend} />
+    </>
+  );
+}
+
+function AgentMsg({ m, state, runningTool, now, onSend }) {
   return (
     <div className="msg">
       <Orb state={m.error ? 'failed' : state} size="s" style={{ marginTop: 1 }} />
       <div style={{ minWidth: 0 }}>
         <div className="msg-meta"><b>{m.name}</b><span>{m.time || ''}</span></div>
-        {m.text ? <Markdown className="msg-text" text={m.text} /> : null}
+        {m.text ? <AgentText text={m.text} onSend={onSend} /> : null}
         {m.tools.length ? (
           <div className="msg-tools">
             {m.tools.map((t, i) => <ToolRow key={t.id || i} t={t} running={runningTool === t} now={now} />)}
@@ -155,7 +179,8 @@ function useStick() {
   return { ref, pinned, onScroll, jump };
 }
 
-export default function Working({ live, pinned }) {
+/** onSend(line): the cockpit's send for one exact line (a /plot card's action); resolves true when it went. */
+export default function Working({ live, pinned, onSend }) {
   const { stage, transcript, asks, permissions, status } = live;
   const items = convoItems(transcript, stage);
   const busy = status?.state === 'running';
@@ -178,7 +203,7 @@ export default function Working({ live, pinned }) {
       <div className="convo is-scroll" aria-live="polite" ref={scroller.ref} onScroll={scroller.onScroll}>
         {items.map((m) => (m.you
           ? <MsgYou key={m.key} time={m.time || ''} text={m.text} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
-          : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} />))}
+          : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} onSend={onSend} />))}
         {asks.map((a) => <AskTugs key={a.id} ask={a} who={nameOf(a.agent)} />)}
         {permissions.map((p) => <PermissionTug key={p.id} req={p} who={nameOf(p.agent)} />)}
       </div>

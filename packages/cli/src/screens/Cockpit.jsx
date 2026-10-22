@@ -102,17 +102,21 @@ export default function Cockpit() {
   const paused = ledger?.state === 'paused';
   const route = routeFor(draft, override, running);
   const cmode = paused ? 'paused' : pinMode ? 'pin' : 'normal';
-  const send = async (text, files) => {
+  // opts.line: one exact line from the transcript (a /plot card's action), routed by its own text; the draft, its
+  // route chip, plot mode and pin mode are the composer's and stay as they are.
+  const send = async (text, files, opts = {}) => {
+    const line = !!opts.line;
     const attachments = (files || []).map((f) => `\n\nAttached: ${f.name}\n\`\`\`\n${f.text}\n\`\`\``).join('');
     try {
-      if (pinMode) {
+      if (pinMode && !line) {
         await api('/api/pin', { session: id, text });
         setPinMode(false);
       } else {
-        const r = route === 'nudge' ? 'ask' : route === 'pin' ? null : (route || 'slash');
-        if (route === 'pin') { await api('/api/pin', { session: id, text }); } else {
+        const rt = line ? routeFor(text, null, running) : route;
+        const r = rt === 'nudge' ? 'ask' : rt === 'pin' ? null : (rt || 'slash');
+        if (rt === 'pin') { await api('/api/pin', { session: id, text }); } else {
           let prompt = toPrompt(text, r, { ...prefs, ...prefsFromRunMode(runMode) });
-          if (route === 'plot' && plotMode === 'do') prompt = `${prompt} and do`;
+          if (!line && route === 'plot' && plotMode === 'do') prompt = `${prompt} and do`;
           if (terminal) {
             // A terminal session: sending from its own cockpit aims at it, so link it and steer it. The line reaches
             // its next tool call (the steer hook), and only this session.
@@ -125,7 +129,7 @@ export default function Cockpit() {
           } else await server.send(prompt + attachments, id);
         }
       }
-      setDraft(''); setOverride(null); setPlotMode('plan');
+      if (!line) { setDraft(''); setOverride(null); setPlotMode('plan'); }
       ledgerRes.reload();
       return true;
     } catch (e) {
@@ -235,7 +239,7 @@ export default function Cockpit() {
       />
     );
   } else {
-    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} pinned={ledger?.pinned?.text} /> : (
+    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} pinned={ledger?.pinned?.text} onSend={(text) => send(text, [], { line: true })} /> : (
       <div className="convo" aria-live="polite">
         <Empty sky="quiet" title="Quiet so far" body="What this session says and does shows up here as it works. Nudge it below, or type / for commands." />
       </div>
