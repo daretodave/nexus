@@ -30,7 +30,6 @@ line goes):
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 48 | GUI follow-ups from the 0.4.0 run | [48-gui-follow-ups.md](48-gui-follow-ups.md) | planned | 1 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 6 | 9 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33

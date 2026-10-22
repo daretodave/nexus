@@ -163,3 +163,5 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 47.4 · Onboarding fits an adopted repo: version, spec number, orbs · d58b1ad8..f4474b07
 - 2026-10-22 · 47 · spec complete: the GUI reads a mature adopter truthfully and every onboarding button does what it says: explode, plot, cloud workflow and schedule, vault states, markdown and highlighted commands, the /plot card, real questions in Oversight, the Plan board on any repo, folded claims, honest Fleet tiles, reorders that land, a cockpit that opens at once, a composer that suggests instead of prefixing; GUI commits run the repo's hooks safely · 6a2292f..f4474b07
 - 2026-10-22 · 48.2 · A resumed ledger names its runner; Fleet shows one tile · 85550dfe..be511c49
+- 2026-10-22 · 48.1 · The CLI suite passes three full Windows runs in a row · 242b44b8..6794dd12
+- 2026-10-22 · 48 · spec complete: the CLI suite holds under full Windows runs (the server ends what it starts, tree kills on timeout) and a ledger resumed in a new session names its runner, one Fleet tile · c9c5ce3..58ca95f
