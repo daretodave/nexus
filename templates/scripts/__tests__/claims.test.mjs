@@ -224,6 +224,23 @@ describe('the CLI', () => {
     assert.equal(JSON.parse(run(a, ['whoami', '--json', '--session', 'nobody']).out).star, '');
   });
 
+  it('cuts a full Claude Code session id given to --session to its claims id; keeps any other value whole', () => {
+    const uuid = '3f2a9c1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f';
+    // Claimed in that Claude Code session: stored by its first 8.
+    assert.equal(run(a, ['claim', '16.7'], { NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: uuid }).code, 0);
+    assert.equal(fetchClaims(a).map['16.7'].split('|')[4], 's:3f2a9c1e');
+    // A later terminal names the session by its full id: renew and release match it.
+    assert.deepEqual(JSON.parse(run(a, ['renew', '--json', '--session', uuid], { NEXUS_SESSION: 'elsewhere' }).out).renewed, ['16.7']);
+    assert.equal(JSON.parse(run(a, ['whoami', '--json', '--session', uuid]).out).session, '3f2a9c1e');
+    assert.deepEqual(JSON.parse(run(a, ['release', '16.7', '--json', '--session', uuid]).out), { released: ['16.7'], kept: [] });
+    // A longer custom name is stored whole, so it is matched whole.
+    const name = 'hosted-session-twelve';
+    assert.equal(run(a, ['claim', '16.8'], { NEXUS_SESSION: name }).code, 0);
+    assert.deepEqual(JSON.parse(run(a, ['renew', '--json', '--session', name], { NEXUS_SESSION: 'elsewhere' }).out).renewed, ['16.8']);
+    assert.equal(JSON.parse(run(a, ['whoami', '--json', '--session', `${uuid}x`]).out).session, `${uuid}x`);
+    assert.equal(run(a, ['release', '16.8', '--session', name]).code, 0);
+  });
+
   it('takes the session from NEXUS_SESSION, then the Claude Code session, and dispatches no board unless asked', () => {
     assert.equal(sessionId({ NEXUS_SESSION: 'x1' }), 'x1');
     assert.equal(sessionId({ CLAUDE_CODE_SESSION_ID: 'abcdef123456' }), 'abcdef12');

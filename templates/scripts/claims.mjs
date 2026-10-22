@@ -29,7 +29,8 @@
 //   node scripts/claims.mjs whoami | list | claim <id…> [--force] [--base <b>] [--package] | renew [<id…>]
 //                           | pr <id> <number> | release <id…> [--force] | prune | free <id> | audit [--release]
 //                           | assign <id…> --to <git name> --login <github login> [--base <b>] [--force]
-//   every command takes --session <id>, and --json (one JSON value on stdout, for the GUI and other tools)
+//   every command takes --session <id> (a full Claude Code session id is cut to its first 8, as claims store it), and
+//   --json (one JSON value on stdout, for the GUI and other tools)
 //
 // Environment: NEXUS_SESSION (this session's claims id), NEXUS_CONTRIBUTOR=1 (run as a contributor), NEXUS_GH_LOGIN
 // (this machine's GitHub login; else asked of gh), NEXUS_CLAIMS_REMOTE (default origin), NEXUS_MAIN_BRANCH (default
@@ -72,6 +73,17 @@ function lanIp() {
 /** This session's claims id: NEXUS_SESSION, else the Claude Code session (first 8), else the parent process. */
 export function sessionId(env = process.env) {
   return env.NEXUS_SESSION || (env.CLAUDE_CODE_SESSION_ID ?? '').slice(0, 8) || `pid${process.ppid}`;
+}
+
+/** A Claude Code session id in full (a UUID), as CLAUDE_CODE_SESSION_ID holds it. */
+const FULL_SESSION = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A --session value as claims store it: a full Claude Code session id cut to its first 8, as sessionId cuts it, so
+ * a renew or release given the full id matches; anything else (a NEXUS_SESSION name, a claims id) stays whole.
+ */
+export function claimsSession(given) {
+  return FULL_SESSION.test(given) ? given.slice(0, 8) : given;
 }
 
 /** Where the guard hook (.claude/hooks/guard.mjs pre-bash) marks a session that loaded it, at the primary checkout. */
@@ -477,7 +489,7 @@ export function main(argv, { cwd = process.cwd(), env = process.env, out = conso
     const i = rest.indexOf(name);
     return i >= 0 ? (rest.splice(i, 2)[1] ?? '') : '';
   };
-  const session = valued('--session');
+  const session = claimsSession(valued('--session'));
   const base = valued('--base');
   const to = valued('--to');
   const login = valued('--login');
