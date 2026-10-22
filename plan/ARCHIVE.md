@@ -165,3 +165,6 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 48.2 · A resumed ledger names its runner; Fleet shows one tile · 85550dfe..be511c49
 - 2026-10-22 · 48.1 · The CLI suite passes three full Windows runs in a row · 242b44b8..6794dd12
 - 2026-10-22 · 48 · spec complete: the CLI suite holds under full Windows runs (the server ends what it starts, tree kills on timeout) and a ledger resumed in a new session names its runner, one Fleet tile · c9c5ce3..58ca95f
+- 2026-10-22 · 49.7 · Closed chunks show no made-up size · 42b0ea0d..42b0ea0d
+- 2026-10-22 · 49.8 · A closed chunk shows its close date and commit · aadda5b8..aadda5b8
+- 2026-10-22 · 49.9 · Archive lines parse by field; no range in a title · d411d308..88763047
