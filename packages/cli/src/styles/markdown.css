@@ -1,0 +1,74 @@
+/* Agent markdown and highlighted commands (spec 47, A5): app glue beside nexus.css, which stays verbatim from the
+   handoff. The --syn-* tokens follow the handoff's .code palette (keys in the accent, strings in the writing pink,
+   comments in the third text) and add the rest from the state colours, so both themes keep the design's ink. Each
+   theme declares every token: a var() in a custom property resolves where it is declared, so a nested
+   data-theme needs its own copy. */
+
+:root,
+[data-theme="dark"] {
+  --syn-text: var(--text-2);
+  --syn-cmd:  var(--accent);
+  --syn-flag: var(--st-thinking);
+  --syn-str:  var(--st-writing);
+  --syn-path: var(--st-tool);
+  --syn-num:  var(--st-blocked);
+  --syn-var:  var(--sess-altair);
+  --syn-op:   var(--text-3);
+}
+
+[data-theme="light"] {
+  --syn-text: var(--text-2);
+  --syn-cmd:  var(--accent);
+  --syn-flag: var(--st-thinking);
+  --syn-str:  var(--st-writing);
+  --syn-path: var(--st-tool);
+  --syn-num:  var(--st-blocked);
+  --syn-var:  var(--sess-altair);
+  --syn-op:   var(--text-3);
+}
+
+.syn-cmd { color: var(--syn-cmd); font-weight: 500; }
+.syn-flag { color: var(--syn-flag); }
+.syn-str { color: var(--syn-str); }
+.syn-path { color: var(--syn-path); }
+.syn-num { color: var(--syn-num); }
+.syn-var { color: var(--syn-var); }
+.syn-op, .syn-comment { color: var(--syn-op); }
+.syn-comment { font-style: italic; }
+
+/* The transcript's markdown: its font and size are the message's; headings stay modest (a conversation, not a page). */
+.md { min-width: 0; overflow-wrap: anywhere; }
+/* Margins reset at one class of weight (:where), so the spacing rules after them win by order. */
+.md :where(p, ul, ol, li, blockquote, pre, h1, h2, h3, h4, table, hr) { margin: 0; }
+.md > * + * { margin-top: 8px; }
+.md .md-h { font-family: inherit; font-weight: 600; line-height: 1.4; color: var(--text); }
+.md h1.md-h, .md h2.md-h { font-size: 1.1em; }
+.md h3.md-h { font-size: 1em; }
+.md h4.md-h { font-size: 1em; font-weight: 500; color: var(--text-2); }
+.md > .md-h + * { margin-top: 4px; }
+.md > * + .md-h { margin-top: 14px; }
+.md strong { font-weight: 600; color: var(--text); }
+.md a { color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--accent) 40%, transparent); text-underline-offset: 2px; }
+.md a:hover { text-decoration-color: var(--accent); }
+.md :where(ul, ol) { padding-left: 1.4em; }
+.md li + li { margin-top: 2px; }
+.md li > * + * { margin-top: 4px; }
+.md li::marker { color: var(--text-3); }
+.md blockquote { padding: 0 0 0 12px; border-left: 2px solid var(--line-2); color: var(--text-2); }
+.md blockquote > * + * { margin-top: 6px; }
+.md hr { height: 1px; border: 0; background: var(--line); }
+.md > * + hr, .md > hr + * { margin-top: 14px; }
+.md code { font-family: var(--font-mono); font-size: .87em; padding: 1px 5px; border-radius: 5px; background: var(--well); font-variant-ligatures: none; }
+.md .md-pre {
+  padding: 10px 12px; border-radius: 10px; background: var(--well); box-shadow: var(--e-1);
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: thin;
+  font-family: var(--font-mono); font-size: 12px; line-height: 18px; color: var(--syn-text);
+  white-space: pre; overflow-wrap: normal; word-break: normal; tab-size: 4;
+  font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0;
+}
+.md .md-pre code { padding: 0; border-radius: 0; background: none; font-size: inherit; color: inherit; white-space: inherit; }
+.md .md-table { overflow-x: auto; scrollbar-width: thin; }
+.md table { border-collapse: collapse; font-size: .93em; line-height: 1.5; }
+.md th, .md td { padding: 4px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+.md th { font-weight: 600; color: var(--text); background: color-mix(in oklab, var(--well) 60%, transparent); }
+.md-inline { display: inline; }
