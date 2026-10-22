@@ -22,7 +22,7 @@ Argument handling:
 - Anything else → that text is the run's work.
 
 The lead never builds: S and M chunks go to one builder
-subagent, in the background (foreground in a cloud tick), L
+subagent, in the background (foreground when headless), L
 chunks to a Workflow (build, adversarial verify, fix). While
 a builder runs, the lead acts on a board `REBOOT` line. The
 lead runs the gate, writes the pending close, lands per owner

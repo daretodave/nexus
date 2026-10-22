@@ -68,9 +68,11 @@ its id (`--set builder=<agent id>`):
   means `/reboot-ready <slug>` now, which stops the builder,
   keeps its worktree and the claims, and parks the ledger so
   `/reboot-resume` harvests the builder by its id.
-- **Cloud tick** (march.yml or any CI job; `CI` or
-  `GITHUB_ACTIONS` set): foreground (`run_in_background:
-  false`). A background agent dies with the job.
+- **Headless** (a cloud tick, any CI job, or `claude -p`;
+  `CI` or `GITHUB_ACTIONS` set, or no one at the prompt):
+  foreground (`run_in_background: false`), and never pace
+  the loop with a wakeup. A background agent dies when the
+  job or the print run ends.
 
 ## 3. Workflows (L chunks, `--workflow`, `batch`)
 
