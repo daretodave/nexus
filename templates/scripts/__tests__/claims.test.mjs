@@ -222,6 +222,10 @@ describe('the CLI', () => {
     assert.equal(JSON.parse(run(a, ['whoami', '--json'], { NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: 'abcdef123456' }).out).star, 'polaris');
     assert.equal(JSON.parse(run(a, ['whoami', '--json', '--session', 'abcdef12']).out).star, 'polaris');
     assert.equal(JSON.parse(run(a, ['whoami', '--json', '--session', 'nobody']).out).star, '');
+    // A session that took a ledger (/reboot-resume, ledger.mjs take) carries that ledger's star: the loop it runs.
+    const d = path.join(a, '.nexus', 'sessions');
+    fs.writeFileSync(path.join(d, 'taken.json'), JSON.stringify({ id: 'c5b0f488-old', star: 'deneb', state: 'resuming', claims: 'c5b0f488', runner: 'abcdef12' }));
+    assert.equal(JSON.parse(run(a, ['whoami', '--json'], { NEXUS_SESSION: '', CLAUDE_CODE_SESSION_ID: 'abcdef123456' }).out).star, 'deneb');
   });
 
   it('cuts a full Claude Code session id given to --session to its claims id; keeps any other value whole', () => {

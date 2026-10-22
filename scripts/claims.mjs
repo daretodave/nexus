@@ -141,7 +141,8 @@ export function whoami(cwd = process.cwd(), env = process.env) {
 /**
  * This session's star name from its ledger (.nexus/sessions/*.json at the primary checkout, scripts/ledger.mjs): the
  * ledger whose id is this session's full id (NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID) or `session` itself, or whose
- * claims id is `session`; one still held (not resumed or ended) first. '' when none says: the tag stays `s:<session>`.
+ * claims id is `session`; one still held (not resumed or ended) first. A ledger this session took and runs (its `runner`,
+ * ledger.mjs take) comes before all of them: its star is the loop it resumed. '' when none says: the tag stays `s:<session>`.
  */
 export function starOf(cwd, session, env = process.env) {
   if (!session) return '';
@@ -160,7 +161,8 @@ export function starOf(cwd, session, env = process.env) {
   const full = sessionId(env) === session ? env.NEXUS_SESSION || env.CLAUDE_CODE_SESSION_ID || '' : '';
   const hits = ledgers.filter((l) => (full && l.id === full) || l.id === session || (l.claims ?? l.id.slice(0, 8)) === session);
   const held = hits.filter((l) => l.state !== 'resumed' && l.state !== 'ended');
-  return (held[0] ?? hits[0])?.star ?? '';
+  const runs = ledgers.filter((l) => l.runner === session && l.state !== 'ended');
+  return (runs[0] ?? held[0] ?? hits[0])?.star ?? '';
 }
 
 /** A session as people read it: `<session>~<star>`, the session alone, or '-'. */
