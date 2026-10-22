@@ -295,7 +295,8 @@ test('secretsStep: missing before any file is picked, the root .env as the vault
   assert.deepEqual(secretsStep(null), { kind: 'unknown' });
   assert.deepEqual(secretsStep({ available: false, vaultState: 'missing', rootEnv: { exists: true, names: 5 } }), { kind: 'missing', envNames: 5 });
   assert.deepEqual(secretsStep({ available: false, vaultState: 'missing', rootEnv: { exists: false, names: 0 } }), { kind: 'missing', envNames: 0 });
-  assert.deepEqual(secretsStep({ ...STATUS, vaultState: 'ready', rootEnv: { exists: true, names: 4, undeclared: 2 } }), { kind: 'already', names: 4, undeclared: 2 });
+  assert.deepEqual(secretsStep({ ...STATUS, vaultState: 'ready', rootEnv: { exists: true, names: 4, undeclared: 2 } }), { kind: 'already', names: 4, undeclared: 2, manifest: false });
+  assert.deepEqual(secretsStep({ ...STATUS, manifest: true, vaultState: 'ready', rootEnv: { exists: true, names: 4, undeclared: 2 } }), { kind: 'already', names: 4, undeclared: 2, manifest: true });
   assert.deepEqual(secretsStep({ ...STATUS, vaultState: 'ready', rootEnv: { exists: true, names: 0, undeclared: 0 } }), { kind: 'import' });
   assert.deepEqual(secretsStep({ ...STATUS, vaultState: 'ready', rootEnv: { exists: false, names: 0 } }), { kind: 'import' });
   assert.ok(vaultMissing({ available: false }) && !vaultMissing(STATUS) && !vaultMissing(null));
@@ -322,4 +323,33 @@ test('secretsStep: missing before any file is picked, the root .env as the vault
   assert.equal(setupToast({ landed: 'main', here: false, note: 'pull main' }).body, 'pull main');
   assert.equal(setupToast({ landed: 'branch', pr: 'https://x/pull/1' }).body, 'https://x/pull/1');
   assert.equal(secretsLine({ available: false, vaultState: 'missing', owner: true }), 'no vault yet · set it up from the Vault');
+});
+
+// ---- the GUI tells the truth (spec 49) -------------------------------------------------------------------------------
+
+test('49.2: with a manifest present, the card names what it lacks with Add it / Add them, in the headings\' sans face', async () => {
+  const fs = await import('node:fs');
+  const { alreadyCopy, alreadyPick, lacksLine } = await import('../src/screens/vault/model.js');
+  assert.equal(lacksLine(1), '1 name in .env isn\'t in nexus.secrets.json yet');
+  assert.equal(lacksLine(2), '2 names in .env aren\'t in nexus.secrets.json yet');
+  const one = alreadyCopy({ names: 3, undeclared: 1, manifest: true });
+  assert.equal(one.title, 'Your .env is already the vault · 3 names');
+  assert.match(one.line, /^1 name in \.env isn't in nexus\.secrets\.json yet\./);
+  assert.equal(one.action, 'Add it');
+  assert.equal(alreadyCopy({ names: 3, undeclared: 2, manifest: true }).action, 'Add them');
+  assert.equal(alreadyCopy({ names: 3, undeclared: 0, manifest: true }).action, null, 'nothing lacking, nothing to add');
+  assert.equal(alreadyCopy({ names: 3, undeclared: 3, manifest: false }).action, 'Write the manifest', 'no manifest yet: write it');
+  assert.equal(alreadyCopy({ names: 3, undeclared: 1, manifest: true }, { owner: false }).action, null);
+  assert.equal(alreadyPick({ names: 3, undeclared: 1, manifest: true }), 'your .env is already the vault · 3 names · 1 name in .env isn\'t in nexus.secrets.json yet');
+  assert.equal(alreadyPick({ names: 3, undeclared: 0, manifest: true }), 'your .env is already the vault · 3 names');
+
+  const step = fs.readFileSync(new URL('../src/screens/onboarding/Secrets.jsx', import.meta.url), 'utf8');
+  assert.match(step, /<EnvFile prose name=\{already\.title\}/, 'the card\'s title is a sentence: sans, not mono');
+  assert.match(step, /already \? alreadyPick\(step\)/, 'the radio\'s lowercase twin reads the same count');
+  const ui = fs.readFileSync(new URL('../src/ui/vault.jsx', import.meta.url), 'utf8');
+  assert.match(ui, /cx\('env-file', prose && 'is-prose'\)/);
+  const css = fs.readFileSync(new URL('../src/styles/vault-truth.css', import.meta.url), 'utf8');
+  assert.match(css, /\.env-file\.is-prose \.t b \{ font-family: var\(--font-ui\); font-size: 15px; line-height: 22px; font-weight: 600;/, 'the .t-title-s face');
+  const nexus = fs.readFileSync(new URL('../src/styles/nexus.css', import.meta.url), 'utf8');
+  assert.equal(nexus, fs.readFileSync(new URL('../design/handoff/nexus.css', import.meta.url), 'utf8'), 'nexus.css stays the handoff\'s');
 });

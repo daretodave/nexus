@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './icons.jsx';
 import { clearPaste, maskInputProps } from './mask-input.js';
 import { cx } from './controls.jsx';
+import '../styles/vault-truth.css';
 
 /** The eight dots of a stored value, whatever its length. */
 export const MASK_DOTS = '•'.repeat(8);
@@ -171,9 +172,10 @@ export function AuditLog({ rows }) {
 }
 
 /** .env-file: the file being imported, its line, and an optional action. */
-export function EnvFile({ name, line, action }) {
+export function EnvFile({ name, line, action, prose = false }) {
+  // prose: the title is a sentence, not a filename, so it takes the headings' sans face (spec 49, A2).
   return (
-    <div className="env-file">
+    <div className={cx('env-file', prose && 'is-prose')}>
       <Icon name="fileOne" style={{ color: 'var(--accent)' }} />
       <span className="t"><b>{name}</b><span>{line}</span></span>
       {action || null}

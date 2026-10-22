@@ -14,7 +14,7 @@ import { useDraft } from './draft.js';
 import { useImport, useFilePick } from '../vault/ImportPanel.jsx';
 import LocalKeys from '../vault/LocalKeys.jsx';
 import VaultSetup from '../vault/VaultSetup.jsx';
-import { WAITS_FOR_VAULT, alreadyCopy, importNote, importTick, keepToggle, secretsStep, waitingOn } from '../vault/model.js';
+import { WAITS_FOR_VAULT, alreadyCopy, alreadyPick, importNote, importTick, keepToggle, secretsStep, waitingOn } from '../vault/model.js';
 import { useToasts } from '../fleet/toasts.js';
 
 const PICKS = [
@@ -119,7 +119,7 @@ export default function Secrets() {
                       <b>{p.label}{p.rec && !missing ? <> <span className="badge-def">recommended</span></> : null}</b>
                       <span>
                         {missing && p.k !== 'skip' ? WAITS_FOR_VAULT
-                          : p.k === 'imp' ? (already ? `your .env is already the vault · ${step.names} ${step.names === 1 ? 'name' : 'names'}` : found.length ? `found ${found[0]} in ${repo} · names come in, values go to your vault` : 'pick a file · names come in, values go to your vault')
+                          : p.k === 'imp' ? (already ? alreadyPick(step) : found.length ? `found ${found[0]} in ${repo} · names come in, values go to your vault` : 'pick a file · names come in, values go to your vault')
                           : p.k === 'empty' ? 'an empty manifest; chunks ask for a name when they need one'
                             : 'nothing written; the vault is in the rail whenever you want it'}
                       </span>
@@ -159,7 +159,7 @@ export default function Secrets() {
           <div className="panel" style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             {already ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <EnvFile name={already.title} line={already.line} action={already.action ? <button className="btn btn-s btn-primary" type="button" onClick={writeManifest} disabled={writing}>{writing ? 'Writing…' : already.action}</button> : null} />
+                <EnvFile prose name={already.title} line={already.line} action={already.action ? <button className="btn btn-s btn-primary" type="button" onClick={writeManifest} disabled={writing}>{writing ? 'Writing…' : already.action}</button> : null} />
               </div>
             ) : null}
             {imp.phase === 'loaded' ? (

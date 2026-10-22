@@ -1,0 +1,4 @@
+/* The vault says what is true (spec 49): a card whose title is a sentence, not a filename, takes the surrounding
+   headings' sans face (.t-title-s) instead of .env-file's mono. Theme tokens only, so day and night both hold. */
+
+.env-file.is-prose .t b { font-family: var(--font-ui); font-size: 15px; line-height: 22px; font-weight: 600; font-variant-ligatures: normal; }

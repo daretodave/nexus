@@ -451,19 +451,36 @@ export function secretsStep(status) {
   if (!status) return { kind: 'unknown' };
   const env = status.rootEnv || { exists: false, names: 0 };
   if (vaultMissing(status)) return { kind: 'missing', envNames: env.exists ? env.names : 0 };
-  if (env.exists && env.names > 0) return { kind: 'already', names: env.names, undeclared: env.undeclared ?? 0 };
+  if (env.exists && env.names > 0) return { kind: 'already', names: env.names, undeclared: env.undeclared ?? 0, manifest: !!status.manifest };
   return { kind: 'import' };
 }
 
-/** "Your .env is already the vault · 4 names", the line under it, and the owner's action (or null). */
+/** "2 names in .env aren't in nexus.secrets.json yet" (spec 49, A2): what the manifest lacks, by count. */
+export function lacksLine(n) {
+  return `${nameCount(n)} in .env ${n === 1 ? 'isn\'t' : 'aren\'t'} in nexus.secrets.json yet`;
+}
+
+/**
+ * "Your .env is already the vault · 4 names", the line under it, and the owner's action (or null). With a manifest
+ * present the line names what it lacks ("1 name in .env isn't in nexus.secrets.json yet") and the action adds it.
+ */
 export function alreadyCopy(step, { owner = true } = {}) {
   const title = `Your .env is already the vault · ${nameCount(step.names)}`;
   if (!owner) return { title, line: 'The owner keeps the project\'s secrets and their manifest.', action: null };
+  if (step.undeclared > 0 && step.manifest) {
+    return { title, line: `${lacksLine(step.undeclared)}. Names only; the values stay where they are.`, action: step.undeclared === 1 ? 'Add it' : 'Add them' };
+  }
   if (step.undeclared > 0) {
     const which = step.undeclared === step.names ? 'them' : `the ${step.undeclared} not named yet`;
     return { title, line: `Its values stay where they are. Write the manifest to name ${which} in nexus.secrets.json, names only.`, action: 'Write the manifest' };
   }
   return { title, line: 'nexus.secrets.json names every one of them. Nothing to write.', action: null };
+}
+
+/** The Import radio's lowercase twin: "your .env is already the vault · 4 names · 1 name in .env isn't in ...". */
+export function alreadyPick(step) {
+  const base = `your .env is already the vault · ${nameCount(step.names)}`;
+  return step.manifest && step.undeclared > 0 ? `${base} · ${lacksLine(step.undeclared)}` : base;
 }
 
 /**
