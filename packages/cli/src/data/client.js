@@ -50,9 +50,9 @@ export const server = {
   interrupt: (session) => api('/api/interrupt', session ? { session } : {}),
   stop: (session) => api('/api/stop', session ? { session } : {}),
   fresh: (session) => api('/api/fresh', session ? { session } : {}),
-  /** POST /api/sessions { name?, worktree?, prompt? } -> { id, name, cwd, worktree, branch, note? } */
+  /** POST /api/sessions { name?, worktree?, prompt? } -> { id, name, cwd, worktree, branch, form?, note? }, at once: the worktree forms after (shared/forming.mjs) */
   startSession: (body = {}) => api('/api/sessions', body),
-  /** POST /api/sessions/:id/(pause|resume|close): pause after this step, resume, close (its worktree stays). */
+  /** POST /api/sessions/:id/(pause|resume|close|retry): pause after this step, resume, close (its worktree stays), retry a worktree that failed to form. */
   sessionAction: (id, action) => api(`/api/sessions/${encodeURIComponent(id)}/${action}`, {}),
   serverInfo: () => api('/api/server'),
   answerAsk: (id, answers) => api(`/api/ask/${encodeURIComponent(id)}`, { answers }),

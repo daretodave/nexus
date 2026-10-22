@@ -12,7 +12,7 @@ const MAX_ATTACH = 200 * 1024;
 /**
  * tray: { count, item: { q, who, a, at, arriving } } or null.
  * composer: { value, onChange, route, onRoute, suggest, onDismissSuggest, plotMode,
- * onPlotMode, why, mode, onTogglePin, pausedText, onResume, onSend(text, files, { as }) }.
+ * onPlotMode, why, mode, onTogglePin, pausedText, onResume, formingText, onSend(text, files, { as }) }.
  * `route` is armed by the person; `suggest` is the classifier's guess, sent only when accepted.
  */
 export default function Dock({ tray, inboxTo, layers, short, composer }) {
@@ -48,7 +48,7 @@ export default function Dock({ tray, inboxTo, layers, short, composer }) {
         suggest={composer.suggest} onDismissSuggest={composer.onDismissSuggest}
         plotMode={composer.plotMode} onPlotMode={composer.onPlotMode} why={composer.why}
         mode={composer.mode} onTogglePin={composer.onTogglePin}
-        pausedText={composer.pausedText} onResume={composer.onResume}
+        pausedText={composer.pausedText} onResume={composer.onResume} formingText={composer.formingText}
         chips={chips} attached={files.filter((f) => f.text != null).length} onAttach={() => pick.current?.click()}
         onSend={async (text, as) => { if (await composer.onSend(text, files.filter((f) => f.text != null), { as })) setFiles([]); }}
       />

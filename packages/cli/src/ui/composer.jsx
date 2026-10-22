@@ -108,18 +108,21 @@ export function matchCommands(draft, commands = COMMANDS) {
  * `suggest` is the classifier's guess (shared/route.mjs), shown as a
  * suggestion chip and sent under only when accepted: onSend(text, suggest).
  *
- * mode: 'normal' | 'pin' | 'paused'. `dock` gives it the fixed dock height
- * (.dock .composer, plus .has-route while a route shows).
+ * mode: 'normal' | 'pin' | 'paused' | 'forming'. `dock` gives it the fixed dock height
+ * (.dock .composer, plus .has-route while a route shows). 'forming' holds it
+ * like 'paused' while the session's worktree is made, `formingText` saying why.
  */
 export function Composer({
   value, onChange, onSend, route, onRoute, suggest, onDismissSuggest, why, plotMode = 'plan', onPlotMode,
-  chips, onAttach, attached = 0, mode = 'normal', onTogglePin, pausedText, onResume,
+  chips, onAttach, attached = 0, mode = 'normal', onTogglePin, pausedText, onResume, formingText,
   placeholder = 'Nudge the run, or type / for commands', commands = COMMANDS, dock, rows = 2, focus,
 }) {
   const [menu, setMenu] = useState(false);
   const [active, setActive] = useState(0);
   const area = useRef(null);
-  const paused = mode === 'paused';
+  const forming = mode === 'forming';
+  // Held: paused (notes wait for resume) or forming (no worktree to work in yet). Nothing sends either way.
+  const paused = mode === 'paused' || forming;
   const pin = mode === 'pin';
   const slash = useMemo(() => (paused ? [] : matchCommands(value, commands)), [value, commands, paused]);
   const text = String(value || '');
@@ -155,7 +158,7 @@ export function Composer({
       {chips && chips.length ? <div className="composer-chips">{chips.map((c) => <FileChip key={c.name} {...c} />)}</div> : null}
       <textarea
         ref={area} rows={rows} aria-label={pin ? 'Pinned note' : 'Message the session'} value={text} disabled={paused}
-        placeholder={paused ? (pausedText ? 'Paused. Notes you write now wait until you resume.' : placeholder) : placeholder}
+        placeholder={forming ? 'Its worktree is forming. You can write once it is ready.' : paused ? (pausedText ? 'Paused. Notes you write now wait until you resume.' : placeholder) : placeholder}
         onChange={(e) => { onChange?.(e.target.value); setActive(0); }} onKeyDown={keyDown}
       />
       {meta ? (
@@ -175,7 +178,9 @@ export function Composer({
       ) : null}
       {meta && route === 'plot' && onPlotMode ? <div className="route-why" style={{ paddingLeft: 2 }}>{why ?? meta.why}</div> : null}
       <div className="composer-bar">
-        {paused ? (
+        {forming ? (
+          <span className="composer-hint" style={{ marginLeft: 6 }}><Icon name="branch" size={14} />{formingText}</span>
+        ) : paused ? (
           <span className="composer-hint" style={{ marginLeft: 6 }}><Icon name="pause" size={14} />{pausedText}</span>
         ) : slash.length ? null : (
           <>
@@ -185,7 +190,7 @@ export function Composer({
         )}
         <span className="spacer" />
         {hint ? <span className={cx('composer-hint', dock && 'tb-long')}>{hint}</span> : null}
-        {paused && onResume ? <button className="btn btn-s" type="button" onClick={onResume}><Icon name="play" size={14} />Resume</button> : null}
+        {paused && !forming && onResume ? <button className="btn btn-s" type="button" onClick={onResume}><Icon name="play" size={14} />Resume</button> : null}
         <button className="send" type="button" aria-label={pin ? 'Pin note' : 'Send'} disabled={paused || !text.trim()} onClick={send}><Icon name="arrowUp" /></button>
       </div>
     </div>

@@ -18,6 +18,7 @@ import QuestionsStart from './cockpit/QuestionsStart.jsx';
 import StageView from './cockpit/StageView.jsx';
 import Working from './cockpit/Working.jsx';
 import { questionMarks, tugFils, tugMarks } from './cockpit/tugs.js';
+import { formWords } from '../../shared/forming.mjs';
 import {
   PHASES, basinItems, clock, ctxLayers, identity, isOwner, liveChunks, liveStage, packageStage, phaseTrack, rememberIdentity, reviewStage, sessionPhase,
   startStage,
@@ -105,10 +106,17 @@ export default function Cockpit() {
   const [pinMode, setPinMode] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const paused = ledger?.state === 'paused';
+  // The worktree still forming behind an open cockpit (spec 47 A4): the live channel's word first, the detail's after.
+  const form = live.status?.form || ledger?.form || null;
+  const formingNow = !!form && form.state !== 'ready';
+  const tick = useNow(formingNow ? 1000 : 60000);
+  const formSay = formWords(form, tick);
+  const [retrying, setRetrying] = useState(false);
+  const retryForm = async () => { setRetrying(true); await act(`${base}/retry`, {}, 'Retry'); setRetrying(false); };
   // `route` is armed by the person (the chip's menu); `suggested` is the classifier's guess, sent only if accepted.
   const route = routeFor(draft, override);
   const suggested = suggestFor(draft, override, dismissed);
-  const cmode = paused ? 'paused' : pinMode ? 'pin' : 'normal';
+  const cmode = formingNow ? 'forming' : paused ? 'paused' : pinMode ? 'pin' : 'normal';
   // opts.line: one exact line from the transcript (a /plot card's action), sent as its own text; the draft, its
   // route chip, plot mode and pin mode are the composer's and stay as they are. opts.as: the suggestion accepted.
   // Plain text never picks up a route here: only an armed route or an accepted suggestion adds one.
@@ -247,7 +255,9 @@ export default function Cockpit() {
   } else {
     left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} pinned={ledger?.pinned?.text} onSend={(text) => send(text, [], { line: true })} /> : (
       <div className="convo" aria-live="polite">
-        <Empty sky="quiet" title="Quiet so far" body="What this session says and does shows up here as it works. Nudge it below, or type / for commands." />
+        {formingNow
+          ? <Empty sky="quiet" title={formSay.title} body={form.state === 'failed' ? `${session.name} has no worktree yet: ${formSay.sub}. Retry on the stage.` : `${session.name} starts once its worktree is ready. What it says and does shows up here.`} />
+          : <Empty sky="quiet" title="Quiet so far" body="What this session says and does shows up here as it works. Nudge it below, or type / for commands." />}
       </div>
     );
   }
@@ -293,13 +303,14 @@ export default function Cockpit() {
               why: route === 'plot' ? (owner ? 'Owner checkout: the plan change lands on main directly.' : 'Contributor checkout: the plan change opens a plan PR for review.') : undefined,
               mode: cmode, onTogglePin: () => setPinMode((p) => !p),
               pausedText: paused ? pause.sub.replace(/^paused/, 'Paused') : undefined, onResume: paused ? togglePause : undefined,
+              formingText: formingNow ? (form.state === 'failed' ? 'No worktree yet: retry on the stage' : `Waiting on its worktree: ${formSay.sub}`) : undefined,
               onSend: send,
             }}
           />
           {showTether ? <span className="tether-l" aria-hidden="true" /> : null}
         </section>
         <section className="pane-right" aria-label="Agent stage">
-          <StageView view={stageView} basin={basin} river={river} riverCap={river && river.length ? `${river.length} this session` : ''} drop={drop} marks={marks} />
+          <StageView view={stageView} basin={basin} river={river} riverCap={river && river.length ? `${river.length} this session` : ''} drop={drop} marks={marks} forming={formingNow ? { form, now: tick, onRetry: retryForm, retrying } : null} />
         </section>
       </Panes>
       <ToastHost toasts={toasts} />

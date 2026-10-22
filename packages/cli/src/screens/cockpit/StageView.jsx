@@ -2,6 +2,7 @@
 // come from model.js; this file only draws them with the design's classes.
 import { Basin, CommitPill, Drop, Fil, Icon, NodeCap, Orb, ParkMark, PkgNode, River, SessTag, SNode, StageLabel, Starfield, cx } from '../../ui/index.js';
 import { clock } from './model.js';
+import Forming from './Forming.jsx';
 import '../../styles/stage-tugs.css';
 
 const PARK_AT = { xl: ['30px', '-46px'], m: ['10px', '-22px'], s: ['6px', '-18px'] };
@@ -46,8 +47,18 @@ function Marks({ marks }) {
  * view: { nodes, fils, count }. basin: { head, items } (contributor) or
  * null; river: [{ sha, msg, at }] (owner) or null; drop: { sha, msg } or null.
  * marks: { tugs, questions, lifted } from cockpit/tugs.js, or null.
+ * forming: { form, now, onRetry, retrying } while the session's worktree forms (Forming.jsx): the stage shows only that.
  */
-export default function StageView({ view, basin, river, riverCap, drop, marks }) {
+export default function StageView({ view, basin, river, riverCap, drop, marks, forming }) {
+  if (forming?.form && forming.form.state !== 'ready') {
+    return (
+      <div className="stage">
+        <Starfield />
+        <StageLabel title="Agent stage" cap={forming.form.state === 'failed' ? 'not formed' : 'forming'} />
+        <Forming {...forming} />
+      </div>
+    );
+  }
   return (
     <div className="stage">
       <Starfield />
