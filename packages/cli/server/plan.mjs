@@ -28,6 +28,7 @@
 // A chunk with no words of its own is where the AI one-liner (GET /api/summaries,
 // server/summaries.mjs) fills in.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -45,10 +46,25 @@ export const PLAN_ENTRIES = Object.freeze(['plan/order.mjs', 'plan/progress.mjs'
 export const PLAN_DOCS = 'https://github.com/daretodave/nexus/blob/main/concepts/plan-shape.md';
 export const BUNDLED_LABEL = "nexus's bundled copy";
 
-/** The scripts directory the bundled plan scripts come from: the CLI's copy, else the kit's templates; null when neither. */
+/**
+ * The scripts directory the bundled plan scripts come from: the CLI's copy, else a copy staged from the kit's
+ * templates (a dev checkout with no build yet); null when neither. The templates are never run in place: their
+ * folder holds claims.mjs, which order.mjs and progress.mjs would load and fetch with, so the staged copy takes only
+ * planKitFiles' closure, as the built kit/ does, and stays read-only.
+ */
+const staged = new Map();
 export function planKitDir({ bundled = PLAN_BUNDLED, templates = PLAN_TEMPLATES } = {}) {
-  for (const d of [bundled, templates]) if (PLAN_ENTRIES.every((e) => fs.existsSync(path.join(d, e)))) return d;
-  return null;
+  const has = (d) => PLAN_ENTRIES.every((e) => fs.existsSync(path.join(d, e)));
+  if (has(bundled)) return bundled;
+  if (!has(templates)) return null;
+  if (staged.has(templates) && has(staged.get(templates))) return staged.get(templates);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-plan-kit-'));
+  for (const f of planKitFiles(templates)) {
+    fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
+    fs.copyFileSync(path.join(templates, f), path.join(dir, f));
+  }
+  staged.set(templates, dir);
+  return dir;
 }
 
 /**
