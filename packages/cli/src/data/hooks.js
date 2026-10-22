@@ -95,7 +95,7 @@ export const useRuns = (poll) => useResource('/api/runs', { poll });
  */
 export const MISSING = [
   { endpoint: 'POST /api/train', hook: 'trainAction', for: 'Pause all, the reboot train, and Resume all' },
-  { endpoint: 'GET /api/cloud (in part)', hook: 'useCloudLoop', for: 'Cloud loop: schedule, next tick, runs as a timeline (served: the loop workflow, paused, running, the PRs opened tonight; runs today: /api/actions + /api/runs)' },
+  { endpoint: 'GET /api/cloud (in part)', hook: 'useCloudLoop', for: 'Cloud loop: runs as a timeline (served: the loop workflow, paused, running, the PRs opened tonight, the schedule and next tick; runs today: /api/actions + /api/runs)' },
   { endpoint: 'POST /api/pin', hook: 'pinNote', for: 'a pinned note every agent reads on its next step ({ session, text })' },
   { endpoint: 'POST /api/sessions/:id/questions', hook: 'cockpit', for: 'answer a start question ({ index, answer, how }) or take every default ({ defaults: true })' },
   { endpoint: 'POST /api/sessions/:id/start', hook: 'cockpit', for: 'leave the start questions and begin working' },
@@ -123,7 +123,7 @@ export const useSummaries = () => useResource('/api/summaries');
 /** GET /api/git (served) -> { repo, root, worktrees, main, prs, gh }: every worktree from worktree.mjs list --json with its session and flag, the primary checkout, main's recent commits, open PRs with CI. GET /api/git/tidy is the /tidy dry run; POST /api/git/fetch prunes remote refs. Shape: server/git.mjs. Each session's own git rides on GET /api/sessions. */
 export const useGitRepo = () => useResource('/api/git');
 
-/** GET /api/cloud (served in part: server/gh.mjs cloudLoop) -> { live, workflow, paused, running, tonight: { since, prs } }; still missing: schedule, next, runs. 404 when the repo has no loop workflow. */
+/** GET /api/cloud (served in part: server/gh.mjs cloudLoop, cloud.mjs loopSchedule) -> { live, workflow, paused, running, tonight: { since, prs }, schedule: { crons, cron, human, label, raw, path }, next }; still missing: runs. 404 when the repo has no loop workflow. */
 export const useCloudLoop = () => useResource('/api/cloud');
 
 /** GET /api/recover?dir= (served) -> { run, agents, resume, recent }: a Workflow run folder read as a timeline (journal.jsonl), and this repo's recent runs. POST /api/recover/resume { dir } resumes it in a hosted session. Shape: server/recover.mjs. */

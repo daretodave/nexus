@@ -11,7 +11,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import {
-  addWorkflow, cronNext, fillTemplate, kitFile, parseCron, readCrons, saveSchedule, scheduleRequest, scopeRefused, setCron,
+  addWorkflow, cronNext, describeCron, describeCrons, fillTemplate, loopSchedule, kitFile, parseCron, readCrons, saveSchedule, scheduleRequest, scopeRefused, setCron,
   SETUP_ACTION_PATH, WORKFLOW_PATH,
 } from '../server/cloud.mjs';
 import { removeTree } from './helpers/tmp.mjs';
@@ -290,7 +290,8 @@ async function withServer(repo, gh, fn) {
   const app = await startServer({ repo, provider, pollRuns: false, dist: NO_DIST, claudeHome, ghRun: gh.run, ghLogin: async () => '' });
   const headers = { 'x-nexus-token': app.token, 'content-type': 'application/json', origin: `http://127.0.0.1:${app.port}` };
   const post = (pathname, b) => req(app.port, { method: 'POST', pathname, headers, body: JSON.stringify(b) });
-  try { await fn(post); } finally { await app.close(); }
+  const get = (pathname) => req(app.port, { pathname, headers: { 'x-nexus-token': app.token } });
+  try { await fn(post, get); } finally { await app.close(); }
 }
 
 test('POST /api/cloud/workflow and /api/cloud/schedule are served, per owner mode', async () => {
@@ -514,5 +515,86 @@ test('Turn on saves the schedule, then enables a loop workflow that is switched 
 
 test('the Cloud step\'s Turn on goes through turnOnCloud with the listed workflow', () => {
   const step = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'screens', 'onboarding', 'CloudSetup.jsx'), 'utf8');
-  assert.match(step, /act\('sched', \(\) => turnOnCloud\(\{ setSchedule: onboardingCalls\.setSchedule, setWorkflow: server\.setWorkflow \}, \{ sched, cron, wf \}\)/);
+  assert.match(step, /act\('sched', \(\) => turnOnCloud\(\{ setSchedule: onboardingCalls\.setSchedule, setWorkflow: server\.setWorkflow \}, \{ sched, cron, wf, keep \}\)/);
+});
+
+// ---- the schedule a repo already has (49.1) ------------------------------------------
+
+const NEXUS_CRON = '0 2,8,14,20 * * *';
+
+test('describeCron says the common shapes in words, UTC, and nothing for the rest', () => {
+  assert.equal(describeCron(NEXUS_CRON), 'every 6 hours (02:00, 08:00, 14:00, 20:00 UTC)');
+  assert.equal(describeCron('0 */6 * * *'), 'every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)');
+  assert.equal(describeCron('15 3 * * *'), 'daily at 03:15 UTC');
+  assert.equal(describeCron('30 1-6 * * *'), 'every hour at :30, 01:30 to 06:30 UTC');
+  assert.equal(describeCron('5 * * * *'), 'every hour at :05 UTC');
+  assert.equal(describeCron('0 */2 * * *'), 'every 2 hours at :00 UTC, from 00:00');
+  // Weekdays, several minutes, uneven hours, not a cron: the caller shows the cron itself.
+  for (const raw of ['0 9 * * 1-5', '0,30 * * * *', '0 1,2,9 * * *', 'nope']) assert.equal(describeCron(raw), null, raw);
+  assert.equal(describeCrons([NEXUS_CRON]), 'every 6 hours (02:00, 08:00, 14:00, 20:00 UTC)');
+  assert.equal(describeCrons(['0 9 * * 1-5']), '0 9 * * 1-5 UTC');
+  assert.equal(describeCrons([]), 'on demand');
+});
+
+test('loopSchedule reads the loop workflow crons at origin/<default branch>, and the next run', async () => {
+  const fx = fixture({ owner: true });
+  assert.equal(await loopSchedule(fx.root), null, 'no loop workflow at origin');
+  const gh = fakeGh();
+  const set = await saveSchedule(fx.root, { cron: NEXUS_CRON }, { owner: true, run: gh.run });
+  assert.equal(set.status, 200, set.error);
+  sh(fx.root, 'fetch', '-q', 'origin');
+  const s = await loopSchedule(fx.root, { now: new Date('2026-10-22T09:00:00Z') });
+  assert.deepEqual(
+    [s.path, s.ref, s.crons, s.cron, s.label, s.raw, s.next],
+    [WORKFLOW_PATH, 'origin/main', [NEXUS_CRON], NEXUS_CRON, 'Every 6 hours (02:00, 08:00, 14:00, 20:00 UTC)', false, '2026-10-22T14:00:00.000Z'],
+  );
+  await saveSchedule(fx.root, { schedule: 'demand' }, { owner: true, run: gh.run });
+  sh(fx.root, 'fetch', '-q', 'origin');
+  const none = await loopSchedule(fx.root);
+  assert.deepEqual([none.crons, none.cron, none.human, none.next], [[], null, 'on demand', null]);
+});
+
+test('the step selects the schedule it found; Turn on with it selected commits nothing, another option commits', async () => {
+  const { turnOnCloud, pickSched, keepsSchedule, nextLocal } = await import('../src/screens/onboarding/cloudFlow.js');
+  const found = { crons: [NEXUS_CRON], cron: NEXUS_CRON };
+  const demand = { crons: [], cron: null };
+  assert.equal(pickSched(null, found), 'current');
+  assert.equal(pickSched(null, demand), 'demand', 'a workflow with no schedule: on demand is its current');
+  assert.equal(pickSched(null, null), 'night', 'no loop workflow yet');
+  assert.equal(pickSched('two', found), 'two', 'what the person picked stands');
+  assert.equal(pickSched('current', demand), 'demand');
+  assert.deepEqual([keepsSchedule('current', found), keepsSchedule('two', found), keepsSchedule('demand', demand), keepsSchedule('demand', found), keepsSchedule('night', null)], [true, false, true, false, false]);
+  const now = new Date(2026, 9, 22, 9, 0);
+  assert.equal(nextLocal(new Date(2026, 9, 22, 14, 0).toISOString(), now), '14:00 today');
+  assert.equal(nextLocal(new Date(2026, 9, 23, 2, 0).toISOString(), now), '02:00 tomorrow');
+  assert.equal(nextLocal(new Date(2026, 9, 26, 2, 0).toISOString(), now), 'Mon 02:00');
+  assert.equal(nextLocal(null, now), '');
+
+  const fx = fixture({ owner: true });
+  const gh = fakeGh();
+  assert.equal((await saveSchedule(fx.root, { cron: NEXUS_CRON }, { owner: true, run: gh.run })).status, 200);
+  sh(fx.root, 'fetch', '-q', 'origin');
+  const tip = sh(fx.origin, 'rev-parse', 'main');
+  await withServer(fx.root, gh, async (post, get) => {
+    // GET /api/actions carries the schedule, read from git (gh here is not signed in).
+    const a = await get('/api/actions');
+    assert.equal(a.status, 200);
+    const s = a.body.schedule;
+    assert.deepEqual([s.crons, s.human], [[NEXUS_CRON], 'every 6 hours (02:00, 08:00, 14:00, 20:00 UTC)']);
+    const call = async (p, b) => { const r = await post(p, b); if (r.status !== 200) throw new Error(r.body?.error || `HTTP ${r.status}`); return r.body; };
+    let scheduled = 0;
+    const calls = { setSchedule: (x, c) => { scheduled++; return call('/api/cloud/schedule', { schedule: x, cron: c }); }, setWorkflow: (id, on) => call('/api/actions/workflow', { id, enabled: on }) };
+    const sched = pickSched(null, s);
+    gh.calls.length = 0;
+    const r = await turnOnCloud(calls, { sched, cron: s.cron, wf: { id: 77, path: WORKFLOW_PATH, enabled: false }, keep: keepsSchedule(sched, s) });
+    assert.equal(scheduled, 0, 'no schedule call');
+    assert.equal(r.enabled, true, 'a switched-off workflow is still switched on');
+    assert.deepEqual(gh.calls.filter((c) => c.startsWith('workflow')), ['workflow enable 77']);
+    assert.equal(sh(fx.origin, 'rev-parse', 'main'), tip, 'no commit');
+    assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), [NEXUS_CRON]);
+    // Another option picked: that one is saved.
+    await turnOnCloud(calls, { sched: 'two', cron: '0 */2 * * *', wf: { id: 77, enabled: true }, keep: keepsSchedule('two', s) });
+    assert.equal(scheduled, 1);
+    assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), ['0 */2 * * *']);
+  });
 });

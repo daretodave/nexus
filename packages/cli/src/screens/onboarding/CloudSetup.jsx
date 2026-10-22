@@ -13,7 +13,8 @@ import { PATHS } from '../../routes.js';
 import { ObFrame, Back, useCopy, CopyFace } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
-import { landThenGo, turnOnCloud, BUSY_NOTE } from './cloudFlow.js';
+import { landThenGo, turnOnCloud, pickSched, keepsSchedule, nextLocal, BUSY_NOTE } from './cloudFlow.js';
+import '../../styles/cloud-current.css';
 import { usePlotLive, PlotAskStrip } from './PlotAsk.jsx';
 
 const LOOP_FILE = /(?:^|\/)(nexus-loop|march)\.ya?ml$/;
@@ -54,7 +55,25 @@ function cronFor(k) {
   return k === 'night' ? nightCron() : k === 'two' ? '0 */2 * * *' : '';
 }
 
-function nextLine(k) {
+/** The options, the schedule the workflow has first when it has one (49.1); on demand says so when it is the current. */
+function schedOptions(found) {
+  const out = [];
+  if (found?.crons?.length) {
+    out.push(['current', {
+      label: found.raw ? <>Current: <code>{found.crons.join(', ')}</code> UTC</> : `Current: ${found.human}`,
+      sub: `as ${found.path} has it; Turn on keeps it`,
+      now: true,
+    }]);
+  }
+  for (const [k, s] of Object.entries(SCHED)) out.push([k, found && !found.crons?.length && k === 'demand' ? { ...s, sub: 'current: no schedule; Turn on keeps it' } : s]);
+  return out;
+}
+
+function nextLine(k, found) {
+  if (k === 'current') {
+    const at = nextLocal(found?.next);
+    return `${at ? `Next run ${at}, your time` : 'No next run read'} · cron ${found?.crons?.join(', ')} UTC, as it is in ${found?.path}`;
+  }
   if (k === 'night') return `Next run ${nextNight()} · cron ${nightCron()}, converted from your time zone`;
   if (k === 'two') return 'Next run at the top of the next even hour · cron 0 */2 * * *';
   return 'No schedule. It runs when you press Run one pass, here or in Cloud loop.';
@@ -109,13 +128,18 @@ export default function CloudSetup() {
     go,
   });
 
-  const sched = d.sched || 'night';
+  // The schedule the loop workflow has at origin (49.1): selected until the person picks another, and kept by Turn on.
+  const found = a?.schedule ?? null;
+  const sched = pickSched(d.sched, found);
   const pick = (k) => patch({ sched: k });
-  const cron = cronFor(sched);
+  const cron = sched === 'current' ? found.cron : cronFor(sched);
+  const keep = keepsSchedule(sched, found);
+  const options = schedOptions(found);
 
   // Saving the schedule commits (the repo's checks run): Launch comes only once it landed; an error stays here.
-  const turnOn = () => act('sched', () => turnOnCloud({ setSchedule: onboardingCalls.setSchedule, setWorkflow: server.setWorkflow }, { sched, cron, wf }), () => patch({ cloud: 'on', cloudSaved: true }), () => nav(PATHS.onboarding(stepAfter('cloud'))));
-  const busy = Object.values(pending).includes('busy');
+  const turnOn = () => act('sched', () => turnOnCloud({ setSchedule: onboardingCalls.setSchedule, setWorkflow: server.setWorkflow }, { sched, cron, wf, keep }), () => patch({ cloud: 'on', cloudSaved: true, sched, schedLabel: sched === 'current' ? found.label : null }), () => nav(PATHS.onboarding(stepAfter('cloud'))));
+  // Until the repo is read, Turn on waits: it must not save the default over a schedule it has not seen yet.
+  const busy = Object.values(pending).includes('busy') || actions.status === 'loading';
   const skip = () => patch({ cloud: 'skipped' });
 
   const note = (key) => {
@@ -132,7 +156,7 @@ export default function CloudSetup() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {note('sched')}
         <Link className="btn btn-ghost" to={PATHS.onboarding(stepAfter('cloud'))} onClick={skip}>Skip</Link>
-        <button className="btn btn-primary btn-l" type="button" disabled={busy} aria-busy={pending.sched === 'busy' || undefined} onClick={turnOn}>{pending.sched === 'busy' ? 'Committing' : 'Turn on the cloud loop'}<Icon name="arrowRight" size={14} /></button>
+        <button className="btn btn-primary btn-l" type="button" disabled={busy} aria-busy={pending.sched === 'busy' || undefined} onClick={turnOn}>{pending.sched === 'busy' ? (keep ? 'Turning on' : 'Committing') : 'Turn on the cloud loop'}<Icon name="arrowRight" size={14} /></button>
       </div>
     </>
   );
@@ -191,7 +215,7 @@ export default function CloudSetup() {
                   <div className="code" style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--well)' }}>
                     <div><span className="p">on</span>:</div>
                     <div><span className="p">  schedule</span>:</div>
-                    <div>    - <span className="p">cron</span>: <span className="s">"{cron || 'none'}"</span><span className="c">   # {sched === 'demand' ? 'schedule removed' : 'your time zone, converted'}</span></div>
+                    <div>    - <span className="p">cron</span>: <span className="s">"{cron || 'none'}"</span><span className="c">   # {sched === 'demand' ? 'schedule removed' : sched === 'current' ? 'kept as it is, UTC' : 'your time zone, converted'}</span></div>
                     <div><span className="p">  workflow_dispatch</span>:</div>
                     <div><span className="p">jobs</span>:</div>
                     <div><span className="p">  owner</span>:</div>
@@ -263,12 +287,12 @@ export default function CloudSetup() {
               <div className="cl-h">Pick a schedule</div>
               <div className="cl-body">
                 <div className="sched" role="radiogroup" aria-label="Schedule">
-                  {Object.entries(SCHED).map(([k, s]) => [
+                  {options.map(([k, s]) => [
                     <input key={`i-${k}`} type="radio" name="sched" id={`sc-${k}`} checked={sched === k} onChange={() => pick(k)} />,
-                    <label key={`l-${k}`} htmlFor={`sc-${k}`}><b>{s.label}</b><span>{s.sub}</span></label>,
+                    <label key={`l-${k}`} htmlFor={`sc-${k}`} className={s.now ? 'sched-now' : undefined}><b>{s.label}</b><span>{s.sub}</span></label>,
                   ])}
                 </div>
-                <div className="run-line"><Icon name="clock" size={14} /><span>{nextLine(sched)}</span></div>
+                <div className="run-line"><Icon name="clock" size={14} /><span>{nextLine(sched, found)}</span></div>
               </div>
             </div>
           </div>

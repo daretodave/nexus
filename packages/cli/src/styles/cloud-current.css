@@ -1,0 +1,4 @@
+/* The Cloud step's "Current: ..." schedule option (spec 49, A1): the cron the loop workflow already has, a full row
+   above the three the step offers. Tokens only, so both themes follow. */
+.sched label.sched-now { grid-column: 1 / -1; }
+.sched label.sched-now code { font-family: var(--font-mono); font-size: 12.5px; color: var(--text); }

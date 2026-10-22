@@ -86,8 +86,9 @@ function planLine(d, adopted) {
 
 function cloudLine(d) {
   if (d.cloud !== 'on') return 'Off · it runs on this machine only';
-  const s = SCHED_SUMMARY[d.sched || 'night'];
+  const s = d.sched === 'current' ? `${d.schedLabel || 'The schedule it had'}, kept` : SCHED_SUMMARY[d.sched || 'night'];
   if (!d.cloudSaved) return `${s} · finish it in Cloud loop`;
+  if (d.sched === 'current') return `${s} · runs on that schedule`;
   return `${s} · ${d.sched === 'demand' ? 'runs when you press Run one pass' : d.sched === 'two' ? 'first run within two hours' : 'first run tonight'}`;
 }
 

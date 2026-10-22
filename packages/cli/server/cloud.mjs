@@ -209,6 +209,40 @@ export function scheduleRequest(b = {}) {
   return { schedule, cron, human: schedule ? `${SCHEDULES[schedule]} (cron ${cron})` : `on cron ${cron}` };
 }
 
+// ---- a schedule in words ---------------------------------------------------------
+
+const hm = (h, m) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+/**
+ * A cron in words, in UTC as GitHub runs it, or null when it is not a shape this describes (the caller then shows the
+ * cron itself). Every day only: one minute, and hours that are one, a run (`1-6`), every hour, or evenly spaced
+ * around the day (`2,8,14,20`, `*\/6`).
+ */
+export function describeCron(cron) {
+  const parts = String(cron ?? '').trim().split(/\s+/);
+  const c = parseCron(cron);
+  if (!c || parts[2] !== '*' || parts[3] !== '*' || parts[4] !== '*' || c.min.length !== 1) return null;
+  const m = c.min[0];
+  const hs = c.hour;
+  const mm = `:${String(m).padStart(2, '0')}`;
+  if (hs.length === 24) return `every hour at ${mm} UTC`;
+  if (hs.length === 1) return `daily at ${hm(hs[0], m)} UTC`;
+  const gaps = hs.map((h, i) => (i ? h - hs[i - 1] : hs[0] + 24 - hs[hs.length - 1]));
+  if (gaps.every((g) => g === gaps[0])) {
+    const n = gaps[0];
+    return hs.length <= 6 ? `every ${n} hours (${hs.map((h) => hm(h, m)).join(', ')} UTC)` : `every ${n} hours at ${mm} UTC, from ${hm(hs[0], m)}`;
+  }
+  if (gaps.slice(1).every((g) => g === 1)) return `every hour at ${mm}, ${hm(hs[0], m)} to ${hm(hs[hs.length - 1], m)} UTC`;
+  return null;
+}
+
+/** The crons in words: each described, or every one shown raw ("`<cron>` UTC") when any is a shape this can't say. */
+export function describeCrons(crons = []) {
+  if (!crons.length) return SCHEDULES.demand;
+  const said = crons.map(describeCron);
+  return said.every(Boolean) ? said.join('; ') : `${crons.join(', ')} UTC`;
+}
+
 // ---- landing -------------------------------------------------------------------
 
 /** How long a commit or push may take: they run the repo's own hooks (its gate before commit), which can take minutes. */
@@ -332,6 +366,28 @@ async function loopAt(repo, ref) {
   if (!r.ok) return null;
   const files = r.out.split(/\r?\n/).filter((f) => LOOP_FILE.test(f));
   return files.find((f) => /march\.ya?ml$/.test(f)) || files[0] || null;
+}
+
+/**
+ * The loop workflow's schedule as it is at origin/<default branch> (no fetch: the last one known), for GET /api/cloud
+ * and GET /api/actions: { path, ref, crons, cron (the first, or null), human, raw (a cron shown as itself), label,
+ * next (ISO, the soonest; null on demand) }, or null when origin has no loop workflow (or no origin).
+ */
+export async function loopSchedule(repo, { now = new Date() } = {}) {
+  try {
+    const ref = `origin/${await defaultBranch(repo)}`;
+    const rel = await loopAt(repo, ref);
+    if (!rel) return null;
+    const text = await showFile(repo, ref, rel);
+    if (text == null) return null;
+    const crons = readCrons(text);
+    const human = describeCrons(crons);
+    const next = crons.map((c) => cronNext(c, now)).filter(Boolean).sort((a, b) => a - b)[0] || null;
+    const raw = crons.length > 0 && !crons.every(describeCron);
+    return { path: rel, ref, crons, cron: crons[0] || null, human, raw, label: raw ? human : human[0].toUpperCase() + human.slice(1), next: next ? next.toISOString() : null };
+  } catch {
+    return null;
+  }
 }
 
 const lastSha = async (repo, ref, rel) => (await gitT(repo, ['log', '-1', '--format=%H', ref, '--', rel])).out || null;

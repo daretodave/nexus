@@ -20,7 +20,7 @@ import { readPlan } from './plan.mjs';
 import { landReorder } from './reorder.mjs';
 import { createSummaries } from './summaries.mjs';
 import { explode, plotPrompt, plotRequest } from './explode.mjs';
-import { addWorkflow, saveSchedule } from './cloud.mjs';
+import { addWorkflow, loopSchedule, saveSchedule } from './cloud.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, transcriptActivity, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
 import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, markEnded, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
@@ -190,7 +190,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   const cloudNow = () => {
     if (!cloudRead.p || Date.now() - cloudRead.at > 60000) {
       // Like the git view: under an injected provider with no ghRun, gh reads as missing, never the real one.
-      const p = gh.cloudLoop(repo, { run: ghRun || (injected ? noGh : undefined), since: tonightStart(new Date()).getTime() }).catch((e) => ({ ok: false, status: 502, error: String(e.message || e) }));
+      // The schedule (49.1) is read from the loop workflow at origin/<default branch>, not asked of gh.
+      const p = Promise.all([
+        gh.cloudLoop(repo, { run: ghRun || (injected ? noGh : undefined), since: tonightStart(new Date()).getTime() }),
+        loopSchedule(repo),
+      ]).then(([r, s]) => (r.ok && s ? { ...r, schedule: s, next: s.next } : r)).catch((e) => ({ ok: false, status: 502, error: String(e.message || e) }));
       cloudRead = { at: Date.now(), p };
     }
     return cloudRead.p;
@@ -549,7 +553,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/explode': { const b = await body(req); const { status, ...r } = await explode({ repo, text: b.text, team: b.team, query: explodeQuery ?? summaryQuery ?? (injected ? false : undefined) }); return send(res, status, r); }
         case 'POST /api/plot': { const { status, ...r } = await plotKept(await body(req)); return send(res, status, r); }
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
-        case 'GET /api/actions': return send(res, 200, await gh.actionsSetup(repo, ghOpts));
+        case 'GET /api/actions': { const [r, schedule] = await Promise.all([gh.actionsSetup(repo, ghOpts), loopSchedule(repo)]); return send(res, 200, { ...r, schedule }); }
         case 'POST /api/actions/workflow': { const b = await body(req); const r = await gh.setWorkflow(repo, b.id, !!b.enabled, ghOpts); cloudRead.p = null; return send(res, 200, r); }
         case 'POST /api/cloud/run': {
           const b = await body(req);
