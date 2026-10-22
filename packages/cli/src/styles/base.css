@@ -12,14 +12,23 @@ body { background: var(--bg); }
    bounds it as it bounds the chunk list, so a long rail never grows the page. */
 .pboard > aside.pb-main { max-height: 100%; overflow: auto; padding-bottom: 8px; scrollbar-width: thin; }
 
+/* A row's id never wraps ("spec 15" stays one line); its column grows past
+   34px only when the id needs it. */
+.cr-claim { grid-template-columns: minmax(34px, auto) minmax(0, 1fr) auto; }
+.cr-claim .id { white-space: nowrap; }
+
 /* A session's run of one spec's chunks, folded to one .cr-claim line with a
-   chevron (as .spec-tog turns); open, its rows sit under it. */
+   chevron (as .spec-tog turns); open, its rows sit under it. Two rows: the
+   range and its count (never cut; the count wraps under the range when the
+   rail is narrow), then the age and time left in the rows' small mono. */
 .cr-run { display: flex; flex-direction: column; gap: 1px; }
-.cr-run-h { width: 100%; padding: 0; border: 0; border-radius: 6px; background: transparent; font: inherit; text-align: left; cursor: pointer; grid-template-columns: auto minmax(0, 1fr) auto; }
+.cr-claim.cr-run-h { display: flex; flex-direction: column; align-items: stretch; gap: 0; width: 100%; padding: 4px 0; border: 0; border-radius: 6px; background: transparent; font: inherit; color: var(--text-2); text-align: left; cursor: pointer; }
 .cr-run-h:hover { color: var(--text); }
+.cr-run-top { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; min-width: 0; }
 .cr-run-h .id { display: inline-flex; align-items: center; gap: 4px; }
 .cr-run-h .id .ic { color: var(--text-3); transition: transform var(--dur-settle) var(--ease-settle); }
 .cr-run.is-open > .cr-run-h .id .ic { transform: rotate(90deg); }
-.cr-run-h .t { color: var(--text-3); }
+.cr-claim.cr-run-h .t { overflow: visible; white-space: nowrap; color: var(--text-3); }
+.cr-claim.cr-run-h .exp { align-self: flex-start; padding-left: 16px; white-space: normal; }
 .cr-claim.cr-run-h:hover .exp, .cr-claim.cr-run-h:focus-within .exp { visibility: visible; }
 .cr-run-rows { display: flex; flex-direction: column; gap: 1px; margin-left: 16px; }

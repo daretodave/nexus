@@ -256,8 +256,7 @@ export function ClaimsRail({ people, owner, onRelease, onReassign, busy, note, e
                   <div key={ln.key} className={cx('cr-run', isOpen && 'is-open')}>
                     <button className="cr-claim cr-run-h" type="button" onClick={() => toggle(ln.key)} aria-expanded={isOpen ? 'true' : 'false'}
                       aria-label={`${isOpen ? 'Fold' : 'Show'} ${ln.n} claimed chunks, ${label}`}>
-                      <span className="id"><Icon name="chevronRight" size={12} />{label}</span>
-                      <span className="t">{ln.n} chunks</span>
+                      <span className="cr-run-top"><span className="id"><Icon name="chevronRight" size={12} />{label}</span><span className="t">· {ln.n} chunks</span></span>
                       <span className={cx('exp', ln.expKind && `is-${ln.expKind}`)}>{ln.exp}</span>
                     </button>
                     {isOpen ? <div className="cr-run-rows">{ln.claims.map((c) => row(pp, c))}</div> : null}
