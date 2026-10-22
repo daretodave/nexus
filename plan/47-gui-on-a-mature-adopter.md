@@ -72,15 +72,13 @@ sessions,reorder}.mjs`, `packages/cli/src/screens/
 - **A9** The claims rail folds consecutive chunks of one session into one expandable line, names the session's star when it has one, and scrolls in its own panel.
 - **A10** Fleet shows one tile per session, idle as idle, a dim tile for a claim holder that is not attached, and each tile's last message and chunk.
 - **A11** A reorder from the GUI lands (owner: committed and pushed through settle; contributor: a PR), never an untracked pending file in the GUI's checkout; announce is found under `scripts/dev/` too.
-- **A12** `claims.mjs` cuts a full session id given to `--session` to the stored form, so renew and release match it.
-- **A13** Settle credits a chunk only the commits in its own range: it stops at what origin already holds and passes over a plot commit that only adds a pending file.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 13 open · 1 closed · next A15
+Measure: 11 open · 3 closed · next A15
 
 - [ ] **47.1** Explode and plot served for onboarding · M · closes A1 · needs —
   - Reuse `/messy`'s clustering for explode and `/plot`'s pending-file shape for plot; owner lands settled, contributor opens a PR.
@@ -97,4 +95,3 @@ Measure: 13 open · 1 closed · next A15
 - [ ] **47.10** The claims rail folds a session's run · S · closes A9 · needs —
 - [ ] **47.11** Fleet tiles are one per session and honest · M · closes A10 · needs —
 - [ ] **47.12** Reorders land; script lookups share one list · S · closes A11 · needs —
-- [ ] **47.13** Claims cuts a full --session id; settle credits its own range · S · closes A12, A13 · needs —

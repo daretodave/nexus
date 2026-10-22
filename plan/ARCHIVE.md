@@ -145,3 +145,4 @@ still pending at the move and live on as specs.
 - 2026-10-21 · 39.4 · one PR-mode tick ran end to end in a scratch adopter · plan only
 - 2026-10-22 · 39.5 · Template script tests pass once copied into a fresh adopter · ec8af4d1..ec8af4d1
 - 2026-10-22 · 47.14 · Interactive builders run in the background; REBOOT reaches the lead · ecab3306..ecab3306
+- 2026-10-22 · 47.13 · Claims cuts a full --session id; settle credits its own range · c3fc3ec5..5f1bd9de
