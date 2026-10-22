@@ -79,6 +79,13 @@ export function createDraftSaver({ put, beacon, delay = 400, setTimer = setTimeo
       mark(key, 'sent');
       try { await put({ [key]: null }); } catch { /* the server clears an ask's drafts itself; a plan one stays a draft */ }
     },
+    /** Dropped without sending (an answer reopened, a typed answer kept elsewhere): the draft clears, quietly. */
+    async clear(key) {
+      stop(key);
+      pending.delete(key);
+      mark(key, '');
+      try { await put({ [key]: null }); } catch { /* left behind, it is only a draft */ }
+    },
     /** The answer did not go: the draft is still what was typed. */
     failed(key) { mark(key, pending.has(key) ? 'unsaved' : 'saved'); },
     state: (key) => states.get(key) || '',

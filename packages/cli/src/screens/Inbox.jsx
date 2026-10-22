@@ -9,6 +9,10 @@
 // Batch-answer with defaults confirms its list first and takes only questions
 // that carry a default. Items: headsdown-inbox/inboxModel.js; app glue CSS:
 // styles/oversight.css.
+// Answers save as typed and send as given (spec 51, A1): a typed answer is a draft on the server (data/drafts.js)
+// until it goes; a plan, parked or cloud question sends the moment it is answered; a live ask's picks are kept as
+// drafts too (`<askId>:<i>:pick`) and go from the first one on with Send (data/answers.js), the rest taking their
+// defaults, or on their own once every one is settled.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -17,6 +21,10 @@ import {
 import '../styles/oversight.css';
 import { countdown } from '../../shared/times.mjs';
 import { api, server, useCloudLoop, useInbox, useOversight, useSecrets } from '../data/index.js';
+import { draftFailed, draftSending, draftSent, useDrafts } from '../data/drafts.js';
+import { askSend, sendsNow } from '../data/answers.js';
+import { NO_ANSWER } from '../../shared/times.mjs';
+import { AnswerField } from '../ui/answer-field.jsx';
 import { PATHS } from '../routes.js';
 import { batchEligible, batchWhyLine, collect, clock, names, planGroups } from './headsdown-inbox/inboxModel.js';
 import { keyCard } from './vault/model.js';
@@ -44,7 +52,6 @@ function Tag({ x }) {
   return <span className="sess-tag">session</span>;
 }
 
-/** "Other…": a typed answer, sent on Enter (or the button, where one is drawn). */
 /**
  * The pending tug's timer (Tug board): a live question counts down to the default its session takes (shared/times.mjs
  * ASK_DEFAULT_MS), ticking each second; one without a deadline shows its age.
@@ -61,16 +68,10 @@ function DefaultIn({ deadline, age }) {
   return age ? <span className="tug-timer">{age}</span> : null;
 }
 
-function Other({ onSend, placeholder = 'Other…', button }) {
-  const [v, setV] = useState('');
-  const send = () => { const t = v.trim(); if (t) { onSend(t); setV(''); } };
-  return (
-    <>
-      <input className="field tug-other" type="text" aria-label="Other answer" placeholder={placeholder} value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send(); }} />
-      {button ? <button className="btn btn-s btn-primary" type="button" onClick={send} disabled={!v.trim()}>{button}<Icon name="arrowRight" size={14} /></button> : null}
-    </>
-  );
-}
+/** A live ask's question as AskUserQuestion has it, for data/answers.js: its default is its first option. */
+const askQ = (x) => ({ question: x.qText, options: x.hasDefault ? [x.opts[0]] : [] });
+/** Where a live ask's picked answer is kept until Send (the server clears `<askId>:` drafts once it is answered). */
+const pickKey = (x) => `${x.id}:pick`;
 
 function Opts({ x, onPick }) {
   return (
@@ -105,6 +106,8 @@ export default function Inbox() {
   const [errs, setErrs] = useState({});
   const doneRef = useRef(done);
   doneRef.current = done;
+  const drafts = useDrafts();
+  const sendingAsks = useRef(new Set());
   // A saved secret settles its row ("set") without an answer to the plan: the value went to the vault, and the
   // request leaves the server's list once its names are set.
   const keys = useKeyCards({
@@ -126,6 +129,21 @@ export default function Inbox() {
   const isDone = (x) => !!done[x.id];
   const openItems = items.filter((x) => !isDone(x));
 
+  // A live ask's picks, kept as drafts, come back after a reload or a return: settled, not yet sent.
+  const askIds = current.filter((i) => i.src === 'ask').map((i) => i.id).join('|');
+  useEffect(() => {
+    if (!drafts.ready) return;
+    const add = {};
+    for (const i of current) {
+      if (i.src !== 'ask' || doneRef.current[i.id]) continue;
+      try {
+        const p = JSON.parse(drafts.get(pickKey(i)) || 'null');
+        if (p && p.a) add[i.id] = { a: String(p.a), how: p.how || 'answered', item: i };
+      } catch { /* not a pick */ }
+    }
+    if (Object.keys(add).length) setDone((d) => ({ ...add, ...d }));
+  }, [drafts.ready, askIds]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const cloudNext = cloud?.next ? clock(cloud.next) : '';
   // A cloud run names its repo's loop ("tidepool loop"), as the board does now that loops span repos.
   const loopName = shell.repo ? `${shell.repo} loop` : 'cloud loop';
@@ -140,24 +158,68 @@ export default function Inbox() {
     const asks = new Map();
     for (const [x, a, how] of entries) {
       setErrs((e) => { if (!e[x.id]) return e; const c = { ...e }; delete c[x.id]; return c; });
-      if (x.src === 'ask') { asks.set(x.askId, true); continue; }
+      if (!sendsNow(x)) {
+        // Kept until Send (or until every one of its questions is settled).
+        drafts.save(pickKey(x), JSON.stringify({ a, how }));
+        asks.set(x.askId, true);
+        continue;
+      }
+      draftSending(x.id);
       try {
         if (x.src === 'perm') await server.answerPermission(x.raw.id, a !== 'Deny', a === 'Always allow');
         else if (x.src === 'durable') await server.answerDurable([{ file: x.raw.file, line: x.raw.line, text: x.raw.text, answer: a }]);
         else await api(`/api/inbox/${encodeURIComponent(x.id)}`, { answer: a, how });
         sent([x.id]);
+        draftSent(x.id);
       } catch (e) {
+        draftFailed(x.id);
         fail([x.id], e.status === 404 && x.src === 'inbox' ? 'Answering here is not served yet (POST /api/inbox/:id).' : e.message);
       }
     }
-    // An ask carries several questions; it goes back to its agent once all of them are settled.
+    // An ask carries several questions; once all of them are settled it goes on its own (Send takes it sooner).
     for (const askId of asks.keys()) {
-      const all = order.current.map((id) => byId[id] || nextDone[id]?.item).filter((x) => x && x.askId === askId);
-      if (!all.every((x) => nextDone[x.id])) continue;
-      const answers = Object.fromEntries(all.map((x) => [x.qText, nextDone[x.id].a]));
-      try { await server.answerAsk(askId, answers); sent(all.map((x) => x.id)); } catch (e) { fail(all.map((x) => x.id), e.message); }
+      if (askItems(askId, nextDone).every((x) => nextDone[x.id])) await sendAsk(askId, nextDone);
     }
-  }, [byId]);
+  }, [byId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** A live ask's questions, in order, the settled ones too. */
+  function askItems(askId, doneMap = doneRef.current) {
+    return order.current.map((id) => byId[id] || doneMap[id]?.item).filter((i) => i && i.askId === askId);
+  }
+
+  /** What Send would do for an ask now: data/answers.js askSend over its questions and the picks not yet sent. */
+  function askPlan(askId, doneMap = doneRef.current) {
+    const all = askItems(askId, doneMap);
+    const picked = Object.fromEntries(all.filter((i) => doneMap[i.id]).map((i) => [i.qText, doneMap[i.id].a]));
+    return { all, ...askSend(all.map(askQ), picked) };
+  }
+
+  /** Send an ask with what is answered: the rest take their defaults (the server fills them in). */
+  async function sendAsk(askId, doneMap = doneRef.current) {
+    if (sendingAsks.current.has(askId)) return;
+    sendingAsks.current.add(askId);
+    const plan = askPlan(askId, doneMap);
+    const ids = plan.all.map((i) => i.id);
+    const filled = plan.all.filter((i) => !doneMap[i.id]).map((i) => i.id);
+    setDone((d) => {
+      const c = { ...d };
+      for (const i of plan.all) if (!c[i.id]) c[i.id] = { a: plan.answers[i.qText] ?? NO_ANSWER, how: 'default', item: i };
+      return c;
+    });
+    ids.forEach(draftSending);
+    try {
+      await server.answerAsk(askId, plan.payload);
+      setDone((d) => { const c = { ...d }; ids.forEach((id) => { if (c[id]) c[id] = { ...c[id], sent: true }; }); return c; });
+      ids.forEach(draftSent);
+    } catch (e) {
+      // Nothing went: the defaults filled in come back off, the picks stay (they are still drafts).
+      setDone((d) => { const c = { ...d }; filled.forEach((id) => delete c[id]); return c; });
+      ids.forEach(draftFailed);
+      setErrs((er) => ({ ...er, [ids[0]]: e.message }));
+    } finally {
+      sendingAsks.current.delete(askId);
+    }
+  }
 
   const settleMany = useCallback((entries) => {
     if (!entries.length) return;
@@ -170,7 +232,11 @@ export default function Inbox() {
   }, [items, submit]);
 
   const settle = (x, a, how) => settleMany([[x, a, how]]);
-  const reopen = (x) => { setDone((d) => { const c = { ...d }; delete c[x.id]; return c; }); setSel(x.id); };
+  const reopen = (x) => {
+    if (x.src === 'ask') drafts.clear(pickKey(x));
+    setDone((d) => { const c = { ...d }; delete c[x.id]; return c; });
+    setSel(x.id);
+  };
   const settleKind = (kind, how) => settleMany(openItems.filter((x) => x.kind === kind && x.hasDefault).map((x) => [x, x.opts[0], how]));
   // Batch-answer with defaults: only the questions that carry a default (a live ask's first option, a parked
   // default, a plan question that names its Recommendation:/Default:/(recommended)); the list shows before it sends.
@@ -220,8 +286,9 @@ export default function Inbox() {
     if (i.src === 'perm') return `${i.who} waits on this permission`;
     if (i.src === 'durable') return 'the answer lands in the plan; the next loop or session picks it up';
     if (i.kind === 'now') {
-      const total = g.now.filter((o) => groupKey(o) === groupKey(i)).length;
-      return i.phase === 'start' && sessName(i) ? `${sessName(i)} starts working once all ${total === 1 ? 'of them' : total} are settled` : `${i.who} waits on this answer`;
+      if (i.src !== 'ask') return `${i.who} waits on this answer`;
+      const who = i.phase === 'start' && sessName(i) ? `${sessName(i)} starts working` : `${i.who} goes on`;
+      return `${who} once you send, from the first answer on; what you leave takes its default`;
     }
     if (i.kind === 'cloud') return `${loopAt} picks up your answer`;
     return 'approving now saves a step at review; a change queues a fix chunk';
@@ -282,6 +349,13 @@ export default function Inbox() {
 
   // In the plan: a header per spec (its number and title) over its questions, then each other file's [needs-user-call] rows
   const planBody = <PlanGroups items={g.plan} row={row} isDone={isDone} />;
+
+  // The Send bar under a live ask's question: from its first pick on, until it has gone.
+  const askBar = (askId) => {
+    const plan = askPlan(askId);
+    if (!plan.label || plan.all.every((i) => done[i.id]?.sent)) return null;
+    return { label: plan.label, answered: plan.answered, total: plan.all.length, sending: sendingAsks.current.has(askId), onSend: () => sendAsk(askId) };
+  };
 
   const loading = !items.length && (oversight.status === 'loading' || inbox.status === 'loading');
   const cloudEmpty = filter === 'cloud' && !g.cloud.length;
@@ -346,7 +420,7 @@ export default function Inbox() {
                 <span><b>{batch} settled with defaults.</b> {batchLine()}.{keyNote}</span>
               </div>
             ) : null}
-            {x ? <Detail x={x} d={done[x.id]} items={g.now} done={done} settle={settle} reopen={reopen} effect={effect(x)} loopAt={loopAt} repo={shell.repo} keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)} /> : null}
+            {x ? <Detail x={x} d={done[x.id]} items={g.now} done={done} settle={settle} reopen={reopen} ask={x.src === 'ask' ? askBar(x.askId) : null} effect={effect(x)} loopAt={loopAt} repo={shell.repo} keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)} /> : null}
           </aside>
         </div>
       )}
@@ -356,7 +430,7 @@ export default function Inbox() {
 }
 
 /** The selected question: a pending tug, a parked card, or the settled tug; then its context. */
-function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyProps, onKeyChange }) {
+function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, keyProps, onKeyChange }) {
   const sess = sessName(x);
   const src = x.src === 'durable' ? `${x.raw.file}:${x.raw.line}` : x.kind === 'cloud'
     ? [`${repo ? `${repo} loop` : 'cloud run'}${x.run ? ` ${x.run}` : ''}`, x.chunk].filter(Boolean).join(' · ')
@@ -376,7 +450,8 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
     let resultC;
     if (x.src === 'perm') resultC = `. ${x.who} goes on.`;
     else if (x.src === 'durable') resultC = '. It lands in the plan.';
-    else if (x.kind === 'now') resultC = x.phase === 'start' && sess ? `. ${sess} starts once all ${group.length === 1 ? 'of them' : group.length} are settled.` : `. ${x.who} resumed.`;
+    else if (x.kind === 'now' && x.src === 'ask' && !d.sent) resultC = '. It goes with Send; what you leave takes its default.';
+    else if (x.kind === 'now') resultC = x.phase === 'start' && sess ? `. ${sess} starts working.` : `. ${x.who} resumed.`;
     else if (x.kind === 'cloud') resultC = `. It lands in the plan for ${loopAt}.`;
     else resultC = d.how === 'changed' ? '. A fix chunk is queued.' : '. Nothing to redo at review.';
     card = (
@@ -397,7 +472,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
         {x.why ? <p className="tug-why"><Icon name="rays8" size={14} style={{ marginTop: 3, color: 'var(--st-blocked)' }} /><span><b>{perm ? 'Why it asks:' : 'Why the default:'}</b> {x.why}</span></p> : null}
         {!perm ? (
           <div className="tug-foot">
-            <Other onSend={(t) => settle(x, t, 'answered')} />
+            <AnswerField draftKey={x.id} button="Answer" onSend={(t) => settle(x, t, 'answered')} />
             {x.hasDefault ? <button className="btn btn-s tug-default" type="button" onClick={() => settle(x, x.opts[0], 'default')}>Use the default and keep going<Icon name="arrowRight" size={14} /></button> : null}
           </div>
         ) : null}
@@ -420,7 +495,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
             </div>
           </>
         ) : null}
-        <div className="tug-foot"><Other placeholder="Your answer…" button="Send answer" onSend={(t) => settle(x, t, 'answered')} /></div>
+        <div className="tug-foot"><AnswerField draftKey={x.id} placeholder="Your answer…" button="Send answer" onSend={(t) => settle(x, t, 'answered')} /></div>
       </div>
     );
   } else {
@@ -440,7 +515,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
             <span className="t-body-s c-3">{x.kind === 'cloud' ? 'Pick another option and it lands in the plan for the next loop.' : 'Pick another option and a fix chunk is queued for this session.'}</span>
           </div>
         ) : (
-          <div className="tug-foot"><Other placeholder="Your answer…" button="Send answer" onSend={(t) => settle(x, t, 'answered')} /></div>
+          <div className="tug-foot"><AnswerField draftKey={x.id} placeholder="Your answer…" button="Send answer" onSend={(t) => settle(x, t, 'answered')} /></div>
         )}
       </div>
     );
@@ -450,6 +525,7 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
   return (
     <>
       {card}
+      {ask ? <AskSendBar {...ask} /> : null}
       <div className="ibx-ctx">
         <div className="ibx-ctx-row"><span className="k">from</span><span className="v">{from}</span></div>
         {x.spec ? <div className="ibx-ctx-row"><span className="k">spec</span><span className="v"><Link className="ibx-spec-link" to={PATHS.board} title={`See spec ${x.spec.n}'s chunks on the board`}><span className="chunk-id">{x.spec.n}</span> {x.spec.title || x.raw.file}</Link></span></div> : null}
@@ -466,6 +542,17 @@ function Detail({ x, d, items, done, settle, reopen, effect, loopAt, repo, keyPr
         ) : null}
       </div>
     </>
+  );
+}
+
+/** A live ask's Send, from the first answer on: "Send 2 answers · 3 take their defaults" (styles/answers.css). */
+function AskSendBar({ label, answered, total, sending, onSend }) {
+  return (
+    <div className="ans-send" role="group" aria-label="Send these answers">
+      <Icon name="arrowRight" size={14} style={{ color: 'var(--accent)', flex: 'none' }} />
+      <span className="t-body-s c-2 ans-send-t">{answered} of {total} answered. The agent waits until you send.</span>
+      <button className="btn btn-primary btn-s" type="button" disabled={sending} onClick={onSend}>{sending ? 'Sending…' : label}</button>
+    </div>
   );
 }
 

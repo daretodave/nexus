@@ -7,6 +7,9 @@ import { PlotCard } from '../../ui/plot-card.jsx';
 import { PermissionCard } from '../../ui/permission-card.jsx';
 import { extractPlotReport } from '../../ui/plot-report.js';
 import { server, TOKEN } from '../../data/client.js';
+import { draftFailed, draftSending, draftSent, useDrafts } from '../../data/drafts.js';
+import { askSend } from '../../data/answers.js';
+import '../../styles/answers.css';
 import { agentState, convoItems, mmss, toolDur } from './model.js';
 import { countdown } from '../../../shared/times.mjs';
 import { pinAfterScroll, stickTarget } from './stick.js';
@@ -85,38 +88,82 @@ function AgentMsg({ m, state, runningTool, now, onSend }) {
 
 const REC = /\s*\(recommended\)\s*$/i;
 
-/** A live AskUserQuestion: one pending tug per question; the answers go back together. */
+/**
+ * A live AskUserQuestion: one pending tug per question (spec 51, A1). A pick is kept as a draft
+ * (`<askId>:<i>:pick`, data/drafts.js) and the answers go from the first one on with Send, the rest taking their
+ * defaults (data/answers.js askSend; the server fills them in), or on their own once every one is picked.
+ */
 function AskTugs({ ask, who }) {
+  const drafts = useDrafts();
   const [picked, setPicked] = useState({});
+  const [sending, setSending] = useState(false);
   // The countdown to the default the session takes on its own (shared/times.mjs ASK_DEFAULT_MS).
   const timer = countdown(ask.deadline, useTick(!!ask.deadline));
   const [err, setErr] = useState('');
   const qs = ask.questions || [];
+  const key = (i) => `${ask.id}:${i}`;
+  // Picks kept as drafts come back after a reload or a return.
+  const kept = {};
+  qs.forEach((q, i) => {
+    if (picked[q.question] != null) return;
+    try { const p = JSON.parse(drafts.get(`${key(i)}:pick`) || 'null'); if (p && p.a) kept[q.question] = String(p.a); } catch { /* not a pick */ }
+  });
+  const have = { ...kept, ...picked };
+  const plan = askSend(qs, have);
   const send = async (next) => {
-    if (Object.keys(next).length < qs.length) return;
-    try { await server.answerAsk(ask.id, next); } catch (e) { setErr(e.message); }
+    if (sending) return;
+    setSending(true);
+    setErr('');
+    qs.forEach((_, i) => draftSending(key(i)));
+    try {
+      await server.answerAsk(ask.id, askSend(qs, next).payload);
+      qs.forEach((_, i) => draftSent(key(i)));
+    } catch (e) {
+      qs.forEach((_, i) => draftFailed(key(i)));
+      setErr(e.message);
+      setSending(false);
+    }
   };
-  const pick = (q, label) => { const next = { ...picked, [q.question]: label }; setPicked(next); send(next); };
-  return qs.map((q, i) => {
+  const pick = (i, q, label) => {
+    const next = { ...have, [q.question]: label };
+    setPicked(next);
+    drafts.save(`${key(i)}:pick`, JSON.stringify({ a: label }));
+    if (qs.every((x) => next[x.question] != null)) send(next);
+  };
+  const unpick = (i, q) => {
+    setPicked((p) => { const c = { ...p }; delete c[q.question]; return c; });
+    drafts.clear(`${key(i)}:pick`);
+  };
+  const tugs = qs.map((q, i) => {
     const opts = (q.options || []).map((o) => ({ label: String(o.label || '').replace(REC, ''), rec: REC.test(o.label || ''), desc: o.description }));
     if (opts.length && !opts.some((o) => o.rec)) opts[0].rec = true;
     const rec = opts.find((o) => o.rec);
-    if (picked[q.question] != null) {
-      return <Tug key={i} state="answered" who={who} src={q.header} question={q.question} chosen={picked[q.question]} />;
+    if (have[q.question] != null) {
+      return <Tug key={i} state="answered" who={who} src={q.header} question={q.question} chosen={have[q.question]} tail={sending ? `${who} resumes.` : 'It goes with Send; what you leave takes its default.'} onChange={sending ? undefined : () => unpick(i, q)} />;
     }
     return (
-      <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <Tug
-          who={who} src={q.header} question={q.question}
-          options={opts} why={rec?.desc} timer={timer}
-          onPick={(label) => pick(q, label)}
-          onOther={(text) => pick(q, text)}
-          onDefault={rec ? () => pick(q, rec.label) : undefined}
-        />
-        {err ? <span className="hint" style={{ color: 'var(--st-failed)' }}>{err}</span> : null}
-      </div>
+      <Tug
+        key={i} who={who} src={q.header} question={q.question} draftKey={key(i)}
+        options={opts} why={rec?.desc} timer={timer}
+        onPick={(label) => pick(i, q, label)}
+        onOther={(text) => pick(i, q, text)}
+        onDefault={rec ? () => pick(i, q, rec.label) : undefined}
+      />
     );
   });
+  return (
+    <>
+      {tugs}
+      {plan.label && plan.answered < qs.length ? (
+        <div className="ans-send" role="group" aria-label="Send these answers">
+          <Icon name="arrowRight" size={14} style={{ color: 'var(--accent)', flex: 'none' }} />
+          <span className="t-body-s c-2 ans-send-t">{plan.answered} of {qs.length} answered. {who} waits until you send.</span>
+          <button className="btn btn-primary btn-s" type="button" disabled={sending} onClick={() => send(have)}>{sending ? 'Sending…' : plan.label}</button>
+        </div>
+      ) : null}
+      {err ? <span className="hint" style={{ color: 'var(--st-failed)' }}>{err}</span> : null}
+    </>
+  );
 }
 
 /** A tool waiting for permission, drawn as a pending tug that reads like a tool row (ui/permission-card.jsx). */

@@ -1,30 +1,30 @@
 // Oversight tug and parked questions (Tug board): .tug (pending, answered,
 // expired), .qstack + .qprog + .qrow + .startbar (Questions at the start),
 // .tray + .parked (Working: never interrupts), .pcard (Questions at the end).
-import { useState } from 'react';
 import { Icon } from './icons.jsx';
 import { Orb, ParkMark } from './agent.jsx';
 import { Ring } from './feedback.jsx';
 import { cx } from './controls.jsx';
 import { Markdown } from './markdown.jsx';
+import { AnswerField } from './answer-field.jsx';
 
 /**
  * .tug. state: pending | answered | expired.
  * options: [{ label, rec?, chosen? }] (recommended first); `why` explains the
  * recommendation; `timer` { left: '4:48', pct: 80 } counts down to the default;
- * `body` (pending only) sits under the question (a permission card's argument).
+ * `body` (pending only) sits under the question (a permission card's argument). `draftKey` keeps the typed
+ * answer as a draft (data/drafts.js; spec 51, A1); its Answer button is always beside it.
  */
 export function Tug({
   state = 'pending', who, src, question, options = [], why, timer, at,
-  onPick, onOther, onDefault, chosen, onChange, onRevisit, label, compact, style, className, body,
+  onPick, onOther, onDefault, chosen, onChange, onRevisit, label, compact, style, className, body, draftKey, tail,
 }) {
-  const [other, setOther] = useState('');
   if (state === 'answered') {
     return (
       <div className={cx('tug is-answered', className)} role="group" aria-label={label || `Answered question from ${who}`} style={style}>
         <div className="tug-head"><Orb state="done" size="s" /><span><span className="tug-who">{who}</span> {src ? <span className="tug-src">· {src}</span> : null}</span>{at ? <span className="tug-timer">{at}</span> : null}</div>
         <p className="tug-q" style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: '21px' }}><Markdown inline text={question} /></p>
-        <div className="tug-result"><Icon name="check" style={{ color: 'var(--st-done)' }} /><span>You chose <b>{chosen}</b>. {who} resumed.</span></div>
+        <div className="tug-result"><Icon name="check" style={{ color: 'var(--st-done)' }} /><span>You chose <b>{chosen}</b>. {tail ?? `${who} resumed.`}</span></div>
         {onChange ? <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-ghost btn-s" type="button" onClick={onChange}>Change answer</button></div> : null}
       </div>
     );
@@ -58,7 +58,7 @@ export function Tug({
       {why ? <p className="tug-why"><Icon name="rays4" size={14} style={{ marginTop: 3, color: 'var(--st-blocked)' }} /><span>{why}</span></p> : null}
       {onOther || onDefault ? (
         <div className="tug-foot">
-          {onOther ? <input className="field tug-other" type="text" aria-label="Other answer" placeholder="Other…" value={other} onChange={(e) => setOther(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && other.trim()) onOther(other.trim()); }} /> : null}
+          {onOther ? <AnswerField draftKey={draftKey} button="Answer" onSend={onOther} /> : null}
           {onDefault ? <button className="btn btn-s tug-default" type="button" onClick={onDefault}>Use the default and keep going<Icon name="arrowRight" size={14} /></button> : null}
         </div>
       ) : null}

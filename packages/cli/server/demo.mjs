@@ -24,6 +24,7 @@ import { createWorld } from './demo/world.mjs';
 import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
 import { realClock } from './demo/clock.mjs';
 import { createDemoVault, DEMO_REQUEST } from './demo/vault.mjs';
+import { applyDrafts } from './drafts.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG = path.resolve(HERE, '..');
@@ -110,6 +111,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw Object.assign(new Error('bad json'), { status: 400 }); }
   }
 
+  let demoDrafts = {};
   const repoPath = `/demo/${world.info().name}`;
   const state = () => {
     const i = world.info();
@@ -167,6 +169,9 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         case 'POST /api/secrets/manifest': await body(req); return send(res, 200, { ok: true, created: false, manifest: 'nexus.secrets.json' });
         case 'GET /api/claims': return send(res, 200, world.claims());
         case 'GET /api/summaries': return send(res, 200, {});
+        // Drafts (spec 51, A1; drafts.mjs), kept in memory for the demo's life.
+        case 'GET /api/drafts': return send(res, 200, { drafts: demoDrafts });
+        case 'PUT /api/drafts': { const b = await body(req); demoDrafts = applyDrafts(demoDrafts, b.drafts || {}); return send(res, 200, { ok: true, drafts: demoDrafts }); }
         case 'POST /api/send': {
           const b = await body(req);
           const text = String(b.text || '').trim();

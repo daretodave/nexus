@@ -49,3 +49,9 @@ export function askSend(questions = [], picked = {}) {
   const total = answered + defaults + unanswered;
   return { payload, answers, how, answered, defaults, unanswered, label: sendLabel({ total, answered, defaults, unanswered }) };
 }
+
+/**
+ * Does an Oversight answer go the moment it is given? A plan (durable), parked, cloud or permission question does;
+ * a live ask's question is kept (as a draft) and goes with Send, or once every question of its ask is settled.
+ */
+export const sendsNow = (item) => item?.src !== 'ask';

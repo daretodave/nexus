@@ -153,7 +153,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   async function body(req, opts = {}) {
     const { max = MAX_BODY, beacon = false } = typeof opts === 'number' ? { max: opts } : opts;
     const type = req.headers['content-type'] || '';
-    if (!/^application\/json/.test(type) && !(beacon && /^text\/plain/.test(type))) throw Object.assign(new Error('json only'), { status: 415 });
+    if (!/^application\/json\b/.test(type) && !(beacon && /^text\/plain\b/.test(type))) throw Object.assign(new Error('json only'), { status: 415 });
     let size = 0;
     const chunks = [];
     for await (const c of req) {

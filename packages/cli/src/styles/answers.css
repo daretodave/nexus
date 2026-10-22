@@ -1,0 +1,21 @@
+/* Answers save as typed and send as given (spec 51, A1), app glue beside nexus.css (which stays verbatim from the
+   handoff). Every value is a nexus.css token, so both themes follow them. The typed answer is the handoff's
+   .tug-other with its Send button beside it and a quiet word for where it is; the Send bar under a live ask is the
+   handoff's .startbar look (Questions at the start) carrying "Send 2 answers · 3 take their defaults". */
+
+/* The typed answer: the field takes the room, its button never hides, the state word sits after */
+.ans-field { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.ans-field .tug-other { flex: 1; min-width: 0; }
+.ans-field .btn { flex: none; }
+.ans-state { flex: none; font-size: 12px; line-height: 16px; color: var(--text-3); }
+.ans-state.is-saving, .ans-state.is-sending { color: var(--text-3); font-style: italic; }
+.ans-state.is-saved { color: var(--text-2); }
+.ans-state.is-sent { color: var(--st-done); }
+
+/* A live ask's Send, from the first answer on */
+.ans-send {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 16px;
+  background: var(--surface-solid); box-shadow: var(--e-2);
+}
+.ans-send-t { flex: 1; min-width: 160px; }
+.ans-send .btn { flex: none; }
