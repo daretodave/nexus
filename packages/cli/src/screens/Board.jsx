@@ -444,7 +444,7 @@ export default function Board() {
         <aside className="pb-main" aria-label="Claims by person">
           {planPr ? <PlanPr pr={planPr} /> : null}
           <ClaimsRail people={people} owner={owner} busy={busy} note={claimsNote}
-            empty="Nobody holds a claim. Every open chunk is free to take."
+            empty={claimsR.status === 'ready' ? 'Nobody holds a claim. Every open chunk is free to take.' : 'Reading the claims...'}
             onRelease={(id) => act('release', id)} onReassign={(id) => openPick(id, 'rail')} pickFor={pickFor('rail')} />
         </aside>
       </div>
