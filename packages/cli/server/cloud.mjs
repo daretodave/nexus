@@ -18,7 +18,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { run as shRun, json } from './sh.mjs';
 import { LOOP_FILE } from './gh.mjs';
@@ -211,15 +211,47 @@ export function scheduleRequest(b = {}) {
 
 // ---- landing -------------------------------------------------------------------
 
-/** git with no shell and no trimming (file contents keep their bytes): { ok, out, err }. */
-function gitRaw(cwd, args, { timeout = 60000 } = {}) {
+/** How long a commit or push may take: they run the repo's own hooks (its gate before commit), which can take minutes. */
+export const HOOK_TIMEOUT_MS = 10 * 60 * 1000;
+const GIT_TIMEOUT_MS = 60000;
+/** Variables a parent git (a hook this server runs under) would hand down; with them git works on another repo. */
+export const GIT_LEAKS = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_PREFIX', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY'];
+export const gitEnv = (env = process.env) => Object.fromEntries(Object.entries(env).filter(([k]) => !GIT_LEAKS.includes(k)));
+
+/** Kill a process and everything it started (a hook's shell and the gate under it). */
+function killTree(child) {
+  if (child.exitCode != null || child.signalCode != null) return;
+  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+  else { try { process.kill(-child.pid, 'SIGKILL'); } catch { child.kill('SIGKILL'); } }
+}
+
+/**
+ * git with no shell, no trimming (file contents keep their bytes) and none of a parent's GIT_* variables: { ok, out,
+ * err, timedOut }. It answers only once git and its hooks have exited: on timeout the whole tree is killed first.
+ */
+function gitRaw(cwd, args, { timeout = GIT_TIMEOUT_MS } = {}) {
   return new Promise((resolve) => {
-    execFile('git', args, { cwd, timeout, windowsHide: true, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
-      resolve({ ok: !err, out: String(stdout || ''), err: String(stderr || (err && err.message) || '').trim() });
+    let child;
+    try {
+      child = spawn('git', args, { cwd, env: gitEnv(), windowsHide: true, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (e) {
+      resolve({ ok: false, out: '', err: String(e.message || e), timedOut: false });
+      return;
+    }
+    let out = '';
+    let err = '';
+    let timedOut = false;
+    child.stdout.on('data', (d) => { out += d; });
+    child.stderr.on('data', (d) => { err += d; });
+    const timer = setTimeout(() => { timedOut = true; killTree(child); }, timeout);
+    child.on('error', (e) => { err += String(e.message || e); });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ ok: code === 0 && !timedOut, out, err: err.trim(), timedOut });
     });
   });
 }
-const gitT = async (cwd, args) => { const r = await gitRaw(cwd, args); return { ...r, out: r.out.trim() }; };
+const gitT = async (cwd, args, o) => { const r = await gitRaw(cwd, args, o); return { ...r, out: r.out.trim() }; };
 const tail = (s, n = 400) => String(s || '').trim().split(/\r?\n/).slice(-6).join('\n').slice(-n);
 const fail = (status, error, extra = {}) => ({ status, error, ...extra });
 
@@ -285,7 +317,7 @@ async function pullRequest(cwd, { head, branch }, run) {
  * Commit `files` ({ rel: text }) on `place.base` in a temporary worktree and land it per owner mode. The person's
  * checkout and working tree are never touched. Answers { status: 200, sha, branch, pr? } or { status, error, fix? }.
  */
-export async function landFiles(repo, place, files, message, { owner, run = shRun } = {}) {
+export async function landFiles(repo, place, files, message, { owner, run = shRun, commitTimeoutMs = HOOK_TIMEOUT_MS } = {}) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-cloud-'));
   const wt = path.join(tmp, 'wt');
   const add = await gitT(repo, ['worktree', 'add', '-q', '--detach', wt, place.base]);
@@ -297,10 +329,14 @@ export async function landFiles(repo, place, files, message, { owner, run = shRu
     }
     const st = await gitT(wt, ['add', '--', ...Object.keys(files)]);
     if (!st.ok) return fail(502, `git add failed: ${tail(st.err, 200)}`);
-    const c = await gitT(wt, ['commit', '-q', '-m', message]);
-    if (!c.ok) return fail(409, `the commit was refused: ${tail(c.err || c.out)}`);
+    // The repo's own pre-commit hook runs here (its gate before commit): awaited to the end, never cut short silently.
+    const c = await gitT(wt, ['commit', '-q', '-m', message], { timeout: commitTimeoutMs });
+    if (c.timedOut) return fail(504, `your repo's checks took longer than ${Math.round(commitTimeoutMs / 1000)} s on the commit, so nothing landed. Run them, then try again.`);
+    if (!c.ok) return fail(409, `your repo's checks refused the commit, so nothing landed:
+${tail(c.err || c.out)}`);
     const sha = (await gitT(wt, ['rev-parse', 'HEAD'])).out;
-    const p = await gitT(wt, ['push', '-q', 'origin', `HEAD:refs/heads/${place.head}`]);
+    const p = await gitT(wt, ['push', '-q', 'origin', `HEAD:refs/heads/${place.head}`], { timeout: commitTimeoutMs });
+    if (p.timedOut) return fail(504, `the push to origin/${place.head} took longer than ${Math.round(commitTimeoutMs / 1000)} s, so nothing landed.`);
     if (!p.ok) {
       if (scopeRefused(p.err)) {
         return fail(409, `GitHub refused the push: your gh token cannot change workflow files. Run \`${SCOPE_FIX}\`, then try again.`, { fix: SCOPE_FIX });
@@ -312,9 +348,10 @@ export async function landFiles(repo, place, files, message, { owner, run = shRu
     if (owner) return { status: 200, sha, branch: place.head };
     return { status: 200, sha, branch: place.head, ...(await pullRequest(wt, place, run)) };
   } finally {
-    await gitT(repo, ['worktree', 'remove', '--force', wt]);
-    fs.rmSync(tmp, { recursive: true, force: true });
-    await gitT(repo, ['worktree', 'prune']);
+    // Every git this started has exited (gitRaw answers on close, after killing a tree that ran over).
+    const rm = await gitT(repo, ['worktree', 'remove', '--force', wt]);
+    try { fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* a temp dir the OS still holds */ }
+    if (!rm.ok) await gitT(repo, ['worktree', 'prune']);
   }
 }
 
@@ -354,14 +391,14 @@ async function workflowFiles(repo, place, cron) {
  * POST /api/cloud/workflow: write the loop workflow from the kit template and land it per owner mode.
  * -> { status, path, sha, written, branch, pr?, setup?, mode?, note? }. Already there: its path and last sha, nothing written.
  */
-export async function addWorkflow(repo, { owner = false, run = shRun, now } = {}) {
+export async function addWorkflow(repo, { owner = false, run = shRun, now, commitTimeoutMs } = {}) {
   try {
     const place = await landingPlace(repo, owner, { now });
     if (place.error) return place;
     const have = await loopAt(repo, place.base);
     if (have) return { status: 200, path: have, sha: await lastSha(repo, place.base, have), written: false, branch: place.head };
     const files = await workflowFiles(repo, place);
-    const r = await landFiles(repo, place, files, 'ci: add the nexus cloud loop', { owner, run });
+    const r = await landFiles(repo, place, files, 'ci: add the nexus cloud loop', { owner, run, commitTimeoutMs });
     if (r.status !== 200) return r;
     const out = { ...r, path: WORKFLOW_PATH, written: true, ...(files[SETUP_ACTION_PATH] ? { setup: SETUP_ACTION_PATH } : {}) };
     if (owner) Object.assign(out, await ownerLoopMode(repo, run));
@@ -376,7 +413,7 @@ export async function addWorkflow(repo, { owner = false, run = shRun, now } = {}
  * and land it per owner mode. A repo with no loop workflow gets it, with this schedule, in the same commit.
  * -> { status, cron, next (ISO, UTC; null on demand), path, written, sha?, pr? }.
  */
-export async function saveSchedule(repo, body, { owner = false, run = shRun, now = new Date() } = {}) {
+export async function saveSchedule(repo, body, { owner = false, run = shRun, now = new Date(), commitTimeoutMs } = {}) {
   const q = scheduleRequest(body);
   if (q.error) return fail(400, q.error);
   const next = q.cron ? cronNext(q.cron, now)?.toISOString() ?? null : null;
@@ -397,7 +434,7 @@ export async function saveSchedule(repo, body, { owner = false, run = shRun, now
       files = await workflowFiles(repo, place, q.cron);
       message = `ci: add the nexus cloud loop, run ${q.human}`;
     }
-    const r = await landFiles(repo, place, files, message, { owner, run });
+    const r = await landFiles(repo, place, files, message, { owner, run, commitTimeoutMs });
     if (r.status !== 200) return r;
     const out = { ...r, cron: q.cron, next, path: have || WORKFLOW_PATH, written: true };
     if (!have && owner) Object.assign(out, await ownerLoopMode(repo, run));

@@ -323,3 +323,57 @@ test('the Cloud step calls the served routes: MISSING no longer lists them, and 
   assert.match(step, /onboardingCalls\.addWorkflow/);
   assert.match(step, /onboardingCalls\.setSchedule/);
 });
+
+// ---- the repo's own hooks -----------------------------------------------------------
+
+const hook = (fx, name, body) => {
+  const f = path.join(fx.root, '.git', 'hooks', name);
+  write(f, `#!/bin/sh\n${body}`);
+  fs.chmodSync(f, 0o755);
+};
+
+test('git variables inherited from a parent hook never reach the git cloud.mjs runs', async () => {
+  const fx = fixture({ owner: true });
+  const head = sh(fx.root, 'rev-parse', 'HEAD');
+  const saved = {};
+  const bogus = { GIT_DIR: path.join(fx.base, 'elsewhere.git'), GIT_WORK_TREE: path.join(fx.base, 'elsewhere'), GIT_INDEX_FILE: path.join(fx.base, 'elsewhere.index'), GIT_PREFIX: 'x/' };
+  for (const [k, v] of Object.entries(bogus)) { saved[k] = process.env[k]; process.env[k] = v; }
+  let r;
+  try {
+    r = await addWorkflow(fx.root, { owner: true, run: fakeGh().run });
+  } finally {
+    for (const [k, v] of Object.entries(saved)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  }
+  assert.equal(r.status, 200, r.error);
+  assert.equal(r.sha, sh(fx.origin, 'rev-parse', 'main'));
+  assert.equal(fs.existsSync(bogus.GIT_DIR), false);
+  untouched(fx, head);
+});
+
+test('the commit runs the repo\'s pre-commit hook; a refusal answers 409 with its last lines and lands nothing', async () => {
+  const fx = fixture({ owner: true });
+  const head = sh(fx.root, 'rev-parse', 'HEAD');
+  hook(fx, 'pre-commit', 'echo "gate: typecheck ok" >&2\necho "gate: 3 tests failed" >&2\nexit 1\n');
+  const r = await addWorkflow(fx.root, { owner: true, run: fakeGh().run });
+  assert.equal(r.status, 409);
+  assert.match(r.error, /gate: 3 tests failed/);
+  assert.doesNotMatch(r.error, /\n\s+at /, 'no stack');
+  assert.equal(sh(fx.origin, 'rev-list', '--count', 'main'), '1');
+  untouched(fx, head);
+});
+
+test('a hook slower than the commit timeout is killed, tree and all, before the worktree is removed', async () => {
+  const fx = fixture({ owner: true });
+  const head = sh(fx.root, 'rev-parse', 'HEAD');
+  const marker = path.join(fx.base, 'hook-finished').split(path.sep).join('/');
+  hook(fx, 'pre-commit', `node -e "setTimeout(() => require('fs').writeFileSync('${marker}', 'late'), 8000)"\n`);
+  const t0 = Date.now();
+  const r = await addWorkflow(fx.root, { owner: true, run: fakeGh().run, commitTimeoutMs: 1500 });
+  assert.equal(r.status, 504, r.error);
+  assert.match(r.error, /checks took longer than/);
+  assert.ok(Date.now() - t0 < 8000, 'answered without waiting for the hook');
+  assert.equal(sh(fx.origin, 'rev-list', '--count', 'main'), '1');
+  untouched(fx, head);
+  await new Promise((res) => setTimeout(res, 9000 - (Date.now() - t0)));
+  assert.equal(fs.existsSync(marker), false, 'the hook\'s child was killed, not left running');
+});
