@@ -627,6 +627,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
   'templates/scripts/__tests__/claims.test.mjs',
   'templates/scripts/__tests__/push-policy-hook.test.mjs',
+  'templates/scripts/__tests__/install-hooks-run.test.mjs',
   'templates/scripts/__tests__/worktree.test.mjs',
   'templates/scripts/__tests__/tick-run.test.mjs',
   'templates/scripts/__tests__/progress-run.test.mjs',

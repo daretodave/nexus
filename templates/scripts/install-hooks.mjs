@@ -32,6 +32,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const MARKER = '# nexus:install-hooks'
+// git hands a hook GIT_DIR (a linked worktree's own git dir), GIT_INDEX_FILE and the like. A gate whose tests make
+// scratch repos (`git init --bare` for a fake origin) would inherit them and write into this repository (its
+// core.bare set true, the checkout broken). Every hook drops them first: its cwd is already the worktree root, so
+// git finds the same repository and index again.
+const UNSET = 'unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX'
 const HOOKS = {
   'pre-commit': `pnpm verify
 `,
@@ -87,7 +92,7 @@ for (const name of names) {
     continue
   }
   fs.mkdirSync(hooksDir, { recursive: true })
-  fs.writeFileSync(hookPath, `#!/bin/sh\n${MARKER} — do not edit by hand; regenerate with\n# node scripts/install-hooks.mjs (--uninstall to remove).\n${HOOKS[name]}`, { mode: 0o755 })
+  fs.writeFileSync(hookPath, `#!/bin/sh\n${MARKER} — do not edit by hand; regenerate with\n# node scripts/install-hooks.mjs (--uninstall to remove).\n${UNSET}\n${HOOKS[name]}`, { mode: 0o755 })
   fs.chmodSync(hookPath, 0o755)
   console.log(`install-hooks: wrote ${hookPath}`)
 }

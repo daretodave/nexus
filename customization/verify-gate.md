@@ -23,7 +23,10 @@ outside the loop has to remember. The template at
 [`templates/scripts/install-hooks.mjs`](../templates/scripts/install-hooks.mjs)
 arms the same rule locally: `node scripts/install-hooks.mjs`
 writes a `.git/hooks/pre-commit` that runs `pnpm verify`
-(`--uninstall` removes it). Adoption runs it once in the
+(`--uninstall` removes it). Each hook first unsets the
+GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE and GIT_PREFIX git hands
+it, so a gate whose tests make scratch repos never writes into
+the real one (a commit from a linked worktree included). Adoption runs it once in the
 adopting checkout ([`prompts/adopt.md`](../prompts/adopt.md));
 every other checkout runs it itself, since hooks aren't
 cloned.
