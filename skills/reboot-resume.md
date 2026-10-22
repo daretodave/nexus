@@ -27,9 +27,12 @@ the same steps.
 ### Step 1 — Take the ledger
 
 `node scripts/ledger.mjs take <star | id>` marks it `resuming`
-by this session and prints it. Refused (`already resuming` or
-`resumed`): stop, another session has it (say which). Refused
-as `live`: the session is still running; don't take it.
+by this session and prints it; it records this session as
+its `runner` (the claims id), so this session's beats keep
+that ledger: one star, one Fleet tile. Refused (`already
+resuming` or `resumed`): stop, another session has it (say
+which). Refused as `live`: the session is still running;
+don't take it.
 
 ### Step 2 — Take the work back
 
@@ -80,17 +83,18 @@ up there; don't re-plan, rebuild, re-claim or release."
   same interval (none for dynamic) and prompt.
 - A single `/next`: finish the chunk in flight, then stop.
 
-Before invoking it, record it in this session's own ledger the
-same way (`ledger.mjs beat --set kind=<kind> --set-file
-loop=<file>`, `--add` each old `done`, `defaults` and
-`parked` entry), so a second crash resumes it too.
+Before invoking it, beat once (`ledger.mjs beat`): the ledger
+this session took and now runs already holds its `kind`,
+`loop`, `done`, `defaults` and `parked`, so a second crash
+resumes it too.
 
 ### Step 4 — Close out
 
-`node scripts/ledger.mjs done <star>`; once every ledger of the
-train is `resumed`, set `.nexus/reboot/<slug>.md` to `state:
-resumed`. Post `node scripts/announce.mjs "REBOOT <slug>: <old
-star> resumed as <new star> on <chunk>"`. The `refs/reboot/…`
+`node scripts/ledger.mjs done <star>` (it sets `resumed_at`;
+the runner's beats read `live` again); once every ledger of the
+train has a `resumed_at`, set `.nexus/reboot/<slug>.md` to
+`state: resumed`. Post `node scripts/announce.mjs "REBOOT
+<slug>: <star> resumed by <claims id> on <chunk>"`. The `refs/reboot/…`
 refs stay until the chunk in flight lands; that iteration
 deletes them (`git update-ref -d`), `/tidy` sweeps leftovers.
 Reply in at most 4 lines: the train, the chunk and its step,
