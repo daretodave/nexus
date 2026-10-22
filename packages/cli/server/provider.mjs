@@ -12,6 +12,11 @@
 //   includePartialMessages       stream text as it is written
 //   canUseTool                   AskUserQuestion -> GUI buttons -> answers;
 //                                other tools -> approve / deny in the GUI
+//   permissionMode               the checkout's pref (Settings, "Permissions
+//                                for new sessions"), read when a conversation
+//                                starts and kept while it runs or resumes;
+//                                bypassPermissions alone also sets the SDK's
+//                                allowDangerouslySkipPermissions opt-in
 // Subagent traffic (parent_tool_use_id) is kept: it is what the stage draws.
 // Stop: interrupt() first so the turn's result still arrives, close() after
 // a 1500 ms grace.
@@ -20,7 +25,25 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 
 export const STOP_GRACE_MS = 1500;
-export const PERMISSION_MODES = ['default', 'acceptEdits', 'auto', 'plan'];
+export const BYPASS = 'bypassPermissions';
+export const PERMISSION_MODES = ['default', 'acceptEdits', 'auto', 'plan', BYPASS];
+
+/** A known permission mode, else 'default' (Ask). */
+export function permissionModeOf(mode) {
+  return PERMISSION_MODES.includes(mode) ? mode : 'default';
+}
+
+/** The SDK query options for a mode: bypass needs the SDK's explicit opt-in, and only bypass gets it. */
+export function modeOptions(mode) {
+  const m = permissionModeOf(mode);
+  return m === BYPASS ? { permissionMode: m, allowDangerouslySkipPermissions: true } : { permissionMode: m };
+}
+
+/** The `claude -p` arguments for a mode: the CLI's own opt-in rides along with bypass only. */
+export function modeArgs(mode) {
+  const m = permissionModeOf(mode);
+  return m === BYPASS ? ['--permission-mode', m, '--allow-dangerously-skip-permissions'] : ['--permission-mode', m];
+}
 
 /** An async iterable fed by push(); the session's streaming input. */
 export function inputQueue() {
@@ -69,9 +92,11 @@ export async function createProvider(o) {
   return sdk ? sdkProvider(sdk, o) : cliProvider(o);
 }
 
-function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', env = () => ({}), resume: seed = null }) {
+export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', env = () => ({}), resume: seed = null }) {
   let session = null;
   let lastSessionId = seed;
+  // The mode this conversation started in: a resume keeps it, a new conversation reads the pref again.
+  let mode = null;
 
   const canUseTool = async (toolName, input, opts) => {
     const id = opts.toolUseID || randomUUID();
@@ -87,6 +112,7 @@ function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, perm
   };
 
   function start(resume) {
+    if (!resume || !mode) mode = permissionModeOf(permissionMode());
     const queue = inputQueue();
     const q = sdk.query({
       prompt: queue,
@@ -94,7 +120,7 @@ function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, perm
         cwd: repo,
         settingSources: ['project'],
         includePartialMessages: true,
-        permissionMode: permissionMode(),
+        ...modeOptions(mode),
         canUseTool,
         ...(resume ? { resume } : {}),
         env: { ...process.env, ...env(), CLAUDE_AGENT_SDK_CLIENT_APP: 'nexus-cli' },
@@ -151,9 +177,12 @@ function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, perm
     },
     fresh() {
       lastSessionId = null;
+      mode = null;
       return this.stop();
     },
     get active() { return !!session; },
+    /** The mode the current conversation started in (null before its first turn). */
+    get mode() { return mode; },
   };
 }
 
@@ -166,9 +195,11 @@ function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, perm
 function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'default', env = () => ({}), resume: seed = null }) {
   let child = null;
   let lastSessionId = seed;
+  let mode = null;
 
   function start() {
-    const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages', '--permission-mode', permissionMode()];
+    if (!lastSessionId || !mode) mode = permissionModeOf(permissionMode());
+    const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages', ...modeArgs(mode)];
     if (lastSessionId) args.push('--resume', lastSessionId);
     const c = process.platform === 'win32'
       ? spawn(['claude', ...args].join(' '), { cwd: repo, shell: true, windowsHide: true, env: { ...process.env, ...env() } })

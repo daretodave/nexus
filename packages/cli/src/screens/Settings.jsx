@@ -6,7 +6,9 @@
 // working phase go to the checkout's local settings (POST /api/local,
 // .nexus/local.json); the cloud loop pause is the loop workflow's enabled
 // state through gh; AI one-liners on the plan board are a GUI pref
-// (POST /api/prefs aiSummaries, on by default); the theme is per browser.
+// (POST /api/prefs aiSummaries, on by default); so is the permission mode
+// for new sessions (POST /api/prefs permissionMode, Ask by default, spec 49
+// A10); the theme is per browser.
 // Secrets (the second and third handoffs): names only, from GET /api/secrets
 // once the server serves it (42.7); the rotate nudge has no store yet, so a
 // change there says it lasts until the page reloads.
@@ -18,6 +20,8 @@ import { PATHS } from '../routes.js';
 import { useLoop, hhmm } from './cloud-settings/loop.js';
 import { MANIFEST, secretCounts, namesLabel, localKeysLabel, secretsSide } from './cloud-settings/secrets.js';
 import { Frame, LoopDot } from './cloud-settings/parts.jsx';
+import { PermissionModes } from './cloud-settings/permission-mode.jsx';
+import '../styles/permission-mode.css';
 
 const SEC = { padding: '18px 26px', gap: 28 };
 const LABEL = { width: 120 };
@@ -108,6 +112,15 @@ export default function Settings() {
     try { await api('/api/prefs', { aiSummaries: on }); app?.reload?.(); setSave('saved'); } catch (e) { setSave({ error: e.message }); }
   };
 
+  // Permissions for new sessions: a GUI pref per checkout (POST /api/prefs), read when a session starts.
+  const [permMine, setPermMine] = useState(null);
+  const perm = permMine ?? app?.data?.prefs?.permissionMode ?? 'default';
+  const changePerm = async (mode) => {
+    setPermMine(mode);
+    setSave('saving');
+    try { await api('/api/prefs', { permissionMode: mode }); app?.reload?.(); setSave('saved'); } catch (e) { setSave({ error: e.message }); }
+  };
+
   const [tip, setTip] = useState(false);
   const bySize = rm === 'size';
   const subOn = rm === 'sub' || rm === 'both';
@@ -194,6 +207,13 @@ export default function Settings() {
                   ]}
                 />
               ) : null}
+            </div>
+          </section>
+
+          <section className="set-sec" style={SEC}>
+            <div><h2 className="set-h">Permissions for new sessions</h2><p className="set-d">What a session may do without asking. A session already running keeps the mode it started with.</p></div>
+            <div style={{ minWidth: 0 }}>
+              <PermissionModes value={perm} onChange={changePerm} />
             </div>
           </section>
 

@@ -497,7 +497,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/state': return send(res, 200, { info: await repoMod.repoInfo(repo), prefs, commands: repoMod.listCommands(repo), provider: provider.kind, permissionModes: PERMISSION_MODES });
         case 'GET /api/preflight': return send(res, 200, await preflight(repo));
         case 'GET /api/prompts': return send(res, 200, { paste: ADOPT_PASTE, adopt: readPrompt('adopt.md'), pitch: readPrompt('pitch.md') });
-        case 'POST /api/prefs': { const b = await body(req); if (b.permissionMode && !PERMISSION_MODES.includes(b.permissionMode)) delete b.permissionMode; prefs = await repoMod.writePrefs(repo, b); return send(res, 200, prefs); }
+        case 'POST /api/prefs': { const b = await body(req); if ('permissionMode' in b && !PERMISSION_MODES.includes(b.permissionMode)) delete b.permissionMode; prefs = await repoMod.writePrefs(repo, b); return send(res, 200, prefs); }
         case 'GET /api/local': return send(res, 200, await local.localView(repo));
         case 'POST /api/local': return send(res, 200, await local.writeLocal(repo, await body(req)));
         case 'POST /api/owner': { const b = await body(req); return send(res, 200, { owner: await repoMod.setOwner(repo, !!b.on) }); }

@@ -24,7 +24,7 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import { inputQueue, userMessage, PERMISSION_MODES } from './provider.mjs';
+import { inputQueue, userMessage, PERMISSION_MODES, BYPASS } from './provider.mjs';
 import { maskFor } from './secrets.mjs';
 
 export const RUN_HELP = `nexus run: answer one prompt headless (one turn, JSON out, no browser).
@@ -47,6 +47,9 @@ export const RUN_HELP = `nexus run: answer one prompt headless (one turn, JSON o
   approve it) and listed in permission_denials.`;
 
 export class UsageError extends Error {}
+
+/** The modes `nexus run` takes: the GUI's, less bypassPermissions (Settings' "Allow everything" stays a GUI choice). */
+export const RUN_MODES = PERMISSION_MODES.filter((m) => m !== BYPASS);
 
 /** Parse the arguments after `run`. */
 export function parseRunArgs(argv) {
@@ -72,8 +75,8 @@ export function parseRunArgs(argv) {
   if (rest.length > 1) throw new UsageError('give the prompt as one argument (quote it), or - to read stdin');
   o.prompt = rest[0];
   if (o.prompt === undefined) throw new UsageError('no prompt: nexus run "<prompt>" (or - to read stdin)');
-  if (o.permissionMode === 'bypassPermissions') throw new UsageError('bypassPermissions is refused; nexus run keeps a person-approved allowlist in charge');
-  if (!PERMISSION_MODES.includes(o.permissionMode)) throw new UsageError(`--permission-mode must be one of ${PERMISSION_MODES.join(', ')}`);
+  if (o.permissionMode === BYPASS) throw new UsageError('bypassPermissions is refused; nexus run keeps a person-approved allowlist in charge');
+  if (!RUN_MODES.includes(o.permissionMode)) throw new UsageError(`--permission-mode must be one of ${RUN_MODES.join(', ')}`);
   return o;
 }
 
@@ -122,6 +125,7 @@ async function loadQuery() {
  * @returns {Promise<object>} the summarized result
  */
 export async function runOnce({ prompt, cwd, permissionMode = 'default', model, query, env = process.env }) {
+  if (!RUN_MODES.includes(permissionMode)) throw new UsageError(permissionMode === BYPASS ? 'bypassPermissions is refused; nexus run keeps a person-approved allowlist in charge' : `--permission-mode must be one of ${RUN_MODES.join(', ')}`);
   let q0 = query;
   if (!q0) {
     try { q0 = await loadQuery(); } catch (e) {
