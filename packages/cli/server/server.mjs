@@ -164,7 +164,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   // Under an injected provider (tests) with no ghRun, gh reads as missing: a test never reaches the real one.
   const noGh = async () => ({ ok: false, code: -1, stdout: '', stderr: 'gh is not stubbed in this test', missing: true });
   // A reorder's pull request (47 A11): gh through the injected ghRun; null runs the real gh, never under a test.
-  const reorderGh = ghRun ? (args, o) => ghRun('gh', args, o) : injected ? noGh : null;
+  const reorderGh = ghRun || injected ? async (args, o) => { const r = await (ghRun || noGh)('gh', args, o); return { ...r, out: r.stdout, err: r.stderr }; } : null;
   const gitView = createGitView({ repo, root: () => primaryRoot(repo), sessions: () => steering.list(), run: ghRun || (injected ? noGh : undefined), ...gitOpts });
   // The boards' times (41.7): ledgers watched across reads, and the plan's titles, sizes and hours, read at most once a
   // minute (the cockpit polls the detail every few seconds).

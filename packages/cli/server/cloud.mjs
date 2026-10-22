@@ -226,16 +226,18 @@ function killTree(child) {
 }
 
 /**
- * git with no shell, no trimming (file contents keep their bytes) and none of a parent's GIT_* variables: { ok, out,
- * err, timedOut }. It answers only once git and its hooks have exited: on timeout the whole tree is killed first.
+ * A program (git, node, gh) with no shell, no trimming (file contents keep their bytes) and none of a parent's GIT_*
+ * variables: { ok, code, out, err, timedOut }. It answers only once the program and everything it started (git's
+ * hooks, a gate under them) have exited: on timeout the whole tree is killed first, so a caller may then remove the
+ * folder it ran in. `env` is the environment to start from; GIT_LEAKS never pass.
  */
-function gitRaw(cwd, args, { timeout = GIT_TIMEOUT_MS } = {}) {
+export function runClean(cmd, args, { cwd, timeout = GIT_TIMEOUT_MS, env = process.env } = {}) {
   return new Promise((resolve) => {
     let child;
     try {
-      child = spawn('git', args, { cwd, env: gitEnv(), windowsHide: true, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'] });
+      child = spawn(cmd, args, { cwd, env: gitEnv(env), windowsHide: true, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'] });
     } catch (e) {
-      resolve({ ok: false, out: '', err: String(e.message || e), timedOut: false });
+      resolve({ ok: false, code: -1, out: '', err: String(e.message || e), timedOut: false });
       return;
     }
     let out = '';
@@ -247,13 +249,15 @@ function gitRaw(cwd, args, { timeout = GIT_TIMEOUT_MS } = {}) {
     child.on('error', (e) => { err += String(e.message || e); });
     child.on('close', (code) => {
       clearTimeout(timer);
-      resolve({ ok: code === 0 && !timedOut, out, err: err.trim(), timedOut });
+      resolve({ ok: code === 0 && !timedOut, code: code ?? -1, out, err: err.trim(), timedOut });
     });
   });
 }
+/** git through runClean. */
+const gitRaw = (cwd, args, o = {}) => runClean('git', args, { cwd, ...o });
 const gitT = async (cwd, args, o) => { const r = await gitRaw(cwd, args, o); return { ...r, out: r.out.trim() }; };
 const slash = (p) => String(p).split(path.sep).join('/');
-const shQuote = (p) => `"${String(p).replace(/(["\$`])/g, '\$1')}"`;
+const shQuote = (p) => `"${String(p).replace(/(["\\$`])/g, '\\$1')}"`;
 
 /**
  * The repo's hooks, made safe to run from a linked worktree. git hands a hook run there an absolute GIT_DIR (the

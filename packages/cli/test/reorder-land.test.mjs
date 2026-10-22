@@ -11,7 +11,8 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
-import { GIT_SCRUB, cleanEnv, exec, landReorder, listedIds, safeHooks, splitArgs } from '../server/reorder.mjs';
+import { landReorder, listedIds, splitArgs } from '../server/reorder.mjs';
+import { GIT_LEAKS, gitEnv, runClean, safeHooks } from '../server/cloud.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'templates', 'scripts');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -34,7 +35,7 @@ const README = [
   '| 07 | Search | [07-search.md](07-search.md) | planned | 3 left |', '',
 ].join('\n');
 
-const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', env: cleanEnv(), stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
 /** The person's checkout (owner or not) with a bare origin; `settle` false leaves the repo without the kit's settle. */
 function fixture({ owner = true, settle = true, hook = null } = {}) {
@@ -85,13 +86,12 @@ function untouched(f, head) {
   assert.equal(git(f.dir, 'config', '--get', 'core.bare'), 'false', 'the repo is never made bare');
 }
 
-/** exec, recording the environment each child got. */
+/** runClean, recording each child. */
 function recorder() {
   const calls = [];
   const run = (cmd, args, o = {}) => {
-    const env = o.env || cleanEnv();
-    calls.push({ cmd, args, env });
-    return exec(cmd, args, { ...o, env });
+    calls.push({ cmd, args });
+    return runClean(cmd, args, o);
   };
   return { calls, run };
 }
@@ -99,12 +99,12 @@ function recorder() {
 /** Run fn with GIT_* pointing somewhere else, as a hook or a parent git leaves them. */
 async function underHookEnv(f, fn) {
   const saved = {};
-  for (const k of GIT_SCRUB) saved[k] = process.env[k];
+  for (const k of GIT_LEAKS) saved[k] = process.env[k];
   Object.assign(process.env, { GIT_DIR: path.join(f.top, 'nowhere'), GIT_WORK_TREE: f.top, GIT_INDEX_FILE: path.join(f.top, 'idx'), GIT_PREFIX: 'x/' });
   try {
     return await fn();
   } finally {
-    for (const k of GIT_SCRUB) if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k];
+    for (const k of GIT_LEAKS) if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k];
   }
 }
 
@@ -131,9 +131,8 @@ test('owner: the reorder is committed, settled and pushed to main from a tempora
     assert.equal(log[1], 'plan: reorder 07.4 to the top of spec 07');
     assert.match(log[0], /^plan: settle/);
     assert.equal(r.commit, git(f.origin, 'rev-parse', '--short', 'main'));
-    // no child got the GIT_* the server's own environment carried
+    // the server's own environment pointed git elsewhere (GIT_DIR, GIT_INDEX_FILE, ...): every child ran without it
     assert.ok(rec.calls.length > 4);
-    for (const c of rec.calls) for (const k of GIT_SCRUB) assert.equal(c.env[k], undefined, `${c.cmd} ${c.args.join(' ')} got ${k}`);
     assert.ok(rec.calls.some((c) => c.cmd === process.execPath && /settle\.mjs$/.test(c.args[0])), 'settle ran');
     untouched(f, head);
   } finally {
@@ -163,7 +162,7 @@ test('contributor: a nexus/reorder branch, pushed, and a pull request; main is n
     const head = git(f.dir, 'rev-parse', 'HEAD');
     const before = git(f.origin, 'rev-parse', 'main');
     const seen = [];
-    const gh = async (args, o) => { seen.push({ args, env: o.env || cleanEnv() }); return { ok: true, code: 0, stdout: 'https://github.com/o/r/pull/7\n', stderr: '' }; };
+    const gh = async (args) => { seen.push({ args }); return { ok: true, code: 0, out: 'https://github.com/o/r/pull/7\n', err: '' }; };
     const r = await landReorder(f.dir, { id: '07.2', after: '07.4' }, { owner: false, now: NOW, gh });
     assert.equal(r.landed, 'pr');
     assert.equal(r.pr, 7);
@@ -202,7 +201,7 @@ test('an old hook runs through a wrapper that unsets GIT_DIR: the gate\'s git in
     assert.equal(r.landed, 'main');
     assert.ok(fs.existsSync(log), 'the hook ran');
     const seen = fs.readFileSync(log, 'utf8');
-    for (const k of GIT_SCRUB) assert.doesNotMatch(seen, new RegExp(`^${k}=`, 'm'), `the hook saw ${k}`);
+    for (const k of GIT_LEAKS) assert.doesNotMatch(seen, new RegExp(`^${k}=`, 'm'), `the hook saw ${k}`);
     assert.equal(git(f.dir, 'config', '--get', 'core.bare'), 'false');
     untouched(f, head);
   } finally {
@@ -231,7 +230,8 @@ test('safeHooks: one wrapper per hook, honouring core.hooksPath; none for sample
     const a = await safeHooks(f.dir);
     assert.deepEqual(fs.readdirSync(a.dir), ['pre-commit']);
     const w = fs.readFileSync(path.join(a.dir, 'pre-commit'), 'utf8');
-    assert.match(w, /^#!\/bin\/sh\nunset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY\nexec ".*\/hooks\/pre-commit" "\$@"\n$/);
+    assert.equal(w.split('\n')[1], `unset ${GIT_LEAKS.join(' ')}`);
+    assert.match(w, /^exec ".*\/hooks\/pre-commit" "\$@"$/m);
     a.cleanup();
     assert.equal(fs.existsSync(a.dir), false);
     fs.mkdirSync(path.join(f.dir, '.githooks'));
