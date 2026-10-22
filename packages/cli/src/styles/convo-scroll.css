@@ -1,0 +1,19 @@
+/* The transcript scrolls (spec 47): app glue beside nexus.css, which stays verbatim from the handoff. The handoff's
+   .convo is a bottom-anchored column with overflow hidden: older messages clipped off the top, out of reach. Here it
+   is a real scroller, still anchored to the bottom while it is short (the first child's auto margin); the top fade
+   stays as the handoff's mask, a look over the scroller, not a clip. Working.jsx keeps it pinned to the newest
+   message (cockpit/stick.js) and shows the jump pill while the person reads further up. */
+.convo-wrap { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.convo.is-scroll {
+  overflow-x: hidden; overflow-y: auto; justify-content: flex-start;
+  overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent;
+  padding-top: 48px; /* the mask's fade height: scrolled to the top, the first message reads clear of it */
+}
+.convo.is-scroll > :first-child { margin-top: auto; }
+
+.jump-latest {
+  position: absolute; z-index: 2; left: 0; right: 0; bottom: 10px; width: max-content; margin: 0 auto;
+  border-radius: var(--r-full); background: var(--raised); box-shadow: var(--e-2);
+  animation: nx-settle-in var(--dur-settle) var(--ease-settle) both;
+}
+@media (prefers-reduced-motion: reduce) { .jump-latest { animation: none; } }

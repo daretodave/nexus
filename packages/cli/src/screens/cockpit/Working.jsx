@@ -1,11 +1,13 @@
 // Working (Cockpit board, phase "working"): the conversation, newest at the
 // bottom, with each agent message's tool rows; your notes on the right; a
 // live question as a pending tug (the stage hushes while it waits).
-import { useEffect, useState } from 'react';
-import { LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph } from '../../ui/index.js';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Icon, LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph } from '../../ui/index.js';
 import { server } from '../../data/client.js';
 import { agentState, convoItems, mmss, toolDur } from './model.js';
 import { countdown } from '../../../shared/times.mjs';
+import { pinAfterScroll, stickTarget } from './stick.js';
+import '../../styles/convo-scroll.css';
 
 /**
  * A .log row as the board draws it, with the board's tool glyph; opens to show the full call. Its diffstat comes from
@@ -117,6 +119,42 @@ function useTick(on) {
   return now;
 }
 
+/**
+ * The transcript's scroller, pinned to the newest message (stick.js): every render and every resize of the box
+ * scrolls to the bottom while pinned; the person's own scroll pins or unpins it.
+ */
+function useStick() {
+  const ref = useRef(null);
+  const pinnedRef = useRef(true);
+  const [pinned, setPinned] = useState(true);
+  const stick = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const top = stickTarget(pinnedRef.current, el);
+    if (top != null && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
+  }, []);
+  useLayoutEffect(stick);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(stick);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [stick]);
+  const onScroll = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const now = pinAfterScroll(el);
+    if (now !== pinnedRef.current) { pinnedRef.current = now; setPinned(now); }
+  }, []);
+  const jump = useCallback(() => {
+    pinnedRef.current = true;
+    setPinned(true);
+    stick();
+  }, [stick]);
+  return { ref, pinned, onScroll, jump };
+}
+
 export default function Working({ live, pinned }) {
   const { stage, transcript, asks, permissions, status } = live;
   const items = convoItems(transcript, stage);
@@ -133,14 +171,22 @@ export default function Working({ live, pinned }) {
     }
   }
   const now = useTick(!!runningTool);
+  const scroller = useStick();
   const nameOf = (agent) => (!agent || agent === 'main' ? 'main' : stage.agents?.[agent]?.label || 'agent');
   return (
-    <div className="convo" aria-live="polite">
-      {items.map((m) => (m.you
-        ? <MsgYou key={m.key} time={m.time || ''} text={m.text} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
-        : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} />))}
-      {asks.map((a) => <AskTugs key={a.id} ask={a} who={nameOf(a.agent)} />)}
-      {permissions.map((p) => <PermissionTug key={p.id} req={p} who={nameOf(p.agent)} />)}
+    <div className="convo-wrap">
+      <div className="convo is-scroll" aria-live="polite" ref={scroller.ref} onScroll={scroller.onScroll}>
+        {items.map((m) => (m.you
+          ? <MsgYou key={m.key} time={m.time || ''} text={m.text} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
+          : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} />))}
+        {asks.map((a) => <AskTugs key={a.id} ask={a} who={nameOf(a.agent)} />)}
+        {permissions.map((p) => <PermissionTug key={p.id} req={p} who={nameOf(p.agent)} />)}
+      </div>
+      {scroller.pinned ? null : (
+        <button className="btn btn-s jump-latest" type="button" onClick={scroller.jump}>
+          <Icon name="chevronDown" size={14} />Jump to latest
+        </button>
+      )}
     </div>
   );
 }
