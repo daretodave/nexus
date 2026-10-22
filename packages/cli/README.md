@@ -63,7 +63,8 @@ You need no API key.
   and durable (from `plan/`). The Oversight badge counts the same list.
   Answers land per owner mode.
 - **Plan**: all chunks in the order `/next` would build them (the
-  repo's `scripts/plan/order.mjs`), or by spec with % done as `/next
+  repo's own `order.mjs`, else nexus's bundled copy; the board says
+  which), or by spec with % done as `/next
   status` reads it (`progress.mjs`, pending closes counted). Sort by
   next up, spec, size or claimed; just-plotted chunks are marked. Chunk
   it on an unchunked spec starts `/next chunk NN`. Claims show by

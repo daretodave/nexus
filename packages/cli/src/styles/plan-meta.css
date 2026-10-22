@@ -1,0 +1,2 @@
+/* The plan board's meta line (spec 47, A8): which order script it read, the repo's own or nexus's bundled copy. */
+.pb-meta { margin: 4px 0 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-3); font-variant-ligatures: none; }

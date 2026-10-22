@@ -20,10 +20,11 @@ import {
 import { api, server, usePlan, useClaims, useSummaries, useSessions, useLocalSettings, useCloudLoop, useReloadOn, chunkStagesOf } from '../data/index.js';
 import { PATHS, lastSession } from '../routes.js';
 import {
-  normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, railPeople, hhmm, waits,
+  normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, orderMeta, railPeople, hhmm, waits,
   gripKey, dragOrder, moveOf, inOrder, gripSays, landingSays, landedToast, reassignTargets, reassignBody, ownerLead,
 } from './board/model.js';
 import { BoardRow, BoardSpec, ClaimsRail, PlanPr } from './board/parts.jsx';
+import '../styles/plan-meta.css';
 
 const SORTS = [
   { value: 'next', label: 'Next up' },
@@ -385,8 +386,17 @@ export default function Board() {
 
   let main;
   if (planR.status === 'loading') main = null;
-  else if (planR.status === 'ready' && planR.data?.available === false) {
-    main = <Empty sky="none" title="No plan to show yet" body={planR.data.note || 'This repo has no plan scripts yet.'} />;
+  else if (planR.status === 'ready' && planR.data?.unreadable) {
+    // The plan is there but didn't read (spec 47, A8): what happened and which script ran, never an empty plan.
+    const d = planR.data;
+    main = <Err title="Plan unreadable" body={`Couldn't read this plan: ${d.error || 'the plan script failed'}`}
+      detail={d.script ? `ran: ${d.script}` : null}
+      actions={<>
+        <button className="btn btn-s" type="button" onClick={planR.reload}>Try again</button>
+        {d.docs ? <a className="btn btn-s" href={d.docs} target="_blank" rel="noreferrer">How the plan is read</a> : null}
+      </>} />;
+  } else if (planR.status === 'ready' && planR.data?.available === false) {
+    main = <Empty sky="none" title="No plan to show yet" body={planR.data.note || 'This repo has no plan yet.'} />;
   } else if (planR.status === 'missing') {
     main = <Empty sky="none" title="No plan to show yet" body="This nexus server doesn't serve the plan yet. Claims still show on the right, live." />;
   } else if (planR.status === 'error') {
@@ -460,6 +470,7 @@ export default function Board() {
             ) : null}
           </div>
           {main}
+          {plan && !plan.unreadable && orderMeta(plan) ? <p className="pb-meta">{orderMeta(plan)}</p> : null}
         </div>
         <aside className="pb-main" aria-label="Claims by person">
           {planPr ? <PlanPr pr={planPr} /> : null}
