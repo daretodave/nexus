@@ -8,21 +8,96 @@
 // chunk order as it reads once settled (a grip reorder waits in a pending
 // file, server/reorder.mjs), so the spec view lists what /next will read.
 //
+// Which order.mjs and progress.mjs (spec 47, A8): the repo's own first, wherever it keeps them (repo.mjs kitScripts:
+// scripts/plan/, scripts/, scripts/dev/, scripts/git/), since a mature repo's plan may not be in the kit's shape and
+// its own script is the one that reads it. Only when the repo has none does the CLI run its bundled copy of the kit's
+// (kit/scripts/, copied by scripts/bundle-kit.mjs; inside the nexus repo, templates/scripts) against the repo, cwd the
+// repo. The bundled copy only reads: its closure has no claims.mjs and no secrets vault (so it never fetches the claims
+// branch or writes a key), it runs with --no-vault, and with no GIT_* a parent git leaked (cloud.mjs gitEnv) and
+// GIT_OPTIONAL_LOCKS=0. A script that exits non-zero, prints what isn't JSON, or JSON not in its shape makes the
+// answer unreadable ({ available: false, unreadable: true, error, script, docs }), never an empty plan; a plan with no
+// specs that read fine stays an empty plan. Every answer says which order script ran (`sources`).
+//
 // The answer is the shape src/screens/board/model.js normalizePlan reads:
 //   { repo, available, specs: [{ id, title, file, unchunked, percent, counts, hoursLeft, here, chunks: [chunk] }],
 //     order: [id], next: [{ id, lane, eta, spec }], asap: [id], held: [id], inFlight: [{ id, who }],
-//     blocked: [{ id, why }], unchunked: [spec], mark: [id], at, hours }
+//     blocked: [{ id, why }], unchunked: [spec], mark: [id], at, hours,
+//     sources: { order: { script, bundled }, progress: { script, bundled } } }
 //   chunk: { id, title, size, state: 'ready'|'claimed'|'closed', closedOn, claim, plotted: 'main'|null, why?,
 //            secrets?: [name], needsSecret?: [name], ownerOnly? }  (secretsOf: the secret gate, names only)
 // A chunk with no words of its own is where the AI one-liner (GET /api/summaries,
 // server/summaries.mjs) fills in.
 import fs from 'node:fs';
 import path from 'node:path';
-import { run, json } from './sh.mjs';
+import { execFile } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { json } from './sh.mjs';
+import { gitEnv } from './cloud.mjs';
 import { findScript, kitScripts, PROGRESS_SCRIPTS, CHUNK_ID } from './repo.mjs';
 import { listedIds, settledPlan, specFile } from './reorder.mjs';
 
 export const ORDER_SCRIPTS = kitScripts('order.mjs', { home: 'scripts/plan' });
+const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/** The CLI's bundled copy of the kit's plan scripts (templates/scripts' layout: plan/order.mjs beside plan-check.mjs). */
+export const PLAN_BUNDLED = path.join(PKG, 'kit', 'scripts');
+const PLAN_TEMPLATES = path.resolve(PKG, '..', '..', 'templates', 'scripts');
+export const PLAN_ENTRIES = Object.freeze(['plan/order.mjs', 'plan/progress.mjs']);
+export const PLAN_DOCS = 'https://github.com/daretodave/nexus/blob/main/concepts/plan-shape.md';
+export const BUNDLED_LABEL = "nexus's bundled copy";
+
+/** The scripts directory the bundled plan scripts come from: the CLI's copy, else the kit's templates; null when neither. */
+export function planKitDir({ bundled = PLAN_BUNDLED, templates = PLAN_TEMPLATES } = {}) {
+  for (const d of [bundled, templates]) if (PLAN_ENTRIES.every((e) => fs.existsSync(path.join(d, e)))) return d;
+  return null;
+}
+
+/**
+ * The files the bundled order.mjs and progress.mjs need, relative to the scripts dir (posix): their static relative
+ * imports, walked. The dynamic ones (claims.mjs, the vault) are left out on purpose: without them the copy only reads.
+ */
+export function planKitFiles(dir) {
+  const seen = [];
+  const queue = [...PLAN_ENTRIES];
+  while (queue.length) {
+    const f = queue.shift();
+    if (seen.includes(f)) continue;
+    const abs = path.join(dir, f);
+    if (!fs.existsSync(abs)) continue;
+    seen.push(f);
+    for (const m of fs.readFileSync(abs, 'utf8').matchAll(/^\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"](\.{1,2}\/[^'"]+)['"]/gm)) {
+      queue.push(path.posix.normalize(path.posix.join(path.posix.dirname(f), m[1])));
+    }
+  }
+  return seen;
+}
+
+/** node on a script, no shell: { ok, code, stdout, stderr }. The environment carries no GIT_* a parent git leaked. */
+export function execNode(_cmd, args, { cwd, timeout = 60000, env } = {}) {
+  return new Promise((resolve) => {
+    execFile(process.execPath, args, { cwd, timeout, env: env || gitEnv(), windowsHide: true, maxBuffer: 64 * 1024 * 1024 }, (e, stdout, stderr) => {
+      resolve({ ok: !e, code: e ? (typeof e.code === 'number' ? e.code : -1) : 0, stdout: String(stdout || ''), stderr: String(stderr || (e && !stderr ? e.message : '') || '') });
+    });
+  });
+}
+
+/** Where a plan script runs from: the repo's own (relative) or the bundled copy (absolute). label: what the board says. */
+function planScript(repo, name, list, kitDir) {
+  const own = findScript(repo, list);
+  if (own) return { path: own, label: own, bundled: false };
+  if (!kitDir) return null;
+  return { path: path.join(kitDir, 'plan', name), label: BUNDLED_LABEL, bundled: true };
+}
+
+/** One line of what a failed script said: its last non-empty stderr line (stdout when stderr is empty). */
+export function oneLine(r) {
+  const lines = String(r?.stderr || r?.stdout || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const pick = lines.find((l) => /error|cannot|can't|not found|invalid|failed/i.test(l)) || lines[lines.length - 1] || `exited ${r?.code ?? 'non-zero'}`;
+  return pick.slice(0, 300);
+}
+
+const isOrder = (o) => !!o && typeof o === 'object' && ['next', 'inFlight', 'blocked'].every((k) => o[k] === undefined || Array.isArray(o[k])) && Array.isArray(o.next);
+const isProgress = (p) => !!p && typeof p === 'object' && Array.isArray(p.specs);
+
 const SPEC_FILE = /^(\d{2,})-[a-z0-9][a-z0-9-]*\.md$/;
 const specOf = (id) => String(id).split('.')[0];
 
@@ -109,31 +184,47 @@ export function boardFrom(order, progress, { repo = '' } = {}) {
 }
 
 /**
- * Shell to the repo's order.mjs and progress.mjs and join them. `mark` is a
- * list of chunk ids to show as just plotted (order.mjs --mark). Returns
- * { available: false, note } when the repo has no plan scripts; throws
- * (status 502) when one fails, with what it printed.
+ * Run order.mjs and progress.mjs (the repo's own, else the CLI's bundled copy) and join them. `mark` is a list of
+ * chunk ids to show as just plotted (order.mjs --mark). Never throws for the plan's sake: a repo with no plan/ folder
+ * is { available: false, note }; a script that fails or prints what isn't its JSON is { available: false,
+ * unreadable: true, error, script, docs }. `exec(cmd, args, opts)` runs node; `kitDir` overrides the bundled copy's
+ * place (null: none).
  */
-export async function readPlan(repo, { mark = [], exec = run, name = path.basename(repo), settled } = {}) {
-  const orderScript = findScript(repo, ORDER_SCRIPTS);
-  const progressScript = findScript(repo, PROGRESS_SCRIPTS);
-  if (!orderScript || !progressScript) {
-    return { repo: name, available: false, note: 'No plan scripts in this repo yet (scripts/plan/order.mjs and progress.mjs).', specs: [], order: [] };
+export async function readPlan(repo, { mark = [], exec = execNode, name = path.basename(repo), settled, kitDir } = {}) {
+  const dir = kitDir === undefined ? planKitDir() : kitDir;
+  const orderS = planScript(repo, 'order.mjs', ORDER_SCRIPTS, dir);
+  const progressS = planScript(repo, 'progress.mjs', PROGRESS_SCRIPTS, dir);
+  const sources = { order: orderS && { script: orderS.label, bundled: orderS.bundled }, progress: progressS && { script: progressS.label, bundled: progressS.bundled } };
+  const nums = specNumbers(repo);
+  if (!fs.existsSync(path.join(repo, 'plan', 'README.md')) && !nums.length) {
+    return { repo: name, available: false, note: 'No plan in this repo yet (plan/README.md and its spec files).', specs: [], order: [], sources };
+  }
+  const unreadable = (script, error) => ({ repo: name, available: false, unreadable: true, error, script, docs: PLAN_DOCS, specs: [], order: [], sources });
+  if (!orderS || !progressS) {
+    const missing = [!orderS && 'order.mjs', !progressS && 'progress.mjs'].filter(Boolean).join(' and ');
+    return unreadable(null, `No ${missing} to run: the repo has none and this nexus CLI carries no bundled copy.`);
   }
   const ids = [].concat(mark).map(String).filter((id) => CHUNK_ID.test(id) && id.includes('.'));
-  const orderArgs = [orderScript, '--json', ...(ids.length ? ['--mark', ids.join(',')] : [])];
-  const nums = specNumbers(repo);
+  const orderArgs = [orderS.path, '--json', ...(orderS.bundled ? ['--no-vault'] : []), ...(ids.length ? ['--mark', ids.join(',')] : [])];
+  // The bundled copy reads only: no leaked GIT_*, and git takes no optional lock (no index refresh written).
+  const opts = (s) => ({ cwd: repo, timeout: 60000, env: { ...gitEnv(), ...(s.bundled ? { GIT_OPTIONAL_LOCKS: '0' } : null) } });
   const [o, p] = await Promise.all([
-    exec('node', orderArgs, { cwd: repo, timeout: 60000 }),
-    nums.length ? exec('node', [progressScript, ...nums, '--json'], { cwd: repo, timeout: 60000 }) : Promise.resolve({ ok: true, stdout: '{"specs":[]}' }),
+    exec('node', orderArgs, opts(orderS)),
+    nums.length ? exec('node', [progressS.path, ...nums, '--json'], opts(progressS)) : Promise.resolve({ ok: true, stdout: '{"specs":[]}' }),
   ]);
-  const order = o.ok ? json(o.stdout) : null;
-  const progress = p.ok ? json(p.stdout) : null;
-  if (!order || !progress) {
-    const bad = !order ? [orderScript, o] : [progressScript, p];
-    throw Object.assign(new Error(`${bad[0]} failed: ${String(bad[1].stderr || bad[1].stdout || '').trim().slice(0, 400)}`), { status: 502 });
-  }
-  const board = boardFrom(order, progress, { repo: name });
+  const read = (r, ok, s) => {
+    if (!r.ok) return { error: `${s.label} failed: ${oneLine(r)}` };
+    const v = json(r.stdout);
+    if (v == null) return { error: `${s.label} printed what isn't JSON: ${String(r.stdout || '').trim().split(/\r?\n/)[0]?.slice(0, 120) || 'nothing'}` };
+    return ok(v) ? { v } : { error: `${s.label} printed JSON that isn't a plan (${s === orderS ? 'no next list' : 'no specs list'})` };
+  };
+  const ro = read(o, isOrder, orderS);
+  if (ro.error) return unreadable(orderS.label, ro.error);
+  const rp = read(p, isProgress, progressS);
+  if (rp.error) return unreadable(progressS.label, rp.error);
+  const order = ro.v;
+  const progress = rp.v;
+  const board = { ...boardFrom(order, progress, { repo: name }), sources };
   try {
     const view = settled || (await settledPlan(repo));
     const listed = new Map(board.specs.map((s) => {

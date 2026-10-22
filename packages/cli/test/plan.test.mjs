@@ -1,7 +1,8 @@
 // GET /api/plan: the plan board's data is order.mjs --json and progress.mjs --json, joined, never a parse of its
 // own. A fixture repo carries the kit's plan scripts (templates/scripts) and a small plan; the route's answer is
 // checked against what the scripts print there. boardFrom's joins (pending chunks, marks, spec order) and the
-// no-scripts answer are checked on stubbed output.
+// no-plan answer are checked on stubbed output. Spec 47 (A8): the repo's own order script first, else the CLI's
+// bundled copy (run read-only on a plan-only fixture), and an unreadable plan says what happened, never zeros.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,8 +12,8 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
-import { boardFrom, readPlan, specNumbers } from '../server/plan.mjs';
-import { normalizePlan, lanes, specProgress } from '../src/screens/board/model.js';
+import { boardFrom, readPlan, specNumbers, planKitDir, planKitFiles, oneLine } from '../server/plan.mjs';
+import { normalizePlan, lanes, specProgress, subLine, orderMeta } from '../src/screens/board/model.js';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'templates', 'scripts');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -143,20 +144,162 @@ test('boardFrom: a pending chunk shows as just plotted; blocked and held keep wh
   assert.equal(plan.chunks.find((c) => c.id === '05.0').state, 'closed');
 });
 
-test('readPlan: no plan scripts is an answer, not an error; a failing script is a 502', async () => {
+
+// ---- which order script, and an unreadable plan (spec 47, A8) ----------------------------------------------------
+
+/** A kit-shape plan and no plan scripts at all: the board runs the CLI's bundled copy. */
+function planOnlyRepo() {
+  const dir = fixtureRepo();
+  fs.rmSync(path.join(dir, 'scripts'), { recursive: true, force: true });
+  return dir;
+}
+
+/** Every file under .git, relative: the bundled run must leave the list (and the tree) as it found them. */
+function gitFiles(dir) {
+  const out = [];
+  const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) (e.isDirectory() ? walk : (x) => out.push(path.relative(dir, x)))(path.join(d, e.name)); };
+  walk(path.join(dir, '.git'));
+  return out.sort();
+}
+
+test('readPlan: a repo with no order.mjs runs the bundled copy, read-only, and says so', async () => {
+  const dir = planOnlyRepo();
+  const kit = planKitDir();
+  assert.ok(kit, 'a bundled copy (kit/scripts) or the kit templates');
+  const own = fixtureRepo();
+  const want = node(own, ['scripts/plan/order.mjs', '--json']);
+  const before = gitFiles(dir);
+  const status = execFileSync('git', ['status', '--porcelain'], { cwd: dir, encoding: 'utf8' });
+  const board = await readPlan(dir);
+  assert.equal(board.available, true);
+  assert.deepEqual(board.sources.order, { script: "nexus's bundled copy", bundled: true });
+  assert.deepEqual(board.sources.progress, { script: "nexus's bundled copy", bundled: true });
+  assert.deepEqual(board.order, want.next.map((c) => c.id));
+  assert.deepEqual(board.specs.map((s) => s.id), ['09', '07', '11']);
+  assert.equal(board.specs.find((s) => s.id === '07').percent, 33);
+  // nothing written: no ref fetched, no index, no file in the tree
+  assert.deepEqual(gitFiles(dir), before);
+  assert.equal(execFileSync('git', ['status', '--porcelain'], { cwd: dir, encoding: 'utf8' }), status);
+  // the bundled copy's closure carries no claims module and no vault: it can't fetch or write a key
+  const files = planKitFiles(kit);
+  assert.ok(files.includes('plan/order.mjs') && files.includes('plan/progress.mjs') && files.includes('plan-check.mjs'));
+  assert.ok(!files.some((f) => /claims|secrets-vault/.test(f)), files.join(', '));
+  // and the board says which order script it used
+  assert.equal(orderMeta(normalizePlan(board)), "order: nexus's bundled copy");
+});
+
+test('readPlan: the bundled copy runs with --no-vault and without a leaked GIT_*', async () => {
+  const dir = planOnlyRepo();
+  const kit = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-plan-kit-'));
+  fs.mkdirSync(path.join(kit, 'plan'));
+  for (const f of ['order.mjs', 'progress.mjs']) fs.writeFileSync(path.join(kit, 'plan', f), '');
+  const calls = [];
+  const exec = async (cmd, args, opts) => {
+    calls.push({ args, env: opts.env, cwd: opts.cwd });
+    return { ok: true, stdout: args[0].endsWith('order.mjs') ? '{"next":[],"inFlight":[],"blocked":[]}' : '{"specs":[]}' };
+  };
+  const was = process.env.GIT_DIR;
+  process.env.GIT_DIR = path.join(os.tmpdir(), 'not-this-repo');
+  try {
+    const board = await readPlan(dir, { exec, kitDir: kit });
+    assert.equal(board.available, true);
+  } finally {
+    if (was === undefined) delete process.env.GIT_DIR; else process.env.GIT_DIR = was;
+  }
+  const order = calls.find((c) => c.args[0].endsWith('order.mjs'));
+  assert.deepEqual(order.args, [path.join(kit, 'plan', 'order.mjs'), '--json', '--no-vault']);
+  assert.equal(order.cwd, dir);
+  assert.equal(order.env.GIT_DIR, undefined);
+  assert.equal(order.env.GIT_OPTIONAL_LOCKS, '0');
+});
+
+test("readPlan: the repo's own order script is preferred, wherever it keeps it", async () => {
+  const dir = planOnlyRepo();
+  fs.mkdirSync(path.join(dir, 'scripts', 'dev'), { recursive: true });
+  for (const f of ['order.mjs', 'progress.mjs']) fs.writeFileSync(path.join(dir, 'scripts', 'dev', f), '');
+  const calls = [];
+  const exec = async (cmd, args) => {
+    calls.push(args);
+    // a mature repo's own shape: rows whose # is a dash still come out as a plan
+    return { ok: true, stdout: args[0].endsWith('order.mjs') ? JSON.stringify({ next: [{ id: '09.2', spec: '09', lane: 'asap', eta: 1 }], inFlight: [], blocked: [] }) : JSON.stringify({ specs: [{ spec: '09', title: 'Billing', chunks: [{ id: '09.2', title: 'Invoices', size: 'S', state: 'open' }] }] }) };
+  };
+  const board = await readPlan(dir, { exec, kitDir: planKitDir() });
+  assert.deepEqual(calls.find((a) => a[0].endsWith('order.mjs')), ['scripts/dev/order.mjs', '--json']);
+  assert.deepEqual(board.sources.order, { script: 'scripts/dev/order.mjs', bundled: false });
+  assert.deepEqual(board.order, ['09.2']);
+  assert.equal(orderMeta(normalizePlan(board)), 'order: scripts/dev/order.mjs');
+  // the kit's own home is looked at first
+  const fx = fixtureRepo();
+  const kitHome = await readPlan(fx, { exec, kitDir: null });
+  assert.equal(kitHome.sources.order.script, 'scripts/plan/order.mjs');
+});
+
+test('readPlan: no plan is an answer; a failing, non-JSON or shapeless script is unreadable, never zeros', async () => {
   const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-plan-bare-'));
-  const none = await readPlan(bare, { exec: () => assert.fail('no script to run') });
+  const none = await readPlan(bare, { exec: () => assert.fail('no plan to read') });
   assert.equal(none.available, false);
+  assert.equal(none.unreadable, undefined);
   assert.deepEqual(none.specs, []);
+  assert.equal(subLine('bare', normalizePlan(none), false), 'bare · no plan yet · claims expire after 24h unless held');
 
   const dir = fixtureRepo();
   assert.deepEqual(specNumbers(dir), ['07', '09', '11']);
   const calls = [];
-  const exec = async (cmd, args) => {
+  const answer = (order, progress = { ok: true, stdout: '{"specs":[]}' }) => async (cmd, args) => {
     calls.push(args);
-    return args[0].endsWith('order.mjs') ? { ok: false, stdout: '', stderr: 'boom' } : { ok: true, stdout: '{"specs":[]}' };
+    return args[0].endsWith('order.mjs') ? order : progress;
   };
-  await assert.rejects(readPlan(dir, { exec, mark: ['07.2', 'nope; rm', '7'] }), (e) => e.status === 502 && /order\.mjs failed: boom/.test(e.message));
+  // non-zero exit: one line of what it printed, which script ran, the docs
+  const failed = await readPlan(dir, { exec: answer({ ok: false, code: 1, stdout: '', stderr: 'at line 3\nError: plan/README.md: no specs table\n    at x (y.mjs:1:1)\n' }), mark: ['07.2', 'nope; rm', '7'] });
+  assert.equal(failed.available, false);
+  assert.equal(failed.unreadable, true);
+  assert.equal(failed.error, 'scripts/plan/order.mjs failed: Error: plan/README.md: no specs table');
+  assert.equal(failed.script, 'scripts/plan/order.mjs');
+  assert.match(failed.docs, /^https:\/\//);
+  assert.deepEqual(failed.specs, []);
   assert.deepEqual(calls.find((a) => a[0].endsWith('order.mjs')), ['scripts/plan/order.mjs', '--json', '--mark', '07.2']);
   assert.deepEqual(calls.find((a) => a[0].endsWith('progress.mjs')), ['scripts/plan/progress.mjs', '07', '09', '11', '--json']);
+  // the header says so, not "0 specs · 0 chunks"
+  const plan = normalizePlan(failed);
+  assert.equal(subLine('tide', plan, false), 'tide · plan unreadable · claims expire after 24h unless held');
+  assert.equal(subLine('tide', plan, true), 'tide · plan unreadable · you own this checkout');
+  assert.equal(oneLine({ code: 2, stderr: '', stdout: '' }), 'exited 2');
+
+  const badJson = await readPlan(dir, { exec: answer({ ok: true, stdout: 'next up (as /next would pick)\n  1 09.2' }) });
+  assert.equal(badJson.unreadable, true);
+  assert.equal(badJson.error, "scripts/plan/order.mjs printed what isn't JSON: next up (as /next would pick)");
+
+  const shapeless = await readPlan(dir, { exec: answer({ ok: true, stdout: '{"chunks":[]}' }) });
+  assert.equal(shapeless.unreadable, true);
+  assert.match(shapeless.error, /^scripts\/plan\/order\.mjs printed JSON that isn't a plan/);
+
+  const progressBad = await readPlan(dir, { exec: answer({ ok: true, stdout: '{"next":[]}' }, { ok: false, code: 1, stderr: 'boom' }) });
+  assert.equal(progressBad.unreadable, true);
+  assert.equal(progressBad.script, 'scripts/plan/progress.mjs');
+  assert.equal(progressBad.error, 'scripts/plan/progress.mjs failed: boom');
+
+  // no script of its own and no bundled copy to run
+  const lone = await readPlan(planOnlyRepo(), { exec: () => assert.fail('nothing to run'), kitDir: null });
+  assert.equal(lone.unreadable, true);
+  assert.match(lone.error, /^No order\.mjs and progress\.mjs to run/);
+
+  // a plan that read fine with no specs keeps the empty plan, counted
+  const empty = await readPlan(dir, { exec: answer({ ok: true, stdout: '{"next":[],"inFlight":[],"blocked":[]}' }) });
+  assert.equal(empty.available, true);
+  assert.equal(subLine('tide', normalizePlan(empty), false), 'tide · 0 specs · 0 chunks · 0 closed · claims expire after 24h unless held');
+});
+
+test('GET /api/plan: an unreadable plan answers 200 with what happened', async () => {
+  const dir = fixtureRepo();
+  fs.writeFileSync(path.join(dir, 'scripts', 'plan', 'order.mjs'), "console.error('Error: this plan has no table'); process.exit(3);\n");
+  const app = await startServer({ repo: dir, provider: { kind: 'fake', send() {}, async interrupt() {}, async stop() {}, async fresh() {} }, pollRuns: false, dist: NO_DIST });
+  try {
+    const { status, body } = await get(app, '/api/plan');
+    assert.equal(status, 200);
+    assert.equal(body.unreadable, true);
+    assert.equal(body.error, 'scripts/plan/order.mjs failed: Error: this plan has no table');
+    assert.equal(body.script, 'scripts/plan/order.mjs');
+  } finally {
+    await app.close();
+  }
 });

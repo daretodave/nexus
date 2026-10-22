@@ -72,6 +72,9 @@ export function normalizePlan(plan) {
   return {
     repo: plan.repo || '', ownerName: plan.ownerName || '', protected: !!plan.protected,
     specs, chunks: all, order, planPr: plan.planPr || null,
+    // Whether the plan read at all (spec 47, A8): no plan yet, or unreadable (error, the script that ran, docs).
+    available: plan.available !== false, unreadable: !!plan.unreadable,
+    error: plan.error || '', script: plan.script || null, docs: plan.docs || null, sources: plan.sources || null,
   };
 }
 
@@ -268,12 +271,23 @@ export function specProgress(list, spec) {
   return { total, done, pct, text: total ? `${done} of ${total}` : 'no chunks yet' };
 }
 
-/** The view's sub line: "tidepool · 4 specs · 18 chunks · 6 closed · claims expire after 24h unless held". */
+/**
+ * The view's sub line: "tidepool · 4 specs · 18 chunks · 6 closed · claims expire after 24h unless held". A plan that
+ * didn't read says so ("plan unreadable", "no plan yet"), never "0 specs · 0 chunks".
+ */
 export function subLine(repo, plan, owner) {
+  const tail = owner ? 'you own this checkout' : 'claims expire after 24h unless held';
+  if (plan.unreadable) return [repo, 'plan unreadable', tail].filter(Boolean).join(' · ');
+  if (plan.available === false) return [repo, 'no plan yet', tail].filter(Boolean).join(' · ');
   const closed = plan.chunks.filter((c) => c.state === 'closed').length;
   const n = (k, w) => `${k} ${w}${k === 1 ? '' : 's'}`;
-  const tail = owner ? 'you own this checkout' : 'claims expire after 24h unless held';
   return [repo, n(plan.specs.length, 'spec'), n(plan.chunks.length, 'chunk'), `${closed} closed`, tail].filter(Boolean).join(' · ');
+}
+
+/** Which order script the board read: "order: scripts/plan/order.mjs", "order: nexus's bundled copy"; null when unknown. */
+export function orderMeta(plan) {
+  const s = plan?.sources?.order?.script || plan?.script;
+  return s ? `order: ${s}` : null;
 }
 
 // ---- the claims rail ------------------------------------------------------------
