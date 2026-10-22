@@ -15,6 +15,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { run } from './sh.mjs';
 import { ANNOUNCE_SCRIPTS, findScript } from './repo.mjs';
+import { summarize } from './normalize.mjs';
 
 export const LEDGERS = '.nexus/sessions';
 export const STALE_MIN = 15;
@@ -70,7 +71,8 @@ export function ledgerStatus(l, now = Date.now(), staleMin = STALE_MIN) {
   return Number.isFinite(beat) && now - beat <= staleMin * 60000 ? 'live' : 'fallen';
 }
 
-function tailJson(file, bytes = 16384) {
+/** The last `bytes` of a session file as parsed lines, in file order (a cut first line is dropped). */
+export function tailEntries(file, bytes = 262144) {
   try {
     const fd = fs.openSync(file, 'r');
     try {
@@ -78,20 +80,109 @@ function tailJson(file, bytes = 16384) {
       const len = Math.min(size, bytes);
       const buf = Buffer.alloc(len);
       fs.readSync(fd, buf, 0, len, size - len);
-      const lines = buf.toString('utf8').split('\n').filter((l) => l.trim());
-      for (let i = lines.length - 1; i >= 0; i--) {
-        try { return JSON.parse(lines[i]); } catch { /* a partial first line */ }
+      const out = [];
+      for (const l of buf.toString('utf8').split('\n')) {
+        if (!l.trim()) continue;
+        try { out.push(JSON.parse(l)); } catch { /* a partial first line */ }
       }
+      return out;
     } finally {
       fs.closeSync(fd);
     }
   } catch {
-    /* unreadable */
+    return [];
   }
-  return null;
 }
 
-/** Claude Code sessions written to within the stale window, for these folders: [{ id, cwd, branch, at, file }]. */
+const oneLine = (t, max = 200) => {
+  const line = String(t || '').split(/\r?\n/).map((l) => l.trim()).find(Boolean) || '';
+  return line.length > max ? `${line.slice(0, max - 3)}...` : line;
+};
+
+/** A typed prompt's words: a slash command as `/name args`, else its first line; '' for a tool result or a hook's note. */
+export function promptText(content) {
+  const text = typeof content === 'string' ? content
+    : Array.isArray(content) ? content.filter((b) => b && b.type === 'text').map((b) => b.text).join('\n') : '';
+  if (!text) return '';
+  const cmd = /<command-name>\s*([^<]+?)\s*<\/command-name>/.exec(text);
+  if (cmd) {
+    const args = /<command-args>\s*([^<]*?)\s*<\/command-args>/.exec(text);
+    const name = cmd[1].startsWith('/') ? cmd[1] : `/${cmd[1]}`;
+    return oneLine(args && args[1] ? `${name} ${args[1]}` : name);
+  }
+  if (/^\s*</.test(text) || /^\[Request interrupted/.test(text)) return '';
+  return oneLine(text);
+}
+
+/**
+ * What a Claude Code session file says of its session, read from its tail (newest last):
+ *   turn        'working' while a turn runs (a prompt or a tool result awaits the model, or a tool call its result),
+ *               'idle' once the main thread's last word ended its turn; null when the tail cannot tell
+ *   last        the main thread's last word: { kind: 'text', text, at } or { kind: 'tool', tool, arg, at }
+ *   lastPrompt  the last prompt typed (a slash command as `/plot peek`)
+ *   cwd, branch where it worked last
+ * Subagent (sidechain) lines never move the turn or the last word.
+ */
+export function sessionActivity(entries = []) {
+  let turn = null;
+  let last = null;
+  let lastPrompt = '';
+  let cwd = '';
+  let branch = '';
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const e = entries[i];
+    if (!e || typeof e !== 'object') continue;
+    if (!cwd && e.cwd) cwd = e.cwd;
+    if (!branch && e.gitBranch) branch = e.gitBranch;
+    if (!lastPrompt && e.type === 'last-prompt' && e.lastPrompt) lastPrompt = promptText(e.lastPrompt);
+    if (e.isSidechain) continue;
+    const content = e.message?.content;
+    if (e.type === 'user') {
+      const words = promptText(content);
+      const interrupted = /\[Request interrupted/.test(typeof content === 'string' ? content : JSON.stringify(content || ''));
+      if (turn == null && !e.isMeta) turn = interrupted ? 'idle' : 'working';
+      if (!lastPrompt && words && !e.isMeta) lastPrompt = words;
+    } else if (e.type === 'assistant') {
+      const stop = e.message?.stop_reason;
+      if (turn == null) turn = stop === 'end_turn' || stop === 'stop_sequence' ? 'idle' : 'working';
+      if (!last && Array.isArray(content)) {
+        for (let j = content.length - 1; j >= 0 && !last; j--) {
+          const b = content[j];
+          if (b?.type === 'text' && oneLine(b.text)) last = { kind: 'text', text: oneLine(b.text), at: e.timestamp || null };
+          else if (b?.type === 'tool_use') last = { kind: 'tool', tool: b.name || 'tool', arg: summarize(b.name, b.input || {}), at: e.timestamp || null };
+        }
+      }
+    } else if (e.type === 'system' && e.subtype === 'turn_duration' && turn == null) {
+      turn = 'idle';
+    }
+    if (turn != null && last && lastPrompt && cwd && branch) break;
+  }
+  return { turn, last, lastPrompt, cwd, branch };
+}
+
+/**
+ * The same for a session this server runs, from its hub's transcript and its state: working while a turn runs or a
+ * prompt waits, idle else.
+ */
+export function transcriptActivity(transcript = [], { busy = false, held = 0 } = {}) {
+  let last = null;
+  let lastPrompt = '';
+  for (let i = transcript.length - 1; i >= 0 && (!last || !lastPrompt); i--) {
+    const t = transcript[i];
+    if (!t) continue;
+    const main = !t.agent || t.agent === 'main';
+    if (!last && main && t.kind === 'text' && oneLine(t.text)) last = { kind: 'text', text: oneLine(t.text), at: t.at ?? null };
+    else if (!last && main && t.kind === 'tool') last = { kind: 'tool', tool: t.name || 'tool', arg: oneLine(t.summary || '', 140), at: t.at ?? null };
+    else if (!lastPrompt && t.kind === 'user') lastPrompt = promptText(t.text);
+  }
+  const norm = (x) => (x && x.at != null && typeof x.at === 'number' ? { ...x, at: new Date(x.at).toISOString() } : x);
+  return { turn: busy || held > 0 ? 'working' : 'idle', last: norm(last), lastPrompt };
+}
+
+/**
+ * Claude Code sessions written to within the stale window, for these folders:
+ * [{ id, cwd, branch, at, file, turn, last, lastPrompt }] (sessionActivity of each file's tail).
+ */
 export function claudeSessions(dirs, { home = claudeHome(), now = Date.now(), staleMin = STALE_MIN } = {}) {
   const out = [];
   for (const dir of dirs) {
@@ -107,8 +198,11 @@ export function claudeSessions(dirs, { home = claudeHome(), now = Date.now(), st
       let st;
       try { st = fs.statSync(file); } catch { continue; }
       if (now - st.mtimeMs > staleMin * 60000) continue;
-      const last = tailJson(file) || {};
-      out.push({ id: f.slice(0, -'.jsonl'.length), cwd: last.cwd || dir, branch: last.gitBranch || '', at: new Date(st.mtimeMs).toISOString(), file });
+      const a = sessionActivity(tailEntries(file));
+      out.push({
+        id: f.slice(0, -'.jsonl'.length), cwd: a.cwd || dir, branch: a.branch || '', at: new Date(st.mtimeMs).toISOString(), file,
+        turn: a.turn, last: a.last, lastPrompt: a.lastPrompt,
+      });
     }
   }
   return out;
@@ -121,6 +215,25 @@ export function parkedItem(p) {
   const alts = (p.alts || p.options || []).map((o) => (typeof o === 'string' ? o : o?.label || '')).filter(Boolean);
   const def = p.default != null ? String(p.default) : null;
   return { ...p, q: p.q || p.question || p.text || '', alts: def && !alts.includes(def) ? [def, ...alts] : alts, state: p.state || 'pending' };
+}
+
+const TRUNKS = new Set(['', 'main', 'master', 'trunk', 'develop', 'HEAD']);
+const samePath = (a, b) => !!a && !!b && path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
+
+/** Does a session file work where a ledger says its session works: the same worktree, or the same session branch? */
+export function samePlace(l, c) {
+  if (l.worktree && samePath(l.worktree, c.cwd)) return true;
+  return !!l.branch && !TRUNKS.has(l.branch) && l.branch === c.branch;
+}
+
+/** The activity fields a row carries (sessionActivity / transcriptActivity), only those known. */
+function activityFields(a) {
+  if (!a) return {};
+  const out = {};
+  if (a.turn) out.turn = a.turn;
+  if (a.last) out.last = a.last;
+  if (a.lastPrompt) out.lastPrompt = a.lastPrompt;
+  return out;
 }
 
 const FLEET_STATE = { live: 'live', fallen: 'fallen', parked: 'paused', resuming: 'resuming', resumed: 'resumed', ended: 'closed' };
@@ -137,8 +250,16 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
     if (status === 'ended' || status === 'resumed') continue;
     byId.set(l.id, { ledger: l, status, claude: null });
   }
+  // A session file joins its ledger by id first; one left over joins the ledger that works where it works (the same
+  // worktree, or the same session branch), so a session whose ledger is keyed by its claims id is still one row.
+  const rest = [];
   for (const c of claude) {
     const hit = [...byId.values()].find((s) => s.ledger && (s.ledger.id === c.id || s.ledger.claude === c.id));
+    if (hit) hit.claude = c;
+    else rest.push(c);
+  }
+  for (const c of rest) {
+    const hit = [...byId.values()].find((s) => s.ledger && !s.claude && samePlace(s.ledger, c));
     if (hit) hit.claude = c;
     else byId.set(c.id, { ledger: null, status: 'live', claude: c });
   }
@@ -164,6 +285,8 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
       live: s.status === 'live' || !!s.claude,
       held: HELD.has(l.state),
       sources: [s.ledger ? 'ledger' : null, s.claude ? 'claude' : null].filter(Boolean),
+      ...(l.claims ? { claimsSession: String(l.claims) } : {}),
+      ...activityFields(s.claude),
     });
   }
   return out.sort((a, b) => String(b.beat || '').localeCompare(String(a.beat || '')));
@@ -172,13 +295,37 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
 /**
  * The list with the sessions this server runs folded in: each is local, steered through the SDK, linked and live
  * (paused when paused), whatever its ledger's beat says; one started from the GUI shows before its ledger or session
- * file does. `hosted`: [{ id, claude, name, place: { worktree, branch }, listed, pause: { state }, at }].
+ * file does. `hosted`: [{ id, claude, name, place: { worktree, branch }, listed, pause: { state }, at, activity }]
+ * (`activity`: transcriptActivity of its stream).
  */
 export function withHosted(list, hosted = [], repoName = '') {
-  const out = list.map((s) => ({ ...s }));
+  let out = list.map((s) => ({ ...s }));
   for (const h of hosted) {
     const names = [h.id, h.claude].filter(Boolean);
-    let row = out.find((s) => names.includes(s.id) || names.includes(s.claude));
+    // Its ledger's row (keyed by its id) and its session file's row (keyed by its Claude Code id) are one session:
+    // one row, under its ledger's id when it has one (the id its cockpit and its claims know).
+    const hits = out.filter((s) => names.includes(s.id) || names.includes(s.claude));
+    let row = hits.find((s) => s.id === h.id) || hits[0];
+    if (hits.length > 1) {
+      for (const o of hits) {
+        if (o === row) continue;
+        Object.assign(row, {
+          beat: [row.beat, o.beat].filter(Boolean).sort().pop() || null,
+          git: { ...o.git, ...Object.fromEntries(Object.entries(row.git || {}).filter(([, v]) => v)) },
+          chunk: row.chunk || o.chunk || null,
+          parked: Math.max(row.parked || 0, o.parked || 0),
+          held: !!(row.held || o.held),
+          sources: [...new Set([...(row.sources || []), ...(o.sources || [])])],
+          ...(!row.claimsSession && o.claimsSession ? { claimsSession: o.claimsSession } : {}),
+          ...(!row.last && o.last ? { last: o.last } : {}),
+          ...(!row.lastPrompt && o.lastPrompt ? { lastPrompt: o.lastPrompt } : {}),
+          ...(!row.turn && o.turn ? { turn: o.turn } : {}),
+        });
+        if (row.state === 'fallen' && o.state !== 'fallen') row.state = o.state;
+      }
+      out = out.filter((s) => s === row || !hits.includes(s));
+    }
+    if (row && h.claude) row.claude = h.claude;
     if (!row) {
       if (!h.listed && !h.claude) continue;
       row = { id: h.id, claude: h.claude || h.id, name: h.name || h.id.slice(0, 8), repo: repoName, chunk: null, parked: 0, beat: h.at || null, git: { branch: h.place?.branch || '', worktree: h.place?.worktree || '' }, held: true, sources: [] };
@@ -196,7 +343,10 @@ export function withHosted(list, hosted = [], repoName = '') {
       pause: h.pause?.state || 'run',
       sources: [...new Set([...(row.sources || []), 'server'])],
     });
+    // The server knows whether its own session runs a turn: that, not the file's tail, says working or idle.
+    if (h.activity) Object.assign(row, activityFields({ ...h.activity, last: h.activity.last || row.last, lastPrompt: h.activity.lastPrompt || row.lastPrompt }));
     if (!row.git?.worktree && h.place?.worktree) row.git = { ...row.git, worktree: h.place.worktree, branch: row.git?.branch || h.place.branch || '' };
+    if (!row.git?.branch && h.place?.branch) row.git = { ...row.git, branch: h.place.branch };
   }
   return out.sort((a, b) => String(b.beat || '').localeCompare(String(a.beat || '')));
 }

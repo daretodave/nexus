@@ -11,7 +11,7 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from '../server/server.mjs';
-import { claudeSlug, dropParked, mergeSessions, parkedAnswer, parkedItem } from '../server/sessions.mjs';
+import { claudeSlug, dropParked, mergeSessions, parkedAnswer, parkedItem, promptText, samePlace, sessionActivity, transcriptActivity, withHosted } from '../server/sessions.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -210,4 +210,100 @@ test('an answer to a parked session waits for the session that resumes it, and s
     fs.rmSync(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
     fs.rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
+});
+
+// ---- spec 47 A10: sessions are honest --------------------------------------------------------------------------
+
+const at = (m) => new Date(NOW - m * 60000).toISOString();
+const asst = (blocks, stop = null, extra = {}) => ({ type: 'assistant', timestamp: at(1), cwd: '/w/vega-1', gitBranch: 'nexus/vega-1', message: { content: blocks, stop_reason: stop }, ...extra });
+const user = (content, extra = {}) => ({ type: 'user', timestamp: at(1), message: { content }, ...extra });
+
+test('a session file says idle once its turn ended, working while a tool or a prompt waits', () => {
+  const ended = sessionActivity([
+    user('<command-name>/plot</command-name>\n<command-args>peek</command-args>'),
+    asst([{ type: 'tool_use', name: 'Bash', input: { command: 'node scripts/plan/order.mjs' } }], 'tool_use'),
+    user([{ type: 'tool_result', tool_use_id: 't1', content: 'ok' }]),
+    asst([{ type: 'text', text: '**Peek:** the plan has 3 ready chunks.\nMore below.' }], 'end_turn'),
+    { type: 'system', subtype: 'turn_duration', durationMs: 900 },
+    { type: 'cost-state', totalCostUSD: 1 },
+  ]);
+  assert.equal(ended.turn, 'idle');
+  assert.deepEqual(ended.last, { kind: 'text', text: '**Peek:** the plan has 3 ready chunks.', at: at(1) });
+  assert.equal(ended.lastPrompt, '/plot peek');
+  assert.equal(ended.branch, 'nexus/vega-1', 'the branch comes from the last line that has one, not the very last line');
+
+  const tool = sessionActivity([user('build it'), asst([{ type: 'text', text: 'On it.' }, { type: 'tool_use', name: 'Read', input: { file_path: 'src/a.js' } }], 'tool_use')]);
+  assert.equal(tool.turn, 'working');
+  assert.deepEqual(tool.last, { kind: 'tool', tool: 'Read', arg: 'src/a.js', at: at(1) });
+  assert.equal(tool.lastPrompt, 'build it');
+
+  assert.equal(sessionActivity([asst([{ type: 'tool_use', name: 'Bash', input: {} }], 'tool_use'), user([{ type: 'tool_result', content: 'x' }])]).turn, 'working');
+  assert.equal(sessionActivity([asst([{ type: 'text', text: 'hi' }], 'end_turn'), user('[Request interrupted by user]')]).turn, 'idle');
+  // A subagent's lines never move the main thread's turn or last word.
+  const side = sessionActivity([asst([{ type: 'text', text: 'Main done.' }], 'end_turn'), asst([{ type: 'tool_use', name: 'Grep', input: { pattern: 'x' } }], 'tool_use', { isSidechain: true })]);
+  assert.equal(side.turn, 'idle');
+  assert.equal(side.last.text, 'Main done.');
+  assert.deepEqual(sessionActivity([]), { turn: null, last: null, lastPrompt: '', cwd: '', branch: '' });
+  assert.equal(promptText('<local-command-stdout>x</local-command-stdout>'), '');
+});
+
+test('a hosted session reads idle from its own state, its last word from its stream', () => {
+  const tx = [
+    { kind: 'user', text: '/plot peek', at: NOW - 5000 },
+    { kind: 'tool', name: 'Bash', summary: 'node scripts/plan/order.mjs', agent: 'main', at: NOW - 4000 },
+    { kind: 'tool', name: 'Grep', summary: 'deep', agent: 'toolu_sub', at: NOW - 3500 },
+    { kind: 'text', text: 'Done: nothing to plot.', agent: 'main', at: NOW - 3000 },
+  ];
+  const idle = transcriptActivity(tx, { busy: false, held: 0 });
+  assert.equal(idle.turn, 'idle');
+  assert.deepEqual(idle.last, { kind: 'text', text: 'Done: nothing to plot.', at: new Date(NOW - 3000).toISOString() });
+  assert.equal(idle.lastPrompt, '/plot peek');
+  assert.equal(transcriptActivity(tx, { busy: true }).turn, 'working');
+  assert.equal(transcriptActivity([], { held: 1 }).turn, 'working', 'a prompt held for a paused session is work queued');
+  assert.deepEqual(transcriptActivity(tx.slice(0, 3), {}).last, { kind: 'tool', tool: 'Bash', arg: 'node scripts/plan/order.mjs', at: new Date(NOW - 4000).toISOString() });
+});
+
+test('one session is one row: its ledger, its session file and the server that runs it', () => {
+  const C = 'cccc4444-0000-4000-8000-000000000004';
+  const beat = at(1);
+  // The ledger is keyed by the claims id the server gave it; the session file by its Claude Code id.
+  const ledgers = [{ id: '1a2b3c4d', star: 'vega', state: 'live', beat, claims: '1a2b3c4d', worktree: '/w/.nexus-wt/vega-1', branch: 'nexus/vega-1', chunk: '47.11' }];
+  const claude = [{ id: C, cwd: '/w/.nexus-wt/vega-1', branch: 'nexus/vega-1', at: beat, turn: 'idle', last: { kind: 'text', text: 'Done.' }, lastPrompt: '/plot peek' }];
+  const merged = mergeSessions({ ledgers, claude, gui: ['1a2b3c4d', C], now: NOW });
+  assert.equal(merged.length, 1, 'joined by where it works');
+  assert.equal(merged[0].claimsSession, '1a2b3c4d');
+  assert.equal(merged[0].last.text, 'Done.');
+  // Even when the merge by place can't tell (a file from somewhere else), the server's own pair joins them.
+  const apart = mergeSessions({ ledgers, claude: [{ ...claude[0], cwd: '/elsewhere', branch: 'main' }], gui: ['1a2b3c4d', C], now: NOW });
+  assert.equal(apart.length, 2);
+  const one = withHosted(apart, [{ id: '1a2b3c4d', claude: C, name: 'vega', place: { worktree: '/w/.nexus-wt/vega-1', branch: 'nexus/vega-1' }, listed: true, pause: { state: 'run' }, activity: { turn: 'idle', last: null, lastPrompt: '' } }], 'repo');
+  assert.equal(one.length, 1);
+  assert.equal(one[0].id, '1a2b3c4d', 'the ledger id stays: the cockpit and the claims know it');
+  assert.equal(one[0].claude, C);
+  assert.equal(one[0].name, 'vega');
+  assert.equal(one[0].turn, 'idle');
+  assert.equal(one[0].last.text, 'Done.', 'the file\'s last word stands in when the stream has none');
+  assert.equal(one[0].git.branch, 'nexus/vega-1');
+  assert.deepEqual(one[0].sources.sort(), ['claude', 'ledger', 'server']);
+  // A trunk branch alone never joins two sessions.
+  assert.equal(samePlace({ branch: 'main' }, { branch: 'main', cwd: '/r' }), false);
+  assert.equal(samePlace({ branch: 'nexus/rigel-2' }, { branch: 'nexus/rigel-2', cwd: '/x' }), true);
+});
+
+
+test('a hosted session keeps its star and branch once it idles past its file and its ledger', () => {
+  // Idle past the stale window: no session file; its ledger ended. The server still runs it.
+  const place = { worktree: '/w/.nexus-wt/sirius-1', branch: 'nexus/sirius-1' };
+  const activity = { turn: 'idle', last: { kind: 'text', text: 'All done.' }, lastPrompt: '/plot peek' };
+  const out = withHosted([], [{ id: '1245bca0', claude: 'dddd', name: 'sirius', place, listed: true, pause: { state: 'run' }, activity }], 'repo');
+  assert.equal(out.length, 1);
+  assert.equal(out[0].name, 'sirius');
+  assert.equal(out[0].git.branch, 'nexus/sirius-1');
+  assert.equal(out[0].turn, 'idle');
+  assert.equal(out[0].lastPrompt, '/plot peek');
+  // A ledger row with no branch of its own takes the server's.
+  const row = { id: '1245bca0', claude: '1245bca0', name: 'sirius', state: 'fallen', git: { branch: '', worktree: '' }, sources: ['ledger'] };
+  const led = withHosted([row], [{ id: '1245bca0', claude: 'dddd', name: 'sirius', place: { worktree: '/w/s', branch: 'nexus/sirius-1' }, listed: true, pause: { state: 'run' } }], 'repo');
+  assert.equal(led[0].git.branch, 'nexus/sirius-1');
+  assert.equal(led[0].state, 'live');
 });

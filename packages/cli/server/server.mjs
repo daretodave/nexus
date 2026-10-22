@@ -19,7 +19,7 @@ import { landReorder } from './reorder.mjs';
 import { createSummaries } from './summaries.mjs';
 import { explode, plotPrompt, plotRequest } from './explode.mjs';
 import { addWorkflow, saveSchedule } from './cloud.mjs';
-import { createSteering, primaryRoot, readLedgers, parkedItem, withHosted } from './sessions.mjs';
+import { createSteering, primaryRoot, readLedgers, parkedItem, transcriptActivity, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
 import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
 import { createGitView } from './git.mjs';
@@ -108,7 +108,10 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   const provider = home.provider;
   /** The hosted session `key` names (id, Claude Code session id or star; none or `main`: home), or null. */
   const sessionOf = (key) => (!key || key === 'main' ? home : [...sessions.values()].find((s) => s.is(String(key))) || null);
-  const hostedRows = () => [...sessions.values()].map((s) => ({ id: s.id, claude: s.claude, name: s.name, place: s.place, listed: s.listed, pause: s.pause, at: s.at }));
+  const hostedRows = () => [...sessions.values()].map((s) => ({
+    id: s.id, claude: s.claude, name: s.name, place: s.place, listed: s.listed, pause: s.pause, at: s.at,
+    activity: transcriptActivity(s.hub.transcript, { busy: s.busy, held: s.pause.held }),
+  }));
   // A session this server does not run (a terminal one) gets a quiet channel: a hello with nothing in it, never
   // another session's stream.
   const elsewhere = createHub({ mask });
