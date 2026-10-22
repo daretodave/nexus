@@ -36,14 +36,12 @@ while releasing `@usenexus/cli` 0.4.0:
 ## Acceptance
 
 - **A1** `npm test` in packages/cli passes three full runs in a row on Windows with no retries.
-- **A2** A ledger resumed by `/reboot-resume` in a new session records its runner, and Fleet shows one tile for it.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 2 open · 0 closed · next A3
+Measure: 1 open · 1 closed · next A3
 
 - [ ] **48.1** The CLI suite holds under a full run on Windows · S · closes A1 · needs —
-- [ ] **48.2** A resumed ledger names its runner; Fleet shows one tile · S · closes A2 · needs —

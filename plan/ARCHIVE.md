@@ -162,3 +162,4 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 47.15 · The plot session onboarding starts asks you on every step · d58b1ad8..f4474b07
 - 2026-10-22 · 47.4 · Onboarding fits an adopted repo: version, spec number, orbs · d58b1ad8..f4474b07
 - 2026-10-22 · 47 · spec complete: the GUI reads a mature adopter truthfully and every onboarding button does what it says: explode, plot, cloud workflow and schedule, vault states, markdown and highlighted commands, the /plot card, real questions in Oversight, the Plan board on any repo, folded claims, honest Fleet tiles, reorders that land, a cockpit that opens at once, a composer that suggests instead of prefixing; GUI commits run the repo's hooks safely · 6a2292f..f4474b07
+- 2026-10-22 · 48.2 · A resumed ledger names its runner; Fleet shows one tile · 85550dfe..be511c49
