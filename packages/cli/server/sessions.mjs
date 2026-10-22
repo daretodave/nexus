@@ -236,6 +236,15 @@ function activityFields(a) {
   return out;
 }
 
+/** Does this session (a Claude Code id, or a claims id) run the ledger it took (`runner`: its claims id, cut to 8)? */
+export function runBy(l, id) {
+  const r = typeof l?.runner === 'string' ? l.runner : '';
+  return !!r && !!id && (r === id || r === String(id).slice(0, 8));
+}
+
+// A taken ledger its runner's live file joined reads live: resuming (before its first beat) or resumed (after `done`).
+const RUN_LIVE = new Set(['resuming', 'resumed']);
+
 const FLEET_STATE = { live: 'live', fallen: 'fallen', parked: 'paused', resuming: 'resuming', resumed: 'resumed', ended: 'closed' };
 
 /**
@@ -247,17 +256,28 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
   const byId = new Map();
   for (const l of ledgers) {
     const status = ledgerStatus(l, now);
-    if (status === 'ended' || status === 'resumed') continue;
-    byId.set(l.id, { ledger: l, status, claude: null });
+    if (status === 'ended') continue;
+    // A resumed ledger shows only through the session that runs it (its `runner`), and only while that one is live.
+    if (status === 'resumed' && !l.runner) continue;
+    byId.set(l.id, { ledger: l, status, claude: null, onlyRun: status === 'resumed' });
   }
-  // A session file joins its ledger by id first; one left over joins the ledger that works where it works (the same
-  // worktree, or the same session branch), so a session whose ledger is keyed by its claims id is still one row.
+  // A session file joins the ledger it runs first (`runner`, its claims id: ledger.mjs take, so a `/reboot-resume`
+  // takeover is the ledger's tile wherever it works, main included), then its own ledger by id; one left over joins the
+  // ledger that works where it works (the same worktree, or the same session branch), so a session whose ledger is
+  // keyed by its claims id is still one row.
   const rest = [];
   for (const c of claude) {
+    const run = [...byId.values()].find((s) => s.ledger && !s.claude && runBy(s.ledger, c.id));
+    if (run) {
+      run.claude = c;
+      run.byRunner = true;
+      continue;
+    }
     const hit = [...byId.values()].find((s) => s.ledger && (s.ledger.id === c.id || s.ledger.claude === c.id));
     if (hit) hit.claude = c;
     else rest.push(c);
   }
+  for (const [id, s] of byId) if (s.onlyRun && !s.claude) byId.delete(id);
   for (const c of rest) {
     const hit = [...byId.values()].find((s) => s.ledger && !s.claude && samePlace(s.ledger, c));
     if (hit) hit.claude = c;
@@ -266,15 +286,17 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
   const out = [];
   for (const [id, s] of byId) {
     const l = s.ledger || {};
-    const claudeId = l.claude || s.claude?.id || id;
+    // A row its runner's file joined steers that session (the ledger's own `claude` is the session that stopped).
+    const claudeId = s.byRunner ? s.claude.id : l.claude || s.claude?.id || id;
     const isGui = guis.includes(id) || guis.includes(claudeId);
     const parked = (Array.isArray(l.parked) ? l.parked : []).map(parkedItem).filter((p) => p.state === 'pending');
+    const running = s.claude && (s.status === 'fallen' || (s.byRunner && RUN_LIVE.has(s.status)));
     out.push({
       id,
       claude: claudeId,
       name: l.star || id.slice(0, 8),
       kind: isGui ? 'local' : 'terminal',
-      state: s.status === 'fallen' && s.claude ? 'live' : FLEET_STATE[s.status] || 'live',
+      state: running ? 'live' : FLEET_STATE[s.status] || 'live',
       repo: repoName,
       chunk: l.chunk ? { id: String(l.chunk), step: l.step || '' } : null,
       parked: parked.length,
@@ -283,9 +305,10 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
       linked: isGui || linked.has(id),
       steer: isGui ? 'sdk' : 'hook',
       live: s.status === 'live' || !!s.claude,
-      held: HELD.has(l.state),
+      held: HELD.has(l.state) || !!s.byRunner,
       sources: [s.ledger ? 'ledger' : null, s.claude ? 'claude' : null].filter(Boolean),
       ...(l.claims ? { claimsSession: String(l.claims) } : {}),
+      ...(l.runner ? { runner: String(l.runner) } : {}),
       ...activityFields(s.claude),
     });
   }

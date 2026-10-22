@@ -291,6 +291,38 @@ test('one session is one row: its ledger, its session file and the server that r
 });
 
 
+test('a ledger taken by /reboot-resume is one tile with the session that runs it, even on main', () => {
+  const E = 'e05dfd1c-0000-4000-8000-000000000005';
+  const old = 'c5b0f488-0000-4000-8000-000000000006';
+  const file = { id: E, cwd: '/r', branch: 'main', at: at(1), turn: 'working', last: { kind: 'tool', tool: 'Agent', arg: 'Build 60.10' } };
+  const taken = { id: old, star: 'sirius', state: 'resuming', beat: at(40), claude: old, claims: 'c5b0f488', branch: 'main', chunk: '60.10', step: 'building', runner: 'e05dfd1c', runnerSince: at(2) };
+  const one = mergeSessions({ ledgers: [taken], claude: [file], now: NOW });
+  assert.equal(one.length, 1, 'the takeover and its ledger are one tile');
+  assert.equal(one[0].id, old);
+  assert.equal(one[0].name, 'sirius');
+  assert.deepEqual(one[0].chunk, { id: '60.10', step: 'building' });
+  assert.equal(one[0].claude, E, 'steering reaches the runner, not the session that stopped');
+  assert.equal(one[0].state, 'live');
+  assert.equal(one[0].live, true);
+  assert.equal(one[0].held, true);
+  assert.equal(one[0].runner, 'e05dfd1c');
+  assert.equal(one[0].last.arg, 'Build 60.10', 'the runner\'s live activity');
+  assert.deepEqual(one[0].sources.sort(), ['claude', 'ledger']);
+  // After `done` the ledger reads resumed: still the runner's tile while its file is live, gone once it is not.
+  const done = { ...taken, state: 'resumed', beat: at(1) };
+  assert.equal(mergeSessions({ ledgers: [done], claude: [file], now: NOW }).length, 1);
+  assert.equal(mergeSessions({ ledgers: [done], claude: [file], now: NOW })[0].state, 'live');
+  assert.equal(mergeSessions({ ledgers: [done], claude: [], now: NOW }).length, 0);
+  // Its runner's beats made it live again: the same one tile.
+  const beating = mergeSessions({ ledgers: [{ ...taken, state: 'live', beat: at(1) }], claude: [file], now: NOW });
+  assert.equal(beating.length, 1);
+  assert.equal(beating[0].state, 'live');
+  // A runner named by a whole NEXUS_SESSION id matches whole; another session's file stays its own tile.
+  assert.equal(mergeSessions({ ledgers: [{ ...taken, runner: E }], claude: [file], now: NOW }).length, 1);
+  assert.equal(mergeSessions({ ledgers: [{ ...taken, runner: 'ffff0000' }], claude: [file], now: NOW }).length, 2);
+  assert.equal(mergeSessions({ ledgers: [{ ...taken, runner: undefined }], claude: [file], now: NOW }).length, 2, 'no runner, on main: still split');
+});
+
 test('a hosted session keeps its star and branch once it idles past its file and its ledger', () => {
   // Idle past the stale window: no session file; its ledger ended. The server still runs it.
   const place = { worktree: '/w/.nexus-wt/sirius-1', branch: 'nexus/sirius-1' };
