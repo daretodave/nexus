@@ -182,3 +182,5 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 51.2 · Images reach the session: attach, paste, drop · 80d0a5d5..4009b6ec
 - 2026-10-22 · 51.1 · Answers save as typed and send as given · d66d4192..c53c8a1c
 - 2026-10-22 · 51 · spec complete: answers save as typed and send as given (drafts survive leaving; a live ask sends from its first answer, the rest at their defaults) and images reach the session as images (attach, paste, drop) · dee2ca1..c53c8a1
+- 2026-10-22 · 52.1 · Onboarding adopts before it plots · 0d33dfe7..0d6228e1
+- 2026-10-22 · 52.4 · Tool rows fit their names; more tool icons · 326ad0d4..326ad0d4

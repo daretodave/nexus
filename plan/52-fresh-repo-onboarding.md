@@ -51,19 +51,15 @@ tool-name column, and those tools fell back to a generic icon.
 
 ## Acceptance
 
-- **A1** On an unadopted repo, onboarding's Plot step and `POST /api/plot` refuse to start `/plot`, offer Adopt now, and plot the kept ideas once adoption lands. Checked live against a fresh scratch repo.
 - **A2** A hosted session's allowed directories are its repo and its worktree root; a read outside them asks even in Allow everything, and the card says why. Checked live against a scratch repo.
 - **A3** `/plot` and `/next` run end to end in a PowerShell session on Windows with no step reported failed when it worked; the docs lint flags bash-only syntax in skills. Checked live: a `/plot` in a scratch repo from a PowerShell session.
-- **A4** Tool rows never overlap their name and argument; PowerShell, WebSearch, WebFetch and ToolSearch have their own icons. Checked live.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 2 open · 2 closed · next A5
 
-- [ ] **52.1** Onboarding adopts before it plots · M · closes A1 · needs —
 - [ ] **52.2** A session stays inside its repo · S · closes A2 · needs —
 - [ ] **52.3** Skills run as written in PowerShell · M · closes A3 · needs —
-- [ ] **52.4** Tool rows fit their names; more tool icons · S · closes A4 · needs —
