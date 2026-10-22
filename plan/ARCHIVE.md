@@ -180,3 +180,5 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 50.1 · Onboarding asks the permission mode first · fe03b707..fe03b707
 - 2026-10-22 · 50 · spec complete: onboarding asks the permission mode right after Welcome, so its plot session and every session after start in the chosen mode · 718591d..fe03b70
 - 2026-10-22 · 51.2 · Images reach the session: attach, paste, drop · 80d0a5d5..4009b6ec
+- 2026-10-22 · 51.1 · Answers save as typed and send as given · d66d4192..c53c8a1c
+- 2026-10-22 · 51 · spec complete: answers save as typed and send as given (drafts survive leaving; a live ask sends from its first answer, the rest at their defaults) and images reach the session as images (attach, paste, drop) · dee2ca1..c53c8a1
