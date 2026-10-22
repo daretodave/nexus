@@ -50,7 +50,12 @@
 .md strong { font-weight: 600; color: var(--text); }
 .md a { color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--accent) 40%, transparent); text-underline-offset: 2px; }
 .md a:hover { text-decoration-color: var(--accent); }
-.md :where(ul, ol) { padding-left: 1.4em; }
+/* nexus.css resets .nx ul/ol (no markers, no indent); the transcript's lists take theirs back. */
+.md ul, .md ol { padding-left: 1.4em; }
+.md ul { list-style: disc; }
+.md ul ul { list-style: circle; }
+.md ul ul ul { list-style: square; }
+.md ol { list-style: decimal; }
 .md li + li { margin-top: 2px; }
 .md li > * + * { margin-top: 4px; }
 .md li::marker { color: var(--text-3); }

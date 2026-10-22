@@ -87,7 +87,7 @@ test('a list item holds a fenced block indented under it', () => {
 
 test('blockquotes nest blocks; horizontal rules', () => {
   assert.deepEqual(parseMarkdown('> **note**\n> - a\n\n---\n***'), [
-    { type: 'quote', children: [P({ type: 'strong', children: [T('note')] }), { type: 'list', ordered: false, start: 1, items: [{ children: [P(T('a'))] }] }] },
+    { type: 'quote', children: [P({ type: 'strong', children: [T('note')] }), { type: 'list', ordered: false, start: 1, tight: true, items: [{ children: [P(T('a'))] }] }] },
     { type: 'hr' },
     { type: 'hr' },
   ]);
@@ -187,4 +187,17 @@ test('both themes define every --syn-* token the highlighter paints with, from e
   for (const [, ref] of `${night}${day}`.matchAll(/var\((--[a-z0-9-]+)\)/g)) assert.ok(nexus.includes(`${ref}:`), `${ref} is a nexus.css token`);
   // Every token kind the tokenizer emits has a colour class.
   for (const k of ['cmd', 'flag', 'str', 'path', 'num', 'var', 'op', 'comment']) assert.ok(css.includes(`.syn-${k}`), `.syn-${k}`);
+});
+
+test('lists are tight unless a blank line splits their items or an item\'s own blocks (GitHub\'s rule)', () => {
+  const tight = (md) => parseMarkdown(md)[0].tight;
+  assert.equal(tight('- a\n- b\n  - b1\n- c'), true);
+  assert.equal(tight('1. a\n2. b'), true);
+  assert.equal(tight('- a\n  ```\n  x\n\n  y\n  ```\n- b'), true, 'a blank line inside a fence is code, not looseness');
+  assert.equal(tight('- a\n\n- b'), false, 'a blank line between items');
+  assert.equal(tight('- a\n\n  more about a\n- b'), false, 'a blank line inside an item');
+  const [outer] = parseMarkdown('- a\n  - b\n\n  - c\n- d');
+  assert.equal(outer.tight, true, 'a loose nested list leaves its parent tight');
+  assert.equal(outer.items[0].children[1].tight, false);
+  assert.equal(tight('- a\n- b\n\nAfter the list.'), true, 'a blank line that ends the list is not inside it');
 });

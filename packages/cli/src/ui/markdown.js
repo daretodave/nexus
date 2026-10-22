@@ -5,7 +5,7 @@
 // asterisks).
 //
 // Blocks:  heading { level, children } · paragraph { children } · code { lang, text, open }
-//          list { ordered, start, items: [{ children: blocks }] } · quote { children: blocks }
+//          list { ordered, start, tight, items: [{ children: blocks }] } (tight: no blank line between or inside its items) · quote { children: blocks }
 //          table { align, head: [inlines], rows: [[inlines]] } · hr
 // Inlines: text { text } · strong/em { children } · code { text } · link { href, children } · br
 //          span { children } (a link whose target is not http/https: its text, never a link)
@@ -96,7 +96,7 @@ function parseList(lines, i, out) {
   const base = first[1].length;
   const ordered = /\d/.test(first[2]);
   const mark = first[2].slice(-1); // a new bullet or delimiter starts a new list
-  const list = { type: 'list', ordered, start: ordered ? parseInt(first[2], 10) : 1, items: [] };
+  const list = { type: 'list', ordered, start: ordered ? parseInt(first[2], 10) : 1, tight: true, items: [] };
   while (i < lines.length) {
     const m = LIST.exec(lines[i]);
     if (!m || m[1].length > base + 1 || m[1].length < base || m[2].slice(-1) !== mark) break;
@@ -122,17 +122,39 @@ function parseList(lines, i, out) {
       if (!interrupts(lines, i) && !BLANK.test(body[body.length - 1])) { body.push(l.trim()); i += 1; continue; }
       break;
     }
+    if (looseGap(body)) list.tight = false;
     list.items.push({ children: parseBlocks(body) });
     // A blank line between two items does not end the list.
     let j = i;
     while (j < lines.length && BLANK.test(lines[j])) j += 1;
     if (j > i && j < lines.length) {
       const n = LIST.exec(lines[j]);
-      if (n && n[1].length >= base && n[1].length <= base + 1 && n[2].slice(-1) === mark) i = j;
+      if (n && n[1].length >= base && n[1].length <= base + 1 && n[2].slice(-1) === mark) { i = j; list.tight = false; }
     }
   }
   out.push(list);
   return i;
+}
+
+/** Whether an item's own blocks are split by a blank line (outside a fence, not inside a nested list): GitHub's loose item. */
+function looseGap(body) {
+  let fence = null;
+  let blank = false;
+  let inList = false; // inside a nested list, whose own blank lines are its own
+  for (const l of body) {
+    const f = FENCE.exec(l);
+    if (fence) { if (new RegExp(`^ {0,3}${fence[0] === '`' ? '`' : '~'}{${fence.length},}[ \\t]*$`).test(l)) fence = null; continue; }
+    if (BLANK.test(l)) { blank = true; continue; }
+    const top = indentOf(l) === 0;
+    if (top) {
+      const item = LIST.test(l);
+      if (blank && !(inList && item)) return true;
+      inList = item;
+    }
+    blank = false;
+    if (f) fence = f[2];
+  }
+  return false;
 }
 
 /** The cells of a table row: split on | outside code spans and escapes, the edge pipes dropped. */

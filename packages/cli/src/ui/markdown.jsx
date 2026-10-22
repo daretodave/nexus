@@ -42,8 +42,11 @@ function CodeBlock({ b }) {
   );
 }
 
-function Blocks({ blocks }) {
+function Blocks({ blocks, tight }) {
   return blocks.map((b, i) => {
+    if (tight && b.type === 'paragraph') {
+      return <Fragment key={i}>{i > 0 ? <br /> : null}<Inlines nodes={b.children} /></Fragment>;
+    }
     switch (b.type) {
       case 'heading': {
         const H = `h${Math.min(b.level, 4)}`;
@@ -54,7 +57,8 @@ function Blocks({ blocks }) {
       case 'hr': return <hr key={i} />;
       case 'quote': return <blockquote key={i}><Blocks blocks={b.children} /></blockquote>;
       case 'list': {
-        const items = b.items.map((it, k) => <li key={k}><Blocks blocks={it.children} /></li>);
+        // A tight list (GitHub's): an item's paragraphs draw as bare lines, no <p> spacing.
+        const items = b.items.map((it, k) => <li key={k}><Blocks blocks={it.children} tight={b.tight} /></li>);
         return b.ordered ? <ol key={i} start={b.start !== 1 ? b.start : undefined}>{items}</ol> : <ul key={i}>{items}</ul>;
       }
       case 'table': return (
