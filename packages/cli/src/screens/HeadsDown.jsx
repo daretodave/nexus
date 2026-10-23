@@ -3,15 +3,18 @@
 // track, now / queue / parked / agents / context, the tape, a prompt and the
 // key footer. Rows are built by headsModel.js from live data; the keys work
 // (c cockpit, i inbox, b plan, f fleet, p pause, / command, esc leave) and
-// typing steers the session. Themes come from tokens only.
+// typing steers the session. Themes come from tokens only. With no session to
+// show (none named, or it is gone), it asks what to start: a spec, or infinite.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tui, useShell } from '../ui/index.js';
-import { api, server, useClaims, useCloudLoop, useEvents, useInbox, useLocalSettings, usePlan, useSession } from '../data/index.js';
+import { api, server, useClaims, useCloudLoop, useEvents, useInbox, useLocalSettings, usePlan, useSession, useSessions } from '../data/index.js';
 import { PATHS, lastSession } from '../routes.js';
 import { headsRows } from './headsdown-inbox/headsModel.js';
 import { renderRows } from './headsdown-inbox/tuiCanvas.jsx';
 import { phaseBudget } from '../../shared/times.mjs';
+import StartPick from './fleet/StartPick.jsx';
+import { norm } from './fleet/model.js';
 
 const SKY = {
   boxSizing: 'border-box',
@@ -52,6 +55,24 @@ function chunkTitles(plan) {
   if (plan.status !== 'ready' || !plan.data) return out;
   for (const sp of plan.data.specs || []) for (const c of sp.chunks || []) if (c.id) out[c.id] = c.title || c.summary || '';
   return out;
+}
+
+/** No session to show: choose a spec or infinite, and the started (or already running) one opens here. */
+function HeadsDownStart({ plan }) {
+  const nav = useNavigate();
+  const sessions = useSessions();
+  const [error, setError] = useState(null);
+  const list = (Array.isArray(sessions.data) ? sessions.data : sessions.data?.sessions || []).map(norm).filter((s) => s.state !== 'closed');
+  return (
+    <div className="tui-wrap" style={SKY}>
+      <div className="sp-card">
+        <div className="t-title-s">Start heads-down</div>
+        <div className="t-body-s c-2">Choose what it works on: a spec, or infinite (loop /next, the next chunk in line, forever). It asks its questions first, then builds without stopping.</div>
+        <StartPick plan={plan.data} sessions={list} open={(sid) => nav(PATHS.headsFor(sid))} onError={(title, body) => setError(`${title}: ${body}`)} />
+        {error ? <div className="t-body-s c-2" role="alert">{error}</div> : null}
+      </div>
+    </div>
+  );
 }
 
 export default function HeadsDown() {
@@ -174,6 +195,8 @@ export default function HeadsDown() {
     seenAt,
     ui: { draft, focused, paused, pausedAt, note, links, onPause: togglePause },
   });
+
+  if (!id || ledgerRes.status === 'missing' || ledger?.state === 'closed') return <HeadsDownStart plan={plan} />;
 
   const focusPrompt = (e) => {
     if (e.target.closest('a, button, input')) return;

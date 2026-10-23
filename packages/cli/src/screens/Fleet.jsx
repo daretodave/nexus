@@ -3,20 +3,19 @@
 // tile, a filter row, "start another session", and Pause all (the reboot
 // train) docked over the grid while it runs.
 //
-// Data: GET /api/sessions (useSessions), GET /api/claims (a claim holder no tile stands for gets a dim tile). Actions: POST /api/sessions (start),
+// Data: GET /api/sessions (useSessions), GET /api/claims (a claim holder no tile stands for gets a dim tile). Actions: POST /api/sessions (start, once a spec or infinite is chosen: StartPick),
 // POST /api/sessions/:id/resume (a hosted one resumes; a fallen one is taken
 // by a new hosted session on /reboot-resume <star>), POST /api/train
 // { action: pause|cancel|resume }. An action the server does not serve yet
 // says plainly that it is not wired up; nothing is invented.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import {
   AppFrame, Topbar, Wordmark, TbSep, TbTitle, TbSpacer, InboxBtn, ViewHead, ChoiceButtons,
   TileNew, TrainDock, Train, ToastHost, Err, Icon, cx, useShell,
 } from '../ui/index.js';
 import { useSessions, usePlan, useClaims } from '../data/index.js';
-import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
+import StartPick from './fleet/StartPick.jsx';
 import SessionTile, { ClaimedTile } from './fleet/SessionTile.jsx';
 import { norm, FILTERS, counts, summary, trainOf, claimHolders, chunkTitle } from './fleet/model.js';
 import '../styles/fleet-honest.css';
@@ -61,15 +60,8 @@ function PauseAll({ train, onClick }) {
   );
 }
 
-function NextChunk({ next }) {
-  if (!next?.id) return <>nexus claims the next chunk in line and asks its questions first.</>;
-  const tail = [next.size ? `size ${next.size}` : null, next.lane ? `from the ${next.lane} lane` : null].filter(Boolean).join(', ');
-  return <>nexus claims the next chunk in line and asks its questions first: <code className="t-mono-s c-1">{next.id}</code> {next.title}{tail ? `, ${tail}` : ''}.</>;
-}
-
 export default function Fleet() {
   const { repo } = useShell();
-  const navigate = useNavigate();
   const now = useNow();
   const sessions = useSessions();
   const plan = usePlan();
@@ -78,7 +70,6 @@ export default function Fleet() {
   const [filter, setFilter] = useState('all');
   const [trainOn, setTrainOn] = useState(false);
   const [resuming, setResuming] = useState({});
-  const [starting, setStarting] = useState(false);
 
   const list = useMemo(() => {
     const raw = sessions.status === 'ready' && Array.isArray(sessions.data) ? sessions.data : sessions.data?.sessions || [];
@@ -99,15 +90,6 @@ export default function Fleet() {
   const where = (repos.length ? repos : [repo].filter(Boolean)).join(' and ');
 
   const notYet = (what) => push({ kind: 'error', title: `${what} is not wired up yet`, body: 'This server does not run sessions yet. Start /heads-down in a terminal; it shows up here as it starts.' });
-
-  async function start() {
-    setStarting(true);
-    const r = await act('/api/sessions', {});
-    setStarting(false);
-    if (r.ok && r.data?.id) { navigate(PATHS.cockpit(r.data.id)); return; }
-    if (r.missing) notYet('Starting a session from here');
-    else push({ kind: 'error', title: "Couldn't start a session", body: r.error });
-  }
 
   async function resume(s) {
     setResuming((m) => ({ ...m, [s.id]: true }));
@@ -187,11 +169,8 @@ export default function Fleet() {
               <TileNew>
                 <span className="cstar is-neutral" />
                 <div className="t-title-s">Start another session</div>
-                <div className="t-body-s c-2"><NextChunk next={[].concat(plan.data?.next || [])[0]} /></div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="btn btn-primary btn-s" type="button" onClick={start} disabled={starting} aria-busy={starting || undefined}><Icon name="plus" size={14} />Start heads-down</button>
-                  <Link className="btn btn-ghost btn-s" to={PATHS.board}>Pick a chunk</Link>
-                </div>
+                <div className="t-body-s c-2">Choose what it works on: a spec, or infinite (loop /next, the next chunk in line, forever). It asks its questions first.</div>
+                <StartPick plan={plan.data} sessions={list} onError={(title, body) => push({ kind: 'error', title, body })} />
                 <span className="cap">Two or three at once is normal. Each one gets its own worktree, color and star.</span>
               </TileNew>
             ) : null}
