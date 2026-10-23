@@ -335,3 +335,9 @@ test('nexus --demo runs under --permission with read-only fs and no child proces
     child.kill();
   }
 });
+
+test('a demo session detail carries the ledger questions as a list, never the fleet row marks', () => {
+  const { world } = play('alive-home');
+  assert.ok(Array.isArray(world.detail('sirius').questions), 'the cockpit filters it');
+  world.close();
+});

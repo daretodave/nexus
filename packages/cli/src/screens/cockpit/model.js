@@ -145,8 +145,9 @@ export function liveChunks(stage) {
  */
 export function phaseTrack({ ledger, owner, phase, stage, now, hrefFor }) {
   const L = ledger || {};
-  const qs = L.questions || [];
-  const parked = L.parked || [];
+  // Arrays only: a fleet row's asking marks ({ answered, total }) are not the ledger's questions.
+  const qs = Array.isArray(L.questions) ? L.questions : [];
+  const parked = Array.isArray(L.parked) ? L.parked : [];
   const closed = L.closed || liveChunks(stage).filter((c) => c.closed);
   const budget = L.budget || null;
   const budgetLabel = budget?.label || '';

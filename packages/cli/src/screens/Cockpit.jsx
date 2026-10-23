@@ -281,7 +281,7 @@ export default function Cockpit() {
   if (view === 'start') {
     left = (
       <QuestionsStart
-        name={session.name} questions={ledger?.questions} busy={busy}
+        name={session.name} questions={Array.isArray(ledger?.questions) ? ledger.questions : []} busy={busy}
         onAnswer={(index, answer, how) => act(`${base}/questions`, { index, answer, how }, 'Answering')}
         onDefaults={() => act(`${base}/questions`, { defaults: true }, 'Accepting the defaults')}
         onStart={async () => { if (await act(`${base}/start`, {}, 'Starting work')) nav(PATHS.cockpit(id)); }}

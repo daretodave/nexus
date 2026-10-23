@@ -296,7 +296,7 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
       const s = find(key);
       if (!s) return null;
       // The tile's asking marks (questions: { answered, total }) are the fleet's; the detail carries the ledger's own.
-      return { ...clone(s.row), ...clone(s.ledger), id: s.id, name: s.name, kind: s.kind, hosted: s.kind !== 'terminal', tugs: clone(s.ledger.tugs || []), parked: clone(s.ledger.parked || []) };
+      return { ...clone(s.row), ...clone(s.ledger), id: s.id, name: s.name, kind: s.kind, hosted: s.kind !== 'terminal', questions: Array.isArray(s.ledger.questions) ? clone(s.ledger.questions) : [], tugs: clone(s.ledger.tugs || []), parked: clone(s.ledger.parked || []) };
     },
     inbox: () => inboxItems({
       hosted: sessions.filter((s) => s.kind !== 'terminal').map((s) => ({ id: s.id, claude: s.ledger.claude || null, name: s.name, asks: [...s.asks.values()], permissions: [] })),
