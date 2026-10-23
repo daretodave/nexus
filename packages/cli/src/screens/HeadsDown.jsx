@@ -79,7 +79,8 @@ export default function HeadsDown() {
   const shell = useShell();
   const nav = useNavigate();
   const [params] = useSearchParams();
-  const id = params.get('s') || lastSession();
+  const named = params.get('s');
+  const id = named || lastSession();
   const ledgerRes = useSession(id);
   const ledger = ledgerRes.status === 'ready' ? ledgerRes.data : null;
   const claimsRes = useClaims(30000);
@@ -196,7 +197,10 @@ export default function HeadsDown() {
     ui: { draft, focused, paused, pausedAt, note, links, onPause: togglePause },
   });
 
-  if (!id || ledgerRes.status === 'missing' || ledger?.state === 'closed') return <HeadsDownStart plan={plan} />;
+  // The nav's Heads-down names no session: the last one opened is shown only if it is one this server runs and it is
+  // still going, never a terminal session (someone else's) or one that fell over or ended.
+  const stale = !named && ledger && (!ledger.hosted || ledger.ended || ['fallen', 'resume-failed'].includes(ledger.state));
+  if (!id || ledgerRes.status === 'missing' || ledger?.state === 'closed' || stale) return <HeadsDownStart plan={plan} />;
 
   const focusPrompt = (e) => {
     if (e.target.closest('a, button, input')) return;
