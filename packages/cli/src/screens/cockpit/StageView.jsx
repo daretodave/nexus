@@ -1,9 +1,12 @@
 // The right pane: the agent stage (Cockpit boards). Nodes and filaments
 // come from model.js; this file only draws them with the design's classes.
-import { Basin, CommitPill, Drop, Fil, Icon, NodeCap, Orb, ParkMark, PkgNode, River, SessTag, SNode, StageLabel, Starfield, cx } from '../../ui/index.js';
+import { Basin, CommitPill, Drop, Fil, FxLayer, Icon, NodeCap, Orb, ParkMark, PkgNode, River, SessTag, SNode, StageLabel, Starfield, cx } from '../../ui/index.js';
 import { clock } from './model.js';
 import Forming from './Forming.jsx';
 import '../../styles/stage-tugs.css';
+
+// While the worktree forms the stage has no orbs of its own: the drift alone.
+const NO_NODES = [];
 
 const PARK_AT = { xl: ['30px', '-46px'], m: ['10px', '-22px'], s: ['6px', '-18px'] };
 
@@ -48,12 +51,14 @@ function Marks({ marks }) {
  * null; river: [{ sha, msg, at }] (owner) or null; drop: { sha, msg } or null.
  * marks: { tugs, questions, lifted } from cockpit/tugs.js, or null.
  * forming: { form, now, onRetry, retrying } while the session's worktree forms (Forming.jsx): the stage shows only that.
+ * fx: { live, landed, hushed, asking, sess } for the particle layer (ui/fx.jsx), or none for a stage without one.
  */
-export default function StageView({ view, basin, river, riverCap, drop, marks, forming }) {
+export default function StageView({ view, basin, river, riverCap, drop, marks, forming, fx }) {
   if (forming?.form && forming.form.state !== 'ready') {
     return (
       <div className="stage">
         <Starfield />
+        {fx ? <FxLayer {...fx} nodes={NO_NODES} /> : null}
         <StageLabel title="Agent stage" cap={forming.form.state === 'failed' ? 'not formed' : 'forming'} />
         <Forming {...forming} />
       </div>
@@ -62,6 +67,7 @@ export default function StageView({ view, basin, river, riverCap, drop, marks, f
   return (
     <div className="stage">
       <Starfield />
+      {fx ? <FxLayer {...fx} nodes={view.nodes} /> : null}
       <StageLabel title="Agent stage" cap={view.count} />
       {view.fils.map((f, i) => (
         <Fil key={f.key || i} l={f.l} t={f.t} w={f.w} h={f.h} d={f.d} flow={f.flow} kind={f.tug ? 'tug' : f.dash ? 'flow' : f.quiet ? 'quiet' : undefined} className={cx(f.dash && f.quiet && 'is-quiet', f.cls) || undefined} />

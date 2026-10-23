@@ -6,7 +6,7 @@
 // each phase's page (?phase=), the session's own phase when none is named.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { AppFrame, Empty, Err, Panes, Phases, ToastHost, localRunMode, prefsFromRunMode, saveRunMode, useShell } from '../ui/index.js';
+import { AppFrame, Empty, Err, Panes, Phases, ToastHost, localRunMode, prefsFromRunMode, saveRunMode, sessClass, useShell } from '../ui/index.js';
 import { api, server, useCloudLoop, useEvents, useLocalSettings, useReloadOn, chunkStagesOf, useResource, useSessions } from '../data/index.js';
 import { PATHS, rememberSession } from '../routes.js';
 import CockpitTop from './cockpit/CockpitTop.jsx';
@@ -56,7 +56,8 @@ export default function Cockpit() {
   useEffect(() => { rememberSession(id); }, [id]);
 
   const live = useEvents(id);
-  const ledgerRes = useResource(`/api/sessions/${encodeURIComponent(id)}`, { poll: 4000 });
+  const ledgerPath = `/api/sessions/${encodeURIComponent(id)}`;
+  const ledgerRes = useResource(ledgerPath, { poll: 4000 });
   // A chunk claimed, gated or archived on the live channel refreshes the ledger now (the river, the strip),
   // not at the next poll.
   useReloadOn(chunkStagesOf(live), ledgerRes);
@@ -246,6 +247,11 @@ export default function Cockpit() {
   const drop = owner && lastLanded && now - new Date(lastLanded.at).getTime() < 120000
     ? { sha: lastLanded.sha, msg: `${lastLanded.chunk ? `${lastLanded.chunk} ` : ''}landed on main` } : null;
   const river = owner ? landed.slice(-3).reverse() : null;
+  // The stage's particles: what the live channel says happened, a commit on main, and the hush. The landed list stays
+  // undefined until this session's ledger loads (a switch in place keeps the last session's until then), so its first
+  // read is a baseline and not a landing. The tug streams only where the working stage draws its ask-tug filament.
+  const fxLanded = ledger && ledgerRes.path === ledgerPath ? landed : undefined;
+  const fx = { live, session: id, landed: fxLanded, hushed, asking: asking && view === 'working', sess: sessClass(session) };
 
   const phases = phaseTrack({ ledger, owner, phase, stage, now, hrefFor });
   const layers = ctxLayers({ ledger, owner, phase: view, stage, info, sessionName: session.name, now });
@@ -335,7 +341,7 @@ export default function Cockpit() {
           {showTether ? <span className="tether-l" aria-hidden="true" /> : null}
         </section>
         <section className="pane-right" aria-label="Agent stage">
-          <StageView view={stageView} basin={basin} river={river} riverCap={river && river.length ? `${river.length} this session` : ''} drop={drop} marks={marks} forming={formingNow ? { form, now: tick, onRetry: retryForm, retrying } : null} />
+          <StageView view={stageView} basin={basin} river={river} riverCap={river && river.length ? `${river.length} this session` : ''} drop={drop} marks={marks} forming={formingNow ? { form, now: tick, onRetry: retryForm, retrying } : null} fx={fx} />
         </section>
       </Panes>
       <ToastHost toasts={toasts} clear="composer" />

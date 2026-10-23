@@ -1,0 +1,20 @@
+/* The particle layer (ui/fx.jsx): a canvas behind the content, never in its way.
+   On the stage it sits over the starfield and under the filaments (z 1), the orbs
+   and the drop (z 2), the labels and tug marks (z 3) and the dock (z 6). In
+   heads-down it is fixed to the window under the box (.tui is z 1), so the box
+   scrolls over it on a narrow window. Colours are drawn by the canvas from the
+   theme's tokens; this file only places it. */
+.fx-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; transition: opacity var(--dur-settle) var(--ease-settle); }
+.fx-layer.is-heads { position: fixed; }
+.fx-canvas { display: block; width: 100%; height: 100%; }
+/* Heads-down's start card is not positioned of its own: lift it over the layer as .tui is. */
+.tui-wrap > .sp-card { position: relative; z-index: 1; }
+
+/* Hushed: the canvas already slows the drift to a trickle and stills the orbs;
+   the layer also dims a touch, as the starfield does. */
+.fx-layer.is-calm { opacity: .85; }
+
+/* The layer is not mounted at all under reduced motion; this holds if it ever is. */
+@media (prefers-reduced-motion: reduce) {
+  .fx-layer { display: none; }
+}

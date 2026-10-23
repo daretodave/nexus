@@ -197,6 +197,8 @@ export function headsRows(m) {
   })();
   {
     const r = framed();
+    // The particle layer's anchor (ui/fx.jsx): the track's ends and where its head is now.
+    r.fx = { kind: 'bar', col0: PHASE_COL[0], col1: PHASE_COL[3] + PHASE_W[3] - 1, head: PHASE_COL[phaseIdx] };
     PHASES.forEach((p, i) => {
       const col = PHASE_COL[i];
       const w = PHASE_W[i];
@@ -208,6 +210,7 @@ export function headsRows(m) {
         r.fill(col, col + w, '┄', 'b');
         r.fill(col, col + head, '━', 'a');
         r.put(col + head, '●', 'a');
+        r.fx.head = col + head;
       } else r.fill(col, col + w, '┄', 'b');
     });
     rows.push(r);
@@ -400,6 +403,7 @@ export function headsRows(m) {
   // the prompt
   {
     const r = framed();
+    r.fx = { kind: 'prompt' };
     let c = r.seq(L, [['a', `${name} ›`], ['', ' ']]);
     if (ui.draft) c = r.seq(c, synSegs(rainbow(draftTokens(cut(ui.draft, WIDTH - 6 - c)))));
     c = r.put(c, '▌', 'a', null, BLINK);

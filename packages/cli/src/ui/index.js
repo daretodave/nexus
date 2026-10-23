@@ -19,3 +19,4 @@ export * from './shell-rules.js';
 export { parsePick, themeFor } from './theme-pick.js';
 export * from './vault.jsx';
 export * from './markdown.jsx';
+export * from './fx.jsx';
