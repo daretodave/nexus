@@ -186,3 +186,5 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 52.4 · Tool rows fit their names; more tool icons · 326ad0d4..326ad0d4
 - 2026-10-22 · 53.1 · Plan answers are kept, take named defaults, go back with Continue · a02c1eb8..91437b1f
 - 2026-10-22 · 53 · spec complete: plan answers are kept on the server, take the defaults their questions name, and go back to the session that asked with one Continue (issues #81, #82, #83) · e060151..be9e2d9
+- 2026-10-22 · 54.1 · The model and effort are shown, chosen and switched · 6097d2fb..a4383ab0
+- 2026-10-22 · 54 · spec complete: every session shows its model and effort, Settings chooses both for new sessions, the cockpit badge switches a running session, and the helpers' model is named · 59b04d6..54.1
