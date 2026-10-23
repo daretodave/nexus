@@ -273,6 +273,20 @@ Used by `scripts/notify.mjs` (standing rule 8). Either works;
 ntfy is the zero-setup path. Optional at Level 0–2; required
 before an unattended window per the hands-off pre-flight.
 
+### Moving a value: two ways, names only
+
+Values reach this repo's sessions as names, never as text. **In:**
+a session missing a value files the ask
+(`node scripts/secrets.mjs request <chunk> [--to D,D] [--service S]`)
+and moves on; it never asks for a value in chat, never reads one,
+never guesses one. **Out:** a session sends a value where it runs
+with `node scripts/secrets.mjs push NAME --to <destination>` (the
+destination declared in `nexus.secrets.json`; the value goes to the
+tool's stdin) and confirms it landed with that place's names-only
+list (`gh secret list`, `vercel env ls`, `fly secrets list`, ...).
+`docs/stack.md`, when Set up a stack wrote one, has the exact lines
+per service. The how: nexus/customization/secrets.md.
+
 ### No other secrets
 
 If a feature ever requires more, the relevant skill stops at its

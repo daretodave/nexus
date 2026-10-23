@@ -23,7 +23,7 @@ only asks for one once a chunk names a secret.
 | `scripts/secrets.mjs` | The command line: `status`, `set`, `import`, `names`, `check`, `push`, `audit`, `request`. Prints names, never values. |
 | `scripts/secrets-vault.mjs` | The vault: reads and writes `.env` and `.env.workspace`, and the keychain when it is on. Hands a value to code only. |
 | `scripts/secrets-keychain.mjs` | The opt-in OS keychain, through the OS's own command line. |
-| `scripts/secrets-sinks.mjs` | The sinks that push a value where it is needed (GitHub Actions, Vercel, Cloudflare), and the push record. Needs `scripts/ledger.mjs` (its lock). |
+| `scripts/secrets-sinks.mjs` | The sinks that push a value where it is needed (GitHub Actions, Vercel, Cloudflare Workers and Pages, Netlify, Fly.io, Supabase, Firebase, AWS, Google Cloud, Azure), and the push record. Needs `scripts/ledger.mjs` (its lock). |
 | `scripts/secrets-audit.mjs` | Set and rotation in the same record, by name; the rotation nudge. Needs `scripts/secrets-sinks.mjs`. |
 | `scripts/secrets-run.mjs` | `secrets run`: a command with the declared values in its environment, its output masked. |
 | `scripts/secrets-scan.mjs` | `secrets scan`: a diff that adds a vault value is refused, by file, line and name. |
@@ -292,6 +292,7 @@ node scripts/secrets.mjs push GH_TOKEN --to github-actions    # one of them
 node scripts/secrets.mjs push GH_TOKEN --repo me/other-repo   # another repo than this checkout's
 node scripts/secrets.mjs push VERCEL_TOKEN --to vercel --env production,preview
 node scripts/secrets.mjs push CF_API_TOKEN --to cloudflare --worker edge-api
+node scripts/secrets.mjs push STRIPE_SECRET_KEY --to fly --app my-app
 ```
 
 | Destination | Sink | Through |
@@ -299,7 +300,24 @@ node scripts/secrets.mjs push CF_API_TOKEN --to cloudflare --worker edge-api
 | `local` | none: it is the vault | |
 | `github-actions` | `gh secret set NAME --app actions` | `gh` reads the value from stdin when `--body` is left out; `gh auth login` first |
 | `vercel` | `vercel env add NAME <environment> --force --yes`, once per environment | `vercel` reads the value from stdin when `--value` is left out; `vercel login` and `vercel link` in the checkout first |
-| `cloudflare` | `wrangler secret put NAME` | `wrangler` reads the value from stdin; `wrangler login` (or its own `CLOUDFLARE_API_TOKEN`) first |
+| `cloudflare` | `wrangler secret put NAME` (a Worker) | `wrangler` reads the value from stdin; `wrangler login` (or its own `CLOUDFLARE_API_TOKEN`) first |
+| `cloudflare-pages` | `wrangler pages secret put NAME --project-name P`, once per environment | stdin, as for a Worker |
+| `netlify` | the Netlify API: the site's account, then `PUT /accounts/{account}/env/NAME?site_id=SITE` (`POST` the first time), a secret value per deploy context | the value in the request body; `netlify env:set` takes it in argv, so it is not used. The token is `NETLIFY_AUTH_TOKEN` from the vault |
+| `fly` | `fly secrets import --stage` | a `NAME=VALUE` line on stdin; `--stage` sets it for the next deploy instead of restarting machines now. `fly auth login` first |
+| `supabase` | `supabase secrets set --env-file F` (Edge Function secrets) | `secrets set NAME=VALUE` is argv, so the file: one `NAME='VALUE'` line; a value holding `'` is refused |
+| `firebase` | `firebase functions:secrets:set NAME` | stdin; redeploy the functions that read it |
+| `aws-secrets-manager` | `aws secretsmanager put-secret-value --secret-id NAME --secret-string file://F` (`create-secret` the first time) | a file the CLI reads |
+| `aws-ssm` | `aws ssm put-parameter --name NAME --type SecureString --overwrite --value file://F` | a file the CLI reads |
+| `gcp-secret-manager` | `gcloud secrets versions add NAME --data-file=-` (`secrets create` the first time) | stdin |
+| `azure-key-vault` | `az keyvault secret set --vault-name V --name NAME --file F --encoding utf-8` | a file the CLI reads; Key Vault names take dashes, so `_` becomes `-` |
+
+"A file the CLI reads" is `/dev/stdin` on macOS and Linux, so
+the value still travels on stdin and nothing touches disk. On
+Windows it is a temp file, owner-only (`0600`) in a new folder
+of its own, deleted the moment the tool exits, landed or not.
+A sink whose tool takes the value only as an argument is not
+offered, and `pushSecret` refuses any call whose arguments
+hold the value.
 
 The defaults, and the flags that change them:
 
@@ -307,7 +325,14 @@ The defaults, and the flags that change them:
 |---|---|---|
 | `--repo OWNER/REPO` | `github-actions` | The checkout's own repo. |
 | `--env E,E` | `vercel` | All three environments: `production`, `preview`, `development`. A name the app needs in one place only is narrowed here. `--force` overwrites, so a re-push is a rotation. |
+| `--env E,E` | `cloudflare-pages` | `production`; add `preview` for preview deployments. |
+| `--env E,E` | `netlify` | `production`, `deploy-preview`, `branch-deploy`. Add `dev` only for a value meant for local development: Netlify shows a dev value in plain text, so with `dev` the variable is not marked secret. |
 | `--worker NAME` | `cloudflare` | The worker the checkout's wrangler config (`wrangler.toml` or `wrangler.jsonc`) names; `--worker` passes `--name` for a checkout without one, or another worker. |
+| `--project P` | `cloudflare-pages`, `supabase`, `firebase`, `gcp-secret-manager` | The Pages project in the wrangler config, the linked Supabase project, the Firebase project in `.firebaserc`, gcloud's `core/project`. |
+| `--app A` | `fly` | The app in the checkout's `fly.toml`. |
+| `--site S` | `netlify` | `NETLIFY_SITE_ID` in the vault, else the checkout's `.netlify/state.json` (`netlify link`). |
+| `--region R` | `aws-secrets-manager`, `aws-ssm` | The AWS CLI's configured region. |
+| `--vault V` | `azure-key-vault` | None: required. |
 
 The manifest stays as it is: a sink's target is a flag on the
 push, not a key on the entry (the shape names no more keys).
@@ -328,7 +353,11 @@ push, not a key on the entry (the shape names no more keys).
   recorded.
 - Each push that lands is one line in
   `.nexus/secrets-audit.jsonl` at the primary checkout, with
-  the repo, environments or worker when the push named them:
+  the repo, environments, worker, app, project, region or
+  vault when the push named them, and who pushed it: a push
+  from a session carries its id (`session`, from
+  `NEXUS_SESSION`), one from the GUI `via`. The GUI's change
+  feed shows each one by name, place and environment:
 
 ```json
 {"time":"2026-10-21T10:00:00.000Z","action":"push","name":"GH_TOKEN","destination":"github-actions"}
@@ -341,8 +370,39 @@ field that isn't a string, so a value can't slip in under
 another word. Code adds events through
 `scripts/secrets-sinks.mjs`'s `recordAudit` and reads them
 with `readAudit`. A new sink is one entry in its `SINKS`
-table: the command, its calls for a name (one argument list
-per target), and what the audit line adds.
+table: the command, how the value reaches it (stdin, a file,
+or an API body), its calls for a name (one argument list per
+target, with a `fallback` for the first push), the options it
+takes, and what the audit line adds. It never takes the value
+in an argument; the tests hold every sink to that with a fake
+runner.
+
+## Values move two ways, and a session handles names only
+
+**In.** The owner puts a value in the vault: `secrets set` in
+their own terminal, the Vault, or Set up a stack. A session
+that needs a value it does not have asks for it:
+
+```bash
+node scripts/secrets.mjs request 07.3 --to vercel,github-actions --service stripe
+```
+
+and moves on. It never asks for a value in chat, never reads
+one, never guesses or makes one up.
+
+**Out.** A session sends a value from the vault to where it
+runs without seeing it: declare the place in the entry's
+`destinations` in `nexus.secrets.json`, then
+
+```bash
+node scripts/secrets.mjs push STRIPE_SECRET_KEY --to vercel
+```
+
+and confirm it landed with the place's own names-only list
+(`gh secret list`, `vercel env ls`, `wrangler secret list`,
+`fly secrets list`, `gcloud secrets versions list NAME`, ...),
+never a command that prints the value back. The stack guide
+(`docs/stack.md`) spells this out for each picked service.
 
 ## Running with secrets
 
@@ -468,7 +528,15 @@ That writes `plan/pending/secrets-07.3.md`, a
 `[needs-user-call]` note for the `/oversight` queue (and the
 GUI's inbox) naming each missing secret, what it is for,
 where to get it, where it goes and the `set` command, never a
-value. Once per chunk: a row already in `plan/` is left
+value. `--to D,D` names the places it goes once set (it adds
+them to the note), and `--service S` the Set up a stack service
+it belongs to (`stripe`, `supabase`, ...). The GUI finds the
+service by the name too, when the name is one a recipe writes.
+For such a request, the inbox's **Add value** opens that
+service's card in the Vault with the field focused; saving
+stores it in the vault, pushes it to each place the request
+named (owner mode only, as every push), and the request leaves
+the inbox, so the chunk is ready on the next pick. Once per chunk: a row already in `plan/` is left
 alone. The owner runs `set` in their own terminal (never in a
 session), and the chunk is ready on the next pick; delete the
 row then.
@@ -565,7 +633,10 @@ What it writes:
   `CLOUDFLARE_API_TOKEN`, `NETLIFY_AUTH_TOKEN`, `FLY_API_TOKEN`,
   `SENTRY_AUTH_TOKEN` and their IDs; never an AWS, Google Cloud
   or Azure key, which CI should get through OIDC), the `vercel`
-  sink when the checkout is linked.
+  sink when the checkout is linked (every picked service's
+  values the app reads at run time; a hosting service's own
+  deploy token and admin-only keys stay out). **Send to
+  Vercel** on the Vercel card sends the same set in one call.
 - A name the repo already reads (`SUPABASE_SERVICE_ROLE_KEY`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `POSTGRES_URL`,
   `AWS_DEFAULT_REGION`, `ARM_CLIENT_SECRET`, `KV_REST_API_URL`
@@ -663,8 +734,9 @@ names it. To add one:
 4. A value goes in through stdin, never argv; `.env` and
    `.env.workspace` are gitignored, and the workspace ring sits
    outside every repo.
-5. A sink takes the value on stdin, runs in owner mode only,
-   and records each push by name, destination and time.
+5. A sink takes the value on stdin (or a file the tool reads
+   from stdin, or an API body), never argv, runs in owner mode
+   only, and records each push by name, destination and time.
 6. A command that needs a value runs under `secrets run`; the
    guard hook and the scan refuse the rest.
 

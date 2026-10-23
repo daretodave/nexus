@@ -80,8 +80,8 @@ In a cloud tick, also skip a chunk that touches
 "Operational secrets"): a local session builds it.
 A chunk with `secrets` is the owner's (a contributor skips it).
 One whose secret is missing reads `needs secret` (`order.mjs`):
-file the ask (`node scripts/secrets.mjs request <id>`, names
-only), commit it, land, pick again; once set, it is ready.
+file the ask (`secrets.mjs request <id> [--to D,D] [--service
+S]`, names only, never in chat), commit, land, pick again.
 
 - `peek`: say the pick, its size, its A-IDs, why it beat the
   rest, and what blocks it, then run the retro and stop.

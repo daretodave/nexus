@@ -10,7 +10,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { main } from '../secrets.mjs';
-import { AUDIT, SINKS, VERCEL_ENVIRONMENTS, actionsSecretNames, pushSecret, readAudit, recordAudit, sinkFor } from '../secrets-sinks.mjs';
+import { AUDIT, SINKS, VERCEL_ENVIRONMENTS, actionsSecretNames, keyVaultName, pushSecret, pushSecretAsync, readAudit, recordAudit, sessionOf, sinkFor, withValueFile } from '../secrets-sinks.mjs';
+
+// A push made from a session records its id; these tests set it only where they mean to.
+delete process.env.NEXUS_SESSION;
 
 const FAKES = ['fake-gh-0001', 'fake "quoted" $(not run) 0002'];
 
@@ -52,8 +55,8 @@ describe('the GitHub Actions sink', () => {
     assert.ok(!done.error.includes(FAKES[0]));
   });
 
-  it('knows GitHub Actions, Vercel and Cloudflare (local is the vault), and refuses a bad name or value before running', () => {
-    assert.deepEqual(Object.keys(SINKS), ['github-actions', 'vercel', 'cloudflare']);
+  it('knows every destination the manifest takes but local (the vault), and refuses a bad name or value before running', () => {
+    assert.deepEqual(Object.keys(SINKS), ['github-actions', 'vercel', 'cloudflare', 'cloudflare-pages', 'netlify', 'fly', 'supabase', 'firebase', 'aws-secrets-manager', 'aws-ssm', 'gcp-secret-manager', 'azure-key-vault']);
     assert.equal(sinkFor('github-actions').command, 'gh');
     assert.equal(sinkFor('vercel').command, 'vercel');
     assert.equal(sinkFor('cloudflare').command, 'wrangler');
@@ -120,6 +123,143 @@ describe('the Cloudflare sink', () => {
     assert.throws(() => pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'cloudflare', run: never, worker: '--env x' }), /not a worker name/);
     const missing = pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'cloudflare', run: () => ({ status: 127, missing: true }) });
     assert.deepEqual(missing, { destination: 'cloudflare', ok: false, error: 'wrangler is not installed' });
+  });
+});
+
+describe('every command-line sink: the value goes to stdin (or a 0600 temp file on Windows), never argv', () => {
+  const value = 'fake-sink-value-0042';
+  const OPTS = { 'azure-key-vault': { vault: 'my-vault' } };
+  const lineOf = (d) => (d === 'fly' ? `A_TOKEN=${value}\n` : d === 'supabase' ? `A_TOKEN='${value}'\n` : value);
+  const cli = Object.keys(SINKS).filter((d) => !SINKS[d].api);
+
+  it('off Windows: each tool gets the value on stdin, file readers through /dev/stdin, and nothing touches disk', () => {
+    for (const d of cli) {
+      const r = recorder();
+      const done = pushSecret({ name: 'A_TOKEN', value, destination: d, run: r.run, cwd: '/w/repo', platform: 'linux', ...OPTS[d] });
+      assert.equal(done.ok, true, d);
+      assert.ok(r.calls.length >= 1, d);
+      for (const c of r.calls) {
+        assert.equal(c.cmd, SINKS[d].command, d);
+        assert.ok(!c.args.join(' ').includes(value), `${d}: the value reached argv`);
+        assert.equal(c.input, lineOf(d), `${d}: the value goes on stdin`);
+        if (SINKS[d].input === 'file') assert.ok(c.args.some((a) => a.includes('/dev/stdin')), `${d}: reads /dev/stdin`);
+      }
+    }
+  });
+
+  it('on Windows: a file reader gets a 0600 temp file holding the value, gone once the tool exits, landed or not', () => {
+    for (const d of cli.filter((x) => SINKS[x].input === 'file')) {
+      for (const status of [0, 1]) {
+        const seen = [];
+        const run = (cmd, args, opts) => {
+          const at = args.map((a) => a.replace(/^file:\/\//, '')).find((a) => /nexus-sink-/.test(a));
+          seen.push({ at, text: fs.readFileSync(at, 'utf8'), input: opts.input, args });
+          return { status };
+        };
+        const done = pushSecret({ name: 'A_TOKEN', value, destination: d, run, platform: 'win32', ...OPTS[d] });
+        assert.equal(done.ok, status === 0, d);
+        assert.ok(seen.length >= 1, d);
+        for (const x of seen) {
+          assert.equal(x.text, lineOf(d), d);
+          assert.equal(x.input, '', `${d}: nothing on stdin when the file holds it`);
+          assert.ok(!x.args.join(' ').includes(value), `${d}: the value reached argv`);
+          assert.ok(!fs.existsSync(x.at), `${d}: the temp file outlived the push`);
+        }
+      }
+    }
+    assert.throws(() => withValueFile('x', () => { throw new Error('boom'); }, { platform: 'win32' }), /boom/);
+  });
+
+  it('runs the create when the update fails (a secret that does not exist yet), with the value on stdin both times', () => {
+    for (const [d, first, then] of [['gcp-secret-manager', 'versions', 'create'], ['aws-secrets-manager', 'put-secret-value', 'create-secret']]) {
+      const r = recorder((cmd, args) => ({ status: args.includes(first) ? 1 : 0 }));
+      const done = pushSecret({ name: 'A_TOKEN', value, destination: d, run: r.run, platform: 'linux', project: 'p-1', region: 'us-east-1' });
+      assert.equal(done.ok, true, d);
+      assert.deepEqual(r.calls.map((c) => c.args.find((a) => a === first || a === then)), [first, then]);
+      for (const c of r.calls) assert.equal(c.input, value);
+    }
+  });
+
+  it('names each place by its options, refuses a bad option, an Azure push without a vault, and an argv that would hold the value', () => {
+    const r = recorder();
+    pushSecret({ name: 'A_TOKEN', value, destination: 'azure-key-vault', run: r.run, platform: 'linux', vault: 'kv-1' });
+    assert.deepEqual(r.calls[0].args.slice(0, 7), ['keyvault', 'secret', 'set', '--vault-name', 'kv-1', '--name', 'A-TOKEN']);
+    assert.equal(keyVaultName('STRIPE_SECRET_KEY'), 'STRIPE-SECRET-KEY');
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'azure-key-vault', run: never }), /needs --vault/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'fly', run: never, app: '--all' }), /not a app name/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'cloudflare-pages', run: never, environments: ['staging'] }), /a Pages environment is one of production, preview/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value: 'it\u0027s a value', destination: 'supabase', run: never }), /a value with '/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'firebase', run: never, project: value }), /refused, the value would be on the command line/);
+    const pages = recorder();
+    const p = pushSecret({ name: 'A_TOKEN', value, destination: 'cloudflare-pages', run: pages.run, project: 'site', environments: ['production', 'preview'] });
+    assert.deepEqual(pages.calls.map((c) => c.args), [['pages', 'secret', 'put', 'A_TOKEN', '--project-name', 'site'], ['pages', 'secret', 'put', 'A_TOKEN', '--project-name', 'site', '--env', 'preview']]);
+    assert.deepEqual(p.detail, { environments: ['production', 'preview'], project: 'site' });
+    const fly = recorder();
+    pushSecret({ name: 'A_TOKEN', value, destination: 'fly', run: fly.run, app: 'my-app' });
+    assert.deepEqual(fly.calls[0].args, ['secrets', 'import', '--stage', '--app', 'my-app']);
+  });
+});
+
+describe('the Netlify sink: the API, the value in the request body only', () => {
+  const value = 'fake-netlify-value-0077';
+  function fakeFetch(answers) {
+    const calls = [];
+    return { calls, fetch: async (url, init = {}) => { calls.push({ url, ...init }); const a = answers.shift() ?? { status: 500 }; return { status: a.status, json: async () => a.json ?? null }; } };
+  }
+
+  it('reads the site account, updates the variable (creating it when new), and never puts the value in a URL', async () => {
+    const f = fakeFetch([{ status: 200, json: { account_id: 'acct-1' } }, { status: 404 }, { status: 201 }]);
+    const done = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', secrets: { token: 'fake-netlify-token', site: 'site-1' }, fetch: f.fetch });
+    assert.deepEqual(done, { destination: 'netlify', ok: true, detail: { environments: ['production', 'deploy-preview', 'branch-deploy'] } });
+    assert.deepEqual(f.calls.map((c) => c.method), ['GET', 'PUT', 'POST']);
+    assert.match(f.calls[1].url, /\/accounts\/acct-1\/env\/A_TOKEN\?site_id=site-1$/);
+    for (const c of f.calls) {
+      assert.ok(!c.url.includes(value), 'the value reached a URL');
+      assert.equal(c.headers.Authorization, 'Bearer fake-netlify-token');
+    }
+    const body = JSON.parse(f.calls[2].body)[0];
+    assert.equal(body.is_secret, true);
+    assert.deepEqual(body.values.map((v) => [v.context, v.value]), [['production', value], ['deploy-preview', value], ['branch-deploy', value]]);
+  });
+
+  it('says what is missing (the token, the site) and fails by status, never by value', async () => {
+    const none = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', secrets: {}, fetch: () => { throw new Error('no call'); } });
+    assert.match(none.error, /needs NETLIFY_AUTH_TOKEN in the vault/);
+    const nosite = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', cwd: '/nowhere', secrets: { token: 't' }, fetch: () => { throw new Error('no call'); } });
+    assert.match(nosite.error, /needs a site/);
+    const f = fakeFetch([{ status: 200, json: { account_id: 'a' } }, { status: 403, json: { message: value } }]);
+    const bad = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', secrets: { token: 't', site: 's' }, fetch: f.fetch });
+    assert.equal(bad.ok, false);
+    assert.equal(bad.error, 'Netlify answered 403 (setting the variable)');
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'netlify', run: never }), /pushSecretAsync/);
+  });
+});
+
+describe('who pushed: the session or the GUI, in the audit line', () => {
+  it('reads NEXUS_SESSION only when it is shaped like an id', () => {
+    assert.equal(sessionOf({ NEXUS_SESSION: 'deneb-7' }), 'deneb-7');
+    assert.equal(sessionOf({ NEXUS_SESSION: 'not ok; rm' }), null);
+    assert.equal(sessionOf({}), null);
+  });
+
+  it('secrets push records a session id from NEXUS_SESSION, or the GUI via, never both, never a value', async () => {
+    const t = workspace();
+    try {
+      fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), JSON.stringify({ version: 1, secrets: [
+        { name: 'GH_TOKEN', for: 'The issue mirror.', where: null, destinations: ['local', 'github-actions'], provider: 'owner', chunk: null },
+      ] }));
+      fs.writeFileSync(path.join(t.repo, '.env'), 'GH_TOKEN=fake-gh-0001\n');
+      const io = { out: () => {}, err: () => {}, owner: () => true, run: recorder().run, vault: { git: () => ({ status: 0, stdout: '' }) } };
+      assert.equal(await main(['push', 'GH_TOKEN', '--root', t.repo], { ...io, env: { NEXUS_SESSION: 'deneb' } }), 0);
+      assert.equal(await main(['push', 'GH_TOKEN', '--root', t.repo], { ...io, env: { NEXUS_SESSION: 'deneb' }, via: 'gui' }), 0);
+      const [a, b] = readAudit(t.repo);
+      assert.equal(a.session, 'deneb');
+      assert.equal(b.via, 'gui');
+      assert.equal(b.session, undefined);
+      assert.ok(!fs.readFileSync(path.join(t.repo, AUDIT), 'utf8').includes('fake-gh-0001'));
+    } finally {
+      t.done();
+    }
   });
 });
 
