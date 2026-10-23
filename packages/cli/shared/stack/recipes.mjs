@@ -75,7 +75,7 @@ export const SERVICES = {
       avoid: 'Not a classic token. Those reach your whole account.',
     },
     steps: [
-      { id: 'sb.new', text: 'Create a project. Save the database password somewhere safe.', link: { href: 'https://supabase.com/dashboard/new', label: 'New project' } },
+      { id: 'sb.new', text: 'Create a project. Save the database password somewhere safe.', link: { href: 'https://supabase.com/dashboard/new', label: 'New project' }, values: ['url'] },
       { id: 'sb.connect', text: 'Open "Connect". Copy the project URL and the publishable key.', link: { href: 'https://supabase.com/dashboard/project/_?showConnect=true', label: 'Open Connect' }, values: ['url', 'publishable'] },
       { id: 'sb.keys', text: 'Copy the secret key (sb_secret_...).', link: { href: 'https://supabase.com/dashboard/project/_/settings/api-keys', label: 'API keys' }, values: ['secret'] },
       { id: 'sb.db', text: 'In "Connect", pick "Transaction pooler" and copy the URI. Put your password in place of [YOUR-PASSWORD].', link: { href: 'https://supabase.com/dashboard/project/_?showConnect=true', label: 'Open Connect' }, values: ['dbUrl'] },
@@ -114,7 +114,7 @@ export const SERVICES = {
       once: 'Vercel shows the token once. Paste it here before you close the page.',
     },
     steps: [
-      { id: 'vc.new', text: 'Import your git repo as a project and let the first build run.', link: { href: 'https://vercel.com/new', label: 'New project' }, note: 'The first deploy has to finish before Vercel accepts a domain.' },
+      { id: 'vc.new', text: 'Import your git repo as a project and let the first build run.', link: { href: 'https://vercel.com/new', label: 'New project' }, auto: 'vercel.projects', note: 'The first deploy has to finish before Vercel accepts a domain.' },
       { id: 'vc.token', text: 'Create the token below and paste it.', values: ['token'] },
       { id: 'vc.ids', text: 'Press Check it, then pick this app\'s project.', values: ['projectId', 'teamId'] },
       { id: 'vc.env', text: 'Send the Supabase values to the project.', action: 'vercel.env' },
