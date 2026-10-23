@@ -2,7 +2,7 @@
 // .tb-*), .shell, .rail, .view, .panes (.pane-left/.pane-right), .convo +
 // .msg, .dock, .ctx layers, .lp, the onboarding frame (.ob + .aurora-field)
 // and the heads-down frame (.tui-wrap).
-import { createContext, useContext, useLayoutEffect, useRef } from 'react';
+import { Children, createContext, isValidElement, useContext, useLayoutEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from './icons.jsx';
 import { Orb } from './agent.jsx';
@@ -10,10 +10,11 @@ import { cx } from './controls.jsx';
 import { Markdown } from './markdown.jsx';
 import { PATHS, lastSession } from '../routes.js';
 import { trayY, vaultRail } from './shell-rules.js';
+import { NeedsYou } from './needs.jsx';
 import '../styles/attachments.css';
 
-/** What every frame shows from live data: the inbox badge, owner mode, the loop line. */
-export const ShellContext = createContext({ inbox: 0, owner: false, repo: '' });
+/** What every frame shows from live data: the inbox badge, owner mode, the loop line, who needs the owner now. */
+export const ShellContext = createContext({ inbox: 0, owner: false, repo: '', needs: [] });
 export const useShell = () => useContext(ShellContext);
 
 export function Wordmark({ to = PATHS.fleet, label = 'nexus, the fleet' }) {
@@ -29,8 +30,16 @@ export function TbTitle({ title, sub }) {
   return <span className="tb-title"><b>{title}</b>{sub ? <span className="tb-long">{sub}</span> : null}</span>;
 }
 
+const isSpacer = (c) => isValidElement(c) && (c.type === TbSpacer || (c.type === 'span' && c.props.className === 'tb-spacer'));
+
+/** .topbar. Who needs the owner rides on every one, first in the right-hand group (after the spacer). */
 export function Topbar({ children }) {
-  return <header className="topbar">{children}</header>;
+  const kids = Children.toArray(children);
+  const at = kids.findIndex(isSpacer);
+  const needs = <NeedsYou key="needs-you" />;
+  if (at < 0) kids.push(needs);
+  else kids.splice(at + 1, 0, needs);
+  return <header className="topbar">{kids}</header>;
 }
 
 const RAIL = [

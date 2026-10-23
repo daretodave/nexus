@@ -22,6 +22,7 @@ import {
 } from '../ui/index.js';
 import { api, useGitRepo } from '../data/index.js';
 import { InlineCode } from '../ui/code.jsx';
+import { SkelRows } from '../ui/loading.jsx';
 import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
 import { act, hhmm, plural, prNum } from './fleet/util.js';
@@ -176,7 +177,7 @@ export default function GitPanel() {
             <button className="btn" type="button" onClick={() => openTidy()} aria-expanded={tidyOpen ? 'true' : 'false'}><Icon name="trash" size={14} />Tidy (dry run)</button>
           </div>
         </div>
-        {git.status === 'loading' ? null : git.status === 'missing' ? (
+        {git.status === 'loading' ? <SkelRows n={5} label="Loading git" /> : git.status === 'missing' ? (
           <Empty sky="none" title="No worktrees to show yet" body="Every session's worktree, recent main commits and open pull requests arrive with the git panel." />
         ) : git.status === 'error' && !git.data ? (
           <Err title="Couldn't read git" body="Nothing was changed. The panel reads git again when you retry." detail={git.error} actions={<button className="btn btn-s" type="button" onClick={git.reload}>Try again</button>} />

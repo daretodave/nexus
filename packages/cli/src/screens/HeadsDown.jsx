@@ -7,7 +7,7 @@
 // show (none named, or it is gone), it asks what to start: a spec, or infinite.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FxLayer, Tui, sessClass, useShell } from '../ui/index.js';
+import { FxLayer, NeedsYou, Tui, sessClass, useShell } from '../ui/index.js';
 import { api, server, useClaims, useCloudLoop, useEvents, useInbox, useLocalSettings, usePlan, useSession, useSessions } from '../data/index.js';
 import { PATHS, lastSession } from '../routes.js';
 import { headsRows } from './headsdown-inbox/headsModel.js';
@@ -240,6 +240,8 @@ export default function HeadsDown() {
       <Tui label={`Heads-down view of the ${name} session`} style={{ whiteSpace: 'normal' }}>
         {renderRows(rows)}
       </Tui>
+      {/* No top bar here, so another session that needs the owner rides in the corner (this one's own asks are on the tape). */}
+      <div className="heads-needs"><NeedsYou max={2} here={id} /></div>
     </div>
   );
 }

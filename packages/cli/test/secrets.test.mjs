@@ -310,3 +310,25 @@ test('nexus run masks a vault value in its output', async () => {
   const plain = await maskFor(fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-novault-')));
   assert.equal(plain.size, 0, 'no vault: nothing to mask');
 });
+
+test('the gh list is read in the background, once, and kept: the vault reads GitHub without holding the server', async () => {
+  const { repo } = vaultRepo({ env: `GH_TOKEN=${GH}\n` });
+  execFileSync('git', ['remote', 'add', 'origin', 'https://github.com/example/app.git'], { cwd: repo });
+  const calls = [];
+  const ghRun = async (cmd, args, opts) => {
+    calls.push({ cmd, args, cwd: opts.cwd });
+    await new Promise((r) => setTimeout(r, 30));
+    return { code: 0, stdout: JSON.stringify([{ name: 'GH_TOKEN', updatedAt: '2026-01-02T03:04:05Z' }]) };
+  };
+  const s = createSecrets({ repo, owner: () => true, ghRun });
+  const remoteOf = (st) => st.secrets.find((x) => x.name === 'GH_TOKEN').destinations.find((d) => d.destination === 'github-actions');
+  const [a, b] = await Promise.all([s.status(), s.status()]);
+  for (const st of [a, b]) {
+    assert.equal(st.status, 200);
+    assert.equal(remoteOf(st).remote, 'set', 'the first look waits for gh and shows what it said');
+  }
+  assert.equal(calls.length, 1, 'two looks at once share one gh read');
+  assert.deepEqual(calls[0].args.slice(0, 3), ['secret', 'list', '--json']);
+  assert.equal(remoteOf(await s.status()).remote, 'set');
+  assert.equal(calls.length, 1, 'kept: a look a moment later asks gh nothing');
+});

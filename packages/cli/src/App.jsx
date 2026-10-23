@@ -2,8 +2,8 @@
 // (the inbox badge, owner mode, the repo name). Screens live in screens/.
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { ShellContext, Err } from './ui/index.js';
-import { useAppState, useEvents, useInbox, useReloadOn } from './data/index.js';
+import { ShellContext, Err, ScreenLoading } from './ui/index.js';
+import { useAppState, useEvents, useInbox, useNeeds, useReloadOn } from './data/index.js';
 import { fromInbox } from './screens/headsdown-inbox/inboxModel.js';
 import { PATHS } from './routes.js';
 // Every screen is its own chunk, fetched when its route first renders, so
@@ -24,22 +24,37 @@ const SCREENS = {
   Vault: () => import('./screens/Vault.jsx'),
   Design: () => import('./screens/Design.jsx'),
 };
-const Fleet = lazy(SCREENS.Fleet);
-const Cockpit = lazy(SCREENS.Cockpit);
-const Onboarding = lazy(SCREENS.Onboarding);
-const HeadsDown = lazy(SCREENS.HeadsDown);
-const Inbox = lazy(SCREENS.Inbox);
-const Board = lazy(SCREENS.Board);
-const CloudLoop = lazy(SCREENS.CloudLoop);
-const Settings = lazy(SCREENS.Settings);
-const Recover = lazy(SCREENS.Recover);
-const GitPanel = lazy(SCREENS.GitPanel);
-const Vault = lazy(SCREENS.Vault);
-const Design = lazy(SCREENS.Design);
+// A screen whose code has arrived renders straight away; until then it is lazy and its route shows ScreenLoading.
+// (lazy alone suspends on every first render, even for code already here, which would flash the loading frame.)
+function screen(load) {
+  let mod = null;
+  const fetch = () => load().then((m) => { mod = m; return m; });
+  const Lazy = lazy(fetch);
+  // Chosen once per mount: switching from Lazy to the module later would remount the screen and lose its state.
+  const Screen = (props) => {
+    const [Comp] = useState(() => (mod ? mod.default : Lazy));
+    return <Comp {...props} />;
+  };
+  Screen.preload = fetch;
+  return Screen;
+}
+const Fleet = screen(SCREENS.Fleet);
+const Cockpit = screen(SCREENS.Cockpit);
+const Onboarding = screen(SCREENS.Onboarding);
+const HeadsDown = screen(SCREENS.HeadsDown);
+const Inbox = screen(SCREENS.Inbox);
+const Board = screen(SCREENS.Board);
+const CloudLoop = screen(SCREENS.CloudLoop);
+const Settings = screen(SCREENS.Settings);
+const Recover = screen(SCREENS.Recover);
+const GitPanel = screen(SCREENS.GitPanel);
+const Vault = screen(SCREENS.Vault);
+const Design = screen(SCREENS.Design);
+const ALL = [Fleet, Cockpit, Onboarding, HeadsDown, Inbox, Board, CloudLoop, Settings, Recover, GitPanel, Vault, Design];
 
 function usePrefetchScreens() {
   useEffect(() => {
-    const go = () => { for (const load of Object.values(SCREENS)) load().catch(() => {}); };
+    const go = () => { for (const s of ALL) s.preload().catch(() => {}); };
     const t = setTimeout(go, 1500);
     return () => clearTimeout(t);
   }, []);
@@ -63,6 +78,7 @@ function Shell() {
   const app = useAppState();
   const live = useEvents();
   const inbox = useInbox();
+  const polled = useNeeds();
   usePrefetchScreens();
   // A question asked or answered on the live channel moves the badge now, not at the next poll.
   useReloadOn(live.asks.length + live.permissions.length, inbox);
@@ -85,10 +101,14 @@ function Shell() {
   const open = inbox.status === 'ready' && inbox.data
     ? fromInbox(inbox.data).filter((x) => !x.settled).length
     : live.asks.length + live.permissions.length;
-  const shell = { inbox: open, owner: !!info.owner, repo: info.name || '', app, live };
+  // Who needs the owner: the live channel's word when it is the newer, else the last look.
+  const seen = polled.status === 'ready' ? polled.data : null;
+  const needs = (live.needs && (!seen || (live.needs.at || 0) >= (seen.at || 0)) ? live.needs : seen)?.items || [];
+  const shell = { inbox: open, owner: !!info.owner, repo: info.name || '', app, live, needs };
   return (
     <ShellContext.Provider value={shell}>
-      <Suspense fallback={null}>
+      {/* A screen whose code is still on its way lands in its frame at once: rail lit, name up, rows to come. */}
+      <Suspense fallback={<ScreenLoading />}>
       <Routes>
         <Route path="/" element={<Home app={app} />} />
         <Route path="/s/:id" element={<Cockpit />} />
@@ -112,7 +132,9 @@ function Shell() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    // Not a transition: a click on the rail changes the screen now (its frame, while its code loads), rather than
+    // keeping the old screen up until the new one is ready.
+    <BrowserRouter useTransitions={false}>
       <Shell />
     </BrowserRouter>
   );

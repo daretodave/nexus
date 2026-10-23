@@ -25,3 +25,21 @@ export function rememberSession(id) {
 export function lastSession() {
   try { return sessionStorage.getItem(LAST) || null; } catch { return null; }
 }
+
+/** The rail item a path lights: 'fleet', 'cockpit', 'heads', 'inbox', 'board', ..., 'onboarding', or null. */
+export function railOf(pathname = '/') {
+  const p = String(pathname || '/');
+  if (p === '/' || p === '') return 'fleet';
+  if (p.startsWith('/s/')) return 'cockpit';
+  if (p.startsWith('/onboarding')) return 'onboarding';
+  const first = p.split('/')[1];
+  const map = { 'heads-down': 'heads', inbox: 'inbox', board: 'board', cloud: 'cloud', settings: 'settings', recover: 'recover', git: 'git', vault: 'vault', design: 'design' };
+  return map[first] || null;
+}
+
+/** The session whose cockpit a path opens (the id in /s/<id>), or null. */
+export function sessionIn(pathname) {
+  const m = /^\/s\/([^/?#]+)/.exec(String(pathname || ''));
+  if (!m) return null;
+  try { return decodeURIComponent(m[1]); } catch { return m[1]; }
+}

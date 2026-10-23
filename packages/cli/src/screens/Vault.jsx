@@ -14,6 +14,7 @@ import {
 import { server, usePlan, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
+import { SkelRows } from '../ui/loading.jsx';
 import { useToasts } from './fleet/toasts.js';
 import ImportPanel from './vault/ImportPanel.jsx';
 import LocalKeys from './vault/LocalKeys.jsx';
@@ -36,7 +37,7 @@ export default function Vault() {
 
   const actions = <><LoopLine /><InboxBtn /></>;
   let body;
-  if (res.status === 'loading' && !st) body = null;
+  if (res.status === 'loading' && !st) body = <SkelRows n={5} label="Loading the vault" />;
   else if (vaultMissing(st)) {
     // No vault scripts here: an empty state with the way forward, not an error (spec 47, A2).
     body = <div className="vault-scroll"><div style={{ marginTop: 56 }}><VaultSetup owner={owner} envNames={st.rootEnv?.exists ? st.rootEnv.names : 0} reload={res.reload} toast={toast} /></div></div>;

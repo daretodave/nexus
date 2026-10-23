@@ -79,6 +79,10 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
     }
   };
   begin();
+  // The top bar's needs on every channel as the script asks and is answered (the live server sends them on the change).
+  const needsLook = setInterval(() => world.pushNeeds(), 400);
+  needsLook.unref?.();
+  world.pushNeeds();
 
   const server = http.createServer((req, res) => {
     handle(req, res).catch((e) => send(res, 500, { error: String(e && e.message ? e.message : e) }));
@@ -161,6 +165,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         }
         case 'GET /api/sessions': return send(res, 200, world.rows());
         case 'GET /api/inbox': return send(res, 200, inboxWithSecret());
+        case 'GET /api/needs': return send(res, 200, world.needs());
         case 'GET /api/oversight': { const row = vault.mark(DEMO_REQUEST.durable); return send(res, 200, { live: world.asks(), durable: [...world.durable(), ...(row && local?.effective !== false ? [row] : [])] }); }
         case 'GET /api/plan': return send(res, 200, planWithSecret());
         case 'GET /api/secrets': { const { status, ...r } = vault.status(); return send(res, 200, r); }
@@ -261,6 +266,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
     restart: begin,
     async close() {
       if (loopTimer) clk.cancel(loopTimer);
+      clearInterval(needsLook);
       world.close();
       await new Promise((r) => { server.close(r); server.closeAllConnections?.(); });
     },

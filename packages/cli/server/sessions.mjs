@@ -32,10 +32,20 @@ export function claudeHome(env = process.env) {
   return env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 }
 
+// Asked on nearly every request: kept per folder until the folder gains or loses its own .git (a git init).
+const roots = new Map();
+
 /** The primary checkout's root (where the board and the ledgers live), or the repo itself outside git. */
 export async function primaryRoot(repo) {
+  const key = path.resolve(repo);
+  const own = fs.existsSync(path.join(key, '.git'));
+  const kept = roots.get(key);
+  if (kept && kept.own === own) return kept.root;
   const r = await run('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: repo });
-  return r.ok && r.stdout.trim() ? path.dirname(path.resolve(r.stdout.trim())) : repo;
+  if (!r.ok || !r.stdout.trim()) return repo;
+  const root = path.dirname(path.resolve(r.stdout.trim()));
+  roots.set(key, { root, own });
+  return root;
 }
 
 /** The repo's worktree folders (the primary first), or just the repo. */

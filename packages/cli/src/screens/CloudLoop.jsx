@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { Icon, PauseBtn, InboxBtn, Empty, Err, cx, useShell } from '../ui/index.js';
 import { server, useClaims, useInbox } from '../data/index.js';
 import { PATHS } from '../routes.js';
+import { SkelRows } from '../ui/loading.jsx';
 import { useLoop, hhmm, inWords, clock, tonightStart } from './cloud-settings/loop.js';
 import { Frame, LoopDot, andList } from './cloud-settings/parts.jsx';
 
@@ -140,7 +141,7 @@ export default function CloudLoop() {
 
   let body;
   if (loop.status === 'loading') {
-    body = null;
+    body = <SkelRows n={4} label="Loading the cloud loop" />;
   } else if (loop.status === 'nogh' || loop.status === 'error') {
     body = <Err icon="offline" title={loop.note || 'gh could not read this repo'} body="nexus reads the cloud loop through your own gh login. Nothing in the loop has changed." actions={<button className="btn btn-s" type="button" onClick={loop.reload}>Check again</button>} />;
   } else if (loop.status === 'none') {
