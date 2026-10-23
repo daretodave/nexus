@@ -110,7 +110,8 @@ export function draftTokens(text, code = liteTokens) {
   if (!s) return [];
   const out = [];
   let body = s;
-  const slash = /^\s*\/[A-Za-z][\w:-]*/.exec(s);
+  // A /command ends at a space or the end; '/usr/bin/node' goes on with another '/', so it is a path, not a command.
+  const slash = /^\s*\/[A-Za-z][\w:-]*(?=\s|$)/.exec(s);
   if (slash) {
     const lead = /^\s*/.exec(s)[0];
     if (lead) out.push({ t: 'ws', v: lead });

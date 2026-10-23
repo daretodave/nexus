@@ -6,6 +6,10 @@ import { BRACKET_DEPTHS } from './tokens.js';
 const br = (v, depth) => ({ t: 'br', v, d: (depth % BRACKET_DEPTHS) + 1 });
 const isBox = (v) => v !== null && typeof v === 'object';
 const entries = (v) => (Array.isArray(v) ? v.map((x, i) => [i, x]) : Object.entries(v));
+/** A child's fold path, its key escaped JSON Pointer style so a key holding '/' never names a nested node. */
+const child = (path, k) => `${path}/${String(k).replace(/~/g, '~0').replace(/\//g, '~1')}`;
+/** The words a fold toggle is named by: its keys joined with dots, the root as 'root'. */
+const nameOf = (label, k) => (label ? `${label}.${k}` : String(k));
 
 function scalar(v) {
   if (typeof v === 'string') return { t: 'str', v: JSON.stringify(v) };
@@ -27,20 +31,20 @@ export function defaultFolds(value, { depth = 2, many = 24 } = {}) {
     if (!isBox(v)) return;
     const kids = entries(v);
     if (d > 0 && (d >= depth || kids.length > many) && kids.length) { out.add(path); return; }
-    for (const [k, x] of kids) walk(x, `${path}/${k}`, d + 1);
+    for (const [k, x] of kids) walk(x, child(path, k), d + 1);
   };
   walk(value, '', 0);
   return out;
 }
 
 /**
- * Rows for a value: [{ tokens, depth, fold: { path, open, count } | null }]. `folded` is a Set of paths ('' the root,
- * '/key/0' below it).
+ * Rows for a value: [{ tokens, depth, fold: { path, name, open, count } | null }]. `folded` is a Set of paths ('' the
+ * root, '/key/0' below it, a '/' in a key written '~1' and a '~' as '~0'); `name` is what its toggle is called.
  */
 export function jsonRows(value, folded = new Set(), { indent = 2 } = {}) {
   const rows = [];
   const pad = (d) => (d ? [{ t: 'ws', v: ' '.repeat(d * indent) }] : []);
-  const emit = (v, path, d, key, comma) => {
+  const emit = (v, path, d, key, comma, label) => {
     const head = [...pad(d)];
     if (key != null) head.push({ t: 'prop', v: JSON.stringify(String(key)) }, { t: 'punct', v: ':' }, { t: 'ws', v: ' ' });
     const tail = comma ? [{ t: 'punct', v: ',' }] : [];
@@ -51,14 +55,14 @@ export function jsonRows(value, folded = new Set(), { indent = 2 } = {}) {
     if (!kids.length) { rows.push({ tokens: [...head, br(o, d), br(c, d), ...tail], depth: d, fold: null }); return; }
     if (folded.has(path)) {
       const note = `${kids.length} ${arr ? (kids.length === 1 ? 'item' : 'items') : (kids.length === 1 ? 'key' : 'keys')}`;
-      rows.push({ tokens: [...head, br(o, d), { t: 'comment', v: ` … ${note} ` }, br(c, d), ...tail], depth: d, fold: { path, open: false, count: kids.length } });
+      rows.push({ tokens: [...head, br(o, d), { t: 'comment', v: ` … ${note} ` }, br(c, d), ...tail], depth: d, fold: { path, name: label || 'root', open: false, count: kids.length } });
       return;
     }
-    rows.push({ tokens: [...head, br(o, d)], depth: d, fold: { path, open: true, count: kids.length } });
-    kids.forEach(([k, x], i) => emit(x, `${path}/${k}`, d + 1, arr ? null : k, i < kids.length - 1));
+    rows.push({ tokens: [...head, br(o, d)], depth: d, fold: { path, name: label || 'root', open: true, count: kids.length } });
+    kids.forEach(([k, x], i) => emit(x, child(path, k), d + 1, arr ? null : k, i < kids.length - 1, nameOf(label, k)));
     rows.push({ tokens: [...pad(d), br(c, d), ...tail], depth: d, fold: null });
   };
-  emit(value, '', 0, null, false);
+  emit(value, '', 0, null, false, '');
   return rows;
 }
 

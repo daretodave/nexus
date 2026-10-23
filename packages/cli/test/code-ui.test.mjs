@@ -58,8 +58,8 @@ test('a JSON tree: rows with fold toggles, deep boxes folded with their counts',
   const { JsonView } = await import('../src/ui/code.jsx');
   const out = html(createElement(JsonView, { value: { command: 'ls', deep: { a: { b: 1 } } } }));
   assert.match(out, /<pre class="code-pre code-json">/);
-  assert.match(out, /<button class="json-fold" type="button" aria-expanded="true" aria-label="Fold"/);
-  assert.match(out, /aria-expanded="false" aria-label="Unfold 1"/);
+  assert.match(out, /<button class="json-fold" type="button" aria-expanded="true" aria-label="Fold root"/);
+  assert.match(out, /aria-expanded="false" aria-label="Unfold deep\.a \(1\)"/, 'each toggle names the node it folds');
   assert.match(out, /… 1 key /);
   const clipped = html(createElement(JsonView, { text: '{"command":"echo (hi' }));
   assert.match(clipped, /<span class="syn-prop">&quot;command&quot;<\/span>/, 'a clipped summary still colours');
@@ -119,6 +119,70 @@ test('the composer\'s field: the real textarea with its text transparent, the co
   const { SyntaxTextarea } = await import('../src/ui/code.jsx');
   const nl = html(createElement(SyntaxTextarea, { value: 'a\n', onChange() {} }));
   assert.match(nl, /<div class="syn-mirror" aria-hidden="true">a\n​<\/div>/, 'a trailing newline keeps its line in the copy');
+});
+
+test('an edit the server cut short shows a note, not a diff of the clipped text, in the row and on the card', async () => {
+  const { clipInput } = await import('../server/normalize.mjs');
+  const { ToolDetail, callView } = await import('../src/ui/tool-detail.jsx');
+  const { PermissionCard, permissionCard } = await import('../src/ui/permission-card.jsx');
+  const edits = [0, 1, 2].map((k) => ({ old_string: `old_${k}\n`.repeat(750), new_string: `new_${k}\n`.repeat(750) }));
+  const clipped = [];
+  const input = clipInput({ file_path: 'src/a.js', edits }, '', clipped);
+  const view = callView('MultiEdit', input, 'src/a.js', clipped);
+  assert.deepEqual(view.edits.map((e) => !!e.cut), [true, true, true], 'every edit with a side cut is marked');
+  assert.equal(callView('Edit', { file_path: 'a.js', old_string: 'a', new_string: 'b' }, '', []).edits[0].cut, undefined);
+  const row = html(createElement(ToolDetail, { tool: 'MultiEdit', args: 'src/a.js', input, clipped }));
+  assert.match(row, /<p class="code-cut">This change is too large to preview here/);
+  assert.doesNotMatch(row, /dl-add|dl-del/, 'no diff drawn from clipped text');
+  const req = { tool: 'MultiEdit', title: 'MultiEdit', args: 'src/a.js', summary: '{}', input, clipped };
+  assert.deepEqual(permissionCard(req).clipped, clipped);
+  const card = html(createElement(PermissionCard, { req, who: 'main' }));
+  assert.match(card, /<div class="perm-change">[\s\S]*code-cut/);
+  assert.doesNotMatch(card, /dl-add|dl-del/);
+});
+
+test('the one-line field: the real input, the coloured copy over it, hidden from readers', async () => {
+  const { SyntaxInput, SyntaxTextarea, DRAFT_MAX } = await import('../src/ui/code.jsx');
+  const out = html(createElement(SyntaxInput, { value: 'run `ls (x)`', onChange() {}, className: 'ans', 'aria-label': 'Answer' }));
+  assert.match(out, /^<span class="syn-field is-line"><input class="ans syn-input" aria-label="Answer" value="run `ls \(x\)`"\/>/);
+  assert.match(out, /<span class="syn-mirror" aria-hidden="true">run <span class="syn-punct">`<\/span><span class="syn-cmd">ls<\/span>/);
+  assert.doesNotMatch(out, /​/, 'an input has no trailing line to keep');
+  const area = html(createElement(SyntaxTextarea, { value: 'x\n', onChange() {}, wrapClassName: 'w' }));
+  assert.match(area, /^<div class="syn-field w"><textarea class="syn-input">/);
+  assert.match(area, /<div class="syn-mirror" aria-hidden="true">x\n​<\/div><\/div>$/, 'the trailing zero-width space');
+  const big = `(${'a'.repeat(DRAFT_MAX)})`;
+  const plain = html(createElement(SyntaxTextarea, { value: big, onChange() {} }));
+  assert.match(plain, /<div class="syn-mirror" aria-hidden="true">\(a+\)<\/div>/, 'a huge draft draws as one plain run');
+});
+
+test('the mirror: metrics copied once, a keystroke only scrolls it and keeps a scrollbar\'s room', async () => {
+  const { measureMirror, placeMirror, setRef } = await import('../src/ui/code.jsx');
+  const writes = [];
+  const style = new Proxy({}, { set(o, k, v) { writes.push(k); o[k] = v; return true; } });
+  const m = { style, scrollTop: 0, scrollLeft: 0 };
+  const cs = { fontFamily: 'mono', fontSize: '13px', paddingRight: '10px', borderLeftWidth: '1px', borderRightWidth: '1px' };
+  const box = measureMirror(m, cs);
+  assert.equal(style.fontFamily, 'mono');
+  assert.equal(style.borderColor, 'transparent');
+  assert.deepEqual({ padRight: box.padRight, borders: box.borders }, { padRight: 10, borders: 2 });
+  const f = { offsetWidth: 302, clientWidth: 300, scrollTop: 40, scrollLeft: 3 };
+  placeMirror(f, m, box);
+  assert.equal(style.paddingRight, '10px', 'no scrollbar: the field\'s own padding');
+  assert.deepEqual([m.scrollTop, m.scrollLeft], [40, 3]);
+  writes.length = 0;
+  f.scrollTop = 60;
+  placeMirror(f, m, box);
+  assert.deepEqual(writes, [], 'a scroll writes no style');
+  assert.equal(m.scrollTop, 60);
+  f.clientWidth = 286;
+  placeMirror(f, m, box);
+  assert.equal(style.paddingRight, '24px', 'a scrollbar appeared: its room kept on the right');
+  // The field's element reaches the caller's ref, a function or an object.
+  let got = null;
+  setRef((el) => { got = el; }, 'el');
+  const obj = { current: null };
+  setRef(obj, 'el2');
+  assert.deepEqual([got, obj.current], ['el', 'el2']);
 });
 
 test('output: escapes and reminders dropped, numbered lines split, list lines coloured', () => {

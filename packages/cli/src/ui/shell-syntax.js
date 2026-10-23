@@ -59,7 +59,9 @@ export function tokenizeShell(src) {
       i = j;
       continue;
     }
-    const here = c === '<' && s[i + 1] === '<' && s[i + 2] !== '<' ? /^<<(-?)[ \t]*(['"]?)([A-Za-z_][\w-]*)\2/.exec(s.slice(i, i + 80)) : null;
+    // A here-string (`<<< word`) is one operator; taken whole here, so its second '<' never reads as a heredoc's first.
+    if (s.startsWith('<<<', i)) { push('op', '<<<'); i += 3; cmdNext = false; continue; }
+    const here = c === '<' && s[i + 1] === '<' ? /^<<(-?)[ \t]*(['"]?)([A-Za-z_][\w-]*)\2/.exec(s.slice(i, i + 80)) : null;
     if (here) {
       push('op', here[0]);
       heredoc = { word: here[3], dash: !!here[1] };

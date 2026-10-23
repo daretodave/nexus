@@ -14,9 +14,12 @@
 // changes an unknown number of places, so it carries no diffstat.
 //
 // Detail (for the cockpit's open tool row): a call carries its `input` too, its strings clipped
-// (clipInput), unless the summary already says all of it (a lone command or path); a successful
-// tool_result becomes a `tool-output` item with its text clipped (clipOutput), head and tail kept.
-// Both are bounded so a 2000-item transcript stays a sane size on every reconnect.
+// (clipInput), unless the summary already says all of it (a lone command or path), and `clipped`,
+// the paths of the strings that were cut, so an edit cut short is never drawn as a diff. A
+// successful tool_result's text, clipped (clipOutput, head and tail kept), rides on its call's
+// `tool-done` item; without a clock there is no tool-done, so it comes as a `tool-output` item.
+// Riding on tool-done keeps a call at two transcript items, so the hub's 2000-item cap holds as
+// much history as it did, and both are bounded so that transcript stays a sane size on reconnect.
 
 export function newTxContext({ now = null } = {}) {
   return { msgId: null, streamed: new Set(), now, started: new Map() };
@@ -81,28 +84,31 @@ const clipStr = (s, n) => (s.length > n ? `${s.slice(0, n)}\n... (${s.length - n
 
 /**
  * A call's input for display: every string clipped to INPUT_STR and the lot to INPUT_ALL (later strings get what is
- * left), nesting kept to a few levels. Null when there is nothing beyond what `summary` shows.
+ * left), nesting kept to a few levels. Null when there is nothing beyond what `summary` shows. Pass an array as
+ * `clipped` and the path of every string that was cut lands in it ('old_string', 'edits/1/new_string'): a clipped
+ * edit is not the edit that will happen, so the views must not diff it.
  */
-export function clipInput(input, summary = '') {
+export function clipInput(input, summary = '', clipped = null) {
   if (!input || typeof input !== 'object') return null;
   const keys = Object.keys(input);
   if (!keys.length) return null;
   if (keys.length === 1 && typeof input[keys[0]] === 'string' && input[keys[0]] === summary) return null;
   let left = INPUT_ALL;
-  const walk = (v, depth) => {
+  const walk = (v, depth, path) => {
     if (typeof v === 'string') {
-      const out = clipStr(v, Math.max(0, Math.min(INPUT_STR, left)));
+      const room = Math.max(0, Math.min(INPUT_STR, left));
       left -= Math.min(v.length, INPUT_STR);
-      return out;
+      if (v.length > room) clipped?.push(path);
+      return clipStr(v, room);
     }
     if (v === null || typeof v !== 'object') return v;
-    if (depth > 4) return Array.isArray(v) ? `[${v.length} items]` : '{...}';
-    if (Array.isArray(v)) return v.slice(0, 50).map((x) => walk(x, depth + 1));
+    if (depth > 4) { clipped?.push(path); return Array.isArray(v) ? `[${v.length} items]` : '{...}'; }
+    if (Array.isArray(v)) return v.slice(0, 50).map((x, i) => walk(x, depth + 1, path ? `${path}/${i}` : String(i)));
     const o = {};
-    for (const [k, x] of Object.entries(v).slice(0, 50)) o[k] = walk(x, depth + 1);
+    for (const [k, x] of Object.entries(v).slice(0, 50)) o[k] = walk(x, depth + 1, path ? `${path}/${k}` : k);
     return o;
   };
-  return walk(input, 0);
+  return walk(input, 0, '');
 }
 
 /** A result's text for display: whole when short, else its head and tail with how many lines fell between. */
@@ -151,7 +157,11 @@ export function txFromMessage(msg, ctx) {
       if (!block || block.type !== 'tool_result' || !ctx.started.has(block.tool_use_id)) continue;
       const from = ctx.started.get(block.tool_use_id);
       ctx.started.delete(block.tool_use_id);
-      out.push({ kind: 'tool-done', id: block.tool_use_id, agent: msg.parent_tool_use_id || 'main', ms: Math.max(0, at - from), ok: !block.is_error, at });
+      const done = { kind: 'tool-done', id: block.tool_use_id, agent: msg.parent_tool_use_id || 'main', ms: Math.max(0, at - from), ok: !block.is_error, at };
+      // The result's text moves onto the tool-done: one item fewer per call in the capped transcript.
+      const k = out.findIndex((x) => x.kind === 'tool-output' && x.id === block.tool_use_id);
+      if (k !== -1) { done.text = out[k].text; out.splice(k, 1); }
+      out.push(done);
     }
   }
   return out;
@@ -188,8 +198,10 @@ function txItems(msg, ctx) {
           const item = { kind: 'tool', id: block.id, agent, name: block.name, summary: summarize(block.name, block.input) };
           const diff = diffOf(block.name, block.input);
           if (diff) item.diff = diff;
-          const input = clipInput(block.input, String(toolArgOf(block.input)));
+          const clipped = [];
+          const input = clipInput(block.input, String(toolArgOf(block.input)), clipped);
           if (input) item.input = input;
+          if (input && clipped.length) item.clipped = clipped;
           out.push(item);
         }
       });

@@ -44,7 +44,7 @@ test('with a clock, items carry when they were read and a tool_result gives the 
   assert.equal(call.at, 1000);
   t = 1900;
   const done = txFromMessage({ type: 'user', parent_tool_use_id: null, message: { content: [{ type: 'tool_result', tool_use_id: 'T1', content: 'ok' }] } }, ctx);
-  assert.deepEqual(done, [{ kind: 'tool-output', id: 'T1', agent: 'main', text: 'ok', at: 1900 }, { kind: 'tool-done', id: 'T1', agent: 'main', ms: 900, ok: true, at: 1900 }]);
+  assert.deepEqual(done, [{ kind: 'tool-done', id: 'T1', agent: 'main', ms: 900, ok: true, at: 1900, text: 'ok' }], 'the result rides on the tool-done: two items per call');
   // A result for a call this context never saw has no start: no duration is guessed.
   assert.deepEqual(txFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'X' }] } }, ctx), []);
   // A failed call still ends, with ok false, after its tool-error.
@@ -93,6 +93,19 @@ test('a call carries its input when the summary does not say it all; strings cli
   assert.ok(big.a.length < 4100 && big.a.endsWith('(5000 more characters)'));
   assert.ok(JSON.stringify(big).length < 9000, 'the whole input stays bounded');
   assert.equal(typeof clipInput({ deep: { a: { b: { c: { d: { e: 1 } } } } } }).deep.a.b.c.d, 'string', 'nesting is cut a few levels down');
+});
+
+test('a clipped input says which strings were cut, so an edit cut short is never diffed', () => {
+  const edits = [0, 1, 2].map((k) => ({ old_string: `${k}`.repeat(3000), new_string: `${k}x`.repeat(1500) }));
+  const cut = [];
+  const shown = clipInput({ file_path: 'a.js', edits }, 'a.js', cut);
+  assert.ok(cut.includes('edits/1/new_string') && cut.includes('edits/2/old_string'), 'the strings past the budget');
+  assert.ok(!cut.includes('edits/0/old_string') && !cut.includes('file_path'), 'the ones that fit are not listed');
+  assert.match(shown.edits[1].new_string, /more characters\)$/);
+  const [row] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'E', name: 'MultiEdit', input: { file_path: 'a.js', edits } }] } }, newTxContext());
+  assert.deepEqual(row.clipped, cut, 'the call carries the list');
+  const [small] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'S', name: 'Edit', input: { file_path: 'a.js', old_string: 'a', new_string: 'b' } }] } }, newTxContext());
+  assert.equal('clipped' in small, false, 'nothing cut, no list');
 });
 
 test('a successful result becomes a tool-output item, clipped to its head and tail', () => {

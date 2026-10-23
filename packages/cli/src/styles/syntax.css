@@ -117,11 +117,14 @@
 /* Your own message's bubble sizes to its text but never past its column: a wide block scrolls inside it. */
 .msg-you > .bubble { max-width: 100%; min-width: 0; }
 
-/* Folded: the first lines, fading into the "Show all" bar. */
-.code-box.is-folded > pre { position: relative; overflow-y: hidden; }
-.code-box.is-folded > pre::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 36px; pointer-events: none;
-  background: linear-gradient(to bottom, transparent, var(--well));
+/* Folded: the first lines, fading into the "Show all" bar. The fade is a mask on the code itself, not an overlay in
+   the pre: an overlay scrolls away with a wide block's content, and the translucent well never fully covers a line.
+   The code grows to its widest line so the mask spans what scrolls into view. */
+.code-box.is-folded > pre { overflow-y: hidden; }
+.code-box.is-folded > pre > code {
+  display: inline-block; min-width: 100%; vertical-align: top;
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 36px), transparent);
 }
 .code-more {
   display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 4px; padding: 4px 8px;
@@ -147,7 +150,10 @@
 .code-cap:first-child { margin-top: 0; }
 
 /* Numbered lines (a Read result): the number in the gutter, never copied with the code. */
-.code-ln { display: inline-block; min-width: 3ch; margin-right: 12px; text-align: right; color: var(--text-off); user-select: none; }
+.code-ln { display: inline-block; min-width: 3ch; margin-right: 12px; text-align: right; color: var(--text-3); user-select: none; }
+
+/* An edit too large to diff here (the server cut its text for display): a note in the diff's frame instead. */
+.code-cut { margin: 0; padding: 8px 12px; font-size: 12px; line-height: 18px; color: var(--text-3); }
 
 /* ---- the JSON tree ----------------------------------------------------------------------------------------------- */
 .json-row { display: block; position: relative; padding-left: 16px; }

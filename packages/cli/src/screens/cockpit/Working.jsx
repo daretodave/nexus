@@ -43,7 +43,7 @@ function ToolRow({ t, running, now }) {
       )}
       open={open} onToggle={() => setOpen((o) => !o)}
     >
-      <ToolDetail tool={t.tool} args={t.args} input={t.input} output={t.output} error={t.error} />
+      <ToolDetail tool={t.tool} args={t.args} input={t.input} clipped={t.clipped} output={t.output} error={t.error} />
     </LogRow>
   );
 }

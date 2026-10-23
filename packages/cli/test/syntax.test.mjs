@@ -52,6 +52,11 @@ test('a heredoc body is one string up to its closing word; <<- allows an indente
   const open = liteTokens('shell', 'cat <<EOF\nstill typing');
   assert.deepEqual(kinds(open).slice(-1), [['str', 'still typing']], 'an unclosed heredoc is string to the end');
   assert.equal(join(liteTokens('shell', 'cat <<< "x"')), 'cat <<< "x"', 'a here-string is not a heredoc');
+  // Its second '<' must not start a heredoc either: the next line is a command again, not a string.
+  const hs = liteTokens('shell', 'cat <<< word\nls');
+  assert.equal(join(hs), 'cat <<< word\nls');
+  assert.deepEqual(kinds(hs), [['cmd', 'cat'], ['op', '<<<'], ['text', 'word'], ['cmd', 'ls']]);
+  assert.ok(!kinds(liteTokens('shell', 'cat <<<EOF\necho hi\nEOF\nls')).some(([t]) => t === 'str'), 'no heredoc body');
 });
 
 // ---- lines and folding ------------------------------------------------------------------------------------------
@@ -219,6 +224,10 @@ test('draft: a fence body in its language, closed or still being typed', () => {
   assert.equal(join(half), 'run `git sta');
   assert.ok(kinds(half).some(([t, v]) => t === 'cmd' && v === 'git'), 'an unclosed tick colours what follows as code');
   const custom = draftTokens('```js\nx\n```', () => [{ t: 'kw', v: 'x' }]);
+  // A leading absolute path is a path, not a /command; a /command alone or before a space still is.
+  assert.deepEqual(kinds(draftTokens('/usr/bin/node crashes')), [['path', '/usr/bin/node'], ['text', ' crashes']]);
+  assert.deepEqual(kinds(draftTokens('/plot')), [['slash', '/plot']]);
+  assert.deepEqual(kinds(draftTokens('  /next now'))[0], ['slash', '/next']);
   assert.ok(kinds(custom).some(([t, v]) => t === 'kw' && v === 'x'), 'the fence body goes through the given highlighter');
 });
 
@@ -242,7 +251,8 @@ test('json rows: a row per entry, brackets by depth, keys and values by kind', (
   const rows = jsonRows({ command: 'ls', opts: { all: true, n: [1, 2] }, none: null });
   const text = rows.map((r) => join(r.tokens)).join('\n');
   assert.equal(text, JSON.stringify({ command: 'ls', opts: { all: true, n: [1, 2] }, none: null }, null, 2));
-  assert.deepEqual(rows[0].fold, { path: '', open: true, count: 3 });
+  assert.deepEqual(rows[0].fold, { path: '', name: 'root', open: true, count: 3 });
+  assert.equal(rows.find((r) => r.fold?.path === '/opts/n').fold.name, 'opts.n', 'a toggle is named by its keys');
   const opts = rows.find((r) => r.fold?.path === '/opts');
   assert.equal(opts.tokens.find((t) => t.t === 'br').d, 2);
   assert.ok(rows.some((r) => r.tokens.some((t) => t.t === 'prop' && t.v === '"command"')));
@@ -257,6 +267,14 @@ test('json rows: a folded box shows on one row with its count; deep boxes start 
   assert.ok(rows.some((r) => join(r.tokens).includes('"list": []')), 'an empty box never folds');
   assert.deepEqual([...defaultFolds(value)], ['/a/b']);
   assert.deepEqual([...defaultFolds({ big: Array.from({ length: 30 }, (_, i) => i) })], ['/big']);
+  // A key holding '/' is escaped, so it never shares a path with a nested key of the same spelling.
+  const clash = { 'a/b': { x: { y: 1 } }, a: { b: { x: { y: 1 } } } };
+  const paths = jsonRows(clash).filter((r) => r.fold).map((r) => r.fold.path);
+  assert.equal(new Set(paths).size, paths.length, 'every box has its own path');
+  assert.ok(paths.includes('/a~1b') && paths.includes('/a/b'));
+  const folds = jsonRows(clash, new Set(['/a/b'])).filter((r) => r.fold && !r.fold.open).map((r) => r.fold.path);
+  assert.deepEqual(folds, ['/a/b'], 'folding one leaves the other open');
+  assert.deepEqual([...defaultFolds({ 'p/q': { r: 1 } }, { depth: 1 })], ['/p~1q']);
   assert.equal(parseJson('{"a":'), null);
   assert.deepEqual(parseJson('[1]'), { value: [1] });
 });

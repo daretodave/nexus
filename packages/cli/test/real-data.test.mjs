@@ -37,6 +37,18 @@ test('a failed result marks its row failed', () => {
   assert.equal(items[0].tools[0].failed, true);
 });
 
+test('a result reaches its row on the tool-done (or a tool-output without a clock), with the input\'s clipped list', () => {
+  const items = convoItems([
+    { kind: 'tool', id: 'B', name: 'Bash', summary: 'ls', input: { command: 'ls' }, clipped: ['command'], at: AT },
+    { kind: 'tool', id: 'R', name: 'Read', summary: 'a' },
+    { kind: 'tool-done', id: 'B', ms: 50, ok: true, text: 'a.js' },
+    { kind: 'tool-output', id: 'R', text: 'x' },
+  ], null);
+  const [bash, read] = items[0].tools;
+  assert.deepEqual([bash.output, bash.clipped, bash.done], ['a.js', ['command'], true]);
+  assert.deepEqual([read.output, read.clipped], ['x', null]);
+});
+
 test('a Workflow call draws the junction, captioned with its agents, and they hang from it on dashed lines', () => {
   const stage = replay([
     { k: 'agent', p: 'start', id: MAIN, label: 'session' },

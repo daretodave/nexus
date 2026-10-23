@@ -125,7 +125,8 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   }
 
   const onPermission = ({ id: reqId, agent, tool, input, suggestions, reason, signal }) => new Promise((resolve) => {
-    const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), input: clipInput(input), args: toolArg(tool, input).slice(0, 4000), title: toolTitle(tool, input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
+    const clipped = [];
+    const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), input: clipInput(input, '', clipped), clipped, args: toolArg(tool, input).slice(0, 4000), title: toolTitle(tool, input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
     permissions.set(reqId, { view, resolve });
     if (!agent || agent === MAIN) hub.beat({ k: 'agent', p: 'wait', id: MAIN });
     publishPerms();

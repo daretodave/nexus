@@ -14,18 +14,24 @@ const LISTS = new Set(['Grep', 'Glob', 'LS']);
 const PROSE = new Set(['Task', 'Agent', 'WebFetch', 'WebSearch']);
 const str = (v) => (typeof v === 'string' ? v : '');
 
-/** The call: { kind, ... } for the panel that draws it. Pure, so the choice is tested without rendering. */
-export function callView(tool, input, args = '') {
+/**
+ * The call: { kind, ... } for the panel that draws it. Pure, so the choice is tested without rendering. `clipped` is
+ * the server's list of string paths it cut for display: an edit with a side cut short is not the edit that will
+ * happen, so it is marked `cut` and drawn as a note, never as a diff of the clipped text.
+ */
+export function callView(tool, input, args = '', clipped = null) {
   const i = input && typeof input === 'object' ? input : null;
+  const cut = new Set(Array.isArray(clipped) ? clipped : []);
+  const edit = (e, at) => ({ file: str(i.file_path) || args, before: e.old_string, after: e.new_string, ...(cut.has(`${at}old_string`) || cut.has(`${at}new_string`) ? { cut: true } : {}) });
   if (SHELL.has(tool) || tool === 'PowerShell') {
     const command = str(i?.command) || args;
     return command ? { kind: 'code', lang: tool === 'PowerShell' ? 'powershell' : 'shell', text: command, label: tool === 'PowerShell' ? 'powershell' : 'shell' } : null;
   }
   if (tool === 'Edit' && i && typeof i.old_string === 'string' && typeof i.new_string === 'string') {
-    return { kind: 'diff', edits: [{ file: str(i.file_path) || args, before: i.old_string, after: i.new_string }] };
+    return { kind: 'diff', edits: [edit(i, '')] };
   }
   if (tool === 'MultiEdit' && i && Array.isArray(i.edits)) {
-    const edits = i.edits.filter((e) => e && typeof e.old_string === 'string' && typeof e.new_string === 'string').map((e) => ({ file: str(i.file_path) || args, before: e.old_string, after: e.new_string }));
+    const edits = i.edits.map((e, k) => (e && typeof e.old_string === 'string' && typeof e.new_string === 'string' ? edit(e, `edits/${k}/`) : null)).filter(Boolean);
     return edits.length ? { kind: 'diff', edits } : null;
   }
   if (tool === 'Write' && i && typeof i.content === 'string') {
@@ -61,7 +67,9 @@ export function outputView(tool, input, output) {
 function Panel({ view, error }) {
   if (!view) return null;
   if (view.kind === 'diff') {
-    return view.edits.map((e, k) => <DiffView key={k} file={e.file} before={e.before} after={e.after} />);
+    return view.edits.map((e, k) => (e.cut
+      ? <div key={k} className="diff code-diff"><div className="diff-head"><b title={e.file}>{e.file || 'change'}</b></div><p className="code-cut">This change is too large to preview here. Raw input shows its start.</p></div>
+      : <DiffView key={k} file={e.file} before={e.before} after={e.after} />));
   }
   if (view.kind === 'json') return <JsonView value={view.value} />;
   if (view.kind === 'list') return <CodeBlockView text={view.text} tokens={listTokens(view.text)} label="matches" />;
@@ -70,8 +78,8 @@ function Panel({ view, error }) {
 }
 
 /** An open tool row's body: the call, then its output or its error. */
-export function ToolDetail({ tool, args, input, output, error }) {
-  const call = useMemo(() => callView(tool, input, args), [tool, input, args]);
+export function ToolDetail({ tool, args, input, clipped = null, output, error }) {
+  const call = useMemo(() => callView(tool, input, args, clipped), [tool, input, args, clipped]);
   const out = useMemo(() => outputView(tool, input, output), [tool, input, output]);
   return (
     <div className="tool-detail">

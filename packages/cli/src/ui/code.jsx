@@ -62,13 +62,15 @@ function sniff(text) {
 /**
  * A block of code: coloured by `lang` (a grammar name or a fence word), rainbow brackets, a language label and a
  * copy button, and past FOLD_AT lines folded to its head with a "Show all" bar. A block still streaming (`open`)
- * never folds, so its newest lines stay in view. With no language the text draws plain, exactly as given.
+ * never folds, so its newest lines stay in view, and draws with the quick tokens: a grammar pass over the whole
+ * block on every delta would cost frames, so it waits for the block to close. With no language the text draws plain,
+ * exactly as given.
  * `tokens` draws ready-made tokens instead (a Grep result); `numbered` puts each line's number in a gutter.
  */
 export function CodeBlockView({ text, lang = '', label, open = false, className = 'code-pre', preClass, fold = true, copy = true, numbered = null, tokens: given = null }) {
   const s = String(text ?? '');
   const grammar = langOf(lang) || (!lang ? sniff(s) : '');
-  const raw = useCodeTokens(grammar, s);
+  const raw = useCodeTokens(grammar, s, { quick: open });
   const tokens = useMemo(() => given || (grammar ? rainbow(raw) : null), [raw, grammar, given]);
   const total = lineCount(s);
   const plan = fold && !open ? foldPlan(total) : { fold: false, keep: total };
@@ -116,7 +118,7 @@ export function JsonView({ value, text, className = 'code-pre', fold = true }) {
         {rows.map((r, i) => (
           <span key={i} className={cx('json-row', r.fold && !r.fold.open && 'is-folded')} onClick={r.fold && !r.fold.open ? () => toggle(r.fold.path) : undefined}>
             {r.fold ? (
-              <button className="json-fold" type="button" aria-expanded={r.fold.open} aria-label={r.fold.open ? 'Fold' : `Unfold ${r.fold.count}`} onClick={(e) => { e.stopPropagation(); toggle(r.fold.path); }}>
+              <button className="json-fold" type="button" aria-expanded={r.fold.open} aria-label={r.fold.open ? `Fold ${r.fold.name}` : `Unfold ${r.fold.name} (${r.fold.count})`} onClick={(e) => { e.stopPropagation(); toggle(r.fold.path); }}>
                 <Icon name="chevronDown" size={12} />
               </button>
             ) : null}
@@ -188,39 +190,67 @@ const MIRROR_PROPS = [
   'borderLeftWidth', 'direction', 'textAlign',
 ];
 
-/** Keep a mirror over its field: the same box metrics, the scrollbar's room kept, scrolled where the field is. */
+/**
+ * Copy a field's box metrics onto its mirror; returns what placeMirror needs (the right padding and the borders it
+ * measures a scrollbar against). `cs` is the field's computed style.
+ */
+export function measureMirror(m, cs) {
+  for (const p of MIRROR_PROPS) m.style[p] = cs[p];
+  m.style.borderStyle = 'solid';
+  m.style.borderColor = 'transparent';
+  return { padRight: parseFloat(cs.paddingRight) || 0, borders: (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0), bars: null };
+}
+
+/** Scroll a mirror to where its field is, keeping a scrollbar's room on the right; writes the padding only on a change. */
+export function placeMirror(f, m, box) {
+  // A textarea's scrollbar narrows its text; the mirror keeps the same room on the right.
+  const bars = Math.max(0, f.offsetWidth - f.clientWidth - box.borders);
+  if (bars !== box.bars) { box.bars = bars; m.style.paddingRight = `${box.padRight + bars}px`; }
+  m.scrollTop = f.scrollTop;
+  m.scrollLeft = f.scrollLeft;
+}
+
+/**
+ * Keep a mirror over its field: the same box metrics, the scrollbar's room kept, scrolled where the field is. The
+ * metrics (fonts, padding, borders) change only with the field's size, so they are copied on mount and on resize; a
+ * keystroke or a scroll only moves the mirror and checks whether a scrollbar came or went, so typing never writes
+ * styles and then reads layout back (a forced reflow per key).
+ */
 function useMirror(field, mirror, deps) {
-  const sync = () => {
+  const box = useRef(null);
+  const place = () => {
+    if (field.current && mirror.current && box.current) placeMirror(field.current, mirror.current, box.current);
+  };
+  const measure = () => {
     const f = field.current;
     const m = mirror.current;
     if (!f || !m || typeof getComputedStyle !== 'function') return;
-    const cs = getComputedStyle(f);
-    for (const p of MIRROR_PROPS) m.style[p] = cs[p];
-    m.style.borderStyle = 'solid';
-    m.style.borderColor = 'transparent';
-    // A textarea's scrollbar narrows its text; the mirror keeps the same room on the right.
-    const bars = f.offsetWidth - f.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
-    if (bars > 0) m.style.paddingRight = `${parseFloat(cs.paddingRight) + bars}px`;
-    m.scrollTop = f.scrollTop;
-    m.scrollLeft = f.scrollLeft;
+    box.current = measureMirror(m, getComputedStyle(f));
+    place();
   };
-  useIsoLayout(sync, deps);
+  useIsoLayout(measure, []);
+  useIsoLayout(place, deps);
   useEffect(() => {
     const f = field.current;
     if (!f || typeof ResizeObserver !== 'function') return undefined;
-    const ro = new ResizeObserver(() => sync());
+    const ro = new ResizeObserver(() => measure());
     ro.observe(f);
     return () => ro.disconnect();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  return sync;
+  return place;
 }
 
-const setRef = (ref, el) => { if (typeof ref === 'function') ref(el); else if (ref) ref.current = el; };
+export const setRef = (ref, el) => { if (typeof ref === 'function') ref(el); else if (ref) ref.current = el; };
+
+/** Past this many characters a field's copy draws as one plain run: a pasted log would be tokenized on every key. */
+export const DRAFT_MAX = 20000;
+/** A fence body as typed: the grammar's tokens, kept out of the cache since every key makes a new text. */
+const draftCode = (lang, text) => codeTokens(lang, text, { cache: false });
 
 /** The tokens a field shows as typed: draft.js's, fence bodies in their grammar once it has loaded. */
 function useDraftTokens(value) {
   const v = useGrammarVersion(null);
-  return useMemo(() => rainbow(draftTokens(value, codeTokens)), [value, v]);
+  return useMemo(() => (value.length > DRAFT_MAX ? [{ t: 'text', v: value }] : rainbow(draftTokens(value, draftCode))), [value, v]);
 }
 
 /**

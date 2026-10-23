@@ -18,8 +18,9 @@ export function permissionCard(req) {
   const tool = req?.tool || 'a tool';
   const args = req?.args != null && req.args !== '' ? String(req.args) : toolArgFromJson(req?.tool, req?.summary);
   const input = req?.input && typeof req.input === 'object' ? req.input : null;
-  const change = input && SHOWS_CHANGE.has(tool) && callView(tool, input, args)?.kind !== 'json';
-  return { tool, title: req?.title || tool, args, raw: req?.summary || '', input, change: !!change, reason: req?.reason || null };
+  const clipped = Array.isArray(req?.clipped) && req.clipped.length ? req.clipped : null;
+  const change = input && SHOWS_CHANGE.has(tool) && callView(tool, input, args, clipped)?.kind !== 'json';
+  return { tool, title: req?.title || tool, args, raw: req?.summary || '', input, clipped, change: !!change, reason: req?.reason || null };
 }
 
 export function PermissionCard({ req, who, onAnswer }) {
@@ -28,7 +29,7 @@ export function PermissionCard({ req, who, onAnswer }) {
   const body = (
     <div className="perm-card-body">
       {c.args ? <pre className="perm-arg"><ToolArgs tool={c.tool} args={c.args} /></pre> : null}
-      {c.change ? <div className="perm-change"><ToolDetail tool={c.tool} args={c.args} input={c.input} /></div> : null}
+      {c.change ? <div className="perm-change"><ToolDetail tool={c.tool} args={c.args} input={c.input} clipped={c.clipped} /></div> : null}
       {c.raw || c.input ? (
         <details className="perm-raw">
           <summary>Raw input</summary>
