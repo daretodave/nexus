@@ -2237,6 +2237,45 @@ unchanged and still accurate; no fresh sweep run.
 
 ## Pending
 
+### [user-issue #88] [MED] fleet worktree creation can collide with a stale worktree registration ("already used by worktree")
+- category: external-issue
+- impact: 6, ease: 3
+- evidence: reporter's screenshot shows `git worktree add` failing
+  with `fatal: 'nexus/polaris-1' is already used by worktree at
+  'C:/Users/notrb/Workspace/.claude/mood-read/polaris-1'` while
+  starting a session in a different project. Traced the GUI's
+  worktree-creation path: `planPlace()`
+  (`packages/cli/server/fleet.mjs:118-139`) picks the next free
+  `n` by checking only that the candidate folder doesn't exist
+  (`fs.existsSync`) and that `refs/heads/nexus/<name>-<n>` isn't
+  already a branch in *this* repo — it never cross-checks the
+  candidate branch name against `git worktree list`'s
+  administrative entries. `formPlace()`
+  (`packages/cli/server/fleet.mjs:148-176`) only runs `git
+  worktree prune` when the *candidate's own* folder is missing,
+  not when some other, unrelated administrative worktree entry
+  still claims the same branch name. Git's own "already used by
+  worktree" error fires from that stale administrative record,
+  independent of whether the branch ref itself still exists —
+  exactly the footgun `skills/reboot-resume.md:60-66` already
+  documents and routes around for reboot/resume (`git worktree
+  prune` before re-adding), but that workaround only runs on the
+  resume path, not on ordinary new-session creation. A branch
+  getting deleted (or its worktree folder moved/renamed, as the
+  screenshot's `mood-read` vs. current-project mismatch suggests)
+  without a `git worktree remove`/`prune` in between would leave
+  exactly this kind of orphaned registration behind. Hypothesis,
+  not yet reproduced locally — no access to the reporter's
+  machine or a second project sharing a `.git`.
+- next: have `formPlace` (or `planPlace`, before returning a
+  candidate) run `git worktree prune` unconditionally before the
+  existence/ref checks, not only in the "candidate folder
+  missing" branch — cheap and idempotent, and it would absorb
+  this exact class without needing the deeper "why did the old
+  registration survive" root cause. Confirm with a repro: `git
+  worktree add` a folder, delete the folder without `remove`, and
+  try `planPlace`/`formPlace` again for the same name.
+
 ### [user-issue #86] [MED] oversight's "needs attention" badge doesn't decrement after all questions are answered and sent
 - category: external-issue
 - impact: 6, ease: 4
