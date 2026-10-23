@@ -84,13 +84,13 @@ export function tokenizeShell(src) {
 const PATH_TOOLS = new Set(['Read', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Glob', 'LS']);
 
 /**
- * A tool row's summary as tokens: a Bash command highlighted, a Grep pattern
+ * A tool row's summary as tokens: a Bash (or PowerShell) command highlighted, a Grep pattern
  * as one string, a file tool's path as a path; any other tool plain.
  */
 export function toolArgTokens(tool, args) {
   const s = String(args ?? '');
   if (!s) return [];
-  if (tool === 'Bash' || tool === 'BashOutput') return tokenizeShell(s);
+  if (tool === 'Bash' || tool === 'BashOutput' || tool === 'PowerShell') return tokenizeShell(s);
   if (tool === 'Grep') return [{ t: 'str', v: s }];
   if (PATH_TOOLS.has(tool)) return [{ t: 'path', v: s }];
   return [{ t: 'text', v: s }];

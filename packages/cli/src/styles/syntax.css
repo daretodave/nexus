@@ -1,0 +1,201 @@
+/* Highlighted code across the GUI: the token colours the grammar engine, the quick tokenizer and the composer paint
+   with (ui/syntax/tokens.js kinds), the rainbow bracket depths, and the code box, JSON tree, diff and typing overlay
+   (ui/code.jsx). Beside nexus.css, which stays verbatim from the handoff. The palette is the design's own ink: the
+   state colours, the session stars and the aurora, so a keyword reads in the thinking violet and a call in sirius
+   blue in both themes. Each theme declares every token: a var() in a custom property resolves where it is declared,
+   so a nested data-theme needs its own copy. The base kinds (cmd, flag, str, path, num, var, op) live in
+   markdown.css. */
+
+:root,
+[data-theme="dark"] {
+  --syn-kw:      var(--st-thinking);
+  --syn-fn:      var(--sess-sirius);
+  --syn-type:    var(--aurora-cyan);
+  --syn-builtin: var(--aurora-violet);
+  --syn-lit:     var(--st-blocked);
+  --syn-prop:    var(--st-done);
+  --syn-tag:     var(--st-failed);
+  --syn-re:      var(--st-failed);
+  --syn-meta:    var(--sess-altair);
+  --syn-punct:   var(--text-3);
+  --syn-comment: var(--text-3);
+  --syn-add:     var(--st-done);
+  --syn-del:     var(--st-failed);
+  --syn-hunk:    var(--accent);
+  --syn-slash:   var(--accent);
+  --syn-url:     var(--sess-sirius);
+  --syn-br1:     var(--st-blocked);
+  --syn-br2:     var(--st-thinking);
+  --syn-br3:     var(--sess-sirius);
+  --syn-br4:     var(--st-done);
+  --syn-br5:     var(--st-writing);
+  --syn-br6:     var(--aurora-cyan);
+  --syn-brx:     var(--st-failed);
+}
+
+[data-theme="light"] {
+  --syn-kw:      var(--st-thinking);
+  --syn-fn:      var(--sess-sirius);
+  --syn-type:    var(--aurora-cyan);
+  --syn-builtin: var(--aurora-violet);
+  --syn-lit:     var(--st-blocked);
+  --syn-prop:    var(--st-done);
+  --syn-tag:     var(--st-failed);
+  --syn-re:      var(--st-failed);
+  --syn-meta:    var(--sess-altair);
+  --syn-punct:   var(--text-3);
+  --syn-comment: var(--text-3);
+  --syn-add:     var(--st-done);
+  --syn-del:     var(--st-failed);
+  --syn-hunk:    var(--accent);
+  --syn-slash:   var(--accent);
+  --syn-url:     var(--sess-sirius);
+  --syn-br1:     var(--st-blocked);
+  --syn-br2:     var(--st-thinking);
+  --syn-br3:     var(--sess-sirius);
+  --syn-br4:     var(--st-done);
+  --syn-br5:     var(--st-writing);
+  --syn-br6:     var(--aurora-cyan);
+  --syn-brx:     var(--st-failed);
+}
+
+/* ---- token kinds ---------------------------------------------------------------------------------------------- */
+.syn-kw { color: var(--syn-kw); }
+.syn-fn { color: var(--syn-fn); }
+.syn-type { color: var(--syn-type); }
+.syn-builtin { color: var(--syn-builtin); }
+.syn-lit { color: var(--syn-lit); }
+.syn-esc { color: var(--syn-lit); }
+.syn-prop { color: var(--syn-prop); }
+.syn-tag { color: var(--syn-tag); }
+.syn-re { color: var(--syn-re); }
+.syn-meta { color: var(--syn-meta); }
+.syn-param { color: var(--syn-var); }
+.syn-punct { color: var(--syn-punct); }
+.syn-add { color: var(--syn-add); }
+.syn-del { color: var(--syn-del); }
+.syn-hunk { color: var(--syn-hunk); }
+.syn-slash { color: var(--syn-slash); font-weight: 600; }
+.syn-url { color: var(--syn-url); text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--syn-url) 40%, transparent); text-underline-offset: 2px; }
+.syn-code { color: var(--text); }
+.syn-fence { color: var(--syn-comment); }
+.syn-comment { color: var(--syn-comment); }
+
+/* Rainbow brackets: each depth its colour, a closer that closes nothing underlined in the failed ink. */
+.syn-b1 { color: var(--syn-br1); }
+.syn-b2 { color: var(--syn-br2); }
+.syn-b3 { color: var(--syn-br3); }
+.syn-b4 { color: var(--syn-br4); }
+.syn-b5 { color: var(--syn-br5); }
+.syn-b6 { color: var(--syn-br6); }
+.syn-bx { color: var(--syn-brx); text-decoration: underline wavy; text-decoration-color: color-mix(in oklab, var(--syn-brx) 70%, transparent); text-underline-offset: 3px; }
+.syn-br { font-weight: 600; }
+
+/* ---- the code box: a block with its language, a copy button and a fold ------------------------------------------ */
+.code-box { position: relative; min-width: 0; }
+.code-box > pre { margin: 0; }
+.code-tools {
+  position: absolute; top: 6px; right: 6px; display: flex; align-items: center; gap: 4px;
+  font-family: var(--font-ui); font-size: 11px; line-height: 16px; pointer-events: none;
+}
+.code-lang {
+  padding: 1px 6px; border-radius: 6px; color: var(--text-3); letter-spacing: .04em; text-transform: lowercase;
+  background: color-mix(in oklab, var(--surface-solid) 80%, transparent); font-family: var(--font-mono);
+  transition: opacity var(--dur-snap) var(--ease-snap);
+}
+.code-btn {
+  display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 7px; border: 0;
+  background: var(--surface-solid); box-shadow: var(--e-1); color: var(--text-2); cursor: pointer; pointer-events: auto;
+  font: inherit; font-size: 11px; opacity: 0; transition: opacity var(--dur-snap) var(--ease-snap), color var(--dur-snap) var(--ease-snap);
+}
+.code-btn:hover { color: var(--text); }
+.code-btn:focus-visible { opacity: 1; outline: 2px solid var(--focus); outline-offset: 1px; }
+.code-btn.is-done { color: var(--st-done); opacity: 1; }
+.code-box:hover .code-btn, .code-box:focus-within .code-btn { opacity: 1; }
+.code-box:hover .code-lang { opacity: .35; }
+@media (hover: none) { .code-btn { opacity: 1; } }
+
+/* Folded: the first lines, fading into the "Show all" bar. */
+.code-box.is-folded > pre { position: relative; overflow-y: hidden; }
+.code-box.is-folded > pre::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 36px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--well));
+}
+.code-more {
+  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 4px; padding: 4px 8px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--text-3); cursor: pointer;
+  font-family: var(--font-ui); font-size: 12px; line-height: 16px;
+  transition: color var(--dur-snap) var(--ease-snap), background var(--dur-snap) var(--ease-snap);
+}
+.code-more:hover { color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, transparent); }
+.code-more:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.code-more .ic { transition: transform var(--dur-snap) var(--ease-snap); }
+.code-more[aria-expanded="true"] .ic { transform: rotate(180deg); }
+
+/* A plain code panel (a tool row's command and output, a permission's raw input): the markdown block's metrics. */
+.code-pre {
+  margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line);
+  font-family: var(--font-mono); font-size: 12px; line-height: 18px; color: var(--syn-text, var(--text-2));
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; tab-size: 4;
+  font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; max-height: 420px; overflow: auto; scrollbar-width: thin;
+}
+.code-pre.is-error { color: var(--st-failed); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-failed) 30%, transparent); }
+.code-box.is-folded > .code-pre { max-height: none; }
+.code-cap { display: block; margin: 8px 0 4px; font-size: 11px; line-height: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.code-cap:first-child { margin-top: 0; }
+
+/* Numbered lines (a Read result): the number in the gutter, never copied with the code. */
+.code-ln { display: inline-block; min-width: 3ch; margin-right: 12px; text-align: right; color: var(--text-off); user-select: none; }
+
+/* ---- the JSON tree ----------------------------------------------------------------------------------------------- */
+.json-row { display: block; position: relative; padding-left: 16px; }
+.json-fold {
+  position: absolute; left: 0; top: 2px; width: 14px; height: 14px; display: grid; place-items: center; padding: 0;
+  border: 0; border-radius: 4px; background: none; color: var(--text-3); cursor: pointer; user-select: none;
+}
+.json-fold:hover { color: var(--accent); background: color-mix(in oklab, var(--accent) 12%, transparent); }
+.json-fold:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
+.json-fold .ic { width: 12px; height: 12px; transition: transform var(--dur-snap) var(--ease-snap); transform: rotate(-90deg); }
+.json-fold[aria-expanded="true"] .ic { transform: none; }
+.json-row.is-folded { cursor: pointer; }
+.json-row.is-folded:hover .syn-comment { color: var(--accent); }
+
+/* ---- the coloured diff (an Edit's change): nexus.css's .diff rows, scrolling sideways as one ---------------------- */
+.code-diff { min-width: 0; }
+.code-diff .diff-head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.code-diff .diff-head .add { color: var(--st-done); }
+.code-diff .diff-head .del { color: var(--st-failed); }
+.code-diff-lines { overflow-x: auto; scrollbar-width: thin; padding: 4px 0; }
+.code-diff .dl { width: max-content; min-width: 100%; grid-template-columns: 36px 18px max-content; padding-right: 12px; }
+.code-diff .dl-add .syn-text, .code-diff .dl-del .syn-text { color: var(--text); }
+.code-diff .dl-skip { color: var(--text-3); font-style: italic; }
+.code-diff + .code-more { margin-top: 6px; }
+
+/* ---- the typing overlay: the field's text transparent, the coloured copy drawn over it, caret and selection kept -- */
+.syn-field { position: relative; display: block; min-width: 0; }
+.syn-field > .syn-input { color: transparent; caret-color: var(--text); }
+.syn-field > .syn-input::selection { color: transparent; background: color-mix(in oklab, var(--accent) 30%, transparent); }
+.syn-mirror {
+  position: absolute; left: 0; top: 0; right: 0; bottom: 0; box-sizing: border-box; overflow: hidden; pointer-events: none;
+  border: 0 solid transparent; color: var(--text); white-space: pre-wrap; overflow-wrap: break-word; word-break: normal;
+}
+.syn-field.is-line > .syn-mirror { white-space: pre; overflow-wrap: normal; }
+/* The copy must match the field glyph for glyph: no weight, slant or padding a proportional font would widen. */
+.syn-mirror span { font-weight: inherit; font-style: normal; text-decoration: none; }
+.syn-mirror .syn-code { border-radius: 3px; background: color-mix(in oklab, var(--accent) 10%, transparent); box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 10%, transparent); }
+.syn-mirror .syn-slash { border-radius: 4px; background: color-mix(in oklab, var(--accent) 14%, transparent); }
+.syn-mirror .syn-url { text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--syn-url) 40%, transparent); }
+.syn-field > .syn-input:disabled + .syn-mirror { opacity: .55; }
+.syn-field > .syn-input:placeholder-shown + .syn-mirror { visibility: hidden; }
+
+/* ---- the heads-down TUI: syntax colours on 1ch cells, no weight that would shift a glyph --------------------------- */
+.tui .syn-cmd, .tui .syn-slash, .tui .syn-br { font-weight: inherit; }
+.tui .syn-url { text-decoration: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .code-btn, .code-lang, .code-more, .code-more .ic, .json-fold .ic { transition: none; }
+}
+
+/* An answer field's input sits in its wrapper now; the wrapper takes the input's place in the row. */
+.ans-field > .syn-field { flex: 1; min-width: 0; }
+.ans-field > .syn-field > .tug-other { width: 100%; }

@@ -1,21 +1,23 @@
 // An agent's markdown, drawn (spec 47, A5): the tree ui/markdown.js parses,
 // as React elements (never innerHTML: a tag in the text is text), and a tool
-// row's command coloured from the --syn-* tokens. Styles: styles/markdown.css.
+// row's command coloured from the --syn-* tokens. Code blocks and inline code go through ui/code.jsx: every fenced
+// language coloured (the grammar engine lazily, the quick tokens first), rainbow brackets, a copy button and a fold.
+// Styles: styles/markdown.css and styles/syntax.css.
 import { Fragment, useMemo } from 'react';
 import { parseInline, parseMarkdown } from './markdown.js';
-import { SHELL_LANGS, tokenizeShell, toolArgTokens } from './shell-syntax.js';
+import { toolArgTokens } from './shell-syntax.js';
+import { rainbow } from './syntax/tokens.js';
+import { CodeBlockView, InlineCode, Tok } from './code.jsx';
 import { cx } from './controls.jsx';
 
-/** Shell tokens as coloured runs. */
+/** Tokens as coloured runs (any kind, brackets included). */
 export function SynRuns({ tokens }) {
-  return tokens.map((tk, i) => (tk.t === 'ws' || tk.t === 'text'
-    ? <Fragment key={i}>{tk.v}</Fragment>
-    : <span key={i} className={`syn-${tk.t}`}>{tk.v}</span>));
+  return <Tok tokens={tokens} />;
 }
 
-/** A tool row's summary, highlighted by tool (Bash as shell, Grep as a string, file tools as a path). */
+/** A tool row's summary, highlighted by tool (Bash as shell, Grep as a string, file tools as a path), brackets by depth. */
 export function ToolArgs({ tool, args }) {
-  const tokens = useMemo(() => toolArgTokens(tool, args), [tool, args]);
+  const tokens = useMemo(() => rainbow(toolArgTokens(tool, args)), [tool, args]);
   return <SynRuns tokens={tokens} />;
 }
 
@@ -24,7 +26,7 @@ function Inlines({ nodes }) {
     switch (n.type) {
       case 'text': return <Fragment key={i}>{n.text}</Fragment>;
       case 'br': return <br key={i} />;
-      case 'code': return <code key={i}>{n.text}</code>;
+      case 'code': return <InlineCode key={i} text={n.text} />;
       case 'strong': return <strong key={i}><Inlines nodes={n.children} /></strong>;
       case 'em': return <em key={i}><Inlines nodes={n.children} /></em>;
       case 'link': return <a key={i} href={n.href} target="_blank" rel="noreferrer"><Inlines nodes={n.children} /></a>;
@@ -33,13 +35,9 @@ function Inlines({ nodes }) {
   });
 }
 
+/** A fenced block: coloured in its language, folded past a dozen lines once it stops streaming. */
 function CodeBlock({ b }) {
-  const lang = b.lang.toLowerCase();
-  return (
-    <pre className={cx('md-pre', b.open && 'is-open')} data-lang={lang || undefined}>
-      <code>{SHELL_LANGS.has(lang) ? <SynRuns tokens={tokenizeShell(b.text)} /> : b.text}</code>
-    </pre>
-  );
+  return <CodeBlockView text={b.text} lang={b.lang.toLowerCase()} open={b.open} preClass="md-pre" />;
 }
 
 function Blocks({ blocks, tight }) {
