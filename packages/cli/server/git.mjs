@@ -252,17 +252,21 @@ function memo(ms, fn) {
 export function createGitView({ repo, root, sessions, run = shRun, claims = readClaims, ttl = {} } = {}) {
   const prs = memo(ttl.prs ?? 30000, async () => openPrs(repo, { run }));
   const closed = memo(ttl.prs ?? 30000, async () => closedPrBranches(repo, { run }));
-  const claimRows = memo(ttl.claims ?? 60000, async () => {
+  const readClaimRows = async () => {
     const c = await claims(repo);
+    // A claims list that could not be read is unknown, never "no claims".
+    if (c?.error) return null;
     return Array.isArray(c?.rows) ? c.rows : null;
-  });
-  const perCwd = memo(ttl.session ?? 3000, async (cwd) => {
+  };
+  const claimRows = memo(ttl.claims ?? 60000, readClaimRows);
+  const readCwd = async (cwd) => {
     const st = await status(cwd);
     if (!st) return null;
     const base = st.upstream || (await baseRef(cwd));
     const [ab, log] = await Promise.all([aheadBehind(cwd, 'HEAD', base), commits(cwd, 'HEAD', 5)]);
     return { ...st, base, ahead: ab.ahead, behind: ab.behind, commits: log };
-  });
+  };
+  const perCwd = memo(ttl.session ?? 3000, readCwd);
 
   /** Where a session works: its worktree, else the worktree on its branch, else the primary checkout. */
   async function cwdOf(s, listed) {
@@ -279,9 +283,15 @@ export function createGitView({ repo, root, sessions, run = shRun, claims = read
   /** One session's git: branch, worktree, ahead/behind, dirty and staged, last five commits, PR and checks, claims held. */
   async function forSession(s, ctx = {}) {
     const cwd = await cwdOf(s, ctx.worktrees);
-    const [g, pr, rows] = await Promise.all([perCwd(samePath(cwd), cwd), ctx.prs ?? prs('prs'), ctx.claims ?? claimRows('claims')]);
+    // `fresh` (put away, a close): read git and claims now, never a cached answer a moment old.
+    const [g, pr, rows] = await Promise.all([
+      ctx.fresh ? readCwd(cwd).catch(() => null) : perCwd(samePath(cwd), cwd),
+      ctx.prs ?? prs('prs'),
+      ctx.claims ?? (ctx.fresh ? readClaimRows().catch(() => null) : claimRows('claims')),
+    ]);
     const was = s.git || {};
-    if (!g) return { ...was };
+    // Git unreadable now: a fresh read must not trust the stored answer, so it reads unknown (put away keeps it all).
+    if (!g) return ctx.fresh ? { ...was, up: null, ahead: null, dirty: null, staged: null } : { ...was };
     const branch = g.branch || was.branch || '';
     const open = pr?.ok ? pr.prs.find((p) => p.branch && p.branch === branch) : null;
     const held = rows ? claimsOf(rows, s) : null;
@@ -304,11 +314,11 @@ export function createGitView({ repo, root, sessions, run = shRun, claims = read
     };
   }
 
-  /** The session list with each row's git filled in. */
-  async function withGit(list) {
+  /** The session list with each row's git filled in. `fresh`: nothing cached (see forSession). */
+  async function withGit(list, { fresh = false } = {}) {
     const rows = Array.isArray(list) ? list : [];
     if (!rows.length) return rows;
-    const ctx = { prs: prs('prs'), claims: claimRows('claims') };
+    const ctx = { fresh, prs: prs('prs'), claims: fresh ? readClaimRows().catch(() => null) : claimRows('claims') };
     return Promise.all(rows.map(async (s) => ({ ...s, git: await forSession(s, ctx) })));
   }
 

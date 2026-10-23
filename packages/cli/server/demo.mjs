@@ -25,6 +25,7 @@ import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
 import { realClock } from './demo/clock.mjs';
 import { createDemoVault, DEMO_REQUEST } from './demo/vault.mjs';
 import { applyDrafts } from './drafts.mjs';
+import { putAwayPlan } from '../shared/put-away.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG = path.resolve(HERE, '..');
@@ -163,7 +164,8 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
           local.effective = local.owner && local.ownerMode !== false;
           return send(res, 200, local);
         }
-        case 'GET /api/sessions': return send(res, 200, world.rows());
+        // The scenario's home session reads as the live server's does: it stays, never offered to be put away.
+        case 'GET /api/sessions': return send(res, 200, world.rows().map((r) => (r.name === sc.home ? { ...r, home: true } : r)));
         case 'GET /api/inbox': return send(res, 200, inboxWithSecret());
         case 'GET /api/needs': return send(res, 200, world.needs());
         case 'GET /api/oversight': { const row = vault.mark(DEMO_REQUEST.durable); return send(res, 200, { live: world.asks(), durable: [...world.durable(), ...(row && local?.effective !== false ? [row] : [])] }); }
@@ -216,6 +218,18 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
       if (one) {
         const d = world.detail(decodeURIComponent(one[1]));
         return d ? send(res, 200, d) : send(res, 404, { error: 'no such live session' });
+      }
+      // Put away (0.5.1): the same rule as the live server (shared/put-away.mjs); the tile leaves, in memory only.
+      const away = /^POST \/api\/sessions\/([\w.%-]+)\/put-away$/.exec(route);
+      if (away) {
+        const b = await body(req);
+        const row = world.rows().find((r) => r.id === decodeURIComponent(away[1]) || r.name === decodeURIComponent(away[1]));
+        if (!row) return send(res, 404, { error: 'no such session' });
+        if (row.name === sc.home) return send(res, 409, { error: 'the home session stays while the server runs: stop it instead' });
+        const plan = putAwayPlan(row);
+        if (!plan.clean && !b.keep) return send(res, 409, { error: `${row.name} holds work. ${plan.say}`, holds: plan.holds, say: plan.say, keep: plan.keep });
+        world.putAway(row.id);
+        return send(res, 200, { id: row.id, name: row.name, closed: true, kept: plan.holds, say: plan.say, worktree: plan.clean && plan.worktree ? { closed: true } : null });
       }
       const act = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close|link|steer|parked)$/.exec(route);
       if (act) {

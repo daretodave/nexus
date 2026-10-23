@@ -227,7 +227,8 @@ function useStick() {
 }
 
 /** onSend(line): the cockpit's send for one exact line (a /plot card's action); resolves true when it went. */
-export default function Working({ live, pinned, onSend }) {
+/** `end`: what closes the conversation once the session is done (the put-away card), or nothing. */
+export default function Working({ live, pinned, onSend, end = null }) {
   const { stage, transcript, asks, permissions, status } = live;
   const items = convoItems(transcript, stage);
   const busy = status?.state === 'running';
@@ -255,6 +256,7 @@ export default function Working({ live, pinned, onSend }) {
           : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} onSend={onSend} />))}
         {asks.map((a) => <AskTugs key={a.id} ask={a} who={nameOf(a.agent)} />)}
         {permissions.map((p) => <PermissionTug key={p.id} req={p} who={nameOf(p.agent)} />)}
+        {end}
       </div>
       {scroller.pinned ? null : (
         <button className="btn btn-s jump-latest" type="button" onClick={scroller.jump}>

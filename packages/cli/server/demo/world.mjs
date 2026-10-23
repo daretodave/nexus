@@ -334,6 +334,13 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
       s.hub.tx({ kind: 'user', text, at: now() });
       return true;
     },
+    /** POST /api/sessions/:id/put-away: the session leaves the fleet until the demo starts over. */
+    putAway(key) {
+      const s = find(key);
+      if (!s) return false;
+      sessions = sessions.filter((x) => x !== s);
+      return true;
+    },
     /** POST /api/sessions/:id/resume: Resume on a fallen tile. */
     resume(key) {
       const s = find(key);

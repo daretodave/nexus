@@ -15,6 +15,7 @@
 //     lastPrompt, claimsSession, ended: <a hosted session that died with its server and left nothing behind> }
 import { foldClaims, sessionOf } from '../board/model.js';
 import { isProgressLine, progressLine } from '../../../shared/progress-line.mjs';
+import { finishedJob } from './alive.js';
 
 /** States a session runs in; an idle one (its turn ended, nothing queued) is shown idle, not working. */
 const RUNNING = ['live', 'observing', 'resumed'];
@@ -147,7 +148,8 @@ export const FILTERS = [
   { value: 'here', label: 'This machine', test: (s) => !aside(s) },
   { value: 'needs', label: 'Needs you', test: (s) => !aside(s) && s.state === 'asking' },
   { value: 'working', label: 'Working', test: (s) => !aside(s) && !s.idle && ['live', 'observing', 'resuming', 'resumed'].includes(s.state) },
-  { value: 'idle', label: 'Idle', test: (s) => !aside(s) && !!s.idle },
+  // A session that finished its job reads done (fleet/alive.js), not idle.
+  { value: 'idle', label: 'Idle', test: (s) => !aside(s) && !!s.idle && !finishedJob(s) },
   { value: 'terminals', label: 'In terminals', optional: true, test: inTerminal },
   { value: 'fallen', label: 'Fell over', optional: true, test: (s) => !!s.ended || fellOver(s) },
 ];
@@ -159,8 +161,8 @@ export function counts(list) {
 }
 
 /**
- * The topbar line, over what this machine shows: "3 sessions · 2 working · 1 needs you · 1 fell over". Fell over
- * counts only work that can be resumed (a stopped session has nothing to lose); terminals get no clause.
+ * The topbar line, over what this machine shows: "3 sessions · 2 working · 1 done · 1 needs you · 1 fell over".
+ * Fell over counts only work that can be resumed (a stopped session has nothing to lose); terminals get no clause.
  */
 export function summary(list) {
   const c = counts(list);
@@ -168,6 +170,8 @@ export function summary(list) {
   if (!c.here && !lost) return 'no sessions yet';
   const parts = [`${c.here} ${c.here === 1 ? 'session' : 'sessions'}`];
   if (c.working) parts.push(`${c.working} working`);
+  const done = list.filter((s) => !aside(s) && finishedJob(s)).length;
+  if (done) parts.push(`${done} done`);
   if (c.idle) parts.push(`${c.idle} idle`);
   if (c.needs) parts.push(`${c.needs} needs you`);
   if (lost) parts.push(`${lost} fell over`);
