@@ -17,6 +17,9 @@ import QuestionsEnd from './cockpit/QuestionsEnd.jsx';
 import QuestionsStart from './cockpit/QuestionsStart.jsx';
 import StageView from './cockpit/StageView.jsx';
 import Working from './cockpit/Working.jsx';
+import PutAway from './fleet/PutAway.jsx';
+import { norm } from './fleet/model.js';
+import { finishedJob, keptAlready, putAwayToast, rememberKeep, viewerStore } from './fleet/alive.js';
 import { questionMarks, tugFils, tugMarks } from './cockpit/tugs.js';
 import { formWords } from '../../shared/forming.mjs';
 import { withFiles } from '../../shared/attachments.mjs';
@@ -208,6 +211,20 @@ export default function Cockpit() {
   const pendingParked = parked.filter((p) => (p.state || 'pending') === 'pending');
   const lastParked = pendingParked[pendingParked.length - 1];
   const asking = live.asks.length + live.permissions.length > 0;
+
+  // Put away (0.5.1): a session that finished its job offers, at the end of its conversation, to be put away. The
+  // fleet row says so (fleet/alive.js finishedJob); Keep it hides the offer for this job, in this browser.
+  const row = useMemo(() => (listed ? norm(listed) : null), [listed]);
+  const done = row && !terminal && !asking && live.status?.state !== 'running' ? finishedJob(row) : null;
+  const [, setKeptTick] = useState(0);
+  const offerAway = !!done && view === 'working' && !keptAlready(row, viewerStore());
+  const putAwayEnd = offerAway ? (
+    <PutAway
+      s={row} done={done}
+      onGone={(r) => nav(PATHS.fleet, { state: { toast: putAwayToast(row.name, r) } })}
+      onKeep={() => { rememberKeep(row, viewerStore()); setKeptTick((n) => n + 1); }}
+    />
+  ) : null;
   const hushed = view === 'start' || view === 'review' || asking;
   const showTray = view === 'working' && pendingParked.length > 0;
   const showTether = showTray && !owner;
@@ -284,7 +301,7 @@ export default function Cockpit() {
       />
     );
   } else {
-    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} pinned={ledger?.pinned?.text} onSend={(text) => send(text, [], { line: true })} /> : (
+    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} pinned={ledger?.pinned?.text} onSend={(text) => send(text, [], { line: true })} end={putAwayEnd} /> : (
       <div className="convo" aria-live="polite">
         {formingNow
           ? <Empty sky="quiet" title={formSay.title} body={form.state === 'failed' ? `${session.name} has no worktree yet: ${formSay.sub}. Retry on the stage.` : `${session.name} starts once its worktree is ready. What it says and does shows up here.`} />
