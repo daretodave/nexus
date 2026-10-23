@@ -138,7 +138,7 @@ export default function HeadsDown() {
     } catch (e) {
       setNote(`not sent: ${e.message}`);
     }
-  }, [draft]);
+  }, [draft, id]);
 
   // the footer keys, when the prompt is not taking text
   useEffect(() => {
@@ -198,8 +198,8 @@ export default function HeadsDown() {
   });
 
   // The nav's Heads-down names no session: the last one opened is shown only if it is one this server runs and it is
-  // still going, never a terminal session (someone else's) or one that fell over or ended.
-  const stale = !named && ledger && (!ledger.hosted || ledger.ended || ['fallen', 'resume-failed'].includes(ledger.state));
+  // still going, never a terminal session (someone else's), one orphaned by a restart, or one that fell over.
+  const stale = !named && ledger && (!ledger.hosted || ['fallen', 'resume-failed'].includes(ledger.state));
   if (!id || ledgerRes.status === 'missing' || ledger?.state === 'closed' || stale) return <HeadsDownStart plan={plan} />;
 
   const focusPrompt = (e) => {

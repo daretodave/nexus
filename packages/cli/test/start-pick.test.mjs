@@ -44,3 +44,8 @@ test('what a session works on: its start prompt, else its chunk', () => {
   assert.equal(workingOn({ lastPrompt: 'hello', chunk: { id: '65.9' } }), '65');
   assert.equal(workingOn({}), null);
 });
+
+test('a spec a terminal session is on is named, not opened: it can be started anyway', () => {
+  const c = startChoices(PLAN, [{ id: 't', name: 'c0ffee12', kind: 'terminal', state: 'observing', chunk: { id: '65.9' } }]);
+  assert.deepEqual(c.find((x) => x.value === '65').running, { id: 't', name: 'c0ffee12', terminal: true });
+});

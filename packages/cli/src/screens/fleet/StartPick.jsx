@@ -1,5 +1,6 @@
 // Start heads-down: choose infinite or a spec first, then start. The Fleet's "start another session" tile and the
-// Heads-down screen with no session both draw it. A choice a running session already works on opens that session.
+// Heads-down screen with no session both draw it. A choice a session this server runs is already on opens that
+// session; one a terminal is on can still be started anyway.
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, cx } from '../../ui/index.js';
@@ -19,7 +20,8 @@ export default function StartPick({ plan, sessions, open, onError }) {
 
   async function start() {
     if (!chosen) return;
-    if (chosen.running) { go(chosen.running.id); return; }
+    const opens = chosen.running && !chosen.running.terminal;
+    if (opens) { go(chosen.running.id); return; }
     setStarting(true);
     const r = await act('/api/sessions', { prompt: startPrompt(chosen.value) });
     setStarting(false);
@@ -35,14 +37,14 @@ export default function StartPick({ plan, sessions, open, onError }) {
             <span className="sp-dot" />
             <span className="sp-text">
               <span className="sp-label">{c.value === 'infinite' ? <Icon name="refresh" size={13} /> : null}{c.label}</span>
-              <span className="sp-sub">{c.running ? `${c.running.name} is already on it` : c.sub}</span>
+              <span className="sp-sub">{!c.running ? c.sub : c.running.terminal ? `${c.running.name} is on it in a terminal` : `${c.running.name} is already on it`}</span>
             </span>
           </button>
         ))}
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <button className="btn btn-primary btn-s" type="button" onClick={start} disabled={!chosen || starting} aria-busy={starting || undefined}>
-          {chosen?.running ? <>Open {chosen.running.name}</> : <><Icon name="plus" size={14} />{chosen ? `Start ${chosen.value === 'infinite' ? 'infinite' : `spec ${chosen.value}`}` : 'Choose a spec or infinite'}</>}
+          {chosen?.running && !chosen.running.terminal ? <>Open {chosen.running.name}</> : <><Icon name="plus" size={14} />{!chosen ? 'Choose a spec or infinite' : `Start ${chosen.value === 'infinite' ? 'infinite' : `spec ${chosen.value}`}${chosen.running ? ' anyway' : ''}`}</>}
         </button>
         <Link className="btn btn-ghost btn-s" to={PATHS.board}>Pick a chunk</Link>
       </div>

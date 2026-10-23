@@ -1,6 +1,7 @@
 // What "start heads-down" offers: a spec to work through (/heads-down <spec>), or infinite (/loop /next, the next
 // chunk in line, forever). Nothing starts until one is chosen. A choice some running session already works on names
-// that session instead, so a second one is not started for the same thing. Pure rules only.
+// that session: one this server runs opens instead of starting a second; one in a terminal (someone else's, or a tab
+// of the owner's) is named but not opened, and starting anyway stays possible. Pure rules only.
 
 export const INFINITE = 'infinite';
 
@@ -24,14 +25,15 @@ export function workingOn(s) {
 
 /**
  * The choices, infinite first then every spec with work left in plan order:
- *   { value, label, sub, running: { id, name } | null }
+ *   { value, label, sub, running: { id, name, terminal? } | null }
  * A spec with nothing ready and nothing to chunk is left out.
  */
 export function startChoices(plan, sessions = []) {
   const live = sessions.filter((s) => RUNNING.includes(s.state) && !s.ended);
   const by = (v) => {
     const s = live.find((x) => sameSpec(workingOn(x), v));
-    return s ? { id: s.id, name: s.name } : null;
+    if (!s) return null;
+    return s.kind === 'terminal' ? { id: s.id, name: s.name, terminal: true } : { id: s.id, name: s.name };
   };
   const next = [].concat(plan?.next || [])[0];
   const out = [{
