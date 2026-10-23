@@ -100,6 +100,11 @@ export function drawPool(ctx, pool, o) {
         ctx.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), s, s);
         break;
       }
+      case 'shape': {
+        ctx.globalAlpha = Math.min(1, a);
+        shape(ctx, p, css(p.color, c));
+        break;
+      }
       case 'glyph': {
         const f = `${Math.round(p.size)}px ${o.font || 'monospace'}`;
         if (f !== font) { ctx.font = f; font = f; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; }
@@ -115,6 +120,38 @@ export function drawPool(ctx, pool, o) {
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
   return drawn;
+}
+
+/**
+ * A drawn mark (effects.js kind 'shape'), `size` across, turned by `rot`: a cross and a bar for a failure, a tick,
+ * a plus, a diamond and a four-point star for a close. Straight strokes with square ends, so it reads as the
+ * terminal's own mark rather than a font's.
+ */
+export function shape(ctx, p, css) {
+  const r = Math.max(1, p.size / 2);
+  const cos = Math.cos(p.rot || 0);
+  const sin = Math.sin(p.rot || 0);
+  const at = (x, y) => [p.x + (x * cos - y * sin) * r, p.y + (x * sin + y * cos) * r];
+  const path = (pts, close) => {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => { const [px, py] = at(x, y); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
+    if (close) ctx.closePath?.();
+  };
+  ctx.lineWidth = Math.max(1, r * 0.42);
+  ctx.lineCap = 'square';
+  ctx.lineJoin = 'miter';
+  ctx.strokeStyle = css;
+  ctx.fillStyle = css;
+  switch (p.shape) {
+    case 'cross': path([[-1, -1], [1, 1]]); ctx.stroke(); path([[1, -1], [-1, 1]]); ctx.stroke(); break;
+    case 'bar': path([[-1, 0], [1, 0]]); ctx.stroke(); break;
+    case 'plus': path([[-1, 0], [1, 0]]); ctx.stroke(); path([[0, -1], [0, 1]]); ctx.stroke(); break;
+    case 'tick': path([[-1, 0.1], [-0.3, 0.8], [1, -0.7]]); ctx.stroke(); break;
+    case 'diamond': path([[0, -1], [0.75, 0], [0, 1], [-0.75, 0]], true); ctx.fill(); break;
+    default: // a four-point star
+      path([[0, -1.2], [0.25, -0.25], [1.2, 0], [0.25, 0.25], [0, 1.2], [-0.25, 0.25], [-1.2, 0], [-0.25, -0.25]], true);
+      ctx.fill();
+  }
 }
 
 function glow(ctx, o, p, a, r, css) {

@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, PauseBtn, InboxBtn, Empty, Err, cx, useShell } from '../ui/index.js';
+import { CronList } from '../ui/code.jsx';
 import { server, useClaims, useInbox } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { SkelRows } from '../ui/loading.jsx';
@@ -175,7 +176,7 @@ export default function CloudLoop() {
             <div className="t-title-s">{loop.schedule?.label || loop.wf?.name}</div>
             <span className="t-body-s c-2">
               {loop.schedule?.window ? <>{loop.schedule.window} · </> : null}
-              {loop.schedule?.cron ? <>cron <code className="t-mono-s c-1">{loop.schedule.cron}</code></> : <>workflow <code className="t-mono-s c-1">{loop.wf?.path}</code></>}
+              {loop.schedule?.cron ? <>cron <CronList schedule={loop.schedule} words={loop.schedule.raw ? undefined : false} /></> : <>workflow <code className="t-mono-s c-1">{loop.wf?.path}</code></>}
             </span>
             {loop.paused || loop.next ? (
               <span className="t-body-s c-2" style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>

@@ -16,7 +16,7 @@ function Node({ n }) {
     <SNode x={`${n.at[0]}%`} y={n.atTray ? 'auto' : `${n.at[1]}%`} capUp={n.capUp} atTray={n.atTray}>
       {n.pkg ? <PkgNode /> : n.junction ? <span className="junction" /> : <Orb state={n.state} size={n.size} main={n.main} />}
       {n.parked ? <ParkMark style={{ position: 'absolute', left: pmx, top: pmy, boxShadow: '0 0 0 2px var(--bg)' }} /> : null}
-      <NodeCap label={n.label} tool={n.tool} toolBad={n.bad} style={{ top: n.capUp ? 'auto' : (n.capTop || '30px') }} />
+      <NodeCap label={n.label} tool={n.tool} call={n.call} toolBad={n.bad} style={{ top: n.capUp ? 'auto' : (n.capTop || '30px') }} />
     </SNode>
   );
 }

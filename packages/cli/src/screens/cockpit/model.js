@@ -303,6 +303,8 @@ export function ctxLayers({ ledger, owner, phase, stage, info, sessionName, now 
  * (clipped by the server; a `tool-output` carries it when there was no clock),
  * and an Edit or Write carries its diffstat and its input (the old and new text,
  * with `clipped` naming any string cut short). An item without them shows none.
+ * Input and output are previews; `more` says the server keeps the fuller call
+ * (GET /api/tool), which the row fetches when it opens.
  */
 export function convoItems(transcript, stage, limit = 40) {
   const out = [];
@@ -322,16 +324,16 @@ export function convoItems(transcript, stage, limit = 40) {
       m.tools.push({
         id: t.id, tool: t.name, args: t.summary || '', failed: failed.has(t.id), at: t.at ?? null,
         diff: t.diff || null, note: SPAWN.has(t.name) ? 'delegated' : '', ms: null, done: false,
-        input: t.input || null, clipped: t.clipped || null, output: null,
+        input: t.input || null, clipped: t.clipped || null, output: null, more: !!t.more,
       });
       continue;
     }
     if (t.kind === 'tool-done') {
-      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) { tool.ms = t.ms ?? null; tool.done = true; if (t.ok === false) tool.failed = true; if (t.text) tool.output = t.text; }
+      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) { tool.ms = t.ms ?? null; tool.done = true; if (t.ok === false) tool.failed = true; if (t.text) tool.output = t.text; if (t.more) tool.more = true; }
       continue;
     }
     if (t.kind === 'tool-output') {
-      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) tool.output = t.text;
+      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) { tool.output = t.text; if (t.more) tool.more = true; }
       continue;
     }
     if (t.kind === 'tool-error') {
@@ -344,6 +346,19 @@ export function convoItems(transcript, stage, limit = 40) {
 }
 
 const SPAWN = new Set(['Task', 'Agent']);
+
+/** A node's caption call: the agent's last call, while it is the tool the agent is on. */
+const callOf = (call, tool) => (call && tool && call.name === tool && call.summary ? { call: { name: call.name, summary: call.summary } } : null);
+
+/**
+ * Each agent's last call from the transcript, newest wins: { [agent]: { name, summary } }. The stage's captions
+ * colour it (NodeCap) when it is still the call the agent is on.
+ */
+export function lastCalls(transcript) {
+  const out = {};
+  for (const t of transcript || []) if (t.kind === 'tool') out[t.agent || MAIN] = { name: t.name, summary: t.summary || '' };
+  return out;
+}
 
 /** Node captions never wrap; long subagent descriptions are cut to fit. */
 const short = (s, n = 28) => { const t = String(s || ''); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
@@ -380,7 +395,7 @@ export function filament(a, b, o = {}) {
  * Nodes and filaments for the live Working stage, from the reduced beats.
  * Newest children win a seat; finished ones give theirs up first.
  */
-export function liveStage(stage, { chunkLabel, parkedAgent } = {}) {
+export function liveStage(stage, { chunkLabel, parkedAgent, calls = {} } = {}) {
   const agents = stage?.agents || {};
   const order = (stage?.order || []).filter((id) => id !== MAIN);
   const main = agents[MAIN];
@@ -399,6 +414,7 @@ export function liveStage(stage, { chunkLabel, parkedAgent } = {}) {
   nodes.push({
     key: MAIN, at: MAIN_AT, size: 'xl', state: main ? st : 'idle', main: true, capTop: '54px',
     label: chunkLabel ? `main · ${chunkLabel}` : 'main', tool: main?.tool || (st === 'blocked' ? 'waiting on you' : ''),
+    ...callOf(calls[MAIN], main?.tool),
   });
   for (const id of [...seated, ...grand]) {
     const a = agents[id];
@@ -411,6 +427,7 @@ export function liveStage(stage, { chunkLabel, parkedAgent } = {}) {
       nodes.push({
         key: id, at: seat[id], size: grand.includes(id) ? 's' : 'm', state: s, capTop: grand.includes(id) ? '20px' : undefined,
         label: short(a.label) || 'agent', tool: a.tool || (s === 'failed' ? 'failed' : ''), bad: s === 'failed', parked: parkedAgent === id,
+        ...callOf(calls[id], a.tool),
       });
     }
     const from = (a.parent || MAIN) === MAIN ? MAIN_AT : seat[a.parent];

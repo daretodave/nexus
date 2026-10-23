@@ -4,10 +4,13 @@
 // fetch it. It sizes the canvas to its box at the device's pixel ratio
 // (capped at 2), sleeps while the tab is hidden or the layer is off-screen,
 // draws a calm sky (drift alone, no burst alive) at about thirty frames a
-// second, and stops the loop outright when nothing is alive and nothing drifts.
+// second, lets that drift thin to a sparse floor once the stage has been
+// quiet a while (effects.js calmScale) and draws it there at a low frame
+// rate, so a calm sky keeps moving for little cost; it stops the loop
+// outright only when nothing is alive and nothing drifts (the layer off).
 import { budgetFor, createGovernor } from './budget.js';
 import { drawPool, parseColor, themeLook } from './draw.js';
-import { FX_TOKENS, ambientEmitters, ambientSpawn, emitCount, headsScene, spawnsFor, stageScene } from './effects.js';
+import { CALM_FLOOR, FX_TOKENS, ambientEmitters, ambientSpawn, calmScale, emitCount, headsScene, spawnsFor, stageLive, stageScene } from './effects.js';
 import { createPool, setLimit, spawn, step } from './pool.js';
 
 const MAX_DPR = 2;
@@ -15,6 +18,16 @@ const CAPACITY = budgetFor('on').cap;
 // A calm frame waits this long before asking for the next one: on a 60Hz display that lands every other frame.
 // Drift moves a few pixels a second, so half the frames look the same and cost the battery half as much.
 const CALM_MS = 24;
+// Settled (quiet long enough that the drift sits at its floor): about fifteen frames a second. A slow mote moving a
+// few pixels a second still reads as a smooth drift, at a quarter of the frames.
+export const SETTLED_MS = 66;
+
+/** What a scene input looks like, as far as the particles care: the mode and each orb's place, size and state. */
+export function sceneSig(input) {
+  if (!input) return '';
+  if (input.mode === 'heads') return `heads:${typeof input.target === 'string' ? input.target : ''}`;
+  return `stage:${(input.nodes || []).map((n) => `${n.key}@${n.at?.join(',')}:${n.size || ''}:${n.state || ''}${n.pkg ? ':p' : ''}${n.junction ? ':j' : ''}`).join('|')}`;
+}
 
 /**
  * Start the layer on `canvas`. Returns { setScene, setState, emit, retheme, destroy }.
@@ -47,6 +60,9 @@ export function createFx(canvas) {
   let visible = !document.hidden;
   let onScreen = true;
   let dead = false;
+  let quietSince = null; // the frame time the stage last had something live; null: something just happened
+  let lastSig = '';
+  let settled = false; // this frame's drift sits at its calm floor: the next frame can wait longer
 
   // ---- tokens ------------------------------------------------------------------
   const probe = document.createElement('span');
@@ -156,8 +172,16 @@ export function createFx(canvas) {
   }
 
   // ---- the loop --------------------------------------------------------------------
-  function emitters() {
-    return budgetFor(state.level).ambient > 0 ? ambientEmitters(scene, state) : [];
+  /** The ambient loops for this frame: a stage with nothing live lets its drift thin to its floor (calmScale). */
+  function emitters(ts) {
+    settled = false;
+    if (budgetFor(state.level).ambient <= 0) return [];
+    const ems = ambientEmitters(scene, state);
+    if (scene.mode !== 'stage') return ems;
+    if (quietSince == null || stageLive(ems) || bursting()) { quietSince = ts; return ems; }
+    const calm = calmScale((ts - quietSince) / 1000);
+    settled = calm <= CALM_FLOOR;
+    return calm >= 1 ? ems : ambientEmitters(scene, { ...state, calm });
   }
 
   function frame(ts) {
@@ -179,7 +203,7 @@ export function createFx(canvas) {
     const b = budgetFor(state.level);
     const g = governor.scale();
     setLimit(pool, b.cap * g);
-    const ems = scene ? emitters() : [];
+    const ems = scene ? emitters(ts) : [];
     for (const em of ems) {
       const count = emitCount(acc, em.key, em.rate * b.ambient * g, dt);
       for (let i = 0; i < count; i += 1) spawn(pool, ambientSpawn(em, scene, rng, state));
@@ -190,10 +214,11 @@ export function createFx(canvas) {
     drawPool(ctx, pool, { color: (t) => colors[t], sprite: (t) => sprites[t], look, alpha: b.alpha, font });
     governor.feed(performance.now() - t0, gap);
     // Asleep when nothing lives and nothing drifts: no frames at all until the next event. Calm (no burst alive)
-    // runs at half rate; a burst, or the event that starts one, brings full rate back at once.
+    // runs at half rate, settled calm at about fifteen frames a second; a burst, or the event that starts one,
+    // brings full rate back at once.
     if (pool.n > 0 || ems.length) {
       if (bursting()) raf = requestAnimationFrame(frame);
-      else timer = setTimeout(() => { timer = 0; if (!dead) raf = requestAnimationFrame(frame); }, CALM_MS);
+      else timer = setTimeout(() => { timer = 0; if (!dead) raf = requestAnimationFrame(frame); }, settled ? SETTLED_MS : CALM_MS);
     } else last = 0;
   }
 
@@ -214,13 +239,19 @@ export function createFx(canvas) {
 
   return {
     setScene(next) {
+      // The cockpit hands a new scene on many a render (a clock tick, a ledger read): only a real change, an orb
+      // that moved or changed state, counts as something happening.
+      const sig = sceneSig(next);
+      if (sig !== lastSig) { lastSig = sig; quietSince = null; }
       input = next;
       follow(input?.mode === 'heads');
       measure();
       wake();
     },
     setState(next) {
+      const was = state;
       state = { ...state, ...next };
+      if (state.hushed !== was.hushed || state.asking !== was.asking || state.level !== was.level) quietSince = null;
       if (budgetFor(state.level).cap === 0) { pool.n = 0; ctx.clearRect(0, 0, canvas.width, canvas.height); }
       wake();
     },
@@ -229,6 +260,7 @@ export function createFx(canvas) {
       const b = budgetFor(state.level);
       const k = b.burst * governor.scale();
       for (const ev of events) for (const s of spawnsFor(ev, scene, rng, k)) spawn(pool, s);
+      quietSince = null;
       wake();
     },
     retheme() {

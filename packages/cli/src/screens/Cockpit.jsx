@@ -25,7 +25,7 @@ import { formWords } from '../../shared/forming.mjs';
 import { withFiles } from '../../shared/attachments.mjs';
 import { wireOf } from '../ui/attachments.js';
 import {
-  PHASES, basinItems, clock, ctxLayers, identity, isOwner, liveChunks, liveStage, packageStage, phaseTrack, rememberIdentity, reviewStage, sessionPhase,
+  PHASES, basinItems, clock, ctxLayers, identity, isOwner, lastCalls, liveChunks, liveStage, packageStage, phaseTrack, rememberIdentity, reviewStage, sessionPhase,
   startStage,
 } from './cockpit/model.js';
 
@@ -238,11 +238,14 @@ export default function Cockpit() {
     lifted: showTether,
   } : null), [view, ledger, now, session.name, session.kind, live.asks, pendingParked, showTether]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Each agent's last call, for the stage captions. Keyed by its text, so a streamed word does not redraw the stage.
+  const calls = useMemo(() => lastCalls(live.transcript), [live.transcript]);
+  const callsKey = JSON.stringify(calls);
   const stageView = useMemo(() => {
     if (view === 'start' && ledger?.questions?.length) return startStage(ledger);
     if (view === 'review' && ledger?.parked?.length) return reviewStage(ledger);
     if (view === 'package' && ledger?.closed?.length) return packageStage(ledger);
-    const s = liveStage(stage, { chunkLabel });
+    const s = liveStage(stage, { chunkLabel, calls });
     if (showTether && lastParked) {
       // The parked agent rests at the tray's height, tethered to the tray (Cockpit board).
       const trayTop = 'calc(100% - var(--tray-y) - 64px)';
@@ -256,7 +259,7 @@ export default function Cockpit() {
     }
     if (marks?.tugs.length) s.fils.push(...tugFils(marks.tugs));
     return s;
-  }, [view, ledger, stage, chunkLabel, showTether, lastParked, asking, marks]);
+  }, [view, ledger, stage, chunkLabel, showTether, lastParked, asking, marks, callsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const liveClosedCount = liveChunks(stage).filter((c) => c.closed).length;
   const basin = owner ? null : basinItems({ ledger, phase: view, stage });
@@ -302,7 +305,7 @@ export default function Cockpit() {
       />
     );
   } else {
-    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} pinned={ledger?.pinned?.text} onSend={(text) => send(text, [], { line: true })} end={putAwayEnd} /> : (
+    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} session={id} pinned={ledger?.pinned?.text} onSend={(text) => send(text, [], { line: true })} end={putAwayEnd} /> : (
       <div className="convo" aria-live="polite">
         {formingNow
           ? <Empty sky="quiet" title={formSay.title} body={form.state === 'failed' ? `${session.name} has no worktree yet: ${formSay.sub}. Retry on the stage.` : `${session.name} starts once its worktree is ready. What it says and does shows up here.`} />

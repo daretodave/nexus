@@ -59,13 +59,13 @@ const agentName = (stage, id) => {
   return (a?.label || 'agent').split(/\s+/)[0].toLowerCase();
 };
 
-/** The last thing an agent did, from the transcript: "Bash npm test -- sync". */
+/** The last thing an agent did, from the transcript: its call, or null when it has made none. */
 function lastTool(transcript, id) {
   for (let i = transcript.length - 1; i >= 0; i -= 1) {
     const t = transcript[i];
-    if (t.kind === 'tool' && (t.agent || 'main') === id) return `${t.name}${t.summary ? ` ${t.summary}` : ''}`;
+    if (t.kind === 'tool' && (t.agent || 'main') === id) return t;
   }
-  return '';
+  return null;
 }
 
 /**
@@ -73,6 +73,9 @@ function lastTool(transcript, id) {
  * tool's command reads as it does in the cockpit and every cell stays 1ch.
  */
 const synSegs = (tokens) => tokens.map((tk) => [tokenClass(tk) || '', tk.v]);
+
+/** A call as the tree's detail column draws it: the tool's name, then its argument coloured as the tape colours it. */
+export const toolSegs = (t, cls = 'k') => [[cls, t.name], ...(t.summary ? [['', ' '], ...synSegs(rainbow(toolArgTokens(t.name, t.summary)))] : [])];
 
 /** One tape event from a transcript item: [who, glyph, glyphCls, segs]. */
 function tapeEvent(t, stage) {
@@ -286,22 +289,31 @@ export function headsRows(m) {
     const working = ids.filter((id) => ['running', 'waiting'].includes(stage.agents[id].state)).length;
     at(11).seq(L, [['k', 'agents     '], ['h', String(ids.length)], ['d', ` · ${working} working`]]);
     const lines = [];
-    const detail = (id, a, hasKids) => (hasKids ? plural(kids(id).length, 'agent') : a.state === 'waiting' ? 'waiting on you' : lastTool(transcript, id) || (a.state === 'done' ? '' : DASH));
+    // The detail column: how many agents a workflow holds, a wait, or the last call, coloured while the agent works (an
+    // agent with no call yet shows a dash). `cls` is the column's ink for words.
+    const detail = (id, a, hasKids, cls) => {
+      if (hasKids) return [[cls, plural(kids(id).length, 'agent')]];
+      if (a.state === 'waiting') return [[cls, 'waiting on you']];
+      const t = lastTool(transcript, id);
+      // A finished agent's last call stays in the column's ink, so done reads quieter than working.
+      if (t) return a.state === 'done' ? [[cls, `${t.name}${t.summary ? ` ${t.summary}` : ''}`]] : toolSegs(t, cls);
+      return [[cls, a.state === 'done' ? '' : DASH]];
+    };
     if (stage.agents.main) {
       const a = stage.agents.main;
       const look = agentLook(a, false);
-      lines.push([[look.cls, look.g], ['h', fit(` main${chunk ? ` · ${chunk.id}` : ''}`, 15)], [look.cls, fit(look.word, 11)], ['k', detail('main', a, false)]]);
+      lines.push([[look.cls, look.g], ['h', fit(` main${chunk ? ` · ${chunk.id}` : ''}`, 15)], [look.cls, fit(look.word, 11)], ...detail('main', a, false, 'k')]);
       const top = kids('main');
       top.forEach((id, i) => {
         const a2 = stage.agents[id];
         const sub = kids(id);
         const lk = agentLook(a2, sub.length > 0);
         const last = i === top.length - 1;
-        lines.push([['b', last ? '└─ ' : '├─ '], [lk.cls, lk.g], ['', fit(` ${agentName(stage, id)}`, 12)], [lk.cls, fit(lk.word, 11)], [lk.cls === 'no' ? 'k' : 'd', detail(id, a2, sub.length > 0)]]);
+        lines.push([['b', last ? '└─ ' : '├─ '], [lk.cls, lk.g], ['', fit(` ${agentName(stage, id)}`, 12)], [lk.cls, fit(lk.word, 11)], ...detail(id, a2, sub.length > 0, lk.cls === 'no' ? 'k' : 'd')]);
         sub.forEach((sid, j) => {
           const a3 = stage.agents[sid];
           const lk3 = agentLook(a3, false);
-          lines.push([['b', `${last ? '   ' : '│  '}${j === sub.length - 1 ? '└─ ' : '├─ '}`], [lk3.cls, lk3.g], ['', fit(` ${agentName(stage, sid)}`, 9)], [lk3.cls, fit(lk3.word, 11)], [lk3.cls === 'no' ? 'k' : 'd', detail(sid, a3, false)]]);
+          lines.push([['b', `${last ? '   ' : '│  '}${j === sub.length - 1 ? '└─ ' : '├─ '}`], [lk3.cls, lk3.g], ['', fit(` ${agentName(stage, sid)}`, 9)], [lk3.cls, fit(lk3.word, 11)], ...detail(sid, a3, false, lk3.cls === 'no' ? 'k' : 'd')]);
         });
       });
     } else {

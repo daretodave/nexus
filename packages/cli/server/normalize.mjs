@@ -20,9 +20,85 @@
 // `tool-done` item; without a clock there is no tool-done, so it comes as a `tool-output` item.
 // Riding on tool-done keeps a call at two transcript items, so the hub's 2000-item cap holds as
 // much history as it did, and both are bounded so that transcript stays a sane size on reconnect.
+//
+// Previews: the transcript (which every open tab keeps, and gets whole on reconnect) holds only a
+// small preview of each call (PREVIEW). With a tool store in the context (createToolStore, the
+// session's own), the call's fuller input and output (DETAIL) are kept there, server side, and the
+// item says `more`: the open tool row asks for them (GET /api/tool) when it opens. So a long
+// session costs the page a few hundred bytes a call, not twelve kilobytes.
 
-export function newTxContext({ now = null } = {}) {
-  return { msgId: null, streamed: new Set(), now, started: new Map() };
+/** How much of a call the transcript keeps, and how much the tool store keeps for an open row. */
+export const PREVIEW = { str: 600, all: 1200, out: 1200 };
+export const DETAIL = { str: 64000, all: 160000, out: 64000 };
+
+export function newTxContext({ now = null, tools = null } = {}) {
+  return { msgId: null, streamed: new Set(), now, started: new Map(), tools };
+}
+
+/**
+ * What every session's tool store holds together: each store is bounded on its own, and a fleet of busy sessions is
+ * bounded too. Past `maxChars` across them all, the biggest store gives up its oldest call first.
+ */
+export function createToolPool({ maxChars = 32_000_000 } = {}) {
+  return { maxChars, size: 0, stores: new Set() };
+}
+
+/** The pool every session's store shares unless it is given its own. */
+const SHARED = createToolPool();
+
+/**
+ * The calls' fuller input and output, by tool_use id, kept server side for the open tool row. Bounded by an estimate
+ * of the characters it holds: past `maxChars` (or past the pool's bound, across every store in it) the oldest calls go
+ * first (a row that opens after that shows its preview). set(id, { input, clipped }) when a call goes out, output(id,
+ * text) when its result comes back; dispose() when the session closes.
+ */
+export function createToolStore({ maxChars = 8_000_000, pool = SHARED } = {}) {
+  const calls = new Map();
+  let size = 0;
+  const weigh = (r) => (r.input ? JSON.stringify(r.input).length : 0) + (r.output ? r.output.length : 0);
+  const drop = (k, v) => { calls.delete(k); size -= v.w; pool.size -= v.w; };
+  /** Give up the oldest call that is not `keep`; false when there is none. */
+  const shed = (keep) => {
+    for (const [k, v] of calls) {
+      if (k === keep) continue;
+      drop(k, v);
+      return true;
+    }
+    return false;
+  };
+  const clear = () => { pool.size -= size; calls.clear(); size = 0; };
+  const store = {
+    get size() { return size; },
+    shed,
+  };
+  pool.stores.add(store);
+  const put = (id, r) => {
+    const was = calls.get(id);
+    if (was) drop(id, was);
+    r.w = weigh(r);
+    calls.set(id, r);
+    size += r.w;
+    pool.size += r.w;
+    while (size > maxChars && shed(id));
+    // Over the pool's bound: the biggest store sheds, this one included, never the call just kept.
+    while (pool.size > pool.maxChars) {
+      let big = null;
+      for (const s of pool.stores) if (!big || s.size > big.size) big = s;
+      if (!big || !big.shed(id)) break;
+    }
+  };
+  return {
+    set(id, { input = null, clipped = null } = {}) { if (id) put(id, { ...(calls.get(id) || {}), input, clipped }); },
+    output(id, text) { if (id) put(id, { input: null, clipped: null, ...(calls.get(id) || {}), output: text }); },
+    get(id) {
+      const r = calls.get(id);
+      return r ? { id, input: r.input ?? null, clipped: r.clipped?.length ? r.clipped : null, output: r.output ?? null } : null;
+    },
+    clear,
+    dispose() { clear(); pool.stores.delete(store); },
+    get size() { return size; },
+    get count() { return calls.size; },
+  };
 }
 
 /** The lines of a text, a trailing newline closing the last one (not opening another). */
@@ -75,7 +151,7 @@ export function diffOf(name, input = {}) {
   return null;
 }
 
-const INPUT_STR = 4000; // one string field of a call's input
+const INPUT_STR = 4000; // one string field of a call's input (a default; the transcript passes PREVIEW)
 const INPUT_ALL = 8000; // all of them together
 const OUTPUT_MAX = 4000; // a result's text
 
@@ -88,16 +164,16 @@ const clipStr = (s, n) => (s.length > n ? `${s.slice(0, n)}\n... (${s.length - n
  * `clipped` and the path of every string that was cut lands in it ('old_string', 'edits/1/new_string'): a clipped
  * edit is not the edit that will happen, so the views must not diff it.
  */
-export function clipInput(input, summary = '', clipped = null) {
+export function clipInput(input, summary = '', clipped = null, { str = INPUT_STR, all = INPUT_ALL } = {}) {
   if (!input || typeof input !== 'object') return null;
   const keys = Object.keys(input);
   if (!keys.length) return null;
   if (keys.length === 1 && typeof input[keys[0]] === 'string' && input[keys[0]] === summary) return null;
-  let left = INPUT_ALL;
+  let left = all;
   const walk = (v, depth, path) => {
     if (typeof v === 'string') {
-      const room = Math.max(0, Math.min(INPUT_STR, left));
-      left -= Math.min(v.length, INPUT_STR);
+      const room = Math.max(0, Math.min(str, left));
+      left -= Math.min(v.length, str);
       if (v.length > room) clipped?.push(path);
       return clipStr(v, room);
     }
@@ -112,11 +188,11 @@ export function clipInput(input, summary = '', clipped = null) {
 }
 
 /** A result's text for display: whole when short, else its head and tail with how many lines fell between. */
-export function clipOutput(text) {
+export function clipOutput(text, max = OUTPUT_MAX) {
   const s = String(text ?? '');
-  if (s.length <= OUTPUT_MAX) return s;
-  const head = s.slice(0, Math.floor(OUTPUT_MAX * 0.7));
-  const tail = s.slice(s.length - Math.floor(OUTPUT_MAX * 0.25));
+  if (s.length <= max) return s;
+  const head = s.slice(0, Math.floor(max * 0.7));
+  const tail = s.slice(s.length - Math.floor(max * 0.25));
   const gone = s.slice(head.length, s.length - tail.length).split('\n').length - 1;
   return `${head}\n... (${gone} more lines) ...\n${tail}`;
 }
@@ -160,7 +236,7 @@ export function txFromMessage(msg, ctx) {
       const done = { kind: 'tool-done', id: block.tool_use_id, agent: msg.parent_tool_use_id || 'main', ms: Math.max(0, at - from), ok: !block.is_error, at };
       // The result's text moves onto the tool-done: one item fewer per call in the capped transcript.
       const k = out.findIndex((x) => x.kind === 'tool-output' && x.id === block.tool_use_id);
-      if (k !== -1) { done.text = out[k].text; out.splice(k, 1); }
+      if (k !== -1) { done.text = out[k].text; if (out[k].more) done.more = true; out.splice(k, 1); }
       out.push(done);
     }
   }
@@ -199,9 +275,18 @@ function txItems(msg, ctx) {
           const diff = diffOf(block.name, block.input);
           if (diff) item.diff = diff;
           const clipped = [];
-          const input = clipInput(block.input, String(toolArgOf(block.input)), clipped);
+          const arg = String(toolArgOf(block.input));
+          const input = clipInput(block.input, arg, clipped, PREVIEW);
           if (input) item.input = input;
-          if (input && clipped.length) item.clipped = clipped;
+          if (input && clipped.length) {
+            item.clipped = clipped;
+            // The preview cut something: the store keeps the fuller call for the open row.
+            if (ctx?.tools && block.id) {
+              const cut = [];
+              ctx.tools.set(block.id, { input: clipInput(block.input, arg, cut, DETAIL), clipped: cut });
+              item.more = true;
+            }
+          }
           out.push(item);
         }
       });
@@ -213,7 +298,13 @@ function txItems(msg, ctx) {
         if (!block || block.type !== 'tool_result') continue;
         if (block.is_error) { out.push({ kind: 'tool-error', id: block.tool_use_id, agent, text: toText(block.content).slice(0, 400) }); continue; }
         const text = toText(block.content, '\n');
-        if (text.trim()) out.push({ kind: 'tool-output', id: block.tool_use_id, agent, text: clipOutput(text) });
+        if (!text.trim()) continue;
+        const item = { kind: 'tool-output', id: block.tool_use_id, agent, text: clipOutput(text, PREVIEW.out) };
+        if (text.length > PREVIEW.out && ctx?.tools && block.tool_use_id) {
+          ctx.tools.output(block.tool_use_id, clipOutput(text, DETAIL.out));
+          item.more = true;
+        }
+        out.push(item);
       }
       break;
     }

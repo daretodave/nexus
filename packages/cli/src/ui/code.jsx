@@ -3,12 +3,13 @@
 // overlay that colours a textarea or an input as it is typed. The grammar engine arrives lazily
 // (syntax/highlighter.js); until it does, and on the server, the quick tokens draw. Styles: styles/syntax.css.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { foldPlan, hasColour, lineCount, rainbow, splitLines, takeLines, tokenClass } from './syntax/tokens.js';
+import { dropLines, FOLD_AT, foldPlan, hasColour, lastLines, lineCount, rainbow, splitLines, takeLines, tokenClass } from './syntax/tokens.js';
 import { codeTokens, useCodeTokens, useGrammarVersion } from './syntax/highlighter.js';
 import { langOf, langOfPath } from './syntax/langs.js';
 import { draftTokens, inlineTokens } from './syntax/draft.js';
-import { defaultFolds, jsonRows, parseJson, prettyJson } from './syntax/json.js';
+import { allFolds, defaultFolds, jsonRows, parseJson, prettyJson } from './syntax/json.js';
 import { diffLines, trimContext } from './syntax/diff.js';
+import { CRON_FIELDS, cronTokens, cronWords } from './syntax/cron.js';
 import { Icon } from './icons.jsx';
 import { cx } from './controls.jsx';
 import '../styles/syntax.css';
@@ -37,8 +38,8 @@ export function CopyButton({ text, label = 'Copy' }) {
     try { navigator.clipboard?.writeText(String(text ?? '')).then(() => setDone(true), () => {}); } catch { /* no clipboard: the text stays on screen to select */ }
   };
   return (
-    <button className={cx('code-btn', done && 'is-done')} type="button" onClick={copy} aria-label={done ? 'Copied' : `${label} to clipboard`}>
-      <Icon name={done ? 'check' : 'copy2'} size={12} />{done ? 'Copied' : label}
+    <button className={cx('code-btn', done && 'is-done')} type="button" onClick={copy} aria-label={done ? 'Copied' : `${label} to clipboard`} title={done ? 'Copied' : label}>
+      <Icon name={done ? 'check' : 'copy2'} size={12} /><span className="code-btn-word">{done ? 'Copied' : label}</span>
     </button>
   );
 }
@@ -62,9 +63,11 @@ function sniff(text) {
 /**
  * A block of code: coloured by `lang` (a grammar name or a fence word), rainbow brackets, a language label and a
  * copy button, and past FOLD_AT lines folded to its head with a "Show all" bar. A block still streaming (`open`)
- * never folds, so its newest lines stay in view, and draws with the quick tokens: a grammar pass over the whole
- * block on every delta would cost frames, so it waits for the block to close. With no language the text draws plain,
- * exactly as given.
+ * folds the moment it passes the limit but shows its tail: its last FOLD_AT lines, so it never shrinks as it folds
+ * and the newest line stays in view. One that streamed here keeps its tail when it finishes, so the lines being read
+ * neither jump nor swap for its head; a block that arrives whole folds to its head. While streaming it draws with the quick
+ * tokens: a grammar pass over the whole block on every delta would cost frames, so it waits for the block to close.
+ * With no language the text draws plain, exactly as given.
  * `tokens` draws ready-made tokens instead (a Grep result); `numbered` puts each line's number in a gutter.
  */
 export function CodeBlockView({ text, lang = '', label, open = false, className = 'code-pre', preClass, fold = true, copy = true, numbered = null, tokens: given = null }) {
@@ -73,20 +76,26 @@ export function CodeBlockView({ text, lang = '', label, open = false, className 
   const raw = useCodeTokens(grammar, s, { quick: open });
   const tokens = useMemo(() => given || (grammar ? rainbow(raw) : null), [raw, grammar, given]);
   const total = lineCount(s);
-  const plan = fold && !open ? foldPlan(total) : { fold: false, keep: total };
+  const plan = fold ? foldPlan(total) : { fold: false, keep: total };
   const [all, setAll] = useState(false);
   const folded = plan.fold && !all;
-  const shown = tokens ? (folded ? takeLines(tokens, plan.keep) : tokens) : null;
-  const plain = folded ? s.split('\n').slice(0, plan.keep).join('\n') : s;
+  // Streamed past the fold here (now, or before it finished): its last FOLD_AT lines, the height it had reached.
+  const streamed = useRef(false);
+  if (open && plan.fold) streamed.current = true;
+  const tail = folded && (open || streamed.current);
+  const keep = tail ? Math.min(total, FOLD_AT) : plan.keep;
+  const from = tail ? total - keep : 0;
+  const shown = tokens ? (tail ? dropLines(tokens, from) : folded ? takeLines(tokens, keep) : tokens) : null;
+  const plain = tail ? lastLines(s, keep) : folded ? s.split('\n').slice(0, keep).join('\n') : s;
   let body;
   if (numbered) {
     const lines = shown ? splitLines(shown) : plain.split('\n').map((l) => (l ? [{ t: 'text', v: l }] : []));
     if (!folded && lines.length > 1 && lines[lines.length - 1].length === 0 && s.endsWith('\n')) lines.pop();
-    body = lines.map((l, i) => <Fragment key={i}>{i ? '\n' : null}<span className="code-ln">{numbered[i] ?? ''}</span><Tok tokens={l} /></Fragment>);
+    body = lines.map((l, i) => <Fragment key={i}>{i ? '\n' : null}<span className="code-ln">{numbered[from + i] ?? ''}</span><Tok tokens={l} /></Fragment>);
   } else body = shown ? <Tok tokens={shown} /> : plain;
   const word = label ?? (lang || (grammar === 'json' ? 'json' : ''));
   return (
-    <div className={cx('code-box', folded && 'is-folded')}>
+    <div className={cx('code-box', folded && (tail ? 'is-tail' : 'is-folded'))}>
       <pre className={cx(preClass || className, open && 'is-open')} data-lang={lang || undefined}><code>{body}</code></pre>
       {copy && s ? <div className="code-tools">{word ? <span className="code-lang">{String(word).toLowerCase()}</span> : null}<CopyButton text={s} /></div> : null}
       {plan.fold ? <FoldBar open={all} total={total} onToggle={() => setAll((a) => !a)} /> : null}
@@ -101,6 +110,36 @@ export function InlineCode({ text }) {
 }
 
 /**
+ * A cron schedule as inline code: each field coloured and named on hover (minute, hour, ...), and its plain words
+ * beside it ("every day at 03:30 UTC"). `words` overrides them (a server's own description); false leaves them out,
+ * for a place that already says them.
+ */
+export function CronCode({ cron, words, className }) {
+  const tokens = useMemo(() => cronTokens(cron), [cron]);
+  const said = words === false ? '' : words || cronWords(cron);
+  const runs = [];
+  for (const tk of tokens) {
+    const last = runs[runs.length - 1];
+    if (tk.field != null && last && last.field === tk.field) last.tokens.push(tk);
+    else runs.push({ field: tk.field, tokens: [tk] });
+  }
+  return (
+    <span className={cx('cron', className)}>
+      <code className="cron-code">
+        {runs.map((r, i) => (r.field != null ? <span key={i} className="cron-field" title={CRON_FIELDS[r.field]}><Tok tokens={r.tokens} /></span> : <Tok key={i} tokens={r.tokens} />))}
+      </code>
+      {said ? <span className="cron-words">{said}</span> : null}
+    </span>
+  );
+}
+
+/** A loop's schedule, every cron in it (a workflow can carry several): each one coloured, with its own words. */
+export function CronList({ schedule, words }) {
+  const crons = schedule?.crons?.length ? schedule.crons : schedule?.cron ? [schedule.cron] : [];
+  return crons.map((c, i) => <Fragment key={c + i}>{i ? (i === crons.length - 1 ? ' and ' : ', ') : null}<CronCode cron={c} words={words} /></Fragment>);
+}
+
+/**
  * A JSON value as a tree that folds by node (syntax/json.js); deep or crowded boxes start folded. A text that does
  * not parse (a summary clipped mid-string) draws as coloured JSON tokens instead.
  */
@@ -112,6 +151,9 @@ export function JsonView({ value, text, className = 'code-pre', fold = true }) {
   const toggle = (path) => setFolded((f) => { const n = new Set(f); if (n.has(path)) n.delete(path); else n.add(path); return n; });
   const pretty = prettyJson(parsed.value);
   const total = rows.length;
+  // Expand all while anything is folded; with everything open, Collapse all folds every box under the root.
+  const anyFolded = folded.size > 0;
+  const nested = anyFolded || rows.some((r) => r.fold && r.fold.path !== '');
   return (
     <div className="code-box">
       <pre className={cx(className, 'code-json')}><code>
@@ -126,7 +168,15 @@ export function JsonView({ value, text, className = 'code-pre', fold = true }) {
           </span>
         ))}
       </code></pre>
-      <div className="code-tools"><span className="code-lang">json</span><CopyButton text={pretty} /></div>
+      <div className="code-tools">
+        <span className="code-lang">json</span>
+        {nested ? (
+          <button className={cx('code-btn', 'json-all', !anyFolded && 'is-open')} type="button" onClick={() => setFolded(anyFolded ? new Set() : allFolds(parsed.value))} aria-label={anyFolded ? 'Expand all nodes' : 'Collapse all nodes'} title={anyFolded ? 'Expand all' : 'Collapse all'}>
+            <Icon name="chevronDown" size={12} /><span className="code-btn-word">{anyFolded ? 'Expand all' : 'Collapse all'}</span>
+          </button>
+        ) : null}
+        <CopyButton text={pretty} />
+      </div>
     </div>
   );
 }

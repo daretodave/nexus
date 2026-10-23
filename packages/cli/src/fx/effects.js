@@ -123,7 +123,8 @@ export function nodeFor(scene, agent) {
 // ---- particle specs ------------------------------------------------------------
 // A spec is the pool's input: { kind, x, y, vx, vy, ax, ay, drag, life, size, color, alpha, prio, ... }.
 // Kinds: mote (soft glow, wobbling drift), ember (glow under gravity), spark (a streak along its velocity),
-// orbit (circles a centre), ring (an expanding circle), seek (rides a bezier path), pixel and glyph (heads-down).
+// orbit (circles a centre), ring (an expanding circle), seek (rides a bezier path), pixel and glyph (heads-down's
+// ambient type), and shape (a drawn mark that tumbles: a cross, a tick, a plus, a diamond, a four-point star).
 
 function radial(x, y, n, o, rng) {
   const out = [];
@@ -135,6 +136,7 @@ function radial(x, y, n, o, rng) {
       vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, ax: 0, ay: o.gravity || 0, drag: o.drag ?? 2.2,
       life: o.life * (0.7 + rng() * 0.6), size: o.size * (0.7 + rng() * 0.6), color: Array.isArray(o.color) ? o.color[i % o.color.length] : o.color,
       alpha: o.alpha ?? 1, prio: 1, glyph: o.glyphs ? o.glyphs[Math.floor(rng() * o.glyphs.length)] : undefined,
+      ...(o.shapes ? { shape: o.shapes[Math.floor(rng() * o.shapes.length)], rot: rng() * TAU, spin: (rng() - 0.5) * (o.spin ?? 6) } : null),
     });
   }
   return out;
@@ -263,7 +265,7 @@ function headsSpawns(ev, scene, rng, k) {
     case 'tool-done':
       return ev.ok ? [] : radial(tape.x, tape.y, n(12), { kind: 'pixel', speed: 150, life: 0.8, size: px, color: '--st-failed', gravity: 160 }, rng);
     case 'error':
-      return radial(tape.x, tape.y, n(16), { kind: 'glyph', speed: 140, life: 0.9, size: scene.rh * 0.8, color: '--st-failed', gravity: 180, glyphs: ['✗', 'x', '!'] }, rng);
+      return radial(tape.x, tape.y, n(16), { kind: 'shape', speed: 140, life: 0.9, size: scene.rh * 0.55, color: '--st-failed', gravity: 180, shapes: ['cross', 'cross', 'bar'] }, rng);
     case 'agent-end':
       return ev.ok ? radial(tape.x, tape.y, n(12), { kind: 'pixel', speed: 130, life: 1, size: px, color: '--st-done', gravity: 60 }, rng) : radial(tape.x, tape.y, n(12), { kind: 'pixel', speed: 110, life: 1, size: px, color: '--st-failed', gravity: 200 }, rng);
     case 'result':
@@ -272,7 +274,7 @@ function headsSpawns(ev, scene, rng, k) {
       if (ev.stage === 'archive') {
         return [
           ...streak('--st-done', scene.bar ? scene.bar.x1 : undefined),
-          ...radial(scene.bar ? scene.bar.head : tape.x, scene.bar ? scene.bar.y : tape.y, n(30), { kind: 'glyph', speed: 200, life: 1.5, size: scene.rh * 0.9, color: CHEER, gravity: 120, glyphs: ['✓', '*', '+', '·', '◆'] }, rng),
+          ...radial(scene.bar ? scene.bar.head : tape.x, scene.bar ? scene.bar.y : tape.y, n(30), { kind: 'shape', speed: 200, life: 1.5, size: scene.rh * 0.6, color: CHEER, gravity: 120, shapes: ['tick', 'star', 'plus', 'diamond', 'star'] }, rng),
         ];
       }
       return streak(ev.stage === 'gate' ? '--st-tool' : '--sess');
@@ -294,13 +296,36 @@ function headsSpawns(ev, scene, rng, k) {
 // ---- ambient ---------------------------------------------------------------------
 
 /**
+ * A stage with nothing live keeps its full drift this long (s) after the last thing happened, then thins over
+ * CALM_FADE down to CALM_FLOOR of it, and keeps drifting there: a calm sky stays alive, just sparser and cheaper.
+ */
+export const CALM_HOLD = 6;
+export const CALM_FADE = 6;
+export const CALM_FLOOR = 0.35;
+
+/**
+ * How much of the stage's drift is left after `quiet` seconds with nothing live (no orb working, no question, no
+ * event): all of it for CALM_HOLD, then down to CALM_FLOOR over CALM_FADE, never less. Settled at the floor the
+ * drift goes on and the loop draws it at a low frame rate (runtime.js SETTLED_MS), so a calm sky still moves but
+ * costs few frames.
+ */
+export function calmScale(quiet) {
+  if (!(quiet > CALM_HOLD)) return 1;
+  return Math.max(CALM_FLOOR, 1 - (1 - CALM_FLOOR) * ((quiet - CALM_HOLD) / CALM_FADE));
+}
+
+/** Is anything on the stage live: an orb with a look of its own, or a question's tug? (The drift alone is not.) */
+export const stageLive = (ems) => ems.some((e) => e.kind !== 'drift');
+
+/**
  * The loops that run while nothing happens: the session's own drift on the
  * sky, each live orb's look, and, while a question waits, the tug's stream.
  * Hushed (a question or permission pending, or a start/review page): the
  * drift slows to a trickle and the orbs go still; only the tug moves.
+ * `calm` (calmScale) thins the stage's drift once nothing is live (it never reaches 0 there; 0 would stop it).
  * Returns [{ key, kind, rate, node? }]; rate is per second, before the level.
  */
-export function ambientEmitters(scene, { hushed = false, asking = false } = {}) {
+export function ambientEmitters(scene, { hushed = false, asking = false, calm = 1 } = {}) {
   if (!scene) return [];
   const out = [];
   const area = (scene.w * scene.h) / (1280 * 800);
@@ -309,7 +334,7 @@ export function ambientEmitters(scene, { hushed = false, asking = false } = {}) 
     if (asking) out.push({ key: 'tug', kind: 'heads-tug', rate: 1.6 });
     return out;
   }
-  out.push({ key: 'drift', kind: 'drift', rate: (hushed ? 1 : 5) * Math.max(0.4, area) });
+  if (calm > 0) out.push({ key: 'drift', kind: 'drift', rate: (hushed ? 1 : 5) * Math.max(0.4, area) * Math.min(1, calm) });
   for (const n of scene.nodes) {
     const look = n.state ? STATE_FX[n.state] : null;
     if (!look || !look.ambient) continue;

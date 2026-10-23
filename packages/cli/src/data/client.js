@@ -60,6 +60,8 @@ export const server = {
   /** POST /api/sessions/:id/(pause|resume|close|retry): pause after this step, resume, close (its worktree stays), retry a worktree that failed to form. */
   sessionAction: (id, action) => api(`/api/sessions/${encodeURIComponent(id)}/${action}`, {}),
   serverInfo: () => api('/api/server'),
+  /** GET /api/tool: an open tool row's fuller call ({ input, clipped, output }); the transcript carries a preview. */
+  toolDetail: (session, id) => api(`/api/tool?id=${encodeURIComponent(id)}${session ? `&session=${encodeURIComponent(session)}` : ''}`),
   answerAsk: (id, answers) => api(`/api/ask/${encodeURIComponent(id)}`, { answers }),
   answerPermission: (id, allow, always = false) => api(`/api/permission/${encodeURIComponent(id)}`, { allow, always }),
   oversight: () => api('/api/oversight'),

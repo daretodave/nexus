@@ -143,3 +143,29 @@ test('closing waits for what the server started, then kills what still runs as a
     fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 });
+
+test('GET /api/tool: an open row gets the fuller call the transcript only previews; the permission card gets it whole', async () => {
+  let hooks;
+  const app = await startServer({ repo: tmpRepo(), provider: (h) => { hooks = h; return fakeProvider(); }, pollRuns: false, dist: NO_DIST });
+  try {
+    const headers = { 'x-nexus-token': app.token };
+    const input = { file_path: 'src/a.js', old_string: 'o'.repeat(9000), new_string: 'n'.repeat(9000) };
+    hooks.onMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'T1', name: 'Edit', input }] } });
+    const item = app.hub.transcript.find((t) => t.id === 'T1');
+    assert.equal(item.more, true);
+    assert.ok(item.input.old_string.length < 1000, 'the transcript holds a preview');
+    const got = await req(app.port, { pathname: '/api/tool?id=T1', headers });
+    assert.equal(got.status, 200);
+    const d = JSON.parse(got.data);
+    assert.deepEqual(d.input, input, 'the whole edit');
+    assert.equal(d.clipped, null);
+    assert.equal((await req(app.port, { pathname: '/api/tool?id=nope', headers })).status, 404, 'a call it no longer keeps');
+    assert.equal((await req(app.port, { pathname: '/api/tool?id=T1&session=nobody', headers })).status, 404, 'another session');
+    hooks.onPermission({ id: 'P1', agent: 'main', tool: 'Edit', input });
+    const card = app.sessions.get(app.home).permissions.get('P1').view;
+    assert.deepEqual(card.input, input, 'the permission card shows the real call, not a preview');
+    assert.deepEqual(card.clipped, []);
+  } finally {
+    await app.close();
+  }
+});

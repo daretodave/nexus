@@ -10,14 +10,15 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { reduce, replay } from '../shared/beats.mjs';
 import { createFxDiffer, diffFx, fxSnapshot, toolTone } from '../src/fx/events.js';
 import {
-  FX_TOKENS, ORB_R, STATE_FX, ambientEmitters, ambientSpawn, bezier, emitCount, headsGrid, headsScene, nodeFor, seeded, spawnsFor, stageScene,
+  CALM_FADE, CALM_FLOOR, CALM_HOLD, FX_TOKENS, ORB_R, STATE_FX, ambientEmitters, ambientSpawn, bezier, calmScale, emitCount, headsGrid, headsScene, nodeFor, seeded, spawnsFor,
+  stageLive, stageScene,
 } from '../src/fx/effects.js';
 import { budgetFor, createGovernor, scaled } from '../src/fx/budget.js';
 import { createPool, ease, envelope, setLimit, spawn, step } from '../src/fx/pool.js';
 import { drawPool, parseColor, rgba, themeLook } from '../src/fx/draw.js';
 import { fxActive, parseFx, FX_LEVELS } from '../src/fx/pref.js';
 import { safely, startFx } from '../src/fx/host.js';
-import { createFx } from '../src/fx/runtime.js';
+import { SETTLED_MS, createFx } from '../src/fx/runtime.js';
 
 const EMPTY = { connected: false, stage: replay([]), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [] };
 const live = (over = {}) => ({ ...EMPTY, connected: true, ...over });
@@ -246,7 +247,11 @@ test('the heads-down grid comes from the rows: the phase track, the newest tape 
   assert.equal(scene.tape.y, 50 + (g.tape + 0.5) * 20);
   const streak = spawnsFor({ type: 'chunk', id: '1', stage: 'archive' }, scene, seeded(4));
   assert.ok(streak.some((p) => p.kind === 'seek' && p.path[0][1] === scene.bar.y), 'a closed chunk streaks along the phase track');
-  assert.ok(streak.some((p) => p.kind === 'glyph'), 'and throws terminal glyphs');
+  assert.ok(streak.some((p) => p.kind === 'shape' && p.shape === 'tick'), 'and throws drawn marks, ticks among them');
+  assert.ok(!streak.some((p) => p.kind === 'glyph'), 'no text glyphs in a burst');
+  const err = spawnsFor({ type: 'error', agent: 'main' }, scene, seeded(4));
+  assert.ok(err.length && err.every((p) => p.kind === 'shape' && ['cross', 'bar'].includes(p.shape) && p.color === '--st-failed'), 'an error throws crosses');
+  assert.ok(err.some((p) => p.spin !== 0), 'that tumble');
   const tool = spawnsFor({ type: 'tool', tone: 'tool' }, scene, seeded(4));
   assert.ok(tool.every((p) => p.kind === 'pixel'), 'heads-down sparks are pixels');
   const amb = ambientEmitters(scene, {});
@@ -355,13 +360,13 @@ function fakeCtx() {
 test('drawPool draws each kind, skips what is invisible, and leaves the context as it found it', () => {
   const pool = createPool(8);
   const base = { life: 2, age: 0.5, alpha: 1, color: '--st-tool' };
-  for (const kind of ['mote', 'spark', 'ring', 'pixel', 'glyph', 'seek']) spawn(pool, { ...base, kind, x: 10, y: 10, vx: 10, r0: 1, r1: 9, glyph: '*', path: [[0, 0], [0, 0], [10, 10], [10, 10]] });
+  for (const kind of ['mote', 'spark', 'ring', 'pixel', 'glyph', 'seek', 'shape']) spawn(pool, { ...base, kind, x: 10, y: 10, vx: 10, r0: 1, r1: 9, glyph: '*', shape: 'cross', path: [[0, 0], [0, 0], [10, 10], [10, 10]] });
   spawn(pool, { ...base, kind: 'mote', color: '--nope' });
   pool.items.slice(0, pool.n).forEach((p) => { p.age = 0.5; });
   const ctx = fakeCtx();
   const img = {};
   const n = drawPool(ctx, pool, { color: (t) => (t === '--st-tool' ? [82, 221, 240, 1] : null), sprite: () => img, look: themeLook('dark'), alpha: 1, font: 'JetBrains Mono' });
-  assert.equal(n, 6, 'an unresolved token is skipped');
+  assert.equal(n, 7, 'an unresolved token is skipped');
   const names = ctx.calls.map((c) => c[0]);
   for (const call of ['drawImage', 'stroke', 'arc', 'fillRect', 'fillText']) assert.ok(names.includes(call), call);
   assert.ok(ctx.font.includes('JetBrains Mono'), 'glyphs in the mono face');
@@ -624,7 +629,7 @@ function stubPage() {
   delete globalThis.ResizeObserver;
   delete globalThis.IntersectionObserver;
   let ts = 0;
-  page.run = () => { ts += 16.7; for (const f of frames.splice(0)) f.fn(ts); };
+  page.run = (step = 16.7) => { ts += step; for (const f of frames.splice(0)) f.fn(ts); };
   page.restore = () => {
     for (const [k, d] of Object.entries(saved)) { if (d) Object.defineProperty(globalThis, k, d); else delete globalThis[k]; }
   };
@@ -677,4 +682,50 @@ test('the runtime: listens only where it must, measures a scroll once a frame, i
     page.restore();
   }
   assert.equal(typeof globalThis.window, 'undefined', 'the page stubs are gone');
+});
+
+test('calm: a stage with nothing live drifts a while, thins to a floor and keeps drifting; anything live keeps it full', () => {
+  assert.equal(calmScale(0), 1);
+  assert.equal(calmScale(CALM_HOLD), 1);
+  assert.ok(Math.abs(calmScale(CALM_HOLD + CALM_FADE / 2) - (1 + CALM_FLOOR) / 2) < 1e-9);
+  assert.equal(calmScale(CALM_HOLD + CALM_FADE + 5), CALM_FLOOR);
+  assert.equal(calmScale(1e6), CALM_FLOOR, 'never down to nothing: a calm sky still drifts');
+  assert.ok(CALM_FLOOR > 0);
+  const scene = stageScene({ nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'done', main: true }] }, 1280, 800);
+  const full = ambientEmitters(scene, {});
+  assert.deepEqual(full.map((e) => e.kind), ['drift']);
+  assert.equal(stageLive(full), false, 'drift alone is not live');
+  assert.ok(Math.abs(ambientEmitters(scene, { calm: 0.5 })[0].rate - full[0].rate / 2) < 1e-9, 'half calm, half the drift');
+  assert.deepEqual(ambientEmitters(scene, { calm: 0 }), [], 'settled: no drift at all');
+  const busy = stageScene({ nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'tool', main: true }] }, 1280, 800);
+  assert.equal(stageLive(ambientEmitters(busy, {})), true, 'an orb at work is live');
+  assert.equal(stageLive(ambientEmitters(scene, { asking: true })), true, 'and so is a question');
+});
+
+test('the runtime: a quiet stage settles to a slow, cheap drift that never stops, and the next event brings full rate', () => {
+  const page = stubPage();
+  const savedTimeout = globalThis.setTimeout;
+  // The calm timer fires at once here (its delay is recorded): the test drives every frame by hand.
+  const delays = [];
+  globalThis.setTimeout = (fn, ms) => { delays.push(ms); fn(); return 1; };
+  try {
+    const fx = createFx(page.canvas);
+    fx.setScene({ mode: 'stage', nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'done', main: true }] });
+    const quiet = (CALM_HOLD + CALM_FADE + 60) / 0.05;
+    for (let i = 0; i < quiet; i += 1) {
+      page.run(50);
+      assert.ok(page.frames.length > 0, `it keeps drifting (${(i * 0.05).toFixed(1)} s of quiet)`);
+    }
+    assert.ok(delays.slice(0, Math.floor(CALM_HOLD / 0.05)).every((d) => d < SETTLED_MS), 'during the hold: the calm rate');
+    assert.equal(delays.at(-1), SETTLED_MS, 'settled: a low frame rate, not none');
+    fx.emit([{ type: 'tool', agent: 'main', tone: 'tool' }]);
+    const before = delays.length;
+    page.run(50);
+    assert.equal(page.frames.length, 1, 'an event brings full rate back');
+    assert.equal(delays.length, before, 'a burst alive: every vsync, no timer');
+    fx.destroy();
+  } finally {
+    globalThis.setTimeout = savedTimeout;
+    page.restore();
+  }
 });

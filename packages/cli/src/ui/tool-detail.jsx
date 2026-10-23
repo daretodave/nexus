@@ -2,7 +2,8 @@
 // back. A shell command whole and coloured, an edit as a coloured diff, a written file in its language, a search's
 // matches with their paths, any other input as a foldable JSON tree; the result below it, a Read's lines numbered
 // and coloured by the file's language. Long panels fold (ui/code.jsx). The input and output come clipped from the
-// server (server/normalize.mjs clipInput, clipOutput); a call from before them shows its one-line summary.
+// server (server/normalize.mjs clipInput, clipOutput); a call from before them shows its one-line summary. In the
+// transcript they are previews: an open row fetches the fuller call (GET /api/tool) and withDetail lays it over.
 import { useMemo } from 'react';
 import { CodeBlockView, DiffView, JsonView } from './code.jsx';
 import { Markdown } from './markdown.jsx';
@@ -13,6 +14,20 @@ const SHELL = new Set(['Bash', 'BashOutput']);
 const LISTS = new Set(['Grep', 'Glob', 'LS']);
 const PROSE = new Set(['Task', 'Agent', 'WebFetch', 'WebSearch']);
 const str = (v) => (typeof v === 'string' ? v : '');
+
+/**
+ * A tool row with the server's fuller call laid over its preview: { input, clipped, output }. The store keeps only
+ * what the preview cut, so a part it does not have keeps the preview's; its input comes with its own `clipped`.
+ */
+export function withDetail(row, detail) {
+  const base = { input: row?.input ?? null, clipped: row?.clipped ?? null, output: row?.output ?? null };
+  if (!detail) return base;
+  return {
+    input: detail.input ?? base.input,
+    clipped: detail.input ? (detail.clipped?.length ? detail.clipped : null) : base.clipped,
+    output: detail.output ?? base.output,
+  };
+}
 
 /**
  * The call: { kind, ... } for the panel that draws it. Pure, so the choice is tested without rendering. `clipped` is
@@ -77,12 +92,13 @@ function Panel({ view, error }) {
   return <CodeBlockView text={view.text} lang={view.lang} label={view.label} numbered={view.numbered || null} className={error ? 'code-pre is-error' : 'code-pre'} />;
 }
 
-/** An open tool row's body: the call, then its output or its error. */
-export function ToolDetail({ tool, args, input, clipped = null, output, error }) {
+/** An open tool row's body: the call, then its output or its error. `loading`: the fuller call is on its way. */
+export function ToolDetail({ tool, args, input, clipped = null, output, error, loading = false }) {
   const call = useMemo(() => callView(tool, input, args, clipped), [tool, input, args, clipped]);
   const out = useMemo(() => outputView(tool, input, output), [tool, input, output]);
   return (
-    <div className="tool-detail">
+    <div className="tool-detail" aria-busy={loading || undefined}>
+      {loading ? <span className="tool-loading" role="status"><span className="spin" aria-hidden="true" />Fetching the whole call</span> : null}
       <Panel view={call} />
       {out ? <><span className="code-cap">{tool === 'Read' ? 'contents' : 'output'}</span><Panel view={out} /></> : null}
       {error ? <><span className="code-cap">error</span><CodeBlockView text={error} className="code-pre is-error" /></> : null}
