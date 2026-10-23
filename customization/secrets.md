@@ -634,8 +634,12 @@ names it. To add one:
    values it asks for), the `values` (each with `env` names,
    `secret`, `required` and a `shape`; a secret has no public
    name), `gotchas`, and the `guide` (`reads`, `run`, `test`,
-   `limits`, `do`, `dont`). Add it to `ORDER`, and its console
-   hosts to `CONSOLE_HOSTS`.
+   `limits`, `do`, `dont`). A name a tool reads by itself (the
+   Stripe CLI's `STRIPE_API_KEY`) goes in the guide's `fixed`,
+   so prose keeps it when the repo uses another name and the
+   guide says how to bridge the two; `runNoteIf` swaps the run
+   note when the repo already uses such a name. Add it to
+   `ORDER`, and its console hosts to `CONSOLE_HOSTS`.
 2. **Its shapes**, in `shapes-more.mjs`: what each value looks
    like, the hint, and a `reject` for the value meant for the
    field next door. A format the service does not publish stays

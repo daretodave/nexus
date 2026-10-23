@@ -16,9 +16,12 @@ const BLOCK = /<!-- nexus:stack:begin[^\n]*?-->[\s\S]*?<!-- nexus:stack:end -->/
 const POINTER = /<!-- nexus:stack-pointer:begin -->[\s\S]*?<!-- nexus:stack-pointer:end -->/;
 
 /** Replace each whole env name in a command with the name this repo uses (an alias it already reads). */
-function rename(text, map) {
+function rename(text, map, fixed = {}) {
   let out = String(text);
-  for (const [from, to] of Object.entries(map)) if (from !== to) out = out.replace(new RegExp(`\\b${from}\\b`, 'g'), to);
+  for (const [from, to] of Object.entries(map)) {
+    if (from === to || fixed[from] || fixed[to]) continue; // in prose, a name a tool reads by itself means that tool's name
+    out = out.replace(new RegExp(`\\b${from}\\b`, 'g'), to);
+  }
   return out;
 }
 
@@ -53,7 +56,9 @@ export function renderGuide({ picked = [], app = {}, names = {} } = {}) {
     const group = GROUPS.find((x) => x.id === s.group)?.label;
     lines.push(`### ${s.name}${group ? ` (${group})` : ''}`, '', s.role, '', '| Name | What it is | Where it may go |', '| --- | --- | --- |');
     const map = {};
+    const labels = {};
     for (const v of s.values) {
+      if (v.env?.server) labels[v.env.server] = v.label;
       const ns = Array.isArray(names[`${id}.${v.key}`]) && names[`${id}.${v.key}`].length ? names[`${id}.${v.key}`] : envNamesFor(v, fw);
       const server = ns.find((n) => !isPublicName(n));
       if (v.env?.server && server) map[v.env.server] = server;
@@ -63,13 +68,25 @@ export function renderGuide({ picked = [], app = {}, names = {} } = {}) {
       }
     }
     lines.push('');
-    if (g.reads) lines.push(`**How code reads them.** ${rename(g.reads, map)}`, '');
+    // fixed: names a tool reads by itself ({ NAME: 'the Stripe CLI' }). Prose keeps them as they are; when this repo
+    // keeps a value under another name, or under a fixed name that is not that value's own, the guide says so plainly.
+    const fixed = g.fixed || {};
+    const clashes = [];
+    for (const [from, to] of Object.entries(map)) {
+      if (from === to) continue;
+      if (fixed[from]) clashes.push(`This repo keeps \`${from}\` (${labels[from]}) as \`${to}\`, and ${fixed[from]} reads only \`${from}\`, so it will not find the value by itself: pass it in code, or set it inside the child (\`sh -c '${from}="$${to}" ...'\`).`);
+      if (fixed[to]) clashes.push(`This repo keeps the ${String(labels[from]).toLowerCase()} as \`${to}\`, the name ${fixed[to]} reads by itself: a command run with \`--only ${to}\` hands it this key. Do that only when the key is a sandbox key.`);
+    }
+    const repoNames = new Set(Object.values(map));
+    const note = Object.entries(g.runNoteIf || {}).find(([n]) => repoNames.has(n) && !map[n])?.[1] || g.runNote;
+    if (g.reads) lines.push(`**How code reads them.** ${rename(g.reads, map, fixed)}`, '');
     if (g.run?.length) lines.push('**Run with vault values:**', '', '```bash', ...g.run.map((c) => rename(c, map)), '```', '');
-    if (g.runNote) lines.push(rename(g.runNote, map), '');
+    if (note) lines.push(rename(note, map, fixed), '');
+    for (const c of clashes) lines.push(c, '');
     if (g.test) lines.push(`**Test and live.** ${g.test}`, '');
     if (g.limits) lines.push(`**Limits.** ${g.limits}`, '');
-    if (g.do?.length) lines.push('Do:', '', ...g.do.map((x) => `- ${rename(x, map)}`), '');
-    if (g.dont?.length) lines.push('Don\'t:', '', ...g.dont.map((x) => `- ${rename(x, map)}`), '');
+    if (g.do?.length) lines.push('Do:', '', ...g.do.map((x) => `- ${rename(x, map, fixed)}`), '');
+    if (g.dont?.length) lines.push('Don\'t:', '', ...g.dont.map((x) => `- ${rename(x, map, fixed)}`), '');
   }
   lines.push(END);
   return lines.join('\n');

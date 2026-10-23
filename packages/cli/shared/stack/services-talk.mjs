@@ -57,6 +57,7 @@ export const TALK_SERVICES = {
       'Reading message text needs the Message Content intent. Past 100 servers, privileged intents need Discord\'s review.',
     ],
     guide: {
+      fixed: { DISCORD_TOKEN: 'discord.js' },
       reads: 'discord.js: `client.login()` reads DISCORD_TOKEN when no token is passed. Other libraries, the interactions handler and command-registration scripts read DISCORD_ names by hand. The REST header is `Authorization: Bot <token>`, not Bearer. DISCORD_PUBLIC_KEY checks interaction signatures (Ed25519).',
       run: [
         'node scripts/secrets.mjs run --only DISCORD_TOKEN,DISCORD_APPLICATION_ID,DISCORD_GUILD_ID -- node scripts/register-commands.mjs',
@@ -179,6 +180,7 @@ export const TALK_SERVICES = {
       'Test credentials only work for sending, calling, buying a number and Lookup; use +15005550006 as the From number with them.',
     ],
     guide: {
+      fixed: { TWILIO_API_KEY: 'the Twilio CLI', TWILIO_API_SECRET: 'the Twilio CLI' },
       reads: 'The Twilio CLI reads TWILIO_ACCOUNT_SID, TWILIO_API_KEY and TWILIO_API_SECRET, and they beat the active profile. The helper libraries do not pick up the key by themselves: Node `twilio(process.env.TWILIO_API_KEY, process.env.TWILIO_API_SECRET, { accountSid: process.env.TWILIO_ACCOUNT_SID })`. Webhooks: `twilio.validateRequest(process.env.TWILIO_AUTH_TOKEN, signature, url, params)`.',
       run: [
         'node scripts/secrets.mjs run --only TWILIO_ACCOUNT_SID,TWILIO_API_KEY,TWILIO_API_SECRET -- twilio api:core:incoming-phone-numbers:list',
@@ -266,7 +268,7 @@ export const TALK_SERVICES = {
       once: 'The Console shows the key once. Paste it here before you close the dialog.',
     },
     steps: [
-      { id: 'an.ws', text: 'Create a workspace for this app and give it a spend limit.', link: { href: 'https://platform.claude.com/settings/workspaces', label: 'Workspaces' }, tick: true },
+      { id: 'an.ws', text: 'Create a workspace for this app and give it a spend limit. Only an organization admin can create workspaces.', link: { href: 'https://platform.claude.com/settings/workspaces', label: 'Workspaces' }, tick: true },
       { id: 'an.billing', text: 'Make sure the organization has credit or a payment method. A new organization starts on low limits.', link: { href: 'https://platform.claude.com/settings/billing', label: 'Billing' }, tick: true },
       { id: 'an.key', text: 'Create the API key below, tied to that workspace, and paste it.', values: ['apiKey'] },
       { id: 'an.check', text: 'Press Check it. It lists the models the key can use and fills in the workspace.', auto: 'anthropic.keyOk' },
@@ -322,7 +324,7 @@ export const TALK_SERVICES = {
     },
     steps: [
       { id: 'oa.project', text: 'Create a project for this app. Keep staging and production in separate projects.', link: { href: 'https://platform.openai.com/settings/organization/projects', label: 'Projects' }, tick: true },
-      { id: 'oa.limits', text: 'In the project\'s Limits, set a monthly budget and the models it may use.', link: { href: 'https://platform.openai.com/settings/organization/limits', label: 'Limits' }, tick: true },
+      { id: 'oa.limits', text: 'In the project\'s Limits, set a monthly budget and the models it may use.', link: { href: 'https://platform.openai.com/settings/project/limits', label: 'Project limits' }, tick: true },
       { id: 'oa.key', text: 'Create the restricted key below and paste it.', values: ['apiKey'] },
       { id: 'oa.check', text: 'Press Check it.', auto: 'openai.keyOk' },
     ],
@@ -409,7 +411,7 @@ export const TALK_SERVICES = {
   posthog: {
     id: 'posthog', name: 'PostHog', mono: 'PH', group: 'observe', keywords: ['analytics', 'feature flags', 'session replay', 'events'],
     role: 'Product analytics, feature flags and session replay.',
-    why: 'The browser sends events with the project key, which is public by design. A personal API key on the server reads data and evaluates flags locally; you only need it if the server does those things.',
+    why: 'The browser sends events with the project key, which is public by design. A personal API key on the server reads data and runs queries; you only need it if the server does that. Flags evaluated on the server use a project secret key instead.',
     inputs: [],
     token: {
       optionalToken: true,
@@ -421,7 +423,6 @@ export const TALK_SERVICES = {
         { group: 'Scopes', item: 'Project', level: 'Read', why: 'reads the project\'s ID and name' },
       ],
       optional: [
-        { group: 'Scopes', item: 'Feature flag', level: 'Read', why: 'only if the server evaluates flags locally' },
         { group: 'Scopes', item: 'Query', level: 'Read', why: 'only if the server runs HogQL queries' },
       ],
       resources: 'Access: this project only.',
@@ -430,7 +431,7 @@ export const TALK_SERVICES = {
     },
     steps: [
       { id: 'ph.key', text: 'In Project settings, copy the project API key (phc_...) and the host it names. Note whether you are on US or EU Cloud.', link: { href: 'https://us.posthog.com/settings/project', label: 'Project settings' }, values: ['projectKey', 'host'] },
-      { id: 'ph.pat', text: 'Only if the server reads data or evaluates flags: create the personal API key below, paste it, and press Check it. It fills in the project ID.', values: ['personalKey'] },
+      { id: 'ph.pat', text: 'Only if the server reads data or runs queries: create the personal API key below, paste it, and press Check it. It fills in the project ID when your organization has one project.', values: ['personalKey'] },
     ],
     values: [
       { key: 'projectKey', label: 'Project API key', env: { public: 'POSTHOG_KEY', server: 'POSTHOG_KEY' }, secret: false, shape: 'posthogProjectKey', required: true },
@@ -447,7 +448,7 @@ export const TALK_SERVICES = {
       'There are no test keys. Use a second project for development, or turn capturing off locally.',
     ],
     guide: {
-      reads: 'The browser passes the prefixed key and host to `posthog.init(key, { api_host })`; the SDK reads no env itself. posthog-node: `new PostHog(process.env.POSTHOG_KEY, { host: process.env.POSTHOG_HOST, personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY })`. REST paths use POSTHOG_PROJECT_ID.',
+      reads: 'The browser passes the prefixed key and host to `posthog.init(key, { api_host })`; the SDK reads no env itself. posthog-node: `new PostHog(process.env.POSTHOG_KEY, { host: process.env.POSTHOG_HOST })`. To evaluate flags locally on the server, PostHog recommends a project secret API key with feature_flag:read (Project settings), passed as `secretKey` in posthog-node 5.40 and later or `secret_key` in Python 7.22.1 and later. It is not one of the stack\'s values: ask the owner to store it with `node scripts/secrets.mjs set POSTHOG_SECRET_KEY`. Passing the personal key as `personalApiKey` still works but is the legacy path. The personal key is for REST reads and queries; REST paths use POSTHOG_PROJECT_ID.',
       run: [
         'node scripts/secrets.mjs run --only POSTHOG_PERSONAL_API_KEY,POSTHOG_PROJECT_ID -- node scripts/ph-query.mjs',
       ],

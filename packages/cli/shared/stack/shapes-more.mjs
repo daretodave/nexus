@@ -32,7 +32,7 @@ export const MORE_SHAPES = {
   gcpServiceAccountKey: {
     // Stored minified (normalize parses and re-writes it before any check), so the regex runs on one line.
     compact: 'json',
-    re: /^\{(?=.*"type":"service_account")(?=.*"private_key":"-----BEGIN PRIVATE KEY-----\\n[A-Za-z0-9+/=\\n]+-----END PRIVATE KEY-----\\n")(?=.*"client_email":"[a-z0-9-]+@[a-z0-9.-]+\.gserviceaccount\.com")(?=.*"project_id":"[a-z][a-z0-9-]{4,28}[a-z0-9]").*\}$/,
+    re: /^\{(?=.*"type":"service_account")(?=.*"private_key":"-----BEGIN PRIVATE KEY-----\\n[A-Za-z0-9+/=\\n]+-----END PRIVATE KEY-----\\n")(?=.*"client_email":"[a-z0-9-]+@[a-z0-9.-]+\.gserviceaccount\.com")(?=.*"project_id":"(?:[a-z0-9-]+(?:\.[a-z0-9-]+)+:)?[a-z][a-z0-9-]{4,28}[a-z0-9]").*\}$/,
     hint: 'Paste the whole JSON key file: it starts with { and has "type": "service_account".',
     reject: [
       { re: /"type":"authorized_user"/, why: 'That is your own gcloud sign-in, not a service account key.' },
@@ -42,8 +42,8 @@ export const MORE_SHAPES = {
     warn: [{ re: /"client_email":"\d+-compute@developer\.gserviceaccount\.com"/, note: 'This is the default compute service account, which has Editor on the project. Make one just for this app.' }],
   },
   gcpProjectId: {
-    re: /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/,
-    hint: 'A project ID is 6 to 30 lower-case letters, digits and hyphens, like my-app-prod.',
+    re: /^(?:[a-z0-9-]+(?:\.[a-z0-9-]+)+:)?[a-z][a-z0-9-]{4,28}[a-z0-9]$/,
+    hint: 'A project ID is 6 to 30 lower-case letters, digits and hyphens, like my-app-prod, or example.com:my-app-prod for a domain-scoped project.',
     reject: [{ re: /^\d+$/, why: 'That is the project number. Use the project ID.' }],
   },
   firebaseApiKey: {

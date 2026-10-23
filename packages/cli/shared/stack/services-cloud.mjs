@@ -51,7 +51,7 @@ export const CLOUD_SERVICES = {
       'Each user can hold two keys. Keep the second slot free so you can rotate.',
     ],
     guide: {
-      reads: 'The AWS SDKs (JavaScript v3, boto3, Go, Java) and the AWS CLI read AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and AWS_REGION from the environment before any profile. Write `new S3Client({})` with no credentials in code.',
+      reads: 'The AWS SDKs and the AWS CLI read AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from the environment, ahead of the shared credentials file as long as AWS_PROFILE is not set (with AWS_PROFILE set, JavaScript v3 uses the profile). AWS_REGION is read by JavaScript v3, Go, Java and AWS CLI v2; boto3 and AWS CLI v1 read only AWS_DEFAULT_REGION, so a Python app passes `region_name=os.environ["AWS_REGION"]` or the repo also declares AWS_DEFAULT_REGION. Write `new S3Client({})` with no credentials in code.',
       run: [
         'node scripts/secrets.mjs run --only AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION -- aws sts get-caller-identity',
         'node scripts/secrets.mjs run --only AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION -- aws s3 ls s3://your-bucket',

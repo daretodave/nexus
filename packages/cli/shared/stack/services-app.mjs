@@ -62,6 +62,10 @@ export const APP_SERVICES = {
         'stripe listen --forward-to localhost:3000/api/stripe/webhook',
       ],
       runNote: 'The Stripe CLI reads STRIPE_API_KEY, not STRIPE_SECRET_KEY: use `stripe login` for local CLI work, or declare a separate sandbox read key as STRIPE_API_KEY. `stripe listen` prints a fresh whsec_ for the session; the owner pastes it with `node scripts/secrets.mjs set STRIPE_WEBHOOK_SECRET` in their own terminal for local work. It is not the Dashboard endpoint\'s secret.',
+      runNoteIf: {
+        STRIPE_API_KEY: 'The Stripe CLI reads STRIPE_API_KEY, and this repo keeps the app\'s secret key under that name: use `stripe login` for local CLI work instead of handing the CLI that name. `stripe listen` prints a fresh whsec_ for the session; the owner pastes it with `node scripts/secrets.mjs set STRIPE_WEBHOOK_SECRET` in their own terminal for local work. It is not the Dashboard endpoint\'s secret.',
+      },
+      fixed: { STRIPE_API_KEY: 'the Stripe CLI' },
       test: 'Sandbox keys are pk_test_, rk_test_ and sk_test_; live keys are _live_. Sandbox and live keep separate data. Use test cards such as 4242 4242 4242 4242. A session never uses a live key unless the owner says so for that task.',
       limits: '100 requests a second live and 25 in a sandbox, per account, with per-endpoint limits too. Reads have a monthly allocation: use webhooks, not polling. Back off with jitter on 429.',
       do: ['Add a permission to the restricted key only when a 403 names it.', 'Verify every webhook\'s signature against the raw body before acting on it.'],
@@ -70,7 +74,7 @@ export const APP_SERVICES = {
   },
 
   // Sources: clerk.com guides clerk-environment-variables; deployment/production (pk/sk test vs live, DNS, own OAuth);
-  // sessions/manual-jwt-verification (GET api.clerk.com/v1/jwks); how-clerk-works/system-limits.
+  // reference/backend-api (GET api.clerk.com/v1/users/count, read-only); how-clerk-works/system-limits.
   clerk: {
     id: 'clerk', name: 'Clerk', mono: 'CK', group: 'auth', keywords: ['auth', 'sign-in', 'users', 'sessions', 'login'],
     role: 'Sign-in, user accounts and sessions.',
@@ -100,7 +104,7 @@ export const APP_SERVICES = {
       { key: 'webhookSecret', label: 'Webhook signing secret', env: { server: 'CLERK_WEBHOOK_SIGNING_SECRET' }, secret: true, shape: 'webhookSecret', required: false,
         where: { href: 'https://dashboard.clerk.com/~/webhooks', label: 'Webhooks, your endpoint, Signing Secret' } },
     ],
-    check: { id: 'clerk', uses: ['secret', 'publishable'], label: 'Check it', note: 'Asks Clerk for its public signing keys with this key, once, from your machine. Nothing is stored but the answer.' },
+    check: { id: 'clerk', uses: ['secret', 'publishable'], label: 'Check it', note: 'Asks Clerk how many users the instance has (a count only, no user data), once, from your machine. Nothing is stored but the answer.' },
     actions: [],
     gotchas: [
       'The secret key never gets NEXT_PUBLIC_ or VITE_. Only the publishable key ships to the browser.',
@@ -132,8 +136,8 @@ export const APP_SERVICES = {
     token: {
       optionalToken: true,
       title: 'Optional: a project-scoped API key, for this project only',
-      create: { href: 'https://console.neon.tech/app/settings/api-keys', label: 'Open API keys' },
-      start: 'In your organization\'s Settings, API keys, press "Create new", pick "Project-scoped" and this project. A key is only needed for Check it, branching from CI, or neonctl.',
+      create: { href: 'https://console.neon.tech/app/projects', label: 'Open the Neon console' },
+      start: 'In your organization\'s Settings, API keys, press "Create new", pick "Project-scoped" and this project. Only organization admins can make one; anyone else makes a personal key under their account settings. A key is only needed for Check it, branching from CI, or neonctl.',
       grant: [{ group: 'Key type', item: 'Project-scoped', level: 'This project', why: 'reads the project and makes preview branches, nothing else' }],
       optional: [{ group: 'Key type', item: 'Personal', level: 'Your account', why: 'only on a personal account with no organization; it reaches all your projects' }],
       resources: 'One project.',
@@ -162,7 +166,7 @@ export const APP_SERVICES = {
       'Supabase also writes DATABASE_URL. Pick one of them to own it; with both picked, the last value saved wins.',
     ],
     guide: {
-      reads: 'DATABASE_URL (pooled) goes to `neon(process.env.DATABASE_URL)` from @neondatabase/serverless, pg, postgres.js or Drizzle; Prisma reads `url = env("DATABASE_URL")` and `directUrl = env("DATABASE_URL_UNPOOLED")`. neonctl reads NEON_API_KEY.',
+      reads: 'DATABASE_URL (pooled) goes to `neon(process.env.DATABASE_URL)` from @neondatabase/serverless, pg, postgres.js or Drizzle; Prisma 7: prisma.config.ts sets `datasource.url` to `env("DATABASE_URL_UNPOOLED")` (the CLI migrates on it), and the runtime client gets the pooled DATABASE_URL through the driver adapter (@prisma/adapter-neon); schema.prisma no longer takes `url` or `directUrl`. Prisma 6 and earlier: schema.prisma reads `url = env("DATABASE_URL")` and `directUrl = env("DATABASE_URL_UNPOOLED")`. neonctl reads NEON_API_KEY.',
       run: [
         'node scripts/secrets.mjs run --only DATABASE_URL_UNPOOLED -- npx drizzle-kit migrate',
         'node scripts/secrets.mjs run --only DATABASE_URL_UNPOOLED -- sh -c \'psql "$DATABASE_URL_UNPOOLED" -c "select 1"\'',
@@ -311,7 +315,7 @@ export const APP_SERVICES = {
       'The token is the whole line, "FlyV1 fm2_..." with the space. Dropping the prefix gives a 401.',
       'Without --expiry a Fly token lasts 20 years. Set one, and revoke one-off tokens (fly tokens revoke) when done.',
       'fly secrets set NAME=value puts the value in your shell history and the process list. Pipe NAME=value lines into fly secrets import instead.',
-      'The Machines API allows about one request a second per app. Scripts that poll need a pause.',
+      'The Machines API limits each action to about one request a second (bursts of 3), per machine or per app. Scripts that poll need a pause.',
     ],
     guide: {
       reads: 'flyctl and Machines API scripts read FLY_API_TOKEN (sent as `Authorization: Bearer` with the whole FlyV1 line). FLY_APP is a nexus name: pass `-a "$FLY_APP"` in scripts. Inside a machine, Fly sets FLY_APP_NAME and FLY_REGION itself, and the app\'s secrets arrive as plain env vars.',
@@ -322,7 +326,7 @@ export const APP_SERVICES = {
       ],
       runNote: 'To get app secrets onto Fly without argv, a short script under the vault runner spawns `fly secrets import -a <app> --stage` and writes NAME=value lines to its stdin. There is no Fly sink in `secrets push` yet.',
       test: 'No test tokens. Use a separate staging app with its own deploy token; never reuse the production token there.',
-      limits: 'The Machines API allows about one request a second per app or machine (bursts of 3).',
+      limits: 'Machines API limits are per action and per machine or app: most actions 1 request a second with bursts of 3; Get Machine 5 a second with bursts of 10; app deletions 100 a minute. Back off on 429.',
       do: ['Create a deploy token per app with an expiry, named after where it lives.', 'Stage secret changes (--stage) and deploy once.'],
       dont: ['Run `fly secrets set NAME=value` with a real value, or `fly ssh console -C env` (prints every value).', 'Use the fly auth login token or an org token for automation.'],
     },
