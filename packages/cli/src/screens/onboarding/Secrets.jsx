@@ -14,11 +14,13 @@ import { useDraft } from './draft.js';
 import { useImport, useFilePick } from '../vault/ImportPanel.jsx';
 import LocalKeys from '../vault/LocalKeys.jsx';
 import VaultSetup from '../vault/VaultSetup.jsx';
+import StackPanel from '../vault/stack/StackPanel.jsx';
 import { WAITS_FOR_VAULT, alreadyCopy, alreadyPick, importNote, importTick, keepToggle, secretsStep, waitingOn } from '../vault/model.js';
 import { useToasts } from '../fleet/toasts.js';
 
 const PICKS = [
   { k: 'imp', label: 'Import a .env', rec: true },
+  { k: 'stack', label: 'Set up a stack', rec: false },
   { k: 'empty', label: 'Start empty' },
   { k: 'skip', label: 'Skip for now' },
 ];
@@ -35,7 +37,9 @@ export default function Secrets() {
   const step = secretsStep(st);
   const missing = step.kind === 'missing';
   const already = step.kind === 'already' ? alreadyCopy(step, { owner }) : null;
-  const pick = missing ? 'skip' : (d.vault || 'imp');
+  // Nothing found to import here (a fresh folder): the stack is the recommended start (the stack hand-off, design 8.4).
+  const envFound = !!(st?.envFiles?.length || step.kind === 'already');
+  const pick = missing ? 'skip' : (d.vault || (st && !envFound ? 'stack' : 'imp'));
   const [writing, setWriting] = useState(false);
   const writeManifest = async () => {
     setWriting(true);
@@ -116,10 +120,11 @@ export default function Secrets() {
                   <Fragment key={p.k}>
                     <input type="radio" name="vstart" id={`vs-${p.k}`} checked={pick === p.k} disabled={missing && p.k !== 'skip'} onChange={() => patch({ vault: p.k })} />
                     <label htmlFor={`vs-${p.k}`}>
-                      <b>{p.label}{p.rec && !missing ? <> <span className="badge-def">recommended</span></> : null}</b>
+                      <b>{p.label}{(p.k === 'stack' ? !envFound : p.k === 'imp' ? envFound : p.rec) && !missing ? <> <span className="badge-def">recommended</span></> : null}</b>
                       <span>
                         {missing && p.k !== 'skip' ? WAITS_FOR_VAULT
                           : p.k === 'imp' ? (already ? alreadyPick(step) : found.length ? `found ${found[0]} in ${repo} · names come in, values go to your vault` : 'pick a file · names come in, values go to your vault')
+                          : p.k === 'stack' ? 'Supabase, Vercel and Cloudflare, card by card · tokens, permissions and env written for you'
                           : p.k === 'empty' ? 'an empty manifest; chunks ask for a name when they need one'
                             : 'nothing written; the vault is in the rail whenever you want it'}
                       </span>
@@ -192,7 +197,12 @@ export default function Secrets() {
                 <button className="btn btn-s" type="button" onClick={pickFile} disabled={imp.busy}><Icon name="fileOne" size={14} />Pick a file</button>
               </div>
             )}
-            <KeyNote>Writes nexus.secrets.json with names only. Vercel and Cloudflare connect later, from the vault.</KeyNote>
+            <KeyNote>Writes nexus.secrets.json with names only. Vercel and Cloudflare connect here with Set up a stack, or later from the vault.</KeyNote>
+          </div>
+        ) : null}
+        {owner && pick === 'stack' && !missing ? (
+          <div className="panel" style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <StackPanel compact toast={toast} onOpenVault={() => nav(`${PATHS.vault}?panel=stack`)} />
           </div>
         ) : null}
         {owner && pick === 'empty' ? (

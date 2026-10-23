@@ -178,6 +178,12 @@ test('drift: the app\'s file holds a different value than the vault, said by nam
   assert.equal(st.names.VITE_SUPABASE_PUBLISHABLE_KEY.drift, true);
   assert.equal(st.names.SUPABASE_PUBLISHABLE_KEY.drift, false);
   noValue(st, [PUB, 'sb_publishable_TESTONLYdifferent']);
+  // Re-sync: the vault's value goes back to the file, read on the server, never posted.
+  const r = await h.stack.save({ service: 'supabase', key: 'publishable', resync: true });
+  assert.equal(r.status, 200, r.error);
+  noValue(r, [PUB]);
+  assert.equal(parseEnv(fs.readFileSync(path.join(root, 'apps/web/.env.local'), 'utf8')).get('VITE_SUPABASE_PUBLISHABLE_KEY'), PUB);
+  assert.equal((await h.stack.status()).names.VITE_SUPABASE_PUBLISHABLE_KEY.drift, false);
 });
 
 test('aliases: a repo that reads SUPABASE_SERVICE_ROLE_KEY keeps it', async () => {

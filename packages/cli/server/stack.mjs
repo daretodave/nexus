@@ -449,6 +449,7 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
 
   /** POST /api/stack/save { service, key, value, targets?, alsoNew? }: the vault, then each ticked mirror and sink. */
   async function save(b = {}) {
+    if (b.resync === true) return resync(b);
     const raw = typeof b.value === 'string' ? b.value : '';
     const scrub = scrubber([raw, raw.trim()]);
     if (!owner()) return scrub({ status: 403, error: 'The stack is the owner\'s to set up. Keep your own keys under Local keys.' });
@@ -492,6 +493,31 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     if (state.targets && b.targets) await writeState(state);
     const legacy = shape.kind === 'legacy' || shape.kind === 'warn' ? [shape.note] : [];
     return scrub({ status: 200, ok: !failed.length && pushed.every((p) => p.ok), names, written, failed, pushed, notes: [...notes, ...legacy] });
+  }
+
+  /** Re-sync (a drifted mirror): the vault's value written to the ticked mirror files again, read here, never posted. */
+  async function resync(b) {
+    if (!owner()) return { status: 403, error: 'The stack is the owner\'s to set up.' };
+    const v = valueOf(b.service, b.key);
+    if (!v) return { status: 400, error: 'No such value in the stack.' };
+    const state = await readState();
+    const ctx = await context(state);
+    if (!ctx.vk) return { status: 409, error: 'Set up the vault first; the stack writes through it.' };
+    const { names } = resolveNames(v, ctx.fw, ctx.present);
+    const entries = [];
+    for (const n of names) { try { const hit = ctx.vk.v.get(n); if (hit?.value) entries.push([n, hit.value]); } catch { /* unreadable */ } }
+    const scrub = scrubber(entries.map(([, x]) => x));
+    if (!entries.length) return { status: 409, error: 'The vault holds no value for this yet. Save it first.' };
+    const written = [];
+    const failed = [];
+    for (const t of ctx.mirrors.filter((x) => x.on && !x.disabled)) {
+      try {
+        if (t.kind === 'dotenv') mirrorDotenv({ root: ctx.root, rel: t.rel, entries, upsertEnv: ctx.vk.k.upsertEnv, git });
+        else mirrorJson({ base: t.base, rel: t.rel, entries, appKey: t.appKey, git, label: t.label });
+        written.push({ target: t.id, label: t.label });
+      } catch (e) { failed.push({ target: t.id, label: t.label, error: String(e.message || e) }); }
+    }
+    return scrub({ status: 200, ok: !failed.length, names: entries.map(([n]) => n), written, failed, pushed: [], notes: [] });
   }
 
   /** A saved value of a service, read from the vault on the server (or a non-secret id from the last check). */

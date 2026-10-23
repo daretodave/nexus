@@ -1,0 +1,227 @@
+/* Set up a stack (the stack hand-off, design section 8). Theme tokens only, so day and night both hold; the one place
+   colours mix is each service's monogram orb, from the accent and the surface, so neither theme needs its own hex.
+   Motion uses the kit's durations and easings and stops under prefers-reduced-motion. nexus.css stays as it is. */
+
+.stk-panel { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.stk-head { display: flex; align-items: flex-start; gap: 12px; }
+.stk-head-t { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.stk-head-t p { max-width: 62ch; text-wrap: pretty; }
+
+/* The monogram orbs: CF, SB, VC. A different mix of the accent per service. */
+.stk-orb {
+  flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--text);
+  background: color-mix(in oklab, var(--accent) 22%, var(--surface-solid));
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 46%, transparent);
+}
+.stk-orb.is-cloudflare { background: color-mix(in oklab, var(--st-blocked) 26%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-blocked) 52%, transparent); }
+.stk-orb.is-supabase { background: color-mix(in oklab, var(--st-done) 24%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-done) 50%, transparent); }
+.stk-orb.is-vercel { background: color-mix(in oklab, var(--text) 14%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text) 38%, transparent); }
+
+/* The picker and its presets. */
+.stk-pick-wrap { display: flex; flex-direction: column; gap: 10px; }
+.stk-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.stk-preset {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 12px; border-radius: var(--r-full, 999px);
+  border: 1px solid var(--line-2); background: var(--surface-solid); color: var(--text-2); font-size: 12px; font-weight: 600;
+  transition: border-color var(--dur-snap) var(--ease-snap), background var(--dur-snap) var(--ease-snap), color var(--dur-snap) var(--ease-snap);
+}
+.stk-preset:hover { color: var(--text); border-color: color-mix(in oklab, var(--text-2) 55%, transparent); }
+.stk-preset.is-on { color: var(--text); border-color: color-mix(in oklab, var(--accent) 60%, transparent); background: color-mix(in oklab, var(--accent) 12%, var(--surface-solid)); }
+.stk-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.stk-tile {
+  position: relative; display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 12px; border-radius: 14px; text-align: left;
+  border: 1px solid var(--line-2); background: color-mix(in oklab, var(--raised) 92%, transparent); color: var(--text);
+  transition: border-color var(--dur-snap) var(--ease-snap), box-shadow var(--dur-snap) var(--ease-snap), transform var(--dur-snap) var(--ease-snap);
+}
+.stk-tile:hover:not(:disabled):not(.is-soon) { border-color: color-mix(in oklab, var(--text-2) 55%, transparent); transform: translateY(-1px); }
+.stk-tile.is-on { border-color: color-mix(in oklab, var(--accent) 64%, transparent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 14%, transparent); }
+.stk-tile.is-soon { border-style: dashed; background: none; color: var(--text-3); }
+.stk-tile-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stk-tile-t b { font-size: 14px; line-height: 18px; font-weight: 600; }
+.stk-tile-t span { font-size: 12px; line-height: 16px; color: var(--text-2); }
+.stk-tile.is-soon .stk-tile-t span { color: var(--text-3); }
+.stk-tile-tick { position: absolute; top: 8px; right: 8px; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; color: var(--on-accent); }
+.stk-tile.is-on .stk-tile-tick { background: var(--accent); }
+
+/* The domain and app line, and the targets line. */
+.stk-ctx { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface); }
+.stk-ctx-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-height: 32px; }
+.stk-ctx-row > .t-label { width: 64px; flex: none; }
+.stk-ctx-row .field { max-width: 320px; }
+.stk-ctx-change { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.stk-select { display: inline-block; width: auto; min-height: 30px; padding: 4px 10px; font-size: 13px; }
+.stk-plain { font-family: var(--font-mono); font-size: 13px; }
+.stk-targets { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; padding: 0 2px; }
+.stk-targets.is-folded { gap: 8px; }
+.stk-target-note { flex-basis: 100%; }
+
+/* A card. */
+.stk-cards { display: flex; flex-direction: column; gap: 10px; }
+.stk-card {
+  position: relative; border-radius: 16px; background: color-mix(in oklab, var(--raised) 94%, transparent);
+  -webkit-backdrop-filter: var(--blur-2); backdrop-filter: var(--blur-2); box-shadow: var(--e-1);
+  transition: box-shadow var(--dur-settle) var(--ease-settle);
+  animation: stk-in var(--dur-settle) var(--ease-settle) both;
+}
+.stk-card.is-open { box-shadow: var(--e-2); }
+.stk-card.is-next { box-shadow: var(--e-2), 0 0 0 1px color-mix(in oklab, var(--accent) 40%, transparent), 0 0 28px 2px var(--glow); }
+.stk-card.is-failed { box-shadow: var(--e-1), 0 0 0 1px color-mix(in oklab, var(--st-blocked) 50%, transparent); }
+.stk-card-head {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 16px; text-align: left;
+  background: none; border: 0; color: var(--text);
+}
+.stk-card-t { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.stk-card-t b { font-size: 15px; line-height: 20px; font-weight: 600; }
+.stk-card-t span { font-size: 12px; line-height: 16px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stk-done-names { font-family: var(--font-mono); }
+.stk-card-state { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.stk-card-state.is-done { color: var(--st-done); }
+.stk-card-state.is-bad { color: var(--st-blocked); }
+.stk-chev { color: var(--text-3); transition: transform var(--dur-snap) var(--ease-snap); }
+.stk-card.is-open .stk-chev { transform: rotate(180deg); }
+.stk-card.is-waiting .stk-card-head .stk-orb { animation: nx-breathe var(--dur-breathe) var(--ease-breathe) infinite alternate; }
+.stk-card-body { display: flex; flex-direction: column; gap: 14px; padding: 0 16px 16px; }
+.stk-why { margin: 0; max-width: 70ch; text-wrap: pretty; }
+.stk-sec { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.stk-sec-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Steps. */
+.stk-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.stk-step { display: grid; grid-template-columns: 16px 16px minmax(0, 1fr) auto; align-items: start; gap: 8px; font-size: 13px; line-height: 20px; color: var(--text); }
+.stk-step.is-todo { color: var(--text-2); }
+.stk-step.is-done .stk-step-t { color: var(--text-2); }
+.stk-step-n { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); text-align: right; }
+.stk-step-t { min-width: 0; text-wrap: pretty; }
+.stk-step-a { display: inline-flex; align-items: center; gap: 8px; }
+.stk-glyph { margin-top: 4px; display: inline-grid; place-items: center; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--text-3); box-sizing: border-box; }
+.stk-glyph.is-done { border: 0; width: 14px; height: 14px; margin-top: 3px; color: var(--st-done); }
+.stk-glyph.is-ready { border: 0; background: var(--accent); }
+.stk-glyph.is-waiting { border: 0; background: var(--st-thinking); animation: nx-breathe var(--dur-breathe) var(--ease-breathe) infinite alternate; }
+.stk-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.stk-link:hover { text-decoration: underline; }
+.stk-copies { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.stk-ns-row { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.stk-ns-row code, .stk-ns code { font-family: var(--font-mono); font-size: 12px; padding: 2px 6px; border-radius: 6px; background: var(--well); color: var(--text); }
+.stk-copy { --h: 24px; padding: 0 8px; font-size: 11px; gap: 4px; }
+
+/* The token box. */
+.stk-grant-t { font-size: 14px; line-height: 20px; font-weight: 600; }
+.stk-grant-grid { display: flex; flex-direction: column; border-radius: 10px; background: var(--well); padding: 4px 0; }
+.stk-grant-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) 96px minmax(0, 1.4fr); gap: 10px; align-items: center; padding: 5px 12px; font-size: 13px; line-height: 18px; }
+.stk-grant-why { font-size: 12px; }
+.stk-level { display: inline-flex; padding: 1px 8px; border-radius: 999px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--text-2); background: color-mix(in oklab, var(--text-2) 12%, transparent); }
+.stk-level.is-edit { color: var(--accent); background: color-mix(in oklab, var(--accent) 14%, transparent); }
+.stk-once { display: inline-flex; align-items: center; gap: 6px; color: var(--st-blocked); }
+
+/* Values. */
+.stk-vals { display: flex; flex-direction: column; gap: 4px; }
+.stk-val { display: grid; grid-template-columns: minmax(96px, .8fr) minmax(0, 1.3fr) minmax(0, 1.7fr) auto; align-items: center; gap: 6px 12px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.stk-val:last-child { border-bottom: 0; }
+.stk-val-l { display: flex; flex-direction: column; gap: 1px; font-size: 13px; line-height: 18px; }
+.stk-val-l span { font-size: 11px; }
+.stk-val-f { min-width: 0; }
+.stk-val-f .mask-field { margin: 0; }
+.stk-val-ro { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+.stk-val-ro.is-set, .stk-val.is-saved .stk-val-ro { color: var(--st-done); }
+.stk-val-a { display: inline-flex; gap: 6px; justify-content: flex-end; }
+.stk-val-note { grid-column: 1 / -1; display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; line-height: 16px; color: var(--text-2); }
+.stk-val-note.is-bad { color: var(--st-blocked); }
+.stk-val-note.is-warn { color: var(--st-thinking); }
+.stk-val-note.is-saved { color: var(--text-2); }
+.stk-val-note.is-saved > svg { color: var(--st-done); }
+.stk-val-note code { font-family: var(--font-mono); }
+.stk-where { display: inline-flex; align-items: center; gap: 3px; color: var(--accent); text-decoration: none; }
+.stk-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.stk-chip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 7px; border-radius: 6px; border: 0;
+  font-family: var(--font-mono); font-size: 11px; line-height: 16px; color: var(--text-2); background: var(--well);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.stk-chip.is-public { color: var(--text); background: color-mix(in oklab, var(--accent) 12%, var(--well)); }
+.stk-chip.is-link { cursor: pointer; }
+.stk-chip.is-link:hover { color: var(--text); background: color-mix(in oklab, var(--text-2) 16%, var(--well)); }
+.stk-offer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-radius: 10px; font-size: 13px; background: color-mix(in oklab, var(--accent) 10%, var(--surface-solid)); animation: stk-in var(--dur-settle) var(--ease-settle) both; }
+
+/* Check it, the project pick, the nameservers. */
+.stk-check-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.stk-check-line { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; line-height: 18px; color: var(--text); text-wrap: pretty; }
+.stk-check-line.is-ok > svg { color: var(--st-done); }
+.stk-check-line.is-bad { color: var(--st-blocked); }
+.stk-ns { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: color-mix(in oklab, var(--st-thinking) 10%, var(--surface-solid)); }
+.stk-ns-row code { font-size: 14px; font-weight: 600; }
+.stk-projects { display: flex; flex-direction: column; gap: 6px; }
+.stk-proj-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.stk-proj { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface-solid); color: var(--text); font-size: 13px; font-weight: 500; }
+.stk-proj span { font-family: var(--font-mono); font-size: 11px; }
+.stk-proj.is-on { border-color: color-mix(in oklab, var(--st-done) 62%, transparent); background: color-mix(in oklab, var(--st-done) 12%, var(--surface-solid)); }
+
+/* Do it for me. */
+.stk-act { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface); }
+.stk-act-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stk-act-t { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.stk-act-t > svg { color: var(--st-done); }
+.stk-plan { display: flex; flex-direction: column; gap: 6px; animation: stk-in var(--dur-settle) var(--ease-settle) both; }
+.stk-plan-row { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; line-height: 18px; color: var(--text); }
+.stk-plan-row > svg { color: var(--text-3); flex: none; }
+.stk-plan-row.is-conflict { color: var(--st-blocked); }
+.stk-plan-foot { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 2px; }
+
+.stk-gotchas summary { cursor: pointer; list-style: none; }
+.stk-gotchas summary::-webkit-details-marker { display: none; }
+.stk-gotchas ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+
+/* The rail. */
+.stk-bar { position: relative; display: block; height: 4px; border-radius: 999px; background: var(--well); overflow: hidden; }
+.stk-bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--aurora-grad); transition: width var(--dur-settle) var(--ease-settle); }
+.stk-rail.is-done .stk-bar i, .stk-rail-line.is-done .stk-bar i { animation: stk-shimmer 1.6s var(--ease-settle) 1 both; background-size: 200% 100%; }
+.stk-ms { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; position: relative; }
+.stk-ms::before { content: ''; position: absolute; left: 10px; top: 12px; bottom: 12px; width: 1px; background: var(--line); }
+.stk-m { position: relative; display: flex; align-items: center; gap: 10px; min-height: 30px; font-size: 13px; line-height: 18px; color: var(--text-2); }
+.stk-m.is-ready { color: var(--text); font-weight: 600; }
+.stk-m.is-done { color: var(--text-2); }
+.stk-m.is-blocked { color: var(--text-3); }
+.stk-m-dot {
+  position: relative; z-index: 1; flex: none; display: inline-grid; place-items: center; width: 21px; height: 21px; border-radius: 50%;
+  font-family: var(--font-mono); font-size: 8px; font-weight: 700; color: var(--text-2);
+  background: var(--surface-solid); box-shadow: inset 0 0 0 1.5px var(--line-2);
+}
+.stk-m.is-done .stk-m-dot { color: var(--on-accent); background: var(--st-done); box-shadow: none; }
+.stk-m.is-ready .stk-m-dot { color: var(--on-accent); background: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent); }
+.stk-m.is-waiting .stk-m-dot { color: var(--text); background: color-mix(in oklab, var(--st-thinking) 30%, var(--surface-solid)); animation: nx-breathe var(--dur-breathe) var(--ease-breathe) infinite alternate; }
+.stk-m-t { min-width: 0; }
+.stk-next { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklab, var(--accent) 9%, var(--surface-solid)); }
+.stk-next.is-waiting { background: color-mix(in oklab, var(--st-thinking) 10%, var(--surface-solid)); }
+.stk-next.is-done { background: color-mix(in oklab, var(--st-done) 11%, var(--surface-solid)); }
+.stk-missing { display: flex; flex-direction: column; gap: 6px; }
+.stk-rail-line { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--surface); font-size: 13px; line-height: 18px; }
+.stk-rail-line .stk-bar { width: 72px; flex: none; }
+.stk-rail-line > span:nth-child(2) { flex: 1; min-width: 0; }
+
+@keyframes stk-in { from { transform: translateY(6px); opacity: .4; } to { transform: none; opacity: 1; } }
+@keyframes stk-shimmer { 0% { background-position: 100% 0; filter: brightness(1); } 50% { filter: brightness(1.35); } 100% { background-position: 0 0; filter: brightness(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .stk-card, .stk-offer, .stk-plan { animation: none; }
+  .stk-card.is-waiting .stk-card-head .stk-orb, .stk-glyph.is-waiting, .stk-m.is-waiting .stk-m-dot { animation: none; }
+  .stk-bar i { transition: none; }
+  .stk-rail.is-done .stk-bar i, .stk-rail-line.is-done .stk-bar i { animation: none; }
+  .stk-tile { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .stk-pick { grid-template-columns: minmax(0, 1fr); }
+  .stk-val { grid-template-columns: minmax(0, 1fr); }
+  .stk-val-a { justify-content: flex-start; }
+  .stk-grant-row { grid-template-columns: 56px minmax(0, 1fr) 80px; }
+  .stk-grant-why { grid-column: 1 / -1; }
+  .stk-ctx-row > .t-label { width: auto; }
+  .stk-head { flex-direction: column; }
+}
+@media (max-width: 960px) and (min-width: 641px) {
+  .stk-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* On a phone the rail comes first: the Vault's right column moves above the cards while the stack is open. */
+@media (max-width: 640px) {
+  .vault-wrap:has(.stk-rail) > .vt-col:last-child { order: -1; }
+}
