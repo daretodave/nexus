@@ -9,11 +9,13 @@ anything else.
 Argument handling:
 - No argument → full signal read + up to 3 candidates.
 - `dry-run` → print candidates, file nothing.
+- `careful` | `bold` | `promote` → the cap and bar, or (owner)
+  this pass writes its picks as specs; `skills/expand.md` §2.
 
 Procedure: §5. Hard rules: §6. Failure modes: §7. Signals:
 audit clusters, critique clusters, triage patterns, sibling
 lessons, platform drift. Never write to the build plan
-directly.
+directly (`promote` is the one documented exception).
 
 When invoked under `/loop` or `/march`, the user is not
 present. After commit + land (or a clean no-candidates exit),

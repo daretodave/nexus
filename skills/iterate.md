@@ -19,6 +19,7 @@ one fix per tick.
 /iterate audit               # audit only; write findings, ship nothing
 /iterate <focus>             # bias one dimension (drift|links|voice|
                              # completeness|friction|freshness|lessons)
+/iterate careful             # never hand off to /expand (a careful /march)
 ```
 
 ## 3. The audit
@@ -85,7 +86,9 @@ verbatim when regenerating the audit block.
 
 1. **No finding scores ≥3.0** — posture `bold` → dispatch
    `skills/expand.md` instead of manufacturing churn; posture
-   `strict` → stop cleanly ("nothing worth a tick").
+   `strict` → stop cleanly ("nothing worth a tick"). Run
+   `careful` (a careful `/march`): stop and report whatever
+   the posture.
 2. **Gate red ≥3× same root cause** — stop loud (rule 6).
 3. **`git pull` divergence** — stop.
 4. **A fix requires breaking template API** — don't; file it

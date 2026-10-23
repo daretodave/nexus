@@ -36,6 +36,9 @@ has overtaken the plan."
 /expand spec                  # bias toward spec drift
 /expand design                # bias toward new design exports
 /expand dry-run               # report candidates; do not commit
+/expand careful               # one candidate at most, and only with 2+ independent signals
+/expand bold                  # up to 3; one strong signal (score 5+) is enough
+/expand promote               # owner: this pass writes its picks as unchunked specs
 ```
 
 `/march` invokes `/expand` periodically (rate-limited) when
@@ -43,6 +46,29 @@ posture is **bold**. `/iterate` falls through to `/expand` when
 the audit produces no actionable findings (top score < 3.0) AND
 posture is bold — that's the "make things brilliant when delivery
 is not" path.
+
+**Run words.** `careful` and `bold` tune only the cap and the
+bar (§5 scoring, §7 rule 2); no word keeps them as written.
+`promote` makes this one pass act as posture `autonomous` (§3):
+its picks become unchunked specs (`plan/<NN>-<slug>.md` + a
+`plan/README.md` row, landed per owner mode), and each also goes
+under `## Promoted` in `plan/CANDIDATES.md` as `promoted:
+<date>, auto (expand pass <N>)` so `/oversight` still sees what
+grew. Owner mode only (a contributor files candidates as usual
+and says so); never under `strict`.
+
+**When a `/next` loop runs dry** (`/loop /next then expand` or
+`then build`, sent by the GUI's Infinite picker): the iteration
+that finds nothing ready runs one `/expand` pass instead of
+ending. The plan being done is the signal, so the rate limit is
+skipped; the posture is not (`strict`: stop as a bare loop
+would). `then expand` files candidates as usual, then the loop
+stops and says what it filed and that it waits in `/oversight`.
+`then build` runs `/expand promote`: the loop chunks and builds
+what it added, and the next dry spell runs another pass. It
+stops when a pass adds nothing: every candidate needs cited
+signals, so the loop ends when the evidence does. A
+contributor's `then build` reads as `then expand`.
 
 ## 3. Posture (read from `bearings.md`)
 
@@ -252,7 +278,8 @@ EOF
 
 (If autonomous posture: subject is `expand: pass <N> — <K>
 specs added (autonomous)` and the body lists which spec
-numbers + their topics.)
+numbers + their topics. A `promote` pass uses the same subject,
+and its body says "promoted by a then-build /next loop".)
 
 If **zero** candidates score above threshold: still update the
 metadata header, commit `expand: pass <N> — no candidates`. The
@@ -293,7 +320,9 @@ oversight will review and promote.
 6. **One commit per pass.**
 7. **No emojis. No `Co-Authored-By:`.**
 8. **Strict posture is real.** If posture is `strict`, exit 0
-   with no-op. Don't sneak candidates in.
+   with no-op. Don't sneak candidates in. `promote` (§2) is the
+   one run-time exception to candidates-only, and it obeys this
+   rule and owner mode.
 
 ## 8. Failure modes
 

@@ -225,6 +225,11 @@ credential. Before every long window:
    in the building; cloud every 2h while you're not. Below 2h
    cloud cadence, ticks start queuing behind the concurrency
    group and you're paying for waiting.
+   The GUI's Infinite picker starts `/loop /march [careful|bold]`
+   (march picks each pass) or `/loop /next [then expand|then build]`
+   (heads down until the plan runs dry, then stop, propose, or
+   propose and build). The words are the skills' own
+   (`skills/march.md` §2, `skills/expand.md` §2).
 
 ---
 
