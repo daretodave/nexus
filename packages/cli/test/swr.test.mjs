@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSwr } from '../server/swr.mjs';
+import { drawsAnswer } from '../src/data/order.js';
 
 function clock() {
   let t = 1000;
@@ -93,4 +94,12 @@ test('a failed read keeps the last answer and is asked again', async () => {
   await new Promise((r) => setImmediate(r));
   await assert.rejects(swr.get('k', async () => { throw new Error('still down'); }, { fresh: true }), /still down/);
   assert.deepEqual(await swr.get('k', async () => 'back'), { value: 'good', stale: true });
+});
+
+test('a polled screen draws the newest answer: never an older one over it, never a stale one while a fresh read runs', () => {
+  assert.equal(drawsAnswer({ n: 1, drawn: 0, stale: false, fresh: false, freshing: 0 }), true, 'the first answer draws');
+  assert.equal(drawsAnswer({ n: 2, drawn: 3, stale: false, fresh: true, freshing: 1 }), false, 'started before the one drawn');
+  assert.equal(drawsAnswer({ n: 3, drawn: 2, stale: true, fresh: false, freshing: 1 }), false, 'a poll\'s stale answer while a fresh read is on its way');
+  assert.equal(drawsAnswer({ n: 3, drawn: 2, stale: true, fresh: false, freshing: 0 }), true, 'stale with nothing fresh coming still draws');
+  assert.equal(drawsAnswer({ n: 4, drawn: 3, stale: false, fresh: true, freshing: 1 }), true, 'the fresh read itself draws');
 });

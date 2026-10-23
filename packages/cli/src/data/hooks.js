@@ -8,6 +8,7 @@
 // up on its own the day the endpoint lands. MISSING lists them.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, STALE } from './client.js';
+import { drawsAnswer } from './order.js';
 
 /**
  * @typedef {object} Resource
@@ -28,20 +29,32 @@ export function useResource(path, { poll, skip } = {}) {
   const [st, setSt] = useState(() => (skip ? null : keptFor(path)) || { status: skip ? 'missing' : 'loading', data: null, error: null });
   const alive = useRef(true);
   const gone = useRef(false);
+  // Each ask is numbered; which answers draw: data/order.js.
+  const asked = useRef(0);
+  const drawn = useRef(0);
+  const freshing = useRef(0);
   const load = useCallback(async (fresh = false) => {
     if (skip || !path) return;
+    const isFresh = fresh === true;
+    const n = ++asked.current;
+    if (isFresh) freshing.current += 1;
     try {
-      const data = await api(path, undefined, { fresh: fresh === true });
+      const data = await api(path, undefined, { fresh: isFresh });
+      const stale = !!(data && data[STALE]);
+      if (!drawsAnswer({ n, drawn: drawn.current, stale, fresh: isFresh, freshing: freshing.current })) return;
+      drawn.current = n;
       LAST.set(path, data);
       if (alive.current) setSt({ status: 'ready', data, error: null, path });
       // Served from what the server last read: ask once more, for the read it is running now.
-      if (data && data[STALE] && fresh !== true && alive.current) load(true);
+      if (stale && !isFresh && alive.current) load(true);
     } catch (e) {
       if (!alive.current) return;
       if (e.status === 404) { gone.current = true; setSt({ status: 'missing', data: null, error: null }); }
       // A failed poll keeps the last good data, but only this path's: a new path (Recover's ?dir=) that fails
       // reads as an error, not as the previous path's data.
       else setSt((s) => (s.data && s.path === path ? { ...s, error: e.message } : { status: 'error', data: null, error: e.message, path }));
+    } finally {
+      if (isFresh) freshing.current -= 1;
     }
   }, [path, skip]);
   useEffect(() => {

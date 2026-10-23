@@ -31,10 +31,23 @@ function More({ rows }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   const ref = useRef(null);
+  const btn = useRef(null);
   useEffect(() => {
     if (!open) return undefined;
+    // Opened, focus moves to the first row; the arrows walk the rows, Escape closes back onto the "+N" button.
+    const items = () => [...(ref.current?.querySelectorAll('[role="menuitem"]') || [])];
+    items()[0]?.focus();
     const down = (e) => { if (ref.current && !ref.current.contains(e.target)) close(); };
-    const key = (e) => { if (e.key === 'Escape') close(); };
+    const key = (e) => {
+      if (e.key === 'Escape') { close(); btn.current?.focus(); return; }
+      const list = items();
+      const at = list.indexOf(document.activeElement);
+      if (at < 0 || !list.length) return;
+      const to = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: list.length - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      list[(to + list.length) % list.length].focus();
+    };
     document.addEventListener('mousedown', down);
     document.addEventListener('keydown', key);
     return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
@@ -43,7 +56,7 @@ function More({ rows }) {
   return (
     <span ref={ref} className="need-more-wrap">
       <button
-        className={cx('need need-more', urgent && 'is-question')} type="button" aria-haspopup="menu" aria-expanded={open}
+        ref={btn} className={cx('need need-more', urgent && 'is-question')} type="button" aria-haspopup="menu" aria-expanded={open}
         aria-label={`${rows.length} more ${rows.length === 1 ? 'session needs' : 'sessions need'} you`} onClick={() => setOpen((o) => !o)}
       >
         +{rows.length}
@@ -66,11 +79,11 @@ function More({ rows }) {
   );
 }
 
-/** The chips, or nothing while no session needs the owner. */
-export function NeedsYou({ max = 3 }) {
+/** The chips, or nothing while no session needs the owner. `here`: the session this screen shows (the cockpit's own, read from the path, by default). */
+export function NeedsYou({ max = 3, here }) {
   const { needs } = useShell();
   const loc = useLocation();
-  const bar = needsBar(needs || [], { max, here: sessionIn(loc.pathname) });
+  const bar = needsBar(needs || [], { max, here: here === undefined ? sessionIn(loc.pathname) : here });
   if (!bar.chips.length && !bar.more.length) return null;
   return (
     <div className="needs" role="group" aria-label="Sessions that need you">

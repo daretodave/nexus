@@ -11,7 +11,7 @@
 // { action: pause|cancel|resume }. An action the server does not serve yet
 // says plainly that it is not wired up; nothing is invented.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import {
   AppFrame, Topbar, Wordmark, TbSep, TbTitle, TbSpacer, InboxBtn, ViewHead, ChoiceButtons,
   TileNew, TrainDock, Train, ToastHost, Err, Icon, cx, useShell,
@@ -73,10 +73,12 @@ export default function Fleet() {
   const claims = useClaims(15000);
   const { toasts, push } = useToasts();
   // ?show=<filter> picks the chip (the top bar's fell-over chip lands on Fell over, where Resume and Clear are).
+  // Keyed on the visit, not the URL: the same chip clicked again after a hand-picked filter still lands there.
   const [params] = useSearchParams();
+  const visit = useLocation().key;
   const shown0 = params.get('show');
   const [filter, setFilter] = useState(() => (FILTERS.some((f) => f.value === shown0) ? shown0 : 'here'));
-  useEffect(() => { if (FILTERS.some((f) => f.value === shown0)) setFilter(shown0); }, [shown0]);
+  useEffect(() => { if (FILTERS.some((f) => f.value === shown0)) setFilter(shown0); }, [shown0, visit]);
   const [trainOn, setTrainOn] = useState(false);
   const [resuming, setResuming] = useState({});
 

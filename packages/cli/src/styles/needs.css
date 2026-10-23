@@ -47,3 +47,7 @@
   .need-pulse::after { animation: none; opacity: 0; }
   .need { transition: none; }
 }
+
+/* Heads-down has no top bar: the chips sit in its top right corner, over the sky. */
+.heads-needs { position: absolute; top: 14px; right: 18px; z-index: 3; display: flex; }
+.heads-needs:empty { display: none; }
