@@ -9,6 +9,8 @@
 //                   the plan, is claimed, built, gated and closed
 //   fall-and-resume deneb fell over mid-chunk; Resume on its tile picks it up and it finishes the chunk
 //   heads-down      altair works a claimed list of three chunks, one after another
+//   alive-home      the Fleet home alive: vega works (cyan), sirius needs you (amber), altair fell over at a build,
+//                   and deneb finishes applying oversight answers, turns green and offers to be put away
 //
 // The script format is server/demo/world.mjs's. Times are ms from the start (or from the gate that holds them).
 // A scenario may carry a `shot` for the recorder (scripts/record.mjs): the screen it opens on (`fleet`, or a
@@ -368,11 +370,67 @@ export const headsDown = {
   ],
 };
 
+const OVERSIGHT_APPLY = '/oversight apply these answers from the nexus GUI. Do not ask again; the person already answered.';
+
+export const aliveHome = {
+  name: 'alive-home',
+  title: 'An alive home',
+  summary: 'The fleet at a glance: vega works, sirius needs you, altair fell over, and deneb finishes its oversight and offers to be put away.',
+  home: 'deneb',
+  shot: { start: 'fleet' },
+  fixtures: (ctx) => base(ctx, (s) => {
+    if (s.name === 'vega') return { ...s, row: { ...s.row, orb: 'tool', turn: 'working', last: { kind: 'tool', tool: 'Bash', arg: 'npm test -- standings', at: ctx.ago(0) } } };
+    if (s.name === 'sirius') {
+      return {
+        ...s,
+        row: { ...s.row, state: 'asking', phase: 'questions', questions: { answered: 2, total: 6 }, chunk: { id: '9.3', title: 'Duplicate player merge', first: true }, progress: undefined, orb: 'blocked', agents: [{ state: 'idle' }, { state: 'idle' }, { state: 'idle' }], event: { at: ctx.ago(2), text: 'asked its start questions' }, git: { ...s.row.git, up: 0, dirty: 0, claims: ['9.3'] } },
+      };
+    }
+    if (s.name === 'altair') {
+      return {
+        ...s, kind: 'local',
+        row: { ...s.row, state: 'fallen', live: false, hosted: false, orb: 'failed', agents: [], beat: ctx.ago(26), fell: { tool: 'Bash npm run build', chunk: '7.6', at: ctx.ago(26) }, event: { at: ctx.ago(26), text: 'fell over mid-chunk' }, git: { ...s.row.git, branch: 'nexus/altair-1', worktree: '../.nexus-wt/altair-1', up: 3, down: 2, dirty: 1 } },
+        ledger: { ...s.ledger, state: 'fallen' },
+        beats: [], transcript: [],
+      };
+    }
+    // deneb: an oversight session on main, still applying the answers when the fleet opens.
+    return {
+      ...s,
+      row: {
+        ...s.row, chunk: undefined, progress: undefined, phase: undefined, orb: 'thinking', agents: [{ state: 'tool' }, { state: 'done' }],
+        turn: 'working', lastPrompt: OVERSIGHT_APPLY, last: { kind: 'tool', tool: 'Bash', arg: 'git push origin main', at: ctx.ago(0) },
+        event: { at: ctx.ago(1), text: 'recording your answers' },
+        git: { branch: 'main', worktree: '', up: 1, down: 0, behind: 0, dirty: 0, pr: null, noPr: 'pushes as chunks land', claims: [], commits: commits([['b9ad24b', 'plan(oversight): no referral reward for either side', '1m']]) },
+      },
+      ledger: { ...s.ledger, chunk: null, closed: [], landed: [], lastShip: null, claims: { now: null, next: [], held: 0 }, git: { branch: 'main', worktree: '', up: 1, down: 0, behind: 0, dirty: 0, pr: null, noPr: 'pushes as chunks land', claims: [] } },
+      beats: [{ k: 'agent', p: 'start', id: MAIN, label: 'session' }, { k: 'agent', p: 'start', id: 'a-deneb-rows', parent: MAIN, label: 'leftover rows' }, { k: 'agent', p: 'end', id: 'a-deneb-rows', ok: true }, { k: 'agent', p: 'tool', id: MAIN, tool: 'Bash' }],
+      transcript: [
+        { kind: 'user', id: 'd0', text: `${OVERSIGHT_APPLY}\n- plan/14-fixture-clashes.md:41 -- "Warn or block on a clash?"\n  answer: warn, and let the organiser keep it` },
+        { kind: 'text', id: 'd1:0', agent: MAIN, text: 'Recording the answer where the question lives, then gate, commit and push.' },
+        { kind: 'tool', id: 't-d1', agent: MAIN, name: 'Edit', summary: 'plan/14-fixture-clashes.md', diff: { add: 2, del: 3 } },
+        { kind: 'tool-done', id: 't-d1', agent: MAIN, ms: 900, ok: true },
+        { kind: 'tool', id: 't-d2', agent: MAIN, name: 'Bash', summary: 'git push origin main' },
+      ],
+    };
+  }),
+  script: [
+    ...breathing(6000).filter((x) => x.session === 'vega'),
+    ...at(2600, 'deneb',
+      tx({ kind: 'tool-done', id: 't-d2', agent: MAIN, ms: 1400, ok: true }),
+      tx({ kind: 'text', id: 'd2:0', agent: MAIN, text: 'I\'ve recorded your answer: a clash warns and the organiser can keep it. The change is committed and pushed to main as `b9ad24b`.' }),
+      beat({ k: 'agent', p: 'end', id: MAIN, ok: true }),
+      { status: { state: 'idle', hosted: true, provider: 'demo', pause: 'run' } },
+      { row: { turn: 'idle', orb: 'idle', agents: [{ state: 'done' }, { state: 'done' }], last: { kind: 'text', text: 'I\'ve recorded your answer: a clash warns and the organiser can keep it. The change is committed and pushed to main as `b9ad24b`.' }, event: { text: 'pushed b9ad24b to main' }, git: { branch: 'main', worktree: '', up: 0, down: 0, behind: 0, dirty: 0, pr: null, noPr: 'pushes as chunks land', claims: [], commits: [{ sha: 'b9ad24b', m: 'plan(oversight): no referral reward for either side', w: '1m' }] } } }),
+  ],
+};
+
 export const SCENARIOS = Object.freeze({
   [fleetToTug.name]: fleetToTug,
   [bugToArchive.name]: bugToArchive,
   [fallAndResume.name]: fallAndResume,
   [headsDown.name]: headsDown,
+  [aliveHome.name]: aliveHome,
 });
 
 export const scenarioNames = () => Object.keys(SCENARIOS);
