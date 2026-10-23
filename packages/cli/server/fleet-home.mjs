@@ -42,9 +42,23 @@ export function progressOf(l = {}) {
 export function fleetRows(list, { ledgers = [], hosted = [], resumers = new Map(), owner = false } = {}) {
   const byLedger = new Map(ledgers.map((l) => [l.id, l]));
   return list.map((row) => {
+    // One ledger a session wrote wrongly drops only what it adds to its own tile, never the whole list.
+    try {
+      return tileOf(row);
+    } catch {
+      return { ...row, mode: owner ? 'owner' : 'contributor' };
+    }
+  });
+
+  function tileOf(row) {
     const l = byLedger.get(row.id) || ledgers.find((x) => x.claude && x.claude === row.claude) || {};
-    const out = { ...row, mode: l.mode || (owner ? 'owner' : 'contributor') };
+    const out = { ...row, mode: typeof l.mode === 'string' && l.mode ? l.mode : owner ? 'owner' : 'contributor' };
     if (l.gui) out.gui = true;
+    if (row.state === 'stopped') {
+      // A stopped session holding a question: it needs the owner, and the answer picks it up.
+      if (row.parked > 0) Object.assign(out, { state: 'asking', phase: 'questions', questions: { answered: 0, total: row.parked } });
+      return out;
+    }
     const phase = phaseOf(l.step);
     if (phase) out.phase = phase;
     const progress = progressOf(l);
@@ -64,7 +78,7 @@ export function fleetRows(list, { ledgers = [], hosted = [], resumers = new Map(
       Object.assign(out, { state: 'resuming', resume: { by: by.name, chunk: l.chunk || '' }, event: { text: `resuming as ${by.name}` } });
     }
     return out;
-  });
+  }
 }
 
 /**
@@ -74,12 +88,17 @@ export function fleetRows(list, { ledgers = [], hosted = [], resumers = new Map(
  * Resume and Inspect. Needs the row's git (gitView.withGit): unknown git is never "nothing behind".
  */
 export function isEnded(row) {
-  if (!row || !row.gui || row.hosted || row.state !== 'fallen') return false;
+  if (!row || !row.gui || row.hosted || !['stopped', 'fallen'].includes(row.state)) return false;
+  // A conversation, a message waiting to go, a loop, a chunk or a question is worth keeping: Pick up, not Clear.
   if ((row.sources || []).includes('claude')) return false;
+  const st = row.stop || {};
+  if (st.talked || st.queued > 0 || st.loop || row.chunk?.id || row.parked > 0) return false;
   const g = row.git || {};
+  // A worktree gone from disk whose branch still holds commits is work, wherever the folder went.
   const ahead = 'ahead' in g ? g.ahead : g.up;
   if (ahead == null) return false;
-  return ahead === 0 && !g.dirty && !g.staged && !(g.claims > 0);
+  // Claims unknown (the read failed) are never "no claims".
+  return ahead === 0 && !g.dirty && !g.staged && g.claims === 0;
 }
 
 /** The list with each ended session marked `ended: true`. */
@@ -130,16 +149,19 @@ export function inboxItems({ hosted = [], ledgers = [], durable = [], now = Date
   }
   for (const l of ledgers) {
     if (GONE.has(l.state)) continue;
-    const session = { id: l.id, name: l.star || l.id.slice(0, 8), kind: hostedIds.has(l.id) || hostedIds.has(l.claude) ? 'local' : 'terminal' };
-    (Array.isArray(l.parked) ? l.parked : []).forEach((raw, index) => {
-      const p = parkedItem(raw);
-      if (p.state !== 'pending' || !p.q) return;
-      out.push({
-        id: parkedId(l.id, index, p.q), kind: 'parked', src: 'inbox', session, sessionId: l.id, agent: p.who || p.agent || 'main',
-        chunk: p.chunk || l.chunk || '', question: p.q, options: p.alts, default: p.alts[0], why: p.why || '', at: p.at || l.beat || null,
-        status: ledgerStatus(l, now),
+    // One ledger written wrongly drops only its own questions.
+    try {
+      const session = { id: l.id, name: String(l.star || l.id.slice(0, 8)), kind: l.gui === true || hostedIds.has(l.id) || hostedIds.has(l.claude) ? 'local' : 'terminal' };
+      (Array.isArray(l.parked) ? l.parked : []).forEach((raw, index) => {
+        const p = parkedItem(raw);
+        if (p.state !== 'pending' || !p.q) return;
+        out.push({
+          id: parkedId(l.id, index, p.q), kind: 'parked', src: 'inbox', session, sessionId: l.id, agent: String(p.who || p.agent || 'main'),
+          chunk: String(p.chunk || l.chunk || ''), question: p.q, options: p.alts, default: p.alts[0], why: typeof p.why === 'string' ? p.why : '', at: typeof p.at === 'string' ? p.at : typeof l.beat === 'string' ? l.beat : null,
+          status: ledgerStatus(l, now),
+        });
       });
-    });
+    } catch { /* skipped */ }
   }
   for (const d of durable) out.push({ id: `plan:${d.id}`, kind: 'plan', src: 'durable', question: d.text, durable: d, at: null });
   return out;
@@ -148,6 +170,7 @@ export function inboxItems({ hosted = [], ledgers = [], durable = [], now = Date
 /** Is the ledger one a resume may take? { ok } or { status, error } (ledger.mjs take's own refusals, said early). */
 export function resumable(l, now = Date.now()) {
   if (!l) return { status: 404, error: 'no ledger for that session: nothing to resume' };
+  if (l.gui === true && l.state !== 'ended' && l.state !== 'resumed') return { status: 409, error: `${l.star} stopped with nexus: pick it up instead`, pickup: true };
   const st = ledgerStatus(l, now);
   if (st === 'ended') return { status: 409, error: `${l.star} ended its loop: nothing to resume` };
   if (st === 'resuming' || st === 'resumed') return { status: 409, error: `${l.star} is already ${st}: another session has it` };

@@ -4,7 +4,7 @@
 // fallback look. The rows and the split: shared/needs.mjs.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { needsBar, needsSay } from '../../shared/needs.mjs';
+import { CALM, needsBar, needsSay } from '../../shared/needs.mjs';
 import { Icon } from './icons.jsx';
 import { SessionGlyph } from './session.jsx';
 import { sessClass } from './stars.js';
@@ -13,13 +13,13 @@ import { useShell } from './shell.jsx';
 import { sessionIn } from '../routes.js';
 import '../styles/needs.css';
 
-const ICON = { permission: 'lock', question: 'question', fallen: 'refresh' };
+const ICON = { permission: 'lock', question: 'question', fallen: 'refresh', stopped: 'refresh' };
 
 function Chip({ r }) {
   const session = { name: r.name, kind: r.kind };
   return (
     <Link className={cx('need', `is-${r.what}`, sessClass(session))} to={r.to} title={needsSay(r)} aria-label={needsSay(r)}>
-      {r.what !== 'fallen' ? <span className="need-pulse" aria-hidden="true" /> : null}
+      {!CALM.has(r.what) ? <span className="need-pulse" aria-hidden="true" /> : null}
       <SessionGlyph session={session} className="need-glyph" />
       <b className="need-name">{r.name}</b>
       <span className="need-what">{r.label}</span>
@@ -52,7 +52,7 @@ function More({ rows }) {
     document.addEventListener('keydown', key);
     return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
   }, [open, close]);
-  const urgent = rows.some((r) => r.what !== 'fallen');
+  const urgent = rows.some((r) => !CALM.has(r.what));
   return (
     <span ref={ref} className="need-more-wrap">
       <button

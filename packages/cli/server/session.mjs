@@ -44,7 +44,7 @@ import { messageContent, withFiles } from '../shared/attachments.mjs';
  * @param {object} [o.form]          a worktree still forming (shared/forming.mjs): no provider yet, and what is sent
  *                                   waits until formed({ cwd }) (POST /api/sessions answers before git has made it)
  */
-export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', model = () => '', effort = () => '', onModel = null, onModels = null, listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
+export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', model = () => '', effort = () => '', onModel = null, onModels = null, onClaude = null, onResumeLost = null, listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
   const hub = createHub({ mask });
   const asks = new Map();
   const permissions = new Map();
@@ -80,7 +80,11 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   };
 
   const onMessage = (msg) => {
-    if (msg.session_id) claude = msg.session_id;
+    if (msg.session_id && msg.session_id !== claude) {
+      claude = msg.session_id;
+      // The server keeps it in the session's ledger, so a later nexus resumes this very conversation.
+      try { onClaude?.(claude); } catch { /* a ledger write that failed is retried by the next beat */ }
+    }
     if (msg.type === 'system' && msg.subtype === 'init' && msg.model) onInit(msg);
     tugLog.onMessage(msg);
     for (const item of txFromMessage(msg, txCtx)) hub.tx(item);
@@ -146,7 +150,15 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     onMessage,
     onAsk,
     onPermission,
-    onStatus: (s) => { if (s.state === 'idle') busy = false; hub.setStatus(s); },
+    onStatus: (s) => {
+      if (s.state === 'idle') busy = false;
+      hub.setStatus(s);
+      // The provider could not reopen the conversation it was asked to resume and started a fresh one (provider.mjs).
+      if (resume && s.note && /could not resume/.test(s.note)) {
+        hub.tx({ kind: 'system', text: 'Picked up fresh: the old conversation could not be reopened.', at: now() });
+        try { onResumeLost?.(); } catch { /* the session still runs, fresh */ }
+      }
+    },
     permissionMode,
     model,
     effort,
@@ -202,6 +214,19 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     get busy() { return busy; },
     get sent() { return sent; },
     get pause() { return { ...pause, held: held.length }; },
+    /**
+     * What this session holds, synchronously, for the ledger a stopping server writes: its Claude Code session, where
+     * it works, the prompts it took, whether a turn runs, its pause, what waits to be sent (the worktree forming, or
+     * held by a pause) and the questions it is asking now.
+     */
+    snapshot() {
+      const q = (x) => ({ text: String(x.text || ''), steered: !!x.steered, ...(x.att?.images?.length ? { images: x.att.images.length } : {}) });
+      return {
+        claude, cwd: here, sent, busy, pause: pause.state, form: form?.state || null,
+        waiting: waiting.map(q), held: held.map(q),
+        asks: [...asks.values()].map((a) => a.view),
+      };
+    },
     /** The model and effort the SDK last said this session runs on (null until its first init), and a switch pending. */
     get model() { return { ...running, pending }; },
 

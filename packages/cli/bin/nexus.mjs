@@ -10,9 +10,11 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
+import net from 'node:net';
+import http from 'node:http';
 import { startServer } from '../server/server.mjs';
 import { primaryRoot } from '../server/sessions.mjs';
-import { findRunning, removeInstance, writeInstance } from '../server/instance.mjs';
+import { claimLock, findRunning, pidAlive, readLast, removeInstance, writeInstance, writeLast } from '../server/instance.mjs';
 
 const argv = process.argv.slice(2);
 
@@ -23,6 +25,10 @@ if (argv[0] === 'run') {
   await new Promise((r) => process.stdout.write('', r));
   process.exit(code);
 }
+
+// Ctrl+C, a kill, and the terminal closing (SIGHUP: on Windows a closed console window gives about 10 s; SIGBREAK is
+// Ctrl+Break there) all stop the same way: every session parked first, then the rest.
+const SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP', ...(process.platform === 'win32' ? ['SIGBREAK'] : [])];
 
 const flag = (name) => argv.includes(name);
 const opt = (name) => {
@@ -36,9 +42,13 @@ if (flag('--help') || flag('-h')) {
   npx @usenexus/cli                 open the GUI for the repo in this folder
   npx @usenexus/cli --repo <dir>    ...for another folder
   npx @usenexus/cli --no-open       print the URL instead of opening a browser
-  npx @usenexus/cli --port <n>      a fixed port (default: any free port)
+  npx @usenexus/cli --port <n>      a fixed port (default: the last launch's,
+                                    else any free port)
                                     (a server already running for the repo is
                                     reused: its link opens instead)
+  npx @usenexus/cli --replace       stop this repo's running server the safe
+                                    way (every session parked), then start:
+                                    how a newer version takes over
   npx @usenexus/cli run "<prompt>"  one turn headless, JSON out (run --help)
   npx @usenexus/cli --demo <name>   a scripted demo: fixtures and a timed beat
                                     script, no repo, no Claude, no network, no
@@ -92,9 +102,31 @@ async function demo() {
   Ctrl+C to stop.
 `);
   if (!flag('--no-open')) openBrowser(d.url);
-  const stop = async () => { await d.close().catch(() => {}); process.exit(0); };
-  process.on('SIGINT', stop);
-  process.on('SIGTERM', stop);
+  let stopping = false;
+  const stop = async () => { if (stopping) process.exit(1); stopping = true; await d.close().catch(() => {}); process.exit(0); };
+  for (const sig of SIGNALS) process.on(sig, stop);
+}
+
+/** Is this port free on 127.0.0.1? */
+function portFree(port) {
+  return new Promise((resolve) => {
+    const s = net.createServer();
+    s.once('error', () => resolve(false));
+    s.listen(port, '127.0.0.1', () => s.close(() => resolve(true)));
+  });
+}
+
+/** Ask a running server to stop the safe way (POST /api/shutdown with its token), then wait for its pid to go. */
+async function replaceRunning(rec) {
+  await new Promise((resolve) => {
+    const req = http.request({ host: '127.0.0.1', port: rec.port, method: 'POST', path: '/api/shutdown', agent: false, headers: { host: `127.0.0.1:${rec.port}`, origin: `http://127.0.0.1:${rec.port}`, 'x-nexus-token': rec.token, 'content-type': 'application/json' } }, (res) => { res.resume(); res.on('end', resolve); });
+    req.on('error', resolve);
+    req.setTimeout(5000, () => { req.destroy(); resolve(); });
+    req.end('{}');
+  });
+  const end = Date.now() + 30000;
+  while (pidAlive(rec.pid) && Date.now() < end) await new Promise((r) => setTimeout(r, 200));
+  return !pidAlive(rec.pid);
 }
 
 async function serve() {
@@ -102,25 +134,61 @@ const repo = path.resolve(opt('--repo') || process.cwd());
 const port = Number(opt('--port') || 0);
 
 const root = await primaryRoot(repo);
+const pkgVersion = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
-// A server already running for this repo: open it rather than start a second.
+// One launch starts a server at a time: a second launch at the same moment waits for the first's server and opens it.
+let lock = claimLock(root);
+if (!lock.ok) {
+  const end = Date.now() + 5000;
+  let up = null;
+  while (!up && Date.now() < end) { await new Promise((r) => setTimeout(r, 250)); up = await findRunning(root, { connect: 1000, answer: 3000 }); }
+  if (up) {
+    console.log(`\n  nexus  ·  ${path.basename(root)}  (started a moment ago, pid ${up.rec.pid})\n\n  ${up.url}\n`);
+    if (!flag('--no-open')) openBrowser(up.url);
+    process.exit(0);
+  }
+  lock = claimLock(root);
+  if (!lock.ok) lock = { ok: true, release: () => {} }; // the other launch never came up: go on
+}
+
+// A server already running for this repo: open it rather than start a second. One on another version says so: an
+// upgrade is a stop and a launch (or --replace, which parks every session and takes over).
 const running = await findRunning(root);
 if (running) {
-  console.log(`
+  const theirs = running.rec.version || 'an older version';
+  if (running.rec.version !== pkgVersion && flag('--replace')) {
+    console.log(`\n  nexus  ·  stopping this repo's nexus ${theirs} (pid ${running.rec.pid}) the safe way: every session is parked...`);
+    if (!(await replaceRunning(running.rec))) {
+      console.log(`  It did not stop within 30 s. Stop it with Ctrl+C where it runs, then launch again.\n`);
+      lock.release();
+      process.exit(1);
+    }
+  } else {
+    const skew = running.rec.version !== pkgVersion
+      ? `\n  This repo's nexus runs ${theirs}; you launched ${pkgVersion}. Stop it (Ctrl+C where it runs), then launch again\n  to upgrade, or launch with --replace. Its sessions are kept and pick up where they left off.\n`
+      : '\n  This repo\'s server is up: this opens it. Stop it with Ctrl+C where it runs.\n';
+    console.log(`
   nexus  ·  ${path.basename(root)}  (already running, pid ${running.rec.pid})
 
   ${running.url}
-
-  This repo's server is up: this opens it. Stop it with Ctrl+C where it runs.
-`);
-  if (!flag('--no-open')) openBrowser(running.url);
-  process.exit(0);
+${skew}`);
+    if (!flag('--no-open')) openBrowser(running.url);
+    lock.release();
+    process.exit(0);
+  }
 }
 
-const app = await startServer({ repo, port });
-const pkgVersion = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+// The last launch's port, when it is free: a tab left open from before reconnects on the same address.
+let usePort = port;
+if (!opt('--port')) {
+  const last = readLast(root);
+  if (last && await portFree(last.port)) usePort = last.port;
+}
+const app = await startServer({ repo, port: usePort, onShutdown: () => shutdown('replace'), log: (line) => console.log(`  ${line}`) });
 await writeInstance(root, { pid: process.pid, port: app.port, token: app.token, url: app.url, repo, root, started: new Date().toISOString(), version: pkgVersion })
   .catch((e) => console.log(`  (could not write .nexus/server.json: ${e.message}; a second launch starts its own server)`));
+await writeLast(root, { port: app.port, version: pkgVersion }).catch(() => null);
+lock.release();
 
 console.log(`
   nexus  ·  ${path.basename(repo)}
@@ -134,17 +202,18 @@ console.log(`
 if (!flag('--no-open')) openBrowser(app.url);
 
 let closing = false;
-const shutdown = async () => {
+async function shutdown(why = 'stop') {
   if (closing) process.exit(1);
   closing = true;
-  console.log('\n  stopping...');
+  // Parked first and synchronously (inside close, before anything async), then server.json goes, then the rest.
+  const done = app.close({ why });
   removeInstance(root);
-  await app.close().catch(() => {});
+  console.log(`\n  stopping... every session is parked and picks up where it left off next launch.`);
+  await done.catch(() => {});
   process.exit(0);
-};
+}
 process.on('exit', () => removeInstance(root));
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+for (const sig of SIGNALS) process.on(sig, () => shutdown(sig === 'SIGHUP' ? 'signal' : 'stop'));
 }
 
 function openBrowser(url) {

@@ -32,16 +32,65 @@ export function readInstance(root) {
   }
 }
 
-/** Keep server.json out of git when no ignore rule already does. */
-async function exclude(root) {
-  const ignored = await run('git', ['check-ignore', '-q', FILE], { cwd: root });
+/** Keep one of the server's own files (server.json by default) out of git when no ignore rule already does. */
+async function exclude(root, rel = FILE) {
+  const ignored = await run('git', ['check-ignore', '-q', rel], { cwd: root });
   if (ignored.ok) return;
   const file = await gitPath(root, 'info/exclude');
   if (!file) return;
   const cur = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  if (cur.split(/\r?\n/).includes(`/${FILE}`)) return;
+  if (cur.split(/\r?\n/).includes(`/${rel}`)) return;
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${cur && !cur.endsWith('\n') ? '\n' : ''}/${FILE}\n`);
+  fs.appendFileSync(file, `${cur && !cur.endsWith('\n') ? '\n' : ''}/${rel}\n`);
+}
+
+/**
+ * The last launch's port and version (`.nexus/last.json`), kept after server.json goes: the next launch asks for the
+ * same port, so an open tab's origin (its theme, its token hand-off) stays the same across a restart or an upgrade.
+ */
+export const LAST = '.nexus/last.json';
+export function readLast(root) {
+  try {
+    const rec = JSON.parse(fs.readFileSync(path.join(root, LAST), 'utf8'));
+    return rec && Number.isInteger(rec.port) && rec.port > 0 && rec.port < 65536 ? rec : null;
+  } catch {
+    return null;
+  }
+}
+export async function writeLast(root, rec) {
+  const file = path.join(root, LAST);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(rec, null, 2)}\n`);
+  fs.renameSync(tmp, file);
+  await exclude(root, LAST).catch(() => null);
+  return file;
+}
+
+/**
+ * One launch starts a server at a time (`.nexus/server.lock`, created exclusively): two launches at once never start
+ * two servers on one repo. A lock whose pid is gone is stale and taken over. -> { ok, release } or { ok: false, rec }.
+ */
+export const LOCK = '.nexus/server.lock';
+export function claimLock(root, { pid = process.pid } = {}) {
+  const file = path.join(root, LOCK);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  for (let tries = 0; tries < 2; tries++) {
+    try {
+      const fd = fs.openSync(file, 'wx');
+      fs.writeSync(fd, `${JSON.stringify({ pid, started: new Date().toISOString() })}\n`);
+      fs.closeSync(fd);
+      exclude(root, LOCK).catch(() => null);
+      return { ok: true, release: () => { try { const r = JSON.parse(fs.readFileSync(file, 'utf8')); if (r.pid === pid) fs.unlinkSync(file); } catch { /* gone */ } } };
+    } catch (e) {
+      if (e.code !== 'EEXIST') return { ok: true, release: () => {} }; // no lock to be had (a read-only folder): go on
+      let rec = null;
+      try { rec = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { /* half written: read as stale */ }
+      if (rec && pidAlive(rec.pid) && rec.pid !== pid) return { ok: false, rec };
+      try { fs.unlinkSync(file); } catch { /* another launch took it over first */ }
+    }
+  }
+  return { ok: false, rec: null };
 }
 
 /** Write this server's record, owner-only, whole (a temp file and a rename). */

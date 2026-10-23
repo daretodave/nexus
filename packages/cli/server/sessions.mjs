@@ -77,8 +77,9 @@ export function readLedgers(root) {
 
 /** Same rule as scripts/ledger.mjs: a live ledger past its stale window reads fallen. */
 export function ledgerStatus(l, now = Date.now(), staleMin = STALE_MIN) {
-  if (l.state !== 'live') return l.state || 'live';
-  const beat = Date.parse(l.beat ?? '');
+  if (l.state !== 'live') return typeof l.state === 'string' && l.state ? l.state : 'live';
+  // A beat is an ISO string; anything else (a number a hand edit left) is no beat at all.
+  const beat = typeof l.beat === 'string' ? Date.parse(l.beat) : NaN;
   return Number.isFinite(beat) && now - beat <= staleMin * 60000 ? 'live' : 'fallen';
 }
 
@@ -225,13 +226,99 @@ export function claudeSessions(dirs, { home = claudeHome(), now = Date.now(), st
   return out;
 }
 
-/** One parked question as the cockpit draws it, whatever shape the session wrote. */
+/** A parked question's words, whatever a session wrote there: a string, or an object carrying one. */
+const words = (v) => {
+  if (v == null) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'object') return words(v.text ?? v.question ?? v.q ?? v.label ?? '');
+  return String(v);
+};
+
+/** A parked question's options as a list of words: an array, or a string split on `|` (else `,`); nothing else. */
+function altsOf(v) {
+  if (Array.isArray(v)) return v.map((o) => (typeof o === 'string' ? o : o && typeof o === 'object' ? words(o.label ?? o.text ?? '') : o == null ? '' : String(o))).map((o) => o.trim()).filter(Boolean);
+  if (typeof v === 'string') return v.split(v.includes('|') ? '|' : ',').map((o) => o.trim()).filter(Boolean);
+  return [];
+}
+
+/**
+ * One parked question as the cockpit draws it, whatever shape the session wrote. The shape skills write is
+ * { q, alts: [], why, default }; a malformed one (alts a string or a number, q an object) still reads, never throws.
+ */
 export function parkedItem(p) {
   if (typeof p === 'string') return { q: p, alts: [], state: 'pending' };
-  if (!p || typeof p !== 'object') return { q: String(p), alts: [], state: 'pending' };
-  const alts = (p.alts || p.options || []).map((o) => (typeof o === 'string' ? o : o?.label || '')).filter(Boolean);
-  const def = p.default != null ? String(p.default) : null;
-  return { ...p, q: p.q || p.question || p.text || '', alts: def && !alts.includes(def) ? [def, ...alts] : alts, state: p.state || 'pending' };
+  if (!p || typeof p !== 'object') return { q: p == null ? '' : String(p), alts: [], state: 'pending' };
+  const alts = altsOf(p.alts ?? p.options);
+  const def = p.default != null && typeof p.default !== 'object' ? String(p.default) : null;
+  return {
+    ...p,
+    q: words(p.q) || words(p.question) || words(p.text),
+    alts: def && !alts.includes(def) ? [def, ...alts] : alts,
+    ...(p.why != null && typeof p.why !== 'string' ? { why: words(p.why) } : {}),
+    state: typeof p.state === 'string' && p.state ? p.state : 'pending',
+  };
+}
+
+/**
+ * The Claude Code session a GUI ledger ran, for a ledger written before ledgers kept it (`claude`): its folder's
+ * session files (no freshness cutoff), the one whose first entry is at or after the ledger's start. In a worktree of
+ * its own the newest such file wins; in the primary checkout, which many sessions share, only one file that starts
+ * within two minutes of the ledger does. -> { id, file } or null.
+ */
+export function claudeFor(l, { home = claudeHome(), primary = '' } = {}) {
+  const dir = l?.worktree || l?.cwd;
+  if (!dir) return null;
+  const started = typeof l.started === 'string' ? Date.parse(l.started) : NaN;
+  if (!Number.isFinite(started)) return null;
+  const folder = path.join(home, 'projects', claudeSlug(dir));
+  let files = [];
+  try { files = fs.readdirSync(folder).filter((f) => f.endsWith('.jsonl')); } catch { return null; }
+  const rows = [];
+  for (const f of files) {
+    const file = path.join(folder, f);
+    const first = firstAt(file);
+    if (first == null || first < started - 5000) continue;
+    let mtime = 0;
+    try { mtime = fs.statSync(file).mtimeMs; } catch { continue; }
+    rows.push({ id: f.slice(0, -'.jsonl'.length), file, first, mtime });
+  }
+  if (!rows.length) return null;
+  const shared = !l.worktree || (primary && samePath(dir, primary));
+  if (shared) {
+    const near = rows.filter((r) => r.first - started <= 120000);
+    return near.length === 1 ? { id: near[0].id, file: near[0].file } : null;
+  }
+  const best = rows.sort((a, b) => b.mtime - a.mtime)[0];
+  return { id: best.id, file: best.file };
+}
+
+/** When a session file's first dated entry was written (ms), or null. Reads its head only. */
+function firstAt(file) {
+  try {
+    const fd = fs.openSync(file, 'r');
+    try {
+      const buf = Buffer.alloc(16384);
+      const n = fs.readSync(fd, buf, 0, buf.length, 0);
+      for (const line of buf.subarray(0, n).toString('utf8').split('\n')) {
+        let e;
+        try { e = JSON.parse(line); } catch { continue; }
+        const t = e && typeof e.timestamp === 'string' ? Date.parse(e.timestamp) : NaN;
+        if (Number.isFinite(t)) return t;
+      }
+      return null;
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return null;
+  }
+}
+
+/** The file of a Claude Code session id in a folder's projects dir, or null. */
+export function claudeFile(dir, id, home = claudeHome()) {
+  if (!dir || !id || !/^[A-Za-z0-9-]{8,64}$/.test(String(id))) return null;
+  const f = path.join(home, 'projects', claudeSlug(dir), `${id}.jsonl`);
+  return fs.existsSync(f) ? f : null;
 }
 
 const TRUNKS = new Set(['', 'main', 'master', 'trunk', 'develop', 'HEAD']);
@@ -290,7 +377,7 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
       run.byRunner = true;
       continue;
     }
-    const hit = [...byId.values()].find((s) => s.ledger && (s.ledger.id === c.id || s.ledger.claude === c.id));
+    const hit = [...byId.values()].find((s) => s.ledger && (s.ledger.id === c.id || s.ledger.claude === c.id || s.ledger._found?.id === c.id));
     if (hit) hit.claude = c;
     else rest.push(c);
   }
@@ -304,9 +391,14 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
   for (const [id, s] of byId) {
     const l = s.ledger || {};
     // A row its runner's file joined steers that session (the ledger's own `claude` is the session that stopped).
-    const claudeId = s.byRunner ? s.claude.id : l.claude || s.claude?.id || id;
+    const claudeId = s.byRunner ? s.claude.id : (typeof l.claude === 'string' && l.claude) || l._found?.id || s.claude?.id || id;
     const isGui = guis.includes(id) || guis.includes(claudeId);
     const parked = (Array.isArray(l.parked) ? l.parked : []).map(parkedItem).filter((p) => p.state === 'pending');
+    const stopped = stoppedWith(l, s, guis, now);
+    if (stopped) {
+      out.push(stoppedRow({ id, l, s, claudeId, parked, repoName, stop: stopped }));
+      continue;
+    }
     const running = s.claude && (s.status === 'fallen' || (s.byRunner && RUN_LIVE.has(s.status)));
     out.push({
       id,
@@ -330,6 +422,64 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
     });
   }
   return out.sort((a, b) => String(b.beat || '').localeCompare(String(a.beat || '')));
+}
+
+const STOPPABLE = new Set(['live', 'parked', 'fallen']);
+
+/**
+ * Did this ledger's session stop with a nexus server? A ledger only a nexus server writes (`gui: true`) that this
+ * server does not run is not running: one server runs per repo, so no beat, pid or session file freshness is needed
+ * to say so, and a ledger an older version wrote reads the same. A 'resuming' one whose pick-up never finished (its
+ * runner neither hosted here nor writing, its beat stale) stopped too. -> the row's `stop`, or null.
+ */
+export function stoppedWith(l, s, guis = [], now = Date.now()) {
+  if (!l || l.gui !== true || !l.id) return null;
+  if (guis.includes(l.id) || (typeof l.claude === 'string' && guis.includes(l.claude))) return null;
+  const st = typeof l.state === 'string' ? l.state : 'live';
+  const marker = l.stop && typeof l.stop === 'object' ? l.stop : null;
+  const base = {
+    at: (marker && typeof marker.at === 'string' ? marker.at : null) || (typeof l.beat === 'string' ? l.beat : null),
+    clean: !!marker && marker.by === 'server' && marker.why !== 'sweep',
+    turn: marker && typeof marker.turn === 'string' ? marker.turn : null,
+    queued: marker && Array.isArray(marker.queued) ? marker.queued.length : 0,
+    asks: marker && Number.isFinite(marker.asks) ? marker.asks : 0,
+    version: marker && typeof marker.version === 'string' ? marker.version : null,
+  };
+  if (STOPPABLE.has(st)) return base;
+  if (st === 'resuming') {
+    if (s?.byRunner) return null;
+    if ((typeof l.runner === 'string' && guis.some((g) => runBy(l, g))) || ledgerStatus({ ...l, state: 'live' }, now) === 'live') return null;
+    return { ...base, note: 'the last pick-up did not finish' };
+  }
+  return null;
+}
+
+/** The row of a session that stopped with nexus: this machine's, calm, waiting for Pick up (never a terminal one). */
+function stoppedRow({ id, l, s, claudeId, parked, repoName, stop }) {
+  const act = l._found?.activity || s.claude || null;
+  const talked = !!((typeof l.claude === 'string' && l.claude) || l._found?.id || (Number.isFinite(l.sent) && l.sent > 0) || stop.queued || s.claude);
+  return {
+    id,
+    claude: claudeId,
+    name: String(l.star || id.slice(0, 8)),
+    kind: 'local',
+    state: 'stopped',
+    repo: repoName,
+    chunk: l.chunk ? { id: String(l.chunk), step: l.step || '' } : null,
+    parked: parked.length,
+    beat: (typeof l.beat === 'string' && l.beat) || null,
+    git: { branch: l.branch || '', worktree: l.worktree || '' },
+    linked: false,
+    steer: 'pickup',
+    live: false,
+    held: true,
+    gui: true,
+    stop: { ...stop, talked, loop: !!l.loop },
+    sources: ['ledger', ...(s.claude || l._found ? ['claude'] : [])],
+    ...(l.claims ? { claimsSession: String(l.claims) } : {}),
+    ...(act?.last ? { last: act.last } : {}),
+    ...(act?.lastPrompt ? { lastPrompt: act.lastPrompt } : {}),
+  };
 }
 
 /**
@@ -379,7 +529,7 @@ export function withHosted(list, hosted = [], repoName = '') {
       linked: true,
       live: true,
       hosted: true,
-      state: paused ? 'paused' : row.state === 'fallen' || row.state === 'paused' ? 'live' : row.state,
+      state: paused ? 'paused' : ['fallen', 'paused', 'stopped'].includes(row.state) ? 'live' : row.state,
       pause: h.pause?.state || 'run',
       sources: [...new Set([...(row.sources || []), 'server'])],
     });
@@ -450,16 +600,46 @@ export function parkedAnswer(item, { action, pick, answer } = {}) {
  * the GUI-owned session `row` names; `guiSession()` its id (or ids); `hosted()` the sessions this server runs
  * (withHosted).
  */
-export function createSteering({ repo, send, guiSession = () => null, hosted = () => [], home, now = () => Date.now() }) {
+export function createSteering({ repo, send, guiSession = () => null, hosted = () => [], home, now = () => Date.now(), pickup = null }) {
   const linked = new Set();
   let rootP = null;
   const root = () => (rootP ||= primaryRoot(repo));
+  // A stopped session's own Claude Code file, found once per ledger and read again only when it changes.
+  const found = new Map();
+
+  /**
+   * Each GUI ledger this server does not run, with the Claude Code session it ran (`_found`: { id, file, activity }):
+   * its `claude` when the ledger kept it, else claudeFor. Its activity (last word, last prompt) is read whatever the
+   * file's age, so a tile that stopped an hour ago still shows what it said last.
+   */
+  function withFound(ledgers, r) {
+    const guis = new Set([guiSession()].flat().filter(Boolean));
+    const h = home || claudeHome();
+    return ledgers.map((l) => {
+      if (l.gui !== true || guis.has(l.id) || ['ended', 'resumed'].includes(l.state)) return l;
+      try {
+        const id = typeof l.claude === 'string' && l.claude ? l.claude : null;
+        const file = id ? claudeFile(l.cwd || l.worktree, id, h) || claudeFile(l.worktree, id, h) : null;
+        const hit = file ? { id, file } : id ? { id, file: null } : claudeFor(l, { home: h, primary: r });
+        if (!hit) return l;
+        let mtime = 0;
+        try { mtime = hit.file ? fs.statSync(hit.file).mtimeMs : 0; } catch { /* gone */ }
+        const kept = found.get(l.id);
+        const activity = kept && kept.file === hit.file && kept.mtime === mtime ? kept.activity
+          : hit.file ? sessionActivity(tailEntries(hit.file, 65536)) : null;
+        found.set(l.id, { file: hit.file, mtime, activity });
+        return { ...l, _found: { id: hit.id, file: hit.file, activity } };
+      } catch {
+        return l;
+      }
+    });
+  }
 
   async function list() {
     const r = await root();
     const dirs = await worktreeDirs(repo);
     const merged = mergeSessions({
-      ledgers: readLedgers(r),
+      ledgers: withFound(readLedgers(r), r),
       claude: claudeSessions(dirs, { home: home || claudeHome(), now: now() }),
       gui: guiSession(),
       linked,
@@ -491,6 +671,12 @@ export function createSteering({ repo, send, guiSession = () => null, hosted = (
     if (!words) return { status: 400, error: 'nothing to send' };
     const s = await find(id);
     if (!s) return { status: 404, error: 'no such live session' };
+    // A session that stopped with nexus: what is sent to it picks it up (the same ledger, star and worktree), then goes.
+    if (s.steer === 'pickup') {
+      if (!pickup) return { status: 409, error: `${s.name} stopped with nexus: pick it up first` };
+      const r = await pickup(s.id, { then: whole, images });
+      return r.status === 200 ? { status: 200, via: 'sdk', session: s.id, pickedUp: true } : r;
+    }
     if (s.steer === 'sdk') {
       // A session this server runs takes image blocks beside the words; a board line carries text only.
       await send(whole, s, images.length ? { images } : {});

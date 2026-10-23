@@ -10,7 +10,10 @@ import { createHub } from './hub.mjs';
 import { createSwr } from './swr.mjs';
 import { PERMISSION_MODES } from './provider.mjs';
 import { createSession } from './session.mjs';
-import { cleanGit, endLedger, formPlace, ghLoginOnce, heldNames, newSessionId, nextName, planPlace, startLedger, validName, writeStartLedger } from './fleet.mjs';
+import { cleanGit, endLedger, formPlace, ghLoginOnce, heldNames, newSessionId, nextName, planPlace, serverStamp, startLedger, updateLedger, validName, writeStartLedger } from './fleet.mjs';
+import { VERSION } from './version.mjs';
+import { autoPickable, parkPatch, pickupMessages, savedTranscript, sweepPatch } from './recovery.mjs';
+import { branchExists, placeState, sweep as sweepPlaces, sweepHooksTemp } from './repair.mjs';
 import { safeHooks } from './cloud.mjs';
 import { formNext, formStart } from '../shared/forming.mjs';
 import { putAwayPlan } from '../shared/put-away.mjs';
@@ -28,11 +31,12 @@ import { createChangeFeed } from './feed.mjs';
 import { runGit } from './feed-push.mjs';
 import { explode, plotPrompt, plotRequest } from './explode.mjs';
 import { addWorkflow, loopSchedule, saveSchedule } from './cloud.mjs';
-import { createSteering, primaryRoot, readLedgers, parkedItem, transcriptActivity, withHosted } from './sessions.mjs';
+import { claudeFile, claudeFor, createSteering, primaryRoot, readLedgers, parkedItem, sessionActivity, stoppedWith, tailEntries, transcriptActivity, withHosted } from './sessions.mjs';
 import { boardTugs, tugOf } from './tugs.mjs';
 import { fleetRows, hasResumeSkill, inboxItems, ledgerFor, markEnded, parseParkedId, resumable, resumePrompt, sameParked } from './fleet-home.mjs';
 import { run as shRun, settle as settleChildren } from './sh.mjs';
 import { createGitView } from './git.mjs';
+import { pidAlive } from './instance.mjs';
 import { readRun, recentRuns } from './recover.mjs';
 import { claudeHome as defaultClaudeHome, worktreeDirs } from './sessions.mjs';
 import { claimsAction, listClaims, SESSION as CLAIMS_SESSION } from './claims.mjs';
@@ -99,7 +103,13 @@ function readPrompt(name) {
  * @param {object} [o.worktree]     a GUI session's worktree seams (tests): { git(cwd, args, o) } for every git it runs (a
  *                                  delay stands in for a slow checkout), { hooks(repo) } for cloud.mjs safeHooks
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, choicesQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads, feed: feedOpts = {} } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, choicesQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads, feed: feedOpts = {}, beatMs = 60000, pickupIdle, onShutdown = null, log = () => {} } = {}) {
+  // The primary checkout's root, where the ledgers live: asked once (a stopping server writes there synchronously).
+  const ROOT = await primaryRoot(repo);
+  const started = new Date().toISOString();
+  // The startup sweep (repair.mjs) and the pick-up of sessions that stopped idle: the first list waits for both.
+  let sweepDone = Promise.resolve();
+  let readyDone = Promise.resolve();
   const wtGit = wtOpts.git || cleanGit;
   const wtHooks = wtOpts.hooks || safeHooks;
   const ghOpts = ghRun ? { run: ghRun } : {};
@@ -167,9 +177,12 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     prefs = { ...prefs, lastModel: model };
     repoMod.writePrefs(repo, { lastModel: model }).then((p) => { prefs = p; }, () => null);
   };
-  async function host({ id, name = '', cwd, place = {}, listed = false, resume = null, form = null }) {
+  async function host({ id, name = '', cwd, place = {}, listed = false, resume = null, form = null, onResumeLost = null }) {
+    let made = null;
     const s = await createSession({
-      id, name, cwd, place, listed, resume, form,
+      id, name, cwd, place, listed, resume, form, onResumeLost,
+      // Its Claude Code session, kept in its ledger the moment it is known, so a later nexus resumes this conversation.
+      onClaude: (c) => { if (made?.listed ?? listed) noteLedger(id, { claude: c, cwd: made?.cwd || cwd }); },
       env: async () => ({ NEXUS_SESSION: id, NEXUS_GH_LOGIN: await login() }),
       // An injected provider object serves the home session only; a factory serves every session (tests).
       provider: typeof injected === 'function' ? injected : sessions.size ? undefined : injected,
@@ -187,9 +200,21 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       set(key, value);
       if (key === 'asks' || key === 'permissions') { for (const k of ['inbox', 'sessions', 'needs']) reads.forget(k); needsSoon(); }
     };
+    made = s;
     sessions.set(id, s);
     s.hub.set('feed', feed.view());
     return s;
+  }
+  /** Merge into a hosted session's ledger; a failed write is caught up by the next beat. */
+  function noteLedger(id, patch) {
+    try { updateLedger(ROOT, id, (l) => (l.state === 'ended' ? null : patch)); } catch { /* the beat writes it again */ }
+  }
+  /** After a prompt went to a hosted session: its ledger counts it (a crash before its first answer still keeps it). */
+  const sentWritten = new Map();
+  function noteSent(s) {
+    if (!s?.listed || sentWritten.get(s.id) === s.sent) return;
+    sentWritten.set(s.id, s.sent);
+    noteLedger(s.id, { sent: s.sent });
   }
   const home = await host({ id: newSessionId(), cwd: repo });
   const hub = home.hub;
@@ -254,6 +279,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     guiSession: () => [...sessions.values()].flatMap((s) => [s.id, s.claude]).filter(Boolean),
     hosted: hostedRows,
     home: claudeHome,
+    // What is sent to a session that stopped with nexus picks it up first (recovery.mjs).
+    pickup: (id, o) => pickup(id, o),
   });
 
   // Git per session and the repo panel (spec 40 A6): read-only, gh through the injected ghRun.
@@ -310,6 +337,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       Object.assign(out, { hosted: true, cwd: run.cwd, worktree: run.place.worktree || '', branch: run.place.branch || out.git?.branch || '' });
       if (run.form) out.form = run.form;
     }
+    // A session that stopped with nexus: its saved conversation, and what it was doing when it stopped.
+    if (!run && (s.state === 'stopped' || s.stop)) {
+      out.stopped = true;
+      const file = claudeFile(l.cwd || l.worktree, s.claude, recoverHome) || claudeFile(l.worktree, s.claude, recoverHome);
+      out.saved = !!file;
+      if (Array.isArray(l.stop?.queued)) out.queued = l.stop.queued.map((q) => String(q?.text || '')).filter(Boolean);
+    }
     out.git = await gitView.forSession(out);
     const times = sessionTimes({
       ledger: l, beats: run ? run.hub.beats : [], hostedAt: run?.at || null, plan: await planForTimes(),
@@ -357,6 +391,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const s = await host({ id, name, cwd, place, listed: true, form });
     // Images (an oversight hand-off's answers): image blocks beside the prompt, its first bubble showing them.
     if (b.prompt && String(b.prompt).trim()) await s.send(String(b.prompt).trim(), Array.isArray(b.images) && b.images.length ? { images: b.images } : {});
+    noteSent(s);
     if (planned) formBehind(s, root);
     return { status: 200, id, name, cwd, worktree: place.worktree || '', branch: place.branch || '', ...(form ? { form } : {}), ...(note ? { note } : {}), ...(origin ? { origin } : {}) };
   }
@@ -366,15 +401,17 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
    * what it was sent goes) or failed (the cockpit offers Retry). One form at a time per session.
    */
   const forming = new Map(); // session id -> the promise of its form
-  function formBehind(s, root) {
+  function formBehind(s, root, { restore = true } = {}) {
     if (forming.has(s.id)) return forming.get(s.id);
     const job = (async () => {
-      const r = await formPlace(root, s.place, { git: wtGit, hooks: wtHooks, onLine: (line) => s.setForm(formNext(s.form, { type: 'progress', line })) })
+      const r = await formPlace(root, s.place, { git: wtGit, hooks: wtHooks, restore, onLine: (line) => s.setForm(formNext(s.form, { type: 'progress', line })) })
         .catch((e) => ({ error: String(e?.message || e) }));
       if (!sessions.has(s.id)) return; // closed while it formed
       if (r.error) { s.setForm(formNext(s.form, { type: 'fail', error: r.error })); return; }
       s.setForm(formNext(s.form, { type: 'ready' }));
       await s.formed({ cwd: s.place.worktree });
+      noteSent(s);
+      if (s.listed) noteLedger(s.id, { cwd: s.place.worktree });
     })().finally(() => forming.delete(s.id));
     forming.set(s.id, job);
     return job;
@@ -462,12 +499,15 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     if (action === 'retry') return retryForm(key);
     const s = sessionOf(key);
     if (!s) {
-      if (action === 'resume') return resumeFallen(key);
+      if (action === 'resume') {
+        const l = ledgerFor(readLedgers(ROOT), key);
+        return l && l.gui === true && !['ended', 'resumed'].includes(l.state) ? pickup(key) : resumeFallen(key);
+      }
       if (action === 'close') return closeEnded(key);
       return { status: 409, error: 'only a session this server runs pauses, resumes or closes here' };
     }
     if (action === 'pause') return { status: 200, id: s.id, pause: s.pauseAfterStep() };
-    if (action === 'resume') return { status: 200, id: s.id, pause: await s.resume() };
+    if (action === 'resume') { const pause = await s.resume(); noteSent(s); return { status: 200, id: s.id, pause }; }
     if (s === home) return { status: 409, error: 'the home session stays while the server runs: stop it instead' };
     await s.close();
     sessions.delete(s.id);
@@ -560,6 +600,162 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return { status: 200, id: r.id, name: r.name, resumes: l.id, star: l.star, prompt, loop: !!l.loop };
   }
 
+  // ---- recovery across a restart or an upgrade (recovery.mjs, repair.mjs) ----------------------------------------
+
+  /**
+   * The startup sweep, once, before the first list: a ledger a killed server left `live` is parked (`stop.why:
+   * 'sweep'`), a worktree an add left half made is finished in place, and old hook wrapper folders go.
+   */
+  const hostedIds = () => new Set([...sessions.values()].flatMap((s) => [s.id, s.claude]).filter(Boolean));
+  async function startupSweep() {
+    const at = new Date().toISOString();
+    const mine = hostedIds();
+    for (const l of readLedgers(ROOT)) {
+      if (l.gui !== true || mine.has(l.id) || l.state !== 'live') continue;
+      // A ledger whose own server still runs (a second server racing this one) is never swept.
+      if (l.server && Number.isInteger(l.server.pid) && l.server.pid !== process.pid && pidAlive(l.server.pid)) continue;
+      try { updateLedger(ROOT, l.id, (cur) => (cur.state === 'live' && !cur.stop ? sweepPatch(cur, { at, version: VERSION }) : null)); } catch { /* read as stopped all the same */ }
+    }
+    try {
+      await sweepPlaces(ROOT, readLedgers(ROOT), { git: wtGit, hooks: wtHooks, skip: (id) => mine.has(id) || forming.has(id), log });
+    } catch (e) { log(`the worktree sweep stopped: ${e?.message || e}`); }
+    if (!injected) sweepHooksTemp();
+  }
+
+  /**
+   * Pick up a session that stopped with nexus (POST /api/sessions/:id/pickup): the same ledger id, star and worktree,
+   * hosted again, resuming its own Claude Code conversation (the SDK starts it on the first send, so hosting alone
+   * costs nothing). Its place is repaired first; what it sends follows recovery.mjs pickupMessages, then `then`
+   * (what the person typed or answered). One pick-up per ledger at a time.
+   */
+  const pickups = new Map();
+  async function pickup(key, { then = null, images = [], auto = false } = {}) {
+    const l = ledgerFor(readLedgers(ROOT), key);
+    if (!l) return { status: 404, error: 'no ledger for that session: nothing to pick up' };
+    if (l.gui !== true) return { status: 409, error: `${l.star} runs in a terminal: resume it there, or with Resume` };
+    const running = sessionOf(l.id);
+    if (running) {
+      if (then && String(then).trim()) { await running.send(String(then).trim(), images.length ? { images } : {}); noteSent(running); }
+      return { status: 200, id: running.id, name: running.name, already: true };
+    }
+    if (['ended', 'resumed'].includes(l.state)) return { status: 409, error: `${l.star} ${l.state === 'ended' ? 'was put away' : 'was resumed elsewhere'}: nothing to pick up` };
+    if (pickups.has(l.id)) return pickups.get(l.id);
+    const job = pickupNow(l, { then, images, auto }).catch((e) => ({ status: 500, error: String(e?.message || e) })).finally(() => pickups.delete(l.id));
+    pickups.set(l.id, job);
+    return job;
+  }
+
+  async function pickupNow(l, { then, images, auto }) {
+    await sweepDone;
+    const stop = l.stop && typeof l.stop === 'object' ? l.stop : {};
+    const ran = (Number.isFinite(l.sent) && l.sent > 0) || !!l.claude;
+    let wt = typeof l.worktree === 'string' ? l.worktree : '';
+    const branch = typeof l.branch === 'string' ? l.branch : '';
+    let form = null;
+    let note = null;
+    if (wt && !fs.existsSync(wt)) {
+      // Gone from disk: its branch checks out there again (formPlace prunes the stale registration first); a session
+      // that never formed forms now. With its branch gone too, nothing on disk is left: it works in the checkout.
+      if (stop.turn === 'forming' || !ran || await branchExists(ROOT, branch, wtGit)) form = formStart({ worktree: wt, branch });
+      else { note = 'Its worktree and branch are gone, so it works in the main checkout.'; wt = ''; }
+    } else if (wt) {
+      const st = placeState(wt);
+      // Half made (an add cut short) or, for a place this version made, hooks that never finished: finished first.
+      if (st.interrupted || st.indexLock != null || (!st.formed && l.server?.version && l.server.version !== '0.5.1')) form = formStart({ worktree: wt, branch });
+    }
+    const place = wt ? { worktree: wt, branch } : {};
+    const cwd = wt || (typeof l.cwd === 'string' && l.cwd && fs.existsSync(l.cwd) ? l.cwd : repo);
+    const found = typeof l.claude === 'string' && l.claude ? { id: l.claude, file: claudeFile(l.cwd || wt, l.claude, recoverHome) } : claudeFor(l, { home: recoverHome, primary: ROOT });
+    const resumeId = found?.id || null;
+    // A crash left no turn: the conversation's own tail says whether a step was under way.
+    const turn = stop.turn || (found?.file ? sessionActivity(tailEntries(found.file, 65536)).turn : null);
+    const skill = hasResumeSkill(ROOT);
+    let s = null;
+    let freshSent = false;
+    s = await host({
+      id: l.id, name: String(l.star || ''), cwd, place, listed: true, resume: resumeId, form,
+      // The conversation could not be reopened: the fresh one gets its context the way a fresh pick-up does.
+      onResumeLost: () => {
+        if (freshSent || !s) return;
+        freshSent = true;
+        const first = pickupMessages({ ...l, claude: null, sent: Math.max(1, Number(l.sent) || 0) }, { resumed: false, turn: 'working', skill })[0];
+        if (first) s.send(first.text).catch(() => null);
+      },
+    });
+    updateLedger(ROOT, l.id, (cur) => ({ state: 'live', stop: undefined, beat: new Date().toISOString(), server: serverStamp(), cwd: form ? wt : cwd, ...(resumeId ? { claude: resumeId } : {}), ...(cur.state === 'resuming' ? { runner: undefined } : {}) }));
+    const msgs = pickupMessages(l, { resumed: !!resumeId, turn, skill, then });
+    if (!resumeId && msgs.length) freshSent = true;
+    for (const m of msgs) await s.send(m.text, { steered: m.steered, ...(then && m.text === String(then).trim() && images.length ? { images } : {}) });
+    noteSent(s);
+    if (form) formBehind(s, ROOT, { restore: !ran });
+    if (note) s.hub.tx({ kind: 'system', text: note, at: Date.now() });
+    if (!resumeId && ran) s.hub.tx({ kind: 'system', text: 'Picked up fresh: the old conversation could not be found.', at: Date.now() });
+    log(`picked up ${l.star}${auto ? ' (it was idle)' : ''}${resumeId ? '' : ' fresh'}`);
+    return { status: 200, id: l.id, name: l.star, resumed: !!resumeId, sent: msgs.length, ...(form ? { form: s.form } : {}), ...(note ? { note } : {}) };
+  }
+
+  /**
+   * The channel of a session that stopped with nexus: its saved conversation (its Claude Code file) replayed in the
+   * hello, and a status that says it stopped. A fresh hub per tab, closed with it.
+   */
+  async function savedHub(key) {
+    const l = ledgerFor(readLedgers(ROOT), String(key));
+    if (!l || l.gui !== true || ['ended', 'resumed'].includes(l.state) || sessionOf(l.id)) return null;
+    const id = typeof l.claude === 'string' && l.claude ? l.claude : claudeFor(l, { home: recoverHome, primary: ROOT })?.id;
+    const file = id ? claudeFile(l.cwd || l.worktree, id, recoverHome) || claudeFile(l.worktree, id, recoverHome) : null;
+    const h = createHub({ mask });
+    for (const item of savedTranscript(file)) h.tx(item);
+    h.flush();
+    h.setStatus({ state: 'idle', hosted: false, stopped: true, saved: !!file });
+    h.flush();
+    return { attach: (req, res) => { h.attach(req, res); req.on('close', () => h.close()); } };
+  }
+
+  /** POST /api/pickup-all: every session that stopped with nexus, in the order they started. */
+  async function pickupAll() {
+    await sweepDone;
+    const mine = hostedIds();
+    const list = readLedgers(ROOT).filter((l) => !mine.has(l.id) && stoppedWith(l, null, [...mine]))
+      .sort((a, b) => String(a.started || '').localeCompare(String(b.started || '')));
+    const picked = [];
+    const failed = [];
+    for (const l of list) {
+      const r = await pickup(l.id);
+      if (r.status === 200) picked.push({ id: l.id, name: l.star, resumed: !!r.resumed });
+      else failed.push({ id: l.id, name: l.star, error: r.error });
+    }
+    return { status: 200, picked, failed };
+  }
+
+  /**
+   * At close, synchronously and first (a closed console window gives the process about 10 s): each session the GUI
+   * started is parked with what it holds (recovery.mjs parkPatch), or ended when it never took a prompt.
+   */
+  function parkAll(why) {
+    const at = new Date().toISOString();
+    for (const s of sessions.values()) {
+      if (!s.listed) continue;
+      try {
+        const snap = s.snapshot();
+        updateLedger(ROOT, s.id, (l) => {
+          if (l.state === 'ended') return null;
+          const p = parkPatch(snap, l, { why, at, version: VERSION, server: serverStamp() });
+          return p.end ? { state: 'ended', beat: at } : p;
+        });
+      } catch { /* one session's ledger never stops the rest */ }
+    }
+  }
+
+  // The hosted beat: each listed session's ledger says it runs (the kit's terminal tools read a stale one as fallen).
+  const beatTimer = beatMs > 0 ? setInterval(() => {
+    const at = new Date().toISOString();
+    for (const s of sessions.values()) {
+      if (!s.listed) continue;
+      noteLedger(s.id, { beat: at, server: serverStamp(), sent: s.sent, ...(s.claude ? { claude: s.claude } : {}), cwd: s.cwd });
+    }
+  }, beatMs) : null;
+  beatTimer?.unref?.();
+
   /** The hosted sessions as the fleet and the inbox read them. */
   const hostedLive = () => [...sessions.values()].map((s) => ({
     id: s.id, claude: s.claude, name: s.name, busy: s.busy, model: s.model.model, effort: s.model.effort, home: s === home,
@@ -568,6 +764,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
 
   /** GET /api/sessions: the session list with each tile's phase, progress, asks and resume. */
   async function sessionList() {
+    await readyDone;
     const list = await steering.list();
     const hosted = hostedLive().map((h) => ({ ...h, asks: h.asks.length }));
     const ledgers = readLedgers(await primaryRoot(repo));
@@ -581,7 +778,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
    */
   async function needsNow() {
     const rows = await sessionList();
-    const odd = rows.filter((r) => r.gui && r.state === 'fallen' && !r.hosted);
+    const odd = rows.filter((r) => r.gui && (r.state === 'fallen' || r.state === 'stopped') && !r.hosted);
     const ended = new Set(odd.length ? markEnded(await gitView.withGit(odd)).filter((r) => r.ended).map((r) => r.id) : []);
     return { at: Date.now(), items: needsFrom(rows.map((r) => (ended.has(r.id) ? { ...r, ended: true } : r)), hostedLive()) };
   }
@@ -770,6 +967,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   async function handle(req, res) {
     const url = new URL(req.url, 'http://127.0.0.1');
     if (!url.pathname.startsWith('/api/')) return serveStatic(req, res, url);
+    // A stale tab asks whether nexus runs here again, before it has a token that works: only that, nothing else.
+    if (url.pathname === '/api/hello' && req.method === 'GET') {
+      if (!hosts.has(req.headers.host || '')) return send(res, 403, { error: 'bad host' });
+      return send(res, 200, { nexus: true, version: VERSION, started });
+    }
     const bad = guard(req, url);
     if (bad) return send(res, 403, { error: bad });
     const route = `${req.method} ${url.pathname}`;
@@ -789,8 +991,22 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         if (r) { const { status, ...rest } = r; return send(res, status, rest); }
       }
       switch (route) {
-        case 'GET /api/events': return (sessionOf(url.searchParams.get('session'))?.hub || elsewhere).attach(req, res);
-        case 'GET /api/server': return send(res, 200, { nexus: true, pid: process.pid, repo, root: await primaryRoot(repo), home: home.id, sessions: sessions.size });
+        case 'GET /api/events': {
+          const key = url.searchParams.get('session');
+          const run = sessionOf(key);
+          if (run) return run.hub.attach(req, res);
+          const saved = key ? await savedHub(key) : null;
+          return (saved || elsewhere).attach(req, res);
+        }
+        case 'GET /api/server': return send(res, 200, { nexus: true, pid: process.pid, repo, root: await primaryRoot(repo), home: home.id, sessions: sessions.size, version: VERSION, started });
+        case 'POST /api/pickup-all': { await body(req); const r = await pickupAll(); return send(res, r.status, r); }
+        // Stop this server the graceful way (every session parked): a newer launch's --replace, then it takes over.
+        case 'POST /api/shutdown': {
+          await body(req);
+          send(res, 200, { ok: true, stopping: true });
+          setTimeout(() => { (onShutdown ? onShutdown() : app.close({ why: 'replace' })).catch?.(() => null); }, 50).unref?.();
+          return undefined;
+        }
         case 'GET /api/state': return send(res, 200, { info: await kept('state', () => repoMod.repoInfo(repo)), prefs, commands: repoMod.listCommands(repo), provider: provider.kind, permissionModes: PERMISSION_MODES });
         case 'GET /api/preflight': return send(res, 200, await preflight(repo));
         case 'GET /api/prompts': return send(res, 200, { paste: ADOPT_PASTE, adopt: readPrompt('adopt.md'), pitch: readPrompt('pitch.md') });
@@ -806,11 +1022,22 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           const att = readAttachments(b.attachments);
           if (att.error) return send(res, / up to /.test(att.error) ? 413 : 400, { error: att.error });
           if (!text && !att.images.length && !att.files.length) return send(res, 400, { error: 'empty prompt' });
-          const s = sessionOf(b.session);
+          let s = sessionOf(b.session);
+          if (!s && b.session) {
+            // The cockpit of a session that stopped with nexus: the first message picks it up, then goes.
+            const l = ledgerFor(readLedgers(ROOT), String(b.session));
+            if (l && l.gui === true && !['ended', 'resumed'].includes(l.state)) {
+              const r = await pickup(l.id);
+              if (r.status !== 200) return send(res, r.status, r);
+              s = sessionOf(l.id);
+            }
+          }
           if (!s) return send(res, 404, { error: 'no such session on this server' });
           const refs = saveUploads(await primaryRoot(repo), s.id, att.images);
           const images = att.images.map((img, i) => ({ ...img, ...refs[i] }));
-          return send(res, 200, { ok: true, session: s.id, ...(await s.send(text, { images, files: att.files })) });
+          const sent = await s.send(text, { images, files: att.files });
+          noteSent(s);
+          return send(res, 200, { ok: true, session: s.id, ...sent });
         }
         case 'POST /api/adopt': await body(req); await sendPrompt(ADOPT_PASTE); return send(res, 200, { ok: true, session: home.id });
         case 'POST /api/interrupt':
@@ -1025,6 +1252,12 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         const r = await putAway(decodeURIComponent(away[1]), await body(req));
         return send(res, r.status, r);
       }
+      const pick = /^POST \/api\/sessions\/([\w.%-]+)\/pickup$/.exec(route);
+      if (pick) {
+        const b = await body(req);
+        const r = await pickup(decodeURIComponent(pick[1]), { then: typeof b.then === 'string' ? b.then : null });
+        return send(res, r.status, r);
+      }
       const life = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close|retry)$/.exec(route);
       if (life) {
         await body(req);
@@ -1089,10 +1322,21 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     if ([...sessions.values()].some((s) => s.hub.clients) || elsewhere.clients) needsSoon(0);
   }, NEEDS_MS);
   needsLook.unref?.();
+  // The startup sweep runs before the first list (sessionList waits for it); then each session that stopped cleanly
+  // while idle comes back by itself, free until it is sent something (the SDK starts on the first send).
+  sweepDone = startupSweep().catch(() => null);
+  readyDone = sweepDone.then(async () => {
+    const auto = pickupIdle ?? prefs.pickupIdle ?? true;
+    if (!auto) return;
+    for (const l of readLedgers(ROOT)) {
+      if (autoPickable(l) && !sessionOf(l.id)) await pickup(l.id, { auto: true }).catch(() => null);
+    }
+  }).catch(() => null);
   needsSoon(0);
   if (feedStarts) feed.sync();
 
-  return {
+  let closed = null;
+  const app = {
     url: `http://127.0.0.1:${actual}/?t=${encodeURIComponent(token)}`,
     port: actual,
     token,
@@ -1101,26 +1345,35 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     sessions,
     /** A deep link to one session's cockpit, carrying this launch's token. */
     urlFor: (id) => `http://127.0.0.1:${actual}/s/${encodeURIComponent(id)}?t=${encodeURIComponent(token)}`,
-    async close() {
-      if (poll) clearInterval(poll);
-      clearInterval(refreshMask);
-      clearInterval(needsLook);
-      clearTimeout(needsTimer);
-      clearTimeout(feedTimer);
-      feed.close();
-      const root = await primaryRoot(repo);
-      for (const s of sessions.values()) {
-        await s.close();
-        // A session started here that never took a prompt frees its star; one that worked stays resumable.
-        if (s.listed && !s.sent) endLedger(root, s.id);
-      }
-      elsewhere.close();
-      await new Promise((r) => server.close(r));
-      // What it started and is still running (a git status a list asked for, a claims read) ends with it: on Windows
-      // a program left running holds the repo's folder.
-      await settleChildren();
+    /**
+     * Stop: first, synchronously, every session the GUI started is parked in its ledger with what it holds (a closed
+     * console window leaves about 10 s); then the sessions, the feed and the listener close. `why`: 'stop' (a close,
+     * Ctrl+C), 'signal' (the terminal closed), 'replace' (a newer launch took over).
+     */
+    async close({ why = 'stop' } = {}) {
+      if (closed) return closed;
+      closed = (async () => {
+        parkAll(why);
+        if (poll) clearInterval(poll);
+        if (beatTimer) clearInterval(beatTimer);
+        clearInterval(refreshMask);
+        clearInterval(needsLook);
+        clearTimeout(needsTimer);
+        clearTimeout(feedTimer);
+        feed.close();
+        for (const s of sessions.values()) await s.close().catch(() => null);
+        elsewhere.close();
+        await new Promise((r) => server.close(r));
+        // What it started and is still running (a git status a list asked for, a claims read) ends with it: on Windows
+        // a program left running holds the repo's folder.
+        await settleChildren();
+      })();
+      return closed;
     },
+    /** Park every session now (synchronously), without stopping: the signal path calls it before anything async. */
+    park: (why = 'signal') => parkAll(why),
   };
+  return app;
 }
 
 function sendJson(res, status, data) {

@@ -19,6 +19,8 @@ import path from 'node:path';
 import { run } from './sh.mjs';
 import { runClean, safeHooks } from './cloud.mjs';
 import { LEDGERS, readLedgers, writeLedger } from './sessions.mjs';
+import { VERSION } from './version.mjs';
+import { markFormed, placeState, repairPlace } from './repair.mjs';
 
 /** The handoff's local stars, in the order a new session takes them (src/ui/stars.js SESSIONS). */
 export const LOCAL_STARS = Object.freeze(['vega', 'sirius', 'deneb', 'altair']);
@@ -139,12 +141,24 @@ export async function planPlace(primary, name, ledgers, { git = cleanGit, local 
 /**
  * Make the planned worktree: `git worktree add -b <branch> <dir> HEAD` from the primary checkout, through the repo's
  * hooks made safe for a linked worktree (cloud.mjs safeHooks: its post-checkout runs, and no GIT_* leaks into it).
- * Each chunk git or a hook prints to stderr goes to `onLine`. A retry takes the branch when the failed try left it,
- * and a folder git already lists is taken as made. -> { ok: true } or { error }.
+ * Each chunk git or a hook prints to stderr goes to `onLine`. A retry takes the branch when the failed try left it;
+ * a folder git already lists is made once its marker says so, else finished in place first (repair.mjs). A folder
+ * gone while its branch stayed is pruned and checked out again. -> { ok: true } or { error }.
  */
-export async function formPlace(primary, place, { git = cleanGit, hooks = safeHooks, onLine = () => {}, timeout = 10 * 60 * 1000 } = {}) {
+export async function formPlace(primary, place, { git = cleanGit, hooks = safeHooks, onLine = () => {}, timeout = 10 * 60 * 1000, restore = true } = {}) {
   const same = (p) => keyOf(p, WIN) === keyOf(place.worktree, WIN);
-  if (fs.existsSync(place.worktree) && (await linkedWorktrees(primary, git)).some(same)) return { ok: true };
+  if (fs.existsSync(place.worktree) && (await linkedWorktrees(primary, git)).some(same)) {
+    // Registered is not made: an add cut short (git's "initializing" lock) or hooks that never finished (no marker)
+    // are finished in place first (repair.mjs), never reported ready as they are.
+    const st = placeState(place.worktree);
+    if (st.formed && !st.locked) return { ok: true };
+    onLine('finishing the worktree a stopped nexus left part made');
+    const r = await repairPlace(primary, place, { git, hooks, restore });
+    return r.ok ? { ok: true, repaired: r.did } : { error: r.error };
+  }
+  // The folder was deleted or moved while git still lists it: drop that registration (prune touches no folder), so
+  // the branch can be checked out here again.
+  if (!fs.existsSync(place.worktree)) await git(primary, ['worktree', 'prune']);
   const h = await hooks(primary);
   try {
     fs.mkdirSync(path.dirname(place.worktree), { recursive: true });
@@ -153,6 +167,8 @@ export async function formPlace(primary, place, { git = cleanGit, hooks = safeHo
     const args = branched ? ['worktree', 'add', wt, place.branch] : ['worktree', 'add', '-b', place.branch, wt, 'HEAD'];
     const r = await git(primary, [...(h.args || []), ...args], { timeout, onErr: onLine });
     if (!r.ok) return { error: `${(r.err || r.out || 'git worktree add failed').trim().split(/\r?\n/).pop()}${r.timedOut ? ' (timed out)' : ''}` };
+    // Made, hooks and all: the marker says so to a later nexus (repair.mjs).
+    markFormed(place.worktree, { version: VERSION });
     return { ok: true };
   } finally {
     h.cleanup?.();
@@ -173,7 +189,31 @@ export function startLedger({ id, name, cwd, place = {}, now = new Date() }) {
     id, star: name, state: 'live', claims: id.slice(0, 8), started: now.toISOString(), beat: now.toISOString(),
     cwd, worktree: place.worktree || '', branch: place.branch || '', chunk: '', step: '', loop: '', claimed: [],
     workflow: null, builder: '', defaults: [], parked: [], train: '', next_step: '', notes: '', gui: true,
+    // Which server runs it (a later one tells a clean stop from a crash, and reads what it can) and the prompts it took.
+    server: serverStamp(), sent: 0,
   };
+}
+
+/** The running server, as a ledger names it: { pid, version, started }. */
+const SERVER_STARTED = new Date().toISOString();
+export const serverStamp = () => ({ pid: process.pid, version: VERSION, started: SERVER_STARTED });
+
+/**
+ * Merge `patch` into a ledger this server wrote (read fresh, written whole through a temp file and a rename, as
+ * scripts/ledger.mjs does). A ledger gone is left gone. A function patch gets the ledger and returns the patch.
+ * -> the ledger written, or null.
+ */
+export function updateLedger(root, id, patch) {
+  const file = ledgerFile(root, id);
+  let l;
+  try { l = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+  if (!l || typeof l !== 'object' || l.id !== id) return null;
+  const p = typeof patch === 'function' ? patch(l) : patch;
+  if (!p) return null;
+  const next = { ...l, ...p };
+  for (const [k, v] of Object.entries(p)) if (v === undefined) delete next[k];
+  writeLedger(file, next);
+  return next;
 }
 
 export function ledgerFile(root, id) {
