@@ -217,7 +217,8 @@ export default function Cockpit() {
   const row = useMemo(() => (listed ? norm(listed) : null), [listed]);
   const done = row && !terminal && !asking && live.status?.state !== 'running' ? finishedJob(row) : null;
   const [, setKeptTick] = useState(0);
-  const offerAway = !!done && view === 'working' && !keptAlready(row, viewerStore());
+  // The home session stays while the server runs, so it never offers (the server refuses it too).
+  const offerAway = !!done && !row.home && view === 'working' && !keptAlready(row, viewerStore());
   const putAwayEnd = offerAway ? (
     <PutAway
       s={row} done={done}

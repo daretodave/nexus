@@ -254,6 +254,8 @@ export function createGitView({ repo, root, sessions, run = shRun, claims = read
   const closed = memo(ttl.prs ?? 30000, async () => closedPrBranches(repo, { run }));
   const readClaimRows = async () => {
     const c = await claims(repo);
+    // A claims list that could not be read is unknown, never "no claims".
+    if (c?.error) return null;
     return Array.isArray(c?.rows) ? c.rows : null;
   };
   const claimRows = memo(ttl.claims ?? 60000, readClaimRows);
@@ -288,7 +290,8 @@ export function createGitView({ repo, root, sessions, run = shRun, claims = read
       ctx.claims ?? (ctx.fresh ? readClaimRows().catch(() => null) : claimRows('claims')),
     ]);
     const was = s.git || {};
-    if (!g) return { ...was };
+    // Git unreadable now: a fresh read must not trust the stored answer, so it reads unknown (put away keeps it all).
+    if (!g) return ctx.fresh ? { ...was, up: null, ahead: null, dirty: null, staged: null } : { ...was };
     const branch = g.branch || was.branch || '';
     const open = pr?.ok ? pr.prs.find((p) => p.branch && p.branch === branch) : null;
     const held = rows ? claimsOf(rows, s) : null;

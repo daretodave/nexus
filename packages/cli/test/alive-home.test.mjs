@@ -9,10 +9,11 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
-import { norm } from '../src/screens/fleet/model.js';
+import { FILTERS, norm, summary } from '../src/screens/fleet/model.js';
 import {
   agentOrb, commandOf, doneTitle, doneTrack, fellParts, finishedJob, jobTitle, keptAlready, mainOrb, nextInLine, putAwayToast,
   rememberKeep, tone,
@@ -85,8 +86,27 @@ test('a session has finished its job only from real signals', () => {
   assert.deepEqual(finishedJob(deneb({ lastPrompt: '/next', last: { kind: 'text', text: 'Gate green.' }, event: { text: '14.2 landed on main' } })), { why: 'next', text: 'its chunk landed' });
   assert.deepEqual(finishedJob(deneb({ lastPrompt: '/heads-down 7', last: { kind: 'text', text: 'All three closed and on main.' } })), { why: 'heads-down', text: 'its list is done' });
   assert.deepEqual(finishedJob(deneb({ lastPrompt: '/plot peek "relative ages"' })), { why: 'plot', text: '/plot finished' });
+  // A turn that ends asking something in plain words waits on the person.
+  assert.equal(finishedJob(deneb({ lastPrompt: '/oversight', last: { kind: 'text', text: 'Question 1 of 4: warn or block?' } })), null);
+  assert.equal(finishedJob(deneb({ lastPrompt: '/plot peek', last: { kind: 'text', text: 'Specced it.\n\nWhich lane should this go in?' } })), null);
+  assert.equal(finishedJob(deneb({ lastPrompt: '/plot peek', last: { kind: 'text', text: 'Which lane? **Asap**, or *anytime?*' } })), null, 'a question in markdown');
+  assert.deepEqual(finishedJob(deneb({ lastPrompt: '/plot peek', last: { kind: 'text', text: 'Why? It was in the way. Planned as 12.6.' } })), { why: 'plot', text: '/plot finished' }, 'a question mid-text is not one left open');
+  // A chunk loop that says its work did not land is not done, and unknown claims are not "none".
+  const failed = 'The gate failed, so nothing was pushed and the chunk is not closed.';
+  assert.equal(finishedJob(deneb({ lastPrompt: '/next', last: { kind: 'text', text: failed } })), null);
+  assert.equal(finishedJob(deneb({ lastPrompt: '/next', last: { kind: 'text', text: "It wasn't merged: the PR waits on review." } })), null);
+  assert.equal(finishedJob(deneb({ lastPrompt: '/next', last: { kind: 'text', text: '14.2 landed on main.' }, git: { ...CLEAN, claims: null } })), null, 'claims unknown');
+  assert.deepEqual(finishedJob(deneb({ lastPrompt: '/next', last: { kind: 'text', text: 'Gate green, pushed to main as 3f0a9d2. Nothing left to do.' } })), { why: 'next', text: 'its chunk landed' });
   assert.equal(commandOf('  /lessons-pr ../x'), 'lessons-pr');
   assert.equal(commandOf('hello /next'), '');
+});
+
+test('a finished session counts as done, never idle: in the topbar line and under the Idle chip', () => {
+  const quiet = deneb({ id: 'q1', name: 'vega', lastPrompt: 'hello there' });
+  const list = [deneb(), quiet];
+  assert.equal(summary(list), '2 sessions · 1 done · 1 idle');
+  const idle = FILTERS.find((f) => f.value === 'idle');
+  assert.deepEqual(list.filter(idle.test).map((s) => s.name), ['vega']);
 });
 
 test('a finished session names its job when it has no chunk; a working one names what it is doing', () => {
@@ -106,19 +126,29 @@ test('putting a session away never loses work: it says what it holds and keeps i
   assert.equal(clean.clean, true);
   assert.equal(clean.say, '');
   assert.equal(clean.worktree, '/wt/vega-1');
-  const onMain = putAwayPlan({ git: { ...CLEAN, up: 2, ahead: 2 } });
+  const onMain = putAwayPlan({ git: { ...CLEAN, worktree: '/wt/vega-1', up: 2, ahead: 2 } });
   assert.equal(onMain.clean, false);
   assert.equal(onMain.say, 'It still holds 2 commits not pushed yet.');
-  assert.match(onMain.keep, /branch and claims stay/);
+  assert.match(onMain.keep, /worktree, branch and claims stay/);
+  // In the shared checkout its commits and changes may be anyone's, and nothing there closes: only claims count.
+  const shared = putAwayPlan({ git: { ...CLEAN, up: 2, ahead: 2, dirty: 1 } });
+  assert.equal(shared.clean, true, "the owner's own edits in the checkout are not the session's");
+  assert.equal(shared.worktree, '');
+  const sharedClaims = putAwayPlan({ git: { ...CLEAN, dirty: 1, claims: 1, claimIds: ['9.3'] } });
+  assert.deepEqual(sharedClaims.holds.map((h) => h.kind), ['claims']);
+  assert.match(sharedClaims.keep, /branch and claims stay/);
   const branch = putAwayPlan({ git: { branch: 'nexus/vega-1', worktree: '/wt/vega-1', ahead: 1, up: 1, dirty: 3, staged: 1, claims: 2, claimIds: ['12.4', '12.5'] } });
   assert.deepEqual(branch.holds.map((h) => h.kind), ['commits', 'changes', 'claims']);
   assert.equal(branch.say, 'It still holds 1 commit not on main yet, 4 uncommitted changes and 2 claims (12.4, 12.5).');
   assert.match(branch.keep, /worktree, branch and claims stay/);
-  assert.equal(putAwayPlan({ git: { ...CLEAN, dirty: true } }).say, 'It still holds an uncommitted change.');
+  assert.equal(putAwayPlan({ git: { ...CLEAN, worktree: '/wt/vega-1', dirty: true } }).say, 'It still holds an uncommitted change.');
   const unknown = putAwayPlan({ git: {} });
   assert.equal(unknown.clean, false, 'git it could not read is never "nothing behind"');
   assert.equal(unknown.say, 'Its git could not be read, so nothing of it is closed.');
-  assert.deepEqual(holdsOf({ git: { ...CLEAN, claims: null } }), [], 'claims it could not read: no claim to keep');
+  const noClaims = putAwayPlan({ git: { ...CLEAN, claims: null } });
+  assert.equal(noClaims.clean, false, 'claims it could not read are never "no claims"');
+  assert.deepEqual(holdsOf({ git: { ...CLEAN, claims: null } }).map((h) => h.text), ['claims unknown']);
+  assert.equal(noClaims.say, 'Its claims could not be read, so nothing of it is closed.');
   assert.equal(claimCount({ claims: ['1.1', '1.2'] }), 2);
   assert.equal(claimCount({ claims: 3 }), 3);
   assert.equal(claimCount({ claims: null }), 0);
@@ -195,12 +225,15 @@ test('the put-away card holding work says what, and its one button keeps it', ()
   assert.match(html, /Put away, keep its work/);
   const clean = renderToStaticMarkup(createElement(PutAway, { s: deneb(), done: finishedJob(deneb()) }));
   assert.match(clean, /<b>deneb<\/b> is done/);
-  assert.match(clean, /nothing is lost/);
+  assert.match(clean, /Nothing in the checkout is touched/, 'in the shared checkout nothing closes');
+  const own = renderToStaticMarkup(createElement(PutAway, { s: deneb({ git: { ...CLEAN, branch: 'nexus/deneb-1', worktree: '/wt/deneb-1' } }), done: finishedJob(deneb()) }));
+  assert.match(own, /closes its empty worktree\. It left nothing behind, so nothing is lost/);
 });
 
 // ---- the server ----------------------------------------------------------------------------------------------------
 
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
+const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 function tmpRepo() {
   const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-away-'));
@@ -233,7 +266,7 @@ function call(app, pathname, body) {
   });
 }
 
-test('put away ends a finished session and frees its star; holding work it refuses, then keeps the work', async () => {
+test('put away ends a finished session and frees its star; the home session and parked questions are refused', async () => {
   const { parent, dir } = tmpRepo();
   const { factory } = fakes();
   const app = await startServer({ repo: dir, provider: factory, pollRuns: false, dist: NO_DIST, ghLogin: async () => '' });
@@ -249,20 +282,102 @@ test('put away ends a finished session and frees its star; holding work it refus
     assert.equal((await call(app, '/api/send', { text: 'x', session: a.id })).status, 404, 'the session is gone');
     assert.equal((await call(app, '/api/sessions', { worktree: false })).json.name, a.name, 'its star is free again');
 
-    // Holding an uncommitted change: refused with what it holds; with keep, it ends and the change stays.
+    // In the shared checkout an uncommitted change may be anyone's: it is not charged, and it stays untouched.
     const b = (await call(app, '/api/sessions', { worktree: false })).json;
     fs.writeFileSync(path.join(dir, 'README.md'), '# r\nwork in progress\n');
-    const refused = await call(app, `/api/sessions/${b.id}/put-away`, {});
-    assert.equal(refused.status, 409);
-    assert.match(refused.json.say, /uncommitted change/);
-    assert.ok(refused.json.holds.some((h) => h.kind === 'changes'));
-    const kept = await call(app, `/api/sessions/${b.id}/put-away`, { keep: true });
-    assert.equal(kept.status, 200);
-    assert.ok(kept.json.kept.some((h) => h.kind === 'changes'));
+    const shared = await call(app, `/api/sessions/${b.id}/put-away`, {});
+    assert.equal(shared.status, 200, JSON.stringify(shared.json));
     assert.equal(fs.readFileSync(path.join(dir, 'README.md'), 'utf8'), '# r\nwork in progress\n', 'the change is still there');
+
+    // The home session stays while the server runs.
+    const home = (await call(app, '/api/server')).json.home;
+    const refusedHome = await call(app, `/api/sessions/${home}/put-away`, {});
+    assert.equal(refusedHome.status, 409);
+    assert.match(refusedHome.json.error, /home session stays/);
+    const rows = (await call(app, '/api/sessions')).json;
+    assert.ok(!rows.some((x) => x.home && x.id !== home), 'only the home session reads home');
+
+    // A session holding a parked question is refused: putting it away would end the ledger that holds it.
+    const c = (await call(app, '/api/sessions', { worktree: false })).json;
+    const lp = path.join(dir, '.nexus', 'sessions', `${c.id}.json`);
+    fs.writeFileSync(lp, JSON.stringify({ ...JSON.parse(fs.readFileSync(lp, 'utf8')), parked: [{ q: 'Warn or block?', state: 'pending' }] }));
+    const parked = await call(app, `/api/sessions/${c.id}/put-away`, {});
+    assert.equal(parked.status, 409, JSON.stringify(parked.json));
+    assert.match(parked.json.error, /parked question/);
 
     assert.equal((await call(app, '/api/sessions/nobody00/put-away', {})).status, 404);
   } finally {
     await removeTree(parent, { stop: [() => app.close()] });
+  }
+});
+
+test('put away closes a clean linked worktree through worktree.mjs; holding a change it refuses, then keeps it all', async () => {
+  const { parent, dir } = tmpRepo();
+  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
+  fs.copyFileSync(path.join(KIT, 'scripts', 'worktree.mjs'), path.join(dir, 'scripts', 'worktree.mjs'));
+  execFileSync('git', ['add', '.'], { cwd: dir });
+  execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'scripts'], { cwd: dir });
+  const { factory } = fakes();
+  const app = await startServer({ repo: dir, provider: factory, pollRuns: false, dist: NO_DIST, ghLogin: async () => '' });
+  /** Start a session in a worktree of its own and wait until git has made it. */
+  async function started() {
+    const s = (await call(app, '/api/sessions', {})).json;
+    assert.ok(s.worktree, JSON.stringify(s));
+    for (let i = 0; i < 200 && !fs.existsSync(path.join(s.worktree, 'README.md')); i++) await new Promise((r) => setTimeout(r, 50));
+    for (let i = 0; i < 200; i++) {
+      const row = (await call(app, '/api/sessions')).json.find((x) => x.id === s.id);
+      if (row?.git?.worktree) break;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return s;
+  }
+  try {
+    // Clean: its empty worktree closes the safe way, and its star frees.
+    const a = await started();
+    const r = await call(app, `/api/sessions/${a.id}/put-away`, {});
+    assert.equal(r.status, 200, JSON.stringify(r.json));
+    assert.deepEqual(r.json.kept, []);
+    assert.equal(r.json.worktree?.closed, true, JSON.stringify(r.json.worktree));
+    assert.equal(fs.existsSync(a.worktree), false, 'its empty worktree is gone');
+
+    // An uncommitted change in its own worktree: refused with what it holds; with keep it ends and the worktree stays.
+    const b = await started();
+    fs.writeFileSync(path.join(b.worktree, 'notes.txt'), 'work in progress\n');
+    const refused = await call(app, `/api/sessions/${b.id}/put-away`, {});
+    assert.equal(refused.status, 409, JSON.stringify(refused.json));
+    assert.match(refused.json.say, /uncommitted change/);
+    const kept = await call(app, `/api/sessions/${b.id}/put-away`, { keep: true });
+    assert.equal(kept.status, 200);
+    assert.ok(kept.json.kept.some((h) => h.kind === 'changes'));
+    assert.equal(kept.json.worktree.closed, false);
+    assert.equal(fs.readFileSync(path.join(b.worktree, 'notes.txt'), 'utf8'), 'work in progress\n', 'its worktree and change stay');
+  } finally {
+    await removeTree(parent, { stop: [() => app.close()] });
+  }
+});
+
+test('a fresh git read never trusts a stored answer: git it cannot read and claims it cannot list read unknown', async () => {
+  const { createGitView } = await import('../server/git.mjs');
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-away-git-'));
+  const nogit = path.join(parent, 'nogit');
+  fs.mkdirSync(nogit);
+  const { dir } = tmpRepo();
+  try {
+    const stored = { id: 'a1', git: { branch: 'main', worktree: '', up: 0, ahead: 0, dirty: 0, staged: 0, claims: 0 } };
+    const blind = createGitView({ repo: nogit, root: async () => nogit, sessions: async () => [], run: async () => ({ ok: false }), claims: async () => ({ rows: [] }) });
+    const [fresh] = await blind.withGit([stored], { fresh: true });
+    assert.equal(fresh.git.ahead, null);
+    assert.equal(fresh.git.up, null);
+    assert.equal(putAwayPlan(fresh).clean, false, 'unknown git is never clean');
+    const [cached] = await blind.withGit([stored]);
+    assert.equal(cached.git.up, 0, 'a passing read keeps what it knew, for the tile');
+
+    const unlisted = createGitView({ repo: dir, root: async () => dir, sessions: async () => [], run: async () => ({ ok: false }), claims: async () => ({ available: true, rows: [], error: 'unreadable claims list' }) });
+    const [read] = await unlisted.withGit([{ id: 'a1', git: {} }], { fresh: true });
+    assert.equal(read.git.ahead, 0);
+    assert.equal(read.git.claims, null, 'a claims list that failed is unknown, not "none"');
+  } finally {
+    await removeTree(parent);
+    await removeTree(path.dirname(dir));
   }
 });

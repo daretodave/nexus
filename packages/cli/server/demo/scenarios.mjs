@@ -376,7 +376,8 @@ export const aliveHome = {
   name: 'alive-home',
   title: 'An alive home',
   summary: 'The fleet at a glance: vega works, sirius needs you, altair fell over, and deneb finishes its oversight and offers to be put away.',
-  home: 'deneb',
+  // vega is home: the home session stays while the server runs, so deneb (the one put away) is not it.
+  home: 'vega',
   shot: { start: 'fleet' },
   fixtures: (ctx) => base(ctx, (s) => {
     if (s.name === 'vega') return { ...s, row: { ...s.row, orb: 'tool', turn: 'working', last: { kind: 'tool', tool: 'Bash', arg: 'npm test -- standings', at: ctx.ago(0) } } };

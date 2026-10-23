@@ -442,9 +442,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
    * Put away a session that finished its job (0.5.1, shared/put-away.mjs): it ends and its star frees. Clean (no
    * commits past its base, no uncommitted changes, no claims), its empty worktree closes too. Holding any of those it
    * is refused with what it holds, unless `keep`: then it ends and its worktree, branch and claims stay as they are.
-   * A session still working, one asking, a terminal session and the home session are refused.
+   * A session still working, one asking or holding parked questions, a terminal session and the home session are
+   * refused.
    */
   async function putAway(key, b = {}) {
+    if (key && sessionOf(key) === home) return { status: 409, error: 'the home session stays while the server runs: stop it instead' };
     const list = await gitView.withGit(await sessionList(), { fresh: true });
     const row = list.find((x) => x.id === key || (x.claude && x.claude === key));
     if (!row) return { status: 404, error: 'no such session' };
@@ -453,6 +455,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     if (row.kind === 'terminal' && !s) return { status: 409, error: `${row.name} runs in a terminal: close it there` };
     if (row.state === 'asking') return { status: 409, error: `${row.name} is waiting on you: answer it first` };
     if (row.turn === 'working') return { status: 409, error: `${row.name} is still working: put it away once it finishes` };
+    if (row.parked > 0) return { status: 409, error: `${row.name} still holds ${row.parked === 1 ? 'a parked question' : `${row.parked} parked questions`}: answer them first` };
     const plan = putAwayPlan(row);
     if (!plan.clean && !b.keep) return { status: 409, error: `${row.name} holds work. ${plan.say}`, holds: plan.holds, say: plan.say, keep: plan.keep };
     if (s) {
@@ -485,7 +488,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
 
   /** The hosted sessions as the fleet and the inbox read them. */
   const hostedLive = () => [...sessions.values()].map((s) => ({
-    id: s.id, claude: s.claude, name: s.name, busy: s.busy, model: s.model.model, effort: s.model.effort,
+    id: s.id, claude: s.claude, name: s.name, busy: s.busy, model: s.model.model, effort: s.model.effort, home: s === home,
     asks: [...s.asks.values()].map((a) => a.view), permissions: [...s.permissions.values()].map((p) => p.view),
   }));
 

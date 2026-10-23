@@ -9,6 +9,12 @@ import { Icon, cx } from '../../ui/index.js';
 import { putAwayPlan } from '../../../shared/put-away.mjs';
 import '../../styles/put-away.css';
 
+/** The line a clean put away reads. In the shared checkout nothing closes, and what is there is left as it is. */
+function cleanLine(plan, compact) {
+  if (!plan.worktree) return compact ? 'Nothing in the checkout is touched.' : 'Frees its star and ends the session. Nothing in the checkout is touched.';
+  return compact ? 'It left nothing behind, so nothing is lost.' : 'Frees its star and closes its empty worktree. It left nothing behind, so nothing is lost.';
+}
+
 /**
  * s: the session's fleet row (normalized); done: finishedJob(s) ({ text }); onGone(result) after it is put away;
  * onKeep() on Keep it. `compact` draws the tile's smaller card.
@@ -46,7 +52,7 @@ export default function PutAway({ s, done, onGone, onKeep, compact = false }) {
           : <div className="pa-title"><b>{s.name}</b> is done{done?.text ? <span className="pa-why">: {done.text}</span> : null}. Put it away?</div>}
         {keepWork
           ? <div className="pa-sub">{say} {compact ? 'It all stays where it is.' : keepSay}</div>
-          : <div className="pa-sub">{compact ? 'It left nothing behind, so nothing is lost.' : plan.worktree ? 'Frees its star and closes its empty worktree. It left nothing behind, so nothing is lost.' : 'Frees its star and ends the session. It left nothing behind, so nothing is lost.'}</div>}
+          : <div className="pa-sub">{cleanLine(plan, compact)}</div>}
         {error ? <div className="pa-err">{error}</div> : null}
         <div className="pa-actions">
           <button className="btn btn-s btn-primary" type="button" onClick={go} disabled={busy} aria-busy={busy || undefined}>

@@ -8,6 +8,9 @@
 //
 // `row` is a GET /api/sessions row with its git (server/git.mjs forSession): up / ahead (commits past its base),
 // dirty and staged (counts or flags), claims (a count, null when unknown) and claimIds.
+//
+// A session with no worktree of its own works in the shared checkout: its commits and changes there may be anyone's
+// (the owner's own edits, another session's), and putting it away touches none of them, so only its claims count.
 
 const TRUNKS = new Set(['', 'main', 'master', 'trunk', 'develop', 'HEAD']);
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -23,14 +26,17 @@ export function claimCount(g = {}) {
 export function holdsOf(row = {}) {
   const g = row.git || {};
   const out = [];
+  const own = !!g.worktree;
   const ahead = g.ahead != null ? g.ahead : g.up;
   if (ahead == null) out.push({ kind: 'git', text: 'git unknown' });
-  else if (Number(ahead) > 0) {
+  else if (own && Number(ahead) > 0) {
     const where = TRUNKS.has(String(g.branch || '')) ? 'not pushed yet' : 'not on main yet';
     out.push({ kind: 'commits', n: Number(ahead), text: `${plural(Number(ahead), 'commit')} ${where}` });
   }
-  const changed = count(g.dirty) + count(g.staged);
+  const changed = own ? count(g.dirty) + count(g.staged) : 0;
   if (changed) out.push({ kind: 'changes', n: changed, text: changed === 1 ? 'an uncommitted change' : `${changed} uncommitted changes` });
+  // Claims that could not be read are not "no claims": they stay, and the card says it does not know.
+  if (ahead != null && g.claims == null) out.push({ kind: 'git', text: 'claims unknown' });
   const claims = claimCount(g);
   if (claims) {
     const ids = (Array.isArray(g.claimIds) ? g.claimIds : Array.isArray(g.claims) ? g.claims : []).filter(Boolean).map(String);
@@ -56,9 +62,11 @@ export function putAwayPlan(row = {}) {
   const worktree = row.git?.worktree || '';
   const clean = holds.length === 0;
   const known = holds.filter((h) => h.kind !== 'git');
+  const unknown = holds.filter((h) => h.kind === 'git');
   const say = [
     known.length ? `It still holds ${andList(known.map((h) => h.text))}.` : '',
-    known.length < holds.length ? 'Its git could not be read, so nothing of it is closed.' : '',
+    unknown.some((h) => h.text === 'git unknown') ? 'Its git could not be read, so nothing of it is closed.'
+      : unknown.length ? 'Its claims could not be read, so nothing of it is closed.' : '',
   ].filter(Boolean).join(' ');
   const keep = clean ? '' : worktree
     ? 'Putting it away keeps all of that: its worktree, branch and claims stay as they are.'
