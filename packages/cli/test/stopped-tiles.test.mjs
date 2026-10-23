@@ -37,6 +37,8 @@ test('each way of stopping says so, and Put away waits while something is mid-fl
   assert.deepEqual(stoppedWords(stopped({ turn: 'working' })), { lines: ['Stopped mid-step when nexus restarted. Pick up to finish the step.'], away: false });
   assert.deepEqual(stoppedWords(stopped({ turn: 'forming', queued: 1 })).lines, ['Stopped while its worktree was being made. Pick up to finish it and send your message.', '1 message waiting to send.']);
   assert.match(stoppedWords(stopped({ clean: false, turn: null })).lines[0], /closed without saying goodbye/);
+  assert.match(stoppedWords(stopped({ clean: false, turn: null, legacy: true })).lines[0], /^Stopped when the older nexus closed/, 'a 0.5.1 ledger never reads as a crash');
+  assert.match(stoppedWords(stopped({ turn: 'idle', train: true })).lines[0], /Parked by its reboot train/);
   assert.match(stoppedWords(stopped({ note: 'the last pick-up did not finish' })).lines[0], /The last pick-up did not finish/);
   assert.match(stoppedWords(stopped({ paused: true })).lines[0], /^Paused when nexus restarted/);
   assert.match(stoppedWords(stopped({}, { git: { missing: true } })).lines[1], /worktree folder is gone; Pick up brings it back/);
@@ -61,4 +63,11 @@ test('the tiles that were already there are unchanged: fell over, ended, in a te
   assert.match(ended, />Clear</);
   const term = tile(norm({ id: 't', name: 'c0ffee12', kind: 'terminal', state: 'live' }));
   assert.match(term, /Running in another terminal/);
+});
+
+test('the error card blames an update only when a screen\'s code could not be fetched', async () => {
+  const { codeGone } = await import('../src/ui/ErrorBoundary.jsx');
+  assert.equal(codeGone(new TypeError('Failed to fetch dynamically imported module: http://127.0.0.1:1/assets/Fleet-abc.js')), true);
+  assert.equal(codeGone(new TypeError('Importing a module script failed.')), true);
+  assert.equal(codeGone(new TypeError("Cannot read properties of undefined (reading 'map')")), false);
 });

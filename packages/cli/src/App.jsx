@@ -94,6 +94,7 @@ function Home({ app }) {
 }
 
 function Shell() {
+  const loc = useLocation();
   const app = useAppState();
   const live = useEvents();
   const inbox = useInbox();
@@ -135,10 +136,11 @@ function Shell() {
   const feed = newerFeed(live.feed, polledFeed.status === 'ready' ? polledFeed.data : null);
   const feedOn = feedPref && feed?.on !== false;
   const shell = { inbox: open, owner: !!info.owner, repo: info.name || '', app, live, needs, feed, feedOn, loadFeed };
+  const where = loc.pathname;
   return (
     <ShellContext.Provider value={shell}>
       <StaleBar />
-      <ErrorBoundary>
+      <ErrorBoundary resetKey={where}>
       {/* A screen whose code is still on its way lands in its frame at once: rail lit, name up, rows to come. */}
       <Suspense fallback={<ScreenLoading />}>
       <Routes>

@@ -111,7 +111,10 @@ export function stoppedWords(s) {
   const st = s.stop || {};
   const lines = [];
   if (st.note) lines.push('The last pick-up did not finish.');
+  // An older nexus (0.5.1) never said how it stopped: no crash to report, only that it stopped.
+  else if (!st.clean && st.legacy) lines.push('Stopped when the older nexus closed. Its work is on disk; pick up to carry on.');
   else if (!st.clean) lines.push('nexus closed without saying goodbye. Its work is on disk; pick up to carry on.');
+  else if (st.train) lines.push('Parked by its reboot train before nexus closed. Pick up resumes the loop.');
   else if (st.turn === 'forming') lines.push('Stopped while its worktree was being made. Pick up to finish it and send your message.');
   else if (st.turn === 'working') lines.push('Stopped mid-step when nexus restarted. Pick up to finish the step.');
   else if (st.turn === 'asking') lines.push('Stopped while it asked you something. Answer it to pick up.');

@@ -13,7 +13,7 @@
 //     git: { branch, worktree, up, down, behind, dirty, pr: { num, ci }, noPr, claims, commits: [{ sha, m, w }] },
 //     turn: 'working'|'idle' (absent: unknown), last: { kind: 'text', text, at } | { kind: 'tool', tool, arg, at },
 //     lastPrompt, claimsSession, ended: <a hosted session that died with its server and left nothing behind>,
-//     stop: { at, clean, turn, queued, asks, talked, loop, note } on a session that stopped with nexus (state 'stopped',
+//     stop: { at, clean, turn, queued, asks, talked, loop, note, legacy, train } on a session that stopped with nexus (state 'stopped',
 //     or 'asking' while it holds a question; it reads calm, stays on This machine and waits for Pick up) }
 import { foldClaims, sessionOf } from '../board/model.js';
 import { isProgressLine, progressLine } from '../../../shared/progress-line.mjs';
