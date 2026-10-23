@@ -95,7 +95,7 @@ test('the Oversight screen: honest sources, plan rows without a chip, text throu
   assert.match(src, /<Markdown inline text=\{oneLine\(r\.q\)\} \/>/, 'the row: inline markdown');
   // The detail is answer first (0.5.1): the answer card draws the whole question.
   const card = fs.readFileSync(new URL('../src/screens/oversight/AnswerCard.jsx', import.meta.url), 'utf8');
-  assert.match(src, /<AnswerCard x=\{x\}/, 'the detail: the answer card');
+  assert.match(src, /<AnswerCard key=\{x\.id\} x=\{x\}/, 'the detail: the answer card, one per question (Show all does not carry over)');
   assert.match(card, /className=\{cx\('acard-q'[^\n]*<Markdown text=\{x\.q\} \/>/, 'the detail: the whole question, drawn');
   assert.match(src, /onClick=\{\(\) => setConfirm\(true\)\} disabled=\{!batchable\}/, 'batch confirms before it sends');
   assert.doesNotMatch(src, /x\.src === 'durable'\) return <span className="sess-tag"/, 'no "plan" chip');

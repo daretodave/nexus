@@ -38,3 +38,24 @@ export function imageRefs(list, ok = () => true) {
   }
   return out;
 }
+
+/**
+ * The choices an answer was given beside (0.5.1): { options: [label], picked: [index] }, cleaned (at most four labels,
+ * picks in range, in order), or null when none were shown. Kept with a plan answer and sent with it, so the session
+ * knows what "the first one" means.
+ */
+export function choiceRefs(v) {
+  if (!v || typeof v !== 'object' || !Array.isArray(v.options)) return null;
+  const options = v.options.slice(0, MAX_OPTIONS).map((o) => clip(typeof o === 'string' ? o : o?.label, LABEL_MAX));
+  if (!options.length || options.some((o) => !o)) return null;
+  const picked = [...new Set((Array.isArray(v.picked) ? v.picked : []).map(Number))]
+    .filter((i) => Number.isInteger(i) && i >= 0 && i < options.length).sort((a, b) => a - b);
+  return { options, picked };
+}
+
+/** Those choices as a session reads them: { shown: '1) A; 2) B', picked: '1, 2' | 'none' }, or null. */
+export function choicesWords(v) {
+  const c = choiceRefs(v);
+  if (!c) return null;
+  return { shown: c.options.map((o, i) => `${i + 1}) ${o}`).join('; '), picked: c.picked.length ? c.picked.map((i) => i + 1).join(', ') : 'none' };
+}

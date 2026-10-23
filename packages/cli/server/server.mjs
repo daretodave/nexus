@@ -37,7 +37,7 @@ import { clearDraftsWith, readDrafts, writeDrafts } from './drafts.mjs';
 import { markPlanAnswersSent, readPlanAnswers, readStoreAt, writePlanAnswers } from './plan-answers.mjs';
 import { createChoices } from './choices.mjs';
 import { specBriefs } from './spec-brief.mjs';
-import { ANSWER_UPLOADS, imageRefs } from '../shared/choices.mjs';
+import { ANSWER_UPLOADS, choiceRefs, choicesWords, imageRefs } from '../shared/choices.mjs';
 import { artifactLink } from '../shared/design-link.mjs';
 import { MAX_IMAGE, MAX_SEND_BODY, MAX_TOTAL, readAttachments, sizeWords } from '../shared/attachments.mjs';
 import { saveUploads, uploadFile } from './uploads.mjs';
@@ -541,7 +541,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return { images, note: over ? `${over} ${over === 1 ? 'image' : 'images'} went as file paths only (over ${sizeWords(MAX_TOTAL)} together).` : '' };
   }
 
-  /** POST /api/inbox/:id { answer, how, images? }: a parked question (to its session, off its ledger) or a permission. */
+  /** POST /api/inbox/:id { answer, how, images?, choices? }: a parked question (to its session, off its ledger) or a permission. */
   async function settleInbox(id, b) {
     const answer = b.answer == null ? '' : String(b.answer);
     if (id.startsWith('perm:')) {
@@ -557,7 +557,10 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const action = b.how === 'approved' || b.how === 'default' ? 'approve' : 'change';
     // Images go as paths: a parked answer reaches its session as text (a board line), and Read opens an image.
     const paths = answerImages(await primaryRoot(repo), b.images).map((i) => i.path);
-    const words = paths.length ? `${answer || ''}${answer ? ' ' : ''}Images: ${paths.join(', ')}` : answer;
+    // The choices shown beside it go too, numbered, so "the first one" in the words means something.
+    const ch = action === 'change' ? choicesWords(b.choices) : null;
+    const said = ch ? `${answer}${answer ? ' ' : ''}(Choices shown: ${ch.shown}. Picked: ${ch.picked}.)` : answer;
+    const words = paths.length ? `${said || ''}${said ? ' ' : ''}Images: ${paths.join(', ')}` : said;
     return steering.settleParked(ref.ledger, { index: ref.index, q, action: paths.length && action === 'approve' ? 'change' : action, answer: words || undefined });
   }
 
@@ -671,6 +674,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
             file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer),
             how: a.how === 'decide' ? 'decide' : a.how === 'default' ? 'default' : 'answered',
             images: answerImages(root, a.images),
+            choices: choiceRefs(a.choices),
           }));
           const ids = clean.map((a) => `${a.file}:${a.line}`);
           const refs = clean.flatMap((a) => a.images);

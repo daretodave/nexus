@@ -201,11 +201,11 @@ export default function Inbox() {
     const sent = (ids) => setDone((d) => { const c = { ...d }; ids.forEach((id) => { if (c[id]) c[id] = { ...c[id], sent: true }; }); return c; });
     const asks = new Map();
     const plan = [];
-    for (const [x, a, how, images] of entries) {
+    for (const [x, a, how, images, choices] of entries) {
       setErrs((e) => { if (!e[x.id]) return e; const c = { ...e }; delete c[x.id]; return c; });
       if (keepsAnswer(x)) {
         // A plan answer is kept, not sent: it goes back with its spec's Continue. Its typed words are the answer now.
-        plan.push([x, a, how, images]);
+        plan.push([x, a, how, images, choices]);
         continue;
       }
       if (!sendsNow(x)) {
@@ -217,7 +217,7 @@ export default function Inbox() {
       draftSending(x.id);
       try {
         if (x.src === 'perm') await server.answerPermission(x.raw.id, a !== 'Deny', a === 'Always allow');
-        else await api(`/api/inbox/${encodeURIComponent(x.id)}`, { answer: a, how, ...(images && images.length ? { images } : {}) });
+        else await api(`/api/inbox/${encodeURIComponent(x.id)}`, { answer: a, how, ...(images && images.length ? { images } : {}), ...(choices ? { choices } : {}) });
         sent([x.id]);
         draftSent(x.id);
         if (images && images.length) drafts.clear(`${x.id}:img`);
@@ -282,7 +282,7 @@ export default function Inbox() {
     submit(entries, next);
   }, [items, submit]);
 
-  const settle = (x, a, how, images) => settleMany([[x, a, how, images]]);
+  const settle = (x, a, how, images, choices) => settleMany([[x, a, how, images, choices]]);
   const reopen = (x) => {
     if (x.src === 'ask') drafts.clear(pickKey(x));
     setDone((d) => { const c = { ...d }; delete c[x.id]; return c; });
@@ -617,7 +617,7 @@ function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, 
     // A plan question, or one a session parked: answer first (oversight/AnswerCard.jsx). Its recommendation (or the
     // session's assumption) is choice 1; the row's Approve still takes it in one click.
     const note = x.kind === 'plan' ? null : x.kind === 'cloud' ? 'Your answer lands in the plan for the next loop.' : 'Keep its assumption and nothing is redone; anything else queues a fix chunk for this session.';
-    card = <AnswerCard x={x} entry={entry} onAsk={onAsk} onKeep={(t, imgs, how) => settle(x, t, how, imgs)} repo={repo} foot={x.kind === 'plan' ? foot : null} footNote={note} />;
+    card = <AnswerCard key={x.id} x={x} entry={entry} onAsk={onAsk} onKeep={(t, imgs, how, ch) => settle(x, t, how, imgs, ch)} repo={repo} foot={x.kind === 'plan' ? foot : null} footNote={note} />;
   }
 
   const from = x.src === 'durable' ? `${x.raw.file}, line ${x.raw.line}` : x.kind === 'cloud' ? `${repo ? `${repo} cloud loop, run` : 'cloud loop run'} ${x.run}${x.at ? ` at ${x.at}` : ''}` : `${sess ? `${sess}, ` : ''}agent ${x.who}`;

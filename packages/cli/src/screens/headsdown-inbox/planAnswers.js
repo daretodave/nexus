@@ -15,7 +15,7 @@ const HOWS = new Set(['default', 'decide']);
 
 /**
  * The store's entries -> the screen's settled rows for these plan items:
- * { [item id]: { a, how: 'answered'|'default'|'decide', images: [{ file, name, mediaType }], item, sent, to, kept } }.
+ * { [item id]: { a, how: 'answered'|'default'|'decide', images: [{ file, name, mediaType }], choices, item, sent, to, kept } }.
  */
 export function keptDone(items = [], store = {}) {
   const out = {};
@@ -23,7 +23,7 @@ export function keptDone(items = [], store = {}) {
     if (!keepsAnswer(x)) continue;
     const e = store[planKey(x)];
     if (!e || !e.answer) continue;
-    out[x.id] = { a: String(e.answer), how: HOWS.has(e.how) ? e.how : 'answered', images: Array.isArray(e.images) ? e.images : [], item: x, sent: !!e.sent, to: e.to || '', kept: true };
+    out[x.id] = { a: String(e.answer), how: HOWS.has(e.how) ? e.how : 'answered', images: Array.isArray(e.images) ? e.images : [], ...(e.choices ? { choices: e.choices } : {}), item: x, sent: !!e.sent, to: e.to || '', kept: true };
   }
   return out;
 }
@@ -98,7 +98,7 @@ export function continueLabel(count, target, images = 0) {
 
 /**
  * The one POST /api/oversight/answer body a Continue makes: every answer of the group (its words, how it was given
- * and the images it carries: their files and names), and where they go.
+ * the images it carries: their files and names, and the choices it was given beside), and where they go.
  */
 export function continueBody(items = [], done = {}, target = NEW_SESSION) {
   return {
@@ -106,6 +106,7 @@ export function continueBody(items = [], done = {}, target = NEW_SESSION) {
       file: x.raw.file, line: x.raw.line, text: x.raw.text, answer: done[x.id].a,
       ...(done[x.id].how && done[x.id].how !== 'answered' ? { how: done[x.id].how } : {}),
       ...(done[x.id].images?.length ? { images: done[x.id].images.map((i) => ({ file: i.file, name: i.name })) } : {}),
+      ...(done[x.id].choices ? { choices: done[x.id].choices } : {}),
     })),
     session: target?.kind === 'new' ? 'new' : target?.id,
   };

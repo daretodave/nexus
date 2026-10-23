@@ -7,6 +7,7 @@ import path from 'node:path';
 import { run, json } from './sh.mjs';
 import { isOwner as effectiveOwner } from './local.mjs';
 import { nextSpec } from './explode.mjs';
+import { choicesWords } from '../shared/choices.mjs';
 
 export const CHUNK_ID = /^[0-9]{1,3}(?:\.[0-9a-z]+)?$/;
 
@@ -270,14 +271,20 @@ const IMAGE_ONLY = '(see the attached images)'; // shared/choices.mjs IMAGE_ONLY
 
 /**
  * One answer's lines: its question on one line, the answer with its own line breaks (each further line indented under
- * `answer:`), a "You decide" said as such, and the images it carries as absolute paths a session can Read.
- * `images`: [{ path, name }].
+ * `answer:`), a "You decide" said as such, the choices it was given beside (numbered as shown, and which were
+ * picked, so "the first one" in the words means something), and the images it carries as absolute paths a session
+ * can Read. `images`: [{ path, name }]; `choices`: { options, picked }.
  */
 export function answerLines(a) {
   const q = String(a.text || '').replace(/\s+/g, ' ').slice(0, 200);
   const words = String(a.answer || '').replace(/\r\n/g, '\n').trim().slice(0, PROMPT_ANSWER_MAX);
   const indent = (t) => t.split('\n').map((l, i) => (i ? `    ${l}` : l)).join('\n');
   const out = [`- ${a.file}:${a.line} -- "${q}"`];
+  const ch = choicesWords(a.choices);
+  if (ch) {
+    out.push(`  choices shown: ${ch.shown}`);
+    out.push(`  picked: ${ch.picked}${ch.picked === 'none' ? ' (the answer is in their own words)' : ''}`);
+  }
   if (a.how === 'decide') {
     out.push('  answer: (left to you) take the option you judge best, record which and why.');
     if (words && words !== DECIDED) out.push(`  Notes: ${indent(words)}`);
@@ -291,18 +298,22 @@ export function answerLines(a) {
  * The prompt that carries plan answers. To the session that asked (`resume`, spec 53): one message with every answer,
  * applied where each question lives, then that session continues where it left off (and lands as its own run would).
  * Otherwise (a new session, the home session): through /oversight, landing per owner mode. An answer keeps its own
- * line breaks; one with images names each file, and the prompt asks for them to be read first.
+ * line breaks; one with images names each file, and the prompt asks for them to be read first; one given beside
+ * choices lists them numbered, so its words can point at them.
  */
 export function answersPrompt(answers, owner, { resume = false } = {}) {
   const lines = answers.map(answerLines);
   const readThem = answers.some((a) => Array.isArray(a.images) && a.images.some((i) => i && i.path))
     ? ['Some answers carry images: open each listed file with Read before you apply that answer.'] : [];
+  const numbered = answers.some((a) => choicesWords(a.choices))
+    ? ['Where an answer lists the choices shown, numbers in its words ("1", "the first one") mean those choices, and "picked" says which the person chose (one or more).'] : [];
   if (resume) {
     const n = answers.length;
     return [
       `Your open questions are answered (${n} ${n === 1 ? 'answer' : 'answers'}, from the nexus GUI). Do not ask again; the person already answered.`,
       'Apply these answers where each question lives (resolve the open question or the [needs-user-call] row), then continue where you left off.',
       ...readThem,
+      ...numbered,
       '',
       ...lines,
     ].join('\n');
@@ -315,6 +326,7 @@ export function answersPrompt(answers, owner, { resume = false } = {}) {
     'For each row: record the answer where the question lives (resolve the [needs-user-call] row or the open question), and act on it as /oversight would.',
     landing,
     ...readThem,
+    ...numbered,
     '',
     ...lines,
   ].join('\n');

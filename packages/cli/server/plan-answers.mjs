@@ -4,6 +4,7 @@
 // never inherits a stale answer.
 //
 //   { "<file:line>": { "answer": "...", "how": "answered" | "default", "hash": "<8 hex>", "at": 1729600000000,
+//                      "images"?: [...], "choices"?: { "options": ["..."], "picked": [0] },
 //                      "sent"?: 1729600001000, "to"?: "<session id>" } }
 //
 // GET /api/plan-answers reads it, pruned to the questions the plan still lists with the same words; PUT (or POST)
@@ -15,7 +16,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { primaryRoot } from './local.mjs';
-import { DECIDE_TEXT, IMAGE_ONLY_TEXT, imageRefs } from '../shared/choices.mjs';
+import { DECIDE_TEXT, IMAGE_ONLY_TEXT, choiceRefs, imageRefs } from '../shared/choices.mjs';
 
 export const PLAN_ANSWERS_FILE = '.nexus/answers.json';
 export const MAX_ANSWER = 20000;
@@ -63,13 +64,14 @@ export function applyAnswers(store, patch, questions, { at = Date.now(), skip = 
   for (const [id, v] of Object.entries(patch || {})) {
     const how = v && HOWS.has(v.how) ? v.how : 'answered';
     const images = v ? imageRefs(v.images, imageOk) : [];
+    const choices = v ? choiceRefs(v.choices) : null;
     let answer = v && v.answer != null ? String(v.answer).trim() : '';
     // Images alone, or the choice left to the session, still make an answer.
     if (!answer && v && how === 'decide') answer = DECIDE_TEXT;
     if (!answer && images.length) answer = IMAGE_ONLY_TEXT;
     if (!answer) { delete out[id]; continue; }
     if (!now.has(id) || skip(id)) { skipped.push(id); continue; }
-    out[id] = { answer: answer.slice(0, MAX_ANSWER), how, hash: now.get(id), at, ...(images.length ? { images } : {}) };
+    out[id] = { answer: answer.slice(0, MAX_ANSWER), how, hash: now.get(id), at, ...(images.length ? { images } : {}), ...(choices ? { choices } : {}) };
   }
   return { store: out, skipped };
 }

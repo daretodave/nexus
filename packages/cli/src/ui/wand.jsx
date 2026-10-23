@@ -1,6 +1,7 @@
 // The wand (0.5.1): the button that asks Claude for answer choices, and the choices it brings back, drawn as one
-// radio group above the answer box (ui/answer-box.jsx). The glyph is drawn here, in the icons' stroke style, so
-// icon-paths.js stays as handed off; its spark is its own path, so it can breathe while the wand works.
+// group of toggles above the answer box (ui/answer-box.jsx; several can be picked). The glyph is drawn here, in the
+// icons' stroke style, so icon-paths.js stays as handed off; its spark is its own path, so it can breathe while the
+// wand works.
 // States: idle (the row's own choice, or a quiet invite), loading (skeleton rows), ready (choices, Ask again),
 // fallback (the row's choices and a plain note), error (the note and Try again). CSS: styles/wand.css.
 import { useEffect, useState } from 'react';
@@ -37,7 +38,8 @@ export function useReducedMotion() {
 }
 
 /**
- * The wand button. `state`: the choices' status (idle|loading|ready|fallback|error); a dot says choices are ready
+ * The wand button. While it works it says so (aria-disabled) instead of disabling itself, so keyboard focus stays on
+ * it. `state`: the choices' status (idle|loading|ready|fallback|error); a dot says choices are ready
  * (accent) or came from the row (quiet). `label` shows beside the glyph when given.
  */
 export function WandBtn({ state = 'idle', onClick, label, title = 'Suggest answers (Alt+W)', aria = 'Suggest answers', ghost = true, small = false, className }) {
@@ -45,7 +47,7 @@ export function WandBtn({ state = 'idle', onClick, label, title = 'Suggest answe
   return (
     <button
       className={cx('btn', ghost && 'btn-ghost', 'btn-s', 'wand-btn', small && 'is-small', label && 'has-label', className)}
-      type="button" onClick={onClick} disabled={busy} aria-busy={busy || undefined} aria-label={label ? undefined : aria} title={title}
+      type="button" onClick={busy ? undefined : onClick} aria-disabled={busy || undefined} aria-busy={busy || undefined} aria-label={label ? undefined : aria} title={title}
     >
       <WandGlyph size={14} busy={busy} />
       {label ? <span>{busy ? 'Suggesting...' : label}</span> : null}
@@ -67,9 +69,9 @@ export function ChoiceNote({ entry, onAsk }) {
 }
 
 /**
- * The choices above an answer: a radio group of numbered rows (label, why, a "spec recommends" tag), the source line
- * and Ask again. `entry` is the store's (data/choices.js), `options` what to draw (the wand's or the row's own),
- * `box` the answer as typed (a choice reads picked while the box starts with it).
+ * The choices above an answer: numbered toggle rows, several can be picked (label, why, a "spec recommends" tag),
+ * the source line and Ask again. `entry` is the store's (data/choices.js), `options` what to draw (the wand's or the row's own),
+ * `box` the answer as typed (a choice reads picked while it is one of the box's first lines).
  */
 export function ChoiceList({ entry, options = [], box = '', onPick, onAsk, canAsk = true, loadingLabel = 'Thinking...', stagger = false }) {
   const reduced = useReducedMotion();
@@ -97,14 +99,15 @@ export function ChoiceList({ entry, options = [], box = '', onPick, onAsk, canAs
     );
   } else {
     const src = sourceLine(entry);
+    const labels = options.map((o) => o.label);
     body = (
       <div className="achoices">
-        <div className="achoice-list" role="radiogroup" aria-label="Suggested answers">
+        <div className="achoice-list" role="group" aria-label="Suggested answers, pick one or more">
           {options.map((o, i) => {
-            const picked = isPicked(box, o.label);
+            const picked = isPicked(box, o.label, labels);
             return (
               <button
-                key={`${i}:${o.label}`} type="button" role="radio" aria-checked={picked}
+                key={`${i}:${o.label}`} type="button" aria-pressed={picked}
                 className={cx('achoice', picked && 'is-picked', stagger && 'is-in')} style={stagger ? { animationDelay: `${i * 40}ms` } : undefined}
                 onClick={() => onPick?.(o.label, i)}
               >

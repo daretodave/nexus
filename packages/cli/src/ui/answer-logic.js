@@ -1,6 +1,6 @@
 // The answer box's pure half (0.5.1): which choices a question has before and after the wand, what picking one does to
-// what is typed, and how a kept answer is labelled. Shared by ui/answer-box.jsx, the Oversight panel and Grill me;
-// tested in node (test/answer-box.test.mjs) without a page.
+// what is typed (several can be picked), which choices a kept answer went with, and how it is labelled. Shared by
+// ui/answer-box.jsx, the Oversight panel and Grill me; tested in node (test/answer-box.test.mjs) without a page.
 
 export const REC_WHY = 'What the spec itself recommends.';
 export const ASSUMED_WHY = 'What the session assumed.';
@@ -26,29 +26,50 @@ export function shownOptions(entry, x) {
 }
 
 const norm = (s) => String(s || '').trim();
+const same = (a, b) => norm(a).replace(/\s+/g, ' ') === norm(b).replace(/\s+/g, ' ');
 
 /**
- * Picking a choice never loses your words: an empty box, or one holding exactly one of the choices, becomes the
- * picked label; anything else keeps what you wrote under the pick (`label`, a blank line, your words).
+ * What the box holds, read against the choices: the picked ones are its first lines, one label per line, then a blank
+ * line and your own words. -> { picked: [index], words }
  */
-export function mergePick(box, label, labels = []) {
-  const t = norm(box);
-  const l = norm(label);
-  if (!t || t === l || labels.some((x) => norm(x) === t)) return l;
-  // A pick over an earlier pick and your words: the earlier pick gives way, your words stay.
-  for (const x of labels) {
-    const head = `${norm(x)}\n\n`;
-    if (norm(x) && t.startsWith(head)) return `${l}\n\n${t.slice(head.length)}`;
+export function splitPicks(box, labels = []) {
+  const lines = String(box || '').replace(/\r\n/g, '\n').replace(/^\s*\n/, '').split('\n');
+  const picked = [];
+  let i = 0;
+  for (; i < lines.length; i += 1) {
+    const at = labels.findIndex((l, j) => norm(l) && !picked.includes(j) && same(l, lines[i]));
+    if (at < 0) break;
+    picked.push(at);
   }
-  return `${l}\n\n${t}`;
+  return { picked: picked.sort((a, b) => a - b), words: lines.slice(i).join('\n').trim() };
 }
 
-/** Is this choice the one picked: the box starts with its label. */
-export const isPicked = (box, label) => {
-  const t = norm(box);
-  const l = norm(label);
-  return !!l && t.startsWith(l);
+/**
+ * Picking a choice toggles it and never loses your words: several can be picked (each on its own line, in the
+ * choices' order), and whatever you wrote stays under them after a blank line.
+ */
+export function togglePick(box, label, labels = []) {
+  const all = labels.some((l) => same(l, label)) ? labels : [...labels, label];
+  const at = all.findIndex((l) => same(l, label));
+  const { picked, words } = splitPicks(box, all);
+  const next = picked.includes(at) ? picked.filter((i) => i !== at) : [...picked, at].sort((a, b) => a - b);
+  const head = next.map((i) => norm(all[i])).join('\n');
+  return head && words ? `${head}\n\n${words}` : head || words;
+}
+
+/** Is this choice picked: its label is one of the box's first lines. */
+export const isPicked = (box, label, labels = [label]) => {
+  if (!norm(label)) return false;
+  const at = labels.findIndex((l) => same(l, label));
+  return at >= 0 && splitPicks(box, labels).picked.includes(at);
 };
+
+/** The choices a kept answer was given beside, for the session: { options: [label], picked: [index] }, or null. */
+export function choicesOf(box, options = []) {
+  const labels = options.map((o) => (typeof o === 'string' ? o : o?.label)).filter((l) => norm(l));
+  if (!labels.length) return null;
+  return { options: labels, picked: splitPicks(box, labels).picked };
+}
 
 /**
  * How a kept plan answer is labelled: `decide` from You decide, `default` when the words are exactly the spec's

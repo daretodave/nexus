@@ -30,7 +30,7 @@ import { answersPrompt } from './repo.mjs';
 import { fallbackNote, REC_WHY, REFUSED } from './choices.mjs';
 import { BRIEFS, FLAKY, GRILL_CHOICES } from './demo/grill.mjs';
 import { recommendedDefault } from '../shared/recommend.mjs';
-import { ANSWER_UPLOADS, imageRefs } from '../shared/choices.mjs';
+import { ANSWER_UPLOADS, choiceRefs, imageRefs } from '../shared/choices.mjs';
 import { MAX_IMAGE, readAttachments, extOf } from '../shared/attachments.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -237,6 +237,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
             file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer),
             how: a.how === 'decide' ? 'decide' : 'answered',
             images: imageRefs(a.images, (f) => uploads.has(f)).map((r) => ({ ...r, mediaType: uploads.get(r.file).type, path: `${repoPath}/.nexus/uploads/${ANSWER_UPLOADS}/${r.file}` })),
+            choices: choiceRefs(a.choices),
           }));
           // A new session is played by the scenario's home session here: the demo starts no sessions.
           const fresh = b.session === 'new' || !world.session(String(b.session || ''));

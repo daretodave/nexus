@@ -67,3 +67,6 @@
   .achoice.is-in { animation: none; }
   .achoice.is-skel .skel-l, .achoice.is-skel .skel-w { animation: none; background: var(--raised); }
 }
+
+/* Working: the wand keeps focus (aria-disabled, not disabled) and looks busy, not off. */
+.wand-btn[aria-busy="true"] { cursor: progress; transform: none; }

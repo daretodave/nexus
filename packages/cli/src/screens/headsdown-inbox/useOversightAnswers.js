@@ -1,8 +1,8 @@
 // The plan answers' writer (spec 53; 0.5.1), shared by the Oversight panel (screens/Inbox.jsx) and Grill me
 // (screens/Grill.jsx), so an answer kept in one reads "answered · not sent yet" in the other at once.
 //
-//   keep(entries)   [[item, words, how, images]]: kept on the server (PUT /api/plan-answers), shown at once; the
-//                   draft's words and images clear
+//   keep(entries)   [[item, words, how, images, choices]]: kept on the server (PUT /api/plan-answers), shown at once;
+//                   the draft's words and images clear once the server has it (a failed save keeps them, and says so)
 //   reopen(item)    Change answer: the words and images go back into the draft, the kept answer leaves the store
 //   send(list, target, key)   a spec's Continue (or Grill me's hand-off): every answer in one message to one session,
 //                   then marked sent -> { ok, session, name, note } or { error }
@@ -34,7 +34,7 @@ export function useOversightAnswers({ items = [], onFail } = {}) {
     if (keptRes.status === 'ready' && !writing.current) setStore(keptRes.data?.answers || {});
   }, [keptRes.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /** Write a patch ({ "<file:line>": { answer, how, images } | null }): shown at once; one that did not keep comes back off. */
+  /** Write a patch ({ "<file:line>": { answer, how, images, choices } | null }): shown at once; one that did not keep comes back off. */
   async function write(patch, ids = []) {
     setStore((st) => {
       const c = { ...st };
@@ -62,19 +62,28 @@ export function useOversightAnswers({ items = [], onFail } = {}) {
     }
   }
 
-  /** Keep these answers: [[item, words, how, images]]. */
-  function keep(entries) {
+  /** Keep these answers: [[item, words, how, images, choices]]. The drafts clear only for what the server kept. */
+  async function keep(entries) {
     const patch = {};
     const ids = [];
-    for (const [x, a, how, images] of entries) {
+    for (const [x, a, how, images, choices] of entries) {
       if (!keepsAnswer(x)) continue;
       const h = how === 'decide' ? 'decide' : how === 'default' || how === 'approved' ? 'default' : 'answered';
-      patch[planKey(x)] = { answer: a, how: h, ...(images && images.length ? { images } : {}) };
+      patch[planKey(x)] = { answer: a, how: h, ...(images && images.length ? { images } : {}), ...(choices ? { choices } : {}) };
       ids.push(x.id);
-      drafts.clear(x.id);
-      drafts.clear(`${x.id}:img`);
     }
-    return ids.length ? write(patch, ids) : Promise.resolve(null);
+    if (!ids.length) return null;
+    // Kept again: an earlier failure for it is old news.
+    setErrors((er) => (ids.some((id) => er[id]) ? Object.fromEntries(Object.entries(er).filter(([k]) => !ids.includes(k))) : er));
+    const r = await write(patch, ids);
+    if (!r) return null;
+    const keys = Object.keys(patch);
+    ids.forEach((id, i) => {
+      if ((r.skipped || []).includes(keys[i])) return;
+      drafts.clear(id);
+      drafts.clear(`${id}:img`);
+    });
+    return r;
   }
 
   /** Change answer: the words and images back into the draft, the kept one out of the store. */

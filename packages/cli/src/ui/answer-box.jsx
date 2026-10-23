@@ -1,12 +1,13 @@
 // The answer box (0.5.1): the biggest thing on a question. Numbered choices above (the wand's, or the question's own
-// recommendation), then a textarea that takes pasted, dropped or picked images, then a bar: attach, You decide, the
-// draft's quiet state word, Keep. Picking a choice fills the box and never keeps by itself (answer-logic.js
-// mergePick: your words are never lost). Used by the Oversight panel (screens/oversight/AnswerCard.jsx) and Grill me.
+// recommendation; several can be picked), then a textarea that takes pasted, dropped or picked images, then a bar:
+// attach, You decide, the draft's quiet state word, Keep. Picking a choice toggles it in the box and never keeps by
+// itself (answer-logic.js togglePick: your words are never lost). Kept answers carry the choices shown and which were
+// picked (choicesOf), so the session reads "the first one" right. Used by the Oversight panel and Grill me.
 //
-// Keys in the box: Enter is a new line, Ctrl/Cmd+Enter keeps, Alt+1..4 picks, Alt+W runs the wand, Esc blurs; none
+// Keys in the box: Enter is a new line, Ctrl/Cmd+Enter keeps, Alt+1..4 picks or unpicks, Alt+W runs the wand, Esc blurs; none
 // while an IME is composing. The text is a draft (data/drafts.js) at `draftKey`, the images at `<draftKey>:img`
 // (ui/image-refs.js). CSS: styles/answer-card.css.
-import { useImperativeHandle, useRef } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Icon } from './icons.jsx';
 import { FileChip, Kbd, cx } from './controls.jsx';
 import { SyntaxTextarea } from './code.jsx';
@@ -15,12 +16,12 @@ import { useFileDrop } from './attachments.js';
 import { useDraft, DRAFT_WORDS } from '../data/drafts.js';
 import { useAnswerImages } from './image-refs.js';
 import { ChoiceList } from './wand.jsx';
-import { howOf, mergePick } from './answer-logic.js';
+import { choicesOf, howOf, togglePick } from './answer-logic.js';
 import '../styles/answer-card.css';
 import '../styles/attachments.css';
 import '../styles/answers.css';
 
-export { mergePick } from './answer-logic.js';
+export { togglePick } from './answer-logic.js';
 
 const ACCEPT = 'image/png,image/jpeg,image/gif,image/webp';
 
@@ -31,7 +32,7 @@ const ACCEPT = 'image/png,image/jpeg,image/gif,image/webp';
  * @param {object} p.entry        the wand's store entry (data/choices.js)
  * @param {Array}  p.options      the choices to draw (the wand's, or the row's own)
  * @param {(fresh: boolean) => void} [p.onAsk]   run the wand (none: no wand here)
- * @param {(text, images, how) => void} p.onKeep
+ * @param {(text, images, how, choices) => void} p.onKeep   choices: { options, picked } or null
  * @param {string} [p.keepLabel]
  * @param {boolean} [p.allowImages]
  * @param {boolean} [p.allowDecide]
@@ -48,6 +49,8 @@ export function AnswerBox({ ref, item, draftKey, entry, options = [], onAsk, onK
   const labels = options.map((o) => o.label);
   const has = !!text.trim() || imgs.refs.length > 0;
   const word = DRAFT_WORDS[d.state] || '';
+  const [wait, setWait] = useState(false);
+  useEffect(() => { if (!imgs.uploading) setWait(false); }, [imgs.uploading]);
 
   const focusEnd = () => {
     const el = area.current;
@@ -58,13 +61,15 @@ export function AnswerBox({ ref, item, draftKey, entry, options = [], onAsk, onK
   const pick = (i) => {
     const o = options[i];
     if (!o) return;
-    d.set(mergePick(text, o.label, labels));
+    d.set(togglePick(text, o.label, labels));
     focusEnd();
   };
+  // The images stay in the draft until the answer is saved or sent: whoever saves it clears them, so a failed save
+  // keeps them. An image still uploading holds Keep back, from the keys as from the button.
   const keep = (decide = false) => {
+    if (imgs.uploading) { setWait(true); return false; }
     if (!has && !decide) { onEmpty?.(); area.current?.focus(); return false; }
-    onKeep?.(text.trim(), imgs.refs, howOf(item, text, options, decide));
-    imgs.clear();
+    onKeep?.(text.trim(), imgs.refs, howOf(item, text, options, decide), choicesOf(text, options));
     return true;
   };
   useImperativeHandle(ref, () => ({ pick, keep: () => keep(false), decide: () => keep(true), focus: focusEnd, has: () => has, addFiles: (f) => imgs.add(f), blur: () => area.current?.blur() }));
@@ -111,7 +116,7 @@ export function AnswerBox({ ref, item, draftKey, entry, options = [], onAsk, onK
         {word ? <span className={`ans-state is-${d.state}`} aria-live="polite">{word}</span> : null}
         <button className="btn btn-primary btn-s abx-keep" type="button" onClick={() => keep(false)} disabled={(!has && !onEmpty) || imgs.uploading}>{keepLabel}<Kbd>Ctrl ⏎</Kbd></button>
       </div>
-      {emptyHint ? <div className="abx-hint" role="status">{emptyHint}</div> : null}
+      {wait ? <div className="abx-hint" role="status">An image is still uploading. Keep the answer once it is done.</div> : emptyHint ? <div className="abx-hint" role="status">{emptyHint}</div> : null}
     </div>
   );
 }

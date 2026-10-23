@@ -72,6 +72,22 @@ test('the prompt keeps line breaks, names images by absolute path, asks to Read 
   assert.doesNotMatch(answersPrompt([{ file: 'a', line: 1, text: 'q', answer: 'a' }], true), /with Read/, 'no images: no Read line');
 });
 
+test('the prompt lists the choices shown, numbered, and which were picked, so "the first" means something', () => {
+  const a = [{ file: 'plan/11-s.md', line: 119, text: 'Clash?', answer: 'Warn\nBlock\n\nsorta like the first', choices: { options: ['Warn', 'Block', 'Ask the venue'], picked: [0, 1] } }];
+  for (const resume of [false, true]) {
+    const p = answersPrompt(a, true, { resume });
+    assert.match(p, /:119 -- "Clash\?"\n {2}choices shown: 1\) Warn; 2\) Block; 3\) Ask the venue\n {2}picked: 1, 2\n {2}answer: Warn\n {4}Block/);
+    assert.match(p, /numbers in its words \("1", "the first one"\) mean those choices/);
+  }
+  const own = answersPrompt([{ ...a[0], answer: 'sorta like the first', choices: { options: ['Warn', 'Block'], picked: [] } }], true);
+  assert.match(own, /picked: none \(the answer is in their own words\)/);
+  assert.doesNotMatch(answersPrompt([{ file: 'a', line: 1, text: 'q', answer: 'a' }], true), /choices shown|mean those choices/, 'no choices: no lines about them');
+  // Kept with the answer, cleaned.
+  const { store } = applyAnswers({}, { [QS[1].id]: { answer: 'Warn', choices: { options: ['Warn', 'Block'], picked: [0, 9] } } }, QS);
+  assert.deepEqual(store[QS[1].id].choices, { options: ['Warn', 'Block'], picked: [0] });
+  assert.equal(applyAnswers({}, { [QS[1].id]: { answer: 'Warn' } }, QS).store[QS[1].id].choices, undefined);
+});
+
 // ---- the routes --------------------------------------------------------------------------------
 
 const SPEC = ['# 60 Listen anywhere', '', '## Open questions', '', '- Which store?', '- What do we call it?', ''].join('\n');

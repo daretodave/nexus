@@ -5,23 +5,45 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { choiceId, howOf, isPicked, mergePick, rowOptions, shownOptions, sourceLine } from '../src/ui/answer-logic.js';
+import { choiceId, choicesOf, howOf, isPicked, rowOptions, shownOptions, sourceLine, splitPicks, togglePick } from '../src/ui/answer-logic.js';
+import { choiceRefs, choicesWords } from '../shared/choices.mjs';
 import { entryOf } from '../src/data/choices.js';
 import { continueBody, continueLabel, keptDone, imageCount } from '../src/screens/headsdown-inbox/planAnswers.js';
 
 const LABELS = ['Warn the organiser', 'Block the save'];
 
-test('mergePick: an empty box takes the label; a label is swapped; your words stay under a pick', () => {
-  assert.equal(mergePick('', LABELS[0], LABELS), 'Warn the organiser');
-  assert.equal(mergePick('  ', LABELS[0], LABELS), 'Warn the organiser');
-  assert.equal(mergePick('Warn the organiser', LABELS[1], LABELS), 'Block the save', 'a box holding one choice becomes the other');
-  assert.equal(mergePick('only on weekends', LABELS[0], LABELS), 'Warn the organiser\n\nonly on weekends', 'your words are kept, under the pick');
-  // A second pick over the first pick and your words: the pick changes, your words stay.
-  assert.equal(mergePick('Warn the organiser\n\nonly on weekends', LABELS[1], LABELS), 'Block the save\n\nonly on weekends');
-  assert.ok(isPicked('Warn the organiser\n\nonly on weekends', LABELS[0]));
+test('togglePick: several can be picked, each on its own line in the order of the choices; your words stay under them', () => {
+  assert.equal(togglePick('', LABELS[0], LABELS), 'Warn the organiser');
+  assert.equal(togglePick('  ', LABELS[0], LABELS), 'Warn the organiser');
+  // A second pick adds to the first (Alt+1 then Alt+2 holds both), in the order of the choices whatever the order picked.
+  assert.equal(togglePick('Warn the organiser', LABELS[1], LABELS), 'Warn the organiser\nBlock the save');
+  assert.equal(togglePick('Block the save', LABELS[0], LABELS), 'Warn the organiser\nBlock the save');
+  // Picking a picked one unpicks it.
+  assert.equal(togglePick('Warn the organiser\nBlock the save', LABELS[0], LABELS), 'Block the save');
+  assert.equal(togglePick('Warn the organiser', LABELS[0], LABELS), '');
+  // Your words are kept, under the picks, through every toggle.
+  assert.equal(togglePick('only on weekends', LABELS[0], LABELS), 'Warn the organiser\n\nonly on weekends');
+  assert.equal(togglePick('Warn the organiser\n\nonly on weekends', LABELS[1], LABELS), 'Warn the organiser\nBlock the save\n\nonly on weekends');
+  assert.equal(togglePick('Warn the organiser\n\nonly on weekends', LABELS[0], LABELS), 'only on weekends');
+  assert.deepEqual(splitPicks('Block the save\nWarn the organiser\n\nsorta like the first', LABELS), { picked: [0, 1], words: 'sorta like the first' });
+  assert.ok(isPicked('Warn the organiser\n\nonly on weekends', LABELS[0], LABELS));
+  assert.ok(isPicked('Warn the organiser\nBlock the save', LABELS[1], LABELS));
   assert.ok(isPicked('Warn the organiser', LABELS[0]));
-  assert.ok(!isPicked('Block the save', LABELS[0]));
+  assert.ok(!isPicked('Block the save', LABELS[0], LABELS));
+  assert.ok(!isPicked('Warn the organiser, mostly', LABELS[0], LABELS), 'a label inside your words is not a pick');
   assert.ok(!isPicked('', ''));
+});
+
+test('choicesOf: a kept answer carries the choices shown and which were picked, cleaned', () => {
+  const opts = LABELS.map((label) => ({ label }));
+  assert.deepEqual(choicesOf('Warn the organiser\nBlock the save\n\nboth, in that order', opts), { options: LABELS, picked: [0, 1] });
+  assert.deepEqual(choicesOf('sorta like the first', opts), { options: LABELS, picked: [] });
+  assert.equal(choicesOf('anything', []), null, 'no choices shown: none carried');
+  assert.deepEqual(choiceRefs({ options: ['a', 'b'], picked: [1, 1, 5, -1, 'x', 0] }), { options: ['a', 'b'], picked: [0, 1] });
+  assert.equal(choiceRefs({ options: [] }), null);
+  assert.equal(choiceRefs(null), null);
+  assert.deepEqual(choicesWords({ options: ['a', 'b', 'c'], picked: [0, 2] }), { shown: '1) a; 2) b; 3) c', picked: '1, 3' });
+  assert.equal(choicesWords({ options: ['a', 'b'], picked: [] }).picked, 'none');
 });
 
 const plan = { id: 'plan:plan/14-x.md:9', src: 'durable', kind: 'plan', raw: { id: 'plan/14-x.md:9', file: 'plan/14-x.md', line: 9 }, opts: ['warn'], hasDefault: true };
@@ -67,6 +89,9 @@ test('kept answers carry how and images to the Continue, and its label counts th
   const body = continueBody([{ ...plan, raw: { ...plan.raw, text: 'Warn?' } }], done, { kind: 'new' });
   assert.deepEqual(body.answers[0], { file: 'plan/14-x.md', line: 9, text: 'Warn?', answer: '(left to the session)', how: 'decide', images: [{ file: 'aaaaaaaaaaaaaaaa.png', name: 'm.png' }] });
   assert.equal(body.session, 'new');
+  const ch = { options: ['Warn', 'Block'], picked: [1] };
+  const withCh = keptDone([plan], { 'plan/14-x.md:9': { answer: 'Block', how: 'answered', choices: ch } });
+  assert.deepEqual(continueBody([{ ...plan, raw: { ...plan.raw, text: 'Warn?' } }], withCh, { kind: 'new' }).answers[0].choices, ch, 'the choices shown go with the answer');
   assert.equal(continueLabel(3, { kind: 'session', name: 'vega' }, 2), 'Send 3 answers (2 images) to vega and continue');
   assert.equal(continueLabel(1, { kind: 'new' }, 1), 'Send 1 answer (1 image) to a new session and continue');
 });
