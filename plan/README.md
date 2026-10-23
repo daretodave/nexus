@@ -36,7 +36,7 @@ line goes):
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
-plan moved to chunks on 2026-10-20). The next new spec is 53.
+plan moved to chunks on 2026-10-20). The next new spec is 54.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is

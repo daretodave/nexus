@@ -184,3 +184,5 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 51 · spec complete: answers save as typed and send as given (drafts survive leaving; a live ask sends from its first answer, the rest at their defaults) and images reach the session as images (attach, paste, drop) · dee2ca1..c53c8a1
 - 2026-10-22 · 52.1 · Onboarding adopts before it plots · 0d33dfe7..0d6228e1
 - 2026-10-22 · 52.4 · Tool rows fit their names; more tool icons · 326ad0d4..326ad0d4
+- 2026-10-22 · 53.1 · Plan answers are kept, take named defaults, go back with Continue · a02c1eb8..91437b1f
+- 2026-10-22 · 53 · spec complete: plan answers are kept on the server, take the defaults their questions name, and go back to the session that asked with one Continue (issues #81, #82, #83) · e060151..be9e2d9
