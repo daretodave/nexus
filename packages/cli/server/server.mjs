@@ -868,6 +868,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/secrets/audit': { const { status, ...r } = await secrets.audit(); return send(res, status, r); }
         case 'POST /api/secrets/import': { const { status, ...r } = await secrets.importEnv(await body(req)); return send(res, status, r); }
         case 'POST /api/secrets/manifest': { const { status, ...r } = await secrets.startManifest(await body(req)); return send(res, status, r); }
+        case 'POST /api/secrets/gitignore': { await body(req); const { status, ...r } = await secrets.ignoreEnv(); return send(res, status, r); }
         // Set up the vault (47.3): the CLI's own copy of the secrets scripts, landed per owner mode (vault-setup.mjs).
         case 'POST /api/secrets/setup': { await body(req); const { status, ...r } = await secrets.setup(); return send(res, status, r); }
       }
@@ -882,6 +883,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       const secPush = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/push$/.exec(route);
       if (secPush) {
         const { status, ...r } = await secrets.push(decodeURIComponent(secPush[1]), await body(req));
+        return send(res, status, r);
+      }
+      const secRemove = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/remove$/.exec(route);
+      if (secRemove) {
+        const { status, ...r } = await secrets.remove(decodeURIComponent(secRemove[1]), await body(req));
         return send(res, status, r);
       }
       const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)$/.exec(route);

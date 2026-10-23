@@ -140,11 +140,12 @@ is the convention). The vault holds its path under a name
 (`GCP_KEY_FILE=/home/me/work/.secrets/gcp.json`), never its
 contents: a vault value is one line.
 
-### Set, status, import
+### Set, unset, status, import
 
 ```bash
 node scripts/secrets.mjs set VERCEL_TOKEN                     # a hidden prompt, or a pipe: never an argument
 node scripts/secrets.mjs set CF_API_TOKEN --ring workspace    # into .env.workspace
+node scripts/secrets.mjs unset VERCEL_TOKEN                   # out of every ring that holds it (or --ring R)
 node scripts/secrets.mjs status                               # each name: where it is set, where it goes
 node scripts/secrets.mjs import incoming.env --store          # a real .env: values into the vault, names into the manifest
 ```
@@ -156,6 +157,20 @@ node scripts/secrets.mjs import incoming.env --store          # a real .env: val
   with a note.
 - `--ring` is `local`, `workspace` or `keychain`. The default
   is the keychain when it is on, else `local`.
+- A write rewrites the ring's file whole, under a lock, through
+  a temp file renamed into place (owner-only, `0600`): every
+  other name, comment, `export` and line ending stays as it
+  was, and rewriting the same value changes nothing. For the
+  root `.env` the temp file and the lock sit inside `.git`,
+  where git never tracks anything, so a write cut short can't
+  leave a value for `git add -A` to find. A value that needs
+  quoting is single-quoted, so no dotenv reader expands a `$`
+  or a backslash in it. One holding a `'` is double-quoted:
+  if it also holds a `$`, dotenv-expand and docker compose
+  expand that `$` (plain dotenv and nexus don't).
+- `unset NAME` takes the value out of every ring that holds it
+  (`--ring` for one), the same way, and records a `remove` in
+  the audit log. The places it was pushed to keep their copy.
 - `status` lists every declared name with the rings that hold
   it (or `missing`; `optional · not set` for an `optional`
   one) and its destinations. A `github-actions` destination is

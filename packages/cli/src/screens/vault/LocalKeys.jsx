@@ -7,6 +7,8 @@ import { Icon, MaskField, TickBox, EnvFile, MASK_DOTS, cx } from '../../ui/index
 import { server } from '../../data/index.js';
 import { localRows, localSub, importNote, nameInput, validName } from './model.js';
 import { useImport, useFilePick } from './ImportPanel.jsx';
+import IgnoreWarn from './IgnoreWarn.jsx';
+import RemoveValue from './RemoveValue.jsx';
 
 const Lock = ({ children = 'this machine only' }) => <span className="lk-dest is-locked"><Icon name="lockOne" />{children}</span>;
 
@@ -58,13 +60,14 @@ export default function LocalKeys({ status, repo, reload, toast, bare }) {
           <button className="btn btn-s" type="button" onClick={() => { setEdit(null); setNw({ name: '', value: '' }); setMode('adding'); }}><Icon name="plus" size={14} />Add a key</button>
         </div>
       </div>
+      <IgnoreWarn status={status} reload={reload} toast={toast} />
       {n === 0 && !adding && !importing ? <div className="lk-empty">None. Add one if the app needs it to run locally.</div> : null}
       {n > 0 ? (
         <div className="lk-rows" role="table" aria-label="Your local keys">
           {rows.map((k) => (
             <div key={k.name} className={cx('lk-row', k.editing && 'is-editing', k.fresh && 'is-fresh')} role="row">
               <span className="sec-name"><b>{k.name}</b><span>{k.sub}</span></span>
-              <span className="mask" aria-label="value hidden">{MASK_DOTS}</span>
+              {k.set ? <span className="mask" aria-label="value hidden">{MASK_DOTS}</span> : <span className="mask is-empty is-quiet" aria-label="no value">no value</span>}
               <span className="lk-dest"><Icon name="laptop" />this machine</span>
               <span className="vt-acts"><button className="btn btn-s btn-ghost" type="button" onClick={() => { setMode('list'); setDraft(''); setEdit(k.name); }}>Replace</button></span>
               {k.editing ? (
@@ -72,6 +75,7 @@ export default function LocalKeys({ status, repo, reload, toast, bare }) {
                   <MaskField value={draft} onChange={setDraft} label={`New value for ${k.name}`} placeholder="Paste the new value" autoFocus onEnter={() => draft && store(k.name, draft, () => { setEdit(null); setDraft(''); })} />
                   <button className="btn btn-s btn-primary" type="button" disabled={!draft || busy} onClick={() => store(k.name, draft, () => { setEdit(null); setDraft(''); })}>Save</button>
                   <button className="btn btn-s btn-ghost" type="button" onClick={() => { setEdit(null); setDraft(''); }}>Cancel</button>
+                  {k.set ? <RemoveValue name={k.name} rings={k.rings} busy={busy} toast={toast} onDone={() => { setEdit(null); setDraft(''); reload?.(); }} /> : null}
                   <span className="t-body-s c-3">Replaces it on this machine only.</span>
                 </div>
               ) : null}

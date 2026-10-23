@@ -94,6 +94,10 @@ export const server = {
   storeSecret: (name, body) => api(`/api/secrets/${encodeURIComponent(name)}`, body),
   /** POST /api/secrets/:name/push { destinations }: push the stored value again (Sync, Retry). */
   pushSecret: (name, destinations) => api(`/api/secrets/${encodeURIComponent(name)}/push`, { destinations }),
+  /** POST /api/secrets/:name/remove { ring? }: take the value out of the vault -> { removed: [rings], still: [rings], notes }. */
+  removeSecret: (name, ring) => api(`/api/secrets/${encodeURIComponent(name)}/remove`, ring ? { ring } : {}),
+  /** POST /api/secrets/gitignore: add the root .env to .gitignore -> { ok, envIgnore, note? }. */
+  ignoreEnv: () => api('/api/secrets/gitignore', {}),
   /** POST /api/secrets/import { text | file, confirm?, names?, destinations? }: a names-only preview, or the store. */
   importSecrets: (body) => api('/api/secrets/import', body),
   /** POST /api/secrets/manifest { fromEnv?, names? }: an empty manifest (onboarding's Start empty), or the root .env's names (all, or those listed: the Vault's Declare) when it is already the vault; one that exists stays. */

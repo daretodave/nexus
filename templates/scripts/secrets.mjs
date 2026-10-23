@@ -4,6 +4,7 @@
 //
 //   node scripts/secrets.mjs status [--json]                  # each name: where it is set, where it goes (Actions: gh)
 //   node scripts/secrets.mjs set NAME [--ring R]              # the value from stdin (or a hidden prompt), never argv
+//   node scripts/secrets.mjs unset NAME [--ring R]            # take the value out of the vault (every ring, or R)
 //   node scripts/secrets.mjs import [file] [--dry-run]        # names + comments from .env.example into nexus.secrets.json
 //   node scripts/secrets.mjs import FILE --store [--ring R]   # a real .env: values into the vault, names into the manifest
 //   node scripts/secrets.mjs names                            # the declared names, one per line
@@ -15,7 +16,7 @@
 //   node scripts/secrets.mjs scan [--staged]                  # refuse a diff that holds a vault value (the gate's rail)
 //
 // The owner's `set` and `import --store` record each name in the audit record (scripts/secrets-audit.mjs: `set` for
-// a first value, `rotate` for a replaced one); `status` and `audit` nudge a secret last set over 90 days ago.
+// a first value, `rotate` for a replaced one; `unset` records `remove` for each ring it left); `status` and `audit` nudge a secret last set over 90 days ago.
 // `request <chunk>` is what /next runs when a chunk's secret is missing: plan/pending/secrets-<chunk>.md, a
 // `[needs-user-call]` note naming each missing secret, what it is for, where to get it and where it goes, never a
 // value; once per chunk.
@@ -38,15 +39,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isOwner, localSettings, primaryRoot } from './owner.mjs';
 import { MANIFEST, NAME, emptyManifest, importEnvExample, mergeImport, readManifest, serialize } from './plan/secrets-manifest.mjs';
-import { CONTRIBUTOR_RINGS, RINGS, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
+import { CONTRIBUTOR_RINGS, RINGS, forgetLocalKeys, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
 import { actionsSecretNames, pushSecret, recordAudit, sinkFor, spawnRunner } from './secrets-sinks.mjs';
 import { runWithSecrets } from './secrets-run.mjs';
 import { describeHit, scanRepo, vaultValues } from './secrets-scan.mjs';
-import { ROTATE_DAYS, ageDays, lastSet, nudgeLine, readAudit, recordSets, rotationNudges } from './secrets-audit.mjs';
+import { ROTATE_DAYS, ageDays, lastSet, nudgeLine, readAudit, recordRemoves, recordSets, rotationNudges } from './secrets-audit.mjs';
 import { loadPlanDir } from './plan-check.mjs';
 
-export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check | push NAME [--to D] [--repo O/R] [--env E,E] [--worker W] | audit [--json] | request <chunk> | run [--only A,B] -- <cmd...> | scan [--staged]   [--root <dir>]';
-const COMMANDS = ['status', 'set', 'import', 'names', 'check', 'push', 'audit', 'request', 'run', 'scan'];
+export const USAGE = 'usage: node scripts/secrets.mjs status [--json] | set NAME [--ring R] | unset NAME [--ring R] | import [file] [--dry-run] [--store [--ring R]] | names | check | push NAME [--to D] [--repo O/R] [--env E,E] [--worker W] | audit [--json] | request <chunk> | run [--only A,B] -- <cmd...> | scan [--staged]   [--root <dir>]';
+const COMMANDS = ['status', 'set', 'unset', 'import', 'names', 'check', 'push', 'audit', 'request', 'run', 'scan'];
 export const REQUEST = (id) => `secret request ${id}:`;
 const SINK_DESTINATIONS = ['github-actions', 'vercel', 'cloudflare'];
 
@@ -120,8 +121,8 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     return 64;
   }
   const bad = !COMMANDS.includes(cmd) || extra.length || rootArg === '' || ring === '' || (ring && !RINGS.includes(ring))
-    || (arg && !['import', 'set', 'push', 'request'].includes(cmd)) || (['set', 'push', 'request'].includes(cmd) && !arg)
-    || ((to !== null || repo !== null) && cmd !== 'push') || (to !== null && !SINK_DESTINATIONS.includes(to)) || repo === '' || (ring && cmd !== 'set' && !store)
+    || (arg && !['import', 'set', 'unset', 'push', 'request'].includes(cmd)) || (['set', 'unset', 'push', 'request'].includes(cmd) && !arg)
+    || ((to !== null || repo !== null) && cmd !== 'push') || (to !== null && !SINK_DESTINATIONS.includes(to)) || repo === '' || (ring && cmd !== 'set' && cmd !== 'unset' && !store)
     || ((env !== null || worker !== null) && cmd !== 'push') || env === '' || worker === ''
     || ((store || dry) && cmd !== 'import') || (store && (dry || !arg)) || (json && !['status', 'audit'].includes(cmd))
     || ((command !== null) !== (cmd === 'run')) || (cmd === 'run' && !command.length) || only === '' || (only !== null && cmd !== 'run')
@@ -147,7 +148,7 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
   }
   const ownerHere = () => (owner ? owner() : isOwner(root));
   if (cmd === 'push') return push({ name: arg, to, repo, env, worker, root, vroot, current, open, out, err, run, owner: ownerHere });
-  const contributor = (cmd === 'set' || store) && !ownerHere();
+  const contributor = (cmd === 'set' || cmd === 'unset' || store) && !ownerHere();
   if (contributor && ring && !CONTRIBUTOR_RINGS.includes(ring)) {
     err(`secrets ${cmd}: a contributor's keys stay with this repo on this machine (${CONTRIBUTOR_RINGS.join(' or ')}): the ${ring} ring is shared with sibling repos`);
     return 1;
@@ -158,6 +159,23 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     if (cmd === 'status') return status(open(), current, { out, json, owner: ownerHere(), localKeys: readLocalKeys(vroot), log: readAudit(vroot), run, root });
     if (cmd === 'audit') return audit(open(), readAudit(vroot), { out, json });
     if (cmd === 'request') return request(open(), current, { root, id: arg, out, err });
+    if (cmd === 'unset') {
+      if (!NAME.test(arg)) { err(`secrets unset: ${arg} is not an env-var name (A-Z, 0-9 and _, starting with a letter)`); return 1; }
+      const vault = open();
+      // A contributor never touches the workspace ring (shared with sibling repos): only this repo's own places.
+      const held = vault.status([arg])[0]?.rings ?? [];
+      const rings = ring ? [ring] : contributor ? held.filter((g) => CONTRIBUTOR_RINGS.includes(g)) : held;
+      const removed = rings.length ? vault.remove([arg], rings) : [{ name: arg, rings: [] }];
+      const gone = removed[0].rings;
+      if (!gone.length) { out(`secrets unset: ${arg} is not in ${ring ? `the ${ring} ring` : 'the vault'}: nothing to take out`); return 0; }
+      const left = vault.status([arg])[0]?.rings ?? [];
+      out(`secrets unset: ${arg} taken out of ${gone.join(', ')}`);
+      if (left.length) out(`  ${arg} is still set in ${left.join(', ')}`);
+      if (!contributor && current && current.manifest.secrets.find((e) => e.name === arg)?.destinations.some((d) => d !== 'local')) out(`  the places it was pushed to keep their copy: remove it there too if it should go`);
+      // A contributor's key gone from every place this machine keeps it leaves their list too.
+      if (contributor) { if (!left.some((g) => CONTRIBUTOR_RINGS.includes(g))) forgetLocalKeys(vroot, [arg]); return 0; }
+      try { recordRemoves(vroot, removed); return 0; } catch (e) { err(`secrets audit: not recorded (${e.message}); the value is out of the vault`); return 1; }
+    }
     if (cmd === 'set') {
       if (!NAME.test(arg)) { err(`secrets set: ${arg} is not an env-var name (A-Z, 0-9 and _, starting with a letter)`); return 1; }
       const vault = open();

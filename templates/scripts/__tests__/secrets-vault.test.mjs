@@ -12,7 +12,7 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { keychain } from '../secrets-keychain.mjs';
 import { main } from '../secrets.mjs';
-import { LOCAL_KEYS_FILE, formatEnvValue, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal, upsertEnv, vaultConfig } from '../secrets-vault.mjs';
+import { LOCAL_KEYS_FILE, formatEnvValue, openVault, parseEnv, readLocalKeys, recordLocalKeys, removeEnv, scratchPath, sinkRefusal, upsertEnv, vaultConfig } from '../secrets-vault.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(HERE, '..', 'secrets.mjs');
@@ -40,7 +40,7 @@ const notRepo = () => ({ status: 128, stdout: '' });
 
 function fakeChain() {
   const items = new Map();
-  return { items, get: (n) => items.get(n) ?? null, set: (n, v) => items.set(n, v), has: (names) => new Set(names.filter((n) => items.has(n))) };
+  return { items, get: (n) => items.get(n) ?? null, set: (n, v) => items.set(n, v), has: (names) => new Set(names.filter((n) => items.has(n))), remove: (n) => items.delete(n) };
 }
 
 describe('the .env format', () => {
@@ -60,8 +60,55 @@ describe('the .env format', () => {
     for (const v of FAKES) assert.equal(parseEnv(`X_TOKEN=${formatEnvValue(v)}\n`).get('X_TOKEN'), v);
     assert.equal(formatEnvValue('github_pat_abc-123'), 'github_pat_abc-123');
     const before = '# keep me\nA_TOKEN=old\n\nB_TOKEN=keep\nA_TOKEN=dupe\n';
-    assert.equal(upsertEnv(before, [['A_TOKEN', 'new'], ['C_TOKEN', 'two words']]), '# keep me\nA_TOKEN=new\n\nB_TOKEN=keep\nC_TOKEN="two words"\n');
+    assert.equal(upsertEnv(before, [['A_TOKEN', 'new'], ['C_TOKEN', 'two words']]), "# keep me\nA_TOKEN=new\n\nB_TOKEN=keep\nC_TOKEN='two words'\n");
     assert.equal(upsertEnv('', [['A_TOKEN', 'x']]), 'A_TOKEN=x\n');
+  });
+
+  it('round-trips the awkward values, single-quoting so no reader expands a $ or a backslash', () => {
+    const odd = ['pa$$word', 'back\\slash', 'has "double"', "it's", "both ' and \"", 'x # y', 'two  spaces', '=lead=', '  pad  ', '#hash', 'é ünï', '`tick`', 'a=b=c'];
+    for (const v of odd) assert.equal(parseEnv(`X_TOKEN=${formatEnvValue(v)}\n`).get('X_TOKEN'), v, v);
+    assert.equal(formatEnvValue('pa$$word'), "'pa$$word'");
+    assert.equal(formatEnvValue('back\\slash'), "'back\\slash'");
+    assert.equal(formatEnvValue("it's"), '"it\'s"');
+    assert.equal(formatEnvValue('a=b=c'), 'a=b=c');
+  });
+
+  it('keeps export, a trailing comment and the line ending when it replaces a name, and is idempotent', () => {
+    assert.equal(upsertEnv('export A_TOKEN=old # from the dashboard\n', [['A_TOKEN', 'new']]), 'export A_TOKEN=new # from the dashboard\n');
+    assert.equal(upsertEnv('A_TOKEN="old" # note\n', [['A_TOKEN', 'two words']]), "A_TOKEN='two words' # note\n");
+    assert.equal(upsertEnv('# c\r\nA_TOKEN=1\r\nB_TOKEN=2\r\n', [['A_TOKEN', 'x'], ['C_TOKEN', 'y']]), '# c\r\nA_TOKEN=x\r\nB_TOKEN=2\r\nC_TOKEN=y\r\n');
+    assert.equal(upsertEnv('A_TOKEN=1', [['B_TOKEN', '2']]), 'A_TOKEN=1\nB_TOKEN=2\n');
+    const once = upsertEnv('# top\nA_TOKEN=1\n', [['A_TOKEN', 'two words'], ['B_TOKEN', "it's"]]);
+    assert.equal(upsertEnv(once, [['A_TOKEN', 'two words'], ['B_TOKEN', "it's"]]), once);
+  });
+
+  it('reads and replaces a quoted value that runs over several lines as one, never leaving its tail behind', () => {
+    const text = 'A_TOKEN=1\nKEY_PEM="-----BEGIN KEY-----\nabc\n-----END KEY-----"\nB_TOKEN=2\n';
+    assert.equal(parseEnv(text).get('KEY_PEM'), '-----BEGIN KEY-----\nabc\n-----END KEY-----');
+    assert.equal(parseEnv(text).get('B_TOKEN'), '2');
+    assert.equal(upsertEnv(text, [['KEY_PEM', 'path/to/key.pem']]), 'A_TOKEN=1\nKEY_PEM=path/to/key.pem\nB_TOKEN=2\n');
+    assert.equal(removeEnv(text, ['KEY_PEM']), 'A_TOKEN=1\nB_TOKEN=2\n');
+    // A quote that never closes is its own line only: the rest of the file still reads.
+    assert.deepEqual([...parseEnv('A_TOKEN="open\nB_TOKEN=2\n')], [['A_TOKEN', 'open'], ['B_TOKEN', '2']]);
+  });
+
+  it('never lets a hand-written quote swallow the lines after it (a Windows path, a stray quote in a comment)', () => {
+    const win = 'DATA_DIR="C:\\data\\"\nAPI_KEY="abc"\nOTHER=1\n';
+    assert.deepEqual([...parseEnv(win)], [['DATA_DIR', 'C:\\data\\'], ['API_KEY', 'abc'], ['OTHER', '1']]);
+    assert.equal(removeEnv(win, ['DATA_DIR']), 'API_KEY="abc"\nOTHER=1\n');
+    assert.equal(upsertEnv(win, [['API_KEY', 'new']]), 'DATA_DIR="C:\\data\\"\nAPI_KEY=new\nOTHER=1\n');
+    const stray = "A_TOKEN='oops\nB_TOKEN=1\n# don't touch\nC_TOKEN=2\n";
+    assert.deepEqual([...parseEnv(stray)], [['A_TOKEN', 'oops'], ['B_TOKEN', '1'], ['C_TOKEN', '2']]);
+    assert.equal(removeEnv(stray, ['A_TOKEN']), "B_TOKEN=1\n# don't touch\nC_TOKEN=2\n");
+    assert.equal(removeEnv(stray, ['B_TOKEN']), "A_TOKEN='oops\n# don't touch\nC_TOKEN=2\n");
+    // No name on the way, but the quote doesn't end its line: still one line only.
+    assert.equal(removeEnv("A_TOKEN='oops\n# it's here\n", ['A_TOKEN']), "# it's here\n");
+  });
+
+  it('removes every assignment of a name and nothing else', () => {
+    assert.equal(removeEnv('# keep\nA_TOKEN=1\nexport B_TOKEN=2 # b\nA_TOKEN=dupe\n', ['A_TOKEN']), '# keep\nexport B_TOKEN=2 # b\n');
+    assert.equal(removeEnv('A_TOKEN=1\n', ['A_TOKEN']), '');
+    assert.equal(removeEnv('A_TOKEN=1\r\nB_TOKEN=2\r\n', ['B_TOKEN']), 'A_TOKEN=1\r\n');
   });
 });
 
@@ -110,11 +157,63 @@ describe('the vault', () => {
     }
   });
 
+  it('rewrites a ring whole (no temp file left, other lines kept), removes from every ring or one, and follows a symlink', () => {
+    const t = workspace();
+    try {
+      const kc = fakeChain();
+      const v = openVault({ root: t.repo, settings: { secrets: { keychain: true } }, git: notRepo, keychain: kc });
+      const local = path.join(t.repo, '.env');
+      fs.writeFileSync(local, '# mine\nexport KEEP_TOKEN=keep # by hand\n');
+      v.set([['A_TOKEN', FAKES[0]]], 'local');
+      v.set([['A_TOKEN', FAKES[1]]], 'workspace');
+      v.set([['A_TOKEN', FAKES[2]]], 'keychain');
+      assert.equal(fs.readFileSync(local, 'utf8'), `# mine\nexport KEEP_TOKEN=keep # by hand\nA_TOKEN=${FAKES[0]}\n`);
+      assert.deepEqual(fs.readdirSync(t.repo).filter((f) => f.endsWith('.tmp') || f.endsWith('.lock')), []);
+      // At a checkout's root the temp file and the lock go inside .git, where nothing is ever tracked.
+      fs.mkdirSync(path.join(t.repo, '.git'));
+      assert.equal(scratchPath(local, '.lock'), path.join(t.repo, '.git', 'nexus-.env.lock'));
+      v.set([['A_TOKEN', FAKES[0]]], 'local');
+      assert.deepEqual(fs.readdirSync(path.join(t.repo, '.git')), []);
+      fs.rmdirSync(path.join(t.repo, '.git'));
+      // In a worktree .git is a file naming the real git folder: follow it.
+      const gd = path.join(t.repo, 'gitdir-elsewhere');
+      fs.mkdirSync(gd);
+      fs.writeFileSync(path.join(t.repo, '.git'), 'gitdir: gitdir-elsewhere\n');
+      assert.equal(scratchPath(local, '.lock'), path.join(gd, 'nexus-.env.lock'));
+      v.set([['A_TOKEN', FAKES[0]]], 'local');
+      assert.deepEqual(fs.readdirSync(gd), []);
+      assert.deepEqual(fs.readdirSync(t.repo).filter((f) => f.endsWith('.tmp') || f.endsWith('.lock')), []);
+      fs.rmSync(path.join(t.repo, '.git'));
+      fs.rmdirSync(gd);
+      assert.deepEqual(v.remove(['A_TOKEN'], 'workspace'), [{ name: 'A_TOKEN', rings: ['workspace'] }]);
+      assert.deepEqual(v.status(['A_TOKEN'])[0].rings, ['local', 'keychain']);
+      assert.deepEqual(v.remove(['A_TOKEN', 'NOPE_TOKEN']), [{ name: 'A_TOKEN', rings: ['local', 'keychain'] }, { name: 'NOPE_TOKEN', rings: [] }]);
+      assert.equal(v.get('A_TOKEN'), null);
+      assert.equal(kc.items.has('A_TOKEN'), false);
+      assert.equal(fs.readFileSync(local, 'utf8'), '# mine\nexport KEEP_TOKEN=keep # by hand\n');
+      assert.throws(() => v.remove(['bad name']), /not an env-var name/);
+      // A .env that is a link to a shared file: the file it points at changes, the link stays a link.
+      const shared = path.join(t.ws, 'shared.env');
+      fs.writeFileSync(shared, 'S_TOKEN=one\n');
+      fs.rmSync(local);
+      let linked = true;
+      try { fs.symlinkSync(shared, local); } catch { linked = false; }
+      if (linked) {
+        v.set([['S_TOKEN', 'two']], 'local');
+        assert.ok(fs.lstatSync(local).isSymbolicLink());
+        assert.equal(fs.readFileSync(shared, 'utf8'), 'S_TOKEN=two\n');
+      }
+    } finally {
+      t.done();
+    }
+  });
+
   it('refuses an ungitignored .env, a .env.workspace inside a repo, the keychain unless opted in, and a bad value', () => {
     const t = workspace();
     try {
-      const ignored = (status) => (args) => (args.includes('check-ignore') ? { status, stdout: '' } : { status: 0, stdout: 'true\n' });
+      const ignored = (status, tracked = 1) => (args) => (args.includes('check-ignore') ? { status, stdout: '' } : args.includes('ls-files') ? { status: tracked, stdout: '' } : { status: 0, stdout: 'true\n' });
       assert.throws(() => openVault({ root: t.repo, git: ignored(1) }).set([['A_TOKEN', 'x']], 'local'), /\.env is not gitignored/);
+      assert.throws(() => openVault({ root: t.repo, git: ignored(1, 0) }).set([['A_TOKEN', 'x']], 'local'), /\.env is tracked by git here: untrack it/);
       assert.throws(() => openVault({ root: t.repo, git: ignored(1) }).set([['A_TOKEN', 'x']], 'workspace'), /inside a git repo/);
       assert.equal(openVault({ root: t.repo, git: ignored(0) }).set([['A_TOKEN', 'x']], 'workspace').ring, 'workspace');
       const off = openVault({ root: t.repo, git: notRepo });
@@ -158,6 +257,18 @@ describe('the keychain, through a recording runner', () => {
       assert.equal(keychain({ platform, run: miss.run, service: 'nexus/repo' }).get('A_TOKEN'), null);
       const broken = recorder(() => ({ status: 1, stdout: value }));
       assert.throws(() => keychain({ platform, run: broken.run, service: 'nexus/repo' }).set('A_TOKEN', value), (e) => /exited 1/.test(e.message) && !e.message.includes(value));
+    });
+
+    it(`${platform}: remove deletes the item by name, takes no value, and a failure throws`, () => {
+      const r = recorder();
+      keychain({ platform, run: r.run, service: 'nexus/repo' }).remove('A_TOKEN');
+      assert.equal(r.calls.length, 1);
+      assert.equal(r.calls[0].cmd, cmd);
+      assert.ok(`${r.calls[0].args.join(' ')}`.includes('A_TOKEN'));
+      assert.equal(r.calls[0].input, '');
+      const broken = recorder(() => ({ status: 1, stdout: '' }));
+      assert.throws(() => keychain({ platform, run: broken.run, service: 'nexus/repo' }).remove('A_TOKEN'), /exited 1/);
+      assert.throws(() => keychain({ platform, run: r.run, service: 'nexus/repo' }).remove("A'B"), /not an env-var name/);
     });
 
     it(`${platform}: has names which are stored`, () => {
@@ -224,6 +335,34 @@ describe('the CLI', () => {
       assert.equal(run(t.repo, '', 'set').status, 64);
       assert.equal(run(t.repo, '', 'import', '--store').status, 64, 'a store names its file');
       assert.equal(run(t.repo, '', 'status', '--ring', 'local').status, 64);
+    } finally {
+      t.done();
+    }
+  });
+
+  it('unsets a name from every ring that holds it (or one), records the removal, and never prints a value', () => {
+    const t = workspace();
+    try {
+      if (!checkout(t.repo, { owner: true })) return;
+      fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), JSON.stringify({ version: 1, secrets: [
+        { name: 'GH_TOKEN', for: 'The issue mirror.', where: null, destinations: ['local', 'github-actions'], provider: 'owner', chunk: null },
+      ] }));
+      fs.writeFileSync(path.join(t.repo, '.env'), '# by hand\nOTHER_TOKEN=keep\n');
+      assert.equal(clean(run(t.repo, FAKES[0], 'set', 'GH_TOKEN')).status, 0);
+      assert.equal(clean(run(t.repo, FAKES[1], 'set', 'GH_TOKEN', '--ring', 'workspace')).status, 0);
+      const one = clean(run(t.repo, '', 'unset', 'GH_TOKEN', '--ring', 'workspace'));
+      assert.equal(one.status, 0, one.stderr);
+      assert.match(one.stdout, /GH_TOKEN taken out of workspace/);
+      assert.match(one.stdout, /still set in local/);
+      const all = clean(run(t.repo, '', 'unset', 'GH_TOKEN'));
+      assert.equal(all.status, 0, all.stderr);
+      assert.match(all.stdout, /taken out of local/);
+      assert.match(all.stdout, /places it was pushed to keep their copy/);
+      assert.equal(fs.readFileSync(path.join(t.repo, '.env'), 'utf8'), '# by hand\nOTHER_TOKEN=keep\n');
+      assert.match(clean(run(t.repo, '', 'unset', 'GH_TOKEN')).stdout, /not in the vault: nothing to take out/);
+      const log = fs.readFileSync(path.join(t.repo, '.nexus', 'secrets-audit.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+      assert.deepEqual(log.filter((e) => e.action === 'remove').map((e) => e.ring), ['workspace', 'local']);
+      assert.equal(run(t.repo, '', 'unset').status, 64);
     } finally {
       t.done();
     }
@@ -319,6 +458,15 @@ describe('a contributor checkout', () => {
       const push = clean(run(t.repo, '', ['push', 'DEV_API_KEY']));
       assert.equal(push.status, 1);
       assert.match(push.stderr, /refused in a contributor checkout/);
+
+      // Unset: out of this machine's places and off the list; never the shared workspace ring.
+      fs.writeFileSync(path.join(t.ws, '.env.workspace'), `DEV_API_KEY=${FAKES[1]}\n`);
+      const unset = clean(run(t.repo, '', ['unset', 'DEV_API_KEY']));
+      assert.equal(unset.status, 0, unset.stderr);
+      assert.match(unset.stdout, /taken out of local/);
+      assert.equal(parseEnv(fs.readFileSync(path.join(t.ws, '.env.workspace'), 'utf8')).get('DEV_API_KEY'), FAKES[1], 'the shared ring is left alone');
+      assert.deepEqual(readLocalKeys(t.repo), ['GH_TOKEN', 'LOCAL_DB_URL']);
+      assert.equal(run(t.repo, '', ['unset', 'DEV_API_KEY', '--ring', 'workspace']).status, 1);
     } finally {
       t.done();
     }

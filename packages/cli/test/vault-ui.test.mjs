@@ -449,3 +449,33 @@ test('49.5 follow-up: a name held where it lives reads "in GitHub Actions" (mute
   assert.equal(heldRemotely({ ...pat, destinations: [...pat.destinations, { destination: 'local', state: 'missing' }] }), null, 'a local place it lacks');
   assert.equal(vaultRows({ secrets: [{ ...pat, destinations: [{ ...pat.destinations[0], remoteAt: undefined }] }] }, { now: NOW })[0].age, '', 'no date: nothing made up');
 });
+
+test('0.5.1 the write loop: Remove it says where it leaves and what keeps a copy; a value in .env.workspace says it is shared', async () => {
+  const { removeNote, removedToast, removeWhere, ignoreWarn } = await import('../src/screens/vault/model.js');
+  assert.equal(removeWhere(['local', 'keychain']), '.env and the keychain');
+  assert.equal(removeNote({ name: 'GH_TOKEN', rings: ['local'], pushedTo: ['github-actions'] }), 'Take GH_TOKEN out of .env? Actions keeps its copy.');
+  assert.match(removeNote({ name: 'CF_TOKEN', rings: ['workspace'] }), /sibling repos lose it too/);
+  assert.deepEqual(removedToast({ removed: ['local'], still: ['workspace'], notes: [] }, 'GH_TOKEN'), { kind: 'shipped', title: 'GH_TOKEN is out of .env', body: 'It is still set in .env.workspace.' });
+  assert.equal(removedToast({ removed: [], still: [], notes: [] }, 'GH_TOKEN').title, 'GH_TOKEN was not in the vault');
+  const shared = { name: 'CF_TOKEN', for: 'Shared.', set: true, rings: ['workspace'], destinations: [{ destination: 'local', state: 'set' }], setAt: day(2), age: 2, rotate: false };
+  const [r] = vaultRows({ secrets: [shared] }, { now: NOW });
+  assert.match(r.editNote, /in \.env\.workspace, which the sibling repos share/);
+  assert.deepEqual(r.rings, ['workspace']);
+  // The warning: only when git would commit .env; the fix button only when a .gitignore line mends it.
+  assert.equal(ignoreWarn({ envIgnore: 'ignored' }), null);
+  assert.equal(ignoreWarn({ envIgnore: null }), null, 'git cannot tell: no warning made up');
+  assert.equal(ignoreWarn({ envIgnore: 'not ignored' }).fix, true);
+  assert.equal(ignoreWarn({ envIgnore: 'tracked' }).fix, false);
+  assert.match(ignoreWarn({ envIgnore: 'tracked' }).body, /git rm --cached \.env/);
+});
+
+test('0.5.1 the write loop: a remove reads in the audit log, and a local key no place holds reads no value', () => {
+  const st = { secrets: [], audit: [
+    { time: day(2), action: 'set', name: 'GH_TOKEN', destination: 'local', ring: 'local' },
+    { time: day(1), action: 'remove', name: 'GH_TOKEN', destination: 'local', ring: 'local' },
+  ] };
+  const rows = auditRows(st, { now: NOW });
+  assert.deepEqual(rows.map((a) => [a.verb, a.name, a.rest]), [['removed', 'GH_TOKEN', 'from local'], ['set', 'GH_TOKEN', '→ local']]);
+  const keys = localRows({ localKeys: [{ name: 'DEV_KEY', rings: ['local'] }, { name: 'GONE_KEY', rings: [] }], audit: [] }, { now: NOW });
+  assert.deepEqual(keys.map((k) => [k.name, k.set, k.sub]), [['DEV_KEY', true, 'in .env'], ['GONE_KEY', false, 'not set on this machine']]);
+});
