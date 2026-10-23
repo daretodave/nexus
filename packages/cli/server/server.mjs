@@ -386,7 +386,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const cwd = place.worktree || repo;
     // `origin: 'oversight'`: started by an oversight hand-off, so a later offer to put it away can find it.
     const origin = b.origin === 'oversight' ? 'oversight' : '';
-    writeStartLedger(root, { ...startLedger({ id, name, cwd, place }), ...(origin ? { origin } : {}) });
+    // The prompt waits in memory while the worktree forms: written down too, so a kill before it goes keeps it.
+    const first = planned && b.prompt && String(b.prompt).trim()
+      ? [{ text: String(b.prompt).trim(), steered: false, ...(Array.isArray(b.images) && b.images.length ? { note: `${b.images.length} ${b.images.length === 1 ? 'image' : 'images'} not kept` } : {}) }]
+      : null;
+    writeStartLedger(root, { ...startLedger({ id, name, cwd, place }), ...(origin ? { origin } : {}), ...(first ? { waiting: first } : {}) });
     const form = planned ? formStart(planned) : null;
     const s = await host({ id, name, cwd, place, listed: true, form });
     // Images (an oversight hand-off's answers): image blocks beside the prompt, its first bubble showing them.
@@ -401,17 +405,18 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
    * what it was sent goes) or failed (the cockpit offers Retry). One form at a time per session.
    */
   const forming = new Map(); // session id -> the promise of its form
-  function formBehind(s, root, { restore = true } = {}) {
+  function formBehind(s, root, { restore = true, orphaned = false } = {}) {
     if (forming.has(s.id)) return forming.get(s.id);
     const job = (async () => {
-      const r = await formPlace(root, s.place, { git: wtGit, hooks: wtHooks, restore, onLine: (line) => s.setForm(formNext(s.form, { type: 'progress', line })) })
+      const r = await formPlace(root, s.place, { git: wtGit, hooks: wtHooks, restore, orphaned, onLine: (line) => s.setForm(formNext(s.form, { type: 'progress', line })) })
         .catch((e) => ({ error: String(e?.message || e) }));
       if (!sessions.has(s.id)) return; // closed while it formed
       if (r.error) { s.setForm(formNext(s.form, { type: 'fail', error: r.error })); return; }
       s.setForm(formNext(s.form, { type: 'ready' }));
       await s.formed({ cwd: s.place.worktree });
       noteSent(s);
-      if (s.listed) noteLedger(s.id, { cwd: s.place.worktree });
+      // What waited went: the ledger's copy of it (a kill while forming) is done with.
+      if (s.listed) noteLedger(s.id, { cwd: s.place.worktree, waiting: undefined });
     })().finally(() => forming.delete(s.id));
     forming.set(s.id, job);
     return job;
@@ -501,7 +506,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     if (!s) {
       if (action === 'resume') {
         const l = ledgerFor(readLedgers(ROOT), key);
-        return l && l.gui === true && !['ended', 'resumed'].includes(l.state) ? pickup(key) : resumeFallen(key);
+        // One a terminal took (`runner`) is that terminal's loop now: it resumes the terminal way.
+        return l && l.gui === true && !['ended', 'resumed'].includes(l.state) && !takenAway(l) ? pickup(key) : resumeFallen(key);
       }
       if (action === 'close') return closeEnded(key);
       return { status: 409, error: 'only a session this server runs pauses, resumes or closes here' };
@@ -607,19 +613,29 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
    * 'sweep'`), a worktree an add left half made is finished in place, and old hook wrapper folders go.
    */
   const hostedIds = () => new Set([...sessions.values()].flatMap((s) => [s.id, s.claude]).filter(Boolean));
+  /** A GUI ledger a terminal took (/reboot-resume: ledger.mjs take names its `runner`): that terminal runs it now. */
+  const takenAway = (l) => !!l && l.state !== 'resuming' && typeof l.runner === 'string' && !!l.runner;
+  // Each place the startup sweep finishes, by ledger id: a pick-up waits for its own place, nothing else does.
+  const placeJobs = new Map();
   async function startupSweep() {
     const at = new Date().toISOString();
     const mine = hostedIds();
     for (const l of readLedgers(ROOT)) {
-      if (l.gui !== true || mine.has(l.id) || l.state !== 'live') continue;
+      if (l.gui !== true || mine.has(l.id) || l.state !== 'live' || takenAway(l)) continue;
       // A ledger whose own server still runs (a second server racing this one) is never swept.
       if (l.server && Number.isInteger(l.server.pid) && l.server.pid !== process.pid && pidAlive(l.server.pid)) continue;
       try { updateLedger(ROOT, l.id, (cur) => (cur.state === 'live' && !cur.stop ? sweepPatch(cur, { at, version: VERSION }) : null)); } catch { /* read as stopped all the same */ }
     }
-    try {
-      await sweepPlaces(ROOT, readLedgers(ROOT), { git: wtGit, hooks: wtHooks, skip: (id) => mine.has(id) || forming.has(id), log });
-    } catch (e) { log(`the worktree sweep stopped: ${e?.message || e}`); }
+    // The places go on behind: hooks can take minutes, and the first list never waits for them.
+    const places = sweepPlaces(ROOT, readLedgers(ROOT).filter((l) => !takenAway(l)), {
+      git: wtGit, hooks: wtHooks, skip: (id) => mine.has(id) || forming.has(id), log,
+      track: (id, job) => {
+        const p = job.catch(() => null).finally(() => { if (placeJobs.get(id) === p) placeJobs.delete(id); });
+        placeJobs.set(id, p);
+      },
+    }).catch((e) => log(`the worktree sweep stopped: ${e?.message || e}`));
     if (!injected) sweepHooksTemp();
+    return { places };
   }
 
   /**
@@ -633,6 +649,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const l = ledgerFor(readLedgers(ROOT), key);
     if (!l) return { status: 404, error: 'no ledger for that session: nothing to pick up' };
     if (l.gui !== true) return { status: 409, error: `${l.star} runs in a terminal: resume it there, or with Resume` };
+    if (takenAway(l) && !sessionOf(l.id)) return { status: 409, error: `${l.star} was taken on from a terminal and runs there now: steer it there` };
     const running = sessionOf(l.id);
     if (running) {
       if (then && String(then).trim()) { await running.send(String(then).trim(), images.length ? { images } : {}); noteSent(running); }
@@ -647,6 +664,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
 
   async function pickupNow(l, { then, images, auto }) {
     await sweepDone;
+    // Its own place, when the startup sweep is finishing it: waited for (only that one), then its ledger read again.
+    if (placeJobs.has(l.id)) {
+      await placeJobs.get(l.id);
+      l = ledgerFor(readLedgers(ROOT), l.id) || l;
+    }
     const stop = l.stop && typeof l.stop === 'object' ? l.stop : {};
     const ran = (Number.isFinite(l.sent) && l.sent > 0) || !!l.claude;
     let wt = typeof l.worktree === 'string' ? l.worktree : '';
@@ -660,8 +682,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       else { note = 'Its worktree and branch are gone, so it works in the main checkout.'; wt = ''; }
     } else if (wt) {
       const st = placeState(wt);
-      // Half made (an add cut short) or, for a place this version made, hooks that never finished: finished first.
-      if (st.interrupted || st.indexLock != null || (!st.formed && l.server?.version && l.server.version !== '0.5.1')) form = formStart({ worktree: wt, branch });
+      // Half made (an add cut short) or, for a place made by a version that marks the places it finishes (`marks`),
+      // hooks that never finished: finished first. A 0.5.1 place has no marker and never needs one.
+      if (st.interrupted || st.indexLock != null || (!st.formed && l.marks === true)) form = formStart({ worktree: wt, branch });
     }
     const place = wt ? { worktree: wt, branch } : {};
     const cwd = wt || (typeof l.cwd === 'string' && l.cwd && fs.existsSync(l.cwd) ? l.cwd : repo);
@@ -684,12 +707,20 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     });
     for (const h of savedHubs.get(l.id) || []) h.close();
     savedHubs.delete(l.id);
-    updateLedger(ROOT, l.id, (cur) => ({ state: 'live', stop: undefined, beat: new Date().toISOString(), server: serverStamp(), cwd: form ? wt : cwd, ...(resumeId ? { claude: resumeId } : {}), ...(cur.state === 'resuming' ? { runner: undefined } : {}) }));
     const msgs = pickupMessages(l, { resumed: !!resumeId, turn, skill, then });
+    // While its place forms what it sends waits in memory: written down too (a kill meanwhile keeps it), and a place
+    // this version forms is marked when done, so the marker is read on the next pick-up.
+    const waiting = form ? msgs.map((m) => ({ text: m.text, steered: !!m.steered })) : [];
+    updateLedger(ROOT, l.id, (cur) => ({
+      state: 'live', stop: undefined, beat: new Date().toISOString(), server: serverStamp(), cwd: form ? wt : cwd,
+      ...(resumeId ? { claude: resumeId } : {}), ...(cur.state === 'resuming' ? { runner: undefined } : {}),
+      ...(form ? { marks: true } : {}), waiting: waiting.length ? waiting : undefined,
+    }));
     if (!resumeId && msgs.length) freshSent = true;
     for (const m of msgs) await s.send(m.text, { steered: m.steered, ...(then && m.text === String(then).trim() && images.length ? { images } : {}) });
     noteSent(s);
-    if (form) formBehind(s, ROOT, { restore: !ran });
+    // The server that ran git there is gone (this one hosts it now): a lock it left is nobody's.
+    if (form) formBehind(s, ROOT, { restore: !ran, orphaned: !(l.server && l.server.pid === process.pid) });
     if (note) s.hub.tx({ kind: 'system', text: note, at: Date.now() });
     if (!resumeId && ran) s.hub.tx({ kind: 'system', text: 'Picked up fresh: the old conversation could not be found.', at: Date.now() });
     log(`picked up ${l.star}${auto ? ' (it was idle)' : ''}${resumeId ? '' : ' fresh'}`);
@@ -1337,12 +1368,17 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   needsLook.unref?.();
   // The startup sweep runs before the first list (sessionList waits for it); then each session that stopped cleanly
   // while idle comes back by itself, free until it is sent something (the SDK starts on the first send).
-  sweepDone = startupSweep().catch(() => null);
-  readyDone = sweepDone.then(async () => {
+  // The ledgers are swept first (quick); the places go on behind (placeJobs). An idle session whose place is being
+  // finished picks up once it is, without holding the first list.
+  const swept = startupSweep().catch(() => null);
+  sweepDone = swept.then(() => null);
+  readyDone = swept.then(async () => {
     const auto = pickupIdle ?? prefs.pickupIdle ?? true;
     if (!auto) return;
     for (const l of readLedgers(ROOT)) {
-      if (autoPickable(l) && !sessionOf(l.id)) await pickup(l.id, { auto: true }).catch(() => null);
+      if (!autoPickable(l) || sessionOf(l.id)) continue;
+      const job = pickup(l.id, { auto: true }).catch(() => null);
+      if (!placeJobs.has(l.id)) await job;
     }
   }).catch(() => null);
   needsSoon(0);

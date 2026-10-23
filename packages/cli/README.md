@@ -228,14 +228,19 @@ by itself (free until it is sent something); the rest wait for Pick up
 on the tile, Pick up all on the fleet, or a message in the cockpit.
 Pick up keeps the same star, worktree and ledger and resumes the same
 conversation; one that was mid-step is asked to carry on, a loop goes
-through `/reboot-resume`, and the waiting messages follow. A worktree
+through `/reboot-resume` (one its reboot train parked waits for Pick up,
+which sends it), and the waiting messages follow. A prompt typed while
+its worktree formed is kept through a kill. A session taken on from a
+terminal with `/reboot-resume` is that terminal's from then on: it reads
+as a terminal session and is never picked up beside it. A worktree
 an interrupted `git worktree add` left half made is finished in place
 (the person's files kept), and one deleted from disk is checked out
 again from its branch. Turn idle pick-ups off with `pickupIdle: false`
 in the prefs.
 
 A newer launch on the same repo says when the running nexus is another
-version: stop it and launch again, or launch with `--replace`. The new
+version: stop it and launch again, or launch with `--replace` (from
+0.5.2 on; 0.5.1 is stopped with Ctrl+C where it runs). The new
 launch takes the last port, so an open tab reconnects: a tab the new
 launch opened hands its token to the older tabs of the same origin
 (nothing is written anywhere new), and a tab with no such neighbour

@@ -20,6 +20,11 @@ import path from 'node:path';
 export const MARKER = 'nexus-formed';
 /** An index.lock younger than this may belong to a git still running: left alone. */
 export const LOCK_STALE_MS = 60000;
+/**
+ * The same, once the server that ran that git is gone (a stop or a kill: its children were stopped with it, or settled
+ * within 5 s on Ctrl+C), so a relaunch moments after an upgrade stop finishes the place instead of waiting a minute.
+ */
+export const LOCK_ORPHAN_MS = 8000;
 
 const slash = (p) => String(p).replace(/\\/g, '/');
 
@@ -84,12 +89,18 @@ async function deletedFiles(wt, git) {
  * `hooks(primary)` wraps the repo's hooks (cloud.mjs safeHooks); `rerun` runs post-checkout again.
  * -> { ok, did: [words], error? }
  */
-export async function repairPlace(primary, place, { git, hooks, restore = true, rerun = true, now = Date.now(), log = () => {} } = {}) {
+export async function repairPlace(primary, place, { git, hooks, restore = true, rerun = true, now = null, log = () => {}, orphaned = false } = {}) {
   const wt = place?.worktree;
-  const st = placeState(wt, now);
+  let st = placeState(wt, now ?? Date.now());
+  if (orphaned && now == null && st.indexLock != null && st.indexLock < LOCK_ORPHAN_MS) {
+    // Its server stopped moments ago (a quick relaunch): the lock comes of age in a few seconds; wait, then look again.
+    await new Promise((r) => setTimeout(r, LOCK_ORPHAN_MS - st.indexLock + 200));
+    st = placeState(wt);
+  }
   const did = [];
   if (!st.exists || !st.gitdir) return { ok: false, did, error: 'its worktree folder is not there' };
-  if (st.indexLock != null && st.indexLock < LOCK_STALE_MS) return { ok: false, did, error: 'git is still working in it' };
+  // `orphaned`: the server that ran git there is gone, so a lock only seconds old is already nobody's.
+  if (st.indexLock != null && st.indexLock < (orphaned ? LOCK_ORPHAN_MS : LOCK_STALE_MS)) return { ok: false, did, error: 'git is still working in it' };
   if (st.interrupted) {
     const u = await git(primary, ['worktree', 'unlock', slash(wt)]);
     if (!u.ok) {
@@ -120,9 +131,14 @@ export async function repairPlace(primary, place, { git, hooks, restore = true, 
       }
     }
     if (rerun && place.branch) {
+      // The hooks run again on what the worktree has checked out now (a checkout of itself): never a switch back to the
+      // branch it began on, which would move a session that changed branches, or fail on an edit it holds.
+      const head = await git(wt, ['symbolic-ref', '--short', '-q', 'HEAD']);
+      const sha = head.ok && String(head.out || '').trim() ? null : await git(wt, ['rev-parse', '-q', '--verify', 'HEAD']);
+      const target = head.ok && String(head.out || '').trim() ? String(head.out).trim() : sha?.ok && String(sha.out || '').trim() ? String(sha.out).trim() : place.branch;
       const h = hooks ? await hooks(primary) : { args: [] };
       try {
-        const r = await git(wt, [...(h.args || []), 'checkout', '-q', place.branch], { timeout: 10 * 60 * 1000 });
+        const r = await git(wt, [...(h.args || []), 'checkout', '-q', target], { timeout: 10 * 60 * 1000 });
         if (!r.ok) return { ok: false, did, error: `its post-checkout hook failed: ${String(r.err || r.out || '').trim().split(/\r?\n/).pop()}` };
         did.push('post-checkout ran');
       } finally {
@@ -167,19 +183,32 @@ export function sweepHooksTemp({ tmp = os.tmpdir(), now = Date.now(), ageMs = 24
  * place (repairPlace). A place whose session never ran gets its missing files back; one that ran keeps its files as
  * they are. `skip(id)`: a session this server forms or runs now. -> [{ id, star, worktree, did }]
  */
-export async function sweep(primary, ledgers, { git, hooks, skip = () => false, log = () => {}, now = Date.now() } = {}) {
-  const out = [];
+export async function sweep(primary, ledgers, { git, hooks, skip = () => false, log = () => {}, now = null, track = () => {}, orphaned = true } = {}) {
+  const todo = [];
   for (const l of ledgers) {
     if (!l || l.gui !== true || ['ended', 'resumed'].includes(l.state) || skip(l.id)) continue;
     const wt = typeof l.worktree === 'string' ? l.worktree : '';
     if (!wt) continue;
-    const st = placeState(wt, now);
+    const st = placeState(wt, now ?? Date.now());
     if (!st.exists || !st.interrupted) continue;
-    const ran = (Number.isFinite(l.sent) && l.sent > 0) || !!l.claude;
-    const r = await repairPlace(primary, { worktree: wt, branch: l.branch }, { git, hooks, restore: !ran, now }).catch((e) => ({ ok: false, did: [], error: String(e?.message || e) }));
-    out.push({ id: l.id, star: l.star, worktree: wt, ...r });
-    if (r.ok) log(`nexus finished making ${l.star}'s worktree after the restart (${r.did.join(', ')})`);
-    else log(`nexus could not finish ${l.star}'s worktree: ${r.error}`);
+    todo.push({ l, wt });
   }
+  // One after another (hooks can be heavy); `track(id, promise)` hands each place's own repair to the caller at once,
+  // so a pick-up waits for its own place only and the list waits for none.
+  const out = [];
+  let chain = Promise.resolve();
+  for (const { l, wt } of todo) {
+    const ran = (Number.isFinite(l.sent) && l.sent > 0) || !!l.claude;
+    const job = chain.then(async () => {
+      const r = await repairPlace(primary, { worktree: wt, branch: l.branch }, { git, hooks, restore: !ran, orphaned, ...(now != null ? { now } : {}) }).catch((e) => ({ ok: false, did: [], error: String(e?.message || e) }));
+      out.push({ id: l.id, star: l.star, worktree: wt, ...r });
+      if (r.ok) log(`nexus finished making ${l.star}'s worktree after the restart (${r.did.join(', ')})`);
+      else log(`nexus could not finish ${l.star}'s worktree: ${r.error}`);
+      return r;
+    });
+    chain = job.catch(() => null);
+    track(l.id, job);
+  }
+  await chain;
   return out;
 }

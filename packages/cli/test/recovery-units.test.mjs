@@ -11,7 +11,7 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { ledgerStatus, mergeSessions, parkedItem, stoppedWith } from '../server/sessions.mjs';
 import { fleetRows, inboxItems, isEnded, markEnded } from '../server/fleet-home.mjs';
-import { asksAsParked, autoPickable, parkPatch, sweepPatch } from '../server/recovery.mjs';
+import { asksAsParked, autoPickable, parkPatch, pickupMessages, sweepPatch, trainParked } from '../server/recovery.mjs';
 import { needsBar, needsFrom } from '../shared/needs.mjs';
 import { readPrefs, writePrefs } from '../server/repo.mjs';
 import { claimLock, readLast, writeLast } from '../server/instance.mjs';
@@ -137,12 +137,12 @@ test('the park patch: what a stopping server writes for each state', () => {
   assert.equal(forming.state, 'parked');
   assert.equal(forming.stop.turn, 'forming');
   assert.deepEqual(forming.stop.queued, [{ text: 'go', steered: false }]);
-  const asking = parkPatch({ sent: 1, claude: 'c', cwd: '/w', busy: true, asks: [{ id: 'q1', questions: [{ question: 'Colour?', options: [{ label: 'blue', description: 'logo' }] }] }], waiting: [], held: [] }, { parked: [{ q: 'old', from: 'ask' }, { q: 'kept' }] }, { at, why: 'signal', version: '9.9.9' });
+  const asking = parkPatch({ sent: 1, claude: 'c', cwd: '/w', busy: true, asks: [{ id: 'q1', questions: [{ question: 'Colour?', options: [{ label: 'blue', description: 'logo' }] }] }], waiting: [], held: [] }, { parked: [{ q: 'old', from: 'ask', askId: 'q0', state: 'pending' }, { q: 'stale copy', from: 'ask', askId: 'q1' }, { q: 'kept' }] }, { at, why: 'signal', version: '9.9.9' });
   assert.equal(asking.stop.turn, 'asking');
   assert.equal(asking.stop.why, 'signal');
   assert.equal(asking.claude, 'c');
-  assert.deepEqual(asking.parked.map((p) => p.q), ['kept', 'Colour?'], 'an older ask is replaced, a skill\'s own parked question kept');
-  assert.equal(asking.parked[1].default, 'blue');
+  assert.deepEqual(asking.parked.map((p) => p.q), ['old', 'kept', 'Colour?'], 'a question parked at an earlier stop stays; only the ask open now is replaced');
+  assert.equal(asking.parked[2].default, 'blue');
   assert.equal(parkPatch({ sent: 2, busy: true, pause: 'paused', held: [{ text: 'later', steered: true, images: 1 }], waiting: [], asks: [] }, {}, { at }).stop.queued[0].note, '1 image not kept');
   assert.equal(asksAsParked([{ id: 'x', questions: [] }])[0].q, 'A question it asked');
   assert.equal(sweepPatch({ beat: OLD }).stop.why, 'sweep');
@@ -151,6 +151,54 @@ test('the park patch: what a stopping server writes for each state', () => {
   assert.equal(autoPickable({ gui: true, state: 'parked', claude: 'c', stop: { by: 'sweep', turn: 'idle' } }), false, 'a crash waits');
   assert.equal(autoPickable({ gui: true, state: 'parked', claude: 'c', stop: { by: 'server', turn: 'idle' }, parked: [{ q: 'open' }] }), false);
   assert.equal(autoPickable({ gui: true, state: 'parked', stop: { by: 'server', turn: 'idle' } }), false, 'no conversation to resume');
+});
+
+test('a loop its reboot train parked: the stop keeps the train, it never picks up by itself, and Pick up sends /reboot-resume', () => {
+  const at = '2026-10-23T12:00:00.000Z';
+  const l = { gui: true, id: 'L', star: 'polaris', state: 'parked', train: 'r1', loop: '/heads-down 3', chunk: '3.1', claude: 'c', sent: 2 };
+  const p = parkPatch({ sent: 2, claude: 'c', busy: false, waiting: [], held: [], asks: [] }, l, { at });
+  assert.equal(p.stop.turn, 'idle');
+  assert.equal(p.stop.train, 'r1');
+  const after = { ...l, ...p };
+  assert.equal(trainParked(after), true);
+  assert.equal(autoPickable(after), false, 'a parked loop waits for /reboot-resume, not a silent pick-up');
+  assert.deepEqual(pickupMessages(after, { resumed: true, skill: true }).map((m) => m.text), ['/reboot-resume polaris']);
+  assert.deepEqual(pickupMessages(after, { resumed: true, skill: false }).map((m) => m.text).length, 1);
+  // A crash after the train parked it: no stop marker, still the train's.
+  assert.equal(trainParked(l), true);
+  assert.deepEqual(pickupMessages(l, { resumed: true, turn: 'idle', skill: true }).map((m) => m.text), ['/reboot-resume polaris']);
+  // Picked up and running again (live): the next stop is an ordinary one.
+  const again = parkPatch({ sent: 3, claude: 'c', busy: false, waiting: [], held: [], asks: [] }, { ...l, state: 'live' }, { at });
+  assert.equal(again.stop.train, undefined);
+  assert.equal(autoPickable({ ...l, ...again }), true);
+  assert.equal(autoPickable({ ...l, ...again, runner: 'bbbbbbbb' }), false, 'one a terminal took is the terminal\'s');
+});
+
+test('a kill while the worktree formed keeps the first prompt: the sweep moves it to the stop\'s queue', () => {
+  const p = sweepPatch({ beat: OLD, waiting: [{ text: 'build the thing', steered: false }] });
+  assert.equal(p.stop.turn, 'forming');
+  assert.deepEqual(p.stop.queued, [{ text: 'build the thing', steered: false }]);
+  assert.ok('waiting' in p && p.waiting === undefined, 'the ledger\'s copy is cleared');
+  assert.deepEqual(pickupMessages({ id: 'x', star: 'vega', sent: 0, ...p }, { resumed: false, skill: true }).map((m) => m.text), ['build the thing']);
+  assert.equal(sweepPatch({ beat: OLD }).stop.turn, null);
+});
+
+test('a GUI ledger a terminal took and runs reads as its runner\'s, never stopped with nexus; a 0.5.1 ledger reads legacy', () => {
+  const now = Date.now();
+  const iso = new Date(now - 30000).toISOString();
+  const l = { id: 'aaaaaaaa-1111-2222-3333-444444444444', star: 'vega', state: 'live', gui: true, beat: iso, started: iso, claims: 'aaaaaaaa',
+    claude: 'old-gui-claude-id', worktree: 'C:/x/wt/vega', branch: 'nexus/vega', runner: 'bbbbbbbb', runnerSince: iso, parked: [], server: { pid: 1 } };
+  assert.equal(stoppedWith(l, null, ['home-id'], now), null);
+  const claude = [{ id: 'bbbbbbbb-9999-8888-7777-666666666666', cwd: 'C:/x/repo', mtime: now - 1000, status: 'live', last: { kind: 'text', text: 'looping' } }];
+  const [row] = mergeSessions({ ledgers: [l], claude, gui: ['home-id'], now });
+  assert.equal(row.state, 'live');
+  assert.notEqual(row.steer, 'pickup');
+  assert.equal(row.claude, claude[0].id, 'steers the terminal loop, not the old GUI conversation');
+  // Still resuming (the take before its first beat) and gone quiet: the last pick-up did not finish, as before.
+  assert.ok(stoppedWith({ ...l, state: 'resuming', beat: OLD }, null, [], now)?.note);
+  const { runner, runnerSince, server, ...plain } = l;
+  assert.equal(stoppedWith({ ...plain, state: 'parked' }, null, [], now).legacy, true);
+  assert.equal(stoppedWith({ ...plain, server, state: 'parked' }, null, [], now).legacy, false);
 });
 
 test('prefs are read by type: a string top level, a mistyped key and a future key', async () => {

@@ -265,25 +265,42 @@ export function parkedItem(p) {
  * its own the newest such file wins; in the primary checkout, which many sessions share, only one file that starts
  * within two minutes of the ledger does. -> { id, file } or null.
  */
+// claudeFor's answers (a miss too), per ledger, until its folder gains or loses a file (the folder's mtime moves).
+const forCache = new Map();
 export function claudeFor(l, { home = claudeHome(), primary = '' } = {}) {
   const dir = l?.worktree || l?.cwd;
   if (!dir) return null;
   const started = typeof l.started === 'string' ? Date.parse(l.started) : NaN;
   if (!Number.isFinite(started)) return null;
   const folder = path.join(home, 'projects', claudeSlug(dir));
+  let stamp = 0;
+  try { stamp = fs.statSync(folder).mtimeMs; } catch { return null; }
+  const key = `${folder}|${l.id || ''}|${started}|${l.worktree ? 1 : 0}|${primary}`;
+  const kept = forCache.get(key);
+  // The newest file in a worktree of its own can change without a file added: only the shared folder's answer is kept.
+  if (kept && kept.stamp === stamp && kept.shared) return kept.hit;
   let files = [];
   try { files = fs.readdirSync(folder).filter((f) => f.endsWith('.jsonl')); } catch { return null; }
   const rows = [];
   for (const f of files) {
     const file = path.join(folder, f);
-    const first = firstAt(file);
-    if (first == null || first < started - 5000) continue;
     let mtime = 0;
     try { mtime = fs.statSync(file).mtimeMs; } catch { continue; }
+    // A file last written before the ledger started cannot have begun after it: its head is never read.
+    if (mtime < started - 5000) continue;
+    const first = firstAt(file);
+    if (first == null || first < started - 5000) continue;
     rows.push({ id: f.slice(0, -'.jsonl'.length), file, first, mtime });
   }
-  if (!rows.length) return null;
   const shared = !l.worktree || (primary && samePath(dir, primary));
+  const hit = claudeForPick(rows, started, shared);
+  if (forCache.size > 500) forCache.clear();
+  forCache.set(key, { stamp, shared: !!shared, hit });
+  return hit;
+}
+
+function claudeForPick(rows, started, shared) {
+  if (!rows.length) return null;
   if (shared) {
     const near = rows.filter((r) => r.first - started <= 120000);
     return near.length === 1 ? { id: near[0].id, file: near[0].file } : null;
@@ -440,6 +457,9 @@ export function stoppedWith(l, s, guis = [], now = Date.now()) {
   if (!l || l.gui !== true || !l.id) return null;
   if (guis.includes(l.id) || (typeof l.claude === 'string' && guis.includes(l.claude))) return null;
   const st = typeof l.state === 'string' ? l.state : 'live';
+  // Taken from a terminal (/reboot-resume: ledger.mjs take names its `runner`, and its beats keep the ledger live): that
+  // terminal runs it now, so it reads as its runner's row (live, paused or fallen), never as stopped with nexus.
+  if (st !== 'resuming' && typeof l.runner === 'string' && l.runner) return null;
   const marker = l.stop && typeof l.stop === 'object' ? l.stop : null;
   const base = {
     at: (marker && typeof marker.at === 'string' ? marker.at : null) || (typeof l.beat === 'string' ? l.beat : null),
@@ -449,6 +469,10 @@ export function stoppedWith(l, s, guis = [], now = Date.now()) {
     asks: marker && Number.isFinite(marker.asks) ? marker.asks : 0,
     version: marker && typeof marker.version === 'string' ? marker.version : null,
     paused: !!marker?.paused,
+    // A ledger no server stamped was written by nexus 0.5.1, which said nothing when it stopped: no crash to report.
+    legacy: !l.server,
+    // Parked by its own loop's reboot train (/reboot-ready) before nexus stopped: Pick up sends /reboot-resume.
+    train: !!((marker && typeof marker.train === 'string' && marker.train) || (!marker && st === 'parked' && typeof l.train === 'string' && l.train)),
   };
   if (STOPPABLE.has(st)) return base;
   if (st === 'resuming') {

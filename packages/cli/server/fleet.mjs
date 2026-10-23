@@ -145,7 +145,7 @@ export async function planPlace(primary, name, ledgers, { git = cleanGit, local 
  * a folder git already lists is made once its marker says so, else finished in place first (repair.mjs). A folder
  * gone while its branch stayed is pruned and checked out again. -> { ok: true } or { error }.
  */
-export async function formPlace(primary, place, { git = cleanGit, hooks = safeHooks, onLine = () => {}, timeout = 10 * 60 * 1000, restore = true } = {}) {
+export async function formPlace(primary, place, { git = cleanGit, hooks = safeHooks, onLine = () => {}, timeout = 10 * 60 * 1000, restore = true, orphaned = false } = {}) {
   const same = (p) => keyOf(p, WIN) === keyOf(place.worktree, WIN);
   if (fs.existsSync(place.worktree) && (await linkedWorktrees(primary, git)).some(same)) {
     // Registered is not made: an add cut short (git's "initializing" lock) or hooks that never finished (no marker)
@@ -153,7 +153,7 @@ export async function formPlace(primary, place, { git = cleanGit, hooks = safeHo
     const st = placeState(place.worktree);
     if (st.formed && !st.locked) return { ok: true };
     onLine('finishing the worktree a stopped nexus left part made');
-    const r = await repairPlace(primary, place, { git, hooks, restore });
+    const r = await repairPlace(primary, place, { git, hooks, restore, orphaned });
     return r.ok ? { ok: true, repaired: r.did } : { error: r.error };
   }
   // The folder was deleted or moved while git still lists it: drop that registration (prune touches no folder), so
@@ -191,6 +191,9 @@ export function startLedger({ id, name, cwd, place = {}, now = new Date() }) {
     workflow: null, builder: '', defaults: [], parked: [], train: '', next_step: '', notes: '', gui: true,
     // Which server runs it (a later one tells a clean stop from a crash, and reads what it can) and the prompts it took.
     server: serverStamp(), sent: 0,
+    // This version marks each worktree it finishes making (repair.mjs MARKER): a later one reads a missing marker as
+    // hooks that never finished. A ledger without this (0.5.1) made its worktree before markers: never re-run.
+    marks: true,
   };
 }
 

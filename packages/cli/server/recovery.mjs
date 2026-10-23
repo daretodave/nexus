@@ -51,7 +51,12 @@ export function parkPatch(snap, l = {}, { why = 'stop', at = new Date().toISOStr
   if (!snap.sent && !queued.length && !snap.claude) return { end: true };
   const asks = asksAsParked(snap.asks, at);
   const turn = snap.form && snap.form !== 'ready' ? 'forming' : asks.length ? 'asking' : snap.busy ? 'working' : 'idle';
-  const kept = (Array.isArray(l.parked) ? l.parked : []).filter((p) => !(p && typeof p === 'object' && p.from === 'ask'));
+  // A question parked at an earlier stop stays (answered or not: the inbox and its history read it); only one the
+  // session is asking again now is replaced by its fresh copy.
+  const now = new Set(asks.map((a) => a.askId).filter(Boolean));
+  const kept = (Array.isArray(l.parked) ? l.parked : []).filter((p) => !(p && typeof p === 'object' && p.from === 'ask' && now.has(String(p.askId || ''))));
+  // Parked by its own loop (/reboot-ready: ledger.mjs park wrote state parked and the train) before nexus stopped.
+  const train = l.state === 'parked' && !l.stop && typeof l.train === 'string' && l.train ? l.train : '';
   return {
     state: 'parked',
     beat: at,
@@ -63,20 +68,39 @@ export function parkPatch(snap, l = {}, { why = 'stop', at = new Date().toISOStr
       at, by: 'server', why, turn, paused: !!snap.pause && snap.pause !== 'run', version,
       queued: queued.map((q) => ({ text: String(q.text), steered: !!q.steered, ...(q.images ? { note: `${q.images} ${q.images === 1 ? 'image' : 'images'} not kept` } : {}) })),
       asks: asks.length,
+      ...(train ? { train } : {}),
     },
+    // The messages a start wrote down while its worktree formed are in `queued` now.
+    waiting: undefined,
     parked: [...kept, ...asks],
   };
 }
 
 /** The patch the next server writes into a ledger a killed server left `live` (no stop marker). */
 export function sweepPatch(l, { at = new Date().toISOString(), version = '' } = {}) {
-  return { state: 'parked', stop: { at: typeof l.beat === 'string' ? l.beat : at, by: 'sweep', why: 'sweep', turn: null, paused: false, version, queued: [], asks: 0, found: at } };
+  // What a start wrote down while its worktree formed (`waiting`) is the first prompt it never sent: kept to send.
+  const waiting = (Array.isArray(l.waiting) ? l.waiting : []).filter((q) => q && typeof q.text === 'string' && q.text.trim())
+    .map((q) => ({ text: q.text, steered: !!q.steered, ...(q.note ? { note: q.note } : {}) }));
+  return {
+    state: 'parked',
+    stop: { at: typeof l.beat === 'string' ? l.beat : at, by: 'sweep', why: 'sweep', turn: waiting.length ? 'forming' : null, paused: false, version, queued: waiting, asks: 0, found: at },
+    waiting: undefined,
+  };
+}
+
+/** Was this ledger parked by its own loop's reboot train (/reboot-ready), not only by nexus stopping? */
+export function trainParked(l) {
+  if (!l || typeof l !== 'object') return false;
+  if (l.stop && typeof l.stop === 'object') return typeof l.stop.train === 'string' && !!l.stop.train;
+  return l.state === 'parked' && typeof l.train === 'string' && !!l.train;
 }
 
 /** Does a session pick up by itself at start: a clean stop, idle, nothing queued, no question, a conversation to resume. */
 export function autoPickable(l) {
   const st = l?.stop;
   if (!l || l.gui !== true || l.state !== 'parked' || !st || st.by !== 'server' || st.turn !== 'idle') return false;
+  // A loop its reboot train parked waits for /reboot-resume (Pick up sends it); one a terminal took is the terminal's.
+  if (trainParked(l) || (typeof l.runner === 'string' && l.runner)) return false;
   if (Array.isArray(st.queued) && st.queued.length) return false;
   if ((Array.isArray(l.parked) ? l.parked : []).some((p) => parkedItem(p).state === 'pending')) return false;
   return typeof l.claude === 'string' && !!l.claude;
@@ -112,10 +136,12 @@ export function pickupMessages(l, { resumed = true, turn = null, skill = false, 
   const queued = (Array.isArray(st.queued) ? st.queued : []).filter((q) => q && typeof q.text === 'string' && q.text.trim());
   const ran = (Number.isFinite(l.sent) && l.sent > 0) || !!l.claude;
   const loopish = !!(l.loop || l.chunk);
-  if (!resumed && ran && (t === 'working' || t === 'asking' || loopish || queued.length || then)) {
+  const train = trainParked(l);
+  if (!resumed && ran && (t === 'working' || t === 'asking' || loopish || train || queued.length || then)) {
     out.push({ text: skill ? `/reboot-resume ${star}` : contextPrompt(l), steered: false });
-  } else if (resumed && t === 'working') {
-    out.push({ text: loopish && skill ? `/reboot-resume ${star}` : CARRY_ON, steered: false });
+  } else if (resumed && (t === 'working' || train)) {
+    // A loop its train parked ended its turn on purpose: /reboot-resume takes it on from its ledger.
+    out.push({ text: (loopish || train) && skill ? `/reboot-resume ${star}` : CARRY_ON, steered: false });
   }
   if (t === 'asking' && !then) out.push({ text: ASK_NOTE, steered: false });
   for (const q of queued) out.push({ text: q.text, steered: !!q.steered });
