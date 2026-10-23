@@ -1,0 +1,72 @@
+/* The wand (0.5.1, ui/wand.jsx): its button, its choices and their states. nexus.css tokens only, so day and night
+   both follow. The spark breathes while the wand works; reduced motion keeps it still and tinted. */
+
+.wand-ic .wand-spark { color: var(--accent); stroke: var(--accent); }
+.wand-ic.is-busy .wand-spark { animation: wand-breathe var(--dur-breathe) var(--ease-breathe) infinite; }
+@keyframes wand-breathe { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+.wand-btn { position: relative; gap: 6px; }
+.wand-btn:not(.has-label) { width: 30px; padding: 0; justify-content: center; }
+.wand-btn.is-small:not(.has-label) { width: 28px; height: 28px; }
+.wand-btn[aria-busy="true"] { opacity: 1; cursor: progress; }
+.wand-dot { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: var(--r-full); background: var(--accent); box-shadow: 0 0 6px var(--glow); }
+.wand-dot.is-quiet { background: var(--text-3); box-shadow: none; }
+.wand-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.wand-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+.achoices { display: flex; flex-direction: column; gap: 8px; }
+.achoice-list { display: flex; flex-direction: column; gap: 6px; }
+.achoice-head { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; color: var(--text-2); }
+
+.achoice {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; width: 100%;
+  padding: 9px 12px; border-radius: var(--r-3); border: 1px solid var(--line-2); background: var(--surface);
+  color: var(--text); text-align: left; cursor: pointer;
+  transition: background var(--dur-snap) var(--ease-snap), box-shadow var(--dur-snap) var(--ease-snap);
+}
+.achoice:hover { background: var(--raised); }
+.achoice:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.achoice.is-picked { background: color-mix(in oklab, var(--accent) 14%, var(--surface)); border-color: transparent; box-shadow: 0 0 0 1.5px var(--accent); }
+.achoice-n {
+  display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px;
+  font-family: var(--font-mono); font-size: 11px; line-height: 1; color: var(--text-3); font-variant-ligatures: none;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.achoice.is-picked .achoice-n { color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 60%, transparent); }
+.achoice-b { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.achoice-l { font-size: 14px; line-height: 20px; font-weight: 600; color: var(--text); text-wrap: pretty; }
+.achoice-w { font-size: 13px; line-height: 18px; color: var(--text-2); text-wrap: pretty; }
+.achoice-tag {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; height: 20px; padding: 0 8px; border-radius: var(--r-full);
+  font-size: 11px; line-height: 16px; color: var(--text-2); background: var(--well); white-space: nowrap;
+}
+.achoice-tag::before { content: ""; width: 6px; height: 6px; border-radius: var(--r-full); background: var(--st-blocked); }
+.achoice.is-in { animation: wand-rise var(--dur-settle) var(--ease-settle) both; }
+@keyframes wand-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.achoice.is-skel { cursor: default; pointer-events: none; min-height: 52px; }
+.achoice.is-skel .achoice-n { box-shadow: none; background: var(--well); }
+.achoice.is-skel .skel-l, .achoice.is-skel .skel-w { display: block; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--well), var(--raised), var(--well)); background-size: 200% 100%; animation: wand-shimmer 1.4s linear infinite; }
+.achoice.is-skel .skel-l { grid-column: 2; width: 62%; margin-top: 4px; }
+.achoice.is-skel .skel-w { grid-column: 2; width: 84%; margin-top: 8px; height: 8px; }
+.achoice.is-skel { grid-template-rows: auto auto; }
+.achoice.is-skel .achoice-n { grid-row: span 2; }
+@keyframes wand-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+.achoice-src { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; line-height: 16px; color: var(--text-3); }
+.achoice-src .wand-ic .wand-spark { color: var(--text-3); stroke: var(--text-3); }
+.achoice-note { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; font-size: 12px; line-height: 17px; color: var(--text-2); }
+.achoice-note > .ic { flex: none; margin-top: 1px; color: var(--text-3); }
+.achoice-note > span { flex: 1 1 220px; min-width: 0; }
+.achoice-note .btn { margin-top: -4px; }
+.achoice-invite { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wand-ic.is-busy .wand-spark { animation: none; opacity: 1; }
+  .achoice.is-in { animation: none; }
+  .achoice.is-skel .skel-l, .achoice.is-skel .skel-w { animation: none; background: var(--raised); }
+}
+
+/* Working: the wand keeps focus (aria-disabled, not disabled) and looks busy, not off. */
+.wand-btn[aria-busy="true"] { cursor: progress; transform: none; }

@@ -36,9 +36,12 @@ import { tonightStart } from '../shared/times.mjs';
 import { createMask, createSecrets, parseRequest } from './secrets.mjs';
 import { readDesign } from './design.mjs';
 import { clearDraftsWith, readDrafts, writeDrafts } from './drafts.mjs';
-import { markPlanAnswersSent, readPlanAnswers, writePlanAnswers } from './plan-answers.mjs';
+import { markPlanAnswersSent, readPlanAnswers, readStoreAt, writePlanAnswers } from './plan-answers.mjs';
+import { createChoices } from './choices.mjs';
+import { specBriefs } from './spec-brief.mjs';
+import { ANSWER_UPLOADS, choiceRefs, choicesWords, imageRefs } from '../shared/choices.mjs';
 import { artifactLink } from '../shared/design-link.mjs';
-import { MAX_SEND_BODY, readAttachments } from '../shared/attachments.mjs';
+import { MAX_IMAGE, MAX_SEND_BODY, MAX_TOTAL, readAttachments, sizeWords } from '../shared/attachments.mjs';
 import { needsFrom } from '../shared/needs.mjs';
 import { saveUploads, uploadFile } from './uploads.mjs';
 import { EFFORTS, HELPER_MODEL, MODELS, effortsFor, modelLabel, validEffort, validModel } from '../shared/models.mjs';
@@ -48,6 +51,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const NEEDS_MS = 10000;
 export const PKG = path.resolve(HERE, '..');
 const MAX_BODY = 1024 * 1024;
+// POST /api/oversight/uploads: one image in base64 and the JSON around it.
+const MAX_UPLOAD_BODY = Math.ceil(MAX_IMAGE * 4 / 3) + 64 * 1024;
 
 export const ADOPT_PASTE = [
   'Clone https://github.com/daretodave/nexus.git to',
@@ -79,13 +84,14 @@ function readPrompt(name) {
  * @param {() => Promise<string>} [o.ghLogin]  how to learn the gh login once (tests stub it; default asks gh)
  * @param {object} [o.git]          createGitView overrides (tests: claims, ttl)
  * @param {function|false} [o.explodeQuery]  the SDK's query() for POST /api/explode (tests); under an injected provider none is loaded
+ * @param {function|false} [o.choicesQuery]  the SDK's query() for the wand (POST /api/oversight/choices); falls back to summaryQuery
  * @param {object} [o.secrets]      the secrets API's seams (tests): { run } a sink's runner, { vault } openVault overrides, { setup } setupVault overrides
  * @param {boolean} [o.swr]         answer the slow reads stale-while-revalidate (swr.mjs). Default: on, and off under an
  *                                  injected provider, where a test reads back what it just wrote
  * @param {object} [o.worktree]     a GUI session's worktree seams (tests): { git(cwd, args, o) } for every git it runs (a
  *                                  delay stands in for a slow checkout), { hooks(repo) } for cloud.mjs safeHooks
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, choicesQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads } = {}) {
   const wtGit = wtOpts.git || cleanGit;
   const wtHooks = wtOpts.hooks || safeHooks;
   const ghOpts = ghRun ? { run: ghRun } : {};
@@ -93,6 +99,16 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   // Run mode moved to .nexus/local.json (A11): carry an older GUI's prefs copy over once.
   await local.migrateRunMode(repo, prefs, async () => { prefs = await repoMod.forgetPrefs(repo, ['agents', 'workflows']); }).catch(() => null);
   const summaries = createSummaries({ repo, readPlan: (r) => readPlan(r), enabled: () => prefs.aiSummaries !== false, query: summaryQuery });
+  // The wand (0.5.1, choices.mjs): the same switch as the summaries; under an injected provider no SDK is loaded.
+  const choices = createChoices({
+    repo,
+    questions: () => repoMod.durableQuestions(repo),
+    isSecret: (text) => !!parseRequest(text),
+    inboxRows: async () => (await inbox()).filter((r) => r.src === 'inbox'),
+    kept: () => readStoreAt(local.primaryRoot(repo)),
+    enabled: () => prefs.aiSummaries !== false,
+    query: choicesQuery ?? summaryQuery ?? (injected ? false : undefined),
+  });
 
   // Many sessions, one server (spec 40): each its own query(), claims session id, worktree and SSE channel. The
   // home session is the one the server starts with: every call that names no session reaches it.
@@ -205,7 +221,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   const steering = createSteering({
     repo,
     // A steer aimed at a session this server runs is drawn on its stage with its state (tugs.mjs).
-    send: (t, row) => (sessionOf(row?.id) || sessionOf(row?.claude) || home).send(t, { steered: true }),
+    send: (t, row, o = {}) => (sessionOf(row?.id) || sessionOf(row?.claude) || home).send(t, { steered: true, images: o.images || [] }),
     guiSession: () => [...sessions.values()].flatMap((s) => [s.id, s.claude]).filter(Boolean),
     hosted: hostedRows,
     home: claudeHome,
@@ -295,12 +311,15 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     }
     const id = newSessionId();
     const cwd = place.worktree || repo;
-    writeStartLedger(root, startLedger({ id, name, cwd, place }));
+    // `origin: 'oversight'`: started by an oversight hand-off, so a later offer to put it away can find it.
+    const origin = b.origin === 'oversight' ? 'oversight' : '';
+    writeStartLedger(root, { ...startLedger({ id, name, cwd, place }), ...(origin ? { origin } : {}) });
     const form = planned ? formStart(planned) : null;
     const s = await host({ id, name, cwd, place, listed: true, form });
-    if (b.prompt && String(b.prompt).trim()) await s.send(String(b.prompt).trim());
+    // Images (an oversight hand-off's answers): image blocks beside the prompt, its first bubble showing them.
+    if (b.prompt && String(b.prompt).trim()) await s.send(String(b.prompt).trim(), Array.isArray(b.images) && b.images.length ? { images: b.images } : {});
     if (planned) formBehind(s, root);
-    return { status: 200, id, name, cwd, worktree: place.worktree || '', branch: place.branch || '', ...(form ? { form } : {}), ...(note ? { note } : {}) };
+    return { status: 200, id, name, cwd, worktree: place.worktree || '', branch: place.branch || '', ...(form ? { form } : {}), ...(note ? { note } : {}), ...(origin ? { origin } : {}) };
   }
 
   /**
@@ -578,7 +597,36 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return repoMod.durableQuestions(repo).some((d) => `${d.file}:${d.line}` === at && parseRequest(d.text));
   }
 
-  /** POST /api/inbox/:id { answer, how }: a parked question (to its session, off its ledger) or a permission. */
+  /**
+   * An answer's images, resolved under the primary checkout: [{ file, name, mediaType, path, full }] for the ones on
+   * disk (a name that is not a content-named upload, or a file not there, is dropped).
+   */
+  function answerImages(root, list) {
+    return imageRefs(list, (f) => !!uploadFile(root, ANSWER_UPLOADS, f)).map((r) => {
+      const f = uploadFile(root, ANSWER_UPLOADS, r.file);
+      return f ? { ...r, mediaType: f.type, path: f.full.replace(/\\/g, '/'), full: f.full } : null;
+    }).filter(Boolean);
+  }
+
+  /**
+   * Image blocks for a session hosted here, read back from disk until MAX_TOTAL; the rest go as paths only, said in
+   * `note`. -> { images: [{ name, mediaType, data, url }], note }
+   */
+  function imageBlocks(refs) {
+    const images = [];
+    let total = 0;
+    let over = 0;
+    for (const r of refs) {
+      let buf;
+      try { buf = fs.readFileSync(r.full); } catch { continue; }
+      if (total + buf.length > MAX_TOTAL) { over += 1; continue; }
+      total += buf.length;
+      images.push({ name: r.name, mediaType: r.mediaType, data: buf.toString('base64'), url: `/api/uploads/${ANSWER_UPLOADS}/${r.file}` });
+    }
+    return { images, note: over ? `${over} ${over === 1 ? 'image' : 'images'} went as file paths only (over ${sizeWords(MAX_TOTAL)} together).` : '' };
+  }
+
+  /** POST /api/inbox/:id { answer, how, images?, choices? }: a parked question (to its session, off its ledger) or a permission. */
   async function settleInbox(id, b) {
     const answer = b.answer == null ? '' : String(b.answer);
     if (id.startsWith('perm:')) {
@@ -592,7 +640,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const q = raw === undefined ? null : parkedItem(raw).q;
     if (q == null || !sameParked(ref, q)) return { status: 409, error: 'the parked list changed; reload and try again' };
     const action = b.how === 'approved' || b.how === 'default' ? 'approve' : 'change';
-    return steering.settleParked(ref.ledger, { index: ref.index, q, action, answer: answer || undefined });
+    // Images go as paths: a parked answer reaches its session as text (a board line), and Read opens an image.
+    const paths = answerImages(await primaryRoot(repo), b.images).map((i) => i.path);
+    // The choices shown beside it go too, numbered, so "the first one" in the words means something.
+    const ch = action === 'change' ? choicesWords(b.choices) : null;
+    const said = ch ? `${answer}${answer ? ' ' : ''}(Choices shown: ${ch.shown}. Picked: ${ch.picked}.)` : answer;
+    const words = paths.length ? `${said || ''}${said ? ' ' : ''}Images: ${paths.join(', ')}` : said;
+    return steering.settleParked(ref.ledger, { index: ref.index, q, action: paths.length && action === 'approve' ? 'change' : action, answer: words || undefined });
   }
 
   /** POST /api/prefs: each known key checked; model and effort against the list, the effort against the model's levels. */
@@ -708,21 +762,32 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           if (!rows.length) return send(res, 400, { error: 'no answers' });
           // A value never goes through a session: a secret request is set in the Vault (POST /api/secrets/:name).
           if (rows.some(secretRequestRow)) return send(res, 409, { error: 'a secret request is answered in the Vault, never in a session: set the value there or in your terminal' });
-          const clean = rows.map((a) => ({ file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer) }));
+          // Each answer's images (0.5.1): resolved under the primary checkout; one that is not there is dropped.
+          const root = await primaryRoot(repo);
+          const clean = rows.map((a) => ({
+            file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer),
+            how: a.how === 'decide' ? 'decide' : a.how === 'default' ? 'default' : 'answered',
+            images: answerImages(root, a.images),
+            choices: choiceRefs(a.choices),
+          }));
           const ids = clean.map((a) => `${a.file}:${a.line}`);
+          const refs = clean.flatMap((a) => a.images);
           if (b.session === 'new') {
             // Continue with no session to go back to (spec 53): a new one starts (in the checkout, as /design and /plot
-            // hand-offs do), running /oversight with them all.
-            const r = await startSession({ worktree: false, prompt: repoMod.answersPrompt(clean, repoMod.isOwner(repo)) });
+            // hand-offs do), running /oversight with them all, the images beside its first prompt.
+            const blocks = imageBlocks(refs);
+            const r = await startSession({ worktree: false, prompt: repoMod.answersPrompt(clean, repoMod.isOwner(repo)), images: blocks.images, origin: 'oversight' });
             if (r.status === 200) markPlanAnswersSent(repo, ids, r.id);
-            return send(res, r.status, { ...r, ok: r.status === 200, session: r.id });
+            return send(res, r.status, { ...r, ok: r.status === 200, session: r.id, ...(blocks.note ? { note: blocks.note } : {}) });
           }
           if (b.session) {
             // Continue (spec 53): every answer in one message to the session that asked (or the one picked), which
-            // applies them and goes on. It reaches that session's next turn, and only that session.
-            const r = await steering.steer(String(b.session), repoMod.answersPrompt(clean, repoMod.isOwner(repo), { resume: true }), { kind: 'answer' });
+            // applies them and goes on. It reaches that session's next turn, and only that session. A session hosted
+            // here gets the images as blocks too; a terminal one over the board reads the paths.
+            const blocks = imageBlocks(refs);
+            const r = await steering.steer(String(b.session), repoMod.answersPrompt(clean, repoMod.isOwner(repo), { resume: true }), { kind: 'answer', images: blocks.images });
             if (r.status === 200) markPlanAnswersSent(repo, ids, r.session || b.session);
-            return send(res, r.status, r);
+            return send(res, r.status, { ...r, ...(r.via === 'sdk' && blocks.note ? { note: blocks.note } : {}) });
           }
           const prompt = repoMod.answersPrompt(clean, repoMod.isOwner(repo));
           await sendPrompt(prompt);
@@ -741,8 +806,24 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           const qs = repoMod.durableQuestions(repo);
           // A secret request is answered by the vault's key card only: its value is never kept here.
           const secretIds = new Set(qs.filter((q) => parseRequest(q.text)).map((q) => q.id));
-          const r = writePlanAnswers(repo, patch, qs, { skip: (id) => secretIds.has(id) });
+          // An answer's images are kept only when the upload is there (POST /api/oversight/uploads).
+          const root = await primaryRoot(repo);
+          const r = writePlanAnswers(repo, patch, qs, { skip: (id) => secretIds.has(id), imageOk: (f) => !!uploadFile(root, ANSWER_UPLOADS, f) });
           return send(res, 200, { ok: true, ...r });
+        }
+        // The wand (0.5.1; choices.mjs): GET is the cache alone, POST asks for these ids (one call per spec).
+        case 'GET /api/oversight/choices': return send(res, 200, await choices.cached());
+        case 'POST /api/oversight/choices': { const b = await body(req); return send(res, 200, await choices.ask(b.ids, { fresh: !!b.fresh })); }
+        // Grill me's spec briefs (spec-brief.mjs): read from the spec, no model.
+        case 'GET /api/oversight/specs': return send(res, 200, specBriefs(repo, (url.searchParams.get('files') || '').split(',').filter(Boolean)));
+        // An image for an answer, uploaded as it is attached, so a draft holds a small reference (uploads.mjs).
+        case 'POST /api/oversight/uploads': {
+          const b = await body(req, MAX_UPLOAD_BODY);
+          const att = readAttachments([{ kind: 'image', name: b.name, mediaType: b.mediaType, data: b.data }]);
+          if (att.error) return send(res, / up to /.test(att.error) ? 413 : 400, { error: att.error });
+          const [img] = att.images;
+          const [ref] = saveUploads(await primaryRoot(repo), ANSWER_UPLOADS, [img]);
+          return send(res, 200, { file: ref.url.split('/').pop(), name: img.name, mediaType: img.mediaType });
         }
         // Answers saved as they are typed (spec 51, A1; drafts.mjs). POST is the same as PUT, for sendBeacon.
         case 'GET /api/drafts': return send(res, 200, { drafts: readDrafts(repo) });

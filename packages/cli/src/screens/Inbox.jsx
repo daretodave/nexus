@@ -16,14 +16,20 @@
 // A plan question's answer is kept, not sent (spec 53, A1): it records on the server at once (GET/PUT
 // /api/plan-answers), reads "answered · not sent yet" across reloads and tabs, and goes back with its spec's Continue,
 // every answer of that spec in one message to the session that asked (headsdown-inbox/planAnswers.js).
+// Answer first (0.5.1): a plan, parked or cloud question opens on its answer card (oversight/AnswerCard.jsx): the
+// wand's choices, a textarea that takes images, You decide, Keep. Every plan row and spec header has a wand
+// (data/choices.js); Grill me (screens/Grill.jsx) walks the open plan questions full screen, spec by spec. The plan
+// answers' writer is shared with Grill me (headsdown-inbox/useOversightAnswers.js).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ViewFrame, ViewHead, ViewTitle, ChoiceButtons, LoopStatus, Icon, Orb, Ring, SessTag, Empty, ToastHost, KeyCard, KeyOrb, Markdown, cx, useShell,
 } from '../ui/index.js';
 import '../styles/oversight.css';
+import '../styles/answer-card.css';
 import { countdown } from '../../shared/times.mjs';
-import { api, server, useCloudLoop, useInbox, useOversight, usePlanAnswers, useSecrets, useSessions } from '../data/index.js';
+import { api, server, useCloudLoop, useInbox, useOversight, useSecrets } from '../data/index.js';
+import { useChoices } from '../data/choices.js';
 import { draftFailed, draftSending, draftSent, useDrafts } from '../data/drafts.js';
 import { askSend, sendsNow } from '../data/answers.js';
 import { NO_ANSWER } from '../../shared/times.mjs';
@@ -31,16 +37,22 @@ import { AnswerField } from '../ui/answer-field.jsx';
 import { PATHS } from '../routes.js';
 import { batchEligible, batchWhyLine, collect, clock, names, planGroups } from './headsdown-inbox/inboxModel.js';
 import {
-  continueBody, continueChoices, continueTarget, keepsAnswer, keptDone, planKey, sendable,
+  continueChoices, continueTarget, imageCount, keepsAnswer, planKey, sendable,
 } from './headsdown-inbox/planAnswers.js';
 import { ContinueBar } from './headsdown-inbox/ContinueBar.jsx';
+import { PlanGroups } from './headsdown-inbox/PlanGroups.jsx';
+import { useOversightAnswers } from './headsdown-inbox/useOversightAnswers.js';
+import { AnswerCard, KeptAnswer } from './oversight/AnswerCard.jsx';
+import { WandBtn } from '../ui/wand.jsx';
+import { choiceId } from '../ui/answer-logic.js';
+import { readGrillAt, grillLeft } from './grill/model.js';
 import { keyCard } from './vault/model.js';
 import { useKeyCards } from './vault/useKeyCards.js';
 
 const KIND_CLS = { now: 'is-now', parked: 'is-parked', cloud: 'is-cloud', plan: 'is-cloud' };
 const KINDS = ['now', 'parked', 'plan', 'cloud'];
-const HOW_META = { approved: 'approved: ', default: 'default: ', answered: 'answered: ', changed: 'changed: ' };
-const HOW_LABEL = { approved: 'approved', default: 'default', answered: 'answered', changed: 'changed', set: 'set' };
+const HOW_META = { approved: 'approved: ', default: 'default: ', answered: 'answered: ', changed: 'changed: ', decide: 'left to the session' };
+const HOW_LABEL = { approved: 'approved', default: 'default', answered: 'answered', changed: 'changed', set: 'set', decide: 'left to the session' };
 const CLOUD_TAG = { width: 12, height: 12, color: 'var(--accent)' };
 
 const sessName = (x) => x.session?.name || '';
@@ -111,19 +123,30 @@ export default function Inbox() {
   const [batch, setBatch] = useState(0);
   const [confirm, setConfirm] = useState(false);
   const [errs, setErrs] = useState({});
-  // Plan answers kept on the server (spec 53): the store as last read or written here; a poll waits while a write is out.
-  const keptRes = usePlanAnswers(8000);
-  const sessionsRes = useSessions(8000);
-  const sessions = sessionsRes.status === 'ready' && Array.isArray(sessionsRes.data) ? sessionsRes.data : [];
-  const [planStore, setPlanStore] = useState({});
-  const writing = useRef(0);
-  useEffect(() => {
-    if (keptRes.status === 'ready' && !writing.current) setPlanStore(keptRes.data?.answers || {});
-  }, [keptRes.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Plan answers kept on the server (spec 53), written through the writer Grill me shares. One that did not keep
+  // comes back off here.
+  const answers = useOversightAnswers({
+    items: current,
+    onFail: (ids) => setDone((d) => { const c = { ...d }; ids.forEach((id) => delete c[id]); return c; }),
+  });
+  const sessions = answers.sessions;
+  const continuing = answers.sending; // the spec group whose Continue is on its way
   const [sendTo, setSendTo] = useState({}); // spec group key -> the target picked with "send to…"
-  const [continuing, setContinuing] = useState(null); // the spec group whose Continue is on its way
+  const [notes, setNotes] = useState({}); // quiet toasts: an image that went as a path only
+  // The wand (0.5.1): press-only here, never on page load. Off with the AI helpers switch in Settings.
+  const choices = useChoices();
+  const wandOn = shell.app?.data?.prefs?.aiSummaries !== false;
+  const askWand = (x, fresh = false) => { const id = choiceId(x); if (id) choices.ask([id], { fresh }); };
+  // Back from Grill me: what it kept, said once, and focus on the button that opened it.
+  const loc = useLocation();
+  useEffect(() => {
+    if (!loc.state?.fromGrill) return;
+    if (loc.state.toast) setNotes((n) => ({ ...n, grill: loc.state.toast }));
+    const t = setTimeout(() => document.querySelector('.ibx-grill a')?.focus(), 50);
+    return () => clearTimeout(t);
+  }, [loc.key]); // eslint-disable-line react-hooks/exhaustive-deps
   // What is settled: this screen's own, then the kept plan answers over them (the server's word on sent).
-  const doneAll = { ...done, ...keptDone(current, planStore) };
+  const doneAll = { ...done, ...answers.kept };
   const doneRef = useRef(doneAll);
   doneRef.current = doneAll;
   const drafts = useDrafts();
@@ -169,28 +192,6 @@ export default function Inbox() {
   const loopName = shell.repo ? `${shell.repo} loop` : 'cloud loop';
   const loopAt = cloudNext ? `the ${cloudNext} loop` : 'the next loop';
 
-  /**
-   * Keep plan answers on the server ({ "<file:line>": { answer, how } | null }): shown at once, written through PUT
-   * /api/plan-answers. One that did not keep comes back off, with why.
-   */
-  async function keepPlan(patch, ids = []) {
-    setPlanStore((st) => {
-      const c = { ...st };
-      for (const [k, v] of Object.entries(patch)) { if (v) c[k] = { ...v, at: Date.now() }; else delete c[k]; }
-      return c;
-    });
-    writing.current += 1;
-    try {
-      const r = await server.savePlanAnswers(patch);
-      setPlanStore(r.answers || {});
-    } catch (e) {
-      setDone((d) => { const c = { ...d }; ids.forEach((id) => delete c[id]); return c; });
-      setErrs((er) => ({ ...er, ...Object.fromEntries(ids.map((id) => [id, `Not kept: ${e.message}`])) }));
-      keptRes.reload();
-    } finally {
-      writing.current -= 1;
-    }
-  }
 
   const submit = useCallback(async (entries, nextDone) => {
     const fail = (ids, msg) => {
@@ -199,15 +200,12 @@ export default function Inbox() {
     };
     const sent = (ids) => setDone((d) => { const c = { ...d }; ids.forEach((id) => { if (c[id]) c[id] = { ...c[id], sent: true }; }); return c; });
     const asks = new Map();
-    const plan = {};
-    const planIds = [];
-    for (const [x, a, how] of entries) {
+    const plan = [];
+    for (const [x, a, how, images, choices] of entries) {
       setErrs((e) => { if (!e[x.id]) return e; const c = { ...e }; delete c[x.id]; return c; });
       if (keepsAnswer(x)) {
         // A plan answer is kept, not sent: it goes back with its spec's Continue. Its typed words are the answer now.
-        plan[planKey(x)] = { answer: a, how: how === 'answered' || how === 'changed' ? 'answered' : 'default' };
-        planIds.push(x.id);
-        drafts.clear(x.id);
+        plan.push([x, a, how, images, choices]);
         continue;
       }
       if (!sendsNow(x)) {
@@ -219,15 +217,16 @@ export default function Inbox() {
       draftSending(x.id);
       try {
         if (x.src === 'perm') await server.answerPermission(x.raw.id, a !== 'Deny', a === 'Always allow');
-        else await api(`/api/inbox/${encodeURIComponent(x.id)}`, { answer: a, how });
+        else await api(`/api/inbox/${encodeURIComponent(x.id)}`, { answer: a, how, ...(images && images.length ? { images } : {}), ...(choices ? { choices } : {}) });
         sent([x.id]);
         draftSent(x.id);
+        if (images && images.length) drafts.clear(`${x.id}:img`);
       } catch (e) {
         draftFailed(x.id);
         fail([x.id], e.status === 404 && x.src === 'inbox' ? 'Answering here is not served yet (POST /api/inbox/:id).' : e.message);
       }
     }
-    if (planIds.length) await keepPlan(plan, planIds);
+    if (plan.length) await answers.keep(plan);
     // An ask carries several questions; once all of them are settled it goes on its own (Send takes it sooner).
     for (const askId of asks.keys()) {
       if (askItems(askId, nextDone).every((x) => nextDone[x.id])) await sendAsk(askId, nextDone);
@@ -276,19 +275,20 @@ export default function Inbox() {
   const settleMany = useCallback((entries) => {
     if (!entries.length) return;
     const next = { ...doneRef.current };
-    for (const [x, a, how] of entries) next[x.id] = { a, how, item: x, ...(keepsAnswer(x) ? { kept: true } : {}) };
+    for (const [x, a, how, images] of entries) next[x.id] = { a, how, item: x, ...(images && images.length ? { images } : {}), ...(keepsAnswer(x) ? { kept: true } : {}) };
     setDone(next);
     const after = items.find((i) => !next[i.id]);
     setSel(after ? after.id : entries[entries.length - 1][0].id);
     submit(entries, next);
   }, [items, submit]);
 
-  const settle = (x, a, how) => settleMany([[x, a, how]]);
+  const settle = (x, a, how, images, choices) => settleMany([[x, a, how, images, choices]]);
   const reopen = (x) => {
     if (x.src === 'ask') drafts.clear(pickKey(x));
     setDone((d) => { const c = { ...d }; delete c[x.id]; return c; });
-    // A kept plan answer, changed: it leaves the store until the new one is given.
-    if (keepsAnswer(x) && planStore[planKey(x)]) keepPlan({ [planKey(x)]: null });
+    // A kept plan answer, changed: its words and images go back into the box, and it leaves the store until the new
+    // one is given.
+    if (keepsAnswer(x) && answers.store[planKey(x)]) answers.reopen(x);
     setSel(x.id);
   };
   /**
@@ -298,21 +298,11 @@ export default function Inbox() {
   async function continueGroup(pg, target) {
     const list = sendable(pg.items, doneRef.current);
     if (!list.length || continuing) return;
-    setContinuing(pg.key);
-    try {
-      const body = continueBody(list, doneRef.current, target);
-      const r = await server.continueAnswers(body.answers, body.session);
-      const to = r.session || body.session;
-      const ids = list.map((i) => i.id);
-      setPlanStore((st) => { const c = { ...st }; for (const i of list) if (c[planKey(i)]) c[planKey(i)] = { ...c[planKey(i)], sent: Date.now(), to }; return c; });
-      setDone((d) => { const c = { ...d }; ids.forEach((id) => { if (c[id]) c[id] = { ...c[id], sent: true, to }; }); return c; });
-      keptRes.reload();
-      sessionsRes.reload();
-    } catch (e) {
-      setErrs((er) => ({ ...er, [`continue:${pg.key}`]: e.message }));
-    } finally {
-      setContinuing(null);
-    }
+    const r = await answers.send(list, target, pg.key, doneRef.current);
+    if (!r.ok) return;
+    const ids = list.map((i) => i.id);
+    setDone((d) => { const c = { ...d }; ids.forEach((id) => { if (c[id]) c[id] = { ...c[id], sent: true, to: r.session }; }); return c; });
+    if (r.note) setNotes((n) => ({ ...n, [`note:${pg.key}`]: r.note }));
   }
   const settleKind = (kind, how) => settleMany(openItems.filter((x) => x.kind === kind && x.hasDefault).map((x) => [x, x.opts[0], how]));
   // Batch-answer with defaults: only the questions that carry a default (a live ask's first option, a parked
@@ -389,22 +379,37 @@ export default function Inbox() {
   const row = (r) => {
     const d = doneAll[r.id];
     const settled = !!d;
+    const words = r.kind === 'plan' && keepsAnswer(r);
     let meta = '';
     let metaB = '';
-    if (settled) { meta = d.how === 'set' ? `${r.secret} set · ` : HOW_META[d.how] || 'answered: '; metaB = d.a; }
+    if (settled && words) { meta = `${r.raw.file}:${r.raw.line}`; }
+    else if (settled) { meta = d.how === 'set' ? `${r.secret} set · ` : HOW_META[d.how] || 'answered: '; metaB = d.how === 'decide' ? '' : d.a; }
     else if (r.secret) { meta = `plan · ${r.chunk} · `; metaB = 'needs a value, no default'; }
     else if (r.src === 'durable') { meta = `${r.raw.file}:${r.raw.line}${r.age ? ` · ${r.age}` : ''}${r.hasDefault ? ' · recommends ' : ''}`; metaB = r.hasDefault ? r.opts[0] : ''; }
     else if (r.kind === 'now') meta = [r.who, r.chunk, r.age].filter(Boolean).join(' · ');
     else { meta = `${[r.kind === 'cloud' ? loopName : r.who, r.chunk, r.at].filter(Boolean).join(' · ')}${r.hasDefault ? ' · assumed ' : ''}`; metaB = r.hasDefault ? r.opts[0] : ''; }
+    // A plan row's third line: what you answered (or left to the session), or what you are writing.
+    const draft = words && !settled ? drafts.get(r.id).trim() : '';
+    let ans = null;
+    if (words && settled) {
+      ans = d.how === 'decide'
+        ? <span className="ibx-ans">left to the session{d.sent ? '' : ' · not sent yet'}</span>
+        : <span className="ibx-ans"><b>{oneLine(d.a)}</b>{d.images?.length ? <><Icon name="image" size={12} />{d.images.length}</> : null}</span>;
+    } else if (draft) ans = <span className="ibx-ans"><i>draft: {oneLine(draft)}</i></span>;
+    const entry = words ? choices.get(choiceId(r)) : null;
+    const ready = words && !settled && !draft && entry?.status === 'ready';
     return (
       <div key={r.id} className={cx('ibx-row', r.kind === 'plan' && 'is-plan', x?.id === r.id && 'is-selected', settled && 'is-settled')}>
+        {ready ? <span className="ibx-ready" title="Choices are ready" /> : null}
         {r.secret ? <KeyOrb small state={settled ? (d.how === 'set' ? 'set' : 'quiet') : ''} icon="key" /> : <span className={cx('urg', settled ? 'is-done' : KIND_CLS[r.kind])} />}
         {r.kind === 'plan' ? null : <Tag x={r} />}
         <button className="ibx-open" type="button" onClick={() => setSel(r.id)} aria-label={`Open: ${oneLine(r.q)}`}>
           <span className="ibx-q">{r.secret ? <>{r.chunk} needs <code className="secret-code">{r.secret}</code></> : <Markdown inline text={oneLine(r.q)} />}</span>
           <span className="ibx-meta">{meta}{metaB ? <b>{metaB}</b> : null}</span>
+          {ans}
         </button>
         <div className="ibx-acts">
+          {words && !settled && wandOn ? <WandBtn small className="ibx-wand" state={entry?.status} onClick={() => { askWand(r, entry?.status === 'ready'); setSel(r.id); }} /> : null}
           {!settled && r.kind === 'now' && r.hasDefault ? <button className="btn btn-ghost btn-s" type="button" onClick={() => settle(r, r.opts[0], 'default')}>Use default</button> : null}
           {!settled && r.kind !== 'now' && r.hasDefault ? <button className="btn btn-s" type="button" onClick={() => settle(r, r.opts[0], 'approved')}><Icon name="check" size={14} />Approve</button> : null}
           {!settled && r.secret ? <button className="btn btn-s btn-warn" type="button" onClick={() => setSel(r.id)}><Icon name="key" size={14} />Add value</button> : null}
@@ -425,13 +430,37 @@ export default function Inbox() {
     </section>
   ) : null);
 
-  // In the plan: a header per spec (its number and title) over its questions, then each other file's [needs-user-call] rows
+  // In the plan: a header per spec (its number and title, its wand and Grill me) over its questions, then each other
+  // file's [needs-user-call] rows
   const planBody = (
     <PlanGroups
       items={g.plan} row={row} isDone={isDone} done={doneAll} sessions={sessions} sendTo={sendTo} continuing={continuing}
-      onPick={(key, id) => setSendTo((m) => ({ ...m, [key]: id }))} onContinue={continueGroup}
+      onPick={(key, id) => setSendTo((m) => ({ ...m, [key]: id }))} onContinue={continueGroup} choices={choices} wandOn={wandOn}
     />
   );
+
+  // Grill me: every open plan question in words (not a secret), and where a run left off.
+  const grillable = openItems.filter((i) => i.kind === 'plan' && keepsAnswer(i));
+  const grillAt = readGrillAt(drafts.get('grill:at'));
+  const resumeLeft = grillAt ? grillLeft(grillAt, grillable) : 0;
+
+  // A selected plan question's spec Continue, inside the panel: once anything in its spec is kept.
+  const panelFoot = (it) => {
+    if (!it || it.kind !== 'plan' || !keepsAnswer(it)) return null;
+    const pg = planGroups(g.plan).find((p) => p.items.some((i) => i.id === it.id));
+    if (!pg) return null;
+    const list = sendable(pg.items, doneAll);
+    if (!list.length) return <div className="acard-foot">Kept here until you send it. {pg.n ? `Spec ${pg.n}'s` : 'Its'} Continue sends it.</div>;
+    const targets = continueChoices(sessions);
+    const found = continueTarget(pg, sessions);
+    const target = targets.find((c) => c.id === sendTo[pg.key]) || found;
+    return (
+      <ContinueBar
+        count={list.length} images={imageCount(list, doneAll)} target={target} asked={target.id === found.id && found.why === 'asked'} choices={targets}
+        sending={continuing === pg.key} onPick={(id) => setSendTo((m) => ({ ...m, [pg.key]: id }))} onSend={() => continueGroup(pg, target)}
+      />
+    );
+  };
 
   // The Send bar under a live ask's question: from its first pick on, until it has gone.
   const askBar = (askId) => {
@@ -467,8 +496,14 @@ export default function Inbox() {
               { value: 'cloud', label: `Cloud runs ${n.cloud}`, title: n.cloud ? undefined : 'No cloud run has parked a question' },
             ]}
           />
+          {grillable.length ? (
+            <span className="ibx-grill">
+              <Link className="btn btn-primary" to={PATHS.grill()}><Icon name="list" size={14} />Grill me · {grillable.length}</Link>
+              {resumeLeft ? <Link className="btn btn-ghost ibx-resume" to={PATHS.grill({ resume: true })}>Resume grill me · {resumeLeft} left</Link> : null}
+            </span>
+          ) : null}
           <span className="ibx-batch" title={batchWhy}>
-            <button className="btn btn-primary" type="button" onClick={() => setConfirm(true)} disabled={!batchable} aria-label={`Batch-answer with defaults: ${batchWhy}`}><Icon name="rays8" size={14} />Batch-answer with defaults{batchable ? <span className="ibx-batch-n">{batchable}</span> : null}</button>
+            <button className="btn" type="button" onClick={() => setConfirm(true)} disabled={!batchable} aria-label={`Batch-answer with defaults: ${batchWhy}`}><Icon name="rays8" size={14} />Batch-answer with defaults{batchable ? <span className="ibx-batch-n">{batchable}</span> : null}</button>
           </span>
         </div>
       </ViewHead>
@@ -503,17 +538,30 @@ export default function Inbox() {
                 <span><b>{batch} settled with defaults.</b> {batchLine()}.{keyNote}</span>
               </div>
             ) : null}
-            {x ? <Detail x={x} d={doneAll[x.id]} items={g.now} done={doneAll} settle={settle} reopen={reopen} ask={x.src === 'ask' ? askBar(x.askId) : null} effect={effect(x)} loopAt={loopAt} repo={shell.repo} keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)} /> : null}
+            {x ? (
+              <Detail
+                x={x} d={doneAll[x.id]} items={g.now} done={doneAll} settle={settle} reopen={reopen} ask={x.src === 'ask' ? askBar(x.askId) : null} effect={effect(x)} loopAt={loopAt} repo={shell.repo}
+                keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)}
+                entry={choiceId(x) ? choices.get(choiceId(x)) : null} onAsk={choiceId(x) && wandOn ? (fresh) => askWand(x, fresh) : null}
+                foot={panelFoot(x)} sessions={sessions}
+              />
+            ) : null}
           </aside>
         </div>
       )}
-      <ToastHost toasts={Object.entries(errs).map(([id, msg]) => ({ id, kind: 'error', title: 'Not sent', body: msg, onDismiss: () => setErrs((e) => { const c = { ...e }; delete c[id]; return c; }) }))} />
+      <ToastHost
+        toasts={[
+          ...Object.entries(errs).map(([id, msg]) => ({ id, kind: 'error', title: 'Not sent', body: msg, onDismiss: () => setErrs((e) => { const c = { ...e }; delete c[id]; return c; }) })),
+          ...Object.entries(answers.errors).map(([id, msg]) => ({ id: `a:${id}`, kind: 'error', title: id.startsWith('continue:') ? 'Not sent' : 'Not kept', body: msg, onDismiss: () => answers.dismiss(id) })),
+          ...Object.entries(notes).map(([id, msg]) => ({ id, kind: 'info', title: id === 'grill' ? 'Grill me' : 'Sent', body: msg, onDismiss: () => setNotes((n) => { const c = { ...n }; delete c[id]; return c; }) })),
+        ]}
+      />
     </ViewFrame>
   );
 }
 
-/** The selected question: a pending tug, a parked card, or the settled tug; then its context. */
-function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, keyProps, onKeyChange }) {
+/** The selected question: a pending tug, an answer card, or the settled one; then its context. */
+function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, keyProps, onKeyChange, entry, onAsk, foot, sessions = [] }) {
   const sess = sessName(x);
   const src = x.src === 'durable' ? `${x.raw.file}:${x.raw.line}` : x.kind === 'cloud'
     ? [`${repo ? `${repo} loop` : 'cloud run'}${x.run ? ` ${x.run}` : ''}`, x.chunk].filter(Boolean).join(' · ')
@@ -528,6 +576,10 @@ function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, 
     // The key card: no default, no countdown. Saved, it folds into one line and the chunk relights.
     const phase = d?.how === 'set' && keyProps.phase === 'pending' ? 'saved' : keyProps.phase;
     card = <KeyCard key={keyProps.card.key} {...keyProps} phase={phase} saved={keyProps.saved || (d ? { places: d.a, failed: [] } : undefined)} onChange={() => { keyProps.onChange(); onKeyChange(); }} />;
+  } else if (d && keepsAnswer(x)) {
+    // A kept plan answer: what you answered, its images, not sent yet (or sent to whom), Change answer.
+    const toName = d.to ? sessions.find((s) => s.id === d.to)?.name || '' : '';
+    card = <KeptAnswer x={x} d={{ ...d, toName }} onChange={canReopen ? () => reopen(x) : null} />;
   } else if (d) {
     const resultA = d.how === 'changed' ? 'Changed to ' : d.how === 'approved' ? 'Approved ' : d.how === 'default' ? 'Took the default, ' : 'You chose ';
     let resultC;
@@ -561,47 +613,11 @@ function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, 
         ) : null}
       </div>
     );
-  } else if (x.kind === 'plan') {
-    // A plan question: the whole of it, drawn; its recommendation (when it names one) to take, or your words.
-    card = (
-      <div className="pcard is-plan" role="group" aria-label="Plan question">
-        <div className="pcard-top">
-          <span className="ibx-at"><Icon name="list" size={14} /><span>{x.raw.file}:{x.raw.line}</span></span>
-          <span>{x.who}</span>
-        </div>
-        <Markdown className="pcard-q" text={x.q} />
-        {x.hasDefault ? (
-          <>
-            <div className="pcard-assumed"><Icon name="rays8" size={14} style={{ color: 'var(--st-blocked)' }} /><span>It recommends <b>{x.opts[0]}</b></span></div>
-            <div className="pcard-acts">
-              <button className="btn btn-s btn-primary" type="button" onClick={() => settle(x, x.opts[0], 'approved')}><Icon name="check" size={14} />Take the recommendation</button>
-            </div>
-          </>
-        ) : null}
-        <div className="tug-foot"><AnswerField draftKey={x.id} placeholder="Your answer…" button="Send answer" onSend={(t) => settle(x, t, 'answered')} /></div>
-      </div>
-    );
   } else {
-    card = (
-      <div className="pcard" role="group" aria-label="Parked question">
-        <div className="pcard-top">
-          {x.kind === 'cloud' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="cloud" size={14} /><span>cloud run {x.run}</span></span>
-              : x.session ? <SessTag session={x.session} /> : null}
-          <span>{[x.who, x.chunk, x.at].filter(Boolean).join(' · ')}</span>
-        </div>
-        <Markdown className="pcard-q" text={x.q} />
-        {x.hasDefault ? <div className="pcard-assumed"><Icon name="clock" size={14} style={{ color: 'var(--st-blocked)' }} /><span>{x.who} assumed <b>{x.opts[0]}</b></span></div> : null}
-        {x.opts.length ? <Opts x={x} onPick={(o, i) => settle(x, o, i === 0 && x.hasDefault ? 'approved' : 'changed')} /> : null}
-        {x.hasDefault ? (
-          <div className="pcard-acts">
-            <button className="btn btn-s btn-primary" type="button" onClick={() => settle(x, x.opts[0], 'approved')}><Icon name="check" size={14} />Approve the default</button>
-            <span className="t-body-s c-3">{x.kind === 'cloud' ? 'Pick another option and it lands in the plan for the next loop.' : 'Pick another option and a fix chunk is queued for this session.'}</span>
-          </div>
-        ) : (
-          <div className="tug-foot"><AnswerField draftKey={x.id} placeholder="Your answer…" button="Send answer" onSend={(t) => settle(x, t, 'answered')} /></div>
-        )}
-      </div>
-    );
+    // A plan question, or one a session parked: answer first (oversight/AnswerCard.jsx). Its recommendation (or the
+    // session's assumption) is choice 1; the row's Approve still takes it in one click.
+    const note = x.kind === 'plan' ? null : x.kind === 'cloud' ? 'Your answer lands in the plan for the next loop.' : 'Keep its assumption and nothing is redone; anything else queues a fix chunk for this session.';
+    card = <AnswerCard key={x.id} x={x} entry={entry} onAsk={onAsk} onKeep={(t, imgs, how, ch) => settle(x, t, how, imgs, ch)} repo={repo} foot={x.kind === 'plan' ? foot : null} footNote={note} />;
   }
 
   const from = x.src === 'durable' ? `${x.raw.file}, line ${x.raw.line}` : x.kind === 'cloud' ? `${repo ? `${repo} cloud loop, run` : 'cloud loop run'} ${x.run}${x.at ? ` at ${x.at}` : ''}` : `${sess ? `${sess}, ` : ''}agent ${x.who}`;
@@ -637,33 +653,6 @@ function AskSendBar({ label, answered, total, sending, onSend }) {
       <button className="btn btn-primary btn-s" type="button" disabled={sending} onClick={onSend}>{sending ? 'Sending…' : label}</button>
     </div>
   );
-}
-
-/** In the plan's body: a header per spec (number, title, open count) over its questions; other files after, by path. */
-// Under each group, its Continue (spec 53): "Send 2 answers to vega and continue", live from the first answer.
-function PlanGroups({ items, row, isDone, done, sessions, sendTo, continuing, onPick, onContinue }) {
-  const choices = continueChoices(sessions);
-  return planGroups(items).map((pg) => {
-    const count = sendable(pg.items, done).length;
-    const found = continueTarget(pg, sessions);
-    const target = choices.find((c) => c.id === sendTo[pg.key]) || found;
-    const words = pg.items.some(keepsAnswer);
-    return (
-      <div key={pg.key} className="ibx-spec" role="group" aria-label={pg.n ? `Spec ${pg.n} ${pg.title}` : pg.file}>
-        <div className="ibx-spec-h">
-          {pg.n ? <><span className="ibx-spec-n">{pg.n}</span><span className="ibx-spec-t">{pg.title || pg.file}</span></> : <span className="ibx-spec-t is-file">{pg.file}</span>}
-          <span className="ibx-spec-c">{pg.items.filter((i) => !isDone(i)).length} open</span>
-        </div>
-        {pg.items.map(row)}
-        {words ? (
-          <ContinueBar
-            count={count} target={target} asked={target.id === found.id && found.why === 'asked'} choices={choices}
-            sending={continuing === pg.key} onPick={(id) => onPick(pg.key, id)} onSend={() => onContinue(pg, target)}
-          />
-        ) : null}
-      </div>
-    );
-  });
 }
 
 /** Batch-answer, before it sends: the count and each question with the default it would take. */

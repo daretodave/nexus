@@ -68,6 +68,13 @@ export const server = {
   savePlanAnswers: (answers) => api('/api/plan-answers', { answers }),
   /** A spec's Continue: every kept answer in one message to `session` (its id, or 'new' to start one running /oversight). */
   continueAnswers: (answers, session) => api('/api/oversight/answer', { answers, session }),
+  /** The wand (0.5.1): POST { ids, fresh } -> { choices: { [id]: Choice }, errors? }; GET is the cache alone. */
+  choices: (ids, fresh) => api('/api/oversight/choices', { ids, fresh: !!fresh }),
+  cachedChoices: () => api('/api/oversight/choices'),
+  /** Grill me's spec briefs: { specs: { [file]: { n, title, lede, why } } }. */
+  specBriefs: (files) => api(`/api/oversight/specs?files=${encodeURIComponent(files.join(','))}`),
+  /** One image for an answer { name, mediaType, data } -> { file, name, mediaType, demo? }. */
+  uploadAnswerImage: (img) => api('/api/oversight/uploads', img),
   announce: (text) => api('/api/announce', { text }),
   claims: () => api('/api/claims'),
   releaseClaim: (id) => api('/api/claims/release', { id }),

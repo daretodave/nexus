@@ -16,6 +16,7 @@ const SCREENS = {
   Onboarding: () => import('./screens/Onboarding.jsx'),
   HeadsDown: () => import('./screens/HeadsDown.jsx'),
   Inbox: () => import('./screens/Inbox.jsx'),
+  Grill: () => import('./screens/Grill.jsx'),
   Board: () => import('./screens/Board.jsx'),
   CloudLoop: () => import('./screens/CloudLoop.jsx'),
   Settings: () => import('./screens/Settings.jsx'),
@@ -43,6 +44,7 @@ const Cockpit = screen(SCREENS.Cockpit);
 const Onboarding = screen(SCREENS.Onboarding);
 const HeadsDown = screen(SCREENS.HeadsDown);
 const Inbox = screen(SCREENS.Inbox);
+const Grill = screen(SCREENS.Grill);
 const Board = screen(SCREENS.Board);
 const CloudLoop = screen(SCREENS.CloudLoop);
 const Settings = screen(SCREENS.Settings);
@@ -50,7 +52,7 @@ const Recover = screen(SCREENS.Recover);
 const GitPanel = screen(SCREENS.GitPanel);
 const Vault = screen(SCREENS.Vault);
 const Design = screen(SCREENS.Design);
-const ALL = [Fleet, Cockpit, Onboarding, HeadsDown, Inbox, Board, CloudLoop, Settings, Recover, GitPanel, Vault, Design];
+const ALL = [Fleet, Cockpit, Onboarding, HeadsDown, Inbox, Grill, Board, CloudLoop, Settings, Recover, GitPanel, Vault, Design];
 
 function usePrefetchScreens() {
   useEffect(() => {
@@ -116,6 +118,7 @@ function Shell() {
         <Route path="/onboarding/:step" element={<Onboarding />} />
         <Route path="/heads-down" element={<HeadsDown />} />
         <Route path="/inbox" element={<Inbox />} />
+        <Route path="/inbox/grill" element={<Grill />} />
         <Route path="/board" element={<Board />} />
         <Route path="/cloud" element={<CloudLoop />} />
         <Route path="/settings" element={<Settings />} />

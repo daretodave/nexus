@@ -6,6 +6,14 @@ export const PATHS = {
   heads: '/heads-down',
   headsFor: (id) => (id ? `/heads-down?s=${encodeURIComponent(id)}` : '/heads-down'),
   inbox: '/inbox',
+  /** Grill me (0.5.1): the open plan questions full screen, spec by spec; `spec` starts on one, `resume` picks up. */
+  grill: ({ spec, resume } = {}) => {
+    const q = new URLSearchParams();
+    if (spec) q.set('spec', String(spec));
+    if (resume) q.set('resume', '1');
+    const s = q.toString();
+    return `/inbox/grill${s ? `?${s}` : ''}`;
+  },
   board: '/board',
   cloud: '/cloud',
   settings: '/settings',

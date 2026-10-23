@@ -1,7 +1,25 @@
 // Reading what the composer is given (spec 51, A2): a picked, pasted or dropped file becomes an attachment, an image
 // as base64 with its media type and a preview, a text file as its text, or a chip saying plainly why not. The rules
 // (types, sizes) are shared/attachments.mjs; this is the browser half.
+import { useState } from 'react';
 import { classify, overTotal, sizeWords, splitDataUrl } from '../../shared/attachments.mjs';
+
+/** Does a drag carry files (not text being moved)? */
+export const hasFiles = (dt) => [...(dt?.types || [])].includes('Files');
+
+/**
+ * Files dropped on a box: `props` go on it (drag over, leave, drop), `over` is true while files hover it. Shared by the
+ * composer and the answer box. Off (or no `onFiles`): no props, nothing taken.
+ */
+export function useFileDrop(onFiles, { off = false } = {}) {
+  const [over, setOver] = useState(false);
+  const props = onFiles && !off ? {
+    onDragOver: (e) => { if (hasFiles(e.dataTransfer)) { e.preventDefault(); setOver(true); } },
+    onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); },
+    onDrop: (e) => { setOver(false); const f = [...(e.dataTransfer?.files || [])]; if (f.length) { e.preventDefault(); onFiles(f); } },
+  } : {};
+  return { over: over && !off && !!onFiles, props };
+}
 
 let seq = 0;
 

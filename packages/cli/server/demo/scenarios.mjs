@@ -11,6 +11,8 @@
 //   heads-down      altair works a claimed list of three chunks, one after another
 //   alive-home      the Fleet home alive: vega works (cyan), sirius needs you (amber), altair fell over at a build,
 //                   and deneb finishes applying oversight answers, turns green and offers to be put away
+//   grill-me        eight open plan questions across two specs and the audit, for the Oversight panel's wand and
+//                   Grill me; deneb plotted spec 11 and waits, sirius holds one live question (Grill me's banner)
 //
 // The script format is server/demo/world.mjs's. Times are ms from the start (or from the gate that holds them).
 // A scenario may carry a `shot` for the recorder (scripts/record.mjs): the screen it opens on (`fleet`, or a
@@ -18,6 +20,7 @@
 // `{ at, click: <css selector>, text?, what }` (`at`: script ms; `text`: the element holds it). A click on the
 // owner's turn takes it as the owner would; the gate's `auto` stays the fallback.
 import { MAIN } from '../../shared/beats.mjs';
+import { GRILL_DURABLE } from './grill.mjs';
 
 export const PROJECT = 'fieldday';
 const OWNER = 'sam';
@@ -426,12 +429,52 @@ export const aliveHome = {
   ],
 };
 
+const ROSTER_Q = 'A player with no shirt number: leave it blank, or give them the next free number?';
+
+export const grillMe = {
+  name: 'grill-me',
+  title: 'Grill me',
+  summary: 'Eight open plan questions across specs 11 and 14 and the audit: the wand drafts choices, Grill me walks them spec by spec, and the answers go to a session that applies them.',
+  home: 'deneb',
+  fixtures: (ctx) => {
+    const fx = base(ctx, (s) => (s.name !== 'deneb' ? s : {
+      ...s,
+      row: {
+        ...s.row, orb: 'idle', agents: [], phase: 'idle', chunk: { id: '11.1', title: 'Share links' },
+        event: { at: ctx.ago(4), text: 'plotted spec 11: four questions for you' },
+        lastPrompt: '/plot sharing and referrals into plan/11-sharing.md',
+        last: { kind: 'text', text: 'Wrote plan/11-sharing.md. Four open questions are waiting in Oversight.' },
+      },
+      beats: [{ k: 'agent', p: 'start', id: MAIN, label: 'session' }, { k: 'agent', p: 'end', id: MAIN, ok: true }],
+      transcript: [
+        { kind: 'user', id: 'g0:u', text: '/plot sharing and referrals into plan/11-sharing.md' },
+        { kind: 'text', id: 'g1:0', agent: MAIN, text: 'Wrote plan/11-sharing.md with three chunks. Four open questions are waiting in Oversight; I will apply your answers when they come back.' },
+      ],
+    }));
+    fx.durable = GRILL_DURABLE.map((d) => ({ ...d }));
+    return fx;
+  },
+  script: [
+    // The others breathe; deneb waits on your answers.
+    ...breathing(8000).filter((x) => x.session !== 'deneb'),
+    {
+      at: 300, session: 'sirius',
+      gate: {
+        ask: { id: 'ask-sirius-roster', agent: MAIN, questions: [{ question: ROSTER_Q, header: 'Shirt numbers', multiSelect: false, options: [{ label: 'Leave it blank (recommended)', description: 'The coach fills it in; a guessed number confuses referees.' }, { label: 'Next free number' }] }] },
+        // No auto and no then: it waits on you for as long as the demo runs (Grill me's banner).
+        then: [],
+      },
+    },
+  ],
+};
+
 export const SCENARIOS = Object.freeze({
   [fleetToTug.name]: fleetToTug,
   [bugToArchive.name]: bugToArchive,
   [fallAndResume.name]: fallAndResume,
   [headsDown.name]: headsDown,
   [aliveHome.name]: aliveHome,
+  [grillMe.name]: grillMe,
 });
 
 export const scenarioNames = () => Object.keys(SCENARIOS);

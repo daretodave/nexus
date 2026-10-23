@@ -485,14 +485,15 @@ export function createSteering({ repo, send, guiSession = () => null, hosted = (
   }
 
   /** Hand `text` to one linked session: the SDK stream for the GUI's own, an addressed owner line for a terminal one. */
-  async function steer(id, text, { kind = 'tug', requireLink = true } = {}) {
+  async function steer(id, text, { kind = 'tug', requireLink = true, images = [] } = {}) {
     const whole = String(text || '').trim();
     const words = whole.replace(/\s+/g, ' '); // a board line is one line
     if (!words) return { status: 400, error: 'nothing to send' };
     const s = await find(id);
     if (!s) return { status: 404, error: 'no such live session' };
     if (s.steer === 'sdk') {
-      await send(whole, s);
+      // A session this server runs takes image blocks beside the words; a board line carries text only.
+      await send(whole, s, images.length ? { images } : {});
       return { status: 200, via: 'sdk', session: s.id };
     }
     if (requireLink && !linked.has(s.id)) return { status: 409, error: `link ${s.name} first: a ${kind} reaches only a linked session` };

@@ -1,0 +1,138 @@
+/* Grill me (0.5.1, screens/Grill.jsx): full screen over the app, one question at a time, spec by spec. A still reading
+   surface (no particles), the bar's progress one segment per spec, the spec beside the question from 1200px and above
+   it below that. nexus.css tokens only, so day and night both follow; reduced motion swaps instantly. */
+
+.grill {
+  position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
+  background: radial-gradient(1200px 600px at 0 0, var(--glow), transparent 60%), var(--bg); color: var(--text);
+}
+
+/* ---- the bar ---- */
+.grill-bar { flex: none; display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 8px 16px 8px 20px; border-bottom: 1px solid var(--line); background: color-mix(in oklab, var(--bg) 84%, transparent); }
+.grill-title { flex: none; font-family: var(--font-display); font-size: 17px; line-height: 22px; font-weight: 600; }
+.grill-prog { flex: 1; display: flex; gap: 10px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.grill-seg { display: flex; flex-direction: column; gap: 4px; min-width: 56px; flex-basis: 0; }
+.grill-seg-n { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 11px; line-height: 14px; color: var(--text-3); font-variant-ligatures: none; }
+.grill-seg-n .ic { color: var(--st-done); }
+.grill-seg.is-on .grill-seg-n { color: var(--accent); }
+.grill-seg .qprog i { cursor: pointer; }
+.grill-seg .qprog i.on { background: var(--accent); }
+.grill-seg .qprog i.def { background: color-mix(in oklab, var(--accent) 45%, transparent); }
+.grill-seg .qprog i.skip { background: transparent; box-shadow: inset 0 0 0 1px var(--text-3); }
+.grill-seg .qprog i.cur { background: var(--focus); }
+.grill-count { flex: none; font-size: 12px; line-height: 16px; color: var(--text-2); white-space: nowrap; }
+
+/* ---- the body ---- */
+.grill-center { flex: 1; min-height: 0; width: 100%; max-width: 760px; margin: 0 auto; padding: 40px 24px; overflow-y: auto; }
+.grill-wide { max-width: 920px; }
+.grill-main { flex: 1; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 40px; min-height: 0; overflow-y: auto; padding: 32px 32px 40px; }
+.grill-col { width: 100%; max-width: 760px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+
+.grill-side { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: 16px; animation: grill-fade 160ms var(--ease-settle) both; }
+.grill-side-n { display: block; font-family: var(--font-mono); font-size: 40px; line-height: 44px; font-weight: 600; color: var(--accent); font-variant-ligatures: none; }
+.grill-side-t { font-family: var(--font-display); font-size: 20px; line-height: 26px; font-weight: 600; text-wrap: balance; }
+.grill-side-f { margin-top: 4px; font-family: var(--font-mono); font-size: 11px; line-height: 16px; color: var(--text-3); font-variant-ligatures: none; }
+.grill-side-f a { color: var(--text-2); }
+.grill-about > summary { display: none; }
+.grill-lede, .grill-why { font-size: 14px; line-height: 21px; color: var(--text-2); }
+.grill-why { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+.grill-index { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.grill-dot {
+  width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--r-full); border: 0; cursor: pointer;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-2); background: transparent; box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.grill-dot.is-kept { background: var(--st-done); color: var(--on-state); box-shadow: none; }
+.grill-dot.is-decided { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); }
+.grill-dot.is-skipped { color: var(--text-3); box-shadow: inset 0 0 0 1px var(--text-3); border: 1px dashed transparent; }
+.grill-dot.is-cur { outline: 2px solid var(--focus); outline-offset: 2px; }
+.grill-dot:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ---- a question ---- */
+.grill-q { display: flex; flex-direction: column; gap: 14px; }
+.grill-q.is-arriving { animation: grill-rise var(--dur-settle) var(--ease-settle) both; }
+.grill-q-where { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; color: var(--text-3); }
+.grill-q-where .n { font-family: var(--font-mono); font-weight: 600; color: var(--accent); }
+.grill-q-text { font-family: var(--font-display); font-size: 28px; line-height: 36px; font-weight: 500; color: var(--text); text-wrap: pretty; }
+.grill-q-text p { margin: 0 0 10px; }
+.grill-q-file { margin-top: -6px; font-family: var(--font-mono); font-size: 11px; line-height: 16px; color: var(--text-3); font-variant-ligatures: none; }
+.grill-acts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.grill-acts .spacer { flex: 1; }
+.grill-acts .kbd { margin-left: 6px; }
+.grill-flash { margin: 0; font-size: 13px; line-height: 18px; color: var(--text-2); }
+.grill-banner {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-3);
+  background: color-mix(in oklab, var(--st-blocked) 14%, transparent); font-size: 13px; line-height: 18px; color: var(--text);
+}
+.grill-banner > span:nth-child(2) { flex: 1; }
+.grill-banner-top { flex: none; padding-top: 16px; padding-bottom: 0; overflow: visible; }
+
+/* ---- start, between, review ---- */
+.grill-start, .grill-between { display: flex; flex-direction: column; gap: 16px; }
+.grill-start-h, .grill-review-h { margin: 0; font-family: var(--font-display); font-size: 26px; line-height: 34px; font-weight: 600; }
+.grill-start-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.grill-start-list label { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-3); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+.grill-start-list .n, .grill-review-sh .n { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--accent); }
+.grill-start-list .t { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grill-start-list .c { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); }
+.grill-between-done { display: flex; align-items: flex-start; gap: 10px; margin: 0; font-size: 17px; line-height: 26px; }
+.grill-between-done .ic { margin-top: 5px; color: var(--st-done); }
+.grill-between-next { margin: 0; font-size: 15px; line-height: 22px; color: var(--text-2); }
+.grill-pick { display: flex; flex-direction: column; gap: 6px; }
+
+.grill-review { display: flex; flex-direction: column; gap: 18px; }
+.grill-review-spec { display: flex; flex-direction: column; gap: 8px; }
+.grill-review-sh { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.grill-review-sh .t { font-weight: 600; }
+.grill-review-sh .c { font-size: 12px; color: var(--text-3); }
+.grill-review-sh .spacer { flex: 1; }
+.grill-target { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.grill-target .field { height: 32px; padding: 0 10px; }
+.grill-review-where { margin: 0; font-size: 12px; line-height: 17px; color: var(--text-3); }
+.grill-review-list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.grill-review-list li { display: grid; grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr) 28px auto; align-items: center; gap: 10px; min-height: 40px; padding: 4px 8px 4px 10px; border-radius: var(--r-2); background: var(--surface); }
+.grill-review-list li > .ic { color: var(--st-done); }
+.grill-review-list li.is-decided > .ic { color: var(--accent); }
+.grill-review-list .q, .grill-review-list .a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 18px; }
+.grill-review-list .q { color: var(--text-2); }
+.grill-review-list .a { font-weight: 600; color: var(--text); }
+.grill-review-list .th { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; }
+.grill-review-err { margin: 0; color: var(--st-failed); font-size: 13px; }
+
+/* ---- keys, the sheet, a whole-window drop ---- */
+.grill-keys { flex: none; display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; padding: 8px 16px 12px; font-size: 11px; line-height: 16px; color: var(--text-3); }
+.grill-keys .kbd { margin-right: 6px; }
+.grill-sheet { position: fixed; right: 16px; top: 64px; z-index: 2; width: 300px; }
+.grill-sheet dl { margin: 0; padding: 4px 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+.grill-sheet dl > div { display: grid; grid-template-columns: 84px 1fr; gap: 8px; align-items: center; font-size: 12px; color: var(--text-2); }
+.grill-sheet dt, .grill-sheet dd { margin: 0; }
+.grill-drop { position: fixed; inset: 0; z-index: 3; display: grid; place-items: center; background: var(--overlay); pointer-events: none; }
+.grill-drop > span { padding: 40px 56px; border-radius: var(--r-5); outline: 2px dashed var(--accent); outline-offset: -2px; font-size: 17px; font-weight: 600; }
+
+@keyframes grill-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes grill-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- narrower ---- */
+@media (max-width: 1199px) {
+  .grill-main { grid-template-columns: minmax(0, 1fr); gap: 20px; justify-items: center; }
+  .grill-side { position: static; width: 100%; max-width: 760px; }
+  .grill-about > summary { display: list-item; cursor: pointer; font-size: 13px; color: var(--text-2); }
+}
+@media (max-width: 719px) {
+  .grill-q-text { font-size: 22px; line-height: 30px; }
+}
+@media (max-width: 639px) {
+  .grill-main, .grill-center { padding-left: 16px; padding-right: 16px; }
+  .grill-bar { padding-left: 16px; gap: 10px; flex-wrap: wrap; }
+  .grill-prog { order: 9; flex-basis: 100%; }
+  .grill-review-list li { grid-template-columns: 16px minmax(0, 1fr) auto; }
+  .grill-review-list .a, .grill-review-list .th { display: none; }
+  .grill .tb-long { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grill-q.is-arriving, .grill-side { animation: none; }
+}
+
+/* An answer that did not keep: said above the question, in the failed colour. */
+.grill-banner.is-failed { background: color-mix(in oklab, var(--st-failed) 14%, transparent); }
+.grill-banner.is-failed > .ic { color: var(--st-failed); flex: none; }
+.grill-banner-top > .grill-banner + .grill-banner { margin-top: 8px; }

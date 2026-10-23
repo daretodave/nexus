@@ -269,12 +269,12 @@ export default function Settings() {
           </section>
 
           <section className="set-sec" style={SEC}>
-            <div><h2 className="set-h">Plan board</h2><p className="set-d">A chunk the plan leaves without words gets a one-line summary from Claude Haiku, marked as AI.</p></div>
+            <div><h2 className="set-h">AI helpers</h2><p className="set-d">A chunk the plan leaves without words gets a one-line summary, marked as AI; an open question gets suggested answers when you press its wand.</p></div>
             <div style={{ minWidth: 0 }}>
               <div className="set-row">
-                <Switch checked={ai} onChange={changeAi} title="AI one-liners" sub={ai ? 'On · cached, asked again only when a chunk or its spec changes' : 'Off · undescribed chunks show their id alone'} iconOn="sparkle" iconOff="xSmall" />
+                <Switch checked={ai} onChange={changeAi} title="AI helpers (board summaries and answer suggestions)" sub={ai ? 'On · cached, asked again only when a question, a chunk or its spec changes' : 'Off · undescribed chunks show their id alone; questions offer only the choices they name'} iconOn="sparkle" iconOff="xSmall" />
                 <div className="explain">
-                  Summaries are kept in <span className="file-tag">.nexus/cache/</span> on this machine and never written to the plan. They run on your own Claude Code login, one small batch per board load.
+                  Suggestions use {models?.helper?.label || 'Claude Haiku'}. Both are kept in <span className="file-tag">.nexus/cache/</span> on this machine and never written to the plan. They run on your own Claude Code login: one small batch per board load, and one call per wand you press.
                 </div>
               </div>
             </div>

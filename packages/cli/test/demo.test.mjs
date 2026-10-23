@@ -59,7 +59,7 @@ const play = (name) => {
 };
 
 test('every scenario is well formed: fictional, steps with one known action, beats the reducer takes', () => {
-  assert.deepEqual(scenarioNames(), ['fleet-to-tug', 'bug-to-archive', 'fall-and-resume', 'heads-down', 'alive-home']);
+  assert.deepEqual(scenarioNames(), ['fleet-to-tug', 'bug-to-archive', 'fall-and-resume', 'heads-down', 'alive-home', 'grill-me']);
   for (const name of scenarioNames()) {
     const sc = SCENARIOS[name];
     assert.equal(sc.name, name);

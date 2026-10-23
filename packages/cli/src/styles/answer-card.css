@@ -1,0 +1,73 @@
+/* The answer box and the Oversight panel's answer card (0.5.1; ui/answer-box.jsx, screens/oversight/AnswerCard.jsx).
+   The answer is the brightest surface on the card: a solid box with a soft accent ring, the question above it at
+   reading size, its context below. nexus.css tokens only, so day and night both follow. */
+
+/* ---- the box ---- */
+.abx {
+  position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  padding: 14px 16px; border-radius: var(--r-4); background: var(--surface-solid);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent), 0 0 30px -14px var(--glow);
+  transition: box-shadow var(--dur-snap) var(--ease-snap);
+}
+.abx:focus-within { box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 60%, transparent), 0 0 34px -12px var(--glow); }
+.abx.is-drop { box-shadow: 0 0 0 1.5px var(--accent), 0 0 34px -12px var(--glow); outline: 1.5px dashed color-mix(in oklab, var(--accent) 70%, transparent); outline-offset: 4px; }
+.abx-label { font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.abx .syn-field { border-radius: var(--r-3); background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
+.abx .syn-field:focus-within { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--focus) 55%, transparent); }
+.abx-field {
+  display: block; width: 100%; margin: 0; padding: 10px 12px; border: 0; outline: none; resize: vertical;
+  background: transparent; font: inherit; font-size: 14px; line-height: 22px;
+  field-sizing: content; min-height: calc(4 * 22px + 20px); max-height: calc(14 * 22px + 20px); overflow-y: auto;
+}
+.abx-field::placeholder { color: var(--text-3); }
+.abx.is-l .abx-field { font-size: 17px; line-height: 26px; min-height: calc(5 * 26px + 24px); max-height: calc(16 * 26px + 24px); padding: 12px 14px; }
+.abx-drop {
+  position: absolute; inset: 0; display: grid; place-items: center; border-radius: var(--r-4); pointer-events: none;
+  background: color-mix(in oklab, var(--accent) 10%, transparent); color: var(--text); font-size: 14px; font-weight: 600;
+}
+.abx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.abx-retry { padding: 0; border: 0; background: none; cursor: pointer; }
+.abx-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.abx-bar .spacer { flex: 1; }
+.abx-keep .kbd { margin-left: 6px; }
+.abx-hint { font-size: 12px; line-height: 16px; color: var(--text-2); }
+
+/* ---- the card ---- */
+.acard { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; border-radius: 14px; background: var(--surface); box-shadow: var(--e-1); }
+.acard-src { display: flex; align-items: center; gap: 8px; min-width: 0; font-family: var(--font-mono); font-size: 11px; line-height: 16px; color: var(--text-3); font-variant-ligatures: none; }
+.acard-src .n { font-weight: 600; color: var(--accent); }
+.acard-src .f { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acard-src .k { margin-left: auto; font-family: var(--font-ui); flex: none; }
+.acard-q { font-size: 16px; line-height: 24px; font-weight: 500; color: var(--text); text-wrap: pretty; }
+.acard-q.is-clamped { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.acard-more { align-self: flex-start; margin-top: -6px; }
+.acard-foot { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; color: var(--text-3); }
+
+.acard.is-kept { gap: 10px; background: transparent; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-done) 36%, transparent); }
+.acard-kept { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 21px; color: var(--text-2); }
+.acard-kept > .ic { flex: none; margin-top: 2px; color: var(--st-done); }
+.acard-kept b { color: var(--text); font-weight: 600; }
+.acard-answer { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 21px; color: var(--text); }
+.acard-thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
+.acard-thumbs img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
+.acard-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ---- the list: a plan row's answer line, its wand ---- */
+.ibx-ans { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; line-height: 16px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibx-ans b { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+.ibx-ans i { font-style: italic; overflow: hidden; text-overflow: ellipsis; }
+.ibx-ans .ic { flex: none; color: var(--text-3); }
+.ibx-ready { position: absolute; left: 3px; top: 50%; width: 5px; height: 5px; margin-top: -2.5px; border-radius: var(--r-full); background: var(--accent); box-shadow: 0 0 6px var(--glow); }
+.ibx-row .ibx-wand { opacity: 0; transition: opacity var(--dur-snap) var(--ease-snap); }
+.ibx-row:hover .ibx-wand, .ibx-row:focus-within .ibx-wand, .ibx-row .ibx-wand[aria-busy="true"], .ibx-row .ibx-wand:has(.wand-dot) { opacity: 1; }
+@media (hover: none) { .ibx-row .ibx-wand { opacity: 1; } }
+.ibx-spec-acts { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.ibx-grill { display: inline-flex; align-items: center; gap: 8px; }
+.ibx-resume { height: 28px; padding: 0 10px; border-radius: var(--r-full); font-size: 12px; }
+
+/* The answer comes first: the panel gets more room on a wide screen. */
+@media (min-width: 1280px) { .inbox { grid-template-columns: minmax(0, 1fr) 540px; } }
+@media (min-width: 1680px) { .inbox { grid-template-columns: minmax(0, 1fr) 640px; } }
+@media (prefers-reduced-motion: reduce) {
+  .abx, .ibx-row .ibx-wand { transition: none; }
+}
