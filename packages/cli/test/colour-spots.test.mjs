@@ -56,8 +56,22 @@ test('a cron: each field coloured and named, and said in words', async () => {
   assert.equal(cronWords('nope'), '');
   const { CronCode } = await import('../src/ui/code.jsx');
   const out = html(createElement(CronCode, { cron: '30 3 * * *' }));
-  assert.match(out, /<span class="cron"><code class="cron-code" aria-label="cron 30 3 \* \* \*, every day at 03:30 UTC"><span class="cron-field" title="minute"><span class="syn-num">30<\/span><\/span> <span class="cron-field" title="hour">/);
+  assert.match(out, /<span class="cron"><code class="cron-code"><span class="cron-field" title="minute"><span class="syn-num">30<\/span><\/span> <span class="cron-field" title="hour">/);
   assert.match(out, /<span class="cron-words">every day at 03:30 UTC<\/span><\/span>$/);
   assert.doesNotMatch(html(createElement(CronCode, { cron: '30 3 * * *', words: false })), /cron-words/, 'a place that already says it leaves the words out');
   assert.match(html(createElement(CronCode, { cron: '0 0 1 * *', words: 'monthly' })), /<span class="cron-words">monthly<\/span>/);
+  const { CronList } = await import('../src/ui/code.jsx');
+  const two = html(createElement(CronList, { schedule: { cron: '0 3 * * 1-5', crons: ['0 3 * * 1-5', '30 9 * * 0,6'] } })).replace(/<[^>]+>/g, '');
+  assert.match(two, /^0 3 \* \* 1-5weekdays at 03:00 UTC and 30 9 \* \* 0,6/, 'every cron of the loop, each with its own words');
+});
+
+test('a finished agent\'s last call stays dim in the heads-down tree; a working one is coloured', async () => {
+  const { headsRows } = await import('../src/screens/headsdown-inbox/headsModel.js');
+  const stage = { agents: { main: { id: 'main', parent: null, label: 'session', state: 'running' }, s1: { id: 's1', parent: 'main', label: 'scout', state: 'done' } }, order: ['main', 's1'], chunks: {}, chunkOrder: [] };
+  const transcript = [{ kind: 'tool', name: 'Bash', agent: 's1', summary: 'npm test' }];
+  const ui = { draft: '', links: { inbox: '/i', cockpitW: {}, inboxW: {}, planW: {}, fleetW: {} } };
+  const rows = headsRows({ ledger: { name: 'vega', phase: 'working' }, live: { stage, transcript, status: {} }, now: 0, ui, seenAt: {} });
+  const tree = rows.find((r) => r.cells.map((c) => c.ch).join('').includes('scout'));
+  const at = tree.cells.map((c) => c.ch).join('').indexOf('npm');
+  assert.equal(tree.cells[at].cls, 'd', 'done reads quieter than working');
 });

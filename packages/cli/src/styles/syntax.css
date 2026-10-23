@@ -94,20 +94,20 @@
 /* ---- the code box: a block with its language, a copy button and a fold ------------------------------------------ */
 .code-box { position: relative; min-width: 0; }
 .code-box > pre { margin: 0; }
-/* The tools sit in the block's top right always, quiet at rest: the copy button alone, as a small icon, with no chip,
-   so it barely touches a line of code yet is there to click, to tab to and to tap. Hovered or focused (or on a touch
-   screen, where nothing hovers) they open into the solid chip with the language and the words. */
+/* The tools sit in the block's top right always, quiet at rest: the buttons alone, as small dim icons on a small solid
+   chip, so a line of code running under them is covered cleanly rather than drawn over, yet they are there to click,
+   to tab to and to tap. Hovered or focused (or on a touch screen, where nothing hovers) they open into the full chip
+   with the language and the words. */
 .code-tools {
   position: absolute; top: 5px; right: 5px; display: flex; align-items: center; gap: 2px; padding: 2px;
-  border-radius: 9px; background: transparent; box-shadow: none;
+  border-radius: 9px; background: var(--surface-solid); box-shadow: none;
   font-family: var(--font-ui); font-size: 11px; line-height: 16px;
-  opacity: .6; transition: opacity var(--dur-snap) var(--ease-snap), background var(--dur-snap) var(--ease-snap), box-shadow var(--dur-snap) var(--ease-snap);
+  transition: background var(--dur-snap) var(--ease-snap), box-shadow var(--dur-snap) var(--ease-snap);
 }
 .code-tools > .code-lang, .code-tools .code-btn-word { display: none; }
-.code-tools > .code-btn { padding: 0 5px; }
-.code-box:hover > .code-tools, .code-box:focus-within > .code-tools {
-  opacity: 1; background: var(--surface-solid); box-shadow: var(--e-1);
-}
+.code-tools > .code-btn { padding: 0 5px; color: var(--text-3); }
+.code-box:hover > .code-tools, .code-box:focus-within > .code-tools { box-shadow: var(--e-1); }
+.code-box:hover > .code-tools > .code-btn, .code-box:focus-within > .code-tools > .code-btn { color: var(--text-2); }
 .code-box:hover > .code-tools > .code-lang, .code-box:focus-within > .code-tools > .code-lang,
 .code-box:hover > .code-tools .code-btn-word, .code-box:focus-within > .code-tools .code-btn-word { display: inline; }
 .code-box:hover > .code-tools > .code-btn, .code-box:focus-within > .code-tools > .code-btn { padding: 0 8px; }
@@ -141,7 +141,7 @@
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 36px), transparent);
   mask-image: linear-gradient(to bottom, black calc(100% - 36px), transparent);
 }
-/* Streaming and past the fold: the newest lines at the folded height, the older ones fading out above them. */
+/* Streamed past the fold: its last twelve lines, the height it had reached, the older ones fading out above them. */
 .code-box.is-tail > pre { overflow-y: hidden; }
 .code-box.is-tail > pre > code {
   display: inline-block; min-width: 100%; vertical-align: top;

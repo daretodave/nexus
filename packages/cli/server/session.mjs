@@ -297,6 +297,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
       for (const a of asks.values()) clearTimeout(a.timer);
       await provider?.stop?.();
       hub.close();
+      tools.dispose();
     },
   };
 }

@@ -289,13 +289,14 @@ export function headsRows(m) {
     const working = ids.filter((id) => ['running', 'waiting'].includes(stage.agents[id].state)).length;
     at(11).seq(L, [['k', 'agents     '], ['h', String(ids.length)], ['d', ` · ${working} working`]]);
     const lines = [];
-    // The detail column: how many agents a workflow holds, a wait, or the last call, coloured (an agent with no call
-    // yet shows a dash). `cls` is the column's ink for words.
+    // The detail column: how many agents a workflow holds, a wait, or the last call, coloured while the agent works (an
+    // agent with no call yet shows a dash). `cls` is the column's ink for words.
     const detail = (id, a, hasKids, cls) => {
       if (hasKids) return [[cls, plural(kids(id).length, 'agent')]];
       if (a.state === 'waiting') return [[cls, 'waiting on you']];
       const t = lastTool(transcript, id);
-      if (t) return toolSegs(t, cls);
+      // A finished agent's last call stays in the column's ink, so done reads quieter than working.
+      if (t) return a.state === 'done' ? [[cls, `${t.name}${t.summary ? ` ${t.summary}` : ''}`]] : toolSegs(t, cls);
       return [[cls, a.state === 'done' ? '' : DASH]];
     };
     if (stage.agents.main) {

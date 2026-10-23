@@ -3,7 +3,7 @@
 // overlay that colours a textarea or an input as it is typed. The grammar engine arrives lazily
 // (syntax/highlighter.js); until it does, and on the server, the quick tokens draw. Styles: styles/syntax.css.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { dropLines, foldPlan, hasColour, lastLines, lineCount, rainbow, splitLines, takeLines, tokenClass } from './syntax/tokens.js';
+import { dropLines, FOLD_AT, foldPlan, hasColour, lastLines, lineCount, rainbow, splitLines, takeLines, tokenClass } from './syntax/tokens.js';
 import { codeTokens, useCodeTokens, useGrammarVersion } from './syntax/highlighter.js';
 import { langOf, langOfPath } from './syntax/langs.js';
 import { draftTokens, inlineTokens } from './syntax/draft.js';
@@ -38,7 +38,7 @@ export function CopyButton({ text, label = 'Copy' }) {
     try { navigator.clipboard?.writeText(String(text ?? '')).then(() => setDone(true), () => {}); } catch { /* no clipboard: the text stays on screen to select */ }
   };
   return (
-    <button className={cx('code-btn', done && 'is-done')} type="button" onClick={copy} aria-label={done ? 'Copied' : `${label} to clipboard`}>
+    <button className={cx('code-btn', done && 'is-done')} type="button" onClick={copy} aria-label={done ? 'Copied' : `${label} to clipboard`} title={done ? 'Copied' : label}>
       <Icon name={done ? 'check' : 'copy2'} size={12} /><span className="code-btn-word">{done ? 'Copied' : label}</span>
     </button>
   );
@@ -63,8 +63,9 @@ function sniff(text) {
 /**
  * A block of code: coloured by `lang` (a grammar name or a fence word), rainbow brackets, a language label and a
  * copy button, and past FOLD_AT lines folded to its head with a "Show all" bar. A block still streaming (`open`)
- * folds the moment it passes the limit, as it will once closed, but shows its tail: the newest lines stay in view at
- * the folded height, so the block never jumps shorter when it finishes. While streaming it draws with the quick
+ * folds the moment it passes the limit but shows its tail: its last FOLD_AT lines, so it never shrinks as it folds
+ * and the newest line stays in view. One that streamed here keeps its tail when it finishes, so the lines being read
+ * neither jump nor swap for its head; a block that arrives whole folds to its head. While streaming it draws with the quick
  * tokens: a grammar pass over the whole block on every delta would cost frames, so it waits for the block to close.
  * With no language the text draws plain, exactly as given.
  * `tokens` draws ready-made tokens instead (a Grep result); `numbered` puts each line's number in a gutter.
@@ -78,11 +79,14 @@ export function CodeBlockView({ text, lang = '', label, open = false, className 
   const plan = fold ? foldPlan(total) : { fold: false, keep: total };
   const [all, setAll] = useState(false);
   const folded = plan.fold && !all;
-  // Streaming and folded: the last lines at the fold's height, so the newest stays in view and the end costs no jump.
-  const tail = folded && open;
-  const from = tail ? total - plan.keep : 0;
-  const shown = tokens ? (tail ? dropLines(tokens, from) : folded ? takeLines(tokens, plan.keep) : tokens) : null;
-  const plain = tail ? lastLines(s, plan.keep) : folded ? s.split('\n').slice(0, plan.keep).join('\n') : s;
+  // Streamed past the fold here (now, or before it finished): its last FOLD_AT lines, the height it had reached.
+  const streamed = useRef(false);
+  if (open && plan.fold) streamed.current = true;
+  const tail = folded && (open || streamed.current);
+  const keep = tail ? Math.min(total, FOLD_AT) : plan.keep;
+  const from = tail ? total - keep : 0;
+  const shown = tokens ? (tail ? dropLines(tokens, from) : folded ? takeLines(tokens, keep) : tokens) : null;
+  const plain = tail ? lastLines(s, keep) : folded ? s.split('\n').slice(0, keep).join('\n') : s;
   let body;
   if (numbered) {
     const lines = shown ? splitLines(shown) : plain.split('\n').map((l) => (l ? [{ t: 'text', v: l }] : []));
@@ -121,12 +125,18 @@ export function CronCode({ cron, words, className }) {
   }
   return (
     <span className={cx('cron', className)}>
-      <code className="cron-code" aria-label={said ? `cron ${cron}, ${said}` : undefined}>
+      <code className="cron-code">
         {runs.map((r, i) => (r.field != null ? <span key={i} className="cron-field" title={CRON_FIELDS[r.field]}><Tok tokens={r.tokens} /></span> : <Tok key={i} tokens={r.tokens} />))}
       </code>
       {said ? <span className="cron-words">{said}</span> : null}
     </span>
   );
+}
+
+/** A loop's schedule, every cron in it (a workflow can carry several): each one coloured, with its own words. */
+export function CronList({ schedule, words }) {
+  const crons = schedule?.crons?.length ? schedule.crons : schedule?.cron ? [schedule.cron] : [];
+  return crons.map((c, i) => <Fragment key={c + i}>{i ? (i === crons.length - 1 ? ' and ' : ', ') : null}<CronCode cron={c} words={words} /></Fragment>);
 }
 
 /**
@@ -161,7 +171,7 @@ export function JsonView({ value, text, className = 'code-pre', fold = true }) {
       <div className="code-tools">
         <span className="code-lang">json</span>
         {nested ? (
-          <button className={cx('code-btn', 'json-all', !anyFolded && 'is-open')} type="button" onClick={() => setFolded(anyFolded ? new Set() : allFolds(parsed.value))} aria-label={anyFolded ? 'Expand every node' : 'Collapse every node'}>
+          <button className={cx('code-btn', 'json-all', !anyFolded && 'is-open')} type="button" onClick={() => setFolded(anyFolded ? new Set() : allFolds(parsed.value))} aria-label={anyFolded ? 'Expand all nodes' : 'Collapse all nodes'} title={anyFolded ? 'Expand all' : 'Collapse all'}>
             <Icon name="chevronDown" size={12} /><span className="code-btn-word">{anyFolded ? 'Expand all' : 'Collapse all'}</span>
           </button>
         ) : null}

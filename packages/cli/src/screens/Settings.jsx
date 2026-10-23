@@ -15,7 +15,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { nextRunMode, localRunMode, saveRunMode, Icon, InfoBtn, Check, BadgeDef, BadgeAuto, Tip, Switch, Seg, ThemeSeg, FxSeg, useShell } from '../ui/index.js';
-import { CronCode } from '../ui/code.jsx';
+import { CronList } from '../ui/code.jsx';
 import { api, useLocalSettings, useResource, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { useLoop, hhmm } from './cloud-settings/loop.js';
@@ -290,7 +290,7 @@ export default function Settings() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span className="t-body-s c-1">{loop.schedule?.label ? `${loop.schedule.label}${loop.schedule.window ? `, ${loop.schedule.window}` : ''}` : loop.wf.name}</span>
                     <span className="t-body-s c-3">
-                      {loop.schedule?.cron ? <>cron <CronCode cron={loop.schedule.cron} words={loop.schedule.raw ? undefined : false} /></> : <>workflow <code className="t-mono-s c-2">{loop.wf.path}</code></>}
+                      {loop.schedule?.cron ? <>cron <CronList schedule={loop.schedule} words={loop.schedule.raw ? undefined : false} /></> : <>workflow <code className="t-mono-s c-2">{loop.wf.path}</code></>}
                       {loop.secret ? <> · sign-in <code className="t-mono-s c-2">{loop.secret.name || 'CLAUDE_CODE_OAUTH_TOKEN'}</code> {loop.secret.ok ? 'set' : loop.secret.ok == null ? 'unknown' : 'missing'}</> : null}
                     </span>
                     <Link className="t-body-s" to={PATHS.cloud}>Open the cloud loop and its runs</Link>

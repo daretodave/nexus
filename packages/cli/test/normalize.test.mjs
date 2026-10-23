@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { txFromMessage, newTxContext, friendlyError, summarize, lines, lineDiff, diffOf, clipInput, clipOutput, createToolStore, PREVIEW, DETAIL } from '../server/normalize.mjs';
+import { txFromMessage, newTxContext, friendlyError, summarize, lines, lineDiff, diffOf, clipInput, clipOutput, createToolStore, createToolPool, PREVIEW, DETAIL } from '../server/normalize.mjs';
 
 test('streamed text is not repeated by the full assistant message', () => {
   const ctx = newTxContext();
@@ -163,4 +163,19 @@ test('the tool store is bounded: past its size the oldest calls go first', () =>
   tools.clear();
   assert.equal(tools.count, 0);
   assert.ok(DETAIL.str > PREVIEW.str * 10);
+});
+
+test('every session\'s tool store shares a bound: past it the biggest store gives up its oldest call', () => {
+  const pool = createToolPool({ maxChars: 5000 });
+  const a = createToolStore({ maxChars: 4000, pool });
+  const b = createToolStore({ maxChars: 4000, pool });
+  for (let i = 0; i < 3; i += 1) a.set(`A${i}`, { input: { s: 'x'.repeat(1000) } });
+  b.set('B0', { input: { s: 'y'.repeat(1000) } });
+  b.set('B1', { input: { s: 'y'.repeat(1000) } });
+  assert.ok(pool.size <= 5000, `the pool holds ${pool.size}`);
+  assert.equal(a.get('A0'), null, 'the biggest store gave up its oldest');
+  assert.ok(b.get('B1'), 'the call just kept stays');
+  a.dispose();
+  assert.equal(pool.size, b.size, 'a closed session gives its share back');
+  assert.equal(pool.stores.size, 1);
 });

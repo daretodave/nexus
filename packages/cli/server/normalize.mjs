@@ -36,24 +36,55 @@ export function newTxContext({ now = null, tools = null } = {}) {
 }
 
 /**
- * The calls' fuller input and output, by tool_use id, kept server side for the open tool row. Bounded by an estimate
- * of the characters it holds: past `maxChars` the oldest calls go first (a row that opens after that shows its
- * preview). set(id, { input, clipped }) when a call goes out, output(id, text) when its result comes back.
+ * What every session's tool store holds together: each store is bounded on its own, and a fleet of busy sessions is
+ * bounded too. Past `maxChars` across them all, the biggest store gives up its oldest call first.
  */
-export function createToolStore({ maxChars = 8_000_000 } = {}) {
+export function createToolPool({ maxChars = 32_000_000 } = {}) {
+  return { maxChars, size: 0, stores: new Set() };
+}
+
+/** The pool every session's store shares unless it is given its own. */
+const SHARED = createToolPool();
+
+/**
+ * The calls' fuller input and output, by tool_use id, kept server side for the open tool row. Bounded by an estimate
+ * of the characters it holds: past `maxChars` (or past the pool's bound, across every store in it) the oldest calls go
+ * first (a row that opens after that shows its preview). set(id, { input, clipped }) when a call goes out, output(id,
+ * text) when its result comes back; dispose() when the session closes.
+ */
+export function createToolStore({ maxChars = 8_000_000, pool = SHARED } = {}) {
   const calls = new Map();
   let size = 0;
   const weigh = (r) => (r.input ? JSON.stringify(r.input).length : 0) + (r.output ? r.output.length : 0);
+  const drop = (k, v) => { calls.delete(k); size -= v.w; pool.size -= v.w; };
+  /** Give up the oldest call that is not `keep`; false when there is none. */
+  const shed = (keep) => {
+    for (const [k, v] of calls) {
+      if (k === keep) continue;
+      drop(k, v);
+      return true;
+    }
+    return false;
+  };
+  const clear = () => { pool.size -= size; calls.clear(); size = 0; };
+  const store = {
+    get size() { return size; },
+    shed,
+  };
+  pool.stores.add(store);
   const put = (id, r) => {
     const was = calls.get(id);
-    if (was) { size -= was.w; calls.delete(id); }
+    if (was) drop(id, was);
     r.w = weigh(r);
     calls.set(id, r);
     size += r.w;
-    for (const [k, v] of calls) {
-      if (size <= maxChars || k === id) break;
-      calls.delete(k);
-      size -= v.w;
+    pool.size += r.w;
+    while (size > maxChars && shed(id));
+    // Over the pool's bound: the biggest store sheds, this one included, never the call just kept.
+    while (pool.size > pool.maxChars) {
+      let big = null;
+      for (const s of pool.stores) if (!big || s.size > big.size) big = s;
+      if (!big || !big.shed(id)) break;
     }
   };
   return {
@@ -63,7 +94,8 @@ export function createToolStore({ maxChars = 8_000_000 } = {}) {
       const r = calls.get(id);
       return r ? { id, input: r.input ?? null, clipped: r.clipped?.length ? r.clipped : null, output: r.output ?? null } : null;
     },
-    clear() { calls.clear(); size = 0; },
+    clear,
+    dispose() { clear(); pool.stores.delete(store); },
     get size() { return size; },
     get count() { return calls.size; },
   };

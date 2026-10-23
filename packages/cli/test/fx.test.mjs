@@ -10,7 +10,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { reduce, replay } from '../shared/beats.mjs';
 import { createFxDiffer, diffFx, fxSnapshot, toolTone } from '../src/fx/events.js';
 import {
-  CALM_FADE, CALM_HOLD, FX_TOKENS, ORB_R, STATE_FX, ambientEmitters, ambientSpawn, bezier, calmScale, emitCount, headsGrid, headsScene, nodeFor, seeded, spawnsFor,
+  CALM_FADE, CALM_FLOOR, CALM_HOLD, FX_TOKENS, ORB_R, STATE_FX, ambientEmitters, ambientSpawn, bezier, calmScale, emitCount, headsGrid, headsScene, nodeFor, seeded, spawnsFor,
   stageLive, stageScene,
 } from '../src/fx/effects.js';
 import { budgetFor, createGovernor, scaled } from '../src/fx/budget.js';
@@ -18,7 +18,7 @@ import { createPool, ease, envelope, setLimit, spawn, step } from '../src/fx/poo
 import { drawPool, parseColor, rgba, themeLook } from '../src/fx/draw.js';
 import { fxActive, parseFx, FX_LEVELS } from '../src/fx/pref.js';
 import { safely, startFx } from '../src/fx/host.js';
-import { createFx } from '../src/fx/runtime.js';
+import { SETTLED_MS, createFx } from '../src/fx/runtime.js';
 
 const EMPTY = { connected: false, stage: replay([]), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [] };
 const live = (over = {}) => ({ ...EMPTY, connected: true, ...over });
@@ -684,11 +684,13 @@ test('the runtime: listens only where it must, measures a scroll once a frame, i
   assert.equal(typeof globalThis.window, 'undefined', 'the page stubs are gone');
 });
 
-test('calm: a stage with nothing live drifts a while, thins, then stops; anything live keeps it going', () => {
+test('calm: a stage with nothing live drifts a while, thins to a floor and keeps drifting; anything live keeps it full', () => {
   assert.equal(calmScale(0), 1);
   assert.equal(calmScale(CALM_HOLD), 1);
-  assert.ok(Math.abs(calmScale(CALM_HOLD + CALM_FADE / 2) - 0.5) < 1e-9);
-  assert.equal(calmScale(CALM_HOLD + CALM_FADE + 5), 0);
+  assert.ok(Math.abs(calmScale(CALM_HOLD + CALM_FADE / 2) - (1 + CALM_FLOOR) / 2) < 1e-9);
+  assert.equal(calmScale(CALM_HOLD + CALM_FADE + 5), CALM_FLOOR);
+  assert.equal(calmScale(1e6), CALM_FLOOR, 'never down to nothing: a calm sky still drifts');
+  assert.ok(CALM_FLOOR > 0);
   const scene = stageScene({ nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'done', main: true }] }, 1280, 800);
   const full = ambientEmitters(scene, {});
   assert.deepEqual(full.map((e) => e.kind), ['drift']);
@@ -700,31 +702,27 @@ test('calm: a stage with nothing live drifts a while, thins, then stops; anythin
   assert.equal(stageLive(ambientEmitters(scene, { asking: true })), true, 'and so is a question');
 });
 
-test('the runtime: a quiet stage settles to no frames at all, and the next event wakes it', () => {
+test('the runtime: a quiet stage settles to a slow, cheap drift that never stops, and the next event brings full rate', () => {
   const page = stubPage();
   const savedTimeout = globalThis.setTimeout;
-  // The calm timer fires at once here: the test drives every frame by hand.
-  globalThis.setTimeout = (fn) => { fn(); return 1; };
+  // The calm timer fires at once here (its delay is recorded): the test drives every frame by hand.
+  const delays = [];
+  globalThis.setTimeout = (fn, ms) => { delays.push(ms); fn(); return 1; };
   try {
     const fx = createFx(page.canvas);
     fx.setScene({ mode: 'stage', nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'done', main: true }] });
-    let frames = 0;
-    let asleepAt = null;
-    for (let i = 0; i < 3000 && page.frames.length; i += 1) {
+    const quiet = (CALM_HOLD + CALM_FADE + 60) / 0.05;
+    for (let i = 0; i < quiet; i += 1) {
       page.run(50);
-      frames += 1;
-      if (frames * 0.05 < CALM_HOLD) assert.ok(page.frames.length > 0, 'it drifts while the hold lasts');
+      assert.ok(page.frames.length > 0, `it keeps drifting (${(i * 0.05).toFixed(1)} s of quiet)`);
     }
-    asleepAt = frames * 0.05;
-    assert.equal(page.frames.length, 0, 'asleep: no frame is asked for');
-    assert.ok(asleepAt > CALM_HOLD + CALM_FADE && asleepAt < CALM_HOLD + CALM_FADE + 14, `settled after ${asleepAt.toFixed(1)} s of quiet (the last motes live out)`);
-    fx.setScene({ mode: 'stage', nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'done', main: true }] });
-    page.run(50);
-    assert.equal(page.frames.length, 0, 'the same scene handed again (a re-render) is not news: still asleep after one look');
+    assert.ok(delays.slice(0, Math.floor(CALM_HOLD / 0.05)).every((d) => d < SETTLED_MS), 'during the hold: the calm rate');
+    assert.equal(delays.at(-1), SETTLED_MS, 'settled: a low frame rate, not none');
     fx.emit([{ type: 'tool', agent: 'main', tone: 'tool' }]);
-    assert.equal(page.frames.length, 1, 'an event wakes it');
+    const before = delays.length;
     page.run(50);
-    assert.equal(page.frames.length, 1, 'and it drifts again');
+    assert.equal(page.frames.length, 1, 'an event brings full rate back');
+    assert.equal(delays.length, before, 'a burst alive: every vsync, no timer');
     fx.destroy();
   } finally {
     globalThis.setTimeout = savedTimeout;

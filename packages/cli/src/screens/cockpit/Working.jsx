@@ -32,7 +32,8 @@ function useToolDetail(session, t, open) {
     if (!want) return undefined;
     let live = true;
     const done = !!t.done;
-    server.toolDetail(session, t.id).then((data) => { if (live) setGot({ done, data }); }, () => { if (live) setGot({ done: true, data: null }); });
+    // A failed fetch is not the last word: it counts for the call as it was, so a call that finishes asks again.
+    server.toolDetail(session, t.id).then((data) => { if (live) setGot({ done, data }); }, () => { if (live) setGot({ done, data: null }); });
     return () => { live = false; };
   }, [want, session, t.id, t.done]);
   return { detail: got?.data || null, loading: !!want };

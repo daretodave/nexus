@@ -295,18 +295,23 @@ function headsSpawns(ev, scene, rng, k) {
 
 // ---- ambient ---------------------------------------------------------------------
 
-/** A stage with nothing live keeps drifting this long (s) after the last thing happened, then fades over CALM_FADE. */
+/**
+ * A stage with nothing live keeps its full drift this long (s) after the last thing happened, then thins over
+ * CALM_FADE down to CALM_FLOOR of it, and keeps drifting there: a calm sky stays alive, just sparser and cheaper.
+ */
 export const CALM_HOLD = 6;
 export const CALM_FADE = 6;
+export const CALM_FLOOR = 0.35;
 
 /**
  * How much of the stage's drift is left after `quiet` seconds with nothing live (no orb working, no question, no
- * event): all of it for CALM_HOLD, then down to none over CALM_FADE. At none the drift stops, the last motes live
- * out, and the loop sleeps until something happens: a calm sky costs no frames.
+ * event): all of it for CALM_HOLD, then down to CALM_FLOOR over CALM_FADE, never less. Settled at the floor the
+ * drift goes on and the loop draws it at a low frame rate (runtime.js SETTLED_MS), so a calm sky still moves but
+ * costs few frames.
  */
 export function calmScale(quiet) {
   if (!(quiet > CALM_HOLD)) return 1;
-  return Math.max(0, 1 - (quiet - CALM_HOLD) / CALM_FADE);
+  return Math.max(CALM_FLOOR, 1 - (1 - CALM_FLOOR) * ((quiet - CALM_HOLD) / CALM_FADE));
 }
 
 /** Is anything on the stage live: an orb with a look of its own, or a question's tug? (The drift alone is not.) */
@@ -317,7 +322,7 @@ export const stageLive = (ems) => ems.some((e) => e.kind !== 'drift');
  * sky, each live orb's look, and, while a question waits, the tug's stream.
  * Hushed (a question or permission pending, or a start/review page): the
  * drift slows to a trickle and the orbs go still; only the tug moves.
- * `calm` (calmScale) thins the stage's drift once nothing is live; at 0 it stops.
+ * `calm` (calmScale) thins the stage's drift once nothing is live (it never reaches 0 there; 0 would stop it).
  * Returns [{ key, kind, rate, node? }]; rate is per second, before the level.
  */
 export function ambientEmitters(scene, { hushed = false, asking = false, calm = 1 } = {}) {
