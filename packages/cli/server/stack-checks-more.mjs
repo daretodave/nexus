@@ -35,17 +35,24 @@ export async function checkAws(fetchImpl, { accessKeyId, secretAccessKey, region
   const host = `sts.${rg}.amazonaws.com`;
   const body = 'Action=GetCallerIdentity&Version=2011-06-15';
   const { authorization, ...plain } = sigv4Headers({ host, region: rg, service: 'sts', body, accessKeyId, secretAccessKey, now });
-  const r = await attempt(fetchImpl, 'aws', { host, path: '/', method: 'POST', token: authorization, header: 'raw', extra: plain, rawBody: body, raw: true });
+  // STS answers in JSON when asked for it and in XML otherwise. Ask for XML (accept is not signed) and read both shapes.
+  const r = await attempt(fetchImpl, 'aws', { host, path: '/', method: 'POST', token: authorization, header: 'raw', extra: { ...plain, accept: 'text/xml' }, rawBody: body, raw: true });
   if (r.error) return { ok: false, reason: r.error, facts: {} };
-  const code = /<Code>([A-Za-z]+)<\/Code>/.exec(r.text || '')?.[1] || '';
+  const fromJson = r.json?.GetCallerIdentityResponse?.GetCallerIdentityResult || {};
+  const tag = (name) => new RegExp(`<${name}>([^<]{1,300})</${name}>`).exec(r.text || '')?.[1];
+  const jsonCode = r.json?.Error?.Code || r.json?.ErrorResponse?.Error?.Code;
+  const code = String((typeof jsonCode === 'string' ? jsonCode : '') || tag('Code') || '').replace(/[^A-Za-z]/g, '');
   if (r.status !== 200) {
     if (code === 'InvalidClientTokenId') return { ok: false, reason: 'AWS does not know this access key ID. It may be deleted or copied short.', facts: {} };
     if (code === 'SignatureDoesNotMatch') return { ok: false, reason: 'The secret access key does not match this key ID.', facts: {} };
     if (/Expired/i.test(code)) return { ok: false, reason: 'This computer\'s clock is off by more than five minutes, or the key has expired. Fix the time and try again.', facts: {} };
     return { ok: false, reason: reasonFor('aws', r), facts: {} };
   }
-  const account = /<Account>(\d{12})<\/Account>/.exec(r.text || '')?.[1];
-  const arn = /<Arn>(arn:aws[\w-]*:(?:iam|sts)::\d{12}:[^<]{1,200})<\/Arn>/.exec(r.text || '')?.[1];
+  const accountRaw = String(fromJson.Account || tag('Account') || '');
+  const arnRaw = String(fromJson.Arn || tag('Arn') || '');
+  const account = /^\d{12}$/.test(accountRaw) ? accountRaw : undefined;
+  const arn = /^arn:aws[\w-]*:(?:iam|sts)::\d{12}:[^<\s]{1,200}$/.test(arnRaw) ? arnRaw : undefined;
+  if (!account) return { ok: false, reason: 'AWS answered, but not in a way this check can read. Try again.', facts: {} };
   const principalType = /:root$/.test(arn || '') ? 'root' : /:user\//.test(arn || '') ? 'user' : /:assumed-role\//.test(arn || '') ? 'role' : 'other';
   const facts = pickFacts('aws', { keyOk: true, account, arn, principalType, keyKind: accessKeyId.startsWith('ASIA') ? 'temporary' : 'long-term', region: rg });
   if (principalType === 'root') return { ok: false, reason: 'This is a root access key. Delete it and make one for an IAM user.', facts };
@@ -83,7 +90,7 @@ export async function checkGcp(fetchImpl, { key, projectId, now = Date.now() } =
   }
   if (p.status !== 200) return { ok: false, reason: reasonFor('gcp', p, { thing: 'that project', field: 'the project ID' }), facts: pickFacts('gcp', facts) };
   Object.assign(facts, { projectOk: true, projectNumber: String(p.json?.name || '').replace(/^projects\//, ''), projectName: p.json?.displayName, projectState: p.json?.state });
-  const fill = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(String(project)) ? { projectId: project } : {};
+  const fill = /^(?:[a-z0-9-]+(?:\.[a-z0-9-]+)+:)?[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(String(project)) ? { projectId: project } : {};
   if (p.json?.state && p.json.state !== 'ACTIVE') return { ok: false, reason: `The project is ${String(p.json.state).toLowerCase()}, not active.`, facts: pickFacts('gcp', facts), fill };
   return { ok: true, summary: `Key works as ${k.client_email}. It can read ${facts.projectName || project}.`, facts: pickFacts('gcp', facts), fill };
 }
@@ -387,10 +394,15 @@ export async function checkPosthog(fetchImpl, { personalKey, host } = {}) {
   if (r.status === 401) return { ok: false, reason: `PostHog does not know this key on ${m[1].toUpperCase()} Cloud. If your account is on the other region, change the host.`, facts: {} };
   if (r.status === 403) return { ok: false, reason: 'The key works but lacks User: Read.', facts: {} };
   if (r.status !== 200) return { ok: false, reason: reasonFor('posthog', r), facts: {} };
+  // @me names the user's current project in the app, not the one the key is scoped to. Trust it only when the
+  // organization has exactly that one project; otherwise the owner saves the project ID by hand.
   const id = r.json?.team?.id;
-  const facts = { keyOk: true, projectId: id != null ? String(id) : undefined, projectName: r.json?.team?.name, region: m[1] };
-  const fill = /^\d{1,12}$/.test(String(id ?? '')) ? { projectId: String(id) } : {};
-  return { ok: true, summary: `Key works for ${facts.projectName || 'your project'} on ${m[1].toUpperCase()} Cloud.`, facts: pickFacts('posthog', facts), fill };
+  const teams = r.json?.organization?.teams;
+  const sure = id != null && Array.isArray(teams) && teams.length === 1 && String(teams[0]?.id) === String(id);
+  const facts = { keyOk: true, ...(sure ? { projectId: String(id), projectName: r.json?.team?.name } : {}), region: m[1] };
+  const fill = sure && /^\d{1,12}$/.test(String(id)) ? { projectId: String(id) } : {};
+  const where = `${m[1].toUpperCase()} Cloud`;
+  return { ok: true, summary: sure ? `Key works for ${facts.projectName || 'your project'} on ${where}.` : `Key works on ${where}. Your organization has more than one project, so save the project ID by hand (Project settings).`, facts: pickFacts('posthog', facts), fill };
 }
 
 /** Every check by service id: the 0.5.1 three and these. */

@@ -202,10 +202,10 @@ const OK_ROUTES = {
   anthropic: [[/^GET https:\/\/api\.anthropic\.com\/v1\/models\?limit=5$/, json(200, { data: [{ id: 'claude-opus-5-5' }] }, { 'anthropic-workspace-id': 'wrkspc_TESTONLY00000000', 'anthropic-organization-id': 'org-uuid' })]],
   openai: [[/^GET https:\/\/api\.openai\.com\/v1\/models$/, json(200, { data: [{ id: 'gpt-x' }, { id: 'gpt-y' }] })]],
   sentry: [[/^GET https:\/\/de\.sentry\.io\/api\/0\/$/, json(200, { version: '0', auth: { scopes: ['org:ci'] } })]],
-  posthog: [[/^GET https:\/\/us\.posthog\.com\/api\/users\/@me\/$/, json(200, { email: 'sam@fieldday.dev', first_name: 'Sam', team: { id: 12345, name: 'Fieldday' }, organization: { name: 'Fieldday' } })]],
+  posthog: [[/^GET https:\/\/us\.posthog\.com\/api\/users\/@me\/$/, json(200, { email: 'sam@fieldday.dev', first_name: 'Sam', team: { id: 12345, name: 'Fieldday' }, organization: { name: 'Fieldday', teams: [{ id: 12345, name: 'Fieldday' }] } })]],
 };
 const AUTH = {
-  aws: (h) => /^AWS4-HMAC-SHA256 /.test(h.authorization), gcp: (h, i) => i === 0 ? !h.authorization : /^Bearer ya29/.test(h.authorization),
+  aws: (h) => /^AWS4-HMAC-SHA256 /.test(h.authorization) && h.accept === 'text/xml', gcp: (h, i) => i === 0 ? !h.authorization : /^Bearer ya29/.test(h.authorization),
   azure: (h, i) => (i === 0 ? /^Basic /.test(h.authorization) : /^Bearer /.test(h.authorization)), firebase: (h) => !!h['x-goog-api-key'] && !h.authorization,
   discord: (h) => /^Bot /.test(h.authorization) && /^DiscordBot /.test(h['user-agent']), twilio: (h) => /^Basic /.test(h.authorization),
   anthropic: (h) => !!h['x-api-key'] && h['anthropic-version'] === '2023-06-01',
@@ -239,6 +239,13 @@ test('checks fail plainly: wrong keys, narrow keys, a user token, mixed modes, a
   const one = async (id, routes, patch = {}) => CHECKS[id](fake(routes), { ...argsFor(id), ...patch });
   assert.match((await one('aws', [[/sts/, { status: 403, body: '<ErrorResponse><Error><Code>InvalidClientTokenId</Code></Error></ErrorResponse>' }]])).reason, /does not know this access key ID/);
   assert.match((await one('aws', [[/sts/, { status: 200, body: '<Arn>arn:aws:iam::123456789012:root</Arn><Account>123456789012</Account>' }]])).reason, /root access key/);
+  // STS answers in JSON when a client asks for JSON: the check reads that shape too (the live answer, not a guess).
+  const awsJson = await one('aws', [[/sts/, json(200, { GetCallerIdentityResponse: { GetCallerIdentityResult: { Account: '123456789012', Arn: 'arn:aws:iam::123456789012:user/fieldday-app', UserId: 'AIDATESTONLY' }, ResponseMetadata: { RequestId: 'x' } } })]]);
+  assert.equal(awsJson.ok, true); assert.match(awsJson.summary, /IAM user fieldday-app in account 123456789012/);
+  assert.match((await one('aws', [[/sts/, json(403, { Error: { Code: 'InvalidClientTokenId', Message: 'The security token included in the request is invalid.' } })]])).reason, /does not know this access key ID/);
+  assert.match((await one('aws', [[/sts/, json(403, { Error: { Code: 'SignatureDoesNotMatch' } })]])).reason, /does not match this key ID/);
+  assert.match((await one('aws', [[/sts/, json(200, { GetCallerIdentityResponse: { GetCallerIdentityResult: { Account: '123456789012', Arn: 'arn:aws:iam::123456789012:root' } } })]])).reason, /root access key/);
+  assert.equal((await one('aws', [[/sts/, json(200, {})]])).ok, false);
   assert.match((await one('slack', [[/auth\.test/, json(200, { ok: false, error: 'invalid_auth' })]])).reason, /not valid/);
   assert.match((await one('slack', [[/auth\.test/, json(200, { ok: true, team_id: 'T0TESTONLY', user: 'sam' })]])).reason, /user token/);
   assert.match((await one('stripe', [[/prices/, json(403, { error: { type: 'invalid_request_error', message: 'The provided key rk_test_TESTONLY... does not have the permission' } })]])).reason, /Add Prices: Read/);
@@ -263,6 +270,8 @@ test('checks fail plainly: wrong keys, narrow keys, a user token, mixed modes, a
   const ph = await one('posthog', OK_ROUTES.posthog);
   assert.ok(!JSON.stringify(ph).includes('sam@fieldday.dev'), 'PostHog: the person\'s email is never kept');
   assert.equal(ph.fill.projectId, '12345');
+  const ph2 = await one('posthog', [[/@me/, json(200, { team: { id: 12345, name: 'Fieldday' }, organization: { name: 'Fieldday', teams: [{ id: 12345 }, { id: 67890 }] } })]]);
+  assert.equal(ph2.ok, true); assert.deepEqual(ph2.fill, {}); assert.equal(ph2.facts.projectId, undefined, 'several projects: the current one is not guessed');
   assert.match((await CHECKS.neon(fake([]), { dbUrl: EXAMPLES.neonPooledUrl })).reason, /optional API key/);
   assert.equal((await one('anthropic', OK_ROUTES.anthropic)).fill.workspaceId, 'wrkspc_TESTONLY00000000');
 });
@@ -332,6 +341,27 @@ test('the guide takes the name the repo already reads, in the table and in the c
   assert.match(g, /\| `STRIPE_API_KEY` \| Restricted key/);
   assert.match(g, /--only STRIPE_API_KEY,STRIPE_WEBHOOK_SECRET -- npm run dev/);
   assert.doesNotMatch(g.split('**Test')[0].split('| --- |')[1], /STRIPE_SECRET_KEY/);
+  // The Stripe CLI's own name is not rewritten into nonsense, and the guide never says to put a second key under it.
+  assert.doesNotMatch(g, /STRIPE_API_KEY, not STRIPE_API_KEY/);
+  assert.doesNotMatch(g, /separate sandbox read key as STRIPE_API_KEY/);
+  assert.match(g, /keeps the restricted key as `STRIPE_API_KEY`, the name the Stripe CLI reads by itself/);
+  // The default names keep the plain note.
+  assert.match(renderGuide({ picked: ['stripe'] }), /The Stripe CLI reads STRIPE_API_KEY, not STRIPE_SECRET_KEY/);
+});
+
+test('a name a tool reads by itself stays that tool\'s name in prose, and the guide says how to bridge a repo name', () => {
+  const g = renderGuide({ picked: ['discord', 'twilio'], names: { 'discord.botToken': ['DISCORD_BOT_TOKEN'], 'twilio.apiKey': ['TWILIO_API_KEY_SID'] } });
+  assert.match(g, /`client\.login\(\)` reads DISCORD_TOKEN/);
+  assert.match(g, /--only DISCORD_BOT_TOKEN -- npm run bot/);
+  assert.match(g, /discord\.js reads only `DISCORD_TOKEN`.*sh -c 'DISCORD_TOKEN="\$DISCORD_BOT_TOKEN"/);
+  assert.match(g, /The Twilio CLI reads TWILIO_ACCOUNT_SID, TWILIO_API_KEY and TWILIO_API_SECRET/);
+  assert.match(g, /the Twilio CLI reads only `TWILIO_API_KEY`/);
+  assert.doesNotMatch(renderGuide({ picked: ['discord', 'twilio'] }), /This repo keeps/);
+});
+
+test('a domain-scoped Google Cloud project ID is a project ID', () => {
+  assert.equal(checkShape('gcpProjectId', 'example.com:my-project').ok, true);
+  assert.equal(checkShape('gcpProjectId', 'evil:my-project').ok, false);
 });
 
 test('the block goes in place: hand edits outside it stay, a rewrite is idempotent, the pointer is added once', () => {
