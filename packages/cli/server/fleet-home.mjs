@@ -36,7 +36,7 @@ export function progressOf(l = {}) {
 }
 
 /**
- * The tile fields for each session row. `hosted`: [{ id, claude, asks, busy }] of the sessions this server runs;
+ * The tile fields for each session row. `hosted`: [{ id, claude, asks, busy, model, effort }] of the sessions this server runs;
  * `resumers`: Map ledger id -> { id, name } of the hosted session resuming it.
  */
 export function fleetRows(list, { ledgers = [], hosted = [], resumers = new Map(), owner = false } = {}) {
@@ -52,6 +52,9 @@ export function fleetRows(list, { ledgers = [], hosted = [], resumers = new Map(
     const h = hosted.find((x) => x.id === row.id || (x.claude && x.claude === row.claude));
     if (h) {
       out.orb = h.busy ? 'thinking' : 'idle';
+      // The model and effort the SDK says it runs on (spec 54); a hosted session not yet started reads null.
+      out.model = h.model || null;
+      out.effort = h.effort || null;
       if (h.asks > 0 && row.state !== 'paused') Object.assign(out, { state: 'asking', phase: 'questions', questions: { answered: 0, total: h.asks } });
     }
     const by = resumers.get(row.id);

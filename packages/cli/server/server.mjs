@@ -38,6 +38,7 @@ import { markPlanAnswersSent, readPlanAnswers, writePlanAnswers } from './plan-a
 import { artifactLink } from '../shared/design-link.mjs';
 import { MAX_SEND_BODY, readAttachments } from '../shared/attachments.mjs';
 import { saveUploads, uploadFile } from './uploads.mjs';
+import { EFFORTS, HELPER_MODEL, MODELS, effortsFor, modelLabel, validEffort, validModel } from '../shared/models.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PKG = path.resolve(HERE, '..');
@@ -102,6 +103,16 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   refreshMask.unref?.();
   const send = (res, status, data) => sendJson(res, status, mask.deep(data));
   const sessions = new Map();
+  // The SDK's supportedModels() rows, asked once by the first session whose query comes up (spec 54): which efforts
+  // each model takes. Null until then; Settings and the badge offer all five meanwhile.
+  let modelCatalog = null;
+  const noteModels = (rows) => { if (!modelCatalog && Array.isArray(rows) && rows.length) modelCatalog = rows; };
+  // A session on Claude Code's default names what that resolved to: Settings labels "Claude Code's default" with it.
+  const noteModel = ({ model, requested }) => {
+    if (requested || !model || prefs.lastModel === model) return;
+    prefs = { ...prefs, lastModel: model };
+    repoMod.writePrefs(repo, { lastModel: model }).then((p) => { prefs = p; }, () => null);
+  };
   async function host({ id, name = '', cwd, place = {}, listed = false, resume = null, form = null }) {
     const s = await createSession({
       id, name, cwd, place, listed, resume, form,
@@ -109,6 +120,10 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       // An injected provider object serves the home session only; a factory serves every session (tests).
       provider: typeof injected === 'function' ? injected : sessions.size ? undefined : injected,
       permissionMode: () => prefs.permissionMode,
+      model: () => prefs.model || '',
+      effort: () => prefs.effort || '',
+      onModel: noteModel,
+      onModels: noteModels,
       mask,
     });
     sessions.set(id, s);
@@ -442,7 +457,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
 
   /** The hosted sessions as the fleet and the inbox read them. */
   const hostedLive = () => [...sessions.values()].map((s) => ({
-    id: s.id, claude: s.claude, name: s.name, busy: s.busy,
+    id: s.id, claude: s.claude, name: s.name, busy: s.busy, model: s.model.model, effort: s.model.effort,
     asks: [...s.asks.values()].map((a) => a.view), permissions: [...s.permissions.values()].map((p) => p.view),
   }));
 
@@ -495,6 +510,58 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return steering.settleParked(ref.ledger, { index: ref.index, q, action, answer: answer || undefined });
   }
 
+  /** POST /api/prefs: each known key checked; model and effort against the list, the effort against the model's levels. */
+  async function savePrefs(b) {
+    const patch = { ...b };
+    delete patch.lastModel; // the server's own note
+    if ('permissionMode' in patch && !PERMISSION_MODES.includes(patch.permissionMode)) delete patch.permissionMode;
+    if ('model' in patch && !validModel(patch.model)) delete patch.model;
+    if ('effort' in patch && !validEffort(patch.effort)) delete patch.effort;
+    const m = 'model' in patch ? patch.model : prefs.model;
+    const e = 'effort' in patch ? patch.effort : prefs.effort;
+    if (e && !effortsFor(m, modelCatalog).includes(e)) patch.effort = ''; // a level this model does not take falls back to its default
+    prefs = await repoMod.writePrefs(repo, patch);
+    return prefs;
+  }
+
+  /** GET /api/models: the list, each model's effort levels (null: not known yet), the helpers' model and the default's. */
+  async function modelsView() {
+    if (!modelCatalog) {
+      for (const s of sessions.values()) {
+        const rows = await s.provider?.supportedModels?.().catch(() => null);
+        if (rows) { noteModels(rows); break; }
+      }
+    }
+    const def = modelCatalog?.find((r) => r && r.value === 'default');
+    return {
+      models: MODELS.map((m) => ({ ...m, efforts: modelCatalog ? effortsFor(m.id, modelCatalog) : null })),
+      efforts: EFFORTS,
+      known: !!modelCatalog,
+      helper: { id: HELPER_MODEL, label: modelLabel(HELPER_MODEL) },
+      lastModel: prefs.lastModel || def?.resolvedModel || '',
+    };
+  }
+
+  /** POST /api/sessions/:id/model { model?, effort? }: a hosted session's model and effort, from its next turn. */
+  async function switchModel(key, b) {
+    const s = sessionOf(key);
+    if (!s) return { status: 409, error: 'only a session this server runs switches its model here' };
+    const pick = {};
+    if (b.model !== undefined) { if (!validModel(b.model)) return { status: 400, error: `unknown model: ${b.model}` }; pick.model = b.model; }
+    if (b.effort !== undefined) { if (!validEffort(b.effort)) return { status: 400, error: `unknown effort: ${b.effort}` }; pick.effort = b.effort; }
+    if (!('model' in pick) && !('effort' in pick)) return { status: 400, error: 'name a model or an effort' };
+    const target = 'model' in pick ? pick.model : s.provider?.chosen?.model ?? s.model.model ?? '';
+    const levels = effortsFor(target || s.model.model || '', modelCatalog);
+    if (pick.effort && !levels.includes(pick.effort)) {
+      if (!('model' in pick)) return { status: 400, error: `${modelLabel(target || s.model.model) || 'this model'} does not take ${pick.effort} effort` };
+      pick.effort = ''; // a new model without that level: its own default
+    }
+    if ('model' in pick && !levels.length) pick.effort = '';
+    const r = await s.switchModel(pick);
+    if (!r.ok) return { status: 409, error: r.error };
+    return { status: 200, id: s.id, pending: r.pending, note: 'applies from the next turn' };
+  }
+
   const answerAsk = (askId, answers) => [...sessions.values()].some((s) => s.answerAsk(askId, answers));
   const answerPermission = (reqId, d) => [...sessions.values()].some((s) => s.answerPermission(reqId, d));
 
@@ -512,7 +579,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/state': return send(res, 200, { info: await repoMod.repoInfo(repo), prefs, commands: repoMod.listCommands(repo), provider: provider.kind, permissionModes: PERMISSION_MODES });
         case 'GET /api/preflight': return send(res, 200, await preflight(repo));
         case 'GET /api/prompts': return send(res, 200, { paste: ADOPT_PASTE, adopt: readPrompt('adopt.md'), pitch: readPrompt('pitch.md') });
-        case 'POST /api/prefs': { const b = await body(req); if ('permissionMode' in b && !PERMISSION_MODES.includes(b.permissionMode)) delete b.permissionMode; prefs = await repoMod.writePrefs(repo, b); return send(res, 200, prefs); }
+        case 'POST /api/prefs': return send(res, 200, await savePrefs(await body(req)));
+        case 'GET /api/models': return send(res, 200, await modelsView());
         case 'GET /api/local': return send(res, 200, await local.localView(repo));
         case 'POST /api/local': return send(res, 200, await local.writeLocal(repo, await body(req)));
         case 'POST /api/owner': { const b = await body(req); return send(res, 200, { owner: await repoMod.setOwner(repo, !!b.on) }); }
@@ -677,6 +745,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         const r = sact[2] === 'link' ? await steering.link(id, b.on !== false)
           : sact[2] === 'steer' ? await steering.steer(id, b.text, { kind: b.kind === 'answer' ? 'answer' : 'tug' })
             : await steering.settleParked(id, { index: Number(b.index), q: b.q, action: b.action, pick: b.pick, answer: b.answer });
+        return send(res, r.status, r);
+      }
+      const mdl = /^POST \/api\/sessions\/([\w.%-]+)\/model$/.exec(route);
+      if (mdl) {
+        const r = await switchModel(decodeURIComponent(mdl[1]), await body(req));
         return send(res, r.status, r);
       }
       const life = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close|retry)$/.exec(route);

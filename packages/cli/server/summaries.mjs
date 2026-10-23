@@ -29,8 +29,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { HELPER_MODEL } from '../shared/models.mjs';
 
-export const SUMMARY_MODEL = 'claude-haiku-5-5';
+export const SUMMARY_MODEL = HELPER_MODEL; // shared/models.mjs: Settings names it
 export const CACHE_FILE = '.nexus/cache/summaries.json';
 export const TIMEOUT_MS = 20000;
 export const HARD_CAP_MS = 120000;

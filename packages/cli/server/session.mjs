@@ -11,6 +11,10 @@
 //
 // Tugs: each session keeps its own tug log (tugs.mjs createTugLog), fed from its own message stream: a send while a
 // turn runs, or a steer aimed at it, is logged and moves sent -> seen -> applied.
+//
+// Model and effort (spec 54): the SDK's init message, sent at the start of each turn, names the model the session
+// runs on (and, where the SDK publishes it, the effort it sends; else the effort asked for). The channel's status
+// carries both as `model` / `effort`; a switch from the cockpit is `modelPending` until the next init confirms it.
 import { createHub } from './hub.mjs';
 import { createProvider } from './provider.mjs';
 import { txFromMessage, newTxContext } from './normalize.mjs';
@@ -29,6 +33,10 @@ import { messageContent, withFiles } from '../shared/attachments.mjs';
  * @param {() => Promise<object>} [o.env]  extra environment, resolved before the first prompt
  * @param {object|function} [o.provider]   a provider, or a factory given the hooks (tests)
  * @param {() => string} [o.permissionMode]
+ * @param {() => string} [o.model]    the model pref for a new conversation ('' : Claude Code's default)
+ * @param {() => string} [o.effort]   the effort pref for a new conversation
+ * @param {(m: {model, effort, requested}) => void} [o.onModel]  each init's model (the server notes the default's)
+ * @param {(rows: object[]) => void} [o.onModels]  the SDK's supportedModels() rows, once
  * @param {boolean} [o.listed]        shown in the session list before it has run (started from the GUI)
  * @param {string} [o.resume]        a Claude Code session id its first turn resumes (Recover: a Workflow run's own)
  * @param {object} [o.mask]         the server's vault mask (secrets.mjs): every frame this session's channel sends
@@ -36,7 +44,7 @@ import { messageContent, withFiles } from '../shared/attachments.mjs';
  * @param {object} [o.form]          a worktree still forming (shared/forming.mjs): no provider yet, and what is sent
  *                                   waits until formed({ cwd }) (POST /api/sessions answers before git has made it)
  */
-export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
+export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', model = () => '', effort = () => '', onModel = null, onModels = null, listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
   const hub = createHub({ mask });
   const asks = new Map();
   const permissions = new Map();
@@ -52,13 +60,26 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   let form = startForm;
   let here = cwd;
   const waiting = []; // sent while the worktree forms: delivered, in order, once it is ready
+  let running = { model: null, effort: null }; // what the SDK's last init said
+  let pending = null; // a switch not yet confirmed by an init
 
   const publishAsks = () => hub.set('asks', [...asks.values()].map((a) => a.view));
   const publishPerms = () => hub.set('permissions', [...permissions.values()].map((a) => a.view));
   const publishPause = () => hub.setStatus({ pause: pause.state, pausedAt: pause.at });
 
+  /** An init names the model (and maybe the effort) this turn runs on: the badge reads it, a pending switch settles. */
+  const onInit = (msg) => {
+    const asked = provider?.chosen || { model: '', effort: '' };
+    const eff = 'effort' in msg ? msg.effort ?? null : asked.effort || null;
+    running = { model: msg.model || null, effort: eff };
+    pending = null;
+    hub.setStatus({ model: running.model, effort: running.effort, modelPending: null });
+    onModel?.({ ...running, requested: asked.model || '' });
+  };
+
   const onMessage = (msg) => {
     if (msg.session_id) claude = msg.session_id;
+    if (msg.type === 'system' && msg.subtype === 'init' && msg.model) onInit(msg);
     tugLog.onMessage(msg);
     for (const item of txFromMessage(msg, txCtx)) hub.tx(item);
     // Stream beats carry when they were read, so the stage knows when a chunk was claimed and closed.
@@ -124,6 +145,9 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     onPermission,
     onStatus: (s) => { if (s.state === 'idle') busy = false; hub.setStatus(s); },
     permissionMode,
+    model,
+    effort,
+    onModels: (rows) => onModels?.(rows),
     ...(resume ? { resume } : {}),
   };
   // A session whose worktree still forms starts its provider once it is ready, so the agent works in the worktree.
@@ -175,6 +199,20 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     get busy() { return busy; },
     get sent() { return sent; },
     get pause() { return { ...pause, held: held.length }; },
+    /** The model and effort the SDK last said this session runs on (null until its first init), and a switch pending. */
+    get model() { return { ...running, pending }; },
+
+    /**
+     * Switch the model and/or the effort from the next turn (provider.switchModel). The badge keeps what runs until
+     * the next init confirms it; the channel says what is pending meanwhile.
+     */
+    async switchModel(pick = {}) {
+      if (!provider || typeof provider.switchModel !== 'function') return { ok: false, error: 'this session cannot switch its model mid-session (the claude CLI fallback): start a new one' };
+      const next = await provider.switchModel(pick);
+      pending = { model: next.model, effort: next.effort };
+      hub.setStatus({ modelPending: pending });
+      return { ok: true, pending, live: next.live };
+    },
 
     /** Send a prompt (`steered`: a steer aimed at this session); a paused (or pausing) session holds it until resume. */
     async send(text, { steered = false, images = [], files = [] } = {}) {

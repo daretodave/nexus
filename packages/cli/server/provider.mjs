@@ -17,6 +17,12 @@
 //                                starts and kept while it runs or resumes;
 //                                bypassPermissions alone also sets the SDK's
 //                                allowDangerouslySkipPermissions opt-in
+//   model, effort                the checkout's prefs (Settings, "Model / Effort
+//                                for new sessions", spec 54), read like the
+//                                mode and passed only when set; a switch from
+//                                the cockpit goes through the live query's
+//                                setModel / applyFlagSettings({ effortLevel })
+//                                and is kept if the conversation resumes
 // Subagent traffic (parent_tool_use_id) is kept: it is what the stage draws.
 // Stop: interrupt() first so the turn's result still arrives, close() after
 // a 1500 ms grace.
@@ -37,6 +43,11 @@ export function permissionModeOf(mode) {
 export function modeOptions(mode) {
   const m = permissionModeOf(mode);
   return m === BYPASS ? { permissionMode: m, allowDangerouslySkipPermissions: true } : { permissionMode: m };
+}
+
+/** The SDK query options for a model and an effort: each only when chosen ('' leaves Claude Code's default). */
+export function modelOptions({ model = '', effort = '' } = {}) {
+  return { ...(model ? { model } : {}), ...(effort ? { effort } : {}) };
 }
 
 /** The `claude -p` arguments for a mode: the CLI's own opt-in rides along with bypass only. */
@@ -91,17 +102,23 @@ async function loadSdk() {
  * @param {() => string} [o.permissionMode]
  * @param {() => object} [o.env]   extra environment (NEXUS_SESSION, NEXUS_GH_LOGIN), read when a session starts
  * @param {string} [o.resume]      a Claude Code session id the first turn resumes (Recover: a Workflow run's own)
+ * @param {() => string} [o.model]  the model for a new conversation ('' : Claude Code's default)
+ * @param {() => string} [o.effort] the effort for a new conversation ('' : the model's default)
+ * @param {(rows: object[]) => void} [o.onModels]  the SDK's supportedModels(), asked once a query is up
  */
 export async function createProvider(o) {
   const sdk = await loadSdk();
   return sdk ? sdkProvider(sdk, o) : cliProvider(o);
 }
 
-export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', env = () => ({}), resume: seed = null }) {
+export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', model = () => '', effort = () => '', onModels = null, env = () => ({}), resume: seed = null }) {
   let session = null;
   let lastSessionId = seed;
   // The mode this conversation started in: a resume keeps it, a new conversation reads the pref again.
   let mode = null;
+  // The model and effort asked for: the prefs when the conversation starts, then each switch; a resume keeps them.
+  let chosen = null;
+  let modelsAsked = false;
 
   const canUseTool = async (toolName, input, opts) => {
     const id = opts.toolUseID || randomUUID();
@@ -118,6 +135,7 @@ export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatu
 
   function start(resume) {
     if (!resume || !mode) mode = permissionModeOf(permissionMode());
+    if (!resume || !chosen) chosen = { model: model() || '', effort: effort() || '' };
     const queue = inputQueue();
     const q = sdk.query({
       prompt: queue,
@@ -126,6 +144,7 @@ export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatu
         settingSources: ['project'],
         includePartialMessages: true,
         ...modeOptions(mode),
+        ...modelOptions(chosen),
         canUseTool,
         ...(resume ? { resume } : {}),
         env: { ...process.env, ...env(), CLAUDE_AGENT_SDK_CLIENT_APP: 'nexus-cli' },
@@ -137,6 +156,10 @@ export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatu
         for await (const msg of q) {
           s.seen += 1;
           if (msg.session_id) lastSessionId = msg.session_id;
+          if (onModels && !modelsAsked && msg.type === 'system' && msg.subtype === 'init' && typeof q.supportedModels === 'function') {
+            modelsAsked = true;
+            q.supportedModels().then((rows) => onModels(rows || []), () => { modelsAsked = false; });
+          }
           onMessage(msg);
         }
       } catch (e) {
@@ -183,11 +206,31 @@ export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatu
     fresh() {
       lastSessionId = null;
       mode = null;
+      chosen = null;
       return this.stop();
+    },
+    /**
+     * Switch the model and/or the effort (undefined: leave it; '': back to the default). A running query takes it
+     * from its next turn (setModel, applyFlagSettings); a stopped one starts or resumes on it.
+     */
+    async switchModel({ model: m, effort: e } = {}) {
+      if (!chosen) chosen = { model: model() || '', effort: effort() || '' };
+      const s = session;
+      if (s && m !== undefined) await s.q.setModel(m || undefined);
+      if (s && e !== undefined) await s.q.applyFlagSettings({ effortLevel: e || null });
+      if (m !== undefined) chosen.model = m;
+      if (e !== undefined) chosen.effort = e;
+      return { ...chosen, live: !!s };
+    },
+    /** The SDK's model rows, from the running query (null when none runs). */
+    async supportedModels() {
+      return session && typeof session.q.supportedModels === 'function' ? session.q.supportedModels() : null;
     },
     get active() { return !!session; },
     /** The mode the current conversation started in (null before its first turn). */
     get mode() { return mode; },
+    /** The model and effort asked for (null before the first turn); what runs is what the init message names. */
+    get chosen() { return chosen ? { ...chosen } : null; },
   };
 }
 
@@ -197,14 +240,18 @@ export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatu
  * CLI, and AskUserQuestion cannot be answered live (questions belong in the
  * oversight queue anyway).
  */
-function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'default', env = () => ({}), resume: seed = null }) {
+function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'default', model = () => '', env = () => ({}), resume: seed = null }) {
   let child = null;
   let lastSessionId = seed;
   let mode = null;
+  let chosen = null;
 
   function start() {
     if (!lastSessionId || !mode) mode = permissionModeOf(permissionMode());
+    // The fallback takes the model at start only (a listed id: shared/models.mjs); it cannot switch mid-session.
+    if (!lastSessionId || !chosen) chosen = { model: model() || '', effort: '' };
     const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages', ...modeArgs(mode)];
+    if (chosen.model) args.push('--model', chosen.model);
     if (lastSessionId) args.push('--resume', lastSessionId);
     const c = process.platform === 'win32'
       ? spawn(['claude', ...args].join(' '), { cwd: repo, shell: true, windowsHide: true, env: { ...process.env, ...env() } })
@@ -250,8 +297,10 @@ function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'defaul
     },
     fresh() {
       lastSessionId = null;
+      chosen = null;
       return this.stop();
     },
     get active() { return !!child; },
+    get chosen() { return chosen ? { ...chosen } : null; },
   };
 }
