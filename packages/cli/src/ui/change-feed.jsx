@@ -12,7 +12,7 @@ import { sessClass, sessionLook } from './stars.js';
 import { cx } from './controls.jsx';
 import { useShell } from './shell.jsx';
 import { PATHS } from '../routes.js';
-import { ago, byDay, deployWords, mergeEvents, tickerText, whoOf } from './change-feed.js';
+import { ago, byDay, deployWords, mergeEvents, tickerParts, tickerText, whoOf } from './change-feed.js';
 import '../styles/change-feed.css';
 
 /** The deploy dot: a tone per state, a breathing ring while it deploys. Nothing at all when the repo has no deploys. */
@@ -131,7 +131,23 @@ function FeedModal({ events, onClose, load }) {
   );
 }
 
-/** The top bar's ticker: the newest push, a new one sliding in over the last. Nothing while the feed is off or empty. */
+/** One line of the ticker: the dot, the line (cut short when room is tight) and the deploy word (never cut). */
+function TickRow({ ev, className, hidden }) {
+  const { line, state } = tickerParts(ev);
+  const d = deployWords(ev.deploy);
+  return (
+    <span className={className} aria-hidden={hidden || undefined}>
+      <Dot deploy={ev.deploy} />
+      <span className="feed-tick-text">{line}</span>
+      {state ? <span className={cx('feed-tick-state', `is-${d.tone}`)}>{state}</span> : null}
+    </span>
+  );
+}
+
+/**
+ * The top bar's ticker: the newest push, a new one sliding in over the last. Nothing while the feed is off or empty.
+ * On a narrow bar it folds to its dot and the word "Changes", still a way into the modal.
+ */
 export function FeedTicker() {
   const { feed, feedOn, loadFeed } = useShell();
   const events = feedOn && feed?.events ? feed.events : [];
@@ -161,9 +177,10 @@ export function FeedTicker() {
         aria-label={`Latest change: ${say}. Open the change feed`} title={say} onClick={() => setOpen(true)}
       >
         <span className="feed-tick-win" aria-live="polite">
-          {leaving ? <span key={`out-${leaving.id}`} className="feed-tick-row is-out" aria-hidden="true"><Dot deploy={leaving.deploy} /><span className="feed-tick-text">{tickerText(leaving)}</span></span> : null}
-          <span key={top.id} className={cx('feed-tick-row', leaving && 'is-in')}><Dot deploy={top.deploy} /><span className="feed-tick-text">{say}</span></span>
+          {leaving ? <TickRow key={`out-${leaving.id}`} ev={leaving} className="feed-tick-row is-out" hidden /> : null}
+          <TickRow key={top.id} ev={top} className={cx('feed-tick-row', leaving && 'is-in')} />
         </span>
+        <span className="feed-tick-fold" aria-hidden="true"><Dot deploy={top.deploy} />Changes</span>
         <span className="feed-tick-ago">{ago(top.at)}</span>
       </button>
       {open ? <FeedModal events={events} onClose={close} load={loadFeed} /> : null}

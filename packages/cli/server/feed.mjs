@@ -45,6 +45,12 @@ export function createBus({ file = null, max = MAX_EVENTS, onChange = () => {} }
   let events = [];
   const index = new Map();
   let lines = 0;
+  let mark = ''; // the file's size and time as this bus last wrote or read it: another server's write changes it
+
+  function stamp() {
+    if (!file) return '';
+    try { const st = fs.statSync(file); return `${st.size}:${st.mtimeMs}`; } catch { return ''; }
+  }
 
   function persist(ev) {
     if (!file) return;
@@ -55,6 +61,7 @@ export function createBus({ file = null, max = MAX_EVENTS, onChange = () => {} }
       fs.appendFileSync(file, `${JSON.stringify(ev)}\n`);
       lines += 1;
       if (lines > max * 2) compact();
+      mark = stamp();
     } catch { /* the feed in memory still serves */ }
   }
 
@@ -65,6 +72,7 @@ export function createBus({ file = null, max = MAX_EVENTS, onChange = () => {} }
       fs.writeFileSync(tmp, events.map((e) => JSON.stringify(e)).join('\n') + (events.length ? '\n' : ''));
       fs.renameSync(tmp, file);
       lines = events.length;
+      mark = stamp();
     } catch { /* kept as it was */ }
   }
 
@@ -83,8 +91,15 @@ export function createBus({ file = null, max = MAX_EVENTS, onChange = () => {} }
       lines = text ? text.split(/\r?\n/).filter((l) => l.trim()).length : 0;
       events = foldLines(text, max);
       for (const e of events) index.set(e.id, e);
+      mark = stamp();
       if (lines > max * 2) compact();
       return bus;
+    },
+    /** Read the file again when someone else (another GUI server on this repo) wrote to it; true when it did. */
+    refresh() {
+      if (!file || stamp() === mark) return false;
+      bus.load();
+      return true;
     },
     has: (id) => index.has(id),
     get: (id) => index.get(id) || null,
@@ -150,7 +165,11 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
   const pushes = createPushWatch({
     repo, stateFile: path.join(root, STATE_FILE), git, whoFor, active, watch,
     onPush: (ev) => { add(ev); },
+    onLook: () => { if (on && bus.refresh()) onChange(view()); },
   });
+
+  /** When the feed began following a push's deploy: when it saw the push (an event dated by its commit can be older). */
+  const followedFrom = (e) => Date.parse(e.seen || e.at || 0) || 0;
 
   function view(limit = LIVE_EVENTS) {
     return { on, at: now(), events: on ? bus.list(limit).map((e) => liveEvent(e)) : [] };
@@ -159,7 +178,7 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
   /** A push from the watch: on the bus at once with its plain fallback line, then the model's line and the deploy. */
   function add(ev) {
     if (!on || bus.has(ev.id)) return null;
-    const e = bus.append({ ...ev, line: fallbackLine(ev.commits), ai: false, deploy: null });
+    const e = bus.append({ ...ev, seen: new Date(now()).toISOString(), line: fallbackLine(ev.commits, ev.count), ai: false, deploy: null });
     if (!e) return null;
     describe(e);
     deploys(e);
@@ -179,7 +198,8 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
 
   async function hasIntegration(e) {
     if (integration && now() - integration.at < INTEGRATION_MS) return integration.value;
-    const shas = [e.from, ...(e.commits || []).slice(1).map((c) => c.sha)].filter(Boolean);
+    // Full shas only: GitHub's deployments?sha= matches nothing on a short one.
+    const shas = [e.from, ...(e.commits || []).slice(1).map((c) => c.oid)].filter((s) => /^[0-9a-f]{40,64}$/.test(String(s || '')));
     const value = await readIntegration(repo, shas, { run: gh }).catch(() => null);
     integration = { value, at: now() };
     return value;
@@ -189,6 +209,16 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
     if (!(await hasIntegration(e)) || !on || closed) return;
     if (!e.deploy) bus.update(e.id, { deploy: { state: 'waiting', env: '', url: '', at: new Date(now()).toISOString() } });
     follow(e.id, 0);
+  }
+
+  /**
+   * The feed stops asking about a deploy that never settled: "not deployed yet" goes quiet (nothing is said, the host
+   * did not build this push), and a stuck "Deploying" becomes "no word on the deploy" rather than breathing forever.
+   */
+  function giveUp(id) {
+    const d = bus.get(id)?.deploy;
+    if (!d || SETTLED.has(d.state)) return;
+    bus.update(id, { deploy: d.state === 'waiting' ? null : { ...d, state: 'quiet', at: new Date(now()).toISOString() } });
   }
 
   /** Look at one push's deploy again after a backing-off wait, until it settles or FOLLOW_MS has passed. */
@@ -203,8 +233,10 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
         const d = deployFrom(c);
         if (d.state !== e.deploy.state || d.url !== e.deploy.url || d.env !== e.deploy.env) bus.update(id, { deploy: { ...d, at: new Date(now()).toISOString() } });
       }
-      const age = now() - Date.parse(e.at || 0);
-      if (!SETTLED.has(bus.get(id)?.deploy?.state) && age < followMs) follow(id, n + 1);
+      const age = now() - followedFrom(bus.get(id) || e);
+      if (SETTLED.has(bus.get(id)?.deploy?.state)) return;
+      if (age < followMs) follow(id, n + 1);
+      else giveUp(id);
     }, wait(n));
     t.unref?.();
     follows.set(id, t);
@@ -215,9 +247,11 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
     on = true;
     if (wasOff) pushes.reset(); // turned (back) on: from main as it is now, not a backlog
     pushes.start().catch(() => null);
-    // A deploy still unsettled from before a restart is followed again while it is young.
-    for (const e of bus.list(20)) {
-      if (e.deploy && !SETTLED.has(e.deploy.state) && now() - Date.parse(e.at || 0) < followMs) follow(e.id, 0);
+    // A deploy still unsettled from before a restart is followed again while it is young, and let go when it is not.
+    for (const e of bus.list(MAX_EVENTS)) {
+      if (!e.deploy || SETTLED.has(e.deploy.state)) continue;
+      if (now() - followedFrom(e) < followMs) follow(e.id, 0);
+      else giveUp(e.id);
     }
     onChange(view());
   }
@@ -241,7 +275,7 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
     /** Follow the switch: on starts the watch, off stops everything. */
     sync() { if (enabled()) start(); else stop(); return on; },
     /** GET /api/feed. */
-    list(limit = 200) { return { on, at: now(), events: on ? bus.list(Math.min(Math.max(1, limit), MAX_EVENTS)) : [] }; },
+    list(limit = 200) { if (on) bus.refresh(); return { on, at: now(), events: on ? bus.list(Math.min(Math.max(1, limit), MAX_EVENTS)) : [] }; },
     close() { stop(); closed = true; },
   };
   return api;

@@ -14,7 +14,8 @@ import { run as shRun, json } from './sh.mjs';
 
 /** A status context, check run or app that is a deploy host. */
 export const DEPLOY_RE = /\b(vercel|netlify|cloudflare|pages|deploy|deployment|render|railway|fly|amplify|heroku|firebase|surge|preview)\b/i;
-export const SETTLED = new Set(['deployed', 'failed']);
+// quiet: the feed stopped asking about a deploy that never settled (feed.mjs giveUp).
+export const SETTLED = new Set(['deployed', 'failed', 'quiet']);
 /** How long a push's deploy is followed before the feed stops asking. */
 export const FOLLOW_MS = 30 * 60 * 1000;
 /** The waits between looks: quick first, then backing off. */

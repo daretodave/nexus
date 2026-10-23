@@ -10,17 +10,27 @@ export function deployWords(d) {
     case 'deploying': return { text: d.env ? `Deploying to ${d.env}` : 'Deploying', short: 'Deploying', tone: 'deploying' };
     case 'deployed': return { text: d.env ? `Deployed to ${d.env}` : 'Deployed', short: 'Deployed', tone: 'deployed' };
     case 'failed': return { text: d.env ? `Deploy to ${d.env} failed` : 'Deploy failed', short: 'Deploy failed', tone: 'failed' };
+    case 'quiet': return { text: 'No word on the deploy', short: 'No deploy word', tone: 'quiet' };
     default: return null;
   }
 }
 
-/** The ticker's words for a push: "Added blue to the home background (not deployed yet)", "... · Deployed". */
+/**
+ * The ticker's two parts: the line, which may be cut short, and the deploy word, which never is (it sits apart, after
+ * the line). The word is '' when the repo has no deploys.
+ */
+export function tickerParts(ev) {
+  if (!ev) return { line: '', state: '' };
+  const d = deployWords(ev.deploy);
+  return { line: ev.line || 'New changes landed on main', state: d ? d.short : '' };
+}
+
+/** The ticker's words for a push, whole: "Added blue to the home background (not deployed yet)", "... · Deployed". */
 export function tickerText(ev) {
   if (!ev) return '';
-  const line = ev.line || 'New changes landed on main';
-  const d = deployWords(ev.deploy);
-  if (!d) return line;
-  return d.tone === 'waiting' ? `${line} (not deployed yet)` : `${line} · ${d.short}`;
+  const { line, state } = tickerParts(ev);
+  if (!state) return line;
+  return ev.deploy.state === 'waiting' ? `${line} (not deployed yet)` : `${line} · ${state}`;
 }
 
 /** Who made a push, as the session glyph draws it: a star here, else the commit's author with a neutral initial. */

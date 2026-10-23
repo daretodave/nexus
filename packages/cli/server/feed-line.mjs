@@ -23,14 +23,17 @@ export function cleanSubject(subject) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** The line a push gets with no model: its newest commit's subject, cleaned, and how many more came with it. */
-export function fallbackLine(commits = []) {
+/**
+ * The line a push gets with no model: its newest commit's subject, cleaned, and how many more came with it. `count` is
+ * the push's whole commit count when the event carries only the newest few.
+ */
+export function fallbackLine(commits = [], count = 0) {
   const list = commits.filter((c) => c && c.subject);
   // The newest commit leads (git log order), but a merge commit says little: the newest non-merge one does.
   const lead = list.find((c) => !/^merge\b/i.test(c.subject)) || list[0];
   const first = lead ? cleanSubject(lead.subject) : '';
   if (!first) return 'New changes landed on main';
-  const more = list.length - 1;
+  const more = Math.max(list.length, Number(count) || 0) - 1;
   return more > 0 ? `${first} (and ${more} more ${more === 1 ? 'change' : 'changes'})` : first;
 }
 

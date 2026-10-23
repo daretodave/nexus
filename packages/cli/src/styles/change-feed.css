@@ -1,9 +1,10 @@
 /* The change feed (src/ui/change-feed.jsx): a quiet ticker on the top bar and a small modal. Theme tokens only, so
-   day and night both hold. The ticker gives its room up first: it shrinks before the needs chips do, and folds away
-   on a narrow bar. Deploy dots: waiting is ash, deploying cyan and breathing, deployed green, failed red. */
+   day and night both hold. The ticker gives its room up first: its base width is nothing (flex-basis 0), so it never
+   pushes the bar onto a second row, it only grows into room that is free, and on a narrow bar it folds to its dot and
+   "Changes". Deploy dots: waiting is ash, deploying cyan and breathing, deployed green, failed red, quiet grey. */
 
 .feed-tick {
-  flex: 1 1 150px; max-width: 420px; min-width: 0; display: inline-flex; align-items: center; gap: 10px; height: 30px; padding: 0 12px 0 10px;
+  flex: 3 1 0; max-width: 460px; min-width: 0; overflow: hidden; display: inline-flex; align-items: center; gap: 10px; height: 30px; padding: 0 12px 0 10px;
   border: 0; border-radius: var(--r-full, 999px); background: color-mix(in oklab, var(--text) 5%, transparent); color: var(--text-2);
   box-shadow: inset 0 0 0 1px var(--line); font: inherit; font-size: 13px; line-height: 18px; text-align: left; cursor: pointer;
   transition: background var(--dur-snap) var(--ease-snap), color var(--dur-snap) var(--ease-snap);
@@ -13,6 +14,11 @@
 .feed-tick-win { position: relative; flex: 1; min-width: 0; height: 18px; overflow: hidden; }
 .feed-tick-row { position: absolute; inset: 0; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .feed-tick-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.feed-tick-state { flex: none; font-size: 12px; white-space: nowrap; color: var(--text-2); }
+.feed-tick-state.is-deployed { color: color-mix(in oklab, var(--st-done) 70%, var(--text)); }
+.feed-tick-state.is-failed { color: color-mix(in oklab, var(--st-failed) 75%, var(--text)); }
+.feed-tick-state.is-deploying { color: color-mix(in oklab, var(--st-tool) 70%, var(--text)); }
+.feed-tick-fold { display: none; flex: none; align-items: center; gap: 8px; color: var(--text); white-space: nowrap; }
 .feed-tick-ago { flex: none; font-size: 12px; color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .feed-tick-row.is-in { animation: feed-in 480ms var(--ease-settle) both; }
 .feed-tick-row.is-out { animation: feed-out 480ms var(--ease-settle) both; }
@@ -27,6 +33,7 @@
 .feed-dot.is-deploying::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--tone); animation: nx-ripple 2.2s var(--ease-breathe) infinite; }
 .feed-dot.is-deployed { --tone: var(--st-done); }
 .feed-dot.is-failed { --tone: var(--st-failed); }
+.feed-dot.is-quiet { --tone: var(--text-3); opacity: .6; }
 
 /* ---- the modal ---- */
 .feed-scrim {
@@ -75,7 +82,11 @@ a.feed-deploy:hover { color: var(--text); text-decoration: underline; }
 
 /* A narrow bar keeps its room for the needs chips and the screen's own actions. */
 @media (max-width: 1100px) { .feed-tick-ago { display: none; } }
-@media (max-width: 960px) { .feed-tick { display: none; } }
+@media (max-width: 960px) {
+  .feed-tick { flex: none; max-width: none; }
+  .feed-tick-win { display: none; }
+  .feed-tick-fold { display: inline-flex; }
+}
 @media (max-width: 600px) { .feed-scrim { padding-top: 24px; } }
 
 @media (prefers-reduced-motion: reduce) {

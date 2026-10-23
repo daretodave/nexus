@@ -5,7 +5,16 @@
 //
 // One event per push: the commits between the tip last seen and the new one, grouped, with their subjects, authors
 // and the paths they changed. The tip last seen is kept in .nexus/feed/state.json, so a restart neither repeats a
-// push nor misses one that landed while the GUI was closed. A first look only records the tip.
+// push nor misses one that landed while the GUI was closed. A first look only records the tip. That file is shared by
+// every GUI server on the repo (a worktree's runs on the primary checkout's .nexus), so each look first lets the feed
+// read the shared feed file again (onLook): a push another server recorded reaches this one's tabs too.
+//
+// An event is dated when the push landed, as near as can be known: after the last look (state.seenAt) and after its
+// tip was committed, never later than now. So a push made while the GUI was closed keeps its own day.
+//
+// The fetch takes git's lock on refs/remotes/origin/<main>, the same one a person's `git pull` or `git push` takes.
+// So it runs only when `git ls-remote` (which takes no lock) shows origin's main has moved, and never while a lock
+// file is already there.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
@@ -27,7 +36,7 @@ export function parseLog(text) {
 }
 
 /** A push's event from its commits (newest first) and changed paths. `who` overrides the newest commit's author. */
-export function pushEvent({ from, to, branch, commits, paths, who = null, at = new Date().toISOString() }) {
+export function pushEvent({ from, to, branch, commits, count = commits.length, paths, who = null, at = new Date().toISOString() }) {
   const list = commits.slice(0, MAX_COMMITS);
   const lead = list[0] || {};
   return {
@@ -38,8 +47,8 @@ export function pushEvent({ from, to, branch, commits, paths, who = null, at = n
     from: from || null,
     to,
     sha: String(to).slice(0, 7),
-    count: commits.length,
-    commits: list.map((c) => ({ sha: c.sha.slice(0, 7), subject: c.subject, author: c.author })),
+    count: Math.max(count, list.length),
+    commits: list.map((c) => ({ sha: c.sha.slice(0, 7), oid: c.sha, subject: c.subject, author: c.author })),
     paths: (paths || []).slice(0, MAX_PATHS),
     morePaths: Math.max(0, (paths || []).length - MAX_PATHS),
     who: who || { name: lead.author || 'someone', kind: 'author' },
@@ -81,8 +90,9 @@ function writeState(file, state) {
  * @param {(commits: object[]) => Promise<object|null>} [o.whoFor]  who made it, when a session here did
  * @param {Function} [o.git]               (args, opts) => Promise<{ ok, stdout }>; tests may pass their own
  * @param {boolean} [o.watch=true]         fs.watch the refs (tests drive check() by hand)
+ * @param {() => void} [o.onLook]          before each look: the feed reads the shared feed file again
  */
-export function createPushWatch({ repo, stateFile, onPush, active = () => true, whoFor = async () => null, git, watch = true, fetchMs = FETCH_MS, pollMs = POLL_MS, now = () => new Date().toISOString() }) {
+export function createPushWatch({ repo, stateFile, onPush, onLook = () => {}, active = () => true, whoFor = async () => null, git, watch = true, fetchMs = FETCH_MS, pollMs = POLL_MS, now = () => new Date().toISOString() }) {
   const g = git || ((args, o = {}) => runGit(repo, args, o));
   let target = null; // { ref, branch, remote, common }
   let checking = null;
@@ -121,16 +131,25 @@ export function createPushWatch({ repo, stateFile, onPush, active = () => true, 
     return target;
   }
 
-  async function build(from, to, branch) {
+  /** When a push landed: after the last look and after its tip was committed, never later than now. */
+  function landedAt(tipAt, seenAt) {
+    const n = Date.parse(now());
+    const t = Math.max(Date.parse(tipAt || '') || 0, Date.parse(seenAt || '') || 0);
+    return new Date(t > 0 && t < n ? t : n).toISOString();
+  }
+
+  async function build(from, to, branch, seenAt) {
     let log = from ? await out(['log', `--format=%H${SEP}%an${SEP}%ae${SEP}%cI${SEP}%s`, '-n', String(MAX_COMMITS + 1), `${from}..${to}`]) : null;
     let base = from;
     if (log == null) { log = await out(['log', `--format=%H${SEP}%an${SEP}%ae${SEP}%cI${SEP}%s`, '-n', '1', to]); base = null; }
     const commits = parseLog(log);
     if (!commits.length) return null; // main went back (a reset on origin): nothing new landed
+    const counted = base && commits.length > MAX_COMMITS ? Number(await out(['rev-list', '--count', `${base}..${to}`])) : 0;
+    const count = Number.isFinite(counted) && counted > commits.length ? counted : commits.length;
     const names = base ? await out(['diff', '--name-only', base, to]) : await out(['show', '--name-only', '--format=', to]);
     const paths = String(names || '').split(/\r?\n/).map((p) => p.trim()).filter(Boolean);
     const who = await whoFor(commits).catch(() => null);
-    return pushEvent({ from: base, to, branch, commits, paths, who, at: now() });
+    return pushEvent({ from: base, to, branch, commits, count, paths, who, at: landedAt(commits[0].at, seenAt) });
   }
 
   /** Look at main's tip once; a move since the last look becomes one event. Overlapping calls share one look. */
@@ -142,11 +161,13 @@ export function createPushWatch({ repo, stateFile, onPush, active = () => true, 
         if (!t) return null;
         const tip = await out(['rev-parse', '--verify', '-q', t.ref]);
         if (!tip) return null;
+        try { onLook(); } catch { /* the feed in memory still serves */ }
         const state = readState(stateFile);
-        if (state.ref === t.ref && state.tip === tip) return null;
-        if (state.ref !== t.ref || !state.tip) { writeState(stateFile, { ref: t.ref, tip }); return null; }
-        const ev = await build(state.tip, tip, t.branch);
-        writeState(stateFile, { ref: t.ref, tip });
+        const seenAt = now();
+        if (state.ref === t.ref && state.tip === tip) { writeState(stateFile, { ...state, seenAt }); return null; }
+        if (state.ref !== t.ref || !state.tip) { writeState(stateFile, { ref: t.ref, tip, seenAt }); return null; }
+        const ev = await build(state.tip, tip, t.branch, state.seenAt);
+        writeState(stateFile, { ref: t.ref, tip, seenAt });
         if (ev) await onPush(ev);
         return ev;
       } finally {
@@ -163,11 +184,22 @@ export function createPushWatch({ repo, stateFile, onPush, active = () => true, 
     if (!t || !t.remote) return; // no remote: nothing to fetch, the local refs are watched
     fetching = true;
     try {
-      await g(['fetch', '--quiet', '--no-tags', '--no-write-fetch-head', t.remote, `+refs/heads/${t.branch}:refs/remotes/${t.remote}/${t.branch}`], { timeout: 45000 });
+      // ls-remote takes no lock: fetch (which locks the ref, as a person's own pull or push does) only when origin moved.
+      const line = await out(['ls-remote', '--heads', t.remote, `refs/heads/${t.branch}`], { timeout: 30000 });
+      const theirs = String(line || '').split(/\s+/)[0];
+      const ours = await out(['rev-parse', '--verify', '-q', t.ref]);
+      if (/^[0-9a-f]{40,64}$/.test(theirs) && theirs !== ours && !locked(t)) await g(['fetch', '--quiet', '--no-tags', '--no-write-fetch-head', t.remote, `+refs/heads/${t.branch}:refs/remotes/${t.remote}/${t.branch}`], { timeout: 45000 });
     } finally {
       fetching = false;
     }
     await check();
+  }
+
+  /** A git ref lock is held (someone's pull, push or fetch is running): the fetch waits for the next round. */
+  function locked(t) {
+    if (!t.common) return false;
+    const refFile = path.join(t.common, ...`refs/remotes/${t.remote}/${t.branch}`.split('/'));
+    return [`${refFile}.lock`, path.join(t.common, 'packed-refs.lock')].some((f) => { try { return fs.existsSync(f); } catch { return false; } });
   }
 
   const soon = () => {

@@ -12,11 +12,11 @@ import path from 'node:path';
 import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { createBus, createChangeFeed, foldLines, FEED_FILE, liveEvent } from '../server/feed.mjs';
-import { createPushWatch, parseLog, pushEvent } from '../server/feed-push.mjs';
+import { createPushWatch, parseLog, pushEvent, runGit } from '../server/feed-push.mjs';
 import { askLine, buildPrompt, cleanSubject, fallbackLine, parseLine } from '../server/feed-line.mjs';
 import { deployFrom, integrationFrom, readCommit, readIntegration } from '../server/feed-deploy.mjs';
 import { startServer } from '../server/server.mjs';
-import { ago, byDay, deployWords, mergeEvents, newerFeed, tickerText, whoOf } from '../src/ui/change-feed.js';
+import { ago, byDay, deployWords, mergeEvents, newerFeed, tickerParts, tickerText, whoOf } from '../src/ui/change-feed.js';
 import { removeTreeSync } from './helpers/tmp.mjs';
 
 const tmp = (p) => fs.mkdtempSync(path.join(os.tmpdir(), `nexus-feed-${p}-`));
@@ -397,4 +397,116 @@ test('the change-feed demo: two pushes land and the first goes not deployed yet,
     assert.equal(world.feed().events.length, 4);
     assert.equal(top().who.kind, 'author');
   } finally { world.close(); }
+});
+
+// ---- review fixes -------------------------------------------------------------------------
+
+test('two GUI servers on one repo share the feed: a push one of them records reaches the other', async () => {
+  const s = remoteSetup();
+  try {
+    const a = createChangeFeed({ repo: s.repo, watch: false, gh: noGh, query: null });
+    const bViews = [];
+    const b = createChangeFeed({ repo: s.repo, watch: false, gh: noGh, query: null, onChange: (v) => bViews.push(v) });
+    a.sync(); b.sync();
+    await new Promise((r) => setTimeout(r, 300)); // both first looks (which only record the tip) are done
+    await a.pushes.check(); await b.pushes.check();
+    const tip = commit(s.other, 'src/home.css', 'body { background: blue; }\n', 'feat(home): blue background');
+    git(s.other, 'push', '-q', 'origin', 'main');
+    git(s.repo, 'fetch', '-q', 'origin');
+    const ev = await a.pushes.check();
+    assert.ok(a.bus.has(`push:${tip}`), ev ? 'A saw the push' : 'B saw it first and A read the shared feed again');
+    await b.pushes.check(); // the tip is recorded already (or B's own look raced A's: the same id, folded as one)
+    assert.ok(b.bus.has(`push:${tip}`), 'B has it too');
+    assert.equal(b.bus.list().filter((e) => e.id === `push:${tip}`).length, 1);
+    assert.equal(bViews[bViews.length - 1].events[0].id, `push:${tip}`, 'and sent it to its tabs');
+    assert.equal(b.list().events[0].id, `push:${tip}`);
+    a.close(); b.close();
+  } finally { removeTreeSync(s.root); }
+});
+
+test('a push caught after the GUI was closed keeps its own date and its whole commit count', async () => {
+  const s = remoteSetup();
+  try {
+    const stateFile = path.join(s.repo, '.nexus', 'feed', 'state.json');
+    const got = [];
+    const w1 = createPushWatch({ repo: s.repo, stateFile, watch: false, onPush: (ev) => { got.push(ev); } });
+    await w1.check();
+    w1.stop();
+    assert.ok(JSON.parse(fs.readFileSync(stateFile, 'utf8')).seenAt, 'the last look is kept');
+    const old = { ...process.env, GIT_COMMITTER_DATE: '2026-10-20T09:00:00Z', GIT_AUTHOR_DATE: '2026-10-20T09:00:00Z' };
+    for (let n = 0; n < 53; n += 1) {
+      fs.writeFileSync(path.join(s.other, `f${n}.txt`), `${n}\n`);
+      execFileSync('git', ['add', '-A'], { cwd: s.other });
+      execFileSync('git', ['-c', 'user.name=Sam Owner', '-c', 'user.email=sam@example.com', 'commit', '-q', '-m', `docs: note ${n}`], { cwd: s.other, env: old });
+    }
+    git(s.other, 'push', '-q', 'origin', 'main');
+    git(s.repo, 'fetch', '-q', 'origin');
+    const later = new Date(Date.now() + 3 * 86400000).toISOString();
+    const w2 = createPushWatch({ repo: s.repo, stateFile, watch: false, now: () => later, onPush: (ev) => { got.push(ev); } });
+    const ev = await w2.check();
+    assert.equal(ev.count, 53, 'the whole count, not the capped log');
+    assert.equal(ev.commits.length, 50);
+    assert.ok(Date.parse(ev.at) < Date.parse(later), 'dated before now (three days on)');
+    assert.equal(fallbackLine(ev.commits, ev.count), 'Note 52 (and 52 more changes)');
+    assert.match(ev.commits[0].oid, /^[0-9a-f]{40}$/, 'the full sha rides along for GitHub lookups');
+  } finally { removeTreeSync(s.root); }
+});
+
+test('the background fetch runs only when origin moved (ls-remote first) and never over a held ref lock', async () => {
+  const s = remoteSetup();
+  try {
+    const calls = [];
+    const real = async (args, o) => { calls.push(args[0]); return runGit(s.repo, args, o); };
+    const w = createPushWatch({ repo: s.repo, stateFile: path.join(s.repo, 's.json'), watch: false, git: real, onPush: () => {} });
+    await w.check();
+    calls.length = 0;
+    await w.fetchNow();
+    assert.ok(calls.includes('ls-remote'));
+    assert.ok(!calls.includes('fetch'), 'origin has not moved: no fetch, no lock taken');
+    commit(s.other, 'x.txt', 'x\n', 'feat: x');
+    git(s.other, 'push', '-q', 'origin', 'main');
+    const lock = path.join(s.repo, '.git', 'refs', 'remotes', 'origin', 'main.lock');
+    fs.writeFileSync(lock, '');
+    calls.length = 0;
+    await w.fetchNow();
+    assert.ok(!calls.includes('fetch'), 'someone holds the ref lock: wait for the next round');
+    fs.rmSync(lock);
+    calls.length = 0;
+    await w.fetchNow();
+    assert.ok(calls.includes('fetch'), 'origin moved and the lock is free: fetch');
+  } finally { removeTreeSync(s.root); }
+});
+
+test('a deploy that never settles is let go: stuck Deploying goes quiet, a never-started one says nothing', async () => {
+  const dir = tmp('giveup');
+  try {
+    const gh = fakeGh({ deployments: [{ id: 9, environment: 'Production' }], statuses: [{ state: 'in_progress' }] });
+    let t = Date.now();
+    const feed = createChangeFeed({ repo: dir, watch: false, gh: gh.run, query: null, wait: () => 5, followMs: 1000, now: () => t });
+    feed.sync();
+    const e = feed.add(PUSH('f'.repeat(40)));
+    for (let i = 0; i < 50 && feed.bus.get(e.id).deploy?.state !== 'deploying'; i += 1) await new Promise((r) => setTimeout(r, 10));
+    assert.equal(feed.bus.get(e.id).deploy.state, 'deploying');
+    t += 5000;
+    for (let i = 0; i < 50 && feed.bus.get(e.id).deploy?.state !== 'quiet'; i += 1) await new Promise((r) => setTimeout(r, 10));
+    assert.equal(feed.bus.get(e.id).deploy.state, 'quiet');
+    assert.equal(deployWords(feed.bus.get(e.id).deploy).text, 'No word on the deploy');
+    // An old "not deployed yet" left from before a restart is let go at start-up.
+    feed.bus.append({ ...PUSH('9'.repeat(40)), seen: new Date(t - 10000).toISOString(), deploy: { state: 'waiting', env: '', url: '' } });
+    feed.close();
+    const again = createChangeFeed({ repo: dir, watch: false, gh: noGh, query: null, followMs: 1000, now: () => t });
+    again.sync();
+    assert.equal(again.bus.get(`push:${'9'.repeat(40)}`).deploy, null);
+    assert.equal(again.bus.get(e.id).deploy.state, 'quiet');
+    again.close();
+  } finally { removeTreeSync(dir); }
+});
+
+test('the ticker keeps the deploy word apart from the line, so cutting the line never cuts the word', () => {
+  assert.deepEqual(tickerParts({ line: 'Added blue', deploy: { state: 'waiting' } }), { line: 'Added blue', state: 'not deployed yet' });
+  assert.deepEqual(tickerParts({ line: 'Added blue', deploy: null }), { line: 'Added blue', state: '' });
+  assert.equal(tickerText({ line: 'Added blue', deploy: { state: 'deployed' } }), 'Added blue · Deployed');
+  const css = fs.readFileSync(new URL('../src/styles/change-feed.css', import.meta.url), 'utf8');
+  assert.match(css, /\.feed-tick \{\s*flex: 3 1 0;/, 'no base width: the ticker never wraps the bar');
+  assert.doesNotMatch(css, /\.feed-tick \{ display: none; \}/, 'a narrow bar folds the ticker, never hides it');
 });
