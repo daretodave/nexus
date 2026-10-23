@@ -48,3 +48,9 @@
 .ibx-confirm-list .q { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .ibx-confirm-list .a { font-size: 12px; line-height: 16px; color: var(--text-3); }
 .ibx-confirm-list .a b { color: var(--text-2); font-weight: 600; }
+
+/* The view clips (nexus.css .view), so the list and the panel scroll on their own: a long plan (52 questions across
+   specs) reaches its last spec, and the selected question stays in view beside it. */
+.inbox { grid-template-rows: minmax(0, 1fr); }
+.ibx-list { max-height: 100%; overflow-y: auto; margin: -2px -8px -2px -2px; padding: 2px 8px 2px 2px; }
+.ibx-panel { max-height: 100%; overflow-y: auto; }
