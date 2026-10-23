@@ -2237,6 +2237,39 @@ unchanged and still accurate; no fresh sweep run.
 
 ## Pending
 
+### [user-issue #86] [MED] oversight's "needs attention" badge doesn't decrement after all questions are answered and sent
+- category: external-issue
+- impact: 6, ease: 4
+- evidence: reporter answered all 7 pending oversight questions
+  and sent them, but the GUI's notification count never went
+  down. Traced the badge logic: `packages/cli/src/App.jsx:129-131`
+  computes it from `useInbox()`'s `GET /api/inbox` poll (every
+  5s, `packages/cli/src/data/hooks.js:142`), which merges live
+  asks/permissions with `planQuestions()` →
+  `repoMod.durableQuestions(repo)`
+  (`packages/cli/server/repo.mjs:208-253`) — a fresh regex scan
+  of `plan/**/*.md` on every call, with no "answered" state of
+  its own. A row only drops out once `settledItem()`
+  (`repo.mjs:228-233`) sees it struck, `[x]`, or replaced with
+  "Settled/Decided/Answered/Resolved/Done/None" text in the
+  markdown. But the GUI's "Send" action
+  (`server.continueAnswers` → `POST /api/oversight/answer`) only
+  delivers the kept answers as one chat message to a target
+  session — it never itself edits the plan file. So "answered
+  and sent" in the UI means "delivered to a session's inbox,"
+  not "resolved in the plan": if that session is idle, busy, or
+  just hasn't acted on the message yet, the `[needs-user-call]`/
+  Open-questions rows stay unstruck and the badge keeps counting
+  them on every 5s poll, even though the user did everything the
+  UI asked of them.
+- next: close the state gap between "sent" and "resolved" —
+  either have the badge (or the answered item itself) show a
+  distinct "sent, awaiting session" state instead of counting it
+  as still-open, or have `continueAnswers` optimistically mark
+  the row settled in the GUI's local view until the plan file
+  catches up. Needs a GUI-side fix in `packages/cli`; no spec
+  currently owns oversight's inbox/badge plumbing.
+
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
 - category: external-issue
 - impact: 4, ease: 2
