@@ -19,6 +19,7 @@ on already-shipped surfaces.
 /iterate                    # full audit, ship the top finding
 /iterate audit              # audit-only; emit plan/AUDIT.md
 /iterate <focus>            # bias toward content / data / seo / a11y / tests / perf
+/iterate careful            # never hand off to /expand (a careful /march)
 /loop 1h /iterate           # autonomous improvement loop
 ```
 
@@ -349,6 +350,9 @@ Return cleanly. Loop's next tick re-audits.
      procedure end-to-end.
    - **strict** posture → stop and report. Site is
      well-iterated.
+
+   Run `careful` (a careful `/march`): stop and report
+   whatever the posture.
 7. **`git pull` divergence.**
 
 ## 7. Hard rules

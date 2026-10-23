@@ -11,6 +11,8 @@ Argument handling:
 - `audit` → audit only; write findings, ship nothing.
 - `<focus>` → bias one dimension (drift|links|voice|
   completeness|friction|freshness|lessons).
+- `careful` → no hand-off to `/expand` when nothing scores
+  3.0 or more (a careful `/march`; `skills/iterate.md` §6).
 
 Procedure: §4. Hard rules: §5. Failure modes: §6. Scoring:
 impact × ease / 10; user rows +0.5; `> Bias:` ×1.5. Durable

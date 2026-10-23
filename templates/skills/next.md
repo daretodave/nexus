@@ -10,17 +10,15 @@
 
 `/next` moves <PROJECT>'s plan by one chunk, leaving nothing
 half-done: built, gated, closed, landed, claim released.
-`/march` (the 30-40 minute run) calls `/next top`;
-`/heads-down` loops it. The builder follows
-`skills/ship-a-chunk.md`'s build steps.
+`/march` (the 30-40 minute run) calls `/next top`; `/heads-down`
+loops it. The builder follows `skills/ship-a-chunk.md`'s build steps.
 
 ## 2. Invocation
 
 ```
 /next                  # pick the next ready chunk (a contributor is asked which)
 /next top              # the first ready, unclaimed chunk, no question (loops)
-/next 07               # spec 07's next ready chunk
-/next 07.3             # that chunk
+/next 07 | 07.3        # spec 07's next ready chunk | that chunk
 /next chunk 07         # only chunk spec 07 (no build)
 /next batch 07         # owner: spec 07's ready chunks, one Workflow each
 /next peek             # say what is next and why; change nothing
@@ -28,6 +26,7 @@ half-done: built, gated, closed, landed, claim released.
 /next ... base <b>     # build on feature branch <b>, land as a PR onto it
 /next ... --agents     # override the build mode: one builder (--workflow: a Workflow)
 /next <free text>      # that text is the run's work (scope, build, retro)
+/next ... then expand  # a loop's dry tail: nothing ready, /expand once (then build: promote)
 ```
 
 ## 3. Who's running, and asking
@@ -186,7 +185,8 @@ the progress at its start and end, and never asks.
   (`agents.md`, "Blocked is loud").
 - **Push rejected 3x:** stop and report; never force.
 - **Nothing ready:** say why per chunk (needs, held, claimed);
-  under `/march` fall through to its next verb.
+  under `/march` fall through to its next verb; `then expand`
+  or `then build` runs `/expand` (`skills/expand.md` §2).
 - **Builder or Workflow died:** harvest its commits, then
   finish inline or re-delegate once.
 

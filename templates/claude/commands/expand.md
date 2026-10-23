@@ -22,6 +22,8 @@ Argument handling:
 - No argument → full pass.
 - `audit` / `spec` / `design` → bias toward that signal source.
 - `dry-run` → report candidates; do not commit.
+- `careful` | `bold` | `promote` → the cap and bar, or (owner)
+  this pass writes its picks as specs; `skills/expand.md` §2.
 
 Procedure: §6 of `skills/expand.md`. Hard rules: §7. Failure
 modes: §8.

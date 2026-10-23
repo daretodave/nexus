@@ -42,7 +42,32 @@ expand check is **rate-limited + posture-gated** (≥20 commits
 /march                       # one tick: dispatch + execute
 /loop 30m /march             # autonomous loop, every 30 min
 /loop /march                 # self-paced autonomous loop
+/loop /march careful         # ideate passes hold back: fix what is there, invent nothing
+/loop /march bold            # ideate passes push: propose new work whenever building is done
 ```
+
+### How hard the ideate passes push
+
+One optional word after `/march` sets it for the run (the GUI's
+Infinite picker sends it); no word is `balanced`. It tunes only
+the passes that invent work: `/expand`, and `/iterate`'s
+hand-off to it. Triage, critique, ready chunks and data
+dispatch exactly as below.
+
+- `careful`: fix what is there, invent nothing. Step 3c
+  (expand) is skipped and `/iterate` runs `careful` (a top
+  score under 3.0 stops the tick instead of handing to
+  `/expand`).
+- `balanced` (default): the bearings posture and cadence as
+  written.
+- `bold`: propose whenever building is done. Step 3c's window
+  opens at **5+ commits** or **12+ hours** since the last pass
+  (instead of 20 / 48 h), and `/expand` runs `bold`.
+
+The word never loosens `plan/bearings.md`: posture `strict`
+keeps `/expand` a no-op (`bold` then reads as `balanced`, and
+the report says so), and only posture `autonomous` writes specs
+without `/oversight`.
 
 ## 3. Procedure
 
@@ -142,7 +167,8 @@ has a data layer):
 #### 3c. Expand due (rate-limited, posture-gated)?
 
 Read `plan/bearings.md` "Plan expansion posture" section. If
-posture is **strict**, skip to 3d.
+posture is **strict**, skip to 3d. A `careful` run (§2) skips to
+3d too; a `bold` run uses its shorter window in condition 2.
 
 Read metadata header at top of `plan/CANDIDATES.md`:
 
@@ -168,7 +194,8 @@ Dispatch to `/expand` if **all four** hold:
 If all four hold:
 
 - Read `skills/expand.md`.
-- Execute its procedure end-to-end.
+- Execute its procedure end-to-end (as `/expand bold` on a
+  `bold` run).
 - Return.
 
 If any condition fails, fall through to 3d.
@@ -176,7 +203,8 @@ If any condition fails, fall through to 3d.
 #### 3d. Else — iterate.
 
 - Read `skills/iterate.md`.
-- Execute its procedure end-to-end.
+- Execute its procedure end-to-end (as `/iterate careful` on a
+  `careful` run).
 - Return.
 
 (Note: when `/iterate`'s audit finds no actionable findings

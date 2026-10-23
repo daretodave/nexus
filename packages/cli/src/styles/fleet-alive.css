@@ -4,6 +4,9 @@
    it was), idle quiet. Theme tokens only, so day and night both hold. */
 
 .view .fleet-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); }
+/* Each tile keeps its own height: a tall neighbour (the start tile with Infinite's follow panel open) never
+   stretches the row and pulls the others' orb art into tall narrow columns. */
+.view .fleet-grid { align-items: start; }
 
 /* working: a cyan sky and a slow light along the top edge */
 .tile.tone-working .tile-stage { background: radial-gradient(72% 66% at 50% 46%, color-mix(in oklab, var(--st-tool) 15%, transparent) 0%, transparent 70%), var(--well); }

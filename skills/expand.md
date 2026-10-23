@@ -17,10 +17,43 @@ This skill turns those signals into scored candidates in
 ```
 /expand                      # full signal read + candidates
 /expand dry-run              # print candidates, file nothing
+/expand careful              # one candidate at most, and only with 2+ independent signals
+/expand bold                 # up to 3; one strong signal (score 5+) is enough
+/expand promote              # owner: this pass writes its picks as unchunked specs
 ```
 
 Rate-limited by `/march` (≥20 commits or >7 days); posture
 `bold` required (see `plan/bearings.md`).
+
+**Run words.** `careful` and `bold` tune only the cap and the
+bar (§4 scoring and its cap); no word keeps them as written.
+`promote` makes this one pass act as posture `autonomous`:
+its picks become unchunked specs (`plan/<NN>-<slug>.md` + a
+`plan/README.md` row in the template's format: outcome, Why,
+Design, Acceptance with A-IDs, `Not chunked yet.`, then `node
+scripts/plan-check.mjs --since HEAD` green before the commit,
+landed per owner mode), and each also goes
+under `## Promoted` in `plan/CANDIDATES.md` as `promoted:
+<date>, auto (expand pass <N>)` so `/oversight` still sees what
+grew. Owner mode only (a contributor files candidates as usual
+and says so); never under `strict`. The kit runs posture `bold`, so this is the
+only way the kit's own loop writes a spec without `/oversight`.
+
+**When a `/next` loop runs dry** (`/loop /next then expand` or
+`then build`, sent by the GUI's Infinite picker): the iteration
+that finds nothing ready runs one `/expand` pass instead of
+ending. The plan being done is the signal, so the rate limit is
+skipped; the posture is not (`strict`: stop as a bare loop
+would). `then expand` runs the pass as the posture says, then
+the loop stops and says what it filed: candidates that wait in
+`/oversight`, or under `autonomous` the specs it added (the
+next run builds them). `then build` runs `/expand promote`:
+the loop chunks and builds what it added, and the next dry
+spell runs another pass. It stops when a pass adds nothing
+(every candidate needs cited signals, so the loop ends when
+the evidence does) or after its third promote pass, whichever
+comes first, and says which. A contributor's `then build`
+reads as `then expand`.
 
 ## 3. Signal sources
 
@@ -66,7 +99,11 @@ still >3). **Cap 3 candidates per pass.**
 ## 6. Hard rules
 
 1. Candidates only — never write a spec or the roadmap
-   (promotion into a spec is `/oversight`'s).
+   (promotion into a spec is `/oversight`'s). `promote` (§2) is
+   the one run-time exception, and it obeys owner mode and
+   never runs under `strict`; its commit is
+   `expand: pass <N> — <K> specs added (autonomous)`, the body
+   saying "promoted by a then-build /next loop".
 2. Every candidate cites its signals; no vibes-only candidates.
 3. Respect the cap; a 10-candidate dump is noise.
 4. No candidate that breaks template API without a migration

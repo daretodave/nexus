@@ -18,4 +18,7 @@ dispatcher.
 This command is **designed for `/loop`**. After commit + land +
 deploy:check, return cleanly.
 
+An optional `careful` or `bold` sets how hard the ideate passes
+push (`skills/march.md` §2); no word is balanced.
+
 Argument: $ARGUMENTS

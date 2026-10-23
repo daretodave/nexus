@@ -9,6 +9,8 @@ instead of asking; document calls in commit bodies.
 
 Argument handling:
 - No argument → one tick: dispatch + execute + return.
+- `careful` or `bold` → how hard the ideate passes push
+  (`skills/march.md` §2); no word is balanced.
 
 Procedure: §3. Failure modes: §5. Fully adopt the dispatched
 child skill's contract (§4) — including the verify gate

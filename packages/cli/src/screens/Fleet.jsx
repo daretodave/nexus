@@ -79,8 +79,8 @@ function PauseAll({ train, onClick, onPickupAll, picking }) {
 function StartLine({ plan }) {
   const next = [].concat(plan?.next || [])[0];
   const line = nextInLine(plan, next ? chunkTitle(plan, next.id) : '');
-  if (!line) return <div className="tn-line">Choose what it works on: a spec, or infinite (loop /next, the next chunk in line, forever). It asks its questions first.</div>;
-  return <div className="tn-line">Choose a spec, or infinite: nexus takes the next chunk in line and asks its questions first. Next up: <b>{line.id}</b>{line.rest ? ` ${line.rest}` : ''}.</div>;
+  if (!line) return <div className="tn-line">Choose what it works on: a spec, which asks its questions first, or infinite, where march picks each pass or the next loop builds the plan chunk by chunk without stopping to ask.</div>;
+  return <div className="tn-line">Choose a spec, which asks its questions first, or infinite, which runs on its own: march picks each pass, the next loop builds in plan order. Next up: <b>{line.id}</b>{line.rest ? ` ${line.rest}` : ''}.</div>;
 }
 
 export default function Fleet() {

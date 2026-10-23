@@ -1,6 +1,6 @@
 ---
 description: Do the next thing on the plan. One chunk, done fully -- picked, claimed, built by a delegated builder, gated, closed, landed per owner mode
-argument-hint: "[top | <NN> | <NN.k> | chunk <NN> | batch <NN> | peek | status [NN…] | <free text>] [base <branch>] [--agents | --workflow]"
+argument-hint: "[top | <NN> | <NN.k> | chunk <NN> | batch <NN> | peek | status [NN…] | <free text>] [base <branch>] [--agents | --workflow] [then expand | then build]"
 ---
 
 You are invoked under the `next` skill: march with no
@@ -19,6 +19,9 @@ Argument handling:
 - `status [NN…]` → print `node scripts/plan/progress.mjs` as is.
 - `base <branch>` → build on that branch, land a PR onto it.
 - `--agents` / `--workflow` → override the build mode by size.
+- `then expand` / `then build` (a loop's tail) → when nothing is
+  ready, one `/expand` pass (`build`: `/expand promote`, then keep
+  building what it adds); `skills/expand.md` §2.
 - Anything else → that text is the run's work.
 
 The lead never builds: S and M chunks go to one builder

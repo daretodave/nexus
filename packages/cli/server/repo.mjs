@@ -105,7 +105,7 @@ export async function setOwner(repo, on) {
 // AI one-liners for undescribed chunks (server/summaries.mjs) are on until Settings turns them off.
 // model / effort: '' is Claude Code's default (spec 54); lastModel: what the default resolved to on the last session.
 // pickupIdle: a session that stopped with nexus while idle comes back by itself on the next launch (recovery.mjs).
-const DEFAULT_PREFS = { permissionMode: 'default', onboarded: false, aiSummaries: true, changeFeed: true, model: '', effort: '', lastModel: '', pickupIdle: true };
+const DEFAULT_PREFS = { permissionMode: 'default', onboarded: false, aiSummaries: true, changeFeed: true, model: '', effort: '', lastModel: '', pickupIdle: true, infinite: '' };
 
 /**
  * The saved prefs over the defaults. Only a plain object counts, a known key only when its type matches its default

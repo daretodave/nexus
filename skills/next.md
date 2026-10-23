@@ -18,8 +18,7 @@ loops it. The builder follows `skills/ship-a-chunk.md`'s steps.
 ```
 /next                  # pick the next ready chunk (a contributor is asked which)
 /next top              # the first ready, unclaimed chunk, no question (loops)
-/next 07               # spec 07's next ready chunk
-/next 07.3             # that chunk
+/next 07 | 07.3        # spec 07's next ready chunk | that chunk
 /next chunk 07         # only chunk spec 07 (no build)
 /next batch 07         # owner: spec 07's ready chunks, one Workflow each
 /next peek             # say what is next and why; change nothing
@@ -27,6 +26,7 @@ loops it. The builder follows `skills/ship-a-chunk.md`'s steps.
 /next ... base <b>     # build on feature branch <b>, land as a PR onto it
 /next ... --agents     # override the build mode: one builder (--workflow: a Workflow)
 /next <free text>      # that text is the run's work (scope, build, retro)
+/next ... then expand  # a loop's dry tail: nothing ready, /expand once (then build: promote)
 ```
 
 ## 3. Who's running, and asking
@@ -182,12 +182,12 @@ the progress at its start and end, and never asks.
 
 ## 7. Failure modes
 
-- **Gate red 3x on one root cause:** stop; keep the claim if the
-  branch holds work worth resuming, else release; say so loud
-  (`agents.md`, "Blocked is loud").
+- **Gate red 3x on one root cause:** stop loud (`agents.md`); keep
+  the claim if the branch holds work worth resuming, else release.
 - **Push rejected 3x:** stop and report; never force.
 - **Nothing ready:** say why per chunk (needs, held, claimed);
-  under `/march` fall through to its next verb.
+  under `/march` fall through to its next verb; `then expand`
+  or `then build` runs `/expand` (`skills/expand.md` §2).
 - **Builder or Workflow died:** harvest its commits, then
   finish inline or re-delegate once.
 

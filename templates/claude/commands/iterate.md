@@ -12,6 +12,8 @@ Argument handling:
   no fixes.
 - `<focus>` → bias toward `content-gaps`, `data-gaps`, `seo`,
   `links`, `a11y`, `tests`, `perf`, `external-critique`.
+- `careful` → no hand-off to `/expand` when nothing scores
+  3.0 or more (a careful `/march`; `skills/iterate.md` §6).
 
 Be bold about delegating:
 - `scout` for web research.

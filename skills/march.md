@@ -26,7 +26,31 @@ contract.
 ```
 /march                       # one tick
 /loop 45m /march             # local autonomous loop
+/loop /march careful         # ideate passes hold back: fix what is there, invent nothing
+/loop /march bold            # ideate passes push: propose new work whenever building is done
 ```
+
+### How hard the ideate passes push
+
+One optional word after `/march` sets it for the run (the GUI's
+Infinite picker sends it); no word is `balanced`. It tunes only
+the passes that invent work: `/expand`, and `/iterate`'s
+hand-off to it. Triage, critique and ready chunks dispatch
+exactly as below.
+
+- `careful`: fix what is there, invent nothing. 3b (expand) is
+  skipped and `/iterate` runs `careful` (a top score under 3.0
+  stops the tick instead of handing to `/expand`).
+- `balanced` (default): the bearings posture and cadence as
+  written.
+- `bold`: propose whenever building is done. 3b's window opens
+  at **5+ commits** or **24+ hours** since the last pass
+  (instead of 20 commits or 7 days), and `/expand` runs `bold`.
+
+The word never loosens `plan/bearings.md`: posture `strict`
+keeps `/expand` a no-op (`bold` then reads as `balanced`, and
+the report says so), and only posture `autonomous` writes specs
+without `/oversight`.
 
 Cloud: `.github/workflows/march.yml` runs one tick per cron
 firing.
@@ -86,8 +110,10 @@ return.
   `plan/bearings.md`) AND (≥20 commits or >7 days since
   `plan/CANDIDATES.md` last pass) AND at least one
   signal (AUDIT/CRITIQUE pending rows, sibling lessons growth,
-  Claude Code release drift) → `skills/expand.md`.
-- **3c. Else** → `skills/iterate.md`.
+  Claude Code release drift) → `skills/expand.md` (`bold` run:
+  the shorter window, `/expand bold`; `careful` run: skip).
+- **3c. Else** → `skills/iterate.md` (`/iterate careful` on a
+  `careful` run).
 
 ### Step 4 — Done
 
