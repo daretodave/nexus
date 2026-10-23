@@ -5,7 +5,9 @@
 // secrets needed", what the plan waits on the owner for, and their own local keys.
 //
 // Data: GET /api/secrets (useSecrets; server/secrets.mjs); writes: POST /api/secrets/:name (a value, in its body
-// only), /api/secrets/:name/push (Sync, Retry), /api/secrets/import. The view model: screens/vault/model.js.
+// only), /api/secrets/:name/push (Sync, Retry), /api/secrets/:name/remove (Remove it), /api/secrets/import,
+// /api/secrets/gitignore (the warning's fix). Every write re-reads GET /api/secrets: the screen shows what the vault
+// holds, never what it hoped to write. The view model: screens/vault/model.js.
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -15,7 +17,9 @@ import { server, usePlan, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
 import { useToasts } from './fleet/toasts.js';
+import IgnoreWarn from './vault/IgnoreWarn.jsx';
 import ImportPanel from './vault/ImportPanel.jsx';
+import RemoveValue from './vault/RemoveValue.jsx';
 import LocalKeys from './vault/LocalKeys.jsx';
 import { useKeyCards } from './vault/useKeyCards.js';
 import VaultSetup from './vault/VaultSetup.jsx';
@@ -132,6 +136,7 @@ function OwnerVault({ st, repo, reload, toast }) {
       </ViewHead>
       <div className="vault-wrap">
         <div className="vt-col">
+          <IgnoreWarn status={st} reload={reload} toast={toast} />
           {panel === 'import' || (empty && !adding) ? (
             <ImportPanel status={st} toast={toast} onClose={() => setPanel('table')} onDone={(r) => { setFresh(new Set(r.stored || [])); reload(); }} />
           ) : null}
@@ -182,6 +187,7 @@ function OwnerVault({ st, repo, reload, toast }) {
                         <MaskField value={draft} onChange={setDraft} label={`New value for ${r.name}`} placeholder={r.placeholder} autoFocus onEnter={() => draft && saveDraft(r)} />
                         <button className="btn btn-s btn-primary" type="button" onClick={() => saveDraft(r)} disabled={!draft || busy}>Save</button>
                         <button className="btn btn-s btn-ghost" type="button" onClick={() => { setEdit(null); setDraft(''); }}>Cancel</button>
+                        {r.set && !r.held ? <RemoveValue name={r.name} rings={r.rings} pushedTo={r.pushTo} busy={busy} toast={toast} onDone={() => { setEdit(null); setDraft(''); setFresh(new Set([r.name])); reload(); }} /> : null}
                         <span className="t-body-s c-3">{r.editNote}</span>
                       </div>
                     ) : null}

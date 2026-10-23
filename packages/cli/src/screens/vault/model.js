@@ -8,7 +8,7 @@
 //             localKeys: [{ name, rings }], nudges, rotateDays, audit: [event], sinks, requests: [request], envFiles }
 //   secret: { name, for, where, chunk, declared, set, rings, destinations: [{ destination, state, at, stale? }], age,
 //             setAt, rotate }
-//   event:  { time, action: 'set'|'rotate'|'push', name, destination, ring?, ... }
+//   event:  { time, action: 'set'|'rotate'|'push'|'remove', name, destination, ring?, ... }
 //   request: { chunk, names, missing, file, line, date }
 
 /** A stored value, always: eight dots, whatever its length (the design's rule: a length never leaks). */
@@ -150,11 +150,53 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
       // Save pushes a replaced value where the old one lives, and a first value to every place the manifest names.
       pushTo: DESTS.filter((d) => d !== 'local' && (s.set ? ['set', 'stale', 'unknown'].includes(states[d]) : states[d] !== 'none')),
       placeholder: s.set ? 'Paste the new value' : 'Paste the value',
+      rings: s.rings || [],
       editNote: s.set
-        ? `Saving replaces it in ${andList(where.length ? where : ['the vault'])}. The old value is gone for good.`
+        ? `Saving replaces it in ${andList(where.length ? where : ['the vault'])}${sharedNote(s)}. The old value is gone for good.`
         : `Saving stores it in ${andList(ticks.length ? ticks : ['the vault'])}${chunk ? `, then ${chunk} is ready again` : ''}.`,
     };
   });
+}
+
+/** A value read from .env.workspace is replaced there, where the sibling repos read it too: the note says so. */
+function sharedNote(s) {
+  return (s.rings || [])[0] === 'workspace' ? ' (in .env.workspace, which the sibling repos share)' : '';
+}
+
+/** Where a value sits on this machine, as the remove confirmation names it: ".env and the keychain". */
+const RING_FILE = { local: '.env', keychain: 'the keychain', workspace: '.env.workspace' };
+export function removeWhere(rings = []) {
+  const list = rings.map((r) => RING_FILE[r]).filter(Boolean);
+  return list.length ? andList(list) : 'the vault';
+}
+
+/**
+ * What the remove confirmation says before it runs: the places on this machine it leaves, a word when one is the
+ * shared workspace file, and the places it was pushed to, which keep their copy. pushedTo: the destinations shown.
+ */
+export function removeNote({ name, rings = [], pushedTo = [] }) {
+  const shared = rings.includes('workspace') ? ' The sibling repos lose it too: .env.workspace is shared.' : '';
+  const far = pushedTo.length ? ` ${andList(pushedTo.map((d) => SHORT[d] || d))} ${pushedTo.length === 1 ? 'keeps its' : 'keep their'} copy.` : '';
+  return `Take ${name} out of ${removeWhere(rings)}?${shared}${far}`;
+}
+
+/** The toast a remove answers with: what left, what is still set, and where a pushed copy stays. */
+export function removedToast(r, name) {
+  const from = r?.removed?.length ? removeWhere(r.removed) : 'the vault';
+  const still = r?.still?.length ? ` It is still set in ${removeWhere(r.still)}.` : '';
+  const far = (r?.notes || []).some((n) => /pushed to keep their copy/.test(n)) ? ' The places it was pushed to keep their copy.' : '';
+  return { kind: 'shipped', title: r?.removed?.length ? `${name} is out of ${from}` : `${name} was not in the vault`, body: `${still}${far}`.trim() || 'Nothing else held it.' };
+}
+
+/**
+ * The warning over the vault when git would commit the root .env (status.envIgnore): null when it is ignored or git
+ * cannot tell. `fix` says the Add to .gitignore button can mend it (a tracked file is the person's to untrack).
+ */
+export function ignoreWarn(status) {
+  const st = status?.envIgnore;
+  if (st === 'not ignored') return { title: '.env is not in .gitignore', body: 'A value saved here could be committed. Add it to .gitignore first; the vault refuses to write it until then.', fix: true };
+  if (st === 'tracked') return { title: '.env is tracked by git', body: 'Its values are in the repo\'s history already. Run git rm --cached .env (the file stays), add it to .gitignore, commit both, and rotate what it held.', fix: false };
+  return null;
 }
 
 /**
@@ -293,6 +335,9 @@ export function auditRows(status, { now = Date.now(), limit = 8, fresh = new Set
       const row = { key: `${e.time}:${e.name}:${e.action}`, time: e.time, kind: e.action === 'set' ? 'set' : 'rotated', verb: e.action === 'set' ? 'set' : 'rotated', name: e.name, to: [place], sep: e.action === 'set' ? '\u2192' : '\u00b7' };
       rows.push(row);
       lastSetRow.set(e.name, { row, t });
+    } else if (e.action === 'remove') {
+      rows.push({ key: `${e.time}:${e.name}:remove:${e.ring}`, time: e.time, kind: 'removed', verb: 'removed', name: e.name, to: [RING[e.ring] || 'local'], sep: 'from' });
+      lastSetRow.delete(e.name);
     } else if (e.action === 'push') {
       const prev = lastSetRow.get(e.name);
       const place = SHORT[e.destination] || e.destination;
@@ -489,8 +534,9 @@ export function localRows(status, { now = Date.now(), fresh = new Set(), edit = 
     const at = last.get(k.name);
     const n = at ? daysAgo(at, now) : null;
     const age = n == null ? '' : n === 0 ? 'set today' : n === 1 ? 'set yesterday' : `set ${n} days ago`;
-    const where = (k.rings || []).map((r) => RING_WORD[r] || r).join(', ') || 'on this machine';
-    return { name: k.name, sub: [where, age].filter(Boolean).join(' \u00b7 '), fresh: fresh.has(k.name), editing: edit === k.name };
+    const set = (k.rings || []).length > 0;
+    const where = set ? k.rings.map((r) => RING_WORD[r] || r).join(', ') : 'not set on this machine';
+    return { name: k.name, set, rings: k.rings || [], sub: [where, set ? age : ''].filter(Boolean).join(' \u00b7 '), fresh: fresh.has(k.name), editing: edit === k.name };
   });
 }
 

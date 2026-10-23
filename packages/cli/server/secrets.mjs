@@ -26,6 +26,9 @@ import { primaryRoot } from './sessions.mjs';
 import { isOwner as effectiveOwner } from './local.mjs';
 import { durableQuestions } from './repo.mjs';
 import { setupVault, DOCS } from './vault-setup.mjs';
+import { run as shRun, track } from './sh.mjs';
+import { gitEnv } from './cloud.mjs';
+import { execFile } from 'node:child_process';
 
 /** The repo's scripts the API runs, each with the exports it needs. `audit` (42.6) is optional. */
 const FILES = {
@@ -42,6 +45,23 @@ const SINK_FLAGS = { 'github-actions': 'repo', vercel: 'environments', cloudflar
 const KEYCHAIN_MS = 60000;
 /** How long the GUI keeps `gh secret list`'s answer (names only): GET /api/secrets runs on every poll. */
 const GH_LIST_MS = 60000;
+/** The kit's own read of the Actions sink's names (secrets-sinks.mjs actionsSecretNames), asked ahead here. */
+const GH_LIST_ARGS = ['secret', 'list', '--json', 'name,updatedAt'];
+/** How long the GUI keeps whether git ignores the root .env. */
+const IGNORE_MS = 30000;
+
+/** git's exit code, off the event loop: { code } (-1 when git did not run). No shell, so a Windows path is fine. */
+function gitExit(args) {
+  return new Promise((resolve) => {
+    track(execFile('git', args, { timeout: 10000, windowsHide: true, env: gitEnv() }, (e) => resolve({ code: !e ? 0 : typeof e.code === 'number' ? e.code : -1 })));
+  });
+}
+
+/** gh, off the event loop, answered the way the kit's runner answers: { status, stdout, missing? }. */
+async function ghAsync(cmd, args, { cwd } = {}) {
+  const r = await shRun(cmd, args, { cwd, timeout: 15000 });
+  return r.missing ? { status: 127, missing: true } : { status: r.code, stdout: r.stdout ?? '' };
+}
 
 /** A secret request row (scripts/secrets.mjs request): `secret request <chunk>: set A, B in your terminal ...`. */
 const REQUEST_ROW = /secret request (\S+?):\s*set\s+([A-Z][A-Z0-9_]*(?:\s*,\s*[A-Z][A-Z0-9_]*)*)/;
@@ -178,8 +198,11 @@ function rootEnvNames(root) {
  * @param {object} [o.mask]              the mask to keep fed (default: a new one)
  * @param {object} [o.setup]             setupVault overrides (tests: { gh } a fake pull request opener, { source })
  * @param {function} [o.setupFn]         replaces setupVault entirely (tests)
+ * @param {function} [o.runAsync]        `gh secret list` asked ahead, off the event loop: (cmd, args, { cwd }) -> Promise
+ *                                       { status, stdout }. Default: gh through sh.mjs; none when a test's `run` is given.
+ * @param {function} [o.gitAsync]        git for the root .env's ignore check: (args) -> Promise<{ code }> (tests)
  */
-export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => effectiveOwner(repo), mask = createMask(), setup: setupOpts, setupFn } = {}) {
+export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => effectiveOwner(repo), mask = createMask(), setup: setupOpts, setupFn, runAsync = run ? null : ghAsync, gitAsync } = {}) {
   let rootP = null;
   const vroot = () => (rootP ||= primaryRoot(repo).catch(() => repo));
   let kitP = null;
@@ -194,17 +217,57 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
   // `gh secret list` (the kit's status reads the Actions sink's names, spec 49 A5), kept briefly: the vault polls.
   let ghList = { at: 0, key: '', r: null };
   const forgetGhList = () => { ghList = { at: 0, key: '', r: null }; };
+  let ghWarm = null;
   function cachedRun(k) {
     const base = run || k.m.sinks.spawnRunner;
     if (typeof base !== 'function') return undefined;
     return (cmd, args, opts = {}) => {
       if (cmd !== 'gh' || args[0] !== 'secret' || args[1] !== 'list') return base(cmd, args, opts);
-      const key = `${opts.cwd || ''}\0${args.join(' ')}`;
-      if (ghList.r && ghList.key === key && Date.now() - ghList.at < GH_LIST_MS) return ghList.r;
+      const key = `${opts.cwd ? path.resolve(opts.cwd) : ''}\0${args.join(' ')}`;
+      // A list being asked again behind this answer: the last one stands until it lands.
+      if (ghList.r && ghList.key === key && (Date.now() - ghList.at < GH_LIST_MS || ghWarm)) return ghList.r;
       const r = base(cmd, args, opts);
       ghList = { at: Date.now(), key, r };
       return r;
     };
+  }
+
+  /**
+   * Ask `gh secret list` ahead, off the event loop, so the kit's status finds it kept: its own runner is synchronous,
+   * and a slow network held the whole server (every tab) for up to its 15 s timeout. The first ask is waited for; a
+   * stale list answers while the next one is asked behind it. Only when some declared name goes to GitHub Actions.
+   */
+  async function warmGhList(k, root) {
+    if (!runAsync || !owner()) return;
+    let wants = false;
+    try { wants = (k.m.manifest.readManifest(path.join(root, k.m.manifest.MANIFEST))?.manifest?.secrets ?? []).some((e) => (e.destinations ?? []).includes('github-actions')); } catch { /* the kit says what is wrong */ }
+    if (!wants) return;
+    const key = `${path.resolve(root)}\0${GH_LIST_ARGS.join(' ')}`;
+    const kept = ghList.r && ghList.key === key;
+    if (kept && Date.now() - ghList.at < GH_LIST_MS) return;
+    if (!ghWarm) {
+      ghWarm = Promise.resolve(runAsync('gh', GH_LIST_ARGS, { cwd: root }))
+        .then((r) => { ghList = { at: Date.now(), key, r: r || { status: 1 } }; })
+        .catch(() => { ghList = { at: Date.now(), key, r: { status: 1 } }; })
+        .finally(() => { ghWarm = null; });
+    }
+    if (!kept) await ghWarm;
+  }
+
+  // Whether git ignores the root .env (the local ring): 'ignored', 'not ignored', 'tracked', or null (no git here).
+  let ignoreKept = { at: 0, root: '', state: null };
+  const forgetIgnore = () => { ignoreKept = { at: 0, root: '', state: null }; };
+  const git = gitAsync || gitExit;
+  async function envIgnore(root) {
+    if (ignoreKept.root === root && Date.now() - ignoreKept.at < IGNORE_MS) return ignoreKept.state;
+    let state = null;
+    try {
+      const r = await git(['-C', root, 'check-ignore', '-q', '.env']);
+      if (r.code === 0) state = 'ignored';
+      else if (r.code === 1) state = (await git(['-C', root, 'ls-files', '--error-unmatch', '.env'])).code === 0 ? 'tracked' : 'not ignored';
+    } catch { /* unknown */ }
+    ignoreKept = { at: Date.now(), root, state };
+    return state;
   }
 
   /** Run the repo's secrets command line in process: { code, out: [lines], err: [lines] }. */
@@ -261,10 +324,11 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
       // No vault scripts at all: not a failure, an empty state with a way forward (Set up the vault).
       const root = await vroot();
       const isOwner = !!owner();
-      return { status: 200, available: false, vaultState: 'missing', mode: isOwner ? 'owner' : 'contributor', owner: isOwner, manifest: fs.existsSync(path.join(root, 'nexus.secrets.json')), rootEnv: rootEnvOf(root), docs: DOCS };
+      return { status: 200, available: false, vaultState: 'missing', mode: isOwner ? 'owner' : 'contributor', owner: isOwner, manifest: fs.existsSync(path.join(root, 'nexus.secrets.json')), rootEnv: rootEnvOf(root), envIgnore: await envIgnore(root), docs: DOCS };
     }
     if (!k.ok) return unavailable(k);
     const root = await vroot();
+    const [ignore] = await Promise.all([envIgnore(root), warmGhList(k, root)]);
     const listRun = cachedRun(k);
     const r = await cli(k, ['status', '--json', '--root', root], listRun ? { run: listRun } : {});
     if (r.code !== 0) return failed(r);
@@ -314,6 +378,7 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
       envFiles: envFilesAt(root),
       vaultState: 'ready',
       rootEnv: rootEnvOf(root, man?.names ?? new Set()),
+      envIgnore: ignore,
       docs: DOCS,
     };
   }
@@ -422,6 +487,17 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     return out;
   }
 
+  /** The ring a set name is read from (local, keychain, workspace), or null: a contributor's never the workspace. */
+  function livesIn(k, root, name) {
+    try {
+      const v = k.m.vault.openVault({ root, settings: k.m.owner.localSettings(root), ...vaultOpts });
+      const rings = v.status([name])[0]?.rings ?? [];
+      return rings.find((g) => owner() || g !== 'workspace') ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   const ringArgs = (ring) => (ring == null || ring === '' ? [] : ['--ring', String(ring)]);
   const destList = (x) => (Array.isArray(x) ? [...new Set(x.map(String))].filter((d) => d !== 'local') : []);
 
@@ -448,12 +524,15 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     const no = pushable(k, root, name, dests);
     if (no) return scrub(no);
     try {
-      const r = await cli(k, ['set', name, '--root', root, ...ringArgs(b.ring)], { input: async () => value });
+      // Replace writes where the value lives (the ring it is read from), so a value in .env.workspace is replaced
+      // there, not shadowed by a new copy in .env; a first value goes to the vault's default ring.
+      const ring = b.ring ?? livesIn(k, root, name);
+      const r = await cli(k, ['set', name, '--root', root, ...ringArgs(ring)], { input: async () => value });
       if (r.code !== 0) return scrub(failed(r, r.code === 64 ? 400 : 409));
       await refresh({ force: true });
       const pushed = await pushAll(k, root, name, dests, b);
-      const ring = (/->\s*(\w+)/.exec(r.out[0] || '') || [])[1] || null;
-      return scrub({ status: 200, ok: pushed.every((p) => p.ok), name, stored: true, ring, pushed, notes: r.out.slice(1).map((s) => s.trim()) });
+      const landed = (/->\s*(\w+)/.exec(r.out[0] || '') || [])[1] || null;
+      return scrub({ status: 200, ok: pushed.every((p) => p.ok), name, stored: true, ring: landed, pushed, notes: r.out.slice(1).map((s) => s.trim()) });
     } catch (e) {
       return scrub({ status: 500, error: String(e.message || e) });
     }
@@ -598,6 +677,56 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
   }
 
   /**
+   * POST /api/secrets/:name/remove { ring? }: take the value out of the vault through the repo's own `unset` (every
+   * ring that holds it, or the one named). The places it was pushed to keep their copy; the answer says so.
+   */
+  async function remove(name, b = {}) {
+    const k = await kit();
+    if (!k.ok) return unavailable(k);
+    if (!NAME.test(String(name))) return { status: 400, error: 'a secret\'s name is an env-var name (A-Z, 0-9 and _, starting with a letter)' };
+    const ring = b && typeof b.ring === 'string' && b.ring ? b.ring : null;
+    if (ring && !k.m.vault.RINGS.includes(ring)) return { status: 400, error: `no ring ${ring} (one of ${k.m.vault.RINGS.join(', ')})` };
+    const root = await vroot();
+    try {
+      const r = await cli(k, ['unset', name, '--root', root, ...ringArgs(ring)]);
+      if (r.code === 64) return { status: 409, error: `this repo's scripts/secrets.mjs has no unset: update the repo's secrets scripts (${DOCS})` };
+      if (r.code !== 0) return failed(r);
+      await refresh({ force: true });
+      const from = (/taken out of (.+)$/.exec(r.out[0] || '') || [])[1];
+      const left = r.out.map((l) => /still set in (.+)$/.exec(l)).find(Boolean);
+      return { status: 200, ok: true, name, removed: from ? from.split(/,\s*/) : [], still: left ? left[1].split(/,\s*/) : [], notes: r.out.slice(1).map((l) => l.trim()) };
+    } catch (e) {
+      return { status: 500, error: String(e.message || e) };
+    }
+  }
+
+  /**
+   * POST /api/secrets/gitignore: the root .env joins .gitignore (the Vault's "not ignored" warning), so no value set
+   * there can be committed. A tracked .env is not fixed here: untracking it is the person's call, and the answer says how.
+   */
+  async function ignoreEnv() {
+    const root = await vroot();
+    forgetIgnore();
+    const state = await envIgnore(root);
+    if (state === 'ignored') return { status: 200, ok: true, already: true, envIgnore: state };
+    if (state === 'tracked') return { status: 409, error: '.env is tracked by git: run git rm --cached .env (the file stays), then add it to .gitignore and commit both', envIgnore: state };
+    if (state === null) return { status: 409, error: 'git could not say whether .env is ignored here (no git repo at the root?)' };
+    const gi = path.join(root, '.gitignore');
+    let had = '';
+    try { had = fs.readFileSync(gi, 'utf8'); } catch (e) { if (e.code !== 'ENOENT') return { status: 500, error: `.gitignore did not read (${e.code || e.message})` }; }
+    const eol = /\r\n/.test(had) ? '\r\n' : '\n';
+    try {
+      fs.writeFileSync(gi, `${had}${had && !/\n$/.test(had) ? eol : ''}# The nexus secrets vault: values stay on this machine${eol}.env${eol}`);
+    } catch (e) {
+      return { status: 500, error: `.gitignore was not written (${e.code || e.message})` };
+    }
+    forgetIgnore();
+    const after = await envIgnore(root);
+    if (after !== 'ignored') return { status: 409, error: '.gitignore names .env now, but git still does not ignore it (a later ! rule?): check .gitignore', envIgnore: after };
+    return { status: 200, ok: true, envIgnore: after, note: '.gitignore now ignores .env: commit it.' };
+  }
+
+  /**
    * POST /api/secrets/setup: land the vault's scripts per owner mode (vault-setup.mjs): the owner's commit on main, a
    * contributor's pull request. One at a time.
    */
@@ -611,7 +740,7 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     try { return await settingUp; } finally { settingUp = null; kitP = null; }
   }
 
-  return { mask, refresh, status, audit, store, importEnv, push, markRequests, startManifest, setup };
+  return { mask, refresh, status, audit, store, remove, ignoreEnv, importEnv, push, markRequests, startManifest, setup };
 }
 
 /** The mask for one repo, fed once (headless `nexus run`): identity when the repo has no vault. */

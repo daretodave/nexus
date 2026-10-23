@@ -167,6 +167,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         case 'GET /api/secrets/audit': return send(res, 200, vault.audit());
         case 'POST /api/secrets/import': { const { status, ...r } = vault.importEnv(await body(req)); return send(res, status, r); }
         case 'POST /api/secrets/manifest': await body(req); return send(res, 200, { ok: true, created: false, manifest: 'nexus.secrets.json' });
+        case 'POST /api/secrets/gitignore': await body(req); return send(res, 200, { ok: true, already: true, envIgnore: 'ignored' });
         case 'GET /api/claims': return send(res, 200, world.claims());
         case 'GET /api/summaries': return send(res, 200, {});
         // Drafts (spec 51, A1; drafts.mjs), kept in memory for the demo's life.
@@ -184,11 +185,11 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         case 'POST /api/announce':
         case 'POST /api/oversight/answer': await body(req); return send(res, 200, { ok: true });
       }
-      const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)(\/push)?$/.exec(route);
+      const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)(\/push|\/remove)?$/.exec(route);
       if (sec) {
         const b = await body(req);
         const name = decodeURIComponent(sec[1]);
-        const { status, ...r } = sec[2] ? vault.push(name, b) : vault.store(name, b);
+        const { status, ...r } = sec[2] === '/push' ? vault.push(name, b) : sec[2] === '/remove' ? vault.remove(name) : vault.store(name, b);
         return send(res, status, r);
       }
       const ask = /^POST \/api\/ask\/([\w-]+)$/.exec(route);

@@ -71,6 +71,7 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true } =
       sinks: SINKS,
       requests: isOwner && missing.length ? [{ chunk: DEMO_REQUEST.chunk, names: DEMO_REQUEST.names, missing, file: DEMO_REQUEST.durable.file, line: DEMO_REQUEST.durable.line, date: iso(3 * 3600000).slice(0, 10) }] : [],
       envFiles: ['.env.local'],
+      envIgnore: 'ignored',
     };
   };
 
@@ -98,6 +99,17 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true } =
     record({ action: had ? 'rotate' : 'set', name, destination: 'local', ring: 'local' });
     const pushed = pushAll(name, (b.destinations || []).filter((d) => !e || e.destinations.includes(d) || b.declare === true));
     return { status: 200, ok: true, name, stored: true, ring: 'local', pushed, notes: [] };
+  };
+
+  /** POST /api/secrets/:name/remove: "it is set" is forgotten, as the repo's `unset` takes the value out. */
+  const remove = (name) => {
+    if (!NAME.test(String(name))) return { status: 400, error: 'a secret\'s name is an env-var name (A-Z, 0-9 and _, starting with a letter)' };
+    const held = owner() ? set : localKeys;
+    if (!held.has(name)) return { status: 200, ok: true, name, removed: [], still: [], notes: [] };
+    held.delete(name);
+    if (owner()) record({ action: 'remove', name, destination: 'local', ring: 'local' });
+    const far = owner() && entries.find((e) => e.name === name)?.destinations.some((d) => d !== 'local');
+    return { status: 200, ok: true, name, removed: ['local'], still: [], notes: far ? ['the places it was pushed to keep their copy: remove it there too if it should go'] : [] };
   };
 
   const push = (name, b = {}) => {
@@ -151,5 +163,5 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true } =
   };
   const isSet = (n) => set.has(n);
 
-  return { status, store, push, importEnv, audit: () => ({ events: audit.slice(), nudges: status().nudges, rotateDays: 90 }), mark, isSet };
+  return { status, store, remove, push, importEnv, audit: () => ({ events: audit.slice(), nudges: status().nudges, rotateDays: 90 }), mark, isSet };
 }
