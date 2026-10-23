@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-10-22
-> Pass count: 28
+> Last pass: 2026-10-23
+> Pass count: 29
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,82 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [ ] [MED] playbooks/new-project.md:695-711 — step 9's automated `/bootstrap` path can wire a ticking cloud loop before a single `/next` chunk has shipped, contradicting the cloud loop's own precondition
+- category: instruction-drift
+- observation: `README.md:426-428` states, routing to the cloud
+  loop: "Don't reach for this until your verify gate is
+  genuinely hermetic and the local loop has run cleanly for a
+  few days — the cloud surfaces every flake." `playbooks/cloud-loop.md:40`
+  repeats the same precondition. But `playbooks/new-project.md`
+  step 9 ("(Optional) Run `/bootstrap`...") sits between step 8
+  (sub-agents) and step 10 (the *first* `/next` invocation) —
+  before the local loop has run even once. Step 9's "Automated"
+  path says running `/bootstrap` "ends with a green deploy + a
+  ticking cloud loop." The shipped manifest an adopter is told to
+  copy at this exact step, `templates/setup/bootstrap.example.json:38`,
+  defaults `"cloud_loop": {"enabled": true, ...}`.
+  `customization/bootstrap-automation.md:164`'s phase-of-life
+  table confirms a "Pre-everything" project (exactly where step 9
+  stands) runs the full chain ending in "cloud loop." Nothing in
+  step 9, `customization/bootstrap-automation.md`, or the
+  manifest's `_help` block warns that enabling the cloud loop
+  this early violates the precondition both README and
+  cloud-loop.md state as a hard "don't."
+- evidence: `README.md:426-428`; `playbooks/cloud-loop.md:40`;
+  `playbooks/new-project.md:695,708-711` (step 9 precedes step
+  10's `/next` smoke test); `templates/setup/bootstrap.example.json:38`
+  (`"enabled": true`); `customization/bootstrap-automation.md:164`.
+- suggested fix: either (a) default `bootstrap.example.json`'s
+  `cloud_loop.enabled` to `false` with an `_help` note to flip it
+  on only once the local loop has proven itself, or (b) add one
+  sentence to `new-project.md` step 9's "Automated" bullet and
+  the phase-of-life table noting the cloud-loop leg should be
+  deferred (or re-run later via `/bootstrap cloud-loop`) until
+  the verify gate is hermetic and the local loop has run cleanly
+  for a few days.
+- source: dry-run
+
+### [ ] [MED] prompts/pitch.md:68-71 — Phase A's own "Standing rules" block never received the Co-Authored-By harness-strip carve-out added to agents.md, templates/agents.md, and prompts/adopt.md
+- category: instruction-drift
+- observation: a prior pass (this file's Done section, "HIGH
+  prompts/adopt.md:89 / templates/agents.md:24-26") fixed the
+  kit's absolute "no Co-Authored-By trailers" rule in three
+  places so it no longer deadlocks against harnesses that
+  auto-append one by default — each now reads "...strip it
+  before every commit — this rule overrides that convention
+  here" (confirmed live at `prompts/adopt.md:117-121`).
+  `prompts/pitch.md` carries its own separate "Standing rules"
+  block for Phase A (the pre-spec interview, which commits
+  `spec.md` and `plan/bearings.md` before Phase B ever reads
+  `adopt.md`), and that block still reads the bare, pre-fix text:
+  "No Co-Authored-By trailers, no emojis." with no carve-out
+  sentence — a fourth copy of the rule the earlier fix missed.
+- evidence: `prompts/pitch.md:68-71` vs `prompts/adopt.md:117-121`.
+- suggested fix: add the same carve-out sentence to
+  `prompts/pitch.md`'s "Standing rules" block, mirroring
+  `adopt.md`'s wording.
+- source: dry-run
+
+### [ ] [LOW] README.md:177-178 — "Review what landed"'s "Files added" checklist omits `nexus.secrets.json`, which step 4's copy also lands at the repo root
+- category: comprehension
+- observation: `README.md:177-178` lists files added as
+  `agents.md`, `CLAUDE.md`, `plan/`, `skills/`, `.claude/`,
+  `scripts/`, `.env.example` — but `playbooks/new-project.md:325`'s
+  step-4 bulk-copy command also lands
+  `templates/env/nexus.secrets.json` as `nexus.secrets.json` at
+  the repo root (a file README's own "What's in this kit" tree
+  documents elsewhere). A stranger diffing the adoption commit
+  against this checklist sees an unlisted new root file. Same bug
+  class as the already-fixed "'Files added' checklist omits
+  CLAUDE.md" entry below — that fix added `CLAUDE.md` but not
+  `nexus.secrets.json`, copied by the same step-4 command even
+  then.
+- evidence: `README.md:177-178` vs `playbooks/new-project.md:325`
+  (`['templates/env/nexus.secrets.json','nexus.secrets.json']`).
+- suggested fix: add `nexus.secrets.json` to the "Files added"
+  list in `README.md:177-178`.
+- source: dry-run
 
 ### [x] [MED] prompts/adopt.md:89 — owner/contributor heuristic errors with no fallback on a repo with no git remote yet — routed to 39.15
 - category: instruction-drift

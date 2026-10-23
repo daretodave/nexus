@@ -226,6 +226,27 @@ replace step.
 |---|---|---|
 | `<WORKSPACE_ORG>` | GitHub org holding every sibling repo | `daretodave` |
 
+### Per-capability placeholders (adopt-by-need)
+
+A few more placeholders live inside specific templates, not
+the tables above. Each is explained where it appears; this
+table is the index — copy it over only if the project adopts
+that capability.
+
+| Placeholder | Lives in | Fill in with |
+|---|---|---|
+| `<CONTENT_LOCATION>` | `agents.md`, `bearings.md`, `ship-a-chunk.md` | Where copy/content lives, e.g. `content/*.mdx` |
+| `<DATA_LOCATION>` | same three | Where structured data lives, e.g. `data/*.json` |
+| `<PROVIDER_AUTH_TOKEN>` | `agents.md` "Operational secrets" | Your hosting provider's real token env var, e.g. `VERCEL_TOKEN` — only if the project has a deploy gate (`pnpm deploy:check`) |
+| `<DOMAIN_SPECIALIST>` / `<SPECIALIST_NAME>` | `agents.md`'s and `bearings.md`'s sub-agent tables; `claude/agents/generic-specialist.md` | Copy `generic-specialist.md`, name it, add the table row — only if the project needs a domain specialist |
+| `<CANONICAL SIBLING>` | `plan/02-canonical-sibling.md`, `plan/README.md` | Your project's first non-substrate feature surface — see "Don't copy these as-is" below |
+
+`<DEPLOY_URL>` isn't search-replaced in a file — it's a CLI
+argument inside example commands (`--deploy-url <DEPLOY_URL>`
+in `ship-a-chunk.md`, `iterate.md`, `ship-data.md`): pass your
+`<HOSTING_URL>` value there when you run the command, not when
+you adopt the template.
+
 ## Don't copy these as-is
 
 A few files in templates intentionally have project-specific
@@ -240,7 +261,9 @@ shape that you must fill in:
   (Next.js, Django, Rails, etc.): design, acceptance IDs,
   chunks
 - `plan/02-canonical-sibling.md` — needs your project's first
-  non-substrate page-family / feature-surface
+  non-substrate page-family / feature-surface in place of its
+  `<CANONICAL SIBLING>` title (also appears in
+  `plan/README.md`'s roadmap row)
 - `plan/ARCHIVE.md` — delete the example lines; real lines
   arrive as chunks close
 

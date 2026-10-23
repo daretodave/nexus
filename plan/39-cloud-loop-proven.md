@@ -46,7 +46,6 @@ would. The chunks below fix them.
 
 ## Acceptance
 
-- **A8** Every angle-bracket placeholder in the templates is documented and swept, or the gate flags an unswept one in an adopter.
 - **A9** A library with no deploy host adopts cleanly: agents.md rules 1 and 4 and bearings.md have a "no deploy gate" path.
 - **A10** The package manager is a placeholder end to end (install-hooks, the setup action, the march prompts, settings.json), and the setup action works without a lockfile.
 - **A11** Day one in an agent session works: the settings allowlist covers claims, plan-check and the plan scripts; `claims whoami` explains `NEXUS_NO_HOOK_CHECK`; the placeholder sweep doesn't need to read `.env.example`; existing-actions Step 9 dispatches after enabling.
@@ -61,10 +60,8 @@ would. The chunks below fix them.
 (None.)
 
 ## Chunks
-Measure: 9 open · 7 closed · next A17
+Measure: 8 open · 8 closed · next A17
 
-- [ ] **39.7** Every template placeholder documented, swept or flagged · M · closes A8 · needs —
-  - Undocumented today: `<CONTENT_LOCATION>`, `<DATA_LOCATION>`, `<PROVIDER_AUTH_TOKEN>`, `<DEPLOY_URL>`, `<DOMAIN_SPECIALIST>`, `<SPECIALIST_NAME>`, `<CANONICAL SIBLING>`, `<PROJECT-SPECIFIC RULES…>`.
 - [ ] **39.8** A no-deploy-host path in the templates · S · closes A9 · needs —
 - [ ] **39.9** The package manager is a placeholder end to end · M · closes A10 · needs —
 - [ ] **39.10** Day one in an agent session needs no workaround · S · closes A11 · needs —

@@ -322,6 +322,13 @@ function legDiscover(files) {
 // The placeholder vocabulary is deliberate. A new template may add a
 // token, but it must be added HERE too — that forced touch is the
 // review. Typos (<PROJECT_NAME> for <PROJECT>) fail immediately.
+//
+// Tokens are normally one UPPER_SNAKE word. A few (e.g. the spec-02
+// scaffold's title) are two or more UPPER words separated by single
+// spaces — the token regex below matches those too, but nothing
+// looser: a free-text scaffold fill-in (`<Decision 1>`, mixed case
+// or punctuation) never matches and is never swept — those are
+// documented once, in templates/README.md's "Don't copy these as-is".
 
 const PLACEHOLDER_VOCABULARY = new Set([
   // canonical six (README adoption prompt)
@@ -348,6 +355,8 @@ const PLACEHOLDER_VOCABULARY = new Set([
   '<SPEC_M>', '<SEV>',
   // plan shape (concepts/plan-shape.md)
   '<NN>',
+  // multi-word (spec-02 scaffold title and roadmap row)
+  '<CANONICAL SIBLING>',
 ])
 
 // Renamed placeholders: the old name may appear only in the upgrade
@@ -361,7 +370,7 @@ const RETIRED_PLACEHOLDER_HOME = 'playbooks/upgrade.md'
 function legPlaceholders(files) {
   const failures = []
   let seen = 0
-  const tokenRe = /<[A-Z][A-Z0-9_]*>/g
+  const tokenRe = /<[A-Z][A-Z0-9_]*(?: [A-Z][A-Z0-9_]*)*>/g
   for (const file of files) {
     const lines = read(file).split(/\r?\n/)
     lines.forEach((line, i) => {
