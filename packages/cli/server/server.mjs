@@ -12,6 +12,7 @@ import { createSession } from './session.mjs';
 import { cleanGit, endLedger, formPlace, ghLoginOnce, heldNames, newSessionId, nextName, planPlace, startLedger, validName, writeStartLedger } from './fleet.mjs';
 import { safeHooks } from './cloud.mjs';
 import { formNext, formStart } from '../shared/forming.mjs';
+import { putAwayPlan } from '../shared/put-away.mjs';
 import { preflight } from './preflight.mjs';
 import * as repoMod from './repo.mjs';
 import * as local from './local.mjs';
@@ -417,24 +418,51 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
    * `git worktree remove`). A fallen session with work is refused: resume or inspect it.
    */
   async function closeEnded(key) {
-    const list = markEnded(await gitView.withGit(await sessionList()));
+    const list = markEnded(await gitView.withGit(await sessionList(), { fresh: true }));
     const row = list.find((x) => x.id === key || x.claude === key);
     if (!row) return { status: 404, error: 'no such session' };
     if (!row.ended) return { status: 409, error: `${row.name} has work (commits, changes or claims) or is still running: resume or inspect it` };
     const root = await primaryRoot(repo);
     endLedger(root, row.id);
-    const wt = row.git?.worktree || '';
-    const script = path.join(root, 'scripts', 'worktree.mjs');
-    let worktree = null;
-    if (wt && fs.existsSync(wt)) {
-      if (!fs.existsSync(script)) worktree = { closed: false, note: 'no scripts/worktree.mjs here: close the worktree with /tidy' };
-      else {
-        const slash = (p) => p.replace(/\\/g, '/');
-        const r = await shRun('node', [slash(script), 'close', slash(wt), '--repo', slash(root)], { cwd: root, timeout: 60000 });
-        worktree = r.ok ? { closed: true } : { closed: false, note: (r.stderr || r.stdout || 'worktree.mjs close failed').trim().split('\n').pop() };
-      }
-    }
+    const worktree = await closeWorktree(root, row.git?.worktree || '');
     return { status: 200, id: row.id, closed: true, name: row.name, worktree };
+  }
+
+  /** Close a session's worktree through the repo's own scripts/worktree.mjs, the one safe way a worktree closes. */
+  async function closeWorktree(root, wt) {
+    if (!wt || !fs.existsSync(wt)) return null;
+    const script = path.join(root, 'scripts', 'worktree.mjs');
+    if (!fs.existsSync(script)) return { closed: false, note: 'no scripts/worktree.mjs here: close the worktree with /tidy' };
+    const slash = (p) => p.replace(/\\/g, '/');
+    const r = await shRun('node', [slash(script), 'close', slash(wt), '--repo', slash(root)], { cwd: root, timeout: 60000 });
+    return r.ok ? { closed: true } : { closed: false, note: (r.stderr || r.stdout || 'worktree.mjs close failed').trim().split('\n').pop() };
+  }
+
+  /**
+   * Put away a session that finished its job (0.5.1, shared/put-away.mjs): it ends and its star frees. Clean (no
+   * commits past its base, no uncommitted changes, no claims), its empty worktree closes too. Holding any of those it
+   * is refused with what it holds, unless `keep`: then it ends and its worktree, branch and claims stay as they are.
+   * A session still working, one asking, a terminal session and the home session are refused.
+   */
+  async function putAway(key, b = {}) {
+    const list = await gitView.withGit(await sessionList(), { fresh: true });
+    const row = list.find((x) => x.id === key || (x.claude && x.claude === key));
+    if (!row) return { status: 404, error: 'no such session' };
+    const s = sessionOf(row.id) || (row.claude ? sessionOf(row.claude) : null);
+    if (s && s === home) return { status: 409, error: 'the home session stays while the server runs: stop it instead' };
+    if (row.kind === 'terminal' && !s) return { status: 409, error: `${row.name} runs in a terminal: close it there` };
+    if (row.state === 'asking') return { status: 409, error: `${row.name} is waiting on you: answer it first` };
+    if (row.turn === 'working') return { status: 409, error: `${row.name} is still working: put it away once it finishes` };
+    const plan = putAwayPlan(row);
+    if (!plan.clean && !b.keep) return { status: 409, error: `${row.name} holds work. ${plan.say}`, holds: plan.holds, say: plan.say, keep: plan.keep };
+    if (s) {
+      await s.close();
+      sessions.delete(s.id);
+    }
+    const root = await primaryRoot(repo);
+    endLedger(root, row.id);
+    const worktree = plan.clean ? await closeWorktree(root, plan.worktree) : plan.worktree ? { closed: false, note: 'kept, with its work' } : null;
+    return { status: 200, id: row.id, name: row.name, closed: true, kept: plan.holds, say: plan.say, worktree };
   }
 
   // Resume from a fallen tile (A2): a new hosted session takes the ledger through /reboot-resume. One resumer per
@@ -750,6 +778,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       const mdl = /^POST \/api\/sessions\/([\w.%-]+)\/model$/.exec(route);
       if (mdl) {
         const r = await switchModel(decodeURIComponent(mdl[1]), await body(req));
+        return send(res, r.status, r);
+      }
+      const away = /^POST \/api\/sessions\/([\w.%-]+)\/put-away$/.exec(route);
+      if (away) {
+        const r = await putAway(decodeURIComponent(away[1]), await body(req));
         return send(res, r.status, r);
       }
       const life = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close|retry)$/.exec(route);

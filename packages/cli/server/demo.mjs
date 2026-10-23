@@ -25,6 +25,7 @@ import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
 import { realClock } from './demo/clock.mjs';
 import { createDemoVault, DEMO_REQUEST } from './demo/vault.mjs';
 import { applyDrafts } from './drafts.mjs';
+import { putAwayPlan } from '../shared/put-away.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG = path.resolve(HERE, '..');
@@ -211,6 +212,17 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
       if (one) {
         const d = world.detail(decodeURIComponent(one[1]));
         return d ? send(res, 200, d) : send(res, 404, { error: 'no such live session' });
+      }
+      // Put away (0.5.1): the same rule as the live server (shared/put-away.mjs); the tile leaves, in memory only.
+      const away = /^POST \/api\/sessions\/([\w.%-]+)\/put-away$/.exec(route);
+      if (away) {
+        const b = await body(req);
+        const row = world.rows().find((r) => r.id === decodeURIComponent(away[1]) || r.name === decodeURIComponent(away[1]));
+        if (!row) return send(res, 404, { error: 'no such session' });
+        const plan = putAwayPlan(row);
+        if (!plan.clean && !b.keep) return send(res, 409, { error: `${row.name} holds work. ${plan.say}`, holds: plan.holds, say: plan.say, keep: plan.keep });
+        world.putAway(row.id);
+        return send(res, 200, { id: row.id, name: row.name, closed: true, kept: plan.holds, say: plan.say, worktree: plan.clean && plan.worktree ? { closed: true } : null });
       }
       const act = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close|link|steer|parked)$/.exec(route);
       if (act) {
