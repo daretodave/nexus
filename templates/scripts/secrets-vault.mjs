@@ -338,10 +338,20 @@ export function readLocalKeys(root) {
 
 /** Add names to the record, under a lock, renamed into place. Returns every recorded name. */
 export function recordLocalKeys(root, names) {
+  return rewriteLocalKeys(root, (had) => [...had, ...names.filter((n) => NAME.test(n))]);
+}
+
+/** Take names out of the record (a key unset from every ring this machine holds it in). Returns every recorded name. */
+export function forgetLocalKeys(root, names) {
+  const drop = new Set(names);
+  return rewriteLocalKeys(root, (had) => had.filter((n) => !drop.has(n)));
+}
+
+function rewriteLocalKeys(root, change) {
   const file = path.join(root, LOCAL_KEYS_FILE);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   return underLock(`${file}.lock`, LOCAL_KEYS_FILE, () => {
-    const all = [...new Set([...readLocalKeys(root), ...names.filter((n) => NAME.test(n))])].sort();
+    const all = [...new Set(change(readLocalKeys(root)))].sort();
     const tmp = `${file}.${process.pid}.tmp`;
     fs.writeFileSync(tmp, `${JSON.stringify({ version: 1, about: 'A contributor\'s own local-only keys: names, never a value. Never in nexus.secrets.json.', localKeys: all }, null, 2)}\n`);
     fs.renameSync(tmp, file);

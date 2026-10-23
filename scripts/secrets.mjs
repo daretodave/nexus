@@ -39,7 +39,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isOwner, localSettings, primaryRoot } from './owner.mjs';
 import { MANIFEST, NAME, emptyManifest, importEnvExample, mergeImport, readManifest, serialize } from './plan/secrets-manifest.mjs';
-import { CONTRIBUTOR_RINGS, RINGS, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
+import { CONTRIBUTOR_RINGS, RINGS, forgetLocalKeys, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
 import { actionsSecretNames, pushSecret, recordAudit, sinkFor, spawnRunner } from './secrets-sinks.mjs';
 import { runWithSecrets } from './secrets-run.mjs';
 import { describeHit, scanRepo, vaultValues } from './secrets-scan.mjs';
@@ -172,7 +172,8 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
       out(`secrets unset: ${arg} taken out of ${gone.join(', ')}`);
       if (left.length) out(`  ${arg} is still set in ${left.join(', ')}`);
       if (!contributor && current && current.manifest.secrets.find((e) => e.name === arg)?.destinations.some((d) => d !== 'local')) out(`  the places it was pushed to keep their copy: remove it there too if it should go`);
-      if (contributor) return 0;
+      // A contributor's key gone from every place this machine keeps it leaves their list too.
+      if (contributor) { if (!left.some((g) => CONTRIBUTOR_RINGS.includes(g))) forgetLocalKeys(vroot, [arg]); return 0; }
       try { recordRemoves(vroot, removed); return 0; } catch (e) { err(`secrets audit: not recorded (${e.message}); the value is out of the vault`); return 1; }
     }
     if (cmd === 'set') {

@@ -429,6 +429,15 @@ describe('a contributor checkout', () => {
       const push = clean(run(t.repo, '', ['push', 'DEV_API_KEY']));
       assert.equal(push.status, 1);
       assert.match(push.stderr, /refused in a contributor checkout/);
+
+      // Unset: out of this machine's places and off the list; never the shared workspace ring.
+      fs.writeFileSync(path.join(t.ws, '.env.workspace'), `DEV_API_KEY=${FAKES[1]}\n`);
+      const unset = clean(run(t.repo, '', ['unset', 'DEV_API_KEY']));
+      assert.equal(unset.status, 0, unset.stderr);
+      assert.match(unset.stdout, /taken out of local/);
+      assert.equal(parseEnv(fs.readFileSync(path.join(t.ws, '.env.workspace'), 'utf8')).get('DEV_API_KEY'), FAKES[1], 'the shared ring is left alone');
+      assert.deepEqual(readLocalKeys(t.repo), ['GH_TOKEN', 'LOCAL_DB_URL']);
+      assert.equal(run(t.repo, '', ['unset', 'DEV_API_KEY', '--ring', 'workspace']).status, 1);
     } finally {
       t.done();
     }
