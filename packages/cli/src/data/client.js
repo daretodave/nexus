@@ -27,14 +27,18 @@ export class ApiError extends Error {
   }
 }
 
-/** GET when body is undefined, POST JSON otherwise. Throws ApiError. */
-export async function api(path, body) {
+/** Set on an answer the server served from what it last read while a fresh read runs behind it (server/swr.mjs). */
+export const STALE = Symbol('stale');
+
+/** GET when body is undefined, POST JSON otherwise. Throws ApiError. `fresh` waits for the server's fresh read. */
+export async function api(path, body, { fresh = false } = {}) {
   const init = body === undefined
-    ? { headers: { 'x-nexus-token': TOKEN } }
+    ? { headers: { 'x-nexus-token': TOKEN, ...(fresh ? { 'x-nexus-fresh': '1' } : {}) } }
     : { method: 'POST', headers: { 'x-nexus-token': TOKEN, 'content-type': 'application/json' }, body: JSON.stringify(body) };
   const res = await fetch(path, init);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(data.error || `HTTP ${res.status}`, res.status, data);
+  if (res.headers.get('x-nexus-stale') === '1' && data && typeof data === 'object') data[STALE] = true;
   return data;
 }
 
@@ -91,7 +95,7 @@ export const server = {
   setupVault: () => api('/api/secrets/setup', {}),
 };
 
-const EMPTY = { connected: false, stage: initialState(), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [] };
+const EMPTY = { connected: false, stage: initialState(), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [], needs: null };
 
 function merge(transcript, item) {
   if (item.kind !== 'delta') return [...transcript, item];
@@ -103,20 +107,21 @@ function merge(transcript, item) {
 function storeReducer(s, [type, data]) {
   switch (type) {
     case 'hello':
-      return { ...s, connected: true, stage: replay(data.beats || []), transcript: data.transcript || [], status: data.status || s.status, asks: data.asks || [], permissions: data.permissions || [], runs: data.runs || [] };
+      return { ...s, connected: true, stage: replay(data.beats || []), transcript: data.transcript || [], status: data.status || s.status, asks: data.asks || [], permissions: data.permissions || [], runs: data.runs || [], needs: data.needs || s.needs };
     case 'beat': return { ...s, stage: reduce(s.stage, data) };
     case 'tx': return { ...s, transcript: merge(s.transcript, data) };
     case 'status': return { ...s, status: data };
     case 'asks': return { ...s, asks: data };
     case 'permissions': return { ...s, permissions: data };
     case 'runs': return { ...s, runs: data };
+    case 'needs': return { ...s, needs: data };
     case 'reset': return { ...s, stage: initialState(), transcript: [] };
     case 'down': return { ...s, connected: false };
     default: return s;
   }
 }
 
-const EVENT_TYPES = ['hello', 'beat', 'tx', 'status', 'asks', 'permissions', 'runs', 'reset'];
+const EVENT_TYPES = ['hello', 'beat', 'tx', 'status', 'asks', 'permissions', 'runs', 'reset', 'needs'];
 
 /**
  * The live store for one SSE channel: reconnects on drop, and a reconnect

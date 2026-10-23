@@ -7,7 +7,7 @@
 // A hook for a missing endpoint still asks the server, so the screen lights
 // up on its own the day the endpoint lands. MISSING lists them.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from './client.js';
+import { api, STALE } from './client.js';
 
 /**
  * @typedef {object} Resource
@@ -18,16 +18,24 @@ import { api } from './client.js';
  * @property {() => void} reload
  */
 
+// The last answer for each path, kept for this page: coming back to a screen draws what it showed last at once, and
+// the read that refreshes it runs behind (the same stale-while-revalidate the server keeps, server/swr.mjs).
+const LAST = new Map();
+const keptFor = (path) => (path && LAST.has(path) ? { status: 'ready', data: LAST.get(path), error: null, path } : null);
+
 /** Fetch `path` once (and on reload, or every `poll` ms). @returns {Resource} */
 export function useResource(path, { poll, skip } = {}) {
-  const [st, setSt] = useState({ status: skip ? 'missing' : 'loading', data: null, error: null });
+  const [st, setSt] = useState(() => (skip ? null : keptFor(path)) || { status: skip ? 'missing' : 'loading', data: null, error: null });
   const alive = useRef(true);
   const gone = useRef(false);
-  const load = useCallback(async () => {
+  const load = useCallback(async (fresh = false) => {
     if (skip || !path) return;
     try {
-      const data = await api(path);
+      const data = await api(path, undefined, { fresh: fresh === true });
+      LAST.set(path, data);
       if (alive.current) setSt({ status: 'ready', data, error: null, path });
+      // Served from what the server last read: ask once more, for the read it is running now.
+      if (data && data[STALE] && fresh !== true && alive.current) load(true);
     } catch (e) {
       if (!alive.current) return;
       if (e.status === 404) { gone.current = true; setSt({ status: 'missing', data: null, error: null }); }
@@ -39,6 +47,9 @@ export function useResource(path, { poll, skip } = {}) {
   useEffect(() => {
     alive.current = true;
     gone.current = false;
+    // A new path (a session's own ledger, Recover's ?dir=) starts from what that path showed last, if anything.
+    const was = skip ? null : keptFor(path);
+    if (was) setSt((s) => (s.path === path ? s : was));
     load();
     // A missing endpoint is asked once per mount, not on every poll.
     const t = poll ? setInterval(() => { if (!gone.current) load(); }, poll) : null;
@@ -140,3 +151,6 @@ export const useLocalSettings = () => useResource('/api/local');
 
 /** GET /api/secrets (served, spec 42) -> { available, mode, owner, projectSecretsNeeded, manifest, vault, secrets: [{ name, for, where, chunk, declared, set, rings, destinations: [{ destination, state, at, stale? }], age, setAt, rotate }], localKeys: [{ name, rings }], nudges, rotateDays, audit: [event], sinks, requests: [{ chunk, names, missing, file, line, date }], envFiles }: names and status, never a value. Plus vaultState ('ready' | 'missing'), rootEnv { exists, names, undeclared? } (counts only) and docs. A repo without the secrets scripts answers 200 with available false and vaultState 'missing' (an empty state: Set up the vault); scripts too old answer 409 (status 'error', its reason). Shape: server/secrets.mjs; the view model: screens/vault/model.js. */
 export const useSecrets = (poll, { skip } = {}) => useResource('/api/secrets', { poll, skip });
+
+/** GET /api/needs (served) -> { at, items }: who needs the owner now, one row per session (shared/needs.mjs). The same answer rides the `needs` event on every live channel; this is the fallback look. */
+export const useNeeds = (poll = 15000) => useResource('/api/needs', { poll });

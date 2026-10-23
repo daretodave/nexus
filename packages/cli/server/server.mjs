@@ -7,6 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createHub } from './hub.mjs';
+import { createSwr } from './swr.mjs';
 import { PERMISSION_MODES } from './provider.mjs';
 import { createSession } from './session.mjs';
 import { cleanGit, endLedger, formPlace, ghLoginOnce, heldNames, newSessionId, nextName, planPlace, startLedger, validName, writeStartLedger } from './fleet.mjs';
@@ -37,10 +38,13 @@ import { clearDraftsWith, readDrafts, writeDrafts } from './drafts.mjs';
 import { markPlanAnswersSent, readPlanAnswers, writePlanAnswers } from './plan-answers.mjs';
 import { artifactLink } from '../shared/design-link.mjs';
 import { MAX_SEND_BODY, readAttachments } from '../shared/attachments.mjs';
+import { needsFrom } from '../shared/needs.mjs';
 import { saveUploads, uploadFile } from './uploads.mjs';
 import { EFFORTS, HELPER_MODEL, MODELS, effortsFor, modelLabel, validEffort, validModel } from '../shared/models.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+/** How often the top bar's needs are looked at again while a tab watches. */
+const NEEDS_MS = 10000;
 export const PKG = path.resolve(HERE, '..');
 const MAX_BODY = 1024 * 1024;
 
@@ -75,10 +79,12 @@ function readPrompt(name) {
  * @param {object} [o.git]          createGitView overrides (tests: claims, ttl)
  * @param {function|false} [o.explodeQuery]  the SDK's query() for POST /api/explode (tests); under an injected provider none is loaded
  * @param {object} [o.secrets]      the secrets API's seams (tests): { run } a sink's runner, { vault } openVault overrides, { setup } setupVault overrides
+ * @param {boolean} [o.swr]         answer the slow reads stale-while-revalidate (swr.mjs). Default: on, and off under an
+ *                                  injected provider, where a test reads back what it just wrote
  * @param {object} [o.worktree]     a GUI session's worktree seams (tests): { git(cwd, args, o) } for every git it runs (a
  *                                  delay stands in for a slow checkout), { hooks(repo) } for cloud.mjs safeHooks
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {} } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads } = {}) {
   const wtGit = wtOpts.git || cleanGit;
   const wtHooks = wtOpts.hooks || safeHooks;
   const ghOpts = ghRun ? { run: ghRun } : {};
@@ -102,6 +108,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   const refreshMask = setInterval(() => { secrets.refresh().catch(() => null); }, 5000);
   refreshMask.unref?.();
   const send = (res, status, data) => sendJson(res, status, mask.deep(data));
+  // The slow reads (git, gh, the plan and claims scripts) answer at once with what they last said while one fresh read
+  // runs behind it (swr.mjs), so moving between screens never waits on them. Any write forgets them all.
+  const reads = createSwr((keepReads ?? !injected) ? {} : { freshMs: 0, keepMs: 0 });
   const sessions = new Map();
   // The SDK's supportedModels() rows, asked once by the first session whose query comes up (spec 54): which efforts
   // each model takes. Null until then; Settings and the badge offer all five meanwhile.
@@ -126,6 +135,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       onModels: noteModels,
       mask,
     });
+    // A question or a permission asked or settled here reaches every screen's top bar now (needsSoon), and the reads
+    // that show it are read again.
+    const set = s.hub.set;
+    s.hub.set = (key, value) => {
+      set(key, value);
+      if (key === 'asks' || key === 'permissions') { for (const k of ['inbox', 'sessions', 'needs']) reads.forget(k); needsSoon(); }
+    };
     sessions.set(id, s);
     return s;
   }
@@ -470,6 +486,37 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     return fleetRows(list, { ledgers, hosted, resumers, owner: repoMod.isOwner(repo) });
   }
 
+  /**
+   * GET /api/needs: who needs the owner now (shared/needs.mjs), without the slow git: only a fallen session the GUI
+   * started has its git read, to tell one that stopped with nothing behind it (a Clear, not a resume) from one with work.
+   */
+  async function needsNow() {
+    const rows = await sessionList();
+    const odd = rows.filter((r) => r.gui && r.state === 'fallen' && !r.hosted);
+    const ended = new Set(odd.length ? markEnded(await gitView.withGit(odd)).filter((r) => r.ended).map((r) => r.id) : []);
+    return { at: Date.now(), items: needsFrom(rows.map((r) => (ended.has(r.id) ? { ...r, ended: true } : r)), hostedLive()) };
+  }
+
+  // The `needs` event on every live channel: sent when a session asks or is answered, after a write, and every
+  // NEEDS_MS while a tab watches (a terminal session's ledger can fall over without this server hearing it).
+  let needsTimer = null;
+  let needsSent = '';
+  function needsSoon(ms = 150) {
+    if (needsTimer) return;
+    needsTimer = setTimeout(async () => {
+      needsTimer = null;
+      const hubs = [...[...sessions.values()].map((s) => s.hub), elsewhere];
+      try {
+        const v = await reads.get('needs', needsNow, { fresh: true });
+        const key = JSON.stringify(v.value.items);
+        if (key === needsSent) return;
+        needsSent = key;
+        for (const h of hubs) h.set('needs', v.value);
+      } catch { /* the next look sends it */ }
+    }, ms);
+    needsTimer.unref?.();
+  }
+
   /** GET /api/inbox: every session's questions, tagged by star, and the plan's. */
   async function inbox() {
     // A secret request carries its chunk and the names still missing; one whose names are all set has left (secrets.mjs).
@@ -571,12 +618,21 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const bad = guard(req, url);
     if (bad) return send(res, 403, { error: bad });
     const route = `${req.method} ${url.pathname}`;
+    // A write forgets every kept read, now and once it has answered (a read that ran across it is not kept). Drafts
+    // save as the person types and change nothing a read shows.
+    if (req.method !== 'GET' && url.pathname !== '/api/drafts') { reads.forget(); res.once('finish', () => { reads.forget(); needsSoon(); }); }
+    // `x-nexus-fresh: 1` waits for the fresh read; otherwise a kept answer comes at once, marked `x-nexus-stale: 1`.
+    const kept = async (key, fn) => {
+      const r = await reads.get(key, fn, { fresh: req.headers['x-nexus-fresh'] === '1' });
+      if (r.stale) res.setHeader('x-nexus-stale', '1');
+      return r.value;
+    };
     try {
       await secrets.refresh().catch(() => null); // a value set in a terminal since the last answer is masked in this one
       switch (route) {
         case 'GET /api/events': return (sessionOf(url.searchParams.get('session'))?.hub || elsewhere).attach(req, res);
         case 'GET /api/server': return send(res, 200, { nexus: true, pid: process.pid, repo, root: await primaryRoot(repo), home: home.id, sessions: sessions.size });
-        case 'GET /api/state': return send(res, 200, { info: await repoMod.repoInfo(repo), prefs, commands: repoMod.listCommands(repo), provider: provider.kind, permissionModes: PERMISSION_MODES });
+        case 'GET /api/state': return send(res, 200, { info: await kept('state', () => repoMod.repoInfo(repo)), prefs, commands: repoMod.listCommands(repo), provider: provider.kind, permissionModes: PERMISSION_MODES });
         case 'GET /api/preflight': return send(res, 200, await preflight(repo));
         case 'GET /api/prompts': return send(res, 200, { paste: ADOPT_PASTE, adopt: readPrompt('adopt.md'), pitch: readPrompt('pitch.md') });
         case 'POST /api/prefs': return send(res, 200, await savePrefs(await body(req)));
@@ -634,8 +690,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           await sendPrompt(prompt);
           return send(res, 200, { ok: true });
         }
-        case 'GET /api/sessions': return send(res, 200, markEnded(await gitView.withGit(await sessionList())));
-        case 'GET /api/inbox': return send(res, 200, await inbox());
+        case 'GET /api/sessions': return send(res, 200, await kept('sessions', async () => markEnded(await gitView.withGit(await sessionList()))));
+        case 'GET /api/inbox': return send(res, 200, await kept('inbox', inbox));
+        case 'GET /api/needs': return send(res, 200, await kept('needs', needsNow));
         // Plan answers kept as given (spec 53, A1; plan-answers.mjs). POST is the same as PUT.
         case 'GET /api/plan-answers': return send(res, 200, { answers: readPlanAnswers(repo, repoMod.durableQuestions(repo)) });
         case 'PUT /api/plan-answers':
@@ -657,14 +714,14 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           if (!b.drafts || typeof b.drafts !== 'object' || Array.isArray(b.drafts)) return send(res, 400, { error: 'drafts: { key: text | null }' });
           return send(res, 200, { ok: true, drafts: writeDrafts(repo, b.drafts) });
         }
-        case 'GET /api/git': return send(res, 200, await gitView.repoGit());
+        case 'GET /api/git': return send(res, 200, await kept('git', () => gitView.repoGit()));
         case 'GET /api/git/tidy': { const r = await gitView.tidyDry(); return send(res, r.available ? 200 : 404, r); }
         case 'POST /api/git/fetch': { await body(req); const r = await gitView.fetchNow(); return send(res, r.ok ? 200 : 502, r); }
         case 'POST /api/announce': { const b = await body(req); const r = await steering.announce(b.text); return send(res, r.status, r); }
-        case 'GET /api/claims': return send(res, 200, await listClaims(repo, await claimsCtx(url.searchParams.get('session'))));
-        case 'GET /api/plan': return send(res, 200, await readPlan(repo, { mark: (url.searchParams.get('mark') || '').split(',').filter(Boolean) }));
+        case 'GET /api/claims': { const who = url.searchParams.get('session') || ''; return send(res, 200, await kept(`claims:${who}`, async () => listClaims(repo, await claimsCtx(who)))); }
+        case 'GET /api/plan': { const mark = url.searchParams.get('mark') || ''; return send(res, 200, await kept(`plan:${mark}`, () => readPlan(repo, { mark: mark.split(',').filter(Boolean) }))); }
         case 'POST /api/plan/reorder': { const b = await body(req); return send(res, 200, await landReorder(repo, b, { owner: (await local.localView(repo)).effective, gh: reorderGh })); }
-        case 'GET /api/summaries': return send(res, 200, await summaries.get());
+        case 'GET /api/summaries': return send(res, 200, await kept('summaries', () => summaries.get()));
         // Onboarding's Plot step (spec 47, A1; explode.mjs): split thoughts into ideas (no write), and plot the kept ones.
         case 'POST /api/explode': { const b = await body(req); const { status, ...r } = await explode({ repo, text: b.text, team: b.team, query: explodeQuery ?? summaryQuery ?? (injected ? false : undefined) }); return send(res, status, r); }
         case 'POST /api/plot': { const { status, ...r } = await plotKept(await body(req)); return send(res, status, r); }
@@ -688,7 +745,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/design/handoff': { const r = await designHandoff(await body(req)); return send(res, r.status, r); }
         case 'GET /api/cloud': { const r = await cloudNow(); return send(res, r.ok ? 200 : r.status || 502, r); }
         // The vault (spec 42, A13; secrets.mjs): names and status out, a value in only through these POST bodies.
-        case 'GET /api/secrets': { const { status, ...r } = await secrets.status(); return send(res, status, r); }
+        case 'GET /api/secrets': { const { status, ...r } = await kept('secrets', () => secrets.status()); return send(res, status, r); }
         case 'GET /api/secrets/audit': { const { status, ...r } = await secrets.audit(); return send(res, status, r); }
         case 'POST /api/secrets/import': { const { status, ...r } = await secrets.importEnv(await body(req)); return send(res, status, r); }
         case 'POST /api/secrets/manifest': { const { status, ...r } = await secrets.startManifest(await body(req)); return send(res, status, r); }
@@ -811,6 +868,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     }
   }, gh.POLL_MS) : null;
 
+  // The top bar's needs, looked at again while a tab watches (needsSoon), and once now so the first hello carries them.
+  const needsLook = setInterval(() => {
+    if ([...sessions.values()].some((s) => s.hub.clients) || elsewhere.clients) needsSoon(0);
+  }, NEEDS_MS);
+  needsLook.unref?.();
+  needsSoon(0);
+
   return {
     url: `http://127.0.0.1:${actual}/?t=${encodeURIComponent(token)}`,
     port: actual,
@@ -823,6 +887,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     async close() {
       if (poll) clearInterval(poll);
       clearInterval(refreshMask);
+      clearInterval(needsLook);
+      clearTimeout(needsTimer);
       const root = await primaryRoot(repo);
       for (const s of sessions.values()) {
         await s.close();

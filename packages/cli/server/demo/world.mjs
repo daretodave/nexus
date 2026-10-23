@@ -33,6 +33,7 @@ import { createHub } from '../hub.mjs';
 import { MAIN } from '../../shared/beats.mjs';
 import { boardFrom } from '../plan.mjs';
 import { inboxItems } from '../fleet-home.mjs';
+import { needsFrom } from '../../shared/needs.mjs';
 
 const ACTIONS = ['beat', 'tx', 'status', 'row', 'ledger', 'land', 'chunk', 'claim', 'release', 'gate'];
 
@@ -79,6 +80,7 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
   let timers = [];
   let log = [];
   let started = false;
+  let sentNeeds = '';
 
   const iso = (ms) => new Date(ms).toISOString();
   const ctx = () => ({ now: t0, at: (ms) => iso(t0 + ms), ago: (min) => iso(t0 - min * 60000) });
@@ -303,6 +305,19 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
       now: now(),
     }),
     asks: () => sessions.flatMap((s) => [...s.asks.values()]),
+    /** GET /api/needs, as the live server answers it (shared/needs.mjs). */
+    needs: () => ({
+      at: now(),
+      items: needsFrom(sessions.map(row), sessions.filter((s) => s.kind !== 'terminal').map((s) => ({ id: s.id, claude: s.ledger.claude || null, name: s.name, asks: [...s.asks.values()], permissions: [] }))),
+    }),
+    /** The `needs` event on every channel, when what the top bar shows changed since it was last sent. */
+    pushNeeds() {
+      const v = api.needs();
+      const key = JSON.stringify(v.items);
+      if (key === sentNeeds) return;
+      sentNeeds = key;
+      for (const h of [...hubs.values(), quiet]) h.set('needs', v);
+    },
     plan: () => boardFrom(clone(fx.plan.order), clone(fx.plan.progress), { repo: fx.repo.name }),
     claims: () => ({ available: true, rows: clone(fx.claims || []), me: { who: fx.repo.owner || 'owner', owner: !!fx.owner } }),
     durable: () => clone(fx.durable || []),
