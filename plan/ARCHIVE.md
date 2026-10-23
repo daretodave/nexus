@@ -188,3 +188,4 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 53 · spec complete: plan answers are kept on the server, take the defaults their questions name, and go back to the session that asked with one Continue (issues #81, #82, #83) · e060151..be9e2d9
 - 2026-10-22 · 54.1 · The model and effort are shown, chosen and switched · 6097d2fb..a4383ab0
 - 2026-10-22 · 54 · spec complete: every session shows its model and effort, Settings chooses both for new sessions, the cockpit badge switches a running session, and the helpers' model is named · 59b04d6..54.1
+- 2026-10-23 · 39.7 · Six undocumented placeholders indexed in templates/README.md · 4d27e5de..4d27e5de
