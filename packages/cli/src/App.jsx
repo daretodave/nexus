@@ -16,6 +16,7 @@ const SCREENS = {
   Onboarding: () => import('./screens/Onboarding.jsx'),
   HeadsDown: () => import('./screens/HeadsDown.jsx'),
   Inbox: () => import('./screens/Inbox.jsx'),
+  Grill: () => import('./screens/Grill.jsx'),
   Board: () => import('./screens/Board.jsx'),
   CloudLoop: () => import('./screens/CloudLoop.jsx'),
   Settings: () => import('./screens/Settings.jsx'),
@@ -29,6 +30,7 @@ const Cockpit = lazy(SCREENS.Cockpit);
 const Onboarding = lazy(SCREENS.Onboarding);
 const HeadsDown = lazy(SCREENS.HeadsDown);
 const Inbox = lazy(SCREENS.Inbox);
+const Grill = lazy(SCREENS.Grill);
 const Board = lazy(SCREENS.Board);
 const CloudLoop = lazy(SCREENS.CloudLoop);
 const Settings = lazy(SCREENS.Settings);
@@ -96,6 +98,7 @@ function Shell() {
         <Route path="/onboarding/:step" element={<Onboarding />} />
         <Route path="/heads-down" element={<HeadsDown />} />
         <Route path="/inbox" element={<Inbox />} />
+        <Route path="/inbox/grill" element={<Grill />} />
         <Route path="/board" element={<Board />} />
         <Route path="/cloud" element={<CloudLoop />} />
         <Route path="/settings" element={<Settings />} />
