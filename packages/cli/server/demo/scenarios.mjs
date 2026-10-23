@@ -16,6 +16,8 @@
 //   plain-folder    a folder with no git: Detect makes it a repo a click per step, a confirm before GitHub
 //   cloud-token     a GitHub repo with the loop and no sign-in: the setup-token walkthrough, then the paste
 //   stack           Set up a stack in the Vault: Cloudflare, Supabase and Vercel, card by card, to a live domain
+//   change-feed     the change feed on the top bar: vega pushes the home background change, it goes "not deployed
+//                   yet" -> Deploying -> Deployed; then the owner pushes from a terminal and that one starts deploying
 //
 // The script format is server/demo/world.mjs's. Times are ms from the start (or from the gate that holds them).
 // A scenario may carry a `shot` for the recorder (scripts/record.mjs): the screen it opens on (`fleet`, or a
@@ -603,6 +605,64 @@ export const stackHandoff = {
   ],
 };
 
+// ---- the change feed ---------------------------------------------------------------------
+
+/** A push on the change feed, as server/feed.mjs makes it. */
+function push(o) {
+  return {
+    id: `push:${o.to}`, kind: 'push', branch: 'main', from: o.from || null, to: o.to, sha: o.to.slice(0, 7),
+    count: o.commits.length, commits: o.commits.map(([sha, subject, author]) => ({ sha, subject, author: author || OWNER })),
+    paths: o.paths || [], morePaths: 0, who: o.who, line: o.line, ai: o.ai ?? true, deploy: o.deploy ?? null,
+    ...(o.at ? { at: o.at } : {}),
+  };
+}
+const PROD = 'https://fieldday.example.com';
+
+export const changeFeed = {
+  name: 'change-feed',
+  title: 'Change feed',
+  summary: 'Pushes said plainly on the top bar: vega pushes the home background change and it deploys; then the owner pushes from a terminal and that one starts deploying.',
+  home: 'vega',
+  shot: { start: 'fleet', moves: [{ at: 7600, click: 'button.feed-tick', what: 'the change feed' }] },
+  fixtures: (ctx) => {
+    const fx = base(ctx);
+    fx.feed = [
+      push({
+        at: ctx.ago(26 * 60), from: '1d0c3aa0', to: '7ab31f2e9d', line: 'Coaches can now export a season to PDF',
+        commits: [['7ab31f2', 'feat(export): season PDF'], ['5c2e910', 'test: season PDF snapshots']],
+        paths: ['src/export/pdf.ts', 'src/export/pdf-table.ts', 'test/export/pdf.test.ts'],
+        who: { name: 'deneb', kind: 'local' }, deploy: { state: 'deployed', env: 'Production', url: PROD },
+      }),
+      push({
+        at: ctx.ago(31), from: '7ab31f2e9d', to: '9c1e2b7d41', line: 'League tables now give 3 points for a win and 1 for a draw',
+        commits: [['9c1e2b7', 'feat: points per match']], paths: ['src/standings/points.ts', 'test/standings/points.test.ts'],
+        who: { name: 'vega', kind: 'local' }, deploy: { state: 'deployed', env: 'Production', url: PROD },
+      }),
+    ];
+    return fx;
+  },
+  script: [
+    ...breathing(9000),
+    ...at(1500, 'vega',
+      { feed: push({
+        from: '9c1e2b7d41', to: '4be81d0c77', line: 'Added blue to the home page background', ai: true,
+        commits: [['4be81d0', 'style(home): blue background behind the fixtures list']], paths: ['src/home/home.css', 'src/theme/tokens.css'],
+        who: { name: 'vega', kind: 'local', session: 'demo-vega' }, deploy: { state: 'waiting', env: '', url: '' },
+      }) },
+      { row: { event: { text: 'pushed 4be81d0 to main' } } }),
+    ...at(3600, 'vega', { feed: { id: 'push:4be81d0c77', deploy: { state: 'deploying', env: 'Production', url: '' } } }),
+    ...at(6400, 'vega', { feed: { id: 'push:4be81d0c77', deploy: { state: 'deployed', env: 'Production', url: PROD } } }),
+    ...at(8200, 'altair',
+      { feed: push({
+        from: '4be81d0c77', to: 'e5f0a92b13', line: 'Fixed referees being booked for two matches at once', ai: true,
+        commits: [['e5f0a92', 'fix(referees): no double booking on the same slot'], ['b20c4d1', 'test: double booking']],
+        paths: ['src/referees/availability.ts', 'test/referees/availability.test.ts'],
+        who: { name: OWNER, kind: 'author' }, deploy: { state: 'waiting', env: '', url: '' },
+      }) }),
+    ...at(9800, 'altair', { feed: { id: 'push:e5f0a92b13', deploy: { state: 'deploying', env: 'Production', url: '' } } }),
+  ],
+};
+
 export const SCENARIOS = Object.freeze({
   [fleetToTug.name]: fleetToTug,
   [bugToArchive.name]: bugToArchive,
@@ -613,6 +673,7 @@ export const SCENARIOS = Object.freeze({
   [plainFolder.name]: plainFolder,
   [cloudToken.name]: cloudToken,
   [stackHandoff.name]: stackHandoff,
+  [changeFeed.name]: changeFeed,
 });
 
 export const scenarioNames = () => Object.keys(SCENARIOS);

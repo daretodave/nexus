@@ -169,3 +169,5 @@ export const useSecrets = (poll, { skip } = {}) => useResource('/api/secrets', {
 export const useNeeds = (poll = 15000) => useResource('/api/needs', { poll });
 /** GET /api/stack (served; server/stack.mjs) -> { available, vaultState, owner, picked, inputs, apps, app, fresh, targets: [{ id, label, on, locked?, disabled?, why }], appNote, names: { NAME: { service, key, vault, app?, workspaceJson?, drift } }, values: { 'svc.key': { names, saved, notes? } }, checks, actions, ticks, vercelLink? }: names and status, never a value. View model: screens/vault/stack/model.js. */
 export const useStack = (poll, { skip } = {}) => useResource('/api/stack', { poll, skip });
+/** GET /api/feed (served) -> { on, at, events }: the change feed, newest first (server/feed.mjs). The `feed` event on every live channel carries the same; this is the fallback look. */
+export const useFeed = (poll = 60000, skip = false) => useResource('/api/feed?limit=40', { poll, skip });

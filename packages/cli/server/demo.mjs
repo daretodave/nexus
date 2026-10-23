@@ -59,7 +59,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   if (!sc) throw Object.assign(new Error(`no demo scenario "${scenario}" (try: ${scenarioNames().join(', ')})`), { code: 'NO_SCENARIO' });
   const clk = clock || realClock({ speed });
   const world = createWorld(sc, { clock: clk, hub });
-  let prefs = { onboarded: true, aiSummaries: true, theme: 'night', ...(sc.prefs || {}) };
+  let prefs = { onboarded: true, aiSummaries: true, changeFeed: true, theme: 'night', ...(sc.prefs || {}) };
   // A folder that is not a repo yet, and the cloud loop's sign-in (demo/repo-start.mjs): held outside the world, so
   // --loop's restarts keep the person's clicks; POST /api/demo/restart resets it.
   const stage = createRepoStage(sc.name, { clock: clk });
@@ -199,6 +199,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         case 'GET /api/sessions': return send(res, 200, world.rows().map((r) => (r.name === sc.home ? { ...r, home: true } : r)));
         case 'GET /api/inbox': return send(res, 200, inboxWithSecret());
         case 'GET /api/needs': return send(res, 200, world.needs());
+        case 'GET /api/feed': return send(res, 200, prefs.changeFeed === false ? { on: false, at: Date.now(), events: [] } : world.feed());
         case 'GET /api/oversight': { const row = vault.mark(DEMO_REQUEST.durable); return send(res, 200, { live: world.asks(), durable: [...world.durable(), ...(row && local?.effective !== false ? [row] : [])] }); }
         case 'GET /api/plan': return send(res, 200, planWithSecret());
         case 'GET /api/secrets': { const { status, ...r } = vault.status(); return send(res, 200, r); }
