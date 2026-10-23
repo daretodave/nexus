@@ -225,3 +225,21 @@ test('output: escapes and reminders dropped, numbered lines split, list lines co
   const t = listTokens('Found 2 files\nsrc/a.js\nC:\\r\\b.ts:3:hit');
   assert.deepEqual(t.filter((x) => x.t !== 'ws').map((x) => x.t), ['comment', 'path', 'path', 'punct', 'num', 'punct', 'text']);
 });
+
+test('an open row lays the fuller call over its preview, part by part; a row from the transcript says when there is more', async () => {
+  const { withDetail, ToolDetail } = await import('../src/ui/tool-detail.jsx');
+  const { convoItems } = await import('../src/screens/cockpit/model.js');
+  const row = { input: { command: 'x' }, clipped: ['command'], output: 'head ... tail' };
+  assert.deepEqual(withDetail(row, null), { input: { command: 'x' }, clipped: ['command'], output: 'head ... tail' }, 'nothing fetched: the preview');
+  assert.deepEqual(withDetail(row, { input: { command: 'xyz' }, clipped: null, output: null }), { input: { command: 'xyz' }, clipped: null, output: 'head ... tail' }, 'the input from the store, its own clipped, the preview output kept');
+  assert.deepEqual(withDetail(row, { input: null, clipped: null, output: 'all of it' }), { input: { command: 'x' }, clipped: ['command'], output: 'all of it' });
+  const tx = [
+    { kind: 'tool', id: 'T', agent: 'main', name: 'Edit', summary: 'a.js', input: { old_string: 'a' }, clipped: ['old_string'], more: true },
+    { kind: 'tool-done', id: 'T', agent: 'main', ms: 5, ok: true, text: 'ok', more: true },
+    { kind: 'tool', id: 'U', agent: 'main', name: 'Bash', summary: 'ls' },
+  ];
+  const [m] = convoItems(tx, null);
+  assert.deepEqual(m.tools.map((t) => t.more), [true, false]);
+  const busy = html(createElement(ToolDetail, { tool: 'Bash', args: 'ls', input: { command: 'ls -la', description: 'list' }, loading: true }));
+  assert.match(busy, /<div class="tool-detail" aria-busy="true"><span class="tool-loading" role="status">/);
+});

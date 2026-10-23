@@ -635,6 +635,12 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           return send(res, 200, { ok: true });
         }
         case 'GET /api/sessions': return send(res, 200, markEnded(await gitView.withGit(await sessionList())));
+        // An open tool row's whole call (normalize.mjs createToolStore): the transcript carries only a preview.
+        case 'GET /api/tool': {
+          const s = sessionOf(url.searchParams.get('session'));
+          const d = s?.toolDetail?.(String(url.searchParams.get('id') || ''));
+          return d ? send(res, 200, d) : send(res, 404, { error: 'that call is no longer kept; its preview stands' });
+        }
         case 'GET /api/inbox': return send(res, 200, await inbox());
         // Plan answers kept as given (spec 53, A1; plan-answers.mjs). POST is the same as PUT.
         case 'GET /api/plan-answers': return send(res, 200, { answers: readPlanAnswers(repo, repoMod.durableQuestions(repo)) });

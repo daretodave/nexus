@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { txFromMessage, newTxContext, friendlyError, summarize, lines, lineDiff, diffOf, clipInput, clipOutput } from '../server/normalize.mjs';
+import { txFromMessage, newTxContext, friendlyError, summarize, lines, lineDiff, diffOf, clipInput, clipOutput, createToolStore, PREVIEW, DETAIL } from '../server/normalize.mjs';
 
 test('streamed text is not repeated by the full assistant message', () => {
   const ctx = newTxContext();
@@ -103,7 +103,9 @@ test('a clipped input says which strings were cut, so an edit cut short is never
   assert.ok(!cut.includes('edits/0/old_string') && !cut.includes('file_path'), 'the ones that fit are not listed');
   assert.match(shown.edits[1].new_string, /more characters\)$/);
   const [row] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'E', name: 'MultiEdit', input: { file_path: 'a.js', edits } }] } }, newTxContext());
-  assert.deepEqual(row.clipped, cut, 'the call carries the list');
+  const preview = [];
+  clipInput({ file_path: 'a.js', edits }, 'a.js', preview, PREVIEW);
+  assert.deepEqual(row.clipped, preview, 'the call carries the list for its preview');
   const [small] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'S', name: 'Edit', input: { file_path: 'a.js', old_string: 'a', new_string: 'b' } }] } }, newTxContext());
   assert.equal('clipped' in small, false, 'nothing cut, no list');
 });
@@ -119,4 +121,46 @@ test('a successful result becomes a tool-output item, clipped to its head and ta
   assert.ok(out.endsWith('row 2999'));
   assert.match(out, /\.\.\. \(\d+ more lines\) \.\.\./);
   assert.equal(clipOutput('short'), 'short');
+});
+
+test('the transcript keeps a preview of each call; the tool store keeps the fuller call for the open row', () => {
+  const tools = createToolStore();
+  const ctx = newTxContext({ now: () => 1000, tools });
+  const big = { file_path: 'src/a.js', old_string: 'o\n'.repeat(4000), new_string: 'n\n'.repeat(4000) };
+  const [call] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'T1', name: 'Edit', input: big }] } }, ctx);
+  assert.equal(call.more, true, 'the preview cut something: the row can ask for more');
+  assert.ok(JSON.stringify(call).length < 2600, 'the transcript item stays small');
+  assert.ok(call.clipped.includes('old_string'));
+  const kept = tools.get('T1');
+  assert.deepEqual(kept.input, big, 'the store has the whole edit');
+  assert.equal(kept.clipped, null, 'nothing cut at the store size');
+  const long = Array.from({ length: 2000 }, (_, i) => `row ${i}`).join('\n');
+  const [done] = txFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'T1', content: long }] } }, ctx);
+  assert.equal(done.kind, 'tool-done');
+  assert.equal(done.more, true);
+  assert.ok(done.text.length < PREVIEW.out + 100, 'the result rides as a preview');
+  assert.equal(tools.get('T1').output, long, 'the store has the whole result');
+  assert.deepEqual(tools.get('T1').input, big, 'and still the call');
+
+  const [small] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'T2', name: 'Edit', input: { file_path: 'a', old_string: 'a', new_string: 'b' } }] } }, ctx);
+  assert.equal('more' in small, false, 'a call that fits has nothing more');
+  assert.equal(tools.get('T2'), null, 'and is not stored twice');
+  const [plain] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'T3', name: 'Edit', input: big }] } }, newTxContext());
+  assert.equal('more' in plain, false, 'no store, nothing promised');
+});
+
+test('the tool store is bounded: past its size the oldest calls go first', () => {
+  const tools = createToolStore({ maxChars: 3000 });
+  for (let i = 0; i < 5; i += 1) tools.set(`T${i}`, { input: { s: 'x'.repeat(1000) } });
+  assert.ok(tools.size <= 3000, `holds ${tools.size}`);
+  assert.equal(tools.get('T0'), null, 'the oldest went');
+  assert.ok(tools.get('T4'), 'the newest stays');
+  tools.output('T4', 'y'.repeat(10));
+  assert.equal(tools.get('T4').output, 'y'.repeat(10));
+  const huge = createToolStore({ maxChars: 10 });
+  huge.set('H', { input: { s: 'z'.repeat(100) } });
+  assert.ok(huge.get('H'), 'a lone call bigger than the bound is still kept until the next comes');
+  tools.clear();
+  assert.equal(tools.count, 0);
+  assert.ok(DETAIL.str > PREVIEW.str * 10);
 });

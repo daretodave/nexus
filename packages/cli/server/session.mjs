@@ -17,7 +17,7 @@
 // carries both as `model` / `effort`; a switch from the cockpit is `modelPending` until the next init confirms it.
 import { createHub } from './hub.mjs';
 import { createProvider } from './provider.mjs';
-import { txFromMessage, newTxContext, clipInput } from './normalize.mjs';
+import { txFromMessage, newTxContext, clipInput, createToolStore, DETAIL } from './normalize.mjs';
 import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
 import { createTugLog } from './tugs.mjs';
 import { ASK_DEFAULT_MS, askDefaults, completeAnswers } from '../shared/times.mjs';
@@ -48,7 +48,9 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   const hub = createHub({ mask });
   const asks = new Map();
   const permissions = new Map();
-  let txCtx = newTxContext({ now });
+  // Each call's fuller input and output, for the open tool row (GET /api/tool): the transcript keeps a preview.
+  const tools = createToolStore();
+  let txCtx = newTxContext({ now, tools });
   let beatCtx = newBeatContext();
   let busy = false;
   let claude = null;
@@ -126,7 +128,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
 
   const onPermission = ({ id: reqId, agent, tool, input, suggestions, reason, signal }) => new Promise((resolve) => {
     const clipped = [];
-    const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), input: clipInput(input, '', clipped), clipped, args: toolArg(tool, input).slice(0, 4000), title: toolTitle(tool, input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
+    const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), input: clipInput(input, '', clipped, DETAIL), clipped, args: toolArg(tool, input).slice(0, 4000), title: toolTitle(tool, input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
     permissions.set(reqId, { view, resolve });
     if (!agent || agent === MAIN) hub.beat({ k: 'agent', p: 'wait', id: MAIN });
     publishPerms();
@@ -253,7 +255,8 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
     stop: () => provider?.stop(),
     async fresh() {
       await provider?.fresh();
-      txCtx = newTxContext({ now });
+      tools.clear();
+      txCtx = newTxContext({ now, tools });
       beatCtx = newBeatContext();
       hub.reset();
     },
@@ -284,6 +287,8 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
       entry.resolve(decision);
       return true;
     },
+    /** A call's fuller input and output (normalize.mjs createToolStore), or null when the store no longer has it. */
+    toolDetail: (toolId) => tools.get(toolId),
     /** Does `key` name this session: its id, its Claude Code session id, or its star? */
     is(key) {
       return !!key && (key === id || key === claude || (!!name && key === name));

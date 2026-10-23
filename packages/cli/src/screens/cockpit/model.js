@@ -303,6 +303,8 @@ export function ctxLayers({ ledger, owner, phase, stage, info, sessionName, now 
  * (clipped by the server; a `tool-output` carries it when there was no clock),
  * and an Edit or Write carries its diffstat and its input (the old and new text,
  * with `clipped` naming any string cut short). An item without them shows none.
+ * Input and output are previews; `more` says the server keeps the fuller call
+ * (GET /api/tool), which the row fetches when it opens.
  */
 export function convoItems(transcript, stage, limit = 40) {
   const out = [];
@@ -322,16 +324,16 @@ export function convoItems(transcript, stage, limit = 40) {
       m.tools.push({
         id: t.id, tool: t.name, args: t.summary || '', failed: failed.has(t.id), at: t.at ?? null,
         diff: t.diff || null, note: SPAWN.has(t.name) ? 'delegated' : '', ms: null, done: false,
-        input: t.input || null, clipped: t.clipped || null, output: null,
+        input: t.input || null, clipped: t.clipped || null, output: null, more: !!t.more,
       });
       continue;
     }
     if (t.kind === 'tool-done') {
-      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) { tool.ms = t.ms ?? null; tool.done = true; if (t.ok === false) tool.failed = true; if (t.text) tool.output = t.text; }
+      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) { tool.ms = t.ms ?? null; tool.done = true; if (t.ok === false) tool.failed = true; if (t.text) tool.output = t.text; if (t.more) tool.more = true; }
       continue;
     }
     if (t.kind === 'tool-output') {
-      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) tool.output = t.text;
+      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) { tool.output = t.text; if (t.more) tool.more = true; }
       continue;
     }
     if (t.kind === 'tool-error') {

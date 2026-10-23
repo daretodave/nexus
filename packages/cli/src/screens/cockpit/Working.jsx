@@ -5,7 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Icon, LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph, toolNameWidth } from '../../ui/index.js';
 import { PlotCard } from '../../ui/plot-card.jsx';
 import { PermissionCard } from '../../ui/permission-card.jsx';
-import { ToolDetail } from '../../ui/tool-detail.jsx';
+import { ToolDetail, withDetail } from '../../ui/tool-detail.jsx';
 import { extractPlotReport } from '../../ui/plot-report.js';
 import { server, TOKEN } from '../../data/client.js';
 import { draftFailed, draftSending, draftSent, useDrafts } from '../../data/drafts.js';
@@ -22,12 +22,31 @@ import '../../styles/permission-card.css';
 const uploadSrcs = (images) => (images || []).map((i) => ({ name: i.name, src: i.url ? `${i.url}?t=${encodeURIComponent(TOKEN)}` : null }));
 
 /**
+ * The fuller call for an open row whose transcript item is a preview (`more`): fetched once when it opens, and once
+ * more if its result arrives after that. Until it comes (or if the server no longer keeps it) the preview shows.
+ */
+function useToolDetail(session, t, open) {
+  const [got, setGot] = useState(null); // { done, data }
+  const want = open && t.more && t.id && (!got || (t.done && !got.done));
+  useEffect(() => {
+    if (!want) return undefined;
+    let live = true;
+    const done = !!t.done;
+    server.toolDetail(session, t.id).then((data) => { if (live) setGot({ done, data }); }, () => { if (live) setGot({ done: true, data: null }); });
+    return () => { live = false; };
+  }, [want, session, t.id, t.done]);
+  return { detail: got?.data || null, loading: !!want };
+}
+
+/**
  * A .log row as the board draws it, with the board's tool glyph; opens to show the full call (ui/tool-detail.jsx:
  * the command whole, an edit's diff, the output). Its diffstat comes from the call's own input, its duration from its
  * result (a running call counts up from when it went out); either one unknown stays blank.
  */
-function ToolRow({ t, running, now }) {
+function ToolRow({ t, running, now, session }) {
   const [open, setOpen] = useState(false);
+  const { detail, loading } = useToolDetail(session, t, open);
+  const full = withDetail(t, detail);
   const d = t.diff;
   const time = running ? (t.at != null && now ? mmss(now - t.at) : '') : toolDur(t.ms);
   return (
@@ -43,7 +62,7 @@ function ToolRow({ t, running, now }) {
       )}
       open={open} onToggle={() => setOpen((o) => !o)}
     >
-      <ToolDetail tool={t.tool} args={t.args} input={t.input} clipped={t.clipped} output={t.output} error={t.error} />
+      <ToolDetail tool={t.tool} args={t.args} input={full.input} clipped={full.clipped} output={full.output} error={t.error} loading={loading} />
     </LogRow>
   );
 }
@@ -69,7 +88,7 @@ function AgentText({ text, onSend }) {
   );
 }
 
-function AgentMsg({ m, state, runningTool, now, onSend }) {
+function AgentMsg({ m, state, runningTool, now, onSend, session }) {
   return (
     <div className="msg">
       <Orb state={m.error ? 'failed' : state} size="s" style={{ marginTop: 1 }} />
@@ -78,7 +97,7 @@ function AgentMsg({ m, state, runningTool, now, onSend }) {
         {m.text ? <AgentText text={m.text} onSend={onSend} /> : null}
         {m.tools.length ? (
           <div className="msg-tools">
-            {m.tools.map((t, i) => <ToolRow key={t.id || i} t={t} running={runningTool === t} now={now} />)}
+            {m.tools.map((t, i) => <ToolRow key={t.id || i} t={t} running={runningTool === t} now={now} session={session} />)}
           </div>
         ) : null}
       </div>
@@ -227,7 +246,7 @@ function useStick() {
 }
 
 /** onSend(line): the cockpit's send for one exact line (a /plot card's action); resolves true when it went. */
-export default function Working({ live, pinned, onSend }) {
+export default function Working({ live, pinned, onSend, session }) {
   const { stage, transcript, asks, permissions, status } = live;
   const items = convoItems(transcript, stage);
   const busy = status?.state === 'running';
@@ -252,7 +271,7 @@ export default function Working({ live, pinned, onSend }) {
       <div className="convo is-scroll" aria-live="polite" ref={scroller.ref} onScroll={scroller.onScroll} style={{ '--log-tool': toolW }}>
         {items.map((m) => (m.you
           ? <MsgYou key={m.key} time={m.time || ''} text={m.text} images={uploadSrcs(m.images)} files={m.files} pinned={m.pinned || (!!pinned && m.text?.trim().toLowerCase() === pinned.trim().toLowerCase())} />
-          : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} onSend={onSend} />))}
+          : <AgentMsg key={m.key} m={m} state={agentState(stage.agents?.[m.agent]) || 'idle'} runningTool={runningTool} now={now} onSend={onSend} session={session} />))}
         {asks.map((a) => <AskTugs key={a.id} ask={a} who={nameOf(a.agent)} />)}
         {permissions.map((p) => <PermissionTug key={p.id} req={p} who={nameOf(p.agent)} />)}
       </div>

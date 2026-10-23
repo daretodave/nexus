@@ -284,7 +284,7 @@ export default function Cockpit() {
       />
     );
   } else {
-    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} pinned={ledger?.pinned?.text} onSend={(text) => send(text, [], { line: true })} /> : (
+    left = live.transcript.length || live.asks.length || live.permissions.length ? <Working live={live} session={id} pinned={ledger?.pinned?.text} onSend={(text) => send(text, [], { line: true })} /> : (
       <div className="convo" aria-live="polite">
         {formingNow
           ? <Empty sky="quiet" title={formSay.title} body={form.state === 'failed' ? `${session.name} has no worktree yet: ${formSay.sub}. Retry on the stage.` : `${session.name} starts once its worktree is ready. What it says and does shows up here.`} />
