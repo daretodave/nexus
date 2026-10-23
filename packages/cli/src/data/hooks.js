@@ -167,3 +167,5 @@ export const useSecrets = (poll, { skip } = {}) => useResource('/api/secrets', {
 
 /** GET /api/needs (served) -> { at, items }: who needs the owner now, one row per session (shared/needs.mjs). The same answer rides the `needs` event on every live channel; this is the fallback look. */
 export const useNeeds = (poll = 15000) => useResource('/api/needs', { poll });
+/** GET /api/feed (served) -> { on, at, events }: the change feed, newest first (server/feed.mjs). The `feed` event on every live channel carries the same; this is the fallback look. */
+export const useFeed = (poll = 60000, skip = false) => useResource('/api/feed?limit=40', { poll, skip });

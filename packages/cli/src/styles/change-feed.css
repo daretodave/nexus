@@ -1,0 +1,86 @@
+/* The change feed (src/ui/change-feed.jsx): a quiet ticker on the top bar and a small modal. Theme tokens only, so
+   day and night both hold. The ticker gives its room up first: it shrinks before the needs chips do, and folds away
+   on a narrow bar. Deploy dots: waiting is ash, deploying cyan and breathing, deployed green, failed red. */
+
+.feed-tick {
+  flex: 1 1 150px; max-width: 420px; min-width: 0; display: inline-flex; align-items: center; gap: 10px; height: 30px; padding: 0 12px 0 10px;
+  border: 0; border-radius: var(--r-full, 999px); background: color-mix(in oklab, var(--text) 5%, transparent); color: var(--text-2);
+  box-shadow: inset 0 0 0 1px var(--line); font: inherit; font-size: 13px; line-height: 18px; text-align: left; cursor: pointer;
+  transition: background var(--dur-snap) var(--ease-snap), color var(--dur-snap) var(--ease-snap);
+}
+.feed-tick:hover { background: color-mix(in oklab, var(--text) 9%, transparent); color: var(--text); }
+.feed-tick:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.feed-tick-win { position: relative; flex: 1; min-width: 0; height: 18px; overflow: hidden; }
+.feed-tick-row { position: absolute; inset: 0; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.feed-tick-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.feed-tick-ago { flex: none; font-size: 12px; color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.feed-tick-row.is-in { animation: feed-in 480ms var(--ease-settle) both; }
+.feed-tick-row.is-out { animation: feed-out 480ms var(--ease-settle) both; }
+@keyframes feed-in { from { transform: translateY(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes feed-out { from { transform: none; opacity: 1; } to { transform: translateY(-100%); opacity: 0; } }
+
+/* ---- the deploy dot ---- */
+.feed-dot { position: relative; width: 7px; height: 7px; flex: none; border-radius: 50%; --tone: var(--text-3); background: var(--tone); }
+.feed-dot.is-plain { --tone: var(--accent); opacity: .7; }
+.feed-dot.is-waiting { --tone: var(--st-fallen); background: transparent; box-shadow: inset 0 0 0 1.5px var(--tone); }
+.feed-dot.is-deploying { --tone: var(--st-tool); }
+.feed-dot.is-deploying::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--tone); animation: nx-ripple 2.2s var(--ease-breathe) infinite; }
+.feed-dot.is-deployed { --tone: var(--st-done); }
+.feed-dot.is-failed { --tone: var(--st-failed); }
+
+/* ---- the modal ---- */
+.feed-scrim {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: 72px 16px 24px;
+  background: color-mix(in oklab, var(--bg) 55%, transparent); -webkit-backdrop-filter: var(--blur-1); backdrop-filter: var(--blur-1);
+  animation: feed-fade 160ms var(--ease-settle) both;
+}
+.feed-modal {
+  width: 100%; max-width: 560px; max-height: min(640px, calc(100vh - 96px)); display: flex; flex-direction: column;
+  border-radius: 16px; background: var(--overlay); -webkit-backdrop-filter: var(--blur-2); backdrop-filter: var(--blur-2);
+  box-shadow: var(--e-3), inset 0 0 0 1px var(--line); color: var(--text);
+  animation: feed-rise 220ms var(--ease-settle) both;
+}
+@keyframes feed-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes feed-rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.feed-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 18px 12px 22px; border-bottom: 1px solid var(--line); }
+.feed-title { margin: 0; font-family: var(--font-display); font-size: 17px; line-height: 22px; font-weight: 600; }
+.feed-sub { margin: 2px 0 0; font-size: 13px; line-height: 18px; color: var(--text-2); }
+.feed-body { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 22px 14px; }
+.feed-day-h { position: sticky; top: 0; z-index: 1; margin: 0; padding: 12px 0 6px; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); background: var(--overlay); }
+.feed-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.feed-row { display: grid; grid-template-columns: 7px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid color-mix(in oklab, var(--line) 60%, transparent); }
+.feed-day .feed-row:first-child { border-top: 0; }
+.feed-row > .feed-dot { margin-top: 6px; }
+.feed-line { margin: 0; font-size: 14px; line-height: 20px; color: var(--text); text-wrap: pretty; }
+.feed-ai { margin-left: 6px; vertical-align: -1px; color: var(--accent); }
+.feed-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--text-3); }
+.feed-who { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); }
+.feed-who b { font-weight: 600; color: var(--sess, var(--text-2)); }
+.feed-glyph { width: 12px; height: 12px; flex: none; fill: var(--sess, var(--text-2)); color: var(--sess, var(--text-2)); }
+.feed-initial { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; font-size: 10px; line-height: 1; font-weight: 700; color: var(--text-2); background: color-mix(in oklab, var(--text) 10%, transparent); }
+.feed-sha { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 6px; border: 0; border-radius: 6px; background: color-mix(in oklab, var(--text) 6%, transparent); color: var(--text-2); font: inherit; cursor: pointer; }
+.feed-sha code { font-family: var(--font-mono); font-size: 11px; font-variant-ligatures: none; }
+.feed-sha:hover { color: var(--text); background: color-mix(in oklab, var(--text) 11%, transparent); }
+.feed-sha:focus-visible, .feed-deploy:focus-visible, .feed-foot a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.feed-copied { color: var(--st-done); }
+.feed-count { color: var(--text-3); }
+.feed-deploy { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); text-decoration: none; }
+a.feed-deploy:hover { color: var(--text); text-decoration: underline; }
+.feed-deploy.is-deployed { color: color-mix(in oklab, var(--st-done) 70%, var(--text)); }
+.feed-deploy.is-failed { color: color-mix(in oklab, var(--st-failed) 75%, var(--text)); }
+.feed-deploy.is-deploying { color: color-mix(in oklab, var(--st-tool) 70%, var(--text)); }
+.feed-empty { margin: 18px 0; font-size: 13px; line-height: 18px; color: var(--text-2); }
+.feed-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 22px 14px; border-top: 1px solid var(--line); font-size: 12px; line-height: 16px; color: var(--text-3); }
+.feed-foot a { color: var(--text-2); }
+
+/* A narrow bar keeps its room for the needs chips and the screen's own actions. */
+@media (max-width: 1100px) { .feed-tick-ago { display: none; } }
+@media (max-width: 960px) { .feed-tick { display: none; } }
+@media (max-width: 600px) { .feed-scrim { padding-top: 24px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-tick-row.is-in, .feed-tick-row.is-out, .feed-scrim, .feed-modal { animation: none; }
+  .feed-tick-row.is-out { display: none; }
+  .feed-dot.is-deploying::after { animation: none; opacity: 0; }
+  .feed-tick { transition: none; }
+}

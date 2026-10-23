@@ -11,10 +11,11 @@ import { Markdown } from './markdown.jsx';
 import { PATHS, lastSession } from '../routes.js';
 import { trayY, vaultRail } from './shell-rules.js';
 import { NeedsYou } from './needs.jsx';
+import { FeedTicker } from './change-feed.jsx';
 import '../styles/attachments.css';
 
-/** What every frame shows from live data: the inbox badge, owner mode, the loop line, who needs the owner now. */
-export const ShellContext = createContext({ inbox: 0, owner: false, repo: '', needs: [] });
+/** What every frame shows from live data: the inbox badge, owner mode, the loop line, who needs the owner now, the change feed. */
+export const ShellContext = createContext({ inbox: 0, owner: false, repo: '', needs: [], feed: null, feedOn: false });
 export const useShell = () => useContext(ShellContext);
 
 export function Wordmark({ to = PATHS.fleet, label = 'nexus, the fleet' }) {
@@ -32,13 +33,17 @@ export function TbTitle({ title, sub }) {
 
 const isSpacer = (c) => isValidElement(c) && (c.type === TbSpacer || (c.type === 'span' && c.props.className === 'tb-spacer'));
 
-/** .topbar. Who needs the owner rides on every one, first in the right-hand group (after the spacer). */
+/**
+ * .topbar. Who needs the owner rides on every one, first in the right-hand group (after the spacer); the change feed's
+ * ticker sits just before the spacer, and gives its room up first.
+ */
 export function Topbar({ children }) {
   const kids = Children.toArray(children);
   const at = kids.findIndex(isSpacer);
   const needs = <NeedsYou key="needs-you" />;
-  if (at < 0) kids.push(needs);
-  else kids.splice(at + 1, 0, needs);
+  const feed = <FeedTicker key="feed-ticker" />;
+  if (at < 0) kids.push(feed, needs);
+  else kids.splice(at, 1, feed, kids[at], needs);
   return <header className="topbar">{kids}</header>;
 }
 

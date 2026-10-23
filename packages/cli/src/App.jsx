@@ -1,9 +1,10 @@
 // Routing for every screen, and the shell context every frame reads
 // (the inbox badge, owner mode, the repo name). Screens live in screens/.
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ShellContext, Err, ScreenLoading } from './ui/index.js';
-import { useAppState, useEvents, useInbox, useNeeds, useReloadOn } from './data/index.js';
+import { api, useAppState, useEvents, useFeed, useInbox, useNeeds, useReloadOn } from './data/index.js';
+import { newerFeed } from './ui/change-feed.js';
 import { fromInbox } from './screens/headsdown-inbox/inboxModel.js';
 import { PATHS } from './routes.js';
 // Every screen is its own chunk, fetched when its route first renders, so
@@ -81,6 +82,9 @@ function Shell() {
   const live = useEvents();
   const inbox = useInbox();
   const polled = useNeeds();
+  const feedPref = app.data?.prefs?.changeFeed !== false;
+  const polledFeed = useFeed(60000, !feedPref);
+  const loadFeed = useCallback(() => api('/api/feed?limit=200'), []);
   usePrefetchScreens();
   // A question asked or answered on the live channel moves the badge now, not at the next poll.
   useReloadOn(live.asks.length + live.permissions.length, inbox);
@@ -106,7 +110,10 @@ function Shell() {
   // Who needs the owner: the live channel's word when it is the newer, else the last look.
   const seen = polled.status === 'ready' ? polled.data : null;
   const needs = (live.needs && (!seen || (live.needs.at || 0) >= (seen.at || 0)) ? live.needs : seen)?.items || [];
-  const shell = { inbox: open, owner: !!info.owner, repo: info.name || '', app, live, needs };
+  // The change feed: on unless Settings turned it off; the live channel's word when it is the newer, else the last look.
+  const feed = newerFeed(live.feed, polledFeed.status === 'ready' ? polledFeed.data : null);
+  const feedOn = feedPref && feed?.on !== false;
+  const shell = { inbox: open, owner: !!info.owner, repo: info.name || '', app, live, needs, feed, feedOn, loadFeed };
   return (
     <ShellContext.Provider value={shell}>
       {/* A screen whose code is still on its way lands in its frame at once: rail lit, name up, rows to come. */}

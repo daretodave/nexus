@@ -108,7 +108,7 @@ export const server = {
   setupVault: () => api('/api/secrets/setup', {}),
 };
 
-const EMPTY = { connected: false, stage: initialState(), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [], needs: null };
+const EMPTY = { connected: false, stage: initialState(), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [], needs: null, feed: null };
 
 function merge(transcript, item) {
   if (item.kind !== 'delta') return [...transcript, item];
@@ -120,7 +120,7 @@ function merge(transcript, item) {
 function storeReducer(s, [type, data]) {
   switch (type) {
     case 'hello':
-      return { ...s, connected: true, stage: replay(data.beats || []), transcript: data.transcript || [], status: data.status || s.status, asks: data.asks || [], permissions: data.permissions || [], runs: data.runs || [], needs: data.needs || s.needs };
+      return { ...s, connected: true, stage: replay(data.beats || []), transcript: data.transcript || [], status: data.status || s.status, asks: data.asks || [], permissions: data.permissions || [], runs: data.runs || [], needs: data.needs || s.needs, feed: data.feed || s.feed };
     case 'beat': return { ...s, stage: reduce(s.stage, data) };
     case 'tx': return { ...s, transcript: merge(s.transcript, data) };
     case 'status': return { ...s, status: data };
@@ -128,13 +128,14 @@ function storeReducer(s, [type, data]) {
     case 'permissions': return { ...s, permissions: data };
     case 'runs': return { ...s, runs: data };
     case 'needs': return { ...s, needs: data };
+    case 'feed': return { ...s, feed: data };
     case 'reset': return { ...s, stage: initialState(), transcript: [] };
     case 'down': return { ...s, connected: false };
     default: return s;
   }
 }
 
-const EVENT_TYPES = ['hello', 'beat', 'tx', 'status', 'asks', 'permissions', 'runs', 'reset', 'needs'];
+const EVENT_TYPES = ['hello', 'beat', 'tx', 'status', 'asks', 'permissions', 'runs', 'reset', 'needs', 'feed'];
 
 /**
  * The live store for one SSE channel: reconnects on drop, and a reconnect

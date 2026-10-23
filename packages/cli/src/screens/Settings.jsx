@@ -8,7 +8,8 @@
 // state through gh; AI one-liners on the plan board are a GUI pref
 // (POST /api/prefs aiSummaries, on by default); so is the permission mode
 // for new sessions (POST /api/prefs permissionMode, Ask by default, spec 49
-// A10); the theme is per browser.
+// A10); so is the change feed on the top bar (POST /api/prefs changeFeed, on
+// by default); the theme is per browser.
 // Secrets (the second and third handoffs): names only, from GET /api/secrets
 // once the server serves it (42.7); the rotate nudge has no store yet, so a
 // change there says it lasts until the page reloads.
@@ -116,6 +117,15 @@ export default function Settings() {
     setAiMine(on);
     setSave('saving');
     try { await api('/api/prefs', { aiSummaries: on }); app?.reload?.(); setSave('saved'); } catch (e) { setSave({ error: e.message }); }
+  };
+
+  // The change feed on the top bar: a GUI pref (POST /api/prefs), on unless turned off. Off, the server stops watching.
+  const [feedMine, setFeedMine] = useState(null);
+  const feedOn = feedMine ?? app?.data?.prefs?.changeFeed !== false;
+  const changeFeed = async (on) => {
+    setFeedMine(on);
+    setSave('saving');
+    try { await api('/api/prefs', { changeFeed: on }); app?.reload?.(); setSave('saved'); } catch (e) { setSave({ error: e.message }); }
   };
 
   // Permissions for new sessions: a GUI pref per checkout (POST /api/prefs), read when a session starts.
@@ -276,6 +286,18 @@ export default function Settings() {
                 <Switch checked={ai} onChange={changeAi} title="AI helpers (board summaries and answer suggestions)" sub={ai ? 'On · cached, asked again only when a question, a chunk or its spec changes' : 'Off · undescribed chunks show their id alone; questions offer only the choices they name'} iconOn="sparkle" iconOff="xSmall" />
                 <div className="explain">
                   Suggestions use {models?.helper?.label || 'Claude Haiku'}. Both are kept in <span className="file-tag">.nexus/cache/</span> on this machine and never written to the plan. They run on your own Claude Code login: one small batch per board load, and one call per wand you press.
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="set-sec" style={SEC}>
+            <div><h2 className="set-h">Change feed</h2><p className="set-d">A line on the top bar each time something lands on main, from any session, a terminal or you, and whether it has deployed.</p></div>
+            <div style={{ minWidth: 0 }}>
+              <div className="set-row">
+                <Switch checked={feedOn} onChange={changeFeed} title="Change feed" sub={feedOn ? 'On · watches main and fetches it about every minute and a half while this page is open' : 'Off · no line on the top bar, no fetching, no AI calls'} iconOn="rays4" iconOff="xSmall" />
+                <div className="explain">
+                  Each push gets one plain sentence{ai ? <>, written by {models?.helper?.label || 'Claude Haiku'} from its commits (the AI helpers switch above)</> : <>, taken from its first commit (turn the AI helpers on for a plainer one)</>}. Deploys are read from what your host reports to GitHub, so they cost nothing; a repo with no deploys says nothing about them. Kept in <span className="file-tag">.nexus/feed/</span> on this machine.
                 </div>
               </div>
             </div>
