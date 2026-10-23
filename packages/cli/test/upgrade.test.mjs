@@ -42,29 +42,64 @@ test('POST /api/shutdown needs the token, then parks every session and stops the
   }
 });
 
-test('a launch that finds this repo\'s nexus on another version says so, names --replace, and opens it', { timeout: 60000 }, async () => {
-  const t = tmpRepo();
-  // A stand-in for an older running server: it answers /api/server as nexus for this root.
+/** A stand-in for a running server on `version`: it answers as nexus for this root, and 404s /api/shutdown when old. */
+async function runningAs(t, version, { shutdown = false } = {}) {
   const fake = http.createServer((req, res) => {
+    if (req.url.startsWith('/api/shutdown') && !shutdown) { res.writeHead(404, { 'content-type': 'application/json' }); res.end('{"error":"not found"}'); return; }
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ nexus: true, root: t.dir, version: '0.0.9' }));
+    res.end(JSON.stringify({ nexus: true, root: t.dir, version }));
   });
   await new Promise((r) => fake.listen(0, '127.0.0.1', r));
   const port = fake.address().port;
-  await writeInstance(t.dir, { pid: process.pid, port, token: 'tok', url: `http://127.0.0.1:${port}/?t=tok`, repo: t.dir, root: t.dir, started: new Date().toISOString(), version: '0.0.9' });
-  const child = spawn(process.execPath, [BIN, '--repo', t.dir, '--no-open'], { stdio: ['ignore', 'pipe', 'pipe'] });
+  await writeInstance(t.dir, { pid: process.pid, port, token: 'tok', url: `http://127.0.0.1:${port}/?t=tok`, repo: t.dir, root: t.dir, started: new Date().toISOString(), version });
+  return { fake, port };
+}
+
+async function launch(t, args = []) {
+  const child = spawn(process.execPath, [BIN, '--repo', t.dir, '--no-open', ...args], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let out = '';
+  child.stdout.on('data', (d) => { out += d; });
+  child.stderr.on('data', (d) => { out += d; });
+  const code = await new Promise((r) => child.on('exit', r));
+  return { code, out, child };
+}
+
+test('a launch that finds this repo\'s nexus on another version says so, names --replace, and opens it', { timeout: 60000 }, async () => {
+  const t = tmpRepo();
+  const { fake, port } = await runningAs(t, '9.0.0', { shutdown: true });
+  let child = null;
   try {
-    let out = '';
-    child.stdout.on('data', (d) => { out += d; });
-    child.stderr.on('data', (d) => { out += d; });
-    const code = await new Promise((r) => child.on('exit', r));
-    assert.equal(code, 0, out);
-    assert.match(out, /already running/);
-    assert.match(out, /This repo's nexus runs 0\.0\.9; you launched \d+\.\d+\.\d+\. Stop it \(Ctrl\+C where it runs\), then launch again/);
-    assert.match(out, /--replace/);
-    assert.match(out, new RegExp(`127\\.0\\.0\\.1:${port}`));
+    const r = await launch(t);
+    child = r.child;
+    assert.equal(r.code, 0, r.out);
+    assert.match(r.out, /already running/);
+    assert.match(r.out, /This repo's nexus runs 9\.0\.0; you launched \d+\.\d+\.\d+\. Stop it \(Ctrl\+C where it runs\), then launch again/);
+    assert.match(r.out, /--replace/);
+    assert.match(r.out, new RegExp(`127\\.0\\.0\\.1:${port}`));
   } finally {
     await new Promise((r) => fake.close(r));
-    await removeTree(t.parent, { children: [child] });
+    await removeTree(t.parent, { children: child ? [child] : [] });
+  }
+});
+
+test('a server older than 0.5.2, which has no safe stop, is never offered --replace, and --replace says to stop it where it runs', { timeout: 60000 }, async () => {
+  const t = tmpRepo();
+  const { fake } = await runningAs(t, '0.4.0');
+  const kids = [];
+  try {
+    const plain = await launch(t);
+    kids.push(plain.child);
+    assert.equal(plain.code, 0, plain.out);
+    assert.match(plain.out, /This repo's nexus runs 0\.4\.0/);
+    assert.doesNotMatch(plain.out, /--replace/);
+    const started = Date.now();
+    const rep = await launch(t, ['--replace']);
+    kids.push(rep.child);
+    assert.equal(rep.code, 1, rep.out);
+    assert.match(rep.out, /nexus 0\.4\.0 cannot be stopped from here\. Stop it with Ctrl\+C where it runs/);
+    assert.ok(Date.now() - started < 20000, 'it says so at once, not after a 30 s wait');
+  } finally {
+    await new Promise((r) => fake.close(r));
+    await removeTree(t.parent, { children: kids });
   }
 });

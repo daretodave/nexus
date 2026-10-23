@@ -116,17 +116,29 @@ function portFree(port) {
   });
 }
 
-/** Ask a running server to stop the safe way (POST /api/shutdown with its token), then wait for its pid to go. */
+/** Can this server version be stopped from here (POST /api/shutdown came after 0.5.1)? */
+function canReplace(version) {
+  const m = /^(\d+)\.(\d+)\.(\d+)/.exec(String(version || ''));
+  if (!m) return false;
+  const [a, b, c] = m.slice(1).map(Number);
+  return a > 0 || b > 5 || (b === 5 && c >= 2);
+}
+
+/**
+ * Ask a running server to stop the safe way (POST /api/shutdown with its token), then wait for its pid to go.
+ * -> 'stopped', 'timeout', or 'old' (it has no /api/shutdown: an older version, stopped where it runs).
+ */
 async function replaceRunning(rec) {
-  await new Promise((resolve) => {
-    const req = http.request({ host: '127.0.0.1', port: rec.port, method: 'POST', path: '/api/shutdown', agent: false, headers: { host: `127.0.0.1:${rec.port}`, origin: `http://127.0.0.1:${rec.port}`, 'x-nexus-token': rec.token, 'content-type': 'application/json' } }, (res) => { res.resume(); res.on('end', resolve); });
-    req.on('error', resolve);
-    req.setTimeout(5000, () => { req.destroy(); resolve(); });
+  const status = await new Promise((resolve) => {
+    const req = http.request({ host: '127.0.0.1', port: rec.port, method: 'POST', path: '/api/shutdown', agent: false, headers: { host: `127.0.0.1:${rec.port}`, origin: `http://127.0.0.1:${rec.port}`, 'x-nexus-token': rec.token, 'content-type': 'application/json' } }, (res) => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
+    req.on('error', () => resolve(0));
+    req.setTimeout(5000, () => { req.destroy(); resolve(0); });
     req.end('{}');
   });
+  if (status === 404 && pidAlive(rec.pid)) return 'old';
   const end = Date.now() + 30000;
   while (pidAlive(rec.pid) && Date.now() < end) await new Promise((r) => setTimeout(r, 200));
-  return !pidAlive(rec.pid);
+  return pidAlive(rec.pid) ? 'timeout' : 'stopped';
 }
 
 async function serve() {
@@ -158,14 +170,17 @@ if (running) {
   const theirs = running.rec.version || 'an older version';
   if (flag('--replace')) {
     console.log(`\n  nexus  ·  stopping this repo's nexus ${theirs} (pid ${running.rec.pid}) the safe way: every session is parked...`);
-    if (!(await replaceRunning(running.rec))) {
-      console.log(`  It did not stop within 30 s. Stop it with Ctrl+C where it runs, then launch again.\n`);
+    const how = await replaceRunning(running.rec);
+    if (how !== 'stopped') {
+      console.log(how === 'old'
+        ? `  nexus ${theirs} cannot be stopped from here. Stop it with Ctrl+C where it runs (or close that terminal),\n  then launch again. Its sessions are kept and pick up where they left off.\n`
+        : `  It did not stop within 30 s. Stop it with Ctrl+C where it runs, then launch again.\n`);
       lock.release();
       process.exit(1);
     }
   } else {
     const skew = running.rec.version !== pkgVersion
-      ? `\n  This repo's nexus runs ${theirs}; you launched ${pkgVersion}. Stop it (Ctrl+C where it runs), then launch again\n  to upgrade, or launch with --replace. Its sessions are kept and pick up where they left off.\n`
+      ? `\n  This repo's nexus runs ${theirs}; you launched ${pkgVersion}. Stop it (Ctrl+C where it runs), then launch again\n  to upgrade${canReplace(running.rec.version) ? ', or launch with --replace' : ''}. Its sessions are kept and pick up where they left off.\n`
       : '\n  This repo\'s server is up: this opens it. Stop it with Ctrl+C where it runs.\n';
     console.log(`
   nexus  ·  ${path.basename(root)}  (already running, pid ${running.rec.pid})
