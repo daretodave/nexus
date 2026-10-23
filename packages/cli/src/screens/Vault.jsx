@@ -187,7 +187,7 @@ function OwnerVault({ st, repo, reload, toast }) {
                         <MaskField value={draft} onChange={setDraft} label={`New value for ${r.name}`} placeholder={r.placeholder} autoFocus onEnter={() => draft && saveDraft(r)} />
                         <button className="btn btn-s btn-primary" type="button" onClick={() => saveDraft(r)} disabled={!draft || busy}>Save</button>
                         <button className="btn btn-s btn-ghost" type="button" onClick={() => { setEdit(null); setDraft(''); }}>Cancel</button>
-                        {r.set && !r.held ? <RemoveValue name={r.name} rings={r.rings} pushedTo={r.pushTo} busy={busy} toast={toast} onDone={() => { setEdit(null); setDraft(''); setFresh(new Set([r.name])); reload(); }} /> : null}
+                        {r.set && !r.held ? <RemoveValue name={r.name} rings={r.rings} pushedTo={r.pushTo} busy={busy} toast={toast} onDone={() => { setEdit(null); setDraft(''); setFresh(new Set()); reload(); }} /> : null}
                         <span className="t-body-s c-3">{r.editNote}</span>
                       </div>
                     ) : null}

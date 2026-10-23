@@ -1,7 +1,7 @@
 // Take a value out of the vault (POST /api/secrets/:name/remove; the repo's own `secrets unset`), from the row's
 // Replace editor: a quiet button, then one line that says where it leaves and what keeps a copy, and Remove or Keep.
 // Nothing is removed until the second click. Styles: styles/vault-loop.css.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../ui/index.js';
 import { server } from '../../data/index.js';
 import { removeNote, removedToast } from './model.js';
@@ -10,9 +10,18 @@ import '../../styles/vault-loop.css';
 export default function RemoveValue({ name, rings = [], pushedTo = [], busy = false, toast, onDone }) {
   const [sure, setSure] = useState(false);
   const [working, setWorking] = useState(false);
+  // Focus follows the swap (Remove it -> Remove, Keep it -> Remove it), never on first show.
+  const asked = useRef(false);
+  const ask = useRef(null);
+  const confirm = useRef(null);
+  useEffect(() => {
+    if (!asked.current) return;
+    (sure ? confirm : ask).current?.focus();
+  }, [sure]);
+  const choose = (v) => { asked.current = true; setSure(v); };
   if (!sure) {
     return (
-      <button className="btn btn-s btn-ghost vault-remove" type="button" onClick={() => setSure(true)} disabled={busy}>
+      <button ref={ask} className="btn btn-s btn-ghost vault-remove" type="button" onClick={() => choose(true)} disabled={busy}>
         <Icon name="trash" size={14} />Remove it
       </button>
     );
@@ -33,8 +42,8 @@ export default function RemoveValue({ name, rings = [], pushedTo = [], busy = fa
   return (
     <div className="vault-remove-ask" role="group" aria-label={`Remove ${name}`}>
       <span className="t-body-s c-2">{removeNote({ name, rings, pushedTo })}</span>
-      <button className="btn btn-s btn-danger" type="button" onClick={remove} disabled={working || busy}>{working ? 'Removing…' : 'Remove'}</button>
-      <button className="btn btn-s btn-ghost" type="button" onClick={() => setSure(false)} disabled={working}>Keep it</button>
+      <button ref={confirm} className="btn btn-s btn-danger" type="button" onClick={remove} disabled={working || busy}>{working ? 'Removing…' : 'Remove'}</button>
+      <button className="btn btn-s btn-ghost" type="button" onClick={() => choose(false)} disabled={working}>Keep it</button>
     </div>
   );
 }
