@@ -9,8 +9,9 @@
 //              unless configured): secrets several repos share, outside every repo so `git add -A` can't reach it
 // Configured in the untracked `.nexus/local.json`:
 //   { "secrets": { "keychain": true, "workspace": "../..", "keychainService": "nexus/myrepo" } }
-// A write refuses a `.env` that isn't gitignored and a `.env.workspace` inside a repo, creates the file owner-only
-// (0600), and refuses a multi-line value. Every message names a secret, never its value.
+// A write refuses a `.env` that isn't gitignored and a `.env.workspace` inside a repo, refuses a multi-line value, and
+// rewrites the file under a lock through a temp file renamed into place, owner-only (0600), keeping every other line,
+// comment and `export` as it was. `remove` takes a name out the same way. Every message names a secret, never its value.
 // The command line: scripts/secrets.mjs; the how and why: nexus/customization/secrets.md.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -22,58 +23,114 @@ export const WORKSPACE_RING = '.env.workspace';
 /** Where a value can live, in read order. */
 export const RINGS = ['local', 'keychain', 'workspace'];
 const NAME = /^[A-Z][A-Z0-9_]*$/;
-const ENV_LINE = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/;
+const ENV_LINE = /^(\s*(?:export\s+)?)([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/;
 const BARE = /^[A-Za-z0-9_\-.\/:@+=,%~]*$/;
 
-function unquote(rest) {
-  const s = rest.trim();
-  if (s[0] === "'") { const end = s.indexOf("'", 1); return end === -1 ? s.slice(1) : s.slice(1, end); }
-  if (s[0] === '"') {
-    let out = '';
-    for (let i = 1; i < s.length; i++) {
-      const c = s[i];
-      if (c === '"') break;
-      if (c === '\\' && i + 1 < s.length) { const n = s[++i]; out += n === 'n' ? '\n' : n; } else out += c;
-    }
-    return out;
+/** Where the quote that opens `s` at `from - 1` closes, or -1 (a double-quoted value honours backslash escapes). */
+function closeAt(s, q, from = 1) {
+  if (q === "'") return s.indexOf("'", from);
+  for (let i = from; i < s.length; i++) {
+    if (s[i] === '\\') i++;
+    else if (s[i] === '"') return i;
+  }
+  return -1;
+}
+
+/** A quoted or bare value (its text after `=`, maybe over several lines): { value, comment } (a trailing ` # ...`). */
+function readValue(rest) {
+  const lead = rest.length - rest.trimStart().length;
+  const s = rest.slice(lead);
+  const q = s[0];
+  if (q === "'" || q === '"') {
+    const end = closeAt(s, q);
+    if (end === -1) return { value: q === "'" ? s.slice(1) : unescapeDq(s.slice(1)), comment: '' };
+    const tail = s.slice(end + 1);
+    return { value: q === "'" ? s.slice(1, end) : unescapeDq(s.slice(1, end)), comment: /^\s*#/.test(tail) ? tail : '' };
   }
   const hash = /(^|\s)#/.exec(s);
-  return (hash ? s.slice(0, hash.index) : s).trim();
+  return hash ? { value: s.slice(0, hash.index).trim(), comment: s.slice(hash.index).replace(/^(\S)/, ' $1') } : { value: s.trim(), comment: '' };
+}
+
+function unescapeDq(s) {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '\\' && i + 1 < s.length) { const n = s[++i]; out += n === 'n' ? '\n' : n; } else out += c;
+  }
+  return out;
+}
+
+/**
+ * A .env text as blocks, in order: { lines } for anything that sets nothing (a comment, a blank line), and { lines,
+ * prefix, name, value, comment } for an assignment. A quoted value that runs onto the next lines (a key pasted whole)
+ * is one block through its closing quote; one that never closes is its own line only.
+ */
+function envBlocks(text) {
+  const lines = String(text ?? '').replace(/\r\n/g, '\n').split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const m = ENV_LINE.exec(lines[i]);
+    if (!m) { out.push({ lines: [lines[i]] }); continue; }
+    const rest = m[3].trimStart();
+    let end = i;
+    if ((rest[0] === '"' || rest[0] === "'") && closeAt(rest, rest[0]) === -1) {
+      for (let j = i + 1; j < lines.length; j++) if (closeAt(lines[j], rest[0], 0) !== -1) { end = j; break; }
+    }
+    const block = lines.slice(i, end + 1);
+    out.push({ lines: block, prefix: m[1], name: m[2], ...readValue([m[3], ...block.slice(1)].join('\n')) });
+    i = end;
+  }
+  return out;
 }
 
 /** A .env file's live assignments: Map name -> value (a commented-out line doesn't count; the last one wins). */
 export function parseEnv(text) {
   const out = new Map();
-  for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
-    const m = ENV_LINE.exec(line);
-    if (m) out.set(m[1], unquote(m[2]));
-  }
+  for (const b of envBlocks(text)) if (b.name) out.set(b.name, b.value);
   return out;
 }
 
-/** A value as one .env line writes it: bare when that's safe, else double-quoted. */
+/**
+ * A value as one .env line writes it: bare when that's safe, else single-quoted (literal in every dotenv reader, so a
+ * `$` or a backslash is never expanded), else double-quoted with `\` and `"` escaped (a value holding a `'`).
+ */
 export function formatEnvValue(value) {
-  return BARE.test(value) ? value : `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  if (BARE.test(value)) return value;
+  if (!value.includes("'")) return `'${value}'`;
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
-/** Set names in a .env file's text: the first live line of a name is replaced, later ones dropped, a new name
- * appended. Every other line (comments, blank lines, other names) stays as it was. */
+/** The text back from its lines (the file's own final newline dropped), in its own line ending, ending in one. */
+function joinLines(lines, eol) {
+  const out = [...lines];
+  if (out.length && out[out.length - 1] === '') out.pop();
+  return out.length ? `${out.join(eol)}${eol}` : '';
+}
+
+const eolOf = (text) => (/\r\n/.test(String(text ?? '')) ? '\r\n' : '\n');
+
+/** Set names in a .env file's text: the first assignment of a name is replaced (its `export` and trailing comment
+ * kept), later ones dropped, a new name appended. Every other line (comments, blank lines, other names, the line
+ * ending) stays as it was. */
 export function upsertEnv(text, entries) {
   const want = new Map(entries);
   const done = new Set();
-  const lines = text ? text.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n') : [];
-  const out = [];
-  for (const line of lines) {
-    const m = ENV_LINE.exec(line);
-    if (m && want.has(m[1])) {
-      if (!done.has(m[1])) out.push(`${m[1]}=${formatEnvValue(want.get(m[1]))}`);
-      done.add(m[1]);
-      continue;
-    }
-    out.push(line);
+  const blocks = [];
+  for (const b of envBlocks(text)) {
+    if (!b.name || !want.has(b.name)) { blocks.push(b); continue; }
+    if (!done.has(b.name)) blocks.push({ lines: [`${b.prefix}${b.name}=${formatEnvValue(want.get(b.name))}${b.comment}`] });
+    done.add(b.name);
   }
-  for (const [name, value] of want) if (!done.has(name)) out.push(`${name}=${formatEnvValue(value)}`);
-  return `${out.join('\n')}\n`;
+  const lines = blocks.flatMap((b) => b.lines);
+  if (lines.length && lines[lines.length - 1] === '') lines.pop();
+  for (const [n, v] of want) if (!done.has(n)) lines.push(`${n}=${formatEnvValue(v)}`);
+  return joinLines(lines, eolOf(text));
+}
+
+/** Take names out of a .env file's text: every assignment of each goes; every other line stays as it was. */
+export function removeEnv(text, names) {
+  const drop = new Set(names);
+  return joinLines(envBlocks(text).filter((b) => !(b.name && drop.has(b.name))).flatMap((b) => b.lines), eolOf(text));
 }
 
 /** Where this checkout's vault lives. `root` is the primary checkout; `settings` is its .nexus/local.json. */
@@ -102,8 +159,49 @@ function checkValue(name, value) {
   if (/[\r\n\0]/.test(value)) throw new Error(`${name}: a value on one line only (a key file goes in a file, its path in the vault)`);
 }
 
+/** Run `fn` holding `lock` (a file made with wx; one older than 10 s is stale), for a few seconds at most. */
+function underLock(lock, what, fn) {
+  const until = Date.now() + 3000;
+  for (;;) {
+    try { fs.closeSync(fs.openSync(lock, 'wx')); break; } catch (err) {
+      // Windows answers EPERM (or EACCES/EBUSY) while another writer's lock is being deleted: busy, not broken.
+      if (!['EEXIST', 'EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
+      try { if (Date.now() - fs.statSync(lock).mtimeMs > 10000) { fs.rmSync(lock, { force: true }); continue; } } catch { /* gone already */ }
+      if (Date.now() > until) throw new Error(`${what} is locked (another write is under way): try again`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+    }
+  }
+  try { return fn(); } finally { fs.rmSync(lock, { force: true }); }
+}
+
 /**
- * The vault for one checkout: { config, get, resolve, status, set }. `get` and `resolve` return values: code only,
+ * Write a ring's file whole: a temp file beside it (owner-only, 0600) renamed over it, so a reader never sees half a
+ * file and a crash never leaves one. A symlinked .env is written where it points. Windows can refuse the rename
+ * while another program holds the file open: a few tries, then the file is written in place.
+ */
+export function writeAtomic(file, text) {
+  let target = file;
+  try { target = fs.realpathSync(file); } catch { /* a new file */ }
+  const tmp = `${target}.${process.pid}.${Date.now().toString(36)}.tmp`;
+  try {
+    fs.writeFileSync(tmp, text, { mode: 0o600 });
+    try { fs.chmodSync(tmp, 0o600); } catch { /* best effort (Windows ignores POSIX modes) */ }
+    for (let i = 0; ; i++) {
+      try { fs.renameSync(tmp, target); return; } catch (err) {
+        if (!['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
+        if (i >= 4) break;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20 * (i + 1));
+      }
+    }
+    fs.writeFileSync(target, text, { mode: 0o600 });
+    try { fs.chmodSync(target, 0o600); } catch { /* best effort */ }
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+}
+
+/**
+ * The vault for one checkout: { config, get, resolve, status, set, remove }. `get` and `resolve` return values: code only,
  * never a terminal. `git` and `keychain` are seams (tests stub both; a test never touches the real keychain).
  */
 export function openVault({ root, settings = {}, platform = process.platform, git = gitRunner, keychain } = {}) {
@@ -157,7 +255,11 @@ export function openVault({ root, settings = {}, platform = process.platform, gi
       return;
     }
     if (ring === 'local') {
-      if (git(['-C', config.root, 'check-ignore', '-q', LOCAL_RING]).status === 1) throw new Error(`${LOCAL_RING} is not gitignored here: add it to .gitignore first`);
+      if (git(['-C', config.root, 'check-ignore', '-q', LOCAL_RING]).status === 1) {
+        // check-ignore never calls a tracked file ignored: say which it is, since the fix differs.
+        if (git(['-C', config.root, 'ls-files', '--error-unmatch', LOCAL_RING]).status === 0) throw new Error(`${LOCAL_RING} is tracked by git here: untrack it (git rm --cached ${LOCAL_RING}) and add it to .gitignore first`);
+        throw new Error(`${LOCAL_RING} is not gitignored here: add it to .gitignore first`);
+      }
       return;
     }
     if (!fs.existsSync(config.workspaceDir)) throw new Error(`no workspace folder at ${config.workspaceDir} (set secrets.workspace in .nexus/local.json)`);
@@ -167,6 +269,16 @@ export function openVault({ root, settings = {}, platform = process.platform, gi
     }
   }
 
+  /** Rewrite one ring's file under its lock: read, change, write a temp file beside it, rename it into place. */
+  function rewrite(ring, change) {
+    const file = ringFile(ring);
+    underLock(`${file}.lock`, path.basename(file), () => {
+      let text = '';
+      try { text = fs.readFileSync(file, 'utf8'); } catch (err) { if (err.code !== 'ENOENT') throw err; }
+      writeAtomic(file, change(text));
+    });
+  }
+
   /** Store values ([[name, value]] or a Map) in one ring (the keychain when it is on, else local). Returns the
    * ring and the names stored. */
   function set(entries, ring = config.keychain ? 'keychain' : 'local') {
@@ -174,15 +286,31 @@ export function openVault({ root, settings = {}, platform = process.platform, gi
     for (const [n, v] of list) checkValue(n, v);
     guardRing(ring);
     if (ring === 'keychain') { for (const [n, v] of list) chain().set(n, v); return { ring, names: list.map(([n]) => n) }; }
-    const file = ringFile(ring);
-    let text = '';
-    try { text = fs.readFileSync(file, 'utf8'); } catch (err) { if (err.code !== 'ENOENT') throw err; }
-    fs.writeFileSync(file, upsertEnv(text, list), { mode: 0o600 });
-    try { fs.chmodSync(file, 0o600); } catch { /* best effort (Windows ignores POSIX modes) */ }
+    rewrite(ring, (text) => upsertEnv(text, list));
     return { ring, names: list.map(([n]) => n) };
   }
 
-  return { config, get, resolve, status, set };
+  /** Take names out of the vault: from the rings named (one, or a list), or every ring that holds each. Returns
+   * [{ name, rings }] (where each one was taken from; [] when it was nowhere). Other names, comments and lines stay. */
+  function remove(names, rings = null) {
+    for (const n of names) if (!NAME.test(n)) throw new Error(`${n}: not an env-var name (A-Z, 0-9 and _, starting with a letter)`);
+    const only = rings == null ? null : [rings].flat();
+    for (const g of only ?? []) if (!RINGS.includes(g)) throw new Error(`no ring ${g} (one of ${RINGS.join(', ')})`);
+    if (only?.includes('keychain') && !config.keychain) throw new Error('the keychain is opt-in: set { "secrets": { "keychain": true } } in .nexus/local.json');
+    const held = new Map(status(names).map((r) => [r.name, r.rings.filter((g) => !only || only.includes(g))]));
+    for (const g of ['local', 'workspace']) {
+      const here = names.filter((n) => held.get(n)?.includes(g));
+      if (here.length) rewrite(g, (text) => removeEnv(text, here));
+    }
+    for (const n of names) {
+      if (!held.get(n)?.includes('keychain')) continue;
+      if (typeof chain().remove !== 'function') throw new Error(`keychain: this keychain cannot take ${n} out (update scripts/secrets-keychain.mjs)`);
+      chain().remove(n);
+    }
+    return names.map((name) => ({ name, rings: held.get(name) ?? [] }));
+  }
+
+  return { config, get, resolve, status, set, remove };
 }
 
 // A contributor's own keys (scripts/owner.mjs: not effective owner mode). Project secrets are the owner's; a
@@ -211,24 +339,12 @@ export function readLocalKeys(root) {
 /** Add names to the record, under a lock, renamed into place. Returns every recorded name. */
 export function recordLocalKeys(root, names) {
   const file = path.join(root, LOCAL_KEYS_FILE);
-  const lock = `${file}.lock`;
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  const until = Date.now() + 3000;
-  for (;;) {
-    try { fs.closeSync(fs.openSync(lock, 'wx')); break; } catch (err) {
-      if (err.code !== 'EEXIST') throw err;
-      try { if (Date.now() - fs.statSync(lock).mtimeMs > 10000) { fs.rmSync(lock, { force: true }); continue; } } catch { continue; }
-      if (Date.now() > until) throw new Error(`${LOCAL_KEYS_FILE} is locked (another write is under way): try again`);
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
-    }
-  }
-  try {
+  return underLock(`${file}.lock`, LOCAL_KEYS_FILE, () => {
     const all = [...new Set([...readLocalKeys(root), ...names.filter((n) => NAME.test(n))])].sort();
     const tmp = `${file}.${process.pid}.tmp`;
     fs.writeFileSync(tmp, `${JSON.stringify({ version: 1, about: 'A contributor\'s own local-only keys: names, never a value. Never in nexus.secrets.json.', localKeys: all }, null, 2)}\n`);
     fs.renameSync(tmp, file);
     return all;
-  } finally {
-    fs.rmSync(lock, { force: true });
-  }
+  });
 }

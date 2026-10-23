@@ -36,7 +36,7 @@ function check(name) {
   if (!NAME.test(name)) throw new Error(`keychain: ${name} is not an env-var name`);
 }
 
-/** The keychain for this platform: { get(name) -> value | null, set(name, value), has(names) -> Set }. */
+/** The keychain for this platform: { get(name) -> value | null, set(name, value), has(names) -> Set, remove(name) }. */
 export function keychain({ platform = process.platform, run = spawnRunner, service } = {}) {
   if (!SERVICE.test(service ?? '')) throw new Error('keychain: the service is letters, digits and . _ : / @ - only');
   const fail = (cmd, r) => { throw new Error(`keychain: ${cmd} exited ${r.status}`); };
@@ -57,6 +57,12 @@ export function keychain({ platform = process.platform, run = spawnRunner, servi
         names.forEach(check);
         return new Set(names.filter((n) => run('security', ['find-generic-password', '-s', service, '-a', n]).status === 0));
       },
+      remove(name) {
+        check(name);
+        // 44: no such item, which is what a remove wants.
+        const r = run('security', ['delete-generic-password', '-s', service, '-a', name]);
+        if (r.status !== 0 && r.status !== 44) fail('security', r);
+      },
     };
   }
   if (platform === 'linux') {
@@ -74,6 +80,11 @@ export function keychain({ platform = process.platform, run = spawnRunner, servi
       has(names) {
         names.forEach(check);
         return new Set(names.filter((n) => run('secret-tool', ['lookup', 'service', service, 'account', n]).status === 0));
+      },
+      remove(name) {
+        check(name);
+        const r = run('secret-tool', ['clear', 'service', service, 'account', name]);
+        if (r.status !== 0) fail('secret-tool', r);
       },
     };
   }
@@ -98,6 +109,11 @@ export function keychain({ platform = process.platform, run = spawnRunner, servi
         const r = ps(`foreach ($n in @(${list})) { try { [void]$v.Retrieve('${service}',$n); [Console]::Out.WriteLine($n) } catch {} }\nexit 0`);
         if (r.status !== 0) fail('powershell.exe', r);
         return new Set(r.stdout.split(/\r?\n/).filter((n) => names.includes(n)));
+      },
+      remove(name) {
+        check(name);
+        const r = ps(`try { $c=$v.Retrieve('${service}','${name}') } catch { exit 0 }\n$v.Remove($c)`);
+        if (r.status !== 0) fail('powershell.exe', r);
       },
     };
   }
