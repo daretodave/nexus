@@ -130,6 +130,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     git: feedOpts.git,
     watch: feedOpts.watch ?? !injected,
     whoFor: (commits) => whoMadeIt(commits),
+    sessionName: (id) => [...sessions.values()].find((s) => s.id === id)?.name || null,
     active: () => [...sessions.values()].some((s) => s.hub.clients) || !!elsewhere?.clients,
     onChange: () => feedSoon(),
   });
@@ -949,7 +950,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         // The stack hand-off (stack.mjs): names, shapes and status out; a value in only through POST /api/stack/save.
         case 'GET /api/stack': { const { status, ...r } = await stack.status(); return send(res, status, r); }
         case 'POST /api/stack/pick': { const { status, ...r } = await stack.pick(await body(req)); return send(res, status, r); }
-        case 'POST /api/stack/save': { const { status, ...r } = await stack.save(await body(req)); return send(res, status, r); }
+        case 'POST /api/stack/save': { const { status, ...r } = await stack.save(await body(req)); feed.nudgeSecrets(); return send(res, status, r); }
         case 'POST /api/stack/tick': { const { status, ...r } = await stack.tick(await body(req)); return send(res, status, r); }
       }
       // An image a person sent (uploads.mjs): the transcript's bubble shows it from here.
@@ -964,11 +965,13 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       if (stk) {
         const b = await body(req);
         const { status, ...r } = stk[1] === 'check' ? await stack.check(stk[2], b) : await stack.apply(stk[2], b);
+        if (stk[1] !== 'check') feed.nudgeSecrets();
         return send(res, status, r);
       }
       const secPush = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/push$/.exec(route);
       if (secPush) {
         const { status, ...r } = await secrets.push(decodeURIComponent(secPush[1]), await body(req));
+        feed.nudgeSecrets();
         return send(res, status, r);
       }
       const secRemove = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/remove$/.exec(route);
@@ -979,6 +982,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)$/.exec(route);
       if (sec) {
         const { status, ...r } = await secrets.store(decodeURIComponent(sec[1]), await body(req));
+        feed.nudgeSecrets();
         return send(res, status, r);
       }
       // The claims panel (spec 40 A5): each verb is one run of the repo's claims CLI as the acting session (claims.mjs).

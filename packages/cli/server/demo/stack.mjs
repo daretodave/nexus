@@ -145,17 +145,21 @@ export function createDemoStack({ now = () => Date.now(), script = () => 0, vaul
     const r = checkShape(v.shape, typeof b.value === 'string' ? b.value : '');
     if (!r.ok) return { status: 400, error: r.why };
     const names = namesOf(b.service, b.key);
+    // A request this save answers (Oversight's Add value): its value also goes to each place the request named.
+    const askTo = b.request && typeof b.request === 'object' && Array.isArray(b.request.to) ? b.request.to.map(String).filter((d) => d !== 'local') : [];
     const pushed = [];
     for (const n of names) {
-      const out = vault ? vault.store(n, { value: 'demo', declare: true, for: recipeFor(b.service, b.key), destinations: [] }) : { status: 200 };
+      const ci = (st.targets['github-actions'] ?? true) && CI_NAMES.has(n) ? ['github-actions'] : [];
+      const dests = [...new Set([...ci, ...askTo])];
+      const out = vault ? vault.store(n, { value: 'demo', declare: true, for: recipeFor(b.service, b.key), destinations: dests }) : { status: 200, pushed: dests.map((d) => ({ destination: d, ok: true })) };
       if (out.status !== 200) return { status: out.status, error: out.error };
-      if ((st.targets['github-actions'] ?? true) && CI_NAMES.has(n)) pushed.push({ name: n, destination: 'github-actions', ok: true });
+      for (const p of out.pushed || []) pushed.push({ name: n, destination: p.destination, ok: !!p.ok });
     }
     st.saved.add(`${b.service}.${b.key}`);
     if (b.service === 'cloudflare' && b.key === 'apiToken') st.cfTokenAt = script();
     if (b.service === 'supabase' && b.key === 'url') st.saved.add('supabase.ref');
     const written = [{ target: 'vault', label: '.env (the vault)' }, ...(st.app.dir !== '.' && (st.targets.app ?? true) ? [{ target: 'app', label: `${st.app.dir}/${fw().file}` }] : [])];
-    return { status: 200, ok: true, names, written, failed: [], pushed, notes: r.kind === 'legacy' || r.kind === 'warn' ? [r.note] : [] };
+    return { status: 200, ok: true, names, written, failed: [], pushed, notes: r.kind === 'legacy' || r.kind === 'warn' ? [r.note] : [], ...(b.request?.chunk ? { request: { chunk: String(b.request.chunk), to: askTo } } : {}) };
   };
 
   /** POST /api/stack/check/:service: posted values are shape-checked (the demo never holds a saved one); canned facts. */

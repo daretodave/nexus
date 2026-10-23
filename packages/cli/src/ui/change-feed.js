@@ -33,7 +33,8 @@ export function tickerText(ev) {
   return ev.deploy.state === 'waiting' ? `${line} (not deployed yet)` : `${line} · ${state}`;
 }
 
-/** Who made a push, as the session glyph draws it: a star here, else the commit's author with a neutral initial. */
+/** Who made a push, as the session glyph draws it: a star here, else the commit's author (or "You", the GUI's own
+ * secret push) with a neutral initial. */
 export function whoOf(ev) {
   const w = ev?.who || {};
   const name = String(w.name || 'someone');

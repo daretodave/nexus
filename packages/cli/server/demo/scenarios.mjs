@@ -663,6 +663,40 @@ export const changeFeed = {
   ],
 };
 
+// ---- moving values ----------------------------------------------------------------------
+
+/** A secret push on the change feed, as server/feed-secrets.mjs makes it from an audit line (names only). */
+function secretPush({ name, destination, label, where, who }) {
+  return { id: `secret:demo:${name}:${destination}`, kind: 'secret-push', name, destination, label, ...(where ? { where } : {}), who, line: `${who.name} pushed ${name} to ${label}${where ? ` (${where})` : ''}` };
+}
+
+// Values both ways: deneb sends the webhook secret to Vercel from its session (names only), and the plan's request for
+// STRIPE_SECRET_KEY (chunk 15.5, server/demo/vault.mjs) waits in Oversight. Add value opens the Stripe card in Set up a
+// stack with the field focused; saving stores it and pushes it to Vercel, and the push lands on the change feed.
+// Demo-safe value: rk_test_demo0000000000000000000000.
+export const movingValues = {
+  name: 'moving-values',
+  title: 'Moving values',
+  summary: 'A session pushes a secret to Vercel by name; a request for the Stripe key opens its stack card, the save pushes it, and both pushes show on the change feed.',
+  home: 'deneb',
+  shot: {
+    screen: '/inbox',
+    moves: [
+      { at: 3500, click: 'button[data-key="STRIPE_SECRET_KEY"]', text: 'Add value', what: 'Add value on the Stripe request' },
+      { at: 6500, type: '[id="stk-stripe-secret"] input', keys: 'rk_test_demo0000000000000000000000', ms: 1200, what: 'the Stripe restricted key' },
+      { at: 8800, click: '[id="stk-stripe-secret"] button.btn-primary', text: 'Save', what: 'Save: the vault, then Vercel' },
+      { at: 11000, click: 'button.feed-tick', what: 'the change feed: both pushes' },
+    ],
+  },
+  fixtures: (ctx) => base(ctx),
+  script: [
+    ...breathing(12000),
+    ...at(1500, 'deneb',
+      { feed: secretPush({ name: 'STRIPE_WEBHOOK_SECRET', destination: 'vercel', label: 'Vercel', where: 'production, preview, development', who: { name: 'deneb', kind: 'local', session: 'demo-deneb' } }) },
+      { row: { event: { text: 'pushed STRIPE_WEBHOOK_SECRET to Vercel' } } }),
+  ],
+};
+
 export const SCENARIOS = Object.freeze({
   [fleetToTug.name]: fleetToTug,
   [bugToArchive.name]: bugToArchive,
@@ -674,6 +708,7 @@ export const SCENARIOS = Object.freeze({
   [cloudToken.name]: cloudToken,
   [stackHandoff.name]: stackHandoff,
   [changeFeed.name]: changeFeed,
+  [movingValues.name]: movingValues,
 });
 
 export const scenarioNames = () => Object.keys(SCENARIOS);

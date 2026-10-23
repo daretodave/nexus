@@ -1,5 +1,6 @@
 // The change feed on the top bar (server/feed.mjs): a quiet ticker with the newest push said plainly and a small dot
-// for its deploy; a new push slides in (no slide under reduced motion). A click opens a small modal with the feed by
+// for its deploy (or a secret sent where it runs: "deneb pushed STRIPE_SECRET_KEY to Cloudflare (production)", names
+// only, with a key where the dot goes); a new push slides in (no slide under reduced motion). A click opens a small modal with the feed by
 // day: each push's line, who made it, its short sha (copyable), how long ago, and its deploy (a link when the host
 // gave one). Esc and a click outside close it; focus stays inside while it is open and goes back to the ticker after.
 // Off in Settings ("Change feed"): nothing here draws. The rules: change-feed.js.
@@ -16,7 +17,8 @@ import { ago, byDay, deployWords, mergeEvents, tickerParts, tickerText, whoOf } 
 import '../styles/change-feed.css';
 
 /** The deploy dot: a tone per state, a breathing ring while it deploys. Nothing at all when the repo has no deploys. */
-function Dot({ deploy }) {
+function Dot({ deploy, ev }) {
+  if (ev?.kind === 'secret-push') return <Icon name="key" size={12} className="feed-key" aria-hidden="true" />;
   const d = deployWords(deploy);
   return <span className={cx('feed-dot', d ? `is-${d.tone}` : 'is-plain')} aria-hidden="true" />;
 }
@@ -93,7 +95,7 @@ function FeedModal({ events, onClose, load }) {
         <div className="feed-head">
           <div>
             <h2 id="feed-title" className="feed-title">Changes on main</h2>
-            <p className="feed-sub">Every push, said plainly, newest first.</p>
+            <p className="feed-sub">Every push to main, and every secret sent where it runs, newest first.</p>
           </div>
           <button type="button" className="btn btn-s btn-icon feed-close" onClick={onClose} aria-label="Close the change feed"><Icon name="x" size={14} /></button>
         </div>
@@ -104,12 +106,13 @@ function FeedModal({ events, onClose, load }) {
               <ul className="feed-rows">
                 {g.events.map((ev) => (
                   <li key={ev.id} className="feed-row">
-                    <Dot deploy={ev.deploy} />
+                    <Dot deploy={ev.deploy} ev={ev} />
                     <div className="feed-row-main">
                       <p className="feed-line">{ev.line}{ev.ai ? <Icon name="sparkle" size={12} className="feed-ai" /> : null}</p>
                       <div className="feed-meta">
                         <Who ev={ev} />
-                        <Sha sha={ev.sha} />
+                        {ev.sha ? <Sha sha={ev.sha} /> : null}
+                        {ev.kind === 'secret-push' ? <span className="feed-count">names only</span> : null}
                         <time dateTime={ev.at} title={ev.at ? new Date(ev.at).toLocaleString() : ''}>{ago(ev.at)}</time>
                         {ev.count > 1 ? <span className="feed-count">{ev.count} commits</span> : null}
                         <Deploy deploy={ev.deploy} />
@@ -137,7 +140,7 @@ function TickRow({ ev, className, hidden }) {
   const d = deployWords(ev.deploy);
   return (
     <span className={className} aria-hidden={hidden || undefined}>
-      <Dot deploy={ev.deploy} />
+      <Dot deploy={ev.deploy} ev={ev} />
       <span className="feed-tick-text">{line}</span>
       {state ? <span className={cx('feed-tick-state', `is-${d.tone}`)}>{state}</span> : null}
     </span>
@@ -180,7 +183,7 @@ export function FeedTicker() {
           {leaving ? <TickRow key={`out-${leaving.id}`} ev={leaving} className="feed-tick-row is-out" hidden /> : null}
           <TickRow key={top.id} ev={top} className={cx('feed-tick-row', leaving && 'is-in')} />
         </span>
-        <span className="feed-tick-fold" aria-hidden="true"><Dot deploy={top.deploy} />Changes</span>
+        <span className="feed-tick-fold" aria-hidden="true"><Dot deploy={top.deploy} ev={top} />Changes</span>
         <span className="feed-tick-ago">{ago(top.at)}</span>
       </button>
       {open ? <FeedModal events={events} onClose={close} load={loadFeed} /> : null}
