@@ -1,0 +1,37 @@
+/* An alive Fleet home (0.5.1): compact cards in a grid that fits as many as the mockup's proportions allow (about
+   three at 1700px wide, never one stretched across a wide screen), and each tile's state read by colour at a glance:
+   working cyan and moving, needs you amber on the whole card, done green and calm with a check, fell over ash (as
+   it was), idle quiet. Theme tokens only, so day and night both hold. */
+
+.view .fleet-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); }
+
+/* working: a cyan sky and a slow light along the top edge */
+.tile.tone-working .tile-stage { background: radial-gradient(72% 66% at 50% 46%, color-mix(in oklab, var(--st-tool) 15%, transparent) 0%, transparent 70%), var(--well); }
+.tile.tone-working::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; pointer-events: none; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--st-tool) 85%, transparent), transparent) no-repeat; background-size: 36% 100%; animation: fa-sweep 3.6s var(--ease-breathe) infinite; }
+@keyframes fa-sweep { from { background-position: -60% 0; } to { background-position: 160% 0; } }
+
+/* needs you: the whole card glows amber and breathes */
+.tile.tone-needs { background: color-mix(in oklab, var(--st-blocked) 5%, var(--surface-solid)); box-shadow: var(--e-tug); }
+.tile.tone-needs::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-blocked) 70%, transparent), inset 0 0 40px -12px color-mix(in oklab, var(--st-blocked) 50%, transparent); animation: nx-twinkle var(--dur-breathe) var(--ease-breathe) infinite alternate; }
+.tile.tone-needs .tile-stage { background: radial-gradient(70% 64% at 50% 46%, color-mix(in oklab, var(--st-blocked) 16%, transparent) 0%, transparent 70%), var(--well); }
+
+/* done: green, calm, a check; its track reads finished */
+.tile.tone-done { background: color-mix(in oklab, var(--st-done) 4%, var(--surface-solid)); box-shadow: 0 0 0 1px color-mix(in oklab, var(--st-done) 36%, transparent), 0 0 46px -18px color-mix(in oklab, var(--st-done) 55%, transparent); }
+.tile.tone-done:hover { box-shadow: 0 0 0 1px color-mix(in oklab, var(--st-done) 60%, transparent), 0 0 52px -14px color-mix(in oklab, var(--st-done) 60%, transparent); }
+.tile.tone-done .tile-stage { background: radial-gradient(70% 64% at 50% 46%, color-mix(in oklab, var(--st-done) 16%, transparent) 0%, transparent 70%), var(--well); }
+.tile.tone-done .mtrack i.done { background: var(--st-done); }
+.tile.tone-done .tile-chunk .id { color: var(--st-done); }
+.done-chip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px 0 7px; border-radius: var(--r-full); background: color-mix(in oklab, var(--st-done) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-done) 45%, transparent); color: var(--st-done); font-size: 11px; line-height: 16px; font-weight: 600; white-space: nowrap; }
+
+/* where a session fell, coloured like a tool row */
+.fell code.fell-at { white-space: normal; overflow-wrap: anywhere; }
+.fell-at .fa-tool { color: var(--st-tool); font-weight: 600; }
+
+/* the start tile sits in the grid like a card */
+.fleet-grid .tile-new { justify-content: flex-start; gap: 10px; padding: 22px 24px; min-height: 300px; }
+.tile-new .tn-line { font-size: 13px; line-height: 19px; color: var(--text-2); }
+.tile-new .tn-line b { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text); font-variant-ligatures: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile.tone-working::before, .tile.tone-needs::after { animation: none; }
+}

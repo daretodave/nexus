@@ -11,7 +11,7 @@
 // { action: pause|cancel|resume }. An action the server does not serve yet
 // says plainly that it is not wired up; nothing is invented.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppFrame, Topbar, Wordmark, TbSep, TbTitle, TbSpacer, InboxBtn, ViewHead, ChoiceButtons,
   TileNew, TrainDock, Train, ToastHost, Err, Icon, cx, useShell,
@@ -22,6 +22,7 @@ import LoopLine from './fleet/LoopLine.jsx';
 import StartPick from './fleet/StartPick.jsx';
 import SessionTile from './fleet/SessionTile.jsx';
 import { norm, FILTERS, counts, summary, trainOf, claimHolders, chunkTitle } from './fleet/model.js';
+import { nextInLine, putAwayToast } from './fleet/alive.js';
 import '../styles/fleet-honest.css';
 import '../styles/tile-bar-fit.css';
 import { act, hhmm } from './fleet/util.js';
@@ -64,6 +65,14 @@ function PauseAll({ train, onClick }) {
   );
 }
 
+/** The start tile's line: what heads-down would take first, from the plan's order, or what choosing means. */
+function StartLine({ plan }) {
+  const next = [].concat(plan?.next || [])[0];
+  const line = nextInLine(plan, next ? chunkTitle(plan, next.id) : '');
+  if (!line) return <div className="tn-line">Choose what it works on: a spec, or infinite (loop /next, the next chunk in line, forever). It asks its questions first.</div>;
+  return <div className="tn-line">Choose a spec, or infinite: nexus takes the next chunk in line and asks its questions first. Next up: <b>{line.id}</b>{line.rest ? ` ${line.rest}` : ''}.</div>;
+}
+
 export default function Fleet() {
   const { repo } = useShell();
   const now = useNow();
@@ -74,11 +83,23 @@ export default function Fleet() {
   const [filter, setFilter] = useState('here');
   const [trainOn, setTrainOn] = useState(false);
   const [resuming, setResuming] = useState({});
+  // Sessions put away from here leave at once, before the next poll agrees.
+  const [gone, setGone] = useState({});
+  const loc = useLocation();
+  const navigate = useNavigate();
 
   const list = useMemo(() => {
     const raw = sessions.status === 'ready' && Array.isArray(sessions.data) ? sessions.data : sessions.data?.sessions || [];
-    return raw.map(norm).filter((s) => s.state !== 'closed').map((s) => (resuming[s.id] && s.state === 'fallen' ? { ...s, state: 'resuming' } : s));
-  }, [sessions.status, sessions.data, resuming]);
+    return raw.map(norm).filter((s) => s.state !== 'closed' && !gone[s.id]).map((s) => (resuming[s.id] && s.state === 'fallen' ? { ...s, state: 'resuming' } : s));
+  }, [sessions.status, sessions.data, resuming, gone]);
+
+  // A session put away from its cockpit lands here with a word on what happened (router state, read once).
+  useEffect(() => {
+    const t = loc.state?.toast;
+    if (!t) return;
+    push(t);
+    navigate(loc.pathname + loc.search, { replace: true, state: null });
+  }, [loc.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Every claim holder no tile stands for: matched against every session the server lists, closed or not.
   const holders = useMemo(() => {
@@ -117,6 +138,13 @@ export default function Fleet() {
     if (!r.ok) push({ kind: 'error', title: `Couldn't clear ${s.name}`, body: r.error });
     else if (r.data?.worktree && !r.data.worktree.closed) push({ kind: 'info', title: `Cleared ${s.name}`, body: `Its star is free. Its worktree stays: ${r.data.worktree.note}` });
     else push({ kind: 'info', title: `Cleared ${s.name}`, body: 'Its star is free and its empty worktree is gone.' });
+    sessions.reload();
+  }
+
+  // Put away a session that finished its job (fleet/PutAway.jsx made the call): its tile leaves, and says what stayed.
+  function putAway(s, r) {
+    setGone((m) => ({ ...m, [s.id]: true }));
+    push(putAwayToast(s.name, r));
     sessions.reload();
   }
 
@@ -174,13 +202,13 @@ export default function Fleet() {
         ) : null}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', margin: '-8px -28px 0', padding: `8px 28px ${24 + dockRoom}px` }}>
           <div className="fleet-grid">
-            {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} title={chunkTitle(plan.data, s.chunk?.id)} onResume={() => resume(s)} onClose={s.ended ? () => close(s) : undefined} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
+            {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} title={chunkTitle(plan.data, s.chunk?.id)} onPutAway={(r) => putAway(s, r)} onResume={() => resume(s)} onClose={s.ended ? () => close(s) : undefined} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
             {sessions.status !== 'loading' && filter === 'here' ? (
               <TileNew>
                 <span className="cstar is-neutral" />
                 <div className="t-title-s">Start another session</div>
-                <div className="t-body-s c-2">Choose what it works on: a spec, or infinite (loop /next, the next chunk in line, forever). It asks its questions first.</div>
-                <StartPick plan={plan.data} sessions={list} onError={(title, body) => push({ kind: 'error', title, body })} />
+                <StartLine plan={plan.data} />
+                <StartPick compact plan={plan.data} sessions={list} onError={(title, body) => push({ kind: 'error', title, body })} />
                 <span className="cap">Two or three at once is normal. Each one gets its own worktree, color and star.</span>
               </TileNew>
             ) : null}

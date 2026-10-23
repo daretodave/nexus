@@ -4,36 +4,44 @@
 // reads idle, the stage carries the session's last word or tool row, and a
 // GUI session that died with its server and left nothing reads "stopped"
 // with a Clear. Terminal, fallen and stopped tiles show under their own
-// fleet chips, never by default (fleet/model.js aside).
+// fleet chips, never by default (fleet/model.js aside). 0.5.1: each tile
+// reads its state by colour (fleet/alive.js tone): working cyan and moving,
+// needs you amber, done green with a check and an offer to put it away.
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Tile, TileChunk, TileBar, TileEvent, TileChip, ParkedBadge, Fresh, Fell, Flag,
-  MTrack, Orb, Fil, SNode, Junction, FreshMark, Icon, Markdown, cx,
+  MTrack, Orb, Fil, SNode, Junction, FreshMark, Icon, Markdown, ToolArgs, cx,
 } from '../../ui/index.js';
 import { PATHS } from '../../routes.js';
 import FleetGit from './FleetGit.jsx';
 import { phaseItems, bar, idleLine, lastLine } from './model.js';
 import { hhmm, ago } from './util.js';
 import { QUADS, seatsFor, filFor } from './sky.js';
+import { finishedJob, tone, mainOrb, agentOrb, doneTrack, doneTitle, jobTitle, fellParts, keptAlready, rememberKeep, viewerStore } from './alive.js';
+import PutAway from './PutAway.jsx';
 import { badgeText } from '../../../shared/models.mjs';
 import '../../styles/model.css';
+import '../../styles/fleet-alive.css';
 
 // A session waiting on its start questions seats its idle agents in a triangle,
 // and a terminal session its one helper up and left (Fleet board: sirius, polaris).
 const ASK_SATS = [{ x: '22%', y: '30%' }, { x: '78%', y: '30%' }, { x: '50%', y: '82%' }];
 const OBS_SATS = [{ x: '30%', y: '30%', fil: { l: '30%', t: '30%', w: '20%', h: '16%', d: 'M100 100C100 50 0 50 0 0' } }];
 
-function SkyStage({ s }) {
+function SkyStage({ s, t }) {
   const asking = s.state === 'asking';
   const observing = s.state === 'observing';
-  const main = asking ? 'blocked' : s.orb || (s.state === 'resumed' ? 'thinking' : 'tool');
+  const main = mainOrb(s, t);
   const seats = asking ? ASK_SATS : observing ? [...OBS_SATS, ...QUADS.slice(1)] : seatsFor(s.name);
   const agents = (s.agents || []).slice(0, seats.length);
+  // A finished session's agents rest: no flow on its filaments (their states say done, not working).
+  const resting = t === 'done' || t === 'idle';
   return (
     <>
       {!asking ? agents.map((a, i) => {
         // Each star's own seats; a known idle agent draws its idle curve (Fleet board: deneb).
-        const f = filFor(seats[i], a, { observing });
+        const f = filFor(seats[i], resting ? { state: 'idle' } : a, { observing });
         return <Fil key={`f${i}`} l={f.l} t={f.t} w={f.w} h={f.h} d={f.d} kind={f.kind} flow={f.flow || undefined} />;
       }) : null}
       <SNode x="50%" y="46%">
@@ -42,11 +50,23 @@ function SkyStage({ s }) {
       </SNode>
       {agents.map((a, i) => (
         <SNode key={`n${i}`} x={seats[i].x} y={seats[i].y}>
-          {a.workflow ? <Junction style={{ transform: 'translate(-50%, -50%) scale(.7)' }} /> : <Orb state={asking ? 'idle' : a.state || 'idle'} size="xs" />}
+          {a.workflow && !resting ? <Junction style={{ transform: 'translate(-50%, -50%) scale(.7)' }} /> : <Orb state={agentOrb(a, t)} size="xs" />}
         </SNode>
       ))}
     </>
   );
+}
+
+/** Where a session fell, coloured: the tool's name, then its command or path as a tool row draws it. */
+function FellAt({ tool }) {
+  const p = fellParts(tool);
+  if (!p) return null;
+  return <code className="fell-at">{p.tool ? <span className="fa-tool">{p.tool}</span> : null}{p.tool && p.arg ? ' ' : null}{p.arg ? <ToolArgs tool={p.tool} args={p.arg} /> : null}</code>;
+}
+
+/** The done chip: a green check and the word. */
+function DoneChip() {
+  return <span className="done-chip"><Icon name="check" size={12} />done</span>;
 }
 
 const Centered = ({ children, style }) => <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', ...style }}>{children}</div>;
@@ -83,8 +103,14 @@ function OwnerChip() {
 
 const recoverHref = (s) => (s.run ? `${PATHS.recover}?dir=${encodeURIComponent(s.run)}` : PATHS.recover);
 
-export default function SessionTile({ s, train, onResume, onLink, onClose, busy, now, title }) {
+export default function SessionTile({ s, train, onResume, onLink, onClose, onPutAway, busy, now, title }) {
   const st = s.state;
+  const done = finishedJob(s);
+  const t = tone(s, done);
+  // Keep it: remembered in this browser for this job only; a later job that finishes asks again.
+  const [, setKeptTick] = useState(0);
+  const kept = done ? keptAlready(s, viewerStore()) : false;
+  const keep = () => { rememberKeep(s, viewerStore()); setKeptTick((n) => n + 1); };
   const fallen = !s.ended && (st === 'fallen' || st === 'resume-failed');
   const toRecover = fallen || st === 'resuming';
   const href = toRecover || s.ended ? recoverHref(s) : PATHS.cockpit(s.id);
@@ -101,6 +127,7 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
   else if (st === 'resume-failed') badge = <Flag kind="fallen">resume failed</Flag>;
   else if (st === 'resuming') badge = <span className="t-label c-2">resuming</span>;
   else if (st === 'resumed') badge = <Fresh />;
+  else if (done) badge = <DoneChip />;
   else if (s.idle) badge = <span className="t-label c-2">idle</span>;
   else if (s.mode === 'owner') badge = <OwnerChip />;
   else if (s.parked) badge = <ParkedBadge>{s.parked} parked</ParkedBadge>;
@@ -109,12 +136,14 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
   if (s.ended) stage = <Centered><Orb state="idle" size="l" /></Centered>;
   else if (fallen) stage = <Centered><Orb state="fallen" size="l" /></Centered>;
   else if (st === 'resuming') stage = <Centered style={{ background: 'radial-gradient(60% 60% at 50% 50%, var(--sky-a), transparent 70%)' }}><Orb relight size="l" gap="6deg" /></Centered>;
-  else stage = <><SkyStage s={s} /><TileLast s={s} /></>;
+  else stage = <><SkyStage s={s} t={t} /><TileLast s={s} /></>;
 
-  const track = <MTrack items={phaseItems(s)} />;
+  const track = <MTrack items={done ? doneTrack(phaseItems(s)) : phaseItems(s)} />;
   const cl = chunkLine(s);
-  const chunk = cl || s.chunk?.title || title ? <TileChunk id={cl} title={s.chunk?.title || title} muted={st === 'observing'} /> : null;
-  const event = s.idle ? <TileEvent flexNone>{idleLine(s)}</TileEvent>
+  const head = s.chunk?.title || title || (done ? doneTitle(done) : t === 'working' ? jobTitle(s) : '');
+  const chunk = cl || head ? <TileChunk id={cl} title={head} muted={st === 'observing'} /> : null;
+  const event = done ? <TileEvent flexNone>{s.last?.at ? `${hhmm(s.last.at)} ` : ''}Done · {done.text}</TileEvent>
+    : s.idle ? <TileEvent flexNone>{idleLine(s)}</TileEvent>
     : s.event?.text ? <TileEvent flexNone>{s.event.at ? `${hhmm(s.event.at)} ` : ''}{s.event.text}</TileEvent> : null;
   const r = s.resume || {};
 
@@ -157,7 +186,7 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
     info = (
       <>
         <Fell>
-          <span>Fell over{f.tool ? <> at <code>{f.tool}</code></> : null}{f.chunk || s.chunk?.id ? <> in chunk <b>{f.chunk || s.chunk.id}</b></> : null}.</span>
+          <span>Fell over{f.tool ? <> at <FellAt tool={f.tool} /></> : null}{f.chunk || s.chunk?.id ? <> in chunk <b>{f.chunk || s.chunk.id}</b></> : null}.</span>
           {lost ? <span className="t-mono-xs c-3">heartbeat lost {hhmm(lost)} · {ago(lost, now)}</span> : null}
         </Fell>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -192,6 +221,13 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
     );
   } else if (st === 'resumed') {
     info = <>{chunk}{track}<Link to={recoverHref(s)} className="t-body-s">Read the recap it started from</Link></>;
+  } else if (done) {
+    info = (
+      <>
+        {chunk}{track}{event}
+        {!kept && onPutAway ? <PutAway s={s} done={done} compact onGone={onPutAway} onKeep={keep} /> : null}
+      </>
+    );
   } else {
     info = <>{chunk}{track}{b ? <TileBar {...b} /> : null}{event}</>;
   }
@@ -207,7 +243,7 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
     <Tile
       session={s.session}
       state={fallen ? 'fallen' : st === 'asking' ? 'asking' : st === 'observing' ? 'observing' : 'live'}
-      className={cx(st === 'asking' && 'is-hushed', s.idle && 'is-idle', s.ended && 'is-ended')}
+      className={cx(st === 'asking' && 'is-hushed', s.idle && 'is-idle', s.ended && 'is-ended', `tone-${t}`)}
       href={href}
       nameStyle={{ color: 'var(--text)' }}
       repo={s.repo}

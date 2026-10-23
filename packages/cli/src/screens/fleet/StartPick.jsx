@@ -1,6 +1,7 @@
 // Start heads-down: choose infinite or a spec first, then start. The Fleet's "start another session" tile and the
 // Heads-down screen with no session both draw it. A choice a session this server runs is already on opens that
-// session; one a terminal is on can still be started anyway.
+// session; one a terminal is on can still be started anyway. `compact` (the Fleet's start tile, sized like a card):
+// the list stays folded behind Start heads-down until it is asked for.
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, cx } from '../../ui/index.js';
@@ -10,11 +11,12 @@ import { startChoices, startPrompt } from './startPick.js';
 import '../../styles/start-pick.css';
 
 /** `open(id)` is where a started or running session opens (the cockpit by default); `onError(title, body)` reports. */
-export default function StartPick({ plan, sessions, open, onError }) {
+export default function StartPick({ plan, sessions, open, onError, compact = false }) {
   const navigate = useNavigate();
   const go = open || ((id) => navigate(PATHS.cockpit(id)));
   const [pick, setPick] = useState(null);
   const [starting, setStarting] = useState(false);
+  const [unfolded, setUnfolded] = useState(!compact);
   const choices = startChoices(plan, sessions);
   const chosen = choices.find((c) => c.value === pick) || null;
 
@@ -27,6 +29,19 @@ export default function StartPick({ plan, sessions, open, onError }) {
     setStarting(false);
     if (r.ok && r.data?.id) { go(r.data.id); return; }
     onError?.(r.missing ? 'Starting a session from here is not wired up yet' : "Couldn't start a session", r.missing ? 'Start /heads-down in a terminal; it shows up here as it starts.' : r.error);
+  }
+
+  if (!unfolded) {
+    return (
+      <div className="start-pick">
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button className="btn btn-primary btn-s" type="button" onClick={() => setUnfolded(true)} aria-expanded="false">
+            <Icon name="plus" size={14} />Start heads-down
+          </button>
+          <Link className="btn btn-ghost btn-s" to={PATHS.board}>Pick a chunk</Link>
+        </div>
+      </div>
+    );
   }
 
   return (

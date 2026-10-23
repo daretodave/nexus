@@ -1,0 +1,23 @@
+/* Put away (0.5.1): the small card a finished session shows at the end of its conversation and on its Fleet tile.
+   Green and quiet, its action first; holding work, it says what in plain words. Theme tokens only, so day and
+   night both hold. */
+
+.put-away { position: relative; z-index: 1; display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 14px; background: color-mix(in oklab, var(--st-done) 8%, var(--well)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-done) 40%, transparent); color: var(--text-2); font-size: 13px; line-height: 19px; }
+.put-away.holds-work { background: color-mix(in oklab, var(--st-blocked) 6%, var(--well)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-blocked) 40%, transparent); }
+.pa-mark { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--st-done); color: var(--on-state, var(--bg)); box-shadow: 0 0 0 4px color-mix(in oklab, var(--st-done) 16%, transparent); }
+.pa-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+.pa-title { color: var(--text); font-size: 14px; line-height: 20px; }
+.pa-title b { font-weight: 600; }
+.pa-why { color: var(--text-2); }
+.pa-sub { color: var(--text-2); }
+.pa-err { color: var(--st-failed); font-size: 12px; line-height: 17px; }
+.pa-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.pa-actions .spin { width: 12px; height: 12px; border-width: 1.5px; }
+
+.put-away.is-compact { gap: 10px; padding: 10px 12px; border-radius: 12px; font-size: 12px; line-height: 17px; }
+.put-away.is-compact .pa-mark { width: 20px; height: 20px; box-shadow: 0 0 0 3px color-mix(in oklab, var(--st-done) 16%, transparent); }
+.put-away.is-compact .pa-title { font-size: 13px; line-height: 18px; }
+.put-away.is-compact .pa-actions { margin-top: 2px; }
+
+/* at the end of the conversation it sits with the messages */
+.convo .put-away { margin: 8px 0 4px 36px; max-width: 640px; }
