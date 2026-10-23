@@ -54,7 +54,7 @@ export function Picker({ stack, ui, readOnly, startOpen }) {
       <div className="stk-presets" role="group" aria-label="Presets">
         {PRESETS.map((p) => {
           const on = p.picked.length === picked.length && p.picked.every((x) => picked.includes(x));
-          return <button key={p.id} type="button" className={cx('stk-preset', on && 'is-on')} onClick={() => set(p.picked)} disabled={readOnly || ui.busy} aria-pressed={on ? 'true' : 'false'} title={joinList(p.picked.map((x) => SERVICES[x].name))}>{on ? <Icon name="check" size={12} /> : null}{p.label}</button>;
+          return <button key={p.id} type="button" className={cx('stk-preset', on && 'is-on')} onClick={() => { set(p.picked); setOpen(false); setQuery(''); }} disabled={readOnly || ui.busy} aria-pressed={on ? 'true' : 'false'} title={joinList(p.picked.map((x) => SERVICES[x].name))}>{on ? <Icon name="check" size={12} /> : null}{p.label}</button>;
         })}
       </div>
       {shown ? (
