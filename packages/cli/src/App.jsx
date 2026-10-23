@@ -3,7 +3,9 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ShellContext, Err, ScreenLoading } from './ui/index.js';
-import { api, useAppState, useEvents, useFeed, useInbox, useNeeds, useReloadOn } from './data/index.js';
+import { api, subscribeHealth, useAppState, useEvents, useFeed, useInbox, useNeeds, useReloadOn } from './data/index.js';
+import StaleBar from './ui/StaleBar.jsx';
+import ErrorBoundary from './ui/ErrorBoundary.jsx';
 import { newerFeed } from './ui/change-feed.js';
 import { fromInbox } from './screens/headsdown-inbox/inboxModel.js';
 import { PATHS } from './routes.js';
@@ -55,6 +57,20 @@ const Vault = screen(SCREENS.Vault);
 const Design = screen(SCREENS.Design);
 const ALL = [Fleet, Cockpit, Onboarding, HeadsDown, Inbox, Grill, Board, CloudLoop, Settings, Recover, GitPanel, Vault, Design];
 
+// A screen's code that is gone from the server (nexus was updated while this tab was open): reload once to get the
+// current version. The flag stops a loop when the reload does not help; it clears once a page has stayed up.
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', (e) => {
+    let tried = false;
+    try { tried = sessionStorage.getItem('nexus-reloaded') === '1'; sessionStorage.setItem('nexus-reloaded', '1'); } catch { tried = true; }
+    if (tried) return; // the error boundary's card takes it from here
+    e.preventDefault?.();
+    window.location.reload();
+  });
+  const clear = setTimeout(() => { try { sessionStorage.removeItem('nexus-reloaded'); } catch { /* none */ } }, 15000);
+  clear.unref?.();
+}
+
 function usePrefetchScreens() {
   useEffect(() => {
     const go = () => { for (const s of ALL) s.preload().catch(() => {}); };
@@ -88,14 +104,19 @@ function Shell() {
   usePrefetchScreens();
   // A question asked or answered on the live channel moves the badge now, not at the next poll.
   useReloadOn(live.asks.length + live.permissions.length, inbox);
+  // Reconnected (a newer launch handed this tab its token): read the app again.
+  useEffect(() => subscribeHealth((s) => { if (s.status === 'ok' || s.status === 'updated') app.reload?.(); }), []); // eslint-disable-line react-hooks/exhaustive-deps
   if (app.status === 'error' && !app.data) {
+    const restarted = /bad token/.test(String(app.error || ''));
     return (
       <div className="ob" style={{ justifyContent: 'center' }}>
         <main className="ob-main" style={{ maxWidth: 560 }}>
           <Err
             title="This page needs its launch link"
-            body="Each launch of npx @usenexus/cli prints a link that carries its own token. Open that link, or relaunch and open the new one."
-            detail={app.error}
+            body={restarted
+              ? 'nexus restarted since this tab opened. Use the link it printed in the terminal: each launch prints one with its own token.'
+              : 'Each launch of npx @usenexus/cli prints a link that carries its own token. Open that link, or relaunch and open the new one.'}
+            detail={restarted ? undefined : app.error}
           />
         </main>
       </div>
@@ -116,6 +137,8 @@ function Shell() {
   const shell = { inbox: open, owner: !!info.owner, repo: info.name || '', app, live, needs, feed, feedOn, loadFeed };
   return (
     <ShellContext.Provider value={shell}>
+      <StaleBar />
+      <ErrorBoundary>
       {/* A screen whose code is still on its way lands in its frame at once: rail lit, name up, rows to come. */}
       <Suspense fallback={<ScreenLoading />}>
       <Routes>
@@ -136,6 +159,7 @@ function Shell() {
         <Route path="*" element={<Navigate to={PATHS.fleet} replace />} />
       </Routes>
       </Suspense>
+      </ErrorBoundary>
     </ShellContext.Provider>
   );
 }

@@ -682,6 +682,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         if (first) s.send(first.text).catch(() => null);
       },
     });
+    for (const h of savedHubs.get(l.id) || []) h.close();
+    savedHubs.delete(l.id);
     updateLedger(ROOT, l.id, (cur) => ({ state: 'live', stop: undefined, beat: new Date().toISOString(), server: serverStamp(), cwd: form ? wt : cwd, ...(resumeId ? { claude: resumeId } : {}), ...(cur.state === 'resuming' ? { runner: undefined } : {}) }));
     const msgs = pickupMessages(l, { resumed: !!resumeId, turn, skill, then });
     if (!resumeId && msgs.length) freshSent = true;
@@ -708,8 +710,17 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     h.flush();
     h.setStatus({ state: 'idle', hosted: false, stopped: true, saved: !!file });
     h.flush();
-    return { attach: (req, res) => { h.attach(req, res); req.on('close', () => h.close()); } };
+    return {
+      attach: (req, res) => {
+        h.attach(req, res);
+        if (!savedHubs.has(l.id)) savedHubs.set(l.id, new Set());
+        savedHubs.get(l.id).add(h);
+        req.on('close', () => { h.close(); savedHubs.get(l.id)?.delete(h); });
+      },
+    };
   }
+  // Open tabs on a stopped session's saved channel: closed when it is picked up, so each reconnects to the live one.
+  const savedHubs = new Map();
 
   /** POST /api/pickup-all: every session that stopped with nexus, in the order they started. */
   async function pickupAll() {

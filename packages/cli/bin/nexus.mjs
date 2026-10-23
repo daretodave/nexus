@@ -156,7 +156,7 @@ if (!lock.ok) {
 const running = await findRunning(root);
 if (running) {
   const theirs = running.rec.version || 'an older version';
-  if (running.rec.version !== pkgVersion && flag('--replace')) {
+  if (flag('--replace')) {
     console.log(`\n  nexus  ·  stopping this repo's nexus ${theirs} (pid ${running.rec.pid}) the safe way: every session is parked...`);
     if (!(await replaceRunning(running.rec))) {
       console.log(`  It did not stop within 30 s. Stop it with Ctrl+C where it runs, then launch again.\n`);

@@ -18,6 +18,9 @@
 //   stack           Set up a stack in the Vault: Cloudflare, Supabase and Vercel, card by card, to a live domain
 //   change-feed     the change feed on the top bar: vega pushes the home background change, it goes "not deployed
 //                   yet" -> Deploying -> Deployed; then the owner pushes from a terminal and that one starts deploying
+//   after-restart   the fleet after nexus was stopped and upgraded: vega was idle and came back by itself; deneb
+//                   stopped mid-step, sirius while it asked, altair with no goodbye (a kill). Calm tiles, "stopped
+//                   with nexus"; Pick up all brings each back in its own worktree and conversation
 //
 // The script format is server/demo/world.mjs's. Times are ms from the start (or from the gate that holds them).
 // A scenario may carry a `shot` for the recorder (scripts/record.mjs): the screen it opens on (`fleet`, or a
@@ -663,6 +666,50 @@ export const changeFeed = {
   ],
 };
 
+/** A session that stopped with nexus, as the live server lists it (sessions.mjs stoppedRow). */
+function stoppedRow(ctx, s, stop, extra = {}) {
+  return {
+    ...s.row, state: 'stopped', live: false, hosted: false, steer: 'pickup', gui: true, linked: false, orb: 'idle',
+    agents: [], turn: undefined, sources: ['ledger', 'claude'],
+    stop: { at: ctx.ago(stop.ago ?? 3), clean: stop.clean !== false, turn: stop.turn ?? null, queued: stop.queued || 0, asks: stop.asks || 0, talked: true, loop: false },
+    ...extra,
+  };
+}
+
+/** What a pick-up turns a stopped tile into: hosted again, working on, in the same worktree. */
+const pickedUp = (text) => ({ row: { state: 'live', live: true, hosted: true, steer: 'sdk', stop: null, orb: 'thinking', agents: [{ state: 'thinking' }], turn: 'working', parked: 0, questions: undefined, phase: 'working', event: { text } } });
+
+export const afterRestart = {
+  name: 'after-restart',
+  title: 'After a restart',
+  summary: 'nexus was stopped and upgraded: vega came back by itself, three sessions wait calmly as "stopped with nexus", and Pick up all brings each back where it left off.',
+  home: 'vega',
+  shot: { start: 'fleet', moves: [{ at: 3200, click: 'button.pause-btn', text: 'Pick up all', what: 'Pick up all' }] },
+  fixtures: (ctx) => base(ctx, (s) => {
+    if (s.name === 'vega') {
+      // Idle when nexus stopped, so it came back by itself (free: nothing is spent until it is sent something).
+      return { ...s, row: { ...s.row, turn: 'idle', orb: 'idle', agents: [{ state: 'idle' }, { state: 'idle' }], lastPrompt: '/heads-down 12', last: { kind: 'text', text: '12.4 is built and gated; waiting for the next chunk.', at: ctx.ago(4) }, event: { at: ctx.ago(0), text: 'picked up by itself after the restart' } }, beats: [], transcript: [{ kind: 'system', text: 'nexus restarted: picked up where it left off (it was idle).' }, ...s.transcript] };
+    }
+    if (s.name === 'deneb') {
+      return { ...s, row: stoppedRow(ctx, s, { turn: 'working' }, { last: { kind: 'text', text: 'Two venues share a pitch on alternate weekends; sweeping every venue for the same pattern.', at: ctx.ago(3) } }), ledger: { ...s.ledger, state: 'parked' }, beats: [] };
+    }
+    if (s.name === 'sirius') {
+      return { ...s, row: stoppedRow(ctx, s, { turn: 'asking', asks: 1, queued: 1 }, { state: 'asking', parked: 1, phase: 'questions', questions: { answered: 0, total: 1 }, last: { kind: 'text', text: 'Rows with no shirt number: skip them, or import them as unnumbered?', at: ctx.ago(3) } }), ledger: { ...s.ledger, state: 'parked', parked: [{ q: 'Rows with no shirt number: skip them, or import them as unnumbered?', alts: ['import as unnumbered', 'skip them'], why: 'nothing is lost', from: 'ask' }] }, beats: [] };
+    }
+    // altair: a GUI session too this time, whose server was killed (no goodbye).
+    return {
+      ...s, kind: 'local',
+      row: stoppedRow(ctx, s, { clean: false, ago: 6 }, { git: { ...s.row.git, branch: 'nexus/altair-1', worktree: '../.nexus-wt/altair-1', up: 1, dirty: 2 }, last: { kind: 'tool', tool: 'Edit', arg: 'src/referees/availability.ts', at: ctx.ago(6) } }),
+      ledger: { ...s.ledger, state: 'parked' }, beats: [], transcript: [],
+    };
+  }),
+  script: [
+    { at: 600, session: 'deneb', gate: { resume: true, auto: 5200, then: [...at(0, 'deneb', pickedUp('picked up: carrying on 14.1'), tx({ kind: 'user', id: 'dp0', text: 'nexus restarted while you were mid-step. Check where you got to and carry on.' }), tx({ kind: 'text', id: 'dp1:0', agent: MAIN, text: 'Two of four venues were swept before the restart; carrying on with the other two.' }), beat({ k: 'agent', p: 'start', id: MAIN, label: 'session' }))] } },
+    { at: 600, session: 'sirius', gate: { resume: true, auto: 5400, then: [...at(0, 'sirius', pickedUp('picked up: its question waits in the inbox'), tx({ kind: 'text', id: 'sp1:0', agent: MAIN, text: 'Importing unnumbered rows for now; the question stays in the inbox.' }), beat({ k: 'agent', p: 'start', id: MAIN, label: 'session' }))] } },
+    { at: 600, session: 'altair', gate: { resume: true, auto: 5600, then: [...at(0, 'altair', pickedUp('picked up after a crash: reading where it got to'), tx({ kind: 'text', id: 'ap1:0', agent: MAIN, text: 'The availability edit is on disk, uncommitted. Running its tests before carrying on.' }), beat({ k: 'agent', p: 'start', id: MAIN, label: 'session' }))] } },
+  ],
+};
+
 export const SCENARIOS = Object.freeze({
   [fleetToTug.name]: fleetToTug,
   [bugToArchive.name]: bugToArchive,
@@ -674,6 +721,7 @@ export const SCENARIOS = Object.freeze({
   [cloudToken.name]: cloudToken,
   [stackHandoff.name]: stackHandoff,
   [changeFeed.name]: changeFeed,
+  [afterRestart.name]: afterRestart,
 });
 
 export const scenarioNames = () => Object.keys(SCENARIOS);

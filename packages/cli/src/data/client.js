@@ -3,6 +3,7 @@
 // nothing else calls fetch.
 import { useEffect, useReducer, useRef } from 'react';
 import { reduce, replay, initialState } from '../../shared/beats.mjs';
+import { createHealth } from './health.js';
 
 function readToken() {
   const url = new URL(window.location.href);
@@ -16,7 +17,20 @@ function readToken() {
   try { return sessionStorage.getItem('nexus-token') || ''; } catch { return ''; }
 }
 
-export const TOKEN = readToken();
+// `let`: a newer launch's tab on this origin can hand a new token over (data/health.js); every call reads it fresh.
+export let TOKEN = readToken();
+export const getToken = () => TOKEN;
+
+/** Take a token another tab of this origin handed over (a newer launch of nexus): kept for this tab's session. */
+export function adoptToken(t) {
+  TOKEN = String(t || '');
+  try { sessionStorage.setItem('nexus-token', TOKEN); } catch { /* in memory for this page */ }
+}
+
+/** Whether this tab still reaches its nexus (the stale-tab bar). One per page; none outside a browser (tests). */
+export const health = typeof window !== 'undefined' && typeof fetch === 'function'
+  ? createHealth({ token: getToken, adopt: adoptToken })
+  : null;
 
 /** An error that carries the HTTP status, so callers can tell "not built yet" (404) from "broke", and the answer's body. */
 export class ApiError extends Error {
@@ -171,7 +185,9 @@ export function useEvents(session, { off = false } = {}) {
       const src = new EventSource(`/api/events?${q}`);
       es.current = src;
       for (const type of EVENT_TYPES) src.addEventListener(type, (e) => dispatch([type, JSON.parse(e.data)]));
+      src.addEventListener('hello', () => health?.up());
       src.onerror = () => {
+        health?.down();
         dispatch(['down']);
         src.close();
         if (!closed) retry = setTimeout(open, 2000);

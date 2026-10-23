@@ -333,6 +333,21 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         world.putAway(row.id);
         return send(res, 200, { id: row.id, name: row.name, closed: true, kept: plan.holds, say: plan.say, worktree: plan.clean && plan.worktree ? { closed: true } : null });
       }
+      // Pick up (after a restart): a session that stopped with nexus comes back; Pick up all brings every one.
+      if (route === 'POST /api/pickup-all') {
+        await body(req);
+        const picked = world.rows().filter((r) => r.state === 'stopped' || (r.state === 'asking' && r.stop))
+          .map((r) => (world.resume(r.id) ? { id: r.id, name: r.name, resumed: true } : null)).filter(Boolean);
+        return send(res, 200, { status: 200, picked, failed: [] });
+      }
+      const pick = /^POST \/api\/sessions\/([\w.%-]+)\/pickup$/.exec(route);
+      if (pick) {
+        await body(req);
+        const s = world.session(decodeURIComponent(pick[1]));
+        if (!s) return send(res, 404, { error: 'no such session' });
+        world.resume(s.id);
+        return send(res, 200, { status: 200, id: s.id, name: s.name, resumed: true });
+      }
       const act = /^POST \/api\/sessions\/([\w.%-]+)\/(pause|resume|close|link|steer|parked)$/.exec(route);
       if (act) {
         await body(req);
