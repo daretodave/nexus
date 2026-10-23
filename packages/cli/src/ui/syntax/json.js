@@ -37,6 +37,19 @@ export function defaultFolds(value, { depth = 2, many = 24 } = {}) {
   return out;
 }
 
+/** Every box below the root that has entries: what Collapse all folds (the root stays open, so its keys show). */
+export function allFolds(value) {
+  const out = new Set();
+  const walk = (v, path, d) => {
+    if (!isBox(v)) return;
+    const kids = entries(v);
+    if (d > 0 && kids.length) out.add(path);
+    for (const [k, x] of kids) walk(x, child(path, k), d + 1);
+  };
+  walk(value, '', 0);
+  return out;
+}
+
 /**
  * Rows for a value: [{ tokens, depth, fold: { path, name, open, count } | null }]. `folded` is a Set of paths ('' the
  * root, '/key/0' below it, a '/' in a key written '~1' and a '~' as '~0'); `name` is what its toggle is called.

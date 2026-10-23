@@ -94,16 +94,27 @@
 /* ---- the code box: a block with its language, a copy button and a fold ------------------------------------------ */
 .code-box { position: relative; min-width: 0; }
 .code-box > pre { margin: 0; }
-/* The tools float over the block's top right only while it is hovered or focused, on a solid chip, so at rest they
-   never sit on a line of code. */
+/* The tools sit in the block's top right always, quiet at rest: the copy button alone, as a small icon, with no chip,
+   so it barely touches a line of code yet is there to click, to tab to and to tap. Hovered or focused (or on a touch
+   screen, where nothing hovers) they open into the solid chip with the language and the words. */
 .code-tools {
   position: absolute; top: 5px; right: 5px; display: flex; align-items: center; gap: 2px; padding: 2px;
-  border-radius: 9px; background: var(--surface-solid); box-shadow: var(--e-1);
+  border-radius: 9px; background: transparent; box-shadow: none;
   font-family: var(--font-ui); font-size: 11px; line-height: 16px;
-  opacity: 0; pointer-events: none; transition: opacity var(--dur-snap) var(--ease-snap);
+  opacity: .6; transition: opacity var(--dur-snap) var(--ease-snap), background var(--dur-snap) var(--ease-snap), box-shadow var(--dur-snap) var(--ease-snap);
 }
-.code-box:hover > .code-tools, .code-box:focus-within > .code-tools { opacity: 1; pointer-events: auto; }
+.code-tools > .code-lang, .code-tools .code-btn-word { display: none; }
+.code-tools > .code-btn { padding: 0 5px; }
+.code-box:hover > .code-tools, .code-box:focus-within > .code-tools {
+  opacity: 1; background: var(--surface-solid); box-shadow: var(--e-1);
+}
+.code-box:hover > .code-tools > .code-lang, .code-box:focus-within > .code-tools > .code-lang,
+.code-box:hover > .code-tools .code-btn-word, .code-box:focus-within > .code-tools .code-btn-word { display: inline; }
+.code-box:hover > .code-tools > .code-btn, .code-box:focus-within > .code-tools > .code-btn { padding: 0 8px; }
 .code-lang { padding: 0 6px; color: var(--text-3); letter-spacing: .04em; text-transform: lowercase; font-family: var(--font-mono); }
+/* Expand all / Collapse all on a JSON tree: the chevron points the way it goes. */
+.json-all .ic { transition: transform var(--dur-snap) var(--ease-snap); }
+.json-all.is-open .ic { transform: rotate(180deg); }
 .code-btn {
   display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 7px; border: 0;
   background: transparent; color: var(--text-2); cursor: pointer; font: inherit; font-size: 11px;
@@ -112,7 +123,11 @@
 .code-btn:hover { color: var(--text); background: color-mix(in oklab, var(--accent) 12%, transparent); }
 .code-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .code-btn.is-done { color: var(--st-done); }
-@media (hover: none) { .code-tools { opacity: 1; pointer-events: auto; } }
+@media (hover: none) {
+  .code-tools { opacity: 1; background: var(--surface-solid); box-shadow: var(--e-1); }
+  .code-tools > .code-lang, .code-tools .code-btn-word { display: inline; }
+  .code-tools > .code-btn { padding: 0 8px; min-height: 28px; }
+}
 
 /* Your own message's bubble sizes to its text but never past its column: a wide block scrolls inside it. */
 .msg-you > .bubble { max-width: 100%; min-width: 0; }
@@ -126,6 +141,14 @@
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 36px), transparent);
   mask-image: linear-gradient(to bottom, black calc(100% - 36px), transparent);
 }
+/* Streaming and past the fold: the newest lines at the folded height, the older ones fading out above them. */
+.code-box.is-tail > pre { overflow-y: hidden; }
+.code-box.is-tail > pre > code {
+  display: inline-block; min-width: 100%; vertical-align: top;
+  -webkit-mask-image: linear-gradient(to top, black calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to top, black calc(100% - 36px), transparent);
+}
+.code-box.is-tail > .code-pre { max-height: none; }
 .code-more {
   display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 4px; padding: 4px 8px;
   border: 0; border-radius: 8px; background: transparent; color: var(--text-3); cursor: pointer;
@@ -201,7 +224,7 @@
 .tui .syn-url { text-decoration: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .code-tools, .code-btn, .code-more, .code-more .ic, .json-fold .ic { transition: none; }
+  .code-tools, .code-btn, .code-more, .code-more .ic, .json-fold .ic, .json-all .ic { transition: none; }
 }
 
 /* An answer field's input sits in its wrapper now; the wrapper takes the input's place in the row. */

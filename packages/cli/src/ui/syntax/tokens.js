@@ -113,3 +113,30 @@ export function tokenClass(tk) {
   if (tk.t === 'br') return `syn-br syn-b${tk.d || 'x'}`;
   return `syn-${tk.t}`;
 }
+
+/** The tokens from line `from` on (0-based; the newline that ends line from - 1 dropped): a streaming block's tail. */
+export function dropLines(tokens, from) {
+  if (from <= 0) return tokens;
+  const out = [];
+  let left = from;
+  for (const tk of tokens) {
+    if (left <= 0) { out.push(tk); continue; }
+    let at = -1;
+    while (left > 0) {
+      const nl = tk.v.indexOf('\n', at + 1);
+      if (nl === -1) break;
+      at = nl;
+      left -= 1;
+    }
+    if (left <= 0 && at < tk.v.length - 1) out.push({ ...tk, v: tk.v.slice(at + 1) });
+  }
+  return out;
+}
+
+/** A text's last `n` lines (a trailing newline closing the last, as lineCount counts). */
+export function lastLines(text, n) {
+  const s = String(text ?? '');
+  const all = s.split('\n');
+  if (s.endsWith('\n')) all.pop();
+  return all.slice(Math.max(0, all.length - n)).join('\n');
+}

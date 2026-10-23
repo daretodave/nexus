@@ -22,7 +22,7 @@ test('a fenced block: coloured in its language at first paint, brackets by depth
   assert.equal(text(out.replace(/<div class="code-tools">[\s\S]*?<\/div>/, '')), 'const f = (a: number) => [a];');
 });
 
-test('a fenced block past twelve lines folds to its head with "Show all"; a streaming one never folds', async () => {
+test('a fenced block past twelve lines folds to its head with "Show all"; a streaming one folds to its tail at the same height', async () => {
   const { Markdown } = await import('../src/ui/markdown.jsx');
   const body = Array.from({ length: 30 }, (_, i) => `line_${i}()`).join('\n');
   const closed = html(createElement(Markdown, { text: `\`\`\`js\n${body}\n\`\`\`` }));
@@ -31,9 +31,42 @@ test('a fenced block past twelve lines folds to its head with "Show all"; a stre
   assert.match(closed, /line_7/);
   assert.doesNotMatch(closed, /line_8\b/, 'folded to eight lines');
   const streaming = html(createElement(Markdown, { text: `\`\`\`js\n${body}` }));
-  assert.match(streaming, /<pre class="md-pre is-open" data-lang="js">/);
-  assert.doesNotMatch(streaming, /is-folded|Show all/);
-  assert.match(streaming, /line_29/);
+  assert.match(streaming, /<div class="code-box is-tail"><pre class="md-pre is-open" data-lang="js">/);
+  assert.match(streaming, />Show all 30 lines</, 'the fold is decided while it streams, not at the end');
+  assert.match(streaming, /line_29/, 'the newest line stays in view');
+  assert.match(streaming, /line_22/);
+  assert.doesNotMatch(streaming, /line_21\b/, 'eight lines, the folded height');
+  const lines = (h) => (text(h.replace(/<div class="code-tools">[\s\S]*?<\/div>/, '').replace(/<button class="code-more"[\s\S]*?<\/button>/, '')).match(/\n/g) || []).length;
+  assert.equal(lines(streaming), lines(closed), 'streaming and closed show as many lines: no jump when it finishes');
+  const short = html(createElement(Markdown, { text: '```js\na()\nb()' }));
+  assert.doesNotMatch(short, /is-tail|is-folded|Show all/, 'a short streaming block stays whole');
+});
+
+test('tail and line helpers: the last lines of tokens and of text', async () => {
+  const { dropLines, lastLines } = await import('../src/ui/syntax/tokens.js');
+  const toks = [{ t: 'fn', v: 'a' }, { t: 'text', v: '\nb\n' }, { t: 'kw', v: 'c\nd' }];
+  assert.deepEqual(dropLines(toks, 2), [{ t: 'kw', v: 'c\nd' }]);
+  assert.deepEqual(dropLines(toks, 1), [{ t: 'text', v: 'b\n' }, { t: 'kw', v: 'c\nd' }]);
+  assert.deepEqual(dropLines(toks, 3), [{ t: 'kw', v: 'd' }]);
+  assert.equal(dropLines(toks, 0), toks);
+  assert.equal(lastLines('a\nb\nc\n', 2), 'b\nc');
+  assert.equal(lastLines('a', 5), 'a');
+});
+
+test('code tools are on the page at rest (quiet, focusable) and a JSON tree expands and collapses all', async () => {
+  const { CodeBlockView, JsonView } = await import('../src/ui/code.jsx');
+  const { allFolds } = await import('../src/ui/syntax/json.js');
+  const block = html(createElement(CodeBlockView, { text: 'ls -la', lang: 'shell' }));
+  assert.match(block, /<div class="code-tools"><span class="code-lang">shell<\/span><button class="code-btn" type="button" aria-label="Copy to clipboard">/, 'a real button, always rendered');
+  assert.match(block, /<span class="code-btn-word">Copy<\/span>/, 'the word is there for when the chip opens');
+  const value = { a: { b: { c: [1, 2] } }, d: [1], e: 1 };
+  assert.deepEqual([...allFolds(value)].sort(), ['/a', '/a/b', '/a/b/c', '/d'], 'every box under the root, the root left open');
+  const tree = html(createElement(JsonView, { value }));
+  assert.match(tree, /<button class="code-btn json-all" type="button" aria-label="Expand every node">[\s\S]*?Expand all/, 'something starts folded: Expand all');
+  const open = html(createElement(JsonView, { value, fold: false }));
+  assert.match(open, /<button class="code-btn json-all is-open" type="button" aria-label="Collapse every node">[\s\S]*?Collapse all/);
+  const flat = html(createElement(JsonView, { value: { a: 1, b: 'x' } }));
+  assert.doesNotMatch(flat, /json-all/, 'nothing to fold under the root: no button');
 });
 
 test('an unlabelled block stays plain text unless it is JSON', async () => {
