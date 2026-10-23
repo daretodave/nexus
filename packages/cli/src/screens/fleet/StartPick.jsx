@@ -1,7 +1,8 @@
 // Start heads-down: choose infinite or a spec first, then start. The Fleet's "start another session" tile and the
 // Heads-down screen with no session both draw it. A choice a session this server runs is already on opens that
 // session; one a terminal is on can still be started anyway. `compact` (the Fleet's start tile, sized like a card):
-// the list stays folded behind Start heads-down until it is asked for.
+// the list stays folded behind Start heads-down until it is asked for. Start empty skips the choice: a session with
+// no prompt and no chunk, opened in its cockpit for whatever the person types.
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, cx } from '../../ui/index.js';
@@ -31,6 +32,19 @@ export default function StartPick({ plan, sessions, open, onError, compact = fal
     onError?.(r.missing ? 'Starting a session from here is not wired up yet' : "Couldn't start a session", r.missing ? 'Start /heads-down in a terminal; it shows up here as it starts.' : r.error);
   }
 
+  async function startEmpty() {
+    setStarting(true);
+    const r = await act('/api/sessions', {});
+    setStarting(false);
+    if (r.ok && r.data?.id) { navigate(PATHS.cockpit(r.data.id)); return; }
+    onError?.(r.missing ? 'Starting a session from here is not wired up yet' : "Couldn't start a session", r.missing ? 'Start claude in a terminal; it shows up here as it starts.' : r.error);
+  }
+  const empty = (
+    <button className="btn btn-s" type="button" onClick={startEmpty} disabled={starting} title="A new session with no prompt and no chunk: type whatever you like in its cockpit">
+      Start empty
+    </button>
+  );
+
   if (!unfolded) {
     return (
       <div className="start-pick">
@@ -38,6 +52,7 @@ export default function StartPick({ plan, sessions, open, onError, compact = fal
           <button className="btn btn-primary btn-s" type="button" onClick={() => setUnfolded(true)} aria-expanded="false">
             <Icon name="plus" size={14} />Start heads-down
           </button>
+          {empty}
           <Link className="btn btn-ghost btn-s" to={PATHS.board}>Pick a chunk</Link>
         </div>
       </div>
@@ -61,6 +76,7 @@ export default function StartPick({ plan, sessions, open, onError, compact = fal
         <button className="btn btn-primary btn-s" type="button" onClick={start} disabled={!chosen || starting} aria-busy={starting || undefined}>
           {chosen?.running && !chosen.running.terminal ? <>Open {chosen.running.name}</> : <><Icon name="plus" size={14} />{!chosen ? 'Choose a spec or infinite' : `Start ${chosen.value === 'infinite' ? 'infinite' : `spec ${chosen.value}`}${chosen.running ? ' anyway' : ''}`}</>}
         </button>
+        {empty}
         <Link className="btn btn-ghost btn-s" to={PATHS.board}>Pick a chunk</Link>
       </div>
     </div>

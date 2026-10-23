@@ -49,3 +49,11 @@ test('a spec a terminal session is on is named, not opened: it can be started an
   const c = startChoices(PLAN, [{ id: 't', name: 'c0ffee12', kind: 'terminal', state: 'observing', chunk: { id: '65.9' } }]);
   assert.deepEqual(c.find((x) => x.value === '65').running, { id: 't', name: 'c0ffee12', terminal: true });
 });
+
+test('start empty is offered beside the choice: no prompt, opened in its cockpit', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(new URL('../src/screens/fleet/StartPick.jsx', import.meta.url), 'utf8');
+  assert.match(src, /act\('\/api\/sessions', \{\}\)/);
+  assert.match(src, /navigate\(PATHS\.cockpit\(r\.data\.id\)\)/);
+  assert.equal((src.match(/\{empty\}/g) || []).length, 2, 'folded and unfolded both offer it');
+});
