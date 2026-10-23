@@ -33,6 +33,9 @@ export function themeLook(theme) {
     : { blend: 'lighter', alpha: 1, halo: 1, light: false };
 }
 
+/** A colour's opaque css, for a fill or stroke whose alpha rides in globalAlpha. */
+export const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+
 export const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${Math.max(0, Math.min(1, a)).toFixed(3)})`;
 
 const TAU = Math.PI * 2;
@@ -40,7 +43,9 @@ const TAU = Math.PI * 2;
 /**
  * Draw every live particle. o: { color(token) -> [r,g,b,a], sprite(token) ->
  * a pre-drawn glow image or null, look (themeLook), alpha (the level's),
- * font (the mono stack, for glyphs) }. Returns how many were drawn.
+ * font (the mono stack, for glyphs) }. Returns how many were drawn. Each
+ * token's opaque css is built once per pass and a particle's own alpha rides
+ * in globalAlpha, so a busy frame makes a few strings, not one per particle.
  */
 export function drawPool(ctx, pool, o) {
   const look = o.look || themeLook('dark');
@@ -48,6 +53,8 @@ export function drawPool(ctx, pool, o) {
   ctx.globalCompositeOperation = look.blend;
   let drawn = 0;
   let font = '';
+  const solid = {};
+  const css = (token, c) => solid[token] || (solid[token] = rgb(c));
   for (let i = 0; i < pool.n; i += 1) {
     const p = pool.items[i];
     const env = envelope(p);
@@ -63,22 +70,22 @@ export function drawPool(ctx, pool, o) {
         // A streak along the way it is going: from velocity, or a seeker's last step.
         const dx = p.kind === 'seek' ? (p.x - p.tx) * 3 : p.vx * 0.045;
         const dy = p.kind === 'seek' ? (p.y - p.ty) * 3 : p.vy * 0.045;
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = rgba(c, a);
+        ctx.globalAlpha = Math.min(1, a);
+        ctx.strokeStyle = css(p.color, c);
         ctx.lineWidth = p.size;
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(p.x - dx, p.y - dy);
         ctx.lineTo(p.x, p.y);
         ctx.stroke();
-        if (p.kind === 'seek') glow(ctx, o, p, a * 0.9, p.size * 2.2 * look.halo + p.size);
+        if (p.kind === 'seek') glow(ctx, o, p, a * 0.9, p.size * 2.2 * look.halo + p.size, css);
         break;
       }
       case 'ring': {
         const t = p.age / p.life;
         const r = p.r0 + (p.r1 - p.r0) * (1 - (1 - t) * (1 - t));
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = rgba(c, a * (1 - t * 0.6));
+        ctx.globalAlpha = Math.min(1, a * (1 - t * 0.6));
+        ctx.strokeStyle = css(p.color, c);
         ctx.lineWidth = Math.max(0.5, p.size * (1 - t * 0.7));
         ctx.beginPath();
         ctx.arc(p.x, p.y, Math.max(0.5, r), 0, TAU);
@@ -88,21 +95,21 @@ export function drawPool(ctx, pool, o) {
       case 'pixel': {
         // Snapped to whole pixels: a terminal's cell, not a glow.
         const s = Math.max(1, Math.round(p.size));
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = rgba(c, a);
+        ctx.globalAlpha = Math.min(1, a);
+        ctx.fillStyle = css(p.color, c);
         ctx.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), s, s);
         break;
       }
       case 'glyph': {
         const f = `${Math.round(p.size)}px ${o.font || 'monospace'}`;
         if (f !== font) { ctx.font = f; font = f; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; }
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = rgba(c, a);
+        ctx.globalAlpha = Math.min(1, a);
+        ctx.fillStyle = css(p.color, c);
         ctx.fillText(p.glyph || '·', p.x, p.y);
         break;
       }
       default:
-        glow(ctx, o, p, a, p.size * (1 + 2.4 * look.halo));
+        glow(ctx, o, p, a, p.size * (1 + 2.4 * look.halo), css);
     }
   }
   ctx.globalAlpha = 1;
@@ -110,16 +117,15 @@ export function drawPool(ctx, pool, o) {
   return drawn;
 }
 
-function glow(ctx, o, p, a, r) {
+function glow(ctx, o, p, a, r, css) {
   const img = o.sprite ? o.sprite(p.color) : null;
   if (img) {
     ctx.globalAlpha = Math.min(1, a);
     ctx.drawImage(img, p.x - r, p.y - r, r * 2, r * 2);
     return;
   }
-  const c = o.color(p.color);
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = rgba(c, a);
+  ctx.globalAlpha = Math.min(1, a);
+  ctx.fillStyle = css(p.color, o.color(p.color));
   ctx.beginPath();
   ctx.arc(p.x, p.y, Math.max(0.5, p.size), 0, TAU);
   ctx.fill();

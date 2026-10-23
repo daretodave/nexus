@@ -31,7 +31,7 @@ export const TONE_TOKEN = { tool: '--st-tool', writing: '--st-writing', spawn: '
 /** Every token the effects name; the runtime resolves exactly these. */
 export const FX_TOKENS = [
   '--st-idle', '--st-thinking', '--st-tool', '--st-writing', '--st-blocked', '--st-done', '--st-failed', '--st-fallen',
-  '--sess', '--aurora-cyan', '--aurora-violet', '--aurora', '--star', '--text-3',
+  '--sess', '--aurora-cyan', '--aurora-violet', '--aurora', '--star',
 ];
 
 const CHEER = ['--st-done', '--aurora-cyan', '--aurora-violet', '--sess', '--st-blocked'];
@@ -157,7 +157,7 @@ function line(x0, y0, x1, y1) {
   return [[x0, y0], [x0 + (x1 - x0) / 3, y0], [x0 + ((x1 - x0) * 2) / 3, y1], [x1, y1]];
 }
 
-const PIXELS = ['▪', '·', '+', '*'];
+const PIXELS = ['■', '·', '+', '*'];
 
 /**
  * The specs for one event in a scene. k: the burst scale (level x governor).
@@ -320,7 +320,9 @@ export function ambientEmitters(scene, { hushed = false, asking = false } = {}) 
   return out;
 }
 
-const RISE_GLYPHS = ['·', '·', '+', '*', '0', '1', '<', '>', '/', '{', '}', '▪', '░', '$'];
+// A rising glyph drifts at most 3px/s sideways for at most 13s: this far from the box it never reaches it.
+const RISE_CLEAR = 40;
+const RISE_GLYPHS = ['·', '·', '+', '*', '0', '1', '<', '>', '/', '{', '}', '■', '░', '$'];
 
 /** One ambient particle for an emitter. */
 export function ambientSpawn(em, scene, rng, { hushed = false } = {}) {
@@ -370,12 +372,17 @@ export function ambientSpawn(em, scene, rng, { hushed = false } = {}) {
       return s ? { ...s, delay: 0, alpha: 0.6, prio: 0 } : null;
     }
     case 'rise': {
-      // Terminal motes: glyphs and pixels rising behind the box, thicker at the bottom, in the session's colour.
-      const glyph = rng() < 0.55;
+      // Terminal motes: glyphs and pixels rising up the sky, thicker at the bottom, in the session's colour. The box
+      // has no background, so a glyph in the terminal's own face inside it would read as dim text in the tape: glyphs
+      // keep to either side of it (RISE_CLEAR covers their sideways drift over a whole life), pixels go anywhere.
+      const x = rng() * scene.w;
+      const b = scene.box;
+      const inBox = !!b && x > b.left - RISE_CLEAR && x < b.left + b.width + RISE_CLEAR;
+      const glyph = !inBox && rng() < 0.55;
       const size = glyph ? Math.min(20, Math.max(9, scene.rh * (0.6 + rng() * 0.4))) : Math.max(2, Math.round((scene.cw || 8) * 0.25));
       return {
-        kind: glyph ? 'glyph' : 'pixel', x: rng() * scene.w, y: scene.h + 10 - rng() * scene.h * 0.25, vx: (rng() - 0.5) * 6, vy: -(14 + rng() * 26) * slow,
-        ax: 0, ay: 0, drag: 0, life: 7 + rng() * 6, size, color: rng() < 0.75 ? '--sess' : '--text-3', alpha: glyph ? 0.28 : 0.4,
+        kind: glyph ? 'glyph' : 'pixel', x, y: scene.h + 10 - rng() * scene.h * 0.25, vx: (rng() - 0.5) * 6, vy: -(14 + rng() * 26) * slow,
+        ax: 0, ay: 0, drag: 0, life: 7 + rng() * 6, size, color: rng() < 0.75 ? '--sess' : '--star', alpha: glyph ? 0.28 : 0.4,
         glyph: glyph ? RISE_GLYPHS[Math.floor(rng() * RISE_GLYPHS.length)] : undefined, prio: 0,
       };
     }

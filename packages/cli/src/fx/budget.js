@@ -29,8 +29,12 @@ export function createGovernor({ budget = FRAME_BUDGET_MS } = {}) {
       // Exponential averages: one slow frame (a GC, a tab switch) moves little.
       cost += (Math.max(0, costMs) - cost) * 0.1;
       gap += (Math.min(250, Math.max(0, gapMs)) - gap) * 0.1;
-      const over = cost > budget || gap > 34;
-      const easy = cost < budget * 0.5 && gap < 20;
+      // Cost decides. A long gap counts only while this layer's own share is large too: a display or a
+      // battery mode that runs requestAnimationFrame at 30Hz stretches every gap, and shedding particles there
+      // buys nothing back.
+      const heavy = cost > budget * 0.5;
+      const over = cost > budget || (heavy && gap > 34);
+      const easy = !heavy;
       if (over) scale = Math.max(MIN_SCALE, scale * 0.97);
       else if (easy) scale = Math.min(1, scale + 0.004);
       return scale;

@@ -94,18 +94,36 @@ function waitingAgent(s) {
 }
 
 /**
- * A stateful differ for a component: feed(snapshot) returns the events since
- * the last feed. Holding it in a ref keeps one baseline across re-renders.
+ * A stateful differ for a component: feed(snapshot, session) returns the
+ * events since the last feed. Holding it in a ref keeps one baseline across
+ * re-renders. A screen that switches sessions in place (the cockpit's /s/:id,
+ * heads-down's ?s=) keeps its store until the new channel's hello lands, and
+ * that store still reads connected. So a new session drops the baseline and
+ * waits for the transcript to be replaced; the first snapshot after that is
+ * the new session's baseline, not a burst of its history. The caller keeps
+ * the landed list undefined until the new session's ledger loads, so its
+ * first sha is a baseline too.
  */
 export function createFxDiffer() {
   let prev = null;
+  let key;
+  let stale = null;
   return {
-    feed(snap) {
+    feed(snap, session) {
+      if (session !== key) {
+        // The first feed only names the session; a change after that is a switch.
+        if (key !== undefined || prev) stale = snap.transcript;
+        key = session;
+        prev = null;
+      }
+      // Still the old session's store: nothing in it is news, and it is no baseline either.
+      if (stale && snap.transcript === stale) return [];
+      stale = null;
       const ev = diffFx(prev, snap);
       // Keep the baseline only once connected; a dropped channel makes the next hello a baseline again.
       prev = snap.connected ? snap : null;
       return ev;
     },
-    reset() { prev = null; },
+    reset() { prev = null; stale = null; },
   };
 }

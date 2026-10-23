@@ -24,6 +24,7 @@ import { PermissionModes } from './cloud-settings/permission-mode.jsx';
 import '../styles/permission-mode.css';
 import { ModelPrefs } from './cloud-settings/model-pref.jsx';
 import '../styles/model.css';
+import { useReducedMotion } from '../fx/pref.js';
 
 const SEC = { padding: '18px 26px', gap: 28 };
 const LABEL = { width: 120 };
@@ -64,6 +65,8 @@ function Saved({ state }) {
 
 export default function Settings() {
   const { app, repo } = useShell();
+  // Reduced motion wins over the particle pick (no canvas at all), so the help line says why On draws nothing.
+  const reducedMotion = useReducedMotion();
   const info = app?.data?.info || {};
   const local = useLocalSettings();
   // .owner at the primary checkout (a worktree's Settings sees it too), as /api/local reads it.
@@ -350,7 +353,7 @@ export default function Settings() {
                 <span className="t-body-s c-2" style={LABEL}>Particle effects</span>
                 <FxSeg />
               </div>
-              <p className="t-body-s c-3" style={{ margin: '8px 0 0' }}>Sparks on the agent stage and behind heads-down as the session works, kept for this browser. Subtle draws fewer; off draws none.</p>
+              <p className="t-body-s c-3" style={{ margin: '8px 0 0' }}>Sparks on the agent stage and behind heads-down as the session works, kept for this browser. Subtle draws fewer; off draws none.{reducedMotion ? ' Your system asks for reduced motion, so none are drawn whatever you pick.' : ''}</p>
             </div>
           </section>
         </div>

@@ -3,7 +3,8 @@
 // inside an effect), so a static render and a reduced-motion browser never
 // fetch it. It sizes the canvas to its box at the device's pixel ratio
 // (capped at 2), sleeps while the tab is hidden or the layer is off-screen,
-// and stops the loop outright when nothing is alive and nothing drifts.
+// draws a calm sky (drift alone, no burst alive) at about thirty frames a
+// second, and stops the loop outright when nothing is alive and nothing drifts.
 import { budgetFor, createGovernor } from './budget.js';
 import { drawPool, parseColor, themeLook } from './draw.js';
 import { FX_TOKENS, ambientEmitters, ambientSpawn, emitCount, headsScene, spawnsFor, stageScene } from './effects.js';
@@ -11,16 +12,20 @@ import { createPool, setLimit, spawn, step } from './pool.js';
 
 const MAX_DPR = 2;
 const CAPACITY = budgetFor('on').cap;
+// A calm frame waits this long before asking for the next one: on a 60Hz display that lands every other frame.
+// Drift moves a few pixels a second, so half the frames look the same and cost the battery half as much.
+const CALM_MS = 24;
 
 /**
- * Start the layer on `canvas`. Returns { setScene, setState, emit, destroy }.
+ * Start the layer on `canvas`. Returns { setScene, setState, emit, retheme, destroy }.
  * setScene(input): { mode: 'stage', nodes } or { mode: 'heads', target (a selector, element or ref), grid }.
  * setState({ level, hushed, asking }). emit(events): events from fx/events.js.
+ * retheme(): read the colours again (the layer's sess class changed).
  */
 export function createFx(canvas) {
   const ctx = canvas.getContext?.('2d');
   const host = canvas.parentElement;
-  if (!ctx || !host) return { setScene() {}, setState() {}, emit() {}, destroy() {} };
+  if (!ctx || !host) return { setScene() {}, setState() {}, emit() {}, retheme() {}, destroy() {} };
 
   const pool = createPool(CAPACITY);
   const governor = createGovernor();
@@ -35,7 +40,10 @@ export function createFx(canvas) {
   let look = themeLook('dark');
   let font = 'monospace';
   let raf = 0;
+  let timer = 0;
   let last = 0;
+  let dirty = false;
+  let following = false;
   let visible = !document.hidden;
   let onScreen = true;
   let dead = false;
@@ -131,10 +139,21 @@ export function createFx(canvas) {
   mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
   const onVis = () => { visible = !document.hidden; wake(); };
   document.addEventListener('visibilitychange', onVis);
-  // Heads-down's box scrolls when the window is narrow: its anchors move with it.
-  const onMove = () => { if (input?.mode === 'heads') measure(); };
-  window.addEventListener('scroll', onMove, true);
-  window.addEventListener('resize', onMove);
+  // Heads-down's box scrolls when the window is narrow: its anchors move with it. A scroll only marks the scene
+  // dirty and the next frame measures once, so a fling costs one layout read per frame, not one per event. The
+  // stage never moves this way, so only a heads scene listens.
+  const onMove = () => { dirty = true; wake(); };
+  function follow(on) {
+    if (on === following) return;
+    following = on;
+    if (on) {
+      window.addEventListener('scroll', onMove, true);
+      window.addEventListener('resize', onMove);
+    } else {
+      window.removeEventListener('scroll', onMove, true);
+      window.removeEventListener('resize', onMove);
+    }
+  }
 
   // ---- the loop --------------------------------------------------------------------
   function emitters() {
@@ -152,6 +171,7 @@ export function createFx(canvas) {
   }
 
   function tick(ts) {
+    if (dirty) { dirty = false; measure(); }
     const gap = last ? ts - last : 16.7;
     const dt = gap / 1000;
     last = ts;
@@ -169,20 +189,33 @@ export function createFx(canvas) {
     ctx.clearRect(0, 0, size.w, size.h);
     drawPool(ctx, pool, { color: (t) => colors[t], sprite: (t) => sprites[t], look, alpha: b.alpha, font });
     governor.feed(performance.now() - t0, gap);
-    // Asleep when nothing lives and nothing drifts: no frames at all until the next event.
-    if (pool.n > 0 || ems.length) raf = requestAnimationFrame(frame);
-    else last = 0;
+    // Asleep when nothing lives and nothing drifts: no frames at all until the next event. Calm (no burst alive)
+    // runs at half rate; a burst, or the event that starts one, brings full rate back at once.
+    if (pool.n > 0 || ems.length) {
+      if (bursting()) raf = requestAnimationFrame(frame);
+      else timer = setTimeout(() => { timer = 0; if (!dead) raf = requestAnimationFrame(frame); }, CALM_MS);
+    } else last = 0;
+  }
+
+  function bursting() {
+    for (let i = 0; i < pool.n; i += 1) if (pool.items[i].prio > 0) return true;
+    return false;
   }
 
   function wake() {
     if (dead || raf || !visible || !onScreen) return;
-    last = 0;
+    if (timer) {
+      // Only idling between calm frames: keep the clock, so the next step covers the real gap.
+      clearTimeout(timer);
+      timer = 0;
+    } else last = 0;
     raf = requestAnimationFrame(frame);
   }
 
   return {
     setScene(next) {
       input = next;
+      follow(input?.mode === 'heads');
       measure();
       wake();
     },
@@ -198,13 +231,18 @@ export function createFx(canvas) {
       for (const ev of events) for (const s of spawnsFor(ev, scene, rng, k)) spawn(pool, s);
       wake();
     },
+    retheme() {
+      readTokens();
+      wake();
+    },
     destroy() {
       dead = true;
       if (raf) cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
+      raf = 0; timer = 0;
       ro?.disconnect(); io?.disconnect(); mo.disconnect();
       document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('scroll', onMove, true);
-      window.removeEventListener('resize', onMove);
+      follow(false);
       probe.remove();
     },
   };

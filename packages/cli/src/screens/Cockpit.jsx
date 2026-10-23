@@ -56,7 +56,8 @@ export default function Cockpit() {
   useEffect(() => { rememberSession(id); }, [id]);
 
   const live = useEvents(id);
-  const ledgerRes = useResource(`/api/sessions/${encodeURIComponent(id)}`, { poll: 4000 });
+  const ledgerPath = `/api/sessions/${encodeURIComponent(id)}`;
+  const ledgerRes = useResource(ledgerPath, { poll: 4000 });
   // A chunk claimed, gated or archived on the live channel refreshes the ledger now (the river, the strip),
   // not at the next poll.
   useReloadOn(chunkStagesOf(live), ledgerRes);
@@ -247,9 +248,10 @@ export default function Cockpit() {
     ? { sha: lastLanded.sha, msg: `${lastLanded.chunk ? `${lastLanded.chunk} ` : ''}landed on main` } : null;
   const river = owner ? landed.slice(-3).reverse() : null;
   // The stage's particles: what the live channel says happened, a commit on main, and the hush. The landed list stays
-  // undefined until the ledger loads, so its first read is a baseline and not a landing. The tug streams only where
-  // the working stage draws its ask-tug filament.
-  const fx = { live, landed: ledger ? landed : undefined, hushed, asking: asking && view === 'working', sess: sessClass(session) };
+  // undefined until this session's ledger loads (a switch in place keeps the last session's until then), so its first
+  // read is a baseline and not a landing. The tug streams only where the working stage draws its ask-tug filament.
+  const fxLanded = ledger && ledgerRes.path === ledgerPath ? landed : undefined;
+  const fx = { live, session: id, landed: fxLanded, hushed, asking: asking && view === 'working', sess: sessClass(session) };
 
   const phases = phaseTrack({ ledger, owner, phase, stage, now, hrefFor });
   const layers = ctxLayers({ ledger, owner, phase: view, stage, info, sessionName: session.name, now });

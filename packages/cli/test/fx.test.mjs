@@ -16,6 +16,8 @@ import { budgetFor, createGovernor, scaled } from '../src/fx/budget.js';
 import { createPool, ease, envelope, setLimit, spawn, step } from '../src/fx/pool.js';
 import { drawPool, parseColor, rgba, themeLook } from '../src/fx/draw.js';
 import { fxActive, parseFx, FX_LEVELS } from '../src/fx/pref.js';
+import { safely, startFx } from '../src/fx/host.js';
+import { createFx } from '../src/fx/runtime.js';
 
 const EMPTY = { connected: false, stage: replay([]), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [] };
 const live = (over = {}) => ({ ...EMPTY, connected: true, ...over });
@@ -310,8 +312,15 @@ test('the governor trades particles for frame time, and gives them back', () => 
   for (let i = 0; i < 2000; i += 1) g.feed(0.5, 16.7);
   assert.equal(g.scale(), 1, 'quick frames restore it');
   const h = createGovernor();
-  for (let i = 0; i < 200; i += 1) h.feed(1, 60);
-  assert.ok(h.scale() < 1, 'a page that only gets 16 frames a second sheds load too');
+  for (let i = 0; i < 200; i += 1) h.feed(3, 60);
+  assert.ok(h.scale() < 1, 'a page that only gets 16 frames a second, with this layer a large share of each, sheds load too');
+  const cheap = createGovernor();
+  for (let i = 0; i < 500; i += 1) cheap.feed(0.6, 33.3);
+  assert.equal(cheap.scale(), 1, 'a 30Hz display (or a battery mode) is not overload when the frames cost little');
+  for (let i = 0; i < 200; i += 1) cheap.feed(12, 33.3);
+  assert.ok(cheap.scale() < 1);
+  for (let i = 0; i < 2000; i += 1) cheap.feed(0.6, 40);
+  assert.equal(cheap.scale(), 1, 'and gives the share back at 30Hz too');
 });
 
 // ---- drawing ------------------------------------------------------------------------------
@@ -395,16 +404,23 @@ test('the stage draws the layer first thing over the starfield, and only when as
 test('the screens wire it: the cockpit\'s live store and hush, heads-down\'s rows, Settings\' switch', () => {
   const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8');
   const cockpit = read('../src/screens/Cockpit.jsx');
-  assert.match(cockpit, /const fx = \{ live, landed: ledger \? landed : undefined, hushed, asking: asking && view === 'working', sess: sessClass\(session\) \};/);
+  assert.match(cockpit, /const fxLanded = ledger && ledgerRes\.path === ledgerPath \? landed : undefined;/, 'landed is read only once the ledger is this session\'s');
+  assert.match(cockpit, /const fx = \{ live, session: id, landed: fxLanded, hushed, asking: asking && view === 'working', sess: sessClass\(session\) \};/);
   assert.match(cockpit, /fx=\{fx\} \/>/);
   const heads = read('../src/screens/HeadsDown.jsx');
   assert.match(heads, /const grid = headsGrid\(rows\);/);
-  assert.match(heads, /<FxLayer\s+mode="heads" target="\.tui"/);
+  assert.match(heads, /const mine = ledger && ledgerRes\.path === `\/api\/sessions\/\$\{encodeURIComponent\(id\)\}`;/);
+  assert.match(heads, /<FxLayer\s+mode="heads" target="\.tui" grid=\{grid\} live=\{live\} session=\{id\} landed=\{mine \? ledger\.landed \|\| \[\] : undefined\} progress=\{mine \? grid\.bar\?\.head : undefined\}/);
   assert.match(heads, /<FxLayer mode="heads" target="\.sp-card" \/>/, 'the start card gets the drift alone');
   const settings = read('../src/screens/Settings.jsx');
   assert.match(settings, /Particle effects<\/span>\s*<FxSeg \/>/);
+  assert.match(settings, /const reducedMotion = useReducedMotion\(\);/);
+  assert.match(settings, /\{reducedMotion \? ' Your system asks for reduced motion, so none are drawn whatever you pick\.' : ''\}/, 'the help line says why On draws nothing');
   const fx = read('../src/ui/fx.jsx');
   assert.match(fx, /import\('\.\.\/fx\/runtime\.js'\)/, 'the engine loads on demand, in its own chunk');
+  assert.match(fx, /return startFx\(fx, \{/, 'the engine\'s life is fx/host.js startFx');
+  assert.match(fx, /useEffect\(\(\) => \{ safely\(fx, \(e\) => e\.retheme\(\)\); \}, \[sess\]\);/, 'a new sess class re-reads the colours');
+  assert.match(fx, /differ\.current\.feed\(fxSnapshot\(live, \{ landed, progress \}\), session\)/, 'the differ knows the session it follows');
 });
 
 test('fx.css leans only on nexus.css tokens, places the layer under everything, and takes no pointer', () => {
@@ -417,4 +433,248 @@ test('fx.css leans only on nexus.css tokens, places the layer under everything, 
   assert.match(css, /prefers-reduced-motion: reduce/);
   for (const t of FX_TOKENS.filter((t) => t !== '--sess')) assert.ok(nexus.includes(`${t}:`), `${t} is a nexus.css token`);
   assert.match(nexus, /\.sess-vega\s*\{[^}]*--sess:/, 'the session classes set --sess');
+});
+
+// ---- a session switched in place ----------------------------------------------------------
+
+test('a session switched in place is a baseline: the old store, the new hello, the new ledger set off nothing', () => {
+  const old = live({
+    transcript: [{ kind: 'tool', name: 'Bash', agent: 'main' }],
+    stage: beats({ k: 'agent', p: 'start', id: 'main' }),
+  });
+  const d = createFxDiffer();
+  assert.deepEqual(d.feed(fxSnapshot(old, { landed: [{ sha: 'a1' }], progress: 10 }), 's1'), [], 'the first session\'s hello');
+  // The route moves: the store is still the old session's (and still connected), the landed list waits for the ledger.
+  assert.deepEqual(d.feed(fxSnapshot(old, { landed: undefined, progress: undefined }), 's2'), [], 'the switch render');
+  const busy = live({
+    transcript: [
+      { kind: 'tool', name: 'Bash', agent: 'main' }, { kind: 'tool', name: 'Edit', agent: 'toolu_9' }, { kind: 'tool-error', agent: 'main', text: 'x' },
+      { kind: 'result', ok: false }, { kind: 'tool', name: 'Read', agent: 'main' },
+    ],
+    stage: beats({ k: 'agent', p: 'start', id: 'main' }, { k: 'agent', p: 'start', id: 'toolu_9', parent: 'main' }, { k: 'agent', p: 'start', id: 'toolu_8', parent: 'main' }),
+  });
+  assert.deepEqual(d.feed(fxSnapshot(busy, { landed: undefined }), 's2'), [], 'the new session\'s hello: longer, other agents, a baseline');
+  assert.deepEqual(d.feed(fxSnapshot(busy, { landed: [{ sha: 'b2' }], progress: 40 }), 's2'), [], 'its ledger loading: another sha, no landing, no streak');
+  const next = { ...busy, transcript: [...busy.transcript, { kind: 'tool', name: 'Grep', agent: 'main' }] };
+  assert.deepEqual(d.feed(fxSnapshot(next, { landed: [{ sha: 'b2' }], progress: 40 }), 's2'), [{ type: 'tool', agent: 'main', name: 'Grep', tone: 'tool' }], 'then news is news');
+
+  // Even a feed that skips the switch render (the new hello is the first thing seen) is no storm.
+  const e = createFxDiffer();
+  e.feed(fxSnapshot(old, { landed: [{ sha: 'a1' }] }), 's1');
+  assert.deepEqual(e.feed(fxSnapshot(busy, { landed: [{ sha: 'b2' }], progress: 40 }), 's2'), []);
+  assert.deepEqual(e.feed(fxSnapshot(busy, { landed: [{ sha: 'b3' }], progress: 41 }), 's2'), [], 'held until the store moves');
+  assert.deepEqual(e.feed(fxSnapshot(next, { landed: [{ sha: 'b3' }], progress: 41 }), 's2'), [], 'which is the baseline');
+  const r = createFxDiffer();
+  r.feed(fxSnapshot(old, { landed: [{ sha: 'a1' }] }));
+  r.reset();
+  assert.deepEqual(r.feed(fxSnapshot(busy, { landed: [{ sha: 'b2' }] })), [], 'reset: the next snapshot is a baseline');
+});
+
+// ---- the engine's life (fx/host.js) ---------------------------------------------------------
+
+const flush = () => new Promise((r) => setImmediate(r));
+
+test('the engine starts on load, stops once, and a layer turned off before the load lands starts none', async () => {
+  const ref = { current: null };
+  let made = 0;
+  let destroyed = 0;
+  const calls = [];
+  const load = async () => ({ createFx: () => { made += 1; return { setState: (s) => calls.push(s), setScene() {}, destroy: () => { destroyed += 1; } }; } });
+  const canvas = () => ({});
+  const first = (e) => e.setState('first');
+
+  const stop = startFx(ref, { load, canvas, first });
+  assert.equal(ref.current, null, 'nothing until the chunk loads');
+  await flush();
+  assert.equal(made, 1);
+  assert.ok(ref.current, 'on: an engine');
+  assert.deepEqual(calls, ['first'], 'brought up to date on start');
+  stop();
+  assert.equal(destroyed, 1, 'off: destroyed once');
+  assert.equal(ref.current, null, 'and let go');
+  stop();
+  assert.equal(destroyed, 1, 'a second cleanup destroys nothing');
+
+  const late = startFx(ref, { load, canvas, first });
+  late();
+  await flush();
+  assert.equal(made, 1, 'turned off before the import landed: no engine at all');
+  assert.equal(ref.current, null);
+
+  const gone = startFx(ref, { load, canvas: () => null, first });
+  await flush();
+  assert.equal(made, 1, 'no canvas (unmounted): no engine');
+  gone();
+
+  const again = startFx(ref, { load, canvas, first });
+  await flush();
+  assert.equal(made, 2, 'on again: a new engine');
+  again();
+  assert.equal(destroyed, 2);
+
+  const broken = startFx(ref, { load: async () => { throw new Error('offline'); }, canvas, first });
+  await flush();
+  assert.equal(ref.current, null, 'no chunk: no particles, no throw');
+  broken();
+});
+
+test('an engine that throws is destroyed and dropped, and the page goes on', async () => {
+  const ref = { current: null };
+  let destroyed = 0;
+  const load = async () => ({ createFx: () => ({ setState() { throw new Error('bad state'); }, destroy: () => { destroyed += 1; } }) });
+  const stop = startFx(ref, { load, canvas: () => ({}), first: (e) => e.setState({}) });
+  await flush();
+  assert.equal(ref.current, null, 'a throw on start drops it');
+  assert.equal(destroyed, 1);
+  stop();
+  assert.equal(destroyed, 1, 'and it is not destroyed twice');
+
+  ref.current = { emit() { throw new Error('boom'); }, destroy() { throw new Error('worse'); } };
+  assert.doesNotThrow(() => safely(ref, (e) => e.emit([])));
+  assert.equal(ref.current, null, 'a throw anywhere, even in destroy, lets it go');
+  assert.doesNotThrow(() => safely(ref, (e) => e.emit([])), 'and a call with no engine is nothing');
+});
+
+// ---- heads-down motes and the drawing pass -------------------------------------------------------
+
+test('heads-down glyph motes keep beside the box, never in it, and never in the dim-text colour', () => {
+  for (const scene of [
+    headsScene({ left: 200, top: 40, width: 1000, height: 600 }, { rows: 30, cols: 120 }, 1400, 900),
+    headsScene({ left: 420, top: 300, width: 560, height: 300 }, undefined, 1400, 900),
+  ]) {
+    const [em] = ambientEmitters(scene, {});
+    const rng = seeded(11);
+    const motes = Array.from({ length: 600 }, () => ambientSpawn(em, scene, rng));
+    const glyphs = motes.filter((m) => m.kind === 'glyph');
+    assert.ok(glyphs.length > 20, 'there are glyphs');
+    assert.ok(motes.some((m) => m.kind === 'pixel' && m.x > scene.box.left && m.x < scene.box.left + scene.box.width), 'pixels may pass behind the box');
+    for (const g of glyphs) {
+      // Its furthest sideways drift over a whole life stays outside the box.
+      const reach = Math.abs(g.vx) * g.life;
+      assert.ok(g.x + reach < scene.box.left || g.x - reach > scene.box.left + scene.box.width, `glyph at ${g.x.toFixed(0)} keeps out of the box`);
+    }
+    assert.ok(motes.every((m) => m.color !== '--text-3'), 'no mote wears the tape\'s dim-text token');
+  }
+  assert.ok(!FX_TOKENS.includes('--text-3'));
+  const wide = headsScene({ left: 0, top: 0, width: 1400, height: 900 }, { rows: 40, cols: 120 }, 1400, 900);
+  const [em] = ambientEmitters(wide, {});
+  const rng = seeded(3);
+  assert.ok(Array.from({ length: 200 }, () => ambientSpawn(em, wide, rng)).every((m) => m.kind === 'pixel'), 'a box as wide as the window: pixels only');
+});
+
+test('the start card (no grid) still anchors every event at its centre in usual cells', () => {
+  const card = headsScene({ left: 420, top: 300, width: 560, height: 300 }, undefined, 1400, 900);
+  assert.equal(card.cw, 9.6);
+  assert.equal(card.bar, null);
+  assert.deepEqual(card.tape, { x: 700, y: 450 });
+  assert.deepEqual(card.prompt, card.tape);
+  for (const type of ['tool', 'error', 'agent-end', 'result', 'chunk', 'landed', 'progress', 'ask']) {
+    const out = spawnsFor({ type, ok: type !== 'result', stage: 'archive' }, card, seeded(2));
+    assert.ok(out.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)), `${type}: finite`);
+  }
+  assert.deepEqual(spawnsFor({ type: 'progress' }, card, seeded(2)), [], 'no phase track: no streak');
+});
+
+test('the drawing pass builds one css string per colour, not one per particle', () => {
+  const pool = createPool(64);
+  for (let i = 0; i < 40; i += 1) spawn(pool, { kind: ['spark', 'ring', 'pixel', 'glyph'][i % 4], x: i, y: i, vx: 5, life: 2, age: 0, alpha: 0.5 + (i % 5) / 10, color: i % 2 ? '--st-tool' : '--st-done', r0: 1, r1: 5, glyph: '*' });
+  pool.items.slice(0, pool.n).forEach((p) => { p.age = 0.5; });
+  const styles = [];
+  const alphas = new Set();
+  const ctx = fakeCtx();
+  for (const k of ['fillStyle', 'strokeStyle']) Object.defineProperty(ctx, k, { set: (v) => styles.push(v), get: () => styles[styles.length - 1] });
+  Object.defineProperty(ctx, 'globalAlpha', { set: (v) => alphas.add(v), get: () => 1 });
+  const colors = { '--st-tool': [82, 221, 240, 1], '--st-done': [120, 230, 160, 1] };
+  drawPool(ctx, pool, { color: (t) => colors[t], sprite: () => null, look: themeLook('dark'), alpha: 1 });
+  assert.deepEqual([...new Set(styles)].sort(), ['rgb(120,230,160)', 'rgb(82,221,240)'], 'opaque per colour');
+  assert.ok(alphas.size > 3, 'each particle\'s alpha rides in globalAlpha');
+});
+
+// ---- the runtime against a stubbed page ---------------------------------------------------------
+
+function stubPage() {
+  const saved = {};
+  for (const k of ['document', 'window', 'getComputedStyle', 'requestAnimationFrame', 'cancelAnimationFrame', 'MutationObserver', 'ResizeObserver', 'IntersectionObserver']) saved[k] = Object.getOwnPropertyDescriptor(globalThis, k);
+  const on = [];
+  const target = (name) => ({
+    addEventListener: (type, fn, cap) => on.push([name, type, fn, !!cap]),
+    removeEventListener: (type, fn, cap) => { const i = on.findIndex((l) => l[0] === name && l[1] === type && l[2] === fn && l[3] === !!cap); if (i >= 0) on.splice(i, 1); },
+  });
+  const frames = [];
+  let id = 0;
+  const cancelled = [];
+  const stops = [];
+  const observers = [];
+  const page = { on, frames, cancelled, stops, observers, sess: 'rgb(1, 2, 3)', reads: 0 };
+  const ctx = () => ({ ...fakeCtx(), setTransform() {}, clearRect() {}, createRadialGradient: () => ({ addColorStop: (o, c) => stops.push(c) }), getImageData: () => ({ data: [0, 0, 0, 0] }) });
+  const tui = { getBoundingClientRect: () => { page.reads += 1; return { left: 100, top: 40, width: 1000, height: 600 }; } };
+  const host = { appendChild: (el) => { page.probe = el; }, parentElement: { querySelector: () => tui } };
+  page.canvas = { width: 0, height: 0, parentElement: host, getContext: () => ctx(), getBoundingClientRect: () => ({ left: 0, top: 0, width: 1200, height: 800 }) };
+  globalThis.document = {
+    hidden: false,
+    documentElement: { getAttribute: () => 'dark' },
+    createElement: (tag) => (tag === 'canvas' ? { width: 0, height: 0, getContext: () => ctx() } : { style: {}, setAttribute() {}, remove() { this.removed = true; } }),
+    ...target('document'),
+  };
+  globalThis.window = { devicePixelRatio: 1, ...target('window') };
+  globalThis.getComputedStyle = (el) => ({ color: String(el.style?.color || '').startsWith('var(--sess') ? page.sess : 'rgb(10, 20, 30)', getPropertyValue: () => '' });
+  globalThis.requestAnimationFrame = (fn) => { id += 1; frames.push({ id, fn }); return id; };
+  globalThis.cancelAnimationFrame = (n) => { cancelled.push(n); const i = frames.findIndex((f) => f.id === n); if (i >= 0) frames.splice(i, 1); };
+  globalThis.MutationObserver = class { constructor(cb) { this.cb = cb; this.live = false; observers.push(this); } observe() { this.live = true; } disconnect() { this.live = false; } };
+  delete globalThis.ResizeObserver;
+  delete globalThis.IntersectionObserver;
+  let ts = 0;
+  page.run = () => { ts += 16.7; for (const f of frames.splice(0)) f.fn(ts); };
+  page.restore = () => {
+    for (const [k, d] of Object.entries(saved)) { if (d) Object.defineProperty(globalThis, k, d); else delete globalThis[k]; }
+  };
+  return page;
+}
+
+test('the runtime: listens only where it must, measures a scroll once a frame, idles calm, re-reads colours, and cleans up', () => {
+  const page = stubPage();
+  try {
+    const fx = createFx(page.canvas);
+    assert.ok(page.observers[0].live, 'it watches the theme on <html>');
+    assert.deepEqual(page.on.map((l) => `${l[0]}:${l[1]}`), ['document:visibilitychange']);
+
+    fx.setScene({ mode: 'stage', nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'idle', main: true }] });
+    assert.equal(page.on.filter((l) => l[0] === 'window').length, 0, 'the stage never listens to window scrolls');
+    assert.equal(page.frames.length, 1, 'a scene wakes the loop');
+    page.run();
+    assert.equal(page.frames.length, 0, 'drift alone is calm: the next frame waits on a timer, not the very next vsync');
+    fx.emit([{ type: 'tool', agent: 'main', tone: 'tool' }]);
+    assert.equal(page.frames.length, 1, 'an event brings full rate back at once');
+    page.run();
+    assert.equal(page.frames.length, 1, 'a burst alive: every frame');
+
+    fx.setScene({ mode: 'heads', target: '.tui', grid: { rows: 30, cols: 120 } });
+    const scrolls = page.on.filter((l) => l[0] === 'window');
+    assert.deepEqual(scrolls.map((l) => `${l[1]}:${l[3]}`), ['scroll:true', 'resize:false'], 'a heads scene follows scrolls');
+    const before = page.reads;
+    for (let i = 0; i < 20; i += 1) scrolls[0][2]();
+    assert.equal(page.reads, before, 'a scroll only marks the scene');
+    page.run();
+    assert.equal(page.reads, before + 1, 'the next frame measures once');
+
+    const stops = page.stops.length;
+    page.sess = 'rgb(9, 9, 9)';
+    fx.retheme();
+    assert.ok(page.stops.slice(stops).some((c) => c.includes('9,9,9')), 'retheme re-reads --sess');
+
+    fx.setScene({ mode: 'stage', nodes: [] });
+    assert.equal(page.on.filter((l) => l[0] === 'window').length, 0, 'back on the stage: no window listeners');
+    fx.setScene({ mode: 'heads', target: '.tui', grid: { rows: 30, cols: 120 } });
+    fx.destroy();
+    assert.deepEqual(page.on, [], 'destroy removes every listener');
+    assert.equal(page.observers[0].live, false, 'and the theme watch');
+    assert.ok(page.probe.removed, 'and the token probe');
+    assert.ok(page.cancelled.length >= 1, 'and the pending frame');
+    for (const f of page.frames.splice(0)) f.fn(1e6);
+    fx.emit([{ type: 'error', agent: 'main' }]);
+    assert.equal(page.frames.length, 0, 'a destroyed layer never wakes');
+  } finally {
+    page.restore();
+  }
+  assert.equal(typeof globalThis.window, 'undefined', 'the page stubs are gone');
 });

@@ -8,28 +8,22 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { cx, Seg } from './controls.jsx';
 import { createFxDiffer, fxSnapshot } from '../fx/events.js';
+import { safely, startFx } from '../fx/host.js';
 import { fxActive, useFxLevel, useReducedMotion } from '../fx/pref.js';
 import '../styles/fx.css';
-
-/** Run one call on the engine; one that throws is stopped, and the page goes on without particles. */
-function safely(ref, call) {
-  if (!ref.current) return;
-  try { call(ref.current); } catch {
-    try { ref.current.destroy(); } catch { /* already broken: let it go */ }
-    ref.current = null;
-  }
-}
 
 /**
  * mode: 'stage' (absolute over the cockpit's stage; nodes: model.js
  * view.nodes) or 'heads' (fixed over the window; target: a selector for the
  * box beside the layer, grid: { rows, cols, bar, tape, prompt }).
- * live: the useEvents store; landed: the ledger's landed list (undefined
- * until it loads); progress: a number that grows as the phase does.
+ * live: the useEvents store; session: the session it follows (a new one is
+ * a baseline, not news); landed: the ledger's landed list (undefined until
+ * this session's ledger loads); progress: a number that grows as the phase
+ * does (undefined likewise).
  * hushed calms the drift; asking streams the tug; sess: the session's
  * sess-* class, so the drift wears its colour.
  */
-export function FxLayer({ mode = 'stage', nodes, target, grid, live, landed, progress, hushed = false, asking = false, sess }) {
+export function FxLayer({ mode = 'stage', nodes, target, grid, live, session, landed, progress, hushed = false, asking = false, sess }) {
   const [level] = useFxLevel();
   const reduced = useReducedMotion();
   const on = fxActive(level, reduced);
@@ -48,27 +42,26 @@ export function FxLayer({ mode = 'stage', nodes, target, grid, live, landed, pro
 
   useEffect(() => {
     if (!on) return undefined;
-    let gone = false;
-    let inst = null;
-    import('../fx/runtime.js').then(({ createFx }) => {
-      if (gone || !canvas.current) return;
-      inst = createFx(canvas.current);
-      fx.current = inst;
-      safely(fx, (e) => { e.setState(latest.current.state); e.setScene(latest.current.scene); });
-    }).catch(() => { /* no engine (an offline chunk): the page simply has no particles */ });
-    return () => { gone = true; if (fx.current === inst) safely(fx, (e) => e.destroy()); fx.current = null; };
+    return startFx(fx, {
+      load: () => import('../fx/runtime.js'),
+      canvas: () => canvas.current,
+      first: (e) => { e.setState(latest.current.state); e.setScene(latest.current.scene); },
+    });
   }, [on]);
 
   useEffect(() => { safely(fx, (e) => e.setState({ level, hushed, asking })); }, [level, hushed, asking]);
   useEffect(() => { safely(fx, (e) => e.setScene(scene)); }, [scene]);
+  // The sess class sits on this layer's own wrapper, which the engine's watch on <html> never sees: a ledger that
+  // names the session after the engine started (or a switch in place) re-reads the colours here.
+  useEffect(() => { safely(fx, (e) => e.retheme()); }, [sess]);
 
   // Diff every store change, on or off, so turning the layer on later starts from now and not from a backlog.
   useEffect(() => {
     if (!live) return;
-    const events = differ.current.feed(fxSnapshot(live, { landed, progress }));
+    const events = differ.current.feed(fxSnapshot(live, { landed, progress }), session);
     // Decoration never takes the screen down: an engine that throws is stopped (safely) and the page goes on.
     if (events.length) safely(fx, (e) => e.emit(events));
-  }, [live, landed, progress]);
+  }, [live, session, landed, progress]);
 
   if (!on) return null;
   return (

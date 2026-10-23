@@ -208,6 +208,9 @@ export default function HeadsDown() {
   // No AppFrame here, so the hush is the pending questions and permissions themselves.
   const grid = headsGrid(rows);
   const asking = live.asks.length + live.permissions.length > 0;
+  // A switch in place (?s=) keeps the last session's ledger until this one's loads: its landing and its phase are no
+  // news until then, so the layer reads them only once the ledger is this session's.
+  const mine = ledger && ledgerRes.path === `/api/sessions/${encodeURIComponent(id)}`;
 
   const focusPrompt = (e) => {
     if (e.target.closest('a, button, input')) return;
@@ -231,7 +234,7 @@ export default function HeadsDown() {
         }}
       />
       <FxLayer
-        mode="heads" target=".tui" grid={grid} live={live} landed={ledger ? ledger.landed || [] : undefined} progress={grid.bar?.head}
+        mode="heads" target=".tui" grid={grid} live={live} session={id} landed={mine ? ledger.landed || [] : undefined} progress={mine ? grid.bar?.head : undefined}
         hushed={asking} asking={asking} sess={sessClass({ name: ledger?.name, kind: ledger?.kind })}
       />
       <Tui label={`Heads-down view of the ${name} session`} style={{ whiteSpace: 'normal' }}>
