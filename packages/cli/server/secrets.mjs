@@ -180,7 +180,7 @@ function rootEnvNames(root) {
  * @param {object} [o.setup]             setupVault overrides (tests: { gh } a fake pull request opener, { source })
  * @param {function} [o.setupFn]         replaces setupVault entirely (tests)
  */
-export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => effectiveOwner(repo), mask = createMask(), setup: setupOpts, setupFn } = {}) {
+export function createSecrets({ repo, run, ghRun = shRun, vault: vaultOpts = {}, owner = () => effectiveOwner(repo), mask = createMask(), setup: setupOpts, setupFn } = {}) {
   let rootP = null;
   const vroot = () => (rootP ||= primaryRoot(repo).catch(() => repo));
   let kitP = null;
@@ -194,14 +194,25 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
 
   // `gh secret list` (the kit's status reads the Actions sink's names, spec 49 A5), kept briefly: the vault polls.
   // The kit's own runner waits on gh in the foreground (spawnSync), and gh asks GitHub: one read held the whole server
-  // still for seconds, every screen with it. So with the real runner the read runs in the background (ghReading): a
-  // status that finds nothing kept yet waits for it and reads again (status below), one that finds an old answer uses
-  // it while the new one comes. An injected runner (tests) is called as it is.
+  // still for seconds, every screen with it. So with the real runner the read runs in the background (ghReads, one
+  // per list asked): a status that finds nothing kept yet waits for it and reads again (status below), one that finds
+  // an old answer uses it while the new one comes. An injected runner (tests) is called as it is; `ghRun` stands in
+  // for the background read in tests.
   let ghList = { at: 0, key: '', r: null };
-  let ghReading = null;
-  let ghMissed = false;
+  let ghLast = null; // the last list asked: after a write drops the answer, status asks it again before reading once
+  const ghReads = new Map();
   const forgetGhList = () => { ghList = { at: 0, key: '', r: null }; };
-  function cachedRun(k) {
+  function ghRead(key, args, cwd) {
+    ghLast = { key, args, cwd };
+    if (!ghReads.has(key)) {
+      ghReads.set(key, Promise.resolve()
+        .then(() => ghRun('gh', args, { cwd, timeout: 15000 }))
+        .then((x) => { ghList = { at: Date.now(), key, r: x.missing ? { status: 127, missing: true } : { status: x.code, stdout: x.stdout } }; })
+        .finally(() => { ghReads.delete(key); }));
+    }
+    return ghReads.get(key);
+  }
+  function cachedRun(k, seen = {}) {
     const base = run || k.m.sinks.spawnRunner;
     if (typeof base !== 'function') return undefined;
     return (cmd, args, opts = {}) => {
@@ -214,13 +225,9 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
         ghList = { at: Date.now(), key, r };
         return r;
       }
-      if (!ghReading) {
-        ghReading = shRun('gh', args, { cwd: opts.cwd, timeout: 15000 })
-          .then((x) => { ghList = { at: Date.now(), key, r: x.missing ? { status: 127, missing: true } : { status: x.code, stdout: x.stdout } }; })
-          .finally(() => { ghReading = null; });
-      }
+      const reading = ghRead(key, args, opts.cwd);
       if (have) return ghList.r;
-      ghMissed = true;
+      seen.wait = reading;
       return { status: 1 };
     };
   }
@@ -274,15 +281,18 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
 
   /** GET /api/secrets: names and status (where set, each destination's last push, the chunk that asked, age), never a value. */
   async function status() {
-    ghMissed = false;
-    const first = await statusOnce();
-    const reading = ghReading;
-    if (!ghMissed || !reading) return first;
+    // After a write the kept list is gone, but which list to ask is known: ask it first, so the status reads once.
+    if (!run && ghLast && !(ghList.r && ghList.key === ghLast.key)) await ghRead(ghLast.key, ghLast.args, ghLast.cwd).catch(() => {});
+    const seen = {};
+    const first = await statusOnce(seen);
+    const reading = seen.wait;
+    if (!reading) return first;
+    // Only the first look at a list (this server has never asked it) reads twice: once to learn what to ask gh.
     await reading.catch(() => {});
     return statusOnce();
   }
 
-  async function statusOnce() {
+  async function statusOnce(seen) {
     const k = await kit();
     if (!k.ok && k.missing) {
       // No vault scripts at all: not a failure, an empty state with a way forward (Set up the vault).
@@ -292,7 +302,7 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     }
     if (!k.ok) return unavailable(k);
     const root = await vroot();
-    const listRun = cachedRun(k);
+    const listRun = cachedRun(k, seen);
     const r = await cli(k, ['status', '--json', '--root', root], listRun ? { run: listRun } : {});
     if (r.code !== 0) return failed(r);
     let st;

@@ -501,13 +501,20 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   // NEEDS_MS while a tab watches (a terminal session's ledger can fall over without this server hearing it).
   let needsTimer = null;
   let needsSent = '';
+  // Each look is numbered: two can run at once (a session answered while one was reading), and one that started
+  // before the last one sent is older than what the tabs already show, so it is dropped.
+  let needsAsked = 0;
+  let needsShown = 0;
   function needsSoon(ms = 150) {
     if (needsTimer) return;
     needsTimer = setTimeout(async () => {
       needsTimer = null;
+      const look = ++needsAsked;
       const hubs = [...[...sessions.values()].map((s) => s.hub), elsewhere];
       try {
         const v = await reads.get('needs', needsNow, { fresh: true });
+        if (look < needsShown) return;
+        needsShown = look;
         const key = JSON.stringify(v.value.items);
         if (key === needsSent) return;
         needsSent = key;

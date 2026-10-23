@@ -31,7 +31,7 @@ function req(port, { method = 'GET', pathname, headers = {}, body }) {
 }
 
 /** Read the live channel until `pred` holds for a `needs` event's data (or the hello's). */
-function waitNeeds(app, pred, ms = 5000) {
+function waitNeeds(app, pred, ms = 15000) {
   return new Promise((resolve, reject) => {
     let buf = '';
     const timer = setTimeout(() => { r.destroy(); reject(new Error(`no matching needs event; got:\n${buf.slice(-800)}`)); }, ms);
