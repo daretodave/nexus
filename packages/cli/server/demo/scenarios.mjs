@@ -9,6 +9,8 @@
 //                   the plan, is claimed, built, gated and closed
 //   fall-and-resume deneb fell over mid-chunk; Resume on its tile picks it up and it finishes the chunk
 //   heads-down      altair works a claimed list of three chunks, one after another
+//   plain-folder    a folder with no git: Detect makes it a repo a click per step, a confirm before GitHub
+//   cloud-token     a GitHub repo with the loop and no sign-in: the setup-token walkthrough, then the paste
 //
 // The script format is server/demo/world.mjs's. Times are ms from the start (or from the gate that holds them).
 // A scenario may carry a `shot` for the recorder (scripts/record.mjs): the screen it opens on (`fleet`, or a
@@ -368,11 +370,92 @@ export const headsDown = {
   ],
 };
 
+// ---- a folder that is not a repo yet, and the loop's sign-in (demo/repo-start.mjs stages their routes) ---------
+// Their own invented names: the folder "lantern", the person Ada Park (gh login ada-park). One idle home session.
+
+const LANTERN = 'lantern';
+
+/** One quiet session with no chunk: a plain folder has no plan yet. */
+function idleSession(ctx, name, text) {
+  const id = `demo-${name}`;
+  const git = { branch: 'main', worktree: '', up: 0, down: 0, behind: 0, dirty: 0, pr: null, noPr: true, claims: [], commits: [] };
+  return {
+    id, name, kind: 'local',
+    row: {
+      claude: `c-${name}`, repo: LANTERN, mode: 'owner', state: 'live', phase: 'idle', progress: null, chunk: null,
+      orb: 'idle', agents: [], event: { at: ctx.ago(0), text: 'waiting for you' }, beat: ctx.ago(0), parked: 0, git,
+      linked: true, steer: 'sdk', live: true, hosted: true, pause: 'run', sources: ['server'],
+    },
+    ledger: {
+      claude: `c-${name}`, repo: LANTERN, mode: 'owner', phase: 'idle', state: 'live', startedAt: ctx.ago(2), workedMs: 120000,
+      budget: null, chunk: null, spec: null, claims: { now: null, next: [], held: 0 }, closed: [], landed: [], lastShip: null,
+      context: { room: 96, strata: [4, 0, 96], compactsAt: 10 }, parked: [], tugs: [], defaults: [], git,
+    },
+    beats: [{ k: 'agent', p: 'start', id: MAIN, label: 'session' }],
+    transcript: [{ kind: 'text', id: `${name}0:0`, agent: MAIN, text }],
+  };
+}
+
+const emptyPlan = () => ({ order: { inFlight: [], next: [], blocked: [], unchunked: [], mark: [] }, progress: { specs: [] } });
+
+/** A few quiet beats on the one session, so the script runs its 4 to 12 s. */
+function idle(name, until) {
+  const out = [];
+  for (let t = 600, i = 0; t < until; t += 900, i += 1) out.push(...at(t, name, beat({ k: 'agent', p: 'tool', id: MAIN, tool: i % 2 ? 'Read' : 'Grep' })));
+  return out;
+}
+
+export const plainFolder = {
+  name: 'plain-folder',
+  title: 'Plain folder',
+  summary: 'A folder with no git. Detect suggests a repo; one click per step, a confirm before GitHub; then the cloud steps light up.',
+  home: 'lyra',
+  open: '/onboarding/detect',
+  adopted: false,
+  prefs: { onboarded: false },
+  fixtures: (ctx) => ({
+    repo: { name: LANTERN, branch: 'main', lastCommit: null, owner: 'ada-park' },
+    owner: false,
+    sessions: [idleSession(ctx, 'lyra', 'This folder is not a repo yet. Detect has the way in.')],
+    plan: emptyPlan(),
+    claims: [],
+    durable: [],
+  }),
+  script: [
+    ...idle('lyra', 5000),
+    ...at(1200, 'lyra', { row: { event: { text: 'looking at the folder' } } }),
+    ...at(2400, 'lyra', tx({ kind: 'text', id: 'ly1:0', agent: MAIN, text: 'No git here yet. Each step waits for your click, and GitHub gets a confirm of its own.' })),
+    ...at(5000, 'lyra', { row: { event: { text: 'waiting for you' } } }),
+  ],
+};
+
+export const cloudToken = {
+  name: 'cloud-token',
+  title: 'Cloud token',
+  summary: 'A GitHub repo with the loop workflow and no sign-in yet: the token walkthrough, then the paste.',
+  home: 'lyra',
+  open: '/onboarding/cloud',
+  fixtures: (ctx) => ({
+    repo: { name: LANTERN, branch: 'main', lastCommit: '9d4c1e0 first commit', owner: 'ada-park' },
+    owner: true,
+    sessions: [idleSession(ctx, 'lyra', 'The loop workflow is in. It needs its sign-in before the first run.')],
+    plan: emptyPlan(),
+    claims: [],
+    durable: [],
+  }),
+  script: [
+    ...idle('lyra', 5000),
+    ...at(5000, 'lyra', { row: { event: { text: 'waiting for the sign-in' } } }),
+  ],
+};
+
 export const SCENARIOS = Object.freeze({
   [fleetToTug.name]: fleetToTug,
   [bugToArchive.name]: bugToArchive,
   [fallAndResume.name]: fallAndResume,
   [headsDown.name]: headsDown,
+  [plainFolder.name]: plainFolder,
+  [cloudToken.name]: cloudToken,
 });
 
 export const scenarioNames = () => Object.keys(SCENARIOS);

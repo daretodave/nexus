@@ -25,6 +25,7 @@ import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
 import { realClock } from './demo/clock.mjs';
 import { createDemoVault, DEMO_REQUEST } from './demo/vault.mjs';
 import { applyDrafts } from './drafts.mjs';
+import { createRepoStage } from './demo/repo-start.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG = path.resolve(HERE, '..');
@@ -48,7 +49,10 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   if (!sc) throw Object.assign(new Error(`no demo scenario "${scenario}" (try: ${scenarioNames().join(', ')})`), { code: 'NO_SCENARIO' });
   const clk = clock || realClock({ speed });
   const world = createWorld(sc, { clock: clk, hub });
-  let prefs = { onboarded: true, aiSummaries: true, theme: 'night' };
+  let prefs = { onboarded: true, aiSummaries: true, theme: 'night', ...(sc.prefs || {}) };
+  // A folder that is not a repo yet, and the cloud loop's sign-in (demo/repo-start.mjs): held outside the world, so
+  // --loop's restarts keep the person's clicks; POST /api/demo/restart resets it.
+  const stage = createRepoStage(sc.name, { clock: clk });
   let local = null;
   // The vault (spec 42): names and status in memory; a posted value is dropped the moment it is read.
   const vault = createDemoVault({ now: () => Date.now(), owner: () => !!(local ? local.effective : world.info().owner) });
@@ -116,7 +120,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   const state = () => {
     const i = world.info();
     return {
-      info: { repo: repoPath, isGit: true, name: i.name, branch: i.branch, remote: null, lastCommit: i.lastCommit, owner: i.owner, adopted: true, demo: sc.name },
+      info: { repo: repoPath, isGit: true, name: i.name, branch: i.branch, remote: null, lastCommit: i.lastCommit, owner: i.owner, adopted: sc.adopted !== false, demo: sc.name, ...(stage ? stage.info() : {}) },
       prefs,
       commands: ['bug', 'explode', 'heads-down', 'next', 'oversight', 'plot'].map((name) => ({ name, hint: '' })),
       provider: 'demo',
@@ -128,8 +132,12 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
       { id: 'claude', label: 'Claude Code installed', ok: true, detail: 'demo', fix: null },
       { id: 'login', label: 'Logged in', ok: true, detail: 'demo', fix: null },
       { id: 'gh', label: 'GitHub CLI signed in', ok: true, optional: true, detail: 'demo', fix: null },
-      { id: 'remote', label: 'Git remote', ok: true, optional: true, detail: 'demo', fix: null },
-      { id: 'adopted', label: 'nexus adopted', ok: true, optional: true, detail: 'agents.md, plan/ and .claude/commands present.', fix: null },
+      stage && !stage.info().remote
+        ? { id: 'remote', label: 'Git remote', ok: false, optional: true, detail: stage.info().isGit ? 'No origin remote.' : 'This folder is not a git repo yet.', fix: 'Make it a repo from Detect: one click per step, nothing leaves this machine until you say so.' }
+        : { id: 'remote', label: 'Git remote', ok: true, optional: true, detail: stage?.info().remote || 'demo', fix: null },
+      sc.adopted === false
+        ? { id: 'adopted', label: 'nexus adopted', ok: false, optional: true, detail: 'Not yet.', fix: 'Use "Adopt nexus" below, or give the prompt to your agent.' }
+        : { id: 'adopted', label: 'nexus adopted', ok: true, optional: true, detail: 'agents.md, plan/ and .claude/commands present.', fix: null },
     ],
     info: state().info,
     ready: true,
@@ -143,10 +151,14 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
     if (bad) return send(res, 403, { error: bad });
     const route = `${req.method} ${url.pathname}`;
     try {
+      if (stage) {
+        const r = await stage.handle(req.method, url.pathname, url, () => body(req));
+        if (r) { const { status, ...rest } = r; return send(res, status, rest); }
+      }
       switch (route) {
         case 'GET /api/events': return world.hubFor(url.searchParams.get('session') || sc.home).attach(req, res);
         case 'GET /api/demo': return send(res, 200, demoInfo());
-        case 'POST /api/demo/restart': await body(req); begin(); return send(res, 200, demoInfo());
+        case 'POST /api/demo/restart': await body(req); stage?.reset(); begin(); return send(res, 200, demoInfo());
         case 'GET /api/server': return send(res, 200, { nexus: true, demo: sc.name, pid: process.pid, repo: repoPath, root: repoPath, home: world.session(sc.home)?.id || null, sessions: world.sessions().length });
         case 'GET /api/state': return send(res, 200, state());
         case 'GET /api/preflight': return send(res, 200, preflight());
@@ -252,7 +264,8 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   }
 
   return {
-    url: `http://127.0.0.1:${actual}/?t=${encodeURIComponent(token)}`,
+    // A scenario may open on a screen of its own (`open`, a path such as /onboarding/detect).
+    url: `http://127.0.0.1:${actual}${sc.open || '/'}?t=${encodeURIComponent(token)}`,
     port: actual,
     token,
     world,
