@@ -160,10 +160,14 @@ node scripts/secrets.mjs import incoming.env --store          # a real .env: val
 - A write rewrites the ring's file whole, under a lock, through
   a temp file renamed into place (owner-only, `0600`): every
   other name, comment, `export` and line ending stays as it
-  was, and rewriting the same value changes nothing. A value
-  that needs quoting is single-quoted, so no dotenv reader
-  expands a `$` or a backslash in it (double-quoted only when
-  it holds a `'`).
+  was, and rewriting the same value changes nothing. For the
+  root `.env` the temp file and the lock sit inside `.git`,
+  where git never tracks anything, so a write cut short can't
+  leave a value for `git add -A` to find. A value that needs
+  quoting is single-quoted, so no dotenv reader expands a `$`
+  or a backslash in it. One holding a `'` is double-quoted:
+  if it also holds a `$`, dotenv-expand and docker compose
+  expand that `$` (plain dotenv and nexus don't).
 - `unset NAME` takes the value out of every ring that holds it
   (`--ring` for one), the same way, and records a `remove` in
   the audit log. The places it was pushed to keep their copy.

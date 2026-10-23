@@ -43,7 +43,12 @@ function readValue(rest) {
   const q = s[0];
   if (q === "'" || q === '"') {
     const end = closeAt(s, q);
-    if (end === -1) return { value: q === "'" ? s.slice(1) : unescapeDq(s.slice(1)), comment: '' };
+    if (end === -1) {
+      // Never closed: a hand-written "C:\data\" still ends in its quote, read literally (as dotenv does); else the rest.
+      const last = s.trimEnd();
+      if (last.length > 1 && last.endsWith(q)) return { value: last.slice(1, -1), comment: '' };
+      return { value: s.slice(1), comment: '' };
+    }
     const tail = s.slice(end + 1);
     return { value: q === "'" ? s.slice(1, end) : unescapeDq(s.slice(1, end)), comment: /^\s*#/.test(tail) ? tail : '' };
   }
@@ -63,7 +68,9 @@ function unescapeDq(s) {
 /**
  * A .env text as blocks, in order: { lines } for anything that sets nothing (a comment, a blank line), and { lines,
  * prefix, name, value, comment } for an assignment. A quoted value that runs onto the next lines (a key pasted whole)
- * is one block through its closing quote; one that never closes is its own line only.
+ * is one block through its closing quote, when that quote ends its line and no line on the way sets a name. Anything
+ * else (a quote that never closes, a "C:\data\" whose last quote reads as escaped, a stray ' in a later comment) is
+ * its own line only, so it never swallows the lines after it.
  */
 function envBlocks(text) {
   const lines = String(text ?? '').replace(/\r\n/g, '\n').split('\n');
@@ -74,7 +81,13 @@ function envBlocks(text) {
     const rest = m[3].trimStart();
     let end = i;
     if ((rest[0] === '"' || rest[0] === "'") && closeAt(rest, rest[0]) === -1) {
-      for (let j = i + 1; j < lines.length; j++) if (closeAt(lines[j], rest[0], 0) !== -1) { end = j; break; }
+      for (let j = i + 1; j < lines.length; j++) {
+        if (ENV_LINE.test(lines[j])) break;
+        const at = closeAt(lines[j], rest[0], 0);
+        if (at === -1) continue;
+        if (/^\s*(#.*)?$/.test(lines[j].slice(at + 1))) end = j;
+        break;
+      }
     }
     const block = lines.slice(i, end + 1);
     out.push({ lines: block, prefix: m[1], name: m[2], ...readValue([m[3], ...block.slice(1)].join('\n')) });
@@ -92,7 +105,9 @@ export function parseEnv(text) {
 
 /**
  * A value as one .env line writes it: bare when that's safe, else single-quoted (literal in every dotenv reader, so a
- * `$` or a backslash is never expanded), else double-quoted with `\` and `"` escaped (a value holding a `'`).
+ * `$` or a backslash is never expanded), else double-quoted with `\` and `"` escaped (a value holding a `'`). A
+ * value holding both a `'` and a `$` has no form every reader keeps literal: dotenv-expand and docker compose expand
+ * that `$`. Plain dotenv and nexus read it as written.
  */
 export function formatEnvValue(value) {
   if (BARE.test(value)) return value;
@@ -159,6 +174,18 @@ function checkValue(name, value) {
   if (/[\r\n\0]/.test(value)) throw new Error(`${name}: a value on one line only (a key file goes in a file, its path in the vault)`);
 }
 
+/**
+ * Where a ring file's temp file and lock go: the repo's own `.git` folder when the file sits at a checkout's root (git
+ * never tracks anything in there, so a crash mid-write can't leave plain-text secrets for `git add -A`), else beside
+ * the file (the workspace ring sits outside every repo).
+ */
+export function scratchPath(file, suffix) {
+  const git = path.join(path.dirname(file), '.git');
+  let inGit = false;
+  try { inGit = fs.statSync(git).isDirectory(); } catch { /* no repo here */ }
+  return inGit ? path.join(git, `nexus-${path.basename(file)}${suffix}`) : `${file}${suffix}`;
+}
+
 /** Run `fn` holding `lock` (a file made with wx; one older than 10 s is stale), for a few seconds at most. */
 function underLock(lock, what, fn) {
   const until = Date.now() + 3000;
@@ -182,21 +209,21 @@ function underLock(lock, what, fn) {
 export function writeAtomic(file, text) {
   let target = file;
   try { target = fs.realpathSync(file); } catch { /* a new file */ }
-  const tmp = `${target}.${process.pid}.${Date.now().toString(36)}.tmp`;
+  const tmp = scratchPath(target, `.${process.pid}.${Date.now().toString(36)}.tmp`);
   try {
     fs.writeFileSync(tmp, text, { mode: 0o600 });
     try { fs.chmodSync(tmp, 0o600); } catch { /* best effort (Windows ignores POSIX modes) */ }
     for (let i = 0; ; i++) {
       try { fs.renameSync(tmp, target); return; } catch (err) {
-        if (!['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
-        if (i >= 4) break;
+        if (!['EPERM', 'EACCES', 'EBUSY', 'EXDEV'].includes(err.code)) throw err;
+        if (err.code === 'EXDEV' || i >= 4) break;
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20 * (i + 1));
       }
     }
     fs.writeFileSync(target, text, { mode: 0o600 });
     try { fs.chmodSync(target, 0o600); } catch { /* best effort */ }
   } finally {
-    fs.rmSync(tmp, { force: true });
+    try { fs.rmSync(tmp, { force: true }); } catch { /* Windows may still hold it (EBUSY): the write itself landed */ }
   }
 }
 
@@ -272,7 +299,7 @@ export function openVault({ root, settings = {}, platform = process.platform, gi
   /** Rewrite one ring's file under its lock: read, change, write a temp file beside it, rename it into place. */
   function rewrite(ring, change) {
     const file = ringFile(ring);
-    underLock(`${file}.lock`, path.basename(file), () => {
+    underLock(scratchPath(file, '.lock'), path.basename(file), () => {
       let text = '';
       try { text = fs.readFileSync(file, 'utf8'); } catch (err) { if (err.code !== 'ENOENT') throw err; }
       writeAtomic(file, change(text));

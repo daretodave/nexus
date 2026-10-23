@@ -12,7 +12,7 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { keychain } from '../secrets-keychain.mjs';
 import { main } from '../secrets.mjs';
-import { LOCAL_KEYS_FILE, formatEnvValue, openVault, parseEnv, readLocalKeys, recordLocalKeys, removeEnv, sinkRefusal, upsertEnv, vaultConfig } from '../secrets-vault.mjs';
+import { LOCAL_KEYS_FILE, formatEnvValue, openVault, parseEnv, readLocalKeys, recordLocalKeys, removeEnv, scratchPath, sinkRefusal, upsertEnv, vaultConfig } from '../secrets-vault.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(HERE, '..', 'secrets.mjs');
@@ -92,6 +92,19 @@ describe('the .env format', () => {
     assert.deepEqual([...parseEnv('A_TOKEN="open\nB_TOKEN=2\n')], [['A_TOKEN', 'open'], ['B_TOKEN', '2']]);
   });
 
+  it('never lets a hand-written quote swallow the lines after it (a Windows path, a stray quote in a comment)', () => {
+    const win = 'DATA_DIR="C:\\data\\"\nAPI_KEY="abc"\nOTHER=1\n';
+    assert.deepEqual([...parseEnv(win)], [['DATA_DIR', 'C:\\data\\'], ['API_KEY', 'abc'], ['OTHER', '1']]);
+    assert.equal(removeEnv(win, ['DATA_DIR']), 'API_KEY="abc"\nOTHER=1\n');
+    assert.equal(upsertEnv(win, [['API_KEY', 'new']]), 'DATA_DIR="C:\\data\\"\nAPI_KEY=new\nOTHER=1\n');
+    const stray = "A_TOKEN='oops\nB_TOKEN=1\n# don't touch\nC_TOKEN=2\n";
+    assert.deepEqual([...parseEnv(stray)], [['A_TOKEN', 'oops'], ['B_TOKEN', '1'], ['C_TOKEN', '2']]);
+    assert.equal(removeEnv(stray, ['A_TOKEN']), "B_TOKEN=1\n# don't touch\nC_TOKEN=2\n");
+    assert.equal(removeEnv(stray, ['B_TOKEN']), "A_TOKEN='oops\n# don't touch\nC_TOKEN=2\n");
+    // No name on the way, but the quote doesn't end its line: still one line only.
+    assert.equal(removeEnv("A_TOKEN='oops\n# it's here\n", ['A_TOKEN']), "# it's here\n");
+  });
+
   it('removes every assignment of a name and nothing else', () => {
     assert.equal(removeEnv('# keep\nA_TOKEN=1\nexport B_TOKEN=2 # b\nA_TOKEN=dupe\n', ['A_TOKEN']), '# keep\nexport B_TOKEN=2 # b\n');
     assert.equal(removeEnv('A_TOKEN=1\n', ['A_TOKEN']), '');
@@ -156,6 +169,12 @@ describe('the vault', () => {
       v.set([['A_TOKEN', FAKES[2]]], 'keychain');
       assert.equal(fs.readFileSync(local, 'utf8'), `# mine\nexport KEEP_TOKEN=keep # by hand\nA_TOKEN=${FAKES[0]}\n`);
       assert.deepEqual(fs.readdirSync(t.repo).filter((f) => f.endsWith('.tmp') || f.endsWith('.lock')), []);
+      // At a checkout's root the temp file and the lock go inside .git, where nothing is ever tracked.
+      fs.mkdirSync(path.join(t.repo, '.git'));
+      assert.equal(scratchPath(local, '.lock'), path.join(t.repo, '.git', 'nexus-.env.lock'));
+      v.set([['A_TOKEN', FAKES[0]]], 'local');
+      assert.deepEqual(fs.readdirSync(path.join(t.repo, '.git')), []);
+      fs.rmdirSync(path.join(t.repo, '.git'));
       assert.deepEqual(v.remove(['A_TOKEN'], 'workspace'), [{ name: 'A_TOKEN', rings: ['workspace'] }]);
       assert.deepEqual(v.status(['A_TOKEN'])[0].rings, ['local', 'keychain']);
       assert.deepEqual(v.remove(['A_TOKEN', 'NOPE_TOKEN']), [{ name: 'A_TOKEN', rings: ['local', 'keychain'] }, { name: 'NOPE_TOKEN', rings: [] }]);
