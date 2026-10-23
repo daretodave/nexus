@@ -1,0 +1,73 @@
+/* Infinite's follow selector (InfiniteFollow.jsx): two mode tiles with a sliding puck, then one three-step control
+   whose thumb glows stronger toward the bold end. Theme tokens only, so day and night both hold. Sized by its own
+   container: the Fleet's start tile and phones fold the tile descriptions into one line under the tiles. */
+
+.start-pick { container-type: inline-size; }
+.start-pick.is-following .sp-list { max-height: 132px; }
+.start-pick .sp-list { transition: max-height var(--dur-settle) var(--ease-settle); }
+
+/* the reveal: rows 0fr -> 1fr, so it opens to exactly its height */
+.sp-follow { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--dur-settle) var(--ease-settle), opacity var(--dur-settle) var(--ease-settle); }
+.sp-follow.is-open { grid-template-rows: 1fr; opacity: 1; }
+.if-inner { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.sp-follow.is-open .if-inner { padding: 2px 1px; }
+.if-head { text-transform: uppercase; }
+
+/* the two mode tiles and their puck */
+.if-modes { position: relative; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 0; padding: 4px; border-radius: 12px; background: var(--well); border: 1px solid var(--line); }
+.if-modes::before { content: ''; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--n)); border-radius: 9px; background: var(--raised); box-shadow: 0 0 0 1px var(--line-2), 0 0 22px -8px var(--glow); transform: translateX(calc(var(--i) * 100%)); transition: transform var(--dur-settle) var(--ease-settle); pointer-events: none; }
+.if-mode { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 10px; min-width: 0; padding: 10px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--text-2); text-align: left; cursor: pointer; transition: color var(--dur-snap) var(--ease-snap); }
+.if-mode:hover, .if-mode.is-on { color: var(--text); }
+.if-mode:focus-visible, .if-step:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.if-ic { flex: none; display: inline-flex; margin-top: 1px; color: var(--text-3); transition: color var(--dur-snap) var(--ease-snap); }
+.if-mode.is-on .if-ic { color: var(--accent); }
+.if-ic-march.is-played { animation: if-wave var(--dur-settle) var(--ease-settle) 1; transform-origin: 20% 90%; }
+.if-ic-next.is-played { animation: if-turn var(--dur-settle) var(--ease-settle) 1; }
+@keyframes if-wave { 0% { transform: skewY(-8deg); } 55% { transform: skewY(4deg); } 100% { transform: none; } }
+@keyframes if-turn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.if-mode-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.if-mode-label { font-size: 13px; line-height: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.if-mode-sub { font-size: 12px; line-height: 16px; color: var(--text-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.if-mode-note { display: none; font-size: 12px; line-height: 16px; color: var(--text-3); }
+
+/* the question and its three steps */
+.if-q { display: flex; flex-direction: column; gap: 6px; }
+.if-q-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.if-q-head > .cap:first-child { text-transform: uppercase; }
+.if-chip { flex: none; text-transform: uppercase; font-size: 10px; line-height: 14px; padding: 1px 6px; border-radius: var(--r-full); color: var(--text-2); box-shadow: inset 0 0 0 1px var(--line-2); background: color-mix(in oklab, var(--accent) 10%, transparent); }
+.if-steps { position: relative; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); padding: 3px; border-radius: 10px; background: var(--well); border: 1px solid var(--line); }
+.if-steps::before { content: ''; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n)); border-radius: 7px; background: color-mix(in oklab, var(--accent) 25%, var(--raised)); box-shadow: 0 0 0 1px var(--line-2); transform: translateX(calc(var(--i) * 100%)); transition: transform var(--dur-settle) var(--ease-settle), background var(--dur-settle) var(--ease-settle), box-shadow var(--dur-settle) var(--ease-settle); pointer-events: none; }
+.if-steps.is-lvl1::before { background: color-mix(in oklab, var(--accent) 55%, var(--raised)); box-shadow: 0 0 0 1px var(--line-2), 0 0 18px -8px var(--glow); }
+.if-steps.is-lvl2::before { background: var(--aurora-grad, var(--accent)); box-shadow: 0 0 0 1px var(--accent), 0 0 26px -4px var(--glow), 0 0 4px 0 var(--glow); }
+.if-step { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; height: 30px; padding: 0 6px; border: 0; border-radius: 7px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: color var(--dur-snap) var(--ease-snap); }
+.if-step:hover { color: var(--text); }
+.if-step.is-on { color: var(--text); }
+.if-steps.is-lvl2 .if-step.is-on { color: var(--on-accent); }
+.if-step.is-off { opacity: .45; cursor: not-allowed; }
+.if-step-label { overflow: hidden; text-overflow: ellipsis; }
+.sp-follow [aria-disabled="true"].if-modes, .sp-follow [aria-disabled="true"].if-steps { opacity: .7; }
+
+/* Build it's mark: an orbit with a dot circling it, while it is the choice */
+.if-orbit { position: relative; display: inline-flex; }
+.if-step.is-on .if-orbit::after { content: ''; position: absolute; top: 50%; left: 50%; width: 3px; height: 3px; margin: -1.5px; border-radius: var(--r-full); background: currentColor; transform: rotate(0deg) translateX(8px); animation: if-orbit var(--dur-spin) linear infinite; }
+@keyframes if-orbit { from { transform: rotate(0deg) translateX(8px); } to { transform: rotate(360deg) translateX(8px); } }
+
+.if-meaning { min-height: 32px; font-size: 12px; line-height: 16px; color: var(--text-2); animation: if-fade var(--dur-snap) var(--ease-snap) 1; }
+@keyframes if-fade { from { opacity: 0; } to { opacity: 1; } }
+.if-preview { font-family: var(--font-mono); font-size: 11px; line-height: 16px; color: var(--text-3); overflow-wrap: anywhere; }
+.if-preview code { font: inherit; color: var(--text-2); }
+
+/* narrow: the Fleet's start tile and phones */
+@container (max-width: 380px) {
+  .if-mode { align-items: center; padding: 8px 10px; }
+  .if-mode-sub { display: none; }
+  .if-mode-note { display: block; }
+  .if-step { height: 28px; font-size: 12px; padding: 0 4px; }
+  .if-orbit { display: none; }
+  .if-step.is-on .if-orbit { display: inline-flex; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-follow, .start-pick .sp-list, .if-modes::before, .if-steps::before, .if-mode, .if-step, .if-ic { transition: none; }
+  .if-ic-march.is-played, .if-ic-next.is-played, .if-meaning, .if-step.is-on .if-orbit::after { animation: none; }
+}
