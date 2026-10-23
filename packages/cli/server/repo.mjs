@@ -7,6 +7,7 @@ import path from 'node:path';
 import { run, json } from './sh.mjs';
 import { isOwner as effectiveOwner } from './local.mjs';
 import { nextSpec } from './explode.mjs';
+import { placeOf } from './place.mjs';
 
 export const CHUNK_ID = /^[0-9]{1,3}(?:\.[0-9a-z]+)?$/;
 
@@ -22,9 +23,13 @@ export async function repoInfo(repo) {
     run('git', ['remote', 'get-url', 'origin'], { cwd: repo }),
     run('git', ['log', '-1', '--oneline'], { cwd: repo }),
   ]);
+  // Where the folder stands (place.mjs): none | nested | refused | local | other | github, from these same calls.
+  const where = placeOf({ folder: repo, top: top.ok ? top.stdout.trim() : null, origin: remote.ok ? remote.stdout.trim() : null });
   return {
     repo,
     isGit: top.ok,
+    place: where.place,
+    ...(where.top ? { top: where.top } : {}),
     name: path.basename(top.ok ? top.stdout.trim() : repo),
     branch: branch.stdout.trim() || null,
     remote: remote.ok ? remote.stdout.trim() : null,

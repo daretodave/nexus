@@ -38,8 +38,8 @@ export async function preflight(repo) {
       label: 'Git remote',
       ok: !!info.remote,
       optional: true,
-      detail: info.remote || (info.isGit ? 'No origin remote.' : 'This folder is not a git repo.'),
-      fix: info.remote ? null : info.isGit ? 'Add one: `git remote add origin <url>`.' : 'Run the GUI from inside your project, or `git init` first.',
+      detail: remoteDetail(info),
+      fix: remoteFix(info),
     },
     {
       id: 'adopted',
@@ -51,6 +51,21 @@ export async function preflight(repo) {
     },
   ];
   return { checks, info, ready: checks.filter((c) => !c.optional).every((c) => c.ok) };
+}
+
+/** The git row's words per place (place.mjs): honest about where this folder stands, with the way forward. */
+function remoteDetail(info) {
+  if (info.place === 'nested') return `Inside the repo at ${info.top}.`;
+  if (info.place === 'refused') return 'Not a git repo, and not a folder to start one in.';
+  if (info.remote) return info.remote;
+  return info.isGit ? 'No origin remote.' : 'This folder is not a git repo yet.';
+}
+
+function remoteFix(info) {
+  if (info.place === 'nested') return `Start nexus at that repo's root: npx @usenexus/cli --repo "${info.top}".`;
+  if (info.place === 'refused') return 'Make a folder for the project and start nexus there.';
+  if (info.remote) return null;
+  return info.isGit ? 'Put it on GitHub from Detect, or add one: `git remote add origin <url>`.' : 'Make it a repo from Detect: one click per step, nothing leaves this machine until you say so.';
 }
 
 function firstLine(text, re) {

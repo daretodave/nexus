@@ -225,6 +225,8 @@ function req(port, { method = 'GET', pathname, headers = {}, body }) {
 test('POST /api/cloud/run and /api/actions/workflow reach only the injected gh', async () => {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-actions-srv-'));
   execFileSync('git', ['init', '-q'], { cwd: repo });
+  // A GitHub origin: the cloud routes answer 409 with the place for a folder that has none (server/place.mjs).
+  execFileSync('git', ['remote', 'add', 'origin', 'https://github.com/acme/widget.git'], { cwd: repo });
   const gh = fakeGh({
     'workflow run 9': ok(''), 'workflow disable 9': ok(''), 'workflow enable 9': ok(''),
     'workflow list': ok([{ id: 9, name: 'march', path: '.github/workflows/march.yml', state: 'active' }]), 'run list': ok([]), 'pr list': ok([]),

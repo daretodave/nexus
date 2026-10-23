@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { run as shRun, json } from './sh.mjs';
+import { NO_ORIGIN, placeNote } from './place.mjs';
 
 export const STALL_MS = 2 * 60 * 1000;
 export const STEP_STALL_MS = 30 * 60 * 1000;
@@ -91,9 +92,13 @@ function readLocal(repo, rel) {
   try { return fs.readFileSync(path.join(repo, rel), 'utf8'); } catch { return null; }
 }
 
-export async function actionsSetup(repo, { run = shRun } = {}) {
+export async function actionsSetup(repo, { run = shRun, where = null } = {}) {
+  // Where the folder stands (place.mjs; the server reads it and passes it): with no repo or no origin there is no
+  // GitHub repo to ask about, so the answer says so instead of gh: true with every step unknown (Cloud setup routes
+  // to its step 0), and no secret, ruleset or role call is made.
   const auth = await run('gh', ['auth', 'status'], { cwd: repo });
-  if (!auth.ok) return { gh: false, note: auth.missing ? 'gh is not installed.' : 'gh is not signed in. Run `gh auth login`.' };
+  if (where && NO_ORIGIN.has(where.place)) return { gh: auth.ok, place: where.place, note: placeNote(where), steps: [], workflows: [] };
+  if (!auth.ok) return { gh: false, ...(where ? { place: where.place } : {}), note: auth.missing ? 'gh is not installed.' : 'gh is not signed in. Run `gh auth login`.' };
   const [secrets, workflows, perms, rulesets, viewer] = await Promise.all([
     run('gh', ['secret', 'list', '--json', 'name'], { cwd: repo }),
     run('gh', ['workflow', 'list', '--all', '--json', 'id,name,path,state'], { cwd: repo }),
@@ -107,8 +112,12 @@ export async function actionsSetup(repo, { run = shRun } = {}) {
   const wfs = (json(workflows.stdout) || []).map((w) => ({ id: w.id, name: w.name, path: w.path, enabled: w.state === 'active', state: w.state }));
   const loop = wfs.find((w) => LOOP_FILE.test(w.path || ''));
   const text = loop ? readLocal(repo, loop.path) : null;
+  const role = viewer.ok ? (json(viewer.stdout) || {}).viewerPermission || null : null;
   return {
     gh: true,
+    ...(where ? { place: where.place } : {}),
+    ...(where?.remote?.web ? { web: where.remote.web, slug: `${where.remote.owner}/${where.remote.name}` } : {}),
+    viewer: role,
     steps: [
       {
         id: 'secret',
@@ -116,10 +125,10 @@ export async function actionsSetup(repo, { run = shRun } = {}) {
         // Listing secrets needs admin (or Secrets: read); without it the secret is unknown, not missing.
         ok: names ? names.includes(SECRET) : null,
         detail: names ? (names.length ? `secrets: ${names.join(', ')}` : 'no repo secrets') : 'could not list secrets (that needs admin on the repo); the loop\'s first run says if it is missing',
-        fix: `Run \`claude setup-token\`, then \`gh secret set ${SECRET}\` and paste the token.`,
+        fix: `Run \`claude setup-token\` on this machine, then paste the token in Cloud setup's sign-in step (or run \`gh secret set ${SECRET}\` and paste it there).`,
       },
       ...permissionSteps({
-        viewer: viewer.ok ? (json(viewer.stdout) || {}).viewerPermission || null : null,
+        viewer: role,
         defaultPerm: p.default_workflow_permissions || null,
         declares: text == null ? null : declaresPermissions(text),
         file: loop ? path.posix.basename(loop.path) : null,
@@ -149,7 +158,8 @@ export async function setWorkflow(repo, id, enabled, { run = shRun } = {}) {
  * "Run one pass now": dispatch the workflow on its default branch with its
  * default inputs. With no id, the loop workflow (LOOP_FILE) is found first.
  */
-export async function dispatchWorkflow(repo, id, { run = shRun } = {}) {
+export async function dispatchWorkflow(repo, id, { run = shRun, where = null } = {}) {
+  if (where && NO_ORIGIN.has(where.place)) return { ok: false, status: 409, place: where.place, error: placeNote(where) };
   if (id == null || id === '') {
     const l = await run('gh', ['workflow', 'list', '--all', '--json', 'id,path'], { cwd: repo });
     const loop = (json(l.stdout) || []).find((w) => LOOP_FILE.test(w.path || ''));
@@ -207,7 +217,8 @@ export async function runJobs(repo, id, { run = shRun, now = Date.now(), since =
   return { ok: true, ...stepStatus(jobs, now, { since, stepMs }) };
 }
 
-export async function listRuns(repo, { run = shRun, now = Date.now(), stepMs } = {}) {
+export async function listRuns(repo, { run = shRun, now = Date.now(), stepMs, where = null } = {}) {
+  if (where && NO_ORIGIN.has(where.place)) return { ok: false, runs: [], place: where.place, note: placeNote(where) };
   const r = await run('gh', ['run', 'list', '-L', '20', '--json', 'databaseId,number,displayTitle,workflowName,status,conclusion,createdAt,updatedAt,url,event'], { cwd: repo });
   if (!r.ok) return { ok: false, runs: [], error: (r.stderr || '').trim().slice(0, 300) };
   const runs = (json(r.stdout) || []).map((x) => markStall(x, now));
@@ -257,7 +268,8 @@ const PR_SLACK_MS = 2 * 60 * 1000;
  * owner's token, so the PR's author cannot tell it apart. `prs` is null when gh could not list the runs or the PRs.
  * No loop workflow: { ok: false, status: 404 } (the screens draw their empty state); gh failing: status 502.
  */
-export async function cloudLoop(repo, { run = shRun, now = Date.now(), since = 0 } = {}) {
+export async function cloudLoop(repo, { run = shRun, now = Date.now(), since = 0, where = null } = {}) {
+  if (where && NO_ORIGIN.has(where.place)) return { ok: false, status: 409, place: where.place, note: placeNote(where), error: placeNote(where) };
   const wl = await run('gh', ['workflow', 'list', '--all', '--json', 'id,name,path,state'], { cwd: repo });
   if (!wl.ok) return { ok: false, status: 502, error: (wl.stderr || 'gh could not list workflows').trim().slice(0, 300) };
   const loop = (json(wl.stdout) || []).find((w) => LOOP_FILE.test(w.path || ''));
