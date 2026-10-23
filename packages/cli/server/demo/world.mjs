@@ -23,6 +23,8 @@
 //     chunk { id, ... }     a plan chunk changed (or slotted in: `plotted: true`); state ready|claimed|closed
 //     claim { id }          the session claims a chunk (the claims rail and the plan's in-flight)
 //     release id            the session lets one go
+//     feed  { id, ... }     a change feed event (server/feed.mjs shape) added, or merged into the one with its id:
+//                           a push landing on main, its plain line, its deploy moving on
 //     gate  { ask | send | resume, auto, answers?, then }
 //                           the owner's turn. `ask` puts a live question to the owner (the stage hushes, the
 //                           card pulls into the conversation); `send` waits for a line from the composer;
@@ -35,7 +37,7 @@ import { boardFrom } from '../plan.mjs';
 import { inboxItems } from '../fleet-home.mjs';
 import { needsFrom } from '../../shared/needs.mjs';
 
-const ACTIONS = ['beat', 'tx', 'status', 'row', 'ledger', 'land', 'chunk', 'claim', 'release', 'gate'];
+const ACTIONS = ['beat', 'tx', 'status', 'row', 'ledger', 'land', 'chunk', 'claim', 'release', 'feed', 'gate'];
 
 /** The action a step carries. */
 export const actionOf = (step) => ACTIONS.find((a) => step[a] !== undefined) || null;
@@ -81,6 +83,7 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
   let log = [];
   let started = false;
   let sentNeeds = '';
+  let feed = []; // the change feed, oldest first (fixtures.feed, then the script's `feed` steps)
 
   const iso = (ms) => new Date(ms).toISOString();
   const ctx = () => ({ now: t0, at: (ms) => iso(t0 + ms), ago: (min) => iso(t0 - min * 60000) });
@@ -106,6 +109,22 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
     }
     gates = [];
     log = [];
+    feed = (fx.feed || []).map((e) => ({ ...clone(e), at: e.at || iso(t0) }));
+    pushFeed();
+  }
+
+  /** The change feed as GET /api/feed answers it: newest first. */
+  const feedView = () => ({ on: true, at: now(), events: clone(feed).reverse() });
+  function pushFeed() {
+    const v = feedView();
+    for (const s of sessions) s.hub.set('feed', v);
+    quiet.set('feed', v);
+  }
+  function setFeed(patch) {
+    const i = feed.findIndex((e) => e.id === patch.id);
+    if (i < 0) feed.push({ at: iso(now()), ...clone(patch) });
+    else feed[i] = { ...feed[i], ...clone(patch) };
+    pushFeed();
   }
 
   const find = (key) => sessions.find((s) => s.id === key || s.name === key || s.ledger.claude === key) || null;
@@ -198,6 +217,7 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
       case 'chunk': setChunk({ ...step.chunk, ...(step.chunk.state === 'closed' ? { closedOn: iso(at).slice(0, 10) } : {}) }); break;
       case 'claim': claim(s, String(step.claim.id ?? step.claim)); break;
       case 'release': fx.claims = (fx.claims || []).filter((r) => r.id !== String(step.release)); break;
+      case 'feed': setFeed(step.feed); break;
       case 'gate': open(s, step.gate); break;
       default: break;
     }
@@ -318,6 +338,7 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
       sentNeeds = key;
       for (const h of [...hubs.values(), quiet]) h.set('needs', v);
     },
+    feed: () => feedView(),
     plan: () => boardFrom(clone(fx.plan.order), clone(fx.plan.progress), { repo: fx.repo.name }),
     claims: () => ({ available: true, rows: clone(fx.claims || []), me: { who: fx.repo.owner || 'owner', owner: !!fx.owner } }),
     durable: () => clone(fx.durable || []),
