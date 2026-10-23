@@ -200,6 +200,14 @@ describe('every command-line sink: the value goes to stdin (or a 0600 temp file 
   });
 });
 
+describe('the Supabase sink refuses the names Supabase reserves', () => {
+  it('a SUPABASE_ name never runs the CLI', () => {
+    const rec = recorder();
+    assert.throws(() => pushSecret({ name: 'SUPABASE_URL', value: 'fake-supabase-0001', destination: 'supabase', run: rec.run }), /reserves the SUPABASE_ prefix/);
+    assert.equal(rec.calls.length, 0);
+  });
+});
+
 describe('the Netlify sink: the API, the value in the request body only', () => {
   const value = 'fake-netlify-value-0077';
   function fakeFetch(answers) {
@@ -220,6 +228,15 @@ describe('the Netlify sink: the API, the value in the request body only', () => 
     const body = JSON.parse(f.calls[2].body)[0];
     assert.equal(body.is_secret, true);
     assert.deepEqual(body.values.map((v) => [v.context, v.value]), [['production', value], ['deploy-preview', value], ['branch-deploy', value]]);
+  });
+
+  it('keeps the variable secret when dev is among the contexts (Netlify unmasks only the dev value)', async () => {
+    const f = fakeFetch([{ status: 200, json: { account_id: 'a' } }, { status: 200 }]);
+    const done = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', environments: ['production', 'dev'], secrets: { token: 't', site: 's' }, fetch: f.fetch });
+    assert.equal(done.ok, true);
+    const body = JSON.parse(f.calls[1].body);
+    assert.equal(body.is_secret, true);
+    assert.ok(!body.scopes.includes('post-processing'));
   });
 
   it('says what is missing (the token, the site) and fails by status, never by value', async () => {

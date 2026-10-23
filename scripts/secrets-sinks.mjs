@@ -134,6 +134,8 @@ export const SINKS = {
   },
   supabase: {
     command: 'supabase', label: 'Supabase Edge Functions', opts: ['project'], input: 'file', envFile: true,
+    // Supabase reserves the SUPABASE_ prefix for the names it injects into every function, and rejects it.
+    refuseName: (name) => (/^SUPABASE_/.test(name) ? `${name}: Supabase reserves the SUPABASE_ prefix (its functions already have their own SUPABASE_ values)` : null),
     calls: (_name, { project } = {}, file) => [{ args: ['secrets', 'set', '--env-file', file, ...opt('--project-ref', project)] }],
     detail: ({ project } = {}) => (project ? { project } : {}),
   },
@@ -232,6 +234,8 @@ export function pushSecret({ name, value, destination, run = spawnRunner, cwd, p
   checkValue(name, value);
   const opts = pick(rest);
   checkOpts(destination, sink, opts);
+  const refused = sink.refuseName?.(name);
+  if (refused) throw new Error(refused);
   if (sink.envFile && value.includes("'")) throw new Error(`${name}: a value with ' cannot go to ${destination} (its env file reads it literally only in single quotes)`);
   const content = sink.line ? `${name}=${value}\n` : sink.envFile ? `${name}='${value}'\n` : value;
   const landed = [];
@@ -298,7 +302,9 @@ async function netlifyRequest({ name, value, opts, token, fetch: fetchImpl }) {
   if (site.status !== 200 || typeof site.json?.account_id !== 'string') return fail('reading the site', site);
   const acct = encodeURIComponent(site.json.account_id);
   const q = `site_id=${encodeURIComponent(opts.site)}`;
-  const entry = { key: name, scopes: ['builds', 'functions', 'runtime', 'post-processing'], values: contexts.map((context) => ({ context, value })), is_secret: !contexts.includes('dev') };
+  // Always secret: Netlify leaves a dev value readable but keeps every other context masked, and a secret may not
+  // have the post-processing scope (nor lose the flag once set), so it is never asked for.
+  const entry = { key: name, scopes: ['builds', 'functions', 'runtime'], values: contexts.map((context) => ({ context, value })), is_secret: true };
   const put = await call('PUT', `${NETLIFY_API}/accounts/${acct}/env/${encodeURIComponent(name)}?${q}`, entry);
   if (put.status === 200) return { ok: true, landed: contexts };
   if (put.status !== 404) return fail('setting the variable', put);
