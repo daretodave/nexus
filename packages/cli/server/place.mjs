@@ -105,7 +105,11 @@ export const NO_ORIGIN = new Set(['none', 'refused', 'local', 'unpushed']);
 /** The words for a place that is not on GitHub, the same everywhere (actions, runs, cloud, the screens). */
 export function placeNote(p) {
   const place = p?.place || p;
-  if (place === 'none' || place === 'refused') return 'This folder is not a git repo yet, so it has no GitHub repo for the cloud loop. Put it on GitHub first (Cloud setup, step 0).';
+  if (place === 'refused') {
+    const what = p?.refusedAs === 'home' ? 'your home folder' : p?.refusedAs === 'root' ? 'the root of a drive' : p?.refusedAs === 'system' ? 'a system folder' : 'a folder nexus will not make a repo of';
+    return `This is ${what}, so nexus will not make it a repo. Make a folder for the project and start nexus there.`;
+  }
+  if (place === 'none') return 'This folder is not a git repo yet, so it has no GitHub repo for the cloud loop. Put it on GitHub first (Cloud setup, step 0).';
   if (place === 'local') return 'This repo is not on GitHub yet: it has no origin. Put it on GitHub first (Cloud setup, step 0).';
   if (place === 'unpushed') return 'The GitHub repo has nothing pushed yet. Push main first (Cloud setup, step 0).';
   if (place === 'nested') return `This folder is inside the repo at ${p?.top || 'a parent folder'}. Start nexus at that repo's root.`;

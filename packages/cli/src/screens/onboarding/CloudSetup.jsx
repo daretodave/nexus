@@ -113,6 +113,8 @@ export default function CloudSetup() {
   const place = startNow?.place ?? start.data?.place ?? a?.place;
   const gate = cloudGate(place);
   const waiting = gate !== 'ready';
+  // Until the place is known (both reads still loading) nothing can be turned on: a plain folder would only 409.
+  const settling = place == null && (start.status === 'loading' || actions.status === 'loading');
   const onRepo = (s) => {
     setStartNow(s);
     if (s?.next === 'done') { actions.reload(); runs.reload(); }
@@ -173,7 +175,7 @@ export default function CloudSetup() {
         {note('sched')}
         <Link className="btn btn-ghost" to={PATHS.onboarding(stepAfter('cloud'))} onClick={skip}>Skip</Link>
         {waiting ? <span className="t-body-s c-3">First, a home on GitHub.</span> : null}
-        <button className="btn btn-primary btn-l" type="button" disabled={busy || waiting} aria-busy={pending.sched === 'busy' || undefined} onClick={turnOn}>{pending.sched === 'busy' ? (keep ? 'Turning on' : 'Committing') : 'Turn on the cloud loop'}<Icon name="arrowRight" size={14} /></button>
+        <button className="btn btn-primary btn-l" type="button" disabled={busy || waiting || settling} aria-busy={pending.sched === 'busy' || undefined} onClick={turnOn}>{pending.sched === 'busy' ? (keep ? 'Turning on' : 'Committing') : 'Turn on the cloud loop'}<Icon name="arrowRight" size={14} /></button>
       </div>
     </>
   );
@@ -208,6 +210,8 @@ export default function CloudSetup() {
                 <div className="cl-h">A home on GitHub</div>
                 {!waiting ? (
                   <div className="cl-d">On GitHub at <b>{(startNow?.repo?.remote?.web || '').replace(/^https:\/\//, '')}</b>.</div>
+                ) : place === 'refused' ? (
+                  <RepoStart where="cloud" compact res={start} onChange={onRepo} />
                 ) : gate === 'other' ? (
                   <div className="cl-d">{a?.note || (place === 'nested' ? 'This folder is inside another repo: start nexus at that repo\'s root.' : 'origin is not on GitHub. The cloud loop runs on GitHub Actions; this repo cannot use it.')} Skip is the way on.</div>
                 ) : (
@@ -219,7 +223,7 @@ export default function CloudSetup() {
               </div>
             </div>
           ) : null}
-          <div className="cl-step" aria-disabled={waiting || undefined}>
+          <div className="cl-step" aria-disabled={waiting || undefined} inert={waiting || undefined}>
             <span className={wf ? 'cl-num is-done' : 'cl-num is-now'}>{wf ? <Icon name="check" /> : <span>1</span>}</span>
             <div>
               <div className="cl-h">
@@ -271,7 +275,7 @@ export default function CloudSetup() {
             </div>
           </div>
 
-          <div className="cl-step" aria-disabled={waiting || undefined}>
+          <div className="cl-step" aria-disabled={waiting || undefined} inert={waiting || undefined}>
             <span className={secret?.ok ? 'cl-num is-done' : wf ? 'cl-num is-now' : 'cl-num'}>{secret?.ok ? <Icon name="check" /> : <span>2</span>}</span>
             <div>
               <div className="cl-h">Give the loop its sign-in</div>
@@ -302,7 +306,7 @@ export default function CloudSetup() {
             </div>
           </div>
 
-          <div className="cl-step" aria-disabled={waiting || undefined}>
+          <div className="cl-step" aria-disabled={waiting || undefined} inert={waiting || undefined}>
             <span className={green ? 'cl-num is-done' : 'cl-num is-now'}>{green ? <Icon name="check" /> : <span>3</span>}</span>
             <div>
               <div className="cl-h">Run one pass now</div>
@@ -330,7 +334,7 @@ export default function CloudSetup() {
             </div>
           </div>
 
-          <div className="cl-step" aria-disabled={waiting || undefined}>
+          <div className="cl-step" aria-disabled={waiting || undefined} inert={waiting || undefined}>
             <span className="cl-num is-now">4</span>
             <div>
               <div className="cl-h">Pick a schedule</div>

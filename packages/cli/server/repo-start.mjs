@@ -89,7 +89,7 @@ const tail = (s, n = 400) => String(s || '').trim().slice(-n);
 
 const q = (s) => `"${String(s).replace(/"/g, '')}"`;
 
-/** The commands for each reason, per platform. ctx: { platform, folder, top, owner, name, ghName, slug, url }. */
+/** The commands for each reason, per platform. ctx: { platform, folder, top, owner, name, ghName, ghEmail, slug, url }. */
 export function guideFor(why, ctx = {}) {
   const win = ctx.platform === 'win32';
   const mac = ctx.platform === 'darwin';
@@ -98,8 +98,12 @@ export function guideFor(why, ctx = {}) {
   const https = `https://github.com/${owner}/${name}.git`;
   switch (why) {
     case 'git-missing': return [win ? 'winget install --id Git.Git -e' : mac ? 'xcode-select --install' : 'sudo apt install git'];
-    case 'no-identity': return [`git config --global user.name ${q(ctx.ghName || 'Your Name')}`, 'git config --global user.email "you@example.com"'];
-    case 'gh-missing': return [...(win ? ['winget install --id GitHub.cli -e'] : mac ? ['brew install gh'] : []), 'gh auth login'];
+    // A placeholder stays unquoted in <angle brackets>: run as is, both shells refuse it instead of setting it.
+    case 'no-identity': return [
+      `git config --global user.name ${ctx.ghName ? q(ctx.ghName) : '<Your Name>'}`,
+      `git config --global user.email ${ctx.ghEmail ? q(ctx.ghEmail) : '<your-email>'}`,
+    ];
+    case 'gh-missing': return [win ? 'winget install --id GitHub.cli -e' : mac ? 'brew install gh' : 'sudo apt install gh', 'gh auth login'];
     case 'gh-signed-out': return ['gh auth login'];
     case 'nested': return [`npx @usenexus/cli --repo ${q(ctx.top || '..')}`];
     case 'refused': return win ? [`mkdir ${ctx.slug || 'my-project'}; cd ${ctx.slug || 'my-project'}; npx @usenexus/cli`] : [`mkdir ${ctx.slug || 'my-project'} && cd ${ctx.slug || 'my-project'} && npx @usenexus/cli`];
@@ -174,20 +178,33 @@ async function identityOf(folder, git) {
   return name && email ? { user: { name, email }, from: from(n) === 'local' || from(e) === 'local' ? 'local' : 'global' } : { user: null, from: null };
 }
 
-/** Count files before init, without git: skips .git, node_modules and .nexus, stops at WALK_CAP. */
-export function countFiles(dir, cap = WALK_CAP) {
+/** Count files before init, without git: skips .git, node_modules and .nexus, stops at WALK_CAP. Async, so a big
+ * folder on a slow drive never holds the server's thread. */
+export async function countFiles(dir, cap = WALK_CAP) {
   let n = 0;
   const stack = [dir];
   while (stack.length && n < cap) {
     const d = stack.pop();
     let list;
-    try { list = fs.readdirSync(d, { withFileTypes: true }); } catch { continue; }
+    try { list = await fs.promises.readdir(d, { withFileTypes: true }); } catch { continue; }
     for (const e of list) {
       if (e.isDirectory()) { if (!['.git', 'node_modules', '.nexus'].includes(e.name)) stack.push(path.join(d, e.name)); } else n += 1;
       if (n >= cap) break;
     }
   }
   return { files: n, capped: n >= cap };
+}
+
+// One count per folder for a short while: a re-check or a re-render does not walk the folder again.
+const COUNT_TTL = 15000;
+const counted = new Map(); // samePath-ish key -> { at, value: Promise }
+function countCached(folder) {
+  const key = path.resolve(folder);
+  const hit = counted.get(key);
+  if (hit && Date.now() - hit.at < COUNT_TTL) return hit.value;
+  const value = countFiles(folder);
+  counted.set(key, { at: Date.now(), value });
+  return value;
 }
 
 /** What a first commit would take: { files, ignoredTop, flagged, large }, from git status (after init). */
@@ -270,7 +287,7 @@ export async function probe(folder, { run = shRun, git = gitRun, home, platform 
   const owner = wantOwner && OWNER_RE.test(wantOwner) ? wantOwner : (remote?.owner || gh.login || null);
   const name = wantName && NAME_RE.test(wantName) && wantName !== '.' && wantName !== '..' ? wantName : (remote?.name || slug);
   const vis = visibility === 'public' ? 'public' : 'private';
-  const ctx = { ...ctxBase, top: where.top, owner, name, ghName: gh.name || gh.login, branch: branch || BRANCH, visibility: vis };
+  const ctx = { ...ctxBase, top: where.top, owner, name, ghName: gh.name || gh.login, ghEmail: noreplyOf(gh), branch: branch || BRANCH, visibility: vis };
 
   let next;
   let why;
@@ -309,7 +326,7 @@ export async function probe(folder, { run = shRun, git = gitRun, home, platform 
   }
   if (gh.signedIn && !gh.scopes.includes('workflow') && gh.scopes.length) out.guide['workflow-scope'] = guideFor('workflow-scope', ctx);
   if (place === 'none' && !dubious) {
-    const c = countFiles(folder);
+    const c = await countCached(folder);
     out.preview = { files: c.files, capped: c.capped, ignoredTop: [], flagged: [], large: [] };
   } else if (isRepo && !commits) {
     out.preview = await commitPreview(folder, git);
@@ -347,9 +364,15 @@ async function ensureGitignore(folder, git) {
   return { appended: true, lines: st.missing.length, added: st.missing };
 }
 
+/** The signed-in account's private noreply address, or null when gh is signed out. */
+function noreplyOf(gh) {
+  if (!gh?.login) return null;
+  return gh.id ? `${gh.id}+${gh.login}@users.noreply.github.com` : `${gh.login}@users.noreply.github.com`;
+}
+
 async function ghIdentity(folder, gh, git) {
   const name = gh.name || gh.login;
-  const email = gh.id && gh.login ? `${gh.id}+${gh.login}@users.noreply.github.com` : `${gh.login}@users.noreply.github.com`;
+  const email = noreplyOf(gh);
   const a = await git(folder, ['config', 'user.name', name]);
   const b = await git(folder, ['config', 'user.email', email]);
   if (!a.ok || !b.ok) return null;

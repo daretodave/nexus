@@ -107,6 +107,16 @@ test('guidance per platform: PowerShell Add-Content on win32, printf elsewhere; 
   assert.match(RS.guideFor('refused', { platform: 'win32', slug: 'lantern' })[0], /mkdir lantern; cd lantern/);
 });
 
+test('guidance: Linux gets an install line for gh; no identity never hands over a runnable fake email', () => {
+  assert.deepEqual(RS.guideFor('gh-missing', { platform: 'linux' }), ['sudo apt install gh', 'gh auth login']);
+  const blank = RS.guideFor('no-identity', { platform: 'linux' });
+  assert.ok(!blank.some((l) => /example.com/.test(l)), 'no you@example.com to paste');
+  assert.match(blank[1], /user.email <your-email>$/, 'an unquoted placeholder the shell refuses');
+  assert.match(blank[0], /user.name <Your Name>$/);
+  const known = RS.guideFor('no-identity', { platform: 'linux', ghName: 'Ada Park', ghEmail: '7+ada@users.noreply.github.com' });
+  assert.deepEqual(known, ['git config --global user.name "Ada Park"', 'git config --global user.email "7+ada@users.noreply.github.com"']);
+});
+
 test('init: -b main and a .gitignore that keeps .env and .nexus/ out; a second init writes nothing', async () => {
   const dir = tempDir();
   write(path.join(dir, 'a.txt'), 'a\n');
@@ -312,4 +322,13 @@ test('GET /api/git answers isGit false in a plain folder, not git\'s fatal', asy
   } finally {
     await app.close();
   }
+});
+
+test('placeNote: a refused folder says to make a project folder, never to use step 0', async () => {
+  const { placeNote } = await import('../server/place.mjs');
+  const home = placeNote({ place: 'refused', refusedAs: 'home' });
+  assert.match(home, /home folder/);
+  assert.match(home, /start nexus there/);
+  assert.doesNotMatch(home, /step 0/);
+  assert.match(placeNote({ place: 'none' }), /step 0/);
 });

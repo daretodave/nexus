@@ -3,7 +3,7 @@
 // the end, a made-up one. One setTimeout chain drives it, paused while the tab is hidden or the window is scrolled
 // out of view; CSS does the line reveal, the caret, the token sweep and the card's slide (styles/mini-term.css).
 // Reduced motion (the system's or the app's own) draws the final frame at once: every line, no caret, the card
-// still and signed in, no Replay. The window is aria-hidden; a visually hidden list holds the whole transcript.
+// still and signed in, no Replay. The window's lines are aria-hidden (Replay stays a real button); a visually hidden list holds the whole transcript.
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../ui/index.js';
 import { useFxLevel, useReducedMotion } from '../../fx/pref.js';
@@ -86,16 +86,16 @@ export default function TokenTerm({ reduced: forceReduced, footnotes = true }) {
 
   return (
     <div className="mt" ref={box}>
-      <div className="mt-win" aria-hidden="true">
+      <div className="mt-win">
         <div className="mt-head">
-          <span className="mt-dots"><i /><i /><i /></span>
-          <span className="mt-title">Terminal · this machine</span>
+          <span className="mt-dots" aria-hidden="true"><i /><i /><i /></span>
+          <span className="mt-title" aria-hidden="true">Terminal · this machine</span>
           <span className="tb-spacer" />
           {!reduced ? (
-            <button className="btn btn-ghost btn-s" type="button" tabIndex={-1} onClick={() => setRun((n) => n + 1)} disabled={!done}><Icon name="refresh" size={12} />Replay</button>
+            <button className="btn btn-ghost btn-s" type="button" aria-label="Replay the terminal" onClick={() => setRun((n) => n + 1)} disabled={!done}><Icon name="refresh" size={12} />Replay</button>
           ) : null}
         </div>
-        <div className={`mt-body${reduced ? ' is-still' : ''}`}>
+        <div className={`mt-body${reduced ? ' is-still' : ''}`} aria-hidden="true">
           {FRAMES.slice(0, Math.max(1, shown)).map((f, i) => <Line key={`${run}-${i}`} f={f} typed={typed} live={i === 0 && (typing || (shown <= 1 && !reduced))} />)}
           <BrowserCard state={browser} />
         </div>

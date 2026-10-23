@@ -86,7 +86,7 @@ test('RepoStart per next: the identity line and the one right button', () => {
 });
 
 test('RepoStart guidance: missing identity offers the gh name and the copyable commands; blocked reasons show commands only', () => {
-  const noId = html(start({ place: 'local', next: 'commit', why: 'no-identity', git: { ...USER, user: null }, guide: { 'no-identity': ['git config --global user.name "Ada Park"', 'git config --global user.email "you@example.com"'] } }));
+  const noId = html(start({ place: 'local', next: 'commit', why: 'no-identity', git: { ...USER, user: null }, guide: { 'no-identity': ['git config --global user.name "Ada Park"', 'git config --global user.email <your-email>'] } }));
   assert.match(noId, /Use ada-park for this repo/);
   assert.match(noId, /user\.email/);
   assert.match(noId, /Check again/);

@@ -135,11 +135,11 @@ export default function RepoStart({ where = 'detect', compact = false, res: give
   // ---- step 3's fields and the live name check (the server's dry run gives the exact plan the card shows) --------
   const owners = useMemo(() => ownerChoices(s), [s]);
   const [owner, setOwner] = useState('');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(null); // null until the person types: then even an empty field stays empty
   const [vis, setVis] = useState('private');
   const [check, setCheck] = useState(null); // { key, free, plan }
   const ownerNow = owner || owners[0] || '';
-  const nameNow = name || s?.folder?.slug || '';
+  const nameNow = name ?? s?.folder?.slug ?? '';
   const key = `${ownerNow}/${nameNow}/${vis}`;
   useEffect(() => {
     if (!s || s.next !== 'remote' || !ownerNow || !nameNow || !s.gh?.signedIn) return undefined;
@@ -158,6 +158,7 @@ export default function RepoStart({ where = 'detect', compact = false, res: give
   const [phase, setPhase] = useState(null);
   const [created, setCreated] = useState(false);
   const [ownerMode, setOwnerMode] = useState(null);
+  const wantOwner = useRef(false); // the owner-mode tick from the create card, kept for a push that lands later
   const ownerTick = ownerMode ?? (!!s?.gh?.login && ownerNow.toLowerCase() === String(s.gh.login).toLowerCase());
 
   if (res.status === 'missing') return null;
@@ -181,6 +182,7 @@ export default function RepoStart({ where = 'detect', compact = false, res: give
   const errFor = (step) => (err && err.step === step ? err : null);
 
   const createAndPush = async () => {
+    wantOwner.current = ownerTick;
     if (!created) {
       setPhase('creating');
       const r = await act('remote', () => repoCalls.remote(ownerNow, nameNow, vis));
@@ -192,14 +194,23 @@ export default function RepoStart({ where = 'detect', compact = false, res: give
     setPhase(null);
     if (!p) return;
     setConfirm(false);
-    if (ownerTick) await server.setOwner(true).catch(() => null);
+    await applyOwner();
+  };
+
+  // Owner mode as ticked on the create card, applied once main is pushed, whichever button pushed it.
+  const applyOwner = async () => {
+    if (!wantOwner.current) return;
+    wantOwner.current = false;
+    await server.setOwner(true).catch(() => null);
   };
 
   const pushOnly = async () => {
     setPhase('pushing');
     const p = await act('push', () => repoCalls.push());
     setPhase(null);
-    if (p) setConfirm(false);
+    if (!p) return;
+    setConfirm(false);
+    await applyOwner();
   };
 
   const identityRow = (
@@ -351,6 +362,7 @@ export default function RepoStart({ where = 'detect', compact = false, res: give
                 <div className="cl-d">origin is <b>{(s.repo?.remote?.web || '').replace(/^https:\/\//, '')}</b>, with nothing pushed yet.</div>
                 {confirm ? (
                   <RepoConfirm kind="push" owner={s.repo?.remote?.owner} name={s.repo?.remote?.name} login={s.gh?.login} plan={s.plan} counts={counts} phase={phase} onCancel={() => setConfirm(false)} onGo={pushOnly}>
+                    {wantOwner.current ? <span className="t-body-s c-3">Owner mode turns on once {counts.branch} is pushed, as you ticked.</span> : null}
                     {errFor('push') ? <ErrLine e={errFor('push')} start={s} /> : null}
                   </RepoConfirm>
                 ) : (

@@ -102,7 +102,7 @@ export function guideCopy(why, start) {
   const name = start?.folder?.name || 'this folder';
   switch (why) {
     case 'git-missing': return 'git is not installed, and nexus needs it.';
-    case 'no-identity': return start?.gh?.signedIn ? 'git does not know who you are yet. Use your GitHub name for this repo, or set it for every repo.' : 'git does not know who you are yet.';
+    case 'no-identity': return start?.gh?.signedIn ? 'git does not know who you are yet. Use your GitHub name for this repo, or set it for every repo.' : 'git does not know who you are yet. Run these with your own name and email in place of the parts in <angle brackets>.';
     case 'gh-missing': return 'Putting it on GitHub needs gh, the GitHub CLI. The local steps work without it.';
     case 'gh-signed-out': return 'gh is not signed in.';
     case 'nested': return `This folder is inside the repo at ${top || 'a parent folder'}. nexus works at a repo's root.`;

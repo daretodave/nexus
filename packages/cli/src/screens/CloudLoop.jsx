@@ -145,6 +145,8 @@ export default function CloudLoop() {
     body = null;
   } else if (loop.status === 'nogh' || loop.status === 'error') {
     body = <Err icon="offline" title={loop.note || 'gh could not read this repo'} body="nexus reads the cloud loop through your own gh login. Nothing in the loop has changed." actions={<button className="btn btn-s" type="button" onClick={loop.reload}>Check again</button>} />;
+  } else if (loop.status === 'norepo' && loop.place === 'refused') {
+    body = <Empty sky="none" title="Not a project folder" body={loop.note || 'Make a folder for the project and start nexus there.'} />;
   } else if (loop.status === 'norepo') {
     body = <Empty sky="none" title="Not on GitHub yet" body="The cloud loop runs on GitHub Actions. Put this folder on GitHub first; setup shows every command before it runs." action={<Link className="btn btn-s" to={PATHS.onboarding('cloud')}>Put it on GitHub</Link>} />;
   } else if (loop.status === 'none') {
