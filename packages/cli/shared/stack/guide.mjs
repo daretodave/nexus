@@ -1,11 +1,14 @@
 // The agent guide: what every session in the app's repo reads about the stack it runs on. Set up a stack writes it to
 // docs/stack.md (server/stack-guide.mjs) inside a marked block, and points agents.md at it, so a session that reads
 // the rule book first finds, for each picked service, its env names, how code reads them, how to run its CLI through
-// the vault runner, test against live, limits, and the do and don't. Names only: nothing here ever takes a value.
+// the vault runner, test against live, limits, the do and don't, and how values move: where each one goes, the push
+// line, the names-only check that it landed, and the request to file when one is missing. Names only: nothing here
+// ever takes a value.
 //
 // Pure functions, shared by the server (which writes the file) and the panel (which shows a preview).
 import { SERVICES, ORDER, GROUPS } from './recipes.mjs';
 import { frameworkById, envNamesFor, isPublicName } from './frameworks.mjs';
+import { DESTINATIONS, DEST_FLAG, destLabel, placesFor } from './moves.mjs';
 
 export const GUIDE_FILE = 'docs/stack.md';
 export const BEGIN = '<!-- nexus:stack:begin. Written by Set up a stack in the nexus GUI: this block is replaced when the stack changes; notes outside it stay. -->';
@@ -47,7 +50,12 @@ export function renderGuide({ picked = [], app = {}, names = {} } = {}) {
     '- `node scripts/secrets.mjs status` shows where each name is set.',
     '- A command that needs values runs under `node scripts/secrets.mjs run --only NAME,NAME -- <command>`. The runner puts the values in the child\'s environment only and masks them in its output.',
     '- Write `$NAME` only inside the child (`sh -c \'...\'`), never on the outer command line: the outer shell expands it before the runner adds anything.',
-    '- A secret never gets a browser prefix. Missing a value? Ask the owner to paste it in Set up a stack, or to run `node scripts/secrets.mjs set NAME`.',
+    '- A secret never gets a browser prefix.',
+    '',
+    'Values move two ways, and a session handles names in both:',
+    '',
+    '- **In.** Missing a value? File the ask: `node scripts/secrets.mjs request <chunk> --to <destination> --service <service>`, then leave that chunk. The owner pastes it in Set up a stack (the ask opens the right card) or runs `node scripts/secrets.mjs set NAME`. Never ask for a value in chat, never read one, never guess or make one up.',
+    '- **Out.** To send a value where it runs, declare the place in its `destinations` in `nexus.secrets.json`, run `node scripts/secrets.mjs push NAME --to <destination>` (the vault hands it to the tool\'s stdin), then confirm with the place\'s names-only list. Each service below has the exact lines.',
     '',
   );
   for (const id of ids) {
@@ -87,9 +95,43 @@ export function renderGuide({ picked = [], app = {}, names = {} } = {}) {
     if (g.limits) lines.push(`**Limits.** ${g.limits}`, '');
     if (g.do?.length) lines.push('Do:', '', ...g.do.map((x) => `- ${rename(x, map, fixed)}`), '');
     if (g.dont?.length) lines.push('Don\'t:', '', ...g.dont.map((x) => `- ${rename(x, map, fixed)}`), '');
+    lines.push(...movingValues(id, s, ids, (v) => (Array.isArray(names[`${id}.${v.key}`]) && names[`${id}.${v.key}`].length ? names[`${id}.${v.key}`] : envNamesFor(v, fw))));
   }
   lines.push(END);
   return lines.join('\n');
+}
+
+/**
+ * A service's "Moving values": each place its values go (from the picks: an app value to each host, a CI name to
+ * GitHub Actions), the push lines, the names-only check, and the request to file when one is missing.
+ */
+export function movingValues(id, s, picked, namesOf) {
+  const byDest = new Map();
+  for (const v of s.values) {
+    const ns = namesOf(v);
+    for (const n of ns) {
+      for (const d of placesFor(id, v.key, n, picked)) {
+        if (!byDest.has(d)) byDest.set(d, []);
+        if (!byDest.get(d).includes(n)) byDest.get(d).push(n);
+      }
+    }
+  }
+  const out = ['**Moving values.**', ''];
+  const first = s.values.find((v) => v.required && v.secret) || s.values[0];
+  const askName = first ? namesOf(first).find((n) => !isPublicName(n)) || namesOf(first)[0] : 'NAME';
+  if (!byDest.size) {
+    out.push(`These stay in the vault: nothing picked runs code that reads them${s.group === 'hosting' ? ' (a host\'s own token is for its CLI and CI)' : ''}.`, '');
+  } else {
+    for (const [d, ns] of byDest) {
+      const flag = DEST_FLAG[d] ? ` ${DEST_FLAG[d]}` : '';
+      out.push(`To ${destLabel(d)} (${DESTINATIONS[d]?.what || 'its secrets'}): ${ns.map((n) => `\`${n}\``).join(', ')}. Declare \`"${d}"\` in each one's \`destinations\` in \`nexus.secrets.json\`, then:`, '', '```bash', ...ns.map((n) => `node scripts/secrets.mjs push ${n} --to ${d}${flag}`), '```', '');
+      const check = DESTINATIONS[d]?.verify(ns[0]) || '';
+      out.push(/\s/.test(check) && !/^the /.test(check) ? `Confirm it landed: \`${check}\` (names only).` : `Confirm it landed: ${check}.`, '');
+    }
+  }
+  const to = [...byDest.keys()];
+  out.push(`Missing one: \`node scripts/secrets.mjs request <chunk>${to.length ? ` --to ${to.join(',')}` : ''} --service ${id}\` (it asks for \`${askName}\` and its siblings by name), then leave that chunk. Never ask for a value in chat or guess one.`, '');
+  return out;
 }
 
 /** A file's text with the guide block put in place: replaced between the markers, or added. Other text stays as is. */

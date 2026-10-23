@@ -231,6 +231,7 @@ export default function StackCard({ svc, stack, ui, isNext, compact, readOnly })
             <div className="stk-vals">
               {rows.map(({ v, row }) => (
                 <ValueField key={v.key} svc={svc} row={row} f={ui.field(svc, v.key)} readOnly={readOnly}
+                  asked={ui.ask && ui.ask.service === svc && ui.ask.valueKey === v.key ? ui.ask : null}
                   set={(patch) => ui.setField(svc, v.key, patch)}
                   onSave={() => ui.save(svc, v.key)}
                   onPaste={(text) => ui.pasted(svc, text)}

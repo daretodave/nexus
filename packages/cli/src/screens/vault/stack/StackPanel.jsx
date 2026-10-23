@@ -6,7 +6,7 @@
 // rail folds to one line above the cards and the gotchas hide.
 //
 // Data: GET /api/stack (useStack, through useStackPanel); writes: /api/stack/pick, save, check, apply, tick.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon, KeyNote, TickLabel, cx } from '../../../ui/index.js';
 import VaultSetup from '../VaultSetup.jsx';
 import StackCard from './StackCard.jsx';
@@ -199,6 +199,28 @@ export default function StackPanel({ sp: shared, compact = false, onClose, onOpe
     );
   }
   const readOnly = !stack.owner;
+  return <Panel stack={stack} ui={ui} compact={compact} onClose={onClose} onOpenVault={onOpenVault} readOnly={readOnly} />;
+}
+
+/** A request's card: picked when it is not yet (the owner's), then opened with its field focused, once. */
+function useAskFocus(stack, ui, readOnly) {
+  const done = useRef(null);
+  const ask = ui.ask;
+  const sig = ask ? `${ask.service}.${ask.key}.${ask.chunk || ''}` : null;
+  useEffect(() => {
+    if (!ask || done.current === sig) return;
+    if (!stack.picked.includes(ask.service)) {
+      if (!readOnly && !ui.busy) ui.pick({ picked: [...stack.picked, ask.service] });
+      return;
+    }
+    if (!ask.valueKey) return;
+    done.current = sig;
+    ui.go({ service: ask.service, key: ask.valueKey });
+  }, [sig, stack.picked.join(','), ask?.valueKey]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+function Panel({ stack, ui, compact, onClose, onOpenVault, readOnly }) {
+  useAskFocus(stack, ui, readOnly);
   const prog = progress(stack);
   const next = nextAction(prog, stack);
   const nextSvc = openCard(stack, next);

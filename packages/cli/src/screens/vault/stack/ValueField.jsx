@@ -4,6 +4,7 @@
 // the value should look like, and Save. After a save the field clears; the row says where the value went.
 import { Icon, MaskField, cx } from '../../../ui/index.js';
 import { shortId } from './model.js';
+import { destLabel } from '../../../../shared/stack/destinations.mjs';
 
 const NOTE_CLASS = { 'typed-bad': 'is-bad', 'save-failed': 'is-bad', drift: 'is-warn', saved: 'is-saved', 'typed-ok': 'is-ok', saving: 'is-ok' };
 
@@ -23,7 +24,7 @@ export function EnvChips({ chips }) {
  * row: model.valueRow. f: the field's ui state ({ paste, show, replacing }). readOnly: a contributor's view.
  * onPaste(text) -> true when the panel took it (paste-many).
  */
-export default function ValueField({ svc, row, f = {}, set, onSave, onPaste, onResync, readOnly }) {
+export default function ValueField({ svc, row, f = {}, set, onSave, onPaste, onResync, readOnly, asked = null }) {
   const editing = !row.saved || f.replacing || !!f.paste || row.phase === 'save-failed';
   const id = `stk-${svc}-${row.key}`;
   const paste = typeof f.paste === 'string' ? f.paste : '';
@@ -32,7 +33,14 @@ export default function ValueField({ svc, row, f = {}, set, onSave, onPaste, onR
     if (text.includes('\n') && onPaste?.(text)) e.preventDefault();
   };
   return (
-    <div className={cx('stk-val', `is-${row.phase}`)} id={id}>
+    <div className={cx('stk-val', `is-${row.phase}`, asked && 'is-asked')} id={id}>
+      {asked ? (
+        <span className="stk-val-ask" role="note">
+          <Icon name="key" size={12} />
+          {asked.chunk ? <><b>{asked.chunk}</b> asked for <code>{asked.key}</code>.</> : <>Asked for <code>{asked.key}</code>.</>}
+          {asked.to?.length ? <> Saving stores it in the vault and pushes it to {asked.to.map(destLabel).join(', ')}.</> : <> Saving stores it in the vault.</>}
+        </span>
+      ) : null}
       <span className="stk-val-l">
         <b>{row.label}</b>
         {!row.required ? <span className="c-3">optional</span> : null}

@@ -159,6 +159,7 @@ test('owner: a masked POST stores the value, pushes it through the sink on stdin
     assert.deepEqual(gh1.rings, ['local']);
     assert.deepEqual(gh1.destinations.map((d) => `${d.destination}:${d.state}`), ['local:set', 'github-actions:pushed']);
     assert.deepEqual(gh1.destinations[1].detail, { repo: 'me/app' });
+    assert.equal(after.json.audit.at(-1)?.via, 'gui', 'the audit line says the GUI pushed it (the change feed reads that)');
     assert.deepEqual(after.json.audit.map((e) => `${e.action} ${e.name} ${e.destination}`), ['set GH_TOKEN local', 'push GH_TOKEN github-actions']);
     const audit = await call('GET', '/api/secrets/audit');
     assert.equal(audit.status, 200);

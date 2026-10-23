@@ -133,7 +133,7 @@ test('the rail shows progress, the next action with its button, and the names st
   assert.match(html, /Your stack/);
   assert.match(html, /2 of 8/);
   assert.match(html, /Next/);
-  assert.match(html, /Send the 4 Supabase values to Vercel\./);
+  assert.match(html, /Send the 4 values the app reads to Vercel\./);
   assert.match(html, />Send to Vercel</);
   assert.match(html, /waiting on nameservers/);
   const miss = renderToStaticMarkup(createElement(StackRail, { stack: stack({ picked: ['vercel'], saved: ['vercel.token'] }), ui: ui() }));

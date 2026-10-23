@@ -157,6 +157,9 @@
 .stk-val-note.is-bad { color: var(--st-blocked); }
 .stk-val-note.is-warn { color: var(--st-thinking); }
 .stk-val-note.is-saved { color: var(--text-2); }
+.stk-val.is-asked { background: color-mix(in oklab, var(--st-thinking) 8%, transparent); border-radius: 8px; padding: 8px; margin: 2px -8px; }
+.stk-val-ask { grid-column: 1 / -1; display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; line-height: 16px; color: var(--text); }
+.stk-val-ask code { font-family: var(--font-mono); }
 .stk-val-note.is-saved > svg { color: var(--st-done); }
 .stk-val-note code { font-family: var(--font-mono); }
 .stk-where { display: inline-flex; align-items: center; gap: 3px; color: var(--accent); text-decoration: none; }

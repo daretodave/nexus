@@ -5,6 +5,7 @@
 import { SERVICES, ORDER, ACTIONS, MILESTONES, PRESETS, GROUPS, milestonesFor, fillTemplate, unfilledKeys, servicesIn, valueOf, searchServices, groupedServices, nameClashes } from '../../../../shared/stack/recipes.mjs';
 import { checkShape, normalize } from '../../../../shared/stack/shapes.mjs';
 import { frameworkById, envNamesFor, isPublicName } from '../../../../shared/stack/frameworks.mjs';
+import { appReads } from '../../../../shared/stack/moves.mjs';
 
 export { SERVICES, ORDER, ACTIONS, PRESETS, GROUPS, fillTemplate, unfilledKeys, servicesIn, valueOf, envNamesFor, checkShape, searchServices, groupedServices, nameClashes };
 
@@ -82,7 +83,7 @@ const NEXT = {
   zone: { text: 'Add {domain} to Cloudflare and change the nameservers. It is the slow one, so start here.', service: 'cloudflare', step: 'cf.add' },
   db: { text: 'Paste your Supabase keys.', service: 'supabase', step: 'sb.connect' },
   host: { text: 'Paste a Vercel token and pick the project.', service: 'vercel', step: 'vc.token' },
-  env: { text: 'Send the {n} Supabase values to Vercel.', service: 'vercel', step: 'vc.env', action: 'vercel.env', cta: 'Send to Vercel' },
+  env: { text: 'Send the {n} values the app reads to Vercel.', service: 'vercel', step: 'vc.env', action: 'vercel.env', cta: 'Send to Vercel' },
   domain: { text: 'Add {domain} to your Vercel project.', service: 'vercel', step: 'vc.domain', action: 'vercel.domain', cta: 'Add the domain' },
   dns: { text: 'Point {domain} at Vercel.', service: 'cloudflare', step: 'cf.ns', action: 'cloudflare.dns', cta: 'Write the records' },
   auth: { text: 'Tell Supabase sign-in about https://{domain}.', service: 'supabase', step: 'sb.auth' },
@@ -105,8 +106,9 @@ export function nextAction(prog, stack) {
   const ready = prog.milestones.find((m) => m.state === 'ready');
   if (ready) {
     const n = nextFor(ready.id);
-    const count = ['url', 'publishable', 'secret', 'dbUrl'].filter((k) => saved(s, 'supabase', k)).length;
-    let text = fillTemplate(n.text, ctx).replace('{n}', String(count || 4));
+    // Every picked service's values the app reads (moves.mjs appReads), saved: what Send to Vercel sends.
+    const count = s.picked.flatMap((id) => (SERVICES[id]?.values || []).filter((v) => appReads(id, v.key) && saved(s, id, v.key))).length;
+    let text = fillTemplate(n.text, ctx).replace('{n} values', count ? `${count} ${count === 1 ? 'value' : 'values'}` : 'values');
     if (ready.id === 'auth' && !s.picked.includes('cloudflare')) text = 'Tell Supabase sign-in about your vercel.app URL.';
     if (ready.id === 'zone' && !s.inputs.domain) text = 'Type your domain, then add it to Cloudflare. It is the slow one, so start here.';
     return { kind: 'ready', milestone: ready.id, service: n.service, step: n.step, text, ...(n.action ? { action: n.action } : {}), ...(n.check ? { check: n.check } : {}), cta: n.cta || 'Show me' };

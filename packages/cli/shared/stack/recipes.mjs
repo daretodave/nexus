@@ -161,7 +161,7 @@ export const SERVICES = {
   vercel: {
     id: 'vercel', name: 'Vercel', mono: 'VC', group: 'hosting', keywords: ['hosting', 'deploy', 'next.js', 'preview'],
     role: 'Builds and hosts the app.',
-    why: 'Every push builds a preview, and main builds production. Vercel serves your domain and keeps the app\'s env, so the Supabase values go here too.',
+    why: 'Every push builds a preview, and main builds production. Vercel serves your domain and keeps the app\'s env, so the values the app reads go here too.',
     inputs: [{ key: 'domain', label: 'Your domain', shape: 'hostname', placeholder: 'example.com', shared: true }],
     token: {
       title: 'An access token for your team',
@@ -176,7 +176,7 @@ export const SERVICES = {
       { id: 'vc.new', text: 'Import your git repo as a project and let the first build run.', link: { href: 'https://vercel.com/new', label: 'New project' }, auto: 'vercel.projects', note: 'The first deploy has to finish before Vercel accepts a domain.' },
       { id: 'vc.token', text: 'Create the token below and paste it.', values: ['token'] },
       { id: 'vc.ids', text: 'Press Check it, then pick this app\'s project.', values: ['projectId', 'teamId'] },
-      { id: 'vc.env', text: 'Send the Supabase values to the project.', action: 'vercel.env' },
+      { id: 'vc.env', text: 'Send the values the app reads (every picked service\'s) to the project.', action: 'vercel.env' },
       { id: 'vc.domain', text: 'Add {domain} and www.{domain} to the project.', action: 'vercel.domain', link: { href: 'https://vercel.com/d?to=%2F%5Bteam%5D%2F%5Bproject%5D%2Fsettings%2Fdomains', label: 'Domains' } },
       { id: 'vc.ready', text: 'Wait for the domain to show Valid.', auto: 'vercel.domainOk' },
     ],
@@ -241,7 +241,7 @@ export const CI_NAMES = new Set([
 export const ACTIONS = {
   'cloudflare.dns': { service: 'cloudflare', label: 'Point {domain} at Vercel', cta: 'Write the records', needs: ['cloudflare', 'vercel'] },
   'vercel.domain': { service: 'vercel', label: 'Add {domain} to the project', cta: 'Add the domain', needs: ['vercel'] },
-  'vercel.env': { service: 'vercel', label: 'Send the Supabase values to Vercel', cta: 'Send to Vercel', needs: ['vercel', 'supabase'] },
+  'vercel.env': { service: 'vercel', label: 'Send the app\'s values to Vercel', cta: 'Send to Vercel', needs: ['vercel'] },
   'vercel.nameservers': { service: 'vercel', label: 'Set the nameservers at Vercel', cta: 'Set the nameservers', needs: ['vercel', 'cloudflare'] },
 };
 
@@ -344,7 +344,8 @@ export function milestonesFor(picked) {
   const has = new Set(picked || []);
   const kept = MILESTONES.filter((m) => {
     if (!has.has(m.service)) return false;
-    if (m.id === 'env') return has.has('supabase') && has.has('vercel');
+    // Keys go to Vercel when it hosts and some picked service holds values the app reads (anything not a host).
+    if (m.id === 'env') return has.has('vercel') && [...has].some((id) => SERVICES[id] && SERVICES[id].group !== 'hosting');
     if (m.id === 'domain' || m.id === 'dns' || m.id === 'live') return has.has('vercel') && has.has('cloudflare');
     return true;
   });

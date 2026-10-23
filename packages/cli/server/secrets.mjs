@@ -29,6 +29,8 @@ import { setupVault, DOCS } from './vault-setup.mjs';
 import { run as shRun, track } from './sh.mjs';
 import { gitEnv } from './cloud.mjs';
 import { execFile } from 'node:child_process';
+import { recipeOfName } from '../shared/stack/moves.mjs';
+import { SERVICES } from '../shared/stack/recipes.mjs';
 
 /** The repo's scripts the API runs, each with the exports it needs. `audit` (42.6) is optional. */
 const FILES = {
@@ -41,7 +43,13 @@ const FILES = {
 };
 const OPTIONAL = { audit: ['secrets-audit.mjs', ['rotationNudges', 'ROTATE_DAYS']] };
 const NAME = /^[A-Z][A-Z0-9_]*$/;
-const SINK_FLAGS = { 'github-actions': 'repo', vercel: 'environments', cloudflare: 'worker' };
+/** Every destination the GUI can push to (the kit's sinks), with the push option it takes from a request body. */
+const SINK_FLAGS = {
+  'github-actions': 'repo', vercel: 'environments', cloudflare: 'worker', 'cloudflare-pages': 'environments', netlify: 'environments',
+  fly: 'app', supabase: 'project', firebase: 'project', 'aws-secrets-manager': 'region', 'aws-ssm': 'region', 'gcp-secret-manager': 'project',
+  'azure-key-vault': 'vault',
+};
+const FLAG_OF = { app: '--app', project: '--project', region: '--region', vault: '--vault' };
 const KEYCHAIN_MS = 60000;
 /** How long the GUI keeps `gh secret list`'s answer (names only): GET /api/secrets runs on every poll. */
 const GH_LIST_MS = 60000;
@@ -62,11 +70,25 @@ const ghKey = (cwd, args) => `${cwd ? path.resolve(cwd) : ''}\0${args.join(' ')}
 
 /** A secret request row (scripts/secrets.mjs request): `secret request <chunk>: set A, B in your terminal ...`. */
 const REQUEST_ROW = /secret request (\S+?):\s*set\s+([A-Z][A-Z0-9_]*(?:\s*,\s*[A-Z][A-Z0-9_]*)*)/;
+/** Where it goes once set (`--to`), and the stack service it belongs to (`--service`), as `request` words them. */
+const REQUEST_TO = /It goes to ([a-z0-9-]+(?:, [a-z0-9-]+)*) once it is set/;
+const REQUEST_STACK = /\(stack: ([a-z][a-z0-9-]{0,39})\)/;
 
-/** The chunk and names a plan question asks a secret for, or null (a plain question). */
+/**
+ * The chunk and names a plan question asks a secret for, or null (a plain question): { chunk, names, to, service? }.
+ * `service` is the one the request names, else the recipe that writes its first name (moves.mjs recipeOfName), so an
+ * older request for STRIPE_SECRET_KEY still opens the Stripe card.
+ */
 export function parseRequest(text) {
-  const m = REQUEST_ROW.exec(String(text || ''));
-  return m ? { chunk: m[1], names: m[2].split(',').map((n) => n.trim()).filter(Boolean) } : null;
+  const t = String(text || '');
+  const m = REQUEST_ROW.exec(t);
+  if (!m) return null;
+  const names = m[2].split(',').map((n) => n.trim()).filter(Boolean);
+  const to = (REQUEST_TO.exec(t)?.[1] || '').split(',').map((d) => d.trim()).filter((d) => d && d in SINK_FLAGS);
+  const named = REQUEST_STACK.exec(t)?.[1];
+  const hit = names.map((n) => recipeOfName(n)).find(Boolean);
+  const service = named && SERVICES[named] ? named : hit?.service || null;
+  return { chunk: m[1], names, to, ...(service ? { service, serviceName: SERVICES[service].name } : {}) };
 }
 
 /** A dotenv file at the repo root the import may read by name: never the vault's own files, never a template. */
@@ -381,7 +403,7 @@ export function createSecrets({ repo, run, ghRun = shRun, vault: vaultOpts = {},
       const destinations = (s.destinations ?? []).map((d) => {
         if (d === 'local') return { destination: d, state: s.rings.length ? 'set' : 'missing' };
         const p = pushes.get(`${s.name}\0${d}`);
-        const { time, action, name, destination, ...detail } = p || {};
+        const { time, action, name, destination, via, session, ...detail } = p || {}; // who pushed is the feed's, not the dot's
         // A push older than the value's last set or rotation: the destination still holds the old value.
         const stale = !!(p && setAt && time < setAt);
         // What the sink itself holds, when the kit reads it (github-actions: gh secret list): set, not set, unknown.
@@ -516,7 +538,9 @@ export function createSecrets({ repo, run, ghRun = shRun, vault: vaultOpts = {},
       if (flag === 'repo' && typeof b.repo === 'string' && b.repo) extra.push('--repo', b.repo);
       if (flag === 'environments' && Array.isArray(b.environments) && b.environments.length) extra.push('--env', b.environments.map(String).join(','));
       if (flag === 'worker' && typeof b.worker === 'string' && b.worker) extra.push('--worker', b.worker);
-      const r = await cli(k, ['push', name, '--to', d, '--root', root, ...extra]);
+      if (FLAG_OF[flag] && typeof b[flag] === 'string' && b[flag]) extra.push(FLAG_OF[flag], b[flag]);
+      // via: the audit line says the GUI pushed it (the change feed reads that), not a session.
+      const r = await cli(k, ['push', name, '--to', d, '--root', root, ...extra], { via: 'gui' });
       out.push(r.code === 0 ? { destination: d, ok: true, note: r.out.join('\n') } : { destination: d, ok: false, error: [...r.err, ...r.out].join('\n').trim() || `exited ${r.code}` });
     }
     return out;

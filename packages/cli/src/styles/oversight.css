@@ -54,3 +54,4 @@
 .inbox { grid-template-rows: minmax(0, 1fr); }
 .ibx-list { max-height: 100%; overflow-y: auto; margin: -2px -8px -2px -2px; padding: 2px 8px 2px 2px; }
 .ibx-panel { max-height: 100%; overflow-y: auto; }
+.ibx-stack-link { margin: 8px 0 0; }

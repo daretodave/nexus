@@ -23,6 +23,7 @@ import { FRAMEWORKS, frameworkById, detectFramework, envNamesFor } from '../shar
 import { ACTION_FNS, refOf, pickFacts } from './stack-checks.mjs';
 import { CHECKS } from './stack-checks-more.mjs';
 import { writeGuide, guideStatus } from './stack-guide.mjs';
+import { appReads } from '../shared/stack/moves.mjs';
 
 export const STATE_FILE = '.nexus/stack.json';
 const WORKSPACE_JSON = '.env.workspace.json';
@@ -31,6 +32,7 @@ const COOLDOWN_MS = 3000;
 /** The Vercel check's facts that are about the domain, dropped when the domain changes. */
 const DOMAIN_FACTS = ['domainOnProject', 'domainOk', 'configuredBy', 'recommended', 'vercelRegistrar'];
 const NAME = /^[A-Z][A-Z0-9_]*$/;
+const CHUNK = /^\d{2,}\.\d+[a-z0-9]*$/;
 /** The names CI needs, pushed to GitHub Actions when that target is ticked (recipes.mjs CI_NAMES). */
 const ACTIONS_NAMES = CI_NAMES;
 
@@ -324,16 +326,16 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     const sinks = st?.sinks || [];
     if (sinks.includes('github-actions')) out.push({ id: 'github-actions', kind: 'sink', label: 'GitHub Actions', on: ticks['github-actions'] ?? true, why: 'The deploy names CI reads (VERCEL_TOKEN, CLOUDFLARE_API_TOKEN, NETLIFY_AUTH_TOKEN, FLY_API_TOKEN, SENTRY_AUTH_TOKEN and their IDs)' });
     const linked = [path.join(root, '.vercel', 'project.json'), path.join(root, app.dir, '.vercel', 'project.json')].some(exists);
-    if (sinks.includes('vercel') && linked) out.push({ id: 'vercel', kind: 'sink', label: 'Vercel (vercel env)', on: ticks.vercel ?? true, why: 'The Supabase values, through the linked project' });
+    if (sinks.includes('vercel') && linked) out.push({ id: 'vercel', kind: 'sink', label: 'Vercel (vercel env)', on: ticks.vercel ?? true, why: 'Every picked service\'s values the app reads, through the linked project' });
     return { targets: out, appNote };
   }
 
-  /** The sinks a name goes to, from the ticked sink targets. */
-  function destsFor(service, name, targets) {
+  /** The sinks a name goes to, from the ticked sink targets: CI names to Actions, every value the app reads to Vercel. */
+  function destsFor(service, key, name, targets) {
     const on = new Set(targets.filter((t) => t.kind === 'sink' && t.on && !t.disabled).map((t) => t.id));
     const out = [];
     if (on.has('github-actions') && ACTIONS_NAMES.has(name)) out.push('github-actions');
-    if (on.has('vercel') && service === 'supabase') out.push('vercel');
+    if (on.has('vercel') && appReads(service, key)) out.push('vercel');
     return out;
   }
 
@@ -484,7 +486,12 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     return { status: 200, ok: true, ticks: state.ticks };
   }
 
-  /** POST /api/stack/save { service, key, value, targets?, alsoNew? }: the vault, then each ticked mirror and sink. */
+  /**
+   * POST /api/stack/save { service, key, value, targets?, alsoNew?, request? }: the vault, then each ticked mirror and
+   * sink. request { chunk, to }: a secret request this save answers (Oversight's Add value opened the card for it): the
+   * value also goes to each place it named, which the kit must have a sink for. The request leaves the inbox once its
+   * names are all in the vault, as it does after a save anywhere, and its chunk is ready on the next pick.
+   */
   async function save(b = {}) {
     if (b.resync === true) return resync(b);
     const raw = typeof b.value === 'string' ? b.value : '';
@@ -506,9 +513,12 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     if ((v.secret && v.env?.public) || wanted.some((n) => !publicSafe(n, v.secret))) return scrub({ status: 400, error: 'A secret never gets a public name.' });
     const { names, notes } = resolveNames(v, ctx.fw, ctx.present, { alsoNew: b.alsoNew === true });
     if (!names.length || names.some((n) => !publicSafe(n, v.secret))) return scrub({ status: 400, error: 'A secret never gets a public name.' });
+    const req = requestOf(b.request, ctx.st);
+    if (req?.error) return scrub({ status: 400, error: req.error });
     const pushed = [];
     for (const n of names) {
-      const r = await secrets.store(n, { value, declare: true, for: recipeFor(b.service, b.key), destinations: destsFor(b.service, n, ctx.targets) });
+      const dests = [...new Set([...destsFor(b.service, b.key, n, ctx.targets), ...(req ? req.to : [])])];
+      const r = await secrets.store(n, { value, declare: true, for: recipeFor(b.service, b.key), destinations: dests });
       if (!r || r.status !== 200) return scrub({ status: r?.status || 500, error: r?.error || 'The vault did not take it.', names });
       for (const p of r.pushed || []) pushed.push({ name: n, destination: p.destination, ok: !!p.ok, ...(p.error ? { error: p.error } : {}) });
     }
@@ -535,7 +545,18 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     }
     if (b.service !== 'supabase' || b.key !== 'ref') { const st2 = await readState(); refreshGuide(st2, await context(st2)); }
     const legacy = shape.kind === 'legacy' || shape.kind === 'warn' ? [shape.note] : [];
-    return scrub({ status: 200, ok: !failed.length && pushed.every((p) => p.ok), names, written, failed, pushed, notes: [...notes, ...legacy] });
+    return scrub({ status: 200, ok: !failed.length && pushed.every((p) => p.ok), names, written, failed, pushed, notes: [...notes, ...legacy], ...(req ? { request: { chunk: req.chunk, to: req.to } } : {}) });
+  }
+
+  /** A save's request: null (none), { chunk, to } (each place a sink the kit has), or { error }. */
+  function requestOf(r, st) {
+    if (r == null) return null;
+    if (typeof r !== 'object' || !CHUNK.test(String(r.chunk || ''))) return { error: 'A request names its chunk, like 15.4.' };
+    const to = Array.isArray(r.to) ? [...new Set(r.to.map(String))].filter((d) => d !== 'local') : [];
+    const sinks = new Set(st?.sinks || []);
+    const unknown = to.filter((d) => !sinks.has(d));
+    if (unknown.length) return { error: `This repo's secrets scripts have no sink for ${unknown.join(', ')}. Update them, then save again.` };
+    return { chunk: String(r.chunk), to };
   }
 
   /** Re-sync (a drifted mirror): the vault's value written to the ticked mirror files again, read here, never posted. */
@@ -639,11 +660,15 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     const get = (s, k) => savedValue(ctx, state, s, k);
     const facts = state.checks || {};
     const projectId = get('vercel', 'projectId');
+    // Send to Vercel: every picked service's values the app reads (not a host's own token, not a tool-only key).
     const entries = [];
-    for (const key of ['url', 'publishable', 'secret', 'dbUrl']) {
-      const v = valueOf('supabase', key);
-      const { names } = resolveNames(v, ctx.fw, ctx.present);
-      for (const n of names) if (ctx.inVault.has(n)) entries.push({ key: n, secret: v.secret });
+    const seen = new Set();
+    for (const id of ORDER.filter((x) => state.picked.includes(x))) {
+      for (const v of SERVICES[id].values) {
+        if (!appReads(id, v.key)) continue;
+        const { names } = resolveNames(v, ctx.fw, ctx.present);
+        for (const n of names) if (ctx.inVault.has(n) && !seen.has(n)) { seen.add(n); entries.push({ key: n, secret: v.secret }); }
+      }
     }
     return {
       domain: state.inputs.domain,

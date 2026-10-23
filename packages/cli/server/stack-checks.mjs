@@ -477,7 +477,7 @@ export async function doVercelDomain(fetchImpl, ctx) {
  */
 export async function planVercelEnv(_fetchImpl, ctx) {
   const entries = ctx.entries || [];
-  if (!entries.length) return { ok: false, reason: 'Save the Supabase values first.' };
+  if (!entries.length) return { ok: false, reason: 'Save a value the app reads first (a key of any picked service but the hosts).' };
   if (!ctx.vc?.token || !ctx.vc?.projectId) return { ok: false, reason: 'Save the Vercel token and pick the project first.' };
   const rows = entries.map((e) => ({ key: e.key, type: e.secret ? 'sensitive' : 'encrypted', target: envTargets(e.secret) }));
   const enc2 = rows.filter((r) => r.type === 'encrypted').map((r) => r.key);
