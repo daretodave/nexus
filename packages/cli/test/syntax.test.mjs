@@ -42,6 +42,18 @@ test('rainbow carries through shell tokens: $( and ) pair up, a quoted paren doe
   assert.equal(brackets(tokens), '(1 )1 (1 )1');
 });
 
+test('a heredoc body is one string up to its closing word; <<- allows an indented close', () => {
+  const src = "cat <<'EOF' > out.txt\nline (1)\n  $HOME\nEOF\necho done";
+  const tokens = liteTokens('shell', src);
+  assert.equal(join(tokens), src);
+  assert.deepEqual(kinds(tokens), [['cmd', 'cat'], ['op', "<<'EOF'"], ['op', '>'], ['path', 'out.txt'], ['str', 'line (1)\n  $HOME\n'], ['op', 'EOF'], ['cmd', 'echo'], ['text', 'done']]);
+  const dash = liteTokens('shell', 'cat <<-END\n\tx\n\tEND');
+  assert.deepEqual(kinds(dash).slice(-2), [['str', '\tx\n'], ['op', '\tEND']]);
+  const open = liteTokens('shell', 'cat <<EOF\nstill typing');
+  assert.deepEqual(kinds(open).slice(-1), [['str', 'still typing']], 'an unclosed heredoc is string to the end');
+  assert.equal(join(liteTokens('shell', 'cat <<< "x"')), 'cat <<< "x"', 'a here-string is not a heredoc');
+});
+
 // ---- lines and folding ------------------------------------------------------------------------------------------
 
 test('lines: split at newlines, cut to the first n, counted with a closing newline', () => {

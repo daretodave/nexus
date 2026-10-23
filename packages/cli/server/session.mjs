@@ -17,7 +17,7 @@
 // carries both as `model` / `effort`; a switch from the cockpit is `modelPending` until the next init confirms it.
 import { createHub } from './hub.mjs';
 import { createProvider } from './provider.mjs';
-import { txFromMessage, newTxContext } from './normalize.mjs';
+import { txFromMessage, newTxContext, clipInput } from './normalize.mjs';
 import { beatsFromMessage, newBeatContext, MAIN } from '../shared/beats.mjs';
 import { createTugLog } from './tugs.mjs';
 import { ASK_DEFAULT_MS, askDefaults, completeAnswers } from '../shared/times.mjs';
@@ -125,7 +125,7 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   }
 
   const onPermission = ({ id: reqId, agent, tool, input, suggestions, reason, signal }) => new Promise((resolve) => {
-    const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), args: toolArg(tool, input).slice(0, 4000), title: toolTitle(tool, input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
+    const view = { id: reqId, agent, tool, summary: JSON.stringify(input).slice(0, 400), input: clipInput(input), args: toolArg(tool, input).slice(0, 4000), title: toolTitle(tool, input).slice(0, 400), reason: reason || null, canAlways: !!(suggestions && suggestions.length), session: id };
     permissions.set(reqId, { view, resolve });
     if (!agent || agent === MAIN) hub.beat({ k: 'agent', p: 'wait', id: MAIN });
     publishPerms();

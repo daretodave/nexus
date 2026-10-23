@@ -7,3 +7,7 @@
 .perm-raw summary:hover { color: var(--text-2); }
 .perm-raw summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 .perm-raw pre { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--well); font-family: var(--font-mono); font-size: 11.5px; line-height: 17px; color: var(--text-2); white-space: pre-wrap; word-break: break-all; font-variant-ligatures: none; }
+/* The change an edit or a write asks to make (ui/tool-detail.jsx), and the raw input as a folding JSON tree. */
+.perm-change { min-width: 0; max-height: 360px; overflow: auto; scrollbar-width: thin; border-radius: 12px; }
+.perm-raw .code-box { margin-top: 6px; }
+.perm-raw .code-box > pre { margin: 0; max-height: 260px; overflow: auto; }

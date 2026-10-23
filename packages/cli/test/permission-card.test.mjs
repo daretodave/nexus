@@ -47,7 +47,9 @@ test('the card: description as title, the command highlighted and whole, raw JSO
   // The JSON shows only inside a <details> with no open attribute.
   const outside = html.replace(/<details class="perm-raw">[\s\S]*?<\/details>/, '');
   assert.doesNotMatch(outside, /&quot;command&quot;|"command"/, 'no raw JSON outside the disclosure');
-  assert.match(html, /<details class="perm-raw"><summary>Raw input<\/summary><pre>\{&quot;command&quot;/);
+  assert.match(html, /<details class="perm-raw"><summary>Raw input<\/summary><div class="code-box"><pre class="code-pre perm-json code-json">/, 'the raw input is a JSON tree');
+  assert.match(html, /<span class="syn-prop">&quot;command&quot;<\/span>/, 'its keys coloured');
+  assert.match(html, /<span class="syn-br syn-b1">\{<\/span>/, 'its brackets by depth');
   assert.doesNotMatch(html, /<details[^>]* open/);
   assert.match(html, />Always allow</);
 

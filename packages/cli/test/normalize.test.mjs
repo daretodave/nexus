@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { txFromMessage, newTxContext, friendlyError, summarize, lines, lineDiff, diffOf } from '../server/normalize.mjs';
+import { txFromMessage, newTxContext, friendlyError, summarize, lines, lineDiff, diffOf, clipInput, clipOutput } from '../server/normalize.mjs';
 
 test('streamed text is not repeated by the full assistant message', () => {
   const ctx = newTxContext();
@@ -44,7 +44,7 @@ test('with a clock, items carry when they were read and a tool_result gives the 
   assert.equal(call.at, 1000);
   t = 1900;
   const done = txFromMessage({ type: 'user', parent_tool_use_id: null, message: { content: [{ type: 'tool_result', tool_use_id: 'T1', content: 'ok' }] } }, ctx);
-  assert.deepEqual(done, [{ kind: 'tool-done', id: 'T1', agent: 'main', ms: 900, ok: true, at: 1900 }]);
+  assert.deepEqual(done, [{ kind: 'tool-output', id: 'T1', agent: 'main', text: 'ok', at: 1900 }, { kind: 'tool-done', id: 'T1', agent: 'main', ms: 900, ok: true, at: 1900 }]);
   // A result for a call this context never saw has no start: no duration is guessed.
   assert.deepEqual(txFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'X' }] } }, ctx), []);
   // A failed call still ends, with ok false, after its tool-error.
@@ -77,4 +77,33 @@ test('an Edit and a MultiEdit count their lines from the call; a Write knows onl
   const big = Array.from({ length: 800 }, (_, i) => `l${i}`).join('\n');
   const other = Array.from({ length: 800 }, (_, i) => `m${i}`).join('\n');
   assert.deepEqual(lineDiff(big, other), { add: 800, del: 800 });
+});
+
+// ---- detail for the open tool row (the syntax pass) ------------------------------------------
+
+test('a call carries its input when the summary does not say it all; strings clipped, the lot bounded', () => {
+  const edit = { file_path: 'src/a.js', old_string: 'one\ntwo', new_string: 'one\n2' };
+  const [row] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'E', name: 'Edit', input: edit }] } }, newTxContext());
+  assert.deepEqual(row.input, edit, 'an Edit keeps its old and new text for the diff');
+  const [heredoc] = txFromMessage({ type: 'assistant', parent_tool_use_id: null, message: { id: 'M', content: [{ type: 'tool_use', id: 'B', name: 'Bash', input: { command: 'cat <<EOF\nx\nEOF', description: 'heredoc' } }] } }, newTxContext());
+  assert.equal(heredoc.input.command, 'cat <<EOF\nx\nEOF', 'the whole command, newlines kept (the summary folds them)');
+  assert.equal(clipInput({ command: 'ls' }, 'ls'), null, 'a lone field the summary shows adds nothing');
+  assert.equal(clipInput(null), null);
+  const big = clipInput({ a: 'x'.repeat(9000), b: 'y'.repeat(9000), c: 'z' });
+  assert.ok(big.a.length < 4100 && big.a.endsWith('(5000 more characters)'));
+  assert.ok(JSON.stringify(big).length < 9000, 'the whole input stays bounded');
+  assert.equal(typeof clipInput({ deep: { a: { b: { c: { d: { e: 1 } } } } } }).deep.a.b.c.d, 'string', 'nesting is cut a few levels down');
+});
+
+test('a successful result becomes a tool-output item, clipped to its head and tail', () => {
+  const ok = txFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'T', content: [{ type: 'text', text: 'line 1' }, { type: 'text', text: 'line 2' }] }] } }, newTxContext());
+  assert.deepEqual(ok, [{ kind: 'tool-output', id: 'T', agent: 'main', text: 'line 1\nline 2' }]);
+  assert.deepEqual(txFromMessage({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'T', content: '   ' }] } }, newTxContext()), [], 'nothing to show, no item');
+  const long = Array.from({ length: 3000 }, (_, i) => `row ${i}`).join('\n');
+  const out = clipOutput(long);
+  assert.ok(out.length < 4200);
+  assert.ok(out.startsWith('row 0\nrow 1'));
+  assert.ok(out.endsWith('row 2999'));
+  assert.match(out, /\.\.\. \(\d+ more lines\) \.\.\./);
+  assert.equal(clipOutput('short'), 'short');
 });

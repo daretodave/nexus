@@ -299,8 +299,9 @@ export function ctxLayers({ ledger, owner, phase, stage, info, sessionName, now 
  * Transcript items to board messages: agent messages carry their tool rows,
  * your notes stand alone. `limit` keeps the newest (the convo fades the top).
  * Times come from the stream: each item's `at` (when the server read it) is the
- * message's time, a `tool-done` gives its call a duration, and an Edit or Write
- * carries its diffstat. An item without them shows none.
+ * message's time, a `tool-done` gives its call a duration, a `tool-output` its
+ * result's text (clipped by the server), and an Edit or Write carries its
+ * diffstat and its input (the old and new text). An item without them shows none.
  */
 export function convoItems(transcript, stage, limit = 40) {
   const out = [];
@@ -320,11 +321,16 @@ export function convoItems(transcript, stage, limit = 40) {
       m.tools.push({
         id: t.id, tool: t.name, args: t.summary || '', failed: failed.has(t.id), at: t.at ?? null,
         diff: t.diff || null, note: SPAWN.has(t.name) ? 'delegated' : '', ms: null, done: false,
+        input: t.input || null, output: null,
       });
       continue;
     }
     if (t.kind === 'tool-done') {
       for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) { tool.ms = t.ms ?? null; tool.done = true; if (t.ok === false) tool.failed = true; }
+      continue;
+    }
+    if (t.kind === 'tool-output') {
+      for (const m of out) for (const tool of m.tools || []) if (tool.id === t.id) tool.output = t.text;
       continue;
     }
     if (t.kind === 'tool-error') {

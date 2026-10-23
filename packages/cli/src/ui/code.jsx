@@ -63,12 +63,13 @@ function sniff(text) {
  * A block of code: coloured by `lang` (a grammar name or a fence word), rainbow brackets, a language label and a
  * copy button, and past FOLD_AT lines folded to its head with a "Show all" bar. A block still streaming (`open`)
  * never folds, so its newest lines stay in view. With no language the text draws plain, exactly as given.
+ * `tokens` draws ready-made tokens instead (a Grep result); `numbered` puts each line's number in a gutter.
  */
-export function CodeBlockView({ text, lang = '', label, open = false, className = 'code-pre', preClass, fold = true, copy = true, numbered = null }) {
+export function CodeBlockView({ text, lang = '', label, open = false, className = 'code-pre', preClass, fold = true, copy = true, numbered = null, tokens: given = null }) {
   const s = String(text ?? '');
   const grammar = langOf(lang) || (!lang ? sniff(s) : '');
   const raw = useCodeTokens(grammar, s);
-  const tokens = useMemo(() => (grammar ? rainbow(raw) : null), [raw, grammar]);
+  const tokens = useMemo(() => given || (grammar ? rainbow(raw) : null), [raw, grammar, given]);
   const total = lineCount(s);
   const plan = fold && !open ? foldPlan(total) : { fold: false, keep: total };
   const [all, setAll] = useState(false);

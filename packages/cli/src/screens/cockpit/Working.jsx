@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Icon, LogRow, Markdown, MsgYou, Orb, ToolArgs, Tug, toolGlyph, toolNameWidth } from '../../ui/index.js';
 import { PlotCard } from '../../ui/plot-card.jsx';
 import { PermissionCard } from '../../ui/permission-card.jsx';
+import { ToolDetail } from '../../ui/tool-detail.jsx';
 import { extractPlotReport } from '../../ui/plot-report.js';
 import { server, TOKEN } from '../../data/client.js';
 import { draftFailed, draftSending, draftSent, useDrafts } from '../../data/drafts.js';
@@ -21,9 +22,9 @@ import '../../styles/permission-card.css';
 const uploadSrcs = (images) => (images || []).map((i) => ({ name: i.name, src: i.url ? `${i.url}?t=${encodeURIComponent(TOKEN)}` : null }));
 
 /**
- * A .log row as the board draws it, with the board's tool glyph; opens to show the full call. Its diffstat comes from
- * the call's own input, its duration from its result (a running call counts up from when it went out); either one
- * unknown stays blank.
+ * A .log row as the board draws it, with the board's tool glyph; opens to show the full call (ui/tool-detail.jsx:
+ * the command whole, an edit's diff, the output). Its diffstat comes from the call's own input, its duration from its
+ * result (a running call counts up from when it went out); either one unknown stays blank.
  */
 function ToolRow({ t, running, now }) {
   const [open, setOpen] = useState(false);
@@ -42,8 +43,7 @@ function ToolRow({ t, running, now }) {
       )}
       open={open} onToggle={() => setOpen((o) => !o)}
     >
-      <pre className="t-mono-xs c-2" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}><ToolArgs tool={t.tool} args={t.args} /></pre>
-      {t.error ? <pre className="t-mono-xs" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: '6px 0 0', color: 'var(--st-failed)' }}>{t.error}</pre> : null}
+      <ToolDetail tool={t.tool} args={t.args} input={t.input} output={t.output} error={t.error} />
     </LogRow>
   );
 }

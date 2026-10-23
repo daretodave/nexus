@@ -26,15 +26,45 @@ export function tokenizeShell(src) {
     if (last && last.t === t && (t === 'ws' || t === 'text')) last.v += v; else out.push({ t, v });
   };
   let cmdNext = true;
+  let heredoc = null; // { word, dash } after <<WORD, until the line that ends it
   let i = 0;
   while (i < s.length) {
     const c = s[i];
     if (/\s/.test(c)) {
       let j = i + 1;
       while (j < s.length && /\s/.test(s[j])) j += 1;
+      const nl = s.indexOf('\n', i);
+      if (heredoc && nl !== -1 && nl < j) {
+        // A heredoc's body is one string, from the line after <<WORD to the line that is WORD.
+        push('ws', s.slice(i, nl + 1));
+        let k = nl + 1;
+        let end = s.length;
+        let close = '';
+        while (k <= s.length) {
+          const e = s.indexOf('\n', k);
+          const line = s.slice(k, e === -1 ? s.length : e);
+          if ((heredoc.dash ? line.trim() : line) === heredoc.word) { end = k; close = line; break; }
+          if (e === -1) break;
+          k = e + 1;
+        }
+        if (end > nl + 1) push('str', s.slice(nl + 1, end));
+        if (close) push('op', close);
+        i = end + close.length;
+        heredoc = null;
+        cmdNext = true;
+        continue;
+      }
       push('ws', s.slice(i, j));
       if (s.slice(i, j).includes('\n')) cmdNext = true;
       i = j;
+      continue;
+    }
+    const here = c === '<' && s[i + 1] === '<' && s[i + 2] !== '<' ? /^<<(-?)[ \t]*(['"]?)([A-Za-z_][\w-]*)\2/.exec(s.slice(i, i + 80)) : null;
+    if (here) {
+      push('op', here[0]);
+      heredoc = { word: here[3], dash: !!here[1] };
+      i += here[0].length;
+      cmdNext = false;
       continue;
     }
     if (c === '#' && (i === 0 || /\s/.test(s[i - 1]))) {

@@ -94,26 +94,28 @@
 /* ---- the code box: a block with its language, a copy button and a fold ------------------------------------------ */
 .code-box { position: relative; min-width: 0; }
 .code-box > pre { margin: 0; }
+/* The tools float over the block's top right only while it is hovered or focused, on a solid chip, so at rest they
+   never sit on a line of code. */
 .code-tools {
-  position: absolute; top: 6px; right: 6px; display: flex; align-items: center; gap: 4px;
-  font-family: var(--font-ui); font-size: 11px; line-height: 16px; pointer-events: none;
+  position: absolute; top: 5px; right: 5px; display: flex; align-items: center; gap: 2px; padding: 2px;
+  border-radius: 9px; background: var(--surface-solid); box-shadow: var(--e-1);
+  font-family: var(--font-ui); font-size: 11px; line-height: 16px;
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-snap) var(--ease-snap);
 }
-.code-lang {
-  padding: 1px 6px; border-radius: 6px; color: var(--text-3); letter-spacing: .04em; text-transform: lowercase;
-  background: color-mix(in oklab, var(--surface-solid) 80%, transparent); font-family: var(--font-mono);
-  transition: opacity var(--dur-snap) var(--ease-snap);
-}
+.code-box:hover > .code-tools, .code-box:focus-within > .code-tools { opacity: 1; pointer-events: auto; }
+.code-lang { padding: 0 6px; color: var(--text-3); letter-spacing: .04em; text-transform: lowercase; font-family: var(--font-mono); }
 .code-btn {
   display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 7px; border: 0;
-  background: var(--surface-solid); box-shadow: var(--e-1); color: var(--text-2); cursor: pointer; pointer-events: auto;
-  font: inherit; font-size: 11px; opacity: 0; transition: opacity var(--dur-snap) var(--ease-snap), color var(--dur-snap) var(--ease-snap);
+  background: transparent; color: var(--text-2); cursor: pointer; font: inherit; font-size: 11px;
+  transition: color var(--dur-snap) var(--ease-snap), background var(--dur-snap) var(--ease-snap);
 }
-.code-btn:hover { color: var(--text); }
-.code-btn:focus-visible { opacity: 1; outline: 2px solid var(--focus); outline-offset: 1px; }
-.code-btn.is-done { color: var(--st-done); opacity: 1; }
-.code-box:hover .code-btn, .code-box:focus-within .code-btn { opacity: 1; }
-.code-box:hover .code-lang { opacity: .35; }
-@media (hover: none) { .code-btn { opacity: 1; } }
+.code-btn:hover { color: var(--text); background: color-mix(in oklab, var(--accent) 12%, transparent); }
+.code-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.code-btn.is-done { color: var(--st-done); }
+@media (hover: none) { .code-tools { opacity: 1; pointer-events: auto; } }
+
+/* Your own message's bubble sizes to its text but never past its column: a wide block scrolls inside it. */
+.msg-you > .bubble { max-width: 100%; min-width: 0; }
 
 /* Folded: the first lines, fading into the "Show all" bar. */
 .code-box.is-folded > pre { position: relative; overflow-y: hidden; }
@@ -193,9 +195,14 @@
 .tui .syn-url { text-decoration: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .code-btn, .code-lang, .code-more, .code-more .ic, .json-fold .ic { transition: none; }
+  .code-tools, .code-btn, .code-more, .code-more .ic, .json-fold .ic { transition: none; }
 }
 
 /* An answer field's input sits in its wrapper now; the wrapper takes the input's place in the row. */
 .ans-field > .syn-field { flex: 1; min-width: 0; }
 .ans-field > .syn-field > .tug-other { width: 100%; }
+
+/* ---- an open tool row: the call, then what came back ---------------------------------------------------------- */
+.tool-detail { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tool-detail > .code-cap { margin: 4px 0 0; }
+.tool-prose { max-height: 360px; overflow: auto; padding: 10px 12px; border-radius: 10px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line); font-size: 13px; line-height: 20px; scrollbar-width: thin; }

@@ -12,6 +12,11 @@
 // added and removed are counted from the call itself (`diff: { add, del }`); a
 // Write carries only the new text (`del: null`, unknown). A replace_all edit
 // changes an unknown number of places, so it carries no diffstat.
+//
+// Detail (for the cockpit's open tool row): a call carries its `input` too, its strings clipped
+// (clipInput), unless the summary already says all of it (a lone command or path); a successful
+// tool_result becomes a `tool-output` item with its text clipped (clipOutput), head and tail kept.
+// Both are bounded so a 2000-item transcript stays a sane size on every reconnect.
 
 export function newTxContext({ now = null } = {}) {
   return { msgId: null, streamed: new Set(), now, started: new Map() };
@@ -65,6 +70,49 @@ export function diffOf(name, input = {}) {
   }
   if (name === 'Write' && typeof input.content === 'string') return { add: lines(input.content).length, del: null };
   return null;
+}
+
+const INPUT_STR = 4000; // one string field of a call's input
+const INPUT_ALL = 8000; // all of them together
+const OUTPUT_MAX = 4000; // a result's text
+
+/** A string cut to `n` characters, saying how much it dropped. */
+const clipStr = (s, n) => (s.length > n ? `${s.slice(0, n)}\n... (${s.length - n} more characters)` : s);
+
+/**
+ * A call's input for display: every string clipped to INPUT_STR and the lot to INPUT_ALL (later strings get what is
+ * left), nesting kept to a few levels. Null when there is nothing beyond what `summary` shows.
+ */
+export function clipInput(input, summary = '') {
+  if (!input || typeof input !== 'object') return null;
+  const keys = Object.keys(input);
+  if (!keys.length) return null;
+  if (keys.length === 1 && typeof input[keys[0]] === 'string' && input[keys[0]] === summary) return null;
+  let left = INPUT_ALL;
+  const walk = (v, depth) => {
+    if (typeof v === 'string') {
+      const out = clipStr(v, Math.max(0, Math.min(INPUT_STR, left)));
+      left -= Math.min(v.length, INPUT_STR);
+      return out;
+    }
+    if (v === null || typeof v !== 'object') return v;
+    if (depth > 4) return Array.isArray(v) ? `[${v.length} items]` : '{...}';
+    if (Array.isArray(v)) return v.slice(0, 50).map((x) => walk(x, depth + 1));
+    const o = {};
+    for (const [k, x] of Object.entries(v).slice(0, 50)) o[k] = walk(x, depth + 1);
+    return o;
+  };
+  return walk(input, 0);
+}
+
+/** A result's text for display: whole when short, else its head and tail with how many lines fell between. */
+export function clipOutput(text) {
+  const s = String(text ?? '');
+  if (s.length <= OUTPUT_MAX) return s;
+  const head = s.slice(0, Math.floor(OUTPUT_MAX * 0.7));
+  const tail = s.slice(s.length - Math.floor(OUTPUT_MAX * 0.25));
+  const gone = s.slice(head.length, s.length - tail.length).split('\n').length - 1;
+  return `${head}\n... (${gone} more lines) ...\n${tail}`;
 }
 
 export function summarize(name, input = {}) {
@@ -140,6 +188,8 @@ function txItems(msg, ctx) {
           const item = { kind: 'tool', id: block.id, agent, name: block.name, summary: summarize(block.name, block.input) };
           const diff = diffOf(block.name, block.input);
           if (diff) item.diff = diff;
+          const input = clipInput(block.input, String(toolArgOf(block.input)));
+          if (input) item.input = input;
           out.push(item);
         }
       });
@@ -148,7 +198,10 @@ function txItems(msg, ctx) {
     case 'user': {
       const content = msg.message && Array.isArray(msg.message.content) ? msg.message.content : [];
       for (const block of content) {
-        if (block && block.type === 'tool_result' && block.is_error) out.push({ kind: 'tool-error', id: block.tool_use_id, agent, text: toText(block.content).slice(0, 400) });
+        if (!block || block.type !== 'tool_result') continue;
+        if (block.is_error) { out.push({ kind: 'tool-error', id: block.tool_use_id, agent, text: toText(block.content).slice(0, 400) }); continue; }
+        const text = toText(block.content, '\n');
+        if (text.trim()) out.push({ kind: 'tool-output', id: block.tool_use_id, agent, text: clipOutput(text) });
       }
       break;
     }
@@ -168,8 +221,11 @@ function txItems(msg, ctx) {
   return out;
 }
 
-function toText(c) {
+/** The input field a summary reads first (summarize's pick, before its whitespace is folded). */
+const toolArgOf = (input = {}) => (input && (input.command || input.file_path || input.pattern || input.url || input.description || input.prompt || input.query)) || '';
+
+function toText(c, sep = ' ') {
   if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.map((x) => (typeof x === 'string' ? x : x && x.text ? x.text : '')).join(' ');
+  if (Array.isArray(c)) return c.map((x) => (typeof x === 'string' ? x : x && x.text ? x.text : '')).filter(Boolean).join(sep);
   return c == null ? '' : JSON.stringify(c);
 }
