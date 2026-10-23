@@ -1,0 +1,49 @@
+/* Needs you, on the top bar (src/ui/needs.jsx): a chip per session waiting on the owner. A question or a permission
+   is amber (the tug colour) with a slow pulse; a session that fell over is ash, still. Theme tokens only, so day and
+   night both hold. */
+.needs { display: inline-flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: nowrap; }
+
+.need {
+  position: relative; display: inline-flex; align-items: center; gap: 7px; height: 30px; max-width: 280px; padding: 0 11px 0 9px;
+  border: 0; border-radius: var(--r-full, 999px); color: var(--text); text-decoration: none; white-space: nowrap; font: inherit; font-size: 13px; line-height: 18px; cursor: pointer;
+  --tone: var(--st-blocked);
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 48%, transparent), 0 0 16px -4px color-mix(in oklab, var(--tone) 55%, transparent);
+  transition: background var(--dur-snap) var(--ease-snap), box-shadow var(--dur-snap) var(--ease-snap);
+}
+.need:hover { background: color-mix(in oklab, var(--tone) 24%, transparent); }
+.need:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.need.is-fallen { --tone: var(--st-fallen); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 50%, transparent); }
+
+.need-glyph { width: 13px; height: 13px; flex: none; fill: var(--sess, var(--text-2)); color: var(--sess, var(--text-2)); }
+.need-glyph.ic { fill: none; }
+.need-name { font-weight: 600; color: var(--text); }
+.need-what { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
+.need.is-permission .need-what, .need.is-question .need-what { color: color-mix(in oklab, var(--tone) 70%, var(--text)); }
+
+/* The pulse: a small amber dot that breathes out a ring, slowly. */
+.need-pulse { position: relative; width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--tone); }
+.need-pulse::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--tone);
+  animation: nx-ripple 2.6s var(--ease-breathe) infinite;
+}
+
+.need-more { min-width: 38px; justify-content: center; padding: 0 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.need-more:not(.is-question) { --tone: var(--st-fallen); }
+.need-more-wrap { position: relative; display: inline-flex; }
+.need-menu { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: 340px; }
+.need-menu .menu-item .need-glyph { width: 14px; height: 14px; }
+.need-row { min-width: 0; color: var(--text); }
+.need-row b { color: var(--text); }
+.need-row .d { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Narrow: the chip keeps its star and name; what it needs is in its title and its label. */
+@media (max-width: 1240px) {
+  .need-what { display: none; }
+  .need { padding: 0 10px 0 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .need-pulse::after { animation: none; opacity: 0; }
+  .need { transition: none; }
+}

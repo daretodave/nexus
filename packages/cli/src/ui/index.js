@@ -20,3 +20,5 @@ export { parsePick, themeFor } from './theme-pick.js';
 export * from './vault.jsx';
 export * from './markdown.jsx';
 export * from './fx.jsx';
+export * from './needs.jsx';
+export * from './loading.jsx';

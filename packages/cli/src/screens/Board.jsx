@@ -19,6 +19,7 @@ import {
 } from '../ui/index.js';
 import { api, server, usePlan, useClaims, useSummaries, useSessions, useLocalSettings, useCloudLoop, useReloadOn, chunkStagesOf } from '../data/index.js';
 import { PATHS, lastSession } from '../routes.js';
+import { SkelRows } from '../ui/loading.jsx';
 import {
   normalizePlan, indexClaims, meWhoFrom, withClaim, rowModel, lanes, specProgress, subLine, orderMeta, railPeople, hhmm, waits,
   gripKey, dragOrder, moveOf, inOrder, gripSays, landingSays, landedToast, reassignTargets, reassignBody, ownerLead,
@@ -385,7 +386,7 @@ export default function Board() {
     : null;
 
   let main;
-  if (planR.status === 'loading') main = null;
+  if (planR.status === 'loading') main = <SkelRows n={8} label="Loading the plan" />;
   else if (planR.status === 'ready' && planR.data?.unreadable) {
     // The plan is there but didn't read (spec 47, A8): what happened and which script ran, never an empty plan.
     const d = planR.data;

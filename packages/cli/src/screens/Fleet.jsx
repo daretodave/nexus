@@ -11,7 +11,7 @@
 // { action: pause|cancel|resume }. An action the server does not serve yet
 // says plainly that it is not wired up; nothing is invented.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   AppFrame, Topbar, Wordmark, TbSep, TbTitle, TbSpacer, InboxBtn, ViewHead, ChoiceButtons,
   TileNew, TrainDock, Train, ToastHost, Err, Icon, cx, useShell,
@@ -26,6 +26,7 @@ import '../styles/fleet-honest.css';
 import '../styles/tile-bar-fit.css';
 import { act, hhmm } from './fleet/util.js';
 import { useToasts } from './fleet/toasts.js';
+import { SkelTiles } from '../ui/loading.jsx';
 
 const PLAY = 'M8 5.5v13l10-6.5z';
 const PAUSE = 'M9 6v12M15 6v12';
@@ -71,7 +72,11 @@ export default function Fleet() {
   const plan = usePlan();
   const claims = useClaims(15000);
   const { toasts, push } = useToasts();
-  const [filter, setFilter] = useState('here');
+  // ?show=<filter> picks the chip (the top bar's fell-over chip lands on Fell over, where Resume and Clear are).
+  const [params] = useSearchParams();
+  const shown0 = params.get('show');
+  const [filter, setFilter] = useState(() => (FILTERS.some((f) => f.value === shown0) ? shown0 : 'here'));
+  useEffect(() => { if (FILTERS.some((f) => f.value === shown0)) setFilter(shown0); }, [shown0]);
   const [trainOn, setTrainOn] = useState(false);
   const [resuming, setResuming] = useState({});
 
@@ -174,6 +179,7 @@ export default function Fleet() {
         ) : null}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', margin: '-8px -28px 0', padding: `8px 28px ${24 + dockRoom}px` }}>
           <div className="fleet-grid">
+            {sessions.status === 'loading' ? <SkelTiles /> : null}
             {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} title={chunkTitle(plan.data, s.chunk?.id)} onResume={() => resume(s)} onClose={s.ended ? () => close(s) : undefined} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
             {sessions.status !== 'loading' && filter === 'here' ? (
               <TileNew>
