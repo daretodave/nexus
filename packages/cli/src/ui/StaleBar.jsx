@@ -1,4 +1,4 @@
-// The stale-tab bar (data/health.js): a slim, calm line under the top bar when this tab lost its nexus (stopped, or
+// The stale-tab bar (data/health.js): a slim, calm line at the foot of the page when this tab lost its nexus (stopped, or
 // restarted as a newer version). The tab keeps what it shows and what was typed; it reconnects by itself.
 import { useEffect, useState } from 'react';
 import { health, healthNow, healthWords, subscribeHealth } from '../data/index.js';

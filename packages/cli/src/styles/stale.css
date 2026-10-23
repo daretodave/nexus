@@ -1,6 +1,6 @@
-/* The stale-tab bar (src/ui/StaleBar.jsx): calm, under the top bar, never an alarm. */
+/* The stale-tab bar (src/ui/StaleBar.jsx): calm, at the foot of the page, over nothing it would hide; never an alarm. */
 .stale-bar {
-  position: fixed; z-index: 40; top: 64px; left: 50%; transform: translateX(-50%);
+  position: fixed; z-index: 40; bottom: 18px; left: 50%; transform: translateX(-50%);
   display: inline-flex; align-items: center; gap: 10px; max-width: calc(100vw - 32px);
   padding: 6px 8px 6px 12px; border-radius: 10px; background: var(--well); color: var(--text-2);
   box-shadow: inset 0 0 0 1px var(--line), 0 6px 20px rgb(0 0 0 / .18); font-size: 13px; line-height: 19px;
