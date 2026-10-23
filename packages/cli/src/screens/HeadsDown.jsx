@@ -7,10 +7,11 @@
 // show (none named, or it is gone), it asks what to start: a spec, or infinite.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Tui, useShell } from '../ui/index.js';
+import { FxLayer, Tui, sessClass, useShell } from '../ui/index.js';
 import { api, server, useClaims, useCloudLoop, useEvents, useInbox, useLocalSettings, usePlan, useSession, useSessions } from '../data/index.js';
 import { PATHS, lastSession } from '../routes.js';
 import { headsRows } from './headsdown-inbox/headsModel.js';
+import { headsGrid } from '../fx/effects.js';
 import { renderRows } from './headsdown-inbox/tuiCanvas.jsx';
 import { phaseBudget } from '../../shared/times.mjs';
 import StartPick from './fleet/StartPick.jsx';
@@ -65,6 +66,7 @@ function HeadsDownStart({ plan }) {
   const list = (Array.isArray(sessions.data) ? sessions.data : sessions.data?.sessions || []).map(norm).filter((s) => s.state !== 'closed');
   return (
     <div className="tui-wrap" style={SKY}>
+      <FxLayer mode="heads" target=".sp-card" />
       <div className="sp-card">
         <div className="t-title-s">Start heads-down</div>
         <div className="t-body-s c-2">Choose what it works on: a spec, or infinite (loop /next, the next chunk in line, forever). It asks its questions first, then builds without stopping.</div>
@@ -202,6 +204,11 @@ export default function HeadsDown() {
   const stale = !named && ledger && (!ledger.hosted || ['fallen', 'resume-failed'].includes(ledger.state));
   if (!id || ledgerRes.status === 'missing' || ledger?.state === 'closed' || stale) return <HeadsDownStart plan={plan} />;
 
+  // The particle layer reads the same rows: the phase track, the newest tape line and the prompt are its anchors.
+  // No AppFrame here, so the hush is the pending questions and permissions themselves.
+  const grid = headsGrid(rows);
+  const asking = live.asks.length + live.permissions.length > 0;
+
   const focusPrompt = (e) => {
     if (e.target.closest('a, button, input')) return;
     input.current?.focus();
@@ -222,6 +229,10 @@ export default function HeadsDown() {
           if (e.key === 'Enter') { e.preventDefault(); submit(); }
           if (e.key === 'Escape') { e.preventDefault(); if (draft) setDraft(''); else e.currentTarget.blur(); }
         }}
+      />
+      <FxLayer
+        mode="heads" target=".tui" grid={grid} live={live} landed={ledger ? ledger.landed || [] : undefined} progress={grid.bar?.head}
+        hushed={asking} asking={asking} sess={sessClass({ name: ledger?.name, kind: ledger?.kind })}
       />
       <Tui label={`Heads-down view of the ${name} session`} style={{ whiteSpace: 'normal' }}>
         {renderRows(rows)}

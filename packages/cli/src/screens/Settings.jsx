@@ -14,7 +14,7 @@
 // change there says it lasts until the page reloads.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { nextRunMode, localRunMode, saveRunMode, Icon, InfoBtn, Check, BadgeDef, BadgeAuto, Tip, Switch, Seg, ThemeSeg, useShell } from '../ui/index.js';
+import { nextRunMode, localRunMode, saveRunMode, Icon, InfoBtn, Check, BadgeDef, BadgeAuto, Tip, Switch, Seg, ThemeSeg, FxSeg, useShell } from '../ui/index.js';
 import { api, useLocalSettings, useResource, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { useLoop, hhmm } from './cloud-settings/loop.js';
@@ -346,6 +346,11 @@ export default function Settings() {
                 <span className="t-body-s c-2" style={LABEL}>Theme</span>
                 <ThemeSeg />
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginTop: 12 }}>
+                <span className="t-body-s c-2" style={LABEL}>Particle effects</span>
+                <FxSeg />
+              </div>
+              <p className="t-body-s c-3" style={{ margin: '8px 0 0' }}>Sparks on the agent stage and behind heads-down as the session works, kept for this browser. Subtle draws fewer; off draws none.</p>
             </div>
           </section>
         </div>
