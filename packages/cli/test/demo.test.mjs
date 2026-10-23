@@ -59,7 +59,7 @@ const play = (name) => {
 };
 
 test('every scenario is well formed: fictional, steps with one known action, beats the reducer takes', () => {
-  assert.deepEqual(scenarioNames(), ['fleet-to-tug', 'bug-to-archive', 'fall-and-resume', 'heads-down']);
+  assert.deepEqual(scenarioNames(), ['fleet-to-tug', 'bug-to-archive', 'fall-and-resume', 'heads-down', 'stack']);
   for (const name of scenarioNames()) {
     const sc = SCENARIOS[name];
     assert.equal(sc.name, name);
@@ -69,7 +69,8 @@ test('every scenario is well formed: fictional, steps with one known action, bea
       if (step.beat) assert.ok(isBeat(step.beat), `${name}: not a beat: ${JSON.stringify(step.beat)}`);
     }
     const d = duration(sc.script);
-    assert.ok(d >= 4000 && d <= 12000, `${name} runs ${d} ms`);
+    // A walkthrough scenario (`long`: the stack hand-off, about 90 s of clicks) may run longer than a GIF moment.
+    assert.ok(d >= 4000 && d <= (sc.long ? 120000 : 12000), `${name} runs ${d} ms`);
     // No real project is named: only the invented one and star names.
     const text = JSON.stringify(sc.fixtures({ now: 0, at: () => '', ago: () => '' })) + JSON.stringify(sc.script);
     assert.doesNotMatch(text, /semilayer|kintilla|daretodave/i);
@@ -333,5 +334,75 @@ test('nexus --demo runs under --permission with read-only fs and no child proces
     assert.doesNotMatch(err, /ERR_ACCESS_DENIED/);
   } finally {
     child.kill();
+  }
+});
+
+test('the stack demo walks the trinity: save, check, the zone turning active, the actions, live; no answer holds a posted value', async () => {
+  const clock = manualClock();
+  const app = await startDemo({ scenario: 'stack', clock, dist: NO_DIST, hub: { flushMs: 5, pingMs: 60000 } });
+  const h = { 'x-nexus-token': app.token, 'content-type': 'application/json', origin: `http://127.0.0.1:${app.port}` };
+  const posted = [];
+  const seen = [];
+  const call = async (method, pathname, body) => {
+    const r = await req(app.port, { method, pathname, headers: h, body: body === undefined ? undefined : JSON.stringify(body) });
+    seen.push(r.data);
+    return { status: r.status, json: JSON.parse(r.data) };
+  };
+  // Secrets are what must never come back; a project id or a zone id is shown on the card on purpose.
+  const SECRET_KEYS = new Set(['apiToken', 'secret', 'dbUrl', 'token', 'publishable']);
+  const save = async (service, key, value) => { if (SECRET_KEYS.has(key)) posted.push(value); const r = await call('POST', '/api/stack/save', { service, key, value }); assert.equal(r.status, 200, `${service}.${key}: ${r.data || JSON.stringify(r.json)}`); return r.json; };
+  try {
+    const first = await call('GET', '/api/stack');
+    assert.equal(first.status, 200);
+    assert.deepEqual(first.json.picked, []);
+    assert.equal(first.json.app.dir, 'apps/web');
+    await call('POST', '/api/stack/pick', { picked: ['cloudflare', 'supabase', 'vercel'], inputs: { domain: 'fieldday.dev' } });
+    posted.push('cfut_bad00000000000000000000000');
+    const bad = await call('POST', '/api/stack/check/cloudflare', { values: { apiToken: 'cfut_bad00000000000000000000000' } });
+    assert.equal(bad.json.ok, false);
+    assert.match(bad.json.reason, /not valid/);
+    await save('cloudflare', 'apiToken', 'cfut_demo0000000000000000000000');
+    const pending = await call('POST', '/api/stack/check/cloudflare', {});
+    assert.equal(pending.json.facts.active, false);
+    assert.deepEqual(pending.json.facts.nameServers, ['ada.ns.cloudflare.com', 'bob.ns.cloudflare.com']);
+    await save('cloudflare', 'zoneId', pending.json.fill.zoneId);
+    for (const [k, v] of [['url', 'https://abcdefghijklmnopqrst.supabase.co'], ['publishable', 'sb_publishable_demo0000000000'], ['secret', 'sb_secret_demo000000000000000'], ['dbUrl', 'postgresql://postgres.abcdefghijklmnopqrst:demo-pw@aws-0-eu-west-2.pooler.supabase.com:6543/postgres']]) await save('supabase', k, v);
+    const sb = await call('POST', '/api/stack/check/supabase', {});
+    assert.match(sb.json.summary, /fieldday-db \(eu-west-2\)/);
+    await save('vercel', 'token', 'vcp_demo00000000000000000000');
+    const vc = await call('POST', '/api/stack/check/vercel', {});
+    assert.deepEqual(vc.json.facts.projects.map((p) => p.name), ['fieldday-web', 'fieldday-docs']);
+    await save('vercel', 'projectId', vc.json.facts.projects[0].id);
+    await save('vercel', 'teamId', vc.json.fill.teamId);
+    for (const a of ['vercel.env', 'vercel.domain']) {
+      assert.equal((await call('POST', `/api/stack/apply/${a}`, { confirm: true })).status, 409, 'no plan, no change');
+      const plan = await call('POST', `/api/stack/apply/${a}`, {});
+      assert.equal(plan.json.ok, true, JSON.stringify(plan.json));
+      assert.equal((await call('POST', `/api/stack/apply/${a}`, { confirm: true })).json.ok, true);
+    }
+    clock.advance(41000);
+    const active = await call('POST', '/api/stack/check/cloudflare', {});
+    assert.equal(active.json.facts.active, true, 'the zone turns active 40 s after the token');
+    assert.equal((await call('POST', '/api/stack/apply/cloudflare.dns', {})).json.plan.cta, 'Write 2 records');
+    assert.match((await call('POST', '/api/stack/apply/cloudflare.dns', { confirm: true })).json.summary, /2 records written, DNS only/);
+    await call('POST', '/api/stack/tick', { step: 'sb.auth', on: true });
+    clock.advance(16000);
+    const live = await call('POST', '/api/stack/check/vercel', {});
+    assert.equal(live.json.facts.domainOk, true);
+    const end = await call('GET', '/api/stack');
+    assert.equal(end.json.values['supabase.secret'].saved, true);
+    assert.deepEqual(end.json.values['supabase.secret'].names, ['SUPABASE_SECRET_KEY']);
+    const { progress } = await import('../src/screens/vault/stack/model.js');
+    const p = progress(end.json);
+    assert.equal(p.done, p.total, JSON.stringify(p.milestones));
+    for (const d of seen) for (const v of posted) assert.ok(!d.includes(v), 'a posted value came back');
+    // The vault table shows the names the stack declared.
+    const secrets = JSON.parse((await req(app.port, { pathname: '/api/secrets', headers: h })).data);
+    assert.ok(secrets.secrets.some((x) => x.name === 'NEXT_PUBLIC_SUPABASE_URL' && x.set));
+    // A restart resets the stack.
+    await call('POST', '/api/demo/restart', {});
+    assert.deepEqual((await call('GET', '/api/stack')).json.picked, []);
+  } finally {
+    await app.close();
   }
 });

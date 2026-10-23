@@ -24,6 +24,7 @@ import { createWorld } from './demo/world.mjs';
 import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
 import { realClock } from './demo/clock.mjs';
 import { createDemoVault, DEMO_REQUEST } from './demo/vault.mjs';
+import { createDemoStack } from './demo/stack.mjs';
 import { applyDrafts } from './drafts.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -52,6 +53,8 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   let local = null;
   // The vault (spec 42): names and status in memory; a posted value is dropped the moment it is read.
   const vault = createDemoVault({ now: () => Date.now(), owner: () => !!(local ? local.effective : world.info().owner) });
+  // The stack hand-off (server/stack.mjs's shapes, in memory): the zone and the domain move with script time.
+  const stack = createDemoStack({ now: () => clk.now(), script: () => world.elapsed, vault, owner: () => !!(local ? local.effective : world.info().owner) });
   /** The plan with the chunk the vault holds back: it waits on a secret until the value is set. */
   const planWithSecret = () => {
     const p = world.plan();
@@ -72,6 +75,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   let loopTimer = null;
   const begin = () => {
     world.start();
+    stack.reset();
     local = { owner: world.info().owner, ownerMode: true, effective: world.info().owner, runMode: 'size', phase: 'std' };
     if (loop) {
       if (loopTimer) clk.cancel(loopTimer);
@@ -167,6 +171,10 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         case 'GET /api/secrets/audit': return send(res, 200, vault.audit());
         case 'POST /api/secrets/import': { const { status, ...r } = vault.importEnv(await body(req)); return send(res, status, r); }
         case 'POST /api/secrets/manifest': await body(req); return send(res, 200, { ok: true, created: false, manifest: 'nexus.secrets.json' });
+        case 'GET /api/stack': { const { status, ...r } = stack.status(); return send(res, status, r); }
+        case 'POST /api/stack/pick': { const { status, ...r } = stack.pick(await body(req)); return send(res, status, r); }
+        case 'POST /api/stack/save': { const { status, ...r } = stack.save(await body(req)); return send(res, status, r); }
+        case 'POST /api/stack/tick': { const { status, ...r } = stack.tick(await body(req)); return send(res, status, r); }
         case 'GET /api/claims': return send(res, 200, world.claims());
         case 'GET /api/summaries': return send(res, 200, {});
         // Drafts (spec 51, A1; drafts.mjs), kept in memory for the demo's life.
@@ -183,6 +191,12 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         }
         case 'POST /api/announce':
         case 'POST /api/oversight/answer': await body(req); return send(res, 200, { ok: true });
+      }
+      const stk = /^POST \/api\/stack\/(check|apply)\/([a-z]+(?:\.[a-z]+)?)$/.exec(route);
+      if (stk) {
+        const b = await body(req);
+        const { status, ...r } = stk[1] === 'check' ? stack.check(stk[2], b) : await stack.apply(stk[2], b);
+        return send(res, status, r);
       }
       const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)(\/push)?$/.exec(route);
       if (sec) {

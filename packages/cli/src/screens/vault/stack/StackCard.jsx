@@ -145,8 +145,8 @@ export default function StackCard({ svc, stack, ui, isNext, compact, readOnly })
   const state = cardState(svc, stack);
   const ctx = ctxOf(stack);
   const steps = stepStates(svc, stack);
-  const open = ui.open ? ui.open === svc : isNext;
-  const toggle = () => ui.setOpen(open ? '__none__' : svc);
+  const open = ui.opened?.[svc] ?? !!isNext;
+  const toggle = () => ui.setOpen(svc, !open);
   const actions = s.actions.filter((a) => ACTIONS[a].needs.every((n) => stack.picked.includes(n)) && (a !== 'vercel.nameservers' || stack.checks?.vercel?.facts?.vercelRegistrar));
   const rows = s.values.map((v) => ({ v, row: valueRow(svc, v, stack, ui.field(svc, v.key)) }));
   const typedOk = rows.filter(({ row }) => row.phase === 'typed-ok').length;

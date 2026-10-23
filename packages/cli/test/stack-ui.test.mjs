@@ -36,7 +36,7 @@ function ui(o = {}) {
   const fields = o.fields || {};
   return {
     field: (svc, key) => fields[`${svc}.${key}`] || {}, setField() {}, save() {}, saveAll() {}, resync() {}, check() {}, checks: {}, plan() {}, confirm() {}, plans: o.plans || {},
-    toggleReplace() {}, pick() {}, tick() {}, busy: false, open: o.open ?? null, setOpen() {}, go() {}, offer: o.offer || null, setOffer() {}, pasted() {}, fill() {}, repoll: o.repoll || {},
+    toggleReplace() {}, pick() {}, tick() {}, busy: false, opened: o.opened || {}, setOpen() {}, go() {}, offer: o.offer || null, setOffer() {}, pasted() {}, fill() {}, repoll: o.repoll || {},
   };
 }
 const sp = (data, u = ui()) => ({ res: { status: 'ready', data, reload() {} }, stack: data, ui: u });
@@ -70,7 +70,7 @@ test('with the trinity picked: the domain, the app, where values go, and the nex
 
 test('each card state says what is true in its head', async () => {
   const { default: StackCard } = await import('../src/screens/vault/stack/StackCard.jsx');
-  const head = (svc, s, u = ui({ open: '__none__' })) => renderToStaticMarkup(createElement(StackCard, { svc, stack: s, ui: u }));
+  const head = (svc, s, u = ui({ opened: { cloudflare: false, supabase: false, vercel: false } })) => renderToStaticMarkup(createElement(StackCard, { svc, stack: s, ui: u }));
   assert.match(head('supabase', stack()), /stk-card-state">Start</);
   assert.match(head('supabase', stack({ saved: ['supabase.url', 'supabase.publishable'] })), /2 of 4 saved/);
   const pending = { cloudflare: { ok: true, summary: 'Token works.', facts: { zone: true, active: false, nameServers: ['ada.ns.cloudflare.com', 'bob.ns.cloudflare.com'] } } };
@@ -88,7 +88,7 @@ test('each card state says what is true in its head', async () => {
 test('a waiting zone shows the two nameservers big, with copy buttons and the next check\'s countdown', async () => {
   const { default: StackCard } = await import('../src/screens/vault/stack/StackCard.jsx');
   const pending = { cloudflare: { ok: true, summary: 'Token works. fieldday.dev is waiting for the nameservers to change.', facts: { zone: true, active: false, nameServers: ['ada.ns.cloudflare.com', 'bob.ns.cloudflare.com'] } } };
-  const html = renderToStaticMarkup(createElement(StackCard, { svc: 'cloudflare', stack: stack({ saved: ['cloudflare.apiToken'], checks: pending }), ui: ui({ open: 'cloudflare', repoll: { cloudflare: 24 } }) }));
+  const html = renderToStaticMarkup(createElement(StackCard, { svc: 'cloudflare', stack: stack({ saved: ['cloudflare.apiToken'], checks: pending }), ui: ui({ opened: { cloudflare: true }, repoll: { cloudflare: 24 } }) }));
   assert.match(html, /<code>ada\.ns\.cloudflare\.com<\/code>/);
   assert.match(html, /Copy: bob\.ns\.cloudflare\.com/);
   assert.match(html, /Checking again in 24 s/);
@@ -97,7 +97,7 @@ test('a waiting zone shows the two nameservers big, with copy buttons and the ne
 test('a secret field is a MaskField with no value in the markup; env chips show the eye or the lock', async () => {
   const { default: StackCard } = await import('../src/screens/vault/stack/StackCard.jsx');
   const paste = 'sb_secret_TESTONLYmarkup000000';
-  const html = renderToStaticMarkup(createElement(StackCard, { svc: 'supabase', stack: stack(), ui: ui({ open: 'supabase', fields: { 'supabase.secret': { paste } } }) }));
+  const html = renderToStaticMarkup(createElement(StackCard, { svc: 'supabase', stack: stack(), ui: ui({ opened: { supabase: true }, fields: { 'supabase.secret': { paste } } }) }));
   assert.ok(!html.includes('TESTONLY'), 'the paste never reaches the markup');
   assert.match(html, /aria-label="Paste the secret key"/);
   assert.match(html, /<input type="password"[^>]*aria-label="Paste the secret key"/);
@@ -110,11 +110,11 @@ test('a secret field is a MaskField with no value in the markup; env chips show 
 
 test('paste-many offers to fill the Supabase values; a plan lists conflicts to tick', async () => {
   const { default: StackCard } = await import('../src/screens/vault/stack/StackCard.jsx');
-  const offer = renderToStaticMarkup(createElement(StackCard, { svc: 'supabase', stack: stack(), ui: ui({ open: 'supabase', offer: { svc: 'supabase', matches: [{ key: 'url' }, { key: 'publishable' }, { key: 'secret' }, { key: 'dbUrl' }] } }) }));
+  const offer = renderToStaticMarkup(createElement(StackCard, { svc: 'supabase', stack: stack(), ui: ui({ opened: { supabase: true }, offer: { svc: 'supabase', matches: [{ key: 'url' }, { key: 'publishable' }, { key: 'secret' }, { key: 'dbUrl' }] } }) }));
   assert.match(offer, /Looks like 4 values from Supabase&#x27;s Connect dialog\. Fill them in\?/);
   const plans = { 'cloudflare.dns': { plan: { lines: ['Create A fieldday.dev -> 76.76.21.21 (DNS only).'], conflicts: [{ key: 'c0', type: 'AAAA', name: 'fieldday.dev', content: '2606:4700::1', proxied: true }], count: 2, cta: 'Write 2 records' }, replace: [] } };
   const s = stack({ saved: ['cloudflare.apiToken', 'cloudflare.zoneId', 'vercel.token', 'vercel.projectId', 'vercel.teamId'] });
-  const act = renderToStaticMarkup(createElement(StackCard, { svc: 'cloudflare', stack: s, ui: ui({ open: 'cloudflare', plans }) }));
+  const act = renderToStaticMarkup(createElement(StackCard, { svc: 'cloudflare', stack: s, ui: ui({ opened: { cloudflare: true }, plans }) }));
   assert.match(act, /Do it for me/);
   assert.match(act, /Point fieldday\.dev at Vercel/);
   assert.match(act, /Replace AAAA fieldday\.dev \(2606:4700::1, proxied\)\?/);

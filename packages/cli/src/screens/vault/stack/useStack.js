@@ -20,7 +20,9 @@ export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) 
   const [fields, setFields] = useState({});
   const [checks, setChecks] = useState({});
   const [plans, setPlans] = useState({});
-  const [open, setOpen] = useState(null);
+  // Cards the person opened or closed by hand (svc -> bool); any other card is open only while it holds the next action.
+  const [opened, setOpened] = useState({});
+  const setOpen = (svc, on) => setOpened((o) => ({ ...o, [svc]: on }));
   const [offer, setOffer] = useState(null);
   const [busy, setBusy] = useState(false);
   const [repoll, setRepoll] = useState({});
@@ -34,6 +36,7 @@ export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) 
     const paste = value ?? fields[k]?.paste ?? '';
     if (!paste) return false;
     setField(svc, key, { busy: true, error: null });
+    setOpen(svc, true);
     try {
       const r = await server.stackSave(saveBody(svc, key, paste));
       setField(svc, key, { busy: false, paste: '', show: false, replacing: false, result: { pushed: r.pushed || [], notes: r.notes || [], failed: r.failed || [] } });
@@ -61,6 +64,7 @@ export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) 
       if (p && checkShape(v.shape, p).ok) values[v.key] = p;
     }
     setChecks((c) => ({ ...c, [svc]: { busy: true, error: null } }));
+    if (!quiet) setOpen(svc, true);
     try {
       const r = await server.stackCheck(svc, { values });
       setChecks((c) => ({ ...c, [svc]: { busy: false, at: Date.now() } }));
@@ -139,7 +143,7 @@ export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) 
   /** Go to the next action: open its card, scroll to it, and start the action's plan or the check it names. */
   const go = (next) => {
     if (!next?.service) return;
-    setOpen(next.service);
+    setOpen(next.service, true);
     setTimeout(() => {
       const el = document.getElementById(next.key ? `stk-${next.service}-${next.key}` : `stk-${next.service}`);
       el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
@@ -177,6 +181,6 @@ export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) 
 
   return {
     field, setField, save, saveAll, resync, check, checks, plan, confirm, plans, toggleReplace, pick, tick, busy,
-    open, setOpen, go, offer, setOffer, pasted, fill, repoll,
+    opened, setOpen, go, offer, setOffer, pasted, fill, repoll,
   };
 }
