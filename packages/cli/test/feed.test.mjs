@@ -408,7 +408,8 @@ test('two GUI servers on one repo share the feed: a push one of them records rea
     const bViews = [];
     const b = createChangeFeed({ repo: s.repo, watch: false, gh: noGh, query: null, onChange: (v) => bViews.push(v) });
     a.sync(); b.sync();
-    await new Promise((r) => setTimeout(r, 300)); // both first looks (which only record the tip) are done
+    // Both first looks (which only record the tip) are done; generous, since a loaded full run is slow to spawn git.
+    await new Promise((r) => setTimeout(r, 2000));
     await a.pushes.check(); await b.pushes.check();
     const tip = commit(s.other, 'src/home.css', 'body { background: blue; }\n', 'feat(home): blue background');
     git(s.other, 'push', '-q', 'origin', 'main');
