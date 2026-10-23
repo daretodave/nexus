@@ -2,11 +2,11 @@
 // Card states, value rows, the milestone progress and the one next action, the names still missing, the save body,
 // and the paste-many matcher. Names and status only: no function here returns or keeps a stored value; a paste is the
 // card's own until Save sends it.
-import { SERVICES, ORDER, ACTIONS, MILESTONES, PRESETS, milestonesFor, fillTemplate, servicesIn, valueOf } from '../../../../shared/stack/recipes.mjs';
+import { SERVICES, ORDER, ACTIONS, MILESTONES, PRESETS, milestonesFor, fillTemplate, unfilledKeys, servicesIn, valueOf } from '../../../../shared/stack/recipes.mjs';
 import { checkShape, normalize } from '../../../../shared/stack/shapes.mjs';
 import { frameworkById, envNamesFor, isPublicName } from '../../../../shared/stack/frameworks.mjs';
 
-export { SERVICES, ORDER, ACTIONS, PRESETS, fillTemplate, servicesIn, valueOf, envNamesFor, checkShape };
+export { SERVICES, ORDER, ACTIONS, PRESETS, fillTemplate, unfilledKeys, servicesIn, valueOf, envNamesFor, checkShape };
 
 const EMPTY = { picked: [], inputs: {}, values: {}, names: {}, checks: {}, actions: {}, ticks: {}, targets: [] };
 const s0 = (stack) => ({ ...EMPTY, ...(stack || {}) });

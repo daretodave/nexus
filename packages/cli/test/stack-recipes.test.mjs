@@ -178,3 +178,15 @@ test('publicSafe: a secret under a public prefix is the one thing refused', () =
   assert.equal(publicSafe('NEXT_PUBLIC_SUPABASE_URL', false), true);
   assert.equal(publicSafe('SUPABASE_SECRET_KEY', true), true);
 });
+
+test('unfilledKeys names the template keys a context leaves empty, so a stand-in is never offered as a copy', async () => {
+  const { unfilledKeys } = await import('../shared/stack/recipes.mjs');
+  assert.deepEqual(unfilledKeys('https://*-{team}.vercel.app/**', { team: '' }), ['team']);
+  assert.deepEqual(unfilledKeys('http://localhost:{port}/**', { port: 3000 }), []);
+  assert.deepEqual(unfilledKeys('https://{domain}/**', { domain: 'fieldday.dev' }), []);
+});
+
+test('the optional Supabase token asks for Project Settings: Read only', async () => {
+  const { SERVICES } = await import('../shared/stack/recipes.mjs');
+  assert.deepEqual(SERVICES.supabase.token.grant.map((g) => `${g.item}: ${g.level}`), ['Project Settings: Read']);
+});

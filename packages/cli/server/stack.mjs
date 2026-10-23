@@ -23,6 +23,8 @@ export const STATE_FILE = '.nexus/stack.json';
 const WORKSPACE_JSON = '.env.workspace.json';
 const PLAN_MS = 10 * 60 * 1000;
 const COOLDOWN_MS = 3000;
+/** The Vercel check's facts that are about the domain, dropped when the domain changes. */
+const DOMAIN_FACTS = ['domainOnProject', 'domainOk', 'configuredBy', 'recommended', 'vercelRegistrar'];
 const NAME = /^[A-Z][A-Z0-9_]*$/;
 /** The names CI needs (vercel pull/build/deploy, wrangler): pushed to GitHub Actions when that target is ticked. */
 const ACTIONS_NAMES = new Set(['VERCEL_TOKEN', 'VERCEL_ORG_ID', 'VERCEL_PROJECT_ID', 'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID']);
@@ -237,6 +239,8 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     b.picked = (Array.isArray(s.picked) ? s.picked : []).filter((x) => SERVICES[x]);
     return b;
   }
+  /** Whether the saved zone ID was saved for a domain other than the current one. */
+  const zoneStale = (s) => !!s.inputs?.zoneFor && s.inputs.zoneFor !== (s.inputs.domain || '');
   async function writeState(s) {
     const root = await vroot();
     fs.mkdirSync(path.join(root, '.nexus'), { recursive: true });
@@ -284,6 +288,7 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     const ticks = state.targets || {};
     const out = [{ id: 'vault', kind: 'vault', label: st?.vault?.keychain ? 'keychain (the vault)' : '.env (the vault)', on: true, locked: true, why: 'The vault keeps every value; pushes read it from there.' }];
     let appNote = null;
+    const keychain = !!st?.vault?.keychain;
     const names = new Set(recipeNames(ORDER, fw));
     if (app.dir !== '.') {
       const rel = `${app.dir}/${fw.file}`;
@@ -291,7 +296,11 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     } else if (fw.file !== '.env' && exists(path.join(root, fw.file))) {
       const t = { id: 'app', kind: 'dotenv', label: fw.file, rel: fw.file, abs: path.join(root, fw.file) };
       const holds = k ? [...targetValues(k, t).keys()].some((n) => names.has(n)) : false;
-      out.push({ ...t, on: ticks.app ?? holds, why: holds ? `${fw.label} gives ${fw.file} precedence, and it already sets some of these names` : `${fw.label} also reads ${fw.file}` });
+      const why = holds ? `${fw.label} gives ${fw.file} precedence, and it already sets some of these names` : keychain ? `${fw.label} reads ${fw.file}; the keychain is not a file it can read` : `${fw.label} also reads ${fw.file}`;
+      out.push({ ...t, on: ticks.app ?? (holds || keychain), why });
+    } else if (keychain) {
+      // The vault is the keychain, so no file at the root holds these: the app needs its own (created, gitignore-guarded).
+      out.push({ id: 'app', kind: 'dotenv', label: fw.file, rel: fw.file, abs: path.join(root, fw.file), on: ticks.app ?? true, why: `${fw.label} reads ${fw.file}; the keychain is not a file it can read` });
     } else {
       appNote = `${fw.label} reads .env at the root, so the vault's file is the app's file.`;
     }
@@ -369,7 +378,9 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     for (const id of ORDER.filter((x) => state.picked.includes(x))) {
       for (const v of SERVICES[id].values) {
         const { names: ns, notes } = resolveNames(v, fw, present);
-        values[`${id}.${v.key}`] = { names: ns, saved: ns.every((n) => inVault.has(n)), ...(notes.length ? { notes } : {}) };
+        // A zone ID saved for another domain reads as not saved, so the next Check it fills in the new one.
+        const stale = id === 'cloudflare' && v.key === 'zoneId' && zoneStale(state);
+        values[`${id}.${v.key}`] = { names: ns, saved: !stale && ns.every((n) => inVault.has(n)), ...(stale ? { stale: true } : {}), ...(notes.length ? { notes } : {}) };
         for (const n of ns) {
           const row = { service: id, key: v.key, vault: inVault.has(n), drift: false };
           for (const [tid, m] of held) {
@@ -419,7 +430,15 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
           const r = checkShape('hostname', raw);
           if (!r.ok) return { status: 400, error: r.why };
           const d = normalize('hostname', raw);
-          if (d !== state.inputs.domain) { state.inputs.domain = d; for (const k of Object.keys(state.actions)) if (k !== 'vercel.env') delete state.actions[k]; }
+          if (d !== state.inputs.domain) {
+            if (state.inputs.zoneFor === undefined && state.inputs.domain) state.inputs.zoneFor = state.inputs.domain;
+            state.inputs.domain = d;
+            for (const k of Object.keys(state.actions)) if (k !== 'vercel.env') delete state.actions[k];
+            // What the last checks found was about the old domain: its zone, its nameservers, its config on Vercel.
+            delete state.checks.cloudflare;
+            const vf = state.checks.vercel?.facts;
+            if (vf) for (const k of DOMAIN_FACTS) delete vf[k];
+          }
         }
       }
     }
@@ -491,6 +510,11 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
       await save({ service: 'supabase', key: 'ref', value: refOf(value), targets: b.targets });
     }
     if (state.targets && b.targets) await writeState(state);
+    if (b.service === 'cloudflare' && b.key === 'zoneId') {
+      const fresh = await readState();
+      fresh.inputs.zoneFor = fresh.inputs.domain || '';
+      await writeState(fresh);
+    }
     const legacy = shape.kind === 'legacy' || shape.kind === 'warn' ? [shape.note] : [];
     return scrub({ status: 200, ok: !failed.length && pushed.every((p) => p.ok), names, written, failed, pushed, notes: [...notes, ...legacy] });
   }
@@ -571,8 +595,14 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
           : { token: vals.token, projectId: vals.projectId, teamId: vals.teamId, domain };
       const r = await fn(fetchImpl, args);
       const record = scrub({ ok: !!r.ok, at: new Date(now()).toISOString(), ...(r.summary ? { summary: r.summary } : {}), ...(r.reason ? { reason: r.reason } : {}), facts: pickFacts(service, r.facts || {}), fill: cleanFill(r.fill) });
-      state.checks[service] = record;
-      await writeState(state);
+      // Re-read: the calls above can take seconds, and an action, a tick or a domain change may have landed meanwhile.
+      const fresh = await readState();
+      const moved = service !== 'supabase' && (fresh.inputs.domain || '') !== (domain || '');
+      if (!moved) {
+        fresh.checks[service] = record;
+        await writeState(fresh);
+      }
+      if (moved) return { status: 200, ok: false, at: record.at, reason: 'The domain changed while this ran. Check again.', facts: {}, fill: {} };
       return scrub({ status: 200, ...record });
     } finally {
       checking.delete(service);
@@ -593,7 +623,7 @@ export function createStack({ repo, secrets, fetchImpl = globalThis.fetch, now =
     }
     return {
       domain: state.inputs.domain,
-      cf: { token: get('cloudflare', 'apiToken'), zoneId: get('cloudflare', 'zoneId') || facts.cloudflare?.facts?.zoneId },
+      cf: { token: get('cloudflare', 'apiToken'), zoneId: (zoneStale(state) ? undefined : get('cloudflare', 'zoneId')) || facts.cloudflare?.facts?.zoneId },
       vc: { token: get('vercel', 'token'), projectId, teamId: get('vercel', 'teamId') },
       projectName: (facts.vercel?.facts?.projects || []).find((p) => p.id === projectId)?.name,
       verification: state.actions['vercel.domain']?.facts?.verification || [],

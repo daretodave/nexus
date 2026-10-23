@@ -193,6 +193,8 @@ test('cloudflare.dns plan: rank-1 records, conflicts listed by key (never an id)
   assert.equal(deleted.length, 0);
   assert.deepEqual(posted.map((b) => b.type), ['CNAME']);
   assert.match(kept.summary, /Left fieldday\.dev alone/);
+  assert.equal(kept.ok, false, 'the apex still points at the old host, so the records are not done');
+  assert.match(kept.reason, /fieldday\.dev still points at the old host/);
   posted.length = 0;
   const done = await doCloudflareDns(f, DNS_CTX, p.plan, p.secret, ['c0']);
   assert.equal(deleted.length, 1);
@@ -219,6 +221,10 @@ test('vercel.env: secrets go sensitive, public values encrypted; values only in 
 test('vercel.domain and nameservers: the plain answers for 409, a missing deploy and an outside registrar', async () => {
   const taken = fake([['POST', /domains/, { status: 409, json: { error: { code: 'domain_taken' } } }]]);
   assert.match((await doVercelDomain(taken, DNS_CTX)).reason, /on another Vercel project/);
+  const moving = fake([['POST', /domains/, { status: 409, json: { error: { code: 'conflict', message: 'The project is currently being transferred' } } }]]);
+  assert.match((await doVercelDomain(moving, DNS_CTX)).reason, /being transferred/);
+  const barred = fake([['POST', /domains/, { status: 409, json: { error: { code: 'forbidden', message: 'The domain is not allowed to be used' } } }]]);
+  assert.match((await doVercelDomain(barred, DNS_CTX)).reason, /does not allow fieldday\.dev/);
   const early = fake([['POST', /domains/, { status: 400, json: { error: { code: 'missing_deployment', message: 'needs a production deployment' } } }]]);
   assert.match((await doVercelDomain(early, DNS_CTX)).reason, /Let the first build finish/);
   const ok = fake([['POST', /domains/, { json: { verified: false, verification: [{ type: 'TXT', domain: '_vercel.fieldday.dev', value: 'vc-domain-verify=fieldday.dev,abc', reason: 'x' }] } }]]);

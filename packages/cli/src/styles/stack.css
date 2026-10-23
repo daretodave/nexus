@@ -225,3 +225,6 @@
 @media (max-width: 640px) {
   .vault-wrap:has(.stk-rail) > .vt-col:last-child { order: -1; }
 }
+
+/* A copy chip still holding a stand-in word: not copyable until the real value is known. */
+.stk-ns-row code.stk-stand-in { background: transparent; color: var(--text-3); border: 1px dashed var(--line); font-style: italic; }

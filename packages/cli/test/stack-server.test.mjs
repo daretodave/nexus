@@ -36,12 +36,12 @@ function tmp(files = {}) {
 /** A fake `git check-ignore`: every path is ignored unless named in `tracked`. */
 const fakeGit = (tracked = []) => (args) => ({ status: args[2] === 'check-ignore' && tracked.includes(args.at(-1)) ? 1 : 0, stdout: '' });
 
-function harness(root, { owner = true, sinks = [], tracked = [], fetchImpl, storeFails } = {}) {
+function harness(root, { owner = true, sinks = [], tracked = [], fetchImpl, storeFails, keychain = null } = {}) {
   const git = fakeGit(tracked);
   const kit = { openVault: (o) => openVault({ ...o, git }), upsertEnv, parseEnv, localSettings: () => ({}) };
   const stored = [];
   const secrets = {
-    status: async () => ({ status: 200, available: true, vaultState: 'ready', owner, vault: { keychain: null }, sinks }),
+    status: async () => ({ status: 200, available: true, vaultState: 'ready', owner, vault: { keychain }, sinks }),
     store: async (name, b) => {
       if (storeFails) return { status: 409, error: `refused ${b.value}` };
       stored.push({ name, for: b.for, declare: b.declare, destinations: b.destinations });
@@ -349,4 +349,65 @@ test('the routes: GET /api/stack, pick, save and check through the live server, 
   } finally {
     await app.close();
   }
+});
+
+test('targets: with the keychain as the vault, a root app gets its own file, ticked, since no file holds the values', async () => {
+  const bare = tmp({ 'package.json': { dependencies: { next: '15' } } });
+  const c = await harness(bare, { keychain: true }).stack.status();
+  assert.deepEqual(c.targets.map((t) => [t.id, t.label, t.on]), [['vault', 'keychain (the vault)', true], ['app', '.env.local', true]]);
+  assert.equal(c.appNote, null);
+  const node = tmp({ 'package.json': {} });
+  const n = (await harness(node, { keychain: true, fetchImpl: undefined }).stack.pick({ app: { dir: '.', framework: 'node' } }));
+  assert.deepEqual(n.targets.map((t) => [t.id, t.label, t.on]), [['vault', 'keychain (the vault)', true], ['app', '.env', true]]);
+  const plain = tmp({ 'package.json': { dependencies: { next: '15' } }, '.env.local': 'OTHER=1\n' });
+  assert.equal((await harness(plain, { keychain: true }).stack.status()).targets.find((t) => t.id === 'app').on, true);
+});
+
+test('check: a slow answer does not overwrite what landed meanwhile; one about an old domain is dropped', async () => {
+  const root = tmp({ 'package.json': { dependencies: { next: '15' } } });
+  let during = async () => {};
+  const zone = { json: { success: true, result: [{ id: '0123456789abcdef0123456789abcdef', status: 'active', name_servers: ['ada.ns.cloudflare.com'], account: { id: 'fedcba9876543210fedcba9876543210', name: 'x' } }] } };
+  const f = async (url, init = {}) => {
+    await during();
+    if (/user\/tokens\/verify/.test(url)) return { status: 200, headers: new Headers(), text: async () => JSON.stringify({ success: true, result: { status: 'active' } }) };
+    if (/zones\?name=/.test(url)) return { status: 200, headers: new Headers(), text: async () => JSON.stringify(zone.json) };
+    return { status: 404, headers: new Headers(), text: async () => '{}', init };
+  };
+  const h = harness(root, { fetchImpl: f });
+  await h.stack.pick({ picked: ['cloudflare', 'supabase'], inputs: { domain: 'fieldday.dev' } });
+  await h.stack.save({ service: 'cloudflare', key: 'apiToken', value: CF });
+  let once = true;
+  during = async () => { if (once) { once = false; await h.stack.tick({ step: 'sb.auth', on: true }); } };
+  const r = await h.stack.check('cloudflare', {});
+  assert.equal(r.ok, true);
+  const disk = JSON.parse(fs.readFileSync(path.join(root, '.nexus/stack.json'), 'utf8'));
+  assert.equal(disk.ticks['sb.auth'], true, 'the tick made during the check survives');
+  assert.ok(disk.checks.cloudflare);
+  h.clock.tick(3100);
+  once = true;
+  during = async () => { if (once) { once = false; await h.stack.pick({ inputs: { domain: 'other.dev' } }); } };
+  const moved = await h.stack.check('cloudflare', {});
+  assert.equal(moved.ok, false);
+  assert.match(moved.reason, /domain changed/);
+  assert.deepEqual(moved.fill, {});
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.nexus/stack.json'), 'utf8')).checks.cloudflare, undefined);
+});
+
+test('pick: a new domain drops the old zone facts, and a zone ID saved for the old domain reads as not saved', async () => {
+  const root = tmp({ 'package.json': { dependencies: { next: '15' } } });
+  const h = harness(root);
+  await h.stack.pick({ picked: ['cloudflare', 'vercel'], inputs: { domain: 'a.dev' } });
+  await h.stack.save({ service: 'cloudflare', key: 'zoneId', value: '0123456789abcdef0123456789abcdef' });
+  const st = JSON.parse(fs.readFileSync(path.join(root, '.nexus/stack.json'), 'utf8'));
+  st.checks = { cloudflare: { ok: true, facts: { zone: true, active: true } }, vercel: { ok: true, facts: { projects: [{ id: 'prj_x', name: 'x' }], domainOk: true } } };
+  fs.writeFileSync(path.join(root, '.nexus/stack.json'), JSON.stringify(st));
+  assert.equal((await h.stack.status()).values['cloudflare.zoneId'].saved, true);
+  const after = await h.stack.pick({ inputs: { domain: 'b.dev' } });
+  assert.equal(after.checks.cloudflare, undefined);
+  assert.equal(after.checks.vercel.facts.domainOk, undefined);
+  assert.equal(after.checks.vercel.facts.projects.length, 1, 'the project list is not about the domain');
+  assert.equal(after.values['cloudflare.zoneId'].saved, false);
+  assert.equal(after.values['cloudflare.zoneId'].stale, true);
+  await h.stack.save({ service: 'cloudflare', key: 'zoneId', value: 'fedcba9876543210fedcba9876543210' });
+  assert.equal((await h.stack.status()).values['cloudflare.zoneId'].saved, true);
 });

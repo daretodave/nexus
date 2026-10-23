@@ -68,8 +68,6 @@ export const SERVICES = {
       start: 'Supabase keys are copied from the project, not created. This token only lets Check it confirm the project.',
       grant: [
         { group: 'Project', item: 'Project Settings', level: 'Read', why: 'confirms the project name, region and status' },
-        { group: 'Project', item: 'API Keys', level: 'Read', why: 'lists the project\'s keys' },
-        { group: 'Project', item: 'API Key Secrets', level: 'Read', why: 'lets the CLI link the project' },
       ],
       resources: 'Selected project: {ref}',
       avoid: 'Not a classic token. Those reach your whole account.',
@@ -209,6 +207,16 @@ export function fillTemplate(text, ctx = {}) {
     if (typeof v === 'number') return String(v);
     return k in words ? words[k] : m;
   });
+}
+
+/** The template keys in a text the context leaves empty (the filled text then holds a stand-in word, not a value). */
+export function unfilledKeys(text, ctx = {}) {
+  const out = [];
+  for (const [, k] of String(text ?? '').matchAll(/\{(\w+)\}/g)) {
+    const v = ctx[k];
+    if (!((typeof v === 'string' && v) || typeof v === 'number')) out.push(k);
+  }
+  return out;
 }
 
 /** The milestones for a set of picked services: those whose services are not all picked drop out. */

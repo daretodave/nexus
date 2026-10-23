@@ -371,7 +371,9 @@ export async function doCloudflareDns(fetchImpl, ctx, plan, secretPart, replace 
   const parts = [`${written} ${written === 1 ? 'record' : 'records'} written, DNS only.`];
   if (removed) parts.push(`${removed} replaced.`);
   if (skipped.length) parts.push(`Left ${skipped.join(', ')} alone: tick Replace to swap the record there.`);
-  return { ok: written > 0 || !skipped.length, summary: `Done. ${parts.join(' ')}` };
+  // A record left behind a conflict means the name still points elsewhere: not done, whatever else was written.
+  if (skipped.length) return { ok: false, summary: parts.join(' '), reason: `${parts.join(' ')} ${skipped.join(', ')} still ${skipped.length === 1 ? 'points' : 'point'} at the old host.` };
+  return { ok: true, summary: `Done. ${parts.join(' ')}` };
 }
 
 /** vercel.domain, the plan. ctx: { domain, vc: { token, projectId, teamId }, projectName? }. */
@@ -393,7 +395,12 @@ export async function doVercelDomain(fetchImpl, ctx) {
     if (r.error) return { ok: false, reason: r.error };
     const code = r.json?.error?.code || '';
     const msg = String(r.json?.error?.message || '');
-    if (r.status === 409) return { ok: false, reason: `${body.name} is on another Vercel project.` };
+    if (r.status === 409) {
+      if (/transfer/i.test(`${code} ${msg}`)) return { ok: false, reason: 'The project is being transferred. Try again once the transfer is done.' };
+      if (/not allowed|forbidden|blocked/i.test(`${code} ${msg}`)) return { ok: false, reason: `Vercel does not allow ${body.name} to be used. Check the name, or ask Vercel support.` };
+      if (/taken|another project|in use|already|conflict/i.test(`${code} ${msg}`) || !msg) return { ok: false, reason: `${body.name} is on another Vercel project. Remove it there first.` };
+      return { ok: false, reason: `Vercel did not add ${body.name}: ${short(msg, 160)}` };
+    }
     if (r.status === 400 && /already|exists/i.test(`${code} ${msg}`) && !/another/i.test(msg)) continue;
     if (r.status === 400 && /deploy/i.test(`${code} ${msg}`)) return { ok: false, reason: 'Vercel adds a domain only after a production deploy finished. Let the first build finish.' };
     if (r.status !== 200) return { ok: false, reason: reasonFor('vercel', r, { what: 'add domains', thing: 'the project', field: 'the project ID' }) };

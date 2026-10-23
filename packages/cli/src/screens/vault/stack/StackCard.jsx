@@ -6,8 +6,11 @@ import { Icon, KeyNote, TickBox, cx } from '../../../ui/index.js';
 import { server } from '../../../data/index.js';
 import ValueField from './ValueField.jsx';
 import {
-  SERVICES, ACTIONS, CARD_CLASS, progress, nextAction, cardState, cardHead, stepStates, valueRow, fillTemplate, ctxOf, shortId, joinList,
+  SERVICES, ACTIONS, CARD_CLASS, progress, nextAction, cardState, cardHead, stepStates, valueRow, fillTemplate, unfilledKeys, ctxOf, shortId, joinList,
 } from './model.js';
+
+/** What a stand-in word in a copy chip asks for; such a chip has no Copy button until the real value is known. */
+const STAND_IN = { team: 'Vercel team slug (it is in your dashboard URL)', domain: 'domain', ref: 'project ref', project: 'project name', port: 'dev port' };
 
 /** A copy button for a plain, non-secret string (a nameserver, a redirect URL, the permission list, git push). */
 export function CopyBtn({ text, label = 'Copy' }) {
@@ -188,7 +191,17 @@ export default function StackCard({ svc, stack, ui, isNext, compact, readOnly })
                       {step.note ? <span className="c-3"> {step.note}</span> : null}
                       {step.copy ? (
                         <span className="stk-copies">
-                          {step.copy.map((c) => { const t = fillTemplate(c, ctx); return <span key={c} className="stk-ns-row"><code>{t}</code><CopyBtn text={t} /></span>; })}
+                          {step.copy.map((c) => {
+                            const t = fillTemplate(c, ctx);
+                            const gap = unfilledKeys(c, ctx);
+                            if (!gap.length) return <span key={c} className="stk-ns-row"><code>{t}</code><CopyBtn text={t} /></span>;
+                            return (
+                              <span key={c} className="stk-ns-row">
+                                <code className="stk-stand-in">{t}</code>
+                                <span className="c-3">put your {gap.map((k) => STAND_IN[k] || k).join(' and ')} in place of {gap.map((k) => fillTemplate(`{${k}}`, {})).join(', ')}</span>
+                              </span>
+                            );
+                          })}
                         </span>
                       ) : null}
                     </span>
