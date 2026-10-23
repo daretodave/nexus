@@ -185,9 +185,10 @@ export function useEvents(session, { off = false } = {}) {
       const src = new EventSource(`/api/events?${q}`);
       es.current = src;
       for (const type of EVENT_TYPES) src.addEventListener(type, (e) => dispatch([type, JSON.parse(e.data)]));
-      src.addEventListener('hello', () => health?.up());
+      // The stale-tab watcher never stands between the channel and its reconnect.
+      src.addEventListener('hello', () => { try { health?.up(); } catch { /* the bar only */ } });
       src.onerror = () => {
-        health?.down();
+        try { health?.down(); } catch { /* the bar only */ }
         dispatch(['down']);
         src.close();
         if (!closed) retry = setTimeout(open, 2000);

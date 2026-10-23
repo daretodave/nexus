@@ -369,8 +369,12 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
   // takeover is the ledger's tile wherever it works, main included), then its own ledger by id; one left over joins the
   // ledger that works where it works (the same worktree, or the same session branch), so a session whose ledger is
   // keyed by its claims id is still one row.
+  // A session nexus started and then ended (put away, cleared) leaves its Claude Code file fresh for a while: that file
+  // is that session's, never a terminal chat of its own.
+  const gone = new Set(ledgers.filter((l) => l.gui === true && (l.state === 'ended' || l.state === 'resumed')).flatMap((l) => [l.claude, l.id]).filter((x) => typeof x === 'string' && x));
   const rest = [];
   for (const c of claude) {
+    if (gone.has(c.id)) continue;
     const run = [...byId.values()].find((s) => s.ledger && !s.claude && runBy(s.ledger, c.id));
     if (run) {
       run.claude = c;
@@ -403,7 +407,7 @@ export function mergeSessions({ ledgers, claude, gui = null, linked = new Set(),
     out.push({
       id,
       claude: claudeId,
-      name: l.star || id.slice(0, 8),
+      name: String(l.star || id.slice(0, 8)),
       kind: isGui ? 'local' : 'terminal',
       state: running ? 'live' : FLEET_STATE[s.status] || 'live',
       repo: repoName,
@@ -444,6 +448,7 @@ export function stoppedWith(l, s, guis = [], now = Date.now()) {
     queued: marker && Array.isArray(marker.queued) ? marker.queued.length : 0,
     asks: marker && Number.isFinite(marker.asks) ? marker.asks : 0,
     version: marker && typeof marker.version === 'string' ? marker.version : null,
+    paused: !!marker?.paused,
   };
   if (STOPPABLE.has(st)) return base;
   if (st === 'resuming') {

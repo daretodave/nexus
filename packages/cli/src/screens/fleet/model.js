@@ -117,7 +117,7 @@ export function claimHolders(rows, sessions = []) {
     const key = tag ? `s:${tag}` : `p:${r.who || 'someone'}`;
     if (!by.has(key)) by.set(key, { key, session: tag, name: '', who: r.who || '', mine: false, claims: [], at: null, stale: true });
     const h = by.get(key);
-    if (r.star && !h.name) h.name = r.star;
+    if (r.star && !h.name) h.name = String(r.star);
     if (r.mine) h.mine = true;
     if (r.state !== 'stale') h.stale = false;
     const t = Date.parse(r.at);
@@ -130,7 +130,7 @@ export function claimHolders(rows, sessions = []) {
     const name = h.name || (h.session ? h.session.slice(0, 8) : h.who || 'someone');
     return { key: h.key, session: h.session, name, who: h.who, mine: h.mine, n: h.claims.length, lines, fold, at: h.at, stale: h.stale };
   });
-  return out.sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+  return out.sort((a, b) => b.n - a.n || String(a.name).localeCompare(String(b.name)));
 }
 
 /**

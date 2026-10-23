@@ -7,6 +7,9 @@
 // fleet chips, never by default (fleet/model.js aside). 0.5.1: each tile
 // reads its state by colour (fleet/alive.js tone): working cyan and moving,
 // needs you amber, done green with a check and an offer to put it away.
+// Recovery: a session that stopped with nexus (a restart, an upgrade) reads calm,
+// "stopped with nexus", on This machine, with Pick up (the same star, worktree
+// and conversation) and Put away where nothing is mid-flight.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -112,6 +115,7 @@ export function stoppedWords(s) {
   else if (st.turn === 'forming') lines.push('Stopped while its worktree was being made. Pick up to finish it and send your message.');
   else if (st.turn === 'working') lines.push('Stopped mid-step when nexus restarted. Pick up to finish the step.');
   else if (st.turn === 'asking') lines.push('Stopped while it asked you something. Answer it to pick up.');
+  else if (st.paused) lines.push('Paused when nexus restarted. Its conversation and worktree are kept; Pick up resumes it.');
   else lines.push('Stopped when nexus restarted. Its conversation and worktree are kept.');
   if (st.queued > 0) lines.push(`${st.queued} ${st.queued === 1 ? 'message' : 'messages'} waiting to send.`);
   if (s.git?.missing && !s.git?.branchGone) lines.push('Its worktree folder is gone; Pick up brings it back from its branch.');

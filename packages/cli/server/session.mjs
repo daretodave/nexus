@@ -44,7 +44,7 @@ import { messageContent, withFiles } from '../shared/attachments.mjs';
  * @param {object} [o.form]          a worktree still forming (shared/forming.mjs): no provider yet, and what is sent
  *                                   waits until formed({ cwd }) (POST /api/sessions answers before git has made it)
  */
-export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', model = () => '', effort = () => '', onModel = null, onModels = null, onClaude = null, onResumeLost = null, listed = false, resume = null, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
+export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', model = () => '', effort = () => '', onModel = null, onModels = null, onClaude = null, onResumeLost = null, listed = false, resume = null, sent: sentBefore = 0, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
   const hub = createHub({ mask });
   const asks = new Map();
   const permissions = new Map();
@@ -53,8 +53,10 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
   let txCtx = newTxContext({ now, tools });
   let beatCtx = newBeatContext();
   let busy = false;
-  let claude = null;
-  let sent = 0;
+  // A session resumed from a stored conversation (a pick-up after a restart, Recover) is that conversation from the
+  // start, and keeps counting the prompts it took before: a stop before its next message still knows it.
+  let claude = resume || null;
+  let sent = Number.isFinite(sentBefore) ? sentBefore : 0;
   let pause = { state: 'run', at: null };
   const held = [];
   let extraEnv = null;

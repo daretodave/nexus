@@ -177,10 +177,10 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     prefs = { ...prefs, lastModel: model };
     repoMod.writePrefs(repo, { lastModel: model }).then((p) => { prefs = p; }, () => null);
   };
-  async function host({ id, name = '', cwd, place = {}, listed = false, resume = null, form = null, onResumeLost = null }) {
+  async function host({ id, name = '', cwd, place = {}, listed = false, resume = null, form = null, onResumeLost = null, sent = 0 }) {
     let made = null;
     const s = await createSession({
-      id, name, cwd, place, listed, resume, form, onResumeLost,
+      id, name, cwd, place, listed, resume, form, onResumeLost, sent,
       // Its Claude Code session, kept in its ledger the moment it is known, so a later nexus resumes this conversation.
       onClaude: (c) => { if (made?.listed ?? listed) noteLedger(id, { claude: c, cwd: made?.cwd || cwd }); },
       env: async () => ({ NEXUS_SESSION: id, NEXUS_GH_LOGIN: await login() }),
@@ -673,7 +673,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     let s = null;
     let freshSent = false;
     s = await host({
-      id: l.id, name: String(l.star || ''), cwd, place, listed: true, resume: resumeId, form,
+      id: l.id, name: String(l.star || ''), cwd, place, listed: true, resume: resumeId, form, sent: Number(l.sent) || 0,
       // The conversation could not be reopened: the fresh one gets its context the way a fresh pick-up does.
       onResumeLost: () => {
         if (freshSent || !s) return;
@@ -726,7 +726,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   async function pickupAll() {
     await sweepDone;
     const mine = hostedIds();
-    const list = readLedgers(ROOT).filter((l) => !mine.has(l.id) && stoppedWith(l, null, [...mine]))
+    // Not the ended ones (nothing to carry on: their tile offers Clear): the fleet's own rule, on fresh git.
+    const ended = new Set(markEnded(await gitView.withGit((await sessionList()).filter((r) => r.state === 'stopped'), { fresh: true })).filter((r) => r.ended).map((r) => r.id));
+    const list = readLedgers(ROOT).filter((l) => !mine.has(l.id) && !ended.has(l.id) && stoppedWith(l, null, [...mine]))
       .sort((a, b) => String(a.started || '').localeCompare(String(b.started || '')));
     const picked = [];
     const failed = [];

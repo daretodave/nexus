@@ -268,3 +268,21 @@ test('the stale tab: the bar shows after the channel is down 5 s, a new launch\'
   assert.equal(token, 'new');
   h.stop();
 });
+
+test('a tab reloaded with an older launch\'s token asks the other tabs at once, and takes the new token when one answers', async () => {
+  const server = { started: 'S2', version: '0.5.2', token: 'new' };
+  const fetchImpl = async (url, o = {}) => (url === '/api/hello'
+    ? { ok: true, json: async () => ({ nexus: true, started: server.started, version: server.version }) }
+    : { ok: o.headers?.['x-nexus-token'] === server.token });
+  const posted = [];
+  let listener = null;
+  let token = 'old';
+  const h = createHealth({ token: () => token, adopt: (t) => { token = t; }, fetchImpl, channel: { post: (m) => posted.push(m), listen: (fn) => { listener = fn; }, close() {} } });
+  for (let i = 0; i < 20 && !posted.length; i++) await new Promise((r) => setTimeout(r, 5));
+  assert.deepEqual(posted, [{ ask: true, started: 'S2' }], 'it never announces a token that does not work');
+  assert.equal(healthNow().status, 'restarted');
+  await listener({ token: 'new', started: 'S2', version: '0.5.2' });
+  assert.equal(token, 'new');
+  assert.equal(healthNow().status, 'ok');
+  h.stop();
+});

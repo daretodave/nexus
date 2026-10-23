@@ -40,7 +40,7 @@ export function healthWords(s) {
  * `channel` are seams for tests. Returns { down(), up(), stop(), hello() }: the live channel calls down() on an error
  * and up() on its hello.
  */
-export function createHealth({ token, adopt, fetchImpl = (...a) => fetch(...a), channel = makeChannel(), now = () => Date.now(), timers = { setTimeout, clearTimeout, setInterval, clearInterval } } = {}) {
+export function createHealth({ token, adopt, fetchImpl = (...a) => fetch(...a), channel = makeChannel(), now = () => Date.now(), timers = BROWSER_TIMERS } = {}) {
   let downAt = null;
   let downTimer = null;
   let poll = null;
@@ -134,6 +134,14 @@ export function createHealth({ token, adopt, fetchImpl = (...a) => fetch(...a), 
     get known() { return known; },
   };
 }
+
+// Called bare: a browser refuses window.setTimeout called as another object's method ("Illegal invocation").
+const BROWSER_TIMERS = {
+  setTimeout: (fn, ms) => setTimeout(fn, ms),
+  clearTimeout: (t) => clearTimeout(t),
+  setInterval: (fn, ms) => setInterval(fn, ms),
+  clearInterval: (t) => clearInterval(t),
+};
 
 function makeChannel() {
   if (typeof BroadcastChannel !== 'function') return null;
