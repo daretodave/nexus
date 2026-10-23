@@ -14,7 +14,7 @@ import { DEST_ORDER, DESTINATIONS, appReads, placesFor, recipeOfName, hostDests 
 import { renderGuide, movingValues } from '../shared/stack/guide.mjs';
 import { SERVICES, milestonesFor } from '../shared/stack/recipes.mjs';
 import { createStack } from '../server/stack.mjs';
-import { parseRequest } from '../server/secrets.mjs';
+import { parseRequest, resolveRequest } from '../server/secrets.mjs';
 import { createSecretsWatch, pushEventOf, whoPushed, AUDIT_FILE } from '../server/feed-secrets.mjs';
 import { createChangeFeed } from '../server/feed.mjs';
 import { createDemoVault, DEMO_STACK_REQUEST } from '../server/demo/vault.mjs';
@@ -67,7 +67,7 @@ test('the guide teaches both directions: the rule up top, then per service where
   assert.match(stripe, /To Vercel \(project environment variables\): .*`STRIPE_SECRET_KEY`/);
   assert.match(stripe, /Declare `"vercel"` in each one's `destinations` in `nexus\.secrets\.json`/);
   assert.match(stripe, /node scripts\/secrets\.mjs push STRIPE_SECRET_KEY --to vercel\n/);
-  assert.match(stripe, /node scripts\/secrets\.mjs push STRIPE_SECRET_KEY --to fly\n/);
+  assert.match(stripe, /node scripts\/secrets\.mjs push STRIPE_SECRET_KEY --to fly --app <app>\n/, 'Fly needs its app named: the push runs from the repo root');
   assert.match(stripe, /Confirm it landed: `vercel env ls` \(names only\)\./);
   assert.match(stripe, /Confirm it landed: `fly secrets list` \(names only\)\./);
   assert.match(stripe, /Missing one: `node scripts\/secrets\.mjs request <chunk> --to vercel,fly --service stripe`/);
@@ -79,7 +79,39 @@ test('the guide teaches both directions: the rule up top, then per service where
   assert.ok(!/sk_live|rk_live|whsec_[A-Za-z0-9]{6}/.test(g), 'names only');
 });
 
-test('a request names where its value goes and its service; an older one finds its service by the name', () => {
+test('with no host picked, Supabase\'s own values and any SUPABASE_ name never go to Supabase (it reserves the prefix)', () => {
+  const picked = ['supabase', 'stripe', 'aws'];
+  assert.ok(!placesFor('supabase', 'url', 'SUPABASE_URL', picked).includes('supabase'));
+  assert.ok(!placesFor('supabase', 'url', 'NEXT_PUBLIC_SUPABASE_URL', picked).includes('supabase'), 'Supabase already gives its functions its own URL');
+  assert.ok(placesFor('supabase', 'url', 'SUPABASE_URL', picked).includes('aws-secrets-manager'));
+  assert.ok(placesFor('stripe', 'secret', 'STRIPE_SECRET_KEY', picked).includes('supabase'), 'another service\'s value still goes there');
+  const g = renderGuide({ picked, app: { framework: 'next' } });
+  assert.ok(!/push \S*SUPABASE_\S* --to supabase/.test(g), 'the guide never teaches a push Supabase rejects');
+});
+
+test('a request\'s places belong to each name: an older one-list request gives a name only what its manifest declares', () => {
+  const each = parseRequest('secret request 15.4: set STRIPE_SECRET_KEY, GH_TOKEN in your terminal. It goes to STRIPE_SECRET_KEY: vercel; GH_TOKEN: github-actions once it is set. Then delete this row.');
+  assert.deepEqual(each.toEach, { STRIPE_SECRET_KEY: ['vercel'], GH_TOKEN: ['github-actions'] });
+  assert.deepEqual(resolveRequest(each).toByName, { STRIPE_SECRET_KEY: ['vercel'], GH_TOKEN: ['github-actions'] });
+  const old = parseRequest('secret request 15.4: set STRIPE_SECRET_KEY, GH_TOKEN in your terminal. It goes to vercel, github-actions once it is set. Then delete this row.');
+  const entries = new Map([['STRIPE_SECRET_KEY', { destinations: ['local', 'vercel'] }], ['GH_TOKEN', { destinations: ['local', 'github-actions'] }]]);
+  assert.deepEqual(resolveRequest(old, { entries }).toByName, { STRIPE_SECRET_KEY: ['vercel'], GH_TOKEN: ['github-actions'] }, 'the Stripe key never goes to GitHub Actions');
+  assert.deepEqual(resolveRequest(old).toByName, { STRIPE_SECRET_KEY: [], GH_TOKEN: [] }, 'undeclared: no place is claimed for it');
+  const [stripe, gh] = fromDurable([{ id: 'r', file: 'plan/pending/secrets-15.4.md', line: 5, text: 'x', secret: { ...each, ...resolveRequest(each, { picked: ['stripe'] }), missing: ['STRIPE_SECRET_KEY', 'GH_TOKEN'] } }]);
+  assert.deepEqual(stripe.stack.to, ['vercel']);
+  assert.equal(gh.stack, undefined, 'no recipe in the stack writes GH_TOKEN');
+});
+
+test('a request that names no service opens a card only for a service already picked, so opening it never adds one', () => {
+  const r = parseRequest('secret request 9.2: set DATABASE_URL in your terminal');
+  assert.equal(r.service, undefined);
+  assert.deepEqual(resolveRequest(r, { picked: ['neon'] }).services, {}, 'a Neon repo is never sent to Supabase');
+  assert.deepEqual(resolveRequest(r, { picked: ['supabase'] }).services, { DATABASE_URL: { service: 'supabase', name: 'Supabase' } });
+  const named = parseRequest('secret request 9.2: set STRIPE_SECRET_KEY, VERCEL_TOKEN, MY_KEY in your terminal (stack: stripe)');
+  assert.deepEqual(Object.keys(resolveRequest(named).services), ['STRIPE_SECRET_KEY', 'MY_KEY'], 'a named service covers its own names and names no recipe writes');
+});
+
+test('a request names where its value goes and its service', () => {
   const r = parseRequest('secret request 15.5: set STRIPE_SECRET_KEY in your terminal or the GUI\'s vault (never in a session), and 15.5 is ready again. It goes to vercel, fly once it is set; it is a stripe value, so the GUI opens its card in Set up a stack (stack: stripe). Then delete this row.');
   assert.deepEqual(r, { chunk: '15.5', names: ['STRIPE_SECRET_KEY'], to: ['vercel', 'fly'], service: 'stripe', serviceName: 'Stripe' });
   assert.deepEqual(parseRequest('secret request 9.1: set SMTP_PASSWORD in your terminal'), { chunk: '9.1', names: ['SMTP_PASSWORD'], to: [] }, 'no recipe writes it: the key card answers it');
@@ -87,7 +119,7 @@ test('a request names where its value goes and its service; an older one finds i
 });
 
 test('Oversight\'s Add value goes to the stack card, the field named, and the Vault reads the URL back', () => {
-  const [item] = fromDurable([{ id: 'r', file: 'plan/pending/secrets-15.5.md', line: 5, text: DEMO_STACK_REQUEST.durable.text, secret: { ...parseRequest(DEMO_STACK_REQUEST.durable.text), missing: ['STRIPE_SECRET_KEY'] } }]);
+  const [item] = fromDurable([{ id: 'r', file: 'plan/pending/secrets-15.5.md', line: 5, text: DEMO_STACK_REQUEST.durable.text, secret: { ...parseRequest(DEMO_STACK_REQUEST.durable.text), ...resolveRequest(parseRequest(DEMO_STACK_REQUEST.durable.text)), missing: ['STRIPE_SECRET_KEY'] } }]);
   assert.deepEqual(item.stack, { service: 'stripe', name: 'Stripe', key: 'STRIPE_SECRET_KEY', chunk: '15.5', to: ['vercel'] });
   const link = stackLink(item.stack);
   assert.equal(link, '/vault?panel=stack&service=stripe&key=STRIPE_SECRET_KEY&chunk=15.5&to=vercel');

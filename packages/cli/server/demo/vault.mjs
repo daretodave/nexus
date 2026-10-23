@@ -2,7 +2,7 @@
 // server's shapes (server/secrets.mjs) so the Vault, the Inbox's key card and the board's "Waiting on a secret" draw
 // in a demo. It holds names and status only: a posted value is looked at for its shape and dropped on the spot, never
 // kept, logged or sent back. Nothing here touches the disk or runs a sink.
-import { looksOf, parseRequest } from '../secrets.mjs';
+import { looksOf, parseRequest, resolveRequest } from '../secrets.mjs';
 import { DEST_ORDER } from '../../shared/stack/destinations.mjs';
 
 const DAY = 86_400_000;
@@ -91,7 +91,7 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true, on
       rotateDays: 90,
       audit: audit.slice(-20),
       sinks: SINKS,
-      requests: isOwner ? open.map(({ q, missing }) => ({ ...parseRequest(q.durable.text), missing, file: q.durable.file, line: q.durable.line, date: iso(3 * 3600000).slice(0, 10) })) : [],
+      requests: isOwner ? open.map(({ q, missing }) => ({ ...parseRequest(q.durable.text), ...resolveRequest(parseRequest(q.durable.text)), missing, file: q.durable.file, line: q.durable.line, date: iso(3 * 3600000).slice(0, 10) })) : [],
       envFiles: ['.env.local'],
       envIgnore: 'ignored',
     };
@@ -181,7 +181,7 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true, on
     const r = parseRequest(d?.text);
     if (!r) return d;
     const missing = r.names.filter((n) => !set.has(n));
-    return missing.length ? { ...d, secret: { ...r, missing } } : null;
+    return missing.length ? { ...d, secret: { ...r, ...resolveRequest(r), missing } } : null;
   };
   const isSet = (n) => set.has(n);
 

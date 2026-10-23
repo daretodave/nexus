@@ -26,5 +26,5 @@ export const DEST_ORDER = Object.keys(DESTINATIONS);
 export const destLabel = (d) => DESTINATIONS[d]?.label || String(d);
 
 /** The push flag that picks a place's project or app, when it needs one to be told (shown in the guide's line). */
-export const DEST_FLAG = { 'azure-key-vault': '--vault <vault>' };
+export const DEST_FLAG = { 'azure-key-vault': '--vault <vault>', fly: '--app <app>' };
 

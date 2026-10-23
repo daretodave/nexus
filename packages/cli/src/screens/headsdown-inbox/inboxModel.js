@@ -176,12 +176,13 @@ export function stackAsk(params) {
 }
 
 /**
- * A secret request (the server marks it: `secret: { chunk, names, missing, to, service? }`) -> one key item per name
- * still missing. It has no default and no countdown, so batch-answer and "Approve all" pass over it; the key card
- * answers it, or, when it knows its stack service, the Vault's card for that service (`stack`).
+ * A secret request (the server marks it: `secret: { chunk, names, missing, to, toByName, services }`) -> one key item
+ * per name still missing. It has no default and no countdown, so batch-answer and "Approve all" pass over it; the key
+ * card answers it, or, when the server matched the name to a stack service, the Vault's card for it (`stack`). Each
+ * name carries only its own places (`toByName`), never another name's.
  */
 function fromSecretRequest(d) {
-  const { chunk = '', missing = [], service = null, serviceName = '', to = [] } = d.secret || {};
+  const { chunk = '', missing = [], services = {}, toByName = {} } = d.secret || {};
   return missing.map((name) => ({
     id: `plan:${d.id}:${name}`,
     kind: 'plan',
@@ -200,7 +201,7 @@ function fromSecretRequest(d) {
     at: '',
     q: `${chunk} needs ${name}`,
     secret: name,
-    ...(service ? { stack: { service, name: serviceName || service, key: name, chunk, to } } : {}),
+    ...(services[name] ? { stack: { service: services[name].service, name: services[name].name || services[name].service, key: name, chunk, to: toByName[name] || [] } } : {}),
     opts: [],
     why: '',
     hasDefault: false,

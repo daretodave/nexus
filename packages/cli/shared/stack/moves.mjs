@@ -55,6 +55,15 @@ export function storeDests(picked = []) {
 }
 
 /**
+ * Whether a place takes this value: Supabase reserves the SUPABASE_ prefix and already gives its functions its own
+ * values, so none of Supabase's values (nor any SUPABASE_ name) go to its Edge Function secrets.
+ */
+export function destTakes(dest, service, name) {
+  if (dest === 'supabase') return service !== 'supabase' && !/^SUPABASE_/.test(String(name || ''));
+  return true;
+}
+
+/**
  * Where one value of a picked service goes, from the picks: an app value to each host (and, when none is picked, the
  * picked secret stores); a CI name to GitHub Actions; a hosting service's own token nowhere but CI.
  */
@@ -62,7 +71,7 @@ export function placesFor(service, key, name, picked = []) {
   const out = [];
   if (appReads(service, key)) {
     const hosts = hostDests(picked);
-    out.push(...(hosts.length ? hosts : storeDests(picked)));
+    out.push(...(hosts.length ? hosts : storeDests(picked)).filter((d) => destTakes(d, service, name)));
   }
   if (CI_NAMES.has(name)) out.push('github-actions');
   return [...new Set(out)];

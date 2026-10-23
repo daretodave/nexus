@@ -72,23 +72,65 @@ const ghKey = (cwd, args) => `${cwd ? path.resolve(cwd) : ''}\0${args.join(' ')}
 const REQUEST_ROW = /secret request (\S+?):\s*set\s+([A-Z][A-Z0-9_]*(?:\s*,\s*[A-Z][A-Z0-9_]*)*)/;
 /** Where it goes once set (`--to`), and the stack service it belongs to (`--service`), as `request` words them. */
 const REQUEST_TO = /It goes to ([a-z0-9-]+(?:, [a-z0-9-]+)*) once it is set/;
+/** The same, per name, when a request asks for more than one: `It goes to A: vercel; B: github-actions once it is set`. */
+const REQUEST_TO_EACH = /It goes to ([A-Z][A-Z0-9_]*: [a-z0-9-]+(?:, [a-z0-9-]+)*(?:; [A-Z][A-Z0-9_]*: [a-z0-9-]+(?:, [a-z0-9-]+)*)*) once it is set/;
 const REQUEST_STACK = /\(stack: ([a-z][a-z0-9-]{0,39})\)/;
 
+const placeList = (s) => String(s || '').split(',').map((d) => d.trim()).filter((d) => d && d in SINK_FLAGS);
+
 /**
- * The chunk and names a plan question asks a secret for, or null (a plain question): { chunk, names, to, service? }.
- * `service` is the one the request names, else the recipe that writes its first name (moves.mjs recipeOfName), so an
- * older request for STRIPE_SECRET_KEY still opens the Stripe card.
+ * The chunk and names a plan question asks a secret for, or null (a plain question): { chunk, names, to, toEach?,
+ * service? }. `to` is every place the request names; `toEach` each name's own, when the request words them per name.
+ * `service` is only the one the request names: resolveRequest decides which names it covers.
  */
 export function parseRequest(text) {
   const t = String(text || '');
   const m = REQUEST_ROW.exec(t);
   if (!m) return null;
   const names = m[2].split(',').map((n) => n.trim()).filter(Boolean);
-  const to = (REQUEST_TO.exec(t)?.[1] || '').split(',').map((d) => d.trim()).filter((d) => d && d in SINK_FLAGS);
+  const each = REQUEST_TO_EACH.exec(t)?.[1];
+  let to = placeList(REQUEST_TO.exec(t)?.[1]);
+  let toEach = null;
+  if (each) {
+    toEach = {};
+    for (const part of each.split('; ')) {
+      const [n, list] = part.split(': ');
+      if (names.includes(n)) toEach[n] = placeList(list);
+    }
+    to = [...new Set(Object.values(toEach).flat())];
+  }
   const named = REQUEST_STACK.exec(t)?.[1];
-  const hit = names.map((n) => recipeOfName(n)).find(Boolean);
-  const service = named && SERVICES[named] ? named : hit?.service || null;
-  return { chunk: m[1], names, to, ...(service ? { service, serviceName: SERVICES[service].name } : {}) };
+  const service = named && SERVICES[named] ? named : null;
+  return { chunk: m[1], names, to, ...(toEach ? { toEach } : {}), ...(service ? { service, serviceName: SERVICES[service].name } : {}) };
+}
+
+/**
+ * Each name's own places and stack card, from a parsed request: { toByName, services: { NAME: { service, name } } }.
+ * A request that words its places per name keeps them; one name takes the whole list; an older request for several
+ * names (one list for all) gives each name only the places its manifest entry already declares, so a save never sends
+ * a value somewhere it was not meant to go. A named service covers the names its recipe writes (or no recipe writes);
+ * with none named, a name's recipe opens its card only when that service is already picked in the stack, so opening
+ * a request never adds a service.
+ */
+export function resolveRequest(r, { entries = new Map(), picked = [] } = {}) {
+  const toByName = {};
+  for (const n of r.names) {
+    if (r.toEach) toByName[n] = r.toEach[n] || [];
+    else if (r.names.length === 1) toByName[n] = r.to;
+    else { const decl = entries.get(n)?.destinations || []; toByName[n] = r.to.filter((d) => decl.includes(d)); }
+  }
+  const services = {};
+  for (const n of r.names) {
+    const hit = recipeOfName(n)?.service || null;
+    const svc = r.service ? (!hit || hit === r.service ? r.service : null) : hit && picked.includes(hit) ? hit : null;
+    if (svc) services[n] = { service: svc, name: SERVICES[svc].name };
+  }
+  return { toByName, services };
+}
+
+/** The stack's picked services (.nexus/stack.json), names only; [] when there is none. */
+function pickedIn(root) {
+  try { const s = JSON.parse(fs.readFileSync(path.join(root, '.nexus', 'stack.json'), 'utf8')); return Array.isArray(s.picked) ? s.picked.filter((x) => typeof x === 'string') : []; } catch { return []; }
 }
 
 /** A dotenv file at the repo root the import may read by name: never the vault's own files, never a template. */
@@ -431,7 +473,7 @@ export function createSecrets({ repo, run, ghRun = shRun, vault: vaultOpts = {},
       rotateDays: k.m.audit?.ROTATE_DAYS ?? null,
       audit: events.slice(-20),
       sinks: Object.keys(SINK_FLAGS).filter((d) => k.m.sinks.sinkFor(d)),
-      requests: requestsIn(durableQuestions(repo), (n) => isSet.has(n)),
+      requests: requestsIn(durableQuestions(repo), (n) => isSet.has(n), { entries, picked: pickedIn(root) }),
       envFiles: envFilesAt(root),
       vaultState: 'ready',
       rootEnv: rootEnvOf(root, man?.names ?? new Set()),
@@ -441,13 +483,13 @@ export function createSecrets({ repo, run, ghRun = shRun, vault: vaultOpts = {},
   }
 
   /** The plan's open secret requests, each with the names still missing (a request whose names are all set is gone). */
-  function requestsIn(durable, has) {
+  function requestsIn(durable, has, ctx) {
     const out = [];
     for (const d of durable) {
       const r = parseRequest(d.text);
       if (!r) continue;
       const missing = r.names.filter((n) => !has(n));
-      if (missing.length) out.push({ ...r, missing, file: d.file, line: d.line, date: fileDate(path.join(repo, d.file)) });
+      if (missing.length) out.push({ ...r, ...resolveRequest(r, ctx), missing, file: d.file, line: d.line, date: fileDate(path.join(repo, d.file)) });
     }
     return out;
   }
@@ -466,10 +508,13 @@ export function createSecrets({ repo, run, ghRun = shRun, vault: vaultOpts = {},
     // A secret request is the owner's: a contributor's inbox never asks them for a project secret.
     if (!owner()) return durable.filter((d) => !parseRequest(d.text));
     let has = () => false;
+    const ctx = { entries: new Map(), picked: [] };
     try {
       const k = await kit();
       if (k.ok) {
         const root = await vroot();
+        ctx.picked = pickedIn(root);
+        try { ctx.entries = new Map((k.m.manifest.readManifest(path.join(root, k.m.manifest.MANIFEST))?.manifest?.secrets ?? []).map((e) => [e.name, e])); } catch { /* a broken manifest: an older request's places stay unclaimed */ }
         const v = k.m.vault.openVault({ root, settings: k.m.owner.localSettings(root), ...vaultOpts });
         const names = [...new Set(durable.flatMap((d) => parseRequest(d.text)?.names ?? []))];
         const set = new Set(v.status(names).filter((r) => r.rings.length).map((r) => r.name));
@@ -483,7 +528,7 @@ export function createSecrets({ repo, run, ghRun = shRun, vault: vaultOpts = {},
       const r = parseRequest(d.text);
       if (!r) { out.push(d); continue; }
       const missing = r.names.filter((n) => !has(n));
-      if (missing.length) out.push({ ...d, secret: { ...r, missing } });
+      if (missing.length) out.push({ ...d, secret: { ...r, ...resolveRequest(r, ctx), missing } });
     }
     return out;
   }

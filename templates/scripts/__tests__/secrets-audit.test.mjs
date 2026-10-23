@@ -176,12 +176,24 @@ describe('the CLI', () => {
       assert.equal(asked.status, 0, asked.stderr);
       const text = clean(fs.readFileSync(path.join(r.root, 'plan', 'pending', 'secrets-07.3.md'), 'utf8'));
       assert.match(text, /secret request 07\.3: set VERCEL_TOKEN, CF_API_TOKEN in your terminal/);
-      assert.match(text, /It goes to cloudflare, vercel once it is set; it is a stripe value, so the GUI opens its card in Set up a stack \(stack: stripe\)\./);
+      assert.match(text, /It goes to VERCEL_TOKEN: cloudflare, vercel; CF_API_TOKEN: cloudflare, vercel once it is set; it is a stripe value, so the GUI opens its card in Set up a stack \(stack: stripe\)\./);
       assert.match(text, /Goes to: github-actions, cloudflare, vercel\./);
       assert.match(asked.stdout, /then to cloudflare, vercel/);
       assert.equal(run(r.root, '', 'request', '07.3', '--to', 'heroku').status, 64);
       assert.equal(run(r.root, '', 'request', '07.3', '--service', 'Not Ok').status, 64);
       assert.equal(run(r.root, '', 'status', '--service', 'stripe').status, 64);
+    } finally { r.done(); }
+  });
+
+  it('words each name\'s own places when a request asks for more than one, so no name takes another\'s', () => {
+    const r = repo();
+    try {
+      gitignore(r.root);
+      manifest(r.root);
+      plan(r.root);
+      assert.equal(run(r.root, '', 'request', '07.3').status, 0);
+      const text = clean(fs.readFileSync(path.join(r.root, 'plan', 'pending', 'secrets-07.3.md'), 'utf8'));
+      assert.match(text, /It goes to VERCEL_TOKEN: vercel; CF_API_TOKEN: github-actions once it is set\./);
     } finally { r.done(); }
   });
 

@@ -402,8 +402,10 @@ export function hostOf(url) {
 export function keyCard(req, name, status, { now = Date.now() } = {}) {
   const s = (status?.secrets || []).find((x) => x.name === name) || { name, destinations: [] };
   const declared = (s.destinations || []).map((x) => x.destination);
-  // The places the request named (`request --to`) join the manifest's: ticked, and declared on save.
-  const asked = (req?.to || []).filter((d) => d !== 'local' && !declared.includes(d));
+  // The places the request named for this name (`request --to`) join the manifest's: ticked, and declared on save.
+  // Only this name's own (toByName): another name's places in the same request never widen this one.
+  const own = req?.toByName ? req.toByName[name] || [] : req?.to || [];
+  const asked = own.filter((d) => d !== 'local' && !declared.includes(d));
   const places = [...declared, ...asked];
   const local = status?.vault?.keychain ? 'keychain' : '.env';
   const dests = ['local', ...places.filter((d) => d !== 'local')].map((d) => ({

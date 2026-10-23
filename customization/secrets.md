@@ -304,7 +304,7 @@ node scripts/secrets.mjs push STRIPE_SECRET_KEY --to fly --app my-app
 | `cloudflare-pages` | `wrangler pages secret put NAME --project-name P`, once per environment | stdin, as for a Worker |
 | `netlify` | the Netlify API: the site's account, then `PUT /accounts/{account}/env/NAME?site_id=SITE` (`POST` the first time), a secret value per deploy context | the value in the request body; `netlify env:set` takes it in argv, so it is not used. The token is `NETLIFY_AUTH_TOKEN` from the vault |
 | `fly` | `fly secrets import --stage` | a `NAME=VALUE` line on stdin; `--stage` sets it for the next deploy instead of restarting machines now. `fly auth login` first |
-| `supabase` | `supabase secrets set --env-file F` (Edge Function secrets) | `secrets set NAME=VALUE` is argv, so the file: one `NAME='VALUE'` line; a value holding `'` is refused |
+| `supabase` | `supabase secrets set --env-file F` (Edge Function secrets) | `secrets set NAME=VALUE` is argv, so the file: one `NAME='VALUE'` line; a value holding `'` is refused, and so is a `SUPABASE_` name (Supabase reserves the prefix and gives its functions its own) |
 | `firebase` | `firebase functions:secrets:set NAME` | stdin; redeploy the functions that read it |
 | `aws-secrets-manager` | `aws secretsmanager put-secret-value --secret-id NAME --secret-string file://F` (`create-secret` the first time) | a file the CLI reads |
 | `aws-ssm` | `aws ssm put-parameter --name NAME --type SecureString --overwrite --value file://F` | a file the CLI reads |
@@ -326,7 +326,7 @@ The defaults, and the flags that change them:
 | `--repo OWNER/REPO` | `github-actions` | The checkout's own repo. |
 | `--env E,E` | `vercel` | All three environments: `production`, `preview`, `development`. A name the app needs in one place only is narrowed here. `--force` overwrites, so a re-push is a rotation. |
 | `--env E,E` | `cloudflare-pages` | `production`; add `preview` for preview deployments. |
-| `--env E,E` | `netlify` | `production`, `deploy-preview`, `branch-deploy`. Add `dev` only for a value meant for local development: Netlify shows a dev value in plain text, so with `dev` the variable is not marked secret. |
+| `--env E,E` | `netlify` | `production`, `deploy-preview`, `branch-deploy`. Add `dev` only for a value meant for local development: the variable stays secret, but Netlify shows its dev value in plain text. The variable gets the builds, functions and runtime scopes; a secret may not have post-processing. |
 | `--worker NAME` | `cloudflare` | The worker the checkout's wrangler config (`wrangler.toml` or `wrangler.jsonc`) names; `--worker` passes `--name` for a checkout without one, or another worker. |
 | `--project P` | `cloudflare-pages`, `supabase`, `firebase`, `gcp-secret-manager` | The Pages project in the wrangler config, the linked Supabase project, the Firebase project in `.firebaserc`, gcloud's `core/project`. |
 | `--app A` | `fly` | The app in the checkout's `fly.toml`. |
@@ -530,8 +530,11 @@ GUI's inbox) naming each missing secret, what it is for,
 where to get it, where it goes and the `set` command, never a
 value. `--to D,D` names the places it goes once set (it adds
 them to the note), and `--service S` the Set up a stack service
-it belongs to (`stripe`, `supabase`, ...). The GUI finds the
-service by the name too, when the name is one a recipe writes.
+it belongs to (`stripe`, `supabase`, ...). With more than one
+name, the note words each name's own places, so no name takes
+another's. A named service covers the names its recipe writes;
+with none named, the GUI finds the service by the name only when
+that service is already picked in the stack.
 For such a request, the inbox's **Add value** opens that
 service's card in the Vault with the field focused; saving
 stores it in the vault, pushes it to each place the request

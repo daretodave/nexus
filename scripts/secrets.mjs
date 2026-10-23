@@ -296,9 +296,12 @@ function request(vault, current, { root, id, out, err, to = null, service = null
   const asked = durableAsk(root, REQUEST(id));
   if (asked) { out(`secrets request: already asked in ${asked}`); return 0; }
   const entries = new Map((current ? current.manifest.secrets : []).map((e) => [e.name, e]));
-  // Where it goes once set: the places named here, else every sink the manifest lists for each name.
-  const places = to ?? [...new Set(missing.flatMap((n) => (entries.get(n)?.destinations ?? []).filter((d) => d !== 'local')))];
-  const goes = places.length ? ` It goes to ${places.join(', ')} once it is set${service ? `; it is a ${service} value, so the GUI opens its card in Set up a stack (stack: ${service})` : ''}.` : service ? ` It is a ${service} value, so the GUI opens its card in Set up a stack (stack: ${service}).` : '';
+  // Where it goes once set: the places named here, else every sink the manifest lists for that name. With more than
+  // one name, each name's places are written by name, so the GUI never sends one name's value to another's places.
+  const placesOf = (n) => to ?? (entries.get(n)?.destinations ?? []).filter((d) => d !== 'local');
+  const places = [...new Set(missing.flatMap(placesOf))];
+  const goesTo = missing.length > 1 ? missing.filter((n) => placesOf(n).length).map((n) => `${n}: ${placesOf(n).join(', ')}`).join('; ') : places.join(', ');
+  const goes = places.length ? ` It goes to ${goesTo} once it is set${service ? `; it is a ${service} value, so the GUI opens its card in Set up a stack (stack: ${service})` : ''}.` : service ? ` It is a ${service} value, so the GUI opens its card in Set up a stack (stack: ${service}).` : '';
   const lines = [`- [needs-user-call] ${REQUEST(id)} set ${missing.join(', ')} in your terminal or the GUI's vault (never in a session), and ${id} is ready again.${goes} Then delete this row.`];
   for (const n of missing) {
     const e = entries.get(n);
