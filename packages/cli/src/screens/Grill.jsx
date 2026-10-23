@@ -48,7 +48,8 @@ export default function Grill() {
   const groups = useMemo(() => planGroups(planItems), [planItems]);
   const skipped = readIds(drafts.get(SKIP));
   const saved = readGrillAt(drafts.get(AT));
-  const loaded = (inbox.status !== 'loading' || oversight.status !== 'loading') && drafts.ready && answers.ready;
+  // Both reads back: plan questions come from /api/oversight alone, so a fast /api/inbox is not enough to start on.
+  const loaded = inbox.status !== 'loading' && oversight.status !== 'loading' && drafts.ready && answers.ready;
 
   const everything = queueOf(groups, done, { all: planItems });
   const [run, setRun] = useState(null); // { specs: [key] } once started
@@ -63,12 +64,14 @@ export default function Grill() {
   const [between, setBetween] = useState({}); // spec key -> { sending, sent }
   const [handing, setHanding] = useState(null); // { sending, results }
   const visited = useRef(new Set());
+  const seen = useRef({}); // spec key -> { spec, items, counts } as last in the queue, for the screen between specs
   const boxRef = useRef(null);
   const lastIndex = useRef(0);
   const opener = useRef(typeof document !== 'undefined' ? document.activeElement : null);
 
   const queue = queueOf(groups, done, { specs: run?.specs, all: planItems });
   const totals = progress(queue, done, skipped);
+  for (const s of queue.specs) seen.current[s.key] = { spec: s, items: s.ids.map((id) => queue.byId[id].item), counts: totals.perSpec[s.key] };
   const cur = st.id ? queue.byId[st.id] : null;
   const x = cur?.item || null;
   const spec = cur ? queue.specs.find((s) => s.key === cur.spec) : null;
@@ -150,8 +153,10 @@ export default function Grill() {
     const toast = kept ? `Kept ${kept} ${kept === 1 ? 'answer' : 'answers'}.${at ? ` Grill me picks up at ${at}.` : ''}` : '';
     navigate(PATHS.inbox, { state: { fromGrill: true, toast } });
   };
-  const keep = (text, images, how) => {
-    answers.keep([[x, text, how, images]]);
+  // Kept as you go: the next question comes at once, the save follows. One that fails keeps its draft (words and
+  // images) and says so above the question, with a way back to it.
+  const keep = (text, images, how, ch) => {
+    answers.keep([[x, text, how, images, ch]]);
     if (skipped.includes(x.id)) drafts.save(SKIP, JSON.stringify(skipped.filter((id) => id !== x.id)));
     move({ type: how === 'decide' ? 'decide' : 'keep' });
   };
@@ -235,6 +240,17 @@ export default function Grill() {
       <span className="park-mark" />
       <span>{nowWho || 'A session'} {nowItems.length === 1 && !nowWho.includes(' and ') ? 'waits' : 'wait'} on you: {nowItems.length} {nowItems.length === 1 ? 'question' : 'questions'}.</span>
       <button className="btn btn-s" type="button" onClick={exit}>Answer now<Icon name="arrowRight" size={14} /></button>
+    </div>
+  ) : null;
+
+  // ---- an answer that did not keep: said, with a way back to it (its draft is still there) ----
+  const failed = Object.entries(answers.errors).filter(([id]) => !id.startsWith('continue:'));
+  const failNote = failed.length ? (
+    <div className="grill-banner is-failed" role="alert">
+      <Icon name="info" size={14} />
+      <span>{failed[0][1]}{failed.length > 1 ? ` (and ${failed.length - 1} more)` : ''}</span>
+      {queue.byId[failed[0][0]] && failed[0][0] !== st.id ? <button className="btn btn-s" type="button" onClick={() => { answers.dismiss(failed[0][0]); setReturnTo(null); setSt({ view: 'q', id: failed[0][0] }); }}>Back to it</button> : null}
+      <button className="btn btn-ghost btn-s" type="button" aria-label="Dismiss" onClick={() => answers.dismiss(failed[0][0])}><Icon name="x" size={14} /></button>
     </div>
   ) : null;
 
@@ -328,16 +344,18 @@ export default function Grill() {
       </div>
     );
   } else if (st.view === 'between' && cur) {
-    const fromKey = Object.keys(totals.perSpec).find((k) => k === (st.from || ''));
-    const from = queue.specs.find((s) => s.key === fromKey) || spec;
-    const fromItems = from.ids.map((id) => queue.byId[id].item);
+    // The spec just finished, as it last stood: once its answers are sent it leaves the queue, and this screen still
+    // talks about it (and says where they went).
+    const was = seen.current[st.from] || seen.current[spec.key];
+    const from = was?.spec || spec;
+    const fromItems = was?.items || from.ids.map((id) => queue.byId[id].item);
     const list = sendable(fromItems, done);
     const t = picks[from.key] || defaultTarget(from);
     const b = between[from.key] || {};
     body = (
       <div className="grill-center">
         <Between
-          from={from} fromCounts={totals.perSpec[from.key]} to={spec} sendable={list.length} targets={targets} target={t}
+          from={from} fromCounts={totals.perSpec[from.key] || was?.counts} to={spec} sendable={list.length} targets={targets} target={t}
           onPick={(tt) => setPicks((p) => ({ ...p, [from.key]: tt }))} sending={b.sending} sent={b.sent}
           onSend={async () => {
             setBetween((m) => ({ ...m, [from.key]: { sending: true } }));
@@ -357,6 +375,7 @@ export default function Grill() {
           onWand={wandOn ? wandSpec : null} onJump={(id) => setSt({ view: 'q', id })} firstVisit={!visited.current.has(`seen:${spec.key}`) && (visited.current.add(`seen:${spec.key}`), true)}
         />
         <div className="grill-col">
+          {failNote}
           {banner}
           {flash ? <p className="grill-flash" role="status">{flash}</p> : null}
           <Question
@@ -374,7 +393,7 @@ export default function Grill() {
   return (
     <div className="grill" role="dialog" aria-modal="true" aria-label="Grill me: open questions, spec by spec">
       {bar}
-      {st.view !== 'q' && banner ? <div className="grill-center grill-banner-top">{banner}</div> : null}
+      {st.view !== 'q' && (banner || failNote) ? <div className="grill-center grill-banner-top">{failNote}{banner}</div> : null}
       {body}
       <footer className="grill-keys tb-long" aria-hidden="true">
         <span><Kbd>alt 1-4</Kbd>pick</span><span><Kbd>ctrl ⏎</Kbd>keep and next</span><span><Kbd>w</Kbd>wand</span><span><Kbd>s</Kbd>skip</span><span><Kbd>d</Kbd>decide</span><span><Kbd>[ ]</Kbd>spec</span><span><Kbd>?</Kbd>keys</span>

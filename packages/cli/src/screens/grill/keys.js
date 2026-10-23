@@ -1,11 +1,12 @@
 // Grill me's keys (0.5.1). Single keys only fire with focus outside a text field; none while an IME is composing.
+// A bare Enter is Grill me's only when nothing has focus: on a button, link or checkbox it stays that control's own.
 // Ctrl/Cmd+Enter and Alt+1..4 work anywhere (in the box too, where ui/answer-box.jsx takes them first).
 
 /** The sheet the ? key shows. */
 export const KEY_SHEET = [
   ['Ctrl ⏎', 'keep and next'],
   ['⏎', 'keep and next, or write'],
-  ['1-4', 'pick a choice'],
+  ['1-4', 'pick a choice, or unpick it'],
   ['W', 'suggest answers again'],
   ['Shift W', 'suggest for the rest of this spec'],
   ['S', 'skip for now'],
@@ -20,7 +21,7 @@ export const KEY_SHEET = [
 /**
  * The action a key asks for: a string ('keep', 'enter', 'go', 'wand', 'wandSpec', 'skip', 'decide', 'prev', 'next',
  * 'prevSpec', 'nextSpec', 'focus', 'exit', 'keys') or { pick: 0..3 }, or null. `inField`: focus is in a text field;
- * `bare`: nothing in particular has focus (Tab then focuses the answer).
+ * `bare`: nothing in particular has focus (Tab then focuses the answer, Enter keeps or writes).
  */
 export function keyAction(e, { inField = false, bare = false } = {}) {
   if (!e || e.isComposing || e.keyCode === 229) return null;
@@ -29,7 +30,7 @@ export function keyAction(e, { inField = false, bare = false } = {}) {
   if (e.altKey && /^[1-4]$/.test(e.key)) return { pick: Number(e.key) - 1 };
   if (inField || mod || e.altKey) return null;
   switch (e.key) {
-    case 'Enter': return 'enter';
+    case 'Enter': return bare ? 'enter' : null;
     case '1': case '2': case '3': case '4': return { pick: Number(e.key) - 1 };
     case 'w': return 'wand';
     case 'W': return 'wandSpec';

@@ -47,6 +47,8 @@ export function askChoices(ids, { fresh = false } = {}) {
   if (!list.length) return Promise.resolve();
   const sig = `${fresh ? '!' : ''}${[...list].sort().join('|')}`;
   if (flying.has(sig)) return flying.get(sig);
+  // What each id held before this ask: a failed Ask again goes back to it (ready choices stay ready).
+  const before = new Map(list.map((id) => [id, getChoices(id)]));
   for (const id of list) state.set(id, { ...getChoices(id), status: 'loading' });
   emit();
   const p = client().then((c) => c.server.choices(list, fresh)).then((r) => {
@@ -57,8 +59,8 @@ export function askChoices(ids, { fresh = false } = {}) {
     }
   }).catch((e) => {
     for (const id of list) {
-      const was = getChoices(id);
-      state.set(id, { ...was, status: was.options.length && was.status !== 'loading' ? was.status : 'error', note: `Couldn't get suggestions (${e?.message || 'it failed'}).`, reason: 'failed', at: Date.now() });
+      const was = before.get(id) || IDLE;
+      state.set(id, { ...was, status: was.options.length && was.status !== 'loading' && was.status !== 'idle' ? was.status : 'error', note: `Couldn't get suggestions (${e?.message || 'it failed'}).`, reason: 'failed', at: Date.now() });
     }
   }).finally(() => { flying.delete(sig); emit(); });
   flying.set(sig, p);

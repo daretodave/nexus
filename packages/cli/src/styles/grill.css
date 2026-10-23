@@ -131,3 +131,8 @@
 @media (prefers-reduced-motion: reduce) {
   .grill-q.is-arriving, .grill-side { animation: none; }
 }
+
+/* An answer that did not keep: said above the question, in the failed colour. */
+.grill-banner.is-failed { background: color-mix(in oklab, var(--st-failed) 14%, transparent); }
+.grill-banner.is-failed > .ic { color: var(--st-failed); flex: none; }
+.grill-banner-top > .grill-banner + .grill-banner { margin-top: 8px; }

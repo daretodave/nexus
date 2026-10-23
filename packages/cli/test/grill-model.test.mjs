@@ -109,4 +109,8 @@ test('keys: single keys only outside a text field, never while composing', () =>
   assert.equal(keyAction({ key: 'Tab' }), null);
   assert.equal(keyAction({ key: 'Tab' }, { bare: true }), 'focus');
   assert.equal(keyAction({ key: 'Enter', ctrlKey: true, isComposing: true }), null);
+  // A bare Enter is Grill me's only when nothing has focus: on a focused button it stays the button's.
+  assert.equal(keyAction({ key: 'Enter' }, { bare: true }), 'enter');
+  assert.equal(keyAction({ key: 'Enter' }), null);
+  assert.equal(keyAction({ key: 'Enter', ctrlKey: true }), 'keep', 'Ctrl+Enter keeps from anywhere');
 });
