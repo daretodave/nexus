@@ -26,6 +26,7 @@ import { primaryRoot } from './sessions.mjs';
 import { isOwner as effectiveOwner } from './local.mjs';
 import { durableQuestions } from './repo.mjs';
 import { setupVault, DOCS } from './vault-setup.mjs';
+import { run as shRun } from './sh.mjs';
 
 /** The repo's scripts the API runs, each with the exports it needs. `audit` (42.6) is optional. */
 const FILES = {
@@ -192,7 +193,13 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
   }
 
   // `gh secret list` (the kit's status reads the Actions sink's names, spec 49 A5), kept briefly: the vault polls.
+  // The kit's own runner waits on gh in the foreground (spawnSync), and gh asks GitHub: one read held the whole server
+  // still for seconds, every screen with it. So with the real runner the read runs in the background (ghReading): a
+  // status that finds nothing kept yet waits for it and reads again (status below), one that finds an old answer uses
+  // it while the new one comes. An injected runner (tests) is called as it is.
   let ghList = { at: 0, key: '', r: null };
+  let ghReading = null;
+  let ghMissed = false;
   const forgetGhList = () => { ghList = { at: 0, key: '', r: null }; };
   function cachedRun(k) {
     const base = run || k.m.sinks.spawnRunner;
@@ -200,10 +207,21 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
     return (cmd, args, opts = {}) => {
       if (cmd !== 'gh' || args[0] !== 'secret' || args[1] !== 'list') return base(cmd, args, opts);
       const key = `${opts.cwd || ''}\0${args.join(' ')}`;
-      if (ghList.r && ghList.key === key && Date.now() - ghList.at < GH_LIST_MS) return ghList.r;
-      const r = base(cmd, args, opts);
-      ghList = { at: Date.now(), key, r };
-      return r;
+      const have = !!ghList.r && ghList.key === key;
+      if (have && Date.now() - ghList.at < GH_LIST_MS) return ghList.r;
+      if (run) {
+        const r = base(cmd, args, opts);
+        ghList = { at: Date.now(), key, r };
+        return r;
+      }
+      if (!ghReading) {
+        ghReading = shRun('gh', args, { cwd: opts.cwd, timeout: 15000 })
+          .then((x) => { ghList = { at: Date.now(), key, r: x.missing ? { status: 127, missing: true } : { status: x.code, stdout: x.stdout } }; })
+          .finally(() => { ghReading = null; });
+      }
+      if (have) return ghList.r;
+      ghMissed = true;
+      return { status: 1 };
     };
   }
 
@@ -256,6 +274,15 @@ export function createSecrets({ repo, run, vault: vaultOpts = {}, owner = () => 
 
   /** GET /api/secrets: names and status (where set, each destination's last push, the chunk that asked, age), never a value. */
   async function status() {
+    ghMissed = false;
+    const first = await statusOnce();
+    const reading = ghReading;
+    if (!ghMissed || !reading) return first;
+    await reading.catch(() => {});
+    return statusOnce();
+  }
+
+  async function statusOnce() {
     const k = await kit();
     if (!k.ok && k.missing) {
       // No vault scripts at all: not a failure, an empty state with a way forward (Set up the vault).

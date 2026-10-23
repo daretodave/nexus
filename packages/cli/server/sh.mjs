@@ -49,6 +49,7 @@ export async function settle({ ms = 5000, quiet = 150 } = {}) {
 // argument passed through here is either a constant or validated by the
 // caller (SAFE_ARG), so quoting is not a user-controlled surface.
 export const SAFE_ARG = /^[\w@./:=,+{}-]*$/;
+const DIRECT = new Set(['git', 'node']);
 
 export function run(cmd, args = [], { cwd, timeout = 20000, input } = {}) {
   return new Promise((resolve) => {
@@ -57,9 +58,11 @@ export function run(cmd, args = [], { cwd, timeout = 20000, input } = {}) {
     }
     let child;
     try {
-      // Joined by hand on Windows: every argument passed SAFE_ARG above.
-      child = WIN
+      // Joined by hand on Windows: every argument passed SAFE_ARG above. git and node are real programs there, so they
+      // skip the shell: a cmd.exe in front doubles what starting one costs, and starting one blocks the server.
+      child = WIN && !DIRECT.has(cmd)
         ? spawn([cmd, ...args].join(' '), { cwd, shell: true, windowsHide: true, env: process.env })
+        : WIN ? spawn(cmd, args, { cwd, windowsHide: true, env: process.env })
         : spawn(cmd, args, { cwd, windowsHide: true, env: process.env, detached: true }); // its own group, so killTree's -pid reaches its children
     } catch (e) {
       return resolve({ ok: false, code: -1, stdout: '', stderr: String(e.message || e), missing: true });

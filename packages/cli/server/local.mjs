@@ -28,10 +28,23 @@ const LOCK_WAIT_MS = 3000;
 
 const git = (cwd, args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
+// Both answers below are asked on nearly every request, and a git call here blocks the whole server while it runs
+// (100 ms and more on Windows), so each is kept until what it rests on changes: whether the folder has its own .git
+// (a git init) for the root, and .owner and the primary index (a commit of .owner) for the owner check.
+const roots = new Map();
+const ownerFiles = new Map();
+const mtimeOf = (f) => { try { return fs.statSync(f).mtimeMs; } catch { return -1; } };
+
 /** The primary checkout's root (a worktree's too): the folder holding the common .git. */
 export function primaryRoot(repo) {
+  const key = path.resolve(repo);
+  const own = fs.existsSync(path.join(key, '.git'));
+  const kept = roots.get(key);
+  if (kept && kept.own === own) return kept.root;
   try {
-    return path.dirname(git(repo, ['rev-parse', '--path-format=absolute', '--git-common-dir']));
+    const root = path.dirname(git(repo, ['rev-parse', '--path-format=absolute', '--git-common-dir']));
+    roots.set(key, { root, own });
+    return root;
   } catch {
     return repo;
   }
@@ -50,12 +63,15 @@ export function readLocal(repo) {
 /** An untracked `.owner` at the primary root (a committed one counts for no one). */
 export function hasOwnerFile(repo) {
   const root = primaryRoot(repo);
-  if (!fs.existsSync(path.join(root, OWNER_FILE))) return false;
-  try {
-    return git(root, ['ls-files', '--', OWNER_FILE]) === '';
-  } catch {
-    return false;
-  }
+  const at = mtimeOf(path.join(root, OWNER_FILE));
+  if (at < 0) return false;
+  const sig = `${at}|${mtimeOf(path.join(root, '.git', 'index'))}`;
+  const kept = ownerFiles.get(root);
+  if (kept && kept.sig === sig) return kept.v;
+  let v = false;
+  try { v = git(root, ['ls-files', '--', OWNER_FILE]) === ''; } catch { v = false; }
+  ownerFiles.set(root, { sig, v });
+  return v;
 }
 
 /**
