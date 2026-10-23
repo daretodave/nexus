@@ -109,7 +109,7 @@ export const SERVICES = {
       create: { href: 'https://vercel.com/account/tokens', label: 'Open tokens' },
       start: 'Press "Create Token" and set the scope to your team.',
       scope: 'Scope: your team (All projects). A project-only token is narrower but cannot add the domain.',
-      grant: [{ group: 'Scope', item: '{team}', level: 'All projects', why: 'adds the domain and sets the project\'s env' }],
+      grant: [{ group: 'Scope', item: 'Your team', level: 'All projects', why: 'adds the domain and sets the project\'s env' }],
       expiry: '30 days is plenty to set up; make a new one for CI later.',
       once: 'Vercel shows the token once. Paste it here before you close the page.',
     },

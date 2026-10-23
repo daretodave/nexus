@@ -499,6 +499,49 @@ nexus runs this on itself: its `nexus.secrets.json` declares
 `GH_TOKEN` and `ACTIONS_PAT` (`agents.md`, "Operational
 secrets") and leaves the loop's sign-in out.
 
+## Stack hand-off
+
+The GUI's Vault has **Set up a stack** (also onboarding's
+Secrets step, recommended in a folder with nothing to import).
+You pick the services the app runs on (Supabase, Vercel and
+Cloudflare to start; each is a recipe in
+`packages/cli/shared/stack/recipes.mjs`). Each one gets a card:
+what it is for, the steps with links to the right console page,
+the token to create and exactly which permissions to give it,
+and a paste field per value that knows the value's shape.
+
+What it writes:
+
+- **The vault first, always.** Each value goes through the
+  repo's own `secrets.mjs set` (the name declared in
+  `nexus.secrets.json`, other keys untouched, the mask
+  refreshed), under the framework's names: a public value gets
+  the framework's prefix (`NEXT_PUBLIC_`, `VITE_`, ...) as well
+  as its plain name; a secret never gets one.
+- **Then the files the app reads**, when the vault's `.env` is
+  not one of them: an app's own env file in a workspace (for
+  example `apps/web/.env.local`), a root `.env.local` that
+  already sets these names, or a `.env.workspace.json` in a
+  layout nexus knows (flat, `env`, or per app). Each must be
+  gitignored and inside the repo; the write is atomic and
+  owner-only, and keeps every other line as it was.
+- **The sinks you tick**: GitHub Actions for the names CI reads
+  (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,
+  `CLOUDFLARE_API_TOKEN`), the `vercel` sink when the checkout is
+  linked.
+- A name the repo already reads (`SUPABASE_SERVICE_ROLE_KEY`,
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `POSTGRES_URL`) is kept in
+  place of the new one.
+
+What it never does: send a value back to the browser, a log, a
+URL or `.nexus/stack.json` (that file holds picks, ticks and
+each check's allowlisted facts only). **Check it** and the
+actions (DNS records on Cloudflare, the domain and the env on
+Vercel) run only on a click, read tokens from the vault on the
+server, call only the three services' own APIs with the token
+in a header, and show a plan before any change. It never runs
+`git push`; the last card gives you the line to run.
+
 ## Hard rules
 
 1. The manifest never holds a value; nothing prints one, and

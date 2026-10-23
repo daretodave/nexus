@@ -6,7 +6,7 @@ import { Icon, KeyNote, TickBox, cx } from '../../../ui/index.js';
 import { server } from '../../../data/index.js';
 import ValueField from './ValueField.jsx';
 import {
-  SERVICES, ACTIONS, CARD_CLASS, cardState, cardHead, stepStates, valueRow, fillTemplate, ctxOf, shortId, joinList,
+  SERVICES, ACTIONS, CARD_CLASS, progress, nextAction, cardState, cardHead, stepStates, valueRow, fillTemplate, ctxOf, shortId, joinList,
 } from './model.js';
 
 /** A copy button for a plain, non-secret string (a nameserver, a redirect URL, the permission list, git push). */
@@ -108,7 +108,7 @@ function CheckRow({ svc, stack, ui, readOnly }) {
   );
 }
 
-function ActionRow({ action, stack, ui, ctx, readOnly }) {
+function ActionRow({ action, stack, ui, ctx, readOnly, next }) {
   const a = ACTIONS[action];
   const p = ui.plans[action] || {};
   const last = stack.actions?.[action];
@@ -117,7 +117,7 @@ function ActionRow({ action, stack, ui, ctx, readOnly }) {
       <div className="stk-act-h">
         <span className="stk-act-t">{last?.ok ? <Icon name="check" size={12} /> : null}{fillTemplate(a.label, ctx)}</span>
         <span className="tb-spacer" style={{ flex: 1 }} />
-        {!p.plan ? <button className={cx('btn btn-s', !last?.ok && 'btn-primary')} type="button" onClick={() => ui.plan(action)} disabled={readOnly || p.busy}>{p.busy ? 'Reading…' : last?.ok ? 'Again' : 'See the plan'}</button> : null}
+        {!p.plan ? <button className={cx('btn btn-s', !last?.ok && next && 'btn-primary')} type="button" onClick={() => ui.plan(action)} disabled={readOnly || p.busy}>{p.busy ? 'Reading…' : last?.ok ? 'Again' : 'See the plan'}</button> : null}
       </div>
       {p.plan ? (
         <div className="stk-plan">
@@ -145,6 +145,7 @@ export default function StackCard({ svc, stack, ui, isNext, compact, readOnly })
   const state = cardState(svc, stack);
   const ctx = ctxOf(stack);
   const steps = stepStates(svc, stack);
+  const nextAct = nextAction(progress(stack), stack).action;
   const open = ui.opened?.[svc] ?? !!isNext;
   const toggle = () => ui.setOpen(svc, !open);
   const actions = s.actions.filter((a) => ACTIONS[a].needs.every((n) => stack.picked.includes(n)) && (a !== 'vercel.nameservers' || stack.checks?.vercel?.facts?.vercelRegistrar));
@@ -228,7 +229,7 @@ export default function StackCard({ svc, stack, ui, isNext, compact, readOnly })
           {actions.length ? (
             <div className="stk-sec">
               <span className="t-caps c-2">Do it for me</span>
-              {actions.map((a) => <ActionRow key={a} action={a} stack={stack} ui={ui} ctx={ctx} readOnly={readOnly} />)}
+              {actions.map((a) => <ActionRow key={a} action={a} stack={stack} ui={ui} ctx={ctx} readOnly={readOnly} next={nextAct === a} />)}
             </div>
           ) : null}
           {!compact ? (

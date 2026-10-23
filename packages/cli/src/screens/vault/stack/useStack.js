@@ -145,7 +145,7 @@ export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) 
     if (!next?.service) return;
     setOpen(next.service, true);
     setTimeout(() => {
-      const el = document.getElementById(next.key ? `stk-${next.service}-${next.key}` : `stk-${next.service}`);
+      const el = document.getElementById(next.key ? `stk-${next.service}-${next.key}` : next.action ? `stk-act-${next.action}` : `stk-${next.service}`);
       el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
       const target = el?.querySelector?.('input:not([disabled]), button.btn-primary');
       target?.focus?.({ preventScroll: true });
