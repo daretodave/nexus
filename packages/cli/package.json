@@ -1,6 +1,6 @@
 {
   "name": "@usenexus/cli",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "nexus: a local GUI for Claude Code that runs the nexus loop on your repo. npx @usenexus/cli",
   "license": "MIT",
   "type": "module",
