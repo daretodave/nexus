@@ -1,0 +1,17 @@
+/* Plan answers go back to the session that asked (spec 53, A1), app glue beside nexus.css (which stays verbatim from
+   the handoff). Every value is a nexus.css token, so both themes follow them. The Continue bar under a spec's
+   questions is the handoff's .startbar look, as answers.css's .ans-send is; its "send to…" picker is the handoff's
+   .menu, dropped under its button. A kept answer not sent yet reads quiet, not done. */
+
+.pans-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 2px; padding: 8px 10px; border-radius: 14px;
+  background: var(--surface-solid); box-shadow: var(--e-2);
+}
+.pans-bar-t { flex: 1; min-width: 160px; }
+.pans-bar .btn { flex: none; }
+.pans-to { position: relative; flex: none; }
+.pans-to .menu { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; width: 260px; max-width: calc(100vw - 32px); }
+
+/* "answered · not sent yet": kept on the server, waiting for its Continue */
+.chk-state.pans-kept { color: var(--text-2); }
+.chk-state.pans-kept .ic { color: var(--st-blocked); }
