@@ -543,7 +543,7 @@ export default function Inbox() {
             {x ? (
               <Detail
                 x={x} d={doneAll[x.id]} items={g.now} done={doneAll} settle={settle} reopen={reopen} ask={x.src === 'ask' ? askBar(x.askId) : null} effect={effect(x)} loopAt={loopAt} repo={shell.repo}
-                keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)}
+                keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file, to: x.raw?.secret?.to }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)}
                 entry={choiceId(x) ? choices.get(choiceId(x)) : null} onAsk={choiceId(x) && wandOn ? (fresh) => askWand(x, fresh) : null}
                 foot={panelFoot(x)} sessions={sessions}
               />

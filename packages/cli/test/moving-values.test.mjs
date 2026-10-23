@@ -46,7 +46,8 @@ test('which values the running app reads: not a host\'s own token, not a tool-on
   assert.equal(appReads('supabase', 'pat'), false, 'the CLI\'s token');
   assert.equal(appReads('neon', 'apiKey'), false, 'an admin key');
   assert.equal(appReads('nope', 'x'), false);
-  assert.deepEqual(hostDests(['stripe', 'vercel', 'fly', 'cloudflare']), ['cloudflare', 'vercel', 'fly']);
+  assert.deepEqual(hostDests(['stripe', 'vercel', 'fly', 'cloudflare']), ['vercel', 'fly'], 'next to a host, Cloudflare holds DNS');
+  assert.deepEqual(hostDests(['stripe', 'cloudflare']), ['cloudflare'], 'alone, it runs the app on Workers');
   assert.deepEqual(placesFor('stripe', 'secret', 'STRIPE_SECRET_KEY', ['stripe', 'vercel']), ['vercel']);
   assert.deepEqual(placesFor('stripe', 'secret', 'STRIPE_SECRET_KEY', ['stripe', 'aws']), ['aws-secrets-manager', 'aws-ssm'], 'no host: the picked secret stores');
   assert.deepEqual(placesFor('vercel', 'token', 'VERCEL_TOKEN', ['vercel']), ['github-actions'], 'a CI name goes to Actions only');
@@ -232,4 +233,15 @@ test('the demo: the Stripe request, its card\'s save pushes to Vercel, and the p
   assert.equal(pushEventOf(pushes[0]).line, 'You pushed STRIPE_SECRET_KEY to Vercel (production, preview, development)');
   assert.ok(!JSON.stringify(pushes).includes('rk_test_demo'));
   assert.ok(!vault.status().requests.some((q) => q.chunk === '15.5'), 'answered: the request leaves');
+});
+
+test('the key card for a request ticks the places it named, and declares the new ones on save', async () => {
+  const { keyCard, saveBody } = await import('../src/screens/vault/model.js');
+  const st = { secrets: [{ name: 'STRIPE_SECRET_KEY', destinations: [{ destination: 'local', state: 'missing' }, { destination: 'vercel', state: 'not pushed' }] }] };
+  const card = keyCard({ chunk: '15.5', to: ['vercel', 'fly'] }, 'STRIPE_SECRET_KEY', st);
+  assert.deepEqual(card.sinks, ['vercel', 'fly']);
+  assert.deepEqual(card.adds, ['fly']);
+  assert.deepEqual(saveBody('v', ['local', 'vercel', 'fly'], card.adds), { value: 'v', destinations: ['vercel', 'fly'], declare: true });
+  assert.deepEqual(saveBody('v', ['local', 'vercel'], card.adds), { value: 'v', destinations: ['vercel'] }, 'untick the new place: nothing to declare');
+  assert.equal(keyCard({ chunk: '15.5' }, 'STRIPE_SECRET_KEY', st).adds, undefined);
 });

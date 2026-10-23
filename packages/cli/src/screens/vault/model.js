@@ -401,7 +401,10 @@ export function hostOf(url) {
  */
 export function keyCard(req, name, status, { now = Date.now() } = {}) {
   const s = (status?.secrets || []).find((x) => x.name === name) || { name, destinations: [] };
-  const places = (s.destinations || []).map((x) => x.destination);
+  const declared = (s.destinations || []).map((x) => x.destination);
+  // The places the request named (`request --to`) join the manifest's: ticked, and declared on save.
+  const asked = (req?.to || []).filter((d) => d !== 'local' && !declared.includes(d));
+  const places = [...declared, ...asked];
   const local = status?.vault?.keychain ? 'keychain' : '.env';
   const dests = ['local', ...places.filter((d) => d !== 'local')].map((d) => ({
     d, locked: d === 'local', label: d === 'local' ? `Store locally \u00b7 ${local}` : `Push to ${LABEL[d] || d}`,
@@ -420,6 +423,7 @@ export function keyCard(req, name, status, { now = Date.now() } = {}) {
     whereLabel: s.where ? hostOf(s.where) : '',
     dests,
     sinks: places.filter((d) => d !== 'local'),
+    ...(asked.length ? { adds: asked } : {}),
   };
 }
 
@@ -437,9 +441,13 @@ export function keyCards(status, opts) {
   return out;
 }
 
-/** The body Save sends, from the card's ticks: the sinks only (the vault always keeps the value). */
-export function saveBody(value, ticked) {
-  return { value, destinations: ticked.filter((d) => d !== 'local') };
+/**
+ * The body Save sends, from the card's ticks: the sinks only (the vault always keeps the value). `adds`: places the
+ * request named that nexus.secrets.json does not list yet; ticked, they are declared as the value is stored.
+ */
+export function saveBody(value, ticked, adds = []) {
+  const destinations = ticked.filter((d) => d !== 'local');
+  return { value, destinations, ...(adds.some((d) => destinations.includes(d)) ? { declare: true } : {}) };
 }
 
 /** The saved line's places: "local, Actions, Vercel"; and the ones a sink refused. */

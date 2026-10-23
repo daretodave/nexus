@@ -117,8 +117,6 @@ export function movingValues(id, s, picked, namesOf) {
     }
   }
   const out = ['**Moving values.**', ''];
-  const first = s.values.find((v) => v.required && v.secret) || s.values[0];
-  const askName = first ? namesOf(first).find((n) => !isPublicName(n)) || namesOf(first)[0] : 'NAME';
   if (!byDest.size) {
     out.push(`These stay in the vault: nothing picked runs code that reads them${s.group === 'hosting' ? ' (a host\'s own token is for its CLI and CI)' : ''}.`, '');
   } else {
@@ -130,7 +128,7 @@ export function movingValues(id, s, picked, namesOf) {
     }
   }
   const to = [...byDest.keys()];
-  out.push(`Missing one: \`node scripts/secrets.mjs request <chunk>${to.length ? ` --to ${to.join(',')}` : ''} --service ${id}\` (it asks for \`${askName}\` and its siblings by name), then leave that chunk. Never ask for a value in chat or guess one.`, '');
+  out.push(`Missing one: \`node scripts/secrets.mjs request <chunk>${to.length ? ` --to ${to.join(',')}` : ''} --service ${id}\` (the chunk's \`secrets\` field names what it waits on), then leave that chunk. Never ask for a value in chat or guess one.`, '');
   return out;
 }
 

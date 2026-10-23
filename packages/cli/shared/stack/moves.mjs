@@ -39,13 +39,14 @@ export function appReads(service, key) {
   return s.group !== 'hosting' && !TOOL_ONLY.has(`${service}.${key}`);
 }
 
-/** The hosts the app runs on among the picks: the places a value the app reads goes. */
+/**
+ * The hosts the app runs on among the picks: the places a value the app reads goes. Cloudflare counts as one (its
+ * Workers) only when no other host is picked: next to Vercel, Netlify or Fly.io it holds the domain and its DNS.
+ */
 export function hostDests(picked = []) {
-  const out = [];
-  for (const id of ORDER.filter((x) => picked.includes(x) && SERVICES[x].group === 'hosting')) {
-    for (const d of SERVICE_DESTS[id] || []) if (d !== 'cloudflare-pages') out.push(d);
-  }
-  return out;
+  const hosts = ORDER.filter((x) => picked.includes(x) && SERVICES[x].group === 'hosting');
+  const others = hosts.filter((x) => x !== 'cloudflare');
+  return (others.length ? others : hosts).flatMap((id) => (SERVICE_DESTS[id] || []).filter((d) => d !== 'cloudflare-pages'));
 }
 
 /** The secret stores among the picks (AWS, Google Cloud, Azure, Firebase, Supabase): a value can go there too. */

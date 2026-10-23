@@ -31,7 +31,7 @@ export function useKeyCards({ reload, onSaved } = {}) {
       onSave: async (value, ticked) => {
         put(card.key, { busy: true, error: null });
         try {
-          const r = await server.storeSecret(card.name, saveBody(value, ticked));
+          const r = await server.storeSecret(card.name, saveBody(value, ticked, card.adds));
           const saved = savedPlaces(r);
           put(card.key, { busy: false, phase: saved.failed.length ? 'partial' : 'saved', saved, card });
           setSkip(card.key, false);
