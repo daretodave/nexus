@@ -7,8 +7,10 @@ import { createDraftSaver } from './drafts-model.js';
 
 // client.js reads the page's URL as it loads; it comes in on first use, so ui/ (which draws a draft field) stays
 // importable where there is no page (the node tests that render it).
-let TOKEN = '';
-const client = () => import('./client.js').then((c) => { TOKEN = c.TOKEN; return c; });
+// The token is read at each save: a newer launch's tab can hand this tab a new one (data/health.js).
+let mod = null;
+const tok = () => (mod ? mod.getToken() : '');
+const client = () => import('./client.js').then((c) => { mod = c; return c; });
 
 const values = new Map(); // key -> text, as typed here or restored from the server
 const touched = new Set(); // keys typed here since load: the server's copy does not overwrite them
@@ -21,17 +23,17 @@ const emit = () => { version++; for (const l of listeners) l(); };
 const PATH = '/api/drafts';
 const put = async (patch) => {
   await client();
-  const res = await fetch(PATH, { method: 'PUT', headers: { 'x-nexus-token': TOKEN, 'content-type': 'application/json' }, body: JSON.stringify({ drafts: patch }) });
+  const res = await fetch(PATH, { method: 'PUT', headers: { 'x-nexus-token': tok(), 'content-type': 'application/json' }, body: JSON.stringify({ drafts: patch }) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 };
 /** The page is going: a keepalive request (headers and all), else navigator.sendBeacon (POST, text/plain, ?t=). */
 const beacon = (patch) => {
   const body = JSON.stringify({ drafts: patch });
   try {
-    fetch(PATH, { method: 'PUT', keepalive: true, headers: { 'x-nexus-token': TOKEN, 'content-type': 'application/json' }, body });
+    fetch(PATH, { method: 'PUT', keepalive: true, headers: { 'x-nexus-token': tok(), 'content-type': 'application/json' }, body });
     return true;
   } catch {
-    try { return !!navigator.sendBeacon?.(`${PATH}?t=${encodeURIComponent(TOKEN)}`, body); } catch { return false; }
+    try { return !!navigator.sendBeacon?.(`${PATH}?t=${encodeURIComponent(tok())}`, body); } catch { return false; }
   }
 };
 

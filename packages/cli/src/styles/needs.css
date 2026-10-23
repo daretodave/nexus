@@ -14,6 +14,8 @@
 .need:hover { background: color-mix(in oklab, var(--tone) 24%, transparent); }
 .need:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .need.is-fallen { --tone: var(--st-fallen); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 50%, transparent); }
+/* Sessions that stopped with nexus: calm, the neutral tone, never an alarm. */
+.need.is-stopped { --tone: var(--text-3); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 40%, transparent); }
 
 .need-glyph { width: 13px; height: 13px; flex: none; fill: var(--sess, var(--text-2)); color: var(--sess, var(--text-2)); }
 .need-glyph.ic { fill: none; }

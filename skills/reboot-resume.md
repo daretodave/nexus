@@ -34,6 +34,14 @@ resuming` or `resumed`): stop, another session has it (say
 which). Refused as `live`: the session is still running;
 don't take it.
 
+**Already its session (the GUI picked it up):** when the GUI's
+Pick up re-hosted this very ledger (this session's
+`NEXUS_SESSION` equals the ledger's `id`, or the ledger's
+`claude` is this conversation), there is nothing to take:
+the GUI already set it `live` under this session, in its own
+worktree. Skip the take and Step 2's claims and worktree
+checks that are already true, and go to Step 3.
+
 ### Step 2 — Take the work back
 
 1. **The Claude session:** where the harness can resume one by
@@ -47,13 +55,23 @@ don't take it.
    chunk in flight, and the rest as the loop reaches them. One
    held by someone else now: drop that chunk and name it.
    Never release anything.
-3. **Worktrees:** for each in the ledger's `work`, check it
-   exists and that HEAD and `git status --short` match.
-   Uncommitted files missing and a snapshot ref named: `git
-   stash apply <ref>` there. The folder gone but its branch
-   there: `git worktree add` it again. A stale lock (dead pid):
-   `git worktree unlock`. A mid-git state: finish it the way
-   `next_step` says. Then work there.
+3. **Worktrees:** for each in the ledger's `work` (a crash
+   ledger, or one the GUI wrote, has none: use its `worktree`
+   and `branch`), check it exists and that HEAD and `git
+   status --short` match. Uncommitted files missing and a
+   snapshot ref named: `git stash apply <ref>` there. The
+   folder gone but its branch there: `git worktree prune`
+   (it drops only registrations whose folder is gone; without
+   it git refuses with "already used by worktree"), then `git
+   worktree add <path> <branch>` again. Locked `initializing`
+   (`git worktree list` shows it): a `git worktree add` cut
+   short, which the GUI finishes in place when it starts; from
+   a terminal, `git worktree unlock`, `git reset -q` there (the
+   index only), and `git checkout --` the files `git ls-files
+   --deleted` names (only when the session never ran: a file it
+   deleted on purpose stays deleted). A stale lock (dead pid): `git worktree
+   unlock`. A mid-git state: finish it the way `next_step`
+   says. Then work there.
 4. **Children:** a stopped builder's partial edits are in its
    worktree: read its `children` entry and the diff, and treat
    that as done. A stopped Workflow: within the same Claude

@@ -200,7 +200,9 @@ export function close(target, repo) {
 }
 
 /** ` · locked`, plus the lock's pid and whether it lives when the reason names one. */
-const lockNote = (r) => (!r.locked ? '' : r.pid ? ` · locked by pid ${r.pid} (${r.pidAlive ? 'alive' : 'dead'})` : ' · locked');
+// git locks a worktree "initializing" while `git worktree add` runs; one still locked so is an add cut short (nexus
+// stopped mid-way), which the nexus GUI finishes in place when it next starts.
+const lockNote = (r) => (!r.locked ? '' : /initializ/i.test(r.lockReason || '') ? ' · interrupted add (nexus repairs it on start)' : r.pid ? ` · locked by pid ${r.pid} (${r.pidAlive ? 'alive' : 'dead'})` : ' · locked');
 
 export function main(argv,{ out = console.log, err = console.error } = {}) {
   const [cmd, ...rest] = argv;

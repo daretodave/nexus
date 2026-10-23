@@ -104,12 +104,24 @@ export async function setOwner(repo, on) {
 // these prefs (agents, workflows) moves there once at server start, and forgetPrefs drops it.
 // AI one-liners for undescribed chunks (server/summaries.mjs) are on until Settings turns them off.
 // model / effort: '' is Claude Code's default (spec 54); lastModel: what the default resolved to on the last session.
-const DEFAULT_PREFS = { permissionMode: 'default', onboarded: false, aiSummaries: true, changeFeed: true, model: '', effort: '', lastModel: '' };
+// pickupIdle: a session that stopped with nexus while idle comes back by itself on the next launch (recovery.mjs).
+const DEFAULT_PREFS = { permissionMode: 'default', onboarded: false, aiSummaries: true, changeFeed: true, model: '', effort: '', lastModel: '', pickupIdle: true };
 
+/**
+ * The saved prefs over the defaults. Only a plain object counts, a known key only when its type matches its default
+ * (a hand edit's `changeFeed: 'off'` reads as the default, never as on); a key this version does not know passes
+ * through untouched, so a newer version's pref survives a downgrade.
+ */
 export async function readPrefs(repo) {
   const file = await gitPath(repo, 'nexus-gui.json');
   const saved = file && fs.existsSync(file) ? json(fs.readFileSync(file, 'utf8')) : null;
-  return { ...DEFAULT_PREFS, ...(saved || {}) };
+  const out = { ...DEFAULT_PREFS };
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return out;
+  for (const [k, v] of Object.entries(saved)) {
+    if (!(k in DEFAULT_PREFS)) out[k] = v;
+    else if (typeof v === typeof DEFAULT_PREFS[k]) out[k] = v;
+  }
+  return out;
 }
 
 export async function writePrefs(repo, patch) {

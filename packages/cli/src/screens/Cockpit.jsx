@@ -6,7 +6,7 @@
 // each phase's page (?phase=), the session's own phase when none is named.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { AppFrame, Empty, Err, Panes, Phases, ToastHost, localRunMode, prefsFromRunMode, saveRunMode, sessClass, useShell } from '../ui/index.js';
+import { AppFrame, Empty, Err, Fell, Icon, Panes, Phases, ToastHost, localRunMode, prefsFromRunMode, saveRunMode, sessClass, useShell } from '../ui/index.js';
 import { api, server, useCloudLoop, useEvents, useLocalSettings, useReloadOn, chunkStagesOf, useResource, useSessions } from '../data/index.js';
 import { PATHS, rememberSession } from '../routes.js';
 import CockpitTop from './cockpit/CockpitTop.jsx';
@@ -105,6 +105,10 @@ export default function Cockpit() {
     } finally { setBusy(false); }
   };
   const base = `/api/sessions/${encodeURIComponent(id)}`;
+
+  // ---- stopped with nexus (a restart, an upgrade): its saved conversation shows, and Pick up carries it on ----
+  const stopped = !!(live.status?.stopped || ledger?.stopped) && !ledger?.hosted;
+  const pickUp = () => act(`${base}/pickup`, {}, 'Pick up');
 
   // ---- composer -------------------------------------------------------------------
   const [draft, setDraft] = useState('');
@@ -344,6 +348,12 @@ export default function Cockpit() {
     <AppFrame topbar={topbar} phases={phaseNav} current="cockpit" railVariant="cockpit" hushed={hushed}>
       <Panes hasRoute={routeShowing(draft, route || suggested, cmode)}>
         <section className="pane-left" aria-label="Conversation and context">
+          {stopped ? (
+            <Fell style={{ margin: '12px 20px 0', background: 'var(--well)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <span>Stopped when nexus restarted. Pick up where it left off, or just send it a message.</span>
+              <button className="btn btn-primary btn-s" type="button" onClick={pickUp} disabled={busy} aria-busy={busy || undefined}><Icon name="refresh" size={14} />Pick up</button>
+            </Fell>
+          ) : null}
           {left}
           <Dock
             tray={tray} inboxTo={PATHS.inbox} layers={layers} short={view !== 'working'}

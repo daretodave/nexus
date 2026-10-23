@@ -6,7 +6,9 @@
 // Server: GET /api/needs and the `needs` event on every live channel (server.mjs) send needsFrom(...).
 // The page: needsBar() splits the rows into chips and the rest, for the top bar (src/ui/needs.jsx).
 
-const ORDER = { permission: 0, question: 1, fallen: 2 };
+const ORDER = { permission: 0, question: 1, fallen: 2, stopped: 3 };
+/** Kinds that wait on a decision, not on an answer now: no pulse, never "urgent". */
+export const CALM = new Set(['fallen', 'stopped']);
 const SKIP = new Set(['closed', 'resuming', 'resumed']);
 
 const clip = (t, n = 140) => {
@@ -53,6 +55,7 @@ export function needsFrom(rows = [], hosted = []) {
       });
       continue;
     }
+    if (r.state === 'stopped') continue; // counted below, in one quiet row
     if (r.state === 'fallen' || r.state === 'resume-failed') {
       const f = r.fell || {};
       const where = f.chunk || r.chunk?.id || '';
@@ -63,6 +66,15 @@ export function needsFrom(rows = [], hosted = []) {
         at: ms(f.at) ?? ms(r.beat), to: '/?show=fallen',
       });
     }
+  }
+  // Sessions that stopped with nexus (a restart, an upgrade) never alarm: two or more get one quiet row that lands on
+  // the fleet, where Pick up all brings them back. One alone waits on its own tile.
+  const stopped = list.filter((r) => r && r.state === 'stopped' && !r.ended);
+  if (stopped.length >= 2) {
+    out.push({
+      id: 'stopped', name: `${stopped.length} sessions`, kind: 'other', what: 'stopped', count: stopped.length,
+      label: 'stopped with nexus', detail: 'Pick up all to carry on where they left off.', at: null, to: '/?show=here',
+    });
   }
   // The most pressing first; within a kind, whoever has waited longest.
   return out.sort((a, b) => ORDER[a.what] - ORDER[b.what] || (a.at ?? Infinity) - (b.at ?? Infinity) || a.name.localeCompare(b.name));
@@ -79,7 +91,7 @@ export function needsBar(rows = [], { max = 3, here = null } = {}) {
     chips: list.slice(0, max),
     more: list.slice(max),
     total: (Array.isArray(rows) ? rows : []).length,
-    urgent: list.some((r) => r.what !== 'fallen'),
+    urgent: list.some((r) => !CALM.has(r.what)),
   };
 }
 

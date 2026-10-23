@@ -30,7 +30,10 @@
 //
 // `--set a.b=v` writes a dotted key (a value that parses as JSON is stored as JSON); `--set-file k=<path>` stores a
 // file's text verbatim (the `/heads-down` loop prompt: its quotes never meet a shell); `--add k=v` appends to a list
-// (`defaults`, `parked`, `claimed`, `done`). Environment: NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID (the session's id);
+// (`defaults`, `parked`, `claimed`, `done`). A parked question is `{ "q": "...", "alts": ["...", "..."], "why": "...",
+// "default": "..." }` (alts a list; a bare string is read as the question alone); the GUI reads that shape. A ledger the
+// nexus GUI wrote may carry `gui`, `claude`, `cwd`, `sent`, `server` and `stop` (why and how it stopped): optional, kept
+// as they are. Environment: NEXUS_SESSION, else CLAUDE_CODE_SESSION_ID (the session's id);
 // NEXUS_LEDGER_STALE_MIN (minutes without a beat before a live session reads as fallen; default 15).
 import fs from 'node:fs';
 import path from 'node:path';

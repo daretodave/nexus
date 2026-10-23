@@ -282,6 +282,9 @@ export function createGitView({ repo, root, sessions, run = shRun, claims = read
 
   /** One session's git: branch, worktree, ahead/behind, dirty and staged, last five commits, PR and checks, claims held. */
   async function forSession(s, ctx = {}) {
+    // A worktree deleted or moved from disk is never read against the primary checkout (its git would pass for the
+    // session's): its branch is read instead, and the row says the folder is missing.
+    if (s.git?.worktree && !fs.existsSync(s.git.worktree)) return missingPlace(s, ctx);
     const cwd = await cwdOf(s, ctx.worktrees);
     // `fresh` (put away, a close): read git and claims now, never a cached answer a moment old.
     const [g, pr, rows] = await Promise.all([
@@ -311,6 +314,24 @@ export function createGitView({ repo, root, sessions, run = shRun, claims = read
       pr: open ? { num: open.num, ci: open.ci, url: open.url, title: open.title } : null,
       claims: held ? held.length : null,
       claimIds: held ? held.map((c) => c.id) : null,
+    };
+  }
+
+  /** A session whose worktree folder is gone: its branch's commits past the base (none when the branch is gone too). */
+  async function missingPlace(s, ctx) {
+    const was = s.git || {};
+    const top = await root();
+    const branch = was.branch || '';
+    const there = !!branch && (await git(top, ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).ok;
+    const base = await baseRef(top);
+    const ab = there ? await aheadBehind(top, branch, base) : { ahead: 0, behind: 0 };
+    const rows = await (ctx.claims ?? (ctx.fresh ? readClaimRows().catch(() => null) : claimRows('claims')));
+    const held = rows ? claimsOf(rows, s) : null;
+    return {
+      ...was, missing: true, branchGone: !there, cwd: null, base,
+      up: ab.ahead, down: ab.behind, ahead: ab.ahead, behind: ab.behind, dirty: 0, staged: 0,
+      commits: there ? await commits(top, branch, 5) : [], pr: null,
+      claims: held ? held.length : null, claimIds: held ? held.map((c) => c.id) : null,
     };
   }
 

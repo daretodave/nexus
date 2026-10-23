@@ -7,6 +7,9 @@
 // fleet chips, never by default (fleet/model.js aside). 0.5.1: each tile
 // reads its state by colour (fleet/alive.js tone): working cyan and moving,
 // needs you amber, done green with a check and an offer to put it away.
+// Recovery: a session that stopped with nexus (a restart, an upgrade) reads calm,
+// "stopped with nexus", on This machine, with Pick up (the same star, worktree
+// and conversation) and Put away where nothing is mid-flight.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -103,8 +106,32 @@ function OwnerChip() {
 
 const recoverHref = (s) => (s.run ? `${PATHS.recover}?dir=${encodeURIComponent(s.run)}` : PATHS.recover);
 
-export default function SessionTile({ s, train, onResume, onLink, onClose, onPutAway, busy, now, title }) {
+/** What a session that stopped with nexus says on its tile: why it stopped, and what Pick up does. */
+export function stoppedWords(s) {
+  const st = s.stop || {};
+  const lines = [];
+  if (st.note) lines.push('The last pick-up did not finish.');
+  // An older nexus (0.5.1) never said how it stopped: no crash to report, only that it stopped.
+  else if (!st.clean && st.legacy) lines.push('Stopped when the older nexus closed. Its work is on disk; pick up to carry on.');
+  else if (!st.clean) lines.push('nexus closed without saying goodbye. Its work is on disk; pick up to carry on.');
+  else if (st.train) lines.push('Parked by its reboot train before nexus closed. Pick up resumes the loop.');
+  else if (st.turn === 'forming') lines.push('Stopped while its worktree was being made. Pick up to finish it and send your message.');
+  else if (st.turn === 'working') lines.push('Stopped mid-step when nexus restarted. Pick up to finish the step.');
+  else if (st.turn === 'asking') lines.push('Stopped while it asked you something. Answer it to pick up.');
+  else if (st.paused) lines.push('Paused when nexus restarted. Its conversation and worktree are kept; Pick up resumes it.');
+  else lines.push('Stopped when nexus restarted. Its conversation and worktree are kept.');
+  if (st.queued > 0) lines.push(`${st.queued} ${st.queued === 1 ? 'message' : 'messages'} waiting to send.`);
+  if (s.git?.missing && !s.git?.branchGone) lines.push('Its worktree folder is gone; Pick up brings it back from its branch.');
+  else if (s.git?.missing) lines.push('Its worktree and branch are gone; nothing on disk to keep.');
+  // Put away is offered where nothing is mid-flight: not mid-step, not while its worktree forms, not after a failed pick-up.
+  const away = !st.note && st.turn !== 'working' && st.turn !== 'forming';
+  return { lines, away };
+}
+
+export default function SessionTile({ s, train, onResume, onPickup, onLink, onClose, onPutAway, busy, now, title }) {
   const st = s.state;
+  const stopped = st === 'stopped' && !s.ended;
+  const [away, setAway] = useState(false);
   const done = finishedJob(s);
   const t = tone(s, done);
   // Keep it: remembered in this browser for this job only; a later job that finishes asks again.
@@ -112,14 +139,16 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, onPut
   const kept = done ? keptAlready(s, viewerStore()) : false;
   const keep = () => { rememberKeep(s, viewerStore()); setKeptTick((n) => n + 1); };
   const fallen = !s.ended && (st === 'fallen' || st === 'resume-failed');
-  const toRecover = fallen || st === 'resuming';
-  const href = toRecover || s.ended ? recoverHref(s) : PATHS.cockpit(s.id);
+  // A session the GUI started opens its own cockpit (its saved conversation), never an empty Recover.
+  const toRecover = (fallen || st === 'resuming') && !s.gui;
+  const href = toRecover || (s.ended && !s.gui) ? recoverHref(s) : PATHS.cockpit(s.id);
   const rider = s.kind === 'local' && !fallen && st !== 'closed';
   const b = bar(s);
   const waiting = s.questions?.total ? s.questions.total - (s.questions.answered || 0) : s.parked || 0;
 
   let badge = null;
   if (s.ended) badge = <span className="t-label c-2">stopped</span>;
+  else if (stopped) badge = <span className="t-label c-2">stopped with nexus</span>;
   else if (train.active && rider) badge = <TileChip paused={train.isPaused(s)} />;
   else if (st === 'asking') badge = waiting ? <ParkedBadge>{waiting} waiting</ParkedBadge> : null;
   else if (st === 'observing') badge = <span className="observing"><Icon name="observe" size={12} />in a terminal</span>;
@@ -134,6 +163,7 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, onPut
 
   let stage;
   if (s.ended) stage = <Centered><Orb state="idle" size="l" /></Centered>;
+  else if (stopped) stage = <><Centered><Orb state="idle" size="l" /></Centered><TileLast s={s} /></>;
   else if (fallen) stage = <Centered><Orb state="fallen" size="l" /></Centered>;
   else if (st === 'resuming') stage = <Centered style={{ background: 'radial-gradient(60% 60% at 50% 50%, var(--sky-a), transparent 70%)' }}><Orb relight size="l" gap="6deg" /></Centered>;
   else stage = <><SkyStage s={s} t={t} /><TileLast s={s} /></>;
@@ -164,8 +194,27 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, onPut
         ) : null}
       </>
     );
+  } else if (stopped) {
+    // Stopped with nexus (a restart, an upgrade): calm, kept, one click from carrying on where it left off.
+    const w = stoppedWords(s);
+    info = (
+      <>
+        {chunk}
+        <Fell style={{ background: 'var(--well)' }}>
+          {w.lines.map((l) => <span key={l}>{l}</span>)}
+          {s.stop?.at ? <span className="t-mono-xs c-3">stopped {hhmm(s.stop.at)} · {ago(s.stop.at, now)}</span> : null}
+        </Fell>
+        {away && onPutAway ? <PutAway s={s} compact onGone={onPutAway} onKeep={() => setAway(false)} /> : (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {onPickup ? <button className="btn btn-primary btn-s" type="button" onClick={onPickup} disabled={busy} aria-busy={busy || undefined} title="The same star, worktree and conversation, carried on"><Icon name="refresh" size={14} />Pick up</button> : null}
+            {w.away && onPutAway ? <button className="btn btn-ghost btn-s" type="button" onClick={() => setAway(true)} disabled={busy}>Put away</button> : null}
+          </div>
+        )}
+      </>
+    );
   } else if (st === 'asking') {
-    info = <>{chunk}{track}{b ? <TileBar {...b} /> : null}<Link className="btn btn-warn btn-s" to={href} style={{ alignSelf: 'flex-start' }}>{waiting ? `Answer ${waiting} to start` : 'Answer to start'}</Link></>;
+    const word = s.stop ? 'pick up' : 'start';
+    info = <>{chunk}{track}{b ? <TileBar {...b} /> : null}<Link className="btn btn-warn btn-s" to={href} style={{ alignSelf: 'flex-start' }}>{waiting ? `Answer ${waiting} to ${word}` : `Answer to ${word}`}</Link></>;
   } else if (st === 'observing') {
     // Linked, a tug or an answer from here reaches this session at its next tool call, and only this session.
     info = (
@@ -237,13 +286,13 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, onPut
     ? <span className="tile-event">{s.event?.at ? `${hhmm(s.event.at)} ` : ''}{s.event?.text || (st === 'resuming' ? 'resume started' : '')}</span>
     : <FleetGit git={s.git} />;
   // A hosted session's model and effort, small (spec 54): what the SDK's init said, "model: starting…" before it.
-  const model = 'model' in s && !s.ended && !fallen ? <span className="tile-model" title={s.model || undefined}>{badgeText(s)}</span> : null;
+  const model = 'model' in s && !s.ended && !fallen && !stopped ? <span className="tile-model" title={s.model || undefined}>{badgeText(s)}</span> : null;
 
   return (
     <Tile
       session={s.session}
       state={fallen ? 'fallen' : st === 'asking' ? 'asking' : st === 'observing' ? 'observing' : 'live'}
-      className={cx(st === 'asking' && 'is-hushed', s.idle && 'is-idle', s.ended && 'is-ended', `tone-${t}`)}
+      className={cx(st === 'asking' && 'is-hushed', (s.idle || stopped) && 'is-idle', s.ended && 'is-ended', `tone-${t}`)}
       href={href}
       nameStyle={{ color: 'var(--text)' }}
       repo={s.repo}

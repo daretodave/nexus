@@ -12,7 +12,9 @@
 //     train: { state: 'pausing'|'paused', text },
 //     git: { branch, worktree, up, down, behind, dirty, pr: { num, ci }, noPr, claims, commits: [{ sha, m, w }] },
 //     turn: 'working'|'idle' (absent: unknown), last: { kind: 'text', text, at } | { kind: 'tool', tool, arg, at },
-//     lastPrompt, claimsSession, ended: <a hosted session that died with its server and left nothing behind> }
+//     lastPrompt, claimsSession, ended: <a hosted session that died with its server and left nothing behind>,
+//     stop: { at, clean, turn, queued, asks, talked, loop, note, legacy, train } on a session that stopped with nexus (state 'stopped',
+//     or 'asking' while it holds a question; it reads calm, stays on This machine and waits for Pick up) }
 import { foldClaims, sessionOf } from '../board/model.js';
 import { isProgressLine, progressLine } from '../../../shared/progress-line.mjs';
 import { finishedJob } from './alive.js';
@@ -115,7 +117,7 @@ export function claimHolders(rows, sessions = []) {
     const key = tag ? `s:${tag}` : `p:${r.who || 'someone'}`;
     if (!by.has(key)) by.set(key, { key, session: tag, name: '', who: r.who || '', mine: false, claims: [], at: null, stale: true });
     const h = by.get(key);
-    if (r.star && !h.name) h.name = r.star;
+    if (r.star && !h.name) h.name = String(r.star);
     if (r.mine) h.mine = true;
     if (r.state !== 'stale') h.stale = false;
     const t = Date.parse(r.at);
@@ -128,7 +130,7 @@ export function claimHolders(rows, sessions = []) {
     const name = h.name || (h.session ? h.session.slice(0, 8) : h.who || 'someone');
     return { key: h.key, session: h.session, name, who: h.who, mine: h.mine, n: h.claims.length, lines, fold, at: h.at, stale: h.stale };
   });
-  return out.sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+  return out.sort((a, b) => b.n - a.n || String(a.name).localeCompare(String(b.name)));
 }
 
 /**
@@ -160,9 +162,13 @@ export function counts(list) {
   return c;
 }
 
+/** A session that stopped with nexus (a restart, an upgrade) and waits to be picked up. */
+export const stoppedWithNexus = (s) => s.state === 'stopped' && !s.ended;
+
 /**
  * The topbar line, over what this machine shows: "3 sessions · 2 working · 1 done · 1 needs you · 1 fell over".
  * Fell over counts only work that can be resumed (a stopped session has nothing to lose); terminals get no clause.
+ * Sessions that stopped with nexus are counted calmly: "2 waiting to pick up".
  */
 export function summary(list) {
   const c = counts(list);
@@ -174,6 +180,8 @@ export function summary(list) {
   if (done) parts.push(`${done} done`);
   if (c.idle) parts.push(`${c.idle} idle`);
   if (c.needs) parts.push(`${c.needs} needs you`);
+  const waiting = list.filter((s) => !aside(s) && stoppedWithNexus(s)).length;
+  if (waiting) parts.push(`${waiting} waiting to pick up`);
   if (lost) parts.push(`${lost} fell over`);
   return parts.join(' · ');
 }
@@ -185,21 +193,26 @@ export function summary(list) {
 export function trainOf(list, on) {
   const local = list.filter((s) => s.kind === 'local');
   const riders = local.filter((s) => !['fallen', 'resume-failed', 'closed'].includes(s.state));
-  const isPaused = (s) => s.train?.state === 'paused' || s.state === 'paused';
+  // A session that stopped with nexus already rides paused: the train's stop already happened.
+  const isPaused = (s) => s.train?.state === 'paused' || s.state === 'paused' || stoppedWithNexus(s) || (s.state === 'asking' && !!s.stop);
+  const stopped = local.filter((s) => stoppedWithNexus(s) || (s.state === 'asking' && !!s.stop && !s.ended)).length;
   const anyServer = riders.some((s) => s.train?.state);
   const active = on || anyServer;
   const paused = riders.filter(isPaused);
   const pending = riders.filter((s) => !isPaused(s));
   const all = active && riders.length > 0 && pending.length === 0;
   const cars = [
-    ...riders.map((s) => ({ session: s.session, state: isPaused(s) ? 'paused' : 'pausing', text: s.train?.text || (isPaused(s) ? 'paused' : 'at its next safe step') })),
+    ...riders.map((s) => ({ session: s.session, state: isPaused(s) ? 'paused' : 'pausing', text: s.train?.text || (s.stop ? 'stopped with nexus' : isPaused(s) ? 'paused' : 'at its next safe step') })),
     ...local.filter((s) => !riders.includes(s)).map((s) => ({ session: s.session, state: 'skipped', text: 'fallen, nothing to stop' })),
     ...list.filter((s) => s.kind === 'terminal').map((s) => ({ session: s.session, state: 'skipped', text: 'terminal, pause it there' })),
   ];
   const names = pending.map((s) => s.name);
   const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] || '';
-  const text = all
-    ? `All ${riders.length} paused. Safe to restart this machine; each session resumes where it stopped.`
-    : `${paused.length} of ${riders.length} paused. Safe to restart once ${who} ${names.length === 1 ? 'finishes its step' : 'finish their steps'}.`;
-  return { active, all, cars, text, paused: paused.length, total: riders.length, isPaused };
+  const allStopped = riders.length > 0 && stopped === riders.length;
+  const text = allStopped
+    ? `All ${riders.length} stopped with nexus. Pick up all to carry on where they left off.`
+    : all
+      ? `All ${riders.length} paused. Safe to restart this machine; each session resumes where it stopped.`
+      : `${paused.length} of ${riders.length} paused. Safe to restart once ${who} ${names.length === 1 ? 'finishes its step' : 'finish their steps'}.`;
+  return { active, all, cars, text, paused: paused.length, total: riders.length, isPaused, stopped };
 }

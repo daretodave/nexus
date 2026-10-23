@@ -68,7 +68,7 @@ export function finishedJob(s) {
  */
 export function tone(s, done = finishedJob(s)) {
   if (!s) return 'idle';
-  if (s.ended) return 'stopped';
+  if (s.ended || (s.state === 'stopped')) return 'stopped';
   if (fellOver(s)) return 'fallen';
   if (s.state === 'asking') return 'needs';
   if (s.state === 'resuming') return 'resuming';

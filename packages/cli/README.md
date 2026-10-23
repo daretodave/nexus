@@ -147,7 +147,8 @@ from nexus `prompts/`, ready to paste.
 ```
 npx @usenexus/cli --repo <dir>   another folder
 npx @usenexus/cli --no-open      print the link instead of opening it
-npx @usenexus/cli --port <n>     a fixed port
+npx @usenexus/cli --port <n>     a fixed port (default: the last launch's, when free)
+npx @usenexus/cli --replace      stop this repo's running nexus the safe way, then start (an upgrade)
 NEXUS_PROVIDER=cli               use `claude -p` stream-json instead of the Agent SDK
 npx @usenexus/cli --demo <name>  a scripted demo (below): no repo, no Claude, no network
 ```
@@ -175,6 +176,7 @@ the design's empty state. The project and everything in it is invented.
 | `bug-to-archive` | 6.7 s | "the PDF export crashes on long seasons" goes to `/bug`; 15.3 slots into the plan, is claimed, built, gated and closed |
 | `fall-and-resume` | 6.6 s | deneb fell over mid-chunk; Resume on its tile picks it up and 14.1 lands |
 | `heads-down` | 7.6 s | altair works a claimed list of three chunks, one after another |
+| `after-restart` | 6.2 s | nexus was stopped and upgraded: vega came back by itself, three tiles wait calmly as "stopped with nexus", and Pick up all brings each back where it left off |
 
 The owner's turn (an answer, a send, a Resume) is a gate: click it in
 the page and the script carries on from that moment, or leave it and
@@ -211,6 +213,40 @@ repo counts only when the repo ignores it), else the kit's
 `../<repo>-wt/`. Pause waits
 for the turn in flight and holds what you send until you resume.
 Closing a session ends its ledger; its worktree stays for `/tidy`.
+
+### Restarts and upgrades
+
+Stopping nexus never loses a session. Ctrl+C, closing the terminal
+(SIGHUP) or `--replace` parks each session in its ledger first: its
+Claude Code conversation, where it works, what it was doing (idle,
+mid-step, asking, its worktree still forming), the messages waiting to
+go and its open questions (they land in the inbox). A kill leaves the
+ledgers as they were; the next launch parks them itself. Either way the
+next launch lists them on This machine as "stopped with nexus", never
+as terminal sessions or as fell over. One that stopped idle comes back
+by itself (free until it is sent something); the rest wait for Pick up
+on the tile, Pick up all on the fleet, or a message in the cockpit.
+Pick up keeps the same star, worktree and ledger and resumes the same
+conversation; one that was mid-step is asked to carry on, a loop goes
+through `/reboot-resume` (one its reboot train parked waits for Pick up,
+which sends it), and the waiting messages follow. A prompt typed while
+its worktree formed is kept through a kill. A session taken on from a
+terminal with `/reboot-resume` is that terminal's from then on: it reads
+as a terminal session and is never picked up beside it. A worktree
+an interrupted `git worktree add` left half made is finished in place
+(the person's files kept), and one deleted from disk is checked out
+again from its branch. Turn idle pick-ups off with `pickupIdle: false`
+in the prefs.
+
+A newer launch on the same repo says when the running nexus is another
+version: stop it and launch again, or launch with `--replace` (from
+0.5.2 on; 0.5.1 is stopped with Ctrl+C where it runs). The new
+launch takes the last port, so an open tab reconnects: a tab the new
+launch opened hands its token to the older tabs of the same origin
+(nothing is written anywhere new), and a tab with no such neighbour
+says to use the printed link. A ledger an older nexus wrote reads the
+same way; going back to 0.5.1 reads a parked session as a paused
+terminal one.
 
 The claims panel runs `scripts/claims.mjs` as the acting session (the
 home session unless a call names another) with the same two variables,

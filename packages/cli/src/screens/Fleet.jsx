@@ -55,7 +55,16 @@ function useNow(ms = 30000) {
   return now;
 }
 
-function PauseAll({ train, onClick }) {
+function PauseAll({ train, onClick, onPickupAll, picking }) {
+  // Sessions that stopped with nexus (a restart, an upgrade): the one control brings them all back.
+  if (train.stopped && !train.active) {
+    return (
+      <button className="pause-btn is-paused" type="button" onClick={onPickupAll} disabled={picking} aria-busy={picking || undefined}>
+        <span className="pb-ic"><Icon d={PLAY} /></span>
+        <span className="pb-text">Pick up all ({train.stopped})<span className="pb-sub tb-long">stopped with nexus</span></span>
+      </button>
+    );
+  }
   const label = !train.active ? 'Pause all' : train.all ? 'Resume all' : 'Pausing';
   const sub = !train.active ? 'reboot train' : train.all ? `all ${train.total} paused` : `${train.paused} of ${train.total} paused`;
   return (
@@ -137,6 +146,31 @@ export default function Fleet() {
     sessions.reload();
   }
 
+  // Pick up a session that stopped with nexus: the same star, worktree and conversation, carried on.
+  async function pickup(s) {
+    setResuming((m) => ({ ...m, [s.id]: true }));
+    const r = await act(`/api/sessions/${encodeURIComponent(s.id)}/pickup`, {});
+    setResuming((m) => { const n = { ...m }; delete n[s.id]; return n; });
+    if (!r.ok) push({ kind: 'error', title: `Couldn't pick up ${s.name}`, body: r.error });
+    else push({ kind: 'info', title: `Picked up ${s.name}`, body: r.data?.note || (r.data?.resumed === false ? 'Its old conversation could not be found, so it started fresh with its context.' : 'It carries on where it left off.') });
+    sessions.reload();
+  }
+
+  // Pick up all: every session that stopped with nexus, in the order they started.
+  const [picking, setPicking] = useState(false);
+  async function pickupAll() {
+    setPicking(true);
+    const r = await act('/api/pickup-all', {});
+    setPicking(false);
+    if (!r.ok) { push({ kind: 'error', title: "Couldn't pick them up", body: r.error }); return; }
+    const n = r.data?.picked?.length || 0;
+    const failed = r.data?.failed || [];
+    push(failed.length
+      ? { kind: 'error', title: `Picked up ${n}, ${failed.length} did not come back`, body: failed.map((f) => `${f.name}: ${f.error}`).join(' · ') }
+      : { kind: 'info', title: `Picked up ${n} ${n === 1 ? 'session' : 'sessions'}`, body: 'Each carries on where it left off.' });
+    sessions.reload();
+  }
+
   // Clear a session that stopped when the server restarted: its star frees and its empty worktree closes.
   async function close(s) {
     setResuming((m) => ({ ...m, [s.id]: true }));
@@ -183,7 +217,7 @@ export default function Fleet() {
       <TbSpacer />
       <InboxBtn />
       <LoopLine />
-      <PauseAll train={train} onClick={onPause} />
+      <PauseAll train={train} onClick={onPause} onPickupAll={pickupAll} picking={picking} />
     </Topbar>
   );
 
@@ -210,7 +244,7 @@ export default function Fleet() {
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', margin: '-8px -28px 0', padding: `8px 28px ${24 + dockRoom}px` }}>
           <div className="fleet-grid">
             {sessions.status === 'loading' ? <SkelTiles /> : null}
-            {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} title={chunkTitle(plan.data, s.chunk?.id)} onPutAway={(r) => putAway(s, r)} onResume={() => resume(s)} onClose={s.ended ? () => close(s) : undefined} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
+            {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} title={chunkTitle(plan.data, s.chunk?.id)} onPutAway={(r) => putAway(s, r)} onResume={() => resume(s)} onPickup={() => pickup(s)} onClose={s.ended ? () => close(s) : undefined} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
             {sessions.status !== 'loading' && filter === 'here' ? (
               <TileNew>
                 <span className="cstar is-neutral" />
