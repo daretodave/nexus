@@ -7,7 +7,7 @@ import { continueLabel } from './planAnswers.js';
 import '../../styles/plan-answers.css';
 
 /** A spec group's Continue bar and its "send to…" picker (styles/plan-answers.css). */
-export function ContinueBar({ count, target, asked, choices, sending, onPick, onSend }) {
+export function ContinueBar({ count, target, asked, choices, sending, onPick, onSend, images = 0 }) {
   const [open, setOpen] = useState(false);
   const note = !count ? 'Answers are kept here as you give them.' : asked ? `${target.name} asked these.` : target.kind === 'new' ? 'No live session to go back to: a new one starts.' : `Goes to ${target.name}, the most recent live session.`;
   return (
@@ -22,7 +22,7 @@ export function ContinueBar({ count, target, asked, choices, sending, onPick, on
           />
         ) : null}
       </span>
-      <button className="btn btn-primary btn-s" type="button" disabled={!count || sending} onClick={onSend}>{sending ? 'Sending…' : continueLabel(count, target)}</button>
+      <button className="btn btn-primary btn-s" type="button" disabled={!count || sending} onClick={onSend}>{sending ? 'Sending…' : continueLabel(count, target, images)}</button>
     </div>
   );
 }

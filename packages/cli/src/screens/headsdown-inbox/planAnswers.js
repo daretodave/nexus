@@ -11,17 +11,25 @@ export const planKey = (x) => x?.raw?.id || (x?.raw?.file ? `${x.raw.file}:${x.r
 /** A plan item the store may hold: a plan question in words (a secret request goes to the vault, never here). */
 export const keepsAnswer = (x) => !!x && x.src === 'durable' && !x.secret;
 
-/** The store's entries -> the screen's settled rows for these plan items: { [item id]: { a, how, item, sent, to, kept } }. */
+const HOWS = new Set(['default', 'decide']);
+
+/**
+ * The store's entries -> the screen's settled rows for these plan items:
+ * { [item id]: { a, how: 'answered'|'default'|'decide', images: [{ file, name, mediaType }], item, sent, to, kept } }.
+ */
 export function keptDone(items = [], store = {}) {
   const out = {};
   for (const x of items) {
     if (!keepsAnswer(x)) continue;
     const e = store[planKey(x)];
     if (!e || !e.answer) continue;
-    out[x.id] = { a: String(e.answer), how: e.how === 'default' ? 'default' : 'answered', item: x, sent: !!e.sent, to: e.to || '', kept: true };
+    out[x.id] = { a: String(e.answer), how: HOWS.has(e.how) ? e.how : 'answered', images: Array.isArray(e.images) ? e.images : [], item: x, sent: !!e.sent, to: e.to || '', kept: true };
   }
   return out;
 }
+
+/** The images these settled answers carry, counted. */
+export const imageCount = (items = [], done = {}) => items.reduce((n, x) => n + (done[x.id]?.images?.length || 0), 0);
 
 /** Can a Continue reach this session: live, and hosted here or linked (a terminal session must be linked first). */
 export function steerable(s) {
@@ -81,16 +89,24 @@ export function sendable(groupItems = [], done = {}) {
   return groupItems.filter((x) => keepsAnswer(x) && done[x.id]?.kept && !done[x.id].sent);
 }
 
-/** The bar's button: "Send 2 answers to vega and continue". */
-export function continueLabel(count, target) {
+/** The bar's button: "Send 2 answers to vega and continue", "Send 3 answers (2 images) to a new session and continue". */
+export function continueLabel(count, target, images = 0) {
   const who = target?.kind === 'new' ? 'a new session' : target?.name || 'a session';
-  return `Send ${count} ${count === 1 ? 'answer' : 'answers'} to ${who} and continue`;
+  const imgs = images ? ` (${images} ${images === 1 ? 'image' : 'images'})` : '';
+  return `Send ${count} ${count === 1 ? 'answer' : 'answers'}${imgs} to ${who} and continue`;
 }
 
-/** The one POST /api/oversight/answer body a Continue makes: every answer of the group, and where they go. */
+/**
+ * The one POST /api/oversight/answer body a Continue makes: every answer of the group (its words, how it was given
+ * and the images it carries: their files and names), and where they go.
+ */
 export function continueBody(items = [], done = {}, target = NEW_SESSION) {
   return {
-    answers: items.map((x) => ({ file: x.raw.file, line: x.raw.line, text: x.raw.text, answer: done[x.id].a })),
+    answers: items.map((x) => ({
+      file: x.raw.file, line: x.raw.line, text: x.raw.text, answer: done[x.id].a,
+      ...(done[x.id].how && done[x.id].how !== 'answered' ? { how: done[x.id].how } : {}),
+      ...(done[x.id].images?.length ? { images: done[x.id].images.map((i) => ({ file: i.file, name: i.name })) } : {}),
+    })),
     session: target?.kind === 'new' ? 'new' : target?.id,
   };
 }

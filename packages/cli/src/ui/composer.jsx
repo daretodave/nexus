@@ -9,6 +9,7 @@ import { useMemo, useRef, useState } from 'react';
 import '../styles/route-suggest.css';
 import '../styles/attachments.css';
 import { clipboardImages } from '../../shared/attachments.mjs';
+import { useFileDrop } from './attachments.js';
 import { Icon } from './icons.jsx';
 import { Choice, FileChip, Kbd, Menu, cx } from './controls.jsx';
 import { SyntaxTextarea } from './code.jsx';
@@ -99,8 +100,6 @@ export function SlashList({ items, active = 0, typed = '/', onPick }) {
   );
 }
 
-/** Does a drag carry files (not text being moved)? */
-const hasFiles = (dt) => [...(dt?.types || [])].includes('Files');
 
 /**
  * A paste into the composer: the images on the clipboard (a screenshot) go to onFiles. The paste's own text, if it
@@ -144,7 +143,6 @@ export function Composer({
 }) {
   const [menu, setMenu] = useState(false);
   const [active, setActive] = useState(0);
-  const [over, setOver] = useState(false);
   const area = useRef(null);
   const forming = mode === 'forming';
   // Held: paused (notes wait for resume) or forming (no worktree to work in yet). Nothing sends either way.
@@ -179,11 +177,7 @@ export function Composer({
   else if (!paused && !text) hint = dock ? <><Kbd>/</Kbd>commands</> : <><Kbd>/</Kbd>commands<Kbd>⏎</Kbd>send</>;
 
   const paste = (e) => { if (onFiles && !paused) pasteFiles(e, onFiles); };
-  const drag = onFiles && !paused ? {
-    onDragOver: (e) => { if (hasFiles(e.dataTransfer)) { e.preventDefault(); setOver(true); } },
-    onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); },
-    onDrop: (e) => { setOver(false); const f = [...(e.dataTransfer?.files || [])]; if (f.length) { e.preventDefault(); onFiles(f); } },
-  } : {};
+  const { over, props: drag } = useFileDrop(onFiles, { off: paused });
 
   return (
     <div className={cx('composer', focus && 'is-focus', pin && 'is-pin', paused && 'is-disabled', dock && (hasRoute || guess) && 'has-route', over && 'is-drop')} {...drag}>
