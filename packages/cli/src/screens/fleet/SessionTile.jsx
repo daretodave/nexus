@@ -1,13 +1,13 @@
 // One session on the fleet (Fleet + FleetKit boards): live, needs you,
 // observing (terminal), fallen, resuming, resumed, resume failed; and the
 // pausing / paused chips while the reboot train runs. Spec 47 (A10): idle
-// reads idle, the stage carries the session's last word or tool row, a
-// GUI session that died with its server and left nothing reads "Ended with
-// the server" with a Close; and ClaimedTile, a claim holder no session
-// tile stands for.
+// reads idle, the stage carries the session's last word or tool row, and a
+// GUI session that died with its server and left nothing reads "stopped"
+// with a Clear. Terminal, fallen and stopped tiles show under their own
+// fleet chips, never by default (fleet/model.js aside).
 import { Link } from 'react-router-dom';
 import {
-  Tile, TileChunk, TileBar, TileEvent, TileChip, ParkedBadge, Observing, Fresh, Fell, Flag,
+  Tile, TileChunk, TileBar, TileEvent, TileChip, ParkedBadge, Fresh, Fell, Flag,
   MTrack, Orb, Fil, SNode, Junction, FreshMark, Icon, Markdown, cx,
 } from '../../ui/index.js';
 import { PATHS } from '../../routes.js';
@@ -93,10 +93,10 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
   const waiting = s.questions?.total ? s.questions.total - (s.questions.answered || 0) : s.parked || 0;
 
   let badge = null;
-  if (s.ended) badge = <span className="t-label c-2">ended</span>;
+  if (s.ended) badge = <span className="t-label c-2">stopped</span>;
   else if (train.active && rider) badge = <TileChip paused={train.isPaused(s)} />;
   else if (st === 'asking') badge = waiting ? <ParkedBadge>{waiting} waiting</ParkedBadge> : null;
-  else if (st === 'observing') badge = <Observing />;
+  else if (st === 'observing') badge = <span className="observing"><Icon name="observe" size={12} />in a terminal</span>;
   else if (st === 'fallen') badge = <Flag kind="fallen">fell over</Flag>;
   else if (st === 'resume-failed') badge = <Flag kind="fallen">resume failed</Flag>;
   else if (st === 'resuming') badge = <span className="t-label c-2">resuming</span>;
@@ -120,17 +120,17 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
 
   let info;
   if (s.ended) {
-    // A session the GUI started that died with its server and left nothing: no commits, no changes, no claims.
+    // A session the GUI started that stopped with its server and left nothing: no commits, no changes, no claims.
     info = (
       <>
         {chunk}
         <Fell>
-          <span>Ended with the server: nothing committed, nothing claimed.</span>
+          <span>Stopped when this server restarted. It left no commits, changes or claims, so clearing it loses nothing.</span>
           {s.beat ? <span className="t-mono-xs c-3">last beat {hhmm(s.beat)} · {ago(s.beat, now)}</span> : null}
         </Fell>
         {onClose ? (
-          <button className="btn btn-s" type="button" onClick={onClose} disabled={busy} aria-busy={busy || undefined} style={{ alignSelf: 'flex-start' }}>
-            <Icon name="x" size={14} />Close
+          <button className="btn btn-s" type="button" onClick={onClose} disabled={busy} aria-busy={busy || undefined} title="Frees its star and removes its empty worktree" style={{ alignSelf: 'flex-start' }}>
+            <Icon name="x" size={14} />Clear
           </button>
         ) : null}
       </>
@@ -143,7 +143,7 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
       <>
         {chunk}{track}{b ? <TileBar {...b} /> : null}
         {s.idle ? event : null}
-        <TileEvent flexNone>{s.linked ? 'Linked: what you send reaches its next tool call.' : 'Started in a terminal. Link it to steer it from here.'}</TileEvent>
+        <TileEvent flexNone>{s.linked ? 'Linked: what you send reaches its next tool call.' : 'Running in another terminal. Link it to steer it from here.'}</TileEvent>
         {onLink ? (
           <button className={cx('btn btn-s', s.linked ? 'btn-ghost' : 'btn-primary')} type="button" onClick={() => onLink(!s.linked)} disabled={busy} aria-pressed={s.linked ? 'true' : 'false'} style={{ alignSelf: 'flex-start' }}>
             {s.linked ? 'Unlink' : 'Link'}
@@ -215,35 +215,6 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
       stage={stage}
       info={info}
       foot={<>{foot}{model}</>}
-    />
-  );
-}
-
-/**
- * A claim holder no session tile stands for (fleet/model.js claimHolders): who, what it holds (folded like the claims
- * rail), how old. Dim: it is not attached here; its claims and their release live on the Plan board.
- */
-export function ClaimedTile({ h, now }) {
-  const session = { name: h.name, kind: 'terminal' };
-  const who = h.mine ? 'you' : h.who || 'someone';
-  const meta = [who, `${h.n} ${h.n === 1 ? 'claim' : 'claims'}`, h.at ? `since ${ago(h.at, now)}` : null, h.stale ? 'stale' : null].filter(Boolean).join(' · ');
-  return (
-    <Tile
-      session={session}
-      state="observing"
-      className="is-claimed"
-      href={PATHS.board}
-      repo={h.session && h.name !== h.session.slice(0, 8) ? h.session.slice(0, 8) : undefined}
-      badge={<span className="t-label c-3">not attached</span>}
-      stage={<Centered><Orb state="idle" size="l" /></Centered>}
-      info={(
-        <>
-          <TileChunk id="Claimed, not attached" title={h.fold} muted />
-          <span className="t-mono-xs c-3">{meta}</span>
-          <Link className="btn btn-s btn-ghost" to={PATHS.board} style={{ alignSelf: 'flex-start' }}>Inspect claims</Link>
-        </>
-      )}
-      foot={<span className="tile-event">{h.session ? `session ${h.session.slice(0, 8)}` : 'no session tag'}{h.at ? ` · oldest claim ${hhmm(h.at)}` : ''}</span>}
     />
   );
 }

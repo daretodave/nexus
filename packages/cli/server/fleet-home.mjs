@@ -68,7 +68,7 @@ export function fleetRows(list, { ledgers = [], hosted = [], resumers = new Map(
 /**
  * A session that ended with its server: one the GUI started (its ledger says `gui`), fallen, no longer run by this
  * server nor writing its session file, and that left nothing behind: no commits past its base, a clean worktree and no
- * claims. It shows as "Ended with the server" with a Close that frees its star; a fallen session with work keeps
+ * claims. It shows as "stopped" (under the fleet's Fell over chip) with a Clear that frees its star; a fallen session with work keeps
  * Resume and Inspect. Needs the row's git (gitView.withGit): unknown git is never "nothing behind".
  */
 export function isEnded(row) {

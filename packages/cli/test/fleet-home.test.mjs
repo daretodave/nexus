@@ -11,7 +11,7 @@ import { startServer } from '../server/server.mjs';
 import { removeTree } from './helpers/tmp.mjs';
 import { fileURLToPath } from 'node:url';
 import { fleetRows, inboxItems, isEnded, markEnded, parkedId, parseParkedId, phaseOf, progressOf, resumable, resumePrompt, sameParked } from '../server/fleet-home.mjs';
-import { norm, FILTERS } from '../src/screens/fleet/model.js';
+import { norm, FILTERS, summary } from '../src/screens/fleet/model.js';
 import { fromInbox } from '../src/screens/headsdown-inbox/inboxModel.js';
 
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
@@ -298,7 +298,9 @@ test('a GUI session that fell with its server and left nothing behind reads ende
   assert.equal(marked[0].ended, true);
   assert.equal(marked[1].ended, undefined);
   const tile = norm(marked[0]);
-  assert.equal(FILTERS.find((f) => f.value === 'fallen').test(tile), false, 'not counted as fell over');
+  assert.equal(FILTERS.find((f) => f.value === 'fallen').test(tile), true, 'it lives under the Fell over chip');
+  assert.equal(FILTERS.find((f) => f.value === 'here').test(tile), false, 'never on the fleet by default');
+  assert.equal(summary([tile]), 'no sessions yet', 'and the topbar does not count it as fell over: it has nothing to lose');
 });
 
 test('an ended session closes from the fleet: its ledger ends (its star frees) and its worktree closes', async () => {

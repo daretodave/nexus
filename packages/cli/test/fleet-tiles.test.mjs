@@ -25,9 +25,8 @@ test('a session whose turn ended reads idle, not working, in the filters and the
   assert.equal(test_('idle')(idle), true);
   const list = [idle, busy, term, unknown];
   assert.equal(counts(list).working, 2);
-  assert.equal(summary(list), '4 sessions · 2 working · 2 idle');
-  assert.equal(summary(list, 3), '4 sessions · 2 working · 2 idle · 3 claimed, not attached');
-  assert.equal(summary([], 1), '0 sessions · 1 claimed, not attached');
+  assert.equal(test_('idle')(term), false, 'an unlinked terminal is set aside, not idle here');
+  assert.equal(summary(list), '3 sessions · 2 working · 1 idle');
   assert.equal(idleLine(idle), 'Done · last: /plot peek');
   assert.equal(idleLine(busy), 'Idle');
   // A fallen session stays fallen whatever its file said last.
@@ -140,4 +139,21 @@ test('the tile bar gives way at the cells, never the label: only .f and .e shrin
   // The label stays a text run of the bar itself, outside the cells that shrink.
   const ui = fs.readFileSync(new URL('../src/ui/fleet.jsx', import.meta.url), 'utf8');
   assert.match(ui, /<span className="e">\{'░'\.repeat\(empty\)\}<\/span>\] \{label\}<\/div>/);
+});
+
+test('the fleet shows this machine by default: unlinked terminals, fallen and stopped sessions are a chip away', () => {
+  const live = norm({ id: 'a', name: 'vega', kind: 'local', state: 'live', turn: 'working' });
+  const asking = norm({ id: 'b', name: 'sirius', kind: 'local', state: 'asking' });
+  const term = norm({ id: 'c', name: 'c0ffee12', kind: 'terminal', state: 'live', turn: 'working' });
+  const linked = norm({ id: 'd', name: 'd00dfeed', kind: 'terminal', state: 'live', turn: 'working', linked: true });
+  const fallen = norm({ id: 'e', name: 'deneb', kind: 'terminal', state: 'fallen' });
+  const stopped = norm({ id: 'f', name: 'rigel', kind: 'terminal', state: 'fallen', ended: true });
+  const list = [live, asking, term, linked, fallen, stopped];
+  assert.deepEqual(list.filter(test_('here')).map((s) => s.name), ['vega', 'sirius', 'd00dfeed'], 'a linked terminal stays: it can be steered from here');
+  assert.deepEqual(list.filter(test_('terminals')).map((s) => s.name), ['c0ffee12']);
+  assert.deepEqual(list.filter(test_('fallen')).map((s) => s.name), ['deneb', 'rigel'], 'stopped sessions live with the fallen ones');
+  assert.equal(test_('working')(term), false, 'set aside counts nowhere on this machine');
+  assert.equal(test_('working')(linked), true);
+  assert.ok(FILTERS.filter((f) => f.optional).every((f) => ['terminals', 'fallen'].includes(f.value)));
+  assert.equal(summary(list), '3 sessions · 2 working · 1 needs you · 1 fell over', 'only resumable work counts as fell over');
 });

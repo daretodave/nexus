@@ -3,20 +3,24 @@
 // tile, a filter row, "start another session", and Pause all (the reboot
 // train) docked over the grid while it runs.
 //
-// Data: GET /api/sessions (useSessions), GET /api/claims (a claim holder no tile stands for gets a dim tile). Actions: POST /api/sessions (start, once a spec or infinite is chosen: StartPick),
+// Data: GET /api/sessions (useSessions), GET /api/claims (claim holders no tile stands for: one line in the head).
+// "This machine" is the default; terminals nobody linked and sessions that fell over or stopped are a chip away.
+// Actions: POST /api/sessions (start, once a spec or infinite is chosen: StartPick),
 // POST /api/sessions/:id/resume (a hosted one resumes; a fallen one is taken
 // by a new hosted session on /reboot-resume <star>), POST /api/train
 // { action: pause|cancel|resume }. An action the server does not serve yet
 // says plainly that it is not wired up; nothing is invented.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AppFrame, Topbar, Wordmark, TbSep, TbTitle, TbSpacer, InboxBtn, ViewHead, ChoiceButtons,
   TileNew, TrainDock, Train, ToastHost, Err, Icon, cx, useShell,
 } from '../ui/index.js';
 import { useSessions, usePlan, useClaims } from '../data/index.js';
+import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
 import StartPick from './fleet/StartPick.jsx';
-import SessionTile, { ClaimedTile } from './fleet/SessionTile.jsx';
+import SessionTile from './fleet/SessionTile.jsx';
 import { norm, FILTERS, counts, summary, trainOf, claimHolders, chunkTitle } from './fleet/model.js';
 import '../styles/fleet-honest.css';
 import '../styles/tile-bar-fit.css';
@@ -67,7 +71,7 @@ export default function Fleet() {
   const plan = usePlan();
   const claims = useClaims(15000);
   const { toasts, push } = useToasts();
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('here');
   const [trainOn, setTrainOn] = useState(false);
   const [resuming, setResuming] = useState({});
 
@@ -105,13 +109,14 @@ export default function Fleet() {
     sessions.reload();
   }
 
-  // Close a session that ended with the server: its star frees and its worktree closes.
+  // Clear a session that stopped when the server restarted: its star frees and its empty worktree closes.
   async function close(s) {
     setResuming((m) => ({ ...m, [s.id]: true }));
     const r = await act(`/api/sessions/${encodeURIComponent(s.id)}/close`, {});
     setResuming((m) => { const n = { ...m }; delete n[s.id]; return n; });
-    if (!r.ok) push({ kind: 'error', title: `Couldn't close ${s.name}`, body: r.error });
-    else if (r.data?.worktree && !r.data.worktree.closed) push({ kind: 'info', title: `Closed ${s.name}`, body: `Its star is free. Its worktree stays: ${r.data.worktree.note}` });
+    if (!r.ok) push({ kind: 'error', title: `Couldn't clear ${s.name}`, body: r.error });
+    else if (r.data?.worktree && !r.data.worktree.closed) push({ kind: 'info', title: `Cleared ${s.name}`, body: `Its star is free. Its worktree stays: ${r.data.worktree.note}` });
+    else push({ kind: 'info', title: `Cleared ${s.name}`, body: 'Its star is free and its empty worktree is gone.' });
     sessions.reload();
   }
 
@@ -139,7 +144,7 @@ export default function Fleet() {
     <Topbar>
       <Wordmark />
       <TbSep />
-      <TbTitle title="Fleet" sub={summary(list, holders.length)} />
+      <TbTitle title="Fleet" sub={summary(list)} />
       <TbSpacer />
       <InboxBtn />
       <LoopLine />
@@ -147,7 +152,8 @@ export default function Fleet() {
     </Topbar>
   );
 
-  const options = FILTERS.map((f) => ({ value: f.value, label: `${f.label} ${c[f.value]}` }));
+  // Terminals and fell-over sessions are a chip away, and the chip shows only while it holds something.
+  const options = FILTERS.filter((f) => !f.optional || c[f.value] || filter === f.value).map((f) => ({ value: f.value, label: `${f.label} ${c[f.value]}` }));
 
   return (
     <AppFrame topbar={topbar} current="fleet">
@@ -157,6 +163,11 @@ export default function Fleet() {
           <span className="view-sub" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <Icon name="clock" size={14} />{[where, hhmm(now), 'tiles stay where you left them'].filter(Boolean).join(' · ')}
           </span>
+          {holders.length ? (
+            <span className="view-sub">
+              {holders.length} {holders.length === 1 ? 'claim holder' : 'claim holders'} outside these sessions · <Link to={PATHS.board}>See them on the Plan board</Link>
+            </span>
+          ) : null}
         </ViewHead>
         {sessions.status === 'error' && !sessions.data ? (
           <Err title="Couldn't read the sessions" body="The tiles come back on their own once the server answers again." detail={sessions.error} actions={<button className="btn btn-s" type="button" onClick={sessions.reload}>Try again</button>} />
@@ -164,8 +175,7 @@ export default function Fleet() {
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', margin: '-8px -28px 0', padding: `8px 28px ${24 + dockRoom}px` }}>
           <div className="fleet-grid">
             {shown.map((s) => <SessionTile key={s.id} s={s} train={train} now={now} busy={!!resuming[s.id]} title={chunkTitle(plan.data, s.chunk?.id)} onResume={() => resume(s)} onClose={s.ended ? () => close(s) : undefined} onLink={s.kind === 'terminal' ? (on) => link(s, on) : undefined} />)}
-            {filter === 'all' ? holders.map((h) => <ClaimedTile key={h.key} h={h} now={now} />) : null}
-            {sessions.status !== 'loading' && filter === 'all' ? (
+            {sessions.status !== 'loading' && filter === 'here' ? (
               <TileNew>
                 <span className="cstar is-neutral" />
                 <div className="t-title-s">Start another session</div>

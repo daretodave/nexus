@@ -219,7 +219,7 @@ test('fleet: the topbar line and the reboot train', () => {
     { id: 'd', name: 'polaris', kind: 'terminal' },
   ].map(norm);
   assert.equal(summary([]), 'no sessions yet');
-  assert.equal(summary(list), '4 sessions · 2 working · 1 needs you · 1 fell over');
+  assert.equal(summary(list), '2 sessions · 1 working · 1 needs you · 1 fell over');
   const t = trainOf(list, true);
   assert.equal(t.total, 2);
   assert.deepEqual(t.cars.map((c) => [c.session.name, c.state]), [['vega', 'pausing'], ['sirius', 'pausing'], ['deneb', 'skipped'], ['polaris', 'skipped']]);

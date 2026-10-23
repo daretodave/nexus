@@ -101,7 +101,7 @@ export function chunkTitle(plan, id) {
 
 /**
  * Every claim holder no session tile stands for: a session tag (or, with none, a person) whose claims no listed
- * session owns, as a dim "Claimed, not attached" tile. The cloud loop's claims and held claims are not sessions.
+ * session owns: the fleet head counts them in one line that links to the Plan board. The cloud loop's claims and held claims are not sessions.
  * rows: GET /api/claims rows; sessions: the fleet rows. -> [{ key, session, name, who, mine, n, lines, fold, at, stale }],
  * the most claims first. `fold` is the rail's fold as one line: "59.10-59.49 · 39 chunks, 60.2".
  */
@@ -130,13 +130,26 @@ export function claimHolders(rows, sessions = []) {
   return out.sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
 }
 
-/** Filters on the view head, and the counts the topbar line reads. */
+/**
+ * Set aside: on the fleet only when asked for. A terminal session nobody linked (any Claude Code chat in the repo that
+ * wrote in the last 15 minutes, the owner's own tabs among them), a session that fell over, and one that stopped when
+ * the server restarted. Nothing waiting on the owner is ever set aside.
+ */
+export const fellOver = (s) => s.state === 'fallen' || s.state === 'resume-failed';
+export const inTerminal = (s) => s.state === 'observing' && !s.linked;
+export const aside = (s) => inTerminal(s) || !!s.ended || fellOver(s);
+
+/**
+ * Filters on the view head, and the counts the topbar line reads. "This machine" is the default; `optional` chips
+ * show only while they hold something (or are chosen).
+ */
 export const FILTERS = [
-  { value: 'all', label: 'All', test: () => true },
-  { value: 'needs', label: 'Needs you', test: (s) => s.state === 'asking' },
-  { value: 'working', label: 'Working', test: (s) => !s.idle && ['live', 'observing', 'resuming', 'resumed'].includes(s.state) },
-  { value: 'idle', label: 'Idle', test: (s) => !!s.idle },
-  { value: 'fallen', label: 'Fell over', test: (s) => !s.ended && (s.state === 'fallen' || s.state === 'resume-failed') },
+  { value: 'here', label: 'This machine', test: (s) => !aside(s) },
+  { value: 'needs', label: 'Needs you', test: (s) => !aside(s) && s.state === 'asking' },
+  { value: 'working', label: 'Working', test: (s) => !aside(s) && !s.idle && ['live', 'observing', 'resuming', 'resumed'].includes(s.state) },
+  { value: 'idle', label: 'Idle', test: (s) => !aside(s) && !!s.idle },
+  { value: 'terminals', label: 'In terminals', optional: true, test: inTerminal },
+  { value: 'fallen', label: 'Fell over', optional: true, test: (s) => !!s.ended || fellOver(s) },
 ];
 
 export function counts(list) {
@@ -145,18 +158,19 @@ export function counts(list) {
   return c;
 }
 
-/** The topbar line: "5 sessions · 3 working · 1 idle · 1 needs you · 1 fell over · 2 claimed, not attached". */
-export function summary(list, holders = 0) {
-  if (!list.length && !holders) return 'no sessions yet';
+/**
+ * The topbar line, over what this machine shows: "3 sessions · 2 working · 1 needs you · 1 fell over". Fell over
+ * counts only work that can be resumed (a stopped session has nothing to lose); terminals get no clause.
+ */
+export function summary(list) {
   const c = counts(list);
-  const parts = [`${list.length} ${list.length === 1 ? 'session' : 'sessions'}`];
+  const lost = list.filter((s) => !s.ended && fellOver(s)).length;
+  if (!c.here && !lost) return 'no sessions yet';
+  const parts = [`${c.here} ${c.here === 1 ? 'session' : 'sessions'}`];
   if (c.working) parts.push(`${c.working} working`);
   if (c.idle) parts.push(`${c.idle} idle`);
   if (c.needs) parts.push(`${c.needs} needs you`);
-  if (c.fallen) parts.push(`${c.fallen} fell over`);
-  const ended = list.filter((s) => s.ended).length;
-  if (ended) parts.push(`${ended} ended with the server`);
-  if (holders) parts.push(`${holders} claimed, not attached`);
+  if (lost) parts.push(`${lost} fell over`);
   return parts.join(' · ');
 }
 

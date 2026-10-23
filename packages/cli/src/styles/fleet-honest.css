@@ -1,5 +1,5 @@
 /* Fleet tiles that say what is true (spec 47, A10): an idle session rests, the stage carries the session's last word
-   or tool row, and a claim holder no tile stands for is a dim tile on the design's muted surface (the well), not
+   or tool row, and a stopped session is a dim tile on the design's muted surface (the well), not
    faded text. Theme tokens only, so day and night both hold. */
 
 .tile.is-idle .tile-stage { background: radial-gradient(80% 70% at 50% 45%, color-mix(in oklab, var(--sess, var(--aurora)) 6%, transparent) 0%, transparent 70%), var(--well); }
@@ -10,7 +10,5 @@
 .tile-last .tool { flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--st-tool); font-variant-ligatures: none; }
 .tile-last .arg { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-mono); font-size: 11px; color: var(--text-3); font-variant-ligatures: none; }
 
-.tile.is-claimed, .tile.is-ended { background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
-.tile.is-claimed .tile-stage, .tile.is-ended .tile-stage { background: transparent; filter: saturate(.35); }
-.tile.is-claimed .tile-name { color: var(--text-2); }
-.tile.is-claimed .tile-chunk .t { -webkit-line-clamp: 3; font-family: var(--font-mono); font-size: 12px; line-height: 16px; font-weight: 400; }
+.tile.is-ended { background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
+.tile.is-ended .tile-stage { background: transparent; filter: saturate(.35); }
