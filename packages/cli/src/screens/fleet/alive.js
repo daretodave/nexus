@@ -13,6 +13,22 @@ const JOBS = new Set([
 // A chunk loop is done only once its work landed: its last word or its last event says so.
 const LANDS = new Set(['next', 'ship-a-chunk', 'heads-down']);
 const LANDED = /\b(landed|pushed|merged|shipped|closed|archived|on main)\b/i;
+// A clause that says it did not land: "nothing was pushed", "the chunk is not closed", "the gate failed".
+const DENIED = /\b(not|no|nothing|never|neither|nor|failed|fails|cannot|unable)\b|n't\b/i;
+
+/** Does this text say its work landed, in a clause that does not deny it? */
+export function saysLanded(text) {
+  return String(text || '').split(/[.!?;,\n]+|\s(?:but|and|so)\s/i).some((x) => LANDED.test(x) && !DENIED.test(x));
+}
+
+/** Does a final word ask the person something? Its last line ends on a question, or it counts questions off. */
+export function asksSomething(text) {
+  const t = String(text || '').trim();
+  if (!t) return false;
+  if (/\bquestion \d+ of \d+\b/i.test(t)) return true;
+  const last = t.split(/\n+/).map((l) => l.trim()).filter(Boolean).pop() || '';
+  return /\?[\s*_`"')\]]*$/.test(last);
+}
 
 /** The slash command a prompt starts with ('oversight'), or ''. */
 export function commandOf(prompt) {
@@ -21,9 +37,9 @@ export function commandOf(prompt) {
 }
 
 /**
- * Has this session finished its job? From real signals only: its turn ended on a final word (not a tool call), it
- * asks nothing and holds no question, it holds no claim, and its last prompt was a job: an /oversight apply, a
- * one-shot skill, or a chunk loop whose work landed. A free-form prompt is a conversation, never "done".
+ * Has this session finished its job? From real signals only: its turn ended on a final word (not a tool call) that
+ * asks nothing, it holds no question and no claim, and its last prompt was a job: an /oversight apply, a one-shot
+ * skill, or a chunk loop whose work landed. A free-form prompt is a conversation, never "done".
  * -> null, or { why, text } where text is the tile's short line ("applied your answers").
  */
 export function finishedJob(s) {
@@ -31,13 +47,16 @@ export function finishedJob(s) {
   if (!['live', 'resumed'].includes(s.state)) return null;
   if (s.parked > 0 || s.questions?.total) return null;
   if (s.last?.kind !== 'text' || !String(s.last.text || '').trim()) return null;
+  // A turn that ends asking something in plain words waits on the person: never done.
+  if (asksSomething(s.last.text)) return null;
   if (claimCount(s.git || {}) > 0) return null;
   const cmd = commandOf(s.lastPrompt);
   if (!JOBS.has(cmd)) return null;
   if (cmd === 'oversight') return { why: 'oversight', text: /\bapply\b/i.test(s.lastPrompt) ? 'applied your answers' : 'oversight finished' };
   if (LANDS.has(cmd)) {
-    const said = `${s.last.text} ${s.event?.text || ''}`;
-    if (!LANDED.test(said)) return null;
+    // Landed only on a word that says so, and with its claims known to be gone (unknown is not "none").
+    if (s.git?.claims == null) return null;
+    if (!saysLanded(s.last.text) && !saysLanded(s.event?.text)) return null;
     return { why: cmd, text: cmd === 'heads-down' ? 'its list is done' : 'its chunk landed' };
   }
   return { why: cmd, text: `/${cmd} finished` };

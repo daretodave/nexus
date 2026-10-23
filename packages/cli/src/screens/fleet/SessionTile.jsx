@@ -127,7 +127,7 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, onPut
   else if (st === 'resume-failed') badge = <Flag kind="fallen">resume failed</Flag>;
   else if (st === 'resuming') badge = <span className="t-label c-2">resuming</span>;
   else if (st === 'resumed') badge = <Fresh />;
-  else if (done) badge = <DoneChip />;
+  else if (done) badge = s.mode === 'owner' ? <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><OwnerChip /><DoneChip /></span> : <DoneChip />;
   else if (s.idle) badge = <span className="t-label c-2">idle</span>;
   else if (s.mode === 'owner') badge = <OwnerChip />;
   else if (s.parked) badge = <ParkedBadge>{s.parked} parked</ParkedBadge>;
@@ -225,7 +225,7 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, onPut
     info = (
       <>
         {chunk}{track}{event}
-        {!kept && onPutAway ? <PutAway s={s} done={done} compact onGone={onPutAway} onKeep={keep} /> : null}
+        {!kept && onPutAway && !s.home ? <PutAway s={s} done={done} compact onGone={onPutAway} onKeep={keep} /> : null}
       </>
     );
   } else {
