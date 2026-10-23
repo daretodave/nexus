@@ -264,18 +264,45 @@ function* walk(dir) {
   }
 }
 
+const PROMPT_ANSWER_MAX = 20000; // plan-answers.mjs MAX_ANSWER
+const DECIDED = '(left to the session)'; // shared/choices.mjs DECIDE_TEXT
+const IMAGE_ONLY = '(see the attached images)'; // shared/choices.mjs IMAGE_ONLY_TEXT
+
+/**
+ * One answer's lines: its question on one line, the answer with its own line breaks (each further line indented under
+ * `answer:`), a "You decide" said as such, and the images it carries as absolute paths a session can Read.
+ * `images`: [{ path, name }].
+ */
+export function answerLines(a) {
+  const q = String(a.text || '').replace(/\s+/g, ' ').slice(0, 200);
+  const words = String(a.answer || '').replace(/\r\n/g, '\n').trim().slice(0, PROMPT_ANSWER_MAX);
+  const indent = (t) => t.split('\n').map((l, i) => (i ? `    ${l}` : l)).join('\n');
+  const out = [`- ${a.file}:${a.line} -- "${q}"`];
+  if (a.how === 'decide') {
+    out.push('  answer: (left to you) take the option you judge best, record which and why.');
+    if (words && words !== DECIDED) out.push(`  Notes: ${indent(words)}`);
+  } else out.push(`  answer: ${indent(words === IMAGE_ONLY ? 'see the images below' : words)}`);
+  const imgs = (Array.isArray(a.images) ? a.images : []).filter((i) => i && i.path);
+  if (imgs.length) out.push(`  images: ${imgs.map((i) => `${i.path}${i.name ? ` (${i.name})` : ''}`).join(', ')}`);
+  return out.join('\n');
+}
+
 /**
  * The prompt that carries plan answers. To the session that asked (`resume`, spec 53): one message with every answer,
  * applied where each question lives, then that session continues where it left off (and lands as its own run would).
- * Otherwise (a new session, the home session): through /oversight, landing per owner mode.
+ * Otherwise (a new session, the home session): through /oversight, landing per owner mode. An answer keeps its own
+ * line breaks; one with images names each file, and the prompt asks for them to be read first.
  */
 export function answersPrompt(answers, owner, { resume = false } = {}) {
-  const lines = answers.map((a) => `- ${a.file}:${a.line} -- "${a.text.replace(/\s+/g, ' ').slice(0, 200)}"\n  answer: ${a.answer.replace(/\s+/g, ' ')}`);
+  const lines = answers.map(answerLines);
+  const readThem = answers.some((a) => Array.isArray(a.images) && a.images.some((i) => i && i.path))
+    ? ['Some answers carry images: open each listed file with Read before you apply that answer.'] : [];
   if (resume) {
     const n = answers.length;
     return [
       `Your open questions are answered (${n} ${n === 1 ? 'answer' : 'answers'}, from the nexus GUI). Do not ask again; the person already answered.`,
       'Apply these answers where each question lives (resolve the open question or the [needs-user-call] row), then continue where you left off.',
+      ...readThem,
       '',
       ...lines,
     ].join('\n');
@@ -287,6 +314,7 @@ export function answersPrompt(answers, owner, { resume = false } = {}) {
     '/oversight apply these answers from the nexus GUI. Do not ask again; the person already answered.',
     'For each row: record the answer where the question lives (resolve the [needs-user-call] row or the open question), and act on it as /oversight would.',
     landing,
+    ...readThem,
     '',
     ...lines,
   ].join('\n');

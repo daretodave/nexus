@@ -311,12 +311,12 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
       const g = gates.find((x) => !x.done && x.on === 'ask' && x.id === askId);
       return g ? fulfil(g, { by: 'page', answers }) : false;
     },
-    /** POST /api/send: a line from the composer. Fulfils the session's open send gate, else just shows. */
-    send(key, text) {
+    /** POST /api/send: a line from the composer (`extra`: its images). Fulfils the session's open send gate, else just shows. */
+    send(key, text, extra = {}) {
       const s = find(key) || homeOf({});
       const g = openGate(s, 'send');
       if (g) return fulfil(g, { by: 'page', text });
-      s.hub.tx({ kind: 'user', text, at: now() });
+      s.hub.tx({ kind: 'user', text, at: now(), ...extra });
       return true;
     },
     /** POST /api/sessions/:id/resume: Resume on a fallen tile. */

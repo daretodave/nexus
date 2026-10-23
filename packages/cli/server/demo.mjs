@@ -25,10 +25,18 @@ import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
 import { realClock } from './demo/clock.mjs';
 import { createDemoVault, DEMO_REQUEST } from './demo/vault.mjs';
 import { applyDrafts } from './drafts.mjs';
+import { applyAnswers, markSentIn } from './plan-answers.mjs';
+import { answersPrompt } from './repo.mjs';
+import { fallbackNote, REC_WHY, REFUSED } from './choices.mjs';
+import { BRIEFS, FLAKY, GRILL_CHOICES } from './demo/grill.mjs';
+import { recommendedDefault } from '../shared/recommend.mjs';
+import { ANSWER_UPLOADS, imageRefs } from '../shared/choices.mjs';
+import { MAX_IMAGE, readAttachments, extOf } from '../shared/attachments.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG = path.resolve(HERE, '..');
 const MAX_BODY = 1024 * 1024;
+const MAX_UPLOAD_BODY = Math.ceil(MAX_IMAGE * 4 / 3) + 64 * 1024;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2', '.woff': 'font/woff', '.png': 'image/png', '.ico': 'image/x-icon' };
 
 export { scenarioNames };
@@ -69,9 +77,16 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
     const rest = world.inbox();
     return row && local?.effective !== false ? [...rest, { id: `plan:${row.id}`, kind: 'plan', src: 'durable', question: row.text, durable: row, at: null }] : rest;
   };
+  // Oversight in the demo (0.5.1): kept answers, the wand's choices, uploaded images and hand-offs, all in memory.
+  let planStore = {};
+  const choiceStore = {};
+  const flaked = new Set();
+  const uploads = new Map(); // file -> { buf, type }
+  const handed = []; // [{ session, text, extra }]: replayed when --loop starts the scenario over
   let loopTimer = null;
   const begin = () => {
     world.start();
+    for (const h of handed) world.send(h.session, h.text, h.extra);
     local = { owner: world.info().owner, ownerMode: true, effective: world.info().owner, runMode: 'size', phase: 'std' };
     if (loop) {
       if (loopTimer) clk.cancel(loopTimer);
@@ -99,13 +114,13 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
     return null;
   }
 
-  async function body(req) {
+  async function body(req, max = MAX_BODY) {
     if (!/^application\/json\b/.test(req.headers['content-type'] || '')) throw Object.assign(new Error('json only'), { status: 415 });
     let size = 0;
     const chunks = [];
     for await (const c of req) {
       size += c.length;
-      if (size > MAX_BODY) throw Object.assign(new Error('too large'), { status: 413 });
+      if (size > max) throw Object.assign(new Error('too large'), { status: 413 });
       chunks.push(c);
     }
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw Object.assign(new Error('bad json'), { status: 400 }); }
@@ -181,8 +196,66 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
           world.send(s.id, text);
           return send(res, 200, { ok: true, session: s.id, held: false });
         }
-        case 'POST /api/announce':
-        case 'POST /api/oversight/answer': await body(req); return send(res, 200, { ok: true });
+        case 'POST /api/announce': await body(req); return send(res, 200, { ok: true });
+        // Plan answers kept in memory, by the live server's own rules (plan-answers.mjs).
+        case 'GET /api/plan-answers': return send(res, 200, { answers: planStore });
+        case 'PUT /api/plan-answers':
+        case 'POST /api/plan-answers': {
+          const b = await body(req);
+          const patch = b.answers && typeof b.answers === 'object' && !Array.isArray(b.answers) ? b.answers : null;
+          if (!patch) return send(res, 400, { error: 'answers: { "<file:line>": { answer, how } | null }' });
+          const r = applyAnswers(planStore, patch, world.durable(), { imageOk: (f) => uploads.has(f) });
+          planStore = r.store;
+          return send(res, 200, { ok: true, answers: planStore, skipped: r.skipped });
+        }
+        // The wand in the demo: example choices after a short think, no model.
+        case 'GET /api/oversight/choices': return send(res, 200, { choices: choiceStore });
+        case 'POST /api/oversight/choices': {
+          const b = await body(req);
+          await new Promise((ok) => setTimeout(ok, 900));
+          return send(res, 200, demoChoices(Array.isArray(b.ids) ? b.ids.map(String) : []));
+        }
+        case 'GET /api/oversight/specs': {
+          const files = (url.searchParams.get('files') || '').split(',').filter(Boolean);
+          return send(res, 200, { specs: Object.fromEntries(files.filter((f) => BRIEFS[f]).map((f) => [f, BRIEFS[f]])) });
+        }
+        case 'POST /api/oversight/uploads': {
+          const b = await body(req, MAX_UPLOAD_BODY);
+          const att = readAttachments([{ kind: 'image', name: b.name, mediaType: b.mediaType, data: b.data }]);
+          if (att.error) return send(res, / up to /.test(att.error) ? 413 : 400, { error: att.error });
+          const [img] = att.images;
+          const buf = Buffer.from(img.data, 'base64');
+          const file = `${crypto.createHash('sha256').update(buf).digest('hex').slice(0, 16)}.${extOf(img.mediaType)}`;
+          uploads.set(file, { buf, type: img.mediaType });
+          return send(res, 200, { file, name: img.name, mediaType: img.mediaType, demo: true });
+        }
+        case 'POST /api/oversight/answer': {
+          const b = await body(req);
+          const rows = (Array.isArray(b.answers) ? b.answers : []).filter((a) => a && a.file && a.answer && String(a.answer).trim());
+          if (!rows.length) return send(res, 400, { error: 'no answers' });
+          const clean = rows.map((a) => ({
+            file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer),
+            how: a.how === 'decide' ? 'decide' : 'answered',
+            images: imageRefs(a.images, (f) => uploads.has(f)).map((r) => ({ ...r, mediaType: uploads.get(r.file).type, path: `${repoPath}/.nexus/uploads/${ANSWER_UPLOADS}/${r.file}` })),
+          }));
+          // A new session is played by the scenario's home session here: the demo starts no sessions.
+          const fresh = b.session === 'new' || !world.session(String(b.session || ''));
+          const s = fresh ? world.session(sc.home) : world.session(String(b.session));
+          const text = answersPrompt(clean, true, { resume: !fresh });
+          const images = clean.flatMap((a) => a.images).map((r) => ({ name: r.name, mediaType: r.mediaType, url: `/api/uploads/${ANSWER_UPLOADS}/${r.file}` }));
+          const extra = images.length ? { images } : {};
+          world.send(s.id, text, extra);
+          handed.push({ session: s.id, text, extra });
+          planStore = markSentIn(planStore, clean.map((a) => `${a.file}:${a.line}`), s.id);
+          return send(res, 200, { ok: true, session: s.id, name: s.name, via: 'sdk' });
+        }
+      }
+      const up = /^GET \/api\/uploads\/oversight\/([\w.-]+)$/.exec(route);
+      if (up) {
+        const f = uploads.get(up[1]);
+        if (!f) return send(res, 404, { error: 'no such upload' });
+        res.writeHead(200, { 'content-type': f.type, 'cache-control': 'private, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' });
+        return res.end(f.buf);
       }
       const sec = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)(\/push)?$/.exec(route);
       if (sec) {
@@ -224,6 +297,31 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
     } catch (e) {
       return send(res, e.status || 500, { error: String(e.message || e) });
     }
+  }
+
+  /** The wand's demo answer: GRILL_CHOICES, one question that fails once (FLAKY), the rest said plainly. */
+  function demoChoices(ids) {
+    const qs = new Map(world.durable().map((d) => [d.id, d]));
+    const choices = {};
+    const errors = {};
+    for (const id of ids.slice(0, 40)) {
+      const d = qs.get(id);
+      if (!d) { errors[id] = REFUSED; continue; }
+      const rec = recommendedDefault(d.text);
+      const row = rec ? [{ label: rec, why: REC_WHY, rec: true }] : [];
+      const failed = (why) => ({ options: row, by: row.length ? 'row' : 'none', at: Date.now(), note: fallbackNote('failed', why, row.length > 0), reason: 'failed' });
+      if (id === FLAKY && !flaked.has(id)) {
+        flaked.add(id);
+        errors[id] = 'took too long';
+        choices[id] = failed('took too long');
+        continue;
+      }
+      const opts = GRILL_CHOICES[id];
+      if (!opts) { choices[id] = failed('nothing came back'); continue; }
+      choices[id] = { options: opts.map((o) => ({ ...o })), by: 'demo', at: Date.now() };
+      choiceStore[id] = choices[id];
+    }
+    return { choices, ...(Object.keys(errors).length ? { errors } : {}) };
   }
 
   function serveStatic(req, res, url) {

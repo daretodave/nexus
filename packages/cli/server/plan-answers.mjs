@@ -15,10 +15,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { primaryRoot } from './local.mjs';
+import { DECIDE_TEXT, IMAGE_ONLY_TEXT, imageRefs } from '../shared/choices.mjs';
 
 export const PLAN_ANSWERS_FILE = '.nexus/answers.json';
 export const MAX_ANSWER = 20000;
-const HOWS = new Set(['answered', 'default']);
+const HOWS = new Set(['answered', 'default', 'decide']);
 
 /** A question's words as a short hash: whitespace does not count, any other change does. */
 export const textHash = (text) => crypto.createHash('sha1').update(String(text || '').replace(/\s+/g, ' ').trim()).digest('hex').slice(0, 8);
@@ -51,19 +52,24 @@ export function pruneAnswers(store, questions) {
 }
 
 /**
- * Pure: apply a patch ({ id: { answer, how } | null }) against the questions listed now. An answer records (its
+ * Pure: apply a patch ({ id: { answer, how, images? } | null }) against the questions listed now. An answer records (its
  * question's hash taken, its sent mark cleared: a changed answer goes again), null or an empty answer clears, an id
  * the plan does not list (or `skip` refuses) is left out. -> { store, skipped: [id] }
  */
-export function applyAnswers(store, patch, questions, { at = Date.now(), skip = () => false } = {}) {
+export function applyAnswers(store, patch, questions, { at = Date.now(), skip = () => false, imageOk = () => false } = {}) {
   const now = listed(questions);
   const out = { ...(store || {}) };
   const skipped = [];
   for (const [id, v] of Object.entries(patch || {})) {
-    const answer = v && v.answer != null ? String(v.answer).trim() : '';
+    const how = v && HOWS.has(v.how) ? v.how : 'answered';
+    const images = v ? imageRefs(v.images, imageOk) : [];
+    let answer = v && v.answer != null ? String(v.answer).trim() : '';
+    // Images alone, or the choice left to the session, still make an answer.
+    if (!answer && v && how === 'decide') answer = DECIDE_TEXT;
+    if (!answer && images.length) answer = IMAGE_ONLY_TEXT;
     if (!answer) { delete out[id]; continue; }
     if (!now.has(id) || skip(id)) { skipped.push(id); continue; }
-    out[id] = { answer: answer.slice(0, MAX_ANSWER), how: HOWS.has(v.how) ? v.how : 'answered', hash: now.get(id), at };
+    out[id] = { answer: answer.slice(0, MAX_ANSWER), how, hash: now.get(id), at, ...(images.length ? { images } : {}) };
   }
   return { store: out, skipped };
 }
