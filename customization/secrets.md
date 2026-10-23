@@ -134,11 +134,17 @@ workspace ring; anything else stays in the repo's `.env`. A
 single-repo project needs only `.env`; repos already on the
 two-ring layout change nothing.
 
-A key **file** (a PEM, a service account's JSON) stays a file,
-outside every repo (a `.secrets/` folder at the workspace root
-is the convention). The vault holds its path under a name
-(`GCP_KEY_FILE=/home/me/work/.secrets/gcp.json`), never its
-contents: a vault value is one line.
+A key **file** (a PEM) stays a file, outside every repo (a
+`.secrets/` folder at the workspace root is the convention).
+The vault holds its path under a name
+(`TLS_KEY_FILE=/home/me/work/.secrets/tls.pem`), never its
+contents: a vault value is one line. A service account's JSON
+key is the one exception, because JSON folds to one line: Set
+up a stack stores Google Cloud's and Firebase's key minified,
+as one value, and the app hands it to the client library from
+the environment, so no key file sits on disk at all. Run
+`set` with a key you minified yourself; the stack's paste
+field minifies for you.
 
 ### Set, unset, status, import
 
@@ -518,9 +524,23 @@ secrets") and leaves the loop's sign-in out.
 
 The GUI's Vault has **Set up a stack** (also onboarding's
 Secrets step, recommended in a folder with nothing to import).
-You pick the services the app runs on (Supabase, Vercel and
-Cloudflare to start; each is a recipe in
-`packages/cli/shared/stack/recipes.mjs`). Each one gets a card:
+You pick the services the app runs on from 21 recipes, grouped
+and searchable, or start from a preset (Supabase + Vercel +
+Cloudflare, Next.js SaaS, AI app, Discord bot, Slack app):
+
+| Group | Services |
+|---|---|
+| Hosting and DNS | Cloudflare, Vercel, Netlify, Fly.io |
+| Data | Supabase, Neon, Upstash Redis, Firebase |
+| Auth | Clerk |
+| Payments | Stripe |
+| AI | Anthropic, OpenAI |
+| Messaging and chat | Discord, Slack |
+| Email and SMS | Resend, Twilio |
+| Observability | Sentry, PostHog |
+| Cloud | AWS, Google Cloud, Azure |
+
+Each one gets a card:
 what it is for, the steps with links to the right console page,
 the token to create and exactly which permissions to give it,
 and a paste field per value that knows the value's shape.
@@ -540,22 +560,93 @@ What it writes:
   layout nexus knows (flat, `env`, or per app). Each must be
   gitignored and inside the repo; the write is atomic and
   owner-only, and keeps every other line as it was.
-- **The sinks you tick**: GitHub Actions for the names CI reads
-  (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,
-  `CLOUDFLARE_API_TOKEN`), the `vercel` sink when the checkout is
-  linked.
+- **The sinks you tick**: GitHub Actions for the deploy names
+  CI reads (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,
+  `CLOUDFLARE_API_TOKEN`, `NETLIFY_AUTH_TOKEN`, `FLY_API_TOKEN`,
+  `SENTRY_AUTH_TOKEN` and their IDs; never an AWS, Google Cloud
+  or Azure key, which CI should get through OIDC), the `vercel`
+  sink when the checkout is linked.
 - A name the repo already reads (`SUPABASE_SERVICE_ROLE_KEY`,
-  `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `POSTGRES_URL`) is kept in
-  place of the new one.
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `POSTGRES_URL`,
+  `AWS_DEFAULT_REGION`, `ARM_CLIENT_SECRET`, `KV_REST_API_URL`
+  and the like) is kept in place of the new one.
+- **The agent guide**: `docs/stack.md`, and a short pointer to
+  it at the end of `agents.md` (or `AGENTS.md`, else
+  `CLAUDE.md`). See below.
 
 What it never does: send a value back to the browser, a log, a
 URL or `.nexus/stack.json` (that file holds picks, ticks and
 each check's allowlisted facts only). **Check it** and the
 actions (DNS records on Cloudflare, the domain and the env on
 Vercel) run only on a click, read tokens from the vault on the
-server, call only the three services' own APIs with the token
-in a header, and show a plan before any change. It never runs
-`git push`; the last card gives you the line to run.
+server, call only each service's own API (an exact host list,
+plus a project's own `supabase.co`, AWS STS and an Upstash
+database by pattern) with the token in a header, read and never
+write (a check is one read: who the key is, one price, one
+PING), drop everything in the answer but a short list of facts,
+and never pass on a service's own error text. Actions show a
+plan before any change. It never runs `git push`; the last
+card gives you the line to run.
+
+When Supabase and Neon are both picked, both write
+`DATABASE_URL`: the panel says so, and the last value saved
+wins. Pick one to own it.
+
+### The agent guide
+
+Picking services, or saving a value, brings a marked block in
+`docs/stack.md` up to date:
+
+```
+<!-- nexus:stack:begin. Written by Set up a stack ... -->
+## The stack this app runs on
+...one section per picked service...
+<!-- nexus:stack:end -->
+```
+
+For each picked service it lists the env names as this repo
+has them (the framework's prefix, an alias the repo already
+reads), which ones are secret and which ship to the browser, how
+code reads them (the SDK that picks them up, or the line that
+passes them), the commands to run its CLI through
+`node scripts/secrets.mjs run --only ...`, test against live,
+rate limits, and what to do and not do. It never holds a value.
+Notes written outside the block stay byte for byte, a rewrite
+that changes nothing is skipped, and a CRLF file stays CRLF.
+The rule book gets a short marked pointer once, so a session
+that reads `agents.md` first finds the guide. Commit both
+files: they are names and guidance, safe in git, and a cloud
+session reads them too. The Vault's **For agents** line shows
+the same text before it is written.
+
+### Adding a service
+
+A service is one entry in the registry; nothing else in the GUI
+names it. To add one:
+
+1. **The entry.** Add it to `SERVICES` (or one of the
+   `services-*.mjs` files it spreads in) under
+   `packages/cli/shared/stack/`: `id`, `name`, a two-letter
+   `mono`, a `group` from `GROUPS`, `keywords` for search,
+   `role` and `why`, the `token` to create (`grant` rows for
+   least privilege, `resources`, `avoid`, `expiry`, `once`), the
+   `steps` (each with a link, a tick, an `auto` fact or the
+   values it asks for), the `values` (each with `env` names,
+   `secret`, `required` and a `shape`; a secret has no public
+   name), `gotchas`, and the `guide` (`reads`, `run`, `test`,
+   `limits`, `do`, `dont`). Add it to `ORDER`, and its console
+   hosts to `CONSOLE_HOSTS`.
+2. **Its shapes**, in `shapes-more.mjs`: what each value looks
+   like, the hint, and a `reject` for the value meant for the
+   field next door. A format the service does not publish stays
+   loose and says so.
+3. **Its check**, in `packages/cli/server/stack-checks-more.mjs`:
+   one read-only call, its host added to `ALLOW` exactly, its
+   facts to `FACTS`. Read the status and a code, never the
+   service's message.
+4. **Its demo answer** in `server/demo/stack.mjs`, and its
+   example value in the tests' `stack-examples.mjs`. The
+   registry test then holds it to every rule above.
 
 ## Hard rules
 
