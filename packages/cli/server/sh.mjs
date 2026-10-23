@@ -51,7 +51,8 @@ export async function settle({ ms = 5000, quiet = 150 } = {}) {
 export const SAFE_ARG = /^[\w@./:=,+{}-]*$/;
 const DIRECT = new Set(['git', 'node']);
 
-export function run(cmd, args = [], { cwd, timeout = 20000, input } = {}) {
+export function run(cmd, args = [], { cwd, timeout = 20000, input, env: extra } = {}) {
+  const env = extra ? { ...process.env, ...extra } : process.env;
   return new Promise((resolve) => {
     for (const a of args) {
       if (WIN && !SAFE_ARG.test(a)) return resolve({ ok: false, code: -1, stdout: '', stderr: `refused unsafe argument: ${a}` });
@@ -61,9 +62,9 @@ export function run(cmd, args = [], { cwd, timeout = 20000, input } = {}) {
       // Joined by hand on Windows: every argument passed SAFE_ARG above. git and node are real programs there, so they
       // skip the shell: a cmd.exe in front doubles what starting one costs, and starting one blocks the server.
       child = WIN && !DIRECT.has(cmd)
-        ? spawn([cmd, ...args].join(' '), { cwd, shell: true, windowsHide: true, env: process.env })
-        : WIN ? spawn(cmd, args, { cwd, windowsHide: true, env: process.env })
-        : spawn(cmd, args, { cwd, windowsHide: true, env: process.env, detached: true }); // its own group, so killTree's -pid reaches its children
+        ? spawn([cmd, ...args].join(' '), { cwd, shell: true, windowsHide: true, env })
+        : WIN ? spawn(cmd, args, { cwd, windowsHide: true, env })
+        : spawn(cmd, args, { cwd, windowsHide: true, env, detached: true }); // its own group, so killTree's -pid reaches its children
     } catch (e) {
       return resolve({ ok: false, code: -1, stdout: '', stderr: String(e.message || e), missing: true });
     }

@@ -99,7 +99,7 @@ export async function setOwner(repo, on) {
 // these prefs (agents, workflows) moves there once at server start, and forgetPrefs drops it.
 // AI one-liners for undescribed chunks (server/summaries.mjs) are on until Settings turns them off.
 // model / effort: '' is Claude Code's default (spec 54); lastModel: what the default resolved to on the last session.
-const DEFAULT_PREFS = { permissionMode: 'default', onboarded: false, aiSummaries: true, model: '', effort: '', lastModel: '' };
+const DEFAULT_PREFS = { permissionMode: 'default', onboarded: false, aiSummaries: true, changeFeed: true, model: '', effort: '', lastModel: '' };
 
 export async function readPrefs(repo) {
   const file = await gitPath(repo, 'nexus-gui.json');

@@ -21,6 +21,8 @@ import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
 import { landReorder } from './reorder.mjs';
 import { createSummaries } from './summaries.mjs';
+import { createChangeFeed } from './feed.mjs';
+import { runGit } from './feed-push.mjs';
 import { explode, plotPrompt, plotRequest } from './explode.mjs';
 import { addWorkflow, loopSchedule, saveSchedule } from './cloud.mjs';
 import { createSteering, primaryRoot, readLedgers, parkedItem, transcriptActivity, withHosted } from './sessions.mjs';
@@ -86,12 +88,14 @@ function readPrompt(name) {
  * @param {function|false} [o.explodeQuery]  the SDK's query() for POST /api/explode (tests); under an injected provider none is loaded
  * @param {function|false} [o.choicesQuery]  the SDK's query() for the wand (POST /api/oversight/choices); falls back to summaryQuery
  * @param {object} [o.secrets]      the secrets API's seams (tests): { run } a sink's runner, { vault } openVault overrides, { setup } setupVault overrides
+ * @param {object} [o.feed]       the change feed's seams (feed.mjs): { start, watch, git, gh, query }. Default: it starts and
+ *                                  watches, and under an injected provider it does neither unless `start` says so
  * @param {boolean} [o.swr]         answer the slow reads stale-while-revalidate (swr.mjs). Default: on, and off under an
  *                                  injected provider, where a test reads back what it just wrote
  * @param {object} [o.worktree]     a GUI session's worktree seams (tests): { git(cwd, args, o) } for every git it runs (a
  *                                  delay stands in for a slow checkout), { hooks(repo) } for cloud.mjs safeHooks
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, choicesQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, choicesQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads, feed: feedOpts = {} } = {}) {
   const wtGit = wtOpts.git || cleanGit;
   const wtHooks = wtOpts.hooks || safeHooks;
   const ghOpts = ghRun ? { run: ghRun } : {};
@@ -108,6 +112,22 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     kept: () => readStoreAt(local.primaryRoot(repo)),
     enabled: () => prefs.aiSummaries !== false,
     query: choicesQuery ?? summaryQuery ?? (injected ? false : undefined),
+  });
+  // The change feed (feed.mjs): pushes landing on main, said plainly, with their deploy. Off with prefs.changeFeed.
+  // Under an injected provider (tests) no gh, no model and no watch unless the test hands them.
+  const feedStarts = feedOpts.start ?? !injected;
+  const feed = createChangeFeed({
+    repo,
+    root: local.primaryRoot(repo),
+    enabled: () => prefs.changeFeed !== false,
+    helpers: () => prefs.aiSummaries !== false,
+    query: feedOpts.query ?? summaryQuery ?? (injected ? false : undefined),
+    gh: feedOpts.gh || ghRun || (injected ? async () => ({ ok: false, stdout: '' }) : undefined),
+    git: feedOpts.git,
+    watch: feedOpts.watch ?? !injected,
+    whoFor: (commits) => whoMadeIt(commits),
+    active: () => [...sessions.values()].some((s) => s.hub.clients) || !!elsewhere?.clients,
+    onChange: () => feedSoon(),
   });
 
   // Many sessions, one server (spec 40): each its own query(), claims session id, worktree and SSE channel. The
@@ -160,6 +180,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       if (key === 'asks' || key === 'permissions') { for (const k of ['inbox', 'sessions', 'needs']) reads.forget(k); needsSoon(); }
     };
     sessions.set(id, s);
+    s.hub.set('feed', feed.view());
     return s;
   }
   const home = await host({ id: newSessionId(), cwd: repo });
@@ -574,6 +595,29 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     needsTimer.unref?.();
   }
 
+  // The `feed` event on every live channel when the change feed moves (a push, its line, its deploy, the switch).
+  let feedTimer = null;
+  function feedSoon(ms = 150) {
+    if (feedTimer) return;
+    feedTimer = setTimeout(() => {
+      feedTimer = null;
+      const v = feed.view();
+      for (const h of [...[...sessions.values()].map((s) => s.hub), elsewhere]) h?.set('feed', v);
+    }, ms);
+    feedTimer.unref?.();
+  }
+
+  /** Who made a push: the named session here whose checkout's HEAD is one of its commits, else null (its author). */
+  async function whoMadeIt(commits) {
+    const shas = new Set(commits.map((c) => c.sha));
+    for (const s of sessions.values()) {
+      if (!s.name || !s.cwd) continue;
+      const r = await runGit(s.cwd, ['rev-parse', 'HEAD']);
+      if (r.ok && shas.has(r.stdout.trim())) return { name: s.name, kind: 'local', session: s.id };
+    }
+    return null;
+  }
+
   /** GET /api/inbox: every session's questions, tagged by star, and the plan's. */
   async function inbox() {
     // A secret request carries its chunk and the names still missing; one whose names are all set has left (secrets.mjs).
@@ -660,6 +704,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     const e = 'effort' in patch ? patch.effort : prefs.effort;
     if (e && !effortsFor(m, modelCatalog).includes(e)) patch.effort = ''; // a level this model does not take falls back to its default
     prefs = await repoMod.writePrefs(repo, patch);
+    if ('changeFeed' in patch && feedStarts) feed.sync();
     return prefs;
   }
 
@@ -802,6 +847,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         }
         case 'GET /api/inbox': return send(res, 200, await kept('inbox', inbox));
         case 'GET /api/needs': return send(res, 200, await kept('needs', needsNow));
+        case 'GET /api/feed': return send(res, 200, feed.list(Number(url.searchParams.get('limit')) || 200));
         // Plan answers kept as given (spec 53, A1; plan-answers.mjs). POST is the same as PUT.
         case 'GET /api/plan-answers': return send(res, 200, { answers: readPlanAnswers(repo, repoMod.durableQuestions(repo)) });
         case 'PUT /api/plan-answers':
@@ -1010,6 +1056,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   }, NEEDS_MS);
   needsLook.unref?.();
   needsSoon(0);
+  if (feedStarts) feed.sync();
 
   return {
     url: `http://127.0.0.1:${actual}/?t=${encodeURIComponent(token)}`,
@@ -1025,6 +1072,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       clearInterval(refreshMask);
       clearInterval(needsLook);
       clearTimeout(needsTimer);
+      clearTimeout(feedTimer);
+      feed.close();
       const root = await primaryRoot(repo);
       for (const s of sessions.values()) {
         await s.close();
