@@ -4,6 +4,7 @@
 // .stage + .starfield, .river, .drop.
 import { Icon } from './icons.jsx';
 import { cx } from './controls.jsx';
+import { ToolArgs } from './markdown.jsx';
 import '../styles/orb-glyph.css';
 
 /** The glyph inside each orb state; idle, fallen, never and relight carry none. */
@@ -41,12 +42,27 @@ export function NodeTag({ state }) {
   return <span className="node-tag" style={{ color: `var(--st-${state})` }}>{STATE_WORD[state] || state}</span>;
 }
 
-/** .node-cap: task above, live tool below in mono; never more than two lines. */
-export function NodeCap({ label, tool, toolBad, spinning, style }) {
+/** A caption's call argument is cut to this many characters: the caption never wraps. */
+export const CAP_ARG = 26;
+const TOOL_NAME = /^[A-Z][A-Za-z]+$/;
+const cutArg = (s) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > CAP_ARG ? `${t.slice(0, CAP_ARG - 1)}…` : t; };
+
+/**
+ * .node-cap: task above, live tool below in mono; never more than two lines. A tool's name reads in the call colour
+ * and `call` ({ name, summary }) adds its argument, coloured as a tool row colours it and cut to fit.
+ */
+export function NodeCap({ label, tool, call, toolBad, spinning, style }) {
+  const named = !toolBad && TOOL_NAME.test(String(tool || ''));
   return (
     <div className="node-cap" style={style}>
       {label ? <span className="node-label">{label}</span> : null}
-      {tool ? <span className={cx('node-tool', toolBad && 'is-bad')} style={toolBad ? { color: 'var(--st-failed)' } : undefined}>{spinning ? <span className="spin" style={{ width: 10, height: 10, borderWidth: 1.5 }} /> : null}{tool}</span> : null}
+      {tool ? (
+        <span className={cx('node-tool', toolBad && 'is-bad')} style={toolBad ? { color: 'var(--st-failed)' } : undefined} title={call?.summary ? `${tool} ${call.summary}` : undefined}>
+          {spinning ? <span className="spin" style={{ width: 10, height: 10, borderWidth: 1.5 }} /> : null}
+          {named ? <span className="syn-fn">{tool}</span> : tool}
+          {named && call?.summary ? <span className="node-arg"><ToolArgs tool={tool} args={cutArg(call.summary)} /></span> : null}
+        </span>
+      ) : null}
     </div>
   );
 }

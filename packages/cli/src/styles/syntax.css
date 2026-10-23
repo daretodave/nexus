@@ -238,3 +238,15 @@
 /* The fuller call on its way (an open row shows its preview meanwhile). */
 .tool-loading { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; line-height: 14px; color: var(--text-3); }
 .tool-loading .spin { width: 10px; height: 10px; border-width: 1.5px; }
+
+/* ---- small coloured spots: a stage caption's call, a cron schedule --------------------------------------------- */
+.node-tool .node-arg { margin-left: 1ch; overflow: hidden; text-overflow: ellipsis; }
+.node-tool > .syn-fn { font-weight: 500; }
+.cron { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; }
+.cron-code {
+  padding: 1px 6px; border-radius: 5px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line);
+  font-family: var(--font-mono); font-size: 12px; line-height: 18px; color: var(--text-2); white-space: pre; font-variant-ligatures: none;
+}
+.cron-field { cursor: help; }
+.cron-field:hover { text-decoration: underline dotted; text-decoration-color: var(--text-3); text-underline-offset: 3px; }
+.cron-words { color: var(--text-2); }

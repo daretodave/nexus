@@ -9,6 +9,7 @@ import { langOf, langOfPath } from './syntax/langs.js';
 import { draftTokens, inlineTokens } from './syntax/draft.js';
 import { allFolds, defaultFolds, jsonRows, parseJson, prettyJson } from './syntax/json.js';
 import { diffLines, trimContext } from './syntax/diff.js';
+import { CRON_FIELDS, cronTokens, cronWords } from './syntax/cron.js';
 import { Icon } from './icons.jsx';
 import { cx } from './controls.jsx';
 import '../styles/syntax.css';
@@ -102,6 +103,30 @@ export function CodeBlockView({ text, lang = '', label, open = false, className 
 export function InlineCode({ text }) {
   const tokens = useMemo(() => rainbow(inlineTokens(text)), [text]);
   return <code>{hasColour(tokens) ? <Tok tokens={tokens} /> : text}</code>;
+}
+
+/**
+ * A cron schedule as inline code: each field coloured and named on hover (minute, hour, ...), and its plain words
+ * beside it ("every day at 03:30 UTC"). `words` overrides them (a server's own description); false leaves them out,
+ * for a place that already says them.
+ */
+export function CronCode({ cron, words, className }) {
+  const tokens = useMemo(() => cronTokens(cron), [cron]);
+  const said = words === false ? '' : words || cronWords(cron);
+  const runs = [];
+  for (const tk of tokens) {
+    const last = runs[runs.length - 1];
+    if (tk.field != null && last && last.field === tk.field) last.tokens.push(tk);
+    else runs.push({ field: tk.field, tokens: [tk] });
+  }
+  return (
+    <span className={cx('cron', className)}>
+      <code className="cron-code" aria-label={said ? `cron ${cron}, ${said}` : undefined}>
+        {runs.map((r, i) => (r.field != null ? <span key={i} className="cron-field" title={CRON_FIELDS[r.field]}><Tok tokens={r.tokens} /></span> : <Tok key={i} tokens={r.tokens} />))}
+      </code>
+      {said ? <span className="cron-words">{said}</span> : null}
+    </span>
+  );
 }
 
 /**

@@ -347,6 +347,19 @@ export function convoItems(transcript, stage, limit = 40) {
 
 const SPAWN = new Set(['Task', 'Agent']);
 
+/** A node's caption call: the agent's last call, while it is the tool the agent is on. */
+const callOf = (call, tool) => (call && tool && call.name === tool && call.summary ? { call: { name: call.name, summary: call.summary } } : null);
+
+/**
+ * Each agent's last call from the transcript, newest wins: { [agent]: { name, summary } }. The stage's captions
+ * colour it (NodeCap) when it is still the call the agent is on.
+ */
+export function lastCalls(transcript) {
+  const out = {};
+  for (const t of transcript || []) if (t.kind === 'tool') out[t.agent || MAIN] = { name: t.name, summary: t.summary || '' };
+  return out;
+}
+
 /** Node captions never wrap; long subagent descriptions are cut to fit. */
 const short = (s, n = 28) => { const t = String(s || ''); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
 
@@ -382,7 +395,7 @@ export function filament(a, b, o = {}) {
  * Nodes and filaments for the live Working stage, from the reduced beats.
  * Newest children win a seat; finished ones give theirs up first.
  */
-export function liveStage(stage, { chunkLabel, parkedAgent } = {}) {
+export function liveStage(stage, { chunkLabel, parkedAgent, calls = {} } = {}) {
   const agents = stage?.agents || {};
   const order = (stage?.order || []).filter((id) => id !== MAIN);
   const main = agents[MAIN];
@@ -401,6 +414,7 @@ export function liveStage(stage, { chunkLabel, parkedAgent } = {}) {
   nodes.push({
     key: MAIN, at: MAIN_AT, size: 'xl', state: main ? st : 'idle', main: true, capTop: '54px',
     label: chunkLabel ? `main · ${chunkLabel}` : 'main', tool: main?.tool || (st === 'blocked' ? 'waiting on you' : ''),
+    ...callOf(calls[MAIN], main?.tool),
   });
   for (const id of [...seated, ...grand]) {
     const a = agents[id];
@@ -413,6 +427,7 @@ export function liveStage(stage, { chunkLabel, parkedAgent } = {}) {
       nodes.push({
         key: id, at: seat[id], size: grand.includes(id) ? 's' : 'm', state: s, capTop: grand.includes(id) ? '20px' : undefined,
         label: short(a.label) || 'agent', tool: a.tool || (s === 'failed' ? 'failed' : ''), bad: s === 'failed', parked: parkedAgent === id,
+        ...callOf(calls[id], a.tool),
       });
     }
     const from = (a.parent || MAIN) === MAIN ? MAIN_AT : seat[a.parent];
