@@ -59,7 +59,7 @@ const play = (name) => {
 };
 
 test('every scenario is well formed: fictional, steps with one known action, beats the reducer takes', () => {
-  assert.deepEqual(scenarioNames(), ['fleet-to-tug', 'bug-to-archive', 'fall-and-resume', 'heads-down', 'alive-home', 'grill-me']);
+  assert.deepEqual(scenarioNames(), ['fleet-to-tug', 'bug-to-archive', 'fall-and-resume', 'heads-down', 'alive-home', 'grill-me', 'plain-folder', 'cloud-token']);
   for (const name of scenarioNames()) {
     const sc = SCENARIOS[name];
     assert.equal(sc.name, name);
@@ -292,6 +292,12 @@ test('a demo run writes nothing, opens no connection out and starts no process',
       await req(app.port, { method: 'POST', pathname: '/api/send', headers: h, body: '{"text":"/bug the PDF export crashes on long seasons"}' });
       await req(app.port, { method: 'POST', pathname: `/api/sessions/${SCENARIOS[name].home}/resume`, headers: h, body: '{}' });
       await hello(app.port, app.token, SCENARIOS[name].home);
+      // The folder-to-cloud stage (plain-folder, cloud-token): every step clicked, all in memory.
+      await req(app.port, { pathname: '/api/repo/start?fail=push', headers: h });
+      for (const step of ['init', 'commit', 'remote', 'push', 'push']) await req(app.port, { method: 'POST', pathname: `/api/repo/${step}`, headers: h, body: JSON.stringify({ confirm: true, owner: 'ada-park', name: 'lantern', visibility: 'private' }) });
+      await req(app.port, { method: 'POST', pathname: '/api/cloud/secret', headers: h, body: JSON.stringify({ value: SECRET_VALUE }) });
+      await req(app.port, { method: 'POST', pathname: '/api/cloud/run', headers: h, body: '{}' });
+      for (const p of ['/api/actions', '/api/runs', '/api/repo/start']) await req(app.port, { pathname: p, headers: h });
       clock.advance(app.world.duration + 1);
       await req(app.port, { pathname: '/api/sessions', headers: h });
       await app.close();
@@ -302,6 +308,74 @@ test('a demo run writes nothing, opens no connection out and starts no process',
     syncBuiltinESMExports();
   }
   assert.deepEqual([...new Set(seen)], []);
+});
+
+const SECRET_VALUE = ['sk', 'ant', 'oat01', 'demo'.repeat(6)].join('-');
+
+test('plain folder: Detect opens on a folder with no git; init, commit, a confirm, then push; the cloud steps light up', async () => {
+  const clock = manualClock();
+  const app = await startDemo({ scenario: 'plain-folder', clock, dist: NO_DIST, hub: { flushMs: 5, pingMs: 60000 } });
+  const h = { 'x-nexus-token': app.token, 'content-type': 'application/json', origin: `http://127.0.0.1:${app.port}` };
+  const get = async (p) => JSON.parse((await req(app.port, { pathname: p, headers: h })).data);
+  const post = async (p, b) => { const r = await req(app.port, { method: 'POST', pathname: p, headers: h, body: JSON.stringify(b) }); return { status: r.status, ...JSON.parse(r.data) }; };
+  try {
+    assert.match(app.url, /\/onboarding\/detect\?t=/, 'the link opens on Detect');
+    const st = await get('/api/state');
+    assert.deepEqual([st.info.isGit, st.info.place, st.info.adopted, st.prefs.onboarded], [false, 'none', false, false]);
+    assert.equal((await get('/api/preflight')).checks.find((c) => c.id === 'remote').ok, false);
+    assert.equal((await get('/api/actions')).place, 'none');
+    assert.equal((await get('/api/repo/start')).next, 'init');
+    assert.equal((await post('/api/repo/init', {})).status, 400, 'confirm required');
+    assert.equal((await post('/api/repo/init', { confirm: true })).start.next, 'commit');
+    assert.equal((await post('/api/repo/init', { confirm: true })).already, true);
+    assert.equal((await post('/api/repo/commit', { confirm: true, leaveOut: ['config/secrets.json'] })).start.next, 'remote');
+    const check = await get('/api/repo/start?owner=ada-park&name=lantern&visibility=public');
+    assert.equal(check.nameFree, true);
+    assert.deepEqual(check.plan.remote, ['gh', 'repo', 'create', 'ada-park/lantern', '--public', '--source', '.', '--remote', 'origin']);
+    assert.equal((await get('/api/repo/start?owner=ada-park&name=lantern-old')).nameFree, false);
+    assert.equal((await post('/api/repo/remote', { confirm: true, owner: 'ada-park', name: 'lantern', visibility: 'private' })).start.next, 'push');
+    await get('/api/repo/start?fail=push');
+    const failed = await post('/api/repo/push', { confirm: true });
+    assert.equal(failed.status, 409);
+    assert.equal(failed.why, 'push-auth');
+    assert.deepEqual(failed.guide, ['gh auth setup-git']);
+    assert.equal((await post('/api/repo/push', { confirm: true })).start.next, 'done');
+    const a = await get('/api/actions');
+    assert.deepEqual([a.place, a.slug, a.workflows.length], ['github', 'ada-park/lantern', 0]);
+    assert.equal((await get('/api/state')).info.place, 'github');
+    clock.advance(app.world.duration + 3000);
+    assert.equal((await get('/api/state')).info.place, 'github', 'the world restarting never undoes a click');
+    await post('/api/demo/restart', {});
+    assert.equal((await get('/api/state')).info.place, 'none', 'only a restart does');
+  } finally {
+    await app.close();
+  }
+});
+
+test('cloud token: the loop is there and its sign-in is not; the paste is checked, dropped, and never answered back', async () => {
+  const clock = manualClock();
+  const app = await startDemo({ scenario: 'cloud-token', clock, dist: NO_DIST, hub: { flushMs: 5, pingMs: 60000 } });
+  const h = { 'x-nexus-token': app.token, 'content-type': 'application/json', origin: `http://127.0.0.1:${app.port}` };
+  const raw = async (p) => (await req(app.port, { pathname: p, headers: h })).data;
+  const post = async (p, b) => { const r = await req(app.port, { method: 'POST', pathname: p, headers: h, body: JSON.stringify(b) }); return { status: r.status, text: r.data, ...JSON.parse(r.data) }; };
+  try {
+    assert.match(app.url, /\/onboarding\/cloud\?t=/);
+    const a = JSON.parse(await raw('/api/actions'));
+    assert.deepEqual([a.place, a.viewer, a.workflows[0].path], ['github', 'ADMIN', '.github/workflows/march.yml']);
+    assert.equal(a.steps.find((x) => x.id === 'secret').ok, false);
+    assert.equal(JSON.parse(await raw('/api/repo/start')).next, 'done');
+    const warn = await post('/api/cloud/secret', { value: 'not-a-setup-token-value-xyz' });
+    assert.deepEqual([warn.status, warn.warn], [422, 'prefix']);
+    const ok = await post('/api/cloud/secret', { value: SECRET_VALUE });
+    assert.deepEqual([ok.status, ok.verified], [200, true]);
+    assert.ok(!ok.text.includes(SECRET_VALUE));
+    assert.equal(JSON.parse(await raw('/api/actions')).steps.find((x) => x.id === 'secret').ok, true);
+    for (const p of ['/api/actions', '/api/runs', '/api/repo/start', '/api/state', '/api/preflight', '/api/demo']) assert.ok(!(await raw(p)).includes(SECRET_VALUE), `${p} never carries the token`);
+    assert.equal((await post('/api/cloud/run', {})).status, 200);
+    assert.equal(JSON.parse(await raw('/api/runs')).runs[0].status, 'queued');
+  } finally {
+    await app.close();
+  }
 });
 
 // Node's permission model, end to end: the CLI's own --demo, with no right to write or to start a process.

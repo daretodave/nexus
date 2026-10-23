@@ -1,0 +1,61 @@
+/* A folder that is not a repo yet (onboarding/RepoStart.jsx, RepoConfirm.jsx) and Cloud setup's step 0. The steps
+   reuse the cl-step idiom from nexus.css; this file adds only what is new. Theme tokens only, day and night. */
+
+.rs { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.rs.is-detect { grid-column: 2 / 4; margin-top: 6px; padding: 14px 16px; border-radius: 12px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
+.rs-head { display: flex; flex-direction: column; gap: 4px; }
+.rs-id { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; line-height: 20px; color: var(--text-2); }
+.rs-id b { color: var(--text); font-weight: 600; }
+.rs-missing { color: var(--st-blocked); }
+.rs-steps { display: flex; flex-direction: column; }
+.rs-step { padding: 12px 0; }
+.rs-step.is-wait .cl-h, .rs-step.is-wait .cl-d { color: var(--text-3); }
+.rs-acts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rs-cmds { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.rs-cmds .cmd-line { min-width: 0; }
+.rs-cmd { min-width: 0; overflow-wrap: anywhere; }
+.rs-guide { grid-column: auto; margin-top: 0; }
+.rs-warn { color: var(--st-blocked); }
+.rs-err { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 10px; color: var(--text); background: color-mix(in oklab, var(--st-failed) 8%, var(--well)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-failed) 30%, transparent); }
+
+.rs-flag { display: flex; flex-direction: column; gap: 6px; }
+.rs-flag-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; line-height: 20px; color: var(--text-2); }
+.rs-flag-row code { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+
+.rs-fields { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.rs-field { flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12px; line-height: 16px; color: var(--text-3); }
+.rs-field select, .rs-field input[type="text"] { height: 32px; min-width: 0; padding: 0 10px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; color: var(--text); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
+.rs-field input[type="text"] { font-family: var(--font-mono); font-variant-ligatures: none; }
+.rs-field select:focus-visible, .rs-field input:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 3px var(--focus); }
+.rs-field[role="radiogroup"] { flex: 0 0 auto; }
+.rs-vis { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
+.rs-vis label { position: relative; display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 7px; font-size: 13px; color: var(--text-2); cursor: pointer; }
+.rs-vis label.is-on { color: var(--text); background: var(--raised); box-shadow: var(--e-1); }
+.rs-vis input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.rs-vis label:focus-within { box-shadow: 0 0 0 2px var(--focus); }
+
+.rs-confirm { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 12px; background: color-mix(in oklab, var(--accent) 6%, var(--well)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent); animation: rs-in var(--dur-settle, 200ms) var(--ease-settle) both; }
+.rs-confirm-h { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--text); }
+.rs-confirm b { color: var(--text); font-weight: 600; }
+.rs-owner { display: flex; flex-direction: column; gap: 4px; }
+.rs-confirm-acts { display: flex; justify-content: flex-end; gap: 8px; }
+
+.rs-manual { display: flex; flex-direction: column; gap: 8px; }
+.rs-manual > .btn { align-self: flex-start; }
+.rs-manual-body { display: flex; flex-direction: column; gap: 8px; }
+
+.rs-pointer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 8px 6px 12px; border-radius: 10px; font-size: 13px; color: var(--text-2); background: var(--well); }
+.rs-pointer b { color: var(--text); }
+
+/* Cloud setup: step 0 above the four, and the four waiting under it until the folder is on GitHub. */
+.cl-steps.is-waiting > .cl-step:not(.cl-step-zero) { opacity: .5; }
+.cl-steps.is-waiting > .cl-step:not(.cl-step-zero) .btn { pointer-events: none; }
+.cl-wait { margin-top: 2px; font-size: 12px; line-height: 18px; color: var(--text-3); }
+.cl-step-zero .rs { margin-top: 10px; }
+.cl-steps .rs-step + .rs-step { box-shadow: 0 -1px 0 var(--line); }
+
+@keyframes rs-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rs-confirm { animation: none; } }
+@media (max-width: 640px) {
+  .rs.is-detect { grid-column: 1 / -1; }
+}

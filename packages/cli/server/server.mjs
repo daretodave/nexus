@@ -15,6 +15,9 @@ import { safeHooks } from './cloud.mjs';
 import { formNext, formStart } from '../shared/forming.mjs';
 import { putAwayPlan } from '../shared/put-away.mjs';
 import { preflight } from './preflight.mjs';
+import { createRepoStart } from './repo-start.mjs';
+import { createLoopSecret } from './cloud-secret.mjs';
+import { repoPlace } from './place.mjs';
 import * as repoMod from './repo.mjs';
 import * as local from './local.mjs';
 import * as gh from './gh.mjs';
@@ -249,13 +252,23 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       // Like the git view: under an injected provider with no ghRun, gh reads as missing, never the real one.
       // The schedule (49.1) is read from the loop workflow at origin/<default branch>, not asked of gh.
       const p = Promise.all([
-        gh.cloudLoop(repo, { run: ghRun || (injected ? noGh : undefined), since: tonightStart(new Date()).getTime() }),
+        repoPlace(repo).then((where) => gh.cloudLoop(repo, { run: ghRun || (injected ? noGh : undefined), since: tonightStart(new Date()).getTime(), where })),
         loopSchedule(repo),
       ]).then(([r, s]) => (r.ok && s ? { ...r, schedule: s, next: s.next } : r)).catch((e) => ({ ok: false, status: 502, error: String(e.message || e) }));
       cloudRead = { at: Date.now(), p };
     }
     return cloudRead.p;
   };
+
+  // A folder that is not a repo yet (repo-start.mjs): one step per click, confirm required, one at a time. Once a
+  // .git exists the prefs kept in memory so far (onboarded, permission mode) are written into it.
+  const repoStart = createRepoStart({
+    repo,
+    run: ghRun || (injected ? noGh : undefined),
+    onChange: async () => { prefs = await repoMod.writePrefs(repo, prefs); cloudRead.p = null; },
+  });
+  // The cloud loop's sign-in (cloud-secret.mjs): the value goes to gh on stdin, never kept, never answered.
+  const loopSecret = createLoopSecret({ repo, run: ghRun || (injected ? noGh : undefined) });
 
   async function sessionDetail(id) {
     const h = sessionOf(id);
@@ -721,6 +734,10 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     };
     try {
       await secrets.refresh().catch(() => null); // a value set in a terminal since the last answer is masked in this one
+      if (url.pathname.startsWith('/api/repo/')) {
+        const r = await repoStart.handle(req.method, url.pathname, url, () => body(req));
+        if (r) { const { status, ...rest } = r; return send(res, status, rest); }
+      }
       switch (route) {
         case 'GET /api/events': return (sessionOf(url.searchParams.get('session'))?.hub || elsewhere).attach(req, res);
         case 'GET /api/server': return send(res, 200, { nexus: true, pid: process.pid, repo, root: await primaryRoot(repo), home: home.id, sessions: sessions.size });
@@ -851,18 +868,19 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/explode': { const b = await body(req); const { status, ...r } = await explode({ repo, text: b.text, team: b.team, query: explodeQuery ?? summaryQuery ?? (injected ? false : undefined) }); return send(res, status, r); }
         case 'POST /api/plot': { const { status, ...r } = await plotKept(await body(req)); return send(res, status, r); }
         case 'GET /api/progress': return send(res, 200, await repoMod.progress(repo, url.searchParams.get('spec')));
-        case 'GET /api/actions': { const [r, schedule] = await Promise.all([gh.actionsSetup(repo, ghOpts), loopSchedule(repo)]); return send(res, 200, { ...r, schedule }); }
+        case 'GET /api/actions': { const where = await repoPlace(repo); const [r, schedule] = await Promise.all([gh.actionsSetup(repo, { ...ghOpts, where }), loopSchedule(repo)]); return send(res, 200, { ...r, schedule }); }
         case 'POST /api/actions/workflow': { const b = await body(req); const r = await gh.setWorkflow(repo, b.id, !!b.enabled, ghOpts); cloudRead.p = null; return send(res, 200, r); }
         case 'POST /api/cloud/run': {
           const b = await body(req);
-          const r = await gh.dispatchWorkflow(repo, b.id, ghOpts);
+          const r = await gh.dispatchWorkflow(repo, b.id, { ...ghOpts, where: await repoPlace(repo) });
           cloudRead.p = null;
           return send(res, r.ok ? 200 : r.status || 400, r);
         }
         // Onboarding's Cloud step (spec 47, A16; cloud.mjs): write the loop workflow, set its schedule; each lands per owner mode.
         case 'POST /api/cloud/workflow': { await body(req); const { status, ...r } = await addWorkflow(repo, { owner: (await local.localView(repo)).effective, run: ghRun || (injected ? noGh : undefined) }); cloudRead.p = null; return send(res, status, r); }
         case 'POST /api/cloud/schedule': { const b = await body(req); const { status, ...r } = await saveSchedule(repo, b, { owner: (await local.localView(repo)).effective, run: ghRun || (injected ? noGh : undefined) }); cloudRead.p = null; return send(res, status, r); }
-        case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo, ghOpts));
+        case 'POST /api/cloud/secret': { const { status, ...r } = await loopSecret.set(await body(req)); if (status === 200) cloudRead.p = null; return send(res, status, r); }
+        case 'GET /api/runs': return send(res, 200, await gh.listRuns(repo, { ...ghOpts, where: await repoPlace(repo) }));
         case 'GET /api/recover': { const r = await recoverRead(url.searchParams.get('dir') || ''); return send(res, r.status, r); }
         case 'POST /api/recover/resume': { const r = await recoverResume(await body(req)); return send(res, r.status, r); }
         // The design handoff (spec 43, A7; design.mjs): the repo's port-map.mjs read as a gallery, and a link sent to /design ingest.

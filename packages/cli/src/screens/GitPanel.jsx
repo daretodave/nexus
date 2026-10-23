@@ -179,6 +179,8 @@ export default function GitPanel() {
         </div>
         {git.status === 'loading' ? <SkelRows n={5} label="Loading git" /> : git.status === 'missing' ? (
           <Empty sky="none" title="No worktrees to show yet" body="Every session's worktree, recent main commits and open pull requests arrive with the git panel." />
+        ) : git.data?.isGit === false ? (
+          <Empty sky="none" title="Not a git repo yet" body="This folder has no git yet, so there are no worktrees or commits to show. Detect has the way in: a click per step." action={<Link className="btn btn-s" to={PATHS.onboarding('detect')}>Make it a repo</Link>} />
         ) : git.status === 'error' && !git.data ? (
           <Err title="Couldn't read git" body="Nothing was changed. The panel reads git again when you retry." detail={git.error} actions={<button className="btn btn-s" type="button" onClick={git.reload}>Try again</button>} />
         ) : (

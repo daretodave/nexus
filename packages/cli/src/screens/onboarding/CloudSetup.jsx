@@ -10,11 +10,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Icon, useShell, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { server, useActions, useRuns } from '../../data/index.js';
 import { PATHS } from '../../routes.js';
-import { ObFrame, Back, useCopy, CopyFace } from './frame.jsx';
+import { ObFrame, Back } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
-import { landThenGo, turnOnCloud, pickSched, keepsSchedule, nextLocal, BUSY_NOTE } from './cloudFlow.js';
+import { landThenGo, turnOnCloud, pickSched, keepsSchedule, nextLocal, cloudGate, BUSY_NOTE } from './cloudFlow.js';
+import RepoStart, { useRepoStart, Cmds } from './RepoStart.jsx';
+import TokenGuide from './TokenGuide.jsx';
+import { repoCalls } from './calls.js';
 import '../../styles/cloud-current.css';
+import '../../styles/repo-start.css';
 import { usePlotLive, PlotAskStrip } from './PlotAsk.jsx';
 
 const LOOP_FILE = /(?:^|\/)(nexus-loop|march)\.ya?ml$/;
@@ -95,15 +99,29 @@ export default function CloudSetup() {
   const [d, patch] = useDraft();
   const plot = usePlotLive(d);
   const [preview, setPreview] = useState(false);
-  const [copied, copy] = useCopy();
   const [pending, setPending] = useState({}); // action -> 'busy' | error text
   const [added, setAdded] = useState(null); // POST /api/cloud/workflow's answer: { path, sha, written, branch, pr? }
   const { owner } = useShell();
   const ownerLands = !!owner && d.ownerMode !== false;
   const [, tick] = useState(0);
 
+  // Where the folder stands (server/place.mjs): the cloud loop needs a GitHub repo with main pushed. Until then a
+  // step 0 (RepoStart) sits above the four, which wait under it, dimmed.
+  const start = useRepoStart();
+  const [startNow, setStartNow] = useState(null);
   const a = actions.data;
-  const ghOk = a?.gh === true;
+  const place = startNow?.place ?? start.data?.place ?? a?.place;
+  const gate = cloudGate(place);
+  const waiting = gate !== 'ready';
+  // Until the place is known (both reads still loading) nothing can be turned on: a plain folder would only 409.
+  const settling = place == null && (start.status === 'loading' || actions.status === 'loading');
+  const onRepo = (s) => {
+    setStartNow(s);
+    if (s?.next === 'done') { actions.reload(); runs.reload(); }
+  };
+  const recheckScope = async () => { try { setStartNow(await repoCalls.start({ fresh: true })); } catch { /* the line stays */ } };
+  const scopeFix = (startNow || start.data)?.guide?.['workflow-scope'] || null;
+  const ghOk = a?.gh === true && !waiting;
   const wf = ghOk ? (a.workflows || []).find((w) => LOOP_FILE.test(w.path || '')) : null;
   const file = wf ? wf.path.split('/').pop() : 'march.yml';
   const secret = ghOk ? (a.steps || []).find((s) => s.id === 'secret') : null;
@@ -156,7 +174,8 @@ export default function CloudSetup() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {note('sched')}
         <Link className="btn btn-ghost" to={PATHS.onboarding(stepAfter('cloud'))} onClick={skip}>Skip</Link>
-        <button className="btn btn-primary btn-l" type="button" disabled={busy} aria-busy={pending.sched === 'busy' || undefined} onClick={turnOn}>{pending.sched === 'busy' ? (keep ? 'Turning on' : 'Committing') : 'Turn on the cloud loop'}<Icon name="arrowRight" size={14} /></button>
+        {waiting ? <span className="t-body-s c-3">First, a home on GitHub.</span> : null}
+        <button className="btn btn-primary btn-l" type="button" disabled={busy || waiting || settling} aria-busy={pending.sched === 'busy' || undefined} onClick={turnOn}>{pending.sched === 'busy' ? (keep ? 'Turning on' : 'Committing') : 'Turn on the cloud loop'}<Icon name="arrowRight" size={14} /></button>
       </div>
     </>
   );
@@ -183,8 +202,28 @@ export default function CloudSetup() {
           </div>
         </div>
 
-        <div className="panel cl-steps" aria-label="Cloud loop setup" aria-busy={actions.status === 'loading' || undefined}>
-          <div className="cl-step">
+        <div className={`panel cl-steps${waiting ? ' is-waiting' : ''}`} aria-label="Cloud loop setup" aria-busy={actions.status === 'loading' || undefined}>
+          {waiting || startNow?.next === 'done' ? (
+            <div className="cl-step cl-step-zero">
+              <span className={waiting ? 'cl-num is-now' : 'cl-num is-done'}>{waiting ? <span>0</span> : <Icon name="check" />}</span>
+              <div>
+                <div className="cl-h">A home on GitHub</div>
+                {!waiting ? (
+                  <div className="cl-d">On GitHub at <b>{(startNow?.repo?.remote?.web || '').replace(/^https:\/\//, '')}</b>.</div>
+                ) : place === 'refused' ? (
+                  <RepoStart where="cloud" compact res={start} onChange={onRepo} />
+                ) : gate === 'other' ? (
+                  <div className="cl-d">{a?.note || (place === 'nested' ? 'This folder is inside another repo: start nexus at that repo\'s root.' : 'origin is not on GitHub. The cloud loop runs on GitHub Actions; this repo cannot use it.')} Skip is the way on.</div>
+                ) : (
+                  <>
+                    <div className="cl-d">The cloud loop is a GitHub Actions workflow, so this folder needs a GitHub repo first. Two minutes, and you see every command before it runs.</div>
+                    <RepoStart where="cloud" compact res={start} onChange={onRepo} />
+                  </>
+                )}
+              </div>
+            </div>
+          ) : null}
+          <div className="cl-step" aria-disabled={waiting || undefined} inert={waiting || undefined}>
             <span className={wf ? 'cl-num is-done' : 'cl-num is-now'}>{wf ? <Icon name="check" /> : <span>1</span>}</span>
             <div>
               <div className="cl-h">
@@ -193,7 +232,8 @@ export default function CloudSetup() {
                 <button className="btn btn-ghost btn-s" type="button" onClick={() => setPreview(!preview)} aria-expanded={preview}>{preview ? 'Hide' : 'Preview'}</button>
               </div>
               <div className="cl-d">
-                {actions.status === 'loading' ? 'Looking at this repo’s CI…'
+                {waiting ? 'nexus writes it to your CI folder once this folder is on GitHub.'
+                  : actions.status === 'loading' ? 'Looking at this repo’s CI…'
                   : !a ? (actions.error || 'Could not read this repo’s CI.')
                     : !ghOk ? <>{a.note} The cloud loop is set up through <code>gh</code>.</>
                       : wf ? <>It is in your CI folder at <code>{wf.path}</code>{wf.enabled ? '.' : ', switched off.'}</>
@@ -202,6 +242,14 @@ export default function CloudSetup() {
                             : ownerLands ? <>nexus writes it to your CI folder and commits it to the default branch.</>
                               : <>nexus writes it to your CI folder and opens a pull request with it.</>}
               </div>
+              {waiting ? <div className="cl-wait">Waits for a GitHub repo.</div> : null}
+              {ghOk && !wf && !added && scopeFix ? (
+                <div className="chk-fix rs-guide">
+                  <span className="t-body-s c-1" style={{ fontWeight: 600 }}>Adding a workflow file needs gh&apos;s workflow scope:</span>
+                  <Cmds cmds={scopeFix} />
+                  <div><button className="btn btn-s btn-warn" type="button" onClick={recheckScope}><Icon name="refresh" size={14} />Check again</button></div>
+                </div>
+              ) : null}
               {ghOk && !wf && !added ? (
                 <div className="cl-body">
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -227,10 +275,11 @@ export default function CloudSetup() {
             </div>
           </div>
 
-          <div className="cl-step">
+          <div className="cl-step" aria-disabled={waiting || undefined} inert={waiting || undefined}>
             <span className={secret?.ok ? 'cl-num is-done' : wf ? 'cl-num is-now' : 'cl-num'}>{secret?.ok ? <Icon name="check" /> : <span>2</span>}</span>
             <div>
-              <div className="cl-h">Add one secret</div>
+              <div className="cl-h">Give the loop its sign-in</div>
+              {waiting ? <div className="cl-wait">Waits for a GitHub repo.</div> : null}
               <div className="cl-body">
                 <div className="secret">
                   <span className="secret-name">CLAUDE_CODE_OAUTH_TOKEN</span>
@@ -239,25 +288,29 @@ export default function CloudSetup() {
                       ? <span className="chk-state is-ok"><Icon name="check" size={14} />set</span>
                       : secret.ok == null ? <span className="chk-state is-wait">unknown</span> : <span className="chk-state is-warn">not set</span>)
                     : <span className="chk-state is-wait">{ghOk || actions.status === 'loading' ? 'checking' : 'unknown'}</span>}
-                  <span className="secret-d">Run <code>claude setup-token</code> on this machine. It prints a long-lived token for CI; store it in the repo's secrets under this name. It never passes through nexus.</span>
+                  <span className="secret-d">{secret?.ok ? 'GitHub lists it. Each run signs in with it.' : secret && secret.ok == null ? secret.detail : 'One token from your Claude subscription, kept in the repo\'s secrets.'}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="btn btn-s" type="button" onClick={() => copy(1, 'claude setup-token')}>
-                    <CopyFace copied={copied === 1} doneColor={false}>Copy <code>claude setup-token</code></CopyFace>
-                  </button>
-                  <button className="btn btn-s" type="button" onClick={() => copy(2, 'gh secret set CLAUDE_CODE_OAUTH_TOKEN')}>
-                    <CopyFace copied={copied === 2} icon="terminal" doneColor={false}>Or set it with <code>gh secret set</code></CopyFace>
-                  </button>
-                  {secret && secret.ok === false ? <button className="btn btn-s btn-ghost" type="button" onClick={actions.reload}><Icon name="refresh" size={14} />Check again</button> : null}
-                </div>
+                {waiting ? null : (
+                  <TokenGuide
+                    slug={a?.slug}
+                    place={place}
+                    gh={a ? a.gh : undefined}
+                    viewer={a?.viewer ?? null}
+                    open={!!wf && secret?.ok === false}
+                    onSaved={() => actions.reload()}
+                    onCheck={actions.reload}
+                  />
+                )}
+                {wf && !waiting ? <span className="t-body-s c-3">If the first run says Claude Code is not installed on this repository, add the Claude GitHub App: <a href="https://github.com/apps/claude" target="_blank" rel="noreferrer">github.com/apps/claude</a>.</span> : null}
               </div>
             </div>
           </div>
 
-          <div className="cl-step">
+          <div className="cl-step" aria-disabled={waiting || undefined} inert={waiting || undefined}>
             <span className={green ? 'cl-num is-done' : 'cl-num is-now'}>{green ? <Icon name="check" /> : <span>3</span>}</span>
             <div>
               <div className="cl-h">Run one pass now</div>
+              {waiting ? <div className="cl-wait">Waits for a GitHub repo.</div> : null}
               <div className="cl-body">
                 {green ? (
                   <div className="run-line"><span className="pill pill-ci ci-green"><span className="ci-dot"><Icon name="check" /></span>green · {dur(last.createdAt, last.updatedAt)}</span><span>{last.displayTitle}</span></div>
@@ -281,10 +334,11 @@ export default function CloudSetup() {
             </div>
           </div>
 
-          <div className="cl-step">
+          <div className="cl-step" aria-disabled={waiting || undefined} inert={waiting || undefined}>
             <span className="cl-num is-now">4</span>
             <div>
               <div className="cl-h">Pick a schedule</div>
+              {waiting ? <div className="cl-wait">Waits for a GitHub repo.</div> : null}
               <div className="cl-body">
                 <div className="sched" role="radiogroup" aria-label="Schedule">
                   {options.map(([k, s]) => [

@@ -5,6 +5,17 @@
 export const BUSY_NOTE = 'Committing: your repo\'s checks are running...';
 
 /**
+ * Whether the cloud steps can run here, from the folder's place (server/place.mjs): 'ready' | 'repo' (put it on
+ * GitHub first: RepoStart as step 0) | 'other' (not GitHub, or not this folder's own repo: guidance only). An unknown
+ * place (an older server) reads 'ready', today's behaviour.
+ */
+export function cloudGate(place) {
+  if (place === 'none' || place === 'local' || place === 'unpushed') return 'repo';
+  if (place === 'other' || place === 'nested' || place === 'refused') return 'other';
+  return 'ready';
+}
+
+/**
  * Run `call`, then advance. busy() at once; done(result) and go() only after it answered; failed(message) on an
  * error, and no go. Answers whether it went.
  */

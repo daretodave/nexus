@@ -337,6 +337,10 @@ export function createGitView({ repo, root, sessions, run = shRun, claims = read
   /** GET /api/git: every worktree, the primary checkout, main's recent commits, open PRs. */
   async function repoGit() {
     const top = await root();
+    // A folder that is not a repo yet (place.mjs 'none'): an honest answer the panel draws as a pointer, not git's fatal.
+    if (!(await git(top, ['rev-parse', '--git-dir'])).ok) {
+      return { isGit: false, repo: path.basename(top), root: { path: top, branch: '', up: 0, down: 0, upstream: null, dirty: 0, staged: 0, pulled: null }, worktrees: [], main: { base: MAIN, ahead: 0, behind: 0, commits: [] }, prs: [], gh: false, note: 'This folder is not a git repo yet.' };
+    }
     const [wl, list, pr, st, base, fetched] = await Promise.all([
       listWorktrees(top),
       sessions().catch(() => []),

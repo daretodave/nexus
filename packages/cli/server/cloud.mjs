@@ -24,6 +24,7 @@ import { run as shRun, json, track } from './sh.mjs';
 import { LOOP_FILE } from './gh.mjs';
 import { MAIN } from './git.mjs';
 import { primaryRoot } from './local.mjs';
+import { NO_ORIGIN, placeNote, repoPlace } from './place.mjs';
 
 const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const WORKFLOW_PATH = '.github/workflows/march.yml';
@@ -483,8 +484,16 @@ async function workflowFiles(repo, place, cron) {
  * POST /api/cloud/workflow: write the loop workflow from the kit template and land it per owner mode.
  * -> { status, path, sha, written, branch, pr?, setup?, mode?, note? }. Already there: its path and last sha, nothing written.
  */
+/** A folder with no repo or no origin has nowhere for the loop's files to land: 409 with the place, before any git. */
+async function notOnGitHub(repo) {
+  const where = await repoPlace(repo);
+  return NO_ORIGIN.has(where.place) ? fail(409, placeNote(where), { place: where.place }) : null;
+}
+
 export async function addWorkflow(repo, { owner = false, run = shRun, now, commitTimeoutMs } = {}) {
   try {
+    const off = await notOnGitHub(repo);
+    if (off) return off;
     const place = await landingPlace(repo, owner, { now });
     if (place.error) return place;
     const have = await loopAt(repo, place.base);
@@ -510,6 +519,8 @@ export async function saveSchedule(repo, body, { owner = false, run = shRun, now
   if (q.error) return fail(400, q.error);
   const next = q.cron ? cronNext(q.cron, now)?.toISOString() ?? null : null;
   try {
+    const off = await notOnGitHub(repo);
+    if (off) return off;
     const place = await landingPlace(repo, owner, { now });
     if (place.error) return place;
     const have = await loopAt(repo, place.base);

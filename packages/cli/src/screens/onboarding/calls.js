@@ -18,3 +18,33 @@ export const onboardingCalls = {
   /** POST /api/cloud/schedule { schedule: 'night'|'two'|'demand', cron } -> { cron, next, path, written, sha, pr? } (served: changes only the cron line, demand takes the schedule out; next is ISO UTC or null) */
   setSchedule: (schedule, cron) => api('/api/cloud/schedule', { schedule, cron }),
 };
+
+/**
+ * A folder that is not a repo yet (server/repo-start.mjs). Each write needs confirm: true, which only a button
+ * sets; each answers what it did plus `start`, the next GET /api/repo/start.
+ */
+export const repoCalls = {
+  /** GET /api/repo/start[?fresh=1][&owner&name&visibility] -> { place, next, why?, platform, folder, git, gh, repo, gitignore, preview?, nameFree?, plan, guide, manual } */
+  start: ({ fresh, owner, name, visibility } = {}) => {
+    const q = new URLSearchParams();
+    if (fresh) q.set('fresh', '1');
+    if (owner) q.set('owner', owner);
+    if (name) q.set('name', name);
+    if (visibility) q.set('visibility', visibility);
+    const s = q.toString();
+    return api(`/api/repo/start${s ? `?${s}` : ''}`);
+  },
+  /** POST /api/repo/init { confirm, identity?: 'gh' } -> { branch, gitignore: { wrote|appended|kept, lines }, identity?, start } */
+  init: (identity) => api('/api/repo/init', { confirm: true, ...(identity ? { identity } : {}) }),
+  /** POST /api/repo/identity { confirm } -> { identity: { name, email, scope: 'repo' }, start } (repo-level config only) */
+  identity: () => api('/api/repo/identity', { confirm: true }),
+  /** POST /api/repo/commit { confirm, leaveOut } -> { head, files, start } */
+  commit: (leaveOut) => api('/api/repo/commit', { confirm: true, leaveOut }),
+  /** POST /api/repo/remote { confirm, owner, name, visibility } -> { web, remote, start }; 409 { exists, web, guide } when taken */
+  remote: (owner, name, visibility) => api('/api/repo/remote', { confirm: true, owner, name, visibility }),
+  /** POST /api/repo/push { confirm } -> { web, start }; 409 { why: 'push-auth'|'push-ssh'|'push-rejected', guide } */
+  push: () => api('/api/repo/push', { confirm: true }),
+};
+
+/** POST /api/cloud/secret { value, force? } -> { name, repo, verified: true|false|null, updatedAt? }; 422 { warn: 'prefix' }. The value goes to gh on stdin; nothing keeps it. */
+export const setLoopSecret = (value, force = false) => api('/api/cloud/secret', { value, ...(force ? { force: true } : {}) });
