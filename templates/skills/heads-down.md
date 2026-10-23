@@ -102,8 +102,7 @@ Then invoke the `loop` skill (no interval) with it:
 > worktree as `/next` says, `--set builder=<agent id>` or `--set
 > workflow.runId=<id> --set workflow.scriptPath=<path>` at
 > dispatch, `--add defaults=<…>` per default taken, `--add
-> parked=<…>` per question parked (a JSON object with `q`, an
-> `alts` list, `why` and `default`), `--add done=<id>` per close.
+> parked=<{q, alts: [], why, default}>` per question parked, `--add done=<id>` per close.
 > Print `node scripts/plan/progress.mjs <specs> --ref
 > origin/<base>` at the start and the end of every iteration.
 > Stop when every chunk is closed or every one left is blocked.
