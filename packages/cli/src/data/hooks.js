@@ -167,3 +167,5 @@ export const useSecrets = (poll, { skip } = {}) => useResource('/api/secrets', {
 
 /** GET /api/needs (served) -> { at, items }: who needs the owner now, one row per session (shared/needs.mjs). The same answer rides the `needs` event on every live channel; this is the fallback look. */
 export const useNeeds = (poll = 15000) => useResource('/api/needs', { poll });
+/** GET /api/stack (served; server/stack.mjs) -> { available, vaultState, owner, picked, inputs, apps, app, fresh, targets: [{ id, label, on, locked?, disabled?, why }], appNote, names: { NAME: { service, key, vault, app?, workspaceJson?, drift } }, values: { 'svc.key': { names, saved, notes? } }, checks, actions, ticks, vercelLink? }: names and status, never a value. View model: screens/vault/stack/model.js. */
+export const useStack = (poll, { skip } = {}) => useResource('/api/stack', { poll, skip });

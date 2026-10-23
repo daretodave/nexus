@@ -15,6 +15,7 @@
 //                   Grill me; deneb plotted spec 11 and waits, sirius holds one live question (Grill me's banner)
 //   plain-folder    a folder with no git: Detect makes it a repo a click per step, a confirm before GitHub
 //   cloud-token     a GitHub repo with the loop and no sign-in: the setup-token walkthrough, then the paste
+//   stack           Set up a stack in the Vault: Cloudflare, Supabase and Vercel, card by card, to a live domain
 //
 // The script format is server/demo/world.mjs's. Times are ms from the start (or from the gate that holds them).
 // A scenario may carry a `shot` for the recorder (scripts/record.mjs): the screen it opens on (`fleet`, or a
@@ -549,6 +550,59 @@ export const cloudToken = {
   ],
 };
 
+// The stack hand-off: one quiet session while the owner walks Set up a stack in the Vault. The demo stack
+// (server/demo/stack.mjs) answers the cards; the clicks below are the recorder's. The Supabase values are typed one
+// by one (a recorder has no clipboard, so paste-many is shown in the UI tests instead). Demo-safe values:
+//   cfut_demo0000000000000000000000, https://abcdefghijklmnopqrst.supabase.co, sb_publishable_demo0000000000,
+//   sb_secret_demo000000000000000, vcp_demo00000000000000000000, and the pooler URL in server/demo/stack.mjs.
+const sbVal = (key) => `[id="stk-supabase-${key}"]`;
+export const stackHandoff = {
+  name: 'stack',
+  title: 'Stack hand-off',
+  summary: 'Set up a stack in the Vault: Cloudflare, Supabase and Vercel, card by card, from tokens to a live domain.',
+  home: 'vega',
+  long: true,
+  shot: {
+    screen: '/vault?panel=stack',
+    moves: [
+      { at: 1500, click: 'button.stk-preset', text: 'Supabase + Vercel + Cloudflare', what: 'the trinity preset' },
+      { at: 3000, type: 'input[aria-label="Your domain"]', keys: 'fieldday.dev', ms: 900, enter: true, what: 'the domain' },
+      { at: 6000, type: '[id="stk-cloudflare-apiToken"] input', keys: 'cfut_demo0000000000000000000000', ms: 1200, what: 'the Cloudflare token' },
+      { at: 7800, click: '[id="stk-cloudflare-apiToken"] button.btn-primary', text: 'Save', what: 'Save the token' },
+      { at: 9000, click: '[id="stk-cloudflare"] .stk-check button', text: 'Check it', what: 'Check it (pending, nameservers shown)' },
+      { at: 14500, type: `${sbVal('url')} input`, keys: 'https://abcdefghijklmnopqrst.supabase.co', ms: 1200, enter: true, what: 'the project URL' },
+      { at: 17000, type: `${sbVal('publishable')} input`, keys: 'sb_publishable_demo0000000000', ms: 1000, enter: true, what: 'the publishable key' },
+      { at: 19500, type: `${sbVal('secret')} input`, keys: 'sb_secret_demo000000000000000', ms: 1000, enter: true, what: 'the secret key' },
+      { at: 22000, type: `${sbVal('dbUrl')} input`, keys: 'postgresql://postgres.abcdefghijklmnopqrst:demo-pw@aws-0-eu-west-2.pooler.supabase.com:6543/postgres', ms: 1600, enter: true, what: 'the database URL' },
+      { at: 27500, type: '[id="stk-vercel-token"] input', keys: 'vcp_demo00000000000000000000', ms: 1000, enter: true, what: 'the Vercel token' },
+      { at: 30000, click: '[id="stk-vercel"] .stk-check button', text: 'Check it', what: 'Check it' },
+      { at: 32500, click: 'button.stk-proj', text: 'fieldday-web', what: 'pick fieldday-web' },
+      { at: 35500, click: '.stk-next button', text: 'Send to Vercel', what: 'Send to Vercel' },
+      { at: 38000, click: '[id="stk-act-vercel.env"] button.btn-primary', text: 'Send to Vercel', what: 'confirm' },
+      { at: 41000, click: '.stk-next button', text: 'Add the domain', what: 'Add the domain' },
+      { at: 43500, click: '[id="stk-act-vercel.domain"] button.btn-primary', text: 'Add the domain', what: 'confirm' },
+      { at: 52000, click: '[id="stk-cloudflare"] .stk-check button', text: 'Check it', what: 'the zone turns active' },
+      { at: 55000, click: '.stk-next button', text: 'Write the records', what: 'Write the records' },
+      { at: 57500, click: '[id="stk-act-cloudflare.dns"] button.btn-primary', text: 'Write 2 records', what: 'confirm' },
+      { at: 63000, click: '[id="stk-supabase-sb.auth"] .check', what: 'tick the Site URL step' },
+      { at: 78000, click: '.stk-next button', text: 'Check again', what: 'Live: Vercel sees the records' },
+    ],
+  },
+  fixtures: (ctx) => {
+    const fx = base(ctx, (s) => ({
+      ...s,
+      row: { ...s.row, orb: 'thinking', agents: [], turn: 'idle', event: { at: ctx.ago(2), text: 'waiting for you' } },
+      beats: [{ k: 'agent', p: 'start', id: MAIN, label: 'session' }],
+      transcript: [{ kind: 'text', id: 'st0:0', agent: MAIN, text: 'Waiting while you set up the stack in the Vault. Agents only see the names.' }],
+    }));
+    return { ...fx, sessions: fx.sessions.filter((x) => x.name === 'vega') };
+  },
+  script: [
+    ...at(400, 'vega', { row: { event: { text: 'waiting for you' } } }),
+    ...at(90000, 'vega', tx({ kind: 'text', id: 'st1:0', agent: MAIN, text: 'The stack is set: names in the vault, values where the app reads them.' })),
+  ],
+};
+
 export const SCENARIOS = Object.freeze({
   [fleetToTug.name]: fleetToTug,
   [bugToArchive.name]: bugToArchive,
@@ -558,6 +612,7 @@ export const SCENARIOS = Object.freeze({
   [grillMe.name]: grillMe,
   [plainFolder.name]: plainFolder,
   [cloudToken.name]: cloudToken,
+  [stackHandoff.name]: stackHandoff,
 });
 
 export const scenarioNames = () => Object.keys(SCENARIOS);

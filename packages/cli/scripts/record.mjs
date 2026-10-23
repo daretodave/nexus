@@ -45,8 +45,8 @@ export function recordLength({ script, speed = 1, seconds = null }) {
 }
 
 /**
- * Where a recording opens, the moves it makes and how long it holds: the scenario's `shot`, or --session's
- * cockpit with no moves. A move is `{ at, click, text?, what }` (press at `at`) or
+ * Where a recording opens, the moves it makes and how long it holds: the scenario's `shot` (its `screen`, a path such
+ * as /vault?panel=stack, opens there), or --session's cockpit with no moves. A move is `{ at, click, text?, what }` (press at `at`) or
  * `{ at, type, keys, ms, enter?, what }` (focus the field, type `keys` from `at` over `ms`, then Enter).
  */
 export function shotFor(scenario, { session = null } = {}) {
@@ -59,7 +59,8 @@ export function shotFor(scenario, { session = null } = {}) {
       : typeof m.type === 'string' && m.type && typeof m.keys === 'string' && m.keys && Number.isFinite(m.ms) && m.ms >= 0);
     if (!ok) throw new Error(`${scenario.name}: a shot move is { at, click } or { at, type, keys, ms }: ${JSON.stringify(m)}`);
   }
-  return { start: shot.start || 'fleet', moves, seconds: shot.seconds || null };
+  if (shot.screen != null && !(typeof shot.screen === 'string' && /^\/[\w/?=&.-]*$/.test(shot.screen))) throw new Error(`${scenario.name}: a shot's screen is a path on the page, like /vault?panel=stack`);
+  return { start: shot.start || 'fleet', ...(shot.screen ? { screen: shot.screen } : {}), moves, seconds: shot.seconds || null };
 }
 
 // The drawn pointer: headless Chrome draws none, so the page gets one (an arrow and a ring that pulses on a
@@ -204,7 +205,12 @@ export async function record(a, log = console.log) {
     });
     const page = await context.newPage();
     let url = demo.url;
-    if (shot.start !== 'fleet') {
+    if (shot.screen) {
+      // A screen of its own (the stack hand-off opens on /vault?panel=stack): the page reads the token from any path.
+      const u = new URL(demo.url);
+      const [p, q] = shot.screen.split('?');
+      url = `${u.origin}${p}?${q ? `${q}&` : ''}t=${encodeURIComponent(demo.token)}`;
+    } else if (shot.start !== 'fleet') {
       const s = demo.world.session(shot.start);
       if (!s) throw new Error(`no session "${shot.start}" in ${a.scenario}`);
       url = demo.urlFor(s.id);

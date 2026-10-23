@@ -106,6 +106,19 @@ export const server = {
   startManifest: (body = {}) => api('/api/secrets/manifest', body),
   /** POST /api/secrets/setup: land the vault's scripts per owner mode -> { ok, landed: 'main' | 'branch', here?, pr?, branch?, note }. */
   setupVault: () => api('/api/secrets/setup', {}),
+  // The stack hand-off (server/stack.mjs): a value goes only in stackSave's body; checks and actions read tokens on the server.
+  /** GET /api/stack -> { picked, inputs, apps, app, targets, names, values, checks, actions, ticks, owner, vaultState }: names and status, never a value. */
+  stack: () => api('/api/stack'),
+  /** POST /api/stack/pick { picked?, inputs?: { domain }, app?: { dir, framework }, targets? } -> the GET answer. */
+  stackPick: (body) => api('/api/stack/pick', body),
+  /** POST /api/stack/save { service, key, value, targets?, alsoNew? } -> { names, written, failed, pushed, notes }. */
+  stackSave: (body) => api('/api/stack/save', body),
+  /** POST /api/stack/check/:service { values?: { key: value } } -> { ok, summary?, reason?, facts, fill }. */
+  stackCheck: (service, body = {}) => api(`/api/stack/check/${encodeURIComponent(service)}`, body),
+  /** POST /api/stack/apply/:action { confirm?, replace? } -> a plan ({ ok, plan }) or the result ({ ok, summary | reason }). */
+  stackApply: (action, body = {}) => api(`/api/stack/apply/${encodeURIComponent(action)}`, body),
+  /** POST /api/stack/tick { step, on }: a step ticked by hand. */
+  stackTick: (body) => api('/api/stack/tick', body),
 };
 
 const EMPTY = { connected: false, stage: initialState(), transcript: [], status: { state: 'idle' }, asks: [], permissions: [], runs: [], needs: null };

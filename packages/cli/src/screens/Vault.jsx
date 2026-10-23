@@ -9,7 +9,7 @@
 // /api/secrets/gitignore (the warning's fix). Every write re-reads GET /api/secrets: the screen shows what the vault
 // holds, never what it hoped to write. The view model: screens/vault/model.js.
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ViewFrame, ViewHead, Icon, InboxBtn, Err, ToastHost, MaskField, KeyCard, KeyOrb, AuditLog, VaultNote, KeyNote, TickLabel, cx, useShell,
 } from '../ui/index.js';
@@ -24,6 +24,8 @@ import RemoveValue from './vault/RemoveValue.jsx';
 import LocalKeys from './vault/LocalKeys.jsx';
 import { useKeyCards } from './vault/useKeyCards.js';
 import VaultSetup from './vault/VaultSetup.jsx';
+import StackPanel, { useStackPanel } from './vault/stack/StackPanel.jsx';
+import StackRail from './vault/stack/StackRail.jsx';
 import {
   DESTS, SHORT, HEAD_TITLE, addBody, addTick, auditRows, destRows, keyCards, nameInput, staleList, subLine, validName, vaultMissing, vaultRows, waitingOn,
 } from './vault/model.js';
@@ -59,7 +61,10 @@ export default function Vault() {
 }
 
 function OwnerVault({ st, repo, reload, toast }) {
-  const [panel, setPanel] = useState('table');
+  const [params] = useSearchParams();
+  const [panel, setPanel] = useState(params.get('panel') === 'stack' ? 'stack' : 'table');
+  // Set up a stack (the stack hand-off): the panel and the rail share one read of GET /api/stack, polled while it is open.
+  const sp = useStackPanel({ skip: panel !== 'stack', toast });
   const [adding, setAdding] = useState(false);
   const [nw, setNw] = useState({ name: '', for: '', value: '', dests: NEW_DESTS });
   const [edit, setEdit] = useState(null);
@@ -131,6 +136,7 @@ function OwnerVault({ st, repo, reload, toast }) {
         <div className="view-title"><h1 className="t-title-l">Vault</h1><VaultNote /></div>
         <div className="view-acts">
           <span className="view-sub">{subLine(st)}</span>
+          <button className="btn" type="button" onClick={() => { setPanel('stack'); setAdding(false); setEdit(null); }}><Icon name="bolt" size={14} />Set up a stack</button>
           <button className="btn" type="button" onClick={() => { setPanel('import'); setAdding(false); setEdit(null); }}><Icon name="fileOne" size={14} />Import .env</button>
           <button className="btn btn-primary" type="button" onClick={() => { setAdding(true); setPanel('table'); setEdit(null); }}><Icon name="plus" size={14} />Add a secret</button>
         </div>
@@ -138,7 +144,8 @@ function OwnerVault({ st, repo, reload, toast }) {
       <div className="vault-wrap">
         <div className="vt-col">
           <IgnoreWarn status={st} reload={reload} toast={toast} />
-          {panel === 'import' || (empty && !adding) ? (
+          {panel === 'stack' ? <StackPanel sp={sp} toast={toast} onClose={() => setPanel('table')} /> : null}
+          {panel === 'import' || (empty && !adding && panel !== 'stack') ? (
             <ImportPanel status={st} toast={toast} onClose={() => setPanel('table')} onDone={(r) => { setFresh(new Set(r.stored || [])); reload(); }} />
           ) : null}
           {panel === 'table' && (!empty || adding) ? (
@@ -211,6 +218,7 @@ function OwnerVault({ st, repo, reload, toast }) {
           ) : null}
         </div>
         <div className="vt-col" aria-label="Requests and destinations">
+          {panel === 'stack' && sp.stack ? <StackRail stack={sp.stack} ui={sp.ui} /> : null}
           {cards.length ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {cards.map((c) => <KeyCard key={c.key} {...kc.props(c)} />)}
