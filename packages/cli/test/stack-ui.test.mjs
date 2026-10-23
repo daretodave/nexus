@@ -42,14 +42,19 @@ function ui(o = {}) {
 const sp = (data, u = ui()) => ({ res: { status: 'ready', data, reload() {} }, stack: data, ui: u });
 const SB = ['supabase.url', 'supabase.publishable', 'supabase.secret', 'supabase.dbUrl'];
 
-test('the panel draws the presets, a tile per service and the dashed "More services soon"', async () => {
+test('the panel draws the presets, a search box, and a tile per service under its group', async () => {
   const { default: StackPanel } = await import('../src/screens/vault/stack/StackPanel.jsx');
+  const { ORDER, SERVICES, GROUPS } = await import('../shared/stack/recipes.mjs');
   const html = renderToStaticMarkup(createElement(StackPanel, { sp: sp(stack({ picked: [] })) }));
   assert.match(html, /Set up a stack/);
   assert.match(html, /Supabase \+ Vercel \+ Cloudflare/);
   assert.match(html, /Supabase \+ Vercel</);
-  for (const n of ['Cloudflare', 'Supabase', 'Vercel']) assert.match(html, new RegExp(`<b>${n}</b>`));
-  assert.match(html, /More services soon/);
+  for (const p of ['Next.js SaaS', 'AI app', 'Discord bot']) assert.match(html, new RegExp(`>${p}<`));
+  assert.match(html, /aria-label="Search services"/);
+  for (const id of ORDER) assert.match(html, new RegExp(`<b>${SERVICES[id].name.replace('.', '\\.')}</b>`), id);
+  let at = -1;
+  for (const g of GROUPS) { const i = html.indexOf(`aria-label="${g.label}"`); assert.ok(i > at, `${g.label} draws after the group before it`); at = i; }
+  assert.doesNotMatch(html, /More services soon/);
   assert.match(html, /Pick a preset or the services your app uses/);
 });
 

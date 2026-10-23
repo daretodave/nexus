@@ -2,11 +2,11 @@
 // Card states, value rows, the milestone progress and the one next action, the names still missing, the save body,
 // and the paste-many matcher. Names and status only: no function here returns or keeps a stored value; a paste is the
 // card's own until Save sends it.
-import { SERVICES, ORDER, ACTIONS, MILESTONES, PRESETS, milestonesFor, fillTemplate, unfilledKeys, servicesIn, valueOf } from '../../../../shared/stack/recipes.mjs';
+import { SERVICES, ORDER, ACTIONS, MILESTONES, PRESETS, GROUPS, milestonesFor, fillTemplate, unfilledKeys, servicesIn, valueOf, searchServices, groupedServices, nameClashes } from '../../../../shared/stack/recipes.mjs';
 import { checkShape, normalize } from '../../../../shared/stack/shapes.mjs';
 import { frameworkById, envNamesFor, isPublicName } from '../../../../shared/stack/frameworks.mjs';
 
-export { SERVICES, ORDER, ACTIONS, PRESETS, fillTemplate, unfilledKeys, servicesIn, valueOf, envNamesFor, checkShape };
+export { SERVICES, ORDER, ACTIONS, PRESETS, GROUPS, fillTemplate, unfilledKeys, servicesIn, valueOf, envNamesFor, checkShape, searchServices, groupedServices, nameClashes };
 
 const EMPTY = { picked: [], inputs: {}, values: {}, names: {}, checks: {}, actions: {}, ticks: {}, targets: [] };
 const s0 = (stack) => ({ ...EMPTY, ...(stack || {}) });
@@ -89,13 +89,22 @@ const NEXT = {
   live: { text: 'Waiting for Vercel to see the records. Usually a few minutes.', service: 'vercel', step: 'vc.ready', check: 'vercel', cta: 'Check again' },
 };
 
+/** Every other service's one milestone: paste its keys, starting at the first step that asks for a value. */
+function nextFor(id) {
+  if (NEXT[id]) return NEXT[id];
+  const s = SERVICES[id];
+  const step = s?.steps.find((x) => x.values?.length) || s?.steps[0];
+  const n = (s?.values || []).filter((v) => v.required).length;
+  return { text: `Paste your ${s?.name || id} ${n === 1 ? 'key' : 'keys'}.`, service: id, step: step?.id };
+}
+
 /** The one next action: the first ready milestone, else what is being waited on, else "set". */
 export function nextAction(prog, stack) {
   const s = s0(stack);
   const ctx = ctxOf(s);
   const ready = prog.milestones.find((m) => m.state === 'ready');
   if (ready) {
-    const n = NEXT[ready.id];
+    const n = nextFor(ready.id);
     const count = ['url', 'publishable', 'secret', 'dbUrl'].filter((k) => saved(s, 'supabase', k)).length;
     let text = fillTemplate(n.text, ctx).replace('{n}', String(count || 4));
     if (ready.id === 'auth' && !s.picked.includes('cloudflare')) text = 'Tell Supabase sign-in about your vercel.app URL.';
@@ -107,7 +116,11 @@ export function nextAction(prog, stack) {
     const m = MILESTONES.find((x) => x.id === waiting.id);
     return { kind: 'waiting', milestone: waiting.id, service: waiting.service, text: `Waiting on ${m?.waitLabel || 'the services'}. Nothing else to do right now.` };
   }
-  if (prog.total && prog.done === prog.total) return { kind: 'done', text: 'Your stack is set. Push to main and Vercel builds it.', copy: 'git push origin main' };
+  if (prog.total && prog.done === prog.total) {
+    const host = ['vercel', 'netlify'].find((h) => s.picked.includes(h));
+    const text = host ? `Your stack is set. Push to main and ${SERVICES[host].name} builds it.` : 'Your stack is set. Sessions read how to use it in the agent guide.';
+    return { kind: 'done', text, copy: 'git push origin main' };
+  }
   return { kind: 'none', text: 'Pick what your app runs on to start.' };
 }
 
@@ -159,6 +172,8 @@ export function stepStates(svc, stack) {
     }
     if (step.values) done = step.values.every((k) => saved(s, svc, k));
     if (step.action) done = !!s.actions[step.action]?.ok;
+    // A step with nothing to tick, save or check (create the app, open the console) is done once the keys it leads to are.
+    if (!step.tick && !step.auto && !step.values && !step.action) done = allRequiredSaved(s, svc);
     const st = done ? 'done' : waiting ? 'waiting' : first ? 'ready' : 'todo';
     if (!done && !waiting) first = false;
     out.push({ id: step.id, state: st });

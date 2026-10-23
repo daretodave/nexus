@@ -14,6 +14,14 @@
   background: color-mix(in oklab, var(--accent) 22%, var(--surface-solid));
   box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 46%, transparent);
 }
+/* The 0.5.2 services take their group's mix; the first three keep their own (below, so they win). */
+.stk-orb.g-hosting { background: color-mix(in oklab, var(--text) 12%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text) 34%, transparent); }
+.stk-orb.g-data { background: color-mix(in oklab, var(--st-done) 22%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-done) 46%, transparent); }
+.stk-orb.g-auth, .stk-orb.g-ai { background: color-mix(in oklab, var(--accent) 24%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 50%, transparent); }
+.stk-orb.g-payments, .stk-orb.g-email { background: color-mix(in oklab, var(--st-thinking) 24%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-thinking) 50%, transparent); }
+.stk-orb.g-chat, .stk-orb.g-observe { background: color-mix(in oklab, var(--st-blocked) 20%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-blocked) 44%, transparent); }
+.stk-orb.g-cloud { background: color-mix(in oklab, var(--accent) 12%, var(--well)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text-2) 40%, transparent); }
+.stk-orb.is-small { width: 20px; height: 20px; font-size: 8px; }
 .stk-orb.is-cloudflare { background: color-mix(in oklab, var(--st-blocked) 26%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-blocked) 52%, transparent); }
 .stk-orb.is-supabase { background: color-mix(in oklab, var(--st-done) 24%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--st-done) 50%, transparent); }
 .stk-orb.is-vercel { background: color-mix(in oklab, var(--text) 14%, var(--surface-solid)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--text) 38%, transparent); }
@@ -29,6 +37,17 @@
 .stk-preset:hover { color: var(--text); border-color: color-mix(in oklab, var(--text-2) 55%, transparent); }
 .stk-preset.is-on { color: var(--text); border-color: color-mix(in oklab, var(--accent) 60%, transparent); background: color-mix(in oklab, var(--accent) 12%, var(--surface-solid)); }
 .stk-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.stk-pick-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.stk-search { flex: 1; min-width: 200px; max-width: 420px; }
+.stk-search-f { width: 100%; font-size: 13px; }
+.stk-group { display: flex; flex-direction: column; gap: 6px; }
+.stk-group-h { padding-left: 2px; }
+.stk-pick-none { padding: 4px 2px; }
+.stk-picked { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface); }
+.stk-picked-list { display: inline-flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+.stk-picked-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 3px 10px 3px 4px; border-radius: 999px; background: var(--surface-solid); border: 1px solid var(--line-2); font-size: 12px; font-weight: 600; color: var(--text); }
+.stk-clash { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--st-thinking); }
+.stk-clash code { font-family: var(--font-mono); font-size: 12px; }
 .stk-tile {
   position: relative; display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 12px; border-radius: 14px; text-align: left;
   border: 1px solid var(--line-2); background: color-mix(in oklab, var(--raised) 92%, transparent); color: var(--text);
@@ -55,6 +74,15 @@
 .stk-targets { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; padding: 0 2px; }
 .stk-targets.is-folded { gap: 8px; }
 .stk-target-note { flex-basis: 100%; }
+
+/* The agent guide line and its preview. */
+.stk-guide { border-radius: 14px; background: var(--surface); }
+.stk-guide summary { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 10px 14px; cursor: pointer; list-style: none; }
+.stk-guide summary::-webkit-details-marker { display: none; }
+.stk-guide summary > .t-label { width: 64px; flex: none; }
+.stk-guide summary > .t-body-s { flex: 1; min-width: 0; text-wrap: pretty; }
+.stk-guide summary code { font-family: var(--font-mono); font-size: 12px; }
+.stk-guide-pre { margin: 0; max-height: 360px; overflow: auto; padding: 12px 14px; border-top: 1px solid var(--line); font-family: var(--font-mono); font-size: 11.5px; line-height: 17px; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* A card. */
 .stk-cards { display: flex; flex-direction: column; gap: 10px; }
@@ -207,6 +235,7 @@
   .stk-bar i { transition: none; }
   .stk-rail.is-done .stk-bar i, .stk-rail-line.is-done .stk-bar i { animation: none; }
   .stk-tile { transition: none; }
+  .stk-preset { transition: none; }
 }
 
 @media (max-width: 640px) {
@@ -217,6 +246,8 @@
   .stk-grant-why { grid-column: 1 / -1; }
   .stk-ctx-row > .t-label { width: auto; }
   .stk-head { flex-direction: column; }
+  .stk-search { min-width: 0; max-width: none; }
+  .stk-guide summary > .t-label { width: auto; }
 }
 @media (max-width: 960px) and (min-width: 641px) {
   .stk-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); }

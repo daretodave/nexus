@@ -158,7 +158,7 @@ export default function StackCard({ svc, stack, ui, isNext, compact, readOnly })
     return (
       <section id={`stk-${svc}`} className={cx('stk-card', CARD_CLASS[state])}>
         <button className="stk-card-head" type="button" onClick={toggle} aria-expanded="false">
-          <span className={cx('stk-orb', `is-${svc}`)} aria-hidden="true">{s.mono}</span>
+          <span className={cx('stk-orb', `g-${s.group}`, `is-${svc}`)} aria-hidden="true">{s.mono}</span>
           <span className="stk-card-t"><b>{s.name}</b><span className="stk-done-names">{joinList(rows.filter(({ row }) => row.saved).flatMap(({ row }) => row.names).slice(0, 4))}</span></span>
           <span className="stk-card-state is-done"><Icon name="check" size={12} />Done</span>
           <span className="btn btn-ghost btn-s">Open</span>
@@ -169,7 +169,7 @@ export default function StackCard({ svc, stack, ui, isNext, compact, readOnly })
   return (
     <section id={`stk-${svc}`} className={cx('stk-card', CARD_CLASS[state], isNext && 'is-next', open && 'is-open')} aria-label={`${s.name}: ${s.role}`}>
       <button className="stk-card-head" type="button" onClick={toggle} aria-expanded={open ? 'true' : 'false'}>
-        <span className={cx('stk-orb', `is-${svc}`)} aria-hidden="true">{s.mono}</span>
+        <span className={cx('stk-orb', `g-${s.group}`, `is-${svc}`)} aria-hidden="true">{s.mono}</span>
         <span className="stk-card-t"><b>{s.name}</b><span>{s.role}</span></span>
         <span className={cx('stk-card-state', state === 'check-failed' && 'is-bad')}>{cardHead(svc, stack)}</span>
         <Icon name="chevronDown" size={14} className="stk-chev" />

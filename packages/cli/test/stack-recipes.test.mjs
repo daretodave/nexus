@@ -8,6 +8,7 @@ import { SERVICES, MILESTONES, CONSOLE_HOSTS, ORDER, ACTIONS, aliasesOf, milesto
 import { SHAPES, PUBLIC_NAME, checkShape, normalize, publicSafe } from '../shared/stack/shapes.mjs';
 import { FRAMEWORKS, detectFramework, envNamesFor } from '../shared/stack/frameworks.mjs';
 import { looksOf } from '../server/secrets.mjs';
+import { EXAMPLES } from './helpers/stack-examples.mjs';
 
 test('every service has a role, steps, and values with a name, a known shape and a secret flag', () => {
   for (const id of ORDER) {
@@ -116,21 +117,6 @@ test('frameworks: detection order and env names', () => {
   assert.deepEqual(envNamesFor({ secret: true, env: { public: 'X', server: 'X_SERVER' } }, 'vite'), ['X_SERVER']);
 });
 
-// Test values only, obviously fake.
-const EXAMPLES = {
-  hostname: 'fieldday.dev',
-  cloudflareToken: 'cfut_TESTONLYdemo0000000000000000',
-  hex32: '0123456789abcdef0123456789abcdef',
-  supabaseUrl: 'https://abcdefghijklmnopqrst.supabase.co',
-  supabaseRef: 'abcdefghijklmnopqrst',
-  supabasePublishable: 'sb_publishable_TESTONLYdemo0000',
-  supabaseSecret: 'sb_secret_TESTONLYdemo00000000',
-  postgresUrl: 'postgresql://postgres.abcdefghijklmnopqrst:TESTONLYpw@aws-0-eu-west-2.pooler.supabase.com:6543/postgres',
-  supabasePat: 'sbp_TESTONLYdemo0000000000000000',
-  vercelToken: 'vcp_TESTONLYdemo00000000000',
-  vercelTeam: 'team_TESTONLYdemo0000',
-  vercelProject: 'prj_TESTONLYdemo0000',
-};
 
 test('each shape accepts its example', () => {
   for (const [id, v] of Object.entries(EXAMPLES)) {
