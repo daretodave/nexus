@@ -1,6 +1,7 @@
 // The cockpit's top bar (Cockpit board header): wordmark, session switcher
 // (FleetKit's menu), repo, git strip, then owner/contributor chip, run mode,
-// the cloud loop and the pause button.
+// the model badge (spec 54: a hosted session's model and effort, switched from its menu), the cloud loop and the
+// pause button.
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -8,6 +9,8 @@ import {
 } from '../../ui/index.js';
 import { PATHS } from '../../routes.js';
 import { switcherMenu, swDesc } from './switcher.js';
+import ModelBadge from './ModelBadge.jsx';
+import '../../styles/model.css';
 
 /** Close a popover on an outside click or Escape. */
 export function useDismiss(open, close) {
@@ -46,10 +49,11 @@ const RUN_MODES = [
 
 /**
  * session: { id, name, kind }; sessions: the fleet (or null when the server
- * cannot list them); git: the ledger's git (null: only the branch is known).
+ * cannot list them); git: the ledger's git (null: only the branch is known); model: { model, effort, pending, view,
+ * onPick } for a session this server runs (null: a terminal session, no badge).
  */
 export default function CockpitTop({
-  session, sessions, repo, git, branch, owner, runMode, onRunMode, loop, pause, onPause,
+  session, sessions, repo, git, branch, owner, runMode, onRunMode, loop, pause, onPause, model,
 }) {
   const nav = useNavigate();
   const [sw, setSw] = useState(false);
@@ -108,6 +112,7 @@ export default function CockpitTop({
       ) : null}
       <span className="tb-spacer" />
       <ModeChip owner={owner} />
+      {model ? <ModelBadge {...model} /> : null}
       <span ref={rmRef} style={{ position: 'relative', display: 'inline-flex' }}>
         <button className="btn btn-s" type="button" aria-label={`Run mode: ${mode.label.toLowerCase()}`} aria-haspopup="menu" aria-expanded={rm} onClick={() => setRm((o) => !o)}>
           <Icon name="runMode" size={14} /><span className="tb-long">{mode.short || mode.label}</span><Icon name="chevronDown" size={14} />

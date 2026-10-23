@@ -15,6 +15,8 @@ import FleetGit from './FleetGit.jsx';
 import { phaseItems, bar, idleLine, lastLine } from './model.js';
 import { hhmm, ago } from './util.js';
 import { QUADS, seatsFor, filFor } from './sky.js';
+import { badgeText } from '../../../shared/models.mjs';
+import '../../styles/model.css';
 
 // A session waiting on its start questions seats its idle agents in a triangle,
 // and a terminal session its one helper up and left (Fleet board: sirius, polaris).
@@ -198,6 +200,8 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
   const foot = footEvent
     ? <span className="tile-event">{s.event?.at ? `${hhmm(s.event.at)} ` : ''}{s.event?.text || (st === 'resuming' ? 'resume started' : '')}</span>
     : <FleetGit git={s.git} />;
+  // A hosted session's model and effort, small (spec 54): what the SDK's init said, "model: starting…" before it.
+  const model = 'model' in s && !s.ended && !fallen ? <span className="tile-model" title={s.model || undefined}>{badgeText(s)}</span> : null;
 
   return (
     <Tile
@@ -210,7 +214,7 @@ export default function SessionTile({ s, train, onResume, onLink, onClose, busy,
       badge={badge}
       stage={stage}
       info={info}
-      foot={foot}
+      foot={<>{foot}{model}</>}
     />
   );
 }

@@ -15,13 +15,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { nextRunMode, localRunMode, saveRunMode, Icon, InfoBtn, Check, BadgeDef, BadgeAuto, Tip, Switch, Seg, ThemeSeg, useShell } from '../ui/index.js';
-import { api, useLocalSettings, useSecrets } from '../data/index.js';
+import { api, useLocalSettings, useResource, useSecrets } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { useLoop, hhmm } from './cloud-settings/loop.js';
 import { MANIFEST, secretCounts, namesLabel, localKeysLabel, secretsSide } from './cloud-settings/secrets.js';
 import { Frame, LoopDot } from './cloud-settings/parts.jsx';
 import { PermissionModes } from './cloud-settings/permission-mode.jsx';
 import '../styles/permission-mode.css';
+import { ModelPrefs } from './cloud-settings/model-pref.jsx';
+import '../styles/model.css';
 
 const SEC = { padding: '18px 26px', gap: 28 };
 const LABEL = { width: 120 };
@@ -121,6 +123,25 @@ export default function Settings() {
     try { await api('/api/prefs', { permissionMode: mode }); app?.reload?.(); setSave('saved'); } catch (e) { setSave({ error: e.message }); }
   };
 
+  // Model and effort for new sessions (spec 54): GUI prefs per checkout, '' = Claude Code's default. The server drops
+  // an effort the new model does not take, so the reload shows what was kept.
+  const modelsRes = useResource('/api/models');
+  const models = modelsRes.status === 'ready' ? modelsRes.data : null;
+  const [modelMine, setModelMine] = useState(null);
+  const [effortMine, setEffortMine] = useState(null);
+  const model = modelMine ?? app?.data?.prefs?.model ?? '';
+  const effort = effortMine ?? app?.data?.prefs?.effort ?? '';
+  const changeModelPref = async (patch) => {
+    if ('model' in patch) setModelMine(patch.model);
+    if ('effort' in patch) setEffortMine(patch.effort);
+    setSave('saving');
+    try {
+      const p = await api('/api/prefs', patch);
+      setModelMine(p.model ?? null); setEffortMine(p.effort ?? null);
+      app?.reload?.(); setSave('saved');
+    } catch (e) { setSave({ error: e.message }); }
+  };
+
   const [tip, setTip] = useState(false);
   const bySize = rm === 'size';
   const subOn = rm === 'sub' || rm === 'both';
@@ -214,6 +235,13 @@ export default function Settings() {
             <div><h2 className="set-h">Permissions for new sessions</h2><p className="set-d">What a session may do without asking. A session already running keeps the mode it started with.</p></div>
             <div style={{ minWidth: 0 }}>
               <PermissionModes value={perm} onChange={changePerm} />
+            </div>
+          </section>
+
+          <section className="set-sec" style={SEC}>
+            <div><h2 className="set-h">Model for new sessions</h2><p className="set-d">The model and effort a new session starts on. A running session keeps its own; switch it from its cockpit's model badge.</p></div>
+            <div style={{ minWidth: 0 }}>
+              <ModelPrefs model={model} effort={effort} view={models} onModel={(m) => changeModelPref({ model: m })} onEffort={(x) => changeModelPref({ effort: x })} />
             </div>
           </section>
 

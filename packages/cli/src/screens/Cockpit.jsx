@@ -62,6 +62,7 @@ export default function Cockpit() {
   useReloadOn(chunkStagesOf(live), ledgerRes);
   const sessionsRes = useSessions();
   const cloudRes = useCloudLoop();
+  const modelsRes = useResource('/api/models');
   const localRes = useLocalSettings();
   const ledger = ledgerRes.status === 'ready' ? ledgerRes.data : null;
   const sessions = sessionsRes.status === 'ready' && Array.isArray(sessionsRes.data) ? sessionsRes.data : null;
@@ -183,6 +184,19 @@ export default function Cockpit() {
     } catch (e) { toast({ kind: 'error', title: 'Run mode not saved', body: e.message }); }
   };
 
+  // ---- the model badge (spec 54): what the SDK's init said, and a switch from the next turn ----
+  const hosted = live.connected && live.status?.hosted !== false;
+  const pickModel = async (pick) => {
+    try {
+      const r = await api(`${base}/model`, pick);
+      toast({ kind: 'info', title: 'Switching', body: r?.note || 'applies from the next turn' });
+    } catch (e) { toast({ kind: 'error', title: 'Not switched', body: e.message }); }
+  };
+  const modelBadge = hosted ? {
+    model: live.status?.model || null, effort: live.status?.effort || null, pending: live.status?.modelPending || null,
+    view: modelsRes.status === 'ready' ? modelsRes.data : null, onPick: pickModel,
+  } : null;
+
   // ---- the cloud loop line -----------------------------------------------------------
   const cloud = cloudRes.status === 'ready' ? cloudRes.data : null;
   const loop = cloud ? { paused: !!cloud.paused, text: cloud.paused ? 'paused' : cloud.next ? `next ${clock(cloud.next)}` : 'on' } : null;
@@ -281,7 +295,7 @@ export default function Cockpit() {
   const topbar = (
     <CockpitTop
       session={session} sessions={sessions} repo={ledger?.repo || listed?.repo || info.name || shell.repo} git={ledger?.git || listed?.git || null}
-      branch={known.current?.branch || info.branch} owner={owner} runMode={runMode} onRunMode={setRunMode} loop={loop} pause={pause} onPause={togglePause}
+      branch={known.current?.branch || info.branch} owner={owner} runMode={runMode} onRunMode={setRunMode} loop={loop} pause={pause} onPause={togglePause} model={modelBadge}
     />
   );
 
