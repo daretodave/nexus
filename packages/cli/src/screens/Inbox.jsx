@@ -21,7 +21,7 @@
 // (data/choices.js); Grill me (screens/Grill.jsx) walks the open plan questions full screen, spec by spec. The plan
 // answers' writer is shared with Grill me (headsdown-inbox/useOversightAnswers.js).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ViewFrame, ViewHead, ViewTitle, ChoiceButtons, LoopStatus, Icon, Orb, Ring, SessTag, Empty, ToastHost, KeyCard, KeyOrb, Markdown, cx, useShell,
 } from '../ui/index.js';
@@ -35,7 +35,7 @@ import { askSend, sendsNow } from '../data/answers.js';
 import { NO_ANSWER } from '../../shared/times.mjs';
 import { AnswerField } from '../ui/answer-field.jsx';
 import { PATHS } from '../routes.js';
-import { batchEligible, batchWhyLine, collect, clock, names, planGroups } from './headsdown-inbox/inboxModel.js';
+import { batchEligible, batchWhyLine, collect, clock, names, planGroups, stackLink } from './headsdown-inbox/inboxModel.js';
 import {
   continueChoices, continueTarget, imageCount, keepsAnswer, planKey, sendable,
 } from './headsdown-inbox/planAnswers.js';
@@ -47,6 +47,7 @@ import { WandBtn } from '../ui/wand.jsx';
 import { choiceId } from '../ui/answer-logic.js';
 import { readGrillAt, grillLeft } from './grill/model.js';
 import { keyCard } from './vault/model.js';
+import { destLabel } from '../../shared/stack/destinations.mjs';
 import { useKeyCards } from './vault/useKeyCards.js';
 
 const KIND_CLS = { now: 'is-now', parked: 'is-parked', cloud: 'is-cloud', plan: 'is-cloud' };
@@ -139,6 +140,7 @@ export default function Inbox() {
   const askWand = (x, fresh = false) => { const id = choiceId(x); if (id) choices.ask([id], { fresh }); };
   // Back from Grill me: what it kept, said once, and focus on the button that opened it.
   const loc = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
     if (!loc.state?.fromGrill) return;
     if (loc.state.toast) setNotes((n) => ({ ...n, grill: loc.state.toast }));
@@ -412,7 +414,7 @@ export default function Inbox() {
           {words && !settled && wandOn ? <WandBtn small className="ibx-wand" state={entry?.status} onClick={() => { askWand(r, entry?.status === 'ready'); setSel(r.id); }} /> : null}
           {!settled && r.kind === 'now' && r.hasDefault ? <button className="btn btn-ghost btn-s" type="button" onClick={() => settle(r, r.opts[0], 'default')}>Use default</button> : null}
           {!settled && r.kind !== 'now' && r.hasDefault ? <button className="btn btn-s" type="button" onClick={() => settle(r, r.opts[0], 'approved')}><Icon name="check" size={14} />Approve</button> : null}
-          {!settled && r.secret ? <button className="btn btn-s btn-warn" type="button" onClick={() => setSel(r.id)}><Icon name="key" size={14} />Add value</button> : null}
+          {!settled && r.secret ? <button className="btn btn-s btn-warn" type="button" data-key={r.secret} onClick={() => (r.stack ? navigate(stackLink(r.stack)) : setSel(r.id))} title={r.stack ? 'Opens its card in Set up a stack' : undefined}><Icon name="key" size={14} />Add value</button> : null}
           {settled && d.kept ? <span className={cx('chk-state', d.sent ? 'is-ok' : 'pans-kept')}><Icon name={d.sent ? 'check' : 'clock'} size={14} />{d.sent ? 'sent' : `${HOW_LABEL[d.how] || 'answered'} · not sent yet`}</span> : null}
           {settled && !d.kept ? <span className="chk-state is-ok"><Icon name="check" size={14} />{HOW_LABEL[d.how] || 'answered'}</span> : null}
         </div>
@@ -541,7 +543,7 @@ export default function Inbox() {
             {x ? (
               <Detail
                 x={x} d={doneAll[x.id]} items={g.now} done={doneAll} settle={settle} reopen={reopen} ask={x.src === 'ask' ? askBar(x.askId) : null} effect={effect(x)} loopAt={loopAt} repo={shell.repo}
-                keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)}
+                keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file, toByName: { [x.secret]: x.raw?.secret?.toByName?.[x.secret] || [] } }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)}
                 entry={choiceId(x) ? choices.get(choiceId(x)) : null} onAsk={choiceId(x) && wandOn ? (fresh) => askWand(x, fresh) : null}
                 foot={panelFoot(x)} sessions={sessions}
               />
@@ -576,6 +578,10 @@ function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, 
     // The key card: no default, no countdown. Saved, it folds into one line and the chunk relights.
     const phase = d?.how === 'set' && keyProps.phase === 'pending' ? 'saved' : keyProps.phase;
     card = <KeyCard key={keyProps.card.key} {...keyProps} phase={phase} saved={keyProps.saved || (d ? { places: d.a, failed: [] } : undefined)} onChange={() => { keyProps.onChange(); onKeyChange(); }} />;
+    // A request that knows its stack service: its card in Set up a stack says where to get it and pushes on save.
+    if (x.stack && phase === 'pending') {
+      card = <>{card}<p className="t-body-s c-2 ibx-stack-link"><Link to={stackLink(x.stack)}>Open the {x.stack.name} card in Set up a stack</Link>{x.stack.to?.length ? <> · saving there pushes it to {x.stack.to.map(destLabel).join(', ')}</> : null}</p></>;
+    }
   } else if (d && keepsAnswer(x)) {
     // A kept plan answer: what you answered, its images, not sent yet (or sent to whom), Change answer.
     const toName = d.to ? sessions.find((s) => s.id === d.to)?.name || '' : '';

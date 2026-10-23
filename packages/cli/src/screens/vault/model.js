@@ -11,17 +11,29 @@
 //   event:  { time, action: 'set'|'rotate'|'push'|'remove', name, destination, ring?, ... }
 //   request: { chunk, names, missing, file, line, date }
 
+import { DESTINATIONS } from '../../../shared/stack/destinations.mjs';
+
 /** A stored value, always: eight dots, whatever its length (the design's rule: a length never leaks). */
 export const MASK = '\u2022'.repeat(8);
 
-/** The manifest's destinations, in the table's column order. */
+/** The manifest's destinations the table always shows, in its column order. */
 export const DESTS = ['local', 'github-actions', 'vercel', 'cloudflare'];
+const MORE = Object.keys(DESTINATIONS).filter((d) => !DESTS.includes(d));
 /** A destination as the table's column and the dots' titles name it. */
-export const SHORT = { local: 'local', 'github-actions': 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+export const SHORT = { local: 'local', 'github-actions': 'Actions', vercel: 'Vercel', cloudflare: 'Cloudflare', ...Object.fromEntries(MORE.map((d) => [d, DESTINATIONS[d].short])) };
 /** A destination as the "Where values go" card names it. */
-export const LABEL = { local: 'Local', 'github-actions': 'GitHub Actions', vercel: 'Vercel', cloudflare: 'Cloudflare' };
+export const LABEL = { local: 'Local', 'github-actions': 'GitHub Actions', vercel: 'Vercel', cloudflare: 'Cloudflare', ...Object.fromEntries(MORE.map((d) => [d, DESTINATIONS[d].label])) };
 /** The column heads' titles. */
-export const HEAD_TITLE = { local: 'this checkout\'s vault', 'github-actions': 'GitHub Actions secrets', vercel: 'Vercel environment variables', cloudflare: 'Cloudflare secrets' };
+export const HEAD_TITLE = { local: 'this checkout\'s vault', 'github-actions': 'GitHub Actions secrets', vercel: 'Vercel environment variables', cloudflare: 'Cloudflare secrets', ...Object.fromEntries(MORE.map((d) => [d, `${DESTINATIONS[d].label} ${DESTINATIONS[d].what}`])) };
+
+/**
+ * The table's columns for a status: the four it always shows, then each other place (Fly.io, Netlify, AWS...) that
+ * some declared name goes to, in the sinks' order.
+ */
+export function destsIn(status) {
+  const used = new Set((status?.secrets || []).flatMap((s) => (s.destinations || []).map((x) => x.destination)));
+  return [...DESTS, ...MORE.filter((d) => used.has(d))];
+}
 /** A dot per state. */
 export const DOT = { set: 'dd is-set', stale: 'dd is-stale', missing: 'dd is-missing', none: 'dd is-none', optional: 'dd is-none', unknown: 'dd is-unknown' };
 const WORD = { set: 'set', stale: 'out of sync', missing: 'missing', none: 'not used', optional: 'optional · not set', unknown: 'unknown (gh can\'t tell)' };
@@ -113,17 +125,18 @@ export function requestedNames(status) {
  */
 export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.now() } = {}) {
   const asked = requestedNames(status);
+  const cols = destsIn(status);
   return (status?.secrets || []).map((s) => {
-    if (s.declared === false) return undeclaredRow(s, { fresh });
-    const states = Object.fromEntries(DESTS.map((d) => [d, shownState(s, d)]));
+    if (s.declared === false) return undeclaredRow(s, { fresh, cols });
+    const states = Object.fromEntries(cols.map((d) => [d, shownState(s, d)]));
     const optionalUnset = !!s.optional && !s.set;
     // Held where it lives (spec 49, A5): not in the vault, every place it goes is remote and lists it. Set there.
     const held = heldRemotely(s);
-    if (held) return heldRow(s, states, held, { edit, fresh, now, asked });
+    if (held) return heldRow(s, states, held, { edit, fresh, now, asked, cols });
     // What Sync pushes: a place holding an older value, or one the value never reached (a set value, missing there).
-    const stale = s.set ? DESTS.filter((d) => d !== 'local' && (states[d] === 'stale' || states[d] === 'missing')) : [];
-    const where = DESTS.filter((d) => states[d] === 'set' || states[d] === 'stale').map((d) => SHORT[d]);
-    const ticks = DESTS.filter((d) => states[d] !== 'none').map((d) => SHORT[d]);
+    const stale = s.set ? cols.filter((d) => d !== 'local' && (states[d] === 'stale' || states[d] === 'missing')) : [];
+    const where = cols.filter((d) => states[d] === 'set' || states[d] === 'stale').map((d) => SHORT[d]);
+    const ticks = cols.filter((d) => states[d] !== 'none').map((d) => SHORT[d]);
     const req = asked.get(s.name);
     const chunk = s.chunk || req?.chunk || '';
     return {
@@ -138,7 +151,7 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
       // The value cell's tone: '' (the dots), 'empty' (no value: the warning), 'quiet' (nothing wrong: muted).
       maskTone: s.set ? '' : optionalUnset ? 'quiet' : 'empty',
       maskAria: s.set ? 'value hidden' : optionalUnset ? OPTIONAL_UNSET : 'no value yet',
-      dots: DESTS.map((d) => ({ d, cls: DOT[states[d]], title: `${SHORT[d]}: ${WORD[states[d]]}` })),
+      dots: cols.map((d) => ({ d, cls: DOT[states[d]], title: `${SHORT[d]}: ${WORD[states[d]]}` })),
       chunk,
       age: optionalUnset ? '' : ageText(s, now),
       old: !!s.rotate,
@@ -148,7 +161,7 @@ export function vaultRows(status, { edit = null, fresh = new Set(), now = Date.n
       stale,
       sinks: ticks,
       // Save pushes a replaced value where the old one lives, and a first value to every place the manifest names.
-      pushTo: DESTS.filter((d) => d !== 'local' && (s.set ? ['set', 'stale', 'unknown'].includes(states[d]) : states[d] !== 'none')),
+      pushTo: cols.filter((d) => d !== 'local' && (s.set ? ['set', 'stale', 'unknown'].includes(states[d]) : states[d] !== 'none')),
       placeholder: s.set ? 'Paste the new value' : 'Paste the value',
       rings: s.rings || [],
       editNote: s.set
@@ -212,9 +225,9 @@ export function heldRemotely(s) {
 }
 
 /** A row for a name held where it lives: "in GitHub Actions" (muted), its age from the sink, and Replace. */
-function heldRow(s, states, held, { edit, fresh, now, asked }) {
+function heldRow(s, states, held, { edit, fresh, now, asked, cols = DESTS }) {
   const req = asked.get(s.name);
-  const ticks = DESTS.filter((d) => states[d] !== 'none');
+  const ticks = cols.filter((d) => states[d] !== 'none');
   const where = `in ${andList(held.places)}`;
   return {
     name: s.name,
@@ -228,7 +241,7 @@ function heldRow(s, states, held, { edit, fresh, now, asked }) {
     mask: where,
     maskTone: 'quiet',
     maskAria: `set ${where}`,
-    dots: DESTS.map((d) => ({ d, cls: DOT[states[d]], title: `${SHORT[d]}: ${WORD[states[d]]}` })),
+    dots: cols.map((d) => ({ d, cls: DOT[states[d]], title: `${SHORT[d]}: ${WORD[states[d]]}` })),
     chunk: s.chunk || req?.chunk || '',
     age: held.at ? ageText({ set: true, setAt: held.at }, now) : '',
     old: false,
@@ -250,7 +263,7 @@ const UNDECLARED_RING = { local: 'in .env', workspace: 'in .env.workspace', keyc
  * A name the vault holds that nexus.secrets.json does not declare (spec 49, A4): marked "in .env, not in the
  * manifest", its Local dot truthful (set where it is set), no other place (the manifest names none), and Declare only.
  */
-function undeclaredRow(s, { fresh }) {
+function undeclaredRow(s, { fresh, cols = DESTS }) {
   const local = s.set || (s.rings || []).length > 0;
   const where = (s.rings || []).map((r) => UNDECLARED_RING[r]).filter(Boolean)[0] || 'in .env';
   return {
@@ -264,7 +277,7 @@ function undeclaredRow(s, { fresh }) {
     mask: local ? MASK : 'no value',
     maskTone: local ? '' : 'empty',
     maskAria: local ? 'value hidden' : 'no value yet',
-    dots: DESTS.map((d) => {
+    dots: cols.map((d) => {
       const st = d === 'local' ? (local ? 'set' : 'missing') : 'none';
       return { d, cls: DOT[st], title: `${SHORT[d]}: ${WORD[st]}` };
     }),
@@ -289,13 +302,15 @@ export const declaredSecrets = (status) => (status?.secrets || []).filter((s) =>
 /** The "Where values go" card: one row per destination, with its count and its worst dot. */
 export function destRows(status, { repo = '' } = {}) {
   const secrets = status?.secrets || [];
+  const cols = destsIn(status);
   const what = {
     local: vaultPlace(status?.vault),
     'github-actions': repo ? `${repo} repository secrets` : 'repository secrets',
     vercel: 'project environment variables',
     cloudflare: 'worker secrets',
+    ...Object.fromEntries(Object.entries(DESTINATIONS).filter(([d]) => !DESTS.includes(d)).map(([d, x]) => [d, x.what])),
   };
-  return DESTS.map((d) => {
+  return cols.map((d) => {
     const n = (w) => secrets.filter((s) => shownState(s, d) === w).length;
     const set = n('set');
     const stale = n('stale');
@@ -313,7 +328,7 @@ export function destRows(status, { repo = '' } = {}) {
 /** Every place behind the vault: [{ name, destinations }] (Sync N): an older value there, or a set value never pushed. */
 export function staleList(status) {
   return (status?.secrets || []).filter((s) => s.set)
-    .map((s) => ({ name: s.name, destinations: DESTS.filter((d) => d !== 'local' && ['stale', 'missing'].includes(destState(s, d))) }))
+    .map((s) => ({ name: s.name, destinations: destsIn(status).filter((d) => d !== 'local' && ['stale', 'missing'].includes(destState(s, d))) }))
     .filter((x) => x.destinations.length);
 }
 
@@ -348,7 +363,7 @@ export function auditRows(status, { now = Date.now(), limit = 8, fresh = new Set
   // The name's last set or rotation says where the old value still sits: "\u00b7 local, Vercel still has the old one".
   for (const [name, { row }] of lastSetRow) {
     const s = (status?.secrets || []).find((x) => x.name === name);
-    const stale = DESTS.filter((d) => d !== 'local' && s && destState(s, d) === 'stale').map((d) => SHORT[d]);
+    const stale = destsIn(status).filter((d) => d !== 'local' && s && destState(s, d) === 'stale').map((d) => SHORT[d]);
     if (stale.length) row.tail = ` ${andList(stale)} still ${stale.length === 1 ? 'has' : 'have'} the old one`;
   }
   for (const r of status?.requests || []) {
@@ -386,7 +401,12 @@ export function hostOf(url) {
  */
 export function keyCard(req, name, status, { now = Date.now() } = {}) {
   const s = (status?.secrets || []).find((x) => x.name === name) || { name, destinations: [] };
-  const places = (s.destinations || []).map((x) => x.destination);
+  const declared = (s.destinations || []).map((x) => x.destination);
+  // The places the request named for this name (`request --to`) join the manifest's: ticked, and declared on save.
+  // Only this name's own (toByName): another name's places in the same request never widen this one.
+  const own = req?.toByName ? req.toByName[name] || [] : req?.to || [];
+  const asked = own.filter((d) => d !== 'local' && !declared.includes(d));
+  const places = [...declared, ...asked];
   const local = status?.vault?.keychain ? 'keychain' : '.env';
   const dests = ['local', ...places.filter((d) => d !== 'local')].map((d) => ({
     d, locked: d === 'local', label: d === 'local' ? `Store locally \u00b7 ${local}` : `Push to ${LABEL[d] || d}`,
@@ -405,6 +425,7 @@ export function keyCard(req, name, status, { now = Date.now() } = {}) {
     whereLabel: s.where ? hostOf(s.where) : '',
     dests,
     sinks: places.filter((d) => d !== 'local'),
+    ...(asked.length ? { adds: asked } : {}),
   };
 }
 
@@ -422,9 +443,13 @@ export function keyCards(status, opts) {
   return out;
 }
 
-/** The body Save sends, from the card's ticks: the sinks only (the vault always keeps the value). */
-export function saveBody(value, ticked) {
-  return { value, destinations: ticked.filter((d) => d !== 'local') };
+/**
+ * The body Save sends, from the card's ticks: the sinks only (the vault always keeps the value). `adds`: places the
+ * request named that nexus.secrets.json does not list yet; ticked, they are declared as the value is stored.
+ */
+export function saveBody(value, ticked, adds = []) {
+  const destinations = ticked.filter((d) => d !== 'local');
+  return { value, destinations, ...(adds.some((d) => destinations.includes(d)) ? { declare: true } : {}) };
 }
 
 /** The saved line's places: "local, Actions, Vercel"; and the ones a sink refused. */

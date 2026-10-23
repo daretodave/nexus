@@ -154,11 +154,35 @@ export function fromPermissions(perms = [], { stage, chunk, now } = {}) {
 }
 
 /**
- * A secret request (the server marks it: `secret: { chunk, names, missing }`) -> one key item per name still missing.
- * It has no default and no countdown, so batch-answer and "Approve all" pass over it; the key card answers it.
+ * Where Add value goes for a request that knows its stack service: the Vault's stack card for it, the field focused,
+ * and the places to push to once saved. `/vault?panel=stack&service=stripe&key=STRIPE_SECRET_KEY&chunk=15.4&to=vercel`.
+ */
+export function stackLink({ service, key, chunk, to = [] }) {
+  const q = new URLSearchParams({ panel: 'stack', service, key });
+  if (chunk) q.set('chunk', chunk);
+  if (to.length) q.set('to', to.join(','));
+  return `/vault?${q.toString()}`;
+}
+
+/** The stack card a Vault URL asks for (stackLink's reverse), or null: names and places only. */
+export function stackAsk(params) {
+  const get = (k) => (params && typeof params.get === 'function' ? params.get(k) : null);
+  const service = get('service');
+  const key = get('key');
+  if (get('panel') !== 'stack' || !/^[a-z][a-z0-9-]{0,39}$/.test(service || '') || !/^[A-Z][A-Z0-9_]*$/.test(key || '')) return null;
+  const chunk = /^\d{2,}\.\d+[a-z0-9]*$/.test(get('chunk') || '') ? get('chunk') : null;
+  const to = (get('to') || '').split(',').map((d) => d.trim()).filter((d) => /^[a-z][a-z0-9-]*$/.test(d));
+  return { service, key, chunk, to };
+}
+
+/**
+ * A secret request (the server marks it: `secret: { chunk, names, missing, to, toByName, services }`) -> one key item
+ * per name still missing. It has no default and no countdown, so batch-answer and "Approve all" pass over it; the key
+ * card answers it, or, when the server matched the name to a stack service, the Vault's card for it (`stack`). Each
+ * name carries only its own places (`toByName`), never another name's.
  */
 function fromSecretRequest(d) {
-  const { chunk = '', missing = [] } = d.secret || {};
+  const { chunk = '', missing = [], services = {}, toByName = {} } = d.secret || {};
   return missing.map((name) => ({
     id: `plan:${d.id}:${name}`,
     kind: 'plan',
@@ -177,6 +201,7 @@ function fromSecretRequest(d) {
     at: '',
     q: `${chunk} needs ${name}`,
     secret: name,
+    ...(services[name] ? { stack: { service: services[name].service, name: services[name].name || services[name].service, key: name, chunk, to: toByName[name] || [] } } : {}),
     opts: [],
     why: '',
     hasDefault: false,

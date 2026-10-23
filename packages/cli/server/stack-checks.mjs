@@ -6,15 +6,34 @@
 //
 // Everything takes an injected `fetchImpl`, so the tests run every path against a fake.
 
-export const ALLOW = ['api.cloudflare.com', 'api.vercel.com', 'api.supabase.com'];
+export const ALLOW = [
+  'api.cloudflare.com', 'api.vercel.com', 'api.supabase.com',
+  // 0.5.2: each service's own API, exactly; nothing else.
+  'oauth2.googleapis.com', 'cloudresourcemanager.googleapis.com', 'identitytoolkit.googleapis.com',
+  'login.microsoftonline.com', 'management.azure.com',
+  'discord.com', 'slack.com', 'api.twilio.com', 'api.stripe.com', 'api.clerk.com',
+  'api.anthropic.com', 'api.openai.com', 'api.resend.com',
+  'sentry.io', 'us.sentry.io', 'de.sentry.io', 'us.posthog.com', 'eu.posthog.com',
+  'console.neon.tech', 'api.netlify.com', 'api.machines.dev',
+];
 const SUPABASE_HOST = /^[a-z0-9]{20}\.supabase\.co$/;
+/** AWS STS: the global endpoint or a regional one (sts.eu-west-2.amazonaws.com). */
+export const STS_HOST = /^sts(\.[a-z]{2,4}(-[a-z]+)+-\d{1,2})?\.amazonaws\.com$/;
+/** An Upstash database's own REST endpoint (us1-merry-cat-32748.upstash.io). */
+export const UPSTASH_HOST = /^[a-z0-9-]+\.upstash\.io$/;
 const MAX_BYTES = 256 * 1024;
 export const TIMEOUT_MS = 8000;
 
-/** True for a host a call may reach: the three APIs, or a project's own <ref>.supabase.co. */
+/** True for a host a call may reach: a service's API, a project's own <ref>.supabase.co, STS, or an Upstash database. */
 export function hostAllowed(host) {
-  return ALLOW.includes(host) || SUPABASE_HOST.test(String(host));
+  const h = String(host);
+  return ALLOW.includes(h) || SUPABASE_HOST.test(h) || STS_HOST.test(h) || UPSTASH_HOST.test(h);
 }
+
+/** The header each auth mode puts the token in. Only these names ever carry a token, and `extra` may not set them. */
+const AUTH_HEADER = { bearer: 'authorization', bot: 'authorization', basic: 'authorization', raw: 'authorization', apikey: 'apikey', xapikey: 'x-api-key', goog: 'x-goog-api-key' };
+const AUTH_PREFIX = { bearer: 'Bearer ', bot: 'Bot ', basic: 'Basic ', raw: '', apikey: '', xapikey: '', goog: '' };
+const TOKEN_HEADERS = new Set(Object.values(AUTH_HEADER));
 
 /** An error a call raises: kind is 'host' | 'timeout' | 'connect' | 'large'. Its message names the host only. */
 export class CallError extends Error {
@@ -44,20 +63,36 @@ async function readCapped(res) {
 }
 
 /**
- * One call. host must pass hostAllowed (else it throws before any connection opens). The token goes only in a
- * header: `Authorization: Bearer` or Supabase's `apikey`. Returns { status, json, headers: { 'x-ratelimit-remaining' } }.
+ * One call. host must pass hostAllowed (else it throws before any connection opens). The token goes only in a header,
+ * by `header`: 'bearer' (Authorization: Bearer), 'bot' (Discord's Authorization: Bot), 'basic' (a base64 user:pass the
+ * caller built), 'raw' (an Authorization the caller built, an AWS signature), 'apikey' (Supabase), 'xapikey'
+ * (Anthropic's x-api-key) or 'goog' (Google's x-goog-api-key). `extra` adds plain headers (a version, a date), never
+ * a token header. A body is JSON (`body`), a form (`form`) or text the caller signed (`rawBody`, its type in extra).
+ * Returns { status, json, headers }: x-ratelimit-remaining and any `keep` names, each cut short; `text` too when
+ * `raw` (an XML answer).
  */
-export async function call(fetchImpl, { host, path = '/', method = 'GET', token, header = 'bearer', body, timeoutMs = TIMEOUT_MS }) {
+export async function call(fetchImpl, { host, path = '/', method = 'GET', token, header = 'bearer', body, form, rawBody, extra = {}, keep = [], raw = false, ua, timeoutMs = TIMEOUT_MS }) {
   if (!hostAllowed(host)) throw new CallError('host', host);
   if (typeof path !== 'string' || !path.startsWith('/')) throw new CallError('host', host);
-  const headers = { 'user-agent': 'nexus-cli', accept: 'application/json' };
-  if (token) headers[header === 'apikey' ? 'apikey' : 'authorization'] = header === 'apikey' ? token : `Bearer ${token}`;
-  if (body !== undefined) headers['content-type'] = 'application/json';
+  const headers = { 'user-agent': ua || 'nexus-cli', accept: 'application/json' };
+  for (const [k, v] of Object.entries(extra || {})) {
+    const name = String(k).toLowerCase();
+    if (TOKEN_HEADERS.has(name) || typeof v !== 'string') continue;
+    headers[name] = v;
+  }
+  if (token) {
+    const mode = AUTH_HEADER[header] ? header : 'bearer';
+    headers[AUTH_HEADER[mode]] = `${AUTH_PREFIX[mode]}${token}`;
+  }
+  let payload;
+  if (body !== undefined) { headers['content-type'] = 'application/json'; payload = JSON.stringify(body); }
+  else if (form) { headers['content-type'] = 'application/x-www-form-urlencoded'; payload = new URLSearchParams(form).toString(); }
+  else if (typeof rawBody === 'string') payload = rawBody;
   let res;
   try {
     res = await fetchImpl(`https://${host}${path}`, {
       method, headers, redirect: 'error', signal: AbortSignal.timeout(timeoutMs),
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(payload !== undefined ? { body: payload } : {}),
     });
   } catch (e) {
     const name = e && (e.name || e.code);
@@ -68,13 +103,21 @@ export async function call(fetchImpl, { host, path = '/', method = 'GET', token,
   if (text === null) throw new CallError('large', host);
   let json = null;
   try { json = text ? JSON.parse(text) : null; } catch { json = null; }
-  const remaining = res.headers && typeof res.headers.get === 'function' ? res.headers.get('x-ratelimit-remaining') : null;
-  return { status: res.status, json, headers: remaining == null ? {} : { 'x-ratelimit-remaining': remaining } };
+  const out = {};
+  for (const k of ['x-ratelimit-remaining', ...keep]) {
+    const v = res.headers && typeof res.headers.get === 'function' ? res.headers.get(k) : null;
+    if (v != null) out[k] = String(v).slice(0, 80);
+  }
+  return { status: res.status, json, headers: out, ...(raw ? { text } : {}) };
 }
 
 // ---- plain reasons (design 7.4) ----------------------------------------------------------------------------------
 
-const NAMES = { cloudflare: 'Cloudflare', supabase: 'Supabase', vercel: 'Vercel' };
+const NAMES = {
+  cloudflare: 'Cloudflare', supabase: 'Supabase', vercel: 'Vercel', aws: 'AWS', gcp: 'Google Cloud', azure: 'Azure', firebase: 'Firebase',
+  stripe: 'Stripe', clerk: 'Clerk', neon: 'Neon', upstash: 'Upstash', netlify: 'Netlify', fly: 'Fly.io', discord: 'Discord', slack: 'Slack',
+  twilio: 'Twilio', resend: 'Resend', anthropic: 'Anthropic', openai: 'OpenAI', sentry: 'Sentry', posthog: 'PostHog',
+};
 
 /** A plain reason for a failed call or status. hint: { what, permission, thing, field }. */
 export function reasonFor(service, r, hint = {}) {
@@ -94,7 +137,7 @@ export function reasonFor(service, r, hint = {}) {
 }
 
 /** Run a call and turn a thrown CallError into { error } (the reason), so each check reads straight down. */
-async function attempt(fetchImpl, service, opts) {
+export async function attempt(fetchImpl, service, opts) {
   try { return await call(fetchImpl, opts); } catch (e) { return { status: 0, error: e instanceof CallError ? reasonFor(service, e) : `${NAMES[service]} could not be reached.` }; }
 }
 
@@ -105,6 +148,24 @@ export const FACTS = {
   cloudflare: ['zone', 'status', 'active', 'nameServers', 'originalNameServers', 'zoneId', 'accountId', 'accountName', 'expiresOn'],
   supabase: ['ref', 'authOk', 'authVersion', 'providers', 'secretOk', 'tables', 'projectName', 'region', 'projectStatus'],
   vercel: ['projects', 'team', 'fullAccount', 'defaultTeamId', 'username', 'domainOnProject', 'domainOk', 'configuredBy', 'recommended', 'vercelRegistrar'],
+  aws: ['keyOk', 'account', 'arn', 'principalType', 'keyKind', 'region'],
+  gcp: ['keyOk', 'clientEmail', 'projectId', 'projectOk', 'projectNumber', 'projectName', 'projectState'],
+  azure: ['tenantOk', 'subscriptionName', 'subscriptionState', 'resourceGroupOk', 'resourceGroupLocation'],
+  firebase: ['projectId', 'projectMatches', 'authorizedDomains', 'domainAuthorized', 'authReady', 'referrerLocked', 'serviceAccountProject', 'serviceAccountMatches'],
+  stripe: ['mode', 'keyKind', 'permissionOk', 'missingPermission'],
+  clerk: ['keyOk', 'mode', 'frontendApi'],
+  neon: ['keyOk', 'projectId', 'projectName', 'regionId', 'pgVersion', 'projects'],
+  upstash: ['pong', 'endpoint'],
+  netlify: ['siteFound', 'siteName', 'siteUrl', 'accountSlug'],
+  fly: ['appFound', 'appName', 'appStatus', 'orgSlug'],
+  discord: ['botOk', 'botUser', 'botId', 'applicationId', 'appName', 'publicKeyMatches', 'botPublic', 'guildCount', 'messageContent'],
+  slack: ['botOk', 'teamId', 'team', 'botUser', 'botId', 'isBot', 'enterprise'],
+  twilio: ['keyOk', 'numbers', 'numberCount', 'hasFrom', 'smsCapable'],
+  resend: ['keyOk', 'access', 'domains', 'verifiedDomains', 'domainStatus', 'domainOk'],
+  anthropic: ['keyOk', 'models', 'newestModel', 'workspaceId', 'organizationId', 'needsWorkspace'],
+  openai: ['keyOk', 'models', 'restricted'],
+  sentry: ['keyOk', 'orgSlug', 'region'],
+  posthog: ['keyOk', 'projectId', 'projectName', 'region'],
 };
 
 const short = (s, n = 200) => String(s).slice(0, n);
@@ -416,7 +477,7 @@ export async function doVercelDomain(fetchImpl, ctx) {
  */
 export async function planVercelEnv(_fetchImpl, ctx) {
   const entries = ctx.entries || [];
-  if (!entries.length) return { ok: false, reason: 'Save the Supabase values first.' };
+  if (!entries.length) return { ok: false, reason: 'Save a value the app reads first (a key of any picked service but the hosts).' };
   if (!ctx.vc?.token || !ctx.vc?.projectId) return { ok: false, reason: 'Save the Vercel token and pick the project first.' };
   const rows = entries.map((e) => ({ key: e.key, type: e.secret ? 'sensitive' : 'encrypted', target: envTargets(e.secret) }));
   const enc2 = rows.filter((r) => r.type === 'encrypted').map((r) => r.key);

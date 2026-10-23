@@ -236,8 +236,8 @@ test('vercel.domain and nameservers: the plain answers for 409, a missing deploy
 });
 
 test('nothing in the stack modules writes to the console', () => {
-  for (const f of ['../server/stack-checks.mjs', '../server/stack.mjs']) {
+  for (const f of ['../server/stack-checks.mjs', '../server/stack-checks-more.mjs', '../server/stack.mjs', '../server/stack-guide.mjs']) {
     const src = fs.readFileSync(new URL(f, import.meta.url), 'utf8');
-    assert.doesNotMatch(src, /console\./, f);
+    assert.doesNotMatch(src, /console\.(log|error|warn|info|debug|trace)\b/, f);
   }
 });

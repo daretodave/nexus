@@ -339,6 +339,8 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
       for (const h of [...hubs.values(), quiet]) h.set('needs', v);
     },
     feed: () => feedView(),
+    /** Add a change feed event (or merge into the one with its id): the demo vault's pushes land here. */
+    addFeed: (patch) => setFeed(patch),
     plan: () => boardFrom(clone(fx.plan.order), clone(fx.plan.progress), { repo: fx.repo.name }),
     claims: () => ({ available: true, rows: clone(fx.claims || []), me: { who: fx.repo.owner || 'owner', owner: !!fx.owner } }),
     durable: () => clone(fx.durable || []),

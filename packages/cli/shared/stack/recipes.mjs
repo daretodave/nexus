@@ -3,8 +3,16 @@
 // copy with its env names, shape and secret flag. Pure data plus tiny helpers; the server and the client both read it.
 // A new service slots in by adding an entry here (and its check in server/stack-checks.mjs when it has one).
 //
+// 0.5.2 adds eighteen services (services-cloud.mjs, services-app.mjs, services-talk.mjs), spread into SERVICES below,
+// each with a group for the picker and a `guide`: what the agent guide (guide.mjs, docs/stack.md in the app's repo)
+// tells every session about using it with values from the vault.
+//
 // Templates: {domain}, {ref}, {team}, {project} and {port} in text and hrefs are filled from the inputs and the last
 // check's facts by fillTemplate; the recipe holds the plain template.
+
+import { CLOUD_SERVICES } from './services-cloud.mjs';
+import { APP_SERVICES } from './services-app.mjs';
+import { TALK_SERVICES } from './services-talk.mjs';
 
 export const STACK_VERSION = 1;
 
@@ -13,11 +21,42 @@ export const CONSOLE_HOSTS = {
   cloudflare: ['dash.cloudflare.com'],
   supabase: ['supabase.com'],
   vercel: ['vercel.com'],
+  aws: ['console.aws.amazon.com'],
+  gcp: ['console.cloud.google.com'],
+  azure: ['portal.azure.com', 'entra.microsoft.com'],
+  firebase: ['console.firebase.google.com', 'console.cloud.google.com'],
+  stripe: ['dashboard.stripe.com'],
+  clerk: ['dashboard.clerk.com'],
+  neon: ['console.neon.tech'],
+  upstash: ['console.upstash.com'],
+  netlify: ['app.netlify.com'],
+  fly: ['fly.io'],
+  discord: ['discord.com'],
+  slack: ['api.slack.com'],
+  twilio: ['console.twilio.com'],
+  resend: ['resend.com'],
+  anthropic: ['platform.claude.com'],
+  openai: ['platform.openai.com'],
+  sentry: ['sentry.io'],
+  posthog: ['us.posthog.com', 'eu.posthog.com'],
 };
+
+/** The picker's groups, in the order they draw. Every service names one. */
+export const GROUPS = [
+  { id: 'hosting', label: 'Hosting and DNS' },
+  { id: 'data', label: 'Data' },
+  { id: 'auth', label: 'Auth' },
+  { id: 'payments', label: 'Payments' },
+  { id: 'ai', label: 'AI' },
+  { id: 'chat', label: 'Messaging and chat' },
+  { id: 'email', label: 'Email and SMS' },
+  { id: 'observe', label: 'Observability' },
+  { id: 'cloud', label: 'Cloud' },
+];
 
 export const SERVICES = {
   cloudflare: {
-    id: 'cloudflare', name: 'Cloudflare', mono: 'CF',
+    id: 'cloudflare', name: 'Cloudflare', mono: 'CF', group: 'hosting', keywords: ['dns', 'domain', 'cdn', 'workers'],
     role: 'Holds your domain and its DNS.',
     why: 'Your registrar points at Cloudflare\'s nameservers. Cloudflare then holds the records that send the domain to Vercel.',
     inputs: [{ key: 'domain', label: 'Your domain', shape: 'hostname', placeholder: 'example.com', shared: true }],
@@ -55,9 +94,20 @@ export const SERVICES = {
       'If you have a CAA record, it must allow letsencrypt.org.',
       'Check email records (MX, SPF, DKIM) after the import; the scan can miss them.',
     ],
+    guide: {
+      reads: 'wrangler and the Cloudflare API read CLOUDFLARE_API_TOKEN (and CLOUDFLARE_ACCOUNT_ID); the token goes in an `Authorization: Bearer` header. CLOUDFLARE_ZONE_ID names the zone in API paths.',
+      run: [
+        'node scripts/secrets.mjs run --only CLOUDFLARE_API_TOKEN,CLOUDFLARE_ACCOUNT_ID -- npx wrangler whoami',
+        'node scripts/secrets.mjs run --only CLOUDFLARE_API_TOKEN,CLOUDFLARE_ZONE_ID -- node scripts/dns-list.mjs',
+      ],
+      test: 'No test tokens. Make a second token scoped to a test zone for experiments; the app\'s token stays on its one zone.',
+      limits: '1200 API requests per five minutes per user. DNS changes reach the edge in seconds, but a nameserver change can take hours.',
+      do: ['Keep records for Vercel DNS only (grey cloud).', 'Scope each token to one zone and give it a TTL.'],
+      dont: ['Turn on proxying for a host that manages its own certificates.', 'Use the Global API Key: it reaches the whole account.'],
+    },
   },
   supabase: {
-    id: 'supabase', name: 'Supabase', mono: 'SB',
+    id: 'supabase', name: 'Supabase', mono: 'SB', group: 'data', keywords: ['postgres', 'database', 'auth', 'storage'],
     role: 'Your database and sign-in.',
     why: 'Postgres, Auth and Storage. The app needs a URL and a public key in the browser, and a secret key and a database URL on the server, here and on Vercel.',
     inputs: [],
@@ -96,11 +146,22 @@ export const SERVICES = {
       'Percent-encode @ # ? & and spaces in the password.',
       'Forgetting the Site URL breaks sign-up emails and password resets.',
     ],
+    guide: {
+      reads: '@supabase/supabase-js and @supabase/ssr take the URL and a key from code: the URL and the publishable key (prefixed) in the browser, the secret key only on the server. Postgres clients and ORMs read DATABASE_URL. The supabase CLI reads SUPABASE_ACCESS_TOKEN.',
+      run: [
+        'node scripts/secrets.mjs run --only SUPABASE_ACCESS_TOKEN,SUPABASE_PROJECT_REF -- sh -c \'npx supabase link --project-ref "$SUPABASE_PROJECT_REF"\'',
+        'node scripts/secrets.mjs run --only DATABASE_URL -- npx drizzle-kit migrate',
+      ],
+      test: 'No test keys. Use a second project for staging, or `npx supabase start` for a local stack with its own keys. Never point tests at the production database.',
+      limits: 'Auth endpoints are rate limited per IP and per project (sign-up emails especially). The transaction pooler takes many clients; a direct connection is capped by the compute size.',
+      do: ['Turn on row level security on every table the browser can reach.', 'Use the transaction pooler (6543) from serverless code.'],
+      dont: ['Give the secret key or DATABASE_URL a public prefix.', 'Use the secret key in browser code: it bypasses row level security.'],
+    },
   },
   vercel: {
-    id: 'vercel', name: 'Vercel', mono: 'VC',
+    id: 'vercel', name: 'Vercel', mono: 'VC', group: 'hosting', keywords: ['hosting', 'deploy', 'next.js', 'preview'],
     role: 'Builds and hosts the app.',
-    why: 'Every push builds a preview, and main builds production. Vercel serves your domain and keeps the app\'s env, so the Supabase values go here too.',
+    why: 'Every push builds a preview, and main builds production. Vercel serves your domain and keeps the app\'s env, so the values the app reads go here too.',
     inputs: [{ key: 'domain', label: 'Your domain', shape: 'hostname', placeholder: 'example.com', shared: true }],
     token: {
       title: 'An access token for your team',
@@ -115,7 +176,7 @@ export const SERVICES = {
       { id: 'vc.new', text: 'Import your git repo as a project and let the first build run.', link: { href: 'https://vercel.com/new', label: 'New project' }, auto: 'vercel.projects', note: 'The first deploy has to finish before Vercel accepts a domain.' },
       { id: 'vc.token', text: 'Create the token below and paste it.', values: ['token'] },
       { id: 'vc.ids', text: 'Press Check it, then pick this app\'s project.', values: ['projectId', 'teamId'] },
-      { id: 'vc.env', text: 'Send the Supabase values to the project.', action: 'vercel.env' },
+      { id: 'vc.env', text: 'Send the values the app reads (every picked service\'s) to the project.', action: 'vercel.env' },
       { id: 'vc.domain', text: 'Add {domain} and www.{domain} to the project.', action: 'vercel.domain', link: { href: 'https://vercel.com/d?to=%2F%5Bteam%5D%2F%5Bproject%5D%2Fsettings%2Fdomains', label: 'Domains' } },
       { id: 'vc.ready', text: 'Wait for the domain to show Valid.', auto: 'vercel.domainOk' },
     ],
@@ -131,23 +192,56 @@ export const SERVICES = {
       'Secret values go to Vercel as Sensitive. You cannot read them back there, so the vault keeps the copy.',
       'Do not switch the domain to Vercel\'s nameservers in this stack; Cloudflare holds DNS.',
     ],
+    guide: {
+      reads: 'The vercel CLI reads VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID in place of `vercel login` and `vercel link`. App code never reads them.',
+      run: [
+        'node scripts/secrets.mjs run --only VERCEL_TOKEN,VERCEL_ORG_ID,VERCEL_PROJECT_ID -- npx vercel pull --yes',
+        'node scripts/secrets.mjs run --only VERCEL_TOKEN,VERCEL_ORG_ID,VERCEL_PROJECT_ID -- npx vercel deploy',
+      ],
+      runNote: 'Send values to the project with `node scripts/secrets.mjs push NAME --to vercel` (stdin, never argv), or the stack card\'s Send to Vercel.',
+      test: 'Every push builds a preview with its own URL; preview env is separate from production. A deploy without --prod is never production.',
+      limits: 'Deployments and API calls are limited per plan; a 429 carries a reset time. Do not redeploy in a loop.',
+      do: ['Redeploy after changing env; changes apply to the next build.', 'Keep secret values Sensitive on Vercel; the vault keeps the readable copy.'],
+      dont: ['Run `vercel env pull` into a tracked file, or `vercel env add` with a secret on the command line.', 'Deploy to production from a session without saying so first.'],
+    },
   },
+  ...CLOUD_SERVICES,
+  ...APP_SERVICES,
+  ...TALK_SERVICES,
 };
 
 /** The order cards draw in (each service's first milestone). */
-export const ORDER = ['cloudflare', 'supabase', 'vercel'];
+export const ORDER = [
+  'cloudflare', 'supabase', 'vercel',
+  'netlify', 'fly', 'neon', 'upstash', 'firebase', 'clerk', 'stripe', 'anthropic', 'openai',
+  'discord', 'slack', 'resend', 'twilio', 'sentry', 'posthog', 'aws', 'gcp', 'azure',
+];
 
 /** The presets above the picker. */
 export const PRESETS = [
   { id: 'trinity', label: 'Supabase + Vercel + Cloudflare', picked: ['cloudflare', 'supabase', 'vercel'] },
   { id: 'sv', label: 'Supabase + Vercel', picked: ['supabase', 'vercel'] },
+  { id: 'saas', label: 'Next.js SaaS', picked: ['vercel', 'neon', 'clerk', 'stripe', 'resend', 'sentry'] },
+  { id: 'ai', label: 'AI app', picked: ['anthropic', 'vercel', 'supabase', 'posthog'] },
+  { id: 'discord', label: 'Discord bot', picked: ['discord', 'fly', 'upstash'] },
+  { id: 'slack', label: 'Slack app', picked: ['slack', 'fly', 'neon'] },
 ];
+
+/**
+ * The names CI needs (vercel pull/build/deploy, wrangler, netlify deploy, fly deploy, the Sentry source map upload):
+ * pushed to GitHub Actions when that target is ticked. Cloud keys stay out: CI should use OIDC for AWS, Google Cloud
+ * and Azure instead of a stored key.
+ */
+export const CI_NAMES = new Set([
+  'VERCEL_TOKEN', 'VERCEL_ORG_ID', 'VERCEL_PROJECT_ID', 'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID',
+  'NETLIFY_AUTH_TOKEN', 'NETLIFY_SITE_ID', 'FLY_API_TOKEN', 'SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT',
+]);
 
 /** What each action does, for the plan's head and the rail's button. */
 export const ACTIONS = {
   'cloudflare.dns': { service: 'cloudflare', label: 'Point {domain} at Vercel', cta: 'Write the records', needs: ['cloudflare', 'vercel'] },
   'vercel.domain': { service: 'vercel', label: 'Add {domain} to the project', cta: 'Add the domain', needs: ['vercel'] },
-  'vercel.env': { service: 'vercel', label: 'Send the Supabase values to Vercel', cta: 'Send to Vercel', needs: ['vercel', 'supabase'] },
+  'vercel.env': { service: 'vercel', label: 'Send the app\'s values to Vercel', cta: 'Send to Vercel', needs: ['vercel'] },
   'vercel.nameservers': { service: 'vercel', label: 'Set the nameservers at Vercel', cta: 'Set the nameservers', needs: ['vercel', 'cloudflare'] },
 };
 
@@ -165,6 +259,10 @@ export const MILESTONES = [
   { id: 'dns', service: 'cloudflare', label: 'DNS points at Vercel', done: 'action:cloudflare.dns', after: ['domain'] },
   { id: 'auth', service: 'supabase', label: 'Sign-in knows the domain', done: 'tick:sb.auth', after: ['dns'], fallbackAfter: ['host'] },
   { id: 'live', service: 'vercel', label: 'Live on {domain}', done: 'vercel.domainOk', wait: 'cloudflare.active', waitLabel: 'nameservers', after: ['dns'] },
+  // Every other service: one milestone, its required values saved. They depend on nothing, so any order works.
+  ...ORDER.filter((id) => !['cloudflare', 'supabase', 'vercel'].includes(id)).map((id) => ({
+    id, service: id, label: `${SERVICES[id].name} ${SERVICES[id].values.filter((v) => v.required).length === 1 ? 'key' : 'keys'} saved`, done: `values:${id}`, after: [],
+  })),
 ];
 
 /**
@@ -176,8 +274,30 @@ export function aliasesOf(name) {
   if (n === 'SUPABASE_SECRET_KEY') return ['SUPABASE_SERVICE_ROLE_KEY'];
   if (n === 'DATABASE_URL') return ['POSTGRES_URL'];
   if (/SUPABASE_PUBLISHABLE_KEY$/.test(n)) return [n.replace(/SUPABASE_PUBLISHABLE_KEY$/, 'SUPABASE_ANON_KEY')];
-  return [];
+  return ALIASES[n] || [];
 }
+
+/** The 0.5.2 services' legacy names. Never an alias to GOOGLE_APPLICATION_CREDENTIALS: that name holds a file path. */
+const ALIASES = {
+  AWS_REGION: ['AWS_DEFAULT_REGION'],
+  GCP_SERVICE_ACCOUNT_KEY: ['GOOGLE_CREDENTIALS', 'GCP_SA_KEY'],
+  GOOGLE_CLOUD_PROJECT: ['GCLOUD_PROJECT', 'GCP_PROJECT_ID'],
+  AZURE_TENANT_ID: ['ARM_TENANT_ID'],
+  AZURE_CLIENT_ID: ['ARM_CLIENT_ID'],
+  AZURE_CLIENT_SECRET: ['ARM_CLIENT_SECRET'],
+  AZURE_SUBSCRIPTION_ID: ['ARM_SUBSCRIPTION_ID'],
+  DISCORD_TOKEN: ['DISCORD_BOT_TOKEN'],
+  DISCORD_APPLICATION_ID: ['DISCORD_CLIENT_ID'],
+  TWILIO_API_SECRET: ['TWILIO_API_KEY_SECRET'],
+  TWILIO_API_KEY: ['TWILIO_API_KEY_SID'],
+  TWILIO_PHONE_NUMBER: ['TWILIO_FROM_NUMBER'],
+  STRIPE_SECRET_KEY: ['STRIPE_API_KEY'],
+  CLERK_WEBHOOK_SIGNING_SECRET: ['CLERK_WEBHOOK_SECRET'],
+  FIREBASE_SERVICE_ACCOUNT_KEY: ['FIREBASE_SERVICE_ACCOUNT'],
+  OPENAI_ORG_ID: ['OPENAI_ORGANIZATION'],
+  UPSTASH_REDIS_REST_URL: ['KV_REST_API_URL'],
+  UPSTASH_REDIS_REST_TOKEN: ['KV_REST_API_TOKEN'],
+};
 
 /** One recipe value: SERVICES[service].values[key], or null. */
 export function valueOf(service, key) {
@@ -224,7 +344,8 @@ export function milestonesFor(picked) {
   const has = new Set(picked || []);
   const kept = MILESTONES.filter((m) => {
     if (!has.has(m.service)) return false;
-    if (m.id === 'env') return has.has('supabase') && has.has('vercel');
+    // Keys go to Vercel when it hosts and some picked service holds values the app reads (anything not a host).
+    if (m.id === 'env') return has.has('vercel') && [...has].some((id) => SERVICES[id] && SERVICES[id].group !== 'hosting');
     if (m.id === 'domain' || m.id === 'dns' || m.id === 'live') return has.has('vercel') && has.has('cloudflare');
     return true;
   });
@@ -234,4 +355,36 @@ export function milestonesFor(picked) {
     if (m.fallbackAfter && m.after.some((a) => !ids.has(a))) after = m.fallbackAfter.filter((a) => ids.has(a));
     return { ...m, after };
   });
+}
+
+/** The services a picker query matches: by name, role, group label or keyword, case-insensitive; all for an empty one. */
+export function searchServices(query, ids = ORDER) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return [...ids];
+  const words = q.split(/\s+/);
+  return ids.filter((id) => {
+    const s = SERVICES[id];
+    const hay = [s.id, s.name, s.role, GROUPS.find((g) => g.id === s.group)?.label, ...(s.keywords || [])].join(' ').toLowerCase();
+    return words.every((w) => hay.includes(w));
+  });
+}
+
+/** The picker's groups with their services, limited to ids (a search's hits); a group with none drops out. */
+export function groupedServices(ids = ORDER) {
+  const want = new Set(ids);
+  return GROUPS.map((g) => ({ ...g, services: ORDER.filter((id) => want.has(id) && SERVICES[id].group === g.id) })).filter((g) => g.services.length);
+}
+
+/** Picked services that write the same env name (Supabase and Neon both write DATABASE_URL): [{ name, services }]. */
+export function nameClashes(picked) {
+  const by = new Map();
+  for (const id of ORDER.filter((x) => (picked || []).includes(x))) {
+    for (const v of SERVICES[id].values) {
+      for (const n of new Set([v.env?.server, v.env?.public].filter(Boolean))) {
+        if (!by.has(n)) by.set(n, new Set());
+        by.get(n).add(id);
+      }
+    }
+  }
+  return [...by].filter(([, set]) => set.size > 1).map(([name, set]) => ({ name, services: [...set] }));
 }

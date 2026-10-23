@@ -210,6 +210,11 @@ verbs — a docs kit ships docs, not pages.
 - The names live in `nexus.secrets.json` (`GH_TOKEN`,
   `ACTIONS_PAT`; the loop's sign-in is not a project secret),
   values never (`customization/secrets.md`).
+- Values move two ways and a session handles names only: a
+  missing one is asked for with `node scripts/secrets.mjs
+  request <chunk>` (never in chat, never guessed); one goes
+  where it runs with `node scripts/secrets.mjs push NAME --to
+  <destination>`, confirmed with that place's names-only list.
 
 ## Where to look
 

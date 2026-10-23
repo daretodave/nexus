@@ -16,11 +16,13 @@ export function publicSafe(name, secret) {
   return !(secret && PUBLIC_NAME.test(String(name)));
 }
 
+import { MORE_SHAPES } from './shapes-more.mjs';
+
 const JWT = /^eyJ[\w-]+\.[\w-]+\.[\w-]+$/;
 
 /**
  * Each shape: { re, hint, legacy?: { re, note }, warn?: [{ re, note }], tip?: [{ re, note }], reject?: [{ re, why }],
- * other?: { re, note } }. `hint` is the plain line the field shows when the value does not match; a `warn` passes with
+ * other?: { re, note }, compact?: 'json' }. `hint` is the plain line the field shows when the value does not match; a `warn` passes with
  * its note; a `tip` is a quiet note on a value that is fine; `other` is a value outside `re` that still passes.
  */
 export const SHAPES = {
@@ -87,12 +89,16 @@ export const SHAPES = {
     re: /^prj_[A-Za-z0-9]{8,48}$/,
     hint: 'A project id starts prj_.',
   },
+  ...MORE_SHAPES,
 };
 
 /** The value as it is checked and saved: trimmed; a hostname also loses a scheme and a trailing slash, lower-cased. */
 export function normalize(id, value) {
   let v = typeof value === 'string' ? value.trim() : '';
   if (id === 'hostname') v = v.replace(/^https?:\/\//i, '').replace(/\/+$/, '').toLowerCase();
+  // A JSON key file (a service account's) is stored as one line: parsed and written back with no spaces, so the
+  // escaped \n inside its private key stays escaped and nothing spans lines. A paste that is not JSON is left as is.
+  if (SHAPES[id]?.compact === 'json' && v) { try { v = JSON.stringify(JSON.parse(v)); } catch { /* the shape's own hint says what is wrong */ } }
   return v;
 }
 
@@ -101,8 +107,9 @@ export function checkShape(id, value) {
   const s = SHAPES[id];
   if (!s) return { ok: false, kind: 'bad', why: 'nexus does not know this value\'s shape.' };
   if (typeof value !== 'string' || !value.trim()) return { ok: false, kind: 'bad', why: s.hint };
-  if (/[\r\n\0]/.test(value.trim())) return { ok: false, kind: 'bad', why: 'A value goes on one line.' };
+  // A compact shape (a JSON key) folds to one line first; every other value must already be one.
   const v = normalize(id, value);
+  if (/[\r\n\0]/.test(s.compact ? v : value.trim())) return { ok: false, kind: 'bad', why: s.compact ? s.hint : 'A value goes on one line.' };
   for (const r of s.reject || []) if (r.re.test(v)) return { ok: false, kind: 'bad', why: r.why };
   if (s.re.test(v)) {
     for (const w of s.warn || []) if (w.re.test(v)) return { ok: true, kind: 'warn', note: w.note };

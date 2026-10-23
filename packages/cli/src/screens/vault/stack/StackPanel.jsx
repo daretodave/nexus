@@ -1,46 +1,93 @@
 // Set up a stack (design 8.1): pick what the app runs on, say the domain and the app, see where values will be
-// written, then one card per service in the trinity's order, the one holding the next action open and lit. In the
+// written, then one card per service in the trinity's order, the one holding the next action open and lit. The picker
+// scales to the whole registry (21 services in 0.5.2): grouped, searchable, with presets, and folded to a line of
+// chips once something is picked. The agent guide line says what sessions read about the stack (docs/stack.md). In the
 // Vault it sits where the import does, with the rail (StackRail) in the right column; in onboarding (`compact`) the
 // rail folds to one line above the cards and the gotchas hide.
 //
 // Data: GET /api/stack (useStack, through useStackPanel); writes: /api/stack/pick, save, check, apply, tick.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon, KeyNote, TickLabel, cx } from '../../../ui/index.js';
 import VaultSetup from '../VaultSetup.jsx';
 import StackCard from './StackCard.jsx';
 import StackRail from './StackRail.jsx';
 import { useStackPanel } from './useStack.js';
-import { SERVICES, ORDER, PRESETS, progress, nextAction, openCard, checkShape } from './model.js';
+import { SERVICES, ORDER, PRESETS, progress, nextAction, openCard, checkShape, searchServices, groupedServices, nameClashes, joinList } from './model.js';
 import { FRAMEWORKS } from '../../../../shared/stack/frameworks.mjs';
+import { renderGuide } from '../../../../shared/stack/guide.mjs';
 import '../../../styles/stack.css';
 
 export { useStackPanel };
 
-function Picker({ stack, ui, readOnly }) {
+/** A service's monogram orb: its own colours for the first three, its group's for the rest. */
+export function Orb({ id, small = false }) {
+  const svc = SERVICES[id];
+  return <span className={cx('stk-orb', `g-${svc.group}`, `is-${id}`, small && 'is-small')} aria-hidden="true">{svc.mono}</span>;
+}
+
+function Tile({ id, on, disabled, onToggle }) {
+  const s = SERVICES[id];
+  return (
+    <button type="button" className={cx('stk-tile', on && 'is-on')} aria-pressed={on ? 'true' : 'false'} disabled={disabled} onClick={onToggle}>
+      <Orb id={id} />
+      <span className="stk-tile-t"><b>{s.name}</b><span>{s.role}</span></span>
+      <span className="stk-tile-tick" aria-hidden="true">{on ? <Icon name="check" size={12} /> : null}</span>
+    </button>
+  );
+}
+
+/**
+ * The picker: presets, then (open) a search box over the grouped tiles, or (folded, once something is picked) one
+ * line of the picked services with Add or remove. A name two picked services both write gets a plain note.
+ */
+export function Picker({ stack, ui, readOnly, startOpen }) {
   const picked = stack.picked || [];
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(startOpen ?? !picked.length);
   const set = (ids) => ui.pick({ picked: ids });
+  const toggle = (id) => set(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]);
+  const groups = groupedServices(searchServices(query));
+  const clashes = nameClashes(picked);
+  const shown = open || !picked.length;
   return (
     <div className="stk-pick-wrap">
       <div className="stk-presets" role="group" aria-label="Presets">
         {PRESETS.map((p) => {
           const on = p.picked.length === picked.length && p.picked.every((x) => picked.includes(x));
-          return <button key={p.id} type="button" className={cx('stk-preset', on && 'is-on')} onClick={() => set(p.picked)} disabled={readOnly || ui.busy} aria-pressed={on ? 'true' : 'false'}>{on ? <Icon name="check" size={12} /> : null}{p.label}</button>;
+          return <button key={p.id} type="button" className={cx('stk-preset', on && 'is-on')} onClick={() => { set(p.picked); setOpen(false); setQuery(''); }} disabled={readOnly || ui.busy} aria-pressed={on ? 'true' : 'false'} title={joinList(p.picked.map((x) => SERVICES[x].name))}>{on ? <Icon name="check" size={12} /> : null}{p.label}</button>;
         })}
       </div>
-      <div className="stk-pick" role="group" aria-label="What your app runs on">
-        {ORDER.map((id) => {
-          const s = SERVICES[id];
-          const on = picked.includes(id);
-          return (
-            <button key={id} type="button" className={cx('stk-tile', on && 'is-on')} aria-pressed={on ? 'true' : 'false'} disabled={readOnly || ui.busy} onClick={() => set(on ? picked.filter((x) => x !== id) : [...picked, id])}>
-              <span className={cx('stk-orb', `is-${id}`)} aria-hidden="true">{s.mono}</span>
-              <span className="stk-tile-t"><b>{s.name}</b><span>{s.role}</span></span>
-              <span className="stk-tile-tick" aria-hidden="true">{on ? <Icon name="check" size={12} /> : null}</span>
-            </button>
-          );
-        })}
-        <span className="stk-tile is-soon" aria-hidden="true"><span className="stk-tile-t"><b>More services soon</b><span>Each one is a recipe in the registry.</span></span></span>
-      </div>
+      {shown ? (
+        <>
+          <div className="stk-pick-bar">
+            <span className="stk-search">
+              <input className="field stk-search-f" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search services: redis, email, payments" aria-label="Search services" autoComplete="off" spellCheck={false} />
+            </span>
+            <span className="t-body-s c-3">{picked.length ? `${picked.length} picked` : `${ORDER.length} services`}</span>
+            {picked.length ? <button className="btn btn-s btn-ghost" type="button" onClick={() => { setOpen(false); setQuery(''); }}>Done</button> : null}
+          </div>
+          {groups.map((g) => (
+            <section key={g.id} className="stk-group" aria-label={g.label}>
+              <span className="t-caps c-2 stk-group-h">{g.label}</span>
+              <div className="stk-pick" role="group" aria-label={g.label}>
+                {g.services.map((id) => <Tile key={id} id={id} on={picked.includes(id)} disabled={readOnly || ui.busy} onToggle={() => toggle(id)} />)}
+              </div>
+            </section>
+          ))}
+          {!groups.length ? <span className="t-body-s c-3 stk-pick-none">No service matches that. Each one is a recipe in the registry, so a missing one can be added.</span> : null}
+        </>
+      ) : (
+        <div className="stk-picked" role="group" aria-label="What your app runs on">
+          <span className="t-label c-2">Runs on</span>
+          <span className="stk-picked-list">
+            {ORDER.filter((id) => picked.includes(id)).map((id) => <span key={id} className="stk-picked-chip"><Orb id={id} small />{SERVICES[id].name}</span>)}
+          </span>
+          <button className="btn btn-s btn-ghost" type="button" onClick={() => setOpen(true)} disabled={readOnly}>Add or remove</button>
+        </div>
+      )}
+      {clashes.map((c) => (
+        <span key={c.name} className="t-body-s stk-clash" role="note"><Icon name="warn" size={12} />{joinList(c.services.map((x) => SERVICES[x].name))} both write <code>{c.name}</code>. The last one saved wins; pick one to own it.</span>
+      ))}
     </div>
   );
 }
@@ -49,7 +96,7 @@ function Context({ stack, ui, readOnly }) {
   const [domain, setDomain] = useState(stack.inputs?.domain || '');
   const [changing, setChanging] = useState(false);
   useEffect(() => { setDomain(stack.inputs?.domain || ''); }, [stack.inputs?.domain]);
-  const needsDomain = stack.picked.includes('cloudflare') || stack.picked.includes('vercel');
+  const needsDomain = stack.picked.some((id) => id === 'cloudflare' || id === 'vercel' || SERVICES[id]?.inputs?.some((i) => i.key === 'domain'));
   const shape = domain.trim() ? checkShape('hostname', domain) : null;
   const saveDomain = () => { if ((shape?.ok || !domain.trim()) && domain !== (stack.inputs?.domain || '')) ui.pick({ inputs: { domain } }); };
   const app = stack.app || { dir: '.', framework: 'next', label: 'Next.js' };
@@ -115,6 +162,26 @@ function Targets({ stack, ui, compact, readOnly }) {
   );
 }
 
+/** The agent guide: where sessions read the stack (docs/stack.md, pointed at from agents.md), with a preview. */
+export function Guide({ stack }) {
+  const g = stack.guide || { path: 'docs/stack.md', exists: false, pointer: null };
+  const names = Object.fromEntries(Object.entries(stack.values || {}).map(([k, v]) => [k, v?.names || []]));
+  const text = renderGuide({ picked: stack.picked || [], app: stack.app || {}, names });
+  return (
+    <details className="stk-guide">
+      <summary>
+        <span className="t-label c-2">For agents</span>
+        <span className="t-body-s">
+          {g.exists ? <>Sessions read <code>{g.path}</code>{g.pointer ? <>, which {g.pointer} points to</> : null}</> : <>nexus writes <code>{g.path}</code> when you pick or save</>}
+          : each service&apos;s names, how code reads them, and how to run its CLI with vault values. Names only, never a value.
+        </span>
+        <span className="btn btn-s btn-ghost stk-guide-open">Preview</span>
+      </summary>
+      <pre className="stk-guide-pre">{text}</pre>
+    </details>
+  );
+}
+
 /**
  * sp: useStackPanel's { res, stack, ui } when the parent shares it with the rail; otherwise the panel has its own.
  */
@@ -132,6 +199,28 @@ export default function StackPanel({ sp: shared, compact = false, onClose, onOpe
     );
   }
   const readOnly = !stack.owner;
+  return <Panel stack={stack} ui={ui} compact={compact} onClose={onClose} onOpenVault={onOpenVault} readOnly={readOnly} />;
+}
+
+/** A request's card: picked when it is not yet (the owner's), then opened with its field focused, once. */
+function useAskFocus(stack, ui, readOnly) {
+  const done = useRef(null);
+  const ask = ui.ask;
+  const sig = ask ? `${ask.service}.${ask.key}.${ask.chunk || ''}` : null;
+  useEffect(() => {
+    if (!ask || done.current === sig) return;
+    if (!stack.picked.includes(ask.service)) {
+      if (!readOnly && !ui.busy) ui.pick({ picked: [...stack.picked, ask.service] });
+      return;
+    }
+    if (!ask.valueKey) return;
+    done.current = sig;
+    ui.go({ service: ask.service, key: ask.valueKey });
+  }, [sig, stack.picked.join(','), ask?.valueKey]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+function Panel({ stack, ui, compact, onClose, onOpenVault, readOnly }) {
+  useAskFocus(stack, ui, readOnly);
   const prog = progress(stack);
   const next = nextAction(prog, stack);
   const nextSvc = openCard(stack, next);
@@ -144,6 +233,7 @@ export default function StackPanel({ sp: shared, compact = false, onClose, onOpe
         <>
           <Context stack={stack} ui={ui} readOnly={readOnly} />
           <Targets stack={stack} ui={ui} compact={compact} readOnly={readOnly} />
+          {!compact ? <Guide stack={stack} /> : null}
           {compact ? <StackRail stack={stack} ui={ui} compact /> : null}
           <div className="stk-cards">
             {ORDER.filter((id) => stack.picked.includes(id)).map((id) => <StackCard key={id} svc={id} stack={stack} ui={ui} isNext={id === nextSvc} compact={compact} readOnly={readOnly} />)}

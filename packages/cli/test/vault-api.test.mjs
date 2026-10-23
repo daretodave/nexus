@@ -84,7 +84,7 @@ function request(repo, id, names) {
 }
 
 test('parseRequest, looksOf and importableEnv: the pure rules', () => {
-  assert.deepEqual(parseRequest('secret request 07.1: set VERCEL_TOKEN, GH_TOKEN in your terminal or the GUI\'s vault'), { chunk: '07.1', names: ['VERCEL_TOKEN', 'GH_TOKEN'] });
+  assert.deepEqual(parseRequest('secret request 07.1: set VERCEL_TOKEN, GH_TOKEN in your terminal or the GUI\'s vault'), { chunk: '07.1', names: ['VERCEL_TOKEN', 'GH_TOKEN'], to: [] }, 'a service only when the request names one (resolveRequest matches the rest against the picks)');
   assert.equal(parseRequest('Should 7.1 deploy on push?'), null);
   assert.equal(looksOf('PUBLIC_SITE_URL', 'https://lantern.example'), 'public');
   assert.equal(looksOf('MAP_STYLE_URL', 'https://tiles.example/style.json'), 'public');
@@ -206,7 +206,7 @@ test('inbox: a secret request is a key row with its chunk and names, and leaves 
     let rows = (await call('GET', '/api/inbox')).json;
     const k = rows.find((x) => x.src === 'durable' && x.durable.secret);
     assert.ok(k, JSON.stringify(rows));
-    assert.deepEqual(k.durable.secret, { chunk: '07.1', names: ['VERCEL_TOKEN'], missing: ['VERCEL_TOKEN'] });
+    assert.deepEqual(k.durable.secret, { chunk: '07.1', names: ['VERCEL_TOKEN'], to: [], toByName: { VERCEL_TOKEN: [] }, services: {}, missing: ['VERCEL_TOKEN'] });
     await call('POST', '/api/secrets/VERCEL_TOKEN', { value: VERCEL });
     rows = (await call('GET', '/api/inbox')).json;
     assert.equal(rows.filter((x) => x.src === 'durable' && /secret request/.test(x.question)).length, 0);
@@ -327,7 +327,7 @@ test('the oversight fallback marks a secret request like the inbox, and its answ
     assert.equal((await call('POST', '/api/secrets/GH_TOKEN', { value: GH })).status, 200);
     const { durable } = (await call('GET', '/api/oversight')).json;
     const asks = durable.filter((d) => parseRequest(d.text));
-    assert.deepEqual(asks.map((d) => d.secret), [{ chunk: '07.1', names: ['VERCEL_TOKEN'], missing: ['VERCEL_TOKEN'] }], 'marked, and the one already set has left');
+    assert.deepEqual(asks.map((d) => d.secret), [{ chunk: '07.1', names: ['VERCEL_TOKEN'], to: [], toByName: { VERCEL_TOKEN: [] }, services: {}, missing: ['VERCEL_TOKEN'] }], 'marked, and the one already set has left');
     const row = asks[0];
     const r = await call('POST', '/api/oversight/answer', { answers: [{ file: row.file, line: row.line, text: row.text, answer: 'PASTED_VALUE_xyz123' }] });
     assert.ok(r.status >= 400 && r.status < 500, JSON.stringify(r.json));

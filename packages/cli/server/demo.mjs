@@ -23,7 +23,8 @@ import { ADOPT_PASTE } from './server.mjs';
 import { createWorld } from './demo/world.mjs';
 import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
 import { realClock } from './demo/clock.mjs';
-import { createDemoVault, DEMO_REQUEST } from './demo/vault.mjs';
+import { createDemoVault, DEMO_REQUESTS } from './demo/vault.mjs';
+import { pushEventOf } from './feed-secrets.mjs';
 import { createDemoStack } from './demo/stack.mjs';
 import { applyDrafts } from './drafts.mjs';
 import { putAwayPlan } from '../shared/put-away.mjs';
@@ -65,26 +66,31 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   const stage = createRepoStage(sc.name, { clock: clk });
   let local = null;
   // The vault (spec 42): names and status in memory; a posted value is dropped the moment it is read.
-  const vault = createDemoVault({ now: () => Date.now(), owner: () => !!(local ? local.effective : world.info().owner) });
+  // Each push it records is a change feed event, as the live feed reads it from the audit record (names only).
+  const vault = createDemoVault({
+    now: () => Date.now(), owner: () => !!(local ? local.effective : world.info().owner),
+    onPush: (line) => { const ev = pushEventOf(line, () => null); if (ev && prefs.changeFeed !== false) world.addFeed(ev); },
+  });
   // The stack hand-off (server/stack.mjs's shapes, in memory): the zone and the domain move with script time.
   const stack = createDemoStack({ now: () => clk.now(), script: () => world.elapsed, vault, owner: () => !!(local ? local.effective : world.info().owner) });
-  /** The plan with the chunk the vault holds back: it waits on a secret until the value is set. */
+  /** The plan with the chunks the vault holds back: each waits on a secret until its value is set. */
   const planWithSecret = () => {
     const p = world.plan();
     const sp = p.specs.find((x) => x.id === '15');
-    if (!sp || sp.chunks.some((c) => c.id === DEMO_REQUEST.chunk)) return p;
-    const waits = DEMO_REQUEST.names.filter((n) => !vault.isSet(n));
-    sp.chunks.push({ id: DEMO_REQUEST.chunk, title: DEMO_REQUEST.title, size: 'M', state: 'ready', closedOn: null, claim: null, plotted: null, secrets: DEMO_REQUEST.names, ...(waits.length ? { why: `needs secret ${waits.join(', ')}`, needsSecret: waits } : {}) });
-    if (waits.length) p.blocked = [...(p.blocked || []), { id: DEMO_REQUEST.chunk, why: `needs secret ${waits.join(', ')}` }];
-    p.order = [...(p.order || []), DEMO_REQUEST.chunk];
+    if (!sp) return p;
+    for (const q of DEMO_REQUESTS) {
+      if (sp.chunks.some((c) => c.id === q.chunk)) continue;
+      const waits = q.names.filter((n) => !vault.isSet(n));
+      sp.chunks.push({ id: q.chunk, title: q.title, size: 'M', state: 'ready', closedOn: null, claim: null, plotted: null, secrets: q.names, ...(waits.length ? { why: `needs secret ${waits.join(', ')}`, needsSecret: waits } : {}) });
+      if (waits.length) p.blocked = [...(p.blocked || []), { id: q.chunk, why: `needs secret ${waits.join(', ')}` }];
+      p.order = [...(p.order || []), q.chunk];
+    }
     return p;
   };
-  /** The inbox with the vault's request row, marked as the live server marks it (gone once the value is set). */
-  const inboxWithSecret = () => {
-    const row = vault.mark(DEMO_REQUEST.durable);
-    const rest = world.inbox();
-    return row && local?.effective !== false ? [...rest, { id: `plan:${row.id}`, kind: 'plan', src: 'durable', question: row.text, durable: row, at: null }] : rest;
-  };
+  /** The vault's request rows still open, marked as the live server marks them (each gone once its value is set). */
+  const requestRows = () => (local?.effective === false ? [] : DEMO_REQUESTS.map((q) => vault.mark(q.durable)).filter(Boolean));
+  /** The inbox with the vault's request rows. */
+  const inboxWithSecret = () => [...world.inbox(), ...requestRows().map((row) => ({ id: `plan:${row.id}`, kind: 'plan', src: 'durable', question: row.text, durable: row, at: null }))];
   // Oversight in the demo (0.5.1): kept answers, the wand's choices, uploaded images and hand-offs, all in memory.
   let planStore = {};
   const choiceStore = {};
@@ -200,7 +206,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         case 'GET /api/inbox': return send(res, 200, inboxWithSecret());
         case 'GET /api/needs': return send(res, 200, world.needs());
         case 'GET /api/feed': return send(res, 200, prefs.changeFeed === false ? { on: false, at: Date.now(), events: [] } : world.feed());
-        case 'GET /api/oversight': { const row = vault.mark(DEMO_REQUEST.durable); return send(res, 200, { live: world.asks(), durable: [...world.durable(), ...(row && local?.effective !== false ? [row] : [])] }); }
+        case 'GET /api/oversight': return send(res, 200, { live: world.asks(), durable: [...world.durable(), ...requestRows()] });
         case 'GET /api/plan': return send(res, 200, planWithSecret());
         case 'GET /api/secrets': { const { status, ...r } = vault.status(); return send(res, 200, r); }
         case 'GET /api/secrets/audit': return send(res, 200, vault.audit());

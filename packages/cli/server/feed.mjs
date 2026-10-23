@@ -1,5 +1,7 @@
-// The change feed (0.5.1): one central bus of things that HAPPENED, not agent chatter. v1 has one kind of event, a
-// push landing on main (feed-push.mjs), from any source: a session here, a terminal, the owner elsewhere. Each push
+// The change feed (0.5.1): one central bus of things that HAPPENED, not agent chatter. Two kinds of event: a push
+// landing on main (feed-push.mjs), from any source: a session here, a terminal, the owner elsewhere; and (0.5.2) a
+// secret pushed to where it is needed (feed-secrets.mjs, kind 'secret-push': names, the place and its environments,
+// and who, read from the vault's audit record, never a value). Each push
 // gets one plain sentence (feed-line.mjs: Claude Haiku when the AI helpers are on, the cleaned commit subject when
 // not) and, when the repo has a deploy integration, a deploy state that moves "not deployed yet" -> "Deploying" ->
 // "Deployed" (or "Deploy failed") from what the host reports back to GitHub (feed-deploy.mjs, no tokens).
@@ -13,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createPushWatch } from './feed-push.mjs';
+import { createSecretsWatch } from './feed-secrets.mjs';
 import { askLine, fallbackLine } from './feed-line.mjs';
 import { backoff, deployFrom, FOLLOW_MS, INTEGRATION_MS, readCommit, readIntegration, SETTLED } from './feed-deploy.mjs';
 import { run as shRun } from './sh.mjs';
@@ -151,8 +154,9 @@ export function liveEvent(e, { paths = 12, commits = 8 } = {}) {
  * @param {() => boolean} [o.active]      a tab is watching
  * @param {(view) => void} [o.onChange]   the feed changed: send it to the tabs
  * @param {boolean} [o.watch=true]        fs.watch and timers (tests drive check() by hand)
+ * @param {(id: string) => string|null} [o.sessionName]  a session's name by its id (who pushed a secret)
  */
-export function createChangeFeed({ repo, root = repo, enabled = () => true, helpers = () => true, query, gh = shRun, git, whoFor, active = () => true, onChange = () => {}, watch = true, followMs = FOLLOW_MS, wait = backoff, now = () => Date.now() }) {
+export function createChangeFeed({ repo, root = repo, enabled = () => true, helpers = () => true, query, gh = shRun, git, whoFor, active = () => true, onChange = () => {}, watch = true, followMs = FOLLOW_MS, wait = backoff, now = () => Date.now(), sessionName = () => null }) {
   const bus = createBus({ file: path.join(root, FEED_FILE), onChange: () => onChange(view()) });
   bus.load();
   const follows = new Map(); // event id -> timer
@@ -167,6 +171,9 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
     onPush: (ev) => { add(ev); },
     onLook: () => { if (on && bus.refresh()) onChange(view()); },
   });
+
+  // Secrets pushed to a sink: one event each, on the bus as they are, no model line and no deploy to follow.
+  const secretPushes = createSecretsWatch({ root, sessionName, watch, onPush: (ev) => { if (on && !bus.has(ev.id)) bus.append({ ...ev, seen: new Date(now()).toISOString() }); } });
 
   /** When the feed began following a push's deploy: when it saw the push (an event dated by its commit can be older). */
   const followedFrom = (e) => Date.parse(e.seen || e.at || 0) || 0;
@@ -247,6 +254,8 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
     on = true;
     if (wasOff) pushes.reset(); // turned (back) on: from main as it is now, not a backlog
     pushes.start().catch(() => null);
+    secretPushes.start();
+    if (wasOff) secretPushes.reset();
     // A deploy still unsettled from before a restart is followed again while it is young, and let go when it is not.
     for (const e of bus.list(MAX_EVENTS)) {
       if (!e.deploy || SETTLED.has(e.deploy.state)) continue;
@@ -261,6 +270,7 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
     if (!on) return;
     on = false;
     pushes.stop();
+    secretPushes.stop();
     for (const t of follows.values()) clearTimeout(t);
     follows.clear();
     onChange(view());
@@ -269,6 +279,9 @@ export function createChangeFeed({ repo, root = repo, enabled = () => true, help
   const api = {
     bus,
     pushes,
+    secretPushes,
+    /** Look at the audit record now (a push from this GUI just landed): its event shows without waiting for the poll. */
+    nudgeSecrets() { if (on) { try { secretPushes.look(); } catch { /* the poll tries again */ } } },
     view,
     add,
     get on() { return on; },

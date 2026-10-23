@@ -11,10 +11,36 @@
 //   secret key           sb_secret_demo000000000000000
 //   database URL         postgresql://postgres.abcdefghijklmnopqrst:demo-pw@aws-0-eu-west-2.pooler.supabase.com:6543/postgres
 //   Vercel token         vcp_demo00000000000000000000
-import { SERVICES, ORDER, ACTIONS, valueOf, recipeFor } from '../../shared/stack/recipes.mjs';
+//
+// The 0.5.2 services (AWS through PostHog) take any value of the right shape; Check it answers canned facts for each
+// (DEMO_CHECKS), filling the ids a real check fills. The agent guide is not written in the demo (no disk); the panel's
+// preview renders it from the same registry.
+import { SERVICES, ORDER, ACTIONS, CI_NAMES, valueOf, recipeFor } from '../../shared/stack/recipes.mjs';
 import { checkShape, normalize } from '../../shared/stack/shapes.mjs';
 import { FRAMEWORKS, frameworkById, envNamesFor } from '../../shared/stack/frameworks.mjs';
 import { planVercelEnv, planVercelDomain, pickFacts } from '../stack-checks.mjs';
+
+/** Canned answers for the 0.5.2 services: { needs (the value Check it cannot run without), summary, facts, fill }. */
+export const DEMO_CHECKS = {
+  aws: { needs: 'secretAccessKey', summary: 'Key works for IAM user fieldday-app in account 123456789012.', facts: { keyOk: true, account: '123456789012', arn: 'arn:aws:iam::123456789012:user/fieldday-app', principalType: 'user', keyKind: 'long-term', region: 'eu-west-2' } },
+  gcp: { needs: 'key', summary: 'Key works as fieldday-app@fieldday-prod.iam.gserviceaccount.com. It can read Fieldday.', facts: { keyOk: true, clientEmail: 'fieldday-app@fieldday-prod.iam.gserviceaccount.com', projectId: 'fieldday-prod', projectOk: true, projectNumber: '412000000000', projectName: 'Fieldday', projectState: 'ACTIVE' }, fill: { projectId: 'fieldday-prod' } },
+  azure: { needs: 'clientSecret', summary: 'The app signs in and can read fieldday-rg (westeurope).', facts: { tenantOk: true, resourceGroupOk: true, resourceGroupLocation: 'westeurope' } },
+  firebase: { needs: 'apiKey', summary: 'Web key works for fieldday-prod.', facts: { authReady: true, projectId: 'fieldday-prod', projectMatches: true, authorizedDomains: ['localhost', 'fieldday-prod.firebaseapp.com'] } },
+  stripe: { needs: 'secret', summary: 'Key works in the sandbox.', facts: { mode: 'test', keyKind: 'restricted', permissionOk: true } },
+  clerk: { needs: 'secret', summary: 'Key works for the development instance (fieldday.clerk.accounts.dev).', facts: { keyOk: true, mode: 'test', frontendApi: 'fieldday.clerk.accounts.dev' } },
+  neon: { needs: 'apiKey', summary: 'Key works for fieldday (aws-eu-west-2).', facts: { keyOk: true, projects: 1, projectId: 'cool-darkness-123456', projectName: 'fieldday', regionId: 'aws-eu-west-2', pgVersion: 17 }, fill: { projectId: 'cool-darkness-123456' } },
+  upstash: { needs: 'restToken', summary: 'PING answered PONG from eu1-fieldday-32748.upstash.io.', facts: { pong: true, endpoint: 'eu1-fieldday-32748.upstash.io' } },
+  netlify: { needs: 'token', summary: 'Token works. It can see fieldday.', facts: { siteFound: true, siteName: 'fieldday', siteUrl: 'https://fieldday.netlify.app', accountSlug: 'sam' } },
+  fly: { needs: 'token', summary: 'Token works for fieldday-bot (deployed).', facts: { appFound: true, appName: 'fieldday-bot', appStatus: 'deployed', orgSlug: 'personal' } },
+  discord: { needs: 'botToken', summary: 'Bot Fieldday works, in 1 server.', facts: { botOk: true, botUser: 'Fieldday', botId: '112233445566778899', applicationId: '112233445566778899', appName: 'Fieldday', publicKeyMatches: true, botPublic: false, guildCount: 1, messageContent: false }, fill: { applicationId: '112233445566778899' } },
+  slack: { needs: 'botToken', summary: 'Bot fieldday works in Fieldday HQ.', facts: { botOk: true, teamId: 'T0FIELDDAY1', team: 'Fieldday HQ', botUser: 'fieldday', botId: 'B0FIELDDAY1', isBot: true, enterprise: false }, fill: { teamId: 'T0FIELDDAY1' } },
+  twilio: { needs: 'apiSecret', summary: 'Key works. It sees 1 number.', facts: { keyOk: true, numbers: ['+15005550006'], numberCount: 1, smsCapable: true } },
+  resend: { needs: 'apiKey', summary: 'Key works, and it can only send email: the right key for the app. Check the domain shows Verified on Resend.', facts: { keyOk: true, access: 'sending' } },
+  anthropic: { needs: 'apiKey', summary: 'Key works. Newest model: claude-opus-5-5.', facts: { keyOk: true, models: ['claude-opus-5-5', 'claude-sonnet-5'], newestModel: 'claude-opus-5-5', workspaceId: 'wrkspc_demoFieldday0000000' }, fill: { workspaceId: 'wrkspc_demoFieldday0000000' } },
+  openai: { needs: 'apiKey', summary: 'Key works. It can see 42 models.', facts: { keyOk: true, models: 42 } },
+  sentry: { needs: 'authToken', summary: 'Token works for fieldday on sentry.io.', facts: { keyOk: true, orgSlug: 'fieldday', region: 'sentry.io' }, fill: { org: 'fieldday' } },
+  posthog: { needs: 'personalKey', summary: 'Key works for Fieldday on US Cloud.', facts: { keyOk: true, projectId: '12345', projectName: 'Fieldday', region: 'us' }, fill: { projectId: '12345' } },
+};
 
 const ZONE_ID = '3f2a9d6e1b7c4a0f8e5d2c9b6a3f1c9b';
 const ACCOUNT_ID = '8c41e07d9a2b5f3e6d1c0b9a8f7e6d01';
@@ -45,7 +71,7 @@ export function createDemoStack({ now = () => Date.now(), script = () => 0, vaul
     const f = fw();
     const out = [{ id: 'vault', kind: 'vault', label: '.env (the vault)', on: true, locked: true, why: 'The vault keeps every value; pushes read it from there.' }];
     if (st.app.dir !== '.') out.push({ id: 'app', kind: 'dotenv', label: `${st.app.dir}/${f.file}`, on: st.targets.app ?? true, why: `${f.label} reads env from ${st.app.dir}` });
-    out.push({ id: 'github-actions', kind: 'sink', label: 'GitHub Actions', on: st.targets['github-actions'] ?? true, why: 'The Vercel and Cloudflare names CI reads' });
+    out.push({ id: 'github-actions', kind: 'sink', label: 'GitHub Actions', on: st.targets['github-actions'] ?? true, why: 'The deploy names CI reads' });
     return out;
   };
 
@@ -80,6 +106,7 @@ export function createDemoStack({ now = () => Date.now(), script = () => 0, vaul
       app: { ...st.app, label: f.label, prefix: f.prefix }, fresh: false,
       targets: targets(), appNote: st.app.dir === '.' && f.file === '.env' ? `${f.label} reads .env at the root, so the vault's file is the app's file.` : null,
       names, values, checks: st.checks, actions: st.actions, ticks: st.ticks,
+      guide: { path: 'docs/stack.md', exists: st.picked.length > 0, pointer: st.picked.length ? 'agents.md' : null },
     };
   };
 
@@ -118,17 +145,21 @@ export function createDemoStack({ now = () => Date.now(), script = () => 0, vaul
     const r = checkShape(v.shape, typeof b.value === 'string' ? b.value : '');
     if (!r.ok) return { status: 400, error: r.why };
     const names = namesOf(b.service, b.key);
+    // A request this save answers (Oversight's Add value): its value also goes to each place the request named.
+    const askTo = b.request && typeof b.request === 'object' && Array.isArray(b.request.to) ? b.request.to.map(String).filter((d) => d !== 'local') : [];
     const pushed = [];
     for (const n of names) {
-      const out = vault ? vault.store(n, { value: 'demo', declare: true, for: recipeFor(b.service, b.key), destinations: [] }) : { status: 200 };
+      const ci = (st.targets['github-actions'] ?? true) && CI_NAMES.has(n) ? ['github-actions'] : [];
+      const dests = [...new Set([...ci, ...askTo])];
+      const out = vault ? vault.store(n, { value: 'demo', declare: true, for: recipeFor(b.service, b.key), destinations: dests }) : { status: 200, pushed: dests.map((d) => ({ destination: d, ok: true })) };
       if (out.status !== 200) return { status: out.status, error: out.error };
-      if ((st.targets['github-actions'] ?? true) && /^(VERCEL_|CLOUDFLARE_API_TOKEN)/.test(n)) pushed.push({ name: n, destination: 'github-actions', ok: true });
+      for (const p of out.pushed || []) pushed.push({ name: n, destination: p.destination, ok: !!p.ok });
     }
     st.saved.add(`${b.service}.${b.key}`);
     if (b.service === 'cloudflare' && b.key === 'apiToken') st.cfTokenAt = script();
     if (b.service === 'supabase' && b.key === 'url') st.saved.add('supabase.ref');
     const written = [{ target: 'vault', label: '.env (the vault)' }, ...(st.app.dir !== '.' && (st.targets.app ?? true) ? [{ target: 'app', label: `${st.app.dir}/${fw().file}` }] : [])];
-    return { status: 200, ok: true, names, written, failed: [], pushed, notes: r.kind === 'legacy' || r.kind === 'warn' ? [r.note] : [] };
+    return { status: 200, ok: true, names, written, failed: [], pushed, notes: r.kind === 'legacy' || r.kind === 'warn' ? [r.note] : [], ...(b.request?.chunk ? { request: { chunk: String(b.request.chunk), to: askTo } } : {}) };
   };
 
   /** POST /api/stack/check/:service: posted values are shape-checked (the demo never holds a saved one); canned facts. */
@@ -160,6 +191,10 @@ export function createDemoStack({ now = () => Date.now(), script = () => 0, vaul
         const bits = [facts.authOk ? 'Sign-in is up' : '', facts.secretOk ? 'the secret key reads 12 tables' : ''].filter(Boolean);
         r = { ok: true, summary: `Keys work for project fieldday-db (eu-west-2).${bits.length ? ` ${bits.join('; ')}.` : ''}`, facts, fill: { ref: 'abcdefghijklmnopqrst' } };
       }
+    } else if (DEMO_CHECKS[service]) {
+      const d = DEMO_CHECKS[service];
+      const label = valueOf(service, d.needs)?.label.toLowerCase() || 'key';
+      r = has(d.needs) ? { ok: true, summary: d.summary, facts: d.facts, fill: d.fill || {} } : { ok: false, reason: `Paste the ${label} first.`, facts: {} };
     } else {
       if (!has('token')) r = { ok: false, reason: 'Paste the access token first.', facts: {} };
       else {

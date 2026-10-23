@@ -5,18 +5,37 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { server, useStack } from '../../../data/index.js';
 import { SERVICES, saveBody, valueOf, checkShape, matchPaste } from './model.js';
+import { recipeOfName, destLabel } from '../../../../shared/stack/moves.mjs';
 
 const REPOLL_S = 30;
 const REPOLL_MAX_MS = 30 * 60 * 1000;
 
-/** The data and the panel state, shared by the panel and the rail. `skip`: the panel is closed (no polling). */
-export function useStackPanel({ skip = false, toast } = {}) {
+/**
+ * The data and the panel state, shared by the panel and the rail. `skip`: the panel is closed (no polling). `ask`: a
+ * secret request's card to open ({ service, key: the env name, chunk, to }, from the Vault's URL); `onAnswered` runs
+ * once its value is saved.
+ */
+export function useStackPanel({ skip = false, toast, ask = null, onAnswered } = {}) {
   const res = useStack(skip ? undefined : 10000, { skip });
-  const ui = useStackUi({ stack: res.data, reload: res.reload, toast });
+  const ui = useStackUi({ stack: res.data, reload: res.reload, toast, ask, onAnswered });
   return { res, stack: res.data, ui };
 }
 
-export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) {
+/** The recipe key an asked env name is saved under on its service's card (this repo's names first), or null. */
+export function askedKey(ask, stack) {
+  if (!ask || !SERVICES[ask.service]) return null;
+  for (const v of SERVICES[ask.service].values) {
+    if ((stack?.values?.[`${ask.service}.${v.key}`]?.names || []).includes(ask.key)) return v.key;
+  }
+  const hit = recipeOfName(ask.key);
+  return hit && hit.service === ask.service ? hit.key : null;
+}
+
+export function useStackUi({ stack, reload = () => {}, toast = () => {}, ask: asked = null, onAnswered } = {}) {
+  // The open request (Oversight's Add value): kept until its value is saved here, then let go.
+  const [ask, setAsk] = useState(asked);
+  useEffect(() => { setAsk(asked); }, [asked]);
+  const askKey = askedKey(ask, stack);
   const [fields, setFields] = useState({});
   const [checks, setChecks] = useState({});
   const [plans, setPlans] = useState({});
@@ -38,16 +57,25 @@ export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) 
     setField(svc, key, { busy: true, error: null });
     setOpen(svc, true);
     try {
-      const r = await server.stackSave(saveBody(svc, key, paste));
+      const answering = ask && ask.chunk && ask.service === svc && askKey === key ? ask : null;
+      const r = await server.stackSave({ ...saveBody(svc, key, paste), ...(answering ? { request: { chunk: answering.chunk, to: answering.to || [] } } : {}) });
       setField(svc, key, { busy: false, paste: '', show: false, replacing: false, result: { pushed: r.pushed || [], notes: r.notes || [], failed: r.failed || [] } });
       if (r.failed?.length) toast({ kind: 'error', title: `${r.names?.join(', ')} saved in the vault`, body: r.failed.map((f) => `${f.label}: ${f.error}`).join(' ') });
+      if (answering) {
+        const bad = (r.pushed || []).filter((p) => !p.ok);
+        toast(bad.length
+          ? { kind: 'error', title: `${answering.key} is in the vault; ${bad.map((p) => destLabel(p.destination)).join(', ')} refused it`, body: bad.map((p) => p.error).filter(Boolean).join('; ') || 'Retry from the table with Sync.' }
+          : { kind: 'success', title: `${answering.key} saved${answering.to?.length ? ` and pushed to ${answering.to.map(destLabel).join(', ')}` : ''}`, body: `${answering.chunk} is ready again; the next pick takes it.` });
+        setAsk(null);
+        onAnswered?.(answering);
+      }
       reload();
       return true;
     } catch (e) {
       setField(svc, key, { busy: false, error: e.message });
       return false;
     }
-  }, [fields, reload, toast]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fields, reload, toast, ask, askKey, onAnswered]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Re-sync: the vault's value written to the mirror files again (the server reads it; the browser never has it). */
   const resync = async (svc, key) => {
@@ -181,6 +209,6 @@ export function useStackUi({ stack, reload = () => {}, toast = () => {} } = {}) 
 
   return {
     field, setField, save, saveAll, resync, check, checks, plan, confirm, plans, toggleReplace, pick, tick, busy,
-    opened, setOpen, go, offer, setOffer, pasted, fill, repoll,
+    opened, setOpen, go, offer, setOffer, pasted, fill, repoll, ask: ask ? { ...ask, valueKey: askKey } : null,
   };
 }

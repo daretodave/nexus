@@ -95,3 +95,5 @@ a.feed-deploy:hover { color: var(--text); text-decoration: underline; }
   .feed-dot.is-deploying::after { animation: none; opacity: 0; }
   .feed-tick { transition: none; }
 }
+.feed-key { flex: none; color: var(--text-3); }
+.feed-row > .feed-key { margin-top: 3px; }

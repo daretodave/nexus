@@ -56,7 +56,7 @@ test('while the zone is pending, the keys and the env stay actionable', () => {
   assert.equal(st.domain, 'ready', 'a waiting zone does not hold up adding the domain');
   const n = nextAction(p, s);
   assert.equal(n.milestone, 'env');
-  assert.equal(n.text, 'Send the 4 Supabase values to Vercel.');
+  assert.equal(n.text, 'Send the 4 values the app reads to Vercel.');
   assert.equal(n.cta, 'Send to Vercel');
   assert.equal(n.action, 'vercel.env');
   assert.equal(cardState('cloudflare', s), 'waiting');

@@ -8,7 +8,7 @@
 // only), /api/secrets/:name/push (Sync, Retry), /api/secrets/:name/remove (Remove it), /api/secrets/import,
 // /api/secrets/gitignore (the warning's fix). Every write re-reads GET /api/secrets: the screen shows what the vault
 // holds, never what it hoped to write. The view model: screens/vault/model.js.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   ViewFrame, ViewHead, Icon, InboxBtn, Err, ToastHost, MaskField, KeyCard, KeyOrb, AuditLog, VaultNote, KeyNote, TickLabel, cx, useShell,
@@ -24,10 +24,11 @@ import RemoveValue from './vault/RemoveValue.jsx';
 import LocalKeys from './vault/LocalKeys.jsx';
 import { useKeyCards } from './vault/useKeyCards.js';
 import VaultSetup from './vault/VaultSetup.jsx';
+import { stackAsk } from './headsdown-inbox/inboxModel.js';
 import StackPanel, { useStackPanel } from './vault/stack/StackPanel.jsx';
 import StackRail from './vault/stack/StackRail.jsx';
 import {
-  DESTS, SHORT, HEAD_TITLE, addBody, addTick, auditRows, destRows, keyCards, nameInput, staleList, subLine, validName, vaultMissing, vaultRows, waitingOn,
+  DESTS, SHORT, HEAD_TITLE, destsIn, addBody, addTick, auditRows, destRows, keyCards, nameInput, staleList, subLine, validName, vaultMissing, vaultRows, waitingOn,
 } from './vault/model.js';
 
 const NEW_DESTS = { local: true, 'github-actions': true, vercel: false, cloudflare: false };
@@ -40,6 +41,17 @@ export default function Vault() {
   const owner = st ? !!st.owner : !!shell.owner;
   const { toasts, push: toast } = useToasts();
   const repo = shell.repo;
+  // A push from anywhere (a session, a terminal, this GUI) lands in the change feed: read the vault again, so "Where
+  // values go" and the table's dots show it without waiting for the next poll.
+  const lastPush = (shell.feed?.events || []).find((e) => e.kind === 'secret-push')?.id || null;
+  const reloadRef = useRef(res.reload);
+  reloadRef.current = res.reload;
+  const seenPush = useRef(lastPush);
+  useEffect(() => {
+    if (!lastPush || seenPush.current === lastPush) return;
+    seenPush.current = lastPush;
+    reloadRef.current();
+  }, [lastPush]);
 
   const actions = <><LoopLine /><InboxBtn /></>;
   let body;
@@ -63,8 +75,11 @@ export default function Vault() {
 function OwnerVault({ st, repo, reload, toast }) {
   const [params] = useSearchParams();
   const [panel, setPanel] = useState(params.get('panel') === 'stack' ? 'stack' : 'table');
+  // A secret request's Add value (Oversight) lands here: the stack card for its service, the field focused.
+  const ask = useMemo(() => stackAsk(params), [params]);
+  useEffect(() => { if (ask) setPanel('stack'); }, [ask]);
   // Set up a stack (the stack hand-off): the panel and the rail share one read of GET /api/stack, polled while it is open.
-  const sp = useStackPanel({ skip: panel !== 'stack', toast });
+  const sp = useStackPanel({ skip: panel !== 'stack', toast, ask, onAnswered: () => reload() });
   const [adding, setAdding] = useState(false);
   const [nw, setNw] = useState({ name: '', for: '', value: '', dests: NEW_DESTS });
   const [edit, setEdit] = useState(null);
@@ -78,6 +93,9 @@ function OwnerVault({ st, repo, reload, toast }) {
   const rows = vaultRows(st, { edit, fresh, now });
   const audit = auditRows(st, { now, fresh: freshAudit });
   const dests = destRows(st, { repo });
+  // The table's place columns: the four it always has, plus any other place a declared name goes (Fly.io, AWS...).
+  const cols = destsIn(st);
+  const grid = cols.length > DESTS.length ? { gridTemplateColumns: `minmax(0, 1fr) 76px repeat(${cols.length}, 58px) 48px 104px 138px` } : undefined;
   const stale = staleList(st);
   const staleN = stale.reduce((n, x) => n + x.destinations.length, 0);
   const cards = useMemo(() => {
@@ -151,9 +169,9 @@ function OwnerVault({ st, repo, reload, toast }) {
           {panel === 'table' && (!empty || adding) ? (
             <>
               <div className="vt" role="table" aria-label="Secrets">
-                <div className="vt-head" role="row">
+                <div className="vt-head" role="row" style={grid}>
                   <span>Name</span><span>Value</span>
-                  {DESTS.map((d) => <span key={d} className="dest" title={HEAD_TITLE[d]}>{d === 'local' ? 'Local' : SHORT[d]}</span>)}
+                  {cols.map((d) => <span key={d} className="dest" title={HEAD_TITLE[d]}>{d === 'local' ? 'Local' : SHORT[d]}</span>)}
                   <span>Chunk</span><span>Rotated</span><span />
                 </div>
                 {adding ? (
@@ -175,7 +193,7 @@ function OwnerVault({ st, repo, reload, toast }) {
                   </div>
                 ) : null}
                 {rows.map((r) => (
-                  <div key={r.name} className={cx('vt-row', r.requested && 'is-requested', r.editing && 'is-editing', r.fresh && 'is-fresh')} role="row">
+                  <div key={r.name} className={cx('vt-row', r.requested && 'is-requested', r.editing && 'is-editing', r.fresh && 'is-fresh')} role="row" style={grid}>
                     <span className="sec-name" role="cell"><b>{r.name}</b><span>{r.for}</span></span>
                     <span className={cx('mask', r.maskTone && 'is-empty', r.maskTone === 'quiet' && 'is-quiet')} role="cell" aria-label={r.maskAria}>{r.mask}</span>
                     {r.dots.map((x) => <span key={x.d} className={x.cls} role="img" aria-label={x.title} title={x.title} />)}

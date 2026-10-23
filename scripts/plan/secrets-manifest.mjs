@@ -22,8 +22,10 @@ import fs from 'node:fs'
 
 export const MANIFEST = 'nexus.secrets.json'
 export const VERSION = 1
-/** Where a secret's value may be pushed. `local` is the vault itself. */
-export const DESTINATIONS = ['local', 'github-actions', 'vercel', 'cloudflare']
+/** Where a secret's value may be pushed. `local` is the vault itself; each other one has a sink in
+ * scripts/secrets-sinks.mjs (cloudflare is a Worker; the rest are named for the place). */
+export const DESTINATIONS = ['local', 'github-actions', 'vercel', 'cloudflare', 'cloudflare-pages', 'netlify', 'fly', 'supabase', 'firebase',
+  'aws-secrets-manager', 'aws-ssm', 'gcp-secret-manager', 'azure-key-vault']
 /** Who provides the value. The owner is the sysadmin; contributors never need project secrets. */
 export const PROVIDERS = ['owner']
 /** An environment variable's name, as a chunk line and the manifest write it. */

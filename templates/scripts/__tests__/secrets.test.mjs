@@ -42,7 +42,7 @@ describe('the manifest shape', () => {
   it('accepts a well-formed manifest', () => {
     assert.deepEqual(validateManifest({ version: 1, secrets: [entry(), entry({ name: 'GH_TOKEN', where: null, destinations: ['github-actions'], chunk: '42.4' })] }), []);
     assert.deepEqual(validateManifest(emptyManifest()), []);
-    assert.deepEqual(DESTINATIONS, ['local', 'github-actions', 'vercel', 'cloudflare']);
+    assert.deepEqual(DESTINATIONS, ['local', 'github-actions', 'vercel', 'cloudflare', 'cloudflare-pages', 'netlify', 'fly', 'supabase', 'firebase', 'aws-secrets-manager', 'aws-ssm', 'gcp-secret-manager', 'azure-key-vault']);
   });
 
   it('refuses a value, an unknown key, a bad name, a duplicate, and a bad destination, provider, link or chunk', () => {

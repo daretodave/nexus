@@ -2,11 +2,15 @@
 // server's shapes (server/secrets.mjs) so the Vault, the Inbox's key card and the board's "Waiting on a secret" draw
 // in a demo. It holds names and status only: a posted value is looked at for its shape and dropped on the spot, never
 // kept, logged or sent back. Nothing here touches the disk or runs a sink.
-import { looksOf, parseRequest } from '../secrets.mjs';
+import { looksOf, parseRequest, resolveRequest } from '../secrets.mjs';
+import { DEST_ORDER } from '../../shared/stack/destinations.mjs';
 
 const DAY = 86_400_000;
 const NAME = /^[A-Z][A-Z0-9_]*$/;
-const SINKS = ['github-actions', 'vercel', 'cloudflare'];
+/** Every place the kit's sinks push to (scripts/secrets-sinks.mjs), staged here: a push is one audit line, no tool. */
+const SINKS = DEST_ORDER;
+/** The environments a demo push names, as the real sinks record them. */
+const ENVS = { vercel: ['production', 'preview', 'development'], 'cloudflare-pages': ['production'], netlify: ['production', 'deploy-preview', 'branch-deploy'] };
 const shaped = (v) => typeof v === 'string' && v.length >= 8 && !/^(?:[A-Za-z]+|\d+)$/.test(v);
 
 /** The chunk the demo's plan holds back for a secret, and the plan row that asks for it. */
@@ -20,7 +24,24 @@ export const DEMO_REQUEST = {
   },
 };
 
-export function createDemoVault({ now = () => Date.now(), owner = () => true } = {}) {
+/**
+ * A request that knows its stack service (0.5.2): Add value opens the Stripe card in Set up a stack, and its save pushes
+ * the key to Vercel, a push the change feed shows. Chunk 15.5 waits on it.
+ */
+export const DEMO_STACK_REQUEST = {
+  chunk: '15.5',
+  title: 'Take season ticket payments',
+  names: ['STRIPE_SECRET_KEY'],
+  durable: {
+    id: 'plan/pending/secrets-15.5.md:5', file: 'plan/pending/secrets-15.5.md', line: 5, source: 'needs-user-call',
+    text: 'secret request 15.5: set STRIPE_SECRET_KEY in your terminal or the GUI\'s vault (never in a session), and 15.5 is ready again. It goes to vercel once it is set; it is a stripe value, so the GUI opens its card in Set up a stack (stack: stripe). Then delete this row.',
+  },
+};
+/** Every request the demo's plan holds, in the order the inbox lists them. */
+export const DEMO_REQUESTS = [DEMO_REQUEST, DEMO_STACK_REQUEST];
+
+/** onPush(event): each push the demo records (an audit line: names, place, who), for the change feed. */
+export function createDemoVault({ now = () => Date.now(), owner = () => true, onPush = () => {} } = {}) {
   const iso = (msAgo) => new Date(now() - msAgo).toISOString();
   const t0 = now();
   const entries = [
@@ -29,6 +50,7 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true } =
     { name: 'PREVIEW_PASSWORD', for: 'Keeps preview deploys private.', where: null, destinations: ['local', 'vercel'], chunk: '15.1' },
     { name: 'SMTP_PASSWORD', for: 'Sends the weekly fixtures email.', where: null, destinations: ['local', 'github-actions'], chunk: '9.2' },
     { name: 'RESULTS_FEED_KEY', for: 'Reads the league results feed.', where: null, destinations: ['local', 'github-actions', 'cloudflare'], chunk: '12.1' },
+    { name: 'STRIPE_SECRET_KEY', for: 'Stripe restricted key (server only). Set up a stack.', where: 'https://dashboard.stripe.com/apikeys', destinations: ['local', 'vercel'], chunk: '15.5' },
   ];
   const at = (d, h = 0) => new Date(t0 - d * DAY - h * 3600000).toISOString();
   const audit = [
@@ -59,7 +81,7 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true } =
       const age = setAt ? Math.floor((now() - Date.parse(setAt)) / DAY) : null;
       return { name: e.name, for: e.for, where: e.where, chunk: e.chunk, declared: true, set: set.has(e.name), rings: set.has(e.name) ? ['local'] : [], destinations, age, setAt, rotate: age !== null && age > 90 };
     });
-    const missing = DEMO_REQUEST.names.filter((n) => !set.has(n));
+    const open = DEMO_REQUESTS.map((q) => ({ q, missing: q.names.filter((n) => !set.has(n)) })).filter((x) => x.missing.length);
     return {
       available: true, mode: isOwner ? 'owner' : 'contributor', owner: isOwner, projectSecretsNeeded: isOwner ? entries.length : 0, manifest: true,
       vault: { local: '/demo/fieldday/.env', workspace: '/demo/.env.workspace', keychain: null },
@@ -69,14 +91,14 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true } =
       rotateDays: 90,
       audit: audit.slice(-20),
       sinks: SINKS,
-      requests: isOwner && missing.length ? [{ chunk: DEMO_REQUEST.chunk, names: DEMO_REQUEST.names, missing, file: DEMO_REQUEST.durable.file, line: DEMO_REQUEST.durable.line, date: iso(3 * 3600000).slice(0, 10) }] : [],
+      requests: isOwner ? open.map(({ q, missing }) => ({ ...parseRequest(q.durable.text), ...resolveRequest(parseRequest(q.durable.text)), missing, file: q.durable.file, line: q.durable.line, date: iso(3 * 3600000).slice(0, 10) })) : [],
       envFiles: ['.env.local'],
       envIgnore: 'ignored',
     };
   };
 
-  const record = (e) => audit.push({ time: new Date(now()).toISOString(), ...e });
-  const pushAll = (name, dests) => dests.filter((d) => SINKS.includes(d)).map((d) => { record({ action: 'push', name, destination: d }); return { destination: d, ok: true, note: `demo: ${name} -> ${d}` }; });
+  const record = (e) => { const line = { time: new Date(now()).toISOString(), ...e }; audit.push(line); if (e.action === 'push') onPush(line); };
+  const pushAll = (name, dests) => dests.filter((d) => SINKS.includes(d)).map((d) => { record({ action: 'push', name, destination: d, ...(ENVS[d] ? { environments: ENVS[d] } : {}), via: 'gui' }); return { destination: d, ok: true, note: `demo: ${name} -> ${d}` }; });
 
   /** POST /api/secrets/:name: the value's shape is checked and the value dropped; only "it is set" is kept. */
   const store = (name, b = {}) => {
@@ -159,7 +181,7 @@ export function createDemoVault({ now = () => Date.now(), owner = () => true } =
     const r = parseRequest(d?.text);
     if (!r) return d;
     const missing = r.names.filter((n) => !set.has(n));
-    return missing.length ? { ...d, secret: { ...r, missing } } : null;
+    return missing.length ? { ...d, secret: { ...r, ...resolveRequest(r), missing } } : null;
   };
   const isSet = (n) => set.has(n);
 
