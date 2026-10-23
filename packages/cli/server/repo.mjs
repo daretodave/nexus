@@ -263,9 +263,22 @@ function* walk(dir) {
   }
 }
 
-/** The prompt that applies durable answers through /oversight and lands per owner mode. */
-export function answersPrompt(answers, owner) {
+/**
+ * The prompt that carries plan answers. To the session that asked (`resume`, spec 53): one message with every answer,
+ * applied where each question lives, then that session continues where it left off (and lands as its own run would).
+ * Otherwise (a new session, the home session): through /oversight, landing per owner mode.
+ */
+export function answersPrompt(answers, owner, { resume = false } = {}) {
   const lines = answers.map((a) => `- ${a.file}:${a.line} -- "${a.text.replace(/\s+/g, ' ').slice(0, 200)}"\n  answer: ${a.answer.replace(/\s+/g, ' ')}`);
+  if (resume) {
+    const n = answers.length;
+    return [
+      `Your open questions are answered (${n} ${n === 1 ? 'answer' : 'answers'}, from the nexus GUI). Do not ask again; the person already answered.`,
+      'Apply these answers where each question lives (resolve the open question or the [needs-user-call] row), then continue where you left off.',
+      '',
+      ...lines,
+    ].join('\n');
+  }
   const landing = owner
     ? 'This checkout is in owner mode: gate, commit, and push to main.'
     : 'This checkout is in contributor mode: gate, commit on a new branch next/oversight-<date>, push it, and open a pull request with gh. Never push main.';

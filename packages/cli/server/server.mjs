@@ -34,6 +34,7 @@ import { tonightStart } from '../shared/times.mjs';
 import { createMask, createSecrets, parseRequest } from './secrets.mjs';
 import { readDesign } from './design.mjs';
 import { clearDraftsWith, readDrafts, writeDrafts } from './drafts.mjs';
+import { markPlanAnswersSent, readPlanAnswers, writePlanAnswers } from './plan-answers.mjs';
 import { artifactLink } from '../shared/design-link.mjs';
 import { MAX_SEND_BODY, readAttachments } from '../shared/attachments.mjs';
 import { saveUploads, uploadFile } from './uploads.mjs';
@@ -545,17 +546,41 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           if (!rows.length) return send(res, 400, { error: 'no answers' });
           // A value never goes through a session: a secret request is set in the Vault (POST /api/secrets/:name).
           if (rows.some(secretRequestRow)) return send(res, 409, { error: 'a secret request is answered in the Vault, never in a session: set the value there or in your terminal' });
-          const prompt = repoMod.answersPrompt(rows.map((a) => ({ file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer) })), repoMod.isOwner(repo));
+          const clean = rows.map((a) => ({ file: String(a.file), line: Number(a.line) || 0, text: String(a.text || ''), answer: String(a.answer) }));
+          const ids = clean.map((a) => `${a.file}:${a.line}`);
+          if (b.session === 'new') {
+            // Continue with no session to go back to (spec 53): a new one starts (in the checkout, as /design and /plot
+            // hand-offs do), running /oversight with them all.
+            const r = await startSession({ worktree: false, prompt: repoMod.answersPrompt(clean, repoMod.isOwner(repo)) });
+            if (r.status === 200) markPlanAnswersSent(repo, ids, r.id);
+            return send(res, r.status, { ...r, ok: r.status === 200, session: r.id });
+          }
           if (b.session) {
-            // Aimed at one linked session: it reaches that session's next turn, and only that session.
-            const r = await steering.steer(String(b.session), prompt, { kind: 'answer' });
+            // Continue (spec 53): every answer in one message to the session that asked (or the one picked), which
+            // applies them and goes on. It reaches that session's next turn, and only that session.
+            const r = await steering.steer(String(b.session), repoMod.answersPrompt(clean, repoMod.isOwner(repo), { resume: true }), { kind: 'answer' });
+            if (r.status === 200) markPlanAnswersSent(repo, ids, r.session || b.session);
             return send(res, r.status, r);
           }
+          const prompt = repoMod.answersPrompt(clean, repoMod.isOwner(repo));
           await sendPrompt(prompt);
           return send(res, 200, { ok: true });
         }
         case 'GET /api/sessions': return send(res, 200, markEnded(await gitView.withGit(await sessionList())));
         case 'GET /api/inbox': return send(res, 200, await inbox());
+        // Plan answers kept as given (spec 53, A1; plan-answers.mjs). POST is the same as PUT.
+        case 'GET /api/plan-answers': return send(res, 200, { answers: readPlanAnswers(repo, repoMod.durableQuestions(repo)) });
+        case 'PUT /api/plan-answers':
+        case 'POST /api/plan-answers': {
+          const b = await body(req);
+          const patch = b.answers && typeof b.answers === 'object' && !Array.isArray(b.answers) ? b.answers : null;
+          if (!patch) return send(res, 400, { error: 'answers: { "<file:line>": { answer, how } | null }' });
+          const qs = repoMod.durableQuestions(repo);
+          // A secret request is answered by the vault's key card only: its value is never kept here.
+          const secretIds = new Set(qs.filter((q) => parseRequest(q.text)).map((q) => q.id));
+          const r = writePlanAnswers(repo, patch, qs, { skip: (id) => secretIds.has(id) });
+          return send(res, 200, { ok: true, ...r });
+        }
         // Answers saved as they are typed (spec 51, A1; drafts.mjs). POST is the same as PUT, for sendBeacon.
         case 'GET /api/drafts': return send(res, 200, { drafts: readDrafts(repo) });
         case 'PUT /api/drafts':

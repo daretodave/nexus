@@ -72,6 +72,9 @@ export const usePreflight = () => useResource('/api/preflight');
 /** GET /api/prompts: { paste, adopt, pitch } for "give this to another agent". */
 export const usePrompts = () => useResource('/api/prompts');
 
+/** GET /api/plan-answers: { answers: { "<file:line>": { answer, how, at, sent?, to? } } }, the plan answers kept until a Continue sends them (spec 53). Writes: server.savePlanAnswers. */
+export const usePlanAnswers = (poll) => useResource('/api/plan-answers', { poll });
+
 /** GET /api/oversight: { live: asks, durable: [{ file, line, text }] }. */
 export const useOversight = (poll) => useResource('/api/oversight', { poll });
 

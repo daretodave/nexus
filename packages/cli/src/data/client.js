@@ -60,6 +60,10 @@ export const server = {
   answerPermission: (id, allow, always = false) => api(`/api/permission/${encodeURIComponent(id)}`, { allow, always }),
   oversight: () => api('/api/oversight'),
   answerDurable: (answers) => api('/api/oversight/answer', { answers }),
+  /** POST /api/plan-answers { answers: { "<file:line>": { answer, how: 'answered'|'default' } | null } }: keep plan answers until a Continue sends them (spec 53). */
+  savePlanAnswers: (answers) => api('/api/plan-answers', { answers }),
+  /** A spec's Continue: every kept answer in one message to `session` (its id, or 'new' to start one running /oversight). */
+  continueAnswers: (answers, session) => api('/api/oversight/answer', { answers, session }),
   announce: (text) => api('/api/announce', { text }),
   claims: () => api('/api/claims'),
   releaseClaim: (id) => api('/api/claims/release', { id }),
