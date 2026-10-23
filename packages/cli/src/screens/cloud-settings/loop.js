@@ -16,10 +16,12 @@ const LOOP_FILE = /(^|\/)(nexus-loop|loop|march)\.ya?ml$/i;
 const SECRET = 'CLAUDE_CODE_OAUTH_TOKEN';
 
 const baseName = (p) => String(p || '').split('/').pop();
+/** Places with no GitHub repo for the loop yet (server/place.mjs NO_ORIGIN, as /api/actions reports them). */
+const NOREPO = new Set(['none', 'refused', 'local', 'unpushed']);
 
 /**
  * Everything the Cloud loop and Settings screens show about the loop.
- * status: 'loading' | 'nogh' | 'none' (no loop workflow) | 'ready'.
+ * status: 'loading' | 'norepo' (not on GitHub yet: no repo, or no origin) | 'nogh' | 'none' (no loop workflow) | 'ready'.
  */
 export function useLoop() {
   const { live } = useShell();
@@ -51,7 +53,8 @@ export function useLoop() {
 
   const status = c ? 'ready'
     : actions.status === 'loading' || cloud.status === 'loading' ? 'loading'
-      : a && a.gh === false ? 'nogh'
+      : a && NOREPO.has(a.place) ? 'norepo'
+        : a && a.gh === false ? 'nogh'
         : !wf ? (actions.status === 'error' ? 'error' : 'none')
           : 'ready';
 
@@ -95,7 +98,13 @@ export function useLoop() {
     next: c?.next || null, // ISO time of the next tick, only from /api/cloud
     schedule: c?.schedule || null, // { label, window, cron }, only from /api/cloud
     runs,
-    runsError: runsRes.data && runsRes.data.ok === false ? runsRes.data.error : null,
+    runsError: runsRes.data && runsRes.data.ok === false ? runsRes.data.error || runsRes.data.note || null : null,
+    // For the sign-in walkthrough (TokenGuide): the repo, the place, gh and the person's role on the repo.
+    repoSlug: a?.slug || null,
+    place: a?.place || null,
+    gh: a ? a.gh : undefined,
+    viewer: a?.viewer ?? null,
+    reloadActions: () => actions.reload(),
     setPaused,
     reload: () => { actions.reload(); runsRes.reload(); cloud.reload(); },
   };

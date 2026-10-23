@@ -297,8 +297,8 @@ export default function Settings() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span className="t-body-s c-2">{loop.status === 'loading' ? 'Asking gh' : loop.status === 'nogh' ? loop.note : 'This repo has no loop workflow yet.'}</span>
-                  {loop.status === 'none' ? <Link className="t-body-s" to={PATHS.onboarding('cloud')}>Set up the cloud loop</Link> : null}
+                  <span className="t-body-s c-2">{loop.status === 'loading' ? 'Asking gh' : loop.status === 'nogh' || loop.status === 'norepo' ? loop.note : 'This repo has no loop workflow yet.'}</span>
+                  {loop.status === 'none' || loop.status === 'norepo' ? <Link className="t-body-s" to={PATHS.onboarding('cloud')}>{loop.status === 'norepo' ? 'Put it on GitHub' : 'Set up the cloud loop'}</Link> : null}
                 </div>
               )}
             </div>

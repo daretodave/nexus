@@ -1,0 +1,67 @@
+/* The mini terminal (onboarding/TokenTerm.jsx): a small window that replays `claude setup-token`, and the still
+   one for "In your terminal". Theme tokens only, so day and night both follow. nexus.css stays as it is. */
+
+.mt { display: flex; flex-direction: column; gap: 10px; max-width: 520px; width: 100%; }
+.mt-win { position: relative; overflow: hidden; border-radius: 12px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line), var(--e-1); }
+.mt-head { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 4px 6px 4px 12px; box-shadow: 0 1px 0 var(--line); background: color-mix(in oklab, var(--surface) 60%, var(--well)); }
+.mt-head .tb-spacer { flex: 1; }
+.mt-dots { display: inline-flex; gap: 6px; }
+.mt-dots i { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in oklab, var(--text-3) 55%, transparent); }
+.mt-title { font-size: 12px; line-height: 16px; color: var(--text-3); }
+
+.mt-body { position: relative; display: flex; flex-direction: column; gap: 4px; min-height: 236px; padding: 12px 14px 14px; font-family: var(--font-mono); font-size: 12.5px; line-height: 19px; color: var(--text-2); font-variant-ligatures: none; overflow-wrap: anywhere; }
+.mt-win.is-static .mt-body { min-height: 0; }
+.mt-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; animation: mt-in var(--dur-settle, 180ms) var(--ease-settle) both; }
+.mt-body.is-still .mt-line { animation: none; }
+.mt-ps { color: var(--accent); font-weight: 600; }
+.mt-line.is-cmd { color: var(--text); }
+.mt-line.is-out { color: var(--text-2); }
+.mt-line.is-dim, .mt-line.is-url { color: var(--text-3); }
+.mt-line.is-url .mt-text { opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.mt-line.is-ok { color: var(--st-done); }
+.mt-line.is-token .mt-text { position: relative; padding: 2px 6px; margin-left: -6px; border-radius: 6px; color: var(--text); background: color-mix(in oklab, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 40%, transparent); overflow: hidden; }
+.mt-line.is-token .mt-text::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, color-mix(in oklab, var(--accent) 35%, transparent) 50%, transparent 80%); transform: translateX(-100%); animation: mt-sweep 900ms var(--ease-settle) 200ms 1 both; pointer-events: none; }
+.mt-body.is-still .mt-line.is-token .mt-text::after { animation: none; opacity: 0; }
+.mt-line.is-callout { align-self: flex-start; gap: 6px; padding: 2px 8px; border-radius: 999px; font-family: var(--font-ui); font-size: 12px; font-weight: 600; color: var(--on-accent); background: var(--accent); }
+.mt-arrow { font-family: var(--font-mono); }
+.mt-note { flex-basis: 100%; font-family: var(--font-ui); font-size: 12px; font-style: italic; color: var(--text-3); }
+
+.mt-caret { display: inline-block; width: 7px; height: 15px; margin-left: 1px; transform: translateY(2px); background: var(--text); animation: mt-blink 1s steps(1) infinite; }
+
+/* The browser card: it slides up over the lower right, labelled so nobody looks for it in the terminal. */
+.mt-browser { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 6px; width: 200px; padding: 10px 12px 12px; border-radius: 12px; font-family: var(--font-ui); background: var(--surface-solid); box-shadow: inset 0 0 0 1px var(--line-2), var(--e-3); animation: mt-up 320ms var(--ease-settle) both; }
+.mt-body.is-still .mt-browser { position: static; justify-self: end; align-self: flex-end; margin-top: 6px; animation: none; }
+.mt-where { position: absolute; top: -9px; left: 10px; padding: 0 6px; border-radius: 999px; font-size: 10.5px; line-height: 17px; font-weight: 600; letter-spacing: .02em; color: var(--on-accent); background: var(--aurora-cyan); }
+.mt-addr { display: inline-flex; align-items: center; gap: 6px; justify-self: start; padding: 2px 8px; border-radius: 999px; font-size: 11px; color: var(--text-2); background: var(--well); }
+.mt-auth { font-size: 13px; font-weight: 600; color: var(--text); }
+.mt-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 26px; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--on-accent); background: var(--accent); animation: mt-pulse 900ms var(--ease-settle) 600ms 1; }
+.mt-browser.is-signed .mt-btn { color: var(--on-accent); background: var(--st-done); animation: none; }
+
+.mt-acts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mt-foot { display: flex; flex-direction: column; gap: 4px; margin: 0; padding-left: 16px; font-size: 12px; line-height: 18px; color: var(--text-3); list-style: disc; }
+.mt-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* The sign-in step around the terminal (onboarding/TokenGuide.jsx): "Where it goes" and its three panels. */
+.tg { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.tg-where { display: flex; flex-direction: column; gap: 8px; }
+.tg-panel { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--well); animation: mt-in var(--dur-settle, 180ms) var(--ease-settle) both; }
+.tg-panel .mt-win { background: var(--surface); }
+.tg-done { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--st-done); }
+.tg-done .t-body-s { color: var(--text-2); }
+.tg-done b { color: var(--text); }
+
+@keyframes mt-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes mt-blink { 50% { opacity: 0; } }
+@keyframes mt-sweep { to { transform: translateX(100%); } }
+@keyframes mt-up { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes mt-pulse { 50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent) 22%, transparent); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-line, .mt-browser, .mt-btn, .mt-caret, .tg-panel, .mt-line.is-token .mt-text::after { animation: none; }
+  .mt-caret { display: none; }
+}
+
+@media (max-width: 560px) {
+  .mt { max-width: none; }
+  .mt-browser { position: static; justify-self: end; align-self: flex-end; width: min(200px, 100%); margin-top: 6px; }
+}

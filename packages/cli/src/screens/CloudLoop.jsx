@@ -10,6 +10,7 @@ import { server, useClaims, useInbox } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import { useLoop, hhmm, inWords, clock, tonightStart } from './cloud-settings/loop.js';
 import { Frame, LoopDot, andList } from './cloud-settings/parts.jsx';
+import TokenGuide from './onboarding/TokenGuide.jsx';
 
 /** A clock that ticks once a second while `on`. */
 function useNow(on) {
@@ -68,6 +69,7 @@ export default function CloudLoop() {
   const inbox = useInbox();
   const [ask, setAsk] = useState(null); // { at } while a manual pass is starting
   const [runErr, setRunErr] = useState(null);
+  const [signIn, setSignIn] = useState(false); // the Sign-in card's walkthrough, open
 
   // A manual pass is "running" from the click until gh lists a run that started after it.
   const started = ask && loop.runs.some((r) => Date.parse(r.startedAt) >= ask.at - 5000);
@@ -143,6 +145,8 @@ export default function CloudLoop() {
     body = null;
   } else if (loop.status === 'nogh' || loop.status === 'error') {
     body = <Err icon="offline" title={loop.note || 'gh could not read this repo'} body="nexus reads the cloud loop through your own gh login. Nothing in the loop has changed." actions={<button className="btn btn-s" type="button" onClick={loop.reload}>Check again</button>} />;
+  } else if (loop.status === 'norepo') {
+    body = <Empty sky="none" title="Not on GitHub yet" body="The cloud loop runs on GitHub Actions. Put this folder on GitHub first; setup shows every command before it runs." action={<Link className="btn btn-s" to={PATHS.onboarding('cloud')}>Put it on GitHub</Link>} />;
   } else if (loop.status === 'none') {
     body = <Empty sky="none" title="No cloud loop yet" body="This repo has no loop workflow. Setup adds one, and the first pass runs at its next tick." action={<Link className="btn btn-s" to={PATHS.onboarding('cloud')}>Set up the cloud loop</Link>} />;
   } else {
@@ -197,9 +201,18 @@ export default function CloudLoop() {
                 <span className="secret-d">
                   {loop.secret.ok
                     ? <>The loop&apos;s own sign-in{loop.secret.added ? <>, added {loop.secret.added} with <code>claude setup-token</code></> : null}. It is not a project secret: {owner ? <>project secrets live in the <Link to={PATHS.vault}>vault</Link>.</> : 'this loop opens PRs and never deploys, so deploy keys stay with the owner.'} Runs stop and park a question if it ever expires.</>
-                    : loop.secret.ok == null ? loop.secret.detail : loop.secret.fix}
+                    : loop.secret.ok == null ? loop.secret.detail : 'Runs cannot sign in to Claude until the repo has this secret.'}
                 </span>
               </div>
+              {loop.secret.ok === false ? (
+                <button className="btn btn-s" type="button" style={{ alignSelf: 'flex-start' }} aria-expanded={signIn} onClick={() => setSignIn(!signIn)}><Icon name="key" size={14} />{signIn ? 'Hide' : 'Set it up'}</button>
+              ) : null}
+            </div>
+          ) : null}
+          {signIn && loop.secret && loop.secret.ok === false ? (
+            <div className="side-card" aria-label="Give the loop its sign-in">
+              <span className="t-caps c-2">Give the loop its sign-in</span>
+              <TokenGuide slug={loop.repoSlug} place={loop.place} gh={loop.gh} viewer={loop.viewer} open onSaved={() => loop.reload()} onCheck={() => loop.reload()} />
             </div>
           ) : null}
           <div className="side-card">
