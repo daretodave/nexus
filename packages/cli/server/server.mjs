@@ -32,6 +32,7 @@ import { claimsAction, listClaims, SESSION as CLAIMS_SESSION } from './claims.mj
 import { createStepWatch, sessionTimes } from './session-times.mjs';
 import { tonightStart } from '../shared/times.mjs';
 import { createMask, createSecrets, parseRequest } from './secrets.mjs';
+import { createStack } from './stack.mjs';
 import { readDesign } from './design.mjs';
 import { clearDraftsWith, readDrafts, writeDrafts } from './drafts.mjs';
 import { markPlanAnswersSent, readPlanAnswers, writePlanAnswers } from './plan-answers.mjs';
@@ -97,7 +98,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   // current values. Under an injected provider (tests) a sink runs only through the injected runner, never a real tool.
   const mask = createMask();
   const noSink = () => ({ status: 127, missing: true });
+  // Under a test provider, the stack's checks never reach the network unless a test hands in its own fetch.
+  const noFetch = async () => { throw Object.assign(new Error('no network under a test provider'), { name: 'TypeError' }); };
   const secrets = createSecrets({ repo, mask, run: secretsOpts.run || (injected ? noSink : undefined), vault: secretsOpts.vault, ...(secretsOpts.owner ? { owner: secretsOpts.owner } : {}), setup: secretsOpts.setup || (injected ? { gh: async () => ({ ok: false, out: '', err: 'no gh under a test provider' }) } : undefined) });
+  // The stack hand-off (stack.mjs): values through the vault, mirrored to the app's env files; checks call out only on a click.
+  const stack = createStack({ repo, secrets, ...(secretsOpts.owner ? { owner: secretsOpts.owner } : {}), ...(secretsOpts.fetch ? { fetchImpl: secretsOpts.fetch } : injected ? { fetchImpl: noFetch } : {}) });
   await secrets.refresh().catch(() => null);
   const refreshMask = setInterval(() => { secrets.refresh().catch(() => null); }, 5000);
   refreshMask.unref?.();
@@ -694,6 +699,11 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'POST /api/secrets/manifest': { const { status, ...r } = await secrets.startManifest(await body(req)); return send(res, status, r); }
         // Set up the vault (47.3): the CLI's own copy of the secrets scripts, landed per owner mode (vault-setup.mjs).
         case 'POST /api/secrets/setup': { await body(req); const { status, ...r } = await secrets.setup(); return send(res, status, r); }
+        // The stack hand-off (stack.mjs): names, shapes and status out; a value in only through POST /api/stack/save.
+        case 'GET /api/stack': { const { status, ...r } = await stack.status(); return send(res, status, r); }
+        case 'POST /api/stack/pick': { const { status, ...r } = await stack.pick(await body(req)); return send(res, status, r); }
+        case 'POST /api/stack/save': { const { status, ...r } = await stack.save(await body(req)); return send(res, status, r); }
+        case 'POST /api/stack/tick': { const { status, ...r } = await stack.tick(await body(req)); return send(res, status, r); }
       }
       // An image a person sent (uploads.mjs): the transcript's bubble shows it from here.
       const up = /^GET \/api\/uploads\/([\w.-]+)\/([\w.-]+)$/.exec(route);
@@ -702,6 +712,12 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         if (!f) return send(res, 404, { error: 'no such upload' });
         res.writeHead(200, { 'content-type': f.type, 'cache-control': 'private, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' });
         return fs.createReadStream(f.full).pipe(res);
+      }
+      const stk = /^POST \/api\/stack\/(check|apply)\/([a-z]+(?:\.[a-z]+)?)$/.exec(route);
+      if (stk) {
+        const b = await body(req);
+        const { status, ...r } = stk[1] === 'check' ? await stack.check(stk[2], b) : await stack.apply(stk[2], b);
+        return send(res, status, r);
       }
       const secPush = /^POST \/api\/secrets\/([A-Za-z0-9_%]+)\/push$/.exec(route);
       if (secPush) {
