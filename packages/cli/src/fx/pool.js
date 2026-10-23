@@ -8,7 +8,7 @@ import { bezier } from './effects.js';
 function blank() {
   return {
     kind: 'mote', x: 0, y: 0, vx: 0, vy: 0, ax: 0, ay: 0, drag: 0, life: 1, age: 0, delay: 0, size: 1, color: '', alpha: 1, prio: 0,
-    r0: 0, r1: 0, cx: 0, cy: 0, rad: 0, ang: 0, w: 0, tilt: 0.4, wob: 0, wf: 0, phase: 0, path: null, jitter: 0, glyph: '', tx: 0, ty: 0,
+    r0: 0, r1: 0, cx: 0, cy: 0, rad: 0, ang: 0, w: 0, tilt: 0.4, wob: 0, wf: 0, phase: 0, path: null, jitter: 0, glyph: '', shape: '', rot: 0, spin: 0, tx: 0, ty: 0,
   };
 }
 
@@ -92,6 +92,7 @@ export function step(pool, dtIn) {
         if (p.drag) { const d = Math.exp(-p.drag * dt); p.vx *= d; p.vy *= d; }
         p.x += p.vx * dt; p.y += p.vy * dt;
         if (p.wob) p.x += Math.sin(p.age * p.wf * Math.PI * 2 + p.phase) * p.wob * dt;
+        if (p.spin) p.rot += p.spin * dt;
       }
     }
   }

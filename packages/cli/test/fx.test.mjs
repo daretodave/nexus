@@ -10,7 +10,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { reduce, replay } from '../shared/beats.mjs';
 import { createFxDiffer, diffFx, fxSnapshot, toolTone } from '../src/fx/events.js';
 import {
-  FX_TOKENS, ORB_R, STATE_FX, ambientEmitters, ambientSpawn, bezier, emitCount, headsGrid, headsScene, nodeFor, seeded, spawnsFor, stageScene,
+  CALM_FADE, CALM_HOLD, FX_TOKENS, ORB_R, STATE_FX, ambientEmitters, ambientSpawn, bezier, calmScale, emitCount, headsGrid, headsScene, nodeFor, seeded, spawnsFor,
+  stageLive, stageScene,
 } from '../src/fx/effects.js';
 import { budgetFor, createGovernor, scaled } from '../src/fx/budget.js';
 import { createPool, ease, envelope, setLimit, spawn, step } from '../src/fx/pool.js';
@@ -246,7 +247,11 @@ test('the heads-down grid comes from the rows: the phase track, the newest tape 
   assert.equal(scene.tape.y, 50 + (g.tape + 0.5) * 20);
   const streak = spawnsFor({ type: 'chunk', id: '1', stage: 'archive' }, scene, seeded(4));
   assert.ok(streak.some((p) => p.kind === 'seek' && p.path[0][1] === scene.bar.y), 'a closed chunk streaks along the phase track');
-  assert.ok(streak.some((p) => p.kind === 'glyph'), 'and throws terminal glyphs');
+  assert.ok(streak.some((p) => p.kind === 'shape' && p.shape === 'tick'), 'and throws drawn marks, ticks among them');
+  assert.ok(!streak.some((p) => p.kind === 'glyph'), 'no text glyphs in a burst');
+  const err = spawnsFor({ type: 'error', agent: 'main' }, scene, seeded(4));
+  assert.ok(err.length && err.every((p) => p.kind === 'shape' && ['cross', 'bar'].includes(p.shape) && p.color === '--st-failed'), 'an error throws crosses');
+  assert.ok(err.some((p) => p.spin !== 0), 'that tumble');
   const tool = spawnsFor({ type: 'tool', tone: 'tool' }, scene, seeded(4));
   assert.ok(tool.every((p) => p.kind === 'pixel'), 'heads-down sparks are pixels');
   const amb = ambientEmitters(scene, {});
@@ -355,13 +360,13 @@ function fakeCtx() {
 test('drawPool draws each kind, skips what is invisible, and leaves the context as it found it', () => {
   const pool = createPool(8);
   const base = { life: 2, age: 0.5, alpha: 1, color: '--st-tool' };
-  for (const kind of ['mote', 'spark', 'ring', 'pixel', 'glyph', 'seek']) spawn(pool, { ...base, kind, x: 10, y: 10, vx: 10, r0: 1, r1: 9, glyph: '*', path: [[0, 0], [0, 0], [10, 10], [10, 10]] });
+  for (const kind of ['mote', 'spark', 'ring', 'pixel', 'glyph', 'seek', 'shape']) spawn(pool, { ...base, kind, x: 10, y: 10, vx: 10, r0: 1, r1: 9, glyph: '*', shape: 'cross', path: [[0, 0], [0, 0], [10, 10], [10, 10]] });
   spawn(pool, { ...base, kind: 'mote', color: '--nope' });
   pool.items.slice(0, pool.n).forEach((p) => { p.age = 0.5; });
   const ctx = fakeCtx();
   const img = {};
   const n = drawPool(ctx, pool, { color: (t) => (t === '--st-tool' ? [82, 221, 240, 1] : null), sprite: () => img, look: themeLook('dark'), alpha: 1, font: 'JetBrains Mono' });
-  assert.equal(n, 6, 'an unresolved token is skipped');
+  assert.equal(n, 7, 'an unresolved token is skipped');
   const names = ctx.calls.map((c) => c[0]);
   for (const call of ['drawImage', 'stroke', 'arc', 'fillRect', 'fillText']) assert.ok(names.includes(call), call);
   assert.ok(ctx.font.includes('JetBrains Mono'), 'glyphs in the mono face');
@@ -624,7 +629,7 @@ function stubPage() {
   delete globalThis.ResizeObserver;
   delete globalThis.IntersectionObserver;
   let ts = 0;
-  page.run = () => { ts += 16.7; for (const f of frames.splice(0)) f.fn(ts); };
+  page.run = (step = 16.7) => { ts += step; for (const f of frames.splice(0)) f.fn(ts); };
   page.restore = () => {
     for (const [k, d] of Object.entries(saved)) { if (d) Object.defineProperty(globalThis, k, d); else delete globalThis[k]; }
   };
@@ -677,4 +682,52 @@ test('the runtime: listens only where it must, measures a scroll once a frame, i
     page.restore();
   }
   assert.equal(typeof globalThis.window, 'undefined', 'the page stubs are gone');
+});
+
+test('calm: a stage with nothing live drifts a while, thins, then stops; anything live keeps it going', () => {
+  assert.equal(calmScale(0), 1);
+  assert.equal(calmScale(CALM_HOLD), 1);
+  assert.ok(Math.abs(calmScale(CALM_HOLD + CALM_FADE / 2) - 0.5) < 1e-9);
+  assert.equal(calmScale(CALM_HOLD + CALM_FADE + 5), 0);
+  const scene = stageScene({ nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'done', main: true }] }, 1280, 800);
+  const full = ambientEmitters(scene, {});
+  assert.deepEqual(full.map((e) => e.kind), ['drift']);
+  assert.equal(stageLive(full), false, 'drift alone is not live');
+  assert.ok(Math.abs(ambientEmitters(scene, { calm: 0.5 })[0].rate - full[0].rate / 2) < 1e-9, 'half calm, half the drift');
+  assert.deepEqual(ambientEmitters(scene, { calm: 0 }), [], 'settled: no drift at all');
+  const busy = stageScene({ nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'tool', main: true }] }, 1280, 800);
+  assert.equal(stageLive(ambientEmitters(busy, {})), true, 'an orb at work is live');
+  assert.equal(stageLive(ambientEmitters(scene, { asking: true })), true, 'and so is a question');
+});
+
+test('the runtime: a quiet stage settles to no frames at all, and the next event wakes it', () => {
+  const page = stubPage();
+  const savedTimeout = globalThis.setTimeout;
+  // The calm timer fires at once here: the test drives every frame by hand.
+  globalThis.setTimeout = (fn) => { fn(); return 1; };
+  try {
+    const fx = createFx(page.canvas);
+    fx.setScene({ mode: 'stage', nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'done', main: true }] });
+    let frames = 0;
+    let asleepAt = null;
+    for (let i = 0; i < 3000 && page.frames.length; i += 1) {
+      page.run(50);
+      frames += 1;
+      if (frames * 0.05 < CALM_HOLD) assert.ok(page.frames.length > 0, 'it drifts while the hold lasts');
+    }
+    asleepAt = frames * 0.05;
+    assert.equal(page.frames.length, 0, 'asleep: no frame is asked for');
+    assert.ok(asleepAt > CALM_HOLD + CALM_FADE && asleepAt < CALM_HOLD + CALM_FADE + 14, `settled after ${asleepAt.toFixed(1)} s of quiet (the last motes live out)`);
+    fx.setScene({ mode: 'stage', nodes: [{ key: 'main', at: [50, 30], size: 'xl', state: 'done', main: true }] });
+    page.run(50);
+    assert.equal(page.frames.length, 0, 'the same scene handed again (a re-render) is not news: still asleep after one look');
+    fx.emit([{ type: 'tool', agent: 'main', tone: 'tool' }]);
+    assert.equal(page.frames.length, 1, 'an event wakes it');
+    page.run(50);
+    assert.equal(page.frames.length, 1, 'and it drifts again');
+    fx.destroy();
+  } finally {
+    globalThis.setTimeout = savedTimeout;
+    page.restore();
+  }
 });
