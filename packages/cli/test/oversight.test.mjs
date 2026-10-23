@@ -72,7 +72,7 @@ test('Batch-answer takes only questions with a default, never a secret; the butt
   ];
   assert.deepEqual(batchEligible(items).map((i) => i.opts[0]), ['fold them', 'hourly']);
   assert.deepEqual(batchEligible(fromDurable(questionsIn(AUDIT, 'plan/AUDIT.md'))), []);
-  assert.match(batchWhyLine(0), /Recommendation:, Default: or \(recommended\)/);
+  assert.match(batchWhyLine(0), /Default if unanswered:, Default:, Defaults to, Recommendation: or \(recommended\)/);
   assert.match(batchWhyLine(2), /2 questions/);
   assert.match(batchWhyLine(2), /list before/);
 });
