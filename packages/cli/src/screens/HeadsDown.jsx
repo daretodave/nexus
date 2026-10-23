@@ -69,7 +69,7 @@ function HeadsDownStart({ plan }) {
       <FxLayer mode="heads" target=".sp-card" />
       <div className="sp-card">
         <div className="t-title-s">Start heads-down</div>
-        <div className="t-body-s c-2">Choose what it works on: a spec, or infinite, where march picks each pass or the next loop builds the plan chunk by chunk. It asks its questions first, then builds without stopping.</div>
+        <div className="t-body-s c-2">Choose what it works on: a spec, or infinite, where march picks each pass or the next loop builds the plan chunk by chunk. A spec asks its questions first; infinite never stops to ask.</div>
         <StartPick plan={plan.data} sessions={list} open={(sid) => nav(PATHS.headsFor(sid))} onError={(title, body) => setError(`${title}: ${body}`)} />
         {error ? <div className="t-body-s c-2" role="alert">{error}</div> : null}
       </div>

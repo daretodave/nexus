@@ -48,7 +48,8 @@ posture is bold — that's the "make things brilliant when delivery
 is not" path.
 
 **Run words.** `careful` and `bold` tune only the cap and the
-bar (§5 scoring, §7 rule 2); no word keeps them as written.
+bar (§7 rule 2 is the cap; the bar is §6 Step 3's "one audit
+row = wait" and §7 rule 4); no word keeps them as written.
 `promote` makes this one pass act as posture `autonomous` (§3):
 its picks become unchunked specs (`plan/<NN>-<slug>.md` + a
 `plan/README.md` row, landed per owner mode), and each also goes
@@ -62,13 +63,16 @@ and says so); never under `strict`.
 that finds nothing ready runs one `/expand` pass instead of
 ending. The plan being done is the signal, so the rate limit is
 skipped; the posture is not (`strict`: stop as a bare loop
-would). `then expand` files candidates as usual, then the loop
-stops and says what it filed and that it waits in `/oversight`.
-`then build` runs `/expand promote`: the loop chunks and builds
-what it added, and the next dry spell runs another pass. It
-stops when a pass adds nothing: every candidate needs cited
-signals, so the loop ends when the evidence does. A
-contributor's `then build` reads as `then expand`.
+would). `then expand` runs the pass as the posture says, then
+the loop stops and says what it filed: candidates that wait in
+`/oversight`, or under `autonomous` the specs it added (the
+next run builds them). `then build` runs `/expand promote`:
+the loop chunks and builds what it added, and the next dry
+spell runs another pass. It stops when a pass adds nothing
+(every candidate needs cited signals, so the loop ends when
+the evidence does) or after its third promote pass, whichever
+comes first, and says which. A contributor's `then build`
+reads as `then expand`.
 
 ## 3. Posture (read from `bearings.md`)
 

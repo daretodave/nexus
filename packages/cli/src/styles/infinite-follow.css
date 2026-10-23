@@ -38,7 +38,10 @@
 .if-steps { position: relative; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); padding: 3px; border-radius: 10px; background: var(--well); border: 1px solid var(--line); }
 .if-steps::before { content: ''; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n)); border-radius: 7px; background: color-mix(in oklab, var(--accent) 25%, var(--raised)); box-shadow: 0 0 0 1px var(--line-2); transform: translateX(calc(var(--i) * 100%)); transition: transform var(--dur-settle) var(--ease-settle), background var(--dur-settle) var(--ease-settle), box-shadow var(--dur-settle) var(--ease-settle); pointer-events: none; }
 .if-steps.is-lvl1::before { background: color-mix(in oklab, var(--accent) 55%, var(--raised)); box-shadow: 0 0 0 1px var(--line-2), 0 0 18px -8px var(--glow); }
-.if-steps.is-lvl2::before { background: var(--aurora-grad, var(--accent)); box-shadow: 0 0 0 1px var(--accent), 0 0 26px -4px var(--glow), 0 0 4px 0 var(--glow); }
+.if-steps.is-lvl2::before { box-shadow: 0 0 0 1px var(--accent), 0 0 26px -4px var(--glow), 0 0 4px 0 var(--glow); }
+/* the bold end's aurora rides a twin thumb that fades in, since a colour cannot ease into a gradient */
+.if-steps::after { content: ''; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n)); border-radius: 7px; background: var(--aurora-grad, var(--accent)); opacity: 0; transform: translateX(calc(var(--i) * 100%)); transition: transform var(--dur-settle) var(--ease-settle), opacity var(--dur-settle) var(--ease-settle); pointer-events: none; }
+.if-steps.is-lvl2::after { opacity: 1; }
 .if-step { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; height: 30px; padding: 0 6px; border: 0; border-radius: 7px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: color var(--dur-snap) var(--ease-snap); }
 .if-step:hover { color: var(--text); }
 .if-step.is-on { color: var(--text); }
@@ -61,6 +64,10 @@
 @container (max-width: 380px) {
   .if-mode { align-items: center; padding: 8px 10px; }
   .if-mode-sub { display: none; }
+  .if-mode-label { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+  .if-q-head { flex-wrap: wrap; row-gap: 2px; }
+  .if-q-head > .cap:first-child { flex: 1 0 100%; }
+  .if-chip { margin-left: auto; }
   .if-mode-note { display: block; }
   .if-step { height: 28px; font-size: 12px; padding: 0 4px; }
   .if-orbit { display: none; }
@@ -68,6 +75,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sp-follow, .start-pick .sp-list, .if-modes::before, .if-steps::before, .if-mode, .if-step, .if-ic { transition: none; }
+  .sp-follow, .start-pick .sp-list, .if-modes::before, .if-steps::before, .if-steps::after, .if-mode, .if-step, .if-ic { transition: none; }
   .if-ic-march.is-played, .if-ic-next.is-played, .if-meaning, .if-step.is-on .if-orbit::after { animation: none; }
 }

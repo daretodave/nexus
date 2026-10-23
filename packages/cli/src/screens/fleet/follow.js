@@ -18,14 +18,14 @@ export const MODE_COPY = {
 
 export const IDEAS_COPY = {
   careful: { label: 'Careful', meaning: 'Fixes what is there. It never invents new work.' },
-  balanced: { label: 'Balanced', meaning: 'Now and then it proposes new work. Ideas wait in Oversight.' },
-  bold: { label: 'Bold', meaning: 'Proposes new work whenever building is done. Ideas wait in Oversight.' },
+  balanced: { label: 'Balanced', meaning: 'Now and then it proposes new work. Ideas wait in Oversight, unless your plan says otherwise.' },
+  bold: { label: 'Bold', meaning: 'Proposes new work whenever building is done. Ideas wait in Oversight, unless your plan says otherwise.' },
 };
 
 export const DRY_COPY = {
   stop: { label: 'Stop', meaning: 'Ends the loop and tells you why nothing is left.' },
-  expand: { label: 'Propose', meaning: 'Proposes new work once, then stops. Ideas wait in Oversight.' },
-  build: { label: 'Build it', meaning: 'Turns its own ideas into specs and builds them, until it runs out of reasons. Your app builds itself.' },
+  expand: { label: 'Propose', meaning: 'Proposes new work once, then stops. Ideas wait in Oversight, unless your plan says otherwise.' },
+  build: { label: 'Build it', meaning: 'Turns its own ideas into specs and builds them, up to three rounds or until it runs out of reasons. Your app builds itself.' },
 };
 
 const pickOf = (list, v, fallback) => (list.includes(v) ? v : fallback);

@@ -29,7 +29,10 @@ Rate-limited by `/march` (≥20 commits or >7 days); posture
 bar (§4 scoring and its cap); no word keeps them as written.
 `promote` makes this one pass act as posture `autonomous`:
 its picks become unchunked specs (`plan/<NN>-<slug>.md` + a
-`plan/README.md` row, landed per owner mode), and each also goes
+`plan/README.md` row in the template's format: outcome, Why,
+Design, Acceptance with A-IDs, `Not chunked yet.`, then `node
+scripts/plan-check.mjs --since HEAD` green before the commit,
+landed per owner mode), and each also goes
 under `## Promoted` in `plan/CANDIDATES.md` as `promoted:
 <date>, auto (expand pass <N>)` so `/oversight` still sees what
 grew. Owner mode only (a contributor files candidates as usual
@@ -41,13 +44,16 @@ only way the kit's own loop writes a spec without `/oversight`.
 that finds nothing ready runs one `/expand` pass instead of
 ending. The plan being done is the signal, so the rate limit is
 skipped; the posture is not (`strict`: stop as a bare loop
-would). `then expand` files candidates as usual, then the loop
-stops and says what it filed and that it waits in `/oversight`.
-`then build` runs `/expand promote`: the loop chunks and builds
-what it added, and the next dry spell runs another pass. It
-stops when a pass adds nothing: every candidate needs cited
-signals, so the loop ends when the evidence does. A
-contributor's `then build` reads as `then expand`.
+would). `then expand` runs the pass as the posture says, then
+the loop stops and says what it filed: candidates that wait in
+`/oversight`, or under `autonomous` the specs it added (the
+next run builds them). `then build` runs `/expand promote`:
+the loop chunks and builds what it added, and the next dry
+spell runs another pass. It stops when a pass adds nothing
+(every candidate needs cited signals, so the loop ends when
+the evidence does) or after its third promote pass, whichever
+comes first, and says which. A contributor's `then build`
+reads as `then expand`.
 
 ## 3. Signal sources
 
