@@ -175,6 +175,16 @@ describe('the vault', () => {
       v.set([['A_TOKEN', FAKES[0]]], 'local');
       assert.deepEqual(fs.readdirSync(path.join(t.repo, '.git')), []);
       fs.rmdirSync(path.join(t.repo, '.git'));
+      // In a worktree .git is a file naming the real git folder: follow it.
+      const gd = path.join(t.repo, 'gitdir-elsewhere');
+      fs.mkdirSync(gd);
+      fs.writeFileSync(path.join(t.repo, '.git'), 'gitdir: gitdir-elsewhere\n');
+      assert.equal(scratchPath(local, '.lock'), path.join(gd, 'nexus-.env.lock'));
+      v.set([['A_TOKEN', FAKES[0]]], 'local');
+      assert.deepEqual(fs.readdirSync(gd), []);
+      assert.deepEqual(fs.readdirSync(t.repo).filter((f) => f.endsWith('.tmp') || f.endsWith('.lock')), []);
+      fs.rmSync(path.join(t.repo, '.git'));
+      fs.rmdirSync(gd);
       assert.deepEqual(v.remove(['A_TOKEN'], 'workspace'), [{ name: 'A_TOKEN', rings: ['workspace'] }]);
       assert.deepEqual(v.status(['A_TOKEN'])[0].rings, ['local', 'keychain']);
       assert.deepEqual(v.remove(['A_TOKEN', 'NOPE_TOKEN']), [{ name: 'A_TOKEN', rings: ['local', 'keychain'] }, { name: 'NOPE_TOKEN', rings: [] }]);

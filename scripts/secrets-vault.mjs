@@ -175,14 +175,21 @@ function checkValue(name, value) {
 }
 
 /**
- * Where a ring file's temp file and lock go: the repo's own `.git` folder when the file sits at a checkout's root (git
+ * Where a ring file's temp file and lock go: the repo's own git folder when the file sits at a checkout's root (git
  * never tracks anything in there, so a crash mid-write can't leave plain-text secrets for `git add -A`), else beside
- * the file (the workspace ring sits outside every repo).
+ * the file (the workspace ring sits outside every repo). In a worktree `.git` is a file naming that folder.
  */
 export function scratchPath(file, suffix) {
-  const git = path.join(path.dirname(file), '.git');
+  const dir = path.dirname(file);
+  let git = path.join(dir, '.git');
   let inGit = false;
-  try { inGit = fs.statSync(git).isDirectory(); } catch { /* no repo here */ }
+  try {
+    if (fs.statSync(git).isFile()) {
+      const m = /^gitdir:\s*(.+?)\s*$/m.exec(fs.readFileSync(git, 'utf8'));
+      if (m) git = path.resolve(dir, m[1]);
+    }
+    inGit = fs.statSync(git).isDirectory();
+  } catch { /* no repo here */ }
   return inGit ? path.join(git, `nexus-${path.basename(file)}${suffix}`) : `${file}${suffix}`;
 }
 
