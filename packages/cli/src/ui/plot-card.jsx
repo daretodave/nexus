@@ -4,6 +4,8 @@
 // test can render it on the server.
 import { Fragment, useState } from 'react';
 import { aheadLabel, answersLine, plotActions, plotCommand } from './plot-report.js';
+import { inlineTokens } from './syntax/draft.js';
+import { hasColour, rainbow, tokenClass } from './syntax/tokens.js';
 
 const MODE_LABEL = { peek: 'Peek', plotted: 'Plotted', done: 'Plotted and built' };
 const ROWS = [
@@ -12,11 +14,21 @@ const ROWS = [
   ['notPlanned', 'Not planned', 'is-new'],
 ];
 
-/** `code` spans in a short text as <code>; everything else stays text. */
+/**
+ * Inline code coloured as the transcript colours it (ui/code.jsx InlineCode, drawn here from the pure token modules
+ * so the card keeps rendering on the server with no .jsx import): a /command, a path, a command line.
+ */
+function InlineCode({ text }) {
+  const tokens = rainbow(inlineTokens(text));
+  if (!hasColour(tokens)) return <code>{text}</code>;
+  return <code>{tokens.map((tk, i) => { const c = tokenClass(tk); return c ? <span key={i} className={c}>{tk.v}</span> : <Fragment key={i}>{tk.v}</Fragment>; })}</code>;
+}
+
+/** `code` spans in a short text as coloured inline code; everything else stays text. */
 function Ticks({ text }) {
   const parts = String(text || '').split(/(`[^`]+`)/);
   return parts.map((p, i) => (p.length > 2 && p.startsWith('`') && p.endsWith('`')
-    ? <code key={i}>{p.slice(1, -1)}</code>
+    ? <InlineCode key={i} text={p.slice(1, -1)} />
     : <Fragment key={i}>{p}</Fragment>));
 }
 
@@ -145,7 +157,7 @@ export function PlotCard({ report, onSend }) {
 
       {actions.length ? (
         <footer className="plotc-acts">
-          {sent ? <span className="plotc-sent">Sent <code>{sent}</code></span> : actions.map((a) => (
+          {sent ? <span className="plotc-sent">Sent <InlineCode text={sent} /></span> : actions.map((a) => (
             <button key={a.key} type="button" className={`btn btn-s${a.primary ? ' btn-primary' : ''}`} disabled={busy} title={plotCommand(report, a.key, picked)} onClick={() => act(a.key)}>
               {a.label}
             </button>

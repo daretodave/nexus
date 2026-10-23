@@ -248,7 +248,7 @@ function ContributorVault({ st, repo, reload, toast }) {
             </div>
             <div className="secret-wait" role="note">
               <KeyOrb state="quiet" />
-              <span><b>{wait.chunk} needs <code>{wait.name}</code>.</b> {Owner} adds it in the vault; the owner&apos;s loop deploys and picks {wait.chunk} back up. Contributors never handle project secrets.</span>
+              <span><b>{wait.chunk} needs <code><span className="syn-lit">{wait.name}</span></code>.</b> {Owner} adds it in the vault; the owner&apos;s loop deploys and picks {wait.chunk} back up. Contributors never handle project secrets.</span>
             </div>
           </div>
         ) : null}

@@ -117,7 +117,7 @@ export function KeyCard({ card, phase = 'pending', saved, busy, error, onSave, o
     return (
       <div className="secret-wait">
         <KeyOrb state="quiet" />
-        <span><b>{card.chunk} skipped for now.</b> It shows as needs secret on the plan board until <code>{card.name}</code> has a value. <button className="btn btn-ghost btn-s" type="button" onClick={onUnskip} style={{ marginLeft: 4 }}>Add it now</button></span>
+        <span><b>{card.chunk} skipped for now.</b> It shows as needs secret on the plan board until <code><span className="syn-lit">{card.name}</span></code> has a value. <button className="btn btn-ghost btn-s" type="button" onClick={onUnskip} style={{ marginLeft: 4 }}>Add it now</button></span>
       </div>
     );
   }

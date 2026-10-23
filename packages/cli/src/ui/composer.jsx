@@ -2,13 +2,16 @@
 // .tool-btn, .send, and the re-route .menu. Large, multiline, always at the
 // bottom of the left pane. Free text goes as typed. A guessed route shows as
 // a suggestion chip (.route-suggest) the person can accept; a route they pick
-// from its menu is armed and shows as the .route chip.
+// from its menu is armed and shows as the .route chip. What is typed is
+// coloured as it is typed (ui/code.jsx SyntaxTextarea): a /command, `code`,
+// fences, paths and brackets, over the real textarea, which keeps every key.
 import { useMemo, useRef, useState } from 'react';
 import '../styles/route-suggest.css';
 import '../styles/attachments.css';
 import { clipboardImages } from '../../shared/attachments.mjs';
 import { Icon } from './icons.jsx';
 import { Choice, FileChip, Kbd, Menu, cx } from './controls.jsx';
+import { SyntaxTextarea } from './code.jsx';
 
 /** The seven commands the slash list offers, in the design's order and words. */
 export const COMMANDS = [
@@ -188,7 +191,7 @@ export function Composer({
       {pin ? <div className="composer-pinhead"><Icon name="pinNote" size={14} />Pinned note · every agent reads this on its next step</div> : null}
       {note ? <div className="composer-note" role="alert">{note}</div> : null}
       {chips && chips.length ? <div className="composer-chips">{chips.map(({ key, ...c }) => <FileChip key={key || c.name} {...c} />)}</div> : null}
-      <textarea
+      <SyntaxTextarea
         ref={area} rows={rows} aria-label={pin ? 'Pinned note' : 'Message the session'} value={text} disabled={paused}
         placeholder={forming ? 'Its worktree is forming. You can write once it is ready.' : paused ? (pausedText ? 'Paused. Notes you write now wait until you resume.' : placeholder) : placeholder}
         onChange={(e) => { onChange?.(e.target.value); setActive(0); }} onKeyDown={keyDown} onPaste={paste}

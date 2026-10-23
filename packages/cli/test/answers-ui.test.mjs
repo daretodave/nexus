@@ -14,7 +14,8 @@ const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
 test('a typed answer: its Send button is drawn from the start, disabled until there is text', async () => {
   const { AnswerField } = await import('../src/ui/answer-field.jsx');
   const html = renderToStaticMarkup(createElement(AnswerField, { onSend() {}, button: 'Send answer', placeholder: 'Your answer…' }));
-  assert.match(html, /class="field tug-other"/);
+  assert.match(html, /class="field tug-other syn-input"/, 'the field, coloured as it is typed');
+  assert.match(html, /<span class="syn-mirror" aria-hidden="true">/);
   assert.match(html, /<button[^>]*disabled=""[^>]*>Send answer/);
 });
 

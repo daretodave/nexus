@@ -18,6 +18,10 @@ import {
   ToastHost, Err, cx, useShell,
 } from '../ui/index.js';
 import { useRecover } from '../data/index.js';
+import { SynRuns } from '../ui/markdown.jsx';
+import { tokenizeShell } from '../ui/shell-syntax.js';
+import { rainbow } from '../ui/syntax/tokens.js';
+import { draftTokens } from '../ui/syntax/draft.js';
 import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
 import { act, hhmm, plural } from './fleet/util.js';
@@ -45,8 +49,8 @@ function PasteResume({ resume }) {
       <Icon name="terminal" style={{ color: 'var(--accent)', flex: 'none', marginTop: 2 }} />
       <span style={{ minWidth: 0, flex: 1 }}>
         <b>Resume it yourself.</b> {resume.why ? `This server cannot: ${resume.why}.` : ''} Reopen the run's session, then paste the prompt.
-        <pre className="t-mono-xs" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{resume.command}</pre>
-        <pre className="t-mono-xs" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{resume.prompt}</pre>
+        <pre className="t-mono-xs" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}><SynRuns tokens={rainbow(tokenizeShell(resume.command))} /></pre>
+        <pre className="t-mono-xs" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}><SynRuns tokens={rainbow(draftTokens(resume.prompt))} /></pre>
       </span>
     </div>
   );

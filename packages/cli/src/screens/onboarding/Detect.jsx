@@ -5,6 +5,8 @@
 import { useState } from 'react';
 import { Icon, Err, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { usePreflight } from '../../data/index.js';
+import { SynRuns } from '../../ui/markdown.jsx';
+import { tokenizeShell } from '../../ui/shell-syntax.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next, useCopy, CopyFace } from './frame.jsx';
 
@@ -94,7 +96,7 @@ function ClaudeFix({ kind, onRecheck, checking }) {
     <div className="chk-fix">
       <span className="t-body-s c-1" style={{ fontWeight: 600 }}>{install ? 'Install it, then check again' : 'Sign in, then check again'}</span>
       <div className="cmd-line">
-        <span className="p">$</span><span>{cmd}</span><span className="tb-spacer" />
+        <span className="p">$</span><span><SynRuns tokens={tokenizeShell(cmd)} /></span><span className="tb-spacer" />
         <button className="btn btn-s btn-ghost" type="button" onClick={() => copy('cmd', cmd)} aria-label={install ? 'Copy the install command' : 'Copy the sign-in command'}>
           <CopyFace copied={copied === 'cmd'}>Copy</CopyFace>
         </button>

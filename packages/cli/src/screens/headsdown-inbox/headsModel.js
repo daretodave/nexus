@@ -4,6 +4,9 @@
 // its label and shows a dim dash, never an invented number.
 import { row, framed, split, rule, fit, cut, len, WIDTH } from './tuiCanvas.jsx';
 import { headsLedger } from './headsLedger.js';
+import { toolArgTokens } from '../../ui/shell-syntax.js';
+import { draftTokens } from '../../ui/syntax/draft.js';
+import { rainbow, tokenClass } from '../../ui/syntax/tokens.js';
 
 export { headsLedger };
 
@@ -35,6 +38,8 @@ const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const SPAWN = new Set(['Task', 'Agent']);
+/** Transcript items the tape skips: streaming deltas, a call's end and its output (the call's own line says it). */
+const QUIET = new Set(['delta', 'tool-done', 'tool-output']);
 
 /** An agent node from the stage reducer -> glyph, class and word (the board's tree). */
 export function agentLook(a, hasKids) {
@@ -63,17 +68,23 @@ function lastTool(transcript, id) {
   return '';
 }
 
+/**
+ * Tokens as canvas segments: each token's syntax class on its cells (styles/syntax.css colours .tui .syn-*), so a
+ * tool's command reads as it does in the cockpit and every cell stays 1ch.
+ */
+const synSegs = (tokens) => tokens.map((tk) => [tokenClass(tk) || '', tk.v]);
+
 /** One tape event from a transcript item: [who, glyph, glyphCls, segs]. */
 function tapeEvent(t, stage) {
   const who = t.kind === 'user' ? 'you' : agentName(stage, t.agent);
   switch (t.kind) {
     case 'tool': {
       const look = WRITE_TOOLS.has(t.name) ? ['◆', 'wr'] : SPAWN.has(t.name) ? ['↳', 'th'] : ['◜', 'tl'];
-      return [who, look[0], look[1], [['k', ` ${t.name} `], ['', t.summary || ''], SPAWN.has(t.name) ? ['d', ' · delegated'] : null]];
+      return [who, look[0], look[1], [['k', ` ${t.name} `], ...synSegs(rainbow(toolArgTokens(t.name, t.summary || ''))), SPAWN.has(t.name) ? ['d', ' · delegated'] : null]];
     }
     case 'tool-error': return [who, '✗', 'no', [['k', ` ${t.text}`]]];
     case 'error': return [who, '✗', 'no', [['k', ` ${t.text}`]]];
-    case 'user': return [who, '›', 'v', [['', ` ${t.text}`]]];
+    case 'user': return [who, '›', 'v', synSegs(rainbow(draftTokens(` ${String(t.text || '').replace(/\s+/g, ' ')}`)))];
     case 'pin': return [who, '■', 'v', [['v', ' pinned '], ['', t.text]]];
     case 'parked': return [who, '?', 'ask', [['ask', ' parked '], ['', t.q || t.text || ''], t.assumed ? ['d', ' · default taken: '] : null, t.assumed ? ['k', t.assumed] : null]];
     case 'result': return [who, t.ok ? '✓' : '✗', t.ok ? 'ok' : 'no', [['k', t.ok ? ' run finished' : ` ${t.text || 'run failed'}`]]];
@@ -363,7 +374,7 @@ export function headsRows(m) {
     const h = framed();
     h.seq(L, [['k', 'tape'], ['d', '       last 7 events · the full log lives in the cockpit']]);
     rows.push(h);
-    const events = transcript.map((t, i) => ({ t, i })).filter(({ t }) => t.kind !== 'delta' && !(t.kind === 'text' && !String(t.text || '').trim()));
+    const events = transcript.map((t, i) => ({ t, i })).filter(({ t }) => !QUIET.has(t.kind) && !(t.kind === 'text' && !String(t.text || '').trim()));
     const last = events.slice(-7);
     for (let k = 0; k < 7; k += 1) {
       const r = framed();
@@ -390,7 +401,7 @@ export function headsRows(m) {
   {
     const r = framed();
     let c = r.seq(L, [['a', `${name} ›`], ['', ' ']]);
-    if (ui.draft) c = r.put(c, cut(ui.draft, WIDTH - 6 - c), '');
+    if (ui.draft) c = r.seq(c, synSegs(rainbow(draftTokens(cut(ui.draft, WIDTH - 6 - c)))));
     c = r.put(c, '▌', 'a', null, BLINK);
     if (ui.note) r.put(c + 2, cut(ui.note, WIDTH - 4 - c), 'ask');
     else if (!ui.draft) r.put(c + 2, `type to steer ${name} · / for commands · anything it asks parks for review`, 'd');

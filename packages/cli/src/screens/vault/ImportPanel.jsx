@@ -132,7 +132,7 @@ export default function ImportPanel({ status, onClose, onDone, toast }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <button className="btn btn-primary" type="button" onClick={imp.confirm} disabled={!imp.kept || imp.busy}><Icon name="check" size={14} />Import {imp.kept} {imp.kept === 1 ? 'name' : 'names'} and write the manifest</button>
-            <span className="t-body-s c-2" style={{ flex: 1, minWidth: 280 }}>Writes <code className="t-mono-s c-1">nexus.secrets.json</code> with names only. Values go to your vault and the destinations you tick; the manifest never holds one.</span>
+            <span className="t-body-s c-2" style={{ flex: 1, minWidth: 280 }}>Writes <code className="t-mono-s syn-path">nexus.secrets.json</code> with names only. Values go to your vault and the destinations you tick; the manifest never holds one.</span>
           </div>
         </>
       ) : null}

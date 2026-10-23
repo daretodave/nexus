@@ -21,6 +21,7 @@ import {
   Empty, Err, ToastHost, cx, useShell,
 } from '../ui/index.js';
 import { api, useGitRepo } from '../data/index.js';
+import { InlineCode } from '../ui/code.jsx';
 import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
 import { act, hhmm, plural, prNum } from './fleet/util.js';
@@ -48,7 +49,8 @@ function syncText(main = {}) {
   return 'main in sync with origin';
 }
 
-const Codes = ({ list }) => list.map((b, i) => <span key={b}>{i ? ', ' : ''}<code>{b}</code></span>);
+// Branch names in the type colour (styles/syntax.css), so a list of them reads as names, not prose.
+const Codes = ({ list }) => list.map((b, i) => <span key={b}>{i ? ', ' : ''}<code><span className="syn-type">{b}</span></code></span>);
 
 function TidyPop({ plan, done, onRun, onClose, running, focus }) {
   const missing = plan?.missing;
@@ -64,7 +66,7 @@ function TidyPop({ plan, done, onRun, onClose, running, focus }) {
       </div>
       <div className="tidy-list">
         {!plan ? <div className="tidy-item"><span className="spin" style={{ width: 14, height: 14 }} /><span>Working out what would go…</span></div> : null}
-        {missing ? <div className="tidy-item"><Icon name="info" size={14} style={{ color: 'var(--text-3)' }} /><span><b>This repo has no dry run here.</b> {plan.note || ''} Run <code>/tidy dry</code> in a terminal to see it.</span></div> : null}
+        {missing ? <div className="tidy-item"><Icon name="info" size={14} style={{ color: 'var(--text-3)' }} /><span><b>This repo has no dry run here.</b> {plan.note || ''} Run <InlineCode text="/tidy dry" /> in a terminal to see it.</span></div> : null}
         {plan?.error ? <div className="tidy-item"><Icon name="x" size={14} style={{ color: 'var(--st-failed)' }} /><span><b>The dry run failed.</b> {plan.error}</span></div> : null}
         {verdict ? (
           <div className="tidy-item"><Icon name={verdict.go ? 'trash' : 'check'} size={14} style={{ color: verdict.go ? 'var(--st-blocked)' : 'var(--st-done)' }} /><span><b>{verdict.text}</b></span></div>
@@ -206,7 +208,7 @@ export default function GitPanel() {
                 <Icon name="lockOne" style={{ color: 'var(--text-3)' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   <span className="t-title-s">Root checkout</span>
-                  <span className="t-mono-xs c-3">{root.path}</span>
+                  <span className="t-mono-xs syn-path">{root.path}</span>
                 </div>
                 <span className="git">
                   <span><Icon name="git" /><span className="br">{root.branch || 'main'}</span></span>
