@@ -2,13 +2,15 @@
 // from GET /api/preflight, each lighting a star; the constellation's lines
 // take the state of the stars they join. Continue unlocks once Claude Code
 // is found and signed in.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon, Err, stepCount, stepAfter, stepBefore, stepNo } from '../../ui/index.js';
 import { usePreflight } from '../../data/index.js';
 import { SynRuns } from '../../ui/markdown.jsx';
 import { tokenizeShell } from '../../ui/shell-syntax.js';
 import { PATHS } from '../../routes.js';
 import { ObFrame, Back, Next, useCopy, CopyFace } from './frame.jsx';
+import RepoStart from './RepoStart.jsx';
+import { gitStar, wantsRepoStart } from './repoStart.js';
 
 const INSTALL = 'npm install -g @anthropic-ai/claude-code';
 
@@ -40,12 +42,18 @@ export function rowsFrom(pf) {
     : installed
       ? { star: 'warn', state: 'warn', word: 'not signed in', short: 'not signed in', detail: 'Found on your PATH, but not signed in yet.', fix: 'login' }
       : { star: 'warn', state: 'warn', word: 'not found', short: 'not found', detail: 'Not found. nexus drives Claude Code, so it has to be here first.', fix: 'install' };
-  const git = info.isGit
-    ? {
-      star: 'lit', state: 'ok', word: 'found', short: `${info.name}${info.branch ? ` · ${info.branch}` : ''}`,
-      detail: <><code>{info.name}</code>{info.branch ? <> on <code>{info.branch}</code></> : null}{info.remote ? ', with an origin remote.' : ', no origin remote yet.'}</>,
-    }
-    : { star: 'warn', state: 'warn', word: 'not a repo', short: 'not a repo', detail: c.remote?.fix || 'This folder is not a git repo.' };
+  // The git star follows the place (server/place.mjs): warn while not a repo, neutral once a repo that is not on
+  // GitHub yet, lit on GitHub. Nested and refused folders are warnings with their own words.
+  const git = info.place === 'nested'
+    ? { star: 'warn', state: 'warn', word: 'inside a repo', short: 'inside another repo', detail: <>This folder is inside the repo at <code>{info.top}</code>.</> }
+    : info.place === 'refused'
+      ? { star: 'warn', state: 'warn', word: 'not here', short: 'not a repo', detail: 'Not a git repo, and not a folder to start one in.' }
+      : info.isGit
+        ? {
+          star: info.place ? gitStar(info.place) : 'lit', state: 'ok', word: info.remote ? 'found' : 'local only', short: `${info.name}${info.branch ? ` · ${info.branch}` : ''}`,
+          detail: <><code>{info.name}</code>{info.branch ? <> on <code>{info.branch}</code></> : null}{info.remote ? (info.place === 'other' ? ', with an origin that is not on GitHub.' : ', with an origin remote.') : ', no origin remote yet.'}</>,
+        }
+        : { star: 'warn', state: 'warn', word: 'not a repo', short: 'not a repo yet', detail: 'This folder is not a git repo yet. Making one is optional here, and takes a click per step.' };
   const gh = c.gh?.ok
     ? { star: 'lit', state: 'ok', word: 'signed in', short: 'signed in', detail: <><code>gh</code> is signed in, so sessions can open pull requests.</> }
     : { star: 'neutral', state: 'new', word: 'optional', short: 'optional', detail: <>{c.gh?.detail || 'Not signed in.'} Only the cloud loop and pull requests need <code>gh</code>.</> };
@@ -129,6 +137,10 @@ export default function Detect() {
   const checking = pre.status === 'loading' || again;
   const recheck = async () => { setAgain(true); try { await pre.reload(); } finally { setAgain(false); } };
   const ready = !!pf?.ready;
+  // Once shown, the repo panel stays for the visit, so its Done step (Open on GitHub) is still there at the end.
+  const [repoPanel, setRepoPanel] = useState(false);
+  const wantsRepo = wantsRepoStart(pf?.info);
+  useEffect(() => { if (wantsRepo) setRepoPanel(true); }, [wantsRepo]);
 
   const foot = (
     <>
@@ -161,7 +173,9 @@ export default function Detect() {
                 <Row title="Claude Code" r={r.claude}>
                   {r.claude.fix ? <ClaudeFix kind={r.claude.fix} onRecheck={recheck} checking={checking} /> : null}
                 </Row>
-                <Row title="Git repo" r={r.git} />
+                <Row title="Git repo" r={r.git}>
+                  {repoPanel || wantsRepo ? <RepoStart where="detect" onChange={() => pre.reload()} /> : null}
+                </Row>
                 <Row title="Git host CLI" r={r.gh} />
                 <Row title="nexus in this repo" r={r.nexus} />
               </div>
