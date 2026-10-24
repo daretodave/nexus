@@ -14,7 +14,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { PERMISSION_MODES, BYPASS, modeOptions, modeArgs, permissionModeOf, sdkProvider } from '../server/provider.mjs';
 import { parseRunArgs, runOnce, RUN_MODES, UsageError } from '../server/headless.mjs';
 import { startServer } from '../server/server.mjs';
-import { removeTreeSync } from './helpers/tmp.mjs';
+import { removeTree, removeTreeSync, until } from './helpers/tmp.mjs';
 
 const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
 
@@ -84,6 +84,28 @@ test('a new conversation reads the pref; a running or resumed one keeps the mode
   assert.equal(sdk.calls[2].permissionMode, 'default');
   assert.equal('allowDangerouslySkipPermissions' in sdk.calls[2], false);
   await p.stop();
+});
+
+test('a session stays in its repo (spec 52, A2): additionalDirectories and the read-outside guard ride along even under bypassPermissions', async () => {
+  const sdk = fakeSdk();
+  const other = os.tmpdir();
+  const p = sdkProvider(sdk, {
+    repo: os.tmpdir(), additionalDirectories: [other], onMessage() {}, onAsk: async () => ({}),
+    onPermission: async () => ({ allow: false }), onStatus() {}, permissionMode: () => 'bypassPermissions',
+  });
+  p.send('one');
+  assert.equal(sdk.calls.length, 1);
+  assert.deepEqual(sdk.calls[0].additionalDirectories, [other]);
+  assert.deepEqual(sdk.calls[0].settings, { permissions: { blockReadsOutsideWorkingDirectories: true } }, 'the guard fires even in bypassPermissions');
+  await p.stop();
+
+  // No additionalDirectories given: the default is [], but the guard is still unconditional.
+  const q = sdkProvider(sdk, { repo: os.tmpdir(), onMessage() {}, onAsk: async () => ({}), onPermission: async () => ({ allow: false }), onStatus() {}, permissionMode: () => 'bypassPermissions' });
+  q.send('two');
+  assert.equal(sdk.calls.length, 2);
+  assert.deepEqual(sdk.calls[1].additionalDirectories, []);
+  assert.deepEqual(sdk.calls[1].settings, { permissions: { blockReadsOutsideWorkingDirectories: true } });
+  await q.stop();
 });
 
 test('nexus run still refuses bypass, from the flag and from runOnce', async () => {
@@ -167,4 +189,40 @@ test('Settings\' control: four radios with one-line explanations, Ask checked by
   assert.match(src, /import '\.\.\/styles\/permission-mode\.css'/);
   const css = read('../src/styles/permission-mode.css');
   assert.doesNotMatch(css, /#[0-9a-fA-F]{3,8}\b/, 'tokens only, so both themes follow');
+});
+
+function tmpRepoInParent() {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-perm-wt-'));
+  const dir = path.join(parent, 'repo');
+  fs.mkdirSync(dir);
+  execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: dir });
+  execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init'], { cwd: dir });
+  return { parent, dir };
+}
+
+test('a session stays in its repo (spec 52, A2): a worktree session\'s hooks carry the repo root as an additional directory; the home session\'s carry none', async () => {
+  const { parent, dir } = tmpRepoInParent();
+  const by = new Map();
+  const provider = (h) => { by.set(h.session, h); return { kind: 'fake', send() {}, async interrupt() {}, async stop() {}, async fresh() {} }; };
+  const app = await startServer({ repo: dir, provider, pollRuns: false, dist: path.join(os.tmpdir(), 'nexus-cli-no-dist') });
+  try {
+    const home = [...by.values()].find((h) => h.repo === dir);
+    assert.ok(home, 'the home session hosts at the repo root');
+    assert.deepEqual(home.additionalDirectories, [], 'no worktree: nothing beyond the repo itself');
+
+    const r = await req(app.port, {
+      method: 'POST', pathname: '/api/sessions',
+      headers: { 'x-nexus-token': app.token, 'content-type': 'application/json', origin: `http://127.0.0.1:${app.port}` },
+      body: JSON.stringify({}),
+    });
+    assert.equal(r.status, 200);
+    // Its provider hosts once the worktree is ready (session.mjs makeProvider), not before.
+    await until(async () => (await req(app.port, { pathname: `/api/sessions/${r.data.id}`, headers: { 'x-nexus-token': app.token } })).data.form?.state === 'ready', { ms: 30000, what: 'the worktree to finish forming' });
+    const hooks = by.get(r.data.id);
+    assert.ok(hooks, 'its provider hosted once the worktree formed');
+    assert.notEqual(path.resolve(hooks.repo), path.resolve(dir), 'it works in its own worktree, not the repo root');
+    assert.deepEqual(hooks.additionalDirectories, [dir], 'the server\'s own checkout root, so a read there still asks rather than reaching outside everything');
+  } finally {
+    await removeTree(parent, { stop: [() => app.close()] });
+  }
 });
