@@ -362,8 +362,9 @@ Now do a global search-and-replace across the copied files:
 | `<REPO_SLUG>` | `your-org/your-repo` |
 | `<DEFAULT_BRANCH>` | usually `main` |
 | `<PROJECT_PKG_PREFIX>` | workspace package prefix, e.g. `@acme` (empty if not a monorepo) |
+| `<PACKAGE_MANAGER>` | your package manager, e.g. `pnpm` / `npm` / `yarn` |
 
-A one-liner that replaces all eight, bash/zsh/WSL/macOS.
+A one-liner that replaces all nine, bash/zsh/WSL/macOS.
 Uses `-i.bak` (suffix attached, no space) rather than bare
 `-i` — stock macOS `sed` is BSD sed, which requires a backup
 suffix argument and otherwise misparses the following `-e` as
@@ -372,7 +373,7 @@ both BSD and GNU sed accept identically, so the trailing
 `find` just cleans up the backups it forces:
 
 ```bash
-grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>\|<PROJECT_PKG_PREFIX>' \
+grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING_PROVIDER>\|<REPO_SLUG>\|<DEFAULT_BRANCH>\|<PROJECT_PKG_PREFIX>\|<PACKAGE_MANAGER>' \
     ./skills ./.claude ./plan ./agents.md ./scripts ./.env.example ./data \
   2>/dev/null | xargs sed -i.bak \
       -e 's/<PROJECT_LOWER>/acme/g' \
@@ -383,6 +384,7 @@ grep -rl '<PROJECT>\|<PROJECT_LOWER>\|<PROJECT_TAGLINE>\|<HOSTING_URL>\|<HOSTING
       -e 's/<REPO_SLUG>/you\/acme/g' \
       -e 's/<DEFAULT_BRANCH>/main/g' \
       -e 's/<PROJECT_PKG_PREFIX>/@acme/g' \
+      -e 's/<PACKAGE_MANAGER>/pnpm/g' \
   && find . -name '*.bak' -delete
 ```
 
@@ -400,6 +402,7 @@ $repl = @{
   '<REPO_SLUG>'           = 'you/acme'
   '<DEFAULT_BRANCH>'      = 'main'
   '<PROJECT_PKG_PREFIX>'  = '@acme'
+  '<PACKAGE_MANAGER>'     = 'pnpm'
 }
 Get-ChildItem -Recurse -File .\skills, .\.claude, .\plan, .\agents.md, .\scripts, .\.env.example, .\data -ErrorAction SilentlyContinue |
   ForEach-Object {
