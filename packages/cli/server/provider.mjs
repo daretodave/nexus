@@ -23,6 +23,12 @@
 //                                the cockpit goes through the live query's
 //                                setModel / applyFlagSettings({ effortLevel })
 //                                and is kept if the conversation resumes
+//   additionalDirectories,       a session's allowed directories are its cwd
+//   settings                     and (spec 52, A2) its server's checkout root,
+//                                when cwd is a worktree of it; the settings
+//                                block's blockReadsOutsideWorkingDirectories
+//                                refuses a read outside both, in every mode
+//                                (even bypassPermissions), unlike permissionMode
 // Subagent traffic (parent_tool_use_id) is kept: it is what the stage draws.
 // Stop: interrupt() first so the turn's result still arrives, close() after
 // a 1500 ms grace.
@@ -95,6 +101,8 @@ async function loadSdk() {
 /**
  * @param {object} o
  * @param {string} o.repo
+ * @param {string[]} [o.additionalDirectories]  directories beyond `repo` (cwd) the session may also read/write — its
+ *                                               main checkout root, when `repo` is a worktree of it
  * @param {(msg: object) => void} o.onMessage
  * @param {(ask: {id, agent, questions}) => Promise<Record<string,string>>} o.onAsk
  * @param {(req: {id, agent, tool, input, suggestions}) => Promise<{allow: boolean, always?: boolean}>} o.onPermission
@@ -111,7 +119,7 @@ export async function createProvider(o) {
   return sdk ? sdkProvider(sdk, o) : cliProvider(o);
 }
 
-export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', model = () => '', effort = () => '', onModels = null, env = () => ({}), resume: seed = null }) {
+export function sdkProvider(sdk, { repo, additionalDirectories = [], onMessage, onAsk, onPermission, onStatus, permissionMode = () => 'default', model = () => '', effort = () => '', onModels = null, env = () => ({}), resume: seed = null }) {
   let session = null;
   let lastSessionId = seed;
   // The mode this conversation started in: a resume keeps it, a new conversation reads the pref again.
@@ -141,6 +149,8 @@ export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatu
       prompt: queue,
       options: {
         cwd: repo,
+        additionalDirectories,
+        settings: { permissions: { blockReadsOutsideWorkingDirectories: true } },
         settingSources: ['project'],
         includePartialMessages: true,
         ...modeOptions(mode),
@@ -240,7 +250,7 @@ export function sdkProvider(sdk, { repo, onMessage, onAsk, onPermission, onStatu
  * CLI, and AskUserQuestion cannot be answered live (questions belong in the
  * oversight queue anyway).
  */
-function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'default', model = () => '', env = () => ({}), resume: seed = null }) {
+function cliProvider({ repo, additionalDirectories = [], onMessage, onStatus, permissionMode = () => 'default', model = () => '', env = () => ({}), resume: seed = null }) {
   let child = null;
   let lastSessionId = seed;
   let mode = null;
@@ -250,7 +260,7 @@ function cliProvider({ repo, onMessage, onStatus, permissionMode = () => 'defaul
     if (!lastSessionId || !mode) mode = permissionModeOf(permissionMode());
     // The fallback takes the model at start only (a listed id: shared/models.mjs); it cannot switch mid-session.
     if (!lastSessionId || !chosen) chosen = { model: model() || '', effort: '' };
-    const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages', ...modeArgs(mode)];
+    const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages', ...modeArgs(mode), ...additionalDirectories.flatMap((d) => ['--add-dir', d])];
     if (chosen.model) args.push('--model', chosen.model);
     if (lastSessionId) args.push('--resume', lastSessionId);
     const c = process.platform === 'win32'

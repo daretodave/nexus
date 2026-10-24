@@ -181,7 +181,7 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   async function host({ id, name = '', cwd, place = {}, listed = false, resume = null, form = null, onResumeLost = null, sent = 0 }) {
     let made = null;
     const s = await createSession({
-      id, name, cwd, place, listed, resume, form, onResumeLost, sent,
+      id, name, cwd, place, listed, resume, form, onResumeLost, sent, repoRoot: repo,
       // Its Claude Code session, kept in its ledger the moment it is known, so a later nexus resumes this conversation.
       onClaude: (c) => { if (made?.listed ?? listed) noteLedger(id, { claude: c, cwd: made?.cwd || cwd }); },
       env: async () => ({ NEXUS_SESSION: id, NEXUS_GH_LOGIN: await login() }),

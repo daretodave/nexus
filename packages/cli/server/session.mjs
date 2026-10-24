@@ -29,6 +29,7 @@ import { messageContent, withFiles } from '../shared/attachments.mjs';
  * @param {string} o.id               claims session and ledger id (NEXUS_SESSION)
  * @param {string} [o.name]           star name
  * @param {string} o.cwd              where the session works (its worktree, or the repo)
+ * @param {string} [o.repoRoot]       the server's own checkout root, for a session whose `cwd` is a worktree of it
  * @param {object} [o.place]          { worktree, branch } when the server opened one for it
  * @param {() => Promise<object>} [o.env]  extra environment, resolved before the first prompt
  * @param {object|function} [o.provider]   a provider, or a factory given the hooks (tests)
@@ -44,7 +45,7 @@ import { messageContent, withFiles } from '../shared/attachments.mjs';
  * @param {object} [o.form]          a worktree still forming (shared/forming.mjs): no provider yet, and what is sent
  *                                   waits until formed({ cwd }) (POST /api/sessions answers before git has made it)
  */
-export async function createSession({ id, name = '', cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', model = () => '', effort = () => '', onModel = null, onModels = null, onClaude = null, onResumeLost = null, listed = false, resume = null, sent: sentBefore = 0, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
+export async function createSession({ id, name = '', cwd, repoRoot = cwd, place = {}, env = async () => ({}), provider: injected, permissionMode = () => 'default', model = () => '', effort = () => '', onModel = null, onModels = null, onClaude = null, onResumeLost = null, listed = false, resume = null, sent: sentBefore = 0, now = () => Date.now(), askDefaultMs = ASK_DEFAULT_MS, mask = null, form: startForm = null }) {
   const hub = createHub({ mask });
   const asks = new Map();
   const permissions = new Map();
@@ -147,6 +148,9 @@ export async function createSession({ id, name = '', cwd, place = {}, env = asyn
 
   const hooks = {
     repo: cwd,
+    // A session whose cwd is a worktree of the server's own checkout also gets that checkout root (spec 52, A2): its
+    // file-tool access is bounded to the two, never the CLI's own install folder or anything else on disk.
+    additionalDirectories: repoRoot !== cwd ? [repoRoot] : [],
     session: id,
     env: () => extraEnv || {},
     onMessage,
