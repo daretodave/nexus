@@ -11,13 +11,12 @@ from the base just fetched, never in the primary checkout:
 
 ```bash
 git fetch origin
-base=$(git rev-parse origin/main)
 # owner: detached, so settle may run there and HEAD pushes to main
-git worktree add --detach ../nexus-wt/<id> "$base"
+node scripts/worktree.mjs cut ../nexus-wt/<id> --ref origin/main
 # contributor: a branch the pull request comes from
-git worktree add -b next/<id> ../nexus-wt/<id> "$base"
+node scripts/worktree.mjs cut ../nexus-wt/<id> --ref origin/main --branch next/<id>
 # a /heads-down package: one branch for the whole package
-git worktree add -b pkg/<slug> ../nexus-wt/pkg-<slug> "$base"
+node scripts/worktree.mjs cut ../nexus-wt/pkg-<slug> --ref origin/main --branch pkg/<slug>
 ```
 
 - Install dependencies in the worktree if the gate needs them.

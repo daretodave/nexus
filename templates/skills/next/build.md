@@ -11,13 +11,12 @@ from the base just fetched, never in the primary checkout:
 
 ```bash
 git fetch origin
-base=$(git rev-parse origin/<DEFAULT_BRANCH>)
 # owner: detached, so settle may run there and HEAD pushes to main
-git worktree add --detach ../<PROJECT_LOWER>-wt/<id> "$base"
+node scripts/worktree.mjs cut ../<PROJECT_LOWER>-wt/<id> --ref origin/<DEFAULT_BRANCH>
 # contributor: a branch the pull request comes from
-git worktree add -b next/<id> ../<PROJECT_LOWER>-wt/<id> "$base"
+node scripts/worktree.mjs cut ../<PROJECT_LOWER>-wt/<id> --ref origin/<DEFAULT_BRANCH> --branch next/<id>
 # a /heads-down package: one branch for the whole package
-git worktree add -b pkg/<slug> ../<PROJECT_LOWER>-wt/pkg-<slug> "$base"
+node scripts/worktree.mjs cut ../<PROJECT_LOWER>-wt/pkg-<slug> --ref origin/<DEFAULT_BRANCH> --branch pkg/<slug>
 ```
 
 - Install dependencies in the worktree if the gate needs them.
