@@ -2343,6 +2343,49 @@ unchanged and still accurate; no fresh sweep run.
   the `/bootstrap` row (which already says "propagating
   secrets").
 
+### [E, 2.1] bash-only syntax ($(...), heredocs, && chaining) survives in skills/ and templates/skills/ outside 52.3's scope
+- category: adopter friction
+- impact: 3, ease: 7
+- evidence: 52.3 added a dualshell-syntax lint (`scripts/verify.mjs`
+  leg `dualshell`, constant `SYNTAX_SCOPED_SKILLS`) scoped to the
+  five git-procedure skills the 52 spec's "Skills run in PowerShell"
+  bullet names (`skills/next/build.md`, `skills/next/land.md`,
+  `skills/next.md`, `skills/plot.md`, `skills/tidy.md`, and their
+  `templates/skills/` twins) — deliberately not the rest of `skills/`
+  (`plan/52-fresh-repo-onboarding.md` chunk 52.3's own scoping note).
+  Grepping every other skill's ```bash fences for the same bash-only
+  shapes (`$(...)`, backtick substitution, a bare `VAR=value`
+  assignment, `&&`/`||` one-liner chaining, a `<<` heredoc) finds real
+  hits outside that scope: `skills/critique.md:5`
+  (`scratch=$(mktemp -d)`), `skills/heads-down.md:2` (`git fetch
+  origin && git show origin/main:plan/README.md`),
+  `skills/iterate.md:6` and `skills/ship-a-chunk.md:27` (`git add
+  <explicit> && git commit`), `skills/lessons-pr.md:1` (`git commit -m
+  "$(cat <<'EOF' ...)"`, a heredoc inside a substitution),
+  `skills/march.md:3-13` (`urgent=$(gh issue list ...)`,
+  `unlabeled=$(gh issue list ...)`), `skills/reboot-ready.md:12`
+  (`git stash create && git update-ref ...`), `skills/ship-a-chunk.md:2`
+  (`issue_body=$(mktemp)`). Their `templates/skills/` twins carry the
+  same shapes plus more: `bootstrap.md`, `moderate.md`,
+  `reboot-ready.md`, `ship-migration.md` (an `&&`-chained `git add
+  ... && git commit` line), `critique.md`, `expand.md`, `oversight.md`,
+  `plan-a-spec.md`, `ship-a-chunk.md` (each a `git commit -m "$(cat
+  <<'EOF' ... )"` heredoc-in-substitution), and `march.md`/`triage.md`
+  (`export GH_TOKEN=$(awk ...)`, `export GH_REPO=$(awk ...)`). None of
+  these are `/plot` or `/next` steps — they're mktemp scratch files, PR
+  issue bodies and `gh` reads unrelated to the worktree-cutting
+  incident 52 fixes — so widening the new lint's file list to them, as
+  this chunk's build prompt weighed and rejected, would have forced
+  rewriting all of it in one M chunk.
+- next: a follow-up chunk either rewrites each shape (mktemp → a small
+  node temp-file helper; `gh issue list ... --jq` → a small node
+  script; the heredoc commit-message pattern → a node script that
+  writes the message to a temp file and passes `git commit -F`) or,
+  cheaper, adds `<!-- dualshell:posix-only -->` above fences with no
+  PowerShell equivalent worth building, then widens
+  `SYNTAX_SCOPED_SKILLS` (`scripts/verify.mjs`) to all of `skills/` +
+  `templates/skills/` once they're clean.
+
 
 ## Done
 
