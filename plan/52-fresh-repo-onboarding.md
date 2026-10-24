@@ -51,7 +51,6 @@ tool-name column, and those tools fell back to a generic icon.
 
 ## Acceptance
 
-- **A2** A hosted session's allowed directories are its repo and its worktree root; a read outside them asks even in Allow everything, and the card says why. Checked live against a scratch repo.
 - **A3** `/plot` and `/next` run end to end in a PowerShell session on Windows with no step reported failed when it worked; the docs lint flags bash-only syntax in skills. Checked live: a `/plot` in a scratch repo from a PowerShell session.
 
 ## Open questions
@@ -59,7 +58,6 @@ tool-name column, and those tools fell back to a generic icon.
 (None.)
 
 ## Chunks
-Measure: 2 open · 2 closed · next A5
+Measure: 1 open · 3 closed · next A5
 
-- [ ] **52.2** A session stays inside its repo · S · closes A2 · needs —
 - [ ] **52.3** Skills run as written in PowerShell · M · closes A3 · needs —

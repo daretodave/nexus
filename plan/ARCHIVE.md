@@ -189,3 +189,4 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 54.1 · The model and effort are shown, chosen and switched · 6097d2fb..a4383ab0
 - 2026-10-22 · 54 · spec complete: every session shows its model and effort, Settings chooses both for new sessions, the cockpit badge switches a running session, and the helpers' model is named · 59b04d6..54.1
 - 2026-10-23 · 39.7 · Six undocumented placeholders indexed in templates/README.md · 4d27e5de..4d27e5de
+- 2026-10-24 · 52.2 · A hosted session's reads stay inside its repo and worktree · c1af1468..56ca72d0
