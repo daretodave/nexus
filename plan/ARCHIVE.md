@@ -190,3 +190,5 @@ still pending at the move and live on as specs.
 - 2026-10-22 · 54 · spec complete: every session shows its model and effort, Settings chooses both for new sessions, the cockpit badge switches a running session, and the helpers' model is named · 59b04d6..54.1
 - 2026-10-23 · 39.7 · Six undocumented placeholders indexed in templates/README.md · 4d27e5de..4d27e5de
 - 2026-10-24 · 52.2 · A hosted session's reads stay inside its repo and worktree · c1af1468..56ca72d0
+- 2026-10-24 · 52.3 · Worktree-cutting skills call one node command, no shell syntax · 12973574..fc8a1006
+- 2026-10-24 · 52 · spec complete: onboarding adopts before it plots, a hosted session's reads stay inside its repo and worktree, worktree-cutting skills call one node command with no bash-only syntax (a gate now catches it), and tool rows fit their names with more tool icons · 0d33dfe7..fc8a1006
