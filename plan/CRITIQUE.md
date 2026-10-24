@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-10-23
-> Pass count: 29
+> Last pass: 2026-10-24
+> Pass count: 30
 
 `/critique` for this repo is a **dry-run adoption**: a
 fresh-eyes agent follows the README's TL;DR into a scratch
@@ -10,6 +10,57 @@ directory as a would-be adopter and files every friction point
 path, comprehension stumble. See `skills/critique.md`.
 
 ## Pending
+
+### [ ] [HIGH] prompts/adopt.md:107-108 vs playbooks/new-project.md:201,306,542,582,667 — the delegated-agent prompt and the playbook it must follow give contradictory commit instructions
+- category: instruction-drift
+- observation: `prompts/adopt.md` tells the delegating agent to
+  "Follow the matching playbook end-to-end. Do not skip steps"
+  (adopt.md:55) and separately "At the end: produce a single
+  commit titled 'chore: adopt nexus methodology'"
+  (adopt.md:107-108). But `playbooks/new-project.md` — the
+  playbook it is told to follow exactly — gives five separate,
+  named commit instructions along the way: "Commit `bearings.md`
+  separately" (line 201), "Commit the roadmap and the specs"
+  (line 306), "Commit the templates as a single commit: `chore:
+  nexus templates copied`" (line 542), "then commit both specs"
+  (line 582), "Commit `package.json` + `scripts/deploy-check.mjs`
+  + `.env.example`" (line 667). A delegated agent literally
+  obeying "do not skip steps" produces ~5-6 commits with varied
+  messages, not the one commit titled "chore: adopt nexus
+  methodology" that `README.md:177` ("Review what landed") tells
+  the human to look for. Nothing resolves which instruction wins.
+- evidence: prompts/adopt.md:55,107-108; playbooks/new-project.md:201,306,542,582,667
+- suggested fix: either have `adopt.md` explicitly say "ignore
+  the playbook's intermediate commit instructions; squash
+  everything into the one final commit described here," or have
+  the final-commit instruction acknowledge the playbook's commit
+  points and state how they reconcile (e.g. the playbook's
+  intermediate commits are for the manual/human path only; the
+  delegated-agent path stages everything and commits once at the
+  end).
+- source: dry-run
+
+### [ ] [MED] playbooks/new-project.md:864-867 — the Day-1 checklist's design-artifact box doesn't map back to a concrete already-completed step
+- category: ordering
+- observation: the "You're ready when" checklist at
+  playbooks/new-project.md:864-867 requires "At least one design
+  artifact (visual system, design tokens, or a
+  `claude-design.prompt.md` for commissioning one) is either
+  committed or has a written brief." None of the playbook's 11
+  numbered steps walks through producing that artifact — the only
+  earlier touchpoint is step 2's "Visual / tonal defaults"
+  subsection (line 152), which just asks for dark-mode/type/
+  palette intent jotted into `bearings.md`. It is never stated
+  whether that jot satisfies the checklist box, so a stranger
+  ticking through the final checklist hits what reads as a new,
+  unaddressed requirement.
+- evidence: playbooks/new-project.md:152-156,864-867
+- suggested fix: add a one-line cross-reference in step 2 ("this
+  also satisfies the Day-1 checklist's design-artifact box — see
+  `customization/visual-system.md` if you want more than a text
+  brief") so the checklist item maps back to a concrete,
+  already-completed action.
+- source: dry-run
 
 ### [ ] [MED] playbooks/new-project.md:695-711 — step 9's automated `/bootstrap` path can wire a ticking cloud loop before a single `/next` chunk has shipped, contradicting the cloud loop's own precondition
 - category: instruction-drift
