@@ -66,6 +66,11 @@ describe('bootstrap: placeholders', () => {
     assert.equal(fillPlaceholders('<PROJECT> <PROJECT_PKG_PREFIX>', manifest()), 'acme @acme');
   });
 
+  it('fills the package manager from the manifest, pnpm when unset', () => {
+    assert.equal(fillPlaceholders('<PACKAGE_MANAGER> install', manifest({}, { package_manager: 'npm' })), 'npm install');
+    assert.equal(fillPlaceholders('<PACKAGE_MANAGER> install', manifest()), 'pnpm install');
+  });
+
   it("fills pr-resolve.yml's push branch, so it follows a non-main default", () => {
     const yml = fs.readFileSync(path.join(HERE, '..', '..', '.github', 'workflows', 'pr-resolve.yml'), 'utf-8');
     assert.match(yml, /branches: \[<DEFAULT_BRANCH>\]/);

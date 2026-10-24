@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // scripts/install-hooks.mjs — opt-in git hooks for hand commits and pushes.
 //
-// nexus/customization/verify-gate.md's contract is "pnpm verify
+// nexus/customization/verify-gate.md's contract is "the verify gate
 // runs before every commit" — but that only binds the loop (skills
 // run it foreground). A human editing outside the loop has to
 // remember to run it. This writes two hooks:
 //
-//   pre-commit  pnpm verify — nothing else: no network, no
-//               formatting, no auto-fix.
+//   pre-commit  <PACKAGE_MANAGER> verify — nothing else: no network,
+//               no formatting, no auto-fix.
 //   pre-push    scripts/git/push-policy.mjs — a push to main on origin
 //               or upstream from a checkout not in owner mode is refused
 //               (land through a pull request; a fork's main is its
@@ -38,7 +38,7 @@ const MARKER = '# nexus:install-hooks'
 // git finds the same repository and index again.
 const UNSET = 'unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT'
 const HOOKS = {
-  'pre-commit': `pnpm verify
+  'pre-commit': `<PACKAGE_MANAGER> verify
 `,
   'pre-push': `# Owner mode decides how work lands: a push to main on origin or upstream
 # from a checkout without effective owner mode is refused (git passes the

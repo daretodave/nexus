@@ -10,22 +10,42 @@ runs:
     # ───────────────────────────────────────────────────────────
     # Project-specific install. Adjust for your stack.
     # ───────────────────────────────────────────────────────────
+    # This kit's own stack ships with no lockfile (zero deps, no
+    # node_modules) — a project adopting it may not have one yet
+    # either. Detect that first and skip the package-manager setup
+    # / cache / install steps rather than hard-failing the job:
+    # <PACKAGE_MANAGER> install --frozen-lockfile needs a lockfile
+    # to freeze against, and actions/setup-node's cache input
+    # errors when there's nothing to hash.
+    - name: Detect lockfile
+      id: lockfile
+      shell: bash
+      run: |
+        if [ -f pnpm-lock.yaml ] || [ -f package-lock.json ] || [ -f yarn.lock ]; then
+          echo "present=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "present=false" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Set up pnpm
+      if: steps.lockfile.outputs.present == 'true'
       uses: pnpm/action-setup@v4
 
     - name: Set up Node 22
       uses: actions/setup-node@v4
       with:
         node-version: 22
-        cache: pnpm
+        cache: ${{ steps.lockfile.outputs.present == 'true' && '<PACKAGE_MANAGER>' || '' }}
 
     - name: Install dependencies
+      if: steps.lockfile.outputs.present == 'true'
       shell: bash
-      run: pnpm install --frozen-lockfile
+      run: <PACKAGE_MANAGER> install --frozen-lockfile
 
     # If you have a Playwright e2e leg, cache + install browsers.
     # Drop these two steps for projects without e2e.
     - name: Cache Playwright browsers
+      if: steps.lockfile.outputs.present == 'true'
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
@@ -34,5 +54,6 @@ runs:
           playwright-${{ runner.os }}-
 
     - name: Install Playwright browsers (chromium only)
+      if: steps.lockfile.outputs.present == 'true'
       shell: bash
-      run: pnpm --filter "<PROJECT_PKG_PREFIX>/e2e" e2e:install
+      run: <PACKAGE_MANAGER> --filter "<PROJECT_PKG_PREFIX>/e2e" e2e:install

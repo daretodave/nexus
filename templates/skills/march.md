@@ -124,7 +124,7 @@ Dispatch to `/critique` if **all three** hold:
    OR `Last pass` > **24 hours ago**, OR `Last pass` is "never"
    and at least one substantive spec (e.g., the canonical
    sibling) has archive lines in `plan/ARCHIVE.md`.
-2. `pnpm deploy:check` shows a green deploy.
+2. `<PACKAGE_MANAGER> deploy:check` shows a green deploy.
 3. No pending HIGH critique already queued for iterate.
 
 If all three hold:
@@ -247,7 +247,7 @@ plan/CRITIQUE.md                     # critique queue + last-pass metadata
 
 # External signals
 gh issue list ...                    # unlabeled count
-pnpm deploy:check                    # green-deploy condition
+<PACKAGE_MANAGER> deploy:check                    # green-deploy condition
 
 # Skills it dispatches into
 skills/triage.md                     # Step 1 (cheapest)

@@ -237,6 +237,7 @@ script refuses to run if it's tracked). The shape:
     "github_repo": "<PROJECT_LOWER>",
     "visibility": "public",
     "default_branch": "main",
+    "package_manager": "pnpm",
     "description": "<repo description for GitHub homepage>"
   },
   "providers": {
@@ -759,8 +760,10 @@ auth's accessible resources.
   inlines `version:`).
 - **Placeholders in the template march.yml are extensive:**
   `<PROJECT>`, `<PROJECT_PKG_PREFIX>`, `<DEFAULT_BRANCH>`,
-  `<HOSTING_PROVIDER>`, `<HOSTING_URL>`, `<REPO_SLUG>`. The
-  script must resolve every one before committing.
+  `<HOSTING_PROVIDER>`, `<HOSTING_URL>`, `<REPO_SLUG>`,
+  `<PACKAGE_MANAGER>` (default `pnpm`, from
+  `project.package_manager`). The script must resolve every one
+  before committing.
 - **`cloud_loop.daily_ceiling` and `cloud_loop.schedule_cron`
   are not bracket-token placeholders** — they're literal lines
   (`ceiling=12`, `- cron: '...'`) in the workflow YAML.

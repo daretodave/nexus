@@ -204,6 +204,7 @@ After copying, search-and-replace across the new files:
 | `<REPO_SLUG>` | GitHub repo slug | `you/acme` |
 | `<DEFAULT_BRANCH>` | Default branch | `main` |
 | `<PROJECT_PKG_PREFIX>` | Workspace package prefix | `@acme` (or empty if not a monorepo) |
+| `<PACKAGE_MANAGER>` | Package manager CLI | `pnpm` (or `npm`, `yarn`) |
 
 For the full bash and PowerShell one-liners that replace all
 eight in one pass, see

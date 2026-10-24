@@ -52,7 +52,11 @@ function fixture(installer) {
   fs.mkdirSync(path.join(work, 'scripts'), { recursive: true });
   fs.writeFileSync(path.join(work, 'scripts', 'verify.mjs'), gate);
   fs.writeFileSync(path.join(work, 'package.json'), JSON.stringify({ name: 'x', private: true, scripts: { verify: 'node scripts/verify.mjs' } }));
-  fs.copyFileSync(installer, path.join(work, 'scripts', 'install-hooks.mjs'));
+  // The template installer's hook body carries the literal placeholder <PACKAGE_MANAGER> (templates/README.md's
+  // adoption table); an adopter's find-and-replace sweep resolves it before anyone runs this script for real. The
+  // nexus installer has no placeholder (it already says `node scripts/verify.mjs`), so this is a no-op for it.
+  const source = fs.readFileSync(installer, 'utf8').replaceAll('<PACKAGE_MANAGER>', 'pnpm');
+  fs.writeFileSync(path.join(work, 'scripts', 'install-hooks.mjs'), source);
   git(work, 'add', '-A');
   git(work, 'commit', '-q', '--no-verify', '-m', 'seed');
   const res = run(work, 'node', ['scripts/install-hooks.mjs', '--only', 'pre-commit']);

@@ -15,6 +15,7 @@
     "visibility": "public",
     "description": "<one-line description for repo About>",
     "default_branch": "main",
+    "package_manager": "pnpm",
     "topics": ["<topic-1>", "<topic-2>"]
   },
 

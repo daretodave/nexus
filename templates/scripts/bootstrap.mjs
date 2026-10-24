@@ -569,6 +569,7 @@ export function fillPlaceholders(text, manifest) {
     .replaceAll('<PROJECT>', manifest.project.name)
     .replaceAll('<DEFAULT_BRANCH>', manifest.project.default_branch ?? 'main')
     .replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`)
+    .replaceAll('<PACKAGE_MANAGER>', manifest.project.package_manager ?? 'pnpm')
 }
 
 // The nexus checkout bootstrap copies templates from.
@@ -914,7 +915,9 @@ async function execCloudLoop(a, state, manifest) {
       log.info(`kept your ${SETUP_ACTION_PATH}`)
     } else if (fs.existsSync(action)) {
       fs.mkdirSync(path.dirname(SETUP_ACTION_PATH), { recursive: true })
-      fs.writeFileSync(SETUP_ACTION_PATH, fs.readFileSync(action, 'utf-8').replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`))
+      fs.writeFileSync(SETUP_ACTION_PATH, fs.readFileSync(action, 'utf-8')
+        .replaceAll('<PROJECT_PKG_PREFIX>', `@${manifest.project.name}`)
+        .replaceAll('<PACKAGE_MANAGER>', manifest.project.package_manager ?? 'pnpm'))
       log.ok(`wrote ${SETUP_ACTION_PATH} (adjust its install steps to your stack)`)
     } else {
       log.warn(`no ${action}: copy nexus/templates/.github/actions/setup/action.yml to ${SETUP_ACTION_PATH}`)
