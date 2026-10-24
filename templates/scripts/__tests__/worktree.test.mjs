@@ -64,6 +64,31 @@ afterEach(() => {
 });
 
 describe('worktree.mjs', () => {
+  it('cuts a worktree on a new branch at the resolved ref, no shell assignment needed', () => {
+    const target = path.join(dir, 'wt-cut');
+    const sha = git(repo, 'rev-parse', 'main');
+    const res = run(['cut', target, '--ref', 'main', '--branch', 'next/09.1']);
+    assert.equal(res.code, 0, res.err);
+    assert.match(res.out, new RegExp(`cut from main \\(${sha.slice(0, 10)}\\) on branch next/09\\.1`));
+    assert.equal(git(target, 'rev-parse', 'HEAD'), sha);
+    assert.ok(branchExists('next/09.1'));
+  });
+
+  it('cuts a detached worktree when no branch is given', () => {
+    const target = path.join(dir, 'wt-cut-detached');
+    const res = run(['cut', target, '--ref', 'main']);
+    assert.equal(res.code, 0, res.err);
+    assert.match(res.out, /detached\r?\n$/);
+    assert.equal(git(target, 'rev-parse', '--abbrev-ref', 'HEAD'), 'HEAD');
+  });
+
+  it('refuses a ref that does not resolve, and a missing --ref', () => {
+    const bad = run(['cut', path.join(dir, 'wt-nope'), '--ref', 'not-a-ref']);
+    assert.equal(bad.code, 1);
+    assert.match(bad.err, /not-a-ref: doesn't resolve/);
+    assert.equal(run(['cut', path.join(dir, 'wt-nope')]).code, 2);
+  });
+
   it('parses the porcelain listing, the main checkout first', () => {
     const rows = parseWorktrees('worktree /r\nHEAD abc\nbranch refs/heads/main\n\nworktree /r-wt/7\nHEAD def\ndetached\nlocked by pid 9\n');
     assert.deepEqual(rows.map((r) => [r.path, r.branch, r.locked]), [['/r', 'main', false], ['/r-wt/7', undefined, true]]);

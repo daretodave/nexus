@@ -1,4 +1,4 @@
-// scripts/worktree.mjs: close a linked git worktree without reaching past it, and list them for /tidy.
+// scripts/worktree.mjs: cut a worktree in one step, close a linked one without reaching past it, and list them for /tidy.
 //
 // Every build runs in its own worktree, so worktrees pile up, and closing one is where work gets lost. git for Windows
 // follows a junction when it deletes a worktree: a plain `git worktree remove` has deleted the file behind a junction to
@@ -6,6 +6,9 @@
 // recursing until "Filename too long". It also stops at its first failure after it has already unregistered the
 // worktree, leaving the rest on disk. So a worktree closes only through this script (the guard hook refuses a bare
 // `git worktree remove`):
+//   - `cut` resolves a base ref to a sha, then adds the worktree there — detached, or on a new branch when `--branch`
+//     is given — in one node call: the multi-step `base=$(git rev-parse …)` a shell needs (bash/POSIX-only syntax a
+//     PowerShell session can't run as written) collapses to a command a skill can show once and any shell can run.
 //   - `close` refuses the main checkout, a locked worktree, the folder this shell stands in, and one holding work git
 //     doesn't (uncommitted or untracked files);
 //   - it unlinks every link in the worktree first (an unlink never touches what a link points at), lets git remove it,
@@ -15,18 +18,20 @@
 //     (`safe` to close, `holds work`, `locked`), so /tidy can offer the safe ones in one question. A locked one's
 //     reason naming a pid says whether that pid still lives (a dead one is a stale lock: `git worktree unlock` it).
 //
+//   node scripts/worktree.mjs cut <path> --ref <ref> [--branch <name>] [--repo <checkout>]
 //   node scripts/worktree.mjs close <path> [<path> …] [--repo <checkout>]
 //   node scripts/worktree.mjs list [--json] [--repo <checkout>]
 //
 // --repo is a checkout of the repository (by default the one holding this script). Exits 1 when a path isn't a linked
-// worktree of it, is refused, or is still there after the close. NEXUS_MAIN_BRANCH names main (default `main`).
+// worktree of it, is refused, or is still there after the close — or, for `cut`, the ref doesn't resolve or the add
+// fails. NEXUS_MAIN_BRANCH names main (default `main`).
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const MAIN = process.env.NEXUS_MAIN_BRANCH || 'main';
-const USAGE = 'usage: node scripts/worktree.mjs close <path> [<path> …] [--repo <checkout>]\n       node scripts/worktree.mjs list [--json] [--repo <checkout>]';
+const USAGE = 'usage: node scripts/worktree.mjs cut <path> --ref <ref> [--branch <name>] [--repo <checkout>]\n       node scripts/worktree.mjs close <path> [<path> …] [--repo <checkout>]\n       node scripts/worktree.mjs list [--json] [--repo <checkout>]';
 
 function git(cwd, ...args) {
   const res = spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
@@ -139,6 +144,20 @@ export function survey(repo) {
   });
 }
 
+/**
+ * Resolves `ref` to a sha in `repo`, then adds a worktree at `targetPath` there — detached, or on a new branch when
+ * `branch` is given — in one call. Replaces a shell's `base=$(git rev-parse <ref>)` followed by a bare
+ * `git worktree add ... "$base"`: one node invocation a PowerShell session runs the same as a bash one.
+ */
+export function cut(repo, targetPath, { ref, branch } = {}) {
+  const resolved = git(repo, 'rev-parse', ref);
+  if (!resolved.ok) throw new Error(`${ref}: doesn't resolve in ${repo} (${resolved.err})`);
+  const sha = resolved.out;
+  const added = git(repo, 'worktree', 'add', ...(branch ? ['-b', branch] : ['--detach']), targetPath, sha);
+  if (!added.ok) throw new Error(`git worktree add ${targetPath} ${sha}: ${added.err}`);
+  return { sha, path: targetPath, branch: branch ?? null };
+}
+
 /** Closes one worktree and says what it did, step by step; throws when it refuses or fails. */
 export function close(target, repo) {
   const all = worktrees(repo);
@@ -207,14 +226,31 @@ const lockNote = (r) => (!r.locked ? '' : /initializ/i.test(r.lockReason || '') 
 export function main(argv,{ out = console.log, err = console.error } = {}) {
   const [cmd, ...rest] = argv;
   let repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  let ref = null;
+  let branch = null;
   const targets = [];
   let bad = false;
   let json = false;
   for (let i = 0; i < rest.length; i++) {
     if (rest[i] === '--json') json = true;
-    else if (rest[i] !== '--repo') targets.push(rest[i]);
-    else if (rest[i + 1] === undefined) bad = true;
-    else repo = path.resolve(rest[++i]);
+    else if (rest[i] === '--repo') { if (rest[i + 1] === undefined) bad = true; else repo = path.resolve(rest[++i]); }
+    else if (rest[i] === '--ref') { if (rest[i + 1] === undefined) bad = true; else ref = rest[++i]; }
+    else if (rest[i] === '--branch') { if (rest[i + 1] === undefined) bad = true; else branch = rest[++i]; }
+    else targets.push(rest[i]);
+  }
+  if (cmd === 'cut') {
+    if (bad || targets.length !== 1 || !ref) {
+      err(USAGE);
+      return 2;
+    }
+    try {
+      const r = cut(repo, path.resolve(targets[0]), { ref, branch });
+      out(`${r.path}: cut from ${ref} (${r.sha.slice(0, 10)})${r.branch ? ` on branch ${r.branch}` : ' detached'}`);
+      return 0;
+    } catch (e) {
+      err(e instanceof Error ? e.message : String(e));
+      return 1;
+    }
   }
   if (cmd === 'list' && !bad && !targets.length) {
     const rows = survey(repo);
