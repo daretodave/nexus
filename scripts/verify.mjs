@@ -569,6 +569,84 @@ function legDualshell(files) {
   return { failures, note: `${checked} posix-leaning bash blocks checked` }
 }
 
+// --- leg: dualshell, syntax half ---------------------------------------------
+// The check above catches POSIX-only *tool names*. It misses bash-only
+// *syntax* — $(...) and backtick command substitution, a bare VAR=value
+// assignment, && / || one-liner chaining, a heredoc, [[ ... ]] — none of
+// which parse in PowerShell even when every tool named is cross-platform.
+// This is the 52.3 incident: a worktree-cutting step shaped as
+// `base=$(git rev-parse ...)` followed by `git worktree add ... "$base"`
+// never runs as written in a PowerShell session.
+//
+// Scoped deliberately to the git-procedure skills the "Skills run in
+// PowerShell" design bullet names (plan/52-fresh-repo-onboarding.md) —
+// /plot, /next's build and land, and the worktree steps they share — not
+// every skill. Several other skills (critique, iterate, ship-a-chunk,
+// march, reboot-ready, lessons-pr) lean on the same bash-only shapes for
+// unrelated things (mktemp, `gh issue list`, a heredoc PR body); widening
+// this list to all of skills/ would force fixing those too, well past
+// what this chunk carries. See plan/AUDIT.md for that row.
+const SYNTAX_SCOPED_SKILLS = new Set([
+  'skills/next/build.md', 'skills/next/land.md', 'skills/next.md', 'skills/plot.md', 'skills/tidy.md',
+  'templates/skills/next/build.md', 'templates/skills/next/land.md', 'templates/skills/next.md',
+  'templates/skills/plot.md', 'templates/skills/tidy.md',
+])
+
+const SYNTAX_CHECKS = [
+  [/\$\(/, 'a $(...) command substitution'],
+  [/`[^`]*`/, 'a backtick command substitution'],
+  [/^\s*[A-Za-z_][A-Za-z0-9_]*=[^=\s]/, 'a bare VAR=value shell assignment'],
+  [/(^|\s)(&&|\|\|)(\s|$)/, '&&/|| one-liner chaining'],
+  [/<<[-~]?['"]?\w/, 'a heredoc'],
+  [/\[\[/, 'a [[ ... ]] test'],
+]
+
+function syntaxViolation(line) {
+  for (const [re, label] of SYNTAX_CHECKS) {
+    if (re.test(line)) return label
+  }
+  return null
+}
+
+/** Every line inside a ```bash fence, 1-indexed, skipping a fence marked `<!-- dualshell:posix-only -->`. */
+function bashFenceLines(text) {
+  const lines = text.split(/\r?\n/)
+  const out = []
+  let inFence = false
+  let marked = false
+  lines.forEach((line, i) => {
+    if (/^```bash/.test(line)) {
+      inFence = true
+      marked = (lines[i - 1] || '').trim() === DUALSHELL_MARKER
+      return
+    }
+    if (inFence && /^```/.test(line)) {
+      inFence = false
+      return
+    }
+    if (inFence && !marked) out.push({ n: i + 1, line })
+  })
+  return out
+}
+
+function legDualshellSyntax(files) {
+  const failures = []
+  const scoped = files.filter((f) => SYNTAX_SCOPED_SKILLS.has(normalize(f)))
+  let checked = 0
+  for (const file of scoped) {
+    for (const { n, line } of bashFenceLines(read(file))) {
+      checked++
+      const bad = syntaxViolation(line)
+      if (bad) {
+        failures.push(
+          `${file}:${n}: ${bad} — bash-only syntax a PowerShell session can't run as written; rewrite the line, or precede the fence with ${DUALSHELL_MARKER} if no PowerShell equivalent applies`,
+        )
+      }
+    }
+  }
+  return { failures, note: `${checked} bash-fence lines in ${scoped.length} scoped skills checked for bash-only syntax` }
+}
+
 // --- leg: chunks ---------------------------------------------------------------
 // The plan shape (concepts/plan-shape.md) is mechanical, so the gate
 // checks it with the same script adopters run. History is checked
@@ -804,7 +882,11 @@ const LEGS = {
   placeholders: (files) => legPlaceholders(files),
   anatomy: () => legAnatomy(),
   emoji: (files) => legEmoji(files),
-  dualshell: (files) => legDualshell(files),
+  dualshell: (files) => {
+    const tools = legDualshell(files)
+    const syntax = legDualshellSyntax(files)
+    return { failures: [...tools.failures, ...syntax.failures], note: `${tools.note}; ${syntax.note}` }
+  },
   chunks: () => legChunks(),
   scripts: () => legScripts(),
   workflows: () => legWorkflows(),
