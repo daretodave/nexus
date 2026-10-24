@@ -47,7 +47,6 @@ would. The chunks below fix them.
 ## Acceptance
 
 - **A9** A library with no deploy host adopts cleanly: agents.md rules 1 and 4 and bearings.md have a "no deploy gate" path.
-- **A10** The package manager is a placeholder end to end (install-hooks, the setup action, the march prompts, settings.json), and the setup action works without a lockfile.
 - **A11** Day one in an agent session works: the settings allowlist covers claims, plan-check and the plan scripts; `claims whoami` explains `NEXUS_NO_HOOK_CHECK`; the placeholder sweep doesn't need to read `.env.example`; existing-actions Step 9 dispatches after enabling.
 - **A12** templates/README says which kit script tests belong in an adopter's gate and what they cost, and the workflows use the Node 24 action majors.
 - **A13** When a close empties a spec, settle absorbs it (spec deleted, its roadmap row gone, a "spec complete" archive line) or stops with the exact steps; it never dies with a stack trace because the commit hook refused.
@@ -60,10 +59,9 @@ would. The chunks below fix them.
 (None.)
 
 ## Chunks
-Measure: 8 open · 8 closed · next A17
+Measure: 7 open · 9 closed · next A17
 
 - [ ] **39.8** A no-deploy-host path in the templates · S · closes A9 · needs —
-- [ ] **39.9** The package manager is a placeholder end to end · M · closes A10 · needs —
 - [ ] **39.10** Day one in an agent session needs no workaround · S · closes A11 · needs —
 - [ ] **39.11** The adopter gate's cost, and actions on Node 24 majors · S · closes A12 · needs —
   - checkout and setup-node v4 warn that they target the deprecated Node 20.

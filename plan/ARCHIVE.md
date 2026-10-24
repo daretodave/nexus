@@ -192,3 +192,4 @@ still pending at the move and live on as specs.
 - 2026-10-24 · 52.2 · A hosted session's reads stay inside its repo and worktree · c1af1468..56ca72d0
 - 2026-10-24 · 52.3 · Worktree-cutting skills call one node command, no shell syntax · 12973574..fc8a1006
 - 2026-10-24 · 52 · spec complete: onboarding adopts before it plots, a hosted session's reads stay inside its repo and worktree, worktree-cutting skills call one node command with no bash-only syntax (a gate now catches it), and tool rows fit their names with more tool icons · 0d33dfe7..fc8a1006
+- 2026-10-24 · 39.9 · Package manager is a placeholder end to end, not hardcoded pnpm · f659b2ca..e0379224
