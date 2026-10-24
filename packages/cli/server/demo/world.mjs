@@ -318,10 +318,12 @@ export function createWorld(scenario, { clock, hub: hubOpts = {} } = {}) {
       // The tile's asking marks (questions: { answered, total }) are the fleet's; the detail carries the ledger's own.
       return { ...clone(s.row), ...clone(s.ledger), id: s.id, name: s.name, kind: s.kind, hosted: s.kind !== 'terminal', questions: Array.isArray(s.ledger.questions) ? clone(s.ledger.questions) : [], tugs: clone(s.ledger.tugs || []), parked: clone(s.ledger.parked || []) };
     },
-    inbox: () => inboxItems({
+    // `kept`: the plan answers kept so far (demo.mjs planStore), so the badge reads them as the live server does.
+    inbox: (kept = {}) => inboxItems({
       hosted: sessions.filter((s) => s.kind !== 'terminal').map((s) => ({ id: s.id, claude: s.ledger.claude || null, name: s.name, asks: [...s.asks.values()], permissions: [] })),
       ledgers: sessions.map((s) => ({ id: s.id, star: s.name, state: 'live', beat: iso(now()), chunk: s.row.chunk?.id || '', parked: s.ledger.parked || [] })),
       durable: fx.durable || [],
+      kept,
       now: now(),
     }),
     asks: () => sessions.flatMap((s) => [...s.asks.values()]),

@@ -44,7 +44,8 @@ import { PlanGroups } from './headsdown-inbox/PlanGroups.jsx';
 import { useOversightAnswers } from './headsdown-inbox/useOversightAnswers.js';
 import { AnswerCard, KeptAnswer } from './oversight/AnswerCard.jsx';
 import { WandBtn } from '../ui/wand.jsx';
-import { choiceId } from '../ui/answer-logic.js';
+import { choiceId, explainId, terseQuestion } from '../ui/answer-logic.js';
+import { Breakout } from './oversight/Breakout.jsx';
 import { readGrillAt, grillLeft } from './grill/model.js';
 import { keyCard } from './vault/model.js';
 import { destLabel } from '../../shared/stack/destinations.mjs';
@@ -329,6 +330,13 @@ export default function Inbox() {
   // keep a selection that exists
   const x = items.find((i) => i.id === sel) || openItems[0] || items[0] || null;
   useEffect(() => { if (x && x.id !== sel) setSel(x.id); }, [x?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A parked or cloud row an agent wrote as shorthand (#87): opening it asks the wand once, for its plain restatement
+  // and choices; the cache answers it after that. Plan questions and live asks wait for a press, as before.
+  useEffect(() => {
+    if (!x || !wandOn || x.src !== 'inbox' || isDone(x) || !terseQuestion(x.q)) return;
+    const id = choiceId(x);
+    if (id && choices.get(id).status === 'idle') askWand(x);
+  }, [x?.id, wandOn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // the top line: "4 open across 3 sessions and the cloud loop"
   const openLine = useMemo(() => {
@@ -406,7 +414,7 @@ export default function Inbox() {
         {r.secret ? <KeyOrb small state={settled ? (d.how === 'set' ? 'set' : 'quiet') : ''} icon="key" /> : <span className={cx('urg', settled ? 'is-done' : KIND_CLS[r.kind])} />}
         {r.kind === 'plan' ? null : <Tag x={r} />}
         <button className="ibx-open" type="button" onClick={() => setSel(r.id)} aria-label={`Open: ${oneLine(r.q)}`}>
-          <span className="ibx-q">{r.secret ? <>{r.chunk} needs <code className="secret-code">{r.secret}</code></> : <Markdown inline text={oneLine(r.q)} />}</span>
+          <span className="ibx-q">{r.secret ? <>{r.chunk} needs <code className="secret-code">{r.secret}</code></> : <Markdown inline text={oneLine(entry?.plain || r.q)} />}</span>
           <span className="ibx-meta">{meta}{metaB ? <b>{metaB}</b> : null}</span>
           {ans}
         </button>
@@ -545,7 +553,7 @@ export default function Inbox() {
                 x={x} d={doneAll[x.id]} items={g.now} done={doneAll} settle={settle} reopen={reopen} ask={x.src === 'ask' ? askBar(x.askId) : null} effect={effect(x)} loopAt={loopAt} repo={shell.repo}
                 keyProps={x.secret ? keys.props({ ...keyCard({ chunk: x.chunk, file: x.raw?.file, toByName: { [x.secret]: x.raw?.secret?.toByName?.[x.secret] || [] } }, x.secret, secretsRes.data), itemId: x.id }) : null} onKeyChange={() => reopen(x)}
                 entry={choiceId(x) ? choices.get(choiceId(x)) : null} onAsk={choiceId(x) && wandOn ? (fresh) => askWand(x, fresh) : null}
-                foot={panelFoot(x)} sessions={sessions}
+                foot={panelFoot(x)} sessions={sessions} breakout={wandOn && !doneAll[x.id] && explainId(x) ? explainId(x) : null}
               />
             ) : null}
           </aside>
@@ -563,7 +571,7 @@ export default function Inbox() {
 }
 
 /** The selected question: a pending tug, an answer card, or the settled one; then its context. */
-function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, keyProps, onKeyChange, entry, onAsk, foot, sessions = [] }) {
+function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, keyProps, onKeyChange, entry, onAsk, foot, sessions = [], breakout = null }) {
   const sess = sessName(x);
   const src = x.src === 'durable' ? `${x.raw.file}:${x.raw.line}` : x.kind === 'cloud'
     ? [`${repo ? `${repo} loop` : 'cloud run'}${x.run ? ` ${x.run}` : ''}`, x.chunk].filter(Boolean).join(' · ')
@@ -630,6 +638,7 @@ function Detail({ x, d, items, done, settle, reopen, ask, effect, loopAt, repo, 
   return (
     <>
       {card}
+      {breakout && !keyProps ? <Breakout key={breakout} id={breakout} /> : null}
       {ask ? <AskSendBar {...ask} /> : null}
       <div className="ibx-ctx">
         <div className="ibx-ctx-row"><span className="k">from</span><span className="v">{from}</span></div>

@@ -26,7 +26,7 @@ export function entryOf(c, error) {
   if (!c) return { ...IDLE, status: 'error', note: error ? `Couldn't get suggestions (${error}).` : "Couldn't get suggestions." };
   const options = Array.isArray(c.options) ? c.options : [];
   const status = c.by === 'ai' || c.by === 'demo' ? 'ready' : options.length ? 'fallback' : 'error';
-  return { status, options, by: c.by || '', note: c.note || '', reason: c.reason || (error ? 'failed' : ''), at: c.at || Date.now() };
+  return { status, options, plain: typeof c.plain === 'string' ? c.plain : '', by: c.by || '', note: c.note || '', reason: c.reason || (error ? 'failed' : ''), at: c.at || Date.now() };
 }
 
 function load() {

@@ -249,6 +249,8 @@ export function fromDurable(rows = []) {
       why: '',
       hasDefault: !!def,
       freeText: true,
+      // An answer kept for it (server/fleet-home.mjs inboxItems): the badge stops counting it.
+      settled: d.settled || null,
       raw: d,
     }];
   });

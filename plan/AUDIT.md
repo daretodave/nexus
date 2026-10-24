@@ -2237,78 +2237,6 @@ unchanged and still accurate; no fresh sweep run.
 
 ## Pending
 
-### [user-issue #88] [MED] fleet worktree creation can collide with a stale worktree registration ("already used by worktree")
-- category: external-issue
-- impact: 6, ease: 3
-- evidence: reporter's screenshot shows `git worktree add` failing
-  with `fatal: 'nexus/polaris-1' is already used by worktree at
-  'C:/Users/notrb/Workspace/.claude/mood-read/polaris-1'` while
-  starting a session in a different project. Traced the GUI's
-  worktree-creation path: `planPlace()`
-  (`packages/cli/server/fleet.mjs:118-139`) picks the next free
-  `n` by checking only that the candidate folder doesn't exist
-  (`fs.existsSync`) and that `refs/heads/nexus/<name>-<n>` isn't
-  already a branch in *this* repo — it never cross-checks the
-  candidate branch name against `git worktree list`'s
-  administrative entries. `formPlace()`
-  (`packages/cli/server/fleet.mjs:148-176`) only runs `git
-  worktree prune` when the *candidate's own* folder is missing,
-  not when some other, unrelated administrative worktree entry
-  still claims the same branch name. Git's own "already used by
-  worktree" error fires from that stale administrative record,
-  independent of whether the branch ref itself still exists —
-  exactly the footgun `skills/reboot-resume.md:60-66` already
-  documents and routes around for reboot/resume (`git worktree
-  prune` before re-adding), but that workaround only runs on the
-  resume path, not on ordinary new-session creation. A branch
-  getting deleted (or its worktree folder moved/renamed, as the
-  screenshot's `mood-read` vs. current-project mismatch suggests)
-  without a `git worktree remove`/`prune` in between would leave
-  exactly this kind of orphaned registration behind. Hypothesis,
-  not yet reproduced locally — no access to the reporter's
-  machine or a second project sharing a `.git`.
-- next: have `formPlace` (or `planPlace`, before returning a
-  candidate) run `git worktree prune` unconditionally before the
-  existence/ref checks, not only in the "candidate folder
-  missing" branch — cheap and idempotent, and it would absorb
-  this exact class without needing the deeper "why did the old
-  registration survive" root cause. Confirm with a repro: `git
-  worktree add` a folder, delete the folder without `remove`, and
-  try `planPlace`/`formPlace` again for the same name.
-
-### [user-issue #86] [MED] oversight's "needs attention" badge doesn't decrement after all questions are answered and sent
-- category: external-issue
-- impact: 6, ease: 4
-- evidence: reporter answered all 7 pending oversight questions
-  and sent them, but the GUI's notification count never went
-  down. Traced the badge logic: `packages/cli/src/App.jsx:129-131`
-  computes it from `useInbox()`'s `GET /api/inbox` poll (every
-  5s, `packages/cli/src/data/hooks.js:142`), which merges live
-  asks/permissions with `planQuestions()` →
-  `repoMod.durableQuestions(repo)`
-  (`packages/cli/server/repo.mjs:208-253`) — a fresh regex scan
-  of `plan/**/*.md` on every call, with no "answered" state of
-  its own. A row only drops out once `settledItem()`
-  (`repo.mjs:228-233`) sees it struck, `[x]`, or replaced with
-  "Settled/Decided/Answered/Resolved/Done/None" text in the
-  markdown. But the GUI's "Send" action
-  (`server.continueAnswers` → `POST /api/oversight/answer`) only
-  delivers the kept answers as one chat message to a target
-  session — it never itself edits the plan file. So "answered
-  and sent" in the UI means "delivered to a session's inbox,"
-  not "resolved in the plan": if that session is idle, busy, or
-  just hasn't acted on the message yet, the `[needs-user-call]`/
-  Open-questions rows stay unstruck and the badge keeps counting
-  them on every 5s poll, even though the user did everything the
-  UI asked of them.
-- next: close the state gap between "sent" and "resolved" —
-  either have the badge (or the answered item itself) show a
-  distinct "sent, awaiting session" state instead of counting it
-  as still-open, or have `continueAnswers` optimistically mark
-  the row settled in the GUI's local view until the plan file
-  catches up. Needs a GUI-side fix in `packages/cli`; no spec
-  currently owns oversight's inbox/badge plumbing.
-
 ### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
 - category: external-issue
 - impact: 4, ease: 2
@@ -2417,6 +2345,92 @@ unchanged and still accurate; no fresh sweep run.
 
 
 ## Done
+
+### [x] [user-issue #88] [MED] fleet worktree creation can collide with a stale worktree registration ("already used by worktree") — cli 0.5.3
+- category: external-issue
+- impact: 6, ease: 3
+- evidence: reporter's screenshot shows `git worktree add` failing
+  with `fatal: 'nexus/polaris-1' is already used by worktree at
+  'C:/Users/notrb/Workspace/.claude/mood-read/polaris-1'` while
+  starting a session in a different project. Traced the GUI's
+  worktree-creation path: `planPlace()`
+  (`packages/cli/server/fleet.mjs:118-139`) picks the next free
+  `n` by checking only that the candidate folder doesn't exist
+  (`fs.existsSync`) and that `refs/heads/nexus/<name>-<n>` isn't
+  already a branch in *this* repo — it never cross-checks the
+  candidate branch name against `git worktree list`'s
+  administrative entries. `formPlace()`
+  (`packages/cli/server/fleet.mjs:148-176`) only runs `git
+  worktree prune` when the *candidate's own* folder is missing,
+  not when some other, unrelated administrative worktree entry
+  still claims the same branch name. Git's own "already used by
+  worktree" error fires from that stale administrative record,
+  independent of whether the branch ref itself still exists —
+  exactly the footgun `skills/reboot-resume.md:60-66` already
+  documents and routes around for reboot/resume (`git worktree
+  prune` before re-adding), but that workaround only runs on the
+  resume path, not on ordinary new-session creation. A branch
+  getting deleted (or its worktree folder moved/renamed, as the
+  screenshot's `mood-read` vs. current-project mismatch suggests)
+  without a `git worktree remove`/`prune` in between would leave
+  exactly this kind of orphaned registration behind. Hypothesis,
+  not yet reproduced locally — no access to the reporter's
+  machine or a second project sharing a `.git`.
+- next: have `formPlace` (or `planPlace`, before returning a
+  candidate) run `git worktree prune` unconditionally before the
+  existence/ref checks, not only in the "candidate folder
+  missing" branch — cheap and idempotent, and it would absorb
+  this exact class without needing the deeper "why did the old
+  registration survive" root cause. Confirm with a repro: `git
+  worktree add` a folder, delete the folder without `remove`, and
+  try `planPlace`/`formPlace` again for the same name.
+- fix: cli 0.5.3. Reproduced the real path: a GUI session's ledger `worktree`
+  is rewritten to a chunk worktree by `ledger.mjs beat --set worktree=`
+  (skills/next/build.md); once that chunk lands and its folder goes, a
+  pick-up re-adds the session branch there, and git refuses because the
+  branch is still checked out at the session's live home. `formPlace`
+  (`packages/cli/server/fleet.mjs`) now prunes unconditionally and, when
+  the branch is already checked out in a folder that exists
+  (`branchHome`), works there (`moved`) instead; the server points the
+  session and its ledger at it. Test: `test/repair.test.mjs` (#88).
+
+### [x] [user-issue #86] [MED] oversight's "needs attention" badge doesn't decrement after all questions are answered and sent — cli 0.5.3
+- category: external-issue
+- impact: 6, ease: 4
+- evidence: reporter answered all 7 pending oversight questions
+  and sent them, but the GUI's notification count never went
+  down. Traced the badge logic: `packages/cli/src/App.jsx:129-131`
+  computes it from `useInbox()`'s `GET /api/inbox` poll (every
+  5s, `packages/cli/src/data/hooks.js:142`), which merges live
+  asks/permissions with `planQuestions()` →
+  `repoMod.durableQuestions(repo)`
+  (`packages/cli/server/repo.mjs:208-253`) — a fresh regex scan
+  of `plan/**/*.md` on every call, with no "answered" state of
+  its own. A row only drops out once `settledItem()`
+  (`repo.mjs:228-233`) sees it struck, `[x]`, or replaced with
+  "Settled/Decided/Answered/Resolved/Done/None" text in the
+  markdown. But the GUI's "Send" action
+  (`server.continueAnswers` → `POST /api/oversight/answer`) only
+  delivers the kept answers as one chat message to a target
+  session — it never itself edits the plan file. So "answered
+  and sent" in the UI means "delivered to a session's inbox,"
+  not "resolved in the plan": if that session is idle, busy, or
+  just hasn't acted on the message yet, the `[needs-user-call]`/
+  Open-questions rows stay unstruck and the badge keeps counting
+  them on every 5s poll, even though the user did everything the
+  UI asked of them.
+- next: close the state gap between "sent" and "resolved" —
+  either have the badge (or the answered item itself) show a
+  distinct "sent, awaiting session" state instead of counting it
+  as still-open, or have `continueAnswers` optimistically mark
+  the row settled in the GUI's local view until the plan file
+  catches up. Needs a GUI-side fix in `packages/cli`; no spec
+  currently owns oversight's inbox/badge plumbing.
+- fix: cli 0.5.3. Still live past the first CLI: the screen counted kept
+  answers as done, the App badge did not. `GET /api/inbox` now marks a
+  plan question `settled` (`kept` or `sent`) when `.nexus/answers.json`
+  holds an answer for its current words (`inboxItems` `kept`), and the
+  badge and Heads-down skip it. Test: `test/fleet-home.test.mjs` (#86).
 
 ### [x] [A, 4.5] README's Hard Rule #6 claims pre-spec.md is "the one carve-out" outside /oversight+/bootstrap, but skills/lessons-pr.md documents a second, already-shipped one — this commit
 - category: doc-drift

@@ -46,8 +46,8 @@ import { createMask, createSecrets, parseRequest } from './secrets.mjs';
 import { createStack } from './stack.mjs';
 import { readDesign } from './design.mjs';
 import { clearDraftsWith, readDrafts, writeDrafts } from './drafts.mjs';
-import { markPlanAnswersSent, readPlanAnswers, readStoreAt, writePlanAnswers } from './plan-answers.mjs';
-import { createChoices } from './choices.mjs';
+import { markPlanAnswersSent, pruneAnswers, readPlanAnswers, readStoreAt, writePlanAnswers } from './plan-answers.mjs';
+import { createChoices, REFUSED } from './choices.mjs';
 import { specBriefs } from './spec-brief.mjs';
 import { ANSWER_UPLOADS, choiceRefs, choicesWords, imageRefs } from '../shared/choices.mjs';
 import { artifactLink } from '../shared/design-link.mjs';
@@ -122,7 +122,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
     repo,
     questions: () => repoMod.durableQuestions(repo),
     isSecret: (text) => !!parseRequest(text),
-    inboxRows: async () => (await inbox()).filter((r) => r.src === 'inbox'),
+    // Parked and cloud rows for the wand; live asks too, for the breakout alone (choices.mjs resolve).
+    inboxRows: async () => (await inbox()).filter((r) => r.src === 'inbox' || r.src === 'ask'),
     kept: () => readStoreAt(local.primaryRoot(repo)),
     enabled: () => prefs.aiSummaries !== false,
     query: choicesQuery ?? summaryQuery ?? (injected ? false : undefined),
@@ -414,10 +415,12 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
       if (!sessions.has(s.id)) return; // closed while it formed
       if (r.error) { s.setForm(formNext(s.form, { type: 'fail', error: r.error })); return; }
       s.setForm(formNext(s.form, { type: 'ready' }));
-      await s.formed({ cwd: s.place.worktree });
+      // Its branch was already checked out elsewhere (fleet.mjs formPlace `moved`): it works there, and its ledger says so.
+      const place = r.moved ? { ...s.place, worktree: r.moved } : s.place;
+      await s.formed({ cwd: place.worktree, ...(r.moved ? { place } : {}) });
       noteSent(s);
       // What waited went: the ledger's copy of it (a kill while forming) is done with.
-      if (s.listed) noteLedger(s.id, { cwd: s.place.worktree, waiting: undefined });
+      if (s.listed) noteLedger(s.id, { cwd: place.worktree, ...(r.moved ? { worktree: place.worktree } : {}), waiting: undefined });
     })().finally(() => forming.delete(s.id));
     forming.set(s.id, job);
     return job;
@@ -881,7 +884,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
   /** GET /api/inbox: every session's questions, tagged by star, and the plan's. */
   async function inbox() {
     // A secret request carries its chunk and the names still missing; one whose names are all set has left (secrets.mjs).
-    return inboxItems({ hosted: hostedLive(), ledgers: readLedgers(await primaryRoot(repo)), durable: await planQuestions() });
+    const root = await primaryRoot(repo);
+    const durable = await planQuestions();
+    return inboxItems({ hosted: hostedLive(), ledgers: readLedgers(root), durable, kept: pruneAnswers(readStoreAt(root), durable) });
   }
 
   /**
@@ -1160,6 +1165,12 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         // The wand (0.5.1; choices.mjs): GET is the cache alone, POST asks for these ids (one call per spec).
         case 'GET /api/oversight/choices': return send(res, 200, await choices.cached());
         case 'POST /api/oversight/choices': { const b = await body(req); return send(res, 200, await choices.ask(b.ids, { fresh: !!b.fresh })); }
+        // The breakout (0.5.3; choices.mjs explain): a short side conversation about one question, before answering.
+        case 'POST /api/oversight/explain': {
+          const b = await body(req);
+          const r = await choices.explain(b.id, b.messages);
+          return send(res, r.error ? (r.error === REFUSED ? 400 : 503) : 200, r);
+        }
         // Grill me's spec briefs (spec-brief.mjs): read from the spec, no model.
         case 'GET /api/oversight/specs': return send(res, 200, specBriefs(repo, (url.searchParams.get('files') || '').split(',').filter(Boolean)));
         // An image for an answer, uploaded as it is attached, so a draft holds a small reference (uploads.mjs).

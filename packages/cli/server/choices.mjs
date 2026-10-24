@@ -4,7 +4,18 @@
 //   GET  /api/oversight/choices                 -> { choices: { [id]: Choice } }   the cache only, never the model
 //   POST /api/oversight/choices { ids, fresh? } -> { choices: { [id]: Choice }, errors?: { [id]: "plain words" } }
 //
-//   Choice = { options: [{ label, why, rec? }], by: 'ai'|'row'|'none'|'demo', at, note?, reason? }
+//   Choice = { options: [{ label, why, rec? }], plain?, by: 'ai'|'row'|'none'|'demo', at, note?, reason? }
+//
+// `plain` (0.5.3): the question in one or two plain sentences for someone who knows the project but not the chunk it
+// came from: what is being decided and what it changes. A parked row an agent wrote tersely ("01.13 (a) ..., (c) ...")
+// then reads as a question a person can answer.
+//
+//   POST /api/oversight/explain { id, messages: [{ role: 'you'|'claude', text }] } -> { reply } | { error }
+//
+// The breakout (0.5.3, explain below): a short side conversation about one question before answering it. Its first
+// turn (no messages) says briefly what the question asks, what it affects, and the trade-off of each choice shown.
+// Same helper model, same resolve (a secret or unlisted id is refused), no tools, nothing cached: each turn is
+// pressed by a person.
 //
 // An id is a plan question's `file:line` or a parked or cloud row's `inbox:<row id>`. The server resolves each one
 // itself (the plan as it reads now, the inbox as it serves now), so a stale tab never asks about words that changed. A
@@ -41,6 +52,9 @@ const OPEN_CHARS = 6000;
 const AROUND = 15;
 export const REC_WHY = 'What the spec itself recommends.';
 export const REFUSED = 'not a question the wand can answer';
+export const PLAIN_MAX = 320;
+export const EXPLAIN_TURNS = 12;
+const EXPLAIN_CHARS = 2000;
 
 export const SYSTEM = [
   "You draft answer choices for open questions in a software project's plan.",
@@ -48,8 +62,10 @@ export const SYSTEM = [
   `Each has a label (the answer itself, at most ${LABEL_MAX} characters, a decision someone can act on, not a restatement of the question)`,
   `and a why (one plain line, at most ${WHY_MAX} characters, the reason it fits this project).`,
   'If the spec names a recommendation, include it as one choice, worded close to the original, with "rec": true.',
+  `Also give plain: the question restated in one or two plain sentences (at most ${PLAIN_MAX} characters) for someone who knows the project but not this chunk:`,
+  'what is being decided and what the answer changes. Name things, not chunk ids or sub-item letters.',
   'No emoji, no quotes around labels.',
-  'Reply with JSON only: {"<id>": [{"label": "...", "why": "...", "rec": true}]}.',
+  'Reply with JSON only: {"<id>": {"plain": "...", "options": [{"label": "...", "why": "...", "rec": true}]}}.',
 ].join(' ');
 
 // ---- what a fallback says ------------------------------------------------------------------
@@ -95,13 +111,21 @@ function firstObject(text) {
   return null;
 }
 
-/** The model's reply -> { choices: { id: [{ label, why, rec? }] }, errors: { id: words } } for the ids asked. */
+/**
+ * The model's reply -> { choices: { id: [{ label, why, rec? }] }, plain: { id: words }, errors: { id: words } } for the
+ * ids asked. Each id's value is { plain, options } or, as the wand asked before 0.5.3, the options list alone.
+ */
 export function parseReply(text, ids) {
   const j = firstObject(text);
   const choices = {};
+  const plain = {};
   const errors = {};
   for (const id of ids) {
-    const raw = j && typeof j === 'object' ? j[id] : null;
+    const val = j && typeof j === 'object' ? j[id] : null;
+    const whole = val && typeof val === 'object' && !Array.isArray(val);
+    const raw = whole ? val.options : val;
+    const p = whole ? clip(val.plain, PLAIN_MAX) : '';
+    if (p) plain[id] = p;
     const seen = new Set();
     const out = [];
     for (const o of Array.isArray(raw) ? raw : []) {
@@ -115,7 +139,7 @@ export function parseReply(text, ids) {
     if (out.length >= MIN_OPTIONS) choices[id] = out;
     else errors[id] = j ? 'the reply had too few choices' : 'the reply was not readable';
   }
-  return { choices, errors };
+  return { choices, plain, errors };
 }
 
 /**
@@ -189,7 +213,51 @@ export function buildPrompt(group) {
       parts.push('');
     }
   }
-  parts.push(`Return JSON: { ${group.questions.map((q) => `"${q.id}": [...]`).join(', ')} }`);
+  parts.push(`Return JSON: { ${group.questions.map((q) => `"${q.id}": { "plain": "...", "options": [...] }`).join(', ')} }`);
+  return parts.join('\n');
+}
+
+// ---- the breakout ----------------------------------------------------------------------------
+
+export const EXPLAIN_SYSTEM = [
+  "You help a project's owner think through one open question from the project's plan before they answer it.",
+  'They know the project and its plan, but not the chunk or session the question came from.',
+  'Answer in plain prose, short: a few sentences or a short list, never more than about 150 words. No emoji, no headings.',
+  'Say what is actually being decided, what it affects, and the trade-off of each choice, when asked or on the first turn.',
+  'Stay on this question. If something cannot be told from what you were given, say so plainly rather than guess.',
+].join(' ');
+
+/** The first turn's ask, when the person opens a breakout. */
+export const EXPLAIN_FIRST = 'Briefly: what is this question really asking, what will the answer affect, and what is the trade-off of each choice?';
+
+/**
+ * The breakout's prompt: the question, where it sits, the choices shown, then the conversation so far (the last
+ * EXPLAIN_TURNS turns, each clipped) ending on the person's turn. `q` is a resolved question (createChoices resolve).
+ */
+export function buildExplainPrompt(q, { options = [], messages = [], fileText = '' } = {}) {
+  const parts = ['# The question', q.text, ''];
+  if (q.kind === 'plan') {
+    parts.push(q.spec?.n ? `It is an open question in spec ${q.spec.n}${q.spec.title ? `: ${q.spec.title}` : ''} (${q.file}).` : `It is in ${q.file}.`, '');
+    if (q.design) parts.push('## The spec\'s Design', cut(q.design, DESIGN_CHARS), '');
+    if (fileText) parts.push('## Where it sits in the file', '```', around(fileText, q.line), '```', '');
+    if (q.rec) parts.push(`The spec recommends: ${q.rec}`, '');
+  } else {
+    parts.push(q.live
+      ? 'A working session is asking it now and waits for the owner; past its timer it takes the default.'
+      : 'A working session parked it: it took a default and kept going, and waits for the owner to approve or change it.', '');
+    if (q.block) parts.push(`## Its chunk in the plan (${q.chunk})`, cut(q.block, DESIGN_CHARS), '');
+    if (q.assumed) parts.push(`${q.live ? 'Its default' : 'The session assumed'}: ${q.assumed}`, '');
+    if (q.why) parts.push(`Why, in the session's words: ${q.why}`, '');
+  }
+  const shown = options.map((o) => (typeof o === 'string' ? { label: o } : o)).filter((o) => o?.label);
+  if (shown.length) parts.push('## The choices shown to the owner', ...shown.map((o) => `- ${o.label}${o.why ? `: ${o.why}` : ''}`), '');
+  const turns = (Array.isArray(messages) ? messages : [])
+    .filter((m) => m && (m.role === 'you' || m.role === 'claude') && String(m.text || '').trim())
+    .slice(-EXPLAIN_TURNS);
+  if (!turns.length || turns[turns.length - 1].role !== 'you') turns.push({ role: 'you', text: EXPLAIN_FIRST });
+  parts.push('## The conversation');
+  for (const m of turns) parts.push(`${m.role === 'you' ? 'Owner' : 'You'}: ${cut(String(m.text).trim(), EXPLAIN_CHARS)}`);
+  parts.push('', 'Reply to the owner\'s last message.');
   return parts.join('\n');
 }
 
@@ -225,7 +293,7 @@ export const choiceKey = (id, text, context) => sha(`${id}\n${textHash(text)}\n$
 // ---- the model call --------------------------------------------------------------------------
 
 /** One model call. -> { text, cost, error? } */
-export async function callModel(prompt, { query, repo, signal, model = SUMMARY_MODEL } = {}) {
+export async function callModel(prompt, { query, repo, signal, model = SUMMARY_MODEL, system = SYSTEM } = {}) {
   const abortController = new AbortController();
   const onAbort = () => abortController.abort();
   signal?.addEventListener?.('abort', onAbort);
@@ -236,7 +304,7 @@ export async function callModel(prompt, { query, repo, signal, model = SUMMARY_M
       options: {
         model,
         cwd: repo,
-        systemPrompt: SYSTEM,
+        systemPrompt: system,
         tools: [],
         allowedTools: [],
         settingSources: [],
@@ -310,7 +378,7 @@ export function createChoices({ repo, questions, isSecret = () => false, inboxRo
   };
 
   /** Every id the wand may answer now, resolved: { id, kind, text, file?, line?, spec?, rec?, opts, context }. */
-  async function resolve(ids) {
+  async function resolve(ids, { asks = false } = {}) {
     texts.clear();
     const want = new Set(ids);
     const out = new Map();
@@ -328,10 +396,12 @@ export function createChoices({ repo, questions, isSecret = () => false, inboxRo
       const rows = (await inboxRows().catch(() => [])) || [];
       for (const r of rows) {
         const id = `inbox:${r.id}`;
-        if (!want.has(id) || r.src !== 'inbox' || !r.question) continue;
+        // A live ask (a session waiting now) is the breakout's alone: its own choices are already the session's.
+        if (!want.has(id) || !(r.src === 'inbox' || (asks && r.src === 'ask')) || !r.question) continue;
         const block = r.chunk ? blockFor(r.chunk) : '';
         const opts = (r.options || []).map((o) => (typeof o === 'string' ? o : o?.label || '')).filter(Boolean);
-        out.set(id, { id, kind: 'inbox', text: String(r.question), chunk: r.chunk || '', block, assumed: opts[0] || '', opts: opts.slice(0, MAX_OPTIONS).map((label, i) => ({ label: clip(label, LABEL_MAX), why: i === 0 ? 'What the session assumed.' : '' })), context: block });
+        const live = r.src === 'ask';
+        out.set(id, { id, kind: 'inbox', live, text: String(r.question), chunk: r.chunk || '', block, assumed: opts[0] || '', why: typeof r.why === 'string' ? r.why : '', opts: opts.slice(0, MAX_OPTIONS).map((label, i) => ({ label: clip(label, LABEL_MAX), why: i === 0 ? (live ? 'The default it takes.' : 'What the session assumed.') : '' })), context: block });
       }
     }
     for (const id of ids) if (!out.has(id)) refused.push(id);
@@ -362,7 +432,7 @@ export function createChoices({ repo, questions, isSecret = () => false, inboxRo
   /** The cache's choice for a resolved question, or null. */
   function hit(entries, q) {
     const e = entries[q.id];
-    return e && e.key === keyOf(q) && Array.isArray(e.options) && e.options.length ? { options: e.options, by: 'ai', at: e.at } : null;
+    return e && e.key === keyOf(q) && Array.isArray(e.options) && e.options.length ? { options: e.options, ...(e.plain ? { plain: e.plain } : {}), by: 'ai', at: e.at } : null;
   }
 
   function fallback(q, reason, why) {
@@ -415,13 +485,13 @@ export function createChoices({ repo, questions, isSecret = () => false, inboxRo
         const r = await callModel(buildPrompt(group), { query: q, repo, signal: ac.signal });
         stats.cost += r.cost || 0;
         if (r.error) return { errors: Object.fromEntries(ids.map((id) => [id, 'it failed'])), error: r.error };
-        const { choices, errors } = parseReply(r.text, ids);
+        const { choices, plain, errors } = parseReply(r.text, ids);
         const at = now();
         const fresh = {};
         for (const x of group.list) {
           if (!choices[x.id]) continue;
           const options = x.kind === 'plan' ? mergeRec(choices[x.id], x.rec) : choices[x.id].map(({ label, why }) => ({ label, why }));
-          fresh[x.id] = { key: keyOf(x), options, at };
+          fresh[x.id] = { key: keyOf(x), options, ...(plain[x.id] ? { plain: plain[x.id] } : {}), at };
         }
         if (Object.keys(fresh).length) {
           const keep = new Set([...(questions() || []).map((x) => x.id), ...Object.keys(readChoicesCache(root())).filter((id) => id.startsWith('inbox:')), ...Object.keys(fresh)]);
@@ -441,6 +511,34 @@ export function createChoices({ repo, questions, isSecret = () => false, inboxRo
 
   return {
     stats,
+    /**
+     * The breakout: one reply about one question. -> { reply } or { error } (a refused id, the helpers off, no SDK, a
+     * failure), never rejects. The choices shown are the cache's (the wand's), else the row's own.
+     */
+    async explain(rawId, messages = []) {
+      const id = String(rawId || '');
+      const { found } = await resolve([id], { asks: true });
+      const q = found.get(id);
+      if (!q) return { error: REFUSED };
+      if (!enabled()) return { error: 'AI helpers are off in Settings' };
+      const call = query === false ? null : query || await loadQuery();
+      if (!call) return { error: "Claude isn't available here" };
+      const cachedOpts = hit(readChoicesCache(root()), q)?.options;
+      const prompt = buildExplainPrompt(q, { options: cachedOpts || q.opts, messages, fileText: q.kind === 'plan' ? fileText(q.file) : '' });
+      const ac = new AbortController();
+      const cap = setTimeout(() => ac.abort(), SPEC_MS);
+      cap.unref?.();
+      stats.calls += 1;
+      try {
+        const r = await callModel(prompt, { query: call, repo, signal: ac.signal, system: EXPLAIN_SYSTEM });
+        stats.cost += r.cost || 0;
+        if (r.error) return { error: ac.signal.aborted ? 'took too long' : r.error };
+        const reply = String(r.text || '').trim();
+        return reply ? { reply } : { error: 'no reply' };
+      } finally {
+        clearTimeout(cap);
+      }
+    },
     /** GET: what the cache holds for questions listed now with the same words. Never calls the model. */
     async cached() {
       if (!enabled()) return { choices: {} };

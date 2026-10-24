@@ -11,6 +11,7 @@ import { shownOptions } from '../../ui/answer-logic.js';
 import { thumbOf } from '../../ui/image-refs.js';
 import { DECIDE_TEXT, IMAGE_ONLY_TEXT } from '../../../shared/choices.mjs';
 import '../../styles/answer-card.css';
+import '../../styles/breakout.css';
 
 const LONG = 420;
 
@@ -71,7 +72,10 @@ export function AnswerCard({ x, entry, onAsk, onKeep, repo, foot, footNote }) {
         <Source x={x} repo={repo} />
         {onAsk ? <WandBtn state={entry?.status} onClick={() => onAsk(entry?.status === 'ready')} small /> : null}
       </div>
-      <div className={cx('acard-q', long && !all && 'is-clamped')}><Markdown text={x.q} /></div>
+      {/* The wand's plain restatement (0.5.3): what is being decided, for someone who knows the project but not the
+          chunk. It leads, at reading size; the words as written follow, quieter. */}
+      {entry?.plain ? <p className="acard-plain"><span className="k">In plain words</span>{entry.plain}</p> : null}
+      <div className={cx('acard-q', long && !all && 'is-clamped', entry?.plain && 'is-orig')}><Markdown text={x.q} /></div>
       {long ? <button className="btn btn-ghost btn-s acard-more" type="button" onClick={() => setAll((a) => !a)}>{all ? 'Show less' : 'Show all'}</button> : null}
       <AnswerBox
         key={x.id} item={x} draftKey={x.id} entry={entry} options={options} onAsk={onAsk} onKeep={onKeep}

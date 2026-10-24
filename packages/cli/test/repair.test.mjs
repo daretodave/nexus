@@ -162,3 +162,28 @@ test('hook wrapper folders a killed form left behind are swept after a day', () 
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('a branch already checked out in a live worktree is used there, never added twice (#88)', async () => {
+  const t = tmpRepo();
+  try {
+    // The session's home, alive; its ledger names a chunk worktree it wrote and removed once the chunk landed.
+    const home = path.join(t.parent, '.claude', 'repo', 'polaris-1');
+    git(t.dir, 'worktree', 'add', '-q', '-b', 'nexus/polaris-1', home, 'HEAD');
+    const gone = path.join(t.parent, 'repo-wt', '01.13');
+    const lines = [];
+    const r = await formPlace(t.dir, { worktree: gone, branch: 'nexus/polaris-1' }, { git: cleanGit, hooks: noHooks, onLine: (l) => lines.push(l) });
+    assert.equal(r.ok, true, r.error);
+    assert.equal(path.resolve(r.moved).toLowerCase(), path.resolve(home).toLowerCase());
+    assert.ok(!fs.existsSync(gone), 'no second checkout');
+    assert.match(lines.join('\n'), /already checked out/);
+
+    // Its home deleted too (a stale registration): pruned, and the branch checks out at the planned place again.
+    await removeTree(home);
+    const again = await formPlace(t.dir, { worktree: gone, branch: 'nexus/polaris-1' }, { git: cleanGit, hooks: noHooks });
+    assert.equal(again.ok, true, again.error);
+    assert.equal(again.moved, undefined);
+    assert.ok(fs.existsSync(path.join(gone, 'README.md')));
+  } finally {
+    await removeTree(t.parent);
+  }
+});

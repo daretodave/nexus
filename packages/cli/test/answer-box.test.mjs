@@ -105,3 +105,12 @@ test('the new styles lean only on nexus.css tokens, so day and night both follow
     assert.match(css, /prefers-reduced-motion: reduce/, `${f}: reduced motion is handled`);
   }
 });
+
+test('terseQuestion: an agent\'s shorthand reads terse; a real question does not (#87)', async () => {
+  const { terseQuestion, explainId } = await import('../src/ui/answer-logic.js');
+  assert.equal(terseQuestion('01.13 (a) converted wording fixed, (c) AIVA/composer, (d) Feed.fm, (e) affiliates -> AUDIT'), true);
+  assert.equal(terseQuestion('Should I push the local-only branch chunk-01.1-player to origin?'), false);
+  assert.equal(terseQuestion(''), false);
+  assert.equal(explainId({ src: 'ask', id: 'tu1:0' }), 'inbox:tu1:0');
+  assert.equal(explainId({ src: 'perm', id: 'perm:1' }), null);
+});

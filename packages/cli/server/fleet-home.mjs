@@ -120,9 +120,11 @@ export const sameParked = (ref, q) => !!ref && hash(q) === ref.hash;
 
 /**
  * The merged inbox, newest first within each kind. `hosted`: [{ id, name, asks: [view], permissions: [view] }];
- * `ledgers` every ledger at the primary root; `durable` repo.durableQuestions.
+ * `ledgers` every ledger at the primary root; `durable` repo.durableQuestions; `kept` the plan answers kept for them
+ * (plan-answers.mjs, pruned to these questions): a plan question with one kept reads `settled`, so the Oversight badge
+ * counts what the screen counts, not the rows the plan still lists until a session strikes them.
  */
-export function inboxItems({ hosted = [], ledgers = [], durable = [], now = Date.now() } = {}) {
+export function inboxItems({ hosted = [], ledgers = [], durable = [], kept = {}, now = Date.now() } = {}) {
   const out = [];
   const tagOf = (h) => ({ id: h.id, name: h.name || h.id.slice(0, 8), kind: 'local' });
   const hostedIds = new Set(hosted.flatMap((h) => [h.id, h.claude]).filter(Boolean));
@@ -163,7 +165,11 @@ export function inboxItems({ hosted = [], ledgers = [], durable = [], now = Date
       });
     } catch { /* skipped */ }
   }
-  for (const d of durable) out.push({ id: `plan:${d.id}`, kind: 'plan', src: 'durable', question: d.text, durable: d, at: null });
+  for (const d of durable) {
+    const k = kept[d.id];
+    const settled = k ? (k.sent ? 'sent' : 'kept') : null;
+    out.push({ id: `plan:${d.id}`, kind: 'plan', src: 'durable', question: d.text, durable: settled ? { ...d, settled } : d, at: null, ...(settled ? { settled } : {}) });
+  }
   return out;
 }
 

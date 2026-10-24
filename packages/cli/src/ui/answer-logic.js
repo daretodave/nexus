@@ -13,6 +13,22 @@ export function choiceId(x) {
   return null;
 }
 
+/** The id a breakout talks about (server/choices.mjs explain): the wand's, or a live ask's row. Never a permission or secret. */
+export function explainId(x) {
+  if (x && !x.secret && x.src === 'ask') return `inbox:${x.id}`;
+  return choiceId(x);
+}
+
+/**
+ * Does the question read as an agent's shorthand (a chunk id and sub-item letters, a note with no question in it)?
+ * Such a one gets the wand's plain restatement on open, without a press (Inbox.jsx).
+ */
+export function terseQuestion(q) {
+  const s = String(q || '').replace(/[`*_]/g, '').trim();
+  if (!s) return false;
+  return !s.includes('?') || /\([a-z]\)\s/i.test(s);
+}
+
 /** The choices a question names itself (no wand): a plan question's recommendation, a parked row's options. */
 export function rowOptions(x) {
   if (!x || !Array.isArray(x.opts)) return [];

@@ -175,6 +175,19 @@ test('inboxItems merges hosted asks, permissions, every held ledger\'s parked qu
   assert.equal(view[4].raw.file, 'plan/a.md', 'a plan question answers through /api/oversight/answer');
 });
 
+test('a plan question with an answer kept reads settled, so the badge stops counting it (#86)', () => {
+  const durable = [
+    { id: 'plan/a.md:3', file: 'plan/a.md', line: 3, text: 'Ship it?', source: 'open-question' },
+    { id: 'plan/a.md:9', file: 'plan/a.md', line: 9, text: 'Rename it?', source: 'open-question' },
+    { id: 'plan/b.md:2', file: 'plan/b.md', line: 2, text: 'Price?', source: 'open-question' },
+  ];
+  const kept = { 'plan/a.md:3': { answer: 'yes', how: 'answered', sent: 1 }, 'plan/a.md:9': { answer: 'no', how: 'answered' } };
+  const items = inboxItems({ durable, kept });
+  assert.deepEqual(items.map((x) => x.settled || null), ['sent', 'kept', null]);
+  const open = fromInbox(items, Date.now()).filter((x) => !x.settled);
+  assert.deepEqual(open.map((x) => x.raw.file + ':' + x.raw.line), ['plan/b.md:2'], 'the App badge counts only the unanswered one');
+});
+
 // ---- the server -------------------------------------------------------------
 
 test('GET /api/inbox merges every session\'s questions; POST /api/inbox/:id settles a parked one', async () => {

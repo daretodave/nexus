@@ -28,7 +28,7 @@
 // `{ at, click: <css selector>, text?, what }` (`at`: script ms; `text`: the element holds it). A click on the
 // owner's turn takes it as the owner would; the gate's `auto` stays the fallback.
 import { MAIN } from '../../shared/beats.mjs';
-import { GRILL_DURABLE } from './grill.mjs';
+import { GRILL_DURABLE, PARKED_TERSE } from './grill.mjs';
 
 export const PROJECT = 'fieldday';
 const OWNER = 'sam';
@@ -460,6 +460,8 @@ export const grillMe = {
       ],
     }));
     fx.durable = GRILL_DURABLE.map((d) => ({ ...d }));
+    // vega parked one in shorthand (#87): the wand says it in plain words.
+    fx.sessions = fx.sessions.map((s) => (s.name !== 'vega' ? s : { ...s, ledger: { ...s.ledger, parked: [{ q: PARKED_TERSE, alts: ['as done'], why: 'kept going on the default', chunk: '14.3', at: ctx.ago(12) }] } }));
     return fx;
   },
   script: [

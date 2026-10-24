@@ -87,6 +87,8 @@ export const server = {
   /** The wand (0.5.1): POST { ids, fresh } -> { choices: { [id]: Choice }, errors? }; GET is the cache alone. */
   choices: (ids, fresh) => api('/api/oversight/choices', { ids, fresh: !!fresh }),
   cachedChoices: () => api('/api/oversight/choices'),
+  /** The breakout (0.5.3): POST { id, messages: [{ role: 'you'|'claude', text }] } -> { reply } about one question. */
+  explain: (id, messages) => api('/api/oversight/explain', { id, messages }),
   /** Grill me's spec briefs: { specs: { [file]: { n, title, lede, why } } }. */
   specBriefs: (files) => api(`/api/oversight/specs?files=${encodeURIComponent(files.join(','))}`),
   /** One image for an answer { name, mediaType, data } -> { file, name, mediaType, demo? }. */

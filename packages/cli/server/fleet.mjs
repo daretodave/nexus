@@ -112,6 +112,26 @@ export async function linkedWorktrees(primary, git = cleanGit) {
 }
 
 /**
+ * Where a branch is checked out now, other than `except`: the folder of the linked worktree `git worktree list
+ * --porcelain` names for it, when that folder still exists, else null. A registration whose folder is gone does not
+ * count (prune drops it).
+ */
+export async function branchHome(primary, branch, { git = cleanGit, except = '' } = {}) {
+  if (!branch) return null;
+  const r = await git(primary, ['worktree', 'list', '--porcelain']);
+  if (!r.ok) return null;
+  const blocks = String(r.out).split(/\r?\n\r?\n/);
+  for (const b of blocks.slice(1)) {
+    const wt = /^worktree (.+)$/m.exec(b)?.[1]?.trim();
+    const br = /^branch refs\/heads\/(.+)$/m.exec(b)?.[1]?.trim();
+    if (!wt || br !== branch) continue;
+    if (except && keyOf(wt, WIN) === keyOf(except, WIN)) continue;
+    if (fs.existsSync(wt)) return path.resolve(wt);
+  }
+  return null;
+}
+
+/**
  * Pick the session's place without making it (a few quick git reads, so POST /api/sessions answers at once):
  * { worktree, branch, n, root, why } or { error } (not a git repository: the session works in the folder itself).
  */
@@ -143,7 +163,11 @@ export async function planPlace(primary, name, ledgers, { git = cleanGit, local 
  * hooks made safe for a linked worktree (cloud.mjs safeHooks: its post-checkout runs, and no GIT_* leaks into it).
  * Each chunk git or a hook prints to stderr goes to `onLine`. A retry takes the branch when the failed try left it;
  * a folder git already lists is made once its marker says so, else finished in place first (repair.mjs). A folder
- * gone while its branch stayed is pruned and checked out again. -> { ok: true } or { error }.
+ * gone while its branch stayed is pruned and checked out again. A branch already checked out in another folder that
+ * still exists is that session's worktree: it works there (`moved`), never a second checkout git would refuse ("already
+ * used by worktree"). A session's ledger can name a folder its branch never lived in: a chunk worktree it wrote with
+ * `ledger.mjs beat --set worktree=` (skills/next/build.md) and removed once the chunk landed. -> { ok: true, moved? }
+ * or { error }.
  */
 export async function formPlace(primary, place, { git = cleanGit, hooks = safeHooks, onLine = () => {}, timeout = 10 * 60 * 1000, restore = true, orphaned = false } = {}) {
   const same = (p) => keyOf(p, WIN) === keyOf(place.worktree, WIN);
@@ -158,7 +182,13 @@ export async function formPlace(primary, place, { git = cleanGit, hooks = safeHo
   }
   // The folder was deleted or moved while git still lists it: drop that registration (prune touches no folder), so
   // the branch can be checked out here again.
-  if (!fs.existsSync(place.worktree)) await git(primary, ['worktree', 'prune']);
+  // Prune first either way (it touches no folder that exists): a stale registration anywhere can hold the branch.
+  await git(primary, ['worktree', 'prune']);
+  const home = await branchHome(primary, place.branch, { git, except: place.worktree });
+  if (home) {
+    onLine(`${place.branch} is already checked out at ${home}: the session works there`);
+    return { ok: true, moved: home };
+  }
   const h = await hooks(primary);
   try {
     fs.mkdirSync(path.dirname(place.worktree), { recursive: true });

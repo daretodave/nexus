@@ -224,3 +224,67 @@ test('the prompt carries the spec, the question in place and the answers already
   assert.match(p, /Already answered for this spec[\s\S]*- Other\? -> yes/);
   assert.match(buildPrompt({ kind: 'inbox', questions: [{ id: 'inbox:p', text: 'Q', block: '- [ ] **3.1** x', assumed: 'A' }] }), /The session assumed: A/);
 });
+
+// ---- 0.5.3: the plain restatement (#87) and the breakout (#85) ------------------------------
+
+test('parseReply reads { plain, options } per id, and the bare list as before', () => {
+  const r = parseReply(JSON.stringify({
+    a: { plain: 'Whether the composer credits go in the player or only in the docs.', options: [{ label: 'Player', why: 'x' }, { label: 'Docs', why: 'y' }] },
+    b: [{ label: 'One' }, { label: 'Two' }],
+  }), ['a', 'b']);
+  assert.equal(r.plain.a, 'Whether the composer credits go in the player or only in the docs.');
+  assert.equal(r.plain.b, undefined);
+  assert.deepEqual(r.choices.a.map((o) => o.label), ['Player', 'Docs']);
+  assert.deepEqual(r.choices.b.map((o) => o.label), ['One', 'Two']);
+});
+
+test('a parked row\'s plain restatement is kept in the cache and served with its choices', async () => {
+  const dir = tmpRepo();
+  try {
+    const row = { id: 'parked:l1:0:abcdef12', src: 'inbox', question: '01.13 (a) converted wording fixed, (c) AIVA/composer', options: ['as done'], chunk: '' };
+    const query = ({ prompt }) => (async function* run() {
+      const out = {};
+      for (const id of idsIn(prompt)) out[id] = { plain: 'Approve the music-credit wording the session settled for chunk 01.13.', options: [{ label: 'Approve' }, { label: 'Reword' }] };
+      yield { type: 'result', subtype: 'success', result: JSON.stringify(out) };
+    })();
+    const e = engine(dir, { query, inboxRows: async () => [row] });
+    const r = await e.ask([`inbox:${row.id}`]);
+    assert.match(r.choices[`inbox:${row.id}`].plain, /music-credit wording/);
+    const again = await e.cached();
+    assert.match(again.choices[`inbox:${row.id}`].plain, /music-credit wording/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the breakout answers about one question with its spec and the conversation; a refused id never reaches the model', async () => {
+  const dir = tmpRepo();
+  try {
+    const calls = [];
+    const query = ({ prompt, options }) => { calls.push({ prompt, options }); return (async function* run() { yield { type: 'result', subtype: 'success', result: 'It decides warn versus block.' }; })(); };
+    const e = engine(dir, { query, inboxRows: async () => [{ id: 'tu1:0', src: 'ask', question: 'Push the branch?', options: ['Push it', 'Leave it'], why: 'so other sessions see it' }] });
+    const [q1] = questionsIn(fs.readFileSync(path.join(dir, 'plan', '14-fixture-clashes.md'), 'utf8'), 'plan/14-fixture-clashes.md');
+    const first = await e.explain(q1.id, []);
+    assert.equal(first.reply, 'It decides warn versus block.');
+    assert.match(calls[0].prompt, /Fixture clashes/);
+    assert.match(calls[0].prompt, /Owner: Briefly: what is this question really asking/);
+    assert.match(calls[0].options.systemPrompt, /one open question/);
+    assert.deepEqual(calls[0].options.tools, []);
+
+    await e.explain(q1.id, [{ role: 'claude', text: first.reply }, { role: 'you', text: 'What breaks if we block?' }]);
+    assert.match(calls[1].prompt, /You: It decides warn versus block\.\nOwner: What breaks if we block\?/);
+
+    // A live ask is the breakout's too (never the wand's).
+    await e.explain('inbox:tu1:0', []);
+    assert.match(calls[2].prompt, /asking it now/);
+    assert.match(calls[2].prompt, /so other sessions see it/);
+    assert.equal((await e.ask(['inbox:tu1:0'])).errors['inbox:tu1:0'], REFUSED);
+
+    const n = calls.length;
+    assert.deepEqual(await e.explain('plan/nope.md:1', []), { error: REFUSED });
+    assert.deepEqual(await engine(dir, { query, enabled: () => false }).explain(q1.id, []), { error: 'AI helpers are off in Settings' });
+    assert.equal(calls.length, n);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

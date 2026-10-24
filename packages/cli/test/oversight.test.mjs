@@ -92,7 +92,7 @@ test('the Oversight screen: honest sources, plan rows without a chip, text throu
   assert.match(src, /value: 'plan', label: `In the plan \$\{n\.plan\}`/);
   assert.match(src, /value: 'cloud', label: `Cloud runs \$\{n\.cloud\}`, title: n\.cloud \? undefined : 'No cloud run has parked a question'/);
   assert.match(src, /\{r\.kind === 'plan' \? null : <Tag x=\{r\} \/>\}/, 'no chip column on a plan row');
-  assert.match(src, /<Markdown inline text=\{oneLine\(r\.q\)\} \/>/, 'the row: inline markdown');
+  assert.match(src, /<Markdown inline text=\{oneLine\(entry\?\.plain \|\| r\.q\)\} \/>/, "the row: inline markdown, the wand's plain words once it has them");
   // The detail is answer first (0.5.1): the answer card draws the whole question.
   const card = fs.readFileSync(new URL('../src/screens/oversight/AnswerCard.jsx', import.meta.url), 'utf8');
   assert.match(src, /<AnswerCard key=\{x\.id\} x=\{x\}/, 'the detail: the answer card, one per question (Show all does not carry over)');

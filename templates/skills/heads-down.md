@@ -97,12 +97,12 @@ Then invoke the `loop` skill (no interval) with it:
 > never settle, no PR until the package ends."> Delegate each
 > build by size (S/M one background builder, L a Workflow); act
 > on a board `REBOOT` line meanwhile, never polling. The lead
-> runs the gate. Beat the ledger (`node scripts/ledger.mjs
-> beat`) at every step: `--chunk <id> --step <step>` and the
-> worktree as `/next` says, `--set builder=<agent id>` or `--set
-> workflow.runId=<id> --set workflow.scriptPath=<path>` at
-> dispatch, `--add defaults=<…>` per default taken, `--add
-> parked=<{q, alts: [], why, default}>` per question parked, `--add done=<id>` per close.
+> runs the gate. Beat the ledger (`node scripts/ledger.mjs beat`) at every step: `--chunk
+> <id> --step <step>` and the worktree as `/next` says, `--set builder=<agent id>` or `--set
+> workflow.runId=<id> --set workflow.scriptPath=<path>` at dispatch, `--add defaults=<…>`
+> per default taken, `--add parked=<{q, alts: [], why, default}>` per question parked (one
+> each; `q` a whole question someone who knows the project but not the chunk can answer:
+> what it decides, in words, never sub-item letters), `--add done=<id>` per close.
 > Print `node scripts/plan/progress.mjs <specs> --ref
 > origin/<base>` at the start and the end of every iteration.
 > Stop when every chunk is closed or every one left is blocked.

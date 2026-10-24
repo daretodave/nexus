@@ -36,6 +36,19 @@ export const GRILL_DURABLE = [
 
 export const FLAKY = `${SHARING}:135`;
 
+/** A parked row an agent wrote as shorthand (#87), and what the wand makes of it: choices and a plain restatement. */
+export const PARKED_TERSE = '14.3 (a) clash copy kept, (c) block on same pitch, (d) organiser override -> AUDIT';
+export const PARKED_CHOICES = {
+  [PARKED_TERSE]: {
+    plain: 'When two fixtures land on the same pitch, vega made it block the second booking, with an override the organiser can use. Keep that, or only warn?',
+    options: [
+      { label: 'Keep it: block, with the organiser override', why: 'What vega built; nothing is redone.', rec: true },
+      { label: 'Warn only, never block', why: 'Gentler for clubs that share pitches on purpose.' },
+      { label: 'Block with no override', why: 'Simplest rule, but the organiser cannot fix a real mistake.' },
+    ],
+  },
+};
+
 /** The wand's choices in the demo, by question id ("Example choices (demo)"). */
 export const GRILL_CHOICES = {
   [`${SHARING}:119`]: [

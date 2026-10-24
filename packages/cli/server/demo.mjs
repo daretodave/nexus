@@ -28,9 +28,10 @@ import { pushEventOf } from './feed-secrets.mjs';
 import { createDemoStack } from './demo/stack.mjs';
 import { applyDrafts } from './drafts.mjs';
 import { putAwayPlan } from '../shared/put-away.mjs';
-import { applyAnswers, markSentIn } from './plan-answers.mjs';
+import { applyAnswers, markSentIn, pruneAnswers } from './plan-answers.mjs';
 import { answersPrompt } from './repo.mjs';
 import { fallbackNote, REC_WHY, REFUSED } from './choices.mjs';
+import { PARKED_CHOICES } from './demo/grill.mjs';
 import { BRIEFS, FLAKY, GRILL_CHOICES } from './demo/grill.mjs';
 import { recommendedDefault } from '../shared/recommend.mjs';
 import { ANSWER_UPLOADS, choiceRefs, imageRefs } from '../shared/choices.mjs';
@@ -90,7 +91,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   /** The vault's request rows still open, marked as the live server marks them (each gone once its value is set). */
   const requestRows = () => (local?.effective === false ? [] : DEMO_REQUESTS.map((q) => vault.mark(q.durable)).filter(Boolean));
   /** The inbox with the vault's request rows. */
-  const inboxWithSecret = () => [...world.inbox(), ...requestRows().map((row) => ({ id: `plan:${row.id}`, kind: 'plan', src: 'durable', question: row.text, durable: row, at: null }))];
+  const inboxWithSecret = () => [...world.inbox(pruneAnswers(planStore, world.durable())), ...requestRows().map((row) => ({ id: `plan:${row.id}`, kind: 'plan', src: 'durable', question: row.text, durable: row, at: null }))];
   // Oversight in the demo (0.5.1): kept answers, the wand's choices, uploaded images and hand-offs, all in memory.
   let planStore = {};
   const choiceStore = {};
@@ -250,6 +251,15 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
           await new Promise((ok) => setTimeout(ok, 900));
           return send(res, 200, demoChoices(Array.isArray(b.ids) ? b.ids.map(String) : []));
         }
+        // The breakout in the demo: a canned explanation after a short think, no model.
+        case 'POST /api/oversight/explain': {
+          const b = await body(req);
+          await new Promise((ok) => setTimeout(ok, 700));
+          const asked = Array.isArray(b.messages) && b.messages.length > 0;
+          return send(res, 200, { reply: asked
+            ? 'In the demo there is no model to ask. With Claude available, the helper model answers here from the question, its spec or chunk, and the choices shown.'
+            : 'It asks which way to settle this before the work goes on. The recommended choice keeps the plan as written; the others trade speed now for less rework later. Pick the one you would defend at review.' });
+        }
         case 'GET /api/oversight/specs': {
           const files = (url.searchParams.get('files') || '').split(',').filter(Boolean);
           return send(res, 200, { specs: Object.fromEntries(files.filter((f) => BRIEFS[f]).map((f) => [f, BRIEFS[f]])) });
@@ -373,7 +383,15 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
     const qs = new Map(world.durable().map((d) => [d.id, d]));
     const choices = {};
     const errors = {};
+    // A parked row the wand restates in plain words (#87): its choices and its plain line, by the row's words.
+    const parked = new Map(world.inbox().filter((r) => r.src === 'inbox').map((r) => [`inbox:${r.id}`, r]));
     for (const id of ids.slice(0, 40)) {
+      const p = parked.get(id);
+      if (p && PARKED_CHOICES[p.question]) {
+        choices[id] = { ...PARKED_CHOICES[p.question], options: PARKED_CHOICES[p.question].options.map((o) => ({ ...o })), by: 'demo', at: Date.now() };
+        choiceStore[id] = choices[id];
+        continue;
+      }
       const d = qs.get(id);
       if (!d) { errors[id] = REFUSED; continue; }
       const rec = recommendedDefault(d.text);
