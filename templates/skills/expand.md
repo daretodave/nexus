@@ -274,7 +274,9 @@ mechanically.
 ### Step 4 — Write to `CANDIDATES.md`
 
 Append under `## Pending`. Update metadata header (last pass,
-pass count).
+pass count, posture, and nothing else: the pass narrative goes
+in the commit body, and the header stays at 20 lines or
+fewer).
 
 If posture is **autonomous**, instead of writing to
 `CANDIDATES.md`, **write each as a new spec**:

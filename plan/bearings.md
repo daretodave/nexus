@@ -25,7 +25,7 @@ library | cli | hybrid`.)
 |---|---|---|
 | Content | Markdown, hard-wrapped ~62–64 cols | Tables exempt from wrap |
 | Scripts | Node ≥18, zero dependencies, ESM `.mjs` | No `node_modules`, no lockfile; paths through `fileURLToPath` (the gate refuses `URL.pathname`); shared `.nexus/` state written under a lock, renamed into place |
-| Verify gate | `node scripts/verify.mjs` | 14 legs, 3 opt-in more; see `agents.md` rule 3 |
+| Verify gate | `node scripts/verify.mjs` | 15 legs, 3 opt-in more; see `agents.md` rule 3 |
 | Secrets | `nexus.secrets.json` + `scripts/secrets.mjs` | The model sees names, never values; values move only between the vault, a sink and a child process (`secrets run`); the guard and the `secrets` leg keep them out |
 | Diagrams | `node scripts/diagrams.mjs` | SVG under `assets/`, one style table; never hand-drawn; `--check` (the `diagrams` leg) fails on drift |
 | README GIFs | `npm run record -- <scenario>` in `packages/cli` | Recorded from a demo scenario under `assets/gifs/`, a `.png` poster beside each; the `gifs` leg holds 5–8 s, 3 MB, alt text and the poster link, never the bytes |

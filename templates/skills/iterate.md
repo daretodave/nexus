@@ -148,9 +148,9 @@ git pull --ff-only
 
 Run §4. Write to `plan/AUDIT.md`.
 
-**Durable rows survive the rewrite.** The audit section (`#
-Site audit — <date>` + Top 5) is yours to regenerate each
-pass. Everything else in the file is durable and must be
+**Durable rows survive the rewrite.** The audit section (the
+`> Last pass:` and `> Pass count:` lines + Top 5) is yours to
+regenerate each pass. Everything else in the file is durable and must be
 preserved verbatim when you rewrite: the `> Bias:` line (only
 `/oversight reset` clears it), `[needs-user-call]` rows, and
 `[user-issue #N]` rows routed by `/triage` that you are not
@@ -168,10 +168,20 @@ finding; `node scripts/plan/locks.mjs list` shows each lock's
 age, and `/march`'s Step 0 sweep relaxes it or asks the owner
 once.
 
+**The header stays lean.** Everything above the first `##`
+heading holds the title, `> Last pass:`, `> Pass count:` and
+`> Bias:`, nothing else: 20 lines at most, the file at most
+256 KB (`node scripts/plan/state.mjs check`;
+`nexus/concepts/plan-shape.md`, "State diet"). What a pass
+did goes in its commit body, never the header.
+
 Audit block shape:
 
 ```markdown
-# Site audit — <ISO date>
+# Site audit
+
+> Last pass: <ISO date>
+> Pass count: <n>
 
 ## Top 5 findings (scored)
 
@@ -327,7 +337,15 @@ git commit -m "<category>: <subject>"
 
 Flip the addressed finding `[ ]` → `[x]` in `plan/AUDIT.md`.
 For external-critique findings, also move row Pending → Done in
-`plan/CRITIQUE.md`. Commit:
+`plan/CRITIQUE.md`. Then delete Done rows closed more than 30
+days ago (git keeps them; give the count in the commit body;
+never move them to `ARCHIVE.md`):
+
+```bash
+node scripts/plan/state.mjs compact --write
+```
+
+Commit:
 
 ```bash
 git add plan/AUDIT.md plan/CRITIQUE.md

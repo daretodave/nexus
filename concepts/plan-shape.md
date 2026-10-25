@@ -165,6 +165,27 @@ has it), re-pinged weekly by comment and listed first in
 by removing the lock, setting a new `since:`, or adding a
 `fallback:`.
 
+## State diet
+
+`AUDIT.md`, `CANDIDATES.md` and `CRITIQUE.md` are read by
+nearly every tick, so whatever they carry, every tick pays to
+read. A header that logs every pass grows without bound: one
+such audit file reached 2,237 header lines before its first
+finding. Three rules keep the queues cheap:
+
+| Rule | Holds |
+|---|---|
+| The header is metadata | The lines above the first `##` heading keep the title, `> Last pass:`, `> Pass count:` and `> Posture:` (`AUDIT.md`'s durable `> Bias:` too): 20 lines at most. What a pass did goes in its commit body. |
+| A queue file has a ceiling | At most `NEXUS_STATE_MAX_KB` kilobytes (256 by default). |
+| Old Done rows go | A Done row (`### [x]`, or any row under `## Done`) closed more than 30 days ago is deleted; git keeps it, the commit body gives the count. Never moved to `ARCHIVE.md`, whose lines are chunk-shaped and parsed by the gate. |
+
+`node scripts/plan/state.mjs check` reports a breach (exit 1;
+add it to your gate). `/iterate` runs `node
+scripts/plan/state.mjs compact --write` when it ticks a
+finding: a row's close date is its `closed <date>`, else the
+day its heading last changed (`git blame`), else the latest
+date it carries; a row with no date stays.
+
 ## Closing a chunk
 
 Closing is one atomic act with the code:

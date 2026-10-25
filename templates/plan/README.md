@@ -118,7 +118,10 @@ integrates it when it lands.
 `/iterate` writes findings to `plan/AUDIT.md` with this format:
 
 ```markdown
-# Site audit — <ISO date>
+# Site audit
+
+> Last pass: <ISO date>
+> Pass count: <n>
 
 ## Top 5 findings (scored)
 
@@ -136,6 +139,13 @@ chunk (or a spec) through `/oversight`.
 A line `> Bias: <category> (set via oversight <date>)` at the
 top of `AUDIT.md` weights that category 1.5x in `/iterate`'s
 scoring. Set / cleared via `/oversight reset`.
+
+The queues stay cheap to read (`nexus/concepts/plan-shape.md`,
+"State diet"): the headers of `AUDIT.md`, `CANDIDATES.md` and
+`CRITIQUE.md` keep only their `Last pass`, `Pass count` and
+`Posture` lines (20 lines at most; a pass's narrative goes in
+its commit body), and Done rows closed more than 30 days ago
+are deleted (`node scripts/plan/state.mjs compact --write`).
 
 ## Reflexes and lessons (adopt-by-need)
 

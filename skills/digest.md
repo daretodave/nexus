@@ -98,10 +98,12 @@ Never dispatched by `/march` — it is its own loop shape (see
    `plan/CANDIDATES.md` candidate citing the pulse
    numbers. **Never edit gates, cadences, ceilings, or rules
    directly** — proposals only; `/oversight` promotes.
-5. **Refresh the audit if stale:** `plan/AUDIT.md` header
-   older than 48h → recompute the Top 5 per
+5. **Refresh the audit if stale:** `plan/AUDIT.md`'s `>
+   Last pass:` older than 48h → recompute the Top 5 per
    `skills/iterate.md` §3 (audit only — ship nothing,
-   preserve durable rows).
+   preserve durable rows), bumping `Last pass` and `Pass
+   count`; the sweep's narrative goes in the commit body,
+   never the header.
 6. **Gate + commit + land:** `node scripts/verify.mjs`, then
    one commit `digest: <YYYY-MM-DD>` and land.
 

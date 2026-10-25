@@ -4,10 +4,6 @@
 > Pass count: 23
 > Posture: bold
 
-`/expand` files candidates here; `/oversight` promotes them
-into `plan/steps/01_build_plan.md`. Seeded 2026-07-02 from the
-kit + sibling surveys.
-
 ## Pending
 
 ### [ ] [score 6.6] Derive verify.mjs's tree reverse-check from the tree diagrams themselves, not a hand-maintained dir list

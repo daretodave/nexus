@@ -55,7 +55,7 @@ node scripts/verify.mjs
 
 Legs: `links → tree → discover → placeholders → anatomy →
 emoji → dualshell → chunks → scripts → workflows → diagrams →
-gifs → secrets → upgrade`
+gifs → secrets → upgrade → state-size`
 (plus the opt-in `adopt-dryrun`, `scripts-git` and `design`). Every leg is a hard gate; red = blocked
 commit. Run it
 **foreground and wait** — never `run_in_background`. No

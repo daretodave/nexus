@@ -67,7 +67,8 @@ pass). Runs fine in the cloud — it needs only files and
    `- observation:` / `- evidence:` (file:line or the exact
    failing command) / `- suggested fix:` / `- source:
    dry-run`). Update the metadata header (`Last pass`, `Pass
-   count`).
+   count`); it holds nothing else, and the pass narrative goes
+   in the commit body (the `state-size` leg).
 7. **Clean up** the scratch dir. **Commit + land:**
    `critique: pass <N> — <K> findings (<H> high, <M> med,
    <L> low)`. Findings-only commits skip the mirror; `/iterate`

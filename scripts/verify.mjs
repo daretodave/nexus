@@ -88,6 +88,17 @@
 //                 templates/skills/march.md and iterate.md hold, so
 //                 every kit version stays known to the upgrade; plus
 //                 both scripts' own node:test suites
+//   state-size    the queues every tick reads stay cheap
+//                 (templates/scripts/plan/state.mjs): in plan/ and
+//                 templates/plan/, each of AUDIT.md, CANDIDATES.md
+//                 and CRITIQUE.md keeps a header (the lines above
+//                 its first ## heading) of 20 lines or fewer and
+//                 weighs at most NEXUS_STATE_MAX_KB (default 256);
+//                 both iterate.md copies compact Done rows past 30
+//                 days; plus the script's own node:test suite, which
+//                 fails an oversize fixture. Done rows past 30 days
+//                 are counted in the note, never failed on (age
+//                 alone must not turn an unrelated commit red)
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds), and heartbeat.yml's
@@ -914,7 +925,7 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs', 'plan/locks.mjs',
+  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs', 'plan/locks.mjs', 'plan/state.mjs',
   'generators/issue-age.mjs', 'generators/stale-candidate.mjs', 'generators/motion.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',
@@ -1071,6 +1082,31 @@ async function legUpgrade() {
   return { failures: [...problems, ...text.problems, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; kit-text snapshot current (paragraphs: ${counts}); ${suite.note}` }
 }
 
+// --- leg: state-size ----------------------------------------------------------
+// The state diet (spec 57): a pass narrative belongs in its commit
+// body, and a Done row past 30 days in git, not in a queue every tick
+// pays to read.
+
+async function legStateSize() {
+  const { DONE_DAYS, checkState, doneRows, gitBlame, maxKb } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/state.mjs')).href)
+  const { daysBetween, today } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/promote.mjs')).href)
+  const kb = maxKb()
+  const own = checkState(ROOT, { kb })
+  const kit = checkState(path.join(ROOT, 'templates'), { kb, label: 'templates/' })
+  const failures = [...own.problems, ...kit.problems]
+  for (const file of ['skills/iterate.md', 'templates/skills/iterate.md']) {
+    if (fs.existsSync(path.join(ROOT, file)) && !/state\.mjs compact/.test(read(file))) failures.push(`${file}: never compacts the queues (node scripts/plan/state.mjs compact --write)`)
+  }
+  let stale = 0
+  for (const rel of ['plan/AUDIT.md', 'plan/CRITIQUE.md']) {
+    if (!fs.existsSync(path.join(ROOT, rel))) continue
+    stale += doneRows(read(rel), { blame: gitBlame(ROOT, rel) }).filter((r) => r.date && daysBetween(r.date, today()) > DONE_DAYS).length
+  }
+  const suite = runSuites(['templates/scripts/__tests__/state.test.mjs'], 'state')
+  const due = stale ? `; ${stale} Done row${stale === 1 ? '' : 's'} past ${DONE_DAYS} days (node scripts/plan/state.mjs compact --write)` : ''
+  return { failures: [...failures, ...suite.failures], note: `${own.checked + kit.checked} queue files: headers <= 20 lines, <= ${kb} KB${due}; ${suite.note}` }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -1117,6 +1153,7 @@ const LEGS = {
   gifs: () => legGifs(),
   secrets: () => legSecrets(),
   upgrade: () => legUpgrade(),
+  'state-size': () => legStateSize(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
   design: () => legDesign(),

@@ -518,6 +518,7 @@ nexus/
 │   ├── plan/unreleased.mjs            # /digest's unreleased CLI fixes: packages/cli commits on main since the last cli-v* tag
 │   ├── __tests__/unreleased.test.mjs  # its pure suite (scripts leg); __tests__/unreleased-run.test.mjs, a scratch repo (scripts-git)
 │   ├── plan/locks.mjs                 # lock timeouts: past max_age a lock takes its fallback or asks once (twin)
+│   ├── plan/state.mjs                 # the state diet: queue headers and size (the state-size leg); compact old Done rows (twin)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
@@ -712,6 +713,7 @@ nexus/
     │   ├── plan/refill.mjs            # the stock refill lane: each listed generator under its target, weekly cap and cadence
     │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react
     │   ├── plan/locks.mjs             # lock timeouts: Held lines, lane locks, owner-blocked rows; release, fallback or one ask
+    │   ├── plan/state.mjs             # the state diet: queue headers <= 20 lines, <= 256 KB; delete Done rows past 30 days
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
     │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
     │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
@@ -763,6 +765,7 @@ nexus/
     │   ├── __tests__/refill.test.mjs  # the refill lane and both generators: dry runs write nothing, a rerun files nothing
     │   ├── __tests__/motion.test.mjs  # the motion pulse, one stall issue over a Sep-Oct decline, stall_action, the generator
     │   ├── __tests__/locks.test.mjs   # lock timeouts: release keeps plan-check green; one ask over 30 ticks, re-pinged weekly
+    │   ├── __tests__/state.test.mjs   # the state diet: an oversize fixture fails; compact dates rows and keeps the rest
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver
@@ -855,7 +858,7 @@ adapt them.
 This repo eats its own dogfood — it is an adopted nexus
 project. The ouroboros, concretely:
 
-- **Its own verify gate.** `node scripts/verify.mjs` — thirteen
+- **Its own verify gate.** `node scripts/verify.mjs` — fifteen
   hermetic legs (every relative link resolves, the kit tree
   matches disk, no orphaned doc, placeholder vocabulary
   enforced, skill anatomy enforced, no emojis, dual-shell
@@ -863,7 +866,9 @@ project. The ouroboros, concretely:
   scripts' own suites green, the workflows linted, every
   diagram under `assets/` what its generator draws, every
   README GIF within budget beside its poster, no vault
-  value in the next commit). On its
+  value in the next commit, the upgrade's kit file list
+  closed, every queue file's header and size within the
+  state diet). On its
   first ever run it caught five real defects in this repo.
   The gate works.
 - **Its own plan.** `plan/README.md` and its specs carry the

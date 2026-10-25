@@ -69,9 +69,14 @@ lane lock and a Held line each carry `since: <date> · until:
 ## 4. The procedure
 
 1. **Sync:** `git pull --ff-only`.
-2. **Audit:** run §3 (or read the latest block if <24h old).
-   Write Top 5 to `plan/AUDIT.md` (schema: `### [score]
-   <desc>` + category/impact/ease/evidence/next).
+2. **Audit:** run §3 (or read the latest block if its `>
+   Last pass:` is <24h old). Write Top 5 to `plan/AUDIT.md`
+   (schema: `### [score] <desc>` +
+   category/impact/ease/evidence/next) and bump its `> Last
+   pass:` and `> Pass count:`. The header keeps those lines
+   and `> Bias:`, nothing else (20 lines at most, the
+   `state-size` leg); the pass narrative goes in the commit
+   body.
 3. **Pick:** top score. `/iterate audit` stops here (commit
    the audit block only).
 4. **Mirror (best-effort):** `node
@@ -92,7 +97,10 @@ lane lock and a Held line each carry `since: <date> · until:
 7. **Commit + land:** `fix|docs|templates: <subject>`, body
    cites the finding, `Closes #N` when mirrored.
 8. **Tick:** finding `[ ]` → `[x] (commit <hash>)`; CRITIQUE
-   rows move Pending → Done.
+   rows move Pending → Done. Then `node
+   scripts/plan/state.mjs compact --write` deletes Done rows
+   closed more than 30 days ago (git keeps them; the commit
+   body gives the count; never moved to `ARCHIVE.md`).
 
 ## 5. Hard rules
 

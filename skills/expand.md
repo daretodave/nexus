@@ -90,7 +90,9 @@ still >3). **Cap 3 candidates per pass.**
 4. File to `## Pending` (standard candidate schema: proposed /
    source signals / rationale / proposed scope / estimated
    chunks / conflicts; `filed score` and `re-evidence` arrive
-   with the first re-evidence). Update the metadata header.
+   with the first re-evidence). Update the metadata header
+   (`Last pass`, `Pass count`, `Posture`, and nothing else:
+   the pass narrative goes in the commit body).
 5. Aged promotion (§6), when the knob allows it.
 6. The Pending cap (§6a).
 7. `node scripts/verify.mjs` → commit + land:

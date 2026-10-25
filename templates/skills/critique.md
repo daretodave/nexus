@@ -182,7 +182,9 @@ After assessment, **3–6 findings**, not 8.
 ### [x] [MED] <url> — ... (pass <N>; addressed at <sha>)
 ```
 
-Update metadata header.
+Update metadata header (`Last pass`, `Pass count`, nothing
+else: what the pass found goes in the commit body, and the
+header stays at 20 lines or fewer).
 
 ### Step 5 — Commit + land
 

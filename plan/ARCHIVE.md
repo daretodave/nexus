@@ -215,3 +215,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 58.4 · Carry the train: lanes extraction, skills, README, references · fdf601cb..fdf601cb
 - 2026-10-25 · 57.6 · Pending stays live: re-evidence scoring and the cap · 29f7fb19..29f7fb19
 - 2026-10-25 · 58.5 · The workflow merge keeps cron, ceiling, model and env · ba72de72..ba72de72
+- 2026-10-25 · 57.7 · State diet: header shape, state-size leg, nexus compaction · 60adffaa..60adffaa

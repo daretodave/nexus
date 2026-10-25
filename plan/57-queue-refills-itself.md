@@ -328,7 +328,6 @@ The Held line for an auto-promotion:
 ## Acceptance
 
 - **A6** `/iterate` dimension I files `category: loop-config` rows whose `next` names a concrete repo variable or bearings line, ships at most one per 7 days, and files a YAML tuning as `[needs-user-call]`.
-- **A8** Queue-file headers are ≤ 20 lines, the `state-size` leg fails an oversize fixture, and nexus's `AUDIT.md` is compacted, with no Done row older than 30 days.
 - **A9** nexus's refill lane runs `cli-ci-red`, `cli-deps` and `ui-walk` under the generator contract, each with a test, and files AUDIT rows only for a red cli-ci run, a stale dependency or a walk finding.
 
 ## Open questions
@@ -337,9 +336,7 @@ The Held line for an auto-promotion:
 
 ## Chunks
 
-Measure: 3 open · 6 closed · next A10
+Measure: 2 open · 7 closed · next A10
 
-- [ ] **57.7** State diet: header shape, state-size leg, nexus compaction · M · closes A8 · needs —
-  - A new leg changes the leg count in `bearings.md` and `agents.md` rule 3 in the same commit.
 - [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 55.5, 54.8
 - [ ] **57.9** nexus generators: cli-ci-red, cli-deps, ui-walk · M · closes A9 · needs 56.5
