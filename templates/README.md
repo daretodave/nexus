@@ -145,7 +145,7 @@ templates/
 │   ├── worktree.mjs                   (close a worktree without deleting through its links; list them for /tidy)
 │   ├── workflow-lint.mjs              (cloud-loop workflow rules: secrets on hosted runners, no secret in a job env, no issue text in a prompt; add to your gate)
 │   ├── cloud/tick.mjs                 (PR-mode cloud tick: pick + claim, fence the diff, land the PR, release)
-│   ├── cloud/quota.mjs                (the quota governor march.yml and night.yml run: reads seven_day utilization, caches it, gates the next tick, opens the one pause issue)
+│   ├── cloud/quota.mjs                (the quota governor march.yml and night.yml run: reads seven_day utilization, caches it, gates the next tick (a 0.97 hard ceiling for every run), counts workflow_dispatch runs against NEXUS_DISPATCH_MAX, opens the one pause issue)
 │   ├── cloud/lost.mjs                 (the lost-to-background mark march.yml runs after the model: a result that defers to background work, no commit for the run)
 │   ├── cloud/idle.mjs                 (the idle probe march.yml runs before the model: a scheduled tick skips it when nothing changed since the last no-op; and the one-line no-op reason every tick that lands nothing writes)
 │   ├── pr/resolve.mjs                 (pr-resolve.yml's resolver: merge main into conflicted PRs, never forced)

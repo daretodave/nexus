@@ -12,8 +12,15 @@
 //   node scripts/cloud/quota.mjs gate [--cache <file>] [--event <name>] [--reason <why>] [--max <0.90|off>]
 //       Whether this run skips the model: `skip=true|false` and `reason` on $GITHUB_OUTPUT. Skips while the pause
 //       issue is open and its reset is ahead (after it, closes the issue and runs), while the cache says `rejected`
-//       with a reset ahead, and, for a scheduled or chained run only, when the cached utilization is at or above
-//       --max. Fails open: a missing or unparseable cache, or gh unreachable, runs the tick.
+//       with a reset ahead, for every run when the cached utilization is at or above the hard ceiling HARD_MAX (0.97,
+//       a constant, not a knob: support, loop:do and hand-dispatched runs included), and, for a scheduled or chained
+//       run only, when it is at or above --max. Fails open: a missing or unparseable cache, or gh unreachable, runs
+//       the tick.
+//   node scripts/cloud/quota.mjs dispatch [--event <name>] [--run-id <id>] [--max <N>]
+//       The dispatch ceiling: `skip=true|false` and `reason` on $GITHUB_OUTPUT. A workflow_dispatch run skips once
+//       --max (NEXUS_DISPATCH_MAX, default 12) other workflow_dispatch runs, of any workflow in the repository,
+//       started in the last 24 hours. It bounds a tick that dispatches runs itself (a prompt-injected `gh workflow
+//       run`), a nudge storm and chained runs alike; a scheduled run never skips here. Fails open when gh cannot say.
 //   node scripts/cloud/quota.mjs pause [--cache <file>] [--resets <ISO>] [--run-url <url>]
 //       Open, or retitle, the ONE `Loop paused: weekly quota until <ISO>` issue (label loop:paused-quota).
 //   node scripts/cloud/quota.mjs show [--cache <file>]
@@ -30,6 +37,10 @@ export const CACHE = '.nexus/quota.json';
 export const PAUSE_LABEL = 'loop:paused-quota';
 export const PAUSE_PREFIX = 'Loop paused: weekly quota until';
 export const DEFAULT_MAX = 0.9;
+/** The hard ceiling: at or above it every run exits before the model, whatever its event, verb, reason or label. */
+export const HARD_MAX = 0.97;
+/** workflow_dispatch runs per 24 hours, repository-wide, before a dispatched run exits clean (NEXUS_DISPATCH_MAX). */
+export const DEFAULT_DISPATCH_MAX = 12;
 
 // ---- reading the model's output ------------------------------------------------------------------------------
 
@@ -169,10 +180,42 @@ export function decide({ cache, pause, kind, max, now }) {
   }
   const u = typeof cache?.utilization === 'number' ? cache.utilization : null;
   const fresh = !(cache?.status === 'rejected' && resets && t >= Date.parse(resets));
+  if (fresh && u !== null && u >= HARD_MAX) {
+    return { skip: true, reason: `seven_day utilization ${u} is at or above the hard ceiling ${HARD_MAX} (every run, a ${kind} one included)`, close };
+  }
   if (fresh && max !== null && u !== null && (kind === 'scheduled' || kind === 'chained') && u >= max) {
     return { skip: true, reason: `seven_day utilization ${u} is at or above NEXUS_QUOTA_MAX ${max} (a ${kind} run)`, close };
   }
   return { skip: false, reason: u === null ? 'no cached reading (the gate fails open)' : `seven_day utilization ${u} under the cap`, close };
+}
+
+// ---- the dispatch ceiling -------------------------------------------------------------------------------------
+
+/** NEXUS_DISPATCH_MAX: a positive whole number; anything else is the default. */
+export function dispatchMax(v) {
+  const s = String(v ?? '').trim();
+  const n = Number(s);
+  return s !== '' && Number.isInteger(n) && n > 0 ? n : DEFAULT_DISPATCH_MAX;
+}
+
+/** The workflow_dispatch runs in `runs` (gh run list JSON) created in the 24 hours before `now`, this run excluded. */
+export function recentDispatches(runs, { now, runId }) {
+  const since = now.getTime() - 24 * 3600 * 1000;
+  return (Array.isArray(runs) ? runs : []).filter((r) => {
+    if (!r || r.event !== 'workflow_dispatch') return false;
+    if (runId && String(r.databaseId) === String(runId)) return false;
+    const t = Date.parse(r.createdAt);
+    return Number.isFinite(t) && t >= since;
+  });
+}
+
+/** The dispatch ceiling's decision: { skip, reason }. `runs` is null when gh could not list them (it fails open). */
+export function decideDispatch({ event, runs, max, now, runId }) {
+  if (event !== 'workflow_dispatch') return { skip: false, reason: `a ${event || 'scheduled'} run is not a dispatch` };
+  if (runs === null) return { skip: false, reason: 'gh could not list the runs (the dispatch ceiling fails open)' };
+  const n = recentDispatches(runs, { now, runId }).length;
+  if (n >= max) return { skip: true, reason: `${n} workflow_dispatch runs started in the last 24h, at or above NEXUS_DISPATCH_MAX ${max}` };
+  return { skip: false, reason: `${n} workflow_dispatch runs in the last 24h, under NEXUS_DISPATCH_MAX ${max}` };
 }
 
 // ---- gh --------------------------------------------------------------------------------------------------------
@@ -277,6 +320,30 @@ function gate(f, { env, run, now }) {
   return 0;
 }
 
+function dispatch(f, { env, run, now }) {
+  const event = f.event ?? env.GITHUB_EVENT_NAME ?? '';
+  const max = dispatchMax(f.max);
+  const runId = f['run-id'] || env.GITHUB_RUN_ID || '';
+  let runs = null;
+  if (event === 'workflow_dispatch') {
+    const since = new Date(now.getTime() - 24 * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const r = run('gh', ['run', 'list', '--event', 'workflow_dispatch', '--created', `>=${since}`, '--json', 'databaseId,createdAt,event,workflowName', '--limit', String(Math.max(100, max * 4))]);
+    if (r.ok) {
+      try {
+        const v = JSON.parse(r.stdout || '[]');
+        runs = Array.isArray(v) ? v : null;
+      } catch {
+        runs = null;
+      }
+    }
+  }
+  const d = decideDispatch({ event, runs, max, now, runId });
+  const line = `Dispatch ceiling: ${d.skip ? 'skip' : 'run'} - ${d.reason}`;
+  console.log(d.skip ? `${line}. Exiting cleanly - no work this tick.` : line);
+  emit(env, { skip: d.skip ? 'true' : 'false', reason: d.reason }, d.skip ? line : '');
+  return 0;
+}
+
 function pauseCmd(f, { env, run }) {
   const cache = readCache(f.cache || CACHE);
   const resets = isoOf(f.resets) ?? isoOf(cache?.resetsAt);
@@ -320,12 +387,14 @@ export async function main(argv, { env = process.env, run = shRun, now = new Dat
       return read(f, { env });
     case 'gate':
       return gate(f, { env, run, now });
+    case 'dispatch':
+      return dispatch(f, { env, run, now });
     case 'pause':
       return pauseCmd(f, { env, run });
     case 'show':
       return show(f);
     default:
-      console.error('usage: node scripts/cloud/quota.mjs read [<execution file>] [--cache <file>] [--run <id>] | gate [--cache <file>] [--event <name>] [--reason <why>] [--max <0.90|off>] | pause [--cache <file>] [--resets <ISO>] [--run-url <url>] | show [--cache <file>]');
+      console.error('usage: node scripts/cloud/quota.mjs read [<execution file>] [--cache <file>] [--run <id>] | gate [--cache <file>] [--event <name>] [--reason <why>] [--max <0.90|off>] | dispatch [--event <name>] [--run-id <id>] [--max <N>] | pause [--cache <file>] [--resets <ISO>] [--run-url <url>] | show [--cache <file>]');
       return 2;
   }
 }

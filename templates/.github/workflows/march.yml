@@ -23,6 +23,10 @@ name: march
 # Every job runs on GitHub-hosted runners (they hold secrets), and no
 # secret sits in run-name or a job's env (scripts/workflow-lint.mjs).
 
+# The verb and the reason in every run's title: an event nudge counts
+# its own ticks by the `issue-` reason it dispatches with.
+run-name: march ${{ inputs.verb || 'march' }} ${{ inputs.reason }}
+
 on:
   schedule:
     # Every 2h, off-peak UTC. Adjust to match your timezone — GH cron
@@ -37,6 +41,15 @@ on:
         type: choice
         default: march
         options: [march, next, critique, iterate, ship-a-chunk, ship-data, expand, triage, digest]
+      # Why this run was dispatched: `issue-<n>` from a nudge, `chain`
+      # from a chained tick, empty by hand. Shown in the run name; the
+      # quota gate and the idle probe read it through env, never
+      # inlined into a script or the prompt.
+      reason:
+        description: 'Why this run was dispatched (issue-<n>, chain; empty by hand)'
+        required: false
+        type: string
+        default: ''
       chunk:
         description: 'Pull-request mode: build this chunk id (empty: the next ready one)'
         required: false
@@ -64,6 +77,7 @@ jobs:
       contents: write   # push back to <DEFAULT_BRANCH>
       issues: write     # /triage labels + cloud-failed issue
       id-token: write   # Claude Code Action's OIDC handshake
+      actions: read     # the dispatch ceiling counts workflow_dispatch runs
     steps:
       - name: Checkout (full history for /march dispatch)
         id: checkout
@@ -87,6 +101,10 @@ jobs:
 
       - name: Daily commit ceiling check
         id: ceiling
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          DISPATCH_MAX: ${{ vars.NEXUS_DISPATCH_MAX || '12' }}
         run: |
           # Cloud commits are identified by the `Cloud-Run:` trailer
           # the agent appends to every commit message (the brief
@@ -120,8 +138,16 @@ jobs:
           if [ "$budget" -ge "$ceiling" ]; then
             echo "Cloud ceiling reached ($ceiling weighted budget/24h). Exiting cleanly — no work this tick."
             echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "reason=the 24h cloud commit budget is spent" >> "$GITHUB_OUTPUT"
           else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
+            # The dispatch ceiling: a dispatched run exits cleanly once
+            # the repo variable NEXUS_DISPATCH_MAX (default 12)
+            # workflow_dispatch runs of any workflow started here in
+            # 24h. It bounds a tick that dispatches runs itself (a
+            # prompt-injected gh workflow run), nudges and chained runs;
+            # a run that ships nothing is invisible to the commit count
+            # above. Scheduled runs never skip here. Fails open.
+            node scripts/cloud/quota.mjs dispatch --event "$EVENT" --run-id "$GITHUB_RUN_ID" --max "$DISPATCH_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       # The quota governor (scripts/cloud/quota.mjs): every loop on
@@ -135,10 +161,12 @@ jobs:
           restore-keys: nexus-quota-
 
       # Skips the model (a clean exit) while the pause issue's reset
-      # is ahead, or, for a scheduled or chained tick, when the cached
-      # utilization is at or above the repo variable NEXUS_QUOTA_MAX
-      # (default 0.90; `off` disables that soft cap). Nudge, loop:do
-      # and hand-dispatched runs ignore the soft cap. Fails open.
+      # is ahead; for every tick at or above the hard ceiling, 0.97
+      # seven_day utilization (a constant, not a knob); and, for a
+      # scheduled or chained tick, when the cached utilization is at or
+      # above the repo variable NEXUS_QUOTA_MAX (default 0.90; `off`
+      # disables that soft cap). Nudge, loop:do and hand-dispatched
+      # runs ignore the soft cap, never the hard one. Fails open.
       - name: Quota gate
         id: quota_gate
         env:
@@ -249,6 +277,9 @@ jobs:
             7. If the tick cannot ship cleanly (red verify, red deploy, blocked phase, no work to do, anything else), do NOT half-commit. Either:
                - exit cleanly with a one-line note in the action log explaining why no work shipped this tick, or
                - if there is a real failure to surface, open a GitHub issue with `gh issue create --title "Cloud march failed: <iso-date>" --body "<context + run URL>"` and exit. Do not pass `--label` — the issue lands unlabeled and the next scheduled tick's /triage classifies and labels it appropriately.
+               - every issue this tick opens, for any reason, carries this line in its body (the loop-filed marker: no issue the loop files starts another tick), and never a `bug`, `loop:do` or other urgent label:
+
+                  Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
             8. This checkout is in owner mode (an untracked .owner) and the claims session is NEXUS_SESSION (cloud-<run id>): /next claims, settles and lands on <DEFAULT_BRANCH> as the owner's checkout does.
 
@@ -342,6 +373,7 @@ jobs:
         env:
           LANDED: ${{ steps.idle_record.outputs.landed }}
           CEILING: ${{ steps.ceiling.outputs.skip }}
+          CEILING_REASON: ${{ steps.ceiling.outputs.reason }}
           QUOTA_SKIP: ${{ steps.quota_gate.outputs.skip }}
           QUOTA_REASON: ${{ steps.quota_gate.outputs.reason }}
           IDLE_SKIP: ${{ steps.idle.outputs.skip }}
@@ -353,7 +385,7 @@ jobs:
           READY: ${{ steps.idle.outputs.ready }}
           EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
         run: >-
-          node scripts/cloud/idle.mjs noop --landed "$LANDED" --ceiling "$CEILING"
+          node scripts/cloud/idle.mjs noop --landed "$LANDED" --ceiling "$CEILING" --ceiling-reason "$CEILING_REASON"
           --quota-skip "$QUOTA_SKIP" --quota-reason "$QUOTA_REASON" --idle-skip "$IDLE_SKIP" --idle-reason "$IDLE_REASON"
           --quota-status "$QUOTA_STATUS" --resets "$RESETS" --lost "$LOST" --model "$MODEL" --ready "$READY" "$EXEC_FILE"
 
@@ -414,6 +446,7 @@ jobs:
       contents: write        # the claims branch (scripts/claims.mjs), nothing else
       pull-requests: read    # how many loop PRs are open
       issues: write          # the quota gate reads and closes the pause issue
+      actions: read          # the dispatch ceiling counts workflow_dispatch runs
     outputs:
       id: ${{ steps.pick.outputs.id }}
     steps:
@@ -444,13 +477,22 @@ jobs:
           QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
         run: node scripts/cloud/quota.mjs gate --event "$EVENT" --reason "$REASON" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
 
+      # The dispatch ceiling, as in the owner job's ceiling step.
+      - name: Dispatch ceiling
+        id: ceiling
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          DISPATCH_MAX: ${{ vars.NEXUS_DISPATCH_MAX || '12' }}
+        run: node scripts/cloud/quota.mjs dispatch --event "$EVENT" --run-id "$GITHUB_RUN_ID" --max "$DISPATCH_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
       # The first ready, unclaimed chunk in /next's pick order on
       # origin, claimed for this run's session (a contributor
       # named nexus-cloud). Nothing when NEXUS_PR_LIMIT loop PRs
       # (default 3) already wait on the owner.
       - name: Pick and claim one chunk
         id: pick
-        if: steps.quota_gate.outputs.skip != 'true'
+        if: steps.quota_gate.outputs.skip != 'true' && steps.ceiling.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           NEXUS_SESSION: cloud-${{ github.run_id }}
@@ -467,7 +509,9 @@ jobs:
         env:
           QUOTA_SKIP: ${{ steps.quota_gate.outputs.skip }}
           QUOTA_REASON: ${{ steps.quota_gate.outputs.reason }}
-        run: node scripts/cloud/idle.mjs noop --quota-skip "$QUOTA_SKIP" --quota-reason "$QUOTA_REASON" --nothing-picked
+          CEILING: ${{ steps.ceiling.outputs.skip }}
+          CEILING_REASON: ${{ steps.ceiling.outputs.reason }}
+        run: node scripts/cloud/idle.mjs noop --ceiling "$CEILING" --ceiling-reason "$CEILING_REASON" --quota-skip "$QUOTA_SKIP" --quota-reason "$QUOTA_REASON" --nothing-picked
 
   build:
     needs: pick

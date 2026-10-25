@@ -1067,7 +1067,34 @@ function runSuites(suites, label) {
 async function legWorkflows() {
   const { lintDirs } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/workflow-lint.mjs')).href)
   const { problems, files } = lintDirs(['.github/workflows', '.github/actions', 'templates/.github/workflows', 'templates/.github/actions'].map((d) => path.join(ROOT, d)))
-  return { failures: problems.map((p) => { const m = /^(.*?\.ya?ml)(:.*)$/s.exec(p); return m ? normalize(path.relative(ROOT, m[1])) + m[2] : p }), note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts` }
+  const failures = problems.map((p) => { const m = /^(.*?\.ya?ml)(:.*)$/s.exec(p); return m ? normalize(path.relative(ROOT, m[1])) + m[2] : p })
+  failures.push(...marchGovernorCheck())
+  return { failures, note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts; march.yml's reason, dispatch ceiling and loop-filed marker` }
+}
+
+// Spec 54: both march.yml copies take a `reason` input shown in the
+// run name (the nudge counts its event ticks by it), hold the
+// dispatch ceiling in the ceiling step (quota.mjs dispatch against
+// NEXUS_DISPATCH_MAX, with actions: read), and tell the tick that an
+// issue it opens carries the `Cloud-Run:` loop-filed marker and no
+// urgent label. The 0.97 hard quota ceiling is quota.mjs's HARD_MAX,
+// held by its tests.
+function marchGovernorCheck(readFile = read) {
+  const failures = []
+  for (const file of ['.github/workflows/march.yml', 'templates/.github/workflows/march.yml']) {
+    if (!fs.existsSync(path.join(ROOT, file))) continue
+    const text = readFile(file)
+    const runName = /^run-name:\s*(.*)$/m.exec(text)
+    if (!runName || !runName[1].includes('inputs.verb') || !runName[1].includes('inputs.reason')) failures.push(`${file}: run-name must show the verb and the reason (run-name: march \${{ inputs.verb || 'march' }} \${{ inputs.reason }})`)
+    if (!/^\s{6}reason:\s*$/m.test(text)) failures.push(`${file}: no workflow_dispatch \`reason\` input`)
+    const ceiling = text.indexOf('id: ceiling')
+    const ceilingEnd = ceiling < 0 ? -1 : text.indexOf('\n      - ', ceiling)
+    const step = ceiling < 0 ? '' : text.slice(ceiling, ceilingEnd < 0 ? undefined : ceilingEnd)
+    if (!/quota\.mjs dispatch\b/.test(step) || !step.includes('NEXUS_DISPATCH_MAX')) failures.push(`${file}: the ceiling step holds no dispatch ceiling (quota.mjs dispatch against NEXUS_DISPATCH_MAX)`)
+    if (!/^\s+actions:\s*read\b/m.test(text)) failures.push(`${file}: the dispatch ceiling needs \`actions: read\``)
+    if (!/loop-filed marker/.test(text) || !/never .*`?bug`?, `?loop:do`?/.test(text)) failures.push(`${file}: the prompt never says an issue the tick opens carries the Cloud-Run: loop-filed marker and no urgent label`)
+  }
+  return failures
 }
 
 // --- leg: diagrams ------------------------------------------------------------

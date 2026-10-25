@@ -210,7 +210,8 @@ describe('the no-op reason', () => {
   });
 
   it('names each skip before the model', () => {
-    assert.match(noopReason({ ceiling: 'true' }).reason, /^ceiling/);
+    assert.match(noopReason({ ceiling: 'true' }).reason, /^ceiling \(the 24h cloud commit budget is spent\)/);
+    assert.match(noopReason({ ceiling: 'true', ceilingReason: '12 workflow_dispatch runs started in the last 24h, at or above NEXUS_DISPATCH_MAX 12' }).reason, /^ceiling \(12 workflow_dispatch runs/);
     assert.match(noopReason({ quotaSkip: 'true', quotaReason: 'seven_day utilization 0.91 is at or above NEXUS_QUOTA_MAX 0.9' }).reason, /^quota \(seven_day utilization 0\.91/);
     assert.match(noopReason({ idleSkip: 'true', idleReason: 'nothing changed' }).reason, /^idle skip \(nothing changed\)/);
   });

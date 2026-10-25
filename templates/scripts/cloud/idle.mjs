@@ -16,8 +16,8 @@
 //       After the model: fetches origin/<main>, asks whether a commit carries this run's `Cloud-Run:` trailer, and
 //       keeps the fingerprint the tick left. A landed tick resets the count; a scheduled no-op adds one. Sets
 //       `landed` (true|false).
-//   node scripts/cloud/idle.mjs noop [--landed <bool>] [--ceiling <skip>] [--quota-skip <skip>] [--quota-reason <why>]
-//                                    [--idle-skip <skip>] [--idle-reason <why>] [--quota-status <status>]
+//   node scripts/cloud/idle.mjs noop [--landed <bool>] [--ceiling <skip>] [--ceiling-reason <why>] [--quota-skip <skip>]
+//                                    [--quota-reason <why>] [--idle-skip <skip>] [--idle-reason <why>] [--quota-status <status>]
 //                                    [--resets <ISO>] [--lost <bool>] [--model <outcome>] [--ready <n>]
 //                                    [--nothing-picked] [--land-failed <bool>] [<execution file>]
 //       Writes `no-op reason: <why>` to the step summary when nothing landed (a lost-to-background run is already
@@ -142,7 +142,7 @@ export function excerpt(text, n = 160) {
  */
 export function noopReason(o) {
   if (yes(o.landed)) return null;
-  if (yes(o.ceiling)) return { reason: 'ceiling (the 24h cloud commit budget is spent)' };
+  if (yes(o.ceiling)) return { reason: `ceiling (${o.ceilingReason || 'the 24h cloud commit budget is spent'})` };
   if (yes(o.quotaSkip)) return { reason: `quota (${o.quotaReason || 'the quota gate skipped the model'})` };
   if (yes(o.idleSkip)) return { reason: `idle skip (${o.idleReason || 'nothing changed since the last no-op'})` };
   if (o.quotaStatus === 'rejected') return { reason: `quota (the weekly quota ran out during the tick${o.resets ? `; it resets ${o.resets}` : ''})` };
@@ -284,6 +284,7 @@ function noop(f, { env }) {
   const r = noopReason({
     landed: f.landed,
     ceiling: f.ceiling,
+    ceilingReason: f['ceiling-reason'],
     quotaSkip: f['quota-skip'],
     quotaReason: f['quota-reason'],
     idleSkip: f['idle-skip'],
@@ -319,7 +320,7 @@ export async function main(argv, { env = process.env, run = shRun, git = gitRun,
     case 'noop':
       return noop(f, { env });
     default:
-      console.error('usage: node scripts/cloud/idle.mjs probe [--state <file>] [--event <name>] [--reason <why>] [--main <branch>] [--backoff <K>] [--wake-every <N>] | record [--state <file>] [--event <name>] [--reason <why>] [--main <branch>] --run-url <url> | noop [--landed <bool>] [--ceiling <skip>] [--quota-skip <skip>] [--quota-reason <why>] [--idle-skip <skip>] [--idle-reason <why>] [--quota-status <status>] [--resets <ISO>] [--lost <bool>] [--model <outcome>] [--ready <n>] [--nothing-picked] [--land-failed <bool>] [<execution file>]');
+      console.error('usage: node scripts/cloud/idle.mjs probe [--state <file>] [--event <name>] [--reason <why>] [--main <branch>] [--backoff <K>] [--wake-every <N>] | record [--state <file>] [--event <name>] [--reason <why>] [--main <branch>] --run-url <url> | noop [--landed <bool>] [--ceiling <skip>] [--ceiling-reason <why>] [--quota-skip <skip>] [--quota-reason <why>] [--idle-skip <skip>] [--idle-reason <why>] [--quota-status <status>] [--resets <ISO>] [--lost <bool>] [--model <outcome>] [--ready <n>] [--nothing-picked] [--land-failed <bool>] [<execution file>]');
       return 2;
   }
 }

@@ -75,7 +75,7 @@ A few new files relative to the standard nexus overlay:
 ├── actions/setup/action.yml  # the project's toolchain, shared by every tick job
 └── CLOUD_LOOP.md          # operator's guide (lives in repo)
 scripts/
-├── cloud/quota.mjs        # quota governor: read, cache, gate, pause issue
+├── cloud/quota.mjs        # quota governor: read, cache, gate, dispatch ceiling, pause issue
 ├── cloud/lost.mjs         # lost-to-background mark, after the model
 ├── cloud/idle.mjs         # idle probe (skip the model when nothing changed) + no-op reason
 ├── cloud/tick.mjs         # PR mode: pick + claim, fence, land, release

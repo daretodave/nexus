@@ -20,6 +20,10 @@ name: march
 # with the CLI's own tests and walk its demo screens
 # (npm run walk). The kit's own gate stays zero-dependency.
 
+# The verb and the reason in every run's title (spec 54): the nudge
+# counts its event ticks by the `issue-` reason it dispatches with.
+run-name: march ${{ inputs.verb || 'march' }} ${{ inputs.reason }}
+
 on:
   schedule:
     # 4 ticks/day: steady, reviewable motion on the kit and the
@@ -33,6 +37,15 @@ on:
         type: choice
         default: march
         options: [march, next, critique, iterate, expand, triage, digest]
+      # Why this run was dispatched (spec 54): `issue-<n>` from the
+      # nudge, `chain` from a chained tick, empty by hand. Shown in
+      # the run name; read by the quota gate and the idle probe
+      # through env, never inlined into a script or the prompt.
+      reason:
+        description: 'Why this run was dispatched (issue-<n>, chain; empty by hand)'
+        required: false
+        type: string
+        default: ''
       # Spec 55.6: does claude-code-action load this repo's .claude
       # hooks? With this set, guard.mjs logs its first call to
       # $RUNNER_TEMP/hook-probe.log and the Hook probe report step
@@ -57,6 +70,7 @@ jobs:
       contents: write   # push to main
       issues: write     # /triage labels + mirrors + crash issue
       id-token: write   # Claude Code Action OIDC
+      actions: read     # the dispatch ceiling counts workflow_dispatch runs
     steps:
       - name: Checkout (full history for /march dispatch)
         id: checkout
@@ -78,6 +92,10 @@ jobs:
 
       - name: Daily commit ceiling check
         id: ceiling
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          DISPATCH_MAX: ${{ vars.NEXUS_DISPATCH_MAX || '12' }}
         run: |
           # Cloud commits are identified by the `Cloud-Run:` trailer
           # the agent appends to every commit message (the brief
@@ -105,8 +123,15 @@ jobs:
           if [ "$budget" -ge "$ceiling" ]; then
             echo "Cloud ceiling reached ($ceiling weighted budget/24h). Exiting cleanly — no work this tick."
             echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "reason=the 24h cloud commit budget is spent" >> "$GITHUB_OUTPUT"
           else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
+            # The dispatch ceiling (spec 54): a dispatched run exits
+            # cleanly once NEXUS_DISPATCH_MAX (12) workflow_dispatch
+            # runs of any workflow started here in 24h. It bounds a
+            # tick that dispatches runs itself (a prompt-injected gh
+            # workflow run), nudges and chained runs; a run that ships
+            # nothing is invisible to the commit count above. Fails open.
+            node templates/scripts/cloud/quota.mjs dispatch --event "$EVENT" --run-id "$GITHUB_RUN_ID" --max "$DISPATCH_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       # The quota governor (templates/scripts/cloud/quota.mjs, the
@@ -121,9 +146,12 @@ jobs:
           restore-keys: nexus-quota-
 
       # Skips the model (a clean exit) while the pause issue's reset
-      # is ahead, or, for a scheduled or chained tick, when the cached
-      # utilization is at or above NEXUS_QUOTA_MAX (`off` disables
-      # that soft cap; nexus yields first at 0.80). Fails open.
+      # is ahead; for every tick (support, loop:do and hand-dispatched
+      # ones included) at or above the hard ceiling, 0.97 seven_day
+      # utilization, a constant; and, for a scheduled or chained tick,
+      # when the cached utilization is at or above NEXUS_QUOTA_MAX
+      # (`off` disables that soft cap; nexus yields first at 0.80).
+      # Fails open.
       - name: Quota gate
         id: quota_gate
         env:
@@ -276,7 +304,15 @@ jobs:
                has an explicit carve-out for this single trailer.
             9. If the tick cannot ship cleanly, do NOT half-commit: exit with
                a one-line note in this log, or open an unlabeled issue via
-               gh issue create (the next /triage classifies it).
+               gh issue create (the next /triage classifies it). Every issue
+               this tick opens, for any reason, carries this line in its
+               body (the loop-filed marker, so no issue the loop files
+               starts another tick):
+
+                  Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+               and never --label bug, loop:do or any urgent label (triage
+               still classifies it later).
             10. The CLI gate is ${{ steps.cli_build.outcome == 'success' && 'ON' || 'OFF' }} this tick (NEXUS_CLI_GATE in the env).
                ON: packages/cli is installed and built, and any diff
                touching packages/cli is gated by node scripts/verify.mjs
@@ -409,6 +445,7 @@ jobs:
         env:
           LANDED: ${{ steps.idle_record.outputs.landed }}
           CEILING: ${{ steps.ceiling.outputs.skip }}
+          CEILING_REASON: ${{ steps.ceiling.outputs.reason }}
           QUOTA_SKIP: ${{ steps.quota_gate.outputs.skip }}
           QUOTA_REASON: ${{ steps.quota_gate.outputs.reason }}
           IDLE_SKIP: ${{ steps.idle.outputs.skip }}
@@ -420,7 +457,7 @@ jobs:
           READY: ${{ steps.idle.outputs.ready }}
           EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
         run: >-
-          node templates/scripts/cloud/idle.mjs noop --landed "$LANDED" --ceiling "$CEILING"
+          node templates/scripts/cloud/idle.mjs noop --landed "$LANDED" --ceiling "$CEILING" --ceiling-reason "$CEILING_REASON"
           --quota-skip "$QUOTA_SKIP" --quota-reason "$QUOTA_REASON" --idle-skip "$IDLE_SKIP" --idle-reason "$IDLE_REASON"
           --quota-status "$QUOTA_STATUS" --resets "$RESETS" --lost "$LOST" --model "$MODEL" --ready "$READY" "$EXEC_FILE"
 

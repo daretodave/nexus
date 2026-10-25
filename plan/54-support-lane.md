@@ -157,7 +157,11 @@ fails the `workflows` leg.
   prompt-injected tick that calls `gh workflow run` itself;
   the weighted commit ceiling stays as it is. Chained runs
   (spec 55) count against the same cap. The job gains
-  `actions: read`.
+  `actions: read`. Built as `quota.mjs dispatch`: only a
+  `workflow_dispatch` run skips on it (scheduled ticks never
+  do), it excludes the run itself, fails open when `gh` cannot
+  list runs, and the template's pull-request `pick` job holds
+  it too.
 - A hard quota ceiling of 0.97 `seven_day` utilization,
   inside spec 55's quota gate: at or above it every tick
   exits cleanly, whatever its event, verb, reason or label.
@@ -242,10 +246,8 @@ asap_cap: 3                 # nexus: 3
 - **A4** `source: user` AUDIT rows gain +1 per 12h (cap +4) and are never filtered by the 3.0 floor; a re-scored #86-shaped row (impact 6, ease 4, 24h old) ranks above every docs row under 4.4.
 - **A5** An open `triage:loop-queued` issue older than `sla_hours` whose work is not in the Asap lane is plotted asap by Step 1.5 and built before any spec-table chunk.
 - **A6** A support fix commit carries `Refs #N` and never `Closes`/`Fixes`; after it lands the issue gets a comment naming the commit and is closed, except a `packages/cli` fix, which says it lands in the next release and stays open.
-- **A7** march.yml takes a `reason` input shown in its run name, and an issue a tick opens carries a `Cloud-Run:` body line and no urgent label.
 - **A8** A collaborator opening an issue labeled `bug` on nexus starts a march run (event `workflow_dispatch`, reason `issue-<n>`) within 15 minutes when nothing is pending in the `march` group; an outsider's issue, a `loop:opened` mirror and a loop-filed issue start none.
 - **A9** `nudge-check.mjs`, tested against stubbed `gh run list` JSON, skips when a march or night run is queued or pending, and when 6 event ticks started in the last 24h; it never cancels a pending night run.
-- **A10** The ceiling step exits cleanly once 12 `workflow_dispatch` runs started in the repository in 24h, and every tick, support and `loop:do` included, exits cleanly at 0.97 `seven_day` utilization.
 - **A11** Tagging `cli-vX.Y.Z` comments "Fixed in @usenexus/cli X.Y.Z" on and closes every open issue labeled `triage:loop-queued` or `bug` referenced by `Refs #N` in the release range; any other referenced issue is left alone and listed in the step summary.
 - **A12** With `NEXUS_SUPPORT` unset an adopter runs as today (no event ticks, AUDIT routing); the knobs are documented in `customization/` and `templates/.github/CLOUD_LOOP.md`, `nudge.yml` is in the README tree, and nexus runs `fix-all`.
 - **A13** `/digest` prints open user issues, mean time to first response and mean time to close over 7 days, and a `triage:needs-user` issue older than `escalate_days` tops "Needs you" and is notified.
@@ -256,14 +258,12 @@ asap_cap: 3                 # nexus: 3
 
 ## Chunks
 
-Measure: 10 open · 3 closed · next A14
+Measure: 8 open · 5 closed · next A14
 
 - [ ] **54.3** User rows age into the queue; the support SLA step · S · closes A4, A5 · needs —
   - Seed: re-score the open `source: user` AUDIT rows in the same commit.
 - [ ] **54.4** A fixed issue is told and closed · S · closes A6 · needs —
-- [ ] **54.5** march.yml reason, dispatch ceiling, hard quota, loop-filed marker · M · closes A7, A10 · needs —
-  - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs 54.3, 54.5
+- [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs 54.3
   - Local: touches .github/workflows (cloud token cannot push it).
   - After landing: `gh variable set NEXUS_SUPPORT --body fix-all` on nexus, then watch one test issue through (a collaborator bug, an outsider issue, a loop-filed issue).
 - [ ] **54.7** A cli release closes the issues it fixed · S · closes A11 · needs 54.4

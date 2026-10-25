@@ -58,12 +58,24 @@ the failure mode of the thing it watches.
   `plan/ARCHIVE.md`) costs 3, a churn commit
   (`/iterate`, `/critique`, `/triage`, `/digest`) costs 1.
   Local commits don't count.
+- **Dispatch ceiling:** the same step stops a
+  `workflow_dispatch` run once `NEXUS_DISPATCH_MAX` (12)
+  dispatch runs of any workflow started in the repository in
+  24h (`quota.mjs dispatch`; the job holds `actions: read`).
+  It bounds a tick that dispatches runs itself, nudges and
+  chained runs; scheduled ticks never skip on it.
+- **Run name and reason:** every run is titled `march <verb>
+  <reason>`; the `reason` input (`issue-<n>`, `chain`, empty by
+  hand) reaches the gates through `env:` only. An issue a tick
+  opens carries a `Cloud-Run: <run url>` body line and no
+  urgent label (prompt rule 9), so it never starts a tick.
 - **Quota governor:** every march and night tick writes its
   `seven_day` utilization to the step summary and caches it
   (`templates/scripts/cloud/quota.mjs`, run in place). The
   next scheduled tick skips the model at or above
   `NEXUS_QUOTA_MAX` (0.80 here, so nexus yields first; `off`
-  disables it); a weekly lockout opens one `Loop paused:
+  disables it), and every tick, support and `loop:do` ones
+  included, skips at the hard ceiling of 0.97; a weekly lockout opens one `Loop paused:
   weekly quota until <ISO>` issue instead of a crash issue,
   and the first tick after the reset closes it. Only a
   labelled pause issue, or one the workflow token opened,

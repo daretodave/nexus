@@ -262,6 +262,30 @@ one file) costs **1**. The tick exits with no work once the
 bootstrap). Default is 12 — four chunk ships, or a dozen
 churn ticks, or any mix between.
 
+A tick that ships nothing is invisible to that count, so the
+same step holds a second one: the **dispatch ceiling**
+(`node scripts/cloud/quota.mjs dispatch`). A
+`workflow_dispatch` run exits clean once
+`NEXUS_DISPATCH_MAX` (repo variable, default 12)
+`workflow_dispatch` runs of any workflow started in the
+repository in the last 24 hours. It bounds a tick that calls
+`gh workflow run` itself (a prompt-injected one), event nudges
+and chained runs alike; scheduled ticks never skip on it, and
+it fails open when `gh` cannot list the runs. The job holds
+`actions: read` for it. The step summary's no-op reason names
+which ceiling stopped the tick.
+
+Every run is titled `march <verb> <reason>` (`run-name`): the
+`reason` input says why a run was dispatched (`issue-<n>` from
+a nudge, `chain` from a chained tick, empty by hand). The gates
+read it through `env:`, never inlined into a script or the
+prompt.
+
+An issue a tick opens carries a `Cloud-Run: <run url>` line in
+its body (the loop-filed marker) and never a `bug`, `loop:do`
+or other urgent label, so nothing the loop files starts another
+tick; `/triage` still classifies it.
+
 ## The quota governor
 
 Every loop on one Claude subscription shares its weekly
@@ -272,12 +296,16 @@ tick's own model output and acts before the next tick spends:
 | Step | What it does |
 |---|---|
 | Quota read | After the model: writes `seven_day utilization: <u> (<status>, resets <ISO>)` to the step summary and caches it (`actions/cache`, key `nexus-quota-<run id>`) |
-| Quota gate | Before the model: restores the newest cached reading and exits clean, with no model call, while the weekly quota is out, or when a scheduled or chained tick finds utilization at or above `NEXUS_QUOTA_MAX` |
+| Quota gate | Before the model: restores the newest cached reading and exits clean, with no model call, while the weekly quota is out, for every tick at or above the hard ceiling (0.97), or when a scheduled or chained tick finds utilization at or above `NEXUS_QUOTA_MAX` |
 | Pause on the weekly quota | On a `rejected` reading: ONE issue `Loop paused: weekly quota until <ISO>` (label `loop:paused-quota`) instead of a crash issue; the first tick after the reset closes it |
 
 - `NEXUS_QUOTA_MAX` (repo variable): the soft cap, default
   `0.90`; `off` disables it. Nudge, `loop:do` and hand-run
   ticks ignore it; the lockout stops every kind of run.
+- The hard ceiling: at or above 0.97 `seven_day` utilization
+  every tick exits clean, whatever its event, verb, reason or
+  label. A constant, not a knob: it keeps the last 3% of the
+  week for the owner's own sessions.
 - The gate fails open: no cache, or one it cannot parse, runs
   the tick.
 - `heartbeat.yml` files no flatline while the pause issue is

@@ -738,7 +738,7 @@ nexus/
     │   ├── worktree.mjs               # close a worktree safely (links unlinked first); list for /tidy
     │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env, no issue text in a prompt
     │   ├── cloud/tick.mjs             # PR-mode tick: pick + claim, fence, land the PR, release
-    │   ├── cloud/quota.mjs            # quota governor: seven_day read + cache, the gate, the pause issue
+    │   ├── cloud/quota.mjs            # quota governor: seven_day read + cache, the gate (0.97 hard ceiling), the dispatch ceiling, the pause issue
     │   ├── cloud/lost.mjs             # lost-to-background mark: a result parked on background work, no commit
     │   ├── cloud/idle.mjs             # idle probe: a scheduled tick skips the model when nothing changed; the no-op reason
     │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs

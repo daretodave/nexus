@@ -7,7 +7,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import {
-  decide, isoOf, lastQuota, main, parseMessages, pausedUntil, pauseTitle, quotaLine, runKind, softCap,
+  decide, decideDispatch, dispatchMax, HARD_MAX, isoOf, lastQuota, main, parseMessages, pausedUntil, pauseTitle, quotaLine,
+  recentDispatches, runKind, softCap,
 } from '../cloud/quota.mjs';
 
 // A locked-out tick: the event, then the API error that carries the same info without utilization.
@@ -156,6 +157,20 @@ describe('the gate decides', () => {
     assert.equal(decide({ cache, pause: null, kind: 'scheduled', max: null, now }).skip, false, 'off disables the cap');
   });
 
+  it('the hard ceiling 0.97 stops every run, manual (support, loop:do) ones included, whatever the soft cap says', () => {
+    assert.equal(HARD_MAX, 0.97);
+    const cache = { utilization: 0.97, status: 'allowed_warning', resetsAt: WARNING_AT };
+    for (const kind of ['scheduled', 'chained', 'manual']) {
+      for (const max of [0.8, 0.99, 1, null]) {
+        const d = decide({ cache, pause: null, kind, max, now });
+        assert.equal(d.skip, true, `${kind} at max ${max}`);
+        assert.match(d.reason, /hard ceiling 0\.97/);
+      }
+    }
+    assert.equal(decide({ cache: { ...cache, utilization: 0.969 }, pause: null, kind: 'manual', max: 0.8, now }).skip, false, 'just under: a manual run goes');
+    assert.equal(decide({ cache: { ...cache, utilization: 0.969 }, pause: null, kind: 'scheduled', max: null, now }).skip, false, 'off leaves only the hard ceiling');
+  });
+
   it('a lockout whose reset has passed no longer counts against the cap', () => {
     assert.equal(decide({ cache: rejected, pause: null, kind: 'scheduled', max: 0.9, now: new Date('2026-10-20T00:00:00Z') }).skip, false);
   });
@@ -249,6 +264,80 @@ describe('gate over gh', () => {
     const b = withCache(reading);
     await main(['gate', '--cache', b.cache, '--event', 'schedule', '--max', '0.9'], { env: b.env, run: ghStub().run, now: new Date('2026-10-25T00:00:00Z') });
     assert.equal(outputs(b.env.GITHUB_OUTPUT).skip, 'true');
+  });
+});
+
+describe('the dispatch ceiling', () => {
+  const now = new Date('2026-10-25T12:00:00Z');
+  const ago = (h) => new Date(now.getTime() - h * 3600 * 1000).toISOString();
+  /** n workflow_dispatch runs spread over the last 23 hours, across march, night and nudge-started ticks. */
+  const runsOf = (n, extra = []) => [
+    ...Array.from({ length: n }, (_, i) => ({ databaseId: 1000 + i, createdAt: ago(1 + (i % 23)), event: 'workflow_dispatch', workflowName: i % 3 ? 'march' : 'night' })),
+    ...extra,
+  ];
+  const env = () => {
+    const d = tmp();
+    return { GITHUB_OUTPUT: path.join(d, 'out'), GITHUB_STEP_SUMMARY: path.join(d, 'sum') };
+  };
+
+  it('reads NEXUS_DISPATCH_MAX, default 12', () => {
+    assert.equal(dispatchMax(''), 12);
+    assert.equal(dispatchMax(undefined), 12);
+    assert.equal(dispatchMax('6'), 6);
+    assert.equal(dispatchMax('0'), 12);
+    assert.equal(dispatchMax('lots'), 12);
+    assert.equal(dispatchMax('2.5'), 12);
+  });
+
+  it('counts only workflow_dispatch runs of the last 24h, this run excluded', () => {
+    const runs = runsOf(3, [
+      { databaseId: 7, createdAt: ago(25), event: 'workflow_dispatch' },
+      { databaseId: 8, createdAt: ago(2), event: 'schedule' },
+      { databaseId: 9, createdAt: ago(0.1), event: 'workflow_dispatch' },
+      { databaseId: 10, createdAt: 'not a date', event: 'workflow_dispatch' },
+    ]);
+    assert.equal(recentDispatches(runs, { now, runId: '9' }).length, 3);
+    assert.equal(recentDispatches(runs, { now, runId: '' }).length, 4);
+  });
+
+  it('a dispatched run exits clean once 12 other dispatch runs started in 24h; 11 still runs', () => {
+    const at = decideDispatch({ event: 'workflow_dispatch', runs: runsOf(12), max: 12, now, runId: '1' });
+    assert.equal(at.skip, true);
+    assert.match(at.reason, /12 workflow_dispatch runs .* NEXUS_DISPATCH_MAX 12/);
+    assert.equal(decideDispatch({ event: 'workflow_dispatch', runs: runsOf(11), max: 12, now, runId: '1' }).skip, false);
+  });
+
+  it('a scheduled run never skips here, and gh failing fails open', () => {
+    assert.equal(decideDispatch({ event: 'schedule', runs: runsOf(40), max: 12, now }).skip, false);
+    assert.equal(decideDispatch({ event: 'workflow_dispatch', runs: null, max: 12, now }).skip, false);
+  });
+
+  it('over gh: lists the repo-wide dispatch runs since 24h ago and writes skip and reason', async () => {
+    const e = env();
+    const gh = ghStub({ 'run list': { ok: true, stdout: JSON.stringify(runsOf(12, [{ databaseId: 555, createdAt: ago(0), event: 'workflow_dispatch' }])), stderr: '' } });
+    await main(['dispatch', '--event', 'workflow_dispatch', '--run-id', '555', '--max', '12'], { env: e, run: gh.run, now });
+    const call = gh.calls.find((c) => c[1] === 'run' && c[2] === 'list');
+    assert.ok(call.includes('--event') && call[call.indexOf('--event') + 1] === 'workflow_dispatch');
+    assert.equal(call[call.indexOf('--created') + 1], '>=2026-10-24T12:00:00Z');
+    assert.ok(!call.includes('--workflow'), 'every workflow in the repository counts');
+    assert.equal(outputs(e.GITHUB_OUTPUT).skip, 'true');
+    assert.match(fs.readFileSync(e.GITHUB_STEP_SUMMARY, 'utf8'), /Dispatch ceiling: skip/);
+  });
+
+  it('over gh: under the cap runs; a scheduled run asks gh nothing; gh failing runs', async () => {
+    const under = env();
+    await main(['dispatch', '--event', 'workflow_dispatch', '--max', '12'], { env: under, run: ghStub({ 'run list': { ok: true, stdout: JSON.stringify(runsOf(4)), stderr: '' } }).run, now });
+    assert.equal(outputs(under.GITHUB_OUTPUT).skip, 'false');
+    const sched = env();
+    const gh = ghStub();
+    await main(['dispatch', '--event', 'schedule'], { env: sched, run: gh.run, now });
+    assert.equal(outputs(sched.GITHUB_OUTPUT).skip, 'false');
+    assert.equal(gh.calls.length, 0);
+    for (const answer of [{ ok: false, stdout: '', stderr: 'gh: auth' }, { ok: true, stdout: '{ nope', stderr: '' }]) {
+      const e = env();
+      await main(['dispatch', '--event', 'workflow_dispatch'], { env: e, run: ghStub({ 'run list': answer }).run, now });
+      assert.equal(outputs(e.GITHUB_OUTPUT).skip, 'false');
+    }
   });
 });
 

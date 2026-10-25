@@ -220,3 +220,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 54.1 · Issue and page text is data; lint scans prompt inputs · 8c094b6..54.1
 - 2026-10-25 · 54.2 · Support routing: fix now or Asap, and march keeps going · dbdd46d..dbdd46d
 - 2026-10-25 · 56.5 · iterate dimension H with the magic guard; expand signal F · adf5772..adf5772
+- 2026-10-25 · 54.5 · march.yml reason, dispatch ceiling, hard quota, loop-filed marker · f429479..f429479
