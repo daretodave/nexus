@@ -13,7 +13,9 @@
 //      step that needs them.
 //   3. Injection. A `run:` script never interpolates text a pull request or an issue author wrote
 //      (`${{ github.event.pull_request.title }}`, `${{ github.head_ref }}`, …): pass it through `env:` and read the
-//      variable, or read the event payload file.
+//      variable, or read the event payload file. The same holds for an action's `with:` inputs that become a model's
+//      instructions (`prompt`, `direct_prompt`, `claude_args`): issue text in a prompt steers the agent, so only an
+//      issue NUMBER crosses, and the agent reads the rest as data.
 //   4. Composite actions (.github/actions/<name>/action.yml) keep rule 3 for their own run scripts, and read no
 //      secret: a composite action has no secrets context, so the secret comes in as an input.
 //
@@ -103,6 +105,32 @@ export function runScripts(yml) {
   return out;
 }
 
+/** The `with:` keys whose value an agent reads as its instructions. */
+export const PROMPT_INPUTS = ['prompt', 'direct_prompt', 'claude_args'];
+
+/**
+ * Each prompt input's text under a `with:` block: `{ key, text }`, an inline value or a block scalar. Only keys at the
+ * with-block's own indent count, so a nested map that happens to name `prompt` is left alone.
+ */
+export function promptInputs(yml) {
+  const lines = yml.split(/\r?\n/);
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^\s*(?:- )?with:\s*$/.test(lines[i])) continue;
+    const block = blockUnder(lines, i);
+    const first = block.find(isContent);
+    if (!first) continue;
+    const keyIndent = indentOf(first);
+    for (let j = 0; j < block.length; j++) {
+      if (!isContent(block[j]) || indentOf(block[j]) !== keyIndent) continue;
+      const m = /^\s*([\w-]+):\s*(.*)$/.exec(block[j]);
+      if (!m || !PROMPT_INPUTS.includes(m[1])) continue;
+      out.push({ key: m[1], text: /^[|>][-+]?\s*$/.test(m[2]) ? blockUnder(block, j).join('\n') : m[2] });
+    }
+  }
+  return out;
+}
+
 /** What's wrong with one workflow file, one line per problem. */
 export function lintWorkflow(name, text) {
   const problems = [];
@@ -133,12 +161,17 @@ export function lintWorkflow(name, text) {
   return problems;
 }
 
-/** Rule 3: each run script that interpolates outsider text, one line each. */
+/** Rule 3: each run script or prompt input that interpolates outsider text, one line each. */
 function injections(name, text) {
   const problems = [];
   for (const script of runScripts(text)) {
     for (const expr of expressions(script)) {
       if (UNTRUSTED.test(expr)) problems.push(`${name}: a run script interpolates \${{${expr}}} (outsider text: pass it through env: instead)`);
+    }
+  }
+  for (const { key, text: input } of promptInputs(text)) {
+    for (const expr of expressions(input)) {
+      if (UNTRUSTED.test(expr)) problems.push(`${name}: with: ${key} interpolates \${{${expr}}} (outsider text steers the agent: pass the issue number, the agent reads the rest as data)`);
     }
   }
   return problems;

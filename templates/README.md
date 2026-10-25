@@ -142,7 +142,7 @@ templates/
 │   ├── announce.mjs                   (the notice board: .announcements.md; owner lines outrank the command, REBOOT preempts)
 │   ├── ledger.mjs                     (each session's live ledger in .nexus/sessions/: star names; a stale beat reads fallen)
 │   ├── worktree.mjs                   (close a worktree without deleting through its links; list them for /tidy)
-│   ├── workflow-lint.mjs              (cloud-loop workflow rules: secrets on hosted runners, no secret in a job env; add to your gate)
+│   ├── workflow-lint.mjs              (cloud-loop workflow rules: secrets on hosted runners, no secret in a job env, no issue text in a prompt; add to your gate)
 │   ├── cloud/tick.mjs                 (PR-mode cloud tick: pick + claim, fence the diff, land the PR, release)
 │   ├── cloud/quota.mjs                (the quota governor march.yml and night.yml run: reads seven_day utilization, caches it, gates the next tick, opens the one pause issue)
 │   ├── cloud/lost.mjs                 (the lost-to-background mark march.yml runs after the model: a result that defers to background work, no commit for the run)

@@ -239,7 +239,6 @@ asap_cap: 3                 # nexus: 3
 
 ## Acceptance
 
-- **A1** `triage.md`, `bug.md` and `iterate.md` (and their templates) carry the untrusted-text rule, covering issue text and UI-walk page text and screenshots, with the quote-and-120-character rule; `workflow-lint` fails a fixture that interpolates `github.event.issue.body` into `with: prompt:`.
 - **A2** Under `fix-small` or `fix-all`, a collaborator's reproduced small bug is fixed in the tick that triaged it (`/plot asap … and do`); a larger one lands in the Asap lane (at most `asap_cap` open, overflow to AUDIT); under `fix-all` a small collaborator enhancement is built the same way and only a scope or taste call gets `triage:needs-user`; an outsider's issue is triaged only unless the owner applies `loop:do`.
 - **A3** A tick that triages into a fix-now or an Asap chunk continues to Step 3a in the same run; a non-empty Asap lane is built before any critique pass.
 - **A4** `source: user` AUDIT rows gain +1 per 12h (cap +4) and are never filtered by the 3.0 floor; a re-scored #86-shaped row (impact 6, ease 4, 24h old) ranks above every docs row under 4.4.
@@ -259,15 +258,13 @@ asap_cap: 3                 # nexus: 3
 
 ## Chunks
 
-Measure: 13 open · 0 closed · next A14
+Measure: 12 open · 1 closed · next A14
 
-- [ ] **54.1** Issue and page text is data; lint scans prompt inputs · S · closes A1 · needs —
-  - Lands first: every later chunk widens what issue text can reach.
-- [ ] **54.2** Support routing: fix now or Asap, and march keeps going · M · closes A2, A3 · needs 54.1
+- [ ] **54.2** Support routing: fix now or Asap, and march keeps going · M · closes A2, A3 · needs —
 - [ ] **54.3** User rows age into the queue; the support SLA step · S · closes A4, A5 · needs 54.2
   - Seed: re-score the open `source: user` AUDIT rows in the same commit.
 - [ ] **54.4** A fixed issue is told and closed · S · closes A6 · needs 54.2
-- [ ] **54.5** march.yml reason, dispatch ceiling, hard quota, loop-filed marker · M · closes A7, A10 · needs 54.1
+- [ ] **54.5** march.yml reason, dispatch ceiling, hard quota, loop-filed marker · M · closes A7, A10 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs 54.3, 54.5
   - Local: touches .github/workflows (cloud token cannot push it).

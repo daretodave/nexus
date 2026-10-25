@@ -93,7 +93,11 @@ create and approve pull requests".
 Every job runs on GitHub-hosted runners, and no secret sits in
 `run-name` or a job's `env:`; `scripts/workflow-lint.mjs`
 checks both, and the night shift (`night.yml`) switches the
-same way (its PR carries only the digest's files).
+same way (its PR carries only the digest's files). The lint
+also fails a run script or an agent's `with:` input
+(`prompt`, `direct_prompt`, `claude_args`) that interpolates
+issue or pull request text: a tick receives an issue's
+number, and reads the rest with `gh` as data.
 
 ## Identity choice — bot or you
 

@@ -217,3 +217,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 58.5 · The workflow merge keeps cron, ceiling, model and env · ba72de72..ba72de72
 - 2026-10-25 · 57.7 · State diet: header shape, state-size leg, nexus compaction · 60adffaa..60adffaa
 - 2026-10-25 · 58.9 · The GUI Upgrade banner · e8499124..e8499124
+- 2026-10-25 · 54.1 · Issue and page text is data; lint scans prompt inputs · 8c094b6..54.1

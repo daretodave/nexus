@@ -732,7 +732,7 @@ nexus/
     │   ├── announce.mjs               # the notice board: owner lines outrank the command; REBOOT preempts
     │   ├── ledger.mjs                 # each session's live ledger (.nexus/sessions/), star names, fallen = stale beat
     │   ├── worktree.mjs               # close a worktree safely (links unlinked first); list for /tidy
-    │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env
+    │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env, no issue text in a prompt
     │   ├── cloud/tick.mjs             # PR-mode tick: pick + claim, fence, land the PR, release
     │   ├── cloud/quota.mjs            # quota governor: seven_day read + cache, the gate, the pause issue
     │   ├── cloud/lost.mjs             # lost-to-background mark: a result parked on background work, no commit

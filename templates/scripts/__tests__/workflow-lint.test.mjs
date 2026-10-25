@@ -1,12 +1,13 @@
 // workflow-lint.mjs: a secret runs on hosted runners only; run-name and env blocks read only the contexts that exist
 // there, and never a secret or a token; a run script (a workflow's or a composite action's) never interpolates outsider
-// text. node:test, no deps, no git (one temp dir for the directory walk).
+// text, nor does an agent's prompt input (with: prompt, direct_prompt, claude_args). node:test, no deps, no git (one temp
+// dir for the directory walk).
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { RUNNER_VAR, contextsIn, lintAction, lintDirs, lintWorkflow, placesIn, runScripts } from '../workflow-lint.mjs';
+import { RUNNER_VAR, contextsIn, lintAction, lintDirs, lintWorkflow, placesIn, promptInputs, runScripts } from '../workflow-lint.mjs';
 
 const job = (runsOn, extra = '') => `jobs:\n  a:\n    runs-on: ${runsOn}\n    steps:\n      - run: echo hi${extra}\n`;
 
@@ -82,6 +83,41 @@ describe('injection', () => {
     assert.equal(lintWorkflow('w.yml', step('git push origin ${{ github.head_ref }}')).length, 1);
     assert.equal(lintWorkflow('w.yml', step('echo ${{ github.event.head_commit.message }}')).length, 1);
     assert.deepEqual(lintWorkflow('w.yml', step('echo ${{ github.run_id }} ${{ github.event.pull_request.number }} "$TITLE"')), []);
+  });
+});
+
+describe('prompt inputs', () => {
+  const agent = (inputs) => `on:\n  issues:\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: anthropics/claude-code-action@v1\n        with:\n          anthropic_api_key: x\n${inputs}`;
+
+  it('reads inline and block prompt inputs under with:, and only those keys', () => {
+    const yml = agent('          prompt: |\n            Fix it.\n            ${{ inputs.reason }}\n          claude_args: --max-turns 5\n          other: y\n');
+    assert.deepEqual(promptInputs(yml).map((p) => p.key), ['prompt', 'claude_args']);
+    assert.match(promptInputs(yml)[0].text, /Fix it\./);
+  });
+
+  it('fails an issue body interpolated into with: prompt (the A1 fixture)', () => {
+    const p = lintWorkflow('w.yml', agent('          prompt: |\n            Triage this issue:\n            ${{ github.event.issue.body }}\n'));
+    assert.equal(p.length, 1);
+    assert.match(p[0], /w\.yml: with: prompt interpolates \$\{\{ github\.event\.issue\.body \}\}/);
+  });
+
+  it('fails outsider text in direct_prompt and claude_args too', () => {
+    assert.equal(lintWorkflow('w.yml', agent('          direct_prompt: "${{ github.event.comment.body }}"\n')).length, 1);
+    assert.equal(lintWorkflow('w.yml', agent('          claude_args: >-\n            --append-system-prompt "${{ github.event.issue.title }}"\n')).length, 1);
+  });
+
+  it('passes the issue number and the run id: only the number crosses', () => {
+    assert.deepEqual(lintWorkflow('w.yml', agent('          prompt: |\n            Triage issue #${{ github.event.issue.number }} (run ${{ github.run_id }}).\n')), []);
+  });
+
+  it('leaves a with: key outside the prompt inputs alone, and a nested prompt key', () => {
+    assert.deepEqual(lintWorkflow('w.yml', agent('          title: ${{ github.event.issue.title }}\n')), []);
+    assert.deepEqual(lintWorkflow('w.yml', agent('          settings:\n            prompt: ${{ github.event.issue.body }}\n')), []);
+  });
+
+  it('holds in a composite action', () => {
+    const action = 'name: x\nruns:\n  using: composite\n  steps:\n    - uses: anthropics/claude-code-action@v1\n      with:\n        prompt: ${{ github.event.issue.body }}\n';
+    assert.match(lintAction('a/action.yml', action)[0], /with: prompt interpolates/);
   });
 });
 

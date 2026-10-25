@@ -226,7 +226,7 @@ or add the `UI:` line by hand.
 ## Chunks
 Measure: 4 open · 6 closed · next A11
 
-- [ ] **56.5** iterate dimension H with the magic guard; expand signal F · M · closes A4, A5 · needs 54.1
+- [ ] **56.5** iterate dimension H with the magic guard; expand signal F · M · closes A4, A5 · needs —
 - [ ] **56.6** The critique GUI pass · S · closes A6 · needs 56.5
-- [ ] **56.7** Adopter twin: UI knobs, ui-walk.mjs, reader Path A2 · L · closes A8 · needs 56.5, 54.1
+- [ ] **56.7** Adopter twin: UI knobs, ui-walk.mjs, reader Path A2 · L · closes A8 · needs 56.5
   - Ships its template twins, `templates/README`, the README tree and any new placeholder in `PLACEHOLDER_VOCABULARY` in the same commit.

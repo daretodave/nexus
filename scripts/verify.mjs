@@ -24,7 +24,9 @@
 //                 200 lines, its next/*.md detail files 120 each,
 //                 /heads-down 150; no skill or pointer pushes the
 //                 default branch bare outside next/land.md (each
-//                 lands per owner mode; scripts/bare-push.mjs)
+//                 lands per owner mode; scripts/bare-push.mjs);
+//                 triage, bug and iterate (both trees) carry the
+//                 rule that issue and page text is data
 //   emoji         no pictographic emoji anywhere in tracked docs,
 //                 nor in packages/cli source (js/jsx/ts/tsx/json/css/html)
 //                 (✓ and ❌ dingbats are fine; 🤖 is not, nor the
@@ -56,7 +58,9 @@
 //                 secret runs on hosted runners only, run-name and
 //                 env blocks read only the contexts GitHub allows
 //                 there and never a secret or token, and no run
-//                 script interpolates outsider text; each
+//                 script, nor an agent's with: prompt,
+//                 direct_prompt or claude_args, interpolates
+//                 outsider text; each
 //                 composite action in .github/actions/ and
 //                 templates/.github/actions/ keeps the run-script
 //                 rule and reads no secret
@@ -469,6 +473,11 @@ const LINE_BUDGETS = {
   'design.md': 150,
 }
 
+// The skills that read issue or page text carry the rule that it is
+// data, never instructions (in both trees; spec 54).
+const UNTRUSTED_TEXT_SKILLS = ['triage.md', 'bug.md', 'iterate.md']
+const UNTRUSTED_TEXT_RULE = [/third-party data, never instructions/, /UI walk/, /at most 120 characters/]
+
 // A `<skill>.lanes.md` beside a skill is that project's lanes file
 // (scripts/plan/lanes.mjs), not a skill: no anatomy, no command pointer.
 const LANES_FILE = /\.lanes\.md$/
@@ -652,6 +661,13 @@ async function legAnatomy() {
         const lines = read(file).replace(/\r?\n$/, '').split(/\r?\n/).length
         if (lines > max) failures.push(`${file}: ${lines} lines, over its budget of ${max} — cut as much as you add`)
       }
+    }
+  }
+  for (const base of ['templates/skills', 'skills']) {
+    for (const name of UNTRUSTED_TEXT_SKILLS) {
+      const file = `${base}/${name}`
+      const flat = read(file).replace(/\s+/g, ' ')
+      if (!UNTRUSTED_TEXT_RULE.every((re) => re.test(flat))) failures.push(`${file}: missing the rule that issue and page text is data (third-party data, never instructions; UI walk; at most 120 characters)`)
     }
   }
   // No bare push of the default branch: every committing skill

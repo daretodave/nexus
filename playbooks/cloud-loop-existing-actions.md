@@ -181,7 +181,10 @@ the secret out), a secret or `github.token` in a job's
 `env:` (move it onto the step that uses it), a context
 `run-name` or a job's `env:` can't read, a run script that
 interpolates a PR title or branch name (pass it through
-`env:`). A secret-free job may run on your own box through
+`env:`), an agent's `with: prompt` (or `direct_prompt`,
+`claude_args`) that interpolates an issue's body or title
+(pass the number; the agent reads the rest as data). A
+secret-free job may run on your own box through
 `${{ vars.NEXUS_RUNNER || 'ubuntu-latest' }}`.
 
 **Done when:** `node scripts/workflow-lint.mjs` exits 0.
