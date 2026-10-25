@@ -266,10 +266,10 @@ test('a v2 repo is already on v2 (exit 0); a repo with no plan exits 2; no origi
   assert.match(n.report.error, /no origin/);
 });
 
-test('flags a later release carries are refused, never ignored; --help prints the usage', async () => {
+test('--pr with --land or --rollback is refused, an unknown flag too; --help prints the usage', async () => {
   const out = sink();
-  for (const f of ['--pr']) assert.equal(await runUpgrade([f], { out, err: out }), 2, f);
-  assert.match(out.text(), /not in this release yet/);
+  for (const f of [['--pr', '--land'], ['--pr', '--rollback']]) assert.equal(await runUpgrade(f, { out, err: out }), 2, f.join(' '));
+  assert.match(out.text(), /a pull request is its own landing/);
   assert.equal(await runUpgrade(['--bogus'], { out, err: out }), 2);
   const help = sink();
   assert.equal(await runUpgrade(['--help'], { out: help }), 0);

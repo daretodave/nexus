@@ -423,9 +423,9 @@ keeps the queue on purpose, and is v2. A v2 repo syncs (below).
 
 It exits 0 when the report prints, 1 when the gate is red (the
 worktree is kept and its path printed), and 2 when the repo is not
-a nexus repo, has no origin, or a flag names a step this release
-does not carry yet (`--land`, `--rollback`, `--pr`, `--no-pause`,
-`--no-watch`; `--write` on a v1 repo).
+a nexus repo, has no origin, or the flags do not go together
+(`--pr` with `--land` or `--rollback`: a pull request is its own
+landing; `--write` on a GitHub repo without `--pr`).
 
 ### Sync: a v2 repo to the current kit
 
@@ -486,6 +486,38 @@ every other line and comment of the lock stays. `--write` makes it
 one commit, `plan: sync to nexus <version>`, on branch
 `nexus/upgrade-<version>`; nothing is pushed. A lock already at
 the CLI's kit prints "already on nexus <version>".
+
+### A repo on GitHub, as a pull request
+
+```
+npx @usenexus/cli upgrade --repo owner/name        the dry run, no checkout needed
+npx @usenexus/cli upgrade --repo owner/name --pr   ...pushed and opened as a pull request
+npx @usenexus/cli upgrade --pr                     the same from a local checkout
+```
+
+`--repo` also takes a GitHub repo (`owner/name` or its URL). The
+command clones it blobless into a temporary folder (commits and
+trees first, each file only when the upgrade reads it), runs the same
+path as a local run, prints the same report, and removes the clone.
+
+`--pr` commits the result (as `--write` does), pushes
+`nexus/upgrade-<version>` and opens a pull request against the
+default branch. Its body is the report: the per-file table, each
+assisted merge's diff with the lines it kept from the repo, the new
+content, the knobs written, the warnings, the gate and the predicted
+first tick. Merging it is the cut-over.
+
+| Case | What `--pr` does |
+|---|---|
+| you can push to the repo | the branch goes to the repo itself |
+| you cannot (read or triage) | `gh repo fork`, and the pull request comes from your fork |
+| an upgrade pull request from an earlier run is open | updated in place: its branch force-updated (with a lease on the sha just read), its title and body rewritten, and a comment listing the files that changed since the last run; never a second one |
+| the earlier one already holds this result | left as it is: nothing pushed, no comment |
+| the gate is red | nothing pushed, nothing opened; exit 1, and the clone is kept with its path printed |
+
+It needs `gh` signed in, and git able to reach GitHub over https
+(`gh auth setup-git`). `--write` on a GitHub repo without `--pr` is
+refused: the commit would land in a clone that is then removed.
 
 The GUI says it too. Open a v1 repo and the Fleet view leads with
 "This repo is on nexus v1" and an **Upgrade** button (a repo part

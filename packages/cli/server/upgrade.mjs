@@ -12,11 +12,13 @@
 // plan-check, its test and workflow-lint (a problem the origin's own workflow already had is a warning) and, with
 // --verify, the repo's own verify, plays march's pick order forward for the first dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
 //
-//   npx @usenexus/cli upgrade [--repo <dir>] [--json] [--keep-workflow] [--verify] [--write]
-//                             [--land [owner|pr]] [--no-pause] [--no-watch] [--rollback]
+//   npx @usenexus/cli upgrade [--repo <dir> | --repo <owner/name>] [--json] [--keep-workflow] [--verify] [--write]
+//                             [--land [owner|pr]] [--no-pause] [--no-watch] [--rollback] [--pr]
 //
 // --write commits the upgrade on nexus/upgrade-v2 (gate green only); --land carries it to the default branch between
 // two ticks and watches the first v2 tick; --rollback reverts it in one commit (upgrade-land.mjs).
+// `--repo owner/name` (or its GitHub URL) runs the same path on a blobless temporary clone, no local checkout; `--pr`
+// pushes the result as a branch and opens (or updates) a pull request whose body is the report (upgrade-remote.mjs).
 //
 // On a v2 repo the same command is the sync to the current kit (sync.mjs: a three-way merge per kit file against the
 // kit at the lock's ref, an assisted merge for a conflict, new content added, the lock's ref moved; --write commits it).
@@ -707,6 +709,11 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
       const r = await sync({ dir: wt.dir, local: root, kit, ref, branch: wt.branch, today, write: commit, ...(assist !== undefined ? { assist } : {}), base, baseOpts: baseOpts || (kit.nexus ? { nexus: kit.nexus } : {}), gateFn, verify: syncVerify });
       Object.assign(report, r.report);
       red = r.code === 1;
+      // The first tick after the sync, predicted as for a v1 upgrade (the pull request's body carries it too).
+      if (r.code === 0 && !report.message) {
+        const mode = loopModeOf(wt.dir).mode;
+        report.dispatch = await predict(wt.dir, kit, { mode }).catch((e) => ({ kind: 'unknown', text: `could not predict: ${e.message}`, idle: false }));
+      }
       return { code: r.code, report };
     }
     if (shape.shape === 'none') return { code: 2, report: { ...report, error: `not a nexus v1 repo: ${shape.why}` } };
@@ -842,12 +849,14 @@ export function render(report, { color = false } = {}) {
   if (report.error && !report.shape) return `nexus upgrade: ${report.error}`;
   const out = [];
   const o = report.origin;
-  out.push(report.dry === false ? 'nexus upgrade: --write (one commit on a branch; the local checkout\'s files are not touched)' : 'nexus upgrade: dry run (nothing written; the local checkout is not touched)');
+  const where = report.remote ? 'no local checkout: a blobless temporary clone of the GitHub repo' : 'the local checkout is not touched';
+  out.push(report.dry === false ? `nexus upgrade: --write (one commit on a branch; ${report.remote ? where : 'the local checkout\'s files are not touched'})` : `nexus upgrade: dry run (nothing written; ${where})`);
   out.push(`  repo     ${report.repo}`);
   if (o) out.push(`  origin   ${o.url} ${o.branch} @ ${o.sha.slice(0, 7)} (fetched now)`);
   if (report.error) { out.push('', `nexus upgrade: ${report.error}`); return out.join('\n'); }
   if (report.shape === 'v2' && report.sync) {
     out.push(...renderSync(report, { red }));
+    if (report.dispatch) out.push('', 'first dispatch (predicted)', `  ${report.dispatch.text}`);
     out.push('');
     if (report.commit) out.push(`committed ${report.commit.sha.slice(0, 7)} on ${report.commit.branch}: ${report.commit.subject}`);
     else if (report.worktree) out.push(`worktree kept: ${report.worktree}`);
@@ -987,18 +996,36 @@ or bring a v2 repo up to the kit this CLI carries (the sync).
   npx @usenexus/cli upgrade --no-assist     leave a conflicting file as the
                                             repo's and list it (no helper model)
 
-  Exit 0: the report printed (or committed, or landed). Exit 1: the gate
-  failed (the worktree is kept and its path printed), or the landing
-  stopped (march is always resumed once paused). Exit 2: not a nexus repo,
-  no origin, the kit at the lock's ref out of reach, nothing to roll back,
-  or a flag this release does not carry yet.
+  A repo on GitHub, no checkout needed:
+  npx @usenexus/cli upgrade --repo owner/name
+                                            the same dry run and report on a
+                                            blobless temporary clone (a GitHub
+                                            URL works too), removed after
+  npx @usenexus/cli upgrade --repo owner/name --pr
+                                            ...and commit it, push the branch
+                                            and open a pull request whose body
+                                            is the report: from a fork without
+                                            push access; an open upgrade pull
+                                            request from an earlier run is
+                                            updated in place (its branch
+                                            force-updated, a comment saying
+                                            what changed); a red gate opens
+                                            nothing and keeps the clone
+  npx @usenexus/cli upgrade --pr            the same from a local checkout
+
+  Exit 0: the report printed (or committed, landed, or its pull request
+  opened). Exit 1: the gate failed (the worktree is kept and its path
+  printed), the landing stopped (march is always resumed once paused), or
+  the push or pull request did. Exit 2: not a nexus repo, no origin, the
+  kit at the lock's ref out of reach, nothing to roll back, or a flag this
+  release does not carry yet.
 
   The runbook: https://github.com/daretodave/nexus/blob/main/playbooks/upgrade.md`;
 
-/** Flags spec 58 names that a later release carries: refused here rather than ignored. */
-export const LATER = Object.freeze(['--pr']);
+/** Flags spec 58 names that a later release carries: refused here rather than ignored (none left). */
+export const LATER = Object.freeze([]);
 /** The flags this release reads (`--repo` and `--land` take a value; `--land`'s is optional). */
-const KNOWN = new Set(['--repo', '--json', '--keep-workflow', '--verify', '--write', '--no-assist', '--land', '--rollback', '--no-pause', '--no-watch']);
+const KNOWN = new Set(['--repo', '--json', '--keep-workflow', '--verify', '--write', '--no-assist', '--land', '--rollback', '--no-pause', '--no-watch', '--pr']);
 const LAND_HOW = new Set(['owner', 'pr']);
 
 /** The live march.yml's cron lines at `sha` in `root`, read with the kit's cadence.mjs. */
@@ -1018,10 +1045,18 @@ export async function runUpgrade(argv, { out = (s) => process.stdout.write(`${s}
   const l = argv.indexOf('--land');
   const landHow = l >= 0 && LAND_HOW.has(argv[l + 1]) ? argv[l + 1] : null;
   const bad = argv.filter((a, k) => !KNOWN.has(a) && !(i >= 0 && k === i + 1) && !(landHow && k === l + 1));
-  if (bad.length || (i >= 0 && !argv[i + 1])) { err(`nexus upgrade: unknown argument ${bad[0] ?? '--repo (needs a folder)'}\n\n${UPGRADE_HELP}`); return 2; }
-  const repo = path.resolve(cwd, i >= 0 ? argv[i + 1] : '.');
-  if (!fs.existsSync(repo) || !fs.statSync(repo).isDirectory()) { err(`nexus upgrade: ${repo} is not a folder`); return 2; }
+  if (bad.length || (i >= 0 && !argv[i + 1])) { err(`nexus upgrade: unknown argument ${bad[0] ?? '--repo (needs a folder or a GitHub owner/name)'}\n\n${UPGRADE_HELP}`); return 2; }
+  const arg = i >= 0 ? argv[i + 1] : '.';
+  const repo = path.resolve(cwd, arg);
+  const pr = argv.includes('--pr');
+  const local = fs.existsSync(repo) && fs.statSync(repo).isDirectory();
+  // A folder that exists is the local repo; otherwise `owner/name` or a GitHub URL is a repo on GitHub, no checkout.
+  const remote = local ? null : (await import('./upgrade-remote.mjs')).parseRemote(arg);
+  if (!local && !remote) { err(`nexus upgrade: ${repo} is not a folder, and ${arg} is not a GitHub owner/name or URL`); return 2; }
+  if (remote && argv.includes('--write') && !pr) { err('nexus upgrade: --write on a GitHub repo would commit into a temporary clone that is then removed; --pr commits, pushes the branch and opens a pull request'); return 2; }
   const landing = l >= 0;
+  // --land and --rollback work on a local checkout's origin; a pull request is its own way to land.
+  if ((remote || pr) && (landing || argv.includes('--rollback'))) { err(`nexus upgrade: ${landing ? '--land' : '--rollback'} needs a local checkout and goes without --pr (a pull request is its own landing)`); return 2; }
   const red = RED(color);
   const landOpts = { pause: !argv.includes('--no-pause'), watch: !argv.includes('--no-watch'), log: (s) => err(`  ${s}`), ...(opts.land || {}) };
   const { land, renderLand, rollbackCommit, renderRollback, ROLLBACK_SUBJECT } = await import('./upgrade-land.mjs');
@@ -1042,7 +1077,17 @@ export async function runUpgrade(argv, { out = (s) => process.stdout.write(`${s}
     return res && !res.ok ? 1 : code;
   }
 
-  const { code, report } = await upgrade({ repo, today, keepWorkflow: argv.includes('--keep-workflow'), verify: argv.includes('--verify'), write: argv.includes('--write') || landing, ...(argv.includes('--no-assist') ? { assist: null } : {}), ...opts });
+  const base = { today, keepWorkflow: argv.includes('--keep-workflow'), verify: argv.includes('--verify'), write: argv.includes('--write') || landing, ...(argv.includes('--no-assist') ? { assist: null } : {}) };
+  const { land: _land, ...passed } = opts;
+  if (remote || pr) {
+    const { upgradeAt, renderPr } = await import('./upgrade-remote.mjs');
+    const { code, report } = await upgradeAt({ ...base, ...passed, repo: local ? repo : null, remote, pr });
+    if (argv.includes('--json')) out(JSON.stringify({ code, ...report }, null, 2));
+    else (code === 2 ? err : out)([render(report, { color }), ...renderPr(report)].join('\n'));
+    return code;
+  }
+  const { gh: _gh, urlOf: _urlOf, ...rest } = passed;
+  const { code, report } = await upgrade({ ...base, repo, ...rest });
   let res = null;
   if (code === 0 && report.commit && landing) {
     const how = landHow || (report.loop?.mode === 'owner' ? 'owner' : 'pr');

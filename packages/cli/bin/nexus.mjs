@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // npx @usenexus/cli [--repo <dir>] [--port <n>] [--no-open]
 // npx @usenexus/cli run "<prompt>" [--cwd <dir>]   one turn headless, JSON out
-// npx @usenexus/cli upgrade [--repo <dir>] [--write] [--land owner|pr] [--rollback]   a v1 repo to v2, dry run first (server/upgrade.mjs)
+// npx @usenexus/cli upgrade [--repo <dir>|<owner/name>] [--write] [--land owner|pr] [--rollback] [--pr]   a v1 repo to v2 or a v2 sync,
+//                                                                     dry run first; a GitHub repo needs no checkout (server/upgrade.mjs)
 // npx @usenexus/cli --demo <scenario> [--speed <n>] [--loop]   fixtures and a beat script, no repo
 //
 // Starts the nexus GUI on 127.0.0.1 (random port, per-launch token) for
@@ -60,7 +61,9 @@ if (flag('--help') || flag('-h')) {
                                     how a newer version takes over
   npx @usenexus/cli run "<prompt>"  one turn headless, JSON out (run --help)
   npx @usenexus/cli upgrade         a nexus v1 repo to v2: a dry run from a
-                                    fresh fetch of origin (upgrade --help)
+                                    fresh fetch of origin, or of a GitHub
+                                    owner/name with no checkout; --pr opens
+                                    it as a pull request (upgrade --help)
   npx @usenexus/cli --demo <name>   a scripted demo: fixtures and a timed beat
                                     script, no repo, no Claude, no network, no
                                     writes (--demo list names them; --speed <n>

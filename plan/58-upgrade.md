@@ -435,6 +435,16 @@ tick).
 - `--pr` works on a local `--repo` too, and is what
   `--land pr` does.
 
+Decided in the build (58.13): `--pr` turns on the write path;
+`--write` on a GitHub repo without `--pr` is refused (exit 2),
+and so is `--pr` with `--land` or `--rollback` (a pull request
+is its own landing). An earlier upgrade pull request is an open
+one whose head matches `nexus/upgrade-*` from the same head
+owner; the force-update leases on the sha just read, and a
+result whose tree equals the branch's pushes and comments
+nothing. The sync report carries the predicted first dispatch
+too, so the pull request body has it.
+
 ## Contracts
 
 - `npx @usenexus/cli upgrade [--repo <dir>] [--write]
@@ -456,7 +466,6 @@ tick).
 
 ## Acceptance
 
-- **A13** `upgrade --repo owner/name` works with no local checkout: a blobless temporary clone, the same report as a local run, and with `--pr` a pushed `nexus/upgrade-<version>` branch and a pull request whose body is the report; without push access it forks; a second run updates the open pull request instead of opening another; a red gate opens nothing (tests with a stubbed `gh` and a local bare remote).
 - **A12** The GUI banner offers Sync when a v2 repo's lock is behind the CLI's bundled kit, and the README door and playbook say the same command keeps a v2 repo current.
 - **A10** `playbooks/upgrade.md` is rewritten around the command with a generated manual appendix, `prompts/upgrade.md` exists, and README.md has a "Used v1?" section with the dry-run command and `--write`, linking the playbook; none of them names an adopter repo; the README section ships in the same release as the subcommand.
 
@@ -465,9 +474,8 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 3 open · 10 closed · next A14
+Measure: 2 open · 11 closed · next A14
 
 - [ ] **58.10** Runbook rewrite, upgrade prompt and the README door · M · closes A10 · needs —
   - The README section merges with the `cli-v*` release that carries 58.3-58.9; the owner tags it.
 - [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs 58.10
-- [ ] **58.13** Upgrade a repo on GitHub as a pull request, no checkout · M · closes A13 · needs —
