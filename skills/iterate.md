@@ -100,6 +100,10 @@ the commit body says why.
   ease 7-9. A visual finding (spacing, contrast, hierarchy)
   caps impact at 6 unless it blocks a flow.
 - **At most 3 H rows a sweep.**
+- **Refill files them too:** `/march`'s refill lane runs
+  `scripts/generators/ui-walk.mjs`, which reads the same walk
+  and files H rows in this shape (stamped `- generator:
+  ui-walk`), never past 3 Pending. Audit them like your own.
 - **The magic guard (hard rule, §5.7).** A `ui` finding never
   removes or dims `packages/cli/src/fx/*` or the particle,
   colour or motion CSS. A performance or distraction finding

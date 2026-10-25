@@ -97,6 +97,25 @@ finding why nothing ships. Both read the same count
 (`scripts/plan/motion.mjs`): feat, fix and content commits
 plus chunk closes; housekeeping verbs never count.
 
+## The kit's own: three more
+
+The kit's own repo lists three generators no adopter gets,
+under its `scripts/generators/`. They show the contract on
+a project with a GUI package:
+
+| Generator | Files | When |
+|---|---|---|
+| `cli-ci-red` | one `[cli-ci #<run>] [HIGH] cli-ci red on main` row per red streak | the newest decisive `cli-ci` run on main failed (`gh run list`, read only); keyed on the run that turned main red |
+| `cli-deps` | one `[cli-deps] [MED] <name> <pinned> -> <latest>` row per dependency | `npm outdated` in the GUI package shows a breaking release ahead: a higher major, or a higher minor of a 0.x |
+| `ui-walk` | `/iterate` dimension H rows, at most 3 Pending | the GUI walk (a fresh one, or one under 24 h old) saw a page error, a failed request, a console error, overflow, an unnamed control or an image without alt |
+
+Each files only for its one cause. A green run, a current
+dependency or a clean walk is `clean`. `ui-walk` runs the
+walk only with a built UI and its browser driver, and in a
+cloud tick only with `NEXUS_CLI_GATE=1`. Otherwise it says
+why and stays `clean`. Every row it writes passes the H-row
+shape and the magic guard (`scripts/plan/ui-rows.mjs`).
+
 ## Domain generators: patterns
 
 A project's own generators follow the same contract under

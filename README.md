@@ -527,6 +527,10 @@ nexus/
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
+│   ├── generators/cli-ci-red.mjs      # a red cli-ci run on main becomes one AUDIT HIGH row per red streak (nexus only)
+│   ├── generators/cli-deps.mjs        # a packages/cli dependency a breaking release behind becomes one AUDIT row (nexus only)
+│   ├── generators/ui-walk.mjs         # the GUI walk's findings become /iterate H rows, at most 3 Pending (nexus only)
+│   ├── __tests__/generators-nexus.test.mjs # their suite, gh, npm and the walk stubbed (scripts leg)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── git/push-policy.mjs            # pre-push: main on origin/upstream is the owner's checkout's alone (owner mode)
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads

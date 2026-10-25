@@ -623,6 +623,16 @@ async function generatorsCheck() {
   for (const g of own.generators) {
     if (!fs.existsSync(path.join(ROOT, 'scripts/generators', `${g.name}.mjs`))) failures.push(`plan/bearings.md: generator ${g.name} has no scripts/generators/${g.name}.mjs`)
   }
+  // nexus's own generators (spec 57.9: no template twin) each have a
+  // pure suite the scripts leg runs, and are listed for refill to run.
+  const listed = new Set(own.generators.map((g) => g.name))
+  const suites = PURE_SUITES.filter((s) => s.startsWith('scripts/__tests__/')).map((s) => fs.existsSync(path.join(ROOT, s)) ? read(s) : '')
+  for (const f of fs.readdirSync(path.join(ROOT, 'scripts/generators')).filter((f) => f.endsWith('.mjs'))) {
+    if (fs.existsSync(path.join(ROOT, 'templates/scripts/generators', f))) continue
+    const name = f.replace(/\.mjs$/, '')
+    if (!listed.has(name)) failures.push(`scripts/generators/${f}: nexus's own generator is not listed under ## Generators in plan/bearings.md`)
+    if (!suites.some((t) => t.includes(`'../generators/${f}'`))) failures.push(`scripts/generators/${f}: no suite in PURE_SUITES (scripts/__tests__/) imports it; a generator ships with its test`)
+  }
   return failures
 }
 
@@ -952,6 +962,7 @@ const PURE_SUITES = [
   'scripts/__tests__/unreleased.test.mjs',
   'scripts/__tests__/iterate-ui.test.mjs',
   'scripts/__tests__/critique-gui.test.mjs',
+  'scripts/__tests__/generators-nexus.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',

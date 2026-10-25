@@ -328,7 +328,6 @@ The Held line for an auto-promotion:
 ## Acceptance
 
 - **A6** `/iterate` dimension I files `category: loop-config` rows whose `next` names a concrete repo variable or bearings line, ships at most one per 7 days, and files a YAML tuning as `[needs-user-call]`.
-- **A9** nexus's refill lane runs `cli-ci-red`, `cli-deps` and `ui-walk` under the generator contract, each with a test, and files AUDIT rows only for a red cli-ci run, a stale dependency or a walk finding.
 
 ## Open questions
 
@@ -336,7 +335,6 @@ The Held line for an auto-promotion:
 
 ## Chunks
 
-Measure: 2 open · 7 closed · next A10
+Measure: 1 open · 8 closed · next A10
 
 - [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 55.5, 54.8
-- [ ] **57.9** nexus generators: cli-ci-red, cli-deps, ui-walk · M · closes A9 · needs —
