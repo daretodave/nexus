@@ -33,7 +33,7 @@ line goes; each line is a lock that times out, so it carries
 |---|---|---|---|---|
 | 54 | Support issues are fixed the same day | [54-support-lane.md](54-support-lane.md) | planned · priority 1 | 4 left |
 | 55 | Cadence that actually delivers | [55-cadence-that-delivers.md](55-cadence-that-delivers.md) | planned · priority 2 | 5 left |
-| 56 | The loop browses and improves the GUI | [56-loop-browses-the-gui.md](56-loop-browses-the-gui.md) | planned · priority 3 | 2 left |
+| 56 | The loop browses and improves the GUI | [56-loop-browses-the-gui.md](56-loop-browses-the-gui.md) | planned · priority 3 | 1 left |
 | 57 | Anti-lull: the queue refills itself | [57-queue-refills-itself.md](57-queue-refills-itself.md) | planned · priority 4 | 2 left |
 | 58 | One command keeps a project on the current kit | [58-upgrade.md](58-upgrade.md) | planned · priority 5 | 7 left |
 | 59 | One improvement dial, and a loop that reads the field | [59-improvement-dial.md](59-improvement-dial.md) | planned · priority 6 | 5 left |

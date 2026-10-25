@@ -951,6 +951,7 @@ const PURE_SUITES = [
   'scripts/__tests__/march-cli-gate.test.mjs',
   'scripts/__tests__/unreleased.test.mjs',
   'scripts/__tests__/iterate-ui.test.mjs',
+  'scripts/__tests__/critique-gui.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
