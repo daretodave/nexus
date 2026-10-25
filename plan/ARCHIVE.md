@@ -194,3 +194,4 @@ still pending at the move and live on as specs.
 - 2026-10-24 · 52 · spec complete: onboarding adopts before it plots, a hosted session's reads stay inside its repo and worktree, worktree-cutting skills call one node command with no bash-only syntax (a gate now catches it), and tool rows fit their names with more tool icons · 0d33dfe7..fc8a1006
 - 2026-10-24 · 39.9 · Package manager is a placeholder end to end, not hardcoded pnpm · f659b2ca..e0379224
 - 2026-10-25 · 39.10 · Settings allowlist, sweep note, and tick order now correct · 72d7184d..0bc8e50b
+- 2026-10-25 · 39.12 · Settle stops cleanly, not a crash, when a spec empties · 7442c908..7442c908
