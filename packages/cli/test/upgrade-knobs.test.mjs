@@ -39,6 +39,17 @@ test('every knob a kit template names has a registry row', { skip: !inRepo && 'o
   assert.deepEqual(knobsMissing(NEXUS), [], 'a template knob with no row in KNOBS (packages/cli/server/upgrade.mjs)');
 });
 
+test('every knob the improvement dial sets has a value at every dial position (spec 59)', { skip: !inRepo && 'outside the nexus repo' }, async () => {
+  const { registryGaps, DIAL, POSITIONS } = await kitScript('plan/improve.mjs');
+  assert.deepEqual(registryGaps(KNOBS), [], 'a dial row in KNOBS with no value at some position (templates/scripts/plan/improve.mjs DIAL)');
+  for (const k of KNOBS.filter((r) => r.write)) assert.equal(typeof k.dial, 'boolean', `${k.knob} says whether the dial sets it`);
+  const gentle = Object.fromEntries(DIAL.map((r) => [r.knob, r.at.gentle]));
+  assert.equal(POSITIONS.length, 4);
+  for (const k of KNOBS.filter((r) => r.dial && r.at !== 'var' && r.value != null)) {
+    assert.equal(gentle[k.knob], k.value === '(none)' ? 'none' : k.value, `${k.knob}: gentle is the conservative value the upgrade writes`);
+  }
+});
+
 test('a template that grows a knob the registry lacks fails', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-knobs-'));
   try {

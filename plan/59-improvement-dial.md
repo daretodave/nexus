@@ -68,6 +68,19 @@ knob added later has a value at every dial position or the
 test fails. The `/digest` pulse prints the dial and any
 overrides in one line.
 
+Decided in the build (59.1): `generic` is the kit's three
+generators at their template lines, `project` every other
+`scripts/generators/<name>.mjs` at `weekly · target 2 · cap
+2/wk`; a `## Generators` section overrides only when it holds
+a list line (`- (none)` included), so prose or a commented
+example defers to the dial. The UI row sets the walk's
+cadence, never its target: `UI: none` overrides to none, a
+`UI cadence:` line overrides, and a `UI: url|dev` target with
+no cadence line walks at `critique` under a none dial (as
+before the dial). A set variable is an override (`from: var`
+in `--json`). The registry rows carry `dial: true|false`, and
+`gentle` equals each row's conservative value.
+
 The repo variables stay the cloud's source of truth for the
 knobs that live there (`NEXUS_SUPPORT`, `NEXUS_CADENCE`); the
 resolver warns when a variable and the dial disagree, and
@@ -116,7 +129,6 @@ nexus runs `Research: weekly`; adopters get it from the dial
 
 ## Acceptance
 
-- **A1** `Improve:` in bearings sets every expansion knob's default per the table; an override line wins for its knob only; `scripts/plan/improve.mjs` prints each knob's effective value and source, warns on a variable/dial disagreement, and its test fails when a registry knob lacks a value at any dial position.
 - **A2** The skills that read expansion knobs (march, triage, expand, iterate, critique, digest, nudge and the cadence step) read them through the resolver; absent dial reads as gentle; nexus runs `Improve: bold`; the upgrade writes `Improve: gentle`.
 - **A3** The research generator, under `Research: weekly`, fetches at most 8 sources, files at most 3 `field` candidates with no product names and no URLs (the gate fails a field candidate with a URL), puts sources in the job summary only, and treats page text as data.
 - **A4** GUI Settings shows the dial as four radios with one-line explanations and writes the bearings line; the GUI's motion and colour stay.
@@ -127,11 +139,10 @@ nexus runs `Research: weekly`; adopters get it from the dial
 (None.)
 
 ## Chunks
-Measure: 5 open · 0 closed · next A6
+Measure: 4 open · 1 closed · next A6
 
-- [ ] **59.1** The dial and its resolver · M · closes A1 · needs —
-- [ ] **59.2** Skills read knobs through the resolver · M · closes A2 · needs 59.1
-- [ ] **59.3** The field-research generator · M · closes A3 · needs 59.1
-- [ ] **59.4** The dial in GUI Settings · S · closes A4 · needs 59.1
+- [ ] **59.2** Skills read knobs through the resolver · M · closes A2 · needs —
+- [ ] **59.3** The field-research generator · M · closes A3 · needs —
+- [ ] **59.4** The dial in GUI Settings · S · closes A4 · needs —
   - Keep the GUI's particles, colour and motion.
 - [ ] **59.5** Dial docs and the adopter default · S · closes A5 · needs 59.2, 59.3

@@ -115,8 +115,12 @@
 //                 knob a template names (a vars.NEXUS_* a workflow
 //                 reads, a bearings knob line, ## Generators) has a
 //                 conservative row in the upgrade's KNOBS registry
-//                 (packages/cli/server/upgrade.mjs); plus both
-//                 scripts' own node:test suites
+//                 (packages/cli/server/upgrade.mjs), and every row
+//                 the improvement dial sets has a value at every
+//                 dial position in scripts/plan/improve.mjs DIAL
+//                 (gentle its conservative value; a written row
+//                 says dial: true or false); plus both scripts'
+//                 own node:test suites
 //   state-size    the queues every tick reads stay cheap
 //                 (templates/scripts/plan/state.mjs): in plan/ and
 //                 templates/plan/, each of AUDIT.md, CANDIDATES.md
@@ -925,6 +929,10 @@ async function legChunks() {
   const { supportLevel } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/support.mjs')).href)
   const knob = supportLevel(read('plan/bearings.md'), process.env)
   if (knob.note) notes.push(`warn: ${knob.note}`)
+  // The improvement dial: a repo variable that disagrees with the dial
+  // (or a bearings override) warns the same way (spec 59).
+  const { resolve: resolveDial } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/improve.mjs')).href)
+  for (const w of resolveDial(read('plan/bearings.md'), { vars: process.env }).warnings) if (!w.startsWith('NEXUS_SUPPORT=')) notes.push(`warn: ${w}`)
   // The checker's own unit tests (node:test, no deps, well under a
   // second): a gate whose rules regress silently is no gate.
   try {
@@ -984,6 +992,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/design-render.test.mjs',
   'templates/scripts/__tests__/design-port.test.mjs',
   'templates/scripts/__tests__/support.test.mjs',
+  'templates/scripts/__tests__/improve.test.mjs',
   'templates/scripts/__tests__/ui-walk.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
@@ -1022,7 +1031,7 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs', 'plan/locks.mjs', 'plan/loop-rows.mjs', 'plan/state.mjs', 'plan/support.mjs',
+  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs', 'plan/locks.mjs', 'plan/loop-rows.mjs', 'plan/state.mjs', 'plan/support.mjs', 'plan/improve.mjs',
   'generators/issue-age.mjs', 'generators/stale-candidate.mjs', 'generators/motion.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',
@@ -1294,9 +1303,12 @@ async function legUpgrade() {
   // The knob registry (spec 58, A6): every knob a template names has a conservative row the upgrade writes from.
   const { knobsMissing, KNOBS } = await import(pathToFileURL(path.join(ROOT, 'packages/cli/server/upgrade.mjs')).href)
   const knobs = knobsMissing(ROOT).map((k) => `${k.from}: knob ${k.knob} (${k.at}) has no row in KNOBS (packages/cli/server/upgrade.mjs); add one with its conservative value`)
+  // The improvement dial (spec 59, A1): every registry knob the dial sets has a value at every position.
+  const { registryGaps } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/improve.mjs')).href)
+  knobs.push(...registryGaps(KNOBS).map((g) => `packages/cli/server/upgrade.mjs KNOBS vs templates/scripts/plan/improve.mjs DIAL: ${g}`))
   const suite = runSuites(['scripts/__tests__/upgrade-files.test.mjs', 'scripts/__tests__/upgrade-kit-text.test.mjs'], 'upgrade')
   const counts = Object.entries(text.counts).map(([s, c]) => `${s} ${c.paras}`).join(', ')
-  return { failures: [...problems, ...text.problems, ...knobs, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; kit-text snapshot current (paragraphs: ${counts}); ${KNOBS.length} knobs registered; ${suite.note}` }
+  return { failures: [...problems, ...text.problems, ...knobs, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; kit-text snapshot current (paragraphs: ${counts}); ${KNOBS.length} knobs registered, ${KNOBS.filter((k) => k.dial).length} valued at every dial position; ${suite.note}` }
 }
 
 // --- leg: state-size ----------------------------------------------------------

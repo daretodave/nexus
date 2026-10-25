@@ -379,22 +379,28 @@ export function flippedLock(seed, today) {
  *   write    true: the upgrade writes it (a bearings line or section added when missing, never over the repo's own;
  *            a var's `gh variable set` line, or "leave unset"). false: left out, and the kit's default stands
  *            (a knob that only matters once another is turned up, or a setting, not a behaviour)
+ *   dial     true: the improvement dial (`Improve:`, spec 59) sets its default, and scripts/plan/improve.mjs DIAL holds
+ *            its value at every position (gentle = `value`); false: the dial leaves it alone. A written row says one
+ *            or the other: improve.mjs registryGaps() fails it otherwise, in a test and the verify gate's upgrade leg.
  *
  * knobsMissing() names a template knob with no row: a test and the verify gate's upgrade leg fail on it.
  */
 export const KNOBS = Object.freeze([
   // Spec 54-57: written at the value that keeps today's behaviour.
-  { knob: 'Support', at: 'bearings', value: 'triage-only', write: true, accepts: ['off', 'triage-only', 'fix-small', 'fix-all'] },
-  { knob: 'NEXUS_SUPPORT', at: 'var', value: null, write: true },
-  { knob: 'Promote', at: 'bearings', value: 'owner', write: true, accepts: ['owner', 'aged'] },
-  { knob: 'Generators', at: 'section', value: '(none)', write: true },
-  { knob: 'stall_action', at: 'bearings', value: 'alert', write: true, accepts: ['alert', 'promote', 'off'] },
-  { knob: 'loop', at: 'bearings', value: 'off', write: true, accepts: ['on', 'off'] },
-  { knob: 'UI', at: 'bearings', value: 'none', write: true, bold: true, accepts: ['none', 'url', 'dev'] },
-  { knob: 'NEXUS_CADENCE', at: 'var', value: null, write: true },
-  { knob: 'NEXUS_CHAIN_MAX', at: 'var', value: '0', write: true },
-  { knob: 'NEXUS_IDLE_BACKOFF', at: 'var', value: '0', write: true },
-  { knob: 'NEXUS_QUOTA_MAX', at: 'var', value: null, write: true },
+  { knob: 'Support', at: 'bearings', value: 'triage-only', write: true, dial: true, accepts: ['off', 'triage-only', 'fix-small', 'fix-all'] },
+  { knob: 'NEXUS_SUPPORT', at: 'var', value: null, write: true, dial: true },
+  { knob: 'Promote', at: 'bearings', value: 'owner', write: true, dial: true, accepts: ['owner', 'aged'] },
+  { knob: 'Generators', at: 'section', value: '(none)', write: true, dial: true },
+  { knob: 'stall_action', at: 'bearings', value: 'alert', write: true, dial: true, accepts: ['alert', 'promote', 'off'] },
+  { knob: 'loop', at: 'bearings', value: 'off', write: true, dial: true, accepts: ['on', 'off'] },
+  { knob: 'UI', at: 'bearings', value: 'none', write: true, dial: true, bold: true, accepts: ['none', 'url', 'dev'] },
+  { knob: 'NEXUS_CADENCE', at: 'var', value: null, write: true, dial: true },
+  // Cadence fields the NEXUS_CADENCE preset sets (the dial reaches them through it), and the quota governor's cap.
+  { knob: 'NEXUS_CHAIN_MAX', at: 'var', value: '0', write: true, dial: false },
+  { knob: 'NEXUS_IDLE_BACKOFF', at: 'var', value: '0', write: true, dial: false },
+  { knob: 'NEXUS_QUOTA_MAX', at: 'var', value: null, write: true, dial: false },
+  // Spec 59: the field-research generator's knob; off is the absent line, so nothing is written.
+  { knob: 'Research', at: 'bearings', value: 'off', write: false, dial: true, accepts: ['off', 'monthly', 'weekly'] },
   // Inert while the knobs above stay down, or settings rather than behaviour: the kit default stands.
   ...['promote_after_days', 'promote_floor', 'promote_per_week', 'veto_days', 'pending_cap', 'Motion floor', 'Lanes off',
     'Lock max age', 'sla_hours', 'escalate_days', 'asap_cap'].map((knob) => ({ knob, at: 'bearings', value: null, write: false })),
