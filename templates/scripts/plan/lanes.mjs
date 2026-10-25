@@ -17,6 +17,10 @@
 // when neither has a ready item. `Lanes off: <name>, <name>` in plan/bearings.md disables lanes by name. No file, or
 // one whose only lane is inside an HTML comment or a code fence, is stock dispatch.
 //
+// One lane is stock: `refill`, at the `queue` hook ahead of the file's own lanes, runs the generators listed under
+// `## Generators` in plan/bearings.md (scripts/plan/refill.mjs). With none listed it is not there at all; `Lanes off:
+// refill` turns it off, and a project lane named `refill` replaces it.
+//
 //   node scripts/plan/lanes.mjs march pre [--asap ready|none] [--support ready|none] [--json]
 //   node scripts/plan/lanes.mjs march queue [--json]
 //   node scripts/plan/lanes.mjs iterate dimensions [--json]
@@ -33,6 +37,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { parseGenerators } from './refill.mjs';
 
 export const HOOKS = Object.freeze({ march: ['pre', 'queue'], iterate: ['dimensions'] });
 export const FILES = Object.freeze({ march: 'skills/march.lanes.md', iterate: 'skills/iterate.lanes.md' });
@@ -159,6 +164,20 @@ export function select(lanes, { hook, off = new Set(), asapReady = false, suppor
   return out;
 }
 
+/** The stock refill lane for `bearings`' `## Generators` list, or null when it lists none. */
+export function stockRefill(bearings = '') {
+  const n = parseGenerators(bearings).generators.length;
+  if (!n) return null;
+  return { name: 'refill', hook: 'queue', when: 'always', run: 'node scripts/plan/refill.mjs --write', return: 'continue', line: 0, stock: `${n} generator${n === 1 ? '' : 's'} in plan/bearings.md` };
+}
+
+/** A hook's lanes with the stock ones added: at `queue`, refill first, unless the file has its own `refill`. */
+export function withStock(lanes, { kind, hook, bearings = '' }) {
+  if (kind !== 'march' || hook !== 'queue' || lanes.some((l) => l.name === 'refill')) return lanes;
+  const refill = stockRefill(bearings);
+  return refill ? [refill, ...lanes] : lanes;
+}
+
 /** Run a `when` script from the repo root: node for .mjs/.js/.cjs, else the file itself. Its exit code (127: none). */
 export function runWhen(root) {
   return (rel) => {
@@ -266,10 +285,11 @@ export async function main(argv, { root = process.cwd(), log = console.log, chec
   if (asapFlag === null || supportFlag === null) return (console.error(USAGE), 64);
   const { lanes, problems } = parseLanes(readSafe(path.join(root, FILES[cmd])), cmd);
   for (const p of problems) log(`problem ${p}`);
+  const bearings = readSafe(path.join(root, 'plan', 'bearings.md'));
   const asapIsReady = hook === 'pre' && lanes.some((l) => l.hook === 'pre') ? (asapFlag ?? (await asap(root))) : false;
   const picked = select(
-    lanes.filter((l) => !problems.some((p) => p.includes(`lane ${l.name}:`))),
-    { hook, off: lanesOff(readSafe(path.join(root, 'plan', 'bearings.md'))), asapReady: asapIsReady, supportReady: supportFlag ?? false, check },
+    withStock(lanes.filter((l) => !problems.some((p) => p.includes(`lane ${l.name}:`))), { kind: cmd, hook, bearings }),
+    { hook, off: lanesOff(bearings), asapReady: asapIsReady, supportReady: supportFlag ?? false, check },
   );
   if (argv.includes('--json')) {
     log(JSON.stringify(picked, null, 2));
@@ -278,7 +298,7 @@ export async function main(argv, { root = process.cwd(), log = console.log, chec
   for (const l of picked) {
     const letter = l.letter ? ` · letter ${l.letter}` : '';
     if (l.action === 'skip') log(`skip ${l.name} · ${l.why}`);
-    else log(`${l.action} ${l.name}${letter} · ${l.action === 'judge' ? `${l.why} · ` : ''}run: ${l.run} · return: ${l.return}`);
+    else log(`${l.action} ${l.name}${letter}${l.stock ? ` · stock: ${l.stock}` : ''} · ${l.action === 'judge' ? `${l.why} · ` : ''}run: ${l.run} · return: ${l.return}`);
   }
   const active = picked.filter((l) => l.action !== 'skip').length;
   log(active ? `${active} lane${active === 1 ? '' : 's'} at ${hook}` : 'stock');

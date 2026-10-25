@@ -131,7 +131,7 @@ Measure: 5 open · 0 closed · next A6
 
 - [ ] **59.1** The dial and its resolver · M · closes A1 · needs 58.6
 - [ ] **59.2** Skills read knobs through the resolver · M · closes A2 · needs 59.1, 57.8
-- [ ] **59.3** The field-research generator · M · closes A3 · needs 57.3, 54.1, 59.1
+- [ ] **59.3** The field-research generator · M · closes A3 · needs 54.1, 59.1
 - [ ] **59.4** The dial in GUI Settings · S · closes A4 · needs 59.1
   - Keep the GUI's particles, colour and motion.
 - [ ] **59.5** Dial docs and the adopter default · S · closes A5 · needs 59.2, 59.3

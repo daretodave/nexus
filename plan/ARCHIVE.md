@@ -203,3 +203,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 58.1 · The converter parses real v1 plans · 83bd586a..83bd586a
 - 2026-10-25 · 55.2 · Background-call guard and lost-to-background mark · ebc281d4..ebc281d4
 - 2026-10-25 · 56.3 · nexus described as kit + GUI; ship-a-chunk code branch · 8840bb7f..8840bb7f
+- 2026-10-25 · 57.3 · Generator contract, refill lane, two generic generators · 279c4b1e..279c4b1e

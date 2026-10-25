@@ -482,7 +482,31 @@ async function lanesCheck() {
       }
     }
   }
+  failures.push(...(await generatorsCheck()))
   return { failures, files }
+}
+
+// The refill lane (spec 57): both march.md copies run it at 3a';
+// the template's bearings has a `## Generators` section listing none
+// (refill is a no-op for an adopter); nexus's parses clean, and every
+// generator it lists has its script under scripts/generators/.
+async function generatorsCheck() {
+  const failures = []
+  const { parseGenerators } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/refill.mjs')).href)
+  for (const file of ['skills/march.md', 'templates/skills/march.md']) {
+    if (fs.existsSync(path.join(ROOT, file)) && !read(file).includes('refill.mjs')) failures.push(`${file}: never runs the stock refill lane (scripts/plan/refill.mjs) at 3a'`)
+  }
+  const tpl = read('templates/plan/bearings.md')
+  if (!/^## Generators\s*$/m.test(tpl)) failures.push('templates/plan/bearings.md: no `## Generators` section (the refill lane reads it)')
+  const t = parseGenerators(tpl)
+  failures.push(...t.problems.map((p) => p.replace('plan/bearings.md', 'templates/plan/bearings.md')))
+  if (t.generators.length) failures.push(`templates/plan/bearings.md: the kit lists no generator by default (${t.generators.map((g) => g.name).join(', ')}); keep examples inside a comment`)
+  const own = parseGenerators(read('plan/bearings.md'))
+  failures.push(...own.problems)
+  for (const g of own.generators) {
+    if (!fs.existsSync(path.join(ROOT, 'scripts/generators', `${g.name}.mjs`))) failures.push(`plan/bearings.md: generator ${g.name} has no scripts/generators/${g.name}.mjs`)
+  }
+  return failures
 }
 
 async function legAnatomy() {
@@ -760,6 +784,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/triage-match.test.mjs',
   'templates/scripts/__tests__/promote.test.mjs',
   'templates/scripts/__tests__/lanes.test.mjs',
+  'templates/scripts/__tests__/refill.test.mjs',
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/quota.test.mjs',
@@ -802,7 +827,8 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
+  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs',
+  'generators/issue-age.mjs', 'generators/stale-candidate.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',
   'secrets-run.mjs', 'secrets-scan.mjs',

@@ -115,6 +115,16 @@ unless named here:
 
 - Lanes off: none
 
+## Generators
+
+When no chunk is ready, `/march`'s stock `refill` lane runs
+these before `/expand` (`scripts/plan/refill.mjs`,
+`concepts/generators.md`); each script lives at
+`scripts/generators/<name>.mjs`:
+
+- issue-age · daily · target 3 · cap 5/wk
+- stale-candidate · weekly · target 2 · cap 2/wk
+
 ## Decisions standing for the loop
 
 1. Adopter-facing improvements (docs, templates or the GUI)

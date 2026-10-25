@@ -153,7 +153,14 @@ return.
 - **3a'. Queue lanes?** No ready chunk: `node
   scripts/plan/lanes.mjs march queue`, then as Step 0.5 (a
   lane returning `end-tick` ends the tick; `stock` or every
-  lane `continue` falls through to 3b).
+  lane `continue` falls through to 3b). The first is the
+  stock **refill** lane (`## Generators` in
+  `plan/bearings.md`; `concepts/generators.md`): `node
+  scripts/plan/refill.mjs --write` runs each listed
+  generator, which files AUDIT rows while its own are under
+  target and weekly cap. A `broke` line goes in the tick's
+  summary and never stops it; `filed N` is committed (`plan:
+  refill — <generators>`, gate first) before 3b.
 - **3b. Expand due?** Posture `bold` (see
   `plan/bearings.md`) AND (≥20 commits or >7 days since
   `plan/CANDIDATES.md` last pass) AND at least one
@@ -195,6 +202,7 @@ plan/CRITIQUE.md                     # critique queue + rate-limit metadata
 plan/CANDIDATES.md             # expand output + rate-limit metadata
 node scripts/plan/promote.mjs sweep  # Step 0: veto or release auto-promoted Held specs
 node scripts/plan/lanes.mjs march pre|queue  # project lanes (skills/march.lanes.md)
+node scripts/plan/refill.mjs --write # 3a': the stock refill lane runs bearings' generators
 gh issue list ...                    # triage gate
 node scripts/verify.mjs              # the gate every child runs
 ```

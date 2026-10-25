@@ -332,6 +332,25 @@ unless named here:
 
 - Lanes off: none
 
+## Generators
+
+When no chunk is ready, `/march`'s stock `refill` lane runs
+each generator listed here before `/expand`
+(`scripts/plan/refill.mjs`; `nexus/concepts/generators.md`).
+A generator turns time or repo state into queue rows: one line
+each, `- <name> · <cadence> · target <n> · cap <n>/wk`, its
+script at `scripts/generators/<name>.mjs`. Cadence is `tick`,
+`daily`, `weekly` or `<n>d`; the queue fills until `target` of
+its rows are Pending, at most `cap` a week. None listed means
+refill is a no-op. The kit ships two:
+
+<!--
+- issue-age · daily · target 3 · cap 5/wk
+- stale-candidate · weekly · target 2 · cap 2/wk
+-->
+
+- (none)
+
 ## Decisions standing for the autonomous loop
 
 (These exist so the loop never asks the user. Add to this list

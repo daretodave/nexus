@@ -30,7 +30,8 @@ Your project's own steps (a weekly snapshot, a content queue,
 an empty-queue refill) go in `skills/march.lanes.md`, not
 here: a re-sync of the kit's skills replaces this file and
 never touches that one. With no lane blocks there, dispatch is
-the stock order above.
+the stock order above. Generators listed in `plan/bearings.md`
+refill the queue through the stock `refill` lane (Step 3a').
 
 This means: an overnight run can take <PROJECT> from
 "scaffolded" to "shipped, populated, iteratively polished,
@@ -219,6 +220,23 @@ node scripts/plan/lanes.mjs march queue
 A lane returning `end-tick` ends the tick; `stock`, or every
 lane returning `continue`, falls through to 3b.
 
+The first `queue` lane is the stock **refill** lane whenever
+`## Generators` in `plan/bearings.md` lists one (none listed:
+it is not there). It runs each listed generator
+(`nexus/concepts/generators.md`), which files rows into
+`plan/AUDIT.md` while its own rows are under their target and
+its weekly cap:
+
+```bash
+node scripts/plan/refill.mjs --write   # filed|clean|skip|broke <generator> per line, then `filed N` or `clean`
+```
+
+A `broke` line (a generator that exited non-zero) goes in the
+tick's summary and never stops the tick. `filed N`: commit the
+rows (`plan: refill — <generators>`), the gate first, and go
+on to 3b; the next tick's `/iterate` picks them up. `Lanes off:
+refill` turns it off.
+
 #### 3b. Pending data?
 
 Open `data/BACKLOG.md`. If any `[ ]` row exists (and project
@@ -321,5 +339,6 @@ skills/ship-data.md                  # Step 3b
 skills/expand.md                     # Step 3c (posture-gated)
 scripts/plan/promote.mjs             # Step 0 veto sweep (Promote: aged)
 skills/march.lanes.md                # Step 0.5 + 3a': this project's own lanes (scripts/plan/lanes.mjs)
+scripts/plan/refill.mjs              # Step 3a': the stock refill lane runs plan/bearings.md's generators
 skills/iterate.md                    # Step 3d
 ```

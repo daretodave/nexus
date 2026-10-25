@@ -510,6 +510,9 @@ nexus/
 │   ├── plan/triage-match.mjs          # /triage: which open spec an issue belongs to, and the open PR already covering it (twin)
 │   ├── plan/promote.mjs               # aged promotion: /expand's pick, the Held veto line, /march's veto sweep (twin)
 │   ├── plan/lanes.mjs                 # project lanes: what runs at march's pre/queue and iterate's dimensions hooks (twin)
+│   ├── plan/refill.mjs                # the stock refill lane: runs the generators plan/bearings.md lists (twin)
+│   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
+│   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── git/push-policy.mjs            # pre-push: main on origin/upstream is the owner's checkout's alone (owner mode)
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
@@ -545,6 +548,7 @@ nexus/
 │   ├── architecture.md                # the whole system in one read
 │   ├── loop-shapes.md                 # the genus: dispatcher, night shift, heartbeat, concierge, pollinator, lanes, meta-loop
 │   ├── plan-shape.md                  # specs, chunks, acceptance IDs: the plan only shrinks
+│   ├── generators.md                  # the queue refills itself: the refill lane, the generator contract, domain patterns
 │   ├── skills-anatomy.md              # how to read/write a skill file
 │   ├── asking-well.md                 # the question-shape convention
 │   └── design-round-trip.md           # Claude Design in, the repo's handoff as source of truth; vs. the in-repo session
@@ -692,6 +696,9 @@ nexus/
     │   ├── plan/triage-match.mjs      # /triage: an issue scored against the open specs, open PRs' pending files read (gh read only)
     │   ├── plan/promote.mjs           # aged promotion behind a Held veto: pick, hold, sweep (gh read only)
     │   ├── plan/lanes.mjs             # project lanes at a hook; check; a skills re-sync that keeps lanes files
+    │   ├── plan/refill.mjs            # the stock refill lane: each listed generator under its target, weekly cap and cadence
+    │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
+    │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
     │   ├── plan/secrets-manifest.mjs  # nexus.secrets.json's shape + the .env.example import (plan-check reads it)
     │   ├── secrets.mjs                # secrets by name: status, set (stdin), import (--store a real .env), names, check, push (owner mode), audit, request; never a value
     │   ├── secrets-vault.mjs          # the vault: .env (local), .env.workspace (workspace root), the keychain; get/resolve for code only
@@ -736,6 +743,7 @@ nexus/
     │   ├── __tests__/triage-match.test.mjs  # an issue to its spec, ambiguous, none, already in PR #N
     │   ├── __tests__/promote.test.mjs # the pick, the weekly cap, the veto and the release
     │   ├── __tests__/lanes.test.mjs   # lane blocks, Lanes off, the Asap yield, the keeping re-sync
+    │   ├── __tests__/refill.test.mjs  # the refill lane and both generators: dry runs write nothing, a rerun files nothing
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver

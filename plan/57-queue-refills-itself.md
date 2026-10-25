@@ -277,8 +277,15 @@ A lanes file holds one block per lane:
 
 The generator contract:
 
-- `node scripts/generators/<name>.mjs [--write]`. Without
-  `--write` it writes nothing.
+- `node scripts/generators/<name>.mjs [--write] [--limit <n>]
+  [--today <date>]`. Without `--write` it writes nothing.
+  `scripts/plan/refill.mjs` passes `--limit` (the room left
+  under target and cap) and `--today`.
+- Every row it files carries `- generator: <name> · filed
+  <date>`. Refill counts those stamps for target, cap and
+  cadence, so its state is the queue files (a fresh cloud
+  checkout reads it as a local loop does); cadence is days
+  since the last filing (`tick`, `daily`, `weekly`, `<n>d`).
 - It is idempotent: it dedups against `AUDIT.md` and
   `CANDIDATES.md`, so a second run files nothing new.
 - It prints `filed N` or `clean` on its last line and exits
@@ -298,7 +305,6 @@ The Held line for an auto-promotion:
 ## Acceptance
 
 - **A2** Independent re-evidence raises a Pending row's score by +0.5 (cap +2). Pending above `pending_cap` shrinks by promotion or by at most 5 stale rejections a pass, each with a reason and listed in the digest.
-- **A4** A tick with no ready chunk runs the refill lane. `issue-age` and `stale-candidate` honour the generator contract, proven by tests: a dry run writes nothing, a second `--write` run files nothing, and a failing generator does not stop the next.
 - **A5** `pulse --motion` reports shipped units against the 4-week baseline. On a fixture of an adopter's Sep-Oct weekly series, heartbeat opens exactly one `Heartbeat: motion stalled` issue. With `stall_action: promote`, the next tick runs `/expand promote`; with `Promote: owner`, it alerts instead.
 - **A6** `/iterate` dimension I files `category: loop-config` rows whose `next` names a concrete repo variable or bearings line, ships at most one per 7 days, and files a YAML tuning as `[needs-user-call]`.
 - **A7** Every lane lock, Held line and owner-blocked row carries `until:` and `max_age:`. Past `max_age` it relaxes to its fallback or files exactly one needs-user ask, re-pinged weekly; `plan-check` rejects a Held line without them.
@@ -311,14 +317,13 @@ The Held line for an auto-promotion:
 
 ## Chunks
 
-Measure: 7 open · 2 closed · next A10
+Measure: 6 open · 3 closed · next A10
 
-- [ ] **57.3** Generator contract, refill lane, two generic generators · M · closes A4 · needs —
-- [ ] **57.4** Motion pulse, heartbeat stall and the motion generator · M · closes A5 · needs 57.3
+- [ ] **57.4** Motion pulse, heartbeat stall and the motion generator · M · closes A5 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **57.5** Lock timeouts, with the Held-line gate check · S · closes A7 · needs —
 - [ ] **57.6** Pending stays live: re-evidence scoring and the cap · S · closes A2 · needs —
 - [ ] **57.7** State diet: header shape, state-size leg, nexus compaction · M · closes A8 · needs —
   - A new leg changes the leg count in `bearings.md` and `agents.md` rule 3 in the same commit.
 - [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 57.4, 55.5, 54.8
-- [ ] **57.9** nexus generators: cli-ci-red, cli-deps, ui-walk · M · closes A9 · needs 57.3, 56.5
+- [ ] **57.9** nexus generators: cli-ci-red, cli-deps, ui-walk · M · closes A9 · needs 56.5

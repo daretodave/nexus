@@ -34,6 +34,7 @@ a project lane is one step of one loop.
 | `skills/march.lanes.md` | `/march`'s lanes, at the `pre` and `queue` hooks. |
 | `skills/iterate.lanes.md` | `/iterate`'s lanes, at the `dimensions` hook. |
 | `scripts/plan/lanes.mjs` | Which lanes run at a hook this tick; `check` lints both files; `sync` re-syncs the kit's skills and keeps both files. |
+| `scripts/plan/refill.mjs` | The stock `refill` lane: runs the generators `plan/bearings.md` lists (`scripts/generators/`). |
 
 Copy all three from `nexus/templates/`. The kit ships each
 lanes file with one example lane, inside an HTML comment so it
@@ -71,6 +72,17 @@ dimension. `node scripts/plan/lanes.mjs <march|iterate>
 <hook>` prints `run`, `judge` or `skip` per lane, then `stock`
 when nothing runs.
 
+## The stock refill lane
+
+One `queue` lane ships with the kit: `refill`, ahead of your
+own. It is there only when `## Generators` in
+`plan/bearings.md` lists a generator, and it runs `node
+scripts/plan/refill.mjs --write`, which runs each one and
+files rows while each is under its target and weekly cap
+([`../concepts/generators.md`](../concepts/generators.md)). A
+lane of your own named `refill` replaces it; `Lanes off:
+refill` turns it off.
+
 ## Turning a lane off
 
 `Lanes off: <name>, <name>` in `plan/bearings.md`, under
@@ -105,3 +117,4 @@ only with `--add`.
 
 - [`../concepts/architecture.md`](../concepts/architecture.md) — the dispatcher the hooks sit in.
 - [`../playbooks/upgrade.md`](../playbooks/upgrade.md) — the re-sync step.
+- [`../concepts/generators.md`](../concepts/generators.md) — the generator contract the refill lane runs.
