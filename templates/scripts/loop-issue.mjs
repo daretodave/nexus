@@ -17,7 +17,7 @@
 // Subcommands:
 //
 //   open --severity <high|med|low>
-//        --category <bug|enhancement|content|data|docs|seo|a11y|perf>
+//        --category <bug|enhancement|content|data|docs|seo|a11y|perf|ui>
 //        --source <user|reader|audit|external>
 //        --title "<title>"
 //        --body-file <path>
@@ -96,6 +96,7 @@ const VALID_CATEGORY = new Set([
   'seo',
   'a11y',
   'perf',
+  'ui',
 ])
 
 // Label palette (color hexes — GitHub takes hex without `#`).
@@ -119,6 +120,7 @@ const LABEL_PALETTE = {
   seo: { color: 'bfdadc', description: '' },
   a11y: { color: '5319e7', description: '' },
   perf: { color: 'e99695', description: '' },
+  ui: { color: 'f9d0c4', description: 'The GUI as a walk saw it' },
 }
 
 // --- argv parsing -----------------------------------------------------
@@ -604,7 +606,7 @@ function printHelp() {
 
 Usage:
   node scripts/loop-issue.mjs open --severity <high|med|low> \\
-      --category <bug|enhancement|content|data|docs|seo|a11y|perf> \\
+      --category <bug|enhancement|content|data|docs|seo|a11y|perf|ui> \\
       --source <user|reader|audit|external> \\
       --title "<title>" --body-file <path>
       → echoes the new issue number to stdout

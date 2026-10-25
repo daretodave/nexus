@@ -145,6 +145,7 @@ test('LABEL_PALETTE has every label the open + phase-open paths apply', () => {
     'seo',
     'a11y',
     'perf',
+    'ui',
   ]
   for (const name of required) {
     assert.ok(LABEL_PALETTE[name], `missing palette entry: ${name}`)
@@ -156,7 +157,7 @@ test('VALID_* enums match the documented brief', () => {
   assert.deepEqual([...VALID_SEVERITY].sort(), ['high', 'low', 'med'])
   assert.deepEqual(
     [...VALID_CATEGORY].sort(),
-    ['a11y', 'bug', 'content', 'data', 'docs', 'enhancement', 'perf', 'seo'],
+    ['a11y', 'bug', 'content', 'data', 'docs', 'enhancement', 'perf', 'seo', 'ui'],
   )
   assert.deepEqual([...VALID_SOURCE].sort(), ['audit', 'external', 'reader', 'user'])
 })

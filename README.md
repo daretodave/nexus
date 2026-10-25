@@ -517,6 +517,8 @@ nexus/
 │   ├── plan/motion.mjs                # the motion pulse and heartbeat.yml's motion-stall alarm (twin)
 │   ├── plan/unreleased.mjs            # /digest's unreleased CLI fixes: packages/cli commits on main since the last cli-v* tag
 │   ├── __tests__/unreleased.test.mjs  # its pure suite (scripts leg); __tests__/unreleased-run.test.mjs, a scratch repo (scripts-git)
+│   ├── plan/ui-rows.mjs               # /iterate's H rows: their shape, at most 3 Pending, and the magic guard on next
+│   ├── __tests__/iterate-ui.test.mjs  # its suite, plus H, signal F and the magic guard in the skills (scripts leg)
 │   ├── plan/locks.mjs                 # lock timeouts: past max_age a lock takes its fallback or asks once (twin)
 │   ├── plan/state.mjs                 # the state diet: queue headers and size (the state-size leg); compact old Done rows (twin)
 │   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going (twin)

@@ -69,11 +69,20 @@ reads as `then expand`.
   last pass.
 - **E.** Platform drift — Claude Code features the kit
   doesn't cover or contradicts.
+- **F.** Product telemetry — the GUI (`packages/cli`) as
+  its users meet it: `[H` rows in `plan/AUDIT.md` (open and
+  recently closed), red `cli-ci` runs on main (`gh run list
+  --workflow cli-ci.yml --branch main --status failure`), GUI
+  issues, and owner-local `packages/` commits no chunk
+  planned (`git log --since <Last pass> -- packages/` minus
+  the `ARCHIVE.md` ranges). Three H rows on one screen, or a
+  fix the owner keeps making by hand, is a spec.
 
 ## 4. Scoring
 
 `expand_score` 0–10, additive: multiple signals +1..+3;
-adopter-facing +2; cheap-and-impactful +2; speculative /
+adopter-facing +2 (a signal F candidate counts: the GUI is
+adopter-facing); cheap-and-impactful +2; speculative /
 no-evidence −3; conflicts a bearings contract −5 (drop unless
 still >3). **Cap 3 candidates per pass.**
 
@@ -81,7 +90,7 @@ still >3). **Cap 3 candidates per pass.**
 
 1. `git pull --ff-only`; read posture (`strict` → print
    "expand: strict posture — skipping", exit 0).
-2. Read signals A–E since the `Last pass` header of
+2. Read signals A–F since the `Last pass` header of
    `plan/CANDIDATES.md`.
 3. Synthesize + score; self-assess down to ≤3. If a signal
    reinforces a candidate already sitting in `## Pending`
@@ -149,7 +158,7 @@ sheds its stalest. Both write through
 every pass:
 
 - **Re-evidence:** `node scripts/plan/promote.mjs reevidence
-  "<title words>" <A-E> [#<issue>|<sha>] --note "<the
+  "<title words>" <A-F> [#<issue>|<sha>] --note "<the
   signal>" --write`. It appends a dated line under the row's
   `- re-evidence:` (the first one also writes `- filed
   score:`). A signal is independent when its letter or its

@@ -85,6 +85,13 @@ pass). Runs fine in the cloud — it needs only files and
    removed.
 5. No fabricated friction: if the walk was smooth, say so
    (`critique: pass <N> — clean`) and record the pass.
+6. **The magic guard.** A finding about the GUI never
+   suggests removing or dimming its particles, colour or
+   motion (`packages/cli/src/fx/*`, the particle, colour and
+   motion CSS). Too busy or too slow is fixed by making them
+   cheaper (`src/fx/budget.js`, `src/fx/pool.js`, the
+   `src/fx/pref.js` reduced-motion path), the rule
+   `skills/iterate.md` §5.7 holds the fix to.
 
 ## 5. Failure modes
 

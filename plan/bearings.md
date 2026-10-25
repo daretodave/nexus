@@ -19,6 +19,10 @@ library | cli | hybrid`.)
 
 **Auth:** `none`.
 
+**UI audit:** `demo fleet-to-tug,stack,grill-me` — the demo
+scenarios `/iterate` dimension H walks
+(`skills/iterate.md` §3a).
+
 ## Stack (locked)
 
 | Piece | Choice | Notes |
@@ -29,7 +33,7 @@ library | cli | hybrid`.)
 | Secrets | `nexus.secrets.json` + `scripts/secrets.mjs` | The model sees names, never values; values move only between the vault, a sink and a child process (`secrets run`); the guard and the `secrets` leg keep them out |
 | Diagrams | `node scripts/diagrams.mjs` | SVG under `assets/`, one style table; never hand-drawn; `--check` (the `diagrams` leg) fails on drift |
 | README GIFs | `npm run record -- <scenario>` in `packages/cli` | Recorded from a demo scenario under `assets/gifs/`, a `.png` poster beside each; the `gifs` leg holds 5–8 s, 3 MB, alt text and the poster link, never the bytes |
-| GUI | `packages/cli` (`@usenexus/cli`) | One server, many sessions; it runs the repo's own scripts (claims, plan, announce, worktree), never reimplements them; plan changes only as `plan/pending/` files; tests reach gh and the model only through injected seams; `design/handoff/` is the source of truth, ported rigidly with every skip logged |
+| GUI | `packages/cli` (`@usenexus/cli`) | One server, many sessions; it runs the repo's own scripts (claims, plan, announce, worktree), never reimplements them; plan changes only as `plan/pending/` files; tests reach gh and the model only through injected seams; `design/handoff/` is the source of truth, ported rigidly with every skip logged; the magic guard: a `ui` finding never removes or dims `src/fx/*` or the particle, colour or motion CSS, it makes them cheaper (`budget.js`, `pool.js`, the `pref.js` reduced-motion path) |
 | Deploy gate | none — push is the deploy | `npm run deploy:check` = symmetry no-op |
 | Issue mirror | `node templates/scripts/loop-issue.mjs` | The kit dogfoods its own template in place |
 

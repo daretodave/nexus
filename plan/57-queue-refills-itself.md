@@ -339,4 +339,4 @@ The Held line for an auto-promotion:
 Measure: 2 open · 7 closed · next A10
 
 - [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 55.5, 54.8
-- [ ] **57.9** nexus generators: cli-ci-red, cli-deps, ui-walk · M · closes A9 · needs 56.5
+- [ ] **57.9** nexus generators: cli-ci-red, cli-deps, ui-walk · M · closes A9 · needs —

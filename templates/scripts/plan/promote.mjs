@@ -23,7 +23,7 @@
 //
 // Pending stays live. `reevidence` records a signal that reinforces a Pending row on the row itself, under
 // `- re-evidence:` (one `  - <date> · <letter> <ref> · independent, +0.5 · <note>` line each). A signal is independent
-// when its letter (the expand skill's signal sources: A-E in the kit, A-H in the template) or its issue or commit ref
+// when its letter (the expand skill's signal sources: A-F in the kit, A-H in the template) or its issue or commit ref
 // is new to the row (letters: its re-evidence lines and any `signal <X>`; refs: anywhere in the row). Each independent
 // one adds +0.5 to the score, capped at +2 over the
 // `- filed score:` the first re-evidence records, and counts toward the twice-re-evidenced trigger above. `cap`, after
