@@ -467,6 +467,11 @@ disk.
   `bearings.md`'s `Auth:` is anything other than `none`.
 - `scripts/stack-lifecycle.mjs` — remove unless hermetic e2e
   uses Pattern B.
+- `scripts/ui-walk.mjs` (and its two tests) — remove when
+  `Surface` is `service`, `library` or `cli` (no pages to
+  walk). Kept, it walks nothing until `bearings.md`'s `UI:`
+  goes from `none` to `url <base>`: set that once `Live at:`
+  is a real deploy and you want the loop to look at it.
 - `.claude/settings.json` + `.claude/hooks/guard.mjs` +
   `.claude/hooks/steer.mjs` (and its test) + `.claude/CLAUDE.md` +
   `scripts/notify.mjs` — remove unless

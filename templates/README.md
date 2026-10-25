@@ -159,6 +159,7 @@ templates/
 │   ├── design/port-map.mjs            (a handoff's port.json: every board ported to a file, skipped with a reason, or pending a chunk; check, status; add to your gate)
 │   ├── design/port.workflow.js        (the port recipe as a Workflow script: foundation, one agent per canvas page, integrate, one fidelity reviewer per theme, land)
 │   ├── upgrade-plan.mjs               (v1 to v2 plan converter, run once from nexus by playbooks/upgrade.md Step 4; omit otherwise)
+│   ├── ui-walk.mjs                    (the scripted walk, reader Path A2 and /iterate dimension H: plan/bearings.md's UI routes in Chrome at desktop and mobile -> .nexus/walk/<iso>/walk.json + one PNG a screen; playwright-core when present, else zero-dependency CDP over Node 22's WebSocket, else --screenshot; anonymous; UI: none walks nothing)
 │   ├── __tests__/loop-issue.test.mjs  (unit tests, node:test, no devDeps)
 │   ├── __tests__/plan-check.test.mjs  (unit tests for plan-check.mjs)
 │   ├── __tests__/pending.test.mjs     (pending files, the config, the settled view)
@@ -207,6 +208,8 @@ templates/
 │   ├── __tests__/design-compare.test.mjs  (the PNG round trip and row filters, the diff's threshold, alpha and sizes, the CLI; pure)
 │   ├── __tests__/design-render.test.mjs  (the board index, imports, theme twins, the staged page, finding Chrome; pure)
 │   ├── __tests__/design-render-run.test.mjs  (tiny boards rendered in Chrome and read back pixel by pixel; skips without Chrome)
+│   ├── __tests__/ui-walk.test.mjs     (the UI knobs and flags, UI: none starting no browser, the credential-free Chrome environment, the finding rules, the playwright path against a fake browser; pure)
+│   ├── __tests__/ui-walk-run.test.mjs  (a local static fixture walked in Chrome by the cdp, playwright and screenshot drivers, no cookie or auth header sent; skips without Chrome)
 │   ├── __tests__/design-port.test.mjs  (the port map over fixture handoffs; the Workflow script's pure meta, its module parse, its steps under stand-in agents)
 │   ├── __tests__/bootstrap.test.mjs   (bootstrap's cloud-loop plan: the loop mode, the PR-mode files, the placeholders; pure)
 │   ├── __tests__/worktree.test.mjs    (worktree close and list in scratch repos; slower, offline)
@@ -330,6 +333,7 @@ the corresponding capability:
 | `.github/workflows/claims-board.yml` + `scripts/claims-board.mjs` | More than the loop's builders want to see who builds what: one issue shows the live claims, redrawn hourly and on each claims write. Off until the repo variable `NEXUS_CLAIMS_BOARD` is `claims-board.yml`. Needs the claims module. See `nexus/customization/claims.md` "The board (optional)". |
 | `.github/workflows/nightly-smoke.yml` | Hermetic e2e is adopted and `night.yml` doesn't already run `SMOKE_SAMPLE=full` as its breadth step — run one or the other, never both. See `nexus/customization/hermetic-e2e.md` + `nexus/concepts/loop-shapes.md`. |
 | `workspace/CLAUDE.md` + `workspace/AGENTS.md` + `workspace/README.md` + `workspace/REPOS.md` | You've outgrown polyrepo into a 3+-repo workspace (an un-versioned local root holding `plan/` and every product as siblings). Copy all four to the workspace root, not into any single repo. See `nexus/playbooks/workspace.md`. |
+| `scripts/ui-walk.mjs` (+ its two tests) | `Surface: site` or `hybrid` and you want the loop to look at the live site in a browser: set `UI: url <base>` in `plan/bearings.md` (default `none`: nothing browses). The reader's cloud Path A2 and `/iterate` dimension H, by `UI cadence:`; anonymous, screenshots uploaded from cloud only with `NEXUS_UI_ARTIFACTS=1`, `UI magic: keep` guarding motion and colour. Uses the project's `playwright-core` when present, else no dependency (Node 22+ for its DevTools driver). See `.github/CLOUD_LOOP.md` "The UI walk". |
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
 | `skills/design.md` + `skills/design/ingest.md` + `skills/design/render.md` + `skills/design/port.md` + `claude/commands/design.md` + `scripts/design/` (prompt, ingest, render, compare, port-map, port.workflow.js) | The owner designs whole screens in Claude Design and the repo takes the artifact back: `/design prompt` and `/design addendum` write the paste from the plan, stored in `design/prompts/`; `/design ingest` keeps the artifact in `design/handoff/<date>/` with a manifest and plots the port; `render.mjs` and `compare.mjs` draw the boards in an installed Chrome and score the app against them; `port.workflow.js` runs the port as a Workflow, and `port-map.mjs check` keeps every board ported, skipped with a reason, or pending (add it to your gate). See `nexus/playbooks/design-handoff.md`. |

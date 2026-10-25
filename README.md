@@ -758,6 +758,7 @@ nexus/
     │   ├── design/port-map.mjs        # port.json: every board ported, skipped with a reason, or pending a chunk; check, status
     │   ├── design/port.workflow.js    # the port recipe as a Workflow script (run through the Workflow tool's scriptPath)
     │   ├── upgrade-plan.mjs           # v1 to v2: shipped phases -> archive lines, pending -> spec stubs, blocked -> Held; dry run by default
+    │   ├── ui-walk.mjs                # the site's UI: routes in Chrome at two viewports -> walk.json + PNGs; playwright-core or zero-dep CDP; anonymous; UI: none walks nothing
     │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
     │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
     │   ├── __tests__/pending.test.mjs # pending files, config, settled view
@@ -806,6 +807,8 @@ nexus/
     │   ├── __tests__/design-ingest.test.mjs # the ingest over a fixture export: manifest, README, check, rehash
     │   ├── __tests__/design-compare.test.mjs # the PNG round trip, the diff math on synthetic images
     │   ├── __tests__/design-render.test.mjs # the board index, imports, theme twins, finding Chrome (+ -run: in Chrome)
+    │   ├── __tests__/ui-walk.test.mjs # the UI knobs, UI: none starts no browser, no credential reaches Chrome, the playwright path faked
+    │   ├── __tests__/ui-walk-run.test.mjs # a local fixture site walked by the cdp, playwright and screenshot drivers (opt-in; skips without Chrome)
     │   ├── __tests__/design-port.test.mjs # the port map over fixture handoffs; the Workflow's meta, module parse and steps
     │   ├── __tests__/bootstrap.test.mjs # bootstrap's cloud-loop plan, pure
     │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)

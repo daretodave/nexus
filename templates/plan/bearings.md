@@ -71,6 +71,39 @@ modes, and the recommended starting point. For
 `Surface: service | library | cli`, set `Auth: none` or omit
 the field entirely (no critique surface to walk).
 
+## UI walk (for Surface: site / hybrid)
+
+**UI:** `none`
+
+**UI routes:** `/`
+
+**UI cadence:** `critique`
+
+**UI magic:** `keep`
+
+Tells the loop whether, where and when to open the pages in a
+real browser: `scripts/ui-walk.mjs` walks each route at two
+viewports and writes `walk.json` (console and page errors,
+4xx and 5xx, overflow, unnamed controls, missing `alt`) plus
+one PNG per screen. In cloud it is the reader's Path A2.
+
+| Knob | Values | Default |
+|---|---|---|
+| `UI:` | `none` · `url <base>` · `dev "<cmd>" <port>` (later; walks nothing yet) | `none`: nothing browses |
+| `UI routes:` | paths under the base, comma-separated | `/` |
+| `UI cadence:` | `critique` (the reader walks) · `iterate` (dimension H walks) · `both` | `critique` |
+| `UI magic:` | `keep` (the magic guard) · `open` | `keep` |
+
+Set `UI:` to `url <HOSTING_URL>` once `Live at:` is a real
+deploy and you want the loop to look at it; leave `none`
+otherwise. The walk is anonymous, whatever `Auth:` says, and
+uploads no screenshots from cloud unless the repo variable
+`NEXUS_UI_ARTIFACTS` is `1` (a public repo's run artifacts
+are readable by any signed-in user). `UI magic: keep` means a
+`ui` finding never removes or dims the site's motion,
+particles or colour: it makes them cheaper. A v1 bearings
+without these lines reads as `UI: none`.
+
 ## Stack (locked — do not re-litigate)
 
 These were decided at project bootstrap. Revisit only if a

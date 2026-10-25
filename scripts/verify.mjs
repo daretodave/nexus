@@ -120,7 +120,9 @@
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds), and heartbeat.yml's
-//                 cadence step run in bash against a stubbed gh. Opt in with
+//                 cadence step run in bash against a stubbed gh, and
+//                 ui-walk.mjs walking a local fixture site in the
+//                 installed Chrome (skips without one). Opt in with
 //                 `node scripts/verify.mjs scripts-git` or
 //                 `NEXUS_VERIFY_GIT_TESTS=1 node scripts/verify.mjs`
 //   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
@@ -967,6 +969,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/design-render.test.mjs',
   'templates/scripts/__tests__/design-port.test.mjs',
   'templates/scripts/__tests__/support.test.mjs',
+  'templates/scripts/__tests__/ui-walk.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
   'scripts/__tests__/probe-latency.test.mjs',
@@ -991,6 +994,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/heartbeat-quota.test.mjs',
   'templates/scripts/__tests__/heartbeat-red.test.mjs',
   'templates/scripts/__tests__/heartbeat-motion.test.mjs',
+  'templates/scripts/__tests__/ui-walk-run.test.mjs',
   'scripts/__tests__/unreleased-run.test.mjs',
 ]
 
