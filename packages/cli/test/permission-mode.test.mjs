@@ -86,25 +86,28 @@ test('a new conversation reads the pref; a running or resumed one keeps the mode
   await p.stop();
 });
 
-test('a session stays in its repo (spec 52, A2): additionalDirectories and the read-outside guard ride along even under bypassPermissions', async () => {
-  const sdk = fakeSdk();
-  const other = os.tmpdir();
-  const p = sdkProvider(sdk, {
-    repo: os.tmpdir(), additionalDirectories: [other], onMessage() {}, onAsk: async () => ({}),
-    onPermission: async () => ({ allow: false }), onStatus() {}, permissionMode: () => 'bypassPermissions',
-  });
-  p.send('one');
-  assert.equal(sdk.calls.length, 1);
-  assert.deepEqual(sdk.calls[0].additionalDirectories, [other]);
-  assert.deepEqual(sdk.calls[0].settings, { permissions: { blockReadsOutsideWorkingDirectories: true } }, 'the guard fires even in bypassPermissions');
-  await p.stop();
+test('a session stays in its repo (spec 52, A2): additionalDirectories ride along in every mode; the read-outside guard only where the person asked to be asked', async () => {
+  const guard = { permissions: { blockReadsOutsideWorkingDirectories: true } };
+  for (const [mode, guarded] of [['default', true], ['acceptEdits', true], ['plan', true], ['auto', false], ['bypassPermissions', false]]) {
+    const sdk = fakeSdk();
+    const other = os.tmpdir();
+    const p = sdkProvider(sdk, {
+      repo: os.tmpdir(), additionalDirectories: [other], onMessage() {}, onAsk: async () => ({}),
+      onPermission: async () => ({ allow: false }), onStatus() {}, permissionMode: () => mode,
+    });
+    p.send('one');
+    assert.equal(sdk.calls.length, 1);
+    assert.deepEqual(sdk.calls[0].additionalDirectories, [other], mode);
+    assert.deepEqual(sdk.calls[0].settings, guarded ? guard : undefined, `${mode}: ${guarded ? 'a read outside asks' : 'the person chose not to be asked'}`);
+    await p.stop();
+  }
 
-  // No additionalDirectories given: the default is [], but the guard is still unconditional.
-  const q = sdkProvider(sdk, { repo: os.tmpdir(), onMessage() {}, onAsk: async () => ({}), onPermission: async () => ({ allow: false }), onStatus() {}, permissionMode: () => 'bypassPermissions' });
+  // No additionalDirectories given: the default is [], and the guard still follows the mode.
+  const sdk = fakeSdk();
+  const q = sdkProvider(sdk, { repo: os.tmpdir(), onMessage() {}, onAsk: async () => ({}), onPermission: async () => ({ allow: false }), onStatus() {}, permissionMode: () => 'default' });
   q.send('two');
-  assert.equal(sdk.calls.length, 2);
-  assert.deepEqual(sdk.calls[1].additionalDirectories, []);
-  assert.deepEqual(sdk.calls[1].settings, { permissions: { blockReadsOutsideWorkingDirectories: true } });
+  assert.deepEqual(sdk.calls[0].additionalDirectories, []);
+  assert.deepEqual(sdk.calls[0].settings, guard);
   await q.stop();
 });
 

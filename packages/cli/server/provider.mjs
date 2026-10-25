@@ -27,8 +27,10 @@
 //   settings                     and (spec 52, A2) its server's checkout root,
 //                                when cwd is a worktree of it; the settings
 //                                block's blockReadsOutsideWorkingDirectories
-//                                refuses a read outside both, in every mode
-//                                (even bypassPermissions), unlike permissionMode
+//                                refuses a read outside both in the modes that
+//                                ask (Ask, accept edits, plan); auto and bypass
+//                                are the person's choice not to be asked, so
+//                                they run without it (guardOptions)
 // Subagent traffic (parent_tool_use_id) is kept: it is what the stage draws.
 // Stop: interrupt() first so the turn's result still arrives, close() after
 // a 1500 ms grace.
@@ -49,6 +51,12 @@ export function permissionModeOf(mode) {
 export function modeOptions(mode) {
   const m = permissionModeOf(mode);
   return m === BYPASS ? { permissionMode: m, allowDangerouslySkipPermissions: true } : { permissionMode: m };
+}
+
+/** The read-outside guard (spec 52, A2) for a mode: on where the person asked to be asked, off under auto and bypass. */
+export function guardOptions(mode) {
+  const m = permissionModeOf(mode);
+  return m === BYPASS || m === 'auto' ? {} : { settings: { permissions: { blockReadsOutsideWorkingDirectories: true } } };
 }
 
 /** The SDK query options for a model and an effort: each only when chosen ('' leaves Claude Code's default). */
@@ -150,7 +158,7 @@ export function sdkProvider(sdk, { repo, additionalDirectories = [], onMessage, 
       options: {
         cwd: repo,
         additionalDirectories,
-        settings: { permissions: { blockReadsOutsideWorkingDirectories: true } },
+        ...guardOptions(mode),
         settingSources: ['project'],
         includePartialMessages: true,
         ...modeOptions(mode),
