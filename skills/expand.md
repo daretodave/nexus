@@ -86,18 +86,18 @@ still >3). **Cap 3 candidates per pass.**
 3. Synthesize + score; self-assess down to ≤3. If a signal
    reinforces a candidate already sitting in `## Pending`
    rather than describing something new, don't file a
-   duplicate — update that row's `last re-evidenced` date
-   (today) and append the new signal to its `source signals`
-   list.
+   duplicate — re-evidence the row (§6a).
 4. File to `## Pending` (standard candidate schema: proposed /
    source signals / rationale / proposed scope / estimated
-   chunks / conflicts / `last re-evidenced` — optional, absent
-   until a later pass re-affirms the candidate). Update the
-   metadata header.
+   chunks / conflicts; `filed score` and `re-evidence` arrive
+   with the first re-evidence). Update the metadata header.
 5. Aged promotion (§6), when the knob allows it.
-6. `node scripts/verify.mjs` → commit + land:
+6. The Pending cap (§6a).
+7. `node scripts/verify.mjs` → commit + land:
    `expand: pass <N> — <K> candidates` (with an aged
-   promotion: `…, auto-promoted <NN> (veto until <date>)`).
+   promotion: `…, auto-promoted <NN> (veto until <date>)`;
+   with a cap cut: `…, cut <K> stale`, each cut title in the
+   body).
 
 ## 6. Aged promotion: the silt valve
 
@@ -139,6 +139,30 @@ spec and the row move, and say so in the commit body. `ask …`
 one `[needs-user-call] promote <title>?` row in
 `plan/AUDIT.md`, deduped by title.
 
+## 6a. Pending stays live
+
+A row a pass re-evidences gains score; a queue past its cap
+sheds its stalest. Both write through
+`scripts/plan/promote.mjs`, so the arithmetic is the same
+every pass:
+
+- **Re-evidence:** `node scripts/plan/promote.mjs reevidence
+  "<title words>" <A-E> [#<issue>|<sha>] --note "<the
+  signal>" --write`. It appends a dated line under the row's
+  `- re-evidence:` (the first one also writes `- filed
+  score:`). A signal is independent when its letter or its
+  issue or commit is new to the row; each independent one
+  adds +0.5, capped at +2 over the filed score, and counts
+  toward §6's re-evidenced-twice trigger. One the row already
+  cites is logged at +0.
+- **The cap:** after §6, `node scripts/plan/promote.mjs cap
+  --write`. While Pending holds more than `pending_cap` rows
+  (bearings; 15), it moves the lowest-scoring ones proposed 60
+  or more days ago to `## Rejected` with `- reason: stale:
+  below cap cut <date>`, at most 5 a pass; `promote.mjs cuts`
+  lists them for the digest. A row younger than 60 days is
+  never cut.
+
 ## 7. Hard rules
 
 1. Candidates only — never write a spec or the roadmap
@@ -156,7 +180,8 @@ one `[needs-user-call] promote <title>?` row in
 ## 8. Failure modes
 
 1. **No signals clear the threshold** — exit cleanly with
-   "expand: no candidates" (no commit).
+   "expand: no candidates" (no commit, unless §6 or the cap
+   in §6a changed the queue).
 2. **`git pull` divergence** — stop.
 
 ## 9. Quick reference
@@ -165,6 +190,8 @@ one `[needs-user-call] promote <title>?` row in
 plan/CANDIDATES.md             # output + metadata header
 plan/AUDIT.md  plan/CRITIQUE.md      # signal sources A/B
 ../<sibling>/plan/lessons.md         # signal source D (if present)
+node scripts/plan/promote.mjs reevidence "<title>" B '#12' --write   # §6a: +0.5 if independent
+node scripts/plan/promote.mjs cap --write                         # §6a: the stale cut over pending_cap
 node scripts/verify.mjs
 git commit -m "expand: pass <N> — <K> candidates"   # then land per owner mode (next/land.md §6)
 ```

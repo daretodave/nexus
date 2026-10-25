@@ -112,6 +112,11 @@ in their veto window first. The digest's silt line becomes
   different signal letter (A-E) or a different issue or commit
   than any already in the row's `source signals`. Each one
   also counts toward the two-re-evidence aging trigger.
+  (Decided in 57.6: `promote.mjs reevidence` writes it on the
+  row, a `- filed score:` line on the first one and a dated
+  line under `- re-evidence:` each time, logged at +0 when not
+  independent; the template's signal letters run A-H. A row's
+  letters are those lines' plus any `signal <X>` in its text.)
 - When Pending exceeds `pending_cap`, the pass promotes per
   `Promote`; if Pending is still over the cap, it moves the
   lowest-scoring rows older than 60 days to `## Rejected` with
@@ -322,7 +327,6 @@ The Held line for an auto-promotion:
 
 ## Acceptance
 
-- **A2** Independent re-evidence raises a Pending row's score by +0.5 (cap +2). Pending above `pending_cap` shrinks by promotion or by at most 5 stale rejections a pass, each with a reason and listed in the digest.
 - **A6** `/iterate` dimension I files `category: loop-config` rows whose `next` names a concrete repo variable or bearings line, ships at most one per 7 days, and files a YAML tuning as `[needs-user-call]`.
 - **A8** Queue-file headers are ≤ 20 lines, the `state-size` leg fails an oversize fixture, and nexus's `AUDIT.md` is compacted, with no Done row older than 30 days.
 - **A9** nexus's refill lane runs `cli-ci-red`, `cli-deps` and `ui-walk` under the generator contract, each with a test, and files AUDIT rows only for a red cli-ci run, a stale dependency or a walk finding.
@@ -333,9 +337,8 @@ The Held line for an auto-promotion:
 
 ## Chunks
 
-Measure: 4 open · 5 closed · next A10
+Measure: 3 open · 6 closed · next A10
 
-- [ ] **57.6** Pending stays live: re-evidence scoring and the cap · S · closes A2 · needs —
 - [ ] **57.7** State diet: header shape, state-size leg, nexus compaction · M · closes A8 · needs —
   - A new leg changes the leg count in `bearings.md` and `agents.md` rule 3 in the same commit.
 - [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 55.5, 54.8

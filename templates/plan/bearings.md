@@ -326,6 +326,14 @@ strict) turns it off; a missing key reads `owner`.
 - promote_per_week: 1
 - veto_days: 3
 
+Pending stays live (`skills/expand.md` Steps 2 and 4c): a
+signal that re-evidences a waiting candidate raises its score
+(+0.5 each independent one, at most +2), and past
+`pending_cap` each pass moves at most 5 stale rows (60+ days
+old, lowest score first) to `## Rejected`, each with its reason.
+
+- pending_cap: 15
+
 The motion heartbeat (`heartbeat.yml`, `scripts/plan/motion.mjs`):
 runs that succeed and ship nothing still look alive, so the
 heartbeat also counts shipped units (feat/fix/content commits,

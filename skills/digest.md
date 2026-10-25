@@ -82,7 +82,10 @@ Never dispatched by `/march` — it is its own loop shape (see
    >21 days, or the oldest pending candidate exceeds 45 days
    (nexus runs `Promote: aged`; with `owner` the line reads
    "oversight needed: candidate queue silting (N pending >21d,
-   oldest Xd)"), a `motion stalled: <the pulse's shipped
+   oldest Xd)"), one `cut <date> [score X] <title>` line per
+   candidate the Pending cap cut since the last digest (`node
+   scripts/plan/promote.mjs cuts --since <its date>`; `none`
+   adds no line), a `motion stalled: <the pulse's shipped
    line>` line whenever `--motion` reads `stalled`, and each
    `rotate <NAME>` line of `node scripts/secrets.mjs
    audit`, a secret last set over 90

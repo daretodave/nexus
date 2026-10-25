@@ -12,7 +12,8 @@ Argument handling:
 - `careful` | `bold` | `promote` → the cap and bar, or (owner)
   this pass writes its picks as specs; `skills/expand.md` §2.
 
-Procedure: §5. Aged promotion: §6. Hard rules: §7. Failure
+Procedure: §5. Aged promotion: §6. Re-evidence scoring and
+the Pending cap: §6a. Hard rules: §7. Failure
 modes: §8. Signals: audit clusters, critique clusters, triage
 patterns, sibling lessons, platform drift. Never write to the
 build plan directly (`promote` and the aged promotion, held

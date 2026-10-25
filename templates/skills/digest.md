@@ -81,7 +81,10 @@ its own cadence.
    Xd)"; under `Promote: aged` the valve is draining it, so the
    line reads "auto-promoted <NN> <title> (veto until <date>),
    Y awaiting" from `node scripts/plan/promote.mjs sweep`, or
-   "auto-promoted none, Y awaiting" — a `motion stalled: <the
+   "auto-promoted none, Y awaiting" — one `cut <date> [score X]
+   <title>` line per candidate the Pending cap cut since the
+   last digest (`node scripts/plan/promote.mjs cuts --since
+   <its date>`), a `motion stalled: <the
    pulse's shipped line>` line whenever `--motion` reads
    `stalled` (the alert `stall_action: alert` promises), and
    each `rotate <NAME>` line of `node scripts/secrets.mjs

@@ -109,6 +109,13 @@ the aged ones promote themselves behind a veto window
 - promote_per_week: 2
 - veto_days: 3
 
+Pending stays live (`skills/expand.md` §6a): an independent
+re-evidence adds +0.5 (cap +2 over the filed score), and past
+the cap each pass cuts at most 5 stale rows (60+ days, lowest
+score first):
+
+- pending_cap: 15
+
 The motion heartbeat (`scripts/plan/motion.mjs`,
 `heartbeat.yml`): a last full week shipping under the floor
 opens one `Heartbeat: motion stalled` issue; nexus answers it

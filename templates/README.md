@@ -118,7 +118,7 @@ templates/
 │   ├── plan/progress.mjs              (ASCII progress per spec: the bar, closed struck, <--- [here], ETAs from sizes; --json for a GUI)
 │   ├── plan/order.mjs                 (the plan in /next's pick order, simulated: /plot's before and after, the GUI's next up)
 │   ├── plan/triage-match.mjs          (/triage: the open spec an issue belongs to, by scored keywords; an open PR's pending files that already cover it)
-│   ├── plan/promote.mjs               (aged promotion behind a Held veto: /expand's pick, the Held line, /march's veto sweep; gh read only)
+│   ├── plan/promote.mjs               (aged promotion behind a Held veto: /expand's pick, the Held line, /march's veto sweep; re-evidence scoring and the Pending cap; gh read only)
 │   ├── plan/lanes.mjs                 (project lanes: which lanes run at a march or iterate hook, Lanes off, the Asap yield; check; a skills re-sync that keeps lanes files)
 │   ├── plan/refill.mjs                (the stock refill lane at march's queue hook: runs each generator plan/bearings.md lists under its target, weekly cap and cadence; a broken one never stops the next)
 │   ├── generators/issue-age.mjs       (generator: an open issue without loop:opened past sla_hours becomes one AUDIT HIGH row; gh read only)

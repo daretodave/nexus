@@ -511,7 +511,7 @@ nexus/
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
 │   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
 │   ├── plan/triage-match.mjs          # /triage: which open spec an issue belongs to, and the open PR already covering it (twin)
-│   ├── plan/promote.mjs               # aged promotion: /expand's pick, the Held veto line, /march's veto sweep (twin)
+│   ├── plan/promote.mjs               # aged promotion: /expand's pick, the Held veto line, /march's veto sweep; re-evidence scoring, the Pending cap (twin)
 │   ├── plan/lanes.mjs                 # project lanes: what runs at march's pre/queue and iterate's dimensions hooks (twin)
 │   ├── plan/refill.mjs                # the stock refill lane: runs the generators plan/bearings.md lists (twin)
 │   ├── plan/motion.mjs                # the motion pulse and heartbeat.yml's motion-stall alarm (twin)
@@ -707,7 +707,7 @@ nexus/
     │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h); --json: the same as data
     │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
     │   ├── plan/triage-match.mjs      # /triage: an issue scored against the open specs, open PRs' pending files read (gh read only)
-    │   ├── plan/promote.mjs           # aged promotion behind a Held veto: pick, hold, sweep (gh read only)
+    │   ├── plan/promote.mjs           # aged promotion behind a Held veto: pick, hold, sweep; reevidence, cap, cuts (gh read only)
     │   ├── plan/lanes.mjs             # project lanes at a hook; check; a skills re-sync that keeps lanes files
     │   ├── plan/refill.mjs            # the stock refill lane: each listed generator under its target, weekly cap and cadence
     │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react

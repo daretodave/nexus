@@ -109,6 +109,7 @@ The same section holds the aged-promotion knobs (Step 4b), one
 | `promote_floor` | score | 6.0 |
 | `promote_per_week` | count | 1 |
 | `veto_days` | days | 3 |
+| `pending_cap` | count | 15 (Step 4c) |
 
 If the bearings section is missing, default to **bold** and add
 the section in the same commit (`bearings: add expand posture
@@ -233,15 +234,25 @@ For each signal cluster, draft a candidate:
 - proposed scope: <1-chunk | N-chunk spec>
 - estimated chunks: <N>
 - conflicts: <with spec / contract / existing plan; or "none">
-- last re-evidenced: <ISO date> (optional — omit until a later
-  pass re-affirms this candidate)
 ```
 
 Score per §5. Sort. Take top 3. If a signal reinforces a
 candidate already sitting in `## Pending` rather than
-describing something new, don't file a duplicate — update that
-row's `last re-evidenced` date (today) and append the new
-signal to its `source signals` list instead.
+describing something new, don't file a duplicate — re-evidence
+that row instead:
+
+```bash
+node scripts/plan/promote.mjs reevidence "<title words>" <A-H> \
+  [#<issue>|<sha>] --note "<the signal>" --write
+```
+
+It appends a dated line under the row's `- re-evidence:` (the
+first one also writes `- filed score:`). A signal is
+independent when its letter (§4) or its issue or commit is new
+to the row; each independent one adds +0.5 to the score,
+capped at +2 over the filed score, and counts toward Step 4b's
+re-evidenced-twice trigger. A signal the row already cites is
+logged at +0. Pending stays live: what keeps coming back rises.
 
 ### Step 3 — Self-assess
 
@@ -318,6 +329,22 @@ spec and the row move, and say so in the commit body. `ask …`
 one `[needs-user-call] promote <title>?` row in
 `plan/AUDIT.md`, deduped by title.
 
+### Step 4c — The Pending cap
+
+A queue past its cap sheds its stalest, so what waits stays
+worth reading. After Step 4b, whatever `Promote` reads:
+
+```bash
+node scripts/plan/promote.mjs cap --write
+```
+
+While `## Pending` holds more than `pending_cap` rows (§3;
+15), it moves the lowest-scoring rows proposed 60 or more days
+ago (ties: the oldest) to `## Rejected` with `- reason: stale:
+below cap cut <date>`, at most 5 a pass, and prints one `cut …`
+line each. A row younger than 60 days is never cut. `node
+scripts/plan/promote.mjs cuts` lists them for `/digest`.
+
 ### Step 5 — Commit + land
 
 ```bash
@@ -342,7 +369,8 @@ numbers + their topics. A `promote` pass uses the same subject,
 and its body says "promoted by a then-build /next loop". An
 aged promotion (Step 4b) appends `, auto-promoted <NN> (veto
 until <date>)` to the subject and names the veto issue in the
-body.)
+body. A cap cut (Step 4c) appends `, cut <K> stale` and lists
+each cut title in the body.)
 
 If **zero** candidates score above threshold: still update the
 metadata header, commit `expand: pass <N> — no candidates`. The

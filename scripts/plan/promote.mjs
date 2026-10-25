@@ -14,21 +14,35 @@
 //   promote_floor       ... when its score is at least this (6.0)
 //   promote_per_week    auto-promotions dated in the last 7 days, vetoed ones included, cap the next (1)
 //   veto_days           the window the Held line holds the spec for (3)
+//   pending_cap         Pending rows above this are cut, the lowest-scoring 60+ days old first, 5 a pass (15)
 //
 // A Pending candidate (plan/CANDIDATES.md, `### [ ] [score X] <title>`) is eligible when its score is at least the
-// floor and it is `promote_after_days` old (its `- proposed:` date) or carries two re-evidence dates. The pick is the
-// highest score, ties to the oldest. Auto-promotions are counted from `- promoted: <date>, auto` lines anywhere in the
+// floor and it is `promote_after_days` old (its `- proposed:` date) or re-evidenced twice (dates in its prose, plus
+// independent `- re-evidence:` lines). The pick is the highest score, ties to the oldest. Auto-promotions are counted from `- promoted: <date>, auto` lines anywhere in the
 // file (a vetoed row keeps its line, so a veto never frees a slot for an immediate retry).
+//
+// Pending stays live. `reevidence` records a signal that reinforces a Pending row on the row itself, under
+// `- re-evidence:` (one `  - <date> · <letter> <ref> · independent, +0.5 · <note>` line each). A signal is independent
+// when its letter (the expand skill's signal sources: A-E in the kit, A-H in the template) or its issue or commit ref
+// is new to the row (letters: its re-evidence lines and any `signal <X>`; refs: anywhere in the row). Each independent
+// one adds +0.5 to the score, capped at +2 over the
+// `- filed score:` the first re-evidence records, and counts toward the twice-re-evidenced trigger above. `cap`, after
+// the pass's promotion: when Pending exceeds `pending_cap`, the lowest-scoring rows proposed 60+ days ago (ties: the
+// oldest) move to `## Rejected` as `stale: below cap cut <date>`, at most 5 a pass; `cuts` lists them for the digest.
 //
 //   node scripts/plan/promote.mjs pick [--today YYYY-MM-DD] [--json]          # the candidate this pass promotes
 //   node scripts/plan/promote.mjs hold <NN> <issue> [--today YYYY-MM-DD]       # write the spec's Held line
 //   node scripts/plan/promote.mjs sweep [--today YYYY-MM-DD] [--issues <file>] [--write] [--json]
+//   node scripts/plan/promote.mjs reevidence "<title words>" <letter> [#<issue>|<sha>] [--note <text>] [--today D] [--write]
+//   node scripts/plan/promote.mjs cap [--today YYYY-MM-DD] [--write] [--json]  # the stale cut over pending_cap
+//   node scripts/plan/promote.mjs cuts [--since YYYY-MM-DD]                   # the cap cuts, for the digest
 //
 // `pick` prints `pick …`, `ask …` (an eligible candidate a contributor's checkout cannot promote: one needs-user ask)
 // or `none: <why>`. `sweep` prints one `veto|release|wait <NN> #<issue>` line per auto-promoted Held line; with
 // `--write` it makes the veto and release plan edits (the skill then closes a released issue with gh). Issue states
 // come from `gh issue view` (read only), or from `--issues <file>` (`{"123": "CLOSED"}`) in tests and dry runs; a
-// state gh cannot read is a `wait`. Exit 0, or 64 on bad usage.
+// state gh cannot read is a `wait`. `reevidence` and `cap` print what they would write, and write it with `--write`.
+// Exit 0; 1 when `reevidence` matches no Pending row or more than one; 64 on bad usage.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -37,8 +51,13 @@ import { parseAutoHeld } from '../plan-check.mjs';
 import { isOwner } from '../owner.mjs';
 import { loadConfig } from './config.mjs';
 
-export const KNOBS = Object.freeze({ promote: 'owner', afterDays: 21, floor: 6.0, perWeek: 1, vetoDays: 3 });
-const KEYS = { Promote: 'promote', promote_after_days: 'afterDays', promote_floor: 'floor', promote_per_week: 'perWeek', veto_days: 'vetoDays' };
+export const KNOBS = Object.freeze({ promote: 'owner', afterDays: 21, floor: 6.0, perWeek: 1, vetoDays: 3, pendingCap: 15 });
+const KEYS = { Promote: 'promote', promote_after_days: 'afterDays', promote_floor: 'floor', promote_per_week: 'perWeek', veto_days: 'vetoDays', pending_cap: 'pendingCap' };
+/** Re-evidence: +0.5 a signal, at most +2 over the filed score. A cap cut: rows this old, at most this many a pass. */
+export const BUMP = 0.5;
+export const BUMP_CAP = 2;
+export const STALE_DAYS = 60;
+export const CUT_PER_PASS = 5;
 const DATE = /\d{4}-\d{2}-\d{2}/g;
 const DAY = 86400000;
 
@@ -97,7 +116,9 @@ export function parseCandidates(text = '') {
     // Re-evidence: every date after the first "re-evidenced" in the proposed field, plus the `last re-evidenced` one.
     const reText = [proposedText.split(/re-evidenced/).slice(1).join(' '), field(body, 'last re-evidenced')].join(' ');
     const reEvidence = [...new Set(reText.match(DATE) ?? [])].filter((d) => d !== proposed);
-    pending.push({ title: m[2].trim(), score: Number(m[1]), proposed, reEvidence: reEvidence.length });
+    // ... plus each independent entry the reevidence command wrote under `- re-evidence:`.
+    const logged = (field(body, 're-evidence').match(/ · independent\b/g) ?? []).length;
+    pending.push({ title: m[2].trim(), score: Number(m[1]), proposed, reEvidence: reEvidence.length + logged });
   }
   const auto = [...text.matchAll(/^- promoted: (\d{4}-\d{2}-\d{2}), auto\b/gm)].map((m) => m[1]);
   return { pending, auto };
@@ -181,24 +202,22 @@ export function decide(entry, state, date = today()) {
   return date > entry.until ? 'release' : 'wait';
 }
 
-/** Move the candidate promoted to `spec` (or under `issue`) from wherever it sits to `## Rejected`, marked vetoed. */
-export function rejectCandidate(text, spec, issue, date) {
-  const lines = text.split('\n');
-  const n = String(Number(spec));
-  const at = lines.findIndex((l, i) => /^### \[promoted /.test(l) && (new RegExp(`→ spec 0*${n}\\]`).test(l)
-    || lines.slice(i + 1, rowEnd(lines, i)).some((b) => new RegExp(`veto #${issue}\\b`).test(b))));
-  if (at < 0) return { text, moved: false };
+/** Cut the row headed at `at` out of `lines` (with one trailing blank) and return its lines. */
+function takeRow(lines, at) {
   const end = rowEnd(lines, at);
   const row = lines.slice(at, end);
-  row[0] = row[0].replace(/^### \[promoted [^\]]*\]/, `### [vetoed ${date} (#${issue})]`);
   lines.splice(at, end - at + (lines[end] !== undefined && !lines[end].trim() ? 1 : 0));
+  return row;
+}
+
+/** Put `row` at the end of `## Rejected` (made when missing); the template's placeholder goes once a real row lands. */
+function toRejected(lines, row) {
   let [start, stop] = section(lines, 'Rejected');
   if (start < 0) {
     while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
     lines.push('', '## Rejected', '');
     [start, stop] = section(lines, 'Rejected');
   }
-  // The template's placeholder paragraph goes once a real row lands.
   const ph = lines.findIndex((l, i) => i > start && i < stop && /^\(empty/.test(l));
   if (ph >= 0) {
     let e = ph;
@@ -209,7 +228,135 @@ export function rejectCandidate(text, spec, issue, date) {
   let put = stop;
   while (put > start + 1 && !lines[put - 1].trim()) put--;
   lines.splice(put, 0, '', ...row, ...(lines[put]?.trim() ? [''] : []));
+}
+
+/** Move the candidate promoted to `spec` (or under `issue`) from wherever it sits to `## Rejected`, marked vetoed. */
+export function rejectCandidate(text, spec, issue, date) {
+  const lines = text.split('\n');
+  const n = String(Number(spec));
+  const at = lines.findIndex((l, i) => /^### \[promoted /.test(l) && (new RegExp(`→ spec 0*${n}\\]`).test(l)
+    || lines.slice(i + 1, rowEnd(lines, i)).some((b) => new RegExp(`veto #${issue}\\b`).test(b))));
+  if (at < 0) return { text, moved: false };
+  const row = takeRow(lines, at);
+  row[0] = row[0].replace(/^### \[promoted [^\]]*\]/, `### [vetoed ${date} (#${issue})]`);
+  toRejected(lines, row);
   return { text: lines.join('\n'), moved: true };
+}
+
+const PENDING_HEAD = /^### \[ \] \[score (\d+(?:\.\d+)?)\] (.+)$/;
+
+/** The Pending heading indices whose title holds `words` (case-insensitive); an exact title wins outright. */
+function findPending(lines, words) {
+  const [start, end] = section(lines, 'Pending');
+  const want = words.trim().toLowerCase();
+  const hits = [];
+  for (let i = start + 1; start >= 0 && want && i < end; i++) {
+    const m = PENDING_HEAD.exec(lines[i]);
+    if (!m) continue;
+    if (m[2].trim().toLowerCase() === want) return [i];
+    if (m[2].toLowerCase().includes(want)) hits.push(i);
+  }
+  return hits;
+}
+
+const fmt = (n) => (Math.round(n * 10) / 10).toFixed(1);
+/** A re-evidence ref: an issue (`#123`) or a commit sha (7-40 hex). */
+export const REF = /^(#\d+|[0-9a-f]{7,40})$/i;
+
+/**
+ * Is a signal independent of what the row already cites? A new signal letter is, and so is a new issue or commit ref.
+ * The row's letters are its re-evidence lines' and any `signal <X>` in its text; a ref is old when the row mentions it
+ * anywhere (a commit by its first 7 characters).
+ */
+export function independent(body, letter, ref = null) {
+  const letters = new Set([
+    ...[...body.matchAll(/^\s+- \d{4}-\d{2}-\d{2} · ([A-H])\b/gm)].map((m) => m[1]),
+    ...[...body.matchAll(/\bsignal ([A-H])\b/g)].map((m) => m[1]),
+  ]);
+  if (!letters.has(letter)) return true;
+  if (!ref) return false;
+  if (ref.startsWith('#')) return !new RegExp(`#${ref.slice(1)}\\b`).test(body);
+  return !body.toLowerCase().includes(ref.slice(0, 7).toLowerCase());
+}
+
+/**
+ * Record one re-evidence on the Pending row whose title holds `words`: { text, title, from, to, independent }, or
+ * { error } when no row or more than one matches. The first one records `- filed score:`; an independent one adds BUMP
+ * to the score, never past filed + BUMP_CAP, and counts toward the twice-re-evidenced promotion trigger.
+ */
+export function reevidence(text, words, letter, ref = null, { date = today(), note = '' } = {}) {
+  const lines = text.split('\n');
+  const hits = findPending(lines, words);
+  if (hits.length !== 1) return { error: hits.length ? `${hits.length} Pending rows match "${words}"; give more of the title` : `no Pending row matches "${words}"` };
+  const at = hits[0];
+  const end = rowEnd(lines, at);
+  const body = lines.slice(at + 1, end);
+  const [, scoreText, title] = PENDING_HEAD.exec(lines[at]);
+  const from = Number(scoreText);
+  const filedText = field(body, 'filed score');
+  const filed = filedText ? Number((/\d+(?:\.\d+)?/.exec(filedText) ?? [from])[0]) : from;
+  const ind = independent(body.join('\n'), letter, ref);
+  const to = ind ? Math.min(from + BUMP, Math.max(from, filed + BUMP_CAP)) : from;
+  const how = !ind ? 'same source, +0' : to > from ? `independent, +${fmt(to - from)}` : `independent, capped at +${BUMP_CAP}`;
+  const tail = note ? ` · ${note.replace(/·/g, '-').replace(/\s+/g, ' ').trim()}` : '';
+  const entry = `  - ${date} · ${letter}${ref ? ` ${ref}` : ''} · ${how}${tail}`;
+  // Bottom-up, so the indices above each edit hold: the entry, the filed score, then the heading.
+  const reAt = body.findIndex((l) => l.startsWith('- re-evidence:'));
+  if (reAt < 0) lines.splice(end, 0, '- re-evidence:', entry);
+  else {
+    let last = at + 1 + reAt;
+    while (last + 1 < end && !/^- /.test(lines[last + 1])) last++;
+    lines.splice(last + 1, 0, entry);
+  }
+  if (!filedText) {
+    const pAt = body.findIndex((l) => l.startsWith('- proposed:'));
+    let put = at + 1;
+    if (pAt >= 0) {
+      put = at + 2 + pAt;
+      while (put < end && !/^- /.test(lines[put])) put++;
+    }
+    lines.splice(put, 0, `- filed score: ${scoreText}`);
+  }
+  if (to > from) lines[at] = `### [ ] [score ${fmt(to)}] ${title}`;
+  return { text: lines.join('\n'), title: title.trim(), from, to, independent: ind };
+}
+
+/** The rows a cap cut takes: with Pending over `pendingCap`, the lowest scores proposed STALE_DAYS+ ago, ties the oldest. */
+export function capCut({ pending }, k, date = today()) {
+  const over = Math.max(0, pending.length - k.pendingCap);
+  const cut = pending
+    .filter((c) => c.proposed && daysBetween(c.proposed, date) >= STALE_DAYS)
+    .map((c) => ({ ...c, age: daysBetween(c.proposed, date) }))
+    .sort((a, b) => a.score - b.score || a.proposed.localeCompare(b.proposed))
+    .slice(0, Math.min(over, CUT_PER_PASS));
+  return { count: pending.length, over, cut };
+}
+
+/** Move the Pending rows with these exact titles to `## Rejected`, each with the reason `stale: below cap cut <date>`. */
+export function cutStale(text, titles, date = today()) {
+  const lines = text.split('\n');
+  for (const title of titles) {
+    const [at] = findPending(lines, title).filter((i) => PENDING_HEAD.exec(lines[i])[2].trim() === title);
+    if (at === undefined) continue;
+    const row = takeRow(lines, at);
+    row[0] = row[0].replace(/^### \[ \]/, `### [rejected ${date}]`);
+    row.splice(1, 0, `- reason: stale: below cap cut ${date}`);
+    toRejected(lines, row);
+  }
+  return lines.join('\n');
+}
+
+/** Every cap cut under `## Rejected` dated `since` or later: { date, score, title }. */
+export function cuts(text, since = '0000-00-00') {
+  const lines = text.split(/\r?\n/);
+  const [start, end] = section(lines, 'Rejected');
+  const out = [];
+  for (let i = start + 1; start >= 0 && i < end; i++) {
+    const m = /^### \[rejected [^\]]*\] \[score (\d+(?:\.\d+)?)\] (.+)$/.exec(lines[i]);
+    const r = m && /^- reason: stale: below cap cut (\d{4}-\d{2}-\d{2})/.exec(lines[i + 1] ?? '');
+    if (r && r[1] >= since) out.push({ date: r[1], score: Number(m[1]), title: m[2].trim() });
+  }
+  return out;
 }
 
 const readSafe = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n') : '');
@@ -260,7 +407,8 @@ function ghState(issue) {
   }
 }
 
-const USAGE = 'usage: promote.mjs pick [--today D] [--json] | hold <NN> <issue> [--today D] | sweep [--today D] [--issues <file>] [--write] [--json]';
+const USAGE = 'usage: promote.mjs pick [--today D] [--json] | hold <NN> <issue> [--today D] | sweep [--today D] [--issues <file>] [--write] [--json]'
+  + ' | reevidence "<title words>" <letter A-H> [#<issue>|<sha>] [--note <text>] [--today D] [--write] | cap [--today D] [--write] [--json] | cuts [--since D]';
 
 export function main(argv, { root = process.cwd(), owner = () => isOwner(root), state = ghState, log = console.log } = {}) {
   const at = (flag) => {
@@ -305,6 +453,40 @@ export function main(argv, { root = process.cwd(), owner = () => isOwner(root), 
       for (const e of out) log(`${e.action} ${e.spec} #${e.issue}${e.action === 'wait' ? ` until ${e.until}${e.state ? '' : ' (issue state unknown)'}` : ''}`);
       log(out.length ? `${out.filter((e) => e.action !== 'wait').length} of ${out.length} auto-promoted Held lines ${write ? 'applied' : 'due'}` : 'clean');
     }
+    return 0;
+  }
+  const candFile = path.join(root, 'plan', 'CANDIDATES.md');
+  const write = argv.includes('--write');
+  if (cmd === 'reevidence') {
+    const valued = new Set(['--today', '--note']);
+    const pos = argv.slice(1).filter((a, i, all) => !a.startsWith('--') && !valued.has(all[i - 1]));
+    const [words, letter, ref = null] = pos;
+    if (!words || !/^[A-H]$/.test(letter ?? '') || (ref && !REF.test(ref)) || pos.length > 3) return (console.error(USAGE), 64);
+    const r = reevidence(readSafe(candFile), words, letter, ref, { date, note: at('--note') ?? '' });
+    if (r.error) return (console.error(`reevidence: ${r.error}`), 1);
+    if (write) fs.writeFileSync(candFile, r.text);
+    const how = r.independent ? (r.to > r.from ? `score ${fmt(r.from)} → ${fmt(r.to)}` : `score ${fmt(r.from)}, capped`) : 'same source, score unchanged';
+    log(`${write ? 're-evidenced' : 'would re-evidence'} ${r.title} · ${letter}${ref ? ` ${ref}` : ''} · ${r.independent ? 'independent' : 'not independent'} · ${how}`);
+    return 0;
+  }
+  if (cmd === 'cap') {
+    const text = readSafe(candFile);
+    const r = capCut(parseCandidates(text), k, date);
+    if (write && r.cut.length) fs.writeFileSync(candFile, cutStale(text, r.cut.map((c) => c.title), date));
+    if (argv.includes('--json')) log(JSON.stringify({ cap: k.pendingCap, ...r }, null, 2));
+    else {
+      for (const c of r.cut) log(`cut [score ${c.score}] ${c.title} · proposed ${c.proposed} (${c.age}d) · stale: below cap cut ${date}`);
+      if (!r.over) log(`clean: ${r.count} Pending (cap ${k.pendingCap})`);
+      else log(`${r.count} Pending, cap ${k.pendingCap}: ${r.cut.length} of ${r.over} over ${write ? 'cut' : 'due'}${r.cut.length < r.over ? ` (only rows ${STALE_DAYS}+ days old, ${CUT_PER_PASS} a pass)` : ''}`);
+    }
+    return 0;
+  }
+  if (cmd === 'cuts') {
+    const since = at('--since') ?? '0000-00-00';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(since)) return (console.error(USAGE), 64);
+    const list = cuts(readSafe(candFile), since);
+    for (const c of list) log(`cut ${c.date} [score ${c.score}] ${c.title}`);
+    if (!list.length) log('none');
     return 0;
   }
   console.error(USAGE);

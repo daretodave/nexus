@@ -9,7 +9,9 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import { checkHistory, checkPlan, loadPlanDir } from '../plan-check.mjs';
 import { lanes } from '../plan/order.mjs';
-import { KNOBS, addHeld, apply, autoHeld, decide, heldLine, knobs, main, parseCandidates, pick, rejectCandidate } from '../plan/promote.mjs';
+import {
+  KNOBS, addHeld, apply, autoHeld, capCut, cutStale, cuts, decide, heldLine, knobs, main, parseCandidates, pick, reevidence, rejectCandidate,
+} from '../plan/promote.mjs';
 
 const row = (score, title, proposed, extra = []) => [`### [ ] [score ${score}] ${title}`, `- proposed: ${proposed} (expand pass 3)`, ...extra, '- rationale: x', ''].join('\n');
 
@@ -32,7 +34,7 @@ describe('knobs', () => {
     assert.deepEqual(knobs(''), KNOBS);
     assert.equal(KNOBS.promote, 'owner');
     const k = knobs('## Plan expansion posture\n\n- **Promote:** aged\n- `promote_after_days`: 14\n- promote_floor: 6.5\n- promote_per_week: 2\n- veto_days: 3\n');
-    assert.deepEqual(k, { promote: 'aged', afterDays: 14, floor: 6.5, perWeek: 2, vetoDays: 3 });
+    assert.deepEqual(k, { promote: 'aged', afterDays: 14, floor: 6.5, perWeek: 2, vetoDays: 3, pendingCap: 15 });
     assert.equal(knobs('Promote: whenever').promote, 'owner');
   });
 });
@@ -193,5 +195,119 @@ describe('main', () => {
     assert.equal(out[2], '- 60 · auto-promoted, veto until 2026-10-28 (#124) · max_age: 3d · fallback: release');
     assert.deepEqual(lanes(fs.readFileSync(path.join(root, 'plan', 'README.md'), 'utf8')).held, ['59', '60']);
     assert.equal(main(['hold', 'x'], opts), 64);
+  });
+});
+
+describe('reevidence: Pending stays live', () => {
+  const ROW = ['## Pending', '', '### [ ] [score 6.0] Lean thing', '- proposed: 2026-08-01 (expand pass 3)', '  wrapped', '- source signals: AUDIT row #12, commit abc1234', '- rationale: x', '', '## Rejected', ''].join('\n');
+  it('an independent signal adds +0.5, records the filed score, and counts toward the aging trigger', () => {
+    const r = reevidence(ROW, 'lean', 'B', '#40', { date: '2026-10-25', note: 'critique · pass 9' });
+    assert.equal(r.independent, true);
+    assert.deepEqual([r.from, r.to], [6, 6.5]);
+    assert.match(r.text, /^### \[ \] \[score 6\.5\] Lean thing$/m);
+    assert.match(r.text, /- proposed: 2026-08-01 \(expand pass 3\)\n {2}wrapped\n- filed score: 6\.0\n/);
+    assert.match(r.text, /- re-evidence:\n {2}- 2026-10-25 · B #40 · independent, \+0\.5 · critique - pass 9\n/);
+    const [c] = parseCandidates(r.text).pending;
+    assert.equal(c.score, 6.5);
+    assert.equal(c.reEvidence, 1);
+  });
+  it('the same letter with no new ref, or a ref the row already cites, adds nothing and does not count', () => {
+    const once = reevidence(ROW, 'Lean thing', 'B', '#40', { date: '2026-10-25' }).text;
+    for (const ref of [null, '#40', '#12', 'abc1234ffff']) {
+      const r = reevidence(once, 'Lean thing', 'B', ref, { date: '2026-10-26' });
+      assert.equal(r.independent, false, String(ref));
+      assert.equal(r.to, 6.5);
+      assert.match(r.text, /2026-10-26 · B.* · same source, \+0/);
+      assert.equal(parseCandidates(r.text).pending[0].reEvidence, 1);
+    }
+    const fresh = reevidence(once, 'Lean thing', 'B', '#41', { date: '2026-10-26' });
+    assert.equal(fresh.to, 7);
+    assert.equal(parseCandidates(fresh.text).pending[0].reEvidence, 2);
+    assert.equal(reevidence(once, 'Lean thing', 'D', null, { date: '2026-10-26' }).to, 7);
+  });
+  it('caps at +2 over the filed score; capped signals still count', () => {
+    let text = ROW;
+    for (const [letter, ref] of [['A', null], ['B', null], ['C', null], ['D', null], ['E', null], ['A', '#99']]) text = reevidence(text, 'Lean', letter, ref, { date: '2026-10-25' }).text;
+    assert.match(text, /\[score 8\.0\] Lean thing/);
+    assert.match(text, /· D · independent, \+0\.5\n {2}- 2026-10-25 · E · independent, capped at \+2\n {2}- 2026-10-25 · A #99 · independent, capped at \+2/);
+    assert.equal((text.match(/- filed score:/g) ?? []).length, 1);
+    assert.equal(parseCandidates(text).pending[0].reEvidence, 6);
+  });
+  it('a title matching no row, or several, is an error', () => {
+    assert.match(reevidence(ROW, 'nothing like it', 'A').error, /no Pending row/);
+    assert.match(reevidence(CANDIDATES, 'old', 'A').error, /3 Pending rows match/);
+    assert.equal(reevidence(CANDIDATES, 'Old and strong', 'A', null, { date: '2026-10-25' }).title, 'Old and strong');
+  });
+});
+
+describe('the pending cap', () => {
+  const many = (n, proposed = '2026-07-01') => [
+    '# Candidates', '', '## Pending', '',
+    ...Array.from({ length: n }, (_, i) => row(`${(5 + (i % 10) / 2).toFixed(1)}`, `Row ${i}`, i === 0 ? '2026-10-01' : proposed)),
+    '## Promoted', '', '## Rejected', '', '(empty — populated as `/oversight` rejects candidates)', '',
+  ].join('\n');
+  const K = knobs('- pending_cap: 15');
+  it('defaults to 15 and reads pending_cap', () => {
+    assert.equal(KNOBS.pendingCap, 15);
+    assert.equal(knobs('- pending_cap: 4').pendingCap, 4);
+  });
+  it('at or under the cap, cuts nothing', () => {
+    assert.deepEqual(capCut(parseCandidates(many(15)), K, '2026-10-25').cut, []);
+  });
+  it('over the cap, cuts the lowest scores 60+ days old, at most 5 a pass, ties to the oldest', () => {
+    const text = many(32);
+    const r = capCut(parseCandidates(text), K, '2026-10-25');
+    assert.equal(r.over, 17);
+    assert.deepEqual(r.cut.map((c) => c.title), ['Row 10', 'Row 20', 'Row 30', 'Row 1', 'Row 11']);
+    assert.ok(r.cut.every((c) => c.age >= 60));
+    const after = cutStale(text, r.cut.map((c) => c.title), '2026-10-25');
+    assert.equal(parseCandidates(after).pending.length, 27);
+    assert.match(after, /### \[rejected 2026-10-25\] \[score 5\.0\] Row 10\n- reason: stale: below cap cut 2026-10-25\n- proposed: 2026-07-01/);
+    assert.ok(!after.includes('(empty'));
+    assert.deepEqual(cuts(after, '2026-10-25').map((c) => c.title), r.cut.map((c) => c.title));
+    assert.deepEqual(cuts(after, '2026-10-26'), []);
+    let drained = after;
+    for (let pass = 0; pass < 3; pass++) {
+      const c = capCut(parseCandidates(drained), K, '2026-10-25');
+      drained = cutStale(drained, c.cut.map((x) => x.title), '2026-10-25');
+    }
+    assert.equal(parseCandidates(drained).pending.length, 15, 'four passes drain 32 to 15');
+    assert.ok(parseCandidates(drained).pending.some((c) => c.title === 'Row 0'), 'a row under 60 days old is never cut');
+  });
+  it('young rows are never cut, even far over the cap', () => {
+    assert.deepEqual(capCut(parseCandidates(many(30, '2026-10-01')), K, '2026-10-25').cut, []);
+  });
+  it('main: cap prints, and writes only with --write; cuts lists them; reevidence writes only with --write', () => {
+    const root = repo();
+    const file = path.join(root, 'plan', 'CANDIDATES.md');
+    fs.writeFileSync(file, many(17));
+    fs.writeFileSync(path.join(root, 'plan', 'bearings.md'), '- pending_cap: 15\n');
+    const out = [];
+    const opts = { root, log: (l) => out.push(l), owner: () => true };
+    assert.equal(main(['cap', '--today', '2026-10-25'], opts), 0);
+    assert.equal(out.length, 3);
+    assert.equal(out[0], 'cut [score 5] Row 10 · proposed 2026-07-01 (116d) · stale: below cap cut 2026-10-25');
+    assert.equal(out[2], '17 Pending, cap 15: 2 of 2 over due');
+    assert.equal(fs.readFileSync(file, 'utf8'), many(17));
+    out.length = 0;
+    main(['cap', '--today', '2026-10-25', '--write'], opts);
+    assert.equal(out[2], '17 Pending, cap 15: 2 of 2 over cut');
+    out.length = 0;
+    main(['cap', '--today', '2026-10-25'], opts);
+    assert.deepEqual(out, ['clean: 15 Pending (cap 15)']);
+    out.length = 0;
+    main(['cuts', '--since', '2026-10-20'], opts);
+    assert.deepEqual(out, ['cut 2026-10-25 [score 5] Row 10', 'cut 2026-10-25 [score 5.5] Row 1']);
+    out.length = 0;
+    const was = fs.readFileSync(file, 'utf8');
+    assert.equal(main(['reevidence', 'Row 2', 'B', '#7', '--today', '2026-10-25', '--note', 'x'], opts), 0);
+    assert.equal(fs.readFileSync(file, 'utf8'), was);
+    assert.equal(main(['reevidence', 'Row 2', 'B', '#7', '--today', '2026-10-25', '--write'], opts), 0);
+    assert.deepEqual(out, ['would re-evidence Row 2 · B #7 · independent · score 6.0 → 6.5', 're-evidenced Row 2 · B #7 · independent · score 6.0 → 6.5']);
+    assert.match(fs.readFileSync(file, 'utf8'), /\[score 6\.5\] Row 2\n/);
+    assert.equal(main(['reevidence', 'Row', 'B'], opts), 1);
+    assert.equal(main(['reevidence', 'Row 2', 'Z'], opts), 64);
+    assert.equal(main(['reevidence', 'Row 2', 'H', '--today', '2026-10-25'], opts), 0, 'the template reads signals A-H');
+    assert.equal(main(['reevidence', 'Row 2', 'B', 'not-a-ref'], opts), 64);
   });
 });

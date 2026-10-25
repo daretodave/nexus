@@ -213,3 +213,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 56.8 · Digest lists unreleased CLI fixes · f51a3bdd..f51a3bdd
 - 2026-10-25 · 57.5 · Lock timeouts, with the Held-line gate check · 897382ce..897382ce
 - 2026-10-25 · 58.4 · Carry the train: lanes extraction, skills, README, references · fdf601cb..fdf601cb
+- 2026-10-25 · 57.6 · Pending stays live: re-evidence scoring and the cap · 29f7fb19..29f7fb19
