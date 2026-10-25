@@ -11,7 +11,8 @@ Argument handling:
 - `audit` → audit-only, dry-run; emit findings to `plan/AUDIT.md`,
   no fixes.
 - `<focus>` → bias toward `content-gaps`, `data-gaps`, `seo`,
-  `links`, `a11y`, `tests`, `perf`, `external-critique`.
+  `links`, `a11y`, `tests`, `perf`, `ui`, `loop`,
+  `external-critique`.
 - `careful` → no hand-off to `/expand` when nothing scores
   3.0 or more (a careful `/march`; `skills/iterate.md` §6).
 

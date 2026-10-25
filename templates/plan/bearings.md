@@ -397,6 +397,16 @@ may set its own):
 
 - Lock max age: 14d
 
+`/iterate` dimension I audits the loop itself (`skills/iterate.md`,
+`scripts/plan/loop-rows.mjs`): the motion pulse and the tick
+summaries become `loop-config` rows, each turning one repo
+variable or one line of this file, ease at most 6, at most one
+shipped per 7 days. A tuning that needs a YAML edit is filed as
+a `[needs-user-call]`, never made. `off` (or posture strict)
+turns it off; a missing line reads `off`:
+
+- loop: on
+
 ## Support
 
 How hard the loop works an issue (`skills/triage.md` Step 2a,

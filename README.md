@@ -526,6 +526,8 @@ nexus/
 │   ├── plan/critique-gui.mjs          # /critique's GUI pass: the onboarding walk or its skip line; walk rows checked
 │   ├── __tests__/critique-gui.test.mjs # its suite, plus the pass in the skill and its command (scripts leg)
 │   ├── plan/locks.mjs                 # lock timeouts: past max_age a lock takes its fallback or asks once (twin)
+│   ├── plan/loop-rows.mjs             # /iterate's I rows: one lever each, ease <= 6, one shipped per 7 days, YAML asked (twin)
+│   ├── __tests__/iterate-loop.test.mjs # nexus's own I rows clean, plus dimension I in the skills and bearings (scripts leg)
 │   ├── plan/state.mjs                 # the state diet: queue headers and size (the state-size leg); compact old Done rows (twin)
 │   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going, the Step 1.5 SLA, aged user rows, a landed fix told and closed, the digest's Support line and needs-user escalation (twin)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
@@ -728,6 +730,7 @@ nexus/
     │   ├── plan/refill.mjs            # the stock refill lane: each listed generator under its target, weekly cap and cadence
     │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react
     │   ├── plan/locks.mjs             # lock timeouts: Held lines, lane locks, owner-blocked rows; release, fallback or one ask
+    │   ├── plan/loop-rows.mjs         # /iterate dimension I: loop-config rows turn one lever, ease <= 6, one ships per 7 days, YAML asked
     │   ├── plan/state.mjs             # the state diet: queue headers <= 20 lines, <= 256 KB; delete Done rows past 30 days
     │   ├── plan/support.mjs           # Support level (NEXUS_SUPPORT over bearings): route a collaborator's bug to /bug, asap_cap, march keeps going, Step 1.5 plots a queued issue past sla_hours, user rows age +1/12h, tell closes a landed fix's issue, digest prints the Support line and escalates needs-user past escalate_days
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
@@ -785,6 +788,7 @@ nexus/
     │   ├── __tests__/refill.test.mjs  # the refill lane and both generators: dry runs write nothing, a rerun files nothing
     │   ├── __tests__/motion.test.mjs  # the motion pulse, one stall issue over a Sep-Oct decline, stall_action, the generator
     │   ├── __tests__/locks.test.mjs   # lock timeouts: release keeps plan-check green; one ask over 30 ticks, re-pinged weekly
+    │   ├── __tests__/loop-rows.test.mjs # dimension I rows: one lever, the ease cap, the YAML ask and its lock, one ship per 7 days
     │   ├── __tests__/state.test.mjs   # the state diet: an oversize fixture fails; compact dates rows and keeps the rest
     │   ├── __tests__/support.test.mjs # the Support level, the routing table, the asap_cap count, continue at half the budget, user rows aged to 4.4, the SLA step and its cap, the digest line and escalation
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules

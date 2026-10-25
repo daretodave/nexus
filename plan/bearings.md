@@ -143,6 +143,14 @@ lane:
 
 - Lock max age: 14d
 
+`/iterate` dimension I audits the loop itself
+(`skills/iterate.md` §3b, `scripts/plan/loop-rows.mjs`): a
+`loop-config` row turns one repo variable or one line here,
+ease at most 6, at most one shipped per 7 days; a YAML tuning
+is a `[needs-user-call]`:
+
+- loop: on
+
 ## Support
 
 How hard the loop works an issue (spec 54,

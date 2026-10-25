@@ -1,5 +1,5 @@
 ---
-description: Audit the kit (drift, completeness, voice, friction, freshness, lessons, ui), ship the top fix.
+description: Audit the kit (drift, completeness, voice, friction, freshness, lessons, ui, loop), ship the top fix.
 ---
 
 You are invoked under the `iterate` skill — full autonomy, no
@@ -10,7 +10,7 @@ Argument handling:
 - No argument → audit + ship the top-scoring finding.
 - `audit` → audit only; write findings, ship nothing.
 - `<focus>` → bias one dimension (drift|links|voice|
-  completeness|friction|freshness|lessons|ui).
+  completeness|friction|freshness|lessons|ui|loop).
 - `careful` → no hand-off to `/expand` when nothing scores
   3.0 or more (a careful `/march`; `skills/iterate.md` §6).
 

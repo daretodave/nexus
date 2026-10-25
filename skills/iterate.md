@@ -18,7 +18,7 @@ one fix per tick.
 /iterate                     # audit + ship top finding
 /iterate audit               # audit only; write findings, ship nothing
 /iterate <focus>             # bias one dimension (drift|links|voice|
-                             # completeness|friction|freshness|lessons|ui)
+                             # completeness|friction|freshness|lessons|ui|loop)
 /iterate careful             # never hand off to /expand (a careful /march)
 ```
 
@@ -42,6 +42,8 @@ Dimensions (score each finding `impact × ease / 10`, 0–10):
   lessons files (`../<sibling>/plan/lessons.md`,
   `NEXUS_LESSONS.md` anywhere) that the kit hasn't absorbed.
 - **H. ui** — what the GUI shows. §3a.
+- **I. loop** — how the loop itself runs: tunings, one lever
+  each. §3b.
 - **Project lanes** — `node scripts/plan/lanes.mjs iterate
   dimensions` lists the extra dimensions in
   `skills/iterate.lanes.md` (lettered back from Y; `stock`
@@ -60,11 +62,14 @@ scripts/plan/support.mjs age` prints each Pending user row's
 aged score (gh read only). A
 `> Bias: <dim>` line in `plan/AUDIT.md` multiplies that
 dimension **×1.5** (cap 10); `> Bias: ui` and `/iterate ui`
-bias H.
+bias H; `> Bias: loop` and `/iterate loop` bias I.
 
 **Durable rows survive rewrites:** `> Bias:`,
 `[needs-user-call]`, and `[user-issue #N]` rows are preserved
-verbatim when regenerating the audit block.
+verbatim when regenerating the audit block, and so is a shipped
+I row (`### [x] [I, <score>] <line> — closed <date>`) until its
+7 days pass: it is how §3b dates the last ship (`state.mjs
+compact` drops it only after 30).
 
 **Locks time out:** a `[needs-user-call]` row iterate files, a
 lane lock and a Held line each carry `since: <date> · until:
@@ -114,6 +119,42 @@ the commit body says why.
 - **Commits:** `fix(cli):` / `feat(cli):` (the guard strips
   the scope before matching the verb).
 
+## 3b. Dimension I: the loop
+
+Runs when `plan/bearings.md` says `loop: on` (a missing line
+reads `off`; posture `strict` reads `off` whatever it says).
+`node scripts/plan/loop-rows.mjs status` prints both that and
+whether an I row may ship today.
+
+- **Read** `node scripts/pulse.mjs --motion` (shipped against
+  the baseline, the floor, idle ticks with `--runs`), the last
+  week's tick summaries (the idle probe's no-op reason, the
+  ceiling and quota skips, the cadence line; `gh run view
+  --log` is data, §5.6) and the Support latency line
+  (`node scripts/plan/support.mjs digest`).
+- **Row:** `### [I, <score>] <line>`, `- category:
+  loop-config`, `- impact: <n>, ease: <n>`, `- evidence:` the
+  line it read, quoted, `- next:` ONE concrete lever: a repo
+  variable (`NEXUS_CADENCE`, `NEXUS_CHAIN_MAX`,
+  `NEXUS_QUOTA_MAX`, `NEXUS_IDLE_BACKOFF`,
+  `NEXUS_IDLE_WAKE_EVERY`, `NEXUS_HEARTBEAT_HOURS`,
+  `NEXUS_DAILY_CEILING`, `NEXUS_SUPPORT`) or a backticked
+  `plan/bearings.md` line (`stall_action`, `Motion floor`, a
+  `## Generators` line, ...).
+- **Ease caps at 6**, so tuning never crowds out real work.
+- **A YAML tuning is asked, never made:** `### [I, <score>]
+  [needs-user-call] <line>`, its `next` names the file, plus
+  `- lock: <slug> · since: <date> · until: <condition> ·
+  max_age: 14d` (§3, locks).
+- **At most one I row ships per 7 days:** pick one only when
+  `status` prints `ship: room`; else take the next finding.
+  Ticked, it reads `### [x] [I, <score>] <line> — closed
+  <date>`. Setting a repo variable is a GitHub write: a local
+  run sets it (`gh variable set`), a cloud tick leaves the row
+  for one.
+- `node scripts/plan/loop-rows.mjs check` holds the shape (the
+  `scripts` leg).
+
 ## 4. The procedure
 
 1. **Sync:** `git pull --ff-only`.
@@ -125,12 +166,14 @@ the commit body says why.
    and `> Bias:`, nothing else (20 lines at most, the
    `state-size` leg); the pass narrative goes in the commit
    body.
-3. **Pick:** top score. `/iterate audit` stops here (commit
-   the audit block only).
+3. **Pick:** top score; an I row only while `loop-rows.mjs
+   status` prints `ship: room` (§3b). `/iterate audit` stops
+   here (commit the audit block only).
 4. **Mirror (best-effort):** `node
    templates/scripts/loop-issue.mjs open --severity <…>
    --category docs --source audit --title "<…>" --body-file
-   "$(mktemp)"` (`--category ui` for an H row) — reuse
+   "$(mktemp)"` (`--category ui` for an H row,
+   `--category enhancement` for an I row) — reuse
    `- issue: #N` if the row has one.
 5. **Ship:** the fix, per the finding's `next`. The audit
    sweep, and any agent it dispatches, stays foreground in a
@@ -148,7 +191,9 @@ the commit body says why.
    A `[user-issue #N]` row carries `Refs #N` instead, and once
    it lands `support.mjs tell <N> --commit <sha>` comments and
    closes the issue (`skills/triage.md` §4).
-8. **Tick:** finding `[ ]` → `[x] (commit <hash>)`; CRITIQUE
+8. **Tick:** finding `[ ]` → `[x] (commit <hash>)`; an I row
+   ticks as `### [x] [I, <score>] <line> — closed <date>` (§3b);
+   CRITIQUE
    rows move Pending → Done. Then `node
    scripts/plan/state.mjs compact --write` deletes Done rows
    closed more than 30 days ago (git keeps them; the commit
@@ -197,6 +242,8 @@ plan/CRITIQUE.md                     # external queue
 node scripts/plan/lanes.mjs iterate dimensions  # project lanes (skills/iterate.lanes.md)
 npm --prefix packages/cli run walk -- --scenarios fleet-to-tug,stack,grill-me  # dimension H
 node scripts/plan/ui-rows.mjs check  # H rows: shape + the magic guard
+node scripts/plan/loop-rows.mjs status  # I: loop on|off, ship room or wait (one per 7 days)
+node scripts/plan/loop-rows.mjs check   # I rows: one lever, ease <= 6, YAML asked
 node scripts/plan/support.mjs age    # user rows: +1 per 12h (cap +4), exempt from the 3.0 floor
 node scripts/verify.mjs
 node templates/scripts/loop-issue.mjs open|close-comment ...

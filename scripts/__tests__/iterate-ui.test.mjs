@@ -121,7 +121,7 @@ describe('the skills say it', () => {
     assert.match(iterate, /### \[H, <score>\] <route> @ <viewport>\n\s*\(<scenario>\) — <line>/);
     assert.match(iterate, /At most 3 H rows a sweep/);
     assert.match(iterate, /at most \*\*8 PNGs\*\*/);
-    assert.match(iterate, /lessons\|ui\)/);
+    assert.match(iterate, /lessons\|ui\|loop\)/);
     assert.match(iterate, /`> Bias: ui`/);
     assert.match(iterate, /`--category ui`/);
     assert.match(iterate, /`fix\(cli\):`/);
@@ -129,8 +129,8 @@ describe('the skills say it', () => {
 
   it('the /iterate command wrapper takes ui as a focus word', () => {
     const wrapper = read('.claude/commands/iterate.md');
-    assert.match(wrapper, /lessons\|ui\)/);
-    assert.match(wrapper, /lessons, ui\)/);
+    assert.match(wrapper, /lessons\|ui\|loop\)/);
+    assert.match(wrapper, /lessons, ui, loop\)/);
   });
 
   it('the magic guard is a hard rule in iterate and critique, and in the bearings GUI row', () => {

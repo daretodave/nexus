@@ -236,3 +236,5 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 54 · spec complete: a collaborator's bug starts a tick within minutes (nudge.yml, behind NEXUS_SUPPORT and the dispatch ceiling), is fixed now or built Asap under the SLA, told and closed by Refs #N and the cli release reply, issue text is data everywhere, and the digest prints the Support line and escalates needs-user issues past escalate_days · 8c094b6..6882421
 - 2026-10-25 · 55.8 · Heartbeat alarms on realized cadence · c123ee3..c123ee3
 - 2026-10-25 · 55.9 · Crons off the hour, cadence docs, nexus on eager · 0e2ac8b..0e2ac8b
+- 2026-10-25 · 57.8 · Iterate dimension I files loop-config rows · 15aa612..15aa612
+- 2026-10-25 · 57 · spec complete: aged candidates promote themselves behind a Held veto window, Pending stays live under re-evidence and a cap, project lanes and generators refill the queue, the motion heartbeat alarms when nothing ships, every lock times out, queue headers stay lean, and /iterate dimension I files loop-config rows at most one a week · 82ad7e47..15aa612
