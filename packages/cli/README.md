@@ -394,6 +394,17 @@ v1, has no origin, or a flag names a step this release does not
 carry yet (`--write`, `--land`, `--rollback`, `--pr`, `--no-pause`,
 `--no-watch`).
 
+The GUI says it too. Open a v1 repo and the Fleet view leads with
+"This repo is on nexus v1" and an **Upgrade** button (a repo part
+way to v2 gets "Finish the upgrade"). The button runs the same dry
+run on the server, in its own process, so the GUI stays live while
+it fetches and gates. The banner then shows the report: the
+headline, the file, archive, warning and gate counts, the predicted
+first dispatch, the loop-mode line and the full text as the terminal
+prints it. One dry run runs at a time, and the last report stays
+for a tab opened later (`GET /api/upgrade`, `POST
+/api/upgrade/dry`). Nothing is written.
+
 ## Develop
 
 ```

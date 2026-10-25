@@ -9,6 +9,7 @@ import { isOwner as effectiveOwner } from './local.mjs';
 import { nextSpec } from './explode.mjs';
 import { choicesWords } from '../shared/choices.mjs';
 import { placeOf } from './place.mjs';
+import { detect } from './upgrade.mjs';
 
 export const CHUNK_ID = /^[0-9]{1,3}(?:\.[0-9a-z]+)?$/;
 
@@ -38,6 +39,7 @@ export async function repoInfo(repo) {
     owner: isOwner(repo),
     adopted: isAdopted(repo),
     kit: kitLock(repo),
+    shape: kitShape(top.ok ? top.stdout.trim() : repo),
     nextSpec: nextSpecOf(repo),
   };
 }
@@ -60,6 +62,15 @@ export function kitLock(repo) {
   const version = field('version');
   const ref = field('ref');
   return version || ref ? { version, ref } : null;
+}
+
+/**
+ * The repo's nexus shape, as `nexus upgrade` reads it (upgrade.mjs detect): 'v1' (a phase plan), 'half' (a lock
+ * saying chunks beside a live plan/steps/ or PHASE_CANDIDATES.md), 'v2', or 'none'. The repo view's Upgrade banner
+ * shows for v1 and half. Read from the local checkout; the dry run itself works from a fresh fetch of origin.
+ */
+export function kitShape(repo) {
+  try { return detect(repo).shape; } catch { return 'none'; }
 }
 
 /** Effective owner mode (server/local.mjs): `.owner` at the primary root, not switched off in .nexus/local.json. */

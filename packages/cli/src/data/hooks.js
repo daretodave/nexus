@@ -87,7 +87,7 @@ export const chunkStagesOf = (live) => Object.values(live?.stage?.chunks || {}).
 
 // ---- served today ---------------------------------------------------------
 
-/** GET /api/state: { info: { repo, name, branch, remote, lastCommit, owner, adopted, kit, nextSpec }, prefs, commands, provider, permissionModes }. */
+/** GET /api/state: { info: { repo, name, branch, remote, lastCommit, owner, adopted, kit, shape, nextSpec }, prefs, commands, provider, permissionModes }. */
 export const useAppState = () => useResource('/api/state');
 
 /** GET /api/preflight: the Detect step's checks. */

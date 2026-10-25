@@ -8,7 +8,7 @@
 // Actions: POST /api/sessions (start, once a spec or infinite is chosen: StartPick),
 // POST /api/sessions/:id/resume (a hosted one resumes; a fallen one is taken
 // by a new hosted session on /reboot-resume <star>), POST /api/train
-// { action: pause|cancel|resume }. An action the server does not serve yet
+// { action: pause|cancel|resume }, POST /api/upgrade/dry (the Upgrade banner, on a v1 repo). An action the server does not serve yet
 // says plainly that it is not wired up; nothing is invented.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -19,6 +19,7 @@ import {
 import { useSessions, usePlan, useClaims } from '../data/index.js';
 import { PATHS } from '../routes.js';
 import LoopLine from './fleet/LoopLine.jsx';
+import UpgradeBanner from './fleet/UpgradeBanner.jsx';
 import StartPick from './fleet/StartPick.jsx';
 import SessionTile from './fleet/SessionTile.jsx';
 import { norm, FILTERS, counts, summary, trainOf, claimHolders, chunkTitle } from './fleet/model.js';
@@ -84,7 +85,7 @@ function StartLine({ plan }) {
 }
 
 export default function Fleet() {
-  const { repo } = useShell();
+  const { repo, app } = useShell();
   const now = useNow();
   const sessions = useSessions();
   const plan = usePlan();
@@ -227,6 +228,8 @@ export default function Fleet() {
   return (
     <AppFrame topbar={topbar} current="fleet">
       <main className="view" aria-label="Fleet" ref={viewRef}>
+        {/* A nexus v1 repo (or one part way to v2): Upgrade runs the dry run and shows its report (spec 58, A9). */}
+        <UpgradeBanner info={app?.data?.info} />
         <ViewHead style={{ alignItems: 'center' }}>
           <ChoiceButtons label="Show sessions" options={options} value={filter} onChange={setFilter} />
           <span className="view-sub" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>

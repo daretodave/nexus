@@ -1,0 +1,85 @@
+/* The Upgrade banner (screens/fleet/UpgradeBanner.jsx; spec 58, A9): a card at the head of the repo view, in the
+   GUI's own colour and motion. An aurora edge breathes at rest and sweeps while the dry run works; a lit star; a few
+   CSS motes drift behind the words (cheap: eight spans, transform and opacity only). Theme tokens only, so day and
+   night both hold; reduced motion stops every animation and keeps the colour. */
+
+.upg {
+  position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; gap: 12px;
+  margin: 0 0 14px; padding: 14px 16px; border-radius: 14px;
+  background: radial-gradient(90% 140% at 0% 0%, color-mix(in oklab, var(--aurora-cyan) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(80% 140% at 100% 100%, color-mix(in oklab, var(--aurora-violet) 12%, transparent) 0%, transparent 60%), var(--surface-solid);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--aurora-violet) 34%, var(--line)), 0 0 40px -22px var(--glow);
+  animation: upg-in 420ms var(--ease-settle) both;
+}
+/* the aurora edge along the top: breathing at rest, a sweep while the dry run works */
+.upg::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: -1; pointer-events: none;
+  background: var(--aurora-grad); opacity: .75; animation: nx-twinkle var(--dur-breathe) var(--ease-breathe) infinite alternate;
+}
+.upg.is-running::before {
+  background: linear-gradient(90deg, transparent, var(--aurora-cyan), var(--aurora-violet), transparent) no-repeat;
+  background-size: 40% 100%; opacity: 1; animation: upg-sweep 1.8s var(--ease-breathe) infinite;
+}
+.upg.is-half { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-blocked) 40%, var(--line)), 0 0 40px -22px var(--glow); }
+
+.upg-sky { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.upg-sky i {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--aurora-cyan);
+  box-shadow: 0 0 8px 1px color-mix(in oklab, var(--aurora-cyan) 60%, transparent); opacity: .45;
+  animation: upg-mote 9s var(--ease-breathe) infinite alternate, nx-twinkle 2.6s var(--ease-breathe) infinite alternate;
+  will-change: transform, opacity;
+}
+.upg-sky i:nth-child(even) { background: var(--aurora-violet); box-shadow: 0 0 8px 1px color-mix(in oklab, var(--aurora-violet) 60%, transparent); animation-duration: 11s, 3.4s; }
+.upg.is-running .upg-sky i { animation-duration: 3s, 1.2s; opacity: .8; }
+
+.upg-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.upg-star { animation: nx-glow var(--dur-breathe) var(--ease-breathe) infinite alternate; }
+.upg.is-half .upg-star { background: var(--st-blocked); box-shadow: 0 0 0 4px color-mix(in oklab, var(--st-blocked) 16%, transparent), 0 0 18px 2px color-mix(in oklab, var(--st-blocked) 45%, transparent); }
+.upg.is-running .upg-star { animation: nx-breathe .9s var(--ease-breathe) infinite alternate; }
+.upg-words { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 2px; }
+.upg-title { font-size: 15px; line-height: 21px; font-weight: 600; color: var(--text); }
+.upg-sub { font-size: 12.5px; line-height: 18px; color: var(--text-2); }
+.upg-go { gap: 6px; }
+
+.upg-progress { font-size: 12.5px; line-height: 18px; color: var(--text-2); }
+.upg-progress::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 8px; border-radius: 50%; background: var(--aurora-cyan); animation: nx-twinkle .8s var(--ease-breathe) infinite alternate; }
+.upg-error { font-size: 12.5px; line-height: 18px; color: var(--st-failed); }
+
+.upg-report { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; box-shadow: 0 -1px 0 var(--line); animation: upg-in 320ms var(--ease-settle) both; }
+.upg-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.upg-headline { flex: 1; min-width: 0; font-size: 13px; line-height: 19px; font-weight: 600; color: var(--text); }
+.upg-report.is-ok .upg-headline { color: var(--st-done); }
+.upg-report.is-red .upg-headline, .upg-report.is-stop .upg-headline { color: var(--st-failed); }
+.upg-age { font-size: 11.5px; color: var(--text-3); }
+.upg-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.upg-chip { display: inline-flex; align-items: baseline; gap: 6px; height: 22px; padding: 0 9px; border-radius: var(--r-full, 999px); font-size: 11.5px; line-height: 22px; color: var(--text-2); background: var(--well); box-shadow: inset 0 0 0 1px var(--line); }
+.upg-chip b { font-family: var(--font-mono); font-weight: 600; color: var(--text); font-variant-ligatures: none; }
+.upg-chip.is-ok { color: var(--st-done); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-done) 45%, transparent); }
+.upg-chip.is-ok b { color: var(--st-done); }
+.upg-chip.is-warn { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-blocked) 50%, transparent); }
+.upg-chip.is-warn b { color: var(--st-blocked); }
+.upg-chip.is-bad { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-failed) 55%, transparent); }
+.upg-chip.is-bad b { color: var(--st-failed); }
+.upg-line { display: grid; grid-template-columns: 110px 1fr; gap: 10px; font-size: 12.5px; line-height: 18px; }
+.upg-line .k { color: var(--text-3); }
+.upg-line .v { min-width: 0; color: var(--text-2); overflow-wrap: anywhere; }
+.upg-line .v.is-bad { color: var(--st-failed); font-weight: 600; }
+.upg-warn { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 18px; color: var(--text-2); }
+.upg-warn li::marker { color: var(--st-blocked); }
+.upg-full summary { cursor: pointer; font-size: 12px; color: var(--text-3); }
+.upg-term {
+  max-height: 340px; overflow: auto; margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--well);
+  box-shadow: inset 0 0 0 1px var(--line); font-family: var(--font-mono); font-size: 12px; line-height: 18px; color: var(--text-2);
+  white-space: pre; font-variant-ligatures: none;
+}
+
+@keyframes upg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes upg-sweep { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+@keyframes upg-mote { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(14px, -10px, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .upg, .upg::before, .upg.is-running::before, .upg-sky i, .upg-star, .upg-progress::after, .upg-report { animation: none; }
+}
+@media (max-width: 640px) {
+  .upg-line { grid-template-columns: 1fr; gap: 2px; }
+}

@@ -19,6 +19,7 @@ import { formNext, formStart } from '../shared/forming.mjs';
 import { putAwayPlan } from '../shared/put-away.mjs';
 import { preflight } from './preflight.mjs';
 import { createRepoStart } from './repo-start.mjs';
+import { createUpgradeView } from './upgrade-view.mjs';
 import { createLoopSecret } from './cloud-secret.mjs';
 import { repoPlace } from './place.mjs';
 import * as repoMod from './repo.mjs';
@@ -102,8 +103,10 @@ function readPrompt(name) {
  *                                  injected provider, where a test reads back what it just wrote
  * @param {object} [o.worktree]     a GUI session's worktree seams (tests): { git(cwd, args, o) } for every git it runs (a
  *                                  delay stands in for a slow checkout), { hooks(repo) } for cloud.mjs safeHooks
+ * @param {function} [o.upgradeRun] the Upgrade banner's dry run, (repo) => Promise<{ code, report }> (tests); default a child
+ *                                  `nexus upgrade --json` (upgrade-view.mjs)
  */
-export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, choicesQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads, feed: feedOpts = {}, beatMs = 60000, pickupIdle, onShutdown = null, log = () => {} } = {}) {
+export async function startServer({ repo, port = 0, token = crypto.randomBytes(24).toString('base64url'), provider: injected, pollRuns = true, dist = path.join(PKG, 'dist'), claudeHome, ghRun, ghLogin, summaryQuery, explodeQuery, choicesQuery, git: gitOpts, secrets: secretsOpts = {}, worktree: wtOpts = {}, swr: keepReads, feed: feedOpts = {}, upgradeRun, beatMs = 60000, pickupIdle, onShutdown = null, log = () => {} } = {}) {
   // The primary checkout's root, where the ledgers live: asked once (a stopping server writes there synchronously).
   const ROOT = await primaryRoot(repo);
   const started = new Date().toISOString();
@@ -317,6 +320,8 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
 
   // A folder that is not a repo yet (repo-start.mjs): one step per click, confirm required, one at a time. Once a
   // .git exists the prefs kept in memory so far (onboarded, permission mode) are written into it.
+  // The Upgrade banner (spec 58, A9): the dry run in a child process, one at a time, its last result kept.
+  const upgradeView = createUpgradeView({ repo, ...(upgradeRun ? { run: upgradeRun } : {}) });
   const repoStart = createRepoStart({
     repo,
     run: ghRun || (injected ? noGh : undefined),
@@ -1058,6 +1063,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
           return undefined;
         }
         case 'GET /api/state': return send(res, 200, { info: await kept('state', () => repoMod.repoInfo(repo)), prefs, commands: repoMod.listCommands(repo), provider: provider.kind, permissionModes: PERMISSION_MODES });
+        // The Upgrade banner (spec 58, A9): the shape, a dry run in flight, the last report; POST runs the dry run.
+        case 'GET /api/upgrade': return send(res, 200, { shape: repoMod.kitShape(repo), ...upgradeView.status() });
+        case 'POST /api/upgrade/dry': { await body(req); return send(res, 200, await upgradeView.dry()); }
         case 'GET /api/preflight': return send(res, 200, await preflight(repo));
         case 'GET /api/prompts': return send(res, 200, { paste: ADOPT_PASTE, adopt: readPrompt('adopt.md'), pitch: readPrompt('pitch.md') });
         case 'POST /api/prefs': return send(res, 200, await savePrefs(await body(req)));

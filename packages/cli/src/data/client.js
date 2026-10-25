@@ -60,6 +60,10 @@ export async function api(path, body, { fresh = false } = {}) {
 export const server = {
   state: () => api('/api/state'),
   preflight: () => api('/api/preflight'),
+  /** GET /api/upgrade: { shape, running, last } for the Upgrade banner; last is { code, report, text, at } or null. */
+  upgrade: () => api('/api/upgrade'),
+  /** POST /api/upgrade/dry: run `nexus upgrade`'s dry run (nothing written) and answer with its { code, report, text, at }. */
+  upgradeDry: () => api('/api/upgrade/dry', {}),
   prompts: () => api('/api/prompts'),
   setPrefs: (patch) => api('/api/prefs', patch),
   setOwner: (on) => api('/api/owner', { on }),
