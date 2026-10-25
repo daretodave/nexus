@@ -23,6 +23,24 @@ The `v1.0.0` tag is the last phase-shape release:
 a v1 repo copied (skills, templates, playbooks) is there,
 unchanged, for as long as you want it.
 
+A v1 cloud loop has no quota governor: it spends the shared
+weekly quota with no gate and fires at minute :00, the
+busiest slot. To fix that before (or instead of) upgrading,
+run nexus's patcher against a fresh clone of your origin,
+never your working checkout:
+
+```bash
+git clone <your origin> /tmp/v1-patch
+node ../nexus/scripts/cloud/patch-v1.mjs --repo /tmp/v1-patch          # dry run: the diff
+node ../nexus/scripts/cloud/patch-v1.mjs --repo /tmp/v1-patch --write  # apply; never commits
+```
+
+It adds the Quota gate, Quota read and pause steps (and
+`scripts/cloud/quota.mjs`) to `march.yml` and `night.yml`,
+moves each cron minute off :00 with the hours kept, and
+leaves every other line alone. Review, commit and push from
+that clone.
+
 ## Step 1 — pin v1 (do this either way)
 
 Write the lock before changing anything, so every skill and

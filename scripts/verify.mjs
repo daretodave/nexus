@@ -853,6 +853,7 @@ const PURE_SUITES = [
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
   'scripts/__tests__/probe-latency.test.mjs',
+  'scripts/__tests__/patch-v1.test.mjs',
   'scripts/__tests__/march-cli-gate.test.mjs',
 ]
 const GIT_SUITES = [

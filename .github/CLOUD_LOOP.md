@@ -201,6 +201,16 @@ cloud volume from local work. Nothing else — no
   <run id>` prints their dispatch p50/p90, march's schedule
   lag over 14 days, the hook line and spec 55's decision rule.
   `probe.yml` goes once the numbers are in the spec.
+- **A v1 adopter still burns the quota ungated?** — `node
+  scripts/cloud/patch-v1.mjs --repo <fresh clone of its
+  origin>` (spec 55.10, owner-run per repo) prints the diff
+  that adds the quota cache, gate, read and pause steps to its
+  `march.yml` and `night.yml`, quiets its issue steps on a
+  lockout, and moves each cron minute off :00 (hours kept).
+  `--write` applies it and copies `quota.mjs` in; it never
+  commits or pushes, refuses a dirty workflow file, and
+  refuses any workflow-lint problem it would add. Never point
+  it at a working checkout.
 
 ## The other shapes
 

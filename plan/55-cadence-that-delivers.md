@@ -309,14 +309,13 @@ and chain max is 0.
 - **A9** The CLI's Cloud step offers the same five presets, and choosing one writes the cron and sets `NEXUS_CADENCE` (server and screen tests).
 - **A10** Heartbeat files one deduped realized-cadence issue when scheduled runs in 72h fall below 40% of what the file's cron promises (replayed against two adopters' 2026-09 run lists as a fixture).
 - **A11** No shipped cron (nexus, templates, packages/cli kit, CLI presets, docs) fires at minute :00; `cloud-loop.md` and `hands-off.md` cadence text matches the presets; nexus runs `eager` on `17 */3 * * *`.
-- **A12** `patch-v1.mjs` dry-runs and then writes the quota gate and an offset cron into a scratch clone of a v1 adopter's origin, leaving every other line of its workflows unchanged, and the patched `march.yml` passes `templates/scripts/workflow-lint.mjs` in its test.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 8 open · 4 closed · next A13
+Measure: 7 open · 5 closed · next A13
 
 - [ ] **55.6** Probe dispatch latency and hook loading in cloud · S · closes A3, A4 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
@@ -330,5 +329,3 @@ Measure: 8 open · 4 closed · next A13
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.9** Crons off the hour, cadence docs, nexus on eager · S · closes A11 · needs 55.7, 55.8
   - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **55.10** Patch v1 workflows with the quota gate and offset cron · M · closes A12 · needs —
-  - Owner-run per adopter repo; proofs on a scratch clone of its origin only, never a local checkout.

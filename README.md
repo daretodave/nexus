@@ -503,6 +503,8 @@ nexus/
 │   ├── __tests__/gifs.test.mjs        # the checker's own suite (run by the gifs leg)
 │   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of the no-model probe.yml, march's schedule lag, the hook probe line
 │   ├── __tests__/probe-latency.test.mjs # its suite, gh stubbed (run by the scripts leg)
+│   ├── cloud/patch-v1.mjs             # owner-run: a v1 repo's march.yml + night.yml get the quota gate and an off-:00 cron (dry run, --write)
+│   ├── __tests__/patch-v1.test.mjs    # its suite, git stubbed, the patched march.yml through workflow-lint (scripts leg)
 │   ├── __tests__/march-cli-gate.test.mjs # march.yml builds, gates and walks the CLI; heartbeat watches cli-ci (scripts leg)
 │   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, --motion, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
