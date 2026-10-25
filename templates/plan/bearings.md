@@ -375,9 +375,14 @@ plots it Asap, and the tick goes on to build; `fix-all` does
 the same for a collaborator's small enhancement. At most
 `asap_cap` issue-born Asap chunks are open at once; the rest
 are `plan/AUDIT.md` rows. In cloud the repo variable
-`NEXUS_SUPPORT` wins over this line.
+`NEXUS_SUPPORT` wins over this line. Under `fix-small` or
+`fix-all`, `/march` Step 1.5 plots Asap a queued issue open
+`sla_hours` or more whose work is not in the Asap lane
+(`support.mjs sla`); the `issue-age` generator reads the same
+`sla_hours`.
 
 - Support: triage-only
+- sla_hours: 24
 - asap_cap: 3
 
 ## Generators

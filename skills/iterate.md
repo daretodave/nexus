@@ -51,8 +51,14 @@ Dimensions (score each finding `impact × ease / 10`, 0–10):
 
 Queue sources compete with audit findings, same scale:
 `plan/CRITIQUE.md` Pending (HIGH→8–10, MED→5–7, LOW→2–4
-impact), `source: user` rows get **+0.5** after scoring;
-a `> Bias: <dim>` line in `plan/AUDIT.md` multiplies that
+impact). **User rows age into the queue** (spec 54): a
+`source: user` or `[user-issue #N]` row gains **+1 per 12
+hours** since its issue opened (or its `user-spotted at`
+time), cap **+4**, never under the flat **+0.5**, after
+scoring; it is never dropped by the 3.0 floor (§6). `node
+scripts/plan/support.mjs age` prints each Pending user row's
+aged score (gh read only). A
+`> Bias: <dim>` line in `plan/AUDIT.md` multiplies that
 dimension **×1.5** (cap 10); `> Bias: ui` and `/iterate ui`
 bias H.
 
@@ -163,7 +169,8 @@ the commit body says why.
 
 ## 6. Failure modes
 
-1. **No finding scores ≥3.0** — posture `bold` → dispatch
+1. **No finding scores ≥3.0** (a user row always counts as
+   one: it is exempt from the floor) — posture `bold` → dispatch
    `skills/expand.md` instead of manufacturing churn; posture
    `strict` → stop cleanly ("nothing worth a tick"). Run
    `careful` (a careful `/march`): stop and report whatever
@@ -183,6 +190,7 @@ plan/CRITIQUE.md                     # external queue
 node scripts/plan/lanes.mjs iterate dimensions  # project lanes (skills/iterate.lanes.md)
 npm --prefix packages/cli run walk -- --scenarios fleet-to-tug,stack,grill-me  # dimension H
 node scripts/plan/ui-rows.mjs check  # H rows: shape + the magic guard
+node scripts/plan/support.mjs age    # user rows: +1 per 12h (cap +4), exempt from the 3.0 floor
 node scripts/verify.mjs
 node templates/scripts/loop-issue.mjs open|close-comment ...
 git add <explicit> && git commit   # then land per owner mode (next/land.md §6)

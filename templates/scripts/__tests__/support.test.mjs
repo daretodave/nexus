@@ -1,7 +1,7 @@
 // support.mjs (spec 54): the Support level (NEXUS_SUPPORT over bearings, triage-only when neither), the routing table
 // (a collaborator's bug to skills/bug.md under fix-small and fix-all, a small enhancement too under fix-all, an
 // outsider's issue triaged only unless loop:do), the asap_cap count of issue-born Asap chunks, and march Step 1's
-// continue-or-return on half the tick budget.
+// continue-or-return on half the tick budget; user rows aged into the queue (A4) and the SLA step (A5).
 // node:test, no deps, no git, no network: gh and the Asap check are injected.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { parseSpec } from '../plan-check.mjs';
-import { asapCap, bearingsLevel, capacity, issueBorn, keepGoing, main, route, supportLevel, trust } from '../plan/support.mjs';
+import { agedScore, asapCap, bearingsLevel, capacity, issueBorn, keepGoing, main, placed, route, slaDue, slaHours, supportLevel, trust, userBonus, userRows } from '../plan/support.mjs';
 
 const readme = (asap) => ['## Lanes', '', '**Asap** (built before the table):', '', ...asap, '', '**Held** (waits):', '', '- (none)', '', '## Specs', ''].join('\n');
 const spec = (num, chunks) => parseSpec(`${num}-x.md`, ['## Acceptance', '- **A1** x', '## Chunks', 'Measure: 1 open · 0 closed · next A2', ...chunks].join('\n'));
@@ -132,6 +132,108 @@ describe('march Step 1 keeps going (A3)', () => {
   });
 });
 
+describe('user rows age into the queue (A4)', () => {
+  const now = Date.parse('2026-10-25T12:00:00Z');
+  const ago = (h) => new Date(now - h * 3600000).toISOString();
+
+  it('adds +1 per full 12 hours, cap +4, never under the flat +0.5', () => {
+    assert.equal(userBonus(0), 0.5);
+    assert.equal(userBonus(11), 0.5);
+    assert.equal(userBonus(12), 1);
+    assert.equal(userBonus(24), 2);
+    assert.equal(userBonus(47), 3);
+    assert.equal(userBonus(500), 4);
+    assert.equal(userBonus(NaN), 0.5);
+  });
+
+  it('re-scores a #86-shaped row (impact 6, ease 4, 24h old) to 4.4, above every docs row under 4.4 and the 3.0 floor', () => {
+    const audit = [
+      '# Kit audit',
+      '',
+      '## Pending',
+      '',
+      '### [A, 4.3] a docs row',
+      '- category: doc-drift',
+      '- impact: 6, ease: 7',
+      '',
+      '### [user-issue #86] [MED] badge does not decrement',
+      '- category: external-issue',
+      '- impact: 6',
+      '- ease: 4',
+      '',
+      '### [D, 2.8] a voice row',
+      '- impact: 4, ease: 7',
+      '',
+      '## Done',
+      '',
+      '### [x] [user-issue #12] [LOW] closed, never aged',
+      '- impact: 9, ease: 9',
+    ].join('\n');
+    const rows = userRows(audit, { opened: new Map([[86, ago(24)]]), now });
+    assert.equal(rows.length, 1);
+    assert.deepEqual({ issue: rows[0].issue, base: rows[0].base, bonus: rows[0].bonus, score: rows[0].score }, { issue: 86, base: 2.4, bonus: 2, score: 4.4 });
+    assert.ok(rows[0].score > 4.3 && rows[0].score >= 3.0);
+  });
+
+  it('ages a /jot row from its user-spotted time, and caps the score at 10', () => {
+    const critique = ['## Pending', '', '### [MED] general — a jot', '- observation: x', `- evidence: user-spotted at ${ago(36)}`, '- source: user', ''].join('\n');
+    const [r] = userRows(critique, { now });
+    assert.equal(r.base, null);
+    assert.equal(r.bonus, 3);
+    assert.equal(r.score, null);
+    assert.equal(agedScore({ base: 9.5, hours: 100 }), 10);
+  });
+
+  it('leaves non-user rows alone', () => {
+    assert.deepEqual(userRows('## Pending\n\n### [A, 5] drift\n- impact: 5, ease: 10\n', { now }), []);
+  });
+});
+
+describe('the SLA step (A5)', () => {
+  const now = Date.parse('2026-10-25T12:00:00Z');
+  const ago = (h) => new Date(now - h * 3600000).toISOString();
+  const specs = [
+    spec('54', [
+      '- [ ] **54.9** Fix the cockpit badge (#91) · S · closes A1 · needs —',
+      '- [ ] **54.10** Theme flash (#94) · S · closes A1 · needs —',
+      '- [ ] **54.11** Done already (#95) · S · closes A1 · needs —',
+    ]),
+  ];
+  const issue = (number, hours, labels = ['triage:loop-queued']) => ({ number, createdAt: ago(hours), labels: labels.map((name) => ({ name })) });
+
+  it('reads sla_hours, 24 when absent', () => {
+    assert.equal(slaHours('sla_hours: 12   # nexus: 12'), 12);
+    assert.equal(slaHours('- **sla_hours:** 6'), 6);
+    assert.equal(slaHours(''), 24);
+  });
+
+  it('places an issue: in the Asap lane, done, an open chunk to lift, or nowhere', () => {
+    const plan = { readme: readme(['- 54.9', '- (#96) plotted by hand']), specs, closed: new Set(['54.11']), archive: '- 53.2 fixed the toast (#97)\n' };
+    assert.equal(placed(91, plan), 'asap');
+    assert.equal(placed(96, plan), 'asap');
+    assert.equal(placed(95, plan), 'done');
+    assert.equal(placed(97, plan), 'done');
+    assert.deepEqual(placed(94, plan), { lift: '54.10' });
+    assert.equal(placed(98, plan), null);
+    assert.equal(placed(9, plan), null);
+  });
+
+  it('plots an overdue queued issue whose work is not in the Asap lane, oldest first, and lifts a chunk that names it', () => {
+    const plan = { readme: readme(['- 54.9']), specs, closed: new Set(['54.11']), archive: '' };
+    const issues = [issue(98, 13), issue(94, 30), issue(91, 40), issue(95, 50), issue(99, 5), issue(100, 60, ['triage:loop-queued', 'loop:opened'])];
+    const d = slaDue({ issues, plan, bearings: 'sla_hours: 12', now });
+    assert.deepEqual(d.plot, [{ number: 94, hours: 30, lift: '54.10' }, { number: 98, hours: 13 }]);
+    assert.deepEqual(d.wait, []);
+  });
+
+  it('waits past asap_cap: the open issue-born Asap chunks and this pass share the room', () => {
+    const plan = { readme: readme(['- 54.9']), specs, closed: new Set(), archive: '' };
+    const d = slaDue({ issues: [issue(98, 30), issue(99, 20)], plan, bearings: 'sla_hours: 12\nasap_cap: 2', now });
+    assert.deepEqual(d.plot, [{ number: 98, hours: 30 }]);
+    assert.deepEqual(d.wait, [{ number: 99, hours: 20 }]);
+  });
+});
+
 describe('the command', () => {
   const repo = (bearings, readmeText = readme(['- (none)']), specFiles = {}) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'support-'));
@@ -188,9 +290,34 @@ describe('the command', () => {
     assert.match((await run(['continue', '--routed', 'fix'], { root: bare })).out[0], /^return · no tick start/);
   });
 
+  it('runs the SLA step only under fix-small or fix-all, reading queued issues from gh (stubbed) or a file', async () => {
+    const issues = [{ number: 98, createdAt: '2026-10-24T00:00:00Z', labels: [{ name: 'triage:loop-queued' }] }];
+    const off = repo('Support: triage-only\n');
+    assert.deepEqual((await run(['sla'], { root: off, env: {}, list: () => assert.fail('gh called') })).out, ['off · support triage-only: no SLA step']);
+    const root = repo('Support: fix-all\nsla_hours: 12\n');
+    const seen = [];
+    const list = (label) => (seen.push(label), issues);
+    const { out } = await run(['sla', '--now', '2026-10-25T12:00:00Z'], { root, env: {}, list });
+    assert.deepEqual(seen, ['triage:loop-queued']);
+    assert.deepEqual(out, ['plot #98 · open 36h, SLA 12h: /plot asap, the title ending (#98)', 'due 1']);
+    assert.deepEqual((await run(['sla'], { root, env: {}, list: () => null })).out, ['skip · gh unavailable: no SLA step this tick']);
+    fs.writeFileSync(path.join(root, 'issues.json'), JSON.stringify([...issues, { number: 99, createdAt: '2026-10-20T00:00:00Z', labels: [] }]));
+    const file = await run(['sla', '--issues', 'issues.json', '--now', '2026-10-25T12:00:00Z', '--json'], { root, env: {} });
+    assert.deepEqual(JSON.parse(file.out[0]).plot, [{ number: 98, hours: 36 }]);
+  });
+
+  it('ages the user rows on disk, and scores one row from --base and --opened', async () => {
+    const root = repo('');
+    fs.writeFileSync(path.join(root, 'plan', 'AUDIT.md'), '## Pending\n\n### [user-issue #86] [MED] badge\n- impact: 6, ease: 4\n\n## Done\n');
+    const list = () => [{ number: 86, createdAt: '2026-10-24T12:00:00Z', labels: [] }];
+    const { out } = await run(['age', '--now', '2026-10-25T12:00:00Z'], { root, list });
+    assert.deepEqual(out, ['4.4 · 2.4 +2 (24h) · AUDIT.md · [user-issue #86] [MED] badge', 'aged 1']);
+    assert.deepEqual((await run(['age', '--base', '2.4', '--opened', '2026-10-24T12:00:00Z', '--now', '2026-10-25T12:00:00Z'], { root })).out, ['4.4 · 2.4 +2 (24h)']);
+  });
+
   it('exits 64 on bad usage', async () => {
     const root = repo('');
-    for (const argv of [[], ['nope'], ['route'], ['route', 'x', '--kind', 'bug'], ['route', '5'], ['continue', '--routed', 'maybe'], ['continue', '--routed', 'fix', '--budget', '0']]) {
+    for (const argv of [[], ['nope'], ['route'], ['route', 'x', '--kind', 'bug'], ['route', '5'], ['continue', '--routed', 'maybe'], ['continue', '--routed', 'fix', '--budget', '0'], ['sla', '--now', 'later'], ['age', '--base', 'x', '--opened', '2026-10-24']]) {
       const err = console.error;
       console.error = () => {};
       try {

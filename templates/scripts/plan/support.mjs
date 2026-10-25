@@ -22,6 +22,18 @@
 //   node scripts/plan/support.mjs asap                  # ready | none: whether the next pick is an Asap chunk
 //   node scripts/plan/support.mjs start                 # march Step 0: stamp the tick start in <git dir>/nexus-tick-start
 //   node scripts/plan/support.mjs continue --routed fix|asap|none [--started <iso>] [--budget <min>] [--now <iso>]
+//   node scripts/plan/support.mjs sla [--json] [--issues <file>] [--now <iso>]   # march Step 1.5 (gh read only)
+//   node scripts/plan/support.mjs age [--base <score> --opened <iso>] [--issues <file>] [--now <iso>]
+//
+// `sla` is march Step 1.5 under fix-small or fix-all: an open `triage:loop-queued` issue `sla_hours` old (bearings;
+// 24 when absent) whose work is not in the Asap lane prints `plot #N` (no chunk names it: `/plot asap`, the title
+// ending `(#N)`) or `lift <id> #N` (an open chunk outside the lane names it: add its id to the Asap lane), oldest
+// first, while asap_cap has room; past the cap `wait #N`. An issue a pending close, ARCHIVE.md or an Asap lane line
+// already names is skipped: its work is planned or done (a cli fix stays open until the release). `age` prints the
+// aged score of every Pending `source: user` or `[user-issue #N]` row in plan/AUDIT.md and plan/CRITIQUE.md: +1 per
+// full 12 hours since its issue opened (or the row's `user-spotted at` / `opened` date), cap +4, never under the
+// flat +0.5; /iterate adds it to `impact × ease / 10` and never drops such a row under the 3.0 floor. With --base
+// and --opened it scores one row.
 //
 // `continue` is march's Step 1 exit: a triage pass that produced a fix-now or an Asap chunk goes on to Step 3a in
 // the same tick while under half the tick's budget (60 minutes when left out) is spent; anything else returns. `route`
@@ -38,6 +50,11 @@ export const LEVELS = ['off', 'triage-only', 'fix-small', 'fix-all'];
 export const COLLABORATORS = ['OWNER', 'MEMBER', 'COLLABORATOR'];
 export const DEFAULT_CAP = 3;
 export const DEFAULT_BUDGET = 60;
+export const DEFAULT_SLA = 24;
+export const AGE_STEP_HOURS = 12;
+export const AGE_CAP = 4;
+export const USER_BUMP = 0.5;
+const HOUR = 3600000;
 
 const knob = (name) => new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${name}[*\`]*[ \\t]*:[*\`]*[ \\t]*([\\w.-]+)`, 'mi');
 
@@ -70,6 +87,122 @@ export function trust(env = process.env) {
 export function asapCap(bearings = '') {
   const n = Number(knob('asap_cap').exec(bearings)?.[1]);
   return Number.isInteger(n) && n >= 0 ? n : DEFAULT_CAP;
+}
+
+/** `sla_hours` from plan/bearings.md text, else 24. */
+export function slaHours(bearings = '') {
+  const n = Number(knob('sla_hours').exec(bearings)?.[1]);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_SLA;
+}
+
+/** A user row's bump after `impact × ease / 10`: +1 per full 12 hours of age, cap +4, never under +0.5. */
+export function userBonus(hours) {
+  const steps = Number.isFinite(hours) ? Math.floor(Math.max(0, hours) / AGE_STEP_HOURS) : 0;
+  return Math.max(USER_BUMP, Math.min(AGE_CAP, steps));
+}
+
+/** The aged score of a user row: base + userBonus, one decimal, at most 10. */
+export function agedScore({ base, hours }) {
+  return Math.min(10, Math.round((base + userBonus(hours)) * 10) / 10);
+}
+
+/** Whether `text` names issue `n` (`#12`, never `#123` or `&#12`). */
+export const names = (text, n) => new RegExp(`(?<![\\w&])#${n}(?!\\d)`).test(String(text ?? ''));
+
+/** The Asap lane's item lines from plan/README.md text. */
+export function asapLines(readme = '') {
+  const out = [];
+  let inAsap = false;
+  for (const line of readme.split(/\r?\n/)) {
+    if (/^\*\*Asap\b/.test(line)) inAsap = true;
+    else if (/^(##|\*\*)/.test(line)) inAsap = false;
+    else if (inAsap && /^\s*- /.test(line) && !/\(none/.test(line)) out.push(line);
+  }
+  return out;
+}
+
+/**
+ * Where an issue's work stands in the plan: 'asap' (an Asap lane line names it, or names a chunk whose title does),
+ * 'done' (a pending close or ARCHIVE.md names it), { lift: id } (an open chunk outside the lane names it), or null.
+ */
+export function placed(n, { readme = '', specs = [], closed = new Set(), archive = '' }) {
+  const chunks = specs.flatMap((s) => s.chunks ?? []);
+  const lane = asapLines(readme);
+  const inLane = (id) => lane.some((l) => (l.match(ID) ?? []).includes(id));
+  if (lane.some((l) => names(l, n))) return 'asap';
+  const mine = chunks.filter((c) => names(c.title, n));
+  if (mine.some((c) => !closed.has(c.id) && inLane(c.id))) return 'asap';
+  if (mine.some((c) => closed.has(c.id)) || names(archive, n)) return 'done';
+  const open = mine.find((c) => !closed.has(c.id));
+  return open ? { lift: open.id } : null;
+}
+
+/**
+ * March Step 1.5: { sla, cap, plot: [{ number, hours, lift? }], wait: [{ number, hours }] }. `issues` are open
+ * `triage:loop-queued` issues ({ number, createdAt, labels }); the oldest past `sla_hours` whose work is not in the
+ * Asap lane take the room asap_cap leaves, the rest wait.
+ */
+export function slaDue({ issues = [], plan = {}, bearings = '', now = Date.now() }) {
+  const sla = slaHours(bearings);
+  const c = capacity(plan, bearings);
+  let room = Math.max(0, c.cap - c.open);
+  const plot = [];
+  const wait = [];
+  const due = issues
+    .filter((i) => Number.isInteger(i.number) && i.createdAt && !(i.labels ?? []).some((l) => (l?.name ?? l) === 'loop:opened'))
+    .map((i) => ({ number: i.number, createdAt: i.createdAt, hours: Math.floor((now - Date.parse(i.createdAt)) / HOUR) }))
+    .filter((i) => Number.isFinite(i.hours) && i.hours >= sla)
+    .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.number - b.number);
+  for (const i of due) {
+    const at = placed(i.number, plan);
+    if (at === 'asap' || at === 'done') continue;
+    const item = { number: i.number, hours: i.hours, ...(at?.lift ? { lift: at.lift } : {}) };
+    if (room > 0) {
+      plot.push(item);
+      room--;
+    } else wait.push(item);
+  }
+  return { sla, cap: c.cap, open: c.open, plot, wait };
+}
+
+/** The Pending rows of a queue file: [{ heading, body }]. */
+export function pendingRows(text = '') {
+  const rows = [];
+  let inPending = false;
+  let cur = null;
+  for (const line of text.split(/\r?\n/)) {
+    if (/^## /.test(line)) {
+      inPending = /^## Pending\b/.test(line);
+      cur = null;
+    } else if (inPending && /^### /.test(line)) rows.push((cur = { heading: line, body: [] }));
+    else if (cur) cur.body.push(line);
+  }
+  return rows;
+}
+
+/**
+ * The user rows of a queue file, aged: [{ heading, issue, base, hours, bonus, score }]. A user row carries
+ * `source: user` or a `[user-issue #N]` heading; its age runs from the issue's createdAt (`opened`, a map of
+ * number → iso) when known, else its `user-spotted at <iso>` or `opened <date>` evidence. `base` is impact × ease / 10
+ * when the row gives both, else null (iterate scores it, then adds the bonus).
+ */
+export function userRows(text = '', { opened = new Map(), now = Date.now() } = {}) {
+  const out = [];
+  for (const { heading, body } of pendingRows(text)) {
+    const all = [heading, ...body].join('\n');
+    const head = /\[user-issue #(\d+)\]/.exec(heading);
+    if (!head && !/^\s*-\s*source:\s*user\b/m.test(all)) continue;
+    const issue = Number(head?.[1] ?? /^\s*-\s*issue:\s*#(\d+)/m.exec(all)?.[1]) || null;
+    const impact = Number(/\bimpact:\s*(\d+(?:\.\d+)?)/.exec(all)?.[1]);
+    const ease = Number(/\bease:\s*(\d+(?:\.\d+)?)/.exec(all)?.[1]);
+    const base = Number.isFinite(impact) && Number.isFinite(ease) ? Math.round(impact * ease) / 10 : null;
+    const from = (issue && opened.get(issue)) || /user-spotted at (\S+)/.exec(all)?.[1] || /\bopened (\d{4}-\d{2}-\d{2})/.exec(all)?.[1];
+    const t = from ? Date.parse(from) : NaN;
+    const hours = Number.isFinite(t) ? Math.floor((now - t) / HOUR) : null;
+    const bonus = userBonus(hours ?? NaN);
+    out.push({ heading, issue, base, hours, bonus, score: base === null ? null : agedScore({ base, hours: hours ?? NaN }) });
+  }
+  return out;
 }
 
 /**
@@ -139,7 +272,7 @@ function readSafe(file) {
   }
 }
 
-/** The plan on disk: { readme, specs, closed }. */
+/** The plan on disk: { readme, specs, closed, archive }. */
 export async function loadPlan(root) {
   const [{ SPEC_FILE, parseSpec }, { pendingFiles, pendingCloses }] = await Promise.all([import('../plan-check.mjs'), import('./pending.mjs')]);
   const dir = path.join(root, 'plan');
@@ -152,7 +285,7 @@ export async function loadPlan(root) {
   } catch {
     // no pending folder, or one that does not parse: nothing counts closed early
   }
-  return { readme, specs, closed };
+  return { readme, specs, closed, archive: readSafe(path.join(dir, 'ARCHIVE.md')) };
 }
 
 /** gh read only: the issue's author association and label names, or null. */
@@ -167,6 +300,19 @@ export function ghIssue(num, { run = spawnSync } = {}) {
   }
 }
 
+/** gh read only: open issues as [{ number, createdAt, labels }] (with `label`, only those carrying it), or null. */
+export function ghIssues(label, { run = spawnSync } = {}) {
+  const args = ['issue', 'list', '--state', 'open', '--limit', '200', '--json', 'number,createdAt,labels', ...(label ? ['--label', label] : [])];
+  const res = run('gh', args, { encoding: 'utf8', windowsHide: true });
+  if (!res || res.status !== 0) return null;
+  try {
+    const j = JSON.parse(res.stdout);
+    return Array.isArray(j) ? j : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The untracked tick-start stamp file: <git dir>/nexus-tick-start, or <root>/.git/nexus-tick-start without git. */
 export function stampFile(root, { run = spawnSync } = {}) {
   const res = run('git', ['rev-parse', '--git-dir'], { cwd: root, encoding: 'utf8', windowsHide: true });
@@ -175,9 +321,9 @@ export function stampFile(root, { run = spawnSync } = {}) {
 }
 
 export const USAGE =
-  'usage: support.mjs level [--json] | route <N> --kind <class> [--association A --labels a,b] [--json] | cap [--json] | asap | start | continue --routed fix|asap|none [--started <iso>] [--budget <min>] [--now <iso>]';
+  'usage: support.mjs level [--json] | route <N> --kind <class> [--association A --labels a,b] [--json] | cap [--json] | asap | start | continue --routed fix|asap|none [--started <iso>] [--budget <min>] [--now <iso>] | sla [--json] [--issues <file>] [--now <iso>] | age [--base <score> --opened <iso>] [--issues <file>] [--now <iso>]';
 
-export async function main(argv, { root = process.cwd(), env = process.env, log = console.log, gh = ghIssue, asap } = {}) {
+export async function main(argv, { root = process.cwd(), env = process.env, log = console.log, gh = ghIssue, list = ghIssues, asap } = {}) {
   const at = (flag) => {
     const i = argv.indexOf(flag);
     return i < 0 ? undefined : argv[i + 1];
@@ -236,6 +382,54 @@ export async function main(argv, { root = process.cwd(), env = process.env, log 
     if (!['fix', 'asap', 'none'].includes(routed) || !(budget > 0) || !Number.isFinite(now)) return (console.error(USAGE), 64);
     const k = keepGoing({ routed, startedMs: started, nowMs: now, budgetMin: budget });
     log(`${k.next} · ${k.why}`);
+    return 0;
+  }
+  if (cmd === 'sla' || cmd === 'age') {
+    const now = at('--now') === undefined ? Date.now() : Date.parse(at('--now'));
+    if (!Number.isFinite(now)) return (console.error(USAGE), 64);
+    const file = at('--issues');
+    const fetch = (label) => {
+      if (!file) return list(label);
+      try {
+        const j = JSON.parse(fs.readFileSync(path.resolve(root, file), 'utf8'));
+        return Array.isArray(j) ? j.filter((i) => !label || (i.labels ?? []).some((l) => (l?.name ?? l) === label)) : null;
+      } catch {
+        return null;
+      }
+    };
+    if (cmd === 'sla') {
+      const { level } = supportLevel(bearings, env);
+      if (level === 'off' || level === 'triage-only') return (log(`off · support ${level}: no SLA step`), 0);
+      const issues = fetch('triage:loop-queued');
+      if (!issues) return (log('skip · gh unavailable: no SLA step this tick'), 0);
+      const d = slaDue({ issues, plan: await loadPlan(root), bearings, now });
+      if (json) log(JSON.stringify(d));
+      else {
+        for (const i of d.plot) log(i.lift ? `lift ${i.lift} #${i.number} · open ${i.hours}h, SLA ${d.sla}h: into the Asap lane` : `plot #${i.number} · open ${i.hours}h, SLA ${d.sla}h: /plot asap, the title ending (#${i.number})`);
+        for (const i of d.wait) log(`wait #${i.number} · open ${i.hours}h, asap_cap full (${d.cap})`);
+        log(d.plot.length + d.wait.length ? `due ${d.plot.length + d.wait.length}` : 'clean');
+      }
+      return 0;
+    }
+    if (at('--base') !== undefined || at('--opened') !== undefined) {
+      const base = Number(at('--base'));
+      const t = Date.parse(at('--opened') ?? '');
+      if (!Number.isFinite(base) || !Number.isFinite(t)) return (console.error(USAGE), 64);
+      const hours = Math.floor((now - t) / HOUR);
+      log(`${agedScore({ base, hours })} · ${base} +${userBonus(hours)} (${hours}h)`);
+      return 0;
+    }
+    const opened = new Map((fetch() ?? []).filter((i) => Number.isInteger(i.number) && i.createdAt).map((i) => [i.number, i.createdAt]));
+    let n = 0;
+    for (const q of ['AUDIT.md', 'CRITIQUE.md']) {
+      for (const r of userRows(readSafe(path.join(root, 'plan', q)), { opened, now })) {
+        n++;
+        const age = r.hours === null ? 'age unknown' : `${r.hours}h`;
+        const head = r.heading.replace(/^###\s*/, '');
+        log(`${r.score ?? 'score'} · ${r.base ?? 'impact × ease / 10'} +${r.bonus} (${age}) · ${q} · ${head.length > 100 ? `${head.slice(0, 97)}...` : head}`);
+      }
+    }
+    log(n ? `aged ${n}` : 'none');
     return 0;
   }
   console.error(USAGE);

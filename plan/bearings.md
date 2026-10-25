@@ -151,9 +151,12 @@ bug, and under `fix-all` a small enhancement, to `/bug`, which
 fixes it in the tick or plots it Asap; at most `asap_cap`
 issue-born Asap chunks are open at once, the rest are AUDIT
 rows. In cloud the repo variable `NEXUS_SUPPORT` wins over
-this line; the `chunks` leg warns when they disagree.
+this line; the `chunks` leg warns when they disagree. `/march`
+Step 1.5 plots Asap a queued issue open `sla_hours` or more
+whose work is not in the Asap lane (`support.mjs sla`).
 
 - Support: fix-all
+- sla_hours: 12
 - asap_cap: 3
 
 ## Generators

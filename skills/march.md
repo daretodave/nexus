@@ -12,6 +12,7 @@ Pick the right verb each tick:
 ```
 pre lanes (skills/march.lanes.md) →  each lane that is due
 unlabeled issues exist            →  /triage (a fix or an Asap chunk: on to 3a)
+queued issue past sla_hours       →  /plot asap (Step 1.5), then 3a
 ELSE critique due, no Asap ready  →  /critique
 ELSE ready chunk                  →  /next top
 ELSE queue lanes                  →  each lane that is due
@@ -169,8 +170,36 @@ node scripts/plan/support.mjs continue --routed <fix|asap|none>   # --budget 60:
 ```
 
 `continue` (a fix-now or an Asap chunk, under half the
-budget used) → Step 3a in this tick, past the critique gate.
-`return` → return.
+budget used) → Step 1.5, then 3a in this tick, past the
+critique gate. `return` → return. No issue to triage → Step
+1.5.
+
+### Step 1.5 — Support SLA
+
+A queued user issue never waits behind the spec table past
+its SLA (spec 54). Under `Support: fix-small` or `fix-all`:
+
+```bash
+node scripts/plan/support.mjs sla   # plot #N | lift <id> #N | wait #N, then due N | clean (gh read only)
+```
+
+It reads the open `triage:loop-queued` issues `sla_hours` old
+(`plan/bearings.md`) whose work no Asap lane line, pending
+close or `ARCHIVE.md` line names, oldest first, within
+`asap_cap`:
+
+- `plot #N`: `/plot asap "<the diagnosis in #N's AUDIT row>"`,
+  the chunk title and its Asap lane line ending `(#N)`; the
+  AUDIT row (if any) moves to Done as `plotted <id>`.
+- `lift <id> #N`: an open chunk already names the issue; add
+  `- <id> (#N)` to the Asap lane.
+- `wait #N`: `asap_cap` is full; the aged AUDIT row carries it
+  (`skills/iterate.md` §3).
+
+Any `plot` or `lift`: the gate, one commit (`plan: support
+SLA — #N`), land, then Step 3a (the Asap lane is built first,
+before any critique pass or spec-table chunk). `clean`, `off`
+or `skip`: go on to Step 2.
 
 ### Step 2 — Critique gate (rate-limited)
 
@@ -253,5 +282,6 @@ node scripts/plan/motion.mjs react    # Step 0.5: an open motion stall under sta
 node scripts/plan/refill.mjs --write # 3a': the stock refill lane runs bearings' generators
 gh issue list ...                    # triage gate
 node scripts/plan/support.mjs continue|asap  # Step 1 keeps going; Step 2 waits behind Asap
+node scripts/plan/support.mjs sla    # Step 1.5: a queued issue past sla_hours is plotted Asap
 node scripts/verify.mjs              # the gate every child runs
 ```

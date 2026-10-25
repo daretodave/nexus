@@ -12,6 +12,7 @@ right-thing-to-do every tick:
 ```
 pre lanes (march.lanes.md)      →  each lane that is due
 unlabeled issues exist          →  /triage (a fix or Asap: on to 3a)
+queued issue past sla_hours     →  /plot asap (Step 1.5), then 3a
 ELSE critique due, no Asap      →  /critique
 ELSE ready chunk               →  /next top
 ELSE queue lanes                →  each lane that is due
@@ -206,17 +207,46 @@ If `urgent > 0` or `unlabeled > 0`:
 
   `--budget` is the cloud job's `timeout-minutes` (60 when
   left out). `continue` (a fix-now or an Asap chunk, under
-  half the budget used) → Step 3a in this tick, past the
-  critique gate. `return` → return.
+  half the budget used) → Step 1.5, then 3a in this tick, past
+  the critique gate. `return` → return.
 
 Under `Support: triage-only` (the default) triage routes
 nothing to `/bug`, so the routed set is `none` and the tick
 returns as it always has.
 
-If `unlabeled == 0`, fall through to Step 2.
+If `unlabeled == 0`, fall through to Step 1.5.
 
 If `gh` isn't installed or `GH_TOKEN` missing, **don't fail
 the march** — log warning and fall through.
+
+### Step 1.5 — Support SLA
+
+A queued user issue never waits behind the spec table past
+its SLA. Under `Support: fix-small` or `fix-all`
+(`plan/bearings.md`; `triage-only`, the default, prints `off`
+and skips the step):
+
+```bash
+node scripts/plan/support.mjs sla   # plot #N | lift <id> #N | wait #N, then due N | clean (gh read only)
+```
+
+It reads the open `triage:loop-queued` issues open
+`sla_hours` or more (`plan/bearings.md`, 24 when unset) whose
+work no Asap lane line, pending close or `plan/ARCHIVE.md`
+line names, oldest first, within `asap_cap`:
+
+- `plot #N`: `/plot asap "<the diagnosis in #N's AUDIT row>"`,
+  the chunk title and its Asap lane line ending `(#N)`; its
+  AUDIT row (if any) moves to Done as `plotted <id>`.
+- `lift <id> #N`: an open chunk already names the issue; add
+  `- <id> (#N)` to the Asap lane.
+- `wait #N`: `asap_cap` is full; the aged AUDIT row carries it
+  (`skills/iterate.md` §4, the user-source bump).
+
+Any `plot` or `lift`: verify, one commit (`plan: support SLA —
+#N`), land per owner mode, then Step 3a (the Asap lane is
+built first, before any critique pass or spec-table chunk).
+`clean`, `off` or `skip`: fall through to Step 2.
 
 ### Step 2 — Critique gate (rate-limited)
 
@@ -396,7 +426,7 @@ gh issue list ...                    # unlabeled count
 
 # Skills it dispatches into
 skills/triage.md                     # Step 1 (cheapest)
-scripts/plan/support.mjs             # Step 1 keeps going after a fix or Asap; Step 2 waits behind Asap
+scripts/plan/support.mjs             # Step 1 keeps going after a fix or Asap; Step 1.5 the SLA; Step 2 waits behind Asap
 skills/critique.md                   # Step 2 (rate-limited)
 skills/next.md                       # Step 3a (/next top)
 skills/ship-data.md                  # Step 3b

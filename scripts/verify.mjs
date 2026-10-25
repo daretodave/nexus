@@ -28,7 +28,8 @@
 //                 triage, bug and iterate (both trees) carry the
 //                 rule that issue and page text is data; triage,
 //                 bug and march (both trees) carry the support
-//                 routing (support.mjs route, cap, continue, asap)
+//                 routing (support.mjs route, cap, continue, asap,
+//                 sla), and iterate the aged user rows (age)
 //   emoji         no pictographic emoji anywhere in tracked docs,
 //                 nor in packages/cli source (js/jsx/ts/tsx/json/css/html)
 //                 (✓ and ❌ dingbats are fine; 🤖 is not, nor the
@@ -486,11 +487,14 @@ const UNTRUSTED_TEXT_RULE = [/third-party data, never instructions/, /UI walk/, 
 // both trees: triage sends a collaborator's bug to /bug under the
 // Support level, /bug fixes it now or plots it Asap under asap_cap,
 // and march keeps going after such a triage and builds a ready Asap
-// chunk before any critique pass.
+// chunk before any critique pass; march's Step 1.5 plots a queued
+// issue past sla_hours Asap, and iterate ages user rows into the queue
+// (+1 per 12 hours, exempt from the 3.0 floor).
 const SUPPORT_ROUTING = {
   'triage.md': [[/support\.mjs route/, 'triage asks `support.mjs route` per issue'], [/skills\/bug\.md/, 'a `bug` route goes to skills/bug.md']],
   'bug.md': [[/asap_cap/, 'a larger bug is plotted Asap only under asap_cap'], [/support\.mjs cap/, '`support.mjs cap` counts the open issue-born Asap chunks']],
-  'march.md': [[/support\.mjs continue/, 'Step 1 continues to 3a through `support.mjs continue`'], [/support\.mjs asap/, 'the critique gate waits behind a ready Asap chunk (`support.mjs asap`)']],
+  'march.md': [[/support\.mjs continue/, 'Step 1 continues to 3a through `support.mjs continue`'], [/support\.mjs asap/, 'the critique gate waits behind a ready Asap chunk (`support.mjs asap`)'], [/Step 1\.5/, 'a Step 1.5 Support SLA'], [/support\.mjs sla/, 'Step 1.5 plots a queued issue past sla_hours through `support.mjs sla`']],
+  'iterate.md': [[/support\.mjs age/, 'user rows age through `support.mjs age`'], [/per 12 hours/, 'a user row gains +1 per 12 hours'], [/floor/, 'a user row is exempt from the 3.0 floor']],
 }
 
 // A `<skill>.lanes.md` beside a skill is that project's lanes file

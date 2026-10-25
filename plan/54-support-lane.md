@@ -89,12 +89,19 @@ default and nexus's value is `collaborators`.
     ticks run p50 3.5 minutes of a 60-minute budget.
   - New Step 1.5 "Support": an open `triage:loop-queued` issue
     older than `sla_hours` whose work is not in the Asap lane
-    is plotted asap before 3a.
+    is plotted asap before 3a. Built as `support.mjs sla`
+    (under `fix-small` or `fix-all` only): an open chunk that
+    already names the issue is lifted into the lane instead of
+    plotted twice, an issue a pending close or `ARCHIVE.md`
+    names is skipped (a cli fix stays open until its release),
+    and it plots only within `asap_cap`; past it the issue
+    waits on its aged AUDIT row.
   - Step 2 (critique gate) moves below a non-empty Asap lane.
 - `skills/iterate.md` and its template: a `source: user` row
   gains +1 per 12 hours since its issue opened (cap +4) and is
   exempt from the 3.0 floor. Re-scored, #86 (2.4, 24h old)
-  reads 4.4.
+  reads 4.4. The flat +0.5 stays as the bump's floor, so a
+  fresh user row scores as before (`support.mjs age`).
 
 ### Untrusted text
 
@@ -243,8 +250,6 @@ asap_cap: 3                 # nexus: 3
 
 ## Acceptance
 
-- **A4** `source: user` AUDIT rows gain +1 per 12h (cap +4) and are never filtered by the 3.0 floor; a re-scored #86-shaped row (impact 6, ease 4, 24h old) ranks above every docs row under 4.4.
-- **A5** An open `triage:loop-queued` issue older than `sla_hours` whose work is not in the Asap lane is plotted asap by Step 1.5 and built before any spec-table chunk.
 - **A6** A support fix commit carries `Refs #N` and never `Closes`/`Fixes`; after it lands the issue gets a comment naming the commit and is closed, except a `packages/cli` fix, which says it lands in the next release and stays open.
 - **A8** A collaborator opening an issue labeled `bug` on nexus starts a march run (event `workflow_dispatch`, reason `issue-<n>`) within 15 minutes when nothing is pending in the `march` group; an outsider's issue, a `loop:opened` mirror and a loop-filed issue start none.
 - **A9** `nudge-check.mjs`, tested against stubbed `gh run list` JSON, skips when a march or night run is queued or pending, and when 6 event ticks started in the last 24h; it never cancels a pending night run.
@@ -258,12 +263,10 @@ asap_cap: 3                 # nexus: 3
 
 ## Chunks
 
-Measure: 8 open · 5 closed · next A14
+Measure: 6 open · 7 closed · next A14
 
-- [ ] **54.3** User rows age into the queue; the support SLA step · S · closes A4, A5 · needs —
-  - Seed: re-score the open `source: user` AUDIT rows in the same commit.
 - [ ] **54.4** A fixed issue is told and closed · S · closes A6 · needs —
-- [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs 54.3
+- [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
   - After landing: `gh variable set NEXUS_SUPPORT --body fix-all` on nexus, then watch one test issue through (a collaborator bug, an outsider issue, a loop-filed issue).
 - [ ] **54.7** A cli release closes the issues it fixed · S · closes A11 · needs 54.4

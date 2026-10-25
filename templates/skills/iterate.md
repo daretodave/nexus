@@ -39,17 +39,27 @@ shipping cheap wins.
 
 ### User-source bump (from `/jot`)
 
-Findings with `source: user` (filed via `/jot`) get a flat
-**`+0.5`** on their final score, capped at `10`. Apply this
-**after** `impact × ease / 10` and **before** the user-set
-bias multiplier below.
+Findings with `source: user` (filed via `/jot`) and
+`[user-issue #N]` rows (routed by `/triage`) get a bump on
+their final score that grows with age: **`+1` per 12 hours**
+since the issue opened (a `/jot` row: since its `user-spotted
+at` time), capped at **`+4`**, never under the flat
+**`+0.5`**; the score caps at `10`. Apply this **after**
+`impact × ease / 10` and **before** the user-set bias
+multiplier below. A user row is **exempt from the 3.0 floor**
+(failure mode 6): it is worked, however low it scores.
+
+```bash
+node scripts/plan/support.mjs age   # each Pending user row's aged score (gh read only)
+```
 
 Rationale: when the user has spotted something with their own
 eyes, it's almost always more valid than what the audit
-auto-detected. The flat add (rather than a multiplier) means
-high-severity user jots don't blow past everything; they just
-edge ahead of comparable auto-detected findings at the same
-severity.
+auto-detected. The add (rather than a multiplier) means a
+fresh high-severity jot doesn't blow past everything; it edges
+ahead of comparable auto-detected findings. Age is what
+promotes it: a user bug (impact 6, ease 4: 2.4) a day old
+reads 4.4, so it is not starved below polish rows forever.
 
 ### User-set bias (from `/oversight`)
 
@@ -387,7 +397,8 @@ Return cleanly. Loop's next tick re-audits.
    `/plan-a-spec`.
 5. **Finding requires user judgment.** Surface to AUDIT.md as
    `[needs-user-call]`, skip, ship next.
-6. **No actionable iterate work** (top score < 3.0). Read
+6. **No actionable iterate work** (top score < 3.0, and no
+   Pending user row: those are exempt from the floor). Read
    `plan/bearings.md` "Plan expansion posture":
    - **bold** or **autonomous** posture → dispatch to
      `/expand` instead of stopping. "Make things brilliant
