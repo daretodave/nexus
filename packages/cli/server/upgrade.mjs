@@ -5,11 +5,13 @@
 // repo's own march and iterate steps (kit-text.mjs: anything no kit version ever held), copies the v2 kit file set
 // (the CLI's bundled kit/upgrade/, else the nexus repo's templates/ in a dev checkout), carries those steps into the
 // lanes files verbatim, keeps custom skills and commands (a command with no skill becomes one), merges the roadmap,
-// converts the build plan with the kit's converter, retires the v1 files (playbooks/upgrade.md Step 5), rewrites v1
-// references outside history files, flips the lock, runs plan-check and its test, plays march's pick order forward
-// for the first dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
+// converts the build plan with the kit's converter, merges the v1 march.yml into the v2 owner-job shape (cron,
+// ceiling, model pin, extra env and concurrency kept; the toolchain steps into .github/actions/setup:
+// workflow-merge.mjs), retires the v1 files (playbooks/upgrade.md Step 5), rewrites v1 references outside history
+// files, flips the lock, runs plan-check, its test and workflow-lint, plays march's pick order forward for the first
+// dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
 //
-//   npx @usenexus/cli upgrade [--repo <dir>] [--json]
+//   npx @usenexus/cli upgrade [--repo <dir>] [--json] [--keep-workflow]
 //
 // Exit 0: the report printed (a v2 repo: "already on v2"). Exit 1: the gate failed (worktree kept). Exit 2: not a
 // v1 or half-done repo, no origin, or a flag this release does not carry yet.
@@ -18,7 +20,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { TRAIN, customUnits, fromJson, laneBlocks, mergeText, textOf, toJson } from './kit-text.mjs';
+import { TRAIN, customUnits, fromJson, laneBlocks, mergeText, textOf, textOfPrompt, toJson } from './kit-text.mjs';
+import { MARCH_YML, SETUP_ACTION, fill, keptLine, mergeWorkflow, packageManager, setupAction } from './workflow-merge.mjs';
 
 const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /** The CLI's bundled kit file set (scripts/bundle-kit.mjs writes it; templates/ layout plus files.json). */
@@ -363,6 +366,51 @@ export function loopModeOf(dir, ref = 'HEAD') {
   return { mode: pushes ? 'owner' : 'pr', pushes };
 }
 
+/**
+ * The workflow merge (workflow-merge.mjs) in `dir`: the v1 march.yml into the kit's v2 owner-job shape, its toolchain
+ * steps into the setup action. `repoAction` is the repo's own .github/actions/setup/action.yml from before the kit
+ * copy: it is put back (the repo wrote it). `keep` (--keep-workflow) leaves march.yml as it is and reports what the
+ * merge would have kept. With no v1 march.yml the kit's setup action is still filled in (its placeholders, no browser
+ * steps). Returns { rows, warnings, kept }.
+ */
+export function workflowMerge(dir, kit, { repoAction = null, branch = 'main', keep = false } = {}) {
+  const rows = [];
+  const warnings = [];
+  const template = read(kit.root, MARCH_YML);
+  const actionTemplate = read(kit.root, SETUP_ACTION);
+  const v1Text = read(dir, MARCH_YML);
+  const fills = { project: projectName(dir), pm: packageManager((f) => exists(dir, f), v1Text || ''), branch };
+  if (repoAction != null) {
+    write(dir, SETUP_ACTION, repoAction);
+    rows.push({ path: SETUP_ACTION, status: 'kept-custom' });
+  }
+  if (template == null || actionTemplate == null) {
+    if (v1Text != null) warnings.push(`the kit carries no ${MARCH_YML} to merge into: ${MARCH_YML} is left as it is`);
+    return { rows, warnings, kept: null };
+  }
+  const kitPrompt = fromJson(toJson(mergeText(kit.text?.['march.yml'], textOfPrompt(template))));
+  const r = mergeWorkflow({ v1Text, template, actionTemplate, repoAction, fills, kitPrompt });
+  if (r.skip) {
+    if (v1Text != null) warnings.push(r.skip);
+    if (repoAction == null) {
+      write(dir, SETUP_ACTION, setupAction({ toolchain: [] }, fill(actionTemplate, fills)).text);
+      rows.push({ path: SETUP_ACTION, status: 'added', note: `the kit's, ${fills.pm}` });
+    }
+    return { rows, warnings, kept: null };
+  }
+  warnings.push(...r.warnings);
+  if (r.action != null) {
+    write(dir, SETUP_ACTION, r.action);
+    rows.push({ path: SETUP_ACTION, status: r.kept.toolchain ? 'merged' : 'added', note: r.kept.toolchain ? `the v1 job's ${r.kept.toolchain} toolchain step${r.kept.toolchain === 1 ? '' : 's'}` : `the kit's, ${fills.pm}` });
+  }
+  if (keep) rows.push({ path: MARCH_YML, status: 'kept (--keep-workflow)', note: `the merge would keep ${keptLine(r.kept)}` });
+  else {
+    write(dir, MARCH_YML, r.march.endsWith('\n') ? r.march : `${r.march}\n`);
+    rows.push({ path: MARCH_YML, status: 'merged', note: `v2 owner-job shape; kept ${keptLine(r.kept)}` });
+  }
+  return { rows, warnings, kept: r.kept };
+}
+
 /** plan-check and its test in `dir`: [{ name, ok, out }]. A repo without plan-check gets one failing row. */
 export function gate(dir, { node = process.execPath } = {}) {
   const run = (name, args) => {
@@ -373,6 +421,7 @@ export function gate(dir, { node = process.execPath } = {}) {
   if (!exists(dir, 'scripts/plan-check.mjs')) return [{ name: 'plan-check', ok: false, out: 'scripts/plan-check.mjs is not in this repo' }];
   const rows = [run('plan-check', ['scripts/plan-check.mjs'])];
   if (exists(dir, 'scripts/__tests__/plan-check.test.mjs')) rows.push(run('plan-check test', ['--test', 'scripts/__tests__/plan-check.test.mjs']));
+  if (exists(dir, 'scripts/workflow-lint.mjs')) rows.push(run('workflow-lint', ['scripts/workflow-lint.mjs']));
   return rows;
 }
 
@@ -410,7 +459,7 @@ export async function predict(dir, kit, { mode }) {
  * The dry run, start to end, on the repo at `repo` (any folder inside it). Returns { code, report } and never
  * throws for an expected stop. `keep` keeps the worktree even when the gate is green.
  */
-export async function upgrade({ repo, today = new Date().toISOString().slice(0, 10), kit = null, keep = false } = {}) {
+export async function upgrade({ repo, today = new Date().toISOString().slice(0, 10), kit = null, keep = false, keepWorkflow = false } = {}) {
   const top = gitIn(repo, ['rev-parse', '--show-toplevel']);
   if (!top.ok) return { code: 2, report: { error: `${repo} is not a git repository` } };
   const root = path.resolve(top.out);
@@ -420,7 +469,7 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
   } catch (e) {
     return { code: e.code || 2, report: { error: e.message } };
   }
-  const report = { repo: root, origin: { url: wt.url, branch: wt.branch, sha: wt.sha }, dry: true, files: [], archive: [], warnings: [], gate: [], dispatch: null, loop: null, worktree: null };
+  const report = { repo: root, origin: { url: wt.url, branch: wt.branch, sha: wt.sha }, dry: true, files: [], archive: [], warnings: [], gate: [], workflow: null, dispatch: null, loop: null, worktree: null };
   let red = false;
   try {
     const shape = detect(wt.dir);
@@ -433,9 +482,10 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
     const kitFiles = new Set(kit.files.map((f) => f.repo));
 
     if (shape.shape === 'v1') {
-      // The repo's own march and iterate steps are read before the kit's skills replace them.
+      // The repo's own march and iterate steps, and its own setup action, are read before the kit's replace them.
       const train = customTrain(wt.dir, kit);
-      report.files.push(...copyKit(wt.dir, kit).filter((r) => r.status !== 'same'));
+      const repoAction = read(wt.dir, SETUP_ACTION);
+      report.files.push(...copyKit(wt.dir, kit).filter((r) => r.status !== 'same' && r.path !== SETUP_ACTION));
       const carried = carryTrain(wt.dir, train, { today });
       report.files.push(...carried.rows);
       report.warnings.push(...carried.warnings);
@@ -452,6 +502,10 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
         report.files.push({ path: f.path, status: f.kind === 'new' ? 'converted' : f.kind === 'append' ? `appended (${f.added.length} lines)` : 'updated' });
       }
       if (conv.failures.length) { red = true; report.gate.push({ name: 'converter', ok: false, out: conv.failures.join('\n') }); }
+      const wf = workflowMerge(wt.dir, kit, { repoAction, branch: wt.branch, keep: keepWorkflow });
+      report.files.push(...wf.rows);
+      report.warnings.push(...wf.warnings);
+      report.workflow = wf.kept ? { kept: wf.kept, keep: keepWorkflow } : null;
     }
 
     const retired = retireV1(wt.dir, { skip: kitFiles });
@@ -520,6 +574,18 @@ export function render(report, { color = false } = {}) {
     out.push(`  ${g.ok ? 'green' : red('RED  ')}  ${g.name}`);
     if (!g.ok && g.out) for (const l of g.out.split('\n')) out.push(`         ${l}`);
   }
+  if (report.workflow) {
+    const k = report.workflow.kept;
+    out.push('', `workflow (${report.workflow.keep ? `${MARCH_YML} kept as it is (--keep-workflow); the merge would keep` : `${MARCH_YML} merged into the v2 owner job, keeping`})`);
+    out.push(`  cron         ${k.cron.length ? k.cron.join(', ') : '(none: dispatch only)'}`);
+    out.push(`  ceiling      ${k.ceiling ?? "the kit's (no number in the v1 step)"}`);
+    out.push(`  model        ${k.model ?? "the kit's (no pin in the v1 step)"}`);
+    out.push(`  env          ${k.env.length ? k.env.join(', ') : '(none extra)'}`);
+    out.push(`  concurrency  ${k.concurrency ?? "the kit's"}`);
+    out.push(`  toolchain    ${k.toolchain ? `${k.toolchain} step${k.toolchain === 1 ? '' : 's'} -> ${SETUP_ACTION}` : '(none moved)'}`);
+    if (k.steps.length) out.push(`  custom steps ${k.steps.join(', ')}`);
+    if (k.prompt) out.push(`  prompt       ${k.prompt} line${k.prompt === 1 ? '' : 's'} of the v1 prompt no kit version held`);
+  }
   if (report.dispatch) {
     const d = report.dispatch;
     out.push('', 'first dispatch (predicted)');
@@ -553,6 +619,9 @@ export const UPGRADE_HELP = `nexus upgrade: move a nexus v1 repo (a phase plan) 
                                             first dispatch and the loop mode
   npx @usenexus/cli upgrade --repo <dir>    ...for another folder
   npx @usenexus/cli upgrade --json          the report as JSON
+  npx @usenexus/cli upgrade --keep-workflow leave .github/workflows/march.yml as
+                                            it is; report what the merge into
+                                            the v2 owner job would keep
 
   Exit 0: the report printed (a v2 repo: already on v2). Exit 1: the
   gate failed (the worktree is kept and its path printed). Exit 2: not a
@@ -561,20 +630,20 @@ export const UPGRADE_HELP = `nexus upgrade: move a nexus v1 repo (a phase plan) 
   The runbook: https://github.com/daretodave/nexus/blob/main/playbooks/upgrade.md`;
 
 /** Flags spec 58 names that a later release carries: refused here rather than ignored. */
-export const LATER = Object.freeze(['--write', '--land', '--rollback', '--pr', '--no-pause', '--no-watch', '--keep-workflow']);
+export const LATER = Object.freeze(['--write', '--land', '--rollback', '--pr', '--no-pause', '--no-watch']);
 
 /** `nexus upgrade <args>`: the exit code. */
 export async function runUpgrade(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), cwd = process.cwd(), color = process.stdout.isTTY && !process.env.NO_COLOR, today } = {}) {
   if (argv.includes('--help') || argv.includes('-h')) { out(UPGRADE_HELP); return 0; }
   const later = argv.filter((a) => LATER.includes(a));
   if (later.length) { err(`nexus upgrade: ${later.join(', ')} ${later.length === 1 ? 'is' : 'are'} not in this release yet; the dry run is (run it with no flags)`); return 2; }
-  const known = new Set(['--repo', '--json']);
+  const known = new Set(['--repo', '--json', '--keep-workflow']);
   const i = argv.indexOf('--repo');
   const bad = argv.filter((a, k) => !known.has(a) && !(i >= 0 && k === i + 1));
   if (bad.length || (i >= 0 && !argv[i + 1])) { err(`nexus upgrade: unknown argument ${bad[0] ?? '--repo (needs a folder)'}\n\n${UPGRADE_HELP}`); return 2; }
   const repo = path.resolve(cwd, i >= 0 ? argv[i + 1] : '.');
   if (!fs.existsSync(repo) || !fs.statSync(repo).isDirectory()) { err(`nexus upgrade: ${repo} is not a folder`); return 2; }
-  const { code, report } = await upgrade({ repo, today });
+  const { code, report } = await upgrade({ repo, today, keepWorkflow: argv.includes('--keep-workflow') });
   if (argv.includes('--json')) out(JSON.stringify({ code, ...report }, null, 2));
   else (code === 2 ? err : out)(render(report, { color }));
   return code;

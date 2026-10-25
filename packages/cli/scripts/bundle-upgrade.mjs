@@ -1,7 +1,8 @@
 // The upgrade's bundled kit (spec 58): the v2 kit file set, computed by the nexus repo's scripts/upgrade-files.mjs
 // (the one list playbooks/upgrade.md's manual appendix is generated from), copied to `out` at its templates/ paths,
 // with files.json naming each file, where it lands in a repo, and its kind. Beside them, the seeds the upgrade reads
-// but never copies over a repo's own (SEEDS: the v2 roadmap it merges in, the lock it flips), at their templates/
+// but never copies over a repo's own (SEEDS: the v2 roadmap it merges in, the lock it flips, the march.yml a v1
+// workflow is merged into), at their templates/
 // paths too, and kit-text.json: every header and paragraph the kit's march and iterate skills ever held (the nexus
 // repo's scripts/upgrade-kit-text.mjs: its committed snapshot, git history and the current templates), which tells a
 // repo's own steps from kit text. bundle-kit.mjs runs it into kit/upgrade/; server/upgrade.mjs reads it.
@@ -13,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 export const bundledPath = (kit) => kit.replace(/^templates\//, '');
 
 /** Templates the upgrade reads (merged or rewritten into a repo, never copied over one), relative to templates/. */
-export const SEEDS = Object.freeze(['plan/README.md', 'plan/nexus.lock']);
+export const SEEDS = Object.freeze(['plan/README.md', 'plan/nexus.lock', '.github/workflows/march.yml']);
 
 /** The kit-text list's name under `out`. */
 export const KIT_TEXT = 'kit-text.json';

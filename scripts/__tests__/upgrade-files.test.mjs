@@ -32,6 +32,9 @@ const BASE = {
   'templates/scripts/owner.mjs': "const v = new URL('./vault.mjs', import.meta.url)\n",
   'templates/scripts/vault.mjs': '// the vault\n',
   'templates/scripts/cloud/tick.mjs': '// import nothing\n',
+  'templates/scripts/cloud/idle.mjs': '// the idle probe\n',
+  'templates/scripts/workflow-lint.mjs': '// the lint\n',
+  'templates/.github/workflows/march.yml': 'jobs:\n  owner:\n    steps:\n      - run: node scripts/cloud/idle.mjs probe\n',
   'templates/scripts/unlisted.mjs': '// nobody imports me\n',
   'templates/scripts/__tests__/plan-check.test.mjs': "import { x } from '../plan-check.mjs'\nconst fixtures = new URL('../plan', import.meta.url)\n",
   'templates/skills/next.md': '# next\n\n`node scripts/ledger.mjs beat` and `node scripts/snapshot.mjs` (an example).\n',
@@ -75,7 +78,8 @@ test('the list is the closures plus the fixed files, a skill-named example and a
   const { files, missing } = upgradeFiles(root)
   assert.deepEqual(missing, [])
   const kits = files.map((f) => f.kit)
-  for (const want of ['plan-check.mjs', 'plan/pending.mjs', 'plan/settled.mjs', 'upgrade-plan.mjs', 'claims.mjs', 'owner.mjs', 'vault.mjs', 'cloud/tick.mjs', 'ledger.mjs', '__tests__/plan-check.test.mjs']) {
+  // workflow-lint is an entry (the upgrade's gate runs it); cloud/idle.mjs is called by the march.yml the upgrade merges.
+  for (const want of ['plan-check.mjs', 'plan/pending.mjs', 'plan/settled.mjs', 'upgrade-plan.mjs', 'claims.mjs', 'owner.mjs', 'vault.mjs', 'cloud/tick.mjs', 'ledger.mjs', '__tests__/plan-check.test.mjs', 'workflow-lint.mjs', 'cloud/idle.mjs']) {
     assert.ok(kits.includes(`templates/scripts/${want}`), want)
   }
   assert.ok(!kits.includes('templates/scripts/unlisted.mjs'))
@@ -133,7 +137,7 @@ test('the kit itself: the list holds plan-check closure, next and plot callees, 
   const { problems, files } = check(REPO)
   assert.deepEqual(problems, [])
   const kits = new Set(files.map((f) => f.kit))
-  for (const want of ['plan/pending.mjs', 'plan/settled.mjs', 'plan/secrets-manifest.mjs', 'owner.mjs', 'plan/config.mjs', 'plan/footguns.mjs', 'plan/settle.mjs', 'claims.mjs', 'plan/order.mjs', 'cloud/tick.mjs', 'upgrade-plan.mjs']) {
+  for (const want of ['plan/pending.mjs', 'plan/settled.mjs', 'plan/secrets-manifest.mjs', 'owner.mjs', 'plan/config.mjs', 'plan/footguns.mjs', 'plan/settle.mjs', 'claims.mjs', 'plan/order.mjs', 'cloud/tick.mjs', 'upgrade-plan.mjs', 'workflow-lint.mjs', 'cloud/quota.mjs', 'cloud/idle.mjs', 'cloud/lost.mjs']) {
     assert.ok(kits.has(`templates/scripts/${want}`), want)
   }
   for (const want of ['templates/skills/next.md', 'templates/skills/plot.md', 'templates/claude/commands/next.md', 'templates/.github/actions/setup/action.yml']) assert.ok(kits.has(want), want)

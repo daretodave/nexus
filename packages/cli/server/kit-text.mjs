@@ -84,6 +84,42 @@ export function textOf(md) {
   return t;
 }
 
+/**
+ * The workflow whose model prompt is kit text too (spec 58, the workflow merge): key -> its templates/ path. A v1
+ * march.yml's prompt line that no kit version ever held is the adopter's own, and the merge carries it across.
+ */
+export const PROMPTS = Object.freeze({ 'march.yml': '.github/workflows/march.yml' });
+
+/** The lines of every `prompt:` block scalar in a workflow (a claude-code-action input), each block dedented. */
+export function promptOf(yml) {
+  const lines = String(yml ?? '').replace(/\r\n/g, '\n').split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^(\s*)prompt:\s*[|>][-+]?\s*$/.exec(lines[i]);
+    if (!m) continue;
+    const block = [];
+    for (let j = i + 1; j < lines.length; j++) {
+      if (lines[j].trim() && /^(\s*)/.exec(lines[j])[1].length <= m[1].length) break;
+      block.push(lines[j]);
+    }
+    const cut = Math.min(...block.filter((l) => l.trim()).map((l) => /^(\s*)/.exec(l)[1].length));
+    out.push(...block.map((l) => l.slice(Number.isFinite(cut) ? Math.min(cut, /^(\s*)/.exec(l)[1].length) : 0)));
+  }
+  return out;
+}
+
+/** A workflow's prompt as kit text: each non-blank prompt line one "paragraph" (its hash, and a pattern if templated). */
+export function textOfPrompt(yml) {
+  const t = { headers: new Set(), paras: new Set(), patterns: new Set() };
+  for (const l of promptOf(yml)) {
+    if (!l.trim()) continue;
+    t.paras.add(hashPara(l));
+    if (PLACEHOLDER.test(l)) t.patterns.add(normPara(l));
+    PLACEHOLDER.lastIndex = 0;
+  }
+  return t;
+}
+
 /** Union of kit texts (any mix of textOf results and parsed JSON entries). */
 export function mergeText(...all) {
   const t = { headers: new Set(), paras: new Set(), patterns: new Set() };

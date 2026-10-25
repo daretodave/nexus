@@ -335,6 +335,7 @@ or `plan`. `bypassPermissions` is refused.
 npx @usenexus/cli upgrade                 the repo in this folder
 npx @usenexus/cli upgrade --repo <dir>    another folder
 npx @usenexus/cli upgrade --json          the report as JSON
+npx @usenexus/cli upgrade --keep-workflow leave march.yml as it is (report only)
 ```
 
 `upgrade` moves a nexus v1 repo (a phase plan:
@@ -347,7 +348,22 @@ same list as the manual copy list in `playbooks/upgrade.md`), merges
 the v2 lanes and spec table into your roadmap (your own sections
 stay where they are), converts the build plan, retires the v1 files,
 rewrites every v1 reference outside history files (workflow prompt
-text included), flips the lock, and runs plan-check and its test.
+text included), flips the lock, and runs plan-check, its test and
+workflow-lint.
+
+Your cloud loop's workflow is merged, not replaced.
+`.github/workflows/march.yml` takes the v2 owner-job shape and
+keeps your cron, ceiling number, model pin, every extra `env:`
+entry (deploy tokens by name), concurrency group, extra checkout
+inputs and permissions, any step the kit never shipped, and any
+prompt line no kit version ever held. The job's toolchain steps
+(package manager, install, browser install) move into
+`.github/actions/setup/action.yml`, which every v2 job calls; a
+step that reads a secret stays in the job (a composite action has
+no secrets context). The model pin and env go to the owner job
+only: the pull-request build job holds no token by design.
+`--keep-workflow` leaves `march.yml` as it is and reports what the
+merge would have kept.
 
 Your loop's own steps come across. Text in `skills/march.md` and
 `skills/iterate.md` that no kit version ever held (the CLI carries
@@ -363,9 +379,9 @@ and the command points at it.
 The report lists every file it touched (`added`, `replaced`,
 `seeded`, `merged`, `converted`, `retired`, `renamed`, `rewritten
 (N refs)`, `moved-to-lane (N)`, `moved-to-skill`, `kept-custom`),
-the archive lines it would append, the warnings, the
-gate, the first dispatch a tick would make (march's pick order
-played forward), and the loop mode. A v1 loop that pushed the
+the archive lines it would append, the warnings, the gate, what
+the workflow merge kept, the first dispatch a tick would make
+(march's pick order played forward), and the loop mode. A v1 loop that pushed the
 default branch (`Cloud-Run` commits) prints the `gh variable set
 NEXUS_LOOP_MODE --body owner` line, because pull-request mode picks
 only chunks. A half-done repo (a lock saying `chunks` beside
@@ -375,7 +391,8 @@ prints "already on v2".
 It exits 0 when the report prints, 1 when the gate is red (the
 worktree is kept and its path printed), and 2 when the repo is not
 v1, has no origin, or a flag names a step this release does not
-carry yet (`--write`, `--land`, `--rollback`, `--pr`).
+carry yet (`--write`, `--land`, `--rollback`, `--pr`, `--no-pause`,
+`--no-watch`).
 
 ## Develop
 

@@ -202,9 +202,20 @@ replaced:
 
 - kept: the cron line, the ceiling number, the model pin,
   every extra `env:` entry (deploy tokens by name), the
-  concurrency group;
+  concurrency group; also extra checkout inputs, job
+  permissions and `claude_args` flags, any step the kit
+  never shipped (ahead of the model step), and each prompt
+  line no kit version held (the kit-text list gains a
+  `march.yml` entry: every line its prompt ever had). The pin
+  and env go to the owner job only; a secret from a job or
+  workflow `env:` moves to the model step (workflow-lint);
 - the v1 toolchain steps (package manager, browser install)
-  become `.github/actions/setup/action.yml`;
+  become `.github/actions/setup/action.yml`; a step that
+  reads a secret stays in the job, in v1 order just ahead of
+  the setup action (a private registry's `.npmrc` still lands
+  before the install), and a repo's own action is kept;
+- the file list ships every script the merged `march.yml`
+  calls, and `workflow-lint` (the gate runs it);
 - `NEXUS_LOOP_MODE`: when the v1 loop pushed to the default
   branch, the report prints
   `gh variable set NEXUS_LOOP_MODE --body owner`, and
@@ -364,7 +375,6 @@ tick).
 
 ## Acceptance
 
-- **A5** The merged `march.yml` keeps the v1 cron, ceiling, model pin, extra env and concurrency group, the toolchain steps become `.github/actions/setup`, workflow-lint passes, and the report prints the `NEXUS_LOOP_MODE` owner line when the v1 loop pushed to the default branch.
 - **A6** The upgrade writes every spec 54-57 knob at its conservative value (Support triage-only, Promote owner, Generators empty, stall_action alert, dimension I off, UI none, cadence unset, chain 0, idle backoff 0), and a test fails when a kit template names a knob the registry lacks.
 - **A7** On a scratch clone of an editorial v1 origin, `--write` yields 52 archive lines (50 + 2 suffixed), 0 open specs, the weekly snapshot gate, content queue and survey refill verbatim in `march.lanes.md` and the cross-link drain in `iterate.lanes.md`, `march.yml` keeping cron `0 * * * *` and ceiling 60, plan-check and the repo's verify green, and a predicted lane dispatch, not an idle tick; a half-done clone and a 40-minute-cron clone also pass.
 - **A8** `--land owner` lands only in an idle window, disables and re-enables march around the push, dispatches and watches the first v2 tick, and `--rollback` restores v1 in one revert commit (tests with a stubbed `gh`).
@@ -379,11 +389,10 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 9 open · 4 closed · next A14
+Measure: 8 open · 5 closed · next A14
 
-- [ ] **58.5** The workflow merge keeps cron, ceiling, model and env · M · closes A5 · needs —
 - [ ] **58.6** Conservative knobs from a registry · S · closes A6 · needs 54.8, 55.5, 56.7, 57.8
-- [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs 58.5, 58.6
+- [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs 58.6
   - Fresh clone of the adopter's origin in the scratchpad only; the local checkout is stale and dirty and is never touched. Gaps become fixes in 58.3-58.6's functions plus fixtures.
 - [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs 58.7
 - [ ] **58.9** The GUI Upgrade banner · S · closes A9 · needs —

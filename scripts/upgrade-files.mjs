@@ -8,9 +8,11 @@
 //
 //   - the import closures (static and dynamic relative imports, and
 //     `new URL('./x', import.meta.url)` loads) of plan-check,
-//     upgrade-plan, claims, cloud/tick, and every script a listed
-//     skill or command calls (next and plot among them, scanned
-//     from their text; a name the kit does not ship is an example);
+//     upgrade-plan, claims, cloud/tick, workflow-lint (the upgrade's
+//     gate runs it), and every script a listed skill or command, or
+//     the march.yml the upgrade merges, calls (next and plot among
+//     them, scanned from their text; a name the kit does not ship is
+//     an example);
 //   - the fixed non-script files: every skill, every command, the
 //     shared toolchain action, and plan-check's own test.
 //
@@ -33,7 +35,9 @@ import { fileURLToPath } from 'node:url'
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Script entries whose closures are always in the set (relative to templates/scripts). */
-export const ENTRIES = Object.freeze(['plan-check.mjs', 'upgrade-plan.mjs', 'claims.mjs', 'cloud/tick.mjs'])
+export const ENTRIES = Object.freeze(['plan-check.mjs', 'upgrade-plan.mjs', 'claims.mjs', 'cloud/tick.mjs', 'workflow-lint.mjs'])
+/** Workflows the upgrade merges into a repo (never copies): the scripts they call ship, or the first tick fails. */
+export const WORKFLOWS = Object.freeze(['.github/workflows/march.yml'])
 /** Fixed non-script files: whole directories (recursive) and single files, relative to templates/. */
 export const FIXED_DIRS = Object.freeze(['skills', 'claude/commands', '.github/actions/setup'])
 export const FIXED_FILES = Object.freeze(['scripts/__tests__/plan-check.test.mjs'])
@@ -113,13 +117,15 @@ export function fixedFiles(root = ROOT) {
   return [...out].sort()
 }
 
-/** The script entries: the fixed ones plus every shipped script a listed skill or command calls. */
+/** The script entries: the fixed ones plus every shipped script a listed skill or command, or a merged workflow, calls. */
 export function entries(root = ROOT) {
   const t = path.join(root, 'templates')
   const out = [...ENTRIES]
-  for (const kit of fixedFiles(root)) {
-    if (!kit.endsWith('.md')) continue
-    for (const s of callsOf(fs.readFileSync(path.join(root, ...kit.split('/')), 'utf8'))) {
+  const sources = [...fixedFiles(root).filter((k) => k.endsWith('.md')), ...WORKFLOWS.map((w) => `templates/${w}`)]
+  for (const kit of sources) {
+    const abs = path.join(root, ...kit.split('/'))
+    if (!fs.existsSync(abs)) continue
+    for (const s of callsOf(fs.readFileSync(abs, 'utf8'))) {
       if (!out.includes(s) && fs.existsSync(path.join(t, 'scripts', ...s.split('/')))) out.push(s)
     }
   }

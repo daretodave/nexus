@@ -163,7 +163,9 @@ test('the dry run reads a fresh fetch of origin in a temporary worktree and writ
   assert.ok(!report.files.some((f) => f.path === 'scratch.txt'));
 
   // The gate, the warnings, the predicted first dispatch and the loop mode.
-  assert.deepEqual(report.gate.map((g) => [g.name, g.ok]), [['plan-check', true], ['plan-check test', true]]);
+  assert.deepEqual(report.gate.map((g) => [g.name, g.ok]), [['plan-check', true], ['plan-check test', true], ['workflow-lint', true]]);
+  assert.equal(status['.github/actions/setup/action.yml'], 'added', 'no v1 march.yml: the kit\'s setup action, filled in');
+  assert.equal(report.workflow, null);
   assert.ok(Array.isArray(report.warnings));
   assert.equal(report.dispatch.kind, 'chunk');
   assert.match(report.dispatch.text, /spec 03/);

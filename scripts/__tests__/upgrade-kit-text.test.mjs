@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { build, check, historyOf, readSnapshot, SNAPSHOT, write } from '../upgrade-kit-text.mjs'
+import { build, check, historyOf, historyOfPath, readSnapshot, SNAPSHOT, write } from '../upgrade-kit-text.mjs'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -47,6 +47,22 @@ test('the leg is red when a template holds text the snapshot lacks, and --write 
   fs.rmSync(root, { recursive: true, force: true })
 })
 
+test('the march.yml prompt is kit text too: red when a prompt line is new, green after --write', async () => {
+  const yml = (line) => `jobs:\n  owner:\n    steps:\n      - uses: anthropics/claude-code-action@v1\n        with:\n          prompt: |\n            You are running <PROJECT>'s loop.\n            ${line}\n`
+  const root = kit({ 'templates/skills/march.md': MARCH, 'templates/skills/iterate.md': ITERATE, 'templates/.github/workflows/march.yml': yml('Begin.') })
+  assert.match((await check(root)).problems.join('\n'), /no entry for march\.yml/)
+  await write(root)
+  assert.deepEqual((await check(root)).problems, [])
+  assert.equal(readSnapshot(root)['march.yml'].paras.length, 2)
+  assert.deepEqual(readSnapshot(root)['march.yml'].patterns, ["You are running <PROJECT>'s loop."])
+  fs.writeFileSync(path.join(root, 'templates', '.github', 'workflows', 'march.yml'), yml('Begin. One tick.'))
+  assert.match((await check(root)).problems.join('\n'), /templates\/\.github\/workflows\/march\.yml holds 1 prompt line\(s\) the kit-text list lacks/)
+  await write(root)
+  assert.deepEqual((await check(root)).problems, [])
+  assert.equal(readSnapshot(root)['march.yml'].paras.length, 3, 'the old line stays')
+  fs.rmSync(root, { recursive: true, force: true })
+})
+
 test('the committed snapshot holds every version of the kit skills in git history', async () => {
   const snap = readSnapshot(REPO)
   assert.ok(fs.existsSync(path.join(REPO, ...SNAPSHOT.split('/'))))
@@ -55,5 +71,8 @@ test('the committed snapshot holds every version of the kit skills in git histor
     if (historyOf(REPO, skill).length < 2) continue // a shallow clone: the snapshot is the history
     assert.deepEqual(new Set(full[skill].paras), new Set(snap[skill].paras), `${skill}: run node scripts/upgrade-kit-text.mjs --write`)
     assert.deepEqual(new Set(full[skill].headers), new Set(snap[skill].headers))
+  }
+  if (historyOfPath(REPO, 'templates/.github/workflows/march.yml').length >= 2) {
+    assert.deepEqual(new Set(full['march.yml'].paras), new Set(snap['march.yml'].paras), 'march.yml: run node scripts/upgrade-kit-text.mjs --write')
   }
 })

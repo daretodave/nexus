@@ -289,5 +289,44 @@
       "```bash node scripts/loop-issue.mjs close-comment \\ --number <N> \\ --commit <commit-sha> \\ --deploy-url <DEPLOY_URL> ```",
       "```markdown - issue: #<N> ```"
     ]
+  },
+  "march.yml": {
+    "headers": [],
+    "paras": [
+      "0cc006f92363b867b2fe5d652c5bb150dd5b99cf",
+      "12cd557487f2764c304c742d4bd830b3f45d70d3",
+      "19d038eab11e71691e58fe29a7be13e51a87d2b6",
+      "1e59b25ed3d2fc3389a25aa339bdd14474c9f1bc",
+      "1e678ca6773625a3d04c032727980ca30fed647a",
+      "24671a1bf0fa67c0497c1a08a13309ed65f38ca7",
+      "2c16187b5d08c93cb9e4af9db85c9b8273b2c182",
+      "2df2d924bdac1c8f0b2268dc090b2603bd192fb8",
+      "394d8c1daeb3cdb5504fdbf95e53fc4a0d80be60",
+      "551fe331dfbf8ae8b86ca8acdec21c76468c0b3f",
+      "5fd6193d80b16d56e8ff2811e5ee9f6a1fedbbad",
+      "6277527d6092fc20ffc02987d7fe9654c52905b0",
+      "6639263dd33a0c40163a1bb6645c42dd8ffa9b42",
+      "7b10cad6c73be7f19d52e80bb5a701767383ee66",
+      "838c9f89ba16f5fc062a37938b503abf88c10eaa",
+      "9266b1e5fc6958ca454ca083fc28f1d954d52873",
+      "9513b756af2512faec9593ea1285c7e02342c51f",
+      "a3a07774962a958f75b7a6783d77e03abb8a4815",
+      "a83c4fc4da7f7140602a8493163aa55d87b722be",
+      "af50efeec4f666c8bf17c5348c0733f79075c9c9",
+      "bdafa41d277a3ffda2f1ad7436dd37d0667a6ed3",
+      "bf9a44f65718ff110c6b40990f3619a99f3bb040",
+      "c4b1254fc3f3fd88528ec2a88d315011149edd28",
+      "ca8948e0d53c1e5b939160be92f4afa1388c61a0",
+      "cf9bc6f5e73ca568098204e2c462e9a4701fcc60",
+      "d062aba462263e323992ffadd38a9b0a18e9ef0a",
+      "d6ae9bf6e54d1a62b02dfbcf85fbc6b3dadbb85d",
+      "e021e7df137280c9f7c94099db807941553e4a5c",
+      "f9d760f54441f6592beb02902fee964908ebf5e8"
+    ],
+    "patterns": [
+      "4. The verify gate (`<PACKAGE_MANAGER> verify`) and deploy gate (`<PACKAGE_MANAGER> deploy:check`) are non-negotiable. Same as local. NEVER --no-verify. Run the gate FOREGROUND and wait for it — never `run_in_background`. Backgrounding the gate is the one thing that wedges this loop: the SDK ends your turn while the gate is still alive, the resume notification is unreliable here, and the run hangs with no commit. If the gate is too slow for one foreground call, run it as sequential foreground legs (each its own blocking call); do not background it. The same holds for agents: every subagent dispatch (the Agent tool, a Workflow) passes run_in_background: false explicitly. Leaving it out is a background dispatch, not a neutral default, and a backgrounded builder's work never lands: the job ends with the turn.",
+      "8. This checkout is in owner mode (an untracked .owner) and the claims session is NEXUS_SESSION (cloud-<run id>): /next claims, settles and lands on <DEFAULT_BRANCH> as the owner's checkout does.",
+      "You are running <PROJECT>'s autonomous loop in CI (GitHub Actions)."
+    ]
   }
 }

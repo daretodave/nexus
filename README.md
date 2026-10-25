@@ -534,7 +534,7 @@ nexus/
 │   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
 │   ├── upgrade-files.mjs              # the v2 kit file list, computed from import closures: the CLI's bundled kit and upgrade.md's copy list (the upgrade leg)
 │   ├── __tests__/upgrade-files.test.mjs # its suite (run by the upgrade leg)
-│   ├── upgrade-kit-text.mjs           # every header and paragraph the kit's march and iterate skills ever held: how the upgrade tells a repo's own steps from kit text (the upgrade leg)
+│   ├── upgrade-kit-text.mjs           # every header and paragraph the kit's march and iterate skills ever held, and every line its march.yml prompt held: how the upgrade tells a repo's own steps and prompt lines from kit text (the upgrade leg)
 │   ├── upgrade-kit-text.json          # its committed snapshot (--write folds a kit edit in; the CLI bundles it as kit-text.json)
 │   ├── __tests__/upgrade-kit-text.test.mjs # its suite (run by the upgrade leg)
 │   ├── secrets.mjs                    # npm run secrets: status, set, import, names, check, push, audit, request, run, scan; never a value (+ plan/secrets-manifest.mjs, secrets-vault.mjs, secrets-keychain.mjs, secrets-sinks.mjs, secrets-audit.mjs, secrets-run.mjs, secrets-scan.mjs; twins)

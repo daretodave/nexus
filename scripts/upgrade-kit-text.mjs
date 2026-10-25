@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// scripts/upgrade-kit-text.mjs: every header and paragraph the kit's march and iterate skills ever held (spec 58).
+// scripts/upgrade-kit-text.mjs: every header and paragraph the kit's march and iterate skills ever held, and every
+// line the kit's march.yml prompt ever held (spec 58; the workflow merge carries a v1 prompt line no kit held).
 //
 // `nexus upgrade` moves a v1 repo's own march and iterate steps into the lanes files and replaces the kit's. To tell
 // one from the other it needs every version of templates/skills/march.md and iterate.md, not one tag: a v1 adopter
@@ -26,8 +27,11 @@ const kt = () => import(pathToFileURL(path.join(ROOT, 'packages', 'cli', 'server
 const git = (root, args) => spawnSync('git', args, { cwd: root, encoding: 'utf8', windowsHide: true, maxBuffer: 256 * 1024 * 1024 })
 
 /** Every committed version of templates/skills/<skill> (renames followed): [text]. Empty outside a git checkout. */
-export function historyOf(root, skill) {
-  const log = git(root, ['log', '--format=@%H', '--name-only', '--follow', '--', `templates/skills/${skill}`])
+export const historyOf = (root, skill) => historyOfPath(root, `templates/skills/${skill}`)
+
+/** Every committed version of one repo path (renames followed): [text]. Empty outside a git checkout. */
+export function historyOfPath(root, rel) {
+  const log = git(root, ['log', '--format=@%H', '--name-only', '--follow', '--', rel])
   if (log.status !== 0) return []
   const out = []
   let sha = null
@@ -51,32 +55,49 @@ export function readSnapshot(root = ROOT) {
   }
 }
 
-const current = (root, skill) => {
+const readOr = (abs) => {
   try {
-    return fs.readFileSync(path.join(root, 'templates', 'skills', skill), 'utf8')
+    return fs.readFileSync(abs, 'utf8')
   } catch {
     return ''
   }
 }
+const current = (root, skill) => readOr(path.join(root, 'templates', 'skills', skill))
+const currentPrompt = (root, rel) => readOr(path.join(root, 'templates', ...rel.split('/')))
 
 /** The kit-text list: per skill, the snapshot, the current template and (with `history`) every version in git. */
 export async function build(root = ROOT, { history = true } = {}) {
-  const { TRAIN, textOf, mergeText, toJson } = await kt()
+  const { TRAIN, PROMPTS, textOf, textOfPrompt, mergeText, toJson } = await kt()
   const snap = readSnapshot(root)
   const out = {}
   for (const skill of Object.keys(TRAIN)) {
     const versions = history ? historyOf(root, skill) : []
     out[skill] = toJson(mergeText(snap[skill], textOf(current(root, skill)), ...versions.map(textOf)))
   }
+  for (const [key, rel] of Object.entries(PROMPTS)) {
+    const versions = history ? historyOfPath(root, `templates/${rel}`) : []
+    out[key] = toJson(mergeText(snap[key], textOfPrompt(currentPrompt(root, rel)), ...versions.map(textOfPrompt)))
+  }
   return out
 }
 
 /** The upgrade leg's half: { problems, counts }. */
 export async function check(root = ROOT) {
-  const { TRAIN, textOf } = await kt()
+  const { TRAIN, PROMPTS, textOf, textOfPrompt } = await kt()
   const snap = readSnapshot(root)
   const problems = []
   const counts = {}
+  for (const [key, rel] of Object.entries(PROMPTS)) {
+    const have = snap[key]
+    if (!have) {
+      problems.push(`${SNAPSHOT}: no entry for ${key}; run node scripts/upgrade-kit-text.mjs --write`)
+      continue
+    }
+    const paras = new Set(have.paras)
+    const lack = [...textOfPrompt(currentPrompt(root, rel)).paras].filter((p) => !paras.has(p))
+    if (lack.length) problems.push(`${SNAPSHOT}: templates/${rel} holds ${lack.length} prompt line(s) the kit-text list lacks; run node scripts/upgrade-kit-text.mjs --write`)
+    counts[key] = { headers: 0, paras: have.paras.length }
+  }
   for (const skill of Object.keys(TRAIN)) {
     const have = snap[skill]
     if (!have) {
