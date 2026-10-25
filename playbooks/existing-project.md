@@ -274,7 +274,9 @@ gate" for the full version):
 2. **Not re-shipping the same chunk next tick.** With `main`
    untouched until merge, the chunk's line would look ready
    forever. `ship-a-chunk` adds it to the **Held** lane as
-   `- **<NN.k>** · blocked: awaiting PR #<n> merge <date>` in
+   `- **<NN.k>** · blocked: awaiting PR merge · since: <date>
+   · until: PR #<n> merges · max_age: 14d` (a lock that times
+   out: `concepts/plan-shape.md`) in
    the same commit that ships the chunk to the branch, and the
    pick order already skips Held. Once the PR merges, the
    close (line out, A-IDs out, archive line in) lands on `main`

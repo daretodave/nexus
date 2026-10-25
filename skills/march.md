@@ -92,8 +92,24 @@ Any veto or release: `node scripts/plan/promote.mjs sweep
 issue: `gh issue close <N> --comment "veto window passed; this
 spec is now built"`. Landing first matters: a closed issue
 whose Held line still exists reads as a veto, whoever closed
-it. The sweep is housekeeping; the tick goes on to the `pre`
-lanes.
+it.
+
+Then the lock sweep: no lock holds forever. Every other Held
+line, lane lock and owner-blocked row carries `since:`,
+`until:` and `max_age:` (`concepts/plan-shape.md`, "Locks
+time out"):
+
+```bash
+node scripts/plan/locks.mjs sweep --write  # release | fallback | ask, one line each
+```
+
+`release` took the lock's line out: gate, one commit (`plan:
+lock sweep — released <slug>`), land. `fallback` is the
+lock's own `fallback:`: apply it now, then remove the lock or
+give it a new `since:`. `ask` filed (or re-pinged weekly) the
+one `Lock past max_age: <slug>` issue, a needs-user ask; an
+ask whose lock is gone is closed. Both sweeps are
+housekeeping; the tick goes on to the `pre` lanes.
 
 ### Step 0.5 — Pre lanes
 
@@ -217,6 +233,7 @@ plan/AUDIT.md                        # iterate queue
 plan/CRITIQUE.md                     # critique queue + rate-limit metadata
 plan/CANDIDATES.md             # expand output + rate-limit metadata
 node scripts/plan/promote.mjs sweep  # Step 0: veto or release auto-promoted Held specs
+node scripts/plan/locks.mjs sweep    # Step 0: locks past max_age relax or ask once
 node scripts/plan/lanes.mjs march pre|queue  # project lanes (skills/march.lanes.md)
 node scripts/plan/motion.mjs react    # Step 0.5: an open motion stall under stall_action promote
 node scripts/plan/refill.mjs --write # 3a': the stock refill lane runs bearings' generators

@@ -58,6 +58,14 @@ dimension **×1.5** (cap 10).
 `[needs-user-call]`, and `[user-issue #N]` rows are preserved
 verbatim when regenerating the audit block.
 
+**Locks time out:** a `[needs-user-call]` row iterate files, a
+lane lock and a Held line each carry `since: <date> · until:
+<date or condition> · max_age: <n>d` (optional `· fallback:`;
+`lock: <slug>` outside the Held lane;
+`concepts/plan-shape.md`). One without them is an A finding.
+`node scripts/plan/locks.mjs list` shows each lock's age;
+`/march` Step 0 sweeps them.
+
 ## 4. The procedure
 
 1. **Sync:** `git pull --ff-only`.

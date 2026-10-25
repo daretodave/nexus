@@ -46,7 +46,7 @@ const NAME = /^[a-z0-9][a-z0-9-]*$/;
 const LETTERS = 'YXWVUTSRQPON';
 
 /** The text with HTML comments and fenced code blanked line for line, so a commented example lane is no lane. */
-function live(text) {
+export function live(text) {
   const out = [];
   let comment = false;
   let fence = false;

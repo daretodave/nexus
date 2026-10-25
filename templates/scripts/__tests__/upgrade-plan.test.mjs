@@ -141,7 +141,7 @@ test('open and blocked rows become spec stubs; blocked ones get a Held line', ()
   const polish = files.find((f) => f.path === 'plan/08-polish-404-about-footer.md').content
   assert.match(polish, /404 page, the about page/, 'the per-phase scope fills Why when there is no brief')
   const readme = files.find((f) => f.path === 'plan/README.md').content
-  assert.match(readme, /^- \*\*06\*\* · blocked: the payments token lacks scope 2026-08-23$/m)
+  assert.match(readme, /^- \*\*06\*\* · blocked: the payments token lacks scope · since: 2026-08-23 · until: the owner unblocks it · max_age: 14d$/m)
   assert.doesNotMatch(readme, /01-bootstrap\.md\)/, 'template rows for specs that do not exist leave the table')
   assert.match(readme, /^\| 7 \| Admin console \| \[07-admin-console\.md\]\(07-admin-console\.md\) \| planned \| not chunked \|$/m)
   assert.match(readme, /^\| 6 \| Checkout flow \| \[06-checkout-flow\.md\]\(06-checkout-flow\.md\) \| held \| not chunked \|$/m)

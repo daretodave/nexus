@@ -110,9 +110,13 @@ current templates carry the fix; confirm your copies do
    *chunk-shaped* (ambiguous scope, missing paid dependency,
    infra failure outside local code), it adds the chunk to
    `plan/README.md`'s **Held** lane as
-   `- **<NN.k>** · blocked: <short reason> <ISO-date>`,
-   commits that state change, notifies (Step 2), and returns
-   cleanly.
+   `- **<NN.k>** · blocked: <short reason> · since: <ISO-date>
+   · until: <what unblocks it> · max_age: 14d`, commits that
+   state change, notifies (Step 2), and returns cleanly. A
+   Held line is a lock that times out: past `max_age` the
+   `/march` lock sweep files one needs-user ask, re-pinged
+   weekly, so nothing waits on you unseen
+   (`concepts/plan-shape.md`, "Locks time out").
 2. **The pick order skips Held.** `/march`'s ready-chunk check
    never picks a held chunk, so the next tick flows past it
    into the next ready chunk, or data / expand / iterate work.

@@ -517,6 +517,7 @@ nexus/
 │   ├── plan/motion.mjs                # the motion pulse and heartbeat.yml's motion-stall alarm (twin)
 │   ├── plan/unreleased.mjs            # /digest's unreleased CLI fixes: packages/cli commits on main since the last cli-v* tag
 │   ├── __tests__/unreleased.test.mjs  # its pure suite (scripts leg); __tests__/unreleased-run.test.mjs, a scratch repo (scripts-git)
+│   ├── plan/locks.mjs                 # lock timeouts: past max_age a lock takes its fallback or asks once (twin)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
@@ -707,6 +708,7 @@ nexus/
     │   ├── plan/lanes.mjs             # project lanes at a hook; check; a skills re-sync that keeps lanes files
     │   ├── plan/refill.mjs            # the stock refill lane: each listed generator under its target, weekly cap and cadence
     │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react
+    │   ├── plan/locks.mjs             # lock timeouts: Held lines, lane locks, owner-blocked rows; release, fallback or one ask
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
     │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
     │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
@@ -757,6 +759,7 @@ nexus/
     │   ├── __tests__/lanes.test.mjs   # lane blocks, Lanes off, the Asap yield, the keeping re-sync
     │   ├── __tests__/refill.test.mjs  # the refill lane and both generators: dry runs write nothing, a rerun files nothing
     │   ├── __tests__/motion.test.mjs  # the motion pulse, one stall issue over a Sep-Oct decline, stall_action, the generator
+    │   ├── __tests__/locks.test.mjs   # lock timeouts: release keeps plan-check green; one ask over 30 ticks, re-pinged weekly
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver

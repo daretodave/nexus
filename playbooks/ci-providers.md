@@ -335,8 +335,10 @@ failure.
 What genuinely changes: the loop can't tell "PR merged" from
 "PR still open" just by looking at `main`, so it can't safely
 close the chunk there yet. `ship-a-chunk` adds it to the Held
-lane as `- **<NN.k>** · blocked: awaiting PR #<n> merge
-<date>` instead (existing vocabulary — no new state); the pick
+lane as `- **<NN.k>** · blocked: awaiting PR merge · since:
+<date> · until: PR #<n> merges · max_age: 14d` instead
+(existing vocabulary — no new state; a Held line is a lock
+that times out, `concepts/plan-shape.md`); the pick
 order already skips Held, so it won't re-ship the same chunk
 next tick. Once the PR merges, the close (line out, A-IDs out,
 archive line in) is on `main`, and the Held line goes with

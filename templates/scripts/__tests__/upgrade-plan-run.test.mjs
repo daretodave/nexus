@@ -93,7 +93,7 @@ test('--write converts the v1 plan to one plan-check passes, archive dated from 
   assert.ok(fs.existsSync(path.join(r.dir, 'plan/03-payments.md')))
   assert.ok(fs.existsSync(path.join(r.dir, 'plan/04-polish.md')))
   const readme = fs.readFileSync(path.join(r.dir, 'plan/README.md'), 'utf-8')
-  assert.match(readme, /^- \*\*03\*\* · blocked: no token 2026-06-02$/m)
+  assert.match(readme, /^- \*\*03\*\* · blocked: no token · since: 2026-06-02 · until: the owner unblocks it · max_age: 14d$/m)
   const check = node(r.dir, [PLAN_CHECK])
   assert.equal(check.status, 0, check.stdout + check.stderr)
   assert.match(check.stdout, /plan-check: green \(2 specs, 0 chunks\)/)

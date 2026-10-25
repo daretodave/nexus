@@ -110,7 +110,8 @@ its `N left`). Whatever builds the next chunk (`/next`, or
 
 and within a spec, the first chunk whose `needs` are done.
 Chunks in the **Held** lane wait on a person's word and are
-never picked. A candidate `/expand` promoted on its own
+never picked, though never forever: each Held line is a lock
+that times out (below). A candidate `/expand` promoted on its own
 (`Promote: aged`) waits there for its veto window, on a line
 `scripts/plan/promote.mjs` writes and `plan-check` parses:
 
@@ -127,6 +128,42 @@ forward (each pick counted done for what needs it), so
 `/plot` can show where a new task lands before and after it
 slots it in: `/plot asap` appends to the Asap lane, `/plot
 anytime` leaves the row in table order.
+
+## Locks time out
+
+A lock is anything that stops the loop until a person or a
+condition says go: a Held line, a lane lock in a lanes file
+(`skills/march.lanes.md`), an owner-blocked row in
+`AUDIT.md` or `CRITIQUE.md`. A lock with no end holds
+forever: a lane "locked until the gap table reads zero" that
+nothing ever zeroes stops its loop for good. So every lock
+carries its own timeout, as fields joined by ` · `:
+
+```
+- **07.3** · blocked: the token lacks scope · since: 2026-10-20 · until: the owner rotates it · max_age: 14d
+- lock: gap-table · since: 2026-10-01 · until: the gap table reads zero · max_age: 21d · fallback: release
+```
+
+| Field | Means |
+|---|---|
+| `since:` | the day the lock was set (`YYYY-MM-DD`); its age counts from here |
+| `until:` | a date, or a condition in words; a date gone by ends the lock too |
+| `max_age:` | how long it may hold, `<n>d`; `Lock max age` in `bearings.md` (14d) is the default outside the Held lane |
+| `fallback:` | optional: what the loop does once it is past its time |
+| `lock:` | the lock's name outside the Held lane (a Held line is named by its id) |
+
+An auto-promoted Held line already has all of it: its `veto
+until` date is its until, and its since is that date less its
+`max_age`. `/march` sweeps the locks at Step 0, after the veto
+sweep (`node scripts/plan/locks.mjs sweep --write`). Past its
+time a lock relaxes to its fallback: `release` takes the line
+out, any other fallback is applied by the tick. With none
+declared, the loop files exactly one needs-user ask, a `Lock
+past max_age: <slug>` issue (plus `notify.mjs` in a repo that
+has it), re-pinged weekly by comment and listed first in
+`/oversight`; the ask closes once the lock is gone. Answer it
+by removing the lock, setting a new `since:`, or adding a
+`fallback:`.
 
 ## Closing a chunk
 
@@ -216,7 +253,8 @@ verify composition) makes the shape mechanical:
   spec that is gone, each row's `N left` is true, and the
   Asap/Held lanes name only chunks (or specs) still in the
   plan; an auto-promoted Held line keeps its shape and holds
-  a spec still in the plan; `ARCHIVE.md` lines parse;
+  a spec still in the plan, and every other Held line carries
+  `since:`, `until:` and `max_age:`; `ARCHIVE.md` lines parse;
 - with `--since <ref>`: a chunk that left the plan has its
   archive line (or was split into suffixed children), a
   deleted spec has its spec-complete line (a vetoed

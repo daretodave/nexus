@@ -27,7 +27,8 @@
 //     brief (or the per-phase scope) folded into Design, one
 //     acceptance ID, `Not chunked yet.`, and a roadmap row
 //   - `[blocked: <reason> <date>]` rows become a spec stub too,
-//     plus a Held line `- **<NN>** · blocked: <reason> <date>`
+//     plus a Held line `- **<NN>** · blocked: <reason> · since:
+//     <date> · until: the owner unblocks it · max_age: 14d`
 //
 // It never deletes the v1 files (Step 5 does) and never touches
 // an existing spec or archive line, so a second run adds nothing.
@@ -366,7 +367,9 @@ export function convert({ buildPlan, briefs = {}, readme, archive, existing = []
     const name = `${nn}-${slug(r.title, num)}.md`
     files.push({ path: `${label}/${name}`, kind: 'new', content: specStub(r, nn, briefFor(r.id), scopes.get(r.id), today) })
     newRows.push(`| ${num} | ${r.title.replace(/\|/g, '/')} | [${name}](${name}) | ${r.status === 'blocked' ? 'held' : 'planned'} | not chunked |`)
-    if (r.status === 'blocked') held.push(`- **${nn}** · blocked: ${r.reason}${r.date ? ` ${r.date}` : ''}`)
+    // A Held line is a lock that times out (concepts/plan-shape.md):
+    // aged from the day it blocked, so an old block asks the owner.
+    if (r.status === 'blocked') held.push(`- **${nn}** · blocked: ${r.reason} · since: ${r.date || today} · until: the owner unblocks it · max_age: 14d`)
   }
 
   const keep = new Set([...existing.map((s) => s.name), ...files.map((f) => path.basename(f.path))])

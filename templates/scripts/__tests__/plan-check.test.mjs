@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseChunk, parseSpec, checkPlan, checkHistory, archived, parseAutoHeld, runCheck, loadPlanDir } from '../plan-check.mjs'
+import { parseChunk, parseSpec, checkPlan, checkHistory, archived, parseAutoHeld, parseLock, laneText, runCheck, loadPlanDir } from '../plan-check.mjs'
 
 const spec = (body) => parseSpec('plan/07-search.md', `# 07 — Search\n\n${body}`)
 
@@ -126,11 +126,52 @@ test('an auto-promoted Held line keeps its shape and holds a spec in the plan', 
   const s = spec(GOOD)
   const held = (line) => `**Held** (waits):\n\n${line}\n\n## Specs\n\n${README}`
   assert.deepEqual(checkPlan({ specs: [s], readme: held('- 07 · auto-promoted, veto until 2026-10-28 (#123) · max_age: 3d · fallback: release'), archive: null }), [])
-  assert.deepEqual(checkPlan({ specs: [s], readme: held('- 7 · auto-promoted, veto until 2026-10-28 (#123)'), archive: null }), [])
+  assert.deepEqual(checkPlan({ specs: [s], readme: held('- 7 · auto-promoted, veto until 2026-10-28 (#123) · max_age: 3d'), archive: null }), [])
+  // No max_age, no lock timeout: rejected.
+  assert.match(checkPlan({ specs: [s], readme: held('- 07 · auto-promoted, veto until 2026-10-28 (#123)'), archive: null }).join('\n'), /auto-promoted Held line reads/)
   assert.match(checkPlan({ specs: [s], readme: held('- 07 · auto-promoted, veto soon'), archive: null }).join('\n'), /auto-promoted Held line reads/)
-  assert.match(checkPlan({ specs: [s], readme: held('- 09 · auto-promoted, veto until 2026-10-28 (#4)'), archive: null }).join('\n'), /no spec 09 is in the plan/)
-  assert.deepEqual(parseAutoHeld('- 59 · auto-promoted, veto until 2026-10-28 (#123) · max_age: 3d · fallback: release'), { spec: '59', until: '2026-10-28', issue: 123 })
+  assert.match(checkPlan({ specs: [s], readme: held('- 09 · auto-promoted, veto until 2026-10-28 (#4) · max_age: 3d'), archive: null }).join('\n'), /no spec 09 is in the plan/)
+  assert.deepEqual(parseAutoHeld('- 59 · auto-promoted, veto until 2026-10-28 (#123) · max_age: 3d · fallback: release'), { spec: '59', until: '2026-10-28', issue: 123, maxAge: 3 })
   assert.equal(parseAutoHeld('- 59 (waits on the owner)'), null)
+})
+
+test('every other Held line is a lock: plan-check rejects one without since:, until: and max_age:', () => {
+  const s = spec(GOOD)
+  const held = (...lines) => `**Held** (waits on the owner's word; never picked until the
+line goes):
+
+${lines.join('\n')}
+
+## Specs
+
+${README}`
+  const ok = '- **07.2** · blocked: no token · since: 2026-10-20 · until: the owner rotates it · max_age: 14d · fallback: release'
+  assert.deepEqual(checkPlan({ specs: [s], readme: held(ok), archive: null }), [])
+  assert.deepEqual(checkPlan({ specs: [s], readme: held('- (none)'), archive: null }), [])
+  // Wrapped over two lines, as a hand-written Held line often is.
+  assert.deepEqual(checkPlan({ specs: [s], readme: held('- **07.2** · blocked: no token · since: 2026-10-20', '  · until: PR #12 merges · max_age: 7d'), archive: null }), [])
+  const bare = checkPlan({ specs: [s], readme: held('- **07.2** · blocked: no token 2026-10-20'), archive: null }).join('\n')
+  assert.match(bare, /plan\/README\.md:4: a Held line is a lock that times out, and this one lacks `since:`, `until:`, `max_age:`/)
+  assert.match(checkPlan({ specs: [s], readme: held('- **07.2** · held: x · since: 2026-10-20 · until: later'), archive: null }).join('\n'), /lacks `max_age:` \(/)
+  assert.match(checkPlan({ specs: [s], readme: held('- **07.2** · held: x · since: 2026-10-20 · until: later · max_age: two weeks'), archive: null }).join('\n'), /lacks `max_age:`/)
+  assert.match(checkPlan({ specs: [s], readme: held('- **07.2** · held: x · since: soon · until: later · max_age: 3d'), archive: null }).join('\n'), /lacks `since:`/)
+  // A sub-bullet is not part of the line.
+  assert.match(checkPlan({ specs: [s], readme: held('- **07.2** · held: x · since: 2026-10-20', '  - until: later · max_age: 3d'), archive: null }).join('\n'), /lacks `until:`, `max_age:`/)
+})
+
+test('parseLock reads a lock\'s fields, and an auto-promotion\'s window as one', () => {
+  assert.deepEqual(parseLock('- lock: gap-table · since: 2026-10-01 · until: the gap table reads zero · max_age: 21d · fallback: release'),
+    { slug: 'gap-table', since: '2026-10-01', until: 'the gap table reads zero', maxAge: 21, fallback: 'release', auto: null, untilDate: null })
+  const row = parseLock('- [needs-user-call] pick the palette · lock: palette · since: 2026-10-02 · until: 2026-10-30 · max_age: 14d')
+  assert.equal(row.slug, 'palette')
+  assert.equal(row.untilDate, '2026-10-30')
+  const auto = parseLock('- 59 · auto-promoted, veto until 2026-10-28 (#123) · max_age: 3d · fallback: release')
+  assert.equal(auto.since, '2026-10-25')
+  assert.equal(auto.until, '2026-10-28')
+  assert.equal(auto.maxAge, 3)
+  assert.equal(auto.auto.issue, 123)
+  assert.deepEqual(parseLock('- **07.2** · blocked: x'), { slug: null, since: null, until: null, maxAge: null, fallback: null, auto: null, untilDate: null })
+  assert.equal(laneText(['- **07.2** · a', '  · until: b', '  - sub', 'next'], 0), '- **07.2** · a · until: b')
 })
 
 test('archived() matches the id exactly, with an optional A-ID note', () => {
@@ -149,9 +190,9 @@ test('the roadmap links no spec that is gone, and its N left is true', () => {
 test('the Asap and Held lanes name only chunks or specs still in the plan', () => {
   const s = spec(GOOD)
   const lanes = (asap, held) => `**Asap** (in order):\n\n${asap}\n\n**Held** (waits):\n\n${held}\n\n## Specs\n\n${README}\n- **07.1** not a lane line`
-  assert.deepEqual(checkPlan({ specs: [s], readme: lanes('- **07.3**', '- **07.2** · blocked: x 2026-10-20'), archive: null }), [])
+  assert.deepEqual(checkPlan({ specs: [s], readme: lanes('- **07.3**', '- **07.2** · blocked: x · since: 2026-10-20 · until: the owner says go · max_age: 14d'), archive: null }), [])
   assert.deepEqual(checkPlan({ specs: [s], readme: lanes('- **07**', '- (none)'), archive: null }), [])
-  const f = checkPlan({ specs: [s], readme: lanes('- **07.1**', '- **09.4** · blocked: x'), archive: null }).join('\n')
+  const f = checkPlan({ specs: [s], readme: lanes('- **07.1**', '- **09.4** · blocked: x · since: 2026-10-20 · until: 2026-11-01 · max_age: 14d'), archive: null }).join('\n')
   assert.match(f, /Asap lane names 07\.1/)
   assert.match(f, /Held lane names 09\.4/)
 })

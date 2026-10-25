@@ -112,6 +112,12 @@ only with `--add`.
    1 on it, so put `check` in your verify command.
 3. **A `pre` lane that never yields.** It can't: the script
    skips every `pre` lane while an Asap chunk is ready.
+4. **A lane that locks forever** ("until the gap table reads
+   zero", and nothing zeroes it). Write the lock as a line in
+   its block, `- lock: <slug> · since: <date> · until:
+   <condition> · max_age: <n>d · fallback: <what>`: past
+   `max_age`, `/march`'s lock sweep applies the fallback or
+   asks the owner once ([`../concepts/plan-shape.md`](../concepts/plan-shape.md#locks-time-out)).
 
 ## See also
 

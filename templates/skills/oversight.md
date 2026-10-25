@@ -72,13 +72,20 @@ In parallel where independent:
 11. `node scripts/plan/promote.mjs sweep` — auto-promoted specs
     still in their veto window (`skills/expand.md` Step 4b; a
     dry run writes nothing).
+12. `node scripts/plan/locks.mjs list` and the open
+    `loop:lock` issues — every lock (Held line, lane lock,
+    owner-blocked row) with its age; one past its time with no
+    `fallback:` has its one `Lock past max_age` ask.
 
 ## 4. The briefing (~25 lines max)
 
 ```
 oversight — <ISO date>
 
-auto-promoted (veto window; listed first, before anything else)
+locks past their time (listed first: each waits on you)
+- <slug> · <why> (#<issue>)   (or "none")
+
+auto-promoted (veto window; listed before the rest)
 - <NN> <title> · veto until <date> (#<issue>)   (or "none")
 
 shipping
@@ -218,9 +225,14 @@ For each answer:
 
 - **"Refresh spec" / "Split it"** → run the `/plan-a-spec
   <NN>` flow inline.
-- **"Hold"** → add `- **<NN.k>** · held: <reason> (oversight
-  <date>)` to the Held lane in `plan/README.md`. Unholding is
-  removing the line.
+- **"Hold"** → add `- **<NN.k>** · held: <reason> · since:
+  <today> · until: <date or condition> · max_age: <Lock max
+  age>` to the Held lane in `plan/README.md` (a lock that
+  times out; `plan-check` rejects one without them). Unholding
+  is removing the line.
+- **"Answer a lock's ask"** → remove the lock, set a new
+  `since:` (keep waiting) or add a `fallback:`. The next
+  `/march` lock sweep closes its `Lock past max_age` issue.
 - **"Drop"** → remove the chunk and the A-IDs only it closed,
   fix the Measure line (dropped IDs count as closed), and
   archive `- <date> · <NN.k> · dropped via oversight: <reason>

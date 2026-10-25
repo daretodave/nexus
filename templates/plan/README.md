@@ -17,7 +17,9 @@ needs are done):
 - (none yet)
 
 **Held** (waits on a person's word; never picked until the
-line goes):
+line goes; each line is a lock that times out:
+`- **<NN.k>** · <reason> · since: <date> · until: <date or
+condition> · max_age: 14d`, an optional `· fallback: release`):
 
 - (none yet)
 

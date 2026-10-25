@@ -228,12 +228,22 @@ A methodology rule in `concepts/plan-shape.md` and
 - Every lane lock, Held line and owner-blocked row carries
   `until:` (a date or a condition) and `max_age:` (default
   `14d`). An optional `fallback:` names what happens when
-  `max_age` passes.
+  `max_age` passes. (Decided in 57.5: a lock also carries
+  `since: <date>`, the day it was set, because age needs a
+  start; an auto-promoted line's is its veto date less its
+  `max_age`. Outside the Held lane a lock names itself with
+  `lock: <slug>`; a Held line is named by its id. A date
+  `until:` gone by ends the lock too.)
 - Past `max_age`, the loop applies the fallback. With none
   declared, it files exactly one needs-user ask: `notify.mjs`
   in adopters, a `needs-user` issue in nexus. The ask is
   deduped by the lock's slug, re-pinged weekly by comment and
-  listed first in `/oversight`.
+  listed first in `/oversight`. (Decided in 57.5: the issue,
+  `Lock past max_age: <slug>`, is the ask's dedup record in
+  both, since a fresh cloud checkout has no other state; an
+  adopter's `notify.mjs` fires beside it on the open and each
+  re-ping. `scripts/plan/locks.mjs sweep` runs at `/march`
+  Step 0, after the veto sweep.)
 - `plan-check` parses `until:` and `max_age:` on Held lines.
 - v1 adopters get the rule through spec 58's upgrade; no v1
   patch path carries it.
@@ -314,7 +324,6 @@ The Held line for an auto-promotion:
 
 - **A2** Independent re-evidence raises a Pending row's score by +0.5 (cap +2). Pending above `pending_cap` shrinks by promotion or by at most 5 stale rejections a pass, each with a reason and listed in the digest.
 - **A6** `/iterate` dimension I files `category: loop-config` rows whose `next` names a concrete repo variable or bearings line, ships at most one per 7 days, and files a YAML tuning as `[needs-user-call]`.
-- **A7** Every lane lock, Held line and owner-blocked row carries `until:` and `max_age:`. Past `max_age` it relaxes to its fallback or files exactly one needs-user ask, re-pinged weekly; `plan-check` rejects a Held line without them.
 - **A8** Queue-file headers are ≤ 20 lines, the `state-size` leg fails an oversize fixture, and nexus's `AUDIT.md` is compacted, with no Done row older than 30 days.
 - **A9** nexus's refill lane runs `cli-ci-red`, `cli-deps` and `ui-walk` under the generator contract, each with a test, and files AUDIT rows only for a red cli-ci run, a stale dependency or a walk finding.
 
@@ -324,9 +333,8 @@ The Held line for an auto-promotion:
 
 ## Chunks
 
-Measure: 5 open · 4 closed · next A10
+Measure: 4 open · 5 closed · next A10
 
-- [ ] **57.5** Lock timeouts, with the Held-line gate check · S · closes A7 · needs —
 - [ ] **57.6** Pending stays live: re-evidence scoring and the cap · S · closes A2 · needs —
 - [ ] **57.7** State diet: header shape, state-size leg, nexus compaction · M · closes A8 · needs —
   - A new leg changes the leg count in `bearings.md` and `agents.md` rule 3 in the same commit.

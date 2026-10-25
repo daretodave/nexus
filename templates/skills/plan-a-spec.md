@@ -191,7 +191,9 @@ If planning shows the plan is missing an initiative entirely:
 1. **The spec's row or outcome is itself ambiguous.** Fix the
    outcome first in its own commit; retry. If it can't be
    clarified without user input, put the spec in the **Held**
-   lane with the question, and stop.
+   lane with the question (`- **<NN>** · held: <question> ·
+   since: <today> · until: the owner answers · max_age: 14d`),
+   and stop.
 2. **Design contradicts a contract.** Surface it; do not
    silently re-decide the contract.
 

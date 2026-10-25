@@ -51,12 +51,17 @@ misconfiguration (§6).
 
 9. `node scripts/plan/promote.mjs sweep` — auto-promotions
    still in their veto window (dry: it writes nothing).
+10. `node scripts/plan/locks.mjs list` and the open
+   `loop:lock` issues — every lock with its age; one past its
+   time with no fallback has its one `Lock past max_age` ask.
 
 ## 4. The briefing (~20 lines)
 
-Auto-promoted first: each spec in its veto window, as `NN
-<title> · veto until <date> (#N)`, so the owner sees what the
-loop is about to build before anything else · Shipping (chunks archived since last oversight, verbs mix) · Queues
+Locks past their time first, as `<slug> · <why> (#N)`, then
+the auto-promoted: each spec in its veto window, as `NN
+<title> · veto until <date> (#N)`, so the owner sees what
+waits on them and what the loop is about to build before
+anything else · Shipping (chunks archived since last oversight, verbs mix) · Queues
 (AUDIT n / CRITIQUE n / candidates n / needs-user n) · Blocked
 rows with reasons · Flags (anything unusual: fix-streaks,
 stale critique, gate additions). Plain text, no questions yet.
@@ -71,7 +76,11 @@ stale critique, gate additions). Plain text, no questions yet.
 4. Apply answers: promote candidate (move to Promoted, write
    `plan/<NN>-<slug>.md` with the next free number, A-IDs and
    `Not chunked yet.`, add its roadmap row) · unhold (remove
-   the Held line, spec amended per the answer) · drop (chunk
+   the Held line, spec amended per the answer) · hold
+   (`- **<NN.k>** · held: <reason> · since: <today> · until:
+   <date or condition> · max_age: 14d`) · answer a lock's ask
+   (remove the lock, set a new `since:`, or add a `fallback:`;
+   the next lock sweep closes the ask) · drop (chunk
    and its A-IDs out, Measure fixed, archive line `dropped:
    <reason>`) · release an auto-promotion early (remove its
    Held line; once landed, close its veto issue with "released

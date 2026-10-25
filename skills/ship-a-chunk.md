@@ -195,9 +195,10 @@ Repo-shaped — stop the tick:
 1. **Gate red ≥3 times on the same root cause.**
 2. **`git pull` divergence.**
 
-Chunk-shaped — add `- **<NN.k>** · blocked: <reason> <date>`
-to the Held lane in `plan/README.md`, commit that state
-change, return cleanly:
+Chunk-shaped — add `- **<NN.k>** · blocked: <reason> · since:
+<date> · until: <what unblocks it> · max_age: 14d` (a lock
+that times out) to the Held lane in `plan/README.md`, commit
+that state change, return cleanly:
 
 3. **The spec contradicts bearings irreconcilably.**
 4. **Chunk scope stays genuinely ambiguous** after reading the

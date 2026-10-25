@@ -26,8 +26,11 @@
 //     its `N left` counts match, and its Asap/Held lanes name only
 //     chunks (or specs) still in the plan; ARCHIVE.md lines parse
 //   - an auto-promoted Held line keeps its shape (`- NN ·
-//     auto-promoted, veto until YYYY-MM-DD (#N) · …`) and holds a
-//     spec still in the plan
+//     auto-promoted, veto until YYYY-MM-DD (#N) · max_age: <n>d ·
+//     …`) and holds a spec still in the plan; every other Held line
+//     is a lock that times out, so it carries `since: <date>`,
+//     `until: <date or condition>` and `max_age: <n>d` (an optional
+//     `fallback:` too; scripts/plan/locks.mjs acts on them)
 //
 // plan/ is read as it will read once plan/pending/ settles (the
 // settled view, scripts/plan/settled.mjs): each pending file's
@@ -231,7 +234,8 @@ function checkRoadmap(specs, readme, chunkIds, specNums) {
   }
   let fenced = false
   let lane = null
-  readme.split(/\r?\n/).forEach((line, i) => {
+  const all = readme.split(/\r?\n/)
+  all.forEach((line, i) => {
     if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; return }
     if (fenced) return
     const at = `plan/README.md:${i + 1}`
@@ -252,19 +256,69 @@ function checkRoadmap(specs, readme, chunkIds, specNums) {
       const auto = parseAutoHeld(line)
       if (!auto) failures.push(`${at}: an auto-promoted Held line reads "- NN · auto-promoted, veto until YYYY-MM-DD (#<issue>) · max_age: <n>d · fallback: release"`)
       else if (!specNums.has(auto.spec)) failures.push(`${at}: the Held lane holds spec ${auto.spec} for its veto window, and no spec ${auto.spec} is in the plan (a veto deletes the line with the spec)`)
+    } else if (lane === 'Held' && /^- /.test(line) && !/^- \(none/.test(line)) {
+      // Every other Held line is a lock, and a lock times out.
+      const lock = parseLock(laneText(all, i))
+      const missing = [['since', lock.since], ['until', lock.until], ['max_age', lock.maxAge]].filter(([, v]) => v === null).map(([k]) => `\`${k}:\``)
+      if (missing.length) failures.push(`${at}: a Held line is a lock that times out, and this one lacks ${missing.join(', ')} (write \`· since: YYYY-MM-DD · until: <date or condition> · max_age: <n>d\`, optionally \`· fallback: <what>\`)`)
     }
   })
   return failures
 }
 
 // An auto-promotion's Held line (skills/expand.md, the /march veto
-// sweep): the spec it holds, the last day of its veto window and
-// the veto issue. scripts/plan/promote.mjs reads it the same way.
-export const AUTO_HELD = /^- (\d+) · auto-promoted, veto until (\d{4}-\d{2}-\d{2}) \(#(\d+)\)(?: · .*)?$/
+// sweep): the spec it holds, the last day of its veto window, the
+// veto issue and its max_age (the window's length).
+// scripts/plan/promote.mjs reads it the same way.
+export const AUTO_HELD = /^- (\d+) · auto-promoted, veto until (\d{4}-\d{2}-\d{2}) \(#(\d+)\) · max_age: (\d+)d(?: · .*)?$/
 
 export function parseAutoHeld(line) {
-  const m = AUTO_HELD.exec(line.trim())
-  return m ? { spec: m[1].padStart(2, '0'), until: m[2], issue: Number(m[3]) } : null
+  const m = AUTO_HELD.exec(String(line).trim())
+  return m ? { spec: m[1].padStart(2, '0'), until: m[2], issue: Number(m[3]), maxAge: Number(m[4]) } : null
+}
+
+// A lock (concepts/plan-shape.md, "Locks time out"): a Held line, a
+// lane lock or an owner-blocked row, its fields joined by ` · `:
+// `lock: <slug>` (outside the Held lane, whose id names it),
+// `since: YYYY-MM-DD` (the day it was set), `until: <date or
+// condition>`, `max_age: <n>d` and an optional `fallback: <what the
+// loop does past max_age>`. An auto-promoted Held line's `veto until
+// <date>` is its until, and its since is that date less its max_age.
+// A missing or malformed field reads null. scripts/plan/locks.mjs
+// reads locks through this.
+const LOCK_FIELD = /^(?:[-*]\s+)?(?:\*\*[^*]+\*\*\s*)?(?:\[[^\]]*\]\s*)*(lock|since|until|max_age|fallback):\s*(.*?)\s*$/
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+
+export function parseLock(text) {
+  const fields = {}
+  for (const part of String(text).trim().split(/\s+·\s+/)) {
+    const m = LOCK_FIELD.exec(part.trim())
+    if (m && !(m[1] in fields) && m[2]) fields[m[1]] = m[2]
+  }
+  const age = /^(\d+)d$/.exec(fields.max_age || '')
+  const lock = {
+    slug: fields.lock || null,
+    since: ISO_DATE.test(fields.since || '') ? fields.since : null,
+    until: fields.until || null,
+    maxAge: age ? Number(age[1]) : null,
+    fallback: fields.fallback || null,
+    auto: null,
+  }
+  const auto = parseAutoHeld(text)
+  if (auto) {
+    const since = new Date(Date.parse(`${auto.until}T00:00:00Z`) - auto.maxAge * 86400000).toISOString().slice(0, 10)
+    Object.assign(lock, { until: auto.until, maxAge: auto.maxAge, since, auto })
+  }
+  lock.untilDate = ISO_DATE.test(lock.until || '') ? lock.until : null
+  return lock
+}
+
+// A list line with its wrapped continuation (the lines after it
+// indented two or more spaces that are not sub-bullets), joined.
+export function laneText(lines, i) {
+  let text = lines[i]
+  for (let j = i + 1; j < lines.length && /^ {2,}\S/.test(lines[j]) && !/^\s*[-*] /.test(lines[j]); j++) text += ` ${lines[j].trim()}`
+  return text
 }
 
 export function archived(archive, id) {

@@ -157,6 +157,17 @@ preserved verbatim when you rewrite: the `> Bias:` line (only
 addressing this tick. Losing a queued user issue in an audit
 rewrite is a state-integrity failure, not tidying.
 
+**Locks time out.** A row that waits on the owner (a
+`[needs-user-call]` you file), a lane lock in
+`skills/*.lanes.md` and a Held line are locks. Each carries
+`since: <date> · until: <date or condition> · max_age: <n>d`
+(an optional `· fallback: <what>`; outside the Held lane, a
+`lock: <slug>` too; `nexus/concepts/plan-shape.md`). Write
+them on every lock you file. One you meet without them is a
+finding; `node scripts/plan/locks.mjs list` shows each lock's
+age, and `/march`'s Step 0 sweep relaxes it or asks the owner
+once.
+
 Audit block shape:
 
 ```markdown

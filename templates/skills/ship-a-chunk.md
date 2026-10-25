@@ -407,9 +407,12 @@ loop is unsafe to continue) end the tick entirely.
 **Chunk-shaped** failures (this one chunk can't ship; the rest
 of the plan is fine) additionally add the chunk to the **Held**
 lane in `plan/README.md` as `- **<NN.k>** · blocked: <short
-reason> <ISO-date>`, commit + land that state change, and
-return cleanly. The next `/march` tick picks past it into
-still-shippable work, and `/oversight` owns unblocking.
+reason> · since: <ISO-date> · until: <what unblocks it> ·
+max_age: 14d` (a lock that times out:
+`nexus/concepts/plan-shape.md`), commit + land that state
+change, and return cleanly. The next `/march` tick picks past
+it into still-shippable work, and `/oversight` owns
+unblocking; past `max_age` the lock sweep asks the owner once.
 
 Repo-shaped — stop the tick:
 

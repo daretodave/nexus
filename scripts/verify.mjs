@@ -491,7 +491,36 @@ async function lanesCheck() {
   }
   failures.push(...(await generatorsCheck()))
   failures.push(...motionCheck())
+  failures.push(...(await locksCheck()))
   return { failures, files }
+}
+
+// Lock timeouts (spec 57): no lock holds forever. Both march.md
+// copies sweep the locks at Step 0, after the veto sweep; both
+// iterate.md copies carry the rule; concepts/plan-shape.md teaches
+// it; both bearings name `Lock max age`; and every lock nexus itself
+// carries (Held lines, lane locks, owner-blocked rows) parses, so a
+// lock the sweep cannot age never ships.
+async function locksCheck() {
+  const failures = []
+  for (const file of ['skills/march.md', 'templates/skills/march.md']) {
+    if (!fs.existsSync(path.join(ROOT, file))) continue
+    const text = read(file)
+    const at = text.indexOf('locks.mjs sweep')
+    const veto = text.indexOf('promote.mjs sweep')
+    const next = text.indexOf('### Step 0.5')
+    if (at < 0 || (next >= 0 && at > next) || (veto >= 0 && at < veto)) failures.push(`${file}: Step 0 never sweeps the locks after the veto sweep (node scripts/plan/locks.mjs sweep)`)
+  }
+  for (const file of ['skills/iterate.md', 'templates/skills/iterate.md']) {
+    if (fs.existsSync(path.join(ROOT, file)) && !/max_age:/.test(read(file))) failures.push(`${file}: no lock-timeout rule (every lock iterate writes or meets carries until: and max_age:)`)
+  }
+  if (!/^##+ Locks time out/m.test(read('concepts/plan-shape.md'))) failures.push('concepts/plan-shape.md: no "Locks time out" section')
+  for (const file of ['plan/bearings.md', 'templates/plan/bearings.md']) {
+    if (!/^[-*]\s+Lock max age:\s*\d+d\b/m.test(read(file))) failures.push(`${file}: no \`- Lock max age: <n>d\` line (locks.mjs reads it)`)
+  }
+  const { findLocks, readFiles } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/locks.mjs')).href)
+  for (const l of findLocks(readFiles(ROOT)).filter((x) => x.problem)) failures.push(`${l.file}:${l.line}: lock ${l.slug ?? '?'} ${l.problem}`)
+  return failures
 }
 
 // The motion heartbeat (spec 57): both heartbeat.yml copies check out
@@ -831,6 +860,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/lanes.test.mjs',
   'templates/scripts/__tests__/refill.test.mjs',
   'templates/scripts/__tests__/motion.test.mjs',
+  'templates/scripts/__tests__/locks.test.mjs',
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/quota.test.mjs',
@@ -880,7 +910,7 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs',
+  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs', 'plan/locks.mjs',
   'generators/issue-age.mjs', 'generators/stale-candidate.mjs', 'generators/motion.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',

@@ -123,6 +123,15 @@ unless named here:
 
 - Lanes off: none
 
+Locks time out (`concepts/plan-shape.md`,
+`scripts/plan/locks.mjs`): every Held line, lane lock and
+owner-blocked row carries `since:`, `until:` and `max_age:`;
+past it, its `fallback:` or one `needs-user` issue,
+re-pinged weekly. The default `max_age` outside the Held
+lane:
+
+- Lock max age: 14d
+
 ## Generators
 
 When no chunk is ready, `/march`'s stock `refill` lane runs
