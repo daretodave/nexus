@@ -99,7 +99,16 @@ types the command.
 9. **Flip the lock** to `version: 2.0.0`, `shape: chunks`,
    `adopted:` today.
 10. **Gate:** plan-check and its test, the repo's own verify
-    command, and workflow-lint, all in the worktree.
+    command, and workflow-lint, all in the worktree. The dry
+    run names the repo's verify and runs it (its frozen install
+    first) only with `--verify`: a full editorial verify is a
+    build and an e2e walk. A workflow-lint problem the origin's
+    own file already had is a warning, not red, but only in a
+    file the upgrade changes by reference rewrites alone: one
+    in a file it writes or merges (march.yml, the setup action,
+    a kit workflow) is red whatever origin had, and an
+    injection is never a warning. The worktree
+    is checked out with the origin's line endings.
 11. **Predict the first dispatch:** march's pick order played
     forward (`scripts/plan/order.mjs`, lanes included). For a
     repo whose v1 loop was live, "idle" is a warning in red.
@@ -138,7 +147,9 @@ import.meta.url)`) of `plan-check`, `upgrade-plan`, `claims`,
 calls (`next`/`plot` among them: a skill the list ships must
 find its scripts), plus the fixed non-script files (skills,
 commands, `.github/actions/setup`, plan-check's test; the
-lanes files as `lane`, seeded only). `packages/cli`'s
+lanes files as `lane`, seeded only; the kit's own test of a
+listed script as `twin`, which replaces a repo's older copy
+and is never added). `packages/cli`'s
 `bundle-kit.mjs` reads it into `kit/upgrade/` with
 `files.json`; the playbook's manual appendix is generated
 from it (`--write`). A verify leg, `upgrade`, fails when a
@@ -178,6 +189,14 @@ replaced; anything unrecognised is kept.
   wins); custom paragraphs inside a kit step are one
   `<step>-notes` lane that continues; iterate's are
   `dimensions`. `when` is prose: the moved text says when.
+  A header that is a kit header with its parenthetical
+  dropped, or with a ` — ` suffix (`Step 3 — Dispatch`,
+  `Failure modes — when to stop`), is that kit section.
+  Custom text outside the procedure (march's Procedure;
+  iterate's Procedure and audit) moves verbatim under one
+  notes header after the lanes, never as a lane. The
+  predicted dispatch skips `continue` lanes and plays a
+  conditional lane's `else` down to the first sure pick.
 - **Custom skills and commands stay.** A skill or command the
   kit never shipped is kept as it is; a `.claude/commands/`
   entry with no skill becomes a skill (`skills/<name>.md`)
@@ -375,7 +394,6 @@ tick).
 
 ## Acceptance
 
-- **A7** On a scratch clone of an editorial v1 origin, `--write` yields 52 archive lines (50 + 2 suffixed), 0 open specs, the weekly snapshot gate, content queue and survey refill verbatim in `march.lanes.md` and the cross-link drain in `iterate.lanes.md`, `march.yml` keeping cron `0 * * * *` and ceiling 60, plan-check and the repo's verify green, and a predicted lane dispatch, not an idle tick; a half-done clone and a 40-minute-cron clone also pass.
 - **A8** `--land owner` lands only in an idle window, disables and re-enables march around the push, dispatches and watches the first v2 tick, and `--rollback` restores v1 in one revert commit (tests with a stubbed `gh`).
 - **A11** On a v2 repo the command syncs to the latest kit: untouched kit files are replaced, customised ones three-way merged (a conflict goes to an assisted merge shown as a diff and applied only with a green gate), new kit content is listed and added with knobs at their conservative values, lanes files and custom skills are untouched, and the lock's `ref:` moves in one `plan: sync to nexus <version>` commit (fixtures: an untouched file, a clean merge, a conflict, a new skill).
 - **A13** `upgrade --repo owner/name` works with no local checkout: a blobless temporary clone, the same report as a local run, and with `--pr` a pushed `nexus/upgrade-<version>` branch and a pull request whose body is the report; without push access it forks; a second run updates the open pull request instead of opening another; a red gate opens nothing (tests with a stubbed `gh` and a local bare remote).
@@ -387,11 +405,9 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 6 open · 7 closed · next A14
+Measure: 5 open · 8 closed · next A14
 
-- [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs —
-  - Fresh clone of the adopter's origin in the scratchpad only; the local checkout is stale and dirty and is never touched. Gaps become fixes in 58.3-58.6's functions plus fixtures.
-- [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs 58.7
+- [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs —
 - [ ] **58.10** Runbook rewrite, upgrade prompt and the README door · M · closes A10 · needs 58.8
   - The README section merges with the `cli-v*` release that carries 58.3-58.9; the owner tags it.
 - [ ] **58.11** v2 to latest: the three-way sync and the assisted merge · L · closes A11 · needs —

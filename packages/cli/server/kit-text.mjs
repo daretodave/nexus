@@ -15,9 +15,15 @@
 import crypto from 'node:crypto';
 
 /** The skills whose custom text moves into a lanes file: skill file -> { lanes file, kind }. */
+/**
+ * `steps` names the sections that are the skill's procedure (march: its Procedure; iterate: its Procedure and its
+ * audit, whose categories are the dimensions): custom text there becomes lanes. Custom text anywhere else (the
+ * purpose, the invocation, failure modes, the quick reference) describes the v1 loop rather than steps it: it moves
+ * verbatim as reference notes after the lanes, never as a lane.
+ */
 export const TRAIN = Object.freeze({
-  'march.md': { lanes: 'skills/march.lanes.md', kind: 'march' },
-  'iterate.md': { lanes: 'skills/iterate.lanes.md', kind: 'iterate' },
+  'march.md': { lanes: 'skills/march.lanes.md', kind: 'march', steps: /^\d*\.?\s*procedure$/ },
+  'iterate.md': { lanes: 'skills/iterate.lanes.md', kind: 'iterate', steps: /^\d*\.?\s*(procedure|the audit)$/ },
 });
 
 const HEAD = /^(#{1,6})\s+(.*?)\s*#*\s*$/;
@@ -27,6 +33,13 @@ const PLACEHOLDER = /<[A-Z][A-Z0-9_]*>/g;
 export const normHeader = (h) => String(h).replace(/^#+\s*/, '').replace(/[*_`]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 export const normPara = (p) => String(p).replace(/\s+/g, ' ').trim();
 export const hashPara = (p) => crypto.createHash('sha1').update(normPara(p)).digest('hex');
+/**
+ * A header's core: normalized, every parenthetical dropped. A v1 fork renames kit steps at the edges
+ * (`Step 3 — Dispatch` for the kit's `Step 3 — Dispatch (first match wins)`, `Failure modes — when to stop`), so a
+ * header whose core is a kit header's core, or starts with one followed by ` — `, is that kit section (its
+ * paragraphs are still judged one by one).
+ */
+export const coreHeader = (h) => normHeader(h).replace(/\s*\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
 
 /**
  * A markdown file split at its headers (fences respected, so a `# comment` in a code block is no header):
@@ -136,8 +149,20 @@ export const toJson = (t) => ({ headers: [...t.headers].sort(), paras: [...t.par
 /** A JSON entry (kit-text.json's `march.md`) back to sets; patterns compiled once. */
 export function fromJson(j) {
   const t = mergeText(j);
+  t.cores = new Set([...t.headers].map(coreHeader));
   t.regexes = [...t.patterns].map((p) => new RegExp(`^${p.split(/<[A-Z][A-Z0-9_]*>/).map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.+?')}$`));
   return t;
+}
+
+/** Is this header a kit section's: in the list as it is, or the same core (see coreHeader). */
+export function isKitHeader(h, t) {
+  if (t.headers.has(normHeader(h))) return true;
+  const cores = t.cores || new Set([...t.headers].map(coreHeader));
+  const c = coreHeader(h);
+  if (!c) return false;
+  if (cores.has(c)) return true;
+  for (const k of cores) if (k && c.startsWith(`${k} — `)) return true;
+  return false;
 }
 
 /** Is this paragraph kit text: its hash in the list, or a placeholder paragraph it fills in. */
@@ -154,24 +179,35 @@ const PICK = /pending (phase|chunk)|ready (phase|chunk)/;
  * The custom text in `md` against kit text `t` (from fromJson): [{ kind: 'section' | 'paras', header, text, before }]
  * in file order. A `section` unit is a custom header with its body and every deeper section under it, verbatim; a
  * `paras` unit is the custom paragraphs of one kit section, verbatim, under that kit section's header line.
- * `before` is true when the unit sits ahead of the step that picked the tick's work (march: a `pre` lane).
+ * `before` is true when the unit sits ahead of the step that picked the tick's work (march: a `pre` lane). `ref` is
+ * true when the unit sits outside the sections `steps` matches (TRAIN): it describes the loop and is no step of it.
+ * A skill with no such section is all steps.
  */
-export function customUnits(md, t) {
+export function customUnits(md, t, { steps = null } = {}) {
   const { sections: secs } = sections(md);
   const units = [];
   let picked = false;
+  const isSteps = (s) => Boolean(steps && s.header && steps.test(coreHeader(s.header)));
+  const hasSteps = secs.some(isSteps);
+  let inSteps = !hasSteps;
+  let stepsLevel = 0;
   for (let i = 0; i < secs.length; i++) {
     const s = secs[i];
-    const kit = s.header === null || t.headers.has(normHeader(s.header));
+    if (hasSteps && s.header) {
+      if (isSteps(s)) { inSteps = true; stepsLevel = s.level; }
+      else if (inSteps && s.level <= stepsLevel) inSteps = false;
+    }
+    const ref = !inSteps;
+    const kit = s.header === null || isKitHeader(s.header, t);
     if (kit && s.header && PICK.test(normHeader(s.header))) picked = true;
     if (!kit) {
       const lines = [s.header, ...s.body];
       while (i + 1 < secs.length && secs[i + 1].level > s.level) lines.push(secs[++i].header, ...secs[i].body);
-      units.push({ kind: 'section', header: s.header, text: trimBlank(lines).join('\n'), before: !picked });
+      units.push({ kind: 'section', header: s.header, text: trimBlank(lines).join('\n'), before: !picked, ref });
       continue;
     }
     const mine = paragraphs(s.body).filter((p) => !isKitPara(p, t));
-    if (mine.length) units.push({ kind: 'paras', header: s.header, text: [s.header ?? '### (the top of the v1 skill)', ...mine].join('\n\n'), before: !picked });
+    if (mine.length) units.push({ kind: 'paras', header: s.header, text: [s.header ?? '### (the top of the v1 skill)', ...mine].join('\n\n'), before: !picked, ref });
   }
   return units;
 }
@@ -196,12 +232,16 @@ export function laneName(header, fallback = 'custom') {
  * The lane blocks for one skill's custom units: { text, names }. Each unit becomes one lane (spec 57's block), its
  * text verbatim under it. march: a unit ahead of the pick step is a `pre` lane, else `queue`; a custom section ends
  * the tick (v1 dispatch was first match wins), custom paragraphs in a kit step continue. iterate: a `dimensions`
- * lane. `taken` holds names already in the lanes file; `rewrite` maps the moved text (the v1 references).
+ * lane. A `ref` unit is no lane: it goes verbatim under one notes header after the lanes (`notes` counts them).
+ * `taken` holds names already in the lanes file; `rewrite` maps the moved text (the v1 references).
  */
 export function laneBlocks(units, { kind, skill, taken = new Set(), rewrite = (s) => s }) {
   const names = [];
-  const blocks = units.map((u) => {
-    const base = laneName(u.header, u.header === null ? 'top' : 'custom') + (u.kind === 'paras' ? '-notes' : '');
+  const top = (u) => u.text.replace('### (the top of the v1 skill)', `### (the top of the v1 skills/${skill})`);
+  const blocks = units.filter((u) => !u.ref).map((u) => {
+    // A notes lane is named for the kit step it amends: the fork's parenthetical on that header dropped.
+    const header = u.kind === 'paras' && u.header ? u.header.replace(/\s*\([^)]*\)/g, '') : u.header;
+    const base = laneName(header, u.header === null ? 'top' : 'custom') + (u.kind === 'paras' ? '-notes' : '');
     let name = base;
     for (let n = 2; taken.has(name); n++) name = `${base}-${n}`;
     taken.add(name);
@@ -216,8 +256,20 @@ export function laneBlocks(units, { kind, skill, taken = new Set(), rewrite = (s
       `- run: ${what}${u.kind === 'paras' ? `, which amended the kit's step "${normHeader(u.header ?? '') || 'top'}"` : ''}`,
       `- return: ${ret}`,
       '',
-      rewrite(u.text.replace('### (the top of the v1 skill)', `### (the top of the v1 skills/${skill})`)),
+      rewrite(top(u)),
     ].join('\n');
   });
-  return { text: blocks.join('\n\n'), names };
+  const refs = units.filter((u) => u.ref);
+  if (refs.length) {
+    blocks.push([
+      `## Notes from the v1 skills/${skill} (reference, not lanes)`,
+      '',
+      "The v1 skill's own words outside its procedure: what its loop did",
+      'and why. No lane runs them; read them when a lane above needs the',
+      'context.',
+      '',
+      refs.map((u) => rewrite(top(u))).join('\n\n'),
+    ].join('\n'));
+  }
+  return { text: blocks.join('\n\n'), names, notes: refs.length };
 }

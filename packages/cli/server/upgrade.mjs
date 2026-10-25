@@ -9,9 +9,10 @@
 // ceiling, model pin, extra env and concurrency kept; the toolchain steps into .github/actions/setup:
 // workflow-merge.mjs), writes the conservative knobs (KNOBS: the v1 train runs as it did), retires the v1 files
 // (playbooks/upgrade.md Step 5), rewrites v1 references outside history files, flips the lock, runs
-// plan-check, its test and workflow-lint, plays march's pick order forward for the first dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
+// plan-check, its test and workflow-lint (a problem the origin's own workflow already had is a warning) and, with
+// --verify, the repo's own verify, plays march's pick order forward for the first dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
 //
-//   npx @usenexus/cli upgrade [--repo <dir>] [--json] [--keep-workflow]
+//   npx @usenexus/cli upgrade [--repo <dir>] [--json] [--keep-workflow] [--verify]
 //
 // Exit 0: the report printed (a v2 repo: "already on v2"). Exit 1: the gate failed (worktree kept). Exit 2: not a
 // v1 or half-done repo, no origin, or a flag this release does not carry yet.
@@ -146,7 +147,9 @@ export function freshWorktree(repo) {
   const sha = gitIn(repo, ['rev-parse', `refs/remotes/origin/${branch}`]).out;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-upgrade-'));
   const hooks = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-upgrade-hooks-'));
-  const added = gitIn(repo, ['-c', `core.hooksPath=${hooks}`, 'worktree', 'add', '--quiet', '--detach', dir, sha]);
+  // The origin's bytes, line endings included: a checkout that turns LF into CRLF (core.autocrlf on Windows) fails a
+  // repo gate that compares generated files byte for byte, which is no fault of the upgrade.
+  const added = gitIn(repo, ['-c', `core.hooksPath=${hooks}`, '-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'worktree', 'add', '--quiet', '--detach', dir, sha]);
   fs.rmSync(hooks, { recursive: true, force: true });
   if (!added.ok) {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -163,6 +166,7 @@ export function freshWorktree(repo) {
 /**
  * Copy the kit file set into `dir`: one row per file, { path, status }: `added`, `replaced`, `same` (identical
  * already) or, for a lanes file, `seeded` when missing and `kept-custom` when the repo has one (never overwritten).
+ * A `twin` (the kit's test of a kit script) replaces the repo's copy and is never added where the repo has none.
  */
 export function copyKit(dir, kit) {
   const rows = [];
@@ -174,7 +178,10 @@ export function copyKit(dir, kit) {
       else { write(dir, f.repo, theirs); rows.push({ path: f.repo, status: 'seeded' }); }
       continue;
     }
+    // A twin (the kit's test of a kit script) goes only over the repo's older copy, which the new script would fail.
+    if (f.kind === 'twin' && !ours) continue;
     if (ours && ours.equals(theirs)) { rows.push({ path: f.repo, status: 'same' }); continue; }
+    if (f.kind === 'twin') { write(dir, f.repo, theirs); rows.push({ path: f.repo, status: 'replaced', note: "the kit's test of the kit's script; the repo's was an older copy" }); continue; }
     write(dir, f.repo, theirs);
     rows.push({ path: f.repo, status: ours ? 'replaced' : 'added' });
   }
@@ -193,7 +200,7 @@ export function customTrain(dir, kit) {
     if (ours == null) continue;
     const theirs = read(kit.root, `skills/${skill}`);
     const t = fromJson(toJson(mergeText(kit.text?.[skill], theirs == null ? null : textOf(theirs))));
-    out[skill] = customUnits(ours, t);
+    out[skill] = customUnits(ours, t, { steps: TRAIN[skill].steps });
   }
   return out;
 }
@@ -213,15 +220,18 @@ export function carryTrain(dir, train, { today } = {}) {
     const taken = new Set([...have.matchAll(/^##\s+lane:\s*(\S+)/gm)].map((m) => m[1]));
     let refs = 0;
     const rewrite = (s) => { const r = rewriteText(s); refs += r.n; return r.text; };
-    const { text, names } = laneBlocks(units, { kind, skill, taken, rewrite });
+    const { text, names, notes } = laneBlocks(units, { kind, skill, taken, rewrite });
     const lead = `<!-- Moved from the v1 skills/${skill} by nexus upgrade${today ? ` (${today})` : ''}: the text the kit never shipped, verbatim. Check each lane's hook and when. -->`;
     write(dir, rel, `${have.replace(/\s*$/, '')}\n\n${lead}\n\n${text}\n`);
-    const sections = units.filter((u) => u.kind === 'section').length;
-    const paras = units.length - sections;
+    const steps = units.filter((u) => !u.ref);
+    const sections = steps.filter((u) => u.kind === 'section').length;
+    const paras = steps.length - sections;
     const what = [sections && `${sections} custom section${sections === 1 ? '' : 's'}`, paras && `custom paragraphs in ${paras} kit step${paras === 1 ? '' : 's'}`].filter(Boolean).join(' and ');
-    rows.push({ path: rel, status: `moved-to-lane (${names.length})`, note: `${names.join(', ')}${refs ? `; ${refs} v1 ref${refs === 1 ? '' : 's'} rewritten` : ''}` });
-    rows.push({ path: `skills/${skill}`, status: 'replaced', note: `${what} moved to ${rel}` });
-    warnings.push(`skills/${skill}: ${what} moved to ${rel} as lanes ${names.join(', ')}; check each lane's hook and when`);
+    const noted = notes ? `${notes} reference note${notes === 1 ? '' : 's'} (outside the procedure)` : '';
+    const moved = [what, noted].filter(Boolean).join(' and ');
+    rows.push({ path: rel, status: `moved-to-lane (${names.length})`, note: `${names.join(', ') || 'no lanes'}${notes ? `; ${noted}` : ''}${refs ? `; ${refs} v1 ref${refs === 1 ? '' : 's'} rewritten` : ''}` });
+    rows.push({ path: `skills/${skill}`, status: 'replaced', note: `${moved} moved to ${rel}` });
+    warnings.push(`skills/${skill}: ${moved} moved to ${rel}${names.length ? ` as lanes ${names.join(', ')}; check each lane's hook and when` : ''}`);
   }
   return { rows, warnings };
 }
@@ -534,6 +544,60 @@ export function gate(dir, { node = process.execPath } = {}) {
 }
 
 /**
+ * workflow-lint's problems split by who made them: { fresh, old }. `old` is a problem the origin's own file already
+ * had (the repo's own workflow, untouched but for reference rewrites): the upgrade did not add it, so it is a
+ * warning, not a red gate. `fresh` is one the upgrade's files have and the origin's did not. A file the upgrade
+ * writes or merges (`owned`: march.yml, the setup action, any kit-copied workflow or action) ships as the upgrade's
+ * own, so every problem in it is fresh whatever the origin had: a v1 prompt's injection carried into the v2 owner
+ * job is the upgrade's to fix. An injection (outsider text interpolated) is never downgraded anywhere.
+ */
+export async function lintDelta(dir, kit, { owned = new Set() } = {}) {
+  const { lintWorkflow, lintAction } = await kitModule(kit, 'scripts/workflow-lint.mjs');
+  const files = [];
+  const flows = path.join(dir, '.github', 'workflows');
+  if (fs.existsSync(flows)) for (const n of fs.readdirSync(flows).sort()) if (/\.ya?ml$/.test(n)) files.push(`.github/workflows/${n}`);
+  const actions = path.join(dir, '.github', 'actions');
+  if (fs.existsSync(actions)) for (const f of walk(dir, '.github/actions')) if (/(^|\/)action\.ya?ml$/.test(f)) files.push(f);
+  const fresh = [];
+  const old = [];
+  for (const rel of files) {
+    const lint = /(^|\/)action\.ya?ml$/.test(rel) ? lintAction : lintWorkflow;
+    const now = lint(rel, read(dir, rel) || '');
+    if (!now.length) continue;
+    if (owned.has(rel)) { fresh.push(...now); continue; }
+    const was = gitIn(dir, ['show', `HEAD:${rel}`]);
+    const before = new Set(was.ok ? lint(rel, was.out) : []);
+    for (const p of now) (before.has(p) && !/interpolates/.test(p) ? old : fresh).push(p);
+  }
+  return { fresh, old };
+}
+
+/**
+ * The repo's own verify command, from package.json's `verify` script run through its package manager (the lockfile
+ * says which): { cmd, install } or null when it has none. `install` is the frozen install the worktree needs first
+ * (null when package.json names no dependency and no workspace: nothing to install).
+ */
+export function repoVerify(dir) {
+  let pkg = null;
+  try { pkg = JSON.parse(read(dir, 'package.json') || 'null'); } catch { return null; }
+  if (!pkg?.scripts?.verify) return null;
+  const pm = packageManager((f) => exists(dir, f));
+  const deps = ['dependencies', 'devDependencies', 'optionalDependencies'].some((k) => Object.keys(pkg[k] || {}).length) || Array.isArray(pkg.workspaces) || exists(dir, 'pnpm-workspace.yaml');
+  const frozen = { pnpm: 'pnpm install --frozen-lockfile', yarn: 'yarn install --frozen-lockfile', bun: 'bun install --frozen-lockfile', npm: exists(dir, 'package-lock.json') ? 'npm ci' : 'npm install' }[pm];
+  return { cmd: `${pm} run verify`, install: deps ? frozen : null };
+}
+
+/** Run the repo's verify in `dir` (its install first): a gate row. The repo's own command, through a shell. */
+export function runRepoVerify(dir, v, { timeout = 3600000 } = {}) {
+  for (const [name, cmd] of [['install', v.install], ['verify', v.cmd]].filter(([, c]) => c)) {
+    const r = spawnSync(cmd, { cwd: dir, shell: true, encoding: 'utf8', windowsHide: true, timeout, maxBuffer: 256 * 1024 * 1024 });
+    const out = `${r.stdout || ''}${r.stderr || ''}`.trim().split(/\r?\n/).slice(-20).join('\n');
+    if (r.status !== 0) return { name: `repo verify (${v.cmd})`, ok: false, out: `${name} failed: ${cmd}\n${out}` };
+  }
+  return { name: `repo verify (${v.cmd})`, ok: true, out: '' };
+}
+
+/**
  * The first tick's dispatch, predicted: march's pick order played forward (scripts/plan/order.mjs, lanes included).
  * Owner mode runs the whole dispatch (a pre lane, a ready chunk, a queue lane, pending data, else /iterate); PR mode
  * picks only chunks, so a plan with none ready is an idle tick. { kind, text, idle }.
@@ -552,22 +616,29 @@ export async function predict(dir, kit, { mode }) {
   const bearings = read(dir, 'plan/bearings.md') || '';
   const off = lanesOff(bearings);
   const { lanes } = parseLanes(read(dir, 'skills/march.lanes.md') || '', 'march');
-  const at = (hook) => withStock(lanes, { kind: 'march', hook, bearings }).find((l) => l.hook === hook && !off.has(l.name));
+  // Only a lane that ends the tick decides the dispatch; a `continue` lane (a v1 step's carried notes) runs and the
+  // tick goes on. A lane with a `when` may not fire, so the chain plays on to the first sure thing.
+  const at = (hook) => withStock(lanes, { kind: 'march', hook, bearings }).filter((l) => l.hook === hook && !off.has(l.name) && l.return === 'end-tick');
+  const lane = (l) => ({ kind: 'lane', text: `lane ${l.name} (${l.hook}: ${short(l.run)}${conditional(l) ? `, when ${short(l.when)}` : ''})`, sure: !conditional(l), name: l.name });
   const asap = first?.lane === 'asap';
-  const pre = !asap && at('pre');
-  if (pre) return { kind: 'lane', text: `lane ${pre.name} (pre: ${pre.run}${pre.when && pre.when !== 'always' ? `, when ${pre.when}` : ''})`, idle: false };
-  if (chunk) return chunk;
-  const queue = at('queue');
-  if (queue) return { kind: 'lane', text: `lane ${queue.name} (queue: ${queue.run}${queue.when && queue.when !== 'always' ? `, when ${queue.when}` : ''})`, idle: false };
-  if (/^- \[ \]/m.test(read(dir, 'data/BACKLOG.md') || '')) return { kind: 'data', text: '/ship-data (data/BACKLOG.md has a pending row)', idle: false };
-  return { kind: 'iterate', text: '/iterate (no chunk, lane or data row is ready)', idle: false };
+  const chain = [...(asap ? [] : at('pre').map(lane)), ...(chunk ? [{ ...chunk, sure: true }] : []), ...at('queue').map(lane)];
+  if (/^- \[ \]/m.test(read(dir, 'data/BACKLOG.md') || '')) chain.push({ kind: 'data', text: '/ship-data (data/BACKLOG.md has a pending row)', sure: true });
+  chain.push({ kind: 'iterate', text: '/iterate (no chunk, lane or data row is ready)', sure: true });
+  const end = chain.findIndex((c) => c.sure);
+  const steps = chain.slice(0, end + 1);
+  const head = steps[0];
+  const lanes1 = steps.filter((c) => c.kind === 'lane').map((c) => c.name);
+  return { kind: head.kind, text: steps.map((c) => c.text).join('; else '), idle: false, ...(lanes1.length ? { lanes: lanes1 } : {}) };
 }
+
+const conditional = (l) => Boolean(l.when && l.when !== 'always');
+const short = (s) => { const t = String(s ?? '').replace(/\s*\(moved verbatim from the v1 [^)]*\)/, ''); return t.length > 80 ? `${t.slice(0, 77)}...` : t; };
 
 /**
  * The dry run, start to end, on the repo at `repo` (any folder inside it). Returns { code, report } and never
  * throws for an expected stop. `keep` keeps the worktree even when the gate is green.
  */
-export async function upgrade({ repo, today = new Date().toISOString().slice(0, 10), kit = null, keep = false, keepWorkflow = false } = {}) {
+export async function upgrade({ repo, today = new Date().toISOString().slice(0, 10), kit = null, keep = false, keepWorkflow = false, verify = false } = {}) {
   const top = gitIn(repo, ['rev-parse', '--show-toplevel']);
   if (!top.ok) return { code: 2, report: { error: `${repo} is not a git repository` } };
   const root = path.resolve(top.out);
@@ -636,6 +707,19 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
     }
 
     if (!red) report.gate.push(...gate(wt.dir));
+    // A workflow problem the origin's own file already had is the repo's, not the upgrade's: a warning.
+    const wl = report.gate.find((g) => g.name === 'workflow-lint' && !g.ok);
+    if (wl) {
+      const owned = new Set([MARCH_YML, SETUP_ACTION, ...[...kitFiles].filter((f) => f.startsWith('.github/'))]);
+      const { fresh, old } = await lintDelta(wt.dir, kit, { owned }).catch(() => ({ fresh: null, old: [] }));
+      if (fresh && !fresh.length && old.length) {
+        wl.ok = true;
+        wl.note = `${old.length} problem${old.length === 1 ? '' : 's'} the repo's own workflow${old.length === 1 ? '' : 's'} already had (warnings)`;
+        for (const p of old) report.warnings.push(`workflow-lint (already on origin, not the upgrade's): ${p}`);
+      }
+    }
+    const v = repoVerify(wt.dir);
+    if (!red && v) report.gate.push(verify && !report.gate.some((g) => !g.ok) ? runRepoVerify(wt.dir, v) : { name: `repo verify (${v.cmd})`, ok: true, skipped: true, out: '', note: 'not run: --verify runs it, its install first, in the worktree' });
     red = red || report.gate.some((g) => !g.ok);
     report.loop = { ...loopModeOf(wt.dir), branch: wt.branch };
     const guess = (mode) => predict(wt.dir, kit, { mode }).catch((e) => ({ kind: 'unknown', text: `could not predict: ${e.message}`, idle: false }));
@@ -688,7 +772,7 @@ export function render(report, { color = false } = {}) {
   for (const wn of report.warnings) out.push(`  - ${wn}`);
   out.push('', 'gate');
   for (const g of report.gate) {
-    out.push(`  ${g.ok ? 'green' : red('RED  ')}  ${g.name}`);
+    out.push(`  ${g.skipped ? 'skip ' : g.ok ? 'green' : red('RED  ')}  ${g.name}${g.note ? `  (${g.note})` : ''}`);
     if (!g.ok && g.out) for (const l of g.out.split('\n')) out.push(`         ${l}`);
   }
   if (report.workflow) {
@@ -756,6 +840,9 @@ export const UPGRADE_HELP = `nexus upgrade: move a nexus v1 repo (a phase plan) 
   npx @usenexus/cli upgrade --keep-workflow leave .github/workflows/march.yml as
                                             it is; report what the merge into
                                             the v2 owner job would keep
+  npx @usenexus/cli upgrade --verify        also run the repo's own verify
+                                            (package.json "verify", its
+                                            install first) in the worktree
 
   Exit 0: the report printed (a v2 repo: already on v2). Exit 1: the
   gate failed (the worktree is kept and its path printed). Exit 2: not a
@@ -771,13 +858,13 @@ export async function runUpgrade(argv, { out = (s) => process.stdout.write(`${s}
   if (argv.includes('--help') || argv.includes('-h')) { out(UPGRADE_HELP); return 0; }
   const later = argv.filter((a) => LATER.includes(a));
   if (later.length) { err(`nexus upgrade: ${later.join(', ')} ${later.length === 1 ? 'is' : 'are'} not in this release yet; the dry run is (run it with no flags)`); return 2; }
-  const known = new Set(['--repo', '--json', '--keep-workflow']);
+  const known = new Set(['--repo', '--json', '--keep-workflow', '--verify']);
   const i = argv.indexOf('--repo');
   const bad = argv.filter((a, k) => !known.has(a) && !(i >= 0 && k === i + 1));
   if (bad.length || (i >= 0 && !argv[i + 1])) { err(`nexus upgrade: unknown argument ${bad[0] ?? '--repo (needs a folder)'}\n\n${UPGRADE_HELP}`); return 2; }
   const repo = path.resolve(cwd, i >= 0 ? argv[i + 1] : '.');
   if (!fs.existsSync(repo) || !fs.statSync(repo).isDirectory()) { err(`nexus upgrade: ${repo} is not a folder`); return 2; }
-  const { code, report } = await upgrade({ repo, today, keepWorkflow: argv.includes('--keep-workflow') });
+  const { code, report } = await upgrade({ repo, today, keepWorkflow: argv.includes('--keep-workflow'), verify: argv.includes('--verify') });
   if (argv.includes('--json')) out(JSON.stringify({ code, ...report }, null, 2));
   else (code === 2 ? err : out)(render(report, { color }));
   return code;

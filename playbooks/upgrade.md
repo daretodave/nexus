@@ -97,7 +97,10 @@ re-sync never overwrites
 `npx @usenexus/cli upgrade` makes this move for you, one lane
 per section no kit version ever held);
 a skill or command of your own that the kit never shipped is
-left alone. Sweep the eight placeholders over the new files
+left alone. A test your repo already carries for a kit script
+(an older copy of the kit's own) is replaced by the kit's, or
+the new script fails it; the list's closing note names them.
+Sweep the eight placeholders over the new files
 exactly as [`new-project.md`](./new-project.md) §4 does.
 
 Two fill-ins were renamed: `<PHASE_N>` → `<SPEC_N>` and
@@ -536,6 +539,8 @@ Copy-Item -Destination skills\next -Path ..\nexus\templates\skills\next\build.md
 ```
 
 The lanes files (`skills/iterate.lanes.md`, `skills/march.lanes.md`) are copied only when your repo has none: they hold your own steps, and nothing overwrites them.
+
+The kit's tests of the scripts above go only over a copy your repo already has (an older copy fails the new script): `scripts/__tests__/announce.test.mjs`, `scripts/__tests__/claims-codec.test.mjs`, `scripts/__tests__/claims.test.mjs`, `scripts/__tests__/ledger.test.mjs`, `scripts/__tests__/loop-issue.test.mjs`, `scripts/__tests__/secrets-audit.test.mjs`, `scripts/__tests__/secrets-run.test.mjs`, `scripts/__tests__/secrets-sinks.test.mjs`, `scripts/__tests__/secrets-vault.test.mjs`, `scripts/__tests__/secrets.test.mjs`, `scripts/__tests__/ui-walk.test.mjs`, `scripts/__tests__/workflow-lint.test.mjs`, `scripts/__tests__/worktree.test.mjs`.
 
 <!-- upgrade-files:end -->
 

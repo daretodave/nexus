@@ -90,6 +90,27 @@ test('the list is the closures plus the fixed files, a skill-named example and a
   assert.equal(byKit['templates/.github/actions/setup/action.yml'].kind, 'action')
 })
 
+test('a listed script\'s kit test ships as a twin when its imports are listed; one that loads an unlisted file does not', () => {
+  const root = kit({
+    ...BASE,
+    'templates/scripts/__tests__/ledger.test.mjs': "import { x } from '../ledger.mjs'\n",
+    'templates/scripts/__tests__/owner.test.mjs': "import { o } from '../owner.mjs'\nimport { f } from './fixtures/owner.mjs'\n",
+    'templates/scripts/__tests__/fixtures/owner.mjs': 'export const f = 1\n',
+    'templates/scripts/__tests__/unlisted.test.mjs': "import '../unlisted.mjs'\n",
+  })
+  const { files } = upgradeFiles(root)
+  const byKit = Object.fromEntries(files.map((f) => [f.kit, f]))
+  assert.deepEqual(byKit['templates/scripts/__tests__/ledger.test.mjs'], { kit: 'templates/scripts/__tests__/ledger.test.mjs', repo: 'scripts/__tests__/ledger.test.mjs', kind: 'twin' })
+  assert.equal(byKit['templates/scripts/__tests__/owner.test.mjs'], undefined, 'a fixture the list lacks keeps the twin out')
+  assert.equal(byKit['templates/scripts/__tests__/unlisted.test.mjs'], undefined, 'no twin for an unlisted script')
+  assert.equal(byKit['templates/scripts/__tests__/plan-check.test.mjs'].kind, 'test', 'a fixed test stays a test')
+  const text = appendix(files)
+  assert.ok(!/cp [^\n]*ledger\.test\.mjs/.test(text), 'a twin is no blind copy')
+  assert.match(text, /go only over a copy your repo already has[^\n]*`scripts\/__tests__\/ledger\.test\.mjs`/)
+  writeAppendix(root)
+  assert.deepEqual(check(root).problems, [])
+})
+
 test('the appendix has a table row and both shells per folder, and leaves the lanes files to a note', () => {
   const { files } = upgradeFiles(kit(BASE))
   const text = appendix(files)

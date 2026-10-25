@@ -14,7 +14,10 @@
 //     them, scanned from their text; a name the kit does not ship is
 //     an example);
 //   - the fixed non-script files: every skill, every command, the
-//     shared toolchain action, and plan-check's own test.
+//     shared toolchain action, and plan-check's own test;
+//   - twins: the kit's own test of a listed script, as `twin`. It
+//     replaces an older copy a repo carries (that copy fails the new
+//     script) and is never added where the repo has none.
 //
 // Every path is a kit path (templates/...) with the place it goes in
 // a repo (templates/claude/ lands in .claude/). Lanes files are listed
@@ -133,8 +136,8 @@ export function entries(root = ROOT) {
 }
 
 /**
- * The v2 kit file set: [{ kit, repo, kind }], sorted by kit path. kind: script | test | skill | lane | command |
- * action. Also returns `missing` (imports that reach no file) for the gate.
+ * The v2 kit file set: [{ kit, repo, kind }], sorted by kit path. kind: script | test | twin | skill | lane | command
+ * | action. Also returns `missing` (imports that reach no file) for the gate.
  */
 export function upgradeFiles(root = ROOT) {
   const t = path.join(root, 'templates')
@@ -152,15 +155,39 @@ export function upgradeFiles(root = ROOT) {
     return 'action'
   }
   const files = [...kits].sort().map((kit) => ({ kit, repo: repoPath(kit), kind: kindOf(kit) }))
+  // Twins: the kit's own test of a listed script. A v1 repo often carries an older copy of it, which the new script
+  // fails (an enum grew), so the twin replaces that copy; a repo without one gets none. Only a twin whose every
+  // import is listed (no fixture folder, no unlisted module) ships.
+  for (const f of twinTests(scriptsDir, scripts)) {
+    const kit = `templates/scripts/${f}`
+    if (!kits.has(kit)) files.push({ kit, repo: repoPath(kit), kind: 'twin' })
+  }
+  files.sort((a, b) => (a.kit < b.kit ? -1 : a.kit > b.kit ? 1 : 0))
   return { files, missing }
+}
+
+/** The kit tests (`__tests__/<name>.test.mjs`) of the listed scripts whose relative imports are all listed. */
+export function twinTests(scriptsDir, scripts) {
+  const listed = new Set(scripts)
+  const out = []
+  for (const s of scripts) {
+    if (!/^[\w.-]+\.mjs$/.test(s)) continue
+    const t = `__tests__/${s.replace(/\.mjs$/, '.test.mjs')}`
+    const abs = path.join(scriptsDir, ...t.split('/'))
+    if (listed.has(t) || !fs.existsSync(abs)) continue
+    const deps = importsOf(fs.readFileSync(abs, 'utf8')).map((spec) => path.posix.normalize(path.posix.join('__tests__', spec)))
+    if (deps.every((d) => listed.has(d))) out.push(t)
+  }
+  return out.sort()
 }
 
 const winPath = (p) => p.split('/').join('\\')
 
 /** The playbook's manual appendix for a list: per destination folder, a table row and the copy commands. */
 export function appendix(files) {
-  const copy = files.filter((f) => f.kind !== 'lane')
+  const copy = files.filter((f) => f.kind !== 'lane' && f.kind !== 'twin')
   const lanes = files.filter((f) => f.kind === 'lane')
+  const twins = files.filter((f) => f.kind === 'twin')
   const groups = new Map()
   for (const f of copy) {
     const to = path.posix.dirname(f.repo)
@@ -187,6 +214,9 @@ export function appendix(files) {
   lines.push('```', '')
   if (lanes.length) {
     lines.push(`The lanes files (${lanes.map((f) => `\`${f.repo}\``).join(', ')}) are copied only when your repo has none: they hold your own steps, and nothing overwrites them.`, '')
+  }
+  if (twins.length) {
+    lines.push(`The kit's tests of the scripts above go only over a copy your repo already has (an older copy fails the new script): ${twins.map((f) => `\`${f.repo}\``).join(', ')}.`, '')
   }
   lines.push(END)
   return lines.join('\n')
@@ -238,7 +268,7 @@ export function check(root = ROOT) {
   if (block === null) problems.push(`${PLAYBOOK}: no generated appendix (the upgrade-files markers); run node scripts/upgrade-files.mjs --write`)
   else if (block !== appendix(files)) {
     const have = new Set([...block.matchAll(/\.\.\/nexus\/(templates\/\S+?)(?= |$)/gm)].map((m) => m[1]))
-    const lacks = files.filter((f) => f.kind !== 'lane' && !have.has(f.kit)).map((f) => f.kit)
+    const lacks = files.filter((f) => f.kind !== 'lane' && f.kind !== 'twin' && !have.has(f.kit)).map((f) => f.kit)
     problems.push(`${PLAYBOOK}: the manual appendix is stale${lacks.length ? ` (lacks ${lacks.join(', ')})` : ''}; run node scripts/upgrade-files.mjs --write`)
   }
   return { problems, files }

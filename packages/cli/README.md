@@ -336,6 +336,7 @@ npx @usenexus/cli upgrade                 the repo in this folder
 npx @usenexus/cli upgrade --repo <dir>    another folder
 npx @usenexus/cli upgrade --json          the report as JSON
 npx @usenexus/cli upgrade --keep-workflow leave march.yml as it is (report only)
+npx @usenexus/cli upgrade --verify        also run your own verify in the worktree
 ```
 
 `upgrade` moves a nexus v1 repo (a phase plan:
@@ -349,7 +350,19 @@ the v2 lanes and spec table into your roadmap (your own sections
 stay where they are), converts the build plan, retires the v1 files,
 rewrites every v1 reference outside history files (workflow prompt
 text included), flips the lock, and runs plan-check, its test and
-workflow-lint.
+workflow-lint. A workflow-lint problem your origin's own workflow
+already had is a warning, not a red gate: the upgrade did not add
+it. That holds only for a workflow the upgrade touches by reference
+rewrites alone: a problem in a file it writes or merges (march.yml,
+the setup action, a kit workflow) is red whatever your origin had,
+and an injection (outsider text interpolated) is red anywhere.
+`--verify` also runs your `package.json` `verify` script (its
+frozen install first) in the worktree; without it the gate names
+the command and skips it. A test you carry for a kit script (an
+older copy of the kit's own) is replaced by the kit's, or the new
+script would fail it. The worktree is checked out with your
+origin's line endings, so a gate that compares generated files
+byte for byte sees what CI sees.
 
 Your cloud loop's workflow is merged, not replaced.
 `.github/workflows/march.yml` takes the v2 owner-job shape and
@@ -372,7 +385,14 @@ long before `v1.0.0` still reads as kit text) moves verbatim into
 `skills/march.lanes.md` and `skills/iterate.lanes.md`, one lane per
 custom section, under its own header: a march step ahead of the v1
 phase pick becomes a `pre` lane, one after it a `queue` lane, an
-iterate one a `dimensions` lane. A skill or command the kit never
+iterate one a `dimensions` lane. A kit step you renamed at the
+edges (`Step 3 — Dispatch` for the kit's `Step 3 — Dispatch (first
+match wins)`, a `— when to stop` suffix) is still the kit's step:
+your paragraphs in it move as one `<step>-notes` lane that
+continues the tick. Your words outside the procedure (the purpose,
+the invocation, failure modes, the quick reference) describe the
+loop rather than step it, so they move verbatim under one notes
+header after the lanes, and no lane runs them. A skill or command the kit never
 shipped stays; a command with no skill becomes `skills/<name>.md`,
 and the command points at it.
 
@@ -382,7 +402,9 @@ The report lists every file it touched (`added`, `replaced`,
 `knobs written`),
 the archive lines it would append, the warnings, the gate, what
 the workflow merge kept, the first dispatch a tick would make
-(march's pick order played forward), and the loop mode. A v1 loop that pushed the
+(march's pick order played forward: a lane that ends the tick, then
+each one after it while the earlier ones only run when their `when`
+holds, down to the first sure pick), and the loop mode. A v1 loop that pushed the
 default branch (`Cloud-Run` commits) prints the `gh variable set
 NEXUS_LOOP_MODE --body owner` line, because pull-request mode picks
 only chunks. The upgrade writes the conservative knobs (`Support:
