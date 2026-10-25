@@ -328,7 +328,9 @@ Each piece is independently opt-in:
 - **`heartbeat.yml`** — no skill dependency, no placeholders;
   copy it alongside `night.yml` any time you want the
   model-free watchdog described in `.github/CLOUD_LOOP.md`
-  "The other shapes".
+  "The other shapes". Name your CI gate in the repo variable
+  `NEXUS_HEARTBEAT_WATCH` (with `march night`) and a red push
+  run on the default branch opens one issue for `/triage`.
 - **`nightly-smoke.yml`** — only if hermetic e2e is adopted
   and `night.yml` isn't already running its own
   `SMOKE_SAMPLE=full` breadth step (see

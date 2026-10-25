@@ -178,6 +178,7 @@ templates/
 │   ├── __tests__/lost.test.mjs        (the lost-to-background mark, git stubbed; the guard hook denying background calls in CI)
 │   ├── __tests__/idle.test.mjs        (the idle probe's skip rules, wake-up and record, and the no-op reason; pure: gh and git stubbed)
 │   ├── __tests__/heartbeat-quota.test.mjs  (heartbeat.yml's cadence step in bash against a stubbed gh: no flatline while paused; slower)
+│   ├── __tests__/heartbeat-red.test.mjs  (heartbeat.yml's red-gate step in bash against a stubbed gh: a failed push run on main opens one issue; slower)
 │   ├── __tests__/upgrade-plan.test.mjs  (the v1 to v2 converter, pure)
 │   ├── __tests__/upgrade-plan-run.test.mjs  (the converter over git: dry run writes nothing, --write passes plan-check; slower, offline)
 │   ├── __tests__/plot-run.test.mjs    (a plot unsettled and settled: settle, plan-check and order agree; slower, offline)

@@ -214,12 +214,10 @@ or add the `UI:` line by hand.
 
 ## Acceptance
 
-- **A3** A cloud tick runs `npm ci --ignore-scripts` and `npm run build` in `packages/cli` on Node 24, uploads walk screenshots as a run artifact (never committed), precedes every `packages/cli` commit with a green `npm test` in the same log, never tags `cli-v*`; `march.yml`'s comments no longer call nexus a docs-only kit.
 - **A4** `/iterate` has dimension H: H rows in `plan/AUDIT.md` carry route, viewport, scenario, evidence with the artifact URL, and `file:line`; the mirror uses `--category ui`; at most 3 H rows and 8 screenshots per sweep; `/expand` reads signal F.
 - **A5** The magic guard is a hard rule in `iterate.md` and `critique.md`; no H finding's `next` removes `src/fx/*` or motion CSS.
 - **A6** `/critique full` runs a GUI pass over the onboarding scenarios and files `source: walk` rows, or logs why it skipped.
 - **A8** Adopter templates carry the `UI:` knobs, `templates/scripts/ui-walk.mjs` (url mode; CDP and playwright paths, tested against a local static fixture), reader Path A2 and the template cloud march using it instead of skipping critique; in cloud the walk is anonymous, uploads nothing unless `NEXUS_UI_ARTIFACTS` is `1`, and treats page text as untrusted; with `UI: none` nothing browses; no adopter is named.
-- **A9** A `cli-ci` failure on main opens a heartbeat issue that `/triage` routes back into the loop.
 - **A10** `/digest` lists `packages/cli` commits on main since the last `cli-v*` tag as unreleased CLI fixes.
 
 ## Open questions
@@ -227,11 +225,9 @@ or add the `UI:` line by hand.
 (None.)
 
 ## Chunks
-Measure: 7 open · 3 closed · next A11
+Measure: 5 open · 5 closed · next A11
 
-- [ ] **56.4** Cloud tick builds, gates and walks the CLI; heartbeat watches cli-ci · M · closes A3, A9 · needs —
-  - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **56.5** iterate dimension H with the magic guard; expand signal F · M · closes A4, A5 · needs 56.4, 54.1
+- [ ] **56.5** iterate dimension H with the magic guard; expand signal F · M · closes A4, A5 · needs 54.1
 - [ ] **56.6** The critique GUI pass · S · closes A6 · needs 56.5
 - [ ] **56.7** Adopter twin: UI knobs, ui-walk.mjs, reader Path A2 · L · closes A8 · needs 56.5, 54.1
   - Ships its template twins, `templates/README`, the README tree and any new placeholder in `PLACEHOLDER_VOCABULARY` in the same commit.

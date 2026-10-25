@@ -73,7 +73,14 @@ verbatim when regenerating the audit block.
 5. **Ship:** the fix, per the finding's `next`. The audit
    sweep, and any agent it dispatches, stays foreground in a
    cloud tick (`run_in_background: false`).
-6. **Gate:** `node scripts/verify.mjs` foreground.
+6. **Gate:** `node scripts/verify.mjs` foreground. A diff
+   touching `packages/cli` also runs `npm --prefix
+   packages/cli test` (plus `npm --prefix packages/cli run
+   build` when `src/` changed), foreground and green before
+   the commit. In a cloud tick only with `NEXUS_CLI_GATE=1`
+   (march.yml's rule 10); otherwise the finding waits for a
+   local session. Never bump the CLI's version or tag
+   `cli-v*`: the owner releases.
 7. **Commit + land:** `fix|docs|templates: <subject>`, body
    cites the finding, `Closes #N` when mirrored.
 8. **Tick:** finding `[ ]` → `[x] (commit <hash>)`; CRITIQUE

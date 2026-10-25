@@ -814,6 +814,7 @@ const PURE_SUITES = [
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
   'scripts/__tests__/probe-latency.test.mjs',
+  'scripts/__tests__/march-cli-gate.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',
@@ -827,6 +828,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/plot-run.test.mjs',
   'templates/scripts/__tests__/secrets-scan-run.test.mjs',
   'templates/scripts/__tests__/heartbeat-quota.test.mjs',
+  'templates/scripts/__tests__/heartbeat-red.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run

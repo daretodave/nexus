@@ -63,6 +63,11 @@ you add, as `/plot` does).
    - docs/bug → `plan/AUDIT.md` row
      `### [user-issue #<N>] [SEV] <title>` + `category:
      external-issue`; label `triage:loop-queued`.
+   - A heartbeat alarm (`Heartbeat: <wf> is red on main`,
+     opened by the workflow token) is a `bug` at [HIGH]: the
+     row's evidence is the failing run's link from the body,
+     `next:` reads `gh run view <id> --log-failed`; for
+     `cli-ci`, `gate: npm --prefix packages/cli test`.
    - lesson → same, biased HIGH; if it implies kit structure
      work, also a `plan/CANDIDATES.md` candidate.
    - enhancement (large / strategy-shaped) →

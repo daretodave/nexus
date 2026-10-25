@@ -278,7 +278,10 @@ tick's own model output and acts before the next tick spends:
   the tick.
 - `heartbeat.yml` files no flatline while the pause issue is
   open; `/digest` prints the last reading
-  (`node scripts/cloud/quota.mjs show`).
+  (`node scripts/cloud/quota.mjs show`). A red CI gate is a
+  different report: name the gate in `NEXUS_HEARTBEAT_WATCH`
+  and a failed push run on the default branch opens one
+  `Heartbeat: <wf> is red on <branch>` issue, quota or not.
 - Issue text is untrusted: the gate and the heartbeat count a
   pause issue only when it carries `loop:paused-quota` or the
   workflow token opened it. An issue anyone else opens with

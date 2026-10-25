@@ -503,6 +503,7 @@ nexus/
 │   ├── __tests__/gifs.test.mjs        # the checker's own suite (run by the gifs leg)
 │   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of the no-model probe.yml, march's schedule lag, the hook probe line
 │   ├── __tests__/probe-latency.test.mjs # its suite, gh stubbed (run by the scripts leg)
+│   ├── __tests__/march-cli-gate.test.mjs # march.yml builds, gates and walks the CLI; heartbeat watches cli-ci (scripts leg)
 │   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
@@ -755,6 +756,7 @@ nexus/
     │   ├── __tests__/lost.test.mjs    # the lost-to-background mark (git stubbed); the guard denies background calls in CI
     │   ├── __tests__/idle.test.mjs    # the idle probe's skip rules and the no-op reason, gh and git stubbed
     │   ├── __tests__/heartbeat-quota.test.mjs # heartbeat's cadence step in bash: no flatline while paused
+    │   ├── __tests__/heartbeat-red.test.mjs # heartbeat's red-gate step in bash: a failed CI run on main opens one issue
     │   ├── __tests__/upgrade-plan.test.mjs # the v1 to v2 converter, pure
     │   ├── __tests__/upgrade-plan-run.test.mjs # the converter over git, dry run and --write (offline)
     │   ├── __tests__/plot-run.test.mjs # a plot: settle, plan-check and order agree (offline)

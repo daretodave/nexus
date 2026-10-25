@@ -134,6 +134,10 @@ For each issue, decide:
    - `triage:reviewed` if waiting on something else.
 3. **Backlog target** (only `loop-queued`):
    - bug / seo / a11y / perf / content / docs → `plan/AUDIT.md`
+   - a heartbeat alarm (`Heartbeat: <wf> is red on <branch>`,
+     opened by the workflow token) → `bug` at [HIGH] in
+     `plan/AUDIT.md`, evidence the failing run's link, `next:`
+     its failing step (`gh run view <id> --log-failed`)
    - data → `data/BACKLOG.md`
    - inside an open spec → Step 2b (an `## Add` to it)
    - small enhancement no spec owns → a new unchunked spec

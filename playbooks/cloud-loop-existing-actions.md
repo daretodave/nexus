@@ -390,7 +390,10 @@ gh variable set NEXUS_HEARTBEAT_WATCH --body "march night"
 ```
 
 Add any of your own long-running writers to the heartbeat's
-watch list (space-separated workflow names), and add
+watch list (space-separated workflow names), and your CI
+gate's workflow name too: a watched gate whose newest push run
+on the default branch failed opens one issue the loop's triage
+routes back into its queue. Then add
 `node scripts/workflow-lint.mjs` to your gate so the next
 workflow edit keeps the rules.
 

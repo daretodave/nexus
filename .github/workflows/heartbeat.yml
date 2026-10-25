@@ -27,11 +27,12 @@ jobs:
     steps:
       # The watch list is a repo variable (space-separated workflow
       # names), so a repo with more cloud writers (pr-resolve, a
-      # deploy loop) watches them with no edit here.
+      # deploy loop) watches them with no edit here. nexus's
+      # default adds cli-ci, the GUI's gate (the red-on-main step).
       - name: Cancel wedged runs (in_progress > 2h)
         env:
           GH_TOKEN: ${{ github.token }}
-          WATCH: ${{ vars.NEXUS_HEARTBEAT_WATCH || 'march night' }}
+          WATCH: ${{ vars.NEXUS_HEARTBEAT_WATCH || 'march night cli-ci' }}
         run: |
           now=$(date -u +%s)
           for wf in $WATCH; do
@@ -50,6 +51,36 @@ jobs:
                   --body "Run $id sat in_progress for ${age}m (honest ticks finish well inside 60m). Cancelled so the concurrency group unblocks; the next cron firing resumes. If the log stalls right after a green gate, that is the post-result exit hang - see playbooks/cloud-loop.md."
               fi
             done
+          done
+
+      # A watched CI gate (a push-triggered workflow such as cli-ci)
+      # whose newest completed push run on the default branch failed
+      # opens one deduped issue per workflow; /triage routes it into
+      # the loop's queue as a bug. Only push runs count, so the
+      # scheduled loops in the same list never trip it.
+      - name: Alarm if a watched gate is red on the default branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WATCH: ${{ vars.NEXUS_HEARTBEAT_WATCH || 'march night cli-ci' }}
+        run: |
+          branch=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null || true)
+          branch=${branch:-main}
+          for wf in $WATCH; do
+            row=$(gh run list --workflow "$wf" --branch "$branch" --event push --status completed -L 1 \
+              --json conclusion,headSha,url --jq '.[0] // empty | [.conclusion, .headSha, .url] | @tsv' 2>/dev/null || true)
+            if [ -z "$row" ]; then
+              echo "$wf: no completed push run on $branch - nothing to check."
+              continue
+            fi
+            IFS=$'\t' read -r conclusion sha url <<< "$row"
+            echo "$wf: newest push run on $branch is $conclusion (${sha:0:7})"
+            case "$conclusion" in failure|timed_out|startup_failure) ;; *) continue ;; esac
+            existing=$(gh issue list --search "in:title \"Heartbeat: $wf is red on $branch\" state:open" --json number --jq 'length')
+            if [ "$existing" -eq 0 ]; then
+              gh issue create \
+                --title "Heartbeat: $wf is red on $branch ($(date -u +%Y-%m-%d))" \
+                --body "The newest $wf run on $branch (push, ${sha:0:7}) ended $conclusion: $url. A red gate on $branch sits under every change after it. Read the failing step (gh run view <id> --log-failed), fix it under that workflow's own gate, and close this issue once a green run lands; the next /triage routes it into the loop's queue. This issue is the one report while it stays open."
+            fi
           done
 
       # A disabled schedule produces no runs, so the cadence check

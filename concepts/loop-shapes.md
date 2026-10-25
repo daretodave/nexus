@@ -74,6 +74,11 @@ other loops' vital signs:
   pager. One threshold per loop (a 6h dispatcher at 14h, a
   daily digest at 48h), and successful runs only: a loop
   failing every tick must not reset its own timer.
+- A watched CI gate red on the default branch (its newest
+  push run failed) → one deduped issue per gate, which the
+  next triage routes into the loop's queue as a bug.
+  Scheduled loops have no push runs, so one watch list
+  holds both.
 
 The heartbeat never fixes anything and never writes to the
 repo. It converts "the loop silently died Tuesday" into "you

@@ -40,7 +40,8 @@
    run end green, read the closing `/oversight audit` block.
 
 That's all. The kit's gate needs no other secrets (zero
-dependencies, no deploy provider). If `ACTIONS_PAT` expires or
+dependencies, no deploy provider); the CLI's install needs
+none either. If `ACTIONS_PAT` expires or
 is removed, checkout fails red on the next tick — re-mint and
 re-set, nothing else to repair. The crash-alarm issue still
 files even then: it authenticates with the run's own
@@ -83,6 +84,19 @@ the failure mode of the thing it watches.
   nothing writes one `no-op reason: <why>` line to the step
   summary. `gh variable set NEXUS_IDLE_BACKOFF --body 0` turns
   the skip off.
+- **The CLI gate:** on Node 24, a tick that runs the model
+  first installs and builds `packages/cli` (`npm ci
+  --ignore-scripts && npm run build`, npm cached on its
+  lockfile, about a minute). A `packages/cli` diff then ships
+  only after `node scripts/verify.mjs` and `npm --prefix
+  packages/cli test` (plus the build when `src/` changed) run
+  green in the same log (prompt rule 10). `npm run walk`
+  output under `.scratch/walk/` uploads as the `walk-<run id>`
+  artifact (14 days); screenshots are never committed. Cloud
+  never bumps the CLI's version or tags `cli-v*`. Off switch:
+  `gh variable set NEXUS_CLI_GATE --body 0` (a failed install
+  or build also turns it off for that tick); the kit's own
+  gate stays zero-dependency either way.
 - **Model:** `claude-sonnet-5` (set in the workflow; ids age —
   verify against current ids before changing).
 - **Pause / resume:** `gh workflow disable march` /
@@ -208,7 +222,12 @@ genus: [`concepts/loop-shapes.md`](../concepts/loop-shapes.md)):
   `gh workflow disable`), naming the state and
   `gh workflow enable <name>`; and opens a deduped issue
   when an active march has no successful tick in 14h or an
-  active night none in 48h. It never re-enables a workflow
+  active night none in 48h. It also watches `cli-ci` (the
+  default `NEXUS_HEARTBEAT_WATCH` is `march night cli-ci`):
+  when the newest push run of a watched gate on main failed,
+  one deduped `Heartbeat: cli-ci is red on main` issue opens,
+  and `/triage` routes it into `plan/AUDIT.md` as a bug the
+  loop fixes. It never re-enables a workflow
   and never writes to the repo; it only tells on the others.
 - **The concierge lane.** Two remote controls: label any
   issue `loop:do` and the next tick triages it straight to
