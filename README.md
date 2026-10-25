@@ -515,6 +515,8 @@ nexus/
 │   ├── plan/lanes.mjs                 # project lanes: what runs at march's pre/queue and iterate's dimensions hooks (twin)
 │   ├── plan/refill.mjs                # the stock refill lane: runs the generators plan/bearings.md lists (twin)
 │   ├── plan/motion.mjs                # the motion pulse and heartbeat.yml's motion-stall alarm (twin)
+│   ├── plan/unreleased.mjs            # /digest's unreleased CLI fixes: packages/cli commits on main since the last cli-v* tag
+│   ├── __tests__/unreleased.test.mjs  # its pure suite (scripts leg); __tests__/unreleased-run.test.mjs, a scratch repo (scripts-git)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)

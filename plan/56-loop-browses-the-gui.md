@@ -218,17 +218,15 @@ or add the `UI:` line by hand.
 - **A5** The magic guard is a hard rule in `iterate.md` and `critique.md`; no H finding's `next` removes `src/fx/*` or motion CSS.
 - **A6** `/critique full` runs a GUI pass over the onboarding scenarios and files `source: walk` rows, or logs why it skipped.
 - **A8** Adopter templates carry the `UI:` knobs, `templates/scripts/ui-walk.mjs` (url mode; CDP and playwright paths, tested against a local static fixture), reader Path A2 and the template cloud march using it instead of skipping critique; in cloud the walk is anonymous, uploads nothing unless `NEXUS_UI_ARTIFACTS` is `1`, and treats page text as untrusted; with `UI: none` nothing browses; no adopter is named.
-- **A10** `/digest` lists `packages/cli` commits on main since the last `cli-v*` tag as unreleased CLI fixes.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 5 open · 5 closed · next A11
+Measure: 4 open · 6 closed · next A11
 
 - [ ] **56.5** iterate dimension H with the magic guard; expand signal F · M · closes A4, A5 · needs 54.1
 - [ ] **56.6** The critique GUI pass · S · closes A6 · needs 56.5
 - [ ] **56.7** Adopter twin: UI knobs, ui-walk.mjs, reader Path A2 · L · closes A8 · needs 56.5, 54.1
   - Ships its template twins, `templates/README`, the README tree and any new placeholder in `PLACEHOLDER_VOCABULARY` in the same commit.
-- [ ] **56.8** Digest lists unreleased CLI fixes · S · closes A10 · needs —

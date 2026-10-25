@@ -35,6 +35,7 @@ Never dispatched by `/march` — it is its own loop shape (see
    gh run list --workflow heartbeat -L 5 --json conclusion
    node scripts/pulse.mjs
    node scripts/pulse.mjs --motion
+   node scripts/plan/unreleased.mjs
    node templates/scripts/cloud/quota.mjs show
    ```
 
@@ -45,6 +46,10 @@ Never dispatched by `/march` — it is its own loop shape (see
    `pulse.mjs --motion` is the motion pulse: shipped units
    in the last full week against the 4-week baseline, and
    `ok` or `stalled` under `Motion floor`.
+
+   `unreleased.mjs` lists the `packages/cli` commits on main
+   since the newest `cli-v*` tag: a cloud GUI fix reaches main,
+   not npm, and only the owner tags a release.
 
    `pulse.mjs` gives the local numbers in one shot: specs,
    chunks left and held, AUDIT pending, CRITIQUE pending +
@@ -64,7 +69,11 @@ Never dispatched by `/march` — it is its own loop shape (see
    verb, outcome — no-ops included), `Shipped`, `Queues now`
    (the candidates line grows the >21-day count alongside the
    existing pending-count and oldest-age numbers, e.g. "17
-   pending (6 >21d), oldest 58d"), `Needs you` (blocked rows,
+   pending (6 >21d), oldest 58d"), `Unreleased CLI fixes`
+   (`unreleased.mjs`'s output as is: the count since the tag
+   and one `<sha> <subject>` line each, so the owner can tag
+   `cli-v*`; "none since cli-v<x>" when the tag is current),
+   `Needs you` (blocked rows,
    needs-user issues, `[needs-user-call]`s, plus the silt line
    "auto-promoted <NN> <title> (veto until <date>), Y awaiting"
    — each spec `node scripts/plan/promote.mjs sweep` shows in
@@ -121,6 +130,7 @@ plan/AUDIT.md                        # staleness check + durable rows
 plan/CANDIDATES.md             # tuning proposals land here
 gh run list --workflow march -L 20   # the invisible no-ops
 node scripts/pulse.mjs               # local queue/plan numbers
+node scripts/plan/unreleased.mjs     # packages/cli commits since the last cli-v* tag
 node scripts/verify.mjs
 git commit -m "digest: <YYYY-MM-DD>"   # then land per owner mode (next/land.md §6)
 ```
