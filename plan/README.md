@@ -31,7 +31,7 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 55 | Cadence that actually delivers | [55-cadence-that-delivers.md](55-cadence-that-delivers.md) | planned · priority 2 | 3 left |
+| 55 | Cadence that actually delivers | [55-cadence-that-delivers.md](55-cadence-that-delivers.md) | planned · priority 2 | 2 left |
 | 57 | Anti-lull: the queue refills itself | [57-queue-refills-itself.md](57-queue-refills-itself.md) | planned · priority 4 | 1 left |
 | 58 | One command keeps a project on the current kit | [58-upgrade.md](58-upgrade.md) | planned · priority 5 | 7 left |
 | 59 | One improvement dial, and a loop that reads the field | [59-improvement-dial.md](59-improvement-dial.md) | planned · priority 6 | 5 left |

@@ -1002,6 +1002,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/heartbeat-quota.test.mjs',
   'templates/scripts/__tests__/heartbeat-red.test.mjs',
   'templates/scripts/__tests__/heartbeat-motion.test.mjs',
+  'templates/scripts/__tests__/heartbeat-realized.test.mjs',
   'templates/scripts/__tests__/ui-walk-run.test.mjs',
   'scripts/__tests__/unreleased-run.test.mjs',
 ]

@@ -284,7 +284,12 @@ genus: [`concepts/loop-shapes.md`](../concepts/loop-shapes.md)):
   `gh workflow disable`), naming the state and
   `gh workflow enable <name>`; and opens a deduped issue
   when an active march has no successful tick in 14h or an
-  active night none in 48h. It also watches `cli-ci` (the
+  active night none in 48h. A success is not a cadence: when
+  march's schedule events in the last 72h fall under 40% of
+  the slots its cron promised (`cadence.mjs realized`;
+  chains, nudges and dispatches never count), one deduped
+  `Heartbeat: march realized cadence below 40%` issue opens.
+  It also watches `cli-ci` (the
   default `NEXUS_HEARTBEAT_WATCH` is `march night cli-ci`):
   when the newest push run of a watched gate on main failed,
   one deduped `Heartbeat: cli-ci is red on main` issue opens,

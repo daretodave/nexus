@@ -4,7 +4,9 @@
 // Three steps decide how hard a loop runs: Cadence (the repo variable
 // NEXUS_CADENCE turned into the ceiling, chain depth, idle backoff and
 // heartbeat threshold), Quota gate (the weekly quota) and Chain next
-// tick (the next run dispatched). Each lives in three places: the
+// tick (the next run dispatched); a fourth, heartbeat's realized-cadence
+// alarm, checks GitHub delivered what the cron promised. Each lives in
+// three places: the
 // workflows nexus runs (.github/workflows), the templates adopters
 // copy (templates/.github/workflows) and the CLI's bundled kit
 // (packages/cli/kit, written by its build, never committed). This
@@ -28,7 +30,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-export const TWIN_STEPS = Object.freeze(['Cadence', 'Quota gate', 'Chain next tick'])
+export const TWIN_STEPS = Object.freeze(['Cadence', 'Quota gate', 'Chain next tick', "Alarm if march's realized cadence is below 40%"])
 export const TWIN_WORKFLOWS = Object.freeze(['march.yml', 'night.yml', 'heartbeat.yml'])
 export const KIT = 'packages/cli/kit'
 const BUNDLED = [

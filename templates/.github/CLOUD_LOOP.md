@@ -432,6 +432,16 @@ threshold. Switching presets is `gh variable set NEXUS_CADENCE
 - Every tick writes one `cadence: ...` line to the step
   summary: `cadence: steady (ceiling 12, chain max 0, idle
   backoff 3, heartbeat 14h)`, plus which variables overrode it.
+- A preset is what the cron promises, not what GitHub
+  delivers: GitHub may delay or drop scheduled runs under
+  load. `heartbeat.yml` counts the slots march.yml's cron
+  promised in the last 72h against the schedule-event runs
+  that started (`node scripts/cloud/cadence.mjs realized`;
+  chains, nudges and dispatches never count), and under 40%
+  opens one `Heartbeat: march realized cadence below 40%`
+  issue, kept to one while it stays open. A cron line changed
+  under 24h ago is not measured yet. The fix is a cron minute
+  off the hour or a slower preset the schedule delivers.
 
 ## The UI walk
 

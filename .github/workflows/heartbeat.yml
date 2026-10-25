@@ -207,6 +207,50 @@ jobs:
           fi
           check_cadence night 48   # daily cadence, one skipped day tolerated
 
+      # Realized cadence, not liveness: GitHub may throttle or drop
+      # scheduled runs, so a cron that promises 8 slots a day can
+      # deliver 2 and the flatline check above still sees a recent
+      # success. This counts the slots march.yml's cron promised in
+      # the last 72h against the schedule-event runs that started
+      # (templates/scripts/cloud/cadence.mjs realized), and under 40% opens
+      # ONE issue. Schedule events only: chains, nudges and
+      # dispatches never mask a throttled schedule. The window starts
+      # no earlier than the commit that last changed the cron line,
+      # and under 24h of it is not measured.
+      - name: Alarm if march's realized cadence is below 40%
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh workflow list --all --limit 200 \
+            --json name,state --jq '.[] | select(.name == "march") | .state' 2>/dev/null || true)
+          if [ "$state" != "active" ]; then
+            echo "march: ${state:-not installed} - realized cadence skipped."
+            exit 0
+          fi
+          since=$(git log -1 --format=%cI -G'cron:' -- .github/workflows/march.yml 2>/dev/null || true)
+          from=$(date -u -d '72 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          runs="${RUNNER_TEMP:-.}/march-schedule-runs.json"
+          if ! gh run list --workflow march --event schedule --created ">=$from" -L 1000 \
+            --json createdAt,event > "$runs" 2>/dev/null; then
+            echo "march: could not list its scheduled runs - realized cadence skipped."
+            exit 0
+          fi
+          rc=0
+          line=$(node templates/scripts/cloud/cadence.mjs realized --march .github/workflows/march.yml --runs "$runs" --since "$since") || rc=$?
+          echo "$line"
+          [ "$rc" = 3 ] || exit 0
+          # One open issue at a time, and only the workflow token's
+          # counts: an outsider's issue with this title never
+          # silences the alarm.
+          existing=$(gh issue list --state open --author app/github-actions \
+            --search 'in:title "Heartbeat: march realized cadence below 40%"' \
+            --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "${existing:-0}" = "0" ]; then
+            gh issue create \
+              --title "Heartbeat: march realized cadence below 40%" \
+              --body "${line#march realized cadence: }. GitHub delivered under 40% of the scheduled march runs its cron promised in the last 72h (schedule events only; chains, nudges and dispatches do not count). The workflow is armed, so the slots are being throttled or dropped, not failing: GitHub delays and drops scheduled runs under load, and minute :00 is the busiest slot. Move the cron's minute off the hour (scripts/cloud/cadence.mjs apply <preset>), or pick a slower preset the schedule actually delivers. Check: gh run list --workflow march --event schedule -L 20. This issue is the one report while it stays open; close it once the schedule recovers."
+          fi
+
       # Motion, not liveness: ticks that succeed and ship nothing
       # look healthy to the cadence check. The motion pulse
       # (scripts/plan/motion.mjs, the lines pulse --motion prints)

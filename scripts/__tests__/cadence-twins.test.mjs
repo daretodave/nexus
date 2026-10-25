@@ -90,6 +90,6 @@ describe('check', () => {
     }
     const r = check('.', tree(files));
     assert.deepEqual(r.problems, []);
-    assert.match(r.note, /^5 named steps agree/);
+    assert.match(r.note, /^6 named steps agree/);
   });
 });

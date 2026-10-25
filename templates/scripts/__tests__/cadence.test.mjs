@@ -9,8 +9,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import {
-  CADENCES, DEFAULT_CADENCE, OFF_MARKER, PRESETS, applyPreset, cronOf, describe as line, main, presetOf, resolve,
-  setCeiling, setCron, setHeartbeatHours,
+  CADENCES, DEFAULT_CADENCE, OFF_MARKER, PRESETS, REALIZED_FLOOR, REALIZED_HOURS, applyPreset, cronOf, cronSlots,
+  cronsOf, describe as line, main, parseCron, presetOf, realized, resolve, setCeiling, setCron, setHeartbeatHours,
 } from '../cloud/cadence.mjs';
 import { CADENCES as BOOTSTRAP_CADENCES, DEFAULT_CADENCE as BOOTSTRAP_DEFAULT } from '../bootstrap.mjs';
 
@@ -202,5 +202,152 @@ describe('the workflows read the Cadence step', () => {
     assert.match(heartbeat, /CADENCE_HOURS: \$\{\{ steps\.cadence\.outputs\.heartbeat_hours \}\}/);
     assert.match(heartbeat, /HEARTBEAT_HOURS: \$\{\{ vars\.NEXUS_HEARTBEAT_HOURS \}\}/);
     assert.ok(heartbeat.indexOf('- name: Cadence\n') < heartbeat.indexOf('CADENCE_HOURS'));
+  });
+});
+
+// ---- the realized-cadence alarm (spec 55.8) --------------------------------------------------------------------
+
+const FIXTURE = JSON.parse(fs.readFileSync(path.join(TEMPLATES, 'scripts', '__tests__', 'fixtures', 'realized-cadence-2026-09.json'), 'utf8'));
+const asRuns = (loop) => loop.runs.map((createdAt) => ({ createdAt, event: 'schedule' }));
+const H = 3600000;
+
+describe('the cron reader', () => {
+  it('counts the slots a cron promises, each minute once', () => {
+    const day = [Date.UTC(2026, 8, 1), Date.UTC(2026, 8, 2)];
+    assert.equal(cronSlots(['0 * * * *'], ...day), 24);
+    assert.equal(cronSlots(['*/40 * * * *'], ...day), 48); // :00 and :40, not every 40 minutes
+    assert.equal(cronSlots(['17 */3 * * *'], ...day), 8);
+    assert.equal(cronSlots(['17 */6 * * *'], ...day), 4);
+    assert.equal(cronSlots(['0 2,8,14,20 * * *'], ...day), 4);
+    assert.equal(cronSlots(['0 1,3,5,7,9,11,23 * * *'], ...day), 7);
+    assert.equal(cronSlots(['0 9-17/2 * * *'], ...day), 5);
+    assert.equal(cronSlots(['0 * * * *', '0 */2 * * *'], ...day), 24);
+    // 2026-09-01 is a Tuesday: weekdays only, by number and by name; Sunday as 0 and 7.
+    assert.equal(cronSlots(['0 12 * * 1-5'], ...day), 1);
+    assert.equal(cronSlots(['0 12 * * MON-FRI'], ...day), 1);
+    assert.equal(cronSlots(['0 12 * * 0'], ...day), 0);
+    assert.equal(cronSlots(['0 12 * * 7'], Date.UTC(2026, 8, 6), Date.UTC(2026, 8, 7)), 1);
+    // Both day fields restricted: either matches (the 1st, or any Tuesday).
+    assert.equal(cronSlots(['0 0 1 * 2'], Date.UTC(2026, 8, 1) - 1, Date.UTC(2026, 9, 1) - 1), 5);
+    assert.equal(cronSlots(['0 0 1 jan *'], Date.UTC(2026, 0, 1) - 1, Date.UTC(2026, 0, 2)), 1);
+  });
+
+  it('refuses what it cannot read', () => {
+    for (const bad of ['* * * *', '60 * * * *', '0 24 * * *', '*/0 * * * *', 'x * * * *']) assert.throws(() => parseCron(bad), /cron:/);
+  });
+
+  it('reads every cron line of a schedule, and none from a file without one', () => {
+    assert.deepEqual(cronsOf(tpl('.github/workflows/march.yml')), [cronOf(tpl('.github/workflows/march.yml'))]);
+    assert.deepEqual(cronsOf("on:\n  schedule:\n    # two\n    - cron: '0 * * * *'\n    - cron: \"30 1 * * *\"  # late\n  workflow_dispatch:\n"), ['0 * * * *', '30 1 * * *']);
+    assert.deepEqual(cronsOf(`on:\n${OFF_MARKER}\n  workflow_dispatch:\n`), []);
+  });
+});
+
+describe('realized cadence, replayed against September 2026', () => {
+  /** Every 6h from 09-04 to 09-30: each window holds a full 72h of the month. */
+  const windows = [];
+  for (let t = Date.UTC(2026, 8, 4); t <= Date.UTC(2026, 8, 30, 18); t += 6 * H) windows.push(t);
+
+  for (const name of ['adopter-hourly', 'adopter-40min']) {
+    it(`${name}: every 72h window is under 40% of what the cron promised, and alarms`, () => {
+      const loop = FIXTURE.loops[name];
+      for (const now of windows) {
+        const r = realized({ crons: [loop.cron], runs: asRuns(loop), now });
+        assert.equal(r.measured, true);
+        assert.ok(r.alarm && r.ratio < REALIZED_FLOOR, `${new Date(now).toISOString()}: ${r.runs}/${r.slots}`);
+      }
+    });
+  }
+
+  it("nexus's own schedule, late but delivered, never alarms", () => {
+    const loop = FIXTURE.loops.nexus;
+    for (const now of windows) {
+      const r = realized({ crons: [loop.cron], runs: asRuns(loop), now });
+      assert.equal(r.slots, 12);
+      assert.equal(r.alarm, false, `${new Date(now).toISOString()}: ${r.runs}/${r.slots}`);
+    }
+  });
+
+  it('counts schedule events only: dispatched, chained and nudged runs never mask a throttled schedule', () => {
+    const loop = FIXTURE.loops['adopter-hourly'];
+    const now = Date.UTC(2026, 8, 20);
+    const extra = Array.from({ length: 72 }, (_, i) => ({ createdAt: new Date(now - i * H - 60000).toISOString(), event: 'workflow_dispatch' }));
+    const r = realized({ crons: [loop.cron], runs: [...asRuns(loop), ...extra], now });
+    assert.equal(r.runs, realized({ crons: [loop.cron], runs: asRuns(loop), now }).runs);
+    assert.equal(r.alarm, true);
+  });
+
+  it('a cron line changed inside the window is measured from the change, and not before 24h of it', () => {
+    const loop = FIXTURE.loops['adopter-hourly'];
+    const now = Date.UTC(2026, 8, 20);
+    const young = realized({ crons: [loop.cron], runs: asRuns(loop), now, since: new Date(now - 10 * H).toISOString() });
+    assert.equal(young.measured, false);
+    assert.equal(young.alarm, false);
+    assert.match(young.why, /the cron line changed/);
+    const cut = realized({ crons: [loop.cron], runs: asRuns(loop), now, since: new Date(now - 30 * H).toISOString() });
+    assert.equal(cut.slots, 30);
+    assert.equal(cut.measured, true);
+  });
+
+  it('no schedule (the off preset) is nothing to measure', () => {
+    const r = realized({ crons: [], runs: [], now: Date.UTC(2026, 8, 20) });
+    assert.deepEqual([r.measured, r.alarm], [false, false]);
+  });
+});
+
+describe('cadence.mjs realized', () => {
+  function cli(argv) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cadence-realized-'));
+    const env = { GITHUB_OUTPUT: path.join(dir, 'out'), GITHUB_STEP_SUMMARY: path.join(dir, 'summary') };
+    const logged = [];
+    const code = main(argv(dir), { env, log: (s) => logged.push(s), warn: (s) => logged.push(s) });
+    const out = fs.existsSync(env.GITHUB_OUTPUT) ? fs.readFileSync(env.GITHUB_OUTPUT, 'utf8') : '';
+    return { code, logged: logged.join('\n'), out };
+  }
+  const write = (dir, name, body) => {
+    const p = path.join(dir, name);
+    fs.writeFileSync(p, typeof body === 'string' ? body : JSON.stringify(body));
+    return p;
+  };
+
+  it('exits 3 and writes its outputs when the schedule delivered under 40%', () => {
+    const loop = FIXTURE.loops['adopter-40min'];
+    const r = cli((dir) => ['realized', '--runs', write(dir, 'runs.json', asRuns(loop)), '--cron', loop.cron, '--now', '2026-09-20T00:00:00Z']);
+    assert.equal(r.code, 3);
+    assert.match(r.logged, /^march realized cadence: \d+ of 144 promised slots ran in 72h \(\d+%, alarm under 40%; cron '\*\/40 \* \* \* \*'\)$/);
+    assert.match(r.out, /realized_slots=144\n/);
+    assert.match(r.out, /realized_alarm=true\n/);
+  });
+
+  it('reads the cron from march.yml, and exits 0 when the schedule is delivered', () => {
+    const loop = FIXTURE.loops.nexus;
+    const r = cli((dir) => ['realized', '--runs', write(dir, 'runs.json', asRuns(loop)), '--march', write(dir, 'march.yml', `on:\n  schedule:\n    - cron: '${loop.cron}'\n`), '--now', '2026-09-20T00:00:00Z']);
+    assert.equal(r.code, 0);
+    assert.match(r.out, /realized_alarm=false\n/);
+  });
+
+  it('never alarms on what it cannot read', () => {
+    for (const argv of [
+      (dir) => ['realized', '--runs', path.join(dir, 'missing.json'), '--cron', '0 * * * *'],
+      (dir) => ['realized', '--runs', write(dir, 'runs.json', '{"not": "a list"}'), '--cron', '0 * * * *'],
+      (dir) => ['realized', '--runs', write(dir, 'runs.json', []), '--cron', 'not a cron'],
+      (dir) => ['realized', '--runs', write(dir, 'runs.json', []), '--march', path.join(dir, 'no-march.yml')],
+    ]) {
+      const r = cli(argv);
+      assert.equal(r.code, 0);
+      assert.match(r.logged, /not measured/);
+    }
+  });
+});
+
+describe('heartbeat runs the realized-cadence alarm', () => {
+  const heartbeat = tpl('.github/workflows/heartbeat.yml');
+  it('after the flatline check, over schedule events, with the 72h window and the one title', () => {
+    assert.ok(heartbeat.indexOf("- name: Alarm if march's realized cadence is below 40%") > heartbeat.indexOf('check_cadence night 48'));
+    assert.match(heartbeat, /gh run list --workflow march --event schedule --created ">=\$from"/);
+    assert.match(heartbeat, /node scripts\/cloud\/cadence\.mjs realized --march \.github\/workflows\/march\.yml/);
+    assert.match(heartbeat, /--title "Heartbeat: march realized cadence below 40%"/);
+    assert.equal(REALIZED_HOURS, 72);
+    assert.equal(REALIZED_FLOOR, 0.4);
   });
 });

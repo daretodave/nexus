@@ -9,6 +9,8 @@
 //                                          [--idle-backoff <N>] [--heartbeat-hours <N|none>]
 //   node scripts/cloud/cadence.mjs apply <word> [--march <path>] [--heartbeat <path>] [--cron <expr>]
 //                                        [--ceiling <N>] [--write]
+//   node scripts/cloud/cadence.mjs realized --runs <file> [--march <path> | --cron <expr>] [--since <ISO>]
+//                                           [--now <ISO>] [--hours <N>] [--floor <0..1>]
 //   node scripts/cloud/cadence.mjs show
 //
 // | Preset | Cron written   | Heartbeat h | Ceiling | Chain max | Idle backoff |
@@ -30,6 +32,13 @@
 // apply: writes a preset into the files: the march.yml cron line (off: the schedule comes out, and a later preset
 // puts it back), its `ceiling=<N>` line, and heartbeat.yml's `march_hours=<N>` line. --cron and --ceiling override
 // the preset's. Dry run by default (prints what would change); --write writes. Never commits.
+//
+// realized: heartbeat.yml's realized-cadence alarm. --runs is `gh run list --workflow march --event schedule --json
+// createdAt,event`; the cron comes from --cron or the march.yml at --march (default .github/workflows/march.yml);
+// --since (the commit that last changed the cron line) cuts the window's start. Prints one line, writes the outputs
+// `realized_runs`, `realized_slots`, `realized_pct` and `realized_alarm` and the line to the step summary, and exits 3
+// when the schedule delivered under --floor (default 0.4) of the slots in the last --hours (default 72); 0 otherwise,
+// an unreadable input included (never a false alarm).
 //
 // Zero dependencies.
 import fs from 'node:fs';
@@ -176,6 +185,127 @@ export function applyPreset(name, { march = null, heartbeat = null, cron, ceilin
   return out;
 }
 
+// ---- the realized-cadence alarm --------------------------------------------------------------------------------
+//
+// GitHub may throttle or drop scheduled runs: a cron can promise 24 slots a day and deliver 6. heartbeat.yml counts
+// the slots march.yml's cron promised in the last 72h (UTC, as GitHub reads it) against the schedule-event runs that
+// actually started, and under 40% opens one issue. Schedule events only: chains, nudges and dispatches never mask a
+// throttled schedule.
+
+/** The window heartbeat measures, and the share of promised slots under which it alarms. */
+export const REALIZED_HOURS = 72;
+export const REALIZED_FLOOR = 0.4;
+/** A window shorter than this (a cron line changed, or march.yml was added, inside the 72h) is not measured. */
+export const REALIZED_MIN_HOURS = 24;
+
+const CRON_NAMES = {
+  month: ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'],
+  dow: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
+};
+
+function cronField(spec, min, max, names) {
+  const val = (s) => {
+    const i = names ? names.indexOf(s.toLowerCase()) : -1;
+    const n = i >= 0 ? i + (min === 1 ? 1 : 0) : Number(s);
+    if (!Number.isInteger(n) || n < min || n > max) throw new Error(`cron: ${JSON.stringify(s)} is out of range ${min}-${max}`);
+    return n;
+  };
+  const out = new Set();
+  for (const part of spec.split(',')) {
+    const m = /^(\*|[\w]+(?:-[\w]+)?)(?:\/(\d+))?$/.exec(part);
+    if (!m) throw new Error(`cron: cannot read ${JSON.stringify(part)}`);
+    const step = m[2] === undefined ? 1 : Number(m[2]);
+    if (step < 1) throw new Error(`cron: step ${m[2]} must be at least 1`);
+    let lo;
+    let hi;
+    if (m[1] === '*') [lo, hi] = [min, max];
+    else if (m[1].includes('-')) [lo, hi] = m[1].split('-').map(val);
+    else [lo, hi] = [val(m[1]), m[2] === undefined ? val(m[1]) : max];
+    for (let v = lo; v <= hi; v += step) out.add(v);
+  }
+  return out;
+}
+
+/** A five-field cron expression (`*`, lists, ranges, steps, month and day names), or a thrown Error. */
+export function parseCron(expr) {
+  const f = String(expr).trim().split(/\s+/);
+  if (f.length !== 5) throw new Error(`cron: ${JSON.stringify(String(expr))} needs five fields`);
+  const dow = cronField(f[4], 0, 7, CRON_NAMES.dow);
+  if (dow.has(7)) dow.add(0);
+  return {
+    minute: cronField(f[0], 0, 59),
+    hour: cronField(f[1], 0, 23),
+    dom: cronField(f[2], 1, 31),
+    month: cronField(f[3], 1, 12, CRON_NAMES.month),
+    dow,
+    domAny: f[2] === '*',
+    dowAny: f[4] === '*',
+  };
+}
+
+/** Whether a parsed cron fires at this UTC minute. Day of month and day of week both restricted: either matches. */
+export function cronFires(c, date) {
+  if (!c.minute.has(date.getUTCMinutes()) || !c.hour.has(date.getUTCHours()) || !c.month.has(date.getUTCMonth() + 1)) return false;
+  const dom = c.dom.has(date.getUTCDate());
+  const dow = c.dow.has(date.getUTCDay());
+  if (c.domAny || c.dowAny) return dom && dow;
+  return dom || dow;
+}
+
+/** The slots the cron lines promise in (fromMs, toMs]: each minute counted once, however many lines fire in it. */
+export function cronSlots(crons, fromMs, toMs) {
+  const parsed = crons.map(parseCron);
+  let n = 0;
+  for (let t = Math.floor(fromMs / 60000) * 60000 + 60000; t <= toMs; t += 60000) {
+    const d = new Date(t);
+    if (parsed.some((c) => cronFires(c, d))) n++;
+  }
+  return n;
+}
+
+/** Every `- cron: '...'` line a workflow's schedule holds (march.yml has one; a hand-edited file may have more). */
+export function cronsOf(yml) {
+  const t = String(yml).replace(/\r\n/g, '\n');
+  const block = /\n {2}schedule:\n((?: {4}(?:#.*|- cron: .*)\n)+)/.exec(t);
+  if (!block) return [];
+  return [...block[1].matchAll(/- cron: ['"]([^'"]+)['"]/g)].map((m) => m[1]);
+}
+
+/**
+ * The realized cadence: schedule-event runs started in the window against the slots the crons promised. The window
+ * is the last `hours`, cut to start no earlier than `since` (the commit that last changed march.yml's cron line, so a
+ * new cron is measured only against itself). Returns { measured, why, slots, runs, ratio, alarm, start, end }:
+ * measured false (no alarm) when there is no cron, the window is under REALIZED_MIN_HOURS, or it promised nothing.
+ */
+export function realized({ crons, runs, now = Date.now(), since, hours = REALIZED_HOURS, floor = REALIZED_FLOOR, minHours = REALIZED_MIN_HOURS }) {
+  const end = typeof now === 'number' ? now : Date.parse(now);
+  let start = end - hours * 3600000;
+  const s = since ? Date.parse(since) : NaN;
+  if (Number.isFinite(s) && s > start) start = s;
+  const base = { measured: false, alarm: false, slots: 0, runs: 0, ratio: null, start, end, hours, floor };
+  if (!crons?.length) return { ...base, why: 'no schedule in march.yml - nothing to measure' };
+  if (end - start < minHours * 3600000) {
+    return { ...base, why: `the cron line changed ${new Date(start).toISOString()}, under ${minHours}h ago - measured once ${minHours}h have passed` };
+  }
+  const slots = cronSlots(crons, start, end);
+  const count = (runs ?? []).filter((r) => {
+    if (r?.event && r.event !== 'schedule') return false;
+    const t = Date.parse(r?.createdAt ?? '');
+    return t > start && t <= end;
+  }).length;
+  if (!slots) return { ...base, runs: count, why: 'the cron promised no slot in the window - nothing to measure' };
+  const ratio = count / slots;
+  return { ...base, measured: true, slots, runs: count, ratio, alarm: ratio < floor, why: '' };
+}
+
+/** The one line: `march realized cadence: 18 of 72 promised slots ran in 72h (25%, alarm under 40%; cron '0 * * * *')`. */
+export function describeRealized(r, crons = []) {
+  const cron = crons.length ? `; cron ${crons.map((c) => `'${c}'`).join(', ')}` : '';
+  if (!r.measured) return `march realized cadence: not measured (${r.why})`;
+  const h = Math.round((r.end - r.start) / 3600000);
+  return `march realized cadence: ${r.runs} of ${r.slots} promised slots ran in ${h}h (${Math.round(r.ratio * 100)}%, alarm under ${Math.round(r.floor * 100)}%${cron})`;
+}
+
 // ---- the command -----------------------------------------------------------------------------------------------
 
 function flags(rest) {
@@ -189,7 +319,7 @@ function flags(rest) {
   return out;
 }
 
-const USAGE = 'usage: node scripts/cloud/cadence.mjs resolve [--cadence <word>] [--ceiling <N>] [--chain-max <N>] [--idle-backoff <N>] [--heartbeat-hours <N|none>] | apply <word> [--march <path>] [--heartbeat <path>] [--cron <expr>] [--ceiling <N>] [--write] | show';
+const USAGE = 'usage: node scripts/cloud/cadence.mjs resolve [--cadence <word>] [--ceiling <N>] [--chain-max <N>] [--idle-backoff <N>] [--heartbeat-hours <N|none>] | apply <word> [--march <path>] [--heartbeat <path>] [--cron <expr>] [--ceiling <N>] [--write] | realized --runs <file> [--march <path> | --cron <expr>] [--since <ISO>] [--now <ISO>] [--hours <N>] [--floor <0..1>] | show';
 
 export function main(argv, { env = process.env, log = console.log, warn = console.error } = {}) {
   const [cmd, ...rest] = argv;
@@ -215,6 +345,45 @@ export function main(argv, { env = process.env, log = console.log, warn = consol
       if (env.GITHUB_STEP_SUMMARY) fs.appendFileSync(env.GITHUB_STEP_SUMMARY, line + '\n');
     } catch {}
     return 0;
+  }
+  if (cmd === 'realized' && !f._.length) {
+    let crons;
+    if (f.cron) crons = [f.cron];
+    else {
+      const p = f.march || '.github/workflows/march.yml';
+      if (!fs.existsSync(p)) {
+        log(`march realized cadence: not measured (no ${p})`);
+        return 0;
+      }
+      crons = cronsOf(fs.readFileSync(p, 'utf8'));
+    }
+    let runs;
+    try {
+      runs = JSON.parse(fs.readFileSync(f.runs, 'utf8'));
+      if (!Array.isArray(runs)) throw new Error('not a JSON array');
+    } catch (e) {
+      log(`march realized cadence: not measured (cannot read the run list ${f.runs || '(no --runs)'}: ${e.message})`);
+      return 0;
+    }
+    const num = (v, d) => (v === undefined || String(v).trim() === '' || !Number.isFinite(Number(v)) ? d : Number(v));
+    const at = f.now ? Date.parse(f.now) : NaN;
+    let r;
+    try {
+      r = realized({ crons, runs, now: Number.isFinite(at) ? at : Date.now(), since: f.since, hours: num(f.hours, REALIZED_HOURS), floor: num(f.floor, REALIZED_FLOOR) });
+    } catch (e) {
+      log(`march realized cadence: not measured (${e.message})`);
+      return 0;
+    }
+    const line = describeRealized(r, crons);
+    log(line);
+    const pct = r.ratio === null ? '' : String(Math.round(r.ratio * 100));
+    try {
+      if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `realized_runs=${r.runs}\nrealized_slots=${r.slots}\nrealized_pct=${pct}\nrealized_alarm=${r.alarm}\n`);
+    } catch {}
+    try {
+      if (env.GITHUB_STEP_SUMMARY) fs.appendFileSync(env.GITHUB_STEP_SUMMARY, line + '\n');
+    } catch {}
+    return r.alarm ? 3 : 0;
   }
   if (cmd === 'apply' && f._.length === 1) {
     const read = (p) => (p && fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);

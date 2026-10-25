@@ -74,6 +74,11 @@ hours it checks the other loops' vital signs:
   pager. One threshold per loop (a 6h dispatcher at 14h, a
   daily digest at 48h), and successful runs only: a loop
   failing every tick must not reset its own timer.
+- Scheduled runs under 40% of the slots the cron promised in
+  72h → one deduped issue. The platform may throttle a
+  schedule while every run that does start succeeds, so
+  liveness looks fine; only scheduled runs count, so chained
+  or nudged ticks never mask it.
 - A watched CI gate red on the default branch (its newest
   push run failed) → one deduped issue per gate, which the
   next triage routes into the loop's queue as a bug.

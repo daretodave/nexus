@@ -754,7 +754,7 @@ nexus/
     │   ├── cloud/lost.mjs             # lost-to-background mark: a result parked on background work, no commit
     │   ├── cloud/idle.mjs             # idle probe: a scheduled tick skips the model when nothing changed; the no-op reason
     │   ├── cloud/chain.mjs            # self-chaining: a tick that shipped dispatches the next while work is ready, every guard holding
-    │   ├── cloud/cadence.mjs          # the cadence presets (calm, steady, eager, sprint, off): NEXUS_CADENCE into ceiling, chain max, idle backoff, heartbeat hours; apply writes the cron
+    │   ├── cloud/cadence.mjs          # the cadence presets (calm, steady, eager, sprint, off): NEXUS_CADENCE into ceiling, chain max, idle backoff, heartbeat hours; apply writes the cron; realized counts delivered slots
     │   ├── cloud/nudge-check.mjs      # nudge.yml's check: who starts a tick, the queue, NEXUS_EVENT_MAX; the one dispatch
     │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
     │   ├── design/ingest.mjs          # /design ingest: an export folder -> design/handoff/<date>/ + manifest.json (sha256 per file) + README; check, rehash
@@ -800,6 +800,8 @@ nexus/
     │   ├── __tests__/heartbeat-quota.test.mjs # heartbeat's cadence step in bash: no flatline while paused
     │   ├── __tests__/heartbeat-red.test.mjs # heartbeat's red-gate step in bash: a failed CI run on main opens one issue
     │   ├── __tests__/heartbeat-motion.test.mjs # heartbeat's motion step in bash: one stall issue, none while paused
+    │   ├── __tests__/heartbeat-realized.test.mjs # heartbeat's realized-cadence step in bash: throttled schedules open one issue
+    │   ├── __tests__/fixtures/realized-cadence-2026-09.json # September 2026 schedule-event run lists: two throttled, one delivered
     │   ├── __tests__/upgrade-plan.test.mjs # the v1 to v2 converter, pure
     │   ├── __tests__/upgrade-plan-run.test.mjs # the converter over git, dry run and --write (offline)
     │   ├── __tests__/plot-run.test.mjs # a plot: settle, plan-check and order agree (offline)

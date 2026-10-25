@@ -348,6 +348,10 @@ Each piece is independently opt-in:
   Its motion step runs `scripts/plan/motion.mjs` (copied
   with the plan scripts; skipped when absent) and reads
   `Motion floor` and `stall_action` from `plan/bearings.md`.
+  Its realized-cadence step runs `scripts/cloud/cadence.mjs`
+  (copied with the cloud scripts) and opens one issue when
+  march's scheduled runs fall under 40% of the cron's slots
+  in 72h.
 - **`nightly-smoke.yml`** — only if hermetic e2e is adopted
   and `night.yml` isn't already running its own
   `SMOKE_SAMPLE=full` breadth step (see
