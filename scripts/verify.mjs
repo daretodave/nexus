@@ -70,6 +70,14 @@
 //                 composite action in .github/actions/ and
 //                 templates/.github/actions/ keeps the run-script
 //                 rule and reads no secret
+//   cadence-twins the Cadence, Quota gate and Chain next tick steps
+//                 (by step name) agree across nexus's own march,
+//                 night and heartbeat workflows and the templates'
+//                 (same env names, variables, step outputs, script,
+//                 subcommand and flags; paths and defaults may
+//                 differ), and the CLI's bundled kit
+//                 (packages/cli/kit, when built) holds them and
+//                 cadence.mjs byte for byte as templates/ does
 //   diagrams      every assets/*.svg is byte-identical to what
 //                 scripts/diagrams.mjs generates (regenerated in
 //                 memory; a hand edit, a missing or a stray SVG is
@@ -943,6 +951,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/lost.test.mjs',
   'templates/scripts/__tests__/idle.test.mjs',
   'templates/scripts/__tests__/chain.test.mjs',
+  'templates/scripts/__tests__/cadence.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
   'templates/scripts/__tests__/loop-issue.test.mjs',
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
@@ -1122,22 +1131,48 @@ function marchGovernorCheck(readFile = read) {
 // Spec 55: self-chaining. Each march.yml copy takes a numeric `chain`
 // input, its ceiling step hands the chain its ceiling, and every
 // "Chain next tick" step runs chain.mjs with this run's depth, its
-// quota reading and NEXUS_CHAIN_MAX (no other default, so the variable
-// alone decides whether a repo chains), with `actions: write` to
-// dispatch. The guards themselves are chain.test.mjs's.
+// quota reading and the chain max its job's Cadence step resolved
+// (55.5: NEXUS_CHAIN_MAX, else the NEXUS_CADENCE preset's; neither
+// carries a default of its own, so the variables alone decide whether
+// a repo chains), with `actions: write` to dispatch. The guards
+// themselves are chain.test.mjs's.
 function marchChainCheck(file, text, ceilingStep) {
   const failures = []
-  if (!/^\s{6}chain:\s*\n(?:\s{8}.*\n)*?\s{8}type:\s*number\s*$/m.test(text.replace(/\r\n/g, '\n'))) failures.push(`${file}: no numeric workflow_dispatch \`chain\` input`)
+  const lf = text.replace(/\r\n/g, '\n')
+  if (!/^\s{6}chain:\s*\n(?:\s{8}.*\n)*?\s{8}type:\s*number\s*$/m.test(lf)) failures.push(`${file}: no numeric workflow_dispatch \`chain\` input`)
   if (!/echo "ceiling=\$ceiling" >> "\$GITHUB_OUTPUT"/.test(ceilingStep)) failures.push(`${file}: the ceiling step never outputs \`ceiling\` (the chain step's budget guard reads it)`)
-  const steps = text.replace(/\r\n/g, '\n').split(/\n(?= {6}- )/).filter((s) => /^ {6}- name: Chain next tick\s*$/m.test(s))
+  if (!/CADENCE_CEILING: \$\{\{ steps\.cadence\.outputs\.ceiling \}\}/.test(ceilingStep)) failures.push(`${file}: the ceiling step must read the Cadence step's ceiling (CADENCE_CEILING: \${{ steps.cadence.outputs.ceiling }})`)
+  const steps = lf.split(/\n(?= {6}- )/).filter((s) => /^ {6}- name: Chain next tick\s*$/m.test(s))
   if (!steps.length) failures.push(`${file}: no "Chain next tick" step`)
   for (const s of steps) {
     if (!/cloud\/chain\.mjs\b/.test(s)) failures.push(`${file}: "Chain next tick" does not run chain.mjs`)
-    if (!/CHAIN_MAX: \$\{\{ vars\.NEXUS_CHAIN_MAX \}\}/.test(s)) failures.push(`${file}: "Chain next tick" must read NEXUS_CHAIN_MAX with no default of its own`)
+    if (!/CHAIN_MAX: \$\{\{ steps\.cadence\.outputs\.chain_max \}\}/.test(s)) failures.push(`${file}: "Chain next tick" must read the chain max its Cadence step resolved (CHAIN_MAX: \${{ steps.cadence.outputs.chain_max }})`)
     if (!/CHAIN: \$\{\{ inputs\.chain \}\}/.test(s) || !/--quota "\$QUOTA"/.test(s)) failures.push(`${file}: "Chain next tick" must pass this run's chain input and quota reading`)
+    // The steps of this step's job before it: back to the last job header (`  <name>:` alone on its line).
+    const before = lf.slice(0, lf.indexOf(s))
+    const head = [...before.matchAll(/\n {2}[\w-]+:\n/g)].pop()
+    if (!/^ {6}- name: Cadence\s*$/m.test(head ? before.slice(head.index) : before)) failures.push(`${file}: the job that runs "Chain next tick" has no Cadence step before it`)
+  }
+  for (const s of lf.split(/\n(?= {6}- )/).filter((x) => /^ {6}- name: Cadence\s*$/m.test(x))) {
+    if (!/cloud\/cadence\.mjs resolve\b/.test(s)) failures.push(`${file}: a Cadence step does not run cadence.mjs resolve`)
+    for (const v of ['NEXUS_CADENCE', 'NEXUS_CHAIN_MAX']) {
+      if (!new RegExp(`\\$\\{\\{ vars\\.${v} \\}\\}`).test(s)) failures.push(`${file}: a Cadence step must read ${v} with no default of its own`)
+    }
   }
   if (!/^\s+actions:\s*write\b/m.test(text)) failures.push(`${file}: the chain step needs \`actions: write\` to dispatch`)
   return failures
+}
+
+// --- leg: cadence-twins -------------------------------------------------------
+// Spec 55.5: the Cadence, Quota gate and Chain next tick steps must not
+// drift between the copy nexus runs, the template adopters copy and
+// the CLI's bundled kit (scripts/cadence-twins.mjs), plus its suite.
+
+async function legCadenceTwins() {
+  const { check } = await import(pathToFileURL(path.join(ROOT, 'scripts/cadence-twins.mjs')).href)
+  const { problems, note } = check(ROOT)
+  const suite = runSuites(['scripts/__tests__/cadence-twins.test.mjs'], 'checker')
+  return { failures: [...problems, ...suite.failures], note: `${note}; ${suite.note}` }
 }
 
 // --- leg: diagrams ------------------------------------------------------------
@@ -1264,6 +1299,7 @@ const LEGS = {
   chunks: () => legChunks(),
   scripts: () => legScripts(),
   workflows: () => legWorkflows(),
+  'cadence-twins': () => legCadenceTwins(),
   diagrams: () => legDiagrams(),
   gifs: () => legGifs(),
   secrets: () => legSecrets(),

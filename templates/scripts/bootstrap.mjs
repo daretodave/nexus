@@ -29,7 +29,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -52,14 +52,20 @@ export const PR_MODE_FILES = [
 ]
 // Files the march.yml and night.yml jobs run, whatever the mode: the quota governor, the lost-to-background mark
 // march runs after the model (it reads the output through the governor's parser), the idle probe with its
-// no-op reason (it reads through both), and the chain step that dispatches the next tick (it reads through the
-// governor and the probe).
+// no-op reason (it reads through both), the chain step that dispatches the next tick (it reads through the
+// governor and the probe), and the cadence step that turns NEXUS_CADENCE into the ceiling, chain depth and backoff.
 export const LOOP_FILES = [
   'scripts/cloud/quota.mjs',
   'scripts/cloud/lost.mjs',
   'scripts/cloud/idle.mjs',
   'scripts/cloud/chain.mjs',
+  'scripts/cloud/cadence.mjs',
 ]
+// The cadence presets (scripts/cloud/cadence.mjs PRESETS, which owns the table; a test holds the two lists equal).
+// The manifest's cloud_loop.cadence names one; a new adoption gets DEFAULT_CADENCE.
+export const CADENCES = ['calm', 'steady', 'eager', 'sprint', 'off']
+export const DEFAULT_CADENCE = 'steady'
+const HEARTBEAT_PATH = '.github/workflows/heartbeat.yml'
 
 // ─────────────────────────────────────────────────────────────
 // Logging
@@ -385,6 +391,9 @@ function discoverGithub(git) {
     out.loopMode = out.variables.includes('NEXUS_LOOP_MODE')
       ? sh(`gh variable get NEXUS_LOOP_MODE -R ${git.owner}/${git.repo}`, { quiet: true }).stdout
       : ''
+    out.cadence = out.variables.includes('NEXUS_CADENCE')
+      ? sh(`gh variable get NEXUS_CADENCE -R ${git.owner}/${git.repo}`, { quiet: true }).stdout
+      : ''
     const inst = sh(`gh api /repos/${git.owner}/${git.repo}/installation -H "Accept: application/vnd.github+json" 2>&1`, { quiet: true })
     out.claudeAppInstalled = inst.code === 0 && /\"app_slug\"\s*:\s*\"claude\"/.test(inst.stdout)
   }
@@ -427,6 +436,7 @@ function discoverCloudLoop(env, githubState) {
     claudeOauthSet: (githubState.secrets ?? []).includes('CLAUDE_CODE_OAUTH_TOKEN'),
     actionsPatSet: (githubState.secrets ?? []).includes('ACTIONS_PAT'),
     loopMode: githubState.loopMode ?? '',
+    cadence: githubState.cadence ?? '',
     prFilesMissing: PR_MODE_FILES.filter((f) => !fs.existsSync(f)),
   }
 }
@@ -482,6 +492,7 @@ function printStateReport(s, manifest) {
   log.info(`  CLAUDE_CODE_OAUTH:   ${tick(s.cloudLoop.claudeOauthSet)}`)
   log.info(`  ACTIONS_PAT:         ${tick(s.cloudLoop.actionsPatSet)}`)
   log.info(`  NEXUS_LOOP_MODE:     ${s.cloudLoop.loopMode || '(unset: pull requests)'}`)
+  log.info(`  NEXUS_CADENCE:       ${s.cloudLoop.cadence || '(unset: the workflow literals, no chain)'}`)
   log.info(`  PR-mode files:       ${tick(!s.cloudLoop.prFilesMissing.length)}`)
   log.hr2()
 }
@@ -551,10 +562,22 @@ export function loopMode(manifest) {
   return mode
 }
 
+// The manifest's cloud_loop.cadence: one of CADENCES. Absent: DEFAULT_CADENCE on a new adoption (no march.yml yet),
+// and nothing on an existing one (its NEXUS_CADENCE, set or not, stays as the repo has it).
+export function cadenceOf(manifest, cloudLoop = {}) {
+  const c = manifest?.cloud_loop?.cadence
+  if (c === undefined || c === null || c === '') return cloudLoop.workflowPresent ? null : DEFAULT_CADENCE
+  if (!CADENCES.includes(c)) {
+    throw new Error(`cloud_loop.cadence must be one of ${CADENCES.join(' | ')} (got ${JSON.stringify(c)})`)
+  }
+  return c
+}
+
 export function cloudLoopActions(cloudLoop, manifest) {
   const actions = []
   if (!manifest.cloud_loop?.enabled) return actions
   const mode = loopMode(manifest)
+  const cadence = cadenceOf(manifest, cloudLoop)
   if (!cloudLoop.workflowPresent) {
     actions.push({ provider: 'cloud-loop', verb: 'install-workflow', desc: 'install .github/workflows/march.yml' })
   }
@@ -563,6 +586,9 @@ export function cloudLoopActions(cloudLoop, manifest) {
   }
   if (mode && cloudLoop.loopMode !== mode) {
     actions.push({ provider: 'cloud-loop', verb: 'set-loop-mode', mode, desc: `set repo variable NEXUS_LOOP_MODE=${mode}` })
+  }
+  if (cadence && cloudLoop.cadence !== cadence) {
+    actions.push({ provider: 'cloud-loop', verb: 'set-cadence', cadence, desc: `set repo variable NEXUS_CADENCE=${cadence} (and the cron line it writes)` })
   }
   if (!cloudLoop.claudeOauthSet) {
     actions.push({ provider: 'cloud-loop', verb: 'set-claude-oauth', handoff: true, desc: 'set CLAUDE_CODE_OAUTH_TOKEN secret' })
@@ -834,35 +860,29 @@ async function execSupabase(a, state, manifest) {
   }
 }
 
-// The manifest's cloud_loop.daily_ceiling field has existed since
-// v1 but nothing wired it up — the workflow always shipped with the
-// literal default. Bake it into the ceiling step's `ceiling=` line,
-// same anchor-and-warn pattern as applyDecoratedMarch below.
-function applyDailyCeiling(yml, manifest) {
-  const ceiling = manifest.cloud_loop?.daily_ceiling
-  if (!ceiling) return yml
-  const anchor = /\n {10}ceiling=\d+\n/
-  if (anchor.test(yml)) {
-    yml = yml.replace(anchor, `\n          ceiling=${ceiling}\n`)
-  } else {
-    log.warn('daily ceiling: `ceiling=<N>` line not found; workflow template may have drifted')
+// The cadence presets live in scripts/cloud/cadence.mjs, which owns
+// the table: loaded from the nexus templates bootstrap copies from,
+// else the copy beside this script or in this repo (install-workflow
+// writes it), so a bootstrap.mjs copied on its own still runs.
+async function loadCadence() {
+  const templates = findTemplates()
+  const here = path.dirname(fileURLToPath(import.meta.url))
+  for (const f of [templates && path.resolve(templates, 'scripts/cloud/cadence.mjs'), path.join(here, 'cloud', 'cadence.mjs'), path.resolve('scripts/cloud/cadence.mjs')]) {
+    if (f && fs.existsSync(f)) return import(pathToFileURL(f).href)
   }
-  return yml
+  throw new Error('cannot find scripts/cloud/cadence.mjs; clone nexus at ../nexus or submodule at .nexus')
 }
 
-// The manifest's cloud_loop.schedule_cron field has existed since
-// v1 but nothing wired it up either — same gap as daily_ceiling,
-// same anchor-and-warn pattern, different anchor.
-function applyScheduleCron(yml, manifest) {
-  const cron = manifest.cloud_loop?.schedule_cron
-  if (!cron) return yml
-  const anchor = /\n {4}- cron: '[^']*'\n/
-  if (anchor.test(yml)) {
-    yml = yml.replace(anchor, `\n    - cron: '${cron}'\n`)
-  } else {
-    log.warn('schedule cron: `- cron: \'...\'` line not found; workflow template may have drifted')
-  }
-  return yml
+// The manifest's cadence written into the workflow texts given: the
+// preset's cron line (cloud_loop.schedule_cron overrides it; `off`
+// takes the schedule out), its `ceiling=` literal (cloud_loop.
+// daily_ceiling overrides it) and heartbeat.yml's `march_hours=`
+// literal. Anchor-and-warn, as applyDecoratedMarch below.
+async function applyCadence(cadence, files, manifest) {
+  const { applyPreset } = await loadCadence()
+  const r = applyPreset(cadence, { ...files, cron: manifest.cloud_loop?.schedule_cron, ceiling: manifest.cloud_loop?.daily_ceiling })
+  for (const n of r.notes) log.warn(`cadence ${cadence}: ${n}`)
+  return r
 }
 
 // "The decorated march" — customization/bootstrap-automation.md's
@@ -912,8 +932,7 @@ async function execCloudLoop(a, state, manifest) {
     }
     const src = path.join(templates, '.github/workflows/march.yml')
     let yml = fillPlaceholders(fs.readFileSync(src, 'utf-8'), manifest)
-    yml = applyDailyCeiling(yml, manifest)
-    yml = applyScheduleCron(yml, manifest)
+    yml = (await applyCadence(cadenceOf(manifest, state.cloudLoop) ?? DEFAULT_CADENCE, { march: yml }, manifest)).march
     if (manifest.cloud_loop?.identity === 'user') {
       yml = await applyDecoratedMarch(yml, manifest)
     }
@@ -969,6 +988,27 @@ async function execCloudLoop(a, state, manifest) {
   }
   if (a.verb === 'set-loop-mode') {
     shOk(`gh variable set NEXUS_LOOP_MODE -R ${slug} --body ${a.mode}`)
+    return
+  }
+  if (a.verb === 'set-cadence') {
+    // The variable switches the ceiling, chain depth, idle backoff and
+    // heartbeat threshold at run time; the cron line is the one thing
+    // only the file holds, so it is written here too.
+    const { PRESETS } = await loadCadence()
+    shOk(`gh variable set NEXUS_CADENCE -R ${slug} --body ${a.cadence}`)
+    const ceiling = Number(manifest.cloud_loop?.daily_ceiling)
+    if (Number.isInteger(ceiling) && ceiling > 0 && ceiling !== PRESETS[a.cadence].ceiling) {
+      // A per-field variable overrides the preset: the manifest's own ceiling keeps winning.
+      shOk(`gh variable set NEXUS_DAILY_CEILING -R ${slug} --body ${ceiling}`)
+    }
+    const read = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf-8') : null)
+    const before = { march: read(WORKFLOW_PATH), heartbeat: read(HEARTBEAT_PATH) }
+    const after = await applyCadence(a.cadence, before, manifest)
+    for (const [key, f] of [['march', WORKFLOW_PATH], ['heartbeat', HEARTBEAT_PATH]]) {
+      if (before[key] === null || after[key] === before[key].replace(/\r\n/g, '\n')) continue
+      fs.writeFileSync(f, after[key])
+      log.ok(`wrote the ${a.cadence} cadence into ${f} (commit it: GitHub reads the cron from the file)`)
+    }
     return
   }
   if (a.verb === 'set-claude-oauth') {

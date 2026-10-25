@@ -52,7 +52,8 @@ on:
         default: ''
       # How deep in a chain this run is: 0 by hand or on a schedule; the
       # chain step dispatches the next run with chain=<this + 1>, never
-      # past the repo variable NEXUS_CHAIN_MAX.
+      # past the chain max (the NEXUS_CADENCE preset's, or the repo
+      # variable NEXUS_CHAIN_MAX).
       chain:
         description: 'Chain depth (0 by hand; set by the Chain next tick step)'
         required: false
@@ -107,12 +108,31 @@ jobs:
       # Cloud-loop control plane.
       # ───────────────────────────────────────────────────────────
 
+      # The cadence (scripts/cloud/cadence.mjs): the repo variable
+      # NEXUS_CADENCE (calm | steady | eager | sprint | off) sets the 24h
+      # ceiling, how deep a shipped tick chains and the idle backoff at
+      # run time, with no file edit; a per-field variable
+      # (NEXUS_DAILY_CEILING, NEXUS_CHAIN_MAX, NEXUS_IDLE_BACKOFF)
+      # overrides its preset. Unset, the ceiling literal below and the
+      # scripts' defaults stand, and nothing chains. The cron line is the
+      # one thing it cannot change: `node scripts/cloud/cadence.mjs apply
+      # <preset> --write` (or bootstrap) writes it. Fails open.
+      - name: Cadence
+        id: cadence
+        env:
+          CADENCE: ${{ vars.NEXUS_CADENCE }}
+          CEILING: ${{ vars.NEXUS_DAILY_CEILING }}
+          CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
+          IDLE_BACKOFF: ${{ vars.NEXUS_IDLE_BACKOFF }}
+        run: node scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --ceiling "$CEILING" --chain-max "$CHAIN_MAX" --idle-backoff "$IDLE_BACKOFF" || true
+
       - name: Daily commit ceiling check
         id: ceiling
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
           DISPATCH_MAX: ${{ vars.NEXUS_DISPATCH_MAX || '12' }}
+          CADENCE_CEILING: ${{ steps.cadence.outputs.ceiling }}
         run: |
           # Cloud commits are identified by the `Cloud-Run:` trailer
           # the agent appends to every commit message (the brief
@@ -128,11 +148,14 @@ jobs:
           #
           # `ceiling=12` below is the literal default; `/bootstrap
           # cloud-loop` (templates/scripts/bootstrap.mjs install-
-          # workflow) overwrites this line with your manifest's
-          # cloud_loop.daily_ceiling when it installs this file. Hand-
-          # editing it (like the cron line above) works too.
+          # workflow) overwrites this line with your cadence preset's
+          # ceiling (or the manifest's cloud_loop.daily_ceiling) when it
+          # installs this file. Hand-editing it (like the cron line
+          # above) works too. A set NEXUS_CADENCE or NEXUS_DAILY_CEILING
+          # wins over it at run time (the Cadence step's output).
           since="$(date -u -d '24 hours ago' '+%Y-%m-%d %H:%M:%S')"
           ceiling=12
+          if [ -n "$CADENCE_CEILING" ]; then ceiling=$CADENCE_CEILING; fi
           budget=0
           for sha in $(git log --since="$since" --grep='Cloud-Run:' --format='%H'); do
             if git diff-tree --no-commit-id --name-only -r "$sha" | grep -qx 'plan/ARCHIVE.md' \
@@ -191,8 +214,9 @@ jobs:
       # The idle probe (scripts/cloud/idle.mjs): a scheduled tick that
       # finds the repo as the last no-op left it (the main sha, open
       # issue counts by label, the ready count, the newest issue update;
-      # counts and hashes, never issue text) after NEXUS_IDLE_BACKOFF
-      # scheduled no-ops (default 3; 0 = never skip), with nothing
+      # counts and hashes, never issue text) after the idle backoff's
+      # count of scheduled no-ops (NEXUS_IDLE_BACKOFF, else the
+      # NEXUS_CADENCE preset's, else 3; 0 = never skip), with nothing
       # ready, exits before the model. Every NEXUS_IDLE_WAKE_EVERYth
       # skip (default 4) runs anyway; dispatch, nudge and chain runs
       # never skip. Fails open.
@@ -212,7 +236,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           REASON: ${{ github.event.inputs.reason }}
           MAIN: ${{ github.event.repository.default_branch }}
-          BACKOFF: ${{ vars.NEXUS_IDLE_BACKOFF }}
+          BACKOFF: ${{ steps.cadence.outputs.idle_backoff }}
           WAKE_EVERY: ${{ vars.NEXUS_IDLE_WAKE_EVERY }}
         run: node scripts/cloud/idle.mjs probe --event "$EVENT" --reason "$REASON" --main "$MAIN" --backoff "$BACKOFF" --wake-every "$WAKE_EVERY" || echo "skip=false" >> "$GITHUB_OUTPUT"
 
@@ -447,7 +471,8 @@ jobs:
       # commit (or was lost to background work: one retry) while work
       # is ready dispatches the next tick now instead of leaving it to
       # the next cron slot. Every guard must hold: chain + 1 at or under
-      # the repo variable NEXUS_CHAIN_MAX (unset reads as 0: no chain),
+      # the chain max (NEXUS_CHAIN_MAX, else the NEXUS_CADENCE preset's;
+      # both unset read as 0: no chain),
       # this run's quota reading parsed and under NEXUS_QUOTA_MAX, the
       # weighted budget + 3 at or under the ceiling, no march or night
       # run queued or pending, not within 30 min of night's slot, and a
@@ -461,7 +486,7 @@ jobs:
           LOST: ${{ steps.lost.outputs.lost }}
           REASON: ${{ github.event.inputs.reason }}
           CHAIN: ${{ inputs.chain }}
-          CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
+          CHAIN_MAX: ${{ steps.cadence.outputs.chain_max }}
           QUOTA: ${{ steps.quota.outputs.quota }}
           QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
           CEILING: ${{ steps.ceiling.outputs.ceiling }}
@@ -862,6 +887,17 @@ jobs:
         with:
           node-version: 22
 
+      # The chain depth from NEXUS_CADENCE (or NEXUS_CHAIN_MAX), as in
+      # the owner job's Cadence step.
+      - name: Cadence
+        id: cadence
+        env:
+          CADENCE: ${{ vars.NEXUS_CADENCE }}
+          CEILING: ${{ vars.NEXUS_DAILY_CEILING }}
+          CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
+          IDLE_BACKOFF: ${{ vars.NEXUS_IDLE_BACKOFF }}
+        run: node scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --ceiling "$CEILING" --chain-max "$CHAIN_MAX" --idle-backoff "$IDLE_BACKOFF" || true
+
       - name: Chain next tick
         env:
           GH_TOKEN: ${{ github.token }}
@@ -869,7 +905,7 @@ jobs:
           LOST: ${{ needs.build.outputs.lost }}
           REASON: ${{ github.event.inputs.reason }}
           CHAIN: ${{ inputs.chain }}
-          CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
+          CHAIN_MAX: ${{ steps.cadence.outputs.chain_max }}
           QUOTA: ${{ needs.build.outputs.quota }}
           QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
           MAIN: ${{ github.event.repository.default_branch }}

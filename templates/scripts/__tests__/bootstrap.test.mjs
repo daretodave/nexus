@@ -1,11 +1,11 @@
-// bootstrap.mjs's cloud-loop slice: the manifest's cloud_loop.mode, the actions it plans from what the repo has, and
+// bootstrap.mjs's cloud-loop slice: the manifest's cloud_loop.mode and cadence, the actions it plans from what the repo has, and
 // the placeholders the copy fills. node:test, no gh, no network.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { LOOP_FILES, PR_MODE_FILES, cloudLoopActions, fillPlaceholders, loopMode } from '../bootstrap.mjs';
+import { LOOP_FILES, PR_MODE_FILES, cadenceOf, cloudLoopActions, fillPlaceholders, loopMode } from '../bootstrap.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const manifest = (cloud = {}, project = {}) => ({
@@ -48,7 +48,7 @@ describe('bootstrap: cloud_loop.mode', () => {
 
   it('keeps the existing actions: the workflow, the OAuth token, the PAT for identity user', () => {
     const bare = state({ workflowPresent: false, claudeOauthSet: false, actionsPatSet: false });
-    assert.deepEqual(verbs(cloudLoopActions(bare, manifest({ identity: 'user' }))), ['install-workflow', 'set-claude-oauth', 'set-actions-pat']);
+    assert.deepEqual(verbs(cloudLoopActions(bare, manifest({ identity: 'user' }))), ['install-workflow', 'set-cadence', 'set-claude-oauth', 'set-actions-pat']);
     assert.deepEqual(verbs(cloudLoopActions(bare, manifest({ enabled: false }))), []);
   });
 
@@ -58,13 +58,14 @@ describe('bootstrap: cloud_loop.mode', () => {
     }
   });
 
-  it('installs every script the workflows it writes run (the quota governor, the lost-to-background mark, the idle probe, the chain)', () => {
+  it('installs every script the workflows it writes run (the quota governor, the lost-to-background mark, the idle probe, the chain, the cadence)', () => {
     const templates = path.resolve(HERE, '..', '..');
     assert.ok(LOOP_FILES.includes('scripts/cloud/quota.mjs'));
     assert.ok(LOOP_FILES.includes('scripts/cloud/lost.mjs'));
     assert.ok(LOOP_FILES.includes('scripts/cloud/idle.mjs'));
     assert.ok(LOOP_FILES.includes('scripts/cloud/chain.mjs'));
-    for (const wf of ['march.yml', 'night.yml']) {
+    assert.ok(LOOP_FILES.includes('scripts/cloud/cadence.mjs'));
+    for (const wf of ['march.yml', 'night.yml', 'heartbeat.yml']) {
       const yml = fs.readFileSync(path.join(templates, '.github', 'workflows', wf), 'utf8');
       // Run in place (node <script>) or copied out before the agent (cp <script>).
       for (const m of yml.matchAll(/(?:node|cp) (scripts\/cloud\/[\w-]+\.mjs)/g)) {
@@ -72,6 +73,31 @@ describe('bootstrap: cloud_loop.mode', () => {
       }
     }
     for (const f of LOOP_FILES) assert.ok(fs.existsSync(path.join(templates, f)), f);
+  });
+});
+
+describe('bootstrap: cloud_loop.cadence', () => {
+  it('reads one of the five presets; steady on a new adoption; nothing on an existing install with no field', () => {
+    assert.equal(cadenceOf(manifest({ cadence: 'eager' }), state()), 'eager');
+    assert.equal(cadenceOf(manifest(), state({ workflowPresent: false })), 'steady');
+    assert.equal(cadenceOf(manifest(), state()), null);
+  });
+
+  it('refuses any other value, naming the field', () => {
+    assert.throws(() => cadenceOf(manifest({ cadence: 'turbo' }), state()), /cloud_loop\.cadence/);
+  });
+
+  it('sets NEXUS_CADENCE when the repo holds another value, and plans nothing once it matches', () => {
+    const set = cloudLoopActions(state({ cadence: 'steady' }), manifest({ cadence: 'calm' }));
+    assert.deepEqual(set.filter((a) => a.verb === 'set-cadence').map((a) => a.cadence), ['calm']);
+    assert.deepEqual(verbs(cloudLoopActions(state({ cadence: 'calm' }), manifest({ cadence: 'calm' }))), []);
+    assert.deepEqual(verbs(cloudLoopActions(state({ cadence: 'eager' }), manifest())), []);
+  });
+
+  it('a new adoption gets steady after the workflow it installs', () => {
+    const fresh = cloudLoopActions(state({ workflowPresent: false }), manifest());
+    assert.deepEqual(verbs(fresh), ['install-workflow', 'set-cadence']);
+    assert.equal(fresh[1].cadence, 'steady');
   });
 });
 

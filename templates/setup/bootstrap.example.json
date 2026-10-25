@@ -3,6 +3,7 @@
     "purpose": "Bootstrap manifest. Copy to setup/bootstrap.local.json (gitignored).",
     "auth_note": "This file holds SETTINGS, not provider auth. Auth handled via `gh auth login`, `vercel login`, `supabase login` out of band. Anthropic OAuth + ACTIONS_PAT are paste-prompted during /bootstrap cloud-loop.",
     "loop_mode_note": "cloud_loop.mode sets the repo variable NEXUS_LOOP_MODE: owner (one job pushes the default branch) or pr (each tick opens a pull request; bootstrap also installs pr-flow.yml, pr-resolve.yml and their scripts). Remove the field to leave the variable as the repo has it.",
+    "cadence_note": "cloud_loop.cadence is one of calm | steady | eager | sprint | off (scripts/cloud/cadence.mjs): bootstrap writes its cron line and ceiling into march.yml and sets the repo variable NEXUS_CADENCE, which sets the ceiling, chain depth, idle backoff and heartbeat threshold at run time. Optional overrides: schedule_cron (a cron line of your own) and daily_ceiling (set as NEXUS_DAILY_CEILING when it differs from the preset).",
     "pre_provisioned_note": "If you've already created the GitHub repo / Vercel project / Supabase project manually, set the *_id / *_ref fields below so bootstrap links rather than searching by name.",
     "schema_doc": "See ../../customization/bootstrap-automation.md (nexus customization) for field descriptions."
   },
@@ -39,8 +40,7 @@
     "enabled": true,
     "mode": "pr",
     "identity": "user",
-    "schedule_cron": "0 */2 * * *",
-    "daily_ceiling": 12,
+    "cadence": "steady",
     "git_author_name": "",
     "git_author_email": ""
   },

@@ -52,6 +52,20 @@ the failure mode of the thing it watches.
 
 - **Cadence:** 02:00 / 08:00 / 14:00 / 20:00 UTC, plus manual
   `gh workflow run march` whenever curious.
+- **Cadence preset:** the first step, Cadence
+  (`templates/scripts/cloud/cadence.mjs`, run in place), turns
+  the repo variable `NEXUS_CADENCE` (`calm | steady | eager |
+  sprint | off`) into the ceiling, chain max and idle backoff
+  at run time, and `heartbeat.yml` into the march flatline
+  hours; a per-field variable (`NEXUS_DAILY_CEILING`,
+  `NEXUS_CHAIN_MAX`, `NEXUS_IDLE_BACKOFF`,
+  `NEXUS_HEARTBEAT_HOURS`) overrides its preset. Unset, the
+  literals below stand and nothing chains. The cron line is
+  the file's: `node templates/scripts/cloud/cadence.mjs apply
+  <preset> --march .github/workflows/march.yml --heartbeat
+  .github/workflows/heartbeat.yml --write` (a local session:
+  the cloud token cannot push a workflow). Spec 55.9 moves
+  nexus to `eager`.
 - **Ceiling:** 20 weighted points per 24h, counted by the
   `Cloud-Run:` trailer. The count is weighted, not flat: a
   chunk-shipping commit (one that adds a line to
@@ -90,7 +104,7 @@ the failure mode of the thing it watches.
 - **Idle probe:** before the model, a scheduled tick that finds
   the repo as the last no-op left it (main's sha, open issue
   counts by label, the ready count, the newest issue update)
-  after `NEXUS_IDLE_BACKOFF` scheduled no-ops (3), with nothing
+  after the idle backoff's scheduled no-ops (3), with nothing
   ready, exits clean (`templates/scripts/cloud/idle.mjs`, run
   in place); every `NEXUS_IDLE_WAKE_EVERY`th skip (4) runs
   anyway, and dispatched runs never skip. Every tick that lands
@@ -103,16 +117,16 @@ the failure mode of the thing it watches.
   the job holds `actions: write`) when this tick landed a
   `Cloud-Run:` commit (or was lost to background work: one
   `reason=retry`) and every guard holds: `chain + 1` at or
-  under `NEXUS_CHAIN_MAX`, this tick's quota reading parsed
+  under the chain max, this tick's quota reading parsed
   and under `NEXUS_QUOTA_MAX`, the weighted budget + 3 at or
   under the ceiling, no march or night run queued or pending,
   not within 30 min of night's slot, and a ready chunk or an
   open `loop:do` or unlabeled issue. It fails closed, and
-  writes one `chain: ...` summary line. `NEXUS_CHAIN_MAX`
-  alone decides whether nexus chains: unset reads as 0 (no
-  chain); spec 55.6's dispatch-latency probe decides whether
-  the owner sets it to 3. Stop: `gh variable set
-  NEXUS_CHAIN_MAX --body 0`.
+  writes one `chain: ...` summary line. The chain max is
+  `NEXUS_CHAIN_MAX`, else the `NEXUS_CADENCE` preset's; with
+  both unset it reads as 0 (no chain); spec 55.6's
+  dispatch-latency probe decides whether the owner sets it to
+  3. Stop: `gh variable set NEXUS_CHAIN_MAX --body 0`.
 - **The CLI gate:** on Node 24, a tick that runs the model
   first installs and builds `packages/cli` (`npm ci
   --ignore-scripts && npm run build`, npm cached on its

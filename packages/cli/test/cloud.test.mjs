@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import {
   addWorkflow, cronNext, describeCron, describeCrons, fillTemplate, loopSchedule, kitFile, parseCron, readCrons, saveSchedule, scheduleRequest, scopeRefused, setCron,
-  CHAIN_PATH, IDLE_PATH, LOST_PATH, QUOTA_PATH, SETUP_ACTION_PATH, WORKFLOW_PATH,
+  CADENCE_PATH, CHAIN_PATH, IDLE_PATH, LOST_PATH, QUOTA_PATH, SETUP_ACTION_PATH, WORKFLOW_PATH,
 } from '../server/cloud.mjs';
 import { removeTree } from './helpers/tmp.mjs';
 
@@ -183,6 +183,7 @@ test('owner: the workflow is committed and pushed to main from a temporary workt
   assert.match(fx.at('main', IDLE_PATH), /the idle probe and the no-op reason/, 'and the idle probe beside them');
   assert.match(yml, /node scripts\/cloud\/chain\.mjs --landed/);
   assert.match(fx.at('main', CHAIN_PATH), /self-chaining/, 'and the chain step beside them');
+  assert.match(fx.at('main', CADENCE_PATH), /the cadence presets/, 'and the cadence presets beside them');
   assert.equal(r.mode, 'owner', 'an unset NEXUS_LOOP_MODE is set to owner');
   assert.ok(gh.calls.includes('variable set NEXUS_LOOP_MODE --body owner'));
   assert.ok(!gh.calls.some((c) => c.startsWith('pr ')));

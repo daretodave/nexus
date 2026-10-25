@@ -47,7 +47,7 @@ case "$1 $2" in
 esac
 `;
 
-function runCadence(rel, paused) {
+function runCadence(rel, paused, hours = '') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'heartbeat-'));
   fs.writeFileSync(path.join(dir, 'gh'), STUB, { mode: 0o755 });
   const script = path.join(dir, 'step.sh');
@@ -56,7 +56,7 @@ function runCadence(rel, paused) {
   const toBash = (p) => p.replace(/\\/g, '/');
   const r = spawnSync('bash', ['-c', `export PATH="$(cd "${toBash(dir)}" && pwd):$PATH"; bash "${toBash(script)}"`], {
     encoding: 'utf8',
-    env: { ...process.env, PAUSED: String(paused), GH_LOG: toBash(log) },
+    env: { ...process.env, PAUSED: String(paused), GH_LOG: toBash(log), CADENCE_HOURS: hours },
   });
   assert.equal(r.status, 0, r.stderr);
   return { out: r.stdout, created: fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : '' };
@@ -80,6 +80,29 @@ describe('heartbeat under a quota pause', { skip: !bashOk && 'no posix bash here
     it(`${rel}: an outsider's unlabelled pause-titled issue does not silence the flatline`, () => {
       const r = runCadence(rel, 'outsider');
       assert.match(r.created, /Heartbeat: march has flatlined/);
+    });
+  }
+});
+
+// The march threshold follows the Cadence step's heartbeat_hours (spec 55.5): a preset's hours replace the literal,
+// and the off preset (none) has no schedule to watch.
+describe('heartbeat reads the cadence', { skip: !bashOk && 'no posix bash here' }, () => {
+  for (const rel of FILES) {
+    it(`${rel}: none (the off preset) skips march's flatline; night is still watched`, () => {
+      const r = runCadence(rel, 'none', 'none');
+      assert.match(r.out, /march: NEXUS_CADENCE off/);
+      assert.doesNotMatch(r.created, /march has flatlined/);
+      assert.match(r.created, /night has flatlined/);
+    });
+
+    it(`${rel}: the cadence's hours replace the literal`, () => {
+      const r = runCadence(rel, 'none', '999999999');
+      assert.match(r.out, /alarm at 999999999h/);
+      assert.doesNotMatch(r.created, /march has flatlined/);
+    });
+
+    it(`${rel}: no cadence output leaves the literal`, () => {
+      assert.match(runCadence(rel, 'none').out, /march: last successful tick \d+h ago \(alarm at 14h\)/);
     });
   }
 });

@@ -256,11 +256,13 @@ commits flatly — it weighs them. A **chunk-shipping** commit
 a chunk close does) costs **3** against the budget; a **churn** commit
 (`/iterate`, `/critique`, `/triage`, `/digest` — one finding,
 one file) costs **1**. The tick exits with no work once the
-24h total meets `cloud_loop.daily_ceiling` from your manifest
-(`/bootstrap cloud-loop` bakes it into the workflow's
-`ceiling=` line; hand-edit that line directly if you didn't
-bootstrap). Default is 12 — four chunk ships, or a dozen
-churn ticks, or any mix between.
+24h total meets the ceiling: the cadence's (`NEXUS_CADENCE`,
+or `NEXUS_DAILY_CEILING`; see [Cadence](#cadence)) when set,
+else the workflow's `ceiling=` line (`/bootstrap cloud-loop`
+bakes your preset's, or `cloud_loop.daily_ceiling`, into it;
+hand-edit that line directly if you didn't bootstrap).
+Default is 12 — four chunk ships, or a dozen churn ticks, or
+any mix between.
 
 A tick that ships nothing is invisible to that count, so the
 same step holds a second one: the **dispatch ceiling**
@@ -347,8 +349,9 @@ model, in the owner job:
 | Idle record | After the model: whether a commit carries the run's `Cloud-Run:` trailer, and the fingerprint the tick left (`actions/cache`, key `nexus-idle-<run id>`) |
 | No-op reason | Every tick: when nothing landed, ONE step-summary line `no-op reason: <why>` (ceiling, quota, idle skip, no ready work, lost-to-background, a failed model step, or the result's last line) |
 
-- `NEXUS_IDLE_BACKOFF` (repo variable): default `3`; `0`
-  never skips. `NEXUS_IDLE_WAKE_EVERY`: default `4`.
+- `NEXUS_IDLE_BACKOFF` (repo variable): default `3` (or the
+  cadence preset's); `0` never skips.
+  `NEXUS_IDLE_WAKE_EVERY`: default `4`.
 - Dispatch, nudge and chain runs never skip; a ready chunk
   always runs; the probe fails open (no cache, gh unreachable,
   no plan scripts: the tick runs).
@@ -366,7 +369,7 @@ only when every guard holds (the job holds `actions: write`):
 
 | Guard | Holds when |
 |---|---|
-| depth | `chain + 1` is at or under `NEXUS_CHAIN_MAX` |
+| depth | `chain + 1` is at or under the chain max (`NEXUS_CHAIN_MAX`, else the cadence preset's) |
 | shipped | this run landed a `Cloud-Run:` commit (pull-request mode: its land job succeeded), or it was marked lost-to-background and is not already the retry (then `reason=retry`, once) |
 | quota | this run's seven_day reading parsed and is under `NEXUS_QUOTA_MAX` (`off`: under 0.97) |
 | budget | the weighted 24h budget + 3 is at or under the ceiling (pull-request mode has none; the dispatch ceiling bounds it) |
@@ -374,10 +377,11 @@ only when every guard holds (the job holds `actions: write`):
 | queue | no march or night run is queued or pending (a new pending run would cancel it) |
 | ready | a chunk is ready (Asap included), or (owner mode) an open `loop:do` or unlabeled issue without `loop:opened` |
 
-- `NEXUS_CHAIN_MAX` (repo variable): unset or anything but a
-  whole number reads as `0`, and `0` never chains. Turn it on
-  with `gh variable set NEXUS_CHAIN_MAX --body 3`; off again
-  with `--body 0`.
+- `NEXUS_CHAIN_MAX` (repo variable) overrides the cadence
+  preset's chain max (`eager` 3, `sprint` 8, the rest 0).
+  With neither set, or anything but a whole number, it reads
+  as `0`, and `0` never chains. Turn it on with `gh variable
+  set NEXUS_CHAIN_MAX --body 3`; off again with `--body 0`.
 - It fails closed: a quota, ceiling, cron or run list it
   cannot read means no chain. The chained run passes the same
   ceilings and quota gate as any run, so the dispatch ceiling
@@ -385,6 +389,43 @@ only when every guard holds (the job holds `actions: write`):
 - Every tick writes one `chain: ...` line to the step summary:
   `dispatched march.yml (chain=2, reason=chain)`, or `no
   (<guard>: <why>)`.
+
+## Cadence
+
+One repo variable sets how hard the loop runs.
+`NEXUS_CADENCE` names a preset (`scripts/cloud/cadence.mjs`
+owns the table), and each march job's first step, **Cadence**,
+turns it into the ceiling, the chain max and the idle backoff
+at run time; `heartbeat.yml` reads it for the march flatline
+threshold. Switching presets is `gh variable set NEXUS_CADENCE
+--body <preset>`: no file edit.
+
+| Preset | Cron written | Heartbeat h | Ceiling | Chain max | Idle backoff |
+|---|---|---|---|---|---|
+| calm | `17 */6 * * *` | 20 | 8 | 0 | 3 |
+| steady | `17 */3 * * *` | 14 | 12 | 0 | 3 |
+| eager | `17 */3 * * *` | 10 | 20 | 3 | 3 |
+| sprint | `17 */3 * * *` | 10 | 30 | 8 | 3 |
+| off | no schedule (dispatch and nudge only) | none | 12 | 0 | 0 |
+
+- A per-field repo variable overrides its preset:
+  `NEXUS_DAILY_CEILING`, `NEXUS_CHAIN_MAX`,
+  `NEXUS_IDLE_BACKOFF`, `NEXUS_HEARTBEAT_HOURS`.
+- Unset (an upgraded repo, or one that never chose), the
+  workflow's own `ceiling=` and heartbeat's `march_hours=`
+  literals stand, the idle backoff is 3, and nothing chains.
+  An unknown word is a warning in the log and reads as unset.
+- The cron line is the one thing a variable cannot change:
+  GitHub reads it from the file. `node
+  scripts/cloud/cadence.mjs apply <preset> --write` writes the
+  preset's cron, `ceiling=` and `march_hours=` lines (dry run
+  without `--write`; `off` takes the schedule out and a later
+  preset puts it back); commit them, then set the variable.
+  `/bootstrap cloud-loop` does both from
+  `cloud_loop.cadence` (default `steady` on a new adoption).
+- Every tick writes one `cadence: ...` line to the step
+  summary: `cadence: steady (ceiling 12, chain max 0, idle
+  backoff 3, heartbeat 14h)`, plus which variables overrode it.
 
 ## Operating it
 
@@ -464,7 +505,9 @@ These are encoded in the brief and in `agents.md`'s standing rules:
 | `Loop paused: weekly quota until <ISO>` issue | The subscription's weekly quota is used up | Nothing: ticks skip the model until the reset, then the issue closes itself. Far off: `gh workflow disable march` |
 | Ticks skip with `Quota gate (scheduled run): skip` | Cached utilization at or above `NEXUS_QUOTA_MAX` | Expected; raise the cap (`gh variable set NEXUS_QUOTA_MAX --body 0.95`) or switch it off (`--body off`) |
 | Ticks skip with `Idle probe (scheduled run): skip` | Nothing changed since the last no-op, after `NEXUS_IDLE_BACKOFF` scheduled no-ops | Expected; a dispatch runs regardless (`gh workflow run march`), or turn it off (`gh variable set NEXUS_IDLE_BACKOFF --body 0`) |
-| More march runs than the cron promises, titled `march march chain` | Chained ticks: a tick that shipped dispatched the next while work was ready | Expected up to `NEXUS_CHAIN_MAX` deep; stop it with `gh variable set NEXUS_CHAIN_MAX --body 0` |
+| More march runs than the cron promises, titled `march march chain` | Chained ticks: a tick that shipped dispatched the next while work was ready | Expected up to the chain max deep; stop it with `gh variable set NEXUS_CHAIN_MAX --body 0` |
+| `cadence: NEXUS_CADENCE "..." is not one of calm \| steady \| eager \| sprint \| off` in the log | A typo in the variable: it reads as unset | `gh variable set NEXUS_CADENCE --body steady` |
+| The variable changed, but ticks still fire on the old cron | The cron lives in the file, not the variable | `node scripts/cloud/cadence.mjs apply <preset> --write`, then commit `march.yml` |
 | `chain: no (dispatch: gh workflow run failed (HTTP 403 ...))` | The job lacks `actions: write` | Restore `actions: write` on the job that runs Chain next tick |
 | Step summary: `no-op reason: lost-to-background` | The agent handed work to a background call and ended its turn | Check the prompt still says every dispatch passes `run_in_background: false`, and that `.claude/settings.json` wires `guard.mjs pre-agent` |
 

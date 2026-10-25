@@ -337,4 +337,4 @@ The Held line for an auto-promotion:
 
 Measure: 1 open · 8 closed · next A10
 
-- [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 55.5, 54.8
+- [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 54.8

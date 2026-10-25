@@ -258,7 +258,7 @@ script refuses to run if it's tracked). The shape:
     "enabled": true,
     "mode": "pr",
     "identity": "user",
-    "schedule_cron": "0 */2 * * *",
+    "cadence": "steady",
     "git_author_name": "",
     "git_author_email": ""
   }
@@ -291,6 +291,22 @@ Field semantics:
   (`install-pr-workflows`), placeholders filled. Absent =
   the variable stays as the repo has it (unset means pull
   requests). Any other value is a config error.
+- **`cloud_loop.cadence`** — `calm | steady | eager | sprint
+  | off`; absent = `steady` on a new adoption (the table lives
+  in `scripts/cloud/cadence.mjs`; the template
+  `CLOUD_LOOP.md`, "Cadence"). `install-workflow` writes the
+  preset's cron line and `ceiling=` literal into `march.yml`
+  (`off` takes the schedule out); `set-cadence` sets the repo
+  variable `NEXUS_CADENCE` and rewrites an installed
+  `march.yml`'s cron line and `heartbeat.yml`'s `march_hours=`
+  literal to match (commit them). The variable then switches
+  the ceiling, chain depth, idle backoff and heartbeat
+  threshold at run time, with no file edit. Absent on an
+  existing install = the variable stays as the repo has it.
+  Optional overrides: `schedule_cron` (a cron line of your
+  own) and `daily_ceiling` (written as the literal, and set as
+  `NEXUS_DAILY_CEILING` when it differs from the preset's).
+  Any other value is a config error.
 - **`git_author_name` / `git_author_email`** — used by
   the decorated-march workflow when
   `cloud_loop.identity: user`. Empty = bootstrap prompts
@@ -764,19 +780,20 @@ auth's accessible resources.
   `<PACKAGE_MANAGER>` (default `pnpm`, from
   `project.package_manager`). The script must resolve every one
   before committing.
-- **`cloud_loop.daily_ceiling` and `cloud_loop.schedule_cron`
-  are not bracket-token placeholders** — they're literal lines
-  (`ceiling=12`, `- cron: '...'`) in the workflow YAML.
-  `install-workflow` finds and overwrites each from the
-  manifest (`applyDailyCeiling`, `applyScheduleCron`); both are
-  a no-op (warn + leave the default) if the field is unset or
-  the anchor line has drifted.
+- **The cadence's cron and ceiling are not bracket-token
+  placeholders** — they're literal lines (`ceiling=12`,
+  `- cron: '...'`, and heartbeat's `march_hours=14`) in the
+  workflow YAML. `install-workflow` and `set-cadence` find and
+  overwrite each from `cloud_loop.cadence` (`applyCadence`,
+  through `cadence.mjs`'s `applyPreset`; `schedule_cron` and
+  `daily_ceiling` override the preset's); each warns and
+  leaves the line if its anchor has drifted.
 - **`install-workflow` also writes `scripts/cloud/quota.mjs`,
-  `lost.mjs`, `idle.mjs` and `chain.mjs`** where missing
-  (`LOOP_FILES`): every march and night job runs the quota
-  gate and read steps, and march the lost-to-background check,
-  the idle probe, the no-op reason and the chain step, in
-  either mode.
+  `lost.mjs`, `idle.mjs`, `chain.mjs` and `cadence.mjs`** where
+  missing (`LOOP_FILES`): every march and night job runs the
+  quota gate and read steps, and march the Cadence step, the
+  lost-to-background check, the idle probe, the no-op reason
+  and the chain step, in either mode.
 - **`pr-resolve.yml` carries `<DEFAULT_BRANCH>`** in its
   `push: branches:` filter. `install-pr-workflows` fills it
   (and every bracket placeholder) from

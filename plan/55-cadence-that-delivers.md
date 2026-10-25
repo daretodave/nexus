@@ -250,6 +250,30 @@ its pick, build and release jobs write the no-op line.
   `cadence.mjs` differs from the template's. The leg count in
   `bearings.md` and `agents.md` rule 3 moves with it.
 
+Built (55.5): each march job that reads a cadence field
+(owner and pull-request mode's `chain`) and `heartbeat.yml`
+run a first step named **Cadence**, `cadence.mjs resolve`,
+whose outputs the ceiling step (`CADENCE_CEILING`, over the
+`ceiling=` literal), the idle probe and the chain step read;
+it fails open (no output: the literal or the script default).
+The ceiling's per-field variable is `NEXUS_DAILY_CEILING`
+(named for the manifest field; bootstrap sets it only when
+`daily_ceiling` differs from the preset's). Heartbeat's
+literal is `march_hours=<N>` (bootstrap's anchor; `none`
+skips march). `off` replaces the schedule block with a marker
+comment a later preset turns back into a cron line.
+`cadence.mjs apply <preset> [--write]` writes the cron,
+ceiling and hours lines for a hand switch; bootstrap's
+`set-cadence` sets the variable and rewrites an installed
+`march.yml` and `heartbeat.yml`, and a new adoption with no
+`cloud_loop.cadence` gets `steady`. `cadence-twins`
+(`scripts/cadence-twins.mjs`) compares the named steps by env
+names, variables, step outputs, script, subcommand and flags
+(nexus keeps its own paths and defaults), the first
+occurrence per file, and the CLI kit byte for byte when
+`packages/cli/kit` is built. The table is built as written:
+55.6's latency numbers were not in yet.
+
 ### Realized-cadence alarm
 
 `heartbeat.yml` reads the cron line from `march.yml`, counts
@@ -290,6 +314,7 @@ fresh scratch clone of an adopter's origin.
 | `NEXUS_IDLE_BACKOFF` | 3 (0 = never skip) | 3 |
 | `NEXUS_IDLE_WAKE_EVERY` | 4 | 4 |
 | `NEXUS_HEARTBEAT_HOURS` | preset value | preset value |
+| `NEXUS_DAILY_CEILING` | preset value (bootstrap sets it when `daily_ceiling` differs) | preset value |
 
 The adopter default is what bootstrap writes on a new
 adoption. With `NEXUS_CADENCE` unset (an upgraded v1 repo,
@@ -316,7 +341,6 @@ and chain max is 0.
 
 - **A3** The dispatch-vs-schedule start latency is measured from 10 dispatched runs and written into this spec's Design, and the decision rule there has been applied to 55.3 and 55.5.
 - **A4** One dispatched cloud tick has shown whether `.claude` hooks load under claude-code-action, and the answer is written into this spec's Design and march.yml's comments (the two contradicting comments reconciled).
-- **A8** Setting `NEXUS_CADENCE` switches ceiling, chain max, idle backoff and heartbeat threshold without a file edit; bootstrap's `cloud_loop.cadence` writes the matching cron and variable; the `cadence-twins` leg fails when the three workflow copies disagree.
 - **A9** The CLI's Cloud step offers the same five presets, and choosing one writes the cron and sets `NEXUS_CADENCE` (server and screen tests).
 - **A10** Heartbeat files one deduped realized-cadence issue when scheduled runs in 72h fall below 40% of what the file's cron promises (replayed against two adopters' 2026-09 run lists as a fixture).
 - **A11** No shipped cron (nexus, templates, packages/cli kit, CLI presets, docs) fires at minute :00; `cloud-loop.md` and `hands-off.md` cadence text matches the presets; nexus runs `eager` on `17 */3 * * *`.
@@ -326,15 +350,13 @@ and chain max is 0.
 (None.)
 
 ## Chunks
-Measure: 6 open · 6 closed · next A13
+Measure: 5 open · 7 closed · next A13
 
 - [ ] **55.6** Probe dispatch latency and hook loading in cloud · S · closes A3, A4 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
   - Tooling landed (probe-latency.mjs, probe.yml, guard hook probe, march.yml hook_probe input); left, owner-run: the ten dispatches and one hook_probe tick, their numbers and answer into Design and march.yml's comments, probe.yml deleted.
-- [ ] **55.5** Cadence presets, the variable and bootstrap · M · closes A8 · needs —
-  - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **55.7** The CLI Cloud step offers the five presets · M · closes A9 · needs 55.5
-- [ ] **55.8** Heartbeat alarms on realized cadence · S · closes A10 · needs 55.5
+- [ ] **55.7** The CLI Cloud step offers the five presets · M · closes A9 · needs —
+- [ ] **55.8** Heartbeat alarms on realized cadence · S · closes A10 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.9** Crons off the hour, cadence docs, nexus on eager · S · closes A11 · needs 55.7, 55.8
   - Local: touches .github/workflows (cloud token cannot push it).

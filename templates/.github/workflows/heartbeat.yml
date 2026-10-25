@@ -123,9 +123,22 @@ jobs:
             fi
           done
 
+      # The march flatline threshold follows the cadence (scripts/cloud/cadence.mjs):
+      # NEXUS_HEARTBEAT_HOURS when set, else the NEXUS_CADENCE preset's
+      # (calm 20, steady 14, eager and sprint 10; off has no schedule,
+      # so nothing to watch), else the march_hours literal below. Fails
+      # open: no output leaves the literal.
+      - name: Cadence
+        id: cadence
+        env:
+          CADENCE: ${{ vars.NEXUS_CADENCE }}
+          HEARTBEAT_HOURS: ${{ vars.NEXUS_HEARTBEAT_HOURS }}
+        run: node scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --heartbeat-hours "$HEARTBEAT_HOURS" || true
+
       - name: Alarm if march or night has not succeeded a tick in time
         env:
           GH_TOKEN: ${{ github.token }}
+          CADENCE_HOURS: ${{ steps.cadence.outputs.heartbeat_hours }}
         run: |
           states=$(gh workflow list --all --limit 200 \
             --json name,state --jq '.[] | [.name, .state] | @tsv')
@@ -183,7 +196,15 @@ jobs:
             fi
           }
 
-          check_cadence march 14   # 6h cadence, two missed ticks tolerated
+          # march: the cadence's hours (the Cadence step), else this
+          # literal; bootstrap writes the preset's value here.
+          march_hours=14
+          if [ -n "${CADENCE_HOURS:-}" ]; then march_hours=$CADENCE_HOURS; fi
+          if [ "$march_hours" = none ]; then
+            echo "march: NEXUS_CADENCE off (no schedule) - cadence skipped."
+          else
+            check_cadence march "$march_hours"
+          fi
           check_cadence night 48   # daily cadence, one skipped day tolerated
 
       # Motion, not liveness: ticks that succeed and ship nothing

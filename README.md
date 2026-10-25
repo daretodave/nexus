@@ -501,6 +501,8 @@ nexus/
 │   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
 │   ├── gifs.mjs                       # every GIF the README shows: exists, 5-8 s, 3 MB at most, alt text, its poster (the gifs leg)
 │   ├── __tests__/gifs.test.mjs        # the checker's own suite (run by the gifs leg)
+│   ├── cadence-twins.mjs              # the Cadence, Quota gate and Chain steps agree across nexus, templates/ and the CLI kit (the cadence-twins leg)
+│   ├── __tests__/cadence-twins.test.mjs # the checker's own suite (run by the cadence-twins leg)
 │   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of the no-model probe.yml, march's schedule lag, the hook probe line
 │   ├── __tests__/probe-latency.test.mjs # its suite, gh stubbed (run by the scripts leg)
 │   ├── cloud/patch-v1.mjs             # owner-run: a v1 repo's march.yml + night.yml get the quota gate and an off-:00 cron (dry run, --write)
@@ -748,6 +750,7 @@ nexus/
     │   ├── cloud/lost.mjs             # lost-to-background mark: a result parked on background work, no commit
     │   ├── cloud/idle.mjs             # idle probe: a scheduled tick skips the model when nothing changed; the no-op reason
     │   ├── cloud/chain.mjs            # self-chaining: a tick that shipped dispatches the next while work is ready, every guard holding
+    │   ├── cloud/cadence.mjs          # the cadence presets (calm, steady, eager, sprint, off): NEXUS_CADENCE into ceiling, chain max, idle backoff, heartbeat hours; apply writes the cron
     │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
     │   ├── design/ingest.mjs          # /design ingest: an export folder -> design/handoff/<date>/ + manifest.json (sha256 per file) + README; check, rehash
     │   ├── design/render.mjs          # a handoff's boards as PNGs at their size, night or dawn, via the installed Chrome (+ board-runtime.js)
@@ -786,6 +789,7 @@ nexus/
     │   ├── __tests__/lost.test.mjs    # the lost-to-background mark (git stubbed); the guard denies background calls in CI
     │   ├── __tests__/idle.test.mjs    # the idle probe's skip rules and the no-op reason, gh and git stubbed
     │   ├── __tests__/chain.test.mjs   # the chain's guards, one test each, and the one dispatch, gh and git stubbed
+    │   ├── __tests__/cadence.test.mjs # the presets: the variable switches every field, overrides, apply on the template workflows
     │   ├── __tests__/heartbeat-quota.test.mjs # heartbeat's cadence step in bash: no flatline while paused
     │   ├── __tests__/heartbeat-red.test.mjs # heartbeat's red-gate step in bash: a failed CI run on main opens one issue
     │   ├── __tests__/heartbeat-motion.test.mjs # heartbeat's motion step in bash: one stall issue, none while paused
