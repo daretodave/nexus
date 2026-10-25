@@ -7,9 +7,9 @@
 // lanes files verbatim, keeps custom skills and commands (a command with no skill becomes one), merges the roadmap,
 // converts the build plan with the kit's converter, merges the v1 march.yml into the v2 owner-job shape (cron,
 // ceiling, model pin, extra env and concurrency kept; the toolchain steps into .github/actions/setup:
-// workflow-merge.mjs), retires the v1 files (playbooks/upgrade.md Step 5), rewrites v1 references outside history
-// files, flips the lock, runs plan-check, its test and workflow-lint, plays march's pick order forward for the first
-// dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
+// workflow-merge.mjs), writes the conservative knobs (KNOBS: the v1 train runs as it did), retires the v1 files
+// (playbooks/upgrade.md Step 5), rewrites v1 references outside history files, flips the lock, runs
+// plan-check, its test and workflow-lint, plays march's pick order forward for the first dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
 //
 //   npx @usenexus/cli upgrade [--repo <dir>] [--json] [--keep-workflow]
 //
@@ -359,6 +359,114 @@ export function flippedLock(seed, today) {
   return text.replace(/^shape:.*$/m, 'shape: chunks').replace(/^adopted:.*$/m, `adopted: ${today}`);
 }
 
+/**
+ * The knob registry: one row per knob a kit template names (a repo variable a template workflow reads, a `- key:`
+ * line or a filled `**Key:**` line of templates/plan/bearings.md, the `## Generators` list), with the value the
+ * upgrade leaves it at so the v1 train runs unchanged and the owner turns knobs up later, one at a time.
+ *
+ *   at       bearings (a plan/bearings.md line) | section (a `## <knob>` list) | var (a repo variable)
+ *   value    the conservative value; for a var, null is unset
+ *   write    true: the upgrade writes it (a bearings line or section added when missing, never over the repo's own;
+ *            a var's `gh variable set` line, or "leave unset"). false: left out, and the kit's default stands
+ *            (a knob that only matters once another is turned up, or a setting, not a behaviour)
+ *
+ * knobsMissing() names a template knob with no row: a test and the verify gate's upgrade leg fail on it.
+ */
+export const KNOBS = Object.freeze([
+  // Spec 54-57: written at the value that keeps today's behaviour.
+  { knob: 'Support', at: 'bearings', value: 'triage-only', write: true, accepts: ['off', 'triage-only', 'fix-small', 'fix-all'] },
+  { knob: 'NEXUS_SUPPORT', at: 'var', value: null, write: true },
+  { knob: 'Promote', at: 'bearings', value: 'owner', write: true, accepts: ['owner', 'aged'] },
+  { knob: 'Generators', at: 'section', value: '(none)', write: true },
+  { knob: 'stall_action', at: 'bearings', value: 'alert', write: true, accepts: ['alert', 'promote', 'off'] },
+  { knob: 'loop', at: 'bearings', value: 'off', write: true, accepts: ['on', 'off'] },
+  { knob: 'UI', at: 'bearings', value: 'none', write: true, bold: true, accepts: ['none', 'url', 'dev'] },
+  { knob: 'NEXUS_CADENCE', at: 'var', value: null, write: true },
+  { knob: 'NEXUS_CHAIN_MAX', at: 'var', value: '0', write: true },
+  { knob: 'NEXUS_IDLE_BACKOFF', at: 'var', value: '0', write: true },
+  { knob: 'NEXUS_QUOTA_MAX', at: 'var', value: null, write: true },
+  // Inert while the knobs above stay down, or settings rather than behaviour: the kit default stands.
+  ...['promote_after_days', 'promote_floor', 'promote_per_week', 'veto_days', 'pending_cap', 'Motion floor', 'Lanes off',
+    'Lock max age', 'sla_hours', 'escalate_days', 'asap_cap'].map((knob) => ({ knob, at: 'bearings', value: null, write: false })),
+  ...['UI routes', 'UI cadence', 'UI magic'].map((knob) => ({ knob, at: 'bearings', value: null, write: false, bold: true })),
+  ...['NEXUS_ALLOW_BACKGROUND', 'NEXUS_APP_ID', 'NEXUS_CLAIMS_BOARD', 'NEXUS_DAILY_CEILING', 'NEXUS_DISPATCH_MAX',
+    'NEXUS_EVENT_MAX', 'NEXUS_HEARTBEAT_HOURS', 'NEXUS_HEARTBEAT_WATCH', 'NEXUS_IDLE_WAKE_EVERY', 'NEXUS_LOOP_ACTOR',
+    'NEXUS_PR_LIMIT', 'NEXUS_SUPPORT_TRUST', 'NEXUS_UI_ARTIFACTS', 'NEXUS_URGENT_LABELS'].map((knob) => ({ knob, at: 'var', value: null, write: false })),
+  // Set by the loop-mode line (owner when the v1 loop pushed the default branch), not here.
+  { knob: 'NEXUS_LOOP_MODE', at: 'var', value: null, write: false },
+].map(Object.freeze));
+
+/**
+ * The knobs kit templates name, from the nexus repo (or any folder in templates/ layout under `root/templates`):
+ * every `vars.NEXUS_*` a template workflow reads, every `- key: value` line and filled `**Key:** \`value\`` line of
+ * templates/plan/bearings.md, and its `## Generators` section. [{ knob, at, from }].
+ */
+export function templateKnobs(root) {
+  const out = new Map();
+  const add = (knob, at, from) => { if (!out.has(knob)) out.set(knob, { knob, at, from }); };
+  const flows = path.join(root, 'templates', '.github', 'workflows');
+  for (const name of fs.existsSync(flows) ? fs.readdirSync(flows).filter((n) => /\.ya?ml$/.test(n)).sort() : []) {
+    for (const m of fs.readFileSync(path.join(flows, name), 'utf8').matchAll(/\bvars\.(NEXUS_[A-Z0-9_]+)/g)) add(m[1], 'var', `templates/.github/workflows/${name}`);
+  }
+  const bearings = read(root, 'templates/plan/bearings.md') || '';
+  const from = 'templates/plan/bearings.md';
+  for (const m of bearings.matchAll(/^- ([A-Za-z][\w ]*?):[ \t]+\S/gm)) add(m[1], 'bearings', from);
+  for (const m of bearings.matchAll(/^\*\*([A-Za-z][\w ]*?):\*\*[ \t]+`([^`<]+)`/gm)) add(m[1], 'bearings', from);
+  if (/^##\s+Generators\s*$/m.test(bearings)) add('Generators', 'section', from);
+  return [...out.values()];
+}
+
+/** Template knobs the registry lacks: [{ knob, at, from }]. */
+export function knobsMissing(root, registry = KNOBS) {
+  const have = new Set(registry.map((r) => r.knob));
+  return templateKnobs(root).filter((k) => !have.has(k.knob));
+}
+
+const knobLine = (key) => new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[*\`]*[ \\t]*:[*\`]*[ \\t]*[*\`]*([^\\s*\`]+)`, 'gm');
+
+/**
+ * Write the conservative knobs into plan/bearings.md text: each `write` bearings row whose line is missing goes into
+ * one `## Loop knobs` block at the end, and a missing `## Generators` section is added empty. A line the repo already
+ * has is kept as it is (it is the repo's own setting). Returns { text, knobs: [{ knob, at, value, status, line? }] }
+ * where status is `written`, `kept` (with the repo's value), `unset` (a var left unset) or `set` (a var to set,
+ * `line` the gh command).
+ */
+export function writeKnobs(bearings, { today, registry = KNOBS } = {}) {
+  const text = String(bearings ?? '').replace(/\r\n/g, '\n');
+  const plain = text.replace(/<!--[\s\S]*?-->/g, '');
+  const knobs = [];
+  const lines = [];
+  let generators = false;
+  for (const r of registry.filter((k) => k.write)) {
+    if (r.at === 'var') {
+      knobs.push(r.value == null ? { knob: r.knob, at: r.at, value: null, status: 'unset' }
+        : { knob: r.knob, at: r.at, value: r.value, status: 'set', line: `gh variable set ${r.knob} --body ${r.value}` });
+      continue;
+    }
+    if (r.at === 'section') {
+      const have = new RegExp(`^##\\s+${r.knob}\\s*$`, 'm').test(plain);
+      if (!have) generators = true;
+      knobs.push({ knob: r.knob, at: r.at, value: r.value, status: have ? 'kept' : 'written' });
+      continue;
+    }
+    // Only a line whose value the knob accepts is the repo's setting; prose (`Support: email us`) is not, and the
+    // conservative line is written beside it (the report warns about the line it passed over).
+    const found = [...plain.matchAll(knobLine(r.knob))].map((m) => m[1]);
+    const own = found.find((v) => !r.accepts || r.accepts.includes(v));
+    if (own) { knobs.push({ knob: r.knob, at: r.at, value: own, status: 'kept' }); continue; }
+    lines.push(r.bold ? `\n**${r.knob}:** \`${r.value}\`` : `- ${r.knob}: ${r.value}`);
+    knobs.push({ knob: r.knob, at: r.at, value: r.value, status: 'written', ...(found.length ? { ignored: found[0] } : {}) });
+  }
+  const blocks = [];
+  if (lines.length) {
+    blocks.push(`## Loop knobs\n\nWritten by \`nexus upgrade\`${today ? ` (${today})` : ''} at the values that keep the v1 loop's\nbehaviour. Turn each up on its own, later: \`Support:\`\n(\`nexus/customization/support.md\`), \`Promote:\` and \`stall_action\`\n(aged promotion, the motion heartbeat), \`loop:\` (\`/iterate\` dimension\nI), \`UI:\` (the browser walk).\n\n${lines.join('\n').replace(/^\n/, '')}`);
+  }
+  if (generators) blocks.push('## Generators\n\nWhen no chunk is ready, `/march`\'s stock `refill` lane runs each\ngenerator listed here (`nexus/concepts/generators.md`). None listed\nmeans refill is a no-op.\n\n- (none)');
+  if (!blocks.length) return { text, knobs };
+  const head = text.trim() ? `${text.replace(/\s*$/, '')}\n\n` : '# Bearings\n\n';
+  return { text: `${head}${blocks.join('\n\n')}\n`, knobs };
+}
+
 /** Did the v1 loop push the default branch? Cloud ticks sign their commits `Cloud-Run: <url>`. */
 export function loopModeOf(dir, ref = 'HEAD') {
   const r = gitIn(dir, ['log', ref, '-E', '--grep=^Cloud-Run:', '--format=%h']);
@@ -469,7 +577,7 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
   } catch (e) {
     return { code: e.code || 2, report: { error: e.message } };
   }
-  const report = { repo: root, origin: { url: wt.url, branch: wt.branch, sha: wt.sha }, dry: true, files: [], archive: [], warnings: [], gate: [], workflow: null, dispatch: null, loop: null, worktree: null };
+  const report = { repo: root, origin: { url: wt.url, branch: wt.branch, sha: wt.sha }, dry: true, files: [], archive: [], warnings: [], gate: [], workflow: null, knobs: [], dispatch: null, loop: null, worktree: null };
   let red = false;
   try {
     const shape = detect(wt.dir);
@@ -506,6 +614,15 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
       report.files.push(...wf.rows);
       report.warnings.push(...wf.warnings);
       report.workflow = wf.kept ? { kept: wf.kept, keep: keepWorkflow } : null;
+      // The conservative knobs (the registry above): the train runs as it did; the owner turns each up later.
+      const bearings = read(wt.dir, 'plan/bearings.md');
+      const kn = writeKnobs(bearings, { today });
+      report.knobs = kn.knobs;
+      const wrote = kn.knobs.filter((k) => k.at !== 'var' && k.status === 'written');
+      if (wrote.length) {
+        write(wt.dir, 'plan/bearings.md', kn.text);
+        report.files.push({ path: 'plan/bearings.md', status: bearings == null ? 'added' : 'knobs written', note: `${wrote.map((k) => k.at === 'section' ? `## ${k.knob} ${k.value}` : `${k.knob}: ${k.value}`).join(', ')}` });
+      }
     }
 
     const retired = retireV1(wt.dir, { skip: kitFiles });
@@ -586,6 +703,21 @@ export function render(report, { color = false } = {}) {
     if (k.steps.length) out.push(`  custom steps ${k.steps.join(', ')}`);
     if (k.prompt) out.push(`  prompt       ${k.prompt} line${k.prompt === 1 ? '' : 's'} of the v1 prompt no kit version held`);
   }
+  if (report.knobs?.length) {
+    const ks = report.knobs;
+    const name = (k) => (k.at === 'section' ? `## ${k.knob}` : k.knob);
+    const file = ks.filter((k) => k.at !== 'var');
+    out.push('', 'knobs (conservative: the v1 loop runs as it did; turn each up later)');
+    const written = file.filter((k) => k.status === 'written');
+    const kept = file.filter((k) => k.status === 'kept');
+    if (written.length) out.push(`  plan/bearings.md  ${written.map((k) => `${name(k)} ${k.value}`).join(', ')}`);
+    if (kept.length) out.push(`  kept (the repo's) ${kept.map((k) => `${name(k)} ${k.value}`).join(', ')}`);
+    for (const k of written.filter((w) => w.ignored)) out.push(`  passed over      ${k.knob}: ${k.ignored}… (not a value ${k.knob} takes; ${k.knob}: ${k.value} written)`);
+    const set = ks.filter((k) => k.status === 'set');
+    const unset = ks.filter((k) => k.status === 'unset');
+    if (unset.length) out.push(`  leave unset      ${unset.map((k) => k.knob).join(', ')}`);
+    for (const k of set) out.push(`  ${k.line}`);
+  }
   if (report.dispatch) {
     const d = report.dispatch;
     out.push('', 'first dispatch (predicted)');
@@ -615,7 +747,9 @@ export const UPGRADE_HELP = `nexus upgrade: move a nexus v1 repo (a phase plan) 
                                             temporary worktree, the local
                                             checkout untouched; prints the
                                             per-file report, the archive lines,
-                                            warnings, the gate, the predicted
+                                            warnings, the gate, the knobs
+                                            (each at the value that keeps the
+                                            v1 loop's behaviour), the predicted
                                             first dispatch and the loop mode
   npx @usenexus/cli upgrade --repo <dir>    ...for another folder
   npx @usenexus/cli upgrade --json          the report as JSON

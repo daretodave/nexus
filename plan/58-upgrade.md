@@ -375,7 +375,6 @@ tick).
 
 ## Acceptance
 
-- **A6** The upgrade writes every spec 54-57 knob at its conservative value (Support triage-only, Promote owner, Generators empty, stall_action alert, dimension I off, UI none, cadence unset, chain 0, idle backoff 0), and a test fails when a kit template names a knob the registry lacks.
 - **A7** On a scratch clone of an editorial v1 origin, `--write` yields 52 archive lines (50 + 2 suffixed), 0 open specs, the weekly snapshot gate, content queue and survey refill verbatim in `march.lanes.md` and the cross-link drain in `iterate.lanes.md`, `march.yml` keeping cron `0 * * * *` and ceiling 60, plan-check and the repo's verify green, and a predicted lane dispatch, not an idle tick; a half-done clone and a 40-minute-cron clone also pass.
 - **A8** `--land owner` lands only in an idle window, disables and re-enables march around the push, dispatches and watches the first v2 tick, and `--rollback` restores v1 in one revert commit (tests with a stubbed `gh`).
 - **A11** On a v2 repo the command syncs to the latest kit: untouched kit files are replaced, customised ones three-way merged (a conflict goes to an assisted merge shown as a diff and applied only with a green gate), new kit content is listed and added with knobs at their conservative values, lanes files and custom skills are untouched, and the lock's `ref:` moves in one `plan: sync to nexus <version>` commit (fixtures: an untouched file, a clean merge, a conflict, a new skill).
@@ -388,14 +387,13 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 7 open · 6 closed · next A14
+Measure: 6 open · 7 closed · next A14
 
-- [ ] **58.6** Conservative knobs from a registry · S · closes A6 · needs —
-- [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs 58.6
+- [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs —
   - Fresh clone of the adopter's origin in the scratchpad only; the local checkout is stale and dirty and is never touched. Gaps become fixes in 58.3-58.6's functions plus fixtures.
 - [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs 58.7
 - [ ] **58.10** Runbook rewrite, upgrade prompt and the README door · M · closes A10 · needs 58.8
   - The README section merges with the `cli-v*` release that carries 58.3-58.9; the owner tags it.
-- [ ] **58.11** v2 to latest: the three-way sync and the assisted merge · L · closes A11 · needs 58.6
+- [ ] **58.11** v2 to latest: the three-way sync and the assisted merge · L · closes A11 · needs —
 - [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs 58.10, 58.11
 - [ ] **58.13** Upgrade a repo on GitHub as a pull request, no checkout · M · closes A13 · needs 58.11

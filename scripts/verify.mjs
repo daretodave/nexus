@@ -111,8 +111,12 @@
 //                 kit-text snapshot (scripts/upgrade-kit-text.json)
 //                 holds every header and paragraph the current
 //                 templates/skills/march.md and iterate.md hold, so
-//                 every kit version stays known to the upgrade; plus
-//                 both scripts' own node:test suites
+//                 every kit version stays known to the upgrade; every
+//                 knob a template names (a vars.NEXUS_* a workflow
+//                 reads, a bearings knob line, ## Generators) has a
+//                 conservative row in the upgrade's KNOBS registry
+//                 (packages/cli/server/upgrade.mjs); plus both
+//                 scripts' own node:test suites
 //   state-size    the queues every tick reads stay cheap
 //                 (templates/scripts/plan/state.mjs): in plan/ and
 //                 templates/plan/, each of AUDIT.md, CANDIDATES.md
@@ -1287,9 +1291,12 @@ async function legUpgrade() {
   // The kit-text snapshot: a kit edit to march.md or iterate.md lands with --write in the same commit.
   const kitText = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-kit-text.mjs')).href)
   const text = await kitText.check(ROOT)
+  // The knob registry (spec 58, A6): every knob a template names has a conservative row the upgrade writes from.
+  const { knobsMissing, KNOBS } = await import(pathToFileURL(path.join(ROOT, 'packages/cli/server/upgrade.mjs')).href)
+  const knobs = knobsMissing(ROOT).map((k) => `${k.from}: knob ${k.knob} (${k.at}) has no row in KNOBS (packages/cli/server/upgrade.mjs); add one with its conservative value`)
   const suite = runSuites(['scripts/__tests__/upgrade-files.test.mjs', 'scripts/__tests__/upgrade-kit-text.test.mjs'], 'upgrade')
   const counts = Object.entries(text.counts).map(([s, c]) => `${s} ${c.paras}`).join(', ')
-  return { failures: [...problems, ...text.problems, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; kit-text snapshot current (paragraphs: ${counts}); ${suite.note}` }
+  return { failures: [...problems, ...text.problems, ...knobs, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; kit-text snapshot current (paragraphs: ${counts}); ${KNOBS.length} knobs registered; ${suite.note}` }
 }
 
 // --- leg: state-size ----------------------------------------------------------

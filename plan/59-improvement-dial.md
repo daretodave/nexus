@@ -129,7 +129,7 @@ nexus runs `Research: weekly`; adopters get it from the dial
 ## Chunks
 Measure: 5 open · 0 closed · next A6
 
-- [ ] **59.1** The dial and its resolver · M · closes A1 · needs 58.6
+- [ ] **59.1** The dial and its resolver · M · closes A1 · needs —
 - [ ] **59.2** Skills read knobs through the resolver · M · closes A2 · needs 59.1
 - [ ] **59.3** The field-research generator · M · closes A3 · needs 59.1
 - [ ] **59.4** The dial in GUI Settings · S · closes A4 · needs 59.1

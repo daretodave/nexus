@@ -378,13 +378,23 @@ and the command points at it.
 
 The report lists every file it touched (`added`, `replaced`,
 `seeded`, `merged`, `converted`, `retired`, `renamed`, `rewritten
-(N refs)`, `moved-to-lane (N)`, `moved-to-skill`, `kept-custom`),
+(N refs)`, `moved-to-lane (N)`, `moved-to-skill`, `kept-custom`,
+`knobs written`),
 the archive lines it would append, the warnings, the gate, what
 the workflow merge kept, the first dispatch a tick would make
 (march's pick order played forward), and the loop mode. A v1 loop that pushed the
 default branch (`Cloud-Run` commits) prints the `gh variable set
 NEXUS_LOOP_MODE --body owner` line, because pull-request mode picks
-only chunks. A half-done repo (a lock saying `chunks` beside
+only chunks. The upgrade writes the conservative knobs (`Support:
+triage-only`, `Promote: owner`, `stall_action: alert`, `loop: off`,
+``**UI:** `none` ``, an empty `## Generators`) into a `## Loop knobs`
+block of `plan/bearings.md`, creating the file when the repo has
+none; a knob line the repo already has, with a value that knob
+takes, is kept as it is (a line of prose under a knob name is
+passed over and named in the report). The report's knobs section lists
+`NEXUS_SUPPORT`, `NEXUS_CADENCE` and `NEXUS_QUOTA_MAX` as "leave
+unset" and prints `gh variable set NEXUS_CHAIN_MAX --body 0` and
+`gh variable set NEXUS_IDLE_BACKOFF --body 0`. A half-done repo (a lock saying `chunks` beside
 `plan/steps/` or `PHASE_CANDIDATES.md`) gets Step 5 only. A v2 repo
 prints "already on v2".
 

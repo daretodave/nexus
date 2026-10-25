@@ -161,6 +161,9 @@ test('the dry run reads a fresh fetch of origin in a temporary worktree and writ
   assert.equal(status['agents.md'], 'rewritten (2 refs)', 'origin\'s agents.md, not the dirty local one');
   assert.equal(status['plan/nexus.lock'], 'added');
   assert.ok(!report.files.some((f) => f.path === 'scratch.txt'));
+  // The conservative knobs (A6): no v1 bearings, so one is added holding them; the vars are report lines.
+  assert.equal(status['plan/bearings.md'], 'added');
+  assert.deepEqual(report.knobs.filter((k) => k.status === 'written').map((k) => `${k.knob} ${k.value}`), ['Support triage-only', 'Promote owner', 'Generators (none)', 'stall_action alert', 'loop off', 'UI none']);
 
   // The gate, the warnings, the predicted first dispatch and the loop mode.
   assert.deepEqual(report.gate.map((g) => [g.name, g.ok]), [['plan-check', true], ['plan-check test', true], ['workflow-lint', true]]);
@@ -172,7 +175,7 @@ test('the dry run reads a fresh fetch of origin in a temporary worktree and writ
   assert.deepEqual([report.loop.mode, report.loop.pushes, report.loop.branch], ['owner', 2, 'main']);
 
   const text = render(report);
-  for (const want of ['dry run (nothing written', `origin   ${r.bare}`, 'files (', 'retired', 'archive (+3 lines)', '+ - ', 'warnings (', 'gate', 'green  plan-check', 'first dispatch (predicted)', 'loop mode', 'gh variable set NEXUS_LOOP_MODE --body owner', 'The worktree is removed']) {
+  for (const want of ['dry run (nothing written', `origin   ${r.bare}`, 'files (', 'retired', 'archive (+3 lines)', '+ - ', 'warnings (', 'gate', 'green  plan-check', 'first dispatch (predicted)', 'loop mode', 'gh variable set NEXUS_LOOP_MODE --body owner', 'knobs (conservative', 'gh variable set NEXUS_IDLE_BACKOFF --body 0', 'The worktree is removed']) {
     assert.ok(text.includes(want), `${want}\n---\n${text}`);
   }
 });
