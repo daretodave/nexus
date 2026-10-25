@@ -144,6 +144,45 @@ For each issue, decide:
    - large / off-strategy enhancement → re-route to
      `triage:needs-user`
 
+### Step 2a — Support: fix now or Asap
+
+How hard the loop works an issue is the Support level: the
+repo variable `NEXUS_SUPPORT` when the tick's environment
+carries it, else `Support:` in `plan/bearings.md`, else
+`triage-only` (everything below routes as it always has).
+
+```bash
+node scripts/plan/support.mjs route "$NUM" --kind <category>   # bug | stock, one line with why (gh read only)
+```
+
+It reads the author association and labels, never the text:
+
+| Level | Collaborator bug | Collaborator enhancement | Outsider issue |
+|---|---|---|---|
+| `off`, `triage-only` | `stock` | `stock` | `stock` |
+| `fix-small` | `bug` | `stock` | `stock` |
+| `fix-all` | `bug` | `bug` | `stock` |
+
+A collaborator is OWNER, MEMBER or COLLABORATOR;
+`NEXUS_SUPPORT_TRUST=everyone` lifts every author, and the
+owner's `loop:do` lifts one issue. A `support` label reads as
+a bug.
+
+- `stock` → Steps 2b and 3 as written.
+- `bug` → label `triage:loop-queued` plus the category (a
+  `loop:do` comes off), comment that the loop is working it
+  now, skip 2b and Step 4, and after Step 5 lands run
+  `skills/bug.md` on it: reproduce in a worktree; a small fix
+  (Step 4's test: about an hour, no schema or contract
+  change) runs `/plot asap "<diagnosis>" and do` this tick; a
+  larger one runs `/plot asap` while `node
+  scripts/plan/support.mjs cap` says `room` (fewer than
+  `asap_cap` issue-born Asap chunks open), else it becomes the
+  `plan/AUDIT.md` row of Step 4. An enhancement whose size is
+  a scope or taste call goes `triage:needs-user` instead.
+- Report the routed set (`fix`, `asap` or `none`): `/march`
+  Step 1 reads it to keep the tick going.
+
 ### Step 2b — Extend before you add
 
 Every `loop-queued` issue first asks whether an open spec
@@ -247,6 +286,9 @@ EOF
 If no file changes (all `triage:closed` or `triage:reviewed`),
 **no empty commit** — exit with a one-line summary.
 
+Then each issue Step 2a routed `bug`, oldest first, through
+`skills/bug.md` (one run each).
+
 ### Step 6 — Confirm deploy
 
 ```bash
@@ -343,6 +385,7 @@ GH_REPO=${GH_REPO:-<REPO_SLUG>}
 
 # Operations
 node scripts/plan/triage-match.mjs <N>   # spec | ambiguous | none | covered (--text, --json, --no-prs)
+node scripts/plan/support.mjs route <N> --kind bug   # bug (skills/bug.md now) | stock (route as today)
 gh issue list --repo "$GH_REPO" --state open --search "..."
 gh issue edit <N> --repo "$GH_REPO" --add-label "..."
 gh issue comment <N> --repo "$GH_REPO" --body "..."

@@ -320,7 +320,7 @@ Measure: 7 open · 5 closed · next A13
 - [ ] **55.6** Probe dispatch latency and hook loading in cloud · S · closes A3, A4 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
   - Tooling landed (probe-latency.mjs, probe.yml, guard hook probe, march.yml hook_probe input); left, owner-run: the ten dispatches and one hook_probe tick, their numbers and answer into Design and march.yml's comments, probe.yml deleted.
-- [ ] **55.3** A shipped tick chains the next while work is ready · M · closes A6 · needs 55.6, 54.2, 54.5
+- [ ] **55.3** A shipped tick chains the next while work is ready · M · closes A6 · needs 55.6, 54.5
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.5** Cadence presets, the variable and bootstrap · M · closes A8 · needs 55.3
   - Local: touches .github/workflows (cloud token cannot push it).

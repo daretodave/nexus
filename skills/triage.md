@@ -34,6 +34,18 @@ you add, as `/plot` does).
    `.github/ISSUE_TEMPLATE/*.yml`? The form's label (`bug`,
    `lesson`, `enhancement`, or `triage:needs-user` direct) IS
    the classification — skip re-deriving it from prose.
+   **Support** (spec 54): `node scripts/plan/support.mjs
+   route <N> --kind <class>` reads the level (`NEXUS_SUPPORT`,
+   else `Support:` in `plan/bearings.md`), the author
+   association and labels, never the text. `stock` → steps 4
+   and 5. `bug` → label `triage:loop-queued` plus the class
+   (a `loop:do` comes off), skip 4 and 5, and once step 7
+   lands run `skills/bug.md` on it: a small fix lands this
+   tick, a larger one is plotted Asap (past `asap_cap`, an
+   AUDIT row as in step 5), both in the spec that owns the
+   area. An enhancement whose size is a scope or taste call
+   goes `triage:needs-user`. Report the routed set (`fix`,
+   `asap` or `none`) to `/march` Step 1.
 4. **Extend before you add** (every class but `question`):
    `node scripts/plan/triage-match.mjs <N>` scores the issue
    against the open specs (title, open chunk lines, Design) and
@@ -79,7 +91,8 @@ you add, as `/plot` does).
    what queue, what happens next. Never close without a
    comment.
 7. **Commit + land** the queue changes and pending files:
-   `triage: <K> issues routed`.
+   `triage: <K> issues routed`. Then each `bug` route, oldest
+   first, through `skills/bug.md` (one run each).
 
 ## 4. Hard rules
 
@@ -115,6 +128,7 @@ gh issue list --repo daretodave/nexus --state open \
   --search "-label:triage:loop-queued -label:triage:planned -label:triage:needs-user -label:triage:closed -label:triage:reviewed -label:loop:opened" \
   --json number,title
 node scripts/plan/triage-match.mjs <N>   # spec | ambiguous | none | covered (--text, --json, --no-prs)
+node scripts/plan/support.mjs route <N> --kind bug   # bug (skills/bug.md now) | stock (route as today)
 plan/pending/triage-<N>.md           # the ## Add to the spec it belongs to
 plan/AUDIT.md                        # routing target
 plan/CANDIDATES.md             # lesson-shaped routing target

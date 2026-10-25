@@ -72,6 +72,19 @@ the body names the root cause.
 task being the bug as diagnosed: the repro, the root cause or
 suspects, the siblings and the proposed fix. Edit no code.
 
+**From an issue** (`/triage` routed it `bug`, spec 54): the
+same test decides, for a bug or a collaborator's enhancement.
+The chunk title ends `(#N)` and so does its Asap lane line
+(`- NN.k (#N)`), so the plan knows it is issue-born. A larger
+one is plotted `asap` only while `node
+scripts/plan/support.mjs cap` says `room` (fewer than
+`asap_cap` issue-born Asap chunks open; `plan/bearings.md`,
+3 when absent); `full` makes it the `plan/AUDIT.md` row
+triage files today, the diagnosis in its `next:`. An
+enhancement whose size is a scope or taste call is no fix:
+label it `triage:needs-user` and stop. Report `fix` (fixed
+now) or `asap` (plotted) to `/march` Step 1.
+
 ### Step 5 — Retro and report
 
 - Stop any preview server you started (by the process that owns
@@ -111,5 +124,6 @@ suspects, the siblings and the proposed fix. Edit no code.
 ```bash
 /plot asap "<bug as diagnosed>" and do     # fix now, planned and archived
 /plot asap "<bug as diagnosed>"            # plot it
+node scripts/plan/support.mjs cap          # from an issue: room | full against asap_cap
 node scripts/worktree.mjs close <path>
 ```

@@ -364,6 +364,22 @@ may set its own):
 
 - Lock max age: 14d
 
+## Support
+
+How hard the loop works an issue (`skills/triage.md` Step 2a,
+`scripts/plan/support.mjs`): `off | triage-only | fix-small |
+fix-all`. `triage-only` (the default) routes every issue into
+the queues and the tick returns. `fix-small` sends a
+collaborator's bug to `/bug`, which fixes it in the tick or
+plots it Asap, and the tick goes on to build; `fix-all` does
+the same for a collaborator's small enhancement. At most
+`asap_cap` issue-born Asap chunks are open at once; the rest
+are `plan/AUDIT.md` rows. In cloud the repo variable
+`NEXUS_SUPPORT` wins over this line.
+
+- Support: triage-only
+- asap_cap: 3
+
 ## Generators
 
 When no chunk is ready, `/march`'s stock `refill` lane runs

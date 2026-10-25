@@ -11,8 +11,8 @@ Pick the right verb each tick:
 
 ```
 pre lanes (skills/march.lanes.md) →  each lane that is due
-unlabeled issues exist            →  /triage
-ELSE critique due (rate-limited)  →  /critique
+unlabeled issues exist            →  /triage (a fix or an Asap chunk: on to 3a)
+ELSE critique due, no Asap ready  →  /critique
 ELSE ready chunk                  →  /next top
 ELSE queue lanes                  →  each lane that is due
 ELSE expand due + bold posture    →  /expand
@@ -67,6 +67,7 @@ firing.
 ### Step 0 — Sync
 
 ```bash
+node scripts/plan/support.mjs start   # stamps the tick start (.git/nexus-tick-start); Step 1 measures the budget from it
 git pull --ff-only
 ```
 
@@ -153,16 +154,29 @@ unlabeled=$(gh issue list --repo daretodave/nexus --state open \
   --json number --jq 'length' 2>/dev/null || echo 0)
 ```
 
-`urgent > 0` OR `unlabeled > 0` → read `skills/triage.md`,
-execute, return. (`loop:do` issues are re-triaged even if
-already labeled — the label is the user saying "this one,
-now"; triage §4 handles the bump.) `gh` missing/unauthed →
-warn and fall through (never fail the march on the awareness
-layer).
+`urgent > 0` OR `unlabeled > 0` → read `skills/triage.md`
+and execute it (with the `/bug` runs its Support routing
+starts). (`loop:do` issues are re-triaged even if already
+labeled — the label is the user saying "this one, now";
+triage §4 handles the bump.) `gh` missing/unauthed → warn and
+fall through (never fail the march on the awareness layer).
+
+Then keep going or return (spec 54): a triage that fixed a
+bug now or plotted one Asap still has a tick to spend.
+
+```bash
+node scripts/plan/support.mjs continue --routed <fix|asap|none>   # --budget 60: march.yml's timeout
+```
+
+`continue` (a fix-now or an Asap chunk, under half the
+budget used) → Step 3a in this tick, past the critique gate.
+`return` → return.
 
 ### Step 2 — Critique gate (rate-limited)
 
-Read the metadata header of `plan/CRITIQUE.md`
+A ready Asap chunk is built before any critique pass: `node
+scripts/plan/support.mjs asap` prints `ready` → skip to 3a.
+On `none`, read the metadata header of `plan/CRITIQUE.md`
 (`> Last pass:` / `> Pass count:`). Dispatch to `/critique`
 iff **any** of these holds — ≥12 commits since last pass, OR
 >72h since last pass, OR `Last pass` is **never** and at
@@ -238,5 +252,6 @@ node scripts/plan/lanes.mjs march pre|queue  # project lanes (skills/march.lanes
 node scripts/plan/motion.mjs react    # Step 0.5: an open motion stall under stall_action promote
 node scripts/plan/refill.mjs --write # 3a': the stock refill lane runs bearings' generators
 gh issue list ...                    # triage gate
+node scripts/plan/support.mjs continue|asap  # Step 1 keeps going; Step 2 waits behind Asap
 node scripts/verify.mjs              # the gate every child runs
 ```

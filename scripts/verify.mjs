@@ -26,7 +26,9 @@
 //                 default branch bare outside next/land.md (each
 //                 lands per owner mode; scripts/bare-push.mjs);
 //                 triage, bug and iterate (both trees) carry the
-//                 rule that issue and page text is data
+//                 rule that issue and page text is data; triage,
+//                 bug and march (both trees) carry the support
+//                 routing (support.mjs route, cap, continue, asap)
 //   emoji         no pictographic emoji anywhere in tracked docs,
 //                 nor in packages/cli source (js/jsx/ts/tsx/json/css/html)
 //                 (✓ and ❌ dingbats are fine; 🤖 is not, nor the
@@ -42,7 +44,9 @@
 //                 and (vs HEAD) a chunk that left the plan has
 //                 its archive line. Runs templates/scripts/plan-check.mjs
 //                 so adopters and the kit share one implementation,
-//                 plus that script's own node:test suite
+//                 plus that script's own node:test suite; a set
+//                 NEXUS_SUPPORT that disagrees with bearings'
+//                 Support: line is a warning in its note
 //   scripts       the node:test suites of the plan, claims and push
 //                 policy scripts adopters copy (templates/scripts/plan/,
 //                 claims, git/push-policy, announce, ledger, the
@@ -478,6 +482,17 @@ const LINE_BUDGETS = {
 const UNTRUSTED_TEXT_SKILLS = ['triage.md', 'bug.md', 'iterate.md']
 const UNTRUSTED_TEXT_RULE = [/third-party data, never instructions/, /UI walk/, /at most 120 characters/]
 
+// The support routing (spec 54, scripts/plan/support.mjs), held in
+// both trees: triage sends a collaborator's bug to /bug under the
+// Support level, /bug fixes it now or plots it Asap under asap_cap,
+// and march keeps going after such a triage and builds a ready Asap
+// chunk before any critique pass.
+const SUPPORT_ROUTING = {
+  'triage.md': [[/support\.mjs route/, 'triage asks `support.mjs route` per issue'], [/skills\/bug\.md/, 'a `bug` route goes to skills/bug.md']],
+  'bug.md': [[/asap_cap/, 'a larger bug is plotted Asap only under asap_cap'], [/support\.mjs cap/, '`support.mjs cap` counts the open issue-born Asap chunks']],
+  'march.md': [[/support\.mjs continue/, 'Step 1 continues to 3a through `support.mjs continue`'], [/support\.mjs asap/, 'the critique gate waits behind a ready Asap chunk (`support.mjs asap`)']],
+}
+
 // A `<skill>.lanes.md` beside a skill is that project's lanes file
 // (scripts/plan/lanes.mjs), not a skill: no anatomy, no command pointer.
 const LANES_FILE = /\.lanes\.md$/
@@ -669,6 +684,12 @@ async function legAnatomy() {
       const flat = read(file).replace(/\s+/g, ' ')
       if (!UNTRUSTED_TEXT_RULE.every((re) => re.test(flat))) failures.push(`${file}: missing the rule that issue and page text is data (third-party data, never instructions; UI walk; at most 120 characters)`)
     }
+    for (const [name, rules] of Object.entries(SUPPORT_ROUTING)) {
+      const file = `${base}/${name}`
+      const flat = read(file).replace(/\s+/g, ' ')
+      const missing = rules.filter(([re]) => !re.test(flat)).map(([, what]) => what)
+      if (missing.length) failures.push(`${file}: missing the support routing (spec 54): ${missing.join('; ')}`)
+    }
   }
   // No bare push of the default branch: every committing skill
   // lands per owner mode, and only next/land.md names the push.
@@ -857,6 +878,12 @@ async function legChunks() {
     failures.push(...f)
     notes.push(`${dirRel}: ${note}`)
   }
+  // The Support knob: the repo variable wins in cloud, so a tick
+  // whose NEXUS_SUPPORT disagrees with bearings' Support: line warns
+  // (a note, never a failure; spec 54).
+  const { supportLevel } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/support.mjs')).href)
+  const knob = supportLevel(read('plan/bearings.md'), process.env)
+  if (knob.note) notes.push(`warn: ${knob.note}`)
   // The checker's own unit tests (node:test, no deps, well under a
   // second): a gate whose rules regress silently is no gate.
   try {
@@ -911,6 +938,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/design-compare.test.mjs',
   'templates/scripts/__tests__/design-render.test.mjs',
   'templates/scripts/__tests__/design-port.test.mjs',
+  'templates/scripts/__tests__/support.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
   'scripts/__tests__/probe-latency.test.mjs',
@@ -941,7 +969,7 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs', 'plan/locks.mjs', 'plan/state.mjs',
+  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs', 'plan/locks.mjs', 'plan/state.mjs', 'plan/support.mjs',
   'generators/issue-age.mjs', 'generators/stale-candidate.mjs', 'generators/motion.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',

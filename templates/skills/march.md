@@ -11,8 +11,8 @@ right-thing-to-do every tick:
 
 ```
 pre lanes (march.lanes.md)      →  each lane that is due
-unlabeled issues exist          →  /triage
-ELSE critique due (rate-lim)    →  /critique
+unlabeled issues exist          →  /triage (a fix or Asap: on to 3a)
+ELSE critique due, no Asap      →  /critique
 ELSE ready chunk               →  /next top
 ELSE queue lanes                →  each lane that is due
 ELSE pending data               →  /ship-data
@@ -84,6 +84,7 @@ pass, held behind its veto window).
 ### Step 0 — Sync
 
 ```bash
+node scripts/plan/support.mjs start   # stamps the tick start (.git/nexus-tick-start); Step 1 measures the budget from it
 git pull --ff-only
 ```
 
@@ -194,8 +195,23 @@ urgent=$(gh issue list --repo "$GH_REPO" --state open \
 If `urgent > 0` or `unlabeled > 0`:
 
 - Read `skills/triage.md`.
-- Execute its procedure end-to-end.
-- Return.
+- Execute its procedure end-to-end, with the `/bug` runs its
+  Step 2a (Support) starts.
+- Keep going or return. A triage that fixed a bug now or
+  plotted one Asap still has a tick to spend:
+
+  ```bash
+  node scripts/plan/support.mjs continue --routed <fix|asap|none> --budget <minutes>
+  ```
+
+  `--budget` is the cloud job's `timeout-minutes` (60 when
+  left out). `continue` (a fix-now or an Asap chunk, under
+  half the budget used) → Step 3a in this tick, past the
+  critique gate. `return` → return.
+
+Under `Support: triage-only` (the default) triage routes
+nothing to `/bug`, so the routed set is `none` and the tick
+returns as it always has.
 
 If `unlabeled == 0`, fall through to Step 2.
 
@@ -204,7 +220,14 @@ the march** — log warning and fall through.
 
 ### Step 2 — Critique gate (rate-limited)
 
-Read metadata header at top of `plan/CRITIQUE.md`:
+A ready Asap chunk is built before any critique pass:
+
+```bash
+node scripts/plan/support.mjs asap   # ready | none
+```
+
+`ready` → skip to Step 3a. On `none`, read the metadata
+header at top of `plan/CRITIQUE.md`:
 
 ```
 > Last pass: <ISO-date> at commit <sha>
@@ -373,6 +396,7 @@ gh issue list ...                    # unlabeled count
 
 # Skills it dispatches into
 skills/triage.md                     # Step 1 (cheapest)
+scripts/plan/support.mjs             # Step 1 keeps going after a fix or Asap; Step 2 waits behind Asap
 skills/critique.md                   # Step 2 (rate-limited)
 skills/next.md                       # Step 3a (/next top)
 skills/ship-data.md                  # Step 3b

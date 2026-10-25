@@ -519,6 +519,7 @@ nexus/
 │   ├── __tests__/unreleased.test.mjs  # its pure suite (scripts leg); __tests__/unreleased-run.test.mjs, a scratch repo (scripts-git)
 │   ├── plan/locks.mjs                 # lock timeouts: past max_age a lock takes its fallback or asks once (twin)
 │   ├── plan/state.mjs                 # the state diet: queue headers and size (the state-size leg); compact old Done rows (twin)
+│   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going (twin)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
@@ -714,6 +715,7 @@ nexus/
     │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react
     │   ├── plan/locks.mjs             # lock timeouts: Held lines, lane locks, owner-blocked rows; release, fallback or one ask
     │   ├── plan/state.mjs             # the state diet: queue headers <= 20 lines, <= 256 KB; delete Done rows past 30 days
+    │   ├── plan/support.mjs           # Support level (NEXUS_SUPPORT over bearings): route a collaborator's bug to /bug, asap_cap, march keeps going
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
     │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
     │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
@@ -766,6 +768,7 @@ nexus/
     │   ├── __tests__/motion.test.mjs  # the motion pulse, one stall issue over a Sep-Oct decline, stall_action, the generator
     │   ├── __tests__/locks.test.mjs   # lock timeouts: release keeps plan-check green; one ask over 30 ticks, re-pinged weekly
     │   ├── __tests__/state.test.mjs   # the state diet: an oversize fixture fails; compact dates rows and keeps the rest
+    │   ├── __tests__/support.test.mjs # the Support level, the routing table, the asap_cap count, continue at half the budget
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver

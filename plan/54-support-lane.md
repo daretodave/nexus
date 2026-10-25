@@ -239,8 +239,6 @@ asap_cap: 3                 # nexus: 3
 
 ## Acceptance
 
-- **A2** Under `fix-small` or `fix-all`, a collaborator's reproduced small bug is fixed in the tick that triaged it (`/plot asap … and do`); a larger one lands in the Asap lane (at most `asap_cap` open, overflow to AUDIT); under `fix-all` a small collaborator enhancement is built the same way and only a scope or taste call gets `triage:needs-user`; an outsider's issue is triaged only unless the owner applies `loop:do`.
-- **A3** A tick that triages into a fix-now or an Asap chunk continues to Step 3a in the same run; a non-empty Asap lane is built before any critique pass.
 - **A4** `source: user` AUDIT rows gain +1 per 12h (cap +4) and are never filtered by the 3.0 floor; a re-scored #86-shaped row (impact 6, ease 4, 24h old) ranks above every docs row under 4.4.
 - **A5** An open `triage:loop-queued` issue older than `sla_hours` whose work is not in the Asap lane is plotted asap by Step 1.5 and built before any spec-table chunk.
 - **A6** A support fix commit carries `Refs #N` and never `Closes`/`Fixes`; after it lands the issue gets a comment naming the commit and is closed, except a `packages/cli` fix, which says it lands in the next release and stays open.
@@ -258,12 +256,11 @@ asap_cap: 3                 # nexus: 3
 
 ## Chunks
 
-Measure: 12 open · 1 closed · next A14
+Measure: 10 open · 3 closed · next A14
 
-- [ ] **54.2** Support routing: fix now or Asap, and march keeps going · M · closes A2, A3 · needs —
-- [ ] **54.3** User rows age into the queue; the support SLA step · S · closes A4, A5 · needs 54.2
+- [ ] **54.3** User rows age into the queue; the support SLA step · S · closes A4, A5 · needs —
   - Seed: re-score the open `source: user` AUDIT rows in the same commit.
-- [ ] **54.4** A fixed issue is told and closed · S · closes A6 · needs 54.2
+- [ ] **54.4** A fixed issue is told and closed · S · closes A6 · needs —
 - [ ] **54.5** march.yml reason, dispatch ceiling, hard quota, loop-filed marker · M · closes A7, A10 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs 54.3, 54.5

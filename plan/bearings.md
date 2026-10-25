@@ -139,6 +139,19 @@ lane:
 
 - Lock max age: 14d
 
+## Support
+
+How hard the loop works an issue (spec 54,
+`scripts/plan/support.mjs`): `/triage` sends a collaborator's
+bug, and under `fix-all` a small enhancement, to `/bug`, which
+fixes it in the tick or plots it Asap; at most `asap_cap`
+issue-born Asap chunks are open at once, the rest are AUDIT
+rows. In cloud the repo variable `NEXUS_SUPPORT` wins over
+this line; the `chunks` leg warns when they disagree.
+
+- Support: fix-all
+- asap_cap: 3
+
 ## Generators
 
 When no chunk is ready, `/march`'s stock `refill` lane runs
