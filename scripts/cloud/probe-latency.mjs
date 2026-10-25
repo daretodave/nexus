@@ -215,7 +215,8 @@ export async function main(argv, deps = {}) {
     out(`probe-latency: ${count} dispatches of ${workflow}, ${gapMin} min apart${opts['dry-run'] ? ' (dry run)' : ''}`);
     let failed = 0;
     for (let i = 0; i < count; i++) {
-      if (i > 0) await sleep(gapMin * 60 * 1000);
+      // A dry run prints the plan at once; only real dispatches wait out the gap.
+      if (i > 0 && !opts['dry-run']) await sleep(gapMin * 60 * 1000);
       const stamp = (deps.clock ? deps.clock() : new Date()).toISOString();
       if (opts['dry-run']) {
         out(`  ${i + 1}/${count} ${stamp} would run: gh workflow run ${workflow}`);

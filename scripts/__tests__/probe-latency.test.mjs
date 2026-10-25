@@ -128,11 +128,13 @@ describe('main', () => {
     assert.deepEqual(slept, [1800000, 1800000]);
   });
 
-  it('a dry run dispatches nothing', async () => {
+  it('a dry run dispatches nothing and never waits out the gap', async () => {
     const gh = ghStub([]);
-    const code = await main(['dispatch', '--count', '2', '--gap-min', '0', '--dry-run'], { run: gh.run, sleep: async () => {}, out: () => {} });
+    const slept = [];
+    const code = await main(['dispatch', '--count', '3', '--dry-run'], { run: gh.run, sleep: async (ms) => { slept.push(ms); }, out: () => {} });
     assert.equal(code, 0);
     assert.equal(gh.calls.length, 0);
+    assert.deepEqual(slept, []);
   });
 
   it('a failed dispatch exits 1', async () => {
