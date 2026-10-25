@@ -8,7 +8,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  appendix, BEGIN, callsOf, check, closure, END, importsOf, namedPaths, repoPath, upgradeFiles, writeAppendix,
+  appendix, BEGIN, callsOf, check, closure, END, importsOf, namedPaths, repoPath, syncFiles, upgradeFiles, writeAppendix,
 } from '../upgrade-files.mjs'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -148,6 +148,36 @@ test('check is red when the playbook names a kit file that does not exist', () =
 test('check is red when the playbook has no appendix markers', () => {
   const root = kit({ ...BASE, 'playbooks/upgrade.md': '# upgrade\n' })
   assert.match(check(root).problems.join('\n'), /no generated appendix/)
+})
+
+test('the sync set is the list plus every kit workflow and the scripts they call', () => {
+  const root = kit({
+    ...BASE,
+    'templates/.github/workflows/heartbeat.yml': 'jobs:\n  beat:\n    steps:\n      - run: node scripts/cloud/beat.mjs\n',
+    'templates/scripts/cloud/beat.mjs': "import './beat-lib.mjs'\n",
+    'templates/scripts/cloud/beat-lib.mjs': 'export {}\n',
+  })
+  const listed = new Set(upgradeFiles(root).files.map((f) => f.kit))
+  const { files, missing } = syncFiles(root)
+  assert.deepEqual(missing, [])
+  const extra = files.filter((f) => !listed.has(f.kit)).map((f) => [f.kit, f.repo, f.kind])
+  assert.deepEqual(extra, [
+    ['templates/.github/workflows/heartbeat.yml', '.github/workflows/heartbeat.yml', 'workflow'],
+    ['templates/.github/workflows/march.yml', '.github/workflows/march.yml', 'workflow'],
+    ['templates/scripts/cloud/beat-lib.mjs', 'scripts/cloud/beat-lib.mjs', 'script'],
+    ['templates/scripts/cloud/beat.mjs', 'scripts/cloud/beat.mjs', 'script'],
+  ])
+  assert.equal(files.length, listed.size + extra.length, 'the list is all there too')
+})
+
+test('check is red when a script a kit workflow calls imports a file that is gone', () => {
+  const root = kit({
+    ...BASE,
+    'templates/.github/workflows/heartbeat.yml': 'jobs:\n  beat:\n    steps:\n      - run: node scripts/cloud/beat.mjs\n',
+    'templates/scripts/cloud/beat.mjs': "import './gone.mjs'\n",
+  })
+  writeAppendix(root)
+  assert.deepEqual(check(root).problems, ['templates/scripts: a script a kit workflow calls imports a file that does not exist (cloud/beat.mjs -> cloud/gone.mjs)'])
 })
 
 test('namedPaths reads ../nexus, bare and backslashed paths and folders, not placeholders', () => {

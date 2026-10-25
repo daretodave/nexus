@@ -56,16 +56,16 @@ for (const [bundled, templ] of Object.values(KIT_FILES)) {
 console.log(`bundle-kit: copied ${Object.values(KIT_FILES).map(([, t]) => t).join(', ')} -> kit/`);
 
 // The v2 kit file set (spec 58): one computed list, shared with the playbook's manual appendix.
-const { files: upgrade, missing } = await bundleUpgrade({ nexus: path.resolve(pkg, '..', '..'), out: UPGRADE_DIR });
+const { files: upgrade, sync: synced = [], missing } = await bundleUpgrade({ nexus: path.resolve(pkg, '..', '..'), out: UPGRADE_DIR });
 if (missing.length) {
   console.error(`bundle-kit: the upgrade list's closure reaches files that are gone: ${missing.join(', ')}`);
   process.exit(1);
 }
-console.log(`bundle-kit: copied ${upgrade.length} upgrade files -> kit/upgrade/ (+ files.json, ${KIT_TEXT})`);
+console.log(`bundle-kit: copied ${upgrade.length} upgrade files and ${synced.length} more a sync adds -> kit/upgrade/ (+ files.json, ${KIT_TEXT})`);
 
 // Every file a server route loads from kit/ must be there, or the build fails here rather than for a user.
 const want = [...Object.values(KIT_FILES).map(([b]) => b), ...planFiles.map((f) => `scripts/${f}`), ...vault.map((f) => `secrets/${f}`),
-  ...upgrade.map((f) => `upgrade/${bundledPath(f.kit)}`), ...SEEDS.map((s) => `upgrade/${s}`), 'upgrade/files.json', `upgrade/${KIT_TEXT}`];
+  ...[...upgrade, ...synced].map((f) => `upgrade/${bundledPath(f.kit)}`), ...SEEDS.map((s) => `upgrade/${s}`), 'upgrade/files.json', `upgrade/${KIT_TEXT}`];
 const lost = want.filter((f) => !fs.existsSync(path.join(pkg, 'kit', ...f.split('/'))));
 if (lost.length) {
   console.error(`bundle-kit: missing from kit/ after bundling: ${lost.join(', ')}`);

@@ -31,6 +31,11 @@
 // --check fails when a templates/ path the playbook names does not
 // exist, when the appendix drifts from the list, or when a listed
 // script reaches (by import) a file the list lacks or that is gone.
+//
+// syncFiles() is the set a v2 repo's sync walks (the CLI's
+// `upgrade` on a v2 repo): the list plus every kit workflow, the
+// closure of the scripts those workflows call, and each listed
+// script's own tests. --check holds that closure too.
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -181,6 +186,53 @@ export function twinTests(scriptsDir, scripts) {
   return out.sort()
 }
 
+/** Where the kit's workflows live, relative to templates/. */
+export const WORKFLOW_DIR = '.github/workflows'
+
+/**
+ * The sync set (a v2 repo brought to the current kit, spec 58): the upgrade list plus every workflow the kit ships
+ * (kind `workflow`) and the closure of every script those workflows call that the list lacks (a synced workflow must
+ * find its scripts, as a listed skill must), and each listed script's own tests (kind `test`). Returns
+ * { files, missing }, sorted by kit path.
+ */
+export function syncFiles(root = ROOT) {
+  const t = path.join(root, 'templates')
+  const { files, missing } = upgradeFiles(root)
+  const have = new Set(files.map((f) => f.kit))
+  const flowsDir = path.join(t, ...WORKFLOW_DIR.split('/'))
+  const flows = fs.existsSync(flowsDir) ? fs.readdirSync(flowsDir).filter((n) => /\.ya?ml$/.test(n)).sort() : []
+  const calls = new Set()
+  const extra = []
+  for (const n of flows) {
+    const kit = `templates/${WORKFLOW_DIR}/${n}`
+    if (!have.has(kit)) extra.push({ kit, repo: repoPath(kit), kind: 'workflow' })
+    for (const s of callsOf(fs.readFileSync(path.join(flowsDir, n), 'utf8'))) {
+      if (fs.existsSync(path.join(t, 'scripts', ...s.split('/')))) calls.add(s)
+    }
+  }
+  const reach = closure(path.join(t, 'scripts'), [...calls])
+  for (const f of reach.files) {
+    const kit = `templates/scripts/${f}`
+    if (!have.has(kit)) { have.add(kit); extra.push({ kit, repo: repoPath(kit), kind: 'script' }) }
+  }
+  // Each listed script's own tests travel with it (a repo that vendored a script often vendored its test beside it,
+  // and a test left behind fails on the moved code): __tests__/<name>.test.mjs and <name>-run.test.mjs, when every
+  // relative import the test makes is in the set (one reaching a fixture folder or an unlisted script stays out).
+  const testsDir = path.join(t, 'scripts', '__tests__')
+  for (const k of [...have].filter((x) => /^templates\/scripts\/(?!__tests__\/).+\.mjs$/.test(x)).sort()) {
+    const name = path.posix.basename(k, '.mjs')
+    for (const tn of [`${name}.test.mjs`, `${name}-run.test.mjs`]) {
+      const kit = `templates/scripts/__tests__/${tn}`
+      const abs = path.join(testsDir, tn)
+      if (have.has(kit) || !fs.existsSync(abs)) continue
+      const reaches = importsOf(fs.readFileSync(abs, 'utf8')).map((s) => path.posix.normalize(path.posix.join('templates/scripts/__tests__', s)))
+      if (reaches.every((r) => have.has(r))) { have.add(kit); extra.push({ kit, repo: repoPath(kit), kind: 'test' }) }
+    }
+  }
+  const all = [...files, ...extra].sort((a, b) => (a.kit < b.kit ? -1 : a.kit > b.kit ? 1 : 0))
+  return { files: all, missing: [...missing, ...reach.missing.filter((m) => !missing.includes(m))] }
+}
+
 const winPath = (p) => p.split('/').join('\\')
 
 /** The playbook's manual appendix for a list: per destination folder, a table row and the copy commands. */
@@ -247,6 +299,8 @@ export function check(root = ROOT) {
   const problems = []
   const { files, missing } = upgradeFiles(root)
   for (const m of missing) problems.push(`templates/scripts: a listed script imports a file that does not exist (${m})`)
+  // The sync set (a v2 repo to the current kit) adds the kit's workflows and the scripts they call: closed too.
+  for (const m of syncFiles(root).missing.filter((x) => !missing.includes(x))) problems.push(`templates/scripts: a script a kit workflow calls imports a file that does not exist (${m})`)
   // The closure is closed: every relative import of every listed script is itself listed.
   const listed = new Set(files.map((f) => f.kit))
   for (const f of files) {

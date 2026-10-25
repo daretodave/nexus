@@ -151,7 +151,7 @@ npx @usenexus/cli --port <n>     a fixed port (default: the last launch's, when 
 npx @usenexus/cli --replace      stop this repo's running nexus the safe way, then start (an upgrade)
 NEXUS_PROVIDER=cli               use `claude -p` stream-json instead of the Agent SDK
 npx @usenexus/cli --demo <name>  a scripted demo (below): no repo, no Claude, no network
-npx @usenexus/cli upgrade        a nexus v1 repo to v2, dry run (below)
+npx @usenexus/cli upgrade        a nexus v1 repo to v2, or a v2 repo to the current kit; dry run first (below)
 ```
 
 ## Demo: fixtures and a timed beat script
@@ -417,14 +417,75 @@ passed over and named in the report). The report's knobs section lists
 `NEXUS_SUPPORT`, `NEXUS_CADENCE` and `NEXUS_QUOTA_MAX` as "leave
 unset" and prints `gh variable set NEXUS_CHAIN_MAX --body 0` and
 `gh variable set NEXUS_IDLE_BACKOFF --body 0`. A half-done repo (a lock saying `chunks` beside
-`plan/steps/` or `PHASE_CANDIDATES.md`) gets Step 5 only. A v2 repo
-prints "already on v2".
+`plan/steps/` or `PHASE_CANDIDATES.md`) gets Step 5 only, unless
+`plan/settle.json` names a build queue there (`queue`): that repo
+keeps the queue on purpose, and is v2. A v2 repo syncs (below).
 
 It exits 0 when the report prints, 1 when the gate is red (the
 worktree is kept and its path printed), and 2 when the repo is not
-v1, has no origin, or a flag names a step this release does not
-carry yet (`--write`, `--land`, `--rollback`, `--pr`, `--no-pause`,
-`--no-watch`).
+a nexus repo, has no origin, or a flag names a step this release
+does not carry yet (`--land`, `--rollback`, `--pr`, `--no-pause`,
+`--no-watch`; `--write` on a v1 repo).
+
+### Sync: a v2 repo to the current kit
+
+```
+npx @usenexus/cli upgrade                 the sync, dry: the report only
+npx @usenexus/cli upgrade --write         ...committed on nexus/upgrade-<version>
+npx @usenexus/cli upgrade --no-assist     conflicts left as the repo's, listed
+```
+
+On a v2 repo the same command brings the kit up to the one the CLI
+carries. `plan/nexus.lock`'s `ref:` names the kit commit the repo
+follows, so each kit file has three versions: the kit at that ref,
+the kit now, and the repo's copy. The kit at the ref comes from a
+shallow fetch of the kit's repository (templates only). Placeholders
+are filled the same way in both kit versions before they are
+compared, so a filled-in copy reads as untouched. The files are the
+v2 kit set plus the kit's workflows, the scripts they call, and each
+script's own tests (a vendored test moves with its code). A repo
+takes a kind of kit file (skills, commands, scripts, workflows) when
+it holds at least four in five of the ones the kit had at the ref.
+
+| The repo's copy | What the sync does |
+|---|---|
+| the kit's at the ref, untouched | `replaced` with the kit now |
+| changed, the kit unchanged since the ref | kept, no row |
+| changed, and so is the kit | three-way merge: `merged` when clean |
+| a conflicting merge | `assisted`: a helper session merges it (below) |
+| code coupled by imports to a file that stays as yours | `held back` with it: code moves as a family, so a test never runs ahead of its code |
+| missing, new since the ref, of a kind the repo takes | `new`: added |
+| missing otherwise (the repo did not take it, or takes no kit files of its kind) | listed as available, not added, unless code the repo keeps now imports it (`new`, "needed by ...") |
+| at another path (a vendored copy: same name, most of its lines) | treated as the repo's copy, merged there |
+| its own file where the kit added one since the ref | kept, with a warning |
+| a lanes file, a skill the kit never shipped | never touched |
+
+The assisted merge is one headless turn on your own Claude Code
+login per conflicting file (four at a time). It gets the three
+versions and git's conflicted merge, and answers with the merged
+file and one line per hunk it kept from your copy. The report shows
+each one as a diff with those lines. An answer that keeps conflict
+markers, or drops any line your copy added, is not used: the file
+stays as yours and the report says why. The repo's gate then runs
+in the worktree: the kit gate legs it already had (plan-check, its
+test, workflow-lint) and its own verify command (`verify`, else
+`check`, in `package.json`, else `scripts/verify.mjs`), with your
+installed `node_modules` linked in (install from a checkout at
+origin's tip: workspace packages resolve to your checkout). Assisted
+files apply only with that gate green. Red with all of them, they
+are tried by halves (code coupled by imports as one family, any
+other file alone; at most six more gate runs): the ones the gate
+passes stay, and the rest go back to your copy with the code coupled
+to them. The report shows the red gate they hit.
+
+A knob the kit's templates name now but did not at the ref arrives
+at its conservative value (the same registry as the v1 upgrade), so
+nothing behaves differently until you turn it up. The lock's `ref:`
+and `version:` move to the kit commit the CLI was built from, and
+every other line and comment of the lock stays. `--write` makes it
+one commit, `plan: sync to nexus <version>`, on branch
+`nexus/upgrade-<version>`; nothing is pushed. A lock already at
+the CLI's kit prints "already on nexus <version>".
 
 The GUI says it too. Open a v1 repo and the Fleet view leads with
 "This repo is on nexus v1" and an **Upgrade** button (a repo part

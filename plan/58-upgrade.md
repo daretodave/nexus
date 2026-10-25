@@ -319,6 +319,64 @@ the kit now (theirs), the repo's copy (ours).
   the CLI was built from, in one commit,
   `plan: sync to nexus <version>`.
 
+Decided while building 58.11:
+
+- **The file set** is the upgrade list plus every kit
+  workflow and the scripts they call
+  (`scripts/upgrade-files.mjs` `syncFiles`; the `upgrade`
+  leg holds its closure). The base comes from the nexus
+  checkout's own history in a dev run, else a shallow,
+  blobless fetch of the kit repo at `ref:` with only
+  `templates/` checked out. Placeholders are filled alike in
+  base and theirs before comparing.
+- **A vendored copy at another path** (same file name, at
+  least half of the base's lines) is the repo's copy and is
+  merged there; the kit path is not added beside it. A file
+  the kit added since `ref:` that the repo already has its
+  own of is kept, with a warning. Each listed script's own
+  tests travel with it (a vendored test merged with its
+  code, or the moved code fails it).
+- **New content, measured on a vendored adopter.** A repo
+  takes a kind of kit file (skills, commands, scripts,
+  workflows) when it holds four in five of the ones the kit
+  had at `ref:`; a file new since `ref:` of a kind it takes is
+  added. Every other missing kit file (one it did not take
+  at `ref:`, or of a kind it takes none of) is listed as
+  available and not added, unless code the repo keeps now
+  imports it. Adding them all broke that adopter's own
+  policy tests (every CLI answers `--help`, the README lists
+  every command, spawning tests carry timeouts).
+- **Code moves as a family.** A script or test coupled by
+  imports (through files that move) to one that stays as the
+  repo's is held back with it, listed `held back`; a vendored
+  test moved past its code failed that adopter's gate.
+- **The assisted merge** answers with the merged file and
+  one reason line per hunk; an answer holding conflict
+  markers or dropping any line the repo added is not used.
+  `--no-assist` leaves every conflict as the repo's. Four
+  run at once. A gate red with all of them tries them by
+  halves (families as above, any other file alone; at most
+  six more gate runs) and keeps the ones it passes.
+- **The gate** is the kit legs the repo already had
+  (plan-check, its test, workflow-lint) plus its own verify
+  command (`verify`, else `check`, in `package.json`, else
+  `scripts/verify.mjs`), the local checkout's
+  `node_modules` linked in.
+- **The version** is the newest `v*` tag, plus `+<short
+  sha>` past it; `ref:` takes the full sha. The commit lands
+  on `nexus/upgrade-<version>` (the branch 58.13 pushes);
+  nothing is pushed.
+- **Never backwards.** A kit at `ref:` ahead of the CLI's
+  build (an older CLI, a stale npx cache, on a repo a newer
+  one already moved) is refused before any write, exit 0:
+  `this CLI's kit (<build>) is older than the repo's
+  (<lock version>)`. A local kit asks the nexus checkout
+  (`git merge-base --is-ancestor`); a fetched one compares
+  the semver cores of the lock's `version:` and the build's.
+- **A build queue kept on purpose** (`plan/settle.json`
+  `queue` under `plan/steps/`) makes a lock saying `chunks`
+  v2, not half-done.
+
 Running it again later picks up whatever shipped since; the
 GUI's banner reads "nexus <version> is out — Sync" when the
 lock's ref is behind the CLI's bundled kit.
@@ -381,13 +439,17 @@ tick).
 
 - `npx @usenexus/cli upgrade [--repo <dir>] [--write]
   [--land owner|pr] [--no-pause] [--no-watch]
-  [--keep-workflow] [--rollback] [--pr]` where `--repo` is a
+  [--keep-workflow] [--rollback] [--pr] [--no-assist]` where `--repo` is a
   folder or a GitHub `owner/name` / URL. Exit 0: dry run printed,
   or written and gated. Exit 1: the gate failed (worktree
   kept, path printed). Exit 2: not a v1 or half-done repo.
 - The upgrade commit's first line:
   `plan: upgrade to nexus v2 (specs + chunks)`; branch
   `nexus/upgrade-v2`.
+- The sync commit's first line: `plan: sync to nexus
+  <version>`; branch `nexus/upgrade-<version>`.
+  `kit/upgrade/files.json` carries `sync` (the extra files a
+  sync walks) and `build` (`{ ref, version }`).
 - `kit/upgrade/kit-text.json`:
   `{ "march.md": { "headers": [..], "paras": [sha1..] },
   "iterate.md": { .. } }`.
@@ -395,7 +457,6 @@ tick).
 ## Acceptance
 
 - **A8** `--land owner` lands only in an idle window, disables and re-enables march around the push, dispatches and watches the first v2 tick, and `--rollback` restores v1 in one revert commit (tests with a stubbed `gh`).
-- **A11** On a v2 repo the command syncs to the latest kit: untouched kit files are replaced, customised ones three-way merged (a conflict goes to an assisted merge shown as a diff and applied only with a green gate), new kit content is listed and added with knobs at their conservative values, lanes files and custom skills are untouched, and the lock's `ref:` moves in one `plan: sync to nexus <version>` commit (fixtures: an untouched file, a clean merge, a conflict, a new skill).
 - **A13** `upgrade --repo owner/name` works with no local checkout: a blobless temporary clone, the same report as a local run, and with `--pr` a pushed `nexus/upgrade-<version>` branch and a pull request whose body is the report; without push access it forks; a second run updates the open pull request instead of opening another; a red gate opens nothing (tests with a stubbed `gh` and a local bare remote).
 - **A12** The GUI banner offers Sync when a v2 repo's lock is behind the CLI's bundled kit, and the README door and playbook say the same command keeps a v2 repo current.
 - **A10** `playbooks/upgrade.md` is rewritten around the command with a generated manual appendix, `prompts/upgrade.md` exists, and README.md has a "Used v1?" section with the dry-run command and `--write`, linking the playbook; none of them names an adopter repo; the README section ships in the same release as the subcommand.
@@ -405,11 +466,10 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 5 open · 8 closed · next A14
+Measure: 4 open · 9 closed · next A14
 
 - [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs —
 - [ ] **58.10** Runbook rewrite, upgrade prompt and the README door · M · closes A10 · needs 58.8
   - The README section merges with the `cli-v*` release that carries 58.3-58.9; the owner tags it.
-- [ ] **58.11** v2 to latest: the three-way sync and the assisted merge · L · closes A11 · needs —
-- [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs 58.10, 58.11
-- [ ] **58.13** Upgrade a repo on GitHub as a pull request, no checkout · M · closes A13 · needs 58.11
+- [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs 58.10
+- [ ] **58.13** Upgrade a repo on GitHub as a pull request, no checkout · M · closes A13 · needs —

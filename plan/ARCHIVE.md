@@ -241,3 +241,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 58.6 · Conservative knobs from a registry · 9aefb13..9aefb13
 - 2026-10-25 · 58.7 · Scratch proof on an editorial v1 clone · eea016a..eea016a
 - 2026-10-25 · 59.1 · The dial and its resolver · 029458f..029458f
+- 2026-10-25 · 58.11 · v2 to latest: the three-way sync and the assisted merge · 0cc9aa6..991d816

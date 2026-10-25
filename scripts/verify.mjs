@@ -105,7 +105,9 @@
 //   upgrade       the v2 kit file list is one computed closure
 //                 (scripts/upgrade-files.mjs): every templates/ path
 //                 playbooks/upgrade.md names exists, no listed script
-//                 imports a file the list lacks or that is gone, and
+//                 imports a file the list lacks or that is gone (nor
+//                 does a script a kit workflow calls: a v2 sync adds
+//                 the workflows and their scripts, syncFiles), and
 //                 the playbook's generated manual copy list matches
 //                 the list (the CLI bundles the same set); and the
 //                 kit-text snapshot (scripts/upgrade-kit-text.json)

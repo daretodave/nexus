@@ -24,6 +24,14 @@ test('the upgrade bundle is the computed list, byte for byte, with files.json na
   assert.deepEqual(manifest.files, files);
   // The seeds the upgrade merges or flips (the v2 roadmap, the lock) ride along, byte for byte.
   assert.deepEqual(manifest.seeds, [...SEEDS]);
+  // A v2 sync's extra files (the kit's workflows and the scripts they call) and the kit commit the bundle was cut from.
+  const { syncFiles } = await import(pathToFileURL(LIST).href);
+  const listed = new Set(files.map((f) => f.kit));
+  assert.deepEqual(manifest.sync, syncFiles(NEXUS).files.filter((f) => !listed.has(f.kit)));
+  for (const want of ['heartbeat.yml', 'march.yml', 'nudge.yml']) assert.ok(manifest.sync.some((f) => f.kit === `templates/.github/workflows/${want}` && f.kind === 'workflow'), want);
+  for (const f of manifest.sync) assert.ok(fs.existsSync(path.join(out, ...bundledPath(f.kit).split('/'))), f.kit);
+  assert.match(manifest.build.ref, /^[0-9a-f]{40}$/);
+  assert.match(manifest.build.version, /^\d+\.\d+\.\d+/);
   for (const s of SEEDS) assert.equal(fs.readFileSync(path.join(out, ...s.split('/')), 'utf8'), fs.readFileSync(path.join(NEXUS, 'templates', ...s.split('/')), 'utf8'), s);
   // kit-text.json: every header and paragraph the kit's march and iterate skills ever held (spec 58, A4).
   const text = JSON.parse(fs.readFileSync(path.join(out, KIT_TEXT), 'utf8'));

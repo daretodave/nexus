@@ -14,7 +14,10 @@
 //
 //   npx @usenexus/cli upgrade [--repo <dir>] [--json] [--keep-workflow] [--verify]
 //
-// Exit 0: the report printed (a v2 repo: "already on v2"). Exit 1: the gate failed (worktree kept). Exit 2: not a
+// On a v2 repo the same command is the sync to the current kit (sync.mjs: a three-way merge per kit file against the
+// kit at the lock's ref, an assisted merge for a conflict, new content added, the lock's ref moved; --write commits it).
+//
+// Exit 0: the report printed (a v2 repo with no ref: "already on v2"). Exit 1: the gate failed (worktree kept). Exit 2: not a
 // v1 or half-done repo, no origin, or a flag this release does not carry yet.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -23,6 +26,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TRAIN, customUnits, fromJson, laneBlocks, mergeText, textOf, textOfPrompt, toJson } from './kit-text.mjs';
 import { MARCH_YML, SETUP_ACTION, fill, keptLine, mergeWorkflow, packageManager, setupAction } from './workflow-merge.mjs';
+import { kitBuild, renderSync, sync } from './sync.mjs';
 
 const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /** The CLI's bundled kit file set (scripts/bundle-kit.mjs writes it; templates/ layout plus files.json). */
@@ -72,6 +76,14 @@ export function lockField(text, key) {
   return v || null;
 }
 
+/** plan/settle.json's `queue` (a build-queue file the repo's settle tidies), or null. */
+export function settleQueue(dir) {
+  try {
+    const q = JSON.parse(read(dir, 'plan/settle.json') || 'null')?.queue;
+    return typeof q === 'string' && q.trim() ? q.trim().replace(/^\.\//, '') : null;
+  } catch { return null; }
+}
+
 /**
  * The repo's shape: { shape: 'v1' | 'half' | 'v2' | 'none', why }. v1 is a build plan with no lock (or a lock
  * still saying `phases`); half is a lock saying `chunks` beside a live plan/steps/ or plan/PHASE_CANDIDATES.md.
@@ -82,6 +94,10 @@ export function detect(dir) {
   const steps = exists(dir, 'plan/steps');
   const cands = exists(dir, 'plan/PHASE_CANDIDATES.md');
   if (shape === 'chunks') {
+    // A build queue the repo keeps on purpose (plan/settle.json `queue`, a key the kit's settle reads) is its own,
+    // not a half-done upgrade: the repo is v2 and syncs.
+    const queue = settleQueue(dir);
+    if ((steps || cands) && queue && /^plan\/steps\//.test(queue)) return { shape: 'v2', why: `plan/nexus.lock says chunks; plan/settle.json keeps ${queue} as its build queue` };
     if (steps || cands) return { shape: 'half', why: `plan/nexus.lock says chunks beside ${[steps && 'plan/steps/', cands && 'plan/PHASE_CANDIDATES.md'].filter(Boolean).join(' and ')}` };
     return { shape: 'v2', why: 'plan/nexus.lock says chunks' };
   }
@@ -100,14 +116,18 @@ export async function kitSource({ bundled = UPGRADE_BUNDLED, nexus = NEXUS_ROOT 
   if (fs.existsSync(manifest)) {
     let text = null;
     try { text = JSON.parse(fs.readFileSync(path.join(bundled, 'kit-text.json'), 'utf8')); } catch { /* an older bundle: the current skills only */ }
-    return { root: bundled, files: JSON.parse(fs.readFileSync(manifest, 'utf8')).files, text, from: 'bundled' };
+    const m = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+    return { root: bundled, files: m.files, sync: m.sync || [], build: m.build || null, text, from: 'bundled' };
   }
   const list = path.join(nexus, 'scripts', 'upgrade-files.mjs');
   if (!fs.existsSync(list)) return null;
-  const { upgradeFiles } = await import(pathToFileURL(list).href);
+  const { upgradeFiles, syncFiles } = await import(pathToFileURL(list).href);
   const kt = path.join(nexus, 'scripts', 'upgrade-kit-text.mjs');
   const text = fs.existsSync(kt) ? await (await import(pathToFileURL(kt).href)).build(nexus, { history: false }) : null;
-  return { root: path.join(nexus, 'templates'), files: upgradeFiles(nexus).files, text, from: 'templates' };
+  const files = upgradeFiles(nexus).files;
+  const listed = new Set(files.map((f) => f.kit));
+  const extra = syncFiles ? syncFiles(nexus).files.filter((f) => !listed.has(f.kit)) : [];
+  return { root: path.join(nexus, 'templates'), files, sync: extra, build: kitBuild(nexus), nexus, text, from: 'templates' };
 }
 
 const kitPath = (kit, f) => path.join(kit.root, ...f.kit.replace(/^templates\//, '').split('/'));
@@ -275,6 +295,9 @@ export function keepCustom(dir, kitFiles) {
   return rows;
 }
 
+/** The repo's package manager, as the workflow merge reads it (lockfiles, then the march.yml's own steps). */
+export const packageManagerOf = (dir) => packageManager((f) => exists(dir, f), read(dir, MARCH_YML) || '');
+
 /** The repo's name for `<PROJECT>`: package.json `name`, else the agents.md title, else the folder's name. */
 export function projectName(dir) {
   try {
@@ -418,13 +441,22 @@ export const KNOBS = Object.freeze([
  * templates/plan/bearings.md, and its `## Generators` section. [{ knob, at, from }].
  */
 export function templateKnobs(root) {
+  const flows = path.join(root, 'templates', '.github', 'workflows');
+  const names = fs.existsSync(flows) ? fs.readdirSync(flows).filter((n) => /\.ya?ml$/.test(n)).sort() : [];
+  return knobsIn({ flows: names.map((n) => [n, fs.readFileSync(path.join(flows, n), 'utf8')]), bearings: read(root, 'templates/plan/bearings.md') });
+}
+
+/**
+ * The knobs a kit's texts name: `flows` [[name, text]] (its workflows) and `bearings` (its plan/bearings.md template).
+ * templateKnobs reads them from a folder; a sync reads them from the kit at the lock's ref too, to tell new knobs.
+ */
+export function knobsIn({ flows = [], bearings: text = null } = {}) {
   const out = new Map();
   const add = (knob, at, from) => { if (!out.has(knob)) out.set(knob, { knob, at, from }); };
-  const flows = path.join(root, 'templates', '.github', 'workflows');
-  for (const name of fs.existsSync(flows) ? fs.readdirSync(flows).filter((n) => /\.ya?ml$/.test(n)).sort() : []) {
-    for (const m of fs.readFileSync(path.join(flows, name), 'utf8').matchAll(/\bvars\.(NEXUS_[A-Z0-9_]+)/g)) add(m[1], 'var', `templates/.github/workflows/${name}`);
+  for (const [name, yml] of flows) {
+    for (const m of String(yml).matchAll(/\bvars\.(NEXUS_[A-Z0-9_]+)/g)) add(m[1], 'var', `templates/.github/workflows/${name}`);
   }
-  const bearings = read(root, 'templates/plan/bearings.md') || '';
+  const bearings = text || '';
   const from = 'templates/plan/bearings.md';
   for (const m of bearings.matchAll(/^- ([A-Za-z][\w ]*?):[ \t]+\S/gm)) add(m[1], 'bearings', from);
   for (const m of bearings.matchAll(/^\*\*([A-Za-z][\w ]*?):\*\*[ \t]+`([^`<]+)`/gm)) add(m[1], 'bearings', from);
@@ -447,7 +479,7 @@ const knobLine = (key) => new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${key.replac
  * where status is `written`, `kept` (with the repo's value), `unset` (a var left unset) or `set` (a var to set,
  * `line` the gh command).
  */
-export function writeKnobs(bearings, { today, registry = KNOBS } = {}) {
+export function writeKnobs(bearings, { today, registry = KNOBS, keeps = "the v1 loop's" } = {}) {
   const text = String(bearings ?? '').replace(/\r\n/g, '\n');
   const plain = text.replace(/<!--[\s\S]*?-->/g, '');
   const knobs = [];
@@ -475,7 +507,7 @@ export function writeKnobs(bearings, { today, registry = KNOBS } = {}) {
   }
   const blocks = [];
   if (lines.length) {
-    blocks.push(`## Loop knobs\n\nWritten by \`nexus upgrade\`${today ? ` (${today})` : ''} at the values that keep the v1 loop's\nbehaviour. Turn each up on its own, later: \`Support:\`\n(\`nexus/customization/support.md\`), \`Promote:\` and \`stall_action\`\n(aged promotion, the motion heartbeat), \`loop:\` (\`/iterate\` dimension\nI), \`UI:\` (the browser walk).\n\n${lines.join('\n').replace(/^\n/, '')}`);
+    blocks.push(`## Loop knobs\n\nWritten by \`nexus upgrade\`${today ? ` (${today})` : ''} at the values that keep ${keeps}\nbehaviour. Turn each up on its own, later: \`Support:\`\n(\`nexus/customization/support.md\`), \`Promote:\` and \`stall_action\`\n(aged promotion, the motion heartbeat), \`loop:\` (\`/iterate\` dimension\nI), \`UI:\` (the browser walk).\n\n${lines.join('\n').replace(/^\n/, '')}`);
   }
   if (generators) blocks.push('## Generators\n\nWhen no chunk is ready, `/march`\'s stock `refill` lane runs each\ngenerator listed here (`nexus/concepts/generators.md`). None listed\nmeans refill is a no-op.\n\n- (none)');
   if (!blocks.length) return { text, knobs };
@@ -644,7 +676,7 @@ const short = (s) => { const t = String(s ?? '').replace(/\s*\(moved verbatim fr
  * The dry run, start to end, on the repo at `repo` (any folder inside it). Returns { code, report } and never
  * throws for an expected stop. `keep` keeps the worktree even when the gate is green.
  */
-export async function upgrade({ repo, today = new Date().toISOString().slice(0, 10), kit = null, keep = false, keepWorkflow = false, verify = false } = {}) {
+export async function upgrade({ repo, today = new Date().toISOString().slice(0, 10), kit = null, keep = false, keepWorkflow = false, verify = false, write: commit = false, assist, base = null, baseOpts, gateFn = null, syncVerify = true } = {}) {
   const top = gitIn(repo, ['rev-parse', '--show-toplevel']);
   if (!top.ok) return { code: 2, report: { error: `${repo} is not a git repository` } };
   const root = path.resolve(top.out);
@@ -654,13 +686,24 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
   } catch (e) {
     return { code: e.code || 2, report: { error: e.message } };
   }
-  const report = { repo: root, origin: { url: wt.url, branch: wt.branch, sha: wt.sha }, dry: true, files: [], archive: [], warnings: [], gate: [], workflow: null, knobs: [], dispatch: null, loop: null, worktree: null };
+  const report = { repo: root, origin: { url: wt.url, branch: wt.branch, sha: wt.sha }, dry: !commit, files: [], archive: [], warnings: [], gate: [], workflow: null, knobs: [], dispatch: null, loop: null, worktree: null };
   let red = false;
   try {
     const shape = detect(wt.dir);
     report.shape = shape.shape;
     report.why = shape.why;
-    if (shape.shape === 'v2') return { code: 0, report: { ...report, message: 'already on v2' } };
+    if (shape.shape === 'v2') {
+      // v2 to latest (spec 58): the three-way sync against the kit at the lock's ref.
+      const ref = lockField(read(wt.dir, 'plan/nexus.lock'), 'ref');
+      if (!ref) return { code: 0, report: { ...report, message: 'already on v2', why: `${shape.why}, and it names no ref: to sync from` } };
+      kit = kit || await kitSource();
+      if (!kit) return { code: 2, report: { ...report, error: 'no bundled kit (kit/upgrade/files.json) and no nexus templates/ beside the CLI' } };
+      const r = await sync({ dir: wt.dir, local: root, kit, ref, branch: wt.branch, today, write: commit, ...(assist !== undefined ? { assist } : {}), base, baseOpts: baseOpts || (kit.nexus ? { nexus: kit.nexus } : {}), gateFn, verify: syncVerify });
+      Object.assign(report, r.report);
+      red = r.code === 1;
+      return { code: r.code, report };
+    }
+    if (commit) return { code: 2, report: { ...report, error: `--write on a ${shape.shape === 'half' ? 'half-done' : 'v1'} repo is not in this release yet; the dry run is (run it without --write). On a v2 repo, --write commits the sync.` } };
     if (shape.shape === 'none') return { code: 2, report: { ...report, error: `not a nexus v1 repo: ${shape.why}` } };
     kit = kit || await kitSource();
     if (!kit) return { code: 2, report: { ...report, error: 'no bundled kit (kit/upgrade/files.json) and no nexus templates/ beside the CLI' } };
@@ -761,10 +804,18 @@ export function render(report, { color = false } = {}) {
   if (report.error && !report.shape) return `nexus upgrade: ${report.error}`;
   const out = [];
   const o = report.origin;
-  out.push('nexus upgrade: dry run (nothing written; the local checkout is not touched)');
+  out.push(report.dry === false ? 'nexus upgrade: --write (one commit on a branch; the local checkout\'s files are not touched)' : 'nexus upgrade: dry run (nothing written; the local checkout is not touched)');
   out.push(`  repo     ${report.repo}`);
   if (o) out.push(`  origin   ${o.url} ${o.branch} @ ${o.sha.slice(0, 7)} (fetched now)`);
   if (report.error) { out.push('', `nexus upgrade: ${report.error}`); return out.join('\n'); }
+  if (report.shape === 'v2' && report.sync) {
+    out.push(...renderSync(report, { red }));
+    out.push('');
+    if (report.commit) out.push(`committed ${report.commit.sha.slice(0, 7)} on ${report.commit.branch}: ${report.commit.subject}`);
+    else if (report.worktree) out.push(`worktree kept: ${report.worktree}`);
+    else if (!report.message) out.push('The worktree is removed. --write commits this as one commit, plan: sync to nexus <version>, on nexus/upgrade-<version>.');
+    return out.join('\n');
+  }
   if (report.message) { out.push('', `${report.message}: ${report.why}. Nothing to upgrade.`); return out.join('\n'); }
   out.push(`  shape    ${report.shape === 'half' ? 'half-done (finishing Step 5 only)' : 'v1 (phases) -> v2 (specs + chunks)'}: ${report.why}`);
   out.push('', `files (${report.files.length})`);
@@ -830,7 +881,8 @@ export function render(report, { color = false } = {}) {
   return out.join('\n');
 }
 
-export const UPGRADE_HELP = `nexus upgrade: move a nexus v1 repo (a phase plan) to v2 (specs + chunks).
+export const UPGRADE_HELP = `nexus upgrade: move a nexus v1 repo (a phase plan) to v2 (specs + chunks),
+or bring a v2 repo up to the kit this CLI carries (the sync).
 
   npx @usenexus/cli upgrade                 dry run on the repo in this folder:
                                             a fresh fetch of origin in a
@@ -850,27 +902,44 @@ export const UPGRADE_HELP = `nexus upgrade: move a nexus v1 repo (a phase plan) 
                                             (package.json "verify", its
                                             install first) in the worktree
 
-  Exit 0: the report printed (a v2 repo: already on v2). Exit 1: the
-  gate failed (the worktree is kept and its path printed). Exit 2: not a
-  v1 repo, no origin, or a flag this release does not carry yet.
+  On a v2 repo (plan/nexus.lock says chunks and names its ref:):
+  npx @usenexus/cli upgrade                 the sync, dry: every kit file
+                                            three ways (the kit at the lock's
+                                            ref, the kit now, the repo's copy):
+                                            untouched ones replaced, customised
+                                            ones merged, a conflict through the
+                                            assisted merge (shown as a diff),
+                                            new kit content listed, new knobs at
+                                            their conservative values
+  npx @usenexus/cli upgrade --write         ...and commit it, plan: sync to
+                                            nexus <version>, on branch
+                                            nexus/upgrade-<version> (an assisted
+                                            merge only with the gate green)
+  npx @usenexus/cli upgrade --no-assist     leave a conflicting file as the
+                                            repo's and list it (no helper model)
+
+  Exit 0: the report printed (or the sync committed). Exit 1: the gate
+  failed (the worktree is kept and its path printed). Exit 2: not a nexus
+  repo, no origin, the kit at the lock's ref out of reach, or a flag this
+  release does not carry yet.
 
   The runbook: https://github.com/daretodave/nexus/blob/main/playbooks/upgrade.md`;
 
-/** Flags spec 58 names that a later release carries: refused here rather than ignored. */
-export const LATER = Object.freeze(['--write', '--land', '--rollback', '--pr', '--no-pause', '--no-watch']);
+/** Flags spec 58 names that a later release carries: refused here rather than ignored. (--write: a v2 sync only.) */
+export const LATER = Object.freeze(['--land', '--rollback', '--pr', '--no-pause', '--no-watch']);
 
 /** `nexus upgrade <args>`: the exit code. */
-export async function runUpgrade(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), cwd = process.cwd(), color = process.stdout.isTTY && !process.env.NO_COLOR, today } = {}) {
+export async function runUpgrade(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), cwd = process.cwd(), color = process.stdout.isTTY && !process.env.NO_COLOR, today, opts = {} } = {}) {
   if (argv.includes('--help') || argv.includes('-h')) { out(UPGRADE_HELP); return 0; }
   const later = argv.filter((a) => LATER.includes(a));
   if (later.length) { err(`nexus upgrade: ${later.join(', ')} ${later.length === 1 ? 'is' : 'are'} not in this release yet; the dry run is (run it with no flags)`); return 2; }
-  const known = new Set(['--repo', '--json', '--keep-workflow', '--verify']);
+  const known = new Set(['--repo', '--json', '--keep-workflow', '--verify', '--write', '--no-assist']);
   const i = argv.indexOf('--repo');
   const bad = argv.filter((a, k) => !known.has(a) && !(i >= 0 && k === i + 1));
   if (bad.length || (i >= 0 && !argv[i + 1])) { err(`nexus upgrade: unknown argument ${bad[0] ?? '--repo (needs a folder)'}\n\n${UPGRADE_HELP}`); return 2; }
   const repo = path.resolve(cwd, i >= 0 ? argv[i + 1] : '.');
   if (!fs.existsSync(repo) || !fs.statSync(repo).isDirectory()) { err(`nexus upgrade: ${repo} is not a folder`); return 2; }
-  const { code, report } = await upgrade({ repo, today, keepWorkflow: argv.includes('--keep-workflow'), verify: argv.includes('--verify') });
+  const { code, report } = await upgrade({ repo, today, keepWorkflow: argv.includes('--keep-workflow'), verify: argv.includes('--verify'), write: argv.includes('--write'), ...(argv.includes('--no-assist') ? { assist: null } : {}), ...opts });
   if (argv.includes('--json')) out(JSON.stringify({ code, ...report }, null, 2));
   else (code === 2 ? err : out)(render(report, { color }));
   return code;
