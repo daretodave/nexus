@@ -319,8 +319,8 @@ Commit subject prefixes:
 Body lists audit finding ID/score, the fix, verify result.
 
 **If the addressed finding has an `- issue: #N` field on its row**
-(populated either by Step 2.5 above, or carried in from `/triage`
-routing), close the loop on GitHub in the same flow:
+(populated by Step 2.5 above), close the loop on GitHub in the
+same flow:
 
 ```
 # Trailer in commit body — auto-links + auto-closes when merged
@@ -328,9 +328,15 @@ routing), close the loop on GitHub in the same flow:
 ```
 
 The `- Closes #<N>` trailer is **mandatory** in the commit body
-when the row carries an issue number; it is the closing mechanism.
-Multiple issues can be closed in a single commit by listing one
-trailer line per issue.
+when the row carries the loop's own mirror; it is the closing
+mechanism. Multiple issues can be closed in a single commit by
+listing one trailer line per issue.
+
+**A reporter's issue** (a `[user-issue #N]` row, carried in from
+`/triage`) is different: the body carries `Refs #N`, never
+`Closes` or `Fixes`, and once the commit lands `node
+scripts/plan/support.mjs tell <N> --commit <sha>` comments and
+closes it (`skills/triage.md` §6).
 
 Load `GH_TOKEN` and `GH_REPO` from `.env` first if they aren't
 already in the env (see `skills/triage.md` §3). The
@@ -369,8 +375,8 @@ git commit -m "audit: finding [<id>] addressed"
 pnpm deploy:check
 ```
 
-**Once deploy:check is green and the row carried an `- issue: #N`,
-post the close-comment** (the `Closes #N` commit trailer already
+**Once deploy:check is green and the row carried the loop's own
+mirror (`- issue: #N`), post the close-comment** (the `Closes #N` commit trailer already
 auto-closed the issue; the comment confirms the deploy URL):
 
 ```bash

@@ -24,6 +24,7 @@
 //   node scripts/plan/support.mjs continue --routed fix|asap|none [--started <iso>] [--budget <min>] [--now <iso>]
 //   node scripts/plan/support.mjs sla [--json] [--issues <file>] [--now <iso>]   # march Step 1.5 (gh read only)
 //   node scripts/plan/support.mjs age [--base <score> --opened <iso>] [--issues <file>] [--now <iso>]
+//   node scripts/plan/support.mjs tell <N> --commit <sha> [--ref <branch>] [--dry-run]   # after the fix lands
 //
 // `sla` is march Step 1.5 under fix-small or fix-all: an open `triage:loop-queued` issue `sla_hours` old (bearings;
 // 24 when absent) whose work is not in the Asap lane prints `plot #N` (no chunk names it: `/plot asap`, the title
@@ -40,7 +41,15 @@
 // reads only the issue's number, author association and labels, never its text; without gh it prints `stock` (the
 // awareness layer never fails the march). `start` writes the stamp to an untracked file in the git dir because each
 // shell call in a tick is a fresh shell (a variable set at Step 0 is gone by Step 1); `continue` reads it when
-// --started is left out. Exit 0, 64 on bad usage.
+// --started is left out.
+//
+// `tell` closes the loop on a support fix once it lands (A6). The fix commit carries `Refs #N`, never `Closes #N` or
+// `Fixes #N`: a closing keyword shuts the issue on push, before a release ships the fix. `tell` reads the commit
+// (git), then comments naming it and closes the issue (gh). A fix touching a published package (`packages/<dir>/`
+// whose package.json has a name and is not private) comments "lands in the next <name> release" and leaves the issue
+// open (reopening one a closing keyword shut): the release closes it. It prints `refuse` when the commit does not
+// name the issue, `wait` when the commit is not on the default branch yet, `skip` without gh. Exit 0, 64 on bad
+// usage.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -264,6 +273,88 @@ export function keepGoing({ routed = 'none', startedMs, nowMs = Date.now(), budg
   return { next: 'return', why: `${Math.round(used)} of ${budgetMin} min used (half is ${half}): the next tick builds it` };
 }
 
+const CLOSING = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)[ \t]*:?[ \t]+(?:[\w.-]+\/[\w.-]+)?#(\d+)(?!\d)/gi;
+
+/** The issue numbers a commit message closes on push through a GitHub closing keyword. */
+export function closingRefs(message = '') {
+  return [...String(message).matchAll(CLOSING)].map((m) => Number(m[1]));
+}
+
+/** Whether a commit message carries `Refs #N`. */
+export const refsIssue = (message, n) => new RegExp(`\\bRefs[ \\t]*:?[ \\t]+#${n}(?!\\d)`, 'i').test(String(message ?? ''));
+
+/** The published packages a commit touches: [{ dir, name }] for `packages/<dir>/` files under a public package.json. */
+export function heldPackages(files = [], root = process.cwd()) {
+  const out = [];
+  for (const f of files) {
+    const m = /^packages\/([^/]+)\//.exec(String(f).replace(/\\/g, '/'));
+    if (!m || out.some((p) => p.dir === `packages/${m[1]}`)) continue;
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(root, 'packages', m[1], 'package.json'), 'utf8'));
+      if (pkg.name && pkg.private !== true) out.push({ dir: `packages/${m[1]}`, name: pkg.name });
+    } catch {
+      // no package.json, or one that does not parse: not a published package
+    }
+  }
+  return out;
+}
+
+/**
+ * What `tell` does for issue `number` and its fix commit: { action, comment?, reopen?, why }. `action` is 'close'
+ * (comment, then close), 'hold' (comment; the release closes it), 'wait' (not landed) or 'refuse' (the commit does
+ * not name the issue). `commit` is { sha, subject, message, landed }; `held` the heldPackages of its files; `state`
+ * the issue's (OPEN | CLOSED).
+ */
+export function tellPlan({ number, commit, held = [], state = 'OPEN' }) {
+  const short = String(commit.sha ?? '').slice(0, 7);
+  const closes = closingRefs(commit.message).includes(number);
+  if (!refsIssue(commit.message, number) && !closes) return { action: 'refuse', why: `${short} does not carry Refs #${number}: not this issue's fix` };
+  if (!commit.landed) return { action: 'wait', why: `${short} is not on the default branch yet: tell it after it lands` };
+  const note = closes ? `; ${short} closes #${number} by keyword: a fix carries Refs #${number}, never Closes or Fixes` : '';
+  const what = `Fixed in ${short} (${commit.subject})`;
+  if (held.length) {
+    return {
+      action: 'hold',
+      comment: `${what}: lands in the next ${held.map((p) => p.name).join(' and ')} release. This issue stays open until it ships.`,
+      reopen: String(state).toUpperCase() === 'CLOSED',
+      why: `touches ${held.map((p) => p.dir).join(', ')}: the release closes it${note}`,
+    };
+  }
+  return { action: 'close', comment: `${what}, now on the default branch.`, why: `landed${note}` };
+}
+
+/** git read only: { sha, subject, message, files, landed } for a commit, or null. `ref` is the branch it must be on. */
+export function gitCommit(sha, { root = process.cwd(), ref, run = spawnSync } = {}) {
+  const git = (...args) => run('git', args, { cwd: root, encoding: 'utf8', windowsHide: true });
+  const log = git('log', '-1', '--format=%H%n%s%n%b', sha);
+  if (!log || log.status !== 0) return null;
+  const [full, subject, ...body] = log.stdout.replace(/\r/g, '').split('\n');
+  const show = git('show', '--name-only', '--format=', full);
+  const files = show && show.status === 0 ? show.stdout.split(/\r?\n/).filter(Boolean) : [];
+  const head = ref ? null : git('rev-parse', '--abbrev-ref', 'origin/HEAD');
+  const refs = ref ? [ref] : [head && head.status === 0 ? head.stdout.trim() : null, 'origin/main', 'origin/master', 'main', 'master'].filter(Boolean);
+  const target = refs.find((r) => git('rev-parse', '--verify', '--quiet', r)?.status === 0);
+  const landed = Boolean(target) && git('merge-base', '--is-ancestor', full, target)?.status === 0;
+  return { sha: full, subject, message: [subject, '', ...body].join('\n'), files, landed };
+}
+
+/** gh read only: an issue's state (OPEN | CLOSED), or null without gh. */
+export function ghState(num, { run = spawnSync } = {}) {
+  const res = run('gh', ['issue', 'view', String(num), '--json', 'state'], { encoding: 'utf8', windowsHide: true });
+  if (!res || res.status !== 0) return null;
+  try {
+    return JSON.parse(res.stdout).state ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** gh write: one issue command (`comment`, `close`, `reopen`); true when it ran clean. */
+export function ghIssueDo(args, { run = spawnSync } = {}) {
+  const res = run('gh', ['issue', ...args], { encoding: 'utf8', windowsHide: true });
+  return Boolean(res) && res.status === 0;
+}
+
 function readSafe(file) {
   try {
     return fs.readFileSync(file, 'utf8');
@@ -321,9 +412,9 @@ export function stampFile(root, { run = spawnSync } = {}) {
 }
 
 export const USAGE =
-  'usage: support.mjs level [--json] | route <N> --kind <class> [--association A --labels a,b] [--json] | cap [--json] | asap | start | continue --routed fix|asap|none [--started <iso>] [--budget <min>] [--now <iso>] | sla [--json] [--issues <file>] [--now <iso>] | age [--base <score> --opened <iso>] [--issues <file>] [--now <iso>]';
+  'usage: support.mjs level [--json] | route <N> --kind <class> [--association A --labels a,b] [--json] | cap [--json] | asap | start | continue --routed fix|asap|none [--started <iso>] [--budget <min>] [--now <iso>] | sla [--json] [--issues <file>] [--now <iso>] | age [--base <score> --opened <iso>] [--issues <file>] [--now <iso>] | tell <N> --commit <sha> [--ref <branch>] [--dry-run]';
 
-export async function main(argv, { root = process.cwd(), env = process.env, log = console.log, gh = ghIssue, list = ghIssues, asap } = {}) {
+export async function main(argv, { root = process.cwd(), env = process.env, log = console.log, gh = ghIssue, list = ghIssues, asap, commit = gitCommit, state = ghState, act = ghIssueDo } = {}) {
   const at = (flag) => {
     const i = argv.indexOf(flag);
     return i < 0 ? undefined : argv[i + 1];
@@ -382,6 +473,28 @@ export async function main(argv, { root = process.cwd(), env = process.env, log 
     if (!['fix', 'asap', 'none'].includes(routed) || !(budget > 0) || !Number.isFinite(now)) return (console.error(USAGE), 64);
     const k = keepGoing({ routed, startedMs: started, nowMs: now, budgetMin: budget });
     log(`${k.next} · ${k.why}`);
+    return 0;
+  }
+  if (cmd === 'tell') {
+    const num = argv[1];
+    const sha = at('--commit');
+    if (!num || !/^\d+$/.test(num) || !sha || sha.startsWith('-')) return (console.error(USAGE), 64);
+    const c = commit(sha, { root, ref: at('--ref') });
+    if (!c) return (log(`refuse #${num} · no commit ${sha} in this checkout`), 0);
+    const dry = argv.includes('--dry-run');
+    const st = dry ? 'OPEN' : state(num);
+    if (!dry && !st) return (log(`skip #${num} · gh unavailable: tell it by hand or on the next tick`), 0);
+    const p = tellPlan({ number: Number(num), commit: c, held: heldPackages(c.files, root), state: st });
+    log(`${p.action} #${num} · ${p.why}`);
+    if (!p.comment) return 0;
+    const closed = String(st).toUpperCase() === 'CLOSED';
+    const steps = [...(p.reopen ? [['reopen', num]] : []), ['comment', num, '--body', p.comment], ...(p.action === 'close' && !closed ? [['close', num]] : [])];
+    if (dry) {
+      for (const s of steps) log(`would: gh issue ${s.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(' ')}`);
+      return 0;
+    }
+    const failed = steps.filter((s) => !act(s)).map((s) => s[0]);
+    if (failed.length) log(`note: gh ${failed.join(', ')} failed; the fix stands, tell it by hand`);
     return 0;
   }
   if (cmd === 'sla' || cmd === 'age') {

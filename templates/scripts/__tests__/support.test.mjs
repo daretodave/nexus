@@ -1,7 +1,8 @@
 // support.mjs (spec 54): the Support level (NEXUS_SUPPORT over bearings, triage-only when neither), the routing table
 // (a collaborator's bug to skills/bug.md under fix-small and fix-all, a small enhancement too under fix-all, an
 // outsider's issue triaged only unless loop:do), the asap_cap count of issue-born Asap chunks, and march Step 1's
-// continue-or-return on half the tick budget; user rows aged into the queue (A4) and the SLA step (A5).
+// continue-or-return on half the tick budget; user rows aged into the queue (A4) and the SLA step (A5); a landed
+// fix told and closed, a published package's fix held open for its release (A6).
 // node:test, no deps, no git, no network: gh and the Asap check are injected.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,7 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { parseSpec } from '../plan-check.mjs';
-import { agedScore, asapCap, bearingsLevel, capacity, issueBorn, keepGoing, main, placed, route, slaDue, slaHours, supportLevel, trust, userBonus, userRows } from '../plan/support.mjs';
+import { agedScore, asapCap, bearingsLevel, capacity, closingRefs, gitCommit, heldPackages, issueBorn, keepGoing, main, placed, refsIssue, route, slaDue, slaHours, supportLevel, tellPlan, trust, userBonus, userRows } from '../plan/support.mjs';
 
 const readme = (asap) => ['## Lanes', '', '**Asap** (built before the table):', '', ...asap, '', '**Held** (waits):', '', '- (none)', '', '## Specs', ''].join('\n');
 const spec = (num, chunks) => parseSpec(`${num}-x.md`, ['## Acceptance', '- **A1** x', '## Chunks', 'Measure: 1 open · 0 closed · next A2', ...chunks].join('\n'));
@@ -234,6 +235,71 @@ describe('the SLA step (A5)', () => {
   });
 });
 
+describe('a fixed issue is told and closed (A6)', () => {
+  const fix = (message, landed = true) => ({ sha: 'abc1234def', subject: message.split('\n')[0], message, landed });
+
+  it('reads Refs #N and the closing keywords GitHub acts on', () => {
+    assert.equal(refsIssue('fix: badge\n\nRefs #88', 88), true);
+    assert.equal(refsIssue('Refs: #88', 88), true);
+    assert.equal(refsIssue('Refs #881', 88), false);
+    assert.equal(refsIssue('fix: badge #88', 88), false);
+    assert.deepEqual(closingRefs('Closes #81\nfixes #9\nResolved: #7\nFix owner/repo#5\nRefs #3\nprefixes #2'), [81, 9, 7, 5]);
+  });
+
+  it('comments naming the commit and closes a landed fix', () => {
+    const p = tellPlan({ number: 88, commit: fix('fix: the badge shows again\n\nRefs #88') });
+    assert.equal(p.action, 'close');
+    assert.equal(p.comment, 'Fixed in abc1234 (fix: the badge shows again), now on the default branch.');
+  });
+
+  it('holds a published package fix open for its release, reopening one a keyword closed', () => {
+    const held = [{ dir: 'packages/cli', name: '@usenexus/cli' }];
+    const p = tellPlan({ number: 86, commit: fix('fix: gui crash\n\nRefs #86'), held });
+    assert.equal(p.action, 'hold');
+    assert.match(p.comment, /^Fixed in abc1234 \(fix: gui crash\): lands in the next @usenexus\/cli release\./);
+    assert.equal(p.reopen, false);
+    const shut = tellPlan({ number: 81, commit: fix('fix: gui crash\n\nCloses #81'), held, state: 'CLOSED' });
+    assert.equal(shut.action, 'hold');
+    assert.equal(shut.reopen, true);
+    assert.match(shut.why, /closes #81 by keyword: a fix carries Refs #81, never Closes or Fixes/);
+  });
+
+  it('refuses a commit that does not name the issue, and waits for one not yet landed', () => {
+    assert.equal(tellPlan({ number: 88, commit: fix('fix: other\n\nRefs #87') }).action, 'refuse');
+    const w = tellPlan({ number: 88, commit: fix('fix: badge\n\nRefs #88', false) });
+    assert.equal(w.action, 'wait');
+    assert.equal(w.comment, undefined);
+  });
+
+  it('holds only for a published package (named, not private)', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'support-pkg-'));
+    const pkg = (dir, json) => (fs.mkdirSync(path.join(root, 'packages', dir), { recursive: true }), fs.writeFileSync(path.join(root, 'packages', dir, 'package.json'), JSON.stringify(json)));
+    pkg('cli', { name: '@usenexus/cli' });
+    pkg('lab', { name: 'lab', private: true });
+    fs.mkdirSync(path.join(root, 'packages', 'bare'), { recursive: true });
+    const files = ['packages/cli/src/a.js', 'packages/cli/b.js', 'packages/lab/x.js', 'packages/bare/y.js', 'skills/bug.md'];
+    assert.deepEqual(heldPackages(files, root), [{ dir: 'packages/cli', name: '@usenexus/cli' }]);
+    assert.deepEqual(heldPackages(['skills/bug.md'], root), []);
+  });
+
+  it('reads a commit from git (stubbed): subject, body, files and whether the branch holds it', () => {
+    const calls = [];
+    const run = (cmd, args) => {
+      calls.push(args.join(' '));
+      if (args[0] === 'log') return { status: 0, stdout: 'abc1234def\nfix: badge\nRefs #88\n' };
+      if (args[0] === 'show') return { status: 0, stdout: 'packages/cli/a.js\nREADME.md\n' };
+      if (args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return { status: 0, stdout: 'origin/main\n' };
+      if (args[0] === 'rev-parse') return { status: 0, stdout: 'x\n' };
+      if (args[0] === 'merge-base') return { status: 0, stdout: '' };
+      return { status: 1, stdout: '' };
+    };
+    const c = gitCommit('HEAD', { run });
+    assert.deepEqual(c, { sha: 'abc1234def', subject: 'fix: badge', message: 'fix: badge\n\nRefs #88\n', files: ['packages/cli/a.js', 'README.md'], landed: true });
+    assert.ok(calls.includes('merge-base --is-ancestor abc1234def origin/main'));
+    assert.equal(gitCommit('nope', { run: () => ({ status: 128, stdout: '' }) }), null);
+  });
+});
+
 describe('the command', () => {
   const repo = (bearings, readmeText = readme(['- (none)']), specFiles = {}) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'support-'));
@@ -315,9 +381,48 @@ describe('the command', () => {
     assert.deepEqual((await run(['age', '--base', '2.4', '--opened', '2026-10-24T12:00:00Z', '--now', '2026-10-25T12:00:00Z'], { root })).out, ['4.4 · 2.4 +2 (24h)']);
   });
 
+  it('tells a landed fix through gh (stubbed): comment then close, or hold a package fix open', async () => {
+    const root = repo('');
+    const done = [];
+    const act = (args) => (done.push(args), true);
+    const commit = (sha) => ({ sha: 'abc1234def', subject: 'fix: badge', message: 'fix: badge\n\nRefs #88', files: ['skills/bug.md'], landed: true });
+    const { out } = await run(['tell', '88', '--commit', 'abc1234'], { root, commit, state: () => 'OPEN', act });
+    assert.deepEqual(out, ['close #88 · landed']);
+    assert.deepEqual(done, [['comment', '88', '--body', 'Fixed in abc1234 (fix: badge), now on the default branch.'], ['close', '88']]);
+
+    fs.mkdirSync(path.join(root, 'packages', 'cli'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'packages', 'cli', 'package.json'), '{"name":"@usenexus/cli"}');
+    done.length = 0;
+    const cli = () => ({ sha: 'abc1234def', subject: 'fix: gui', message: 'fix: gui\n\nRefs #86', files: ['packages/cli/src/x.js'], landed: true });
+    assert.match((await run(['tell', '86', '--commit', 'abc1234'], { root, commit: cli, state: () => 'OPEN', act })).out[0], /^hold #86 · touches packages\/cli/);
+    assert.deepEqual(done.map((a) => a[0]), ['comment']);
+    assert.match(done[0][3], /lands in the next @usenexus\/cli release/);
+  });
+
+  it('writes nothing on refuse, wait, dry-run or without gh', async () => {
+    const root = repo('');
+    const act = () => assert.fail('gh write');
+    const c = (message, landed = true) => () => ({ sha: 'abc1234def', subject: 'fix: badge', message, files: [], landed });
+    assert.match((await run(['tell', '88', '--commit', 'x'], { root, commit: c('fix: badge'), state: () => 'OPEN', act })).out[0], /^refuse #88/);
+    assert.match((await run(['tell', '88', '--commit', 'x'], { root, commit: c('fix: badge\n\nRefs #88', false), state: () => 'OPEN', act })).out[0], /^wait #88/);
+    assert.match((await run(['tell', '88', '--commit', 'x'], { root, commit: () => null, act })).out[0], /^refuse #88 · no commit x/);
+    assert.match((await run(['tell', '88', '--commit', 'x'], { root, commit: c('Refs #88'), state: () => null, act })).out[0], /^skip #88 · gh unavailable/);
+    const dry = await run(['tell', '88', '--commit', 'x', '--dry-run'], { root, commit: c('fix: badge\n\nRefs #88'), state: () => assert.fail('gh read'), act });
+    assert.deepEqual(dry.out, ['close #88 · landed', 'would: gh issue comment 88 --body "Fixed in abc1234 (fix: badge), now on the default branch."', 'would: gh issue close 88']);
+  });
+
+  it('only comments on an issue a keyword already closed, and notes the keyword', async () => {
+    const root = repo('');
+    const done = [];
+    const commit = () => ({ sha: 'abc1234def', subject: 'fix: badge', message: 'fix: badge\n\nFixes #88', files: [], landed: true });
+    const { out } = await run(['tell', '88', '--commit', 'x'], { root, commit, state: () => 'CLOSED', act: (a) => (done.push(a[0]), true) });
+    assert.match(out[0], /^close #88 · landed; abc1234 closes #88 by keyword/);
+    assert.deepEqual(done, ['comment']);
+  });
+
   it('exits 64 on bad usage', async () => {
     const root = repo('');
-    for (const argv of [[], ['nope'], ['route'], ['route', 'x', '--kind', 'bug'], ['route', '5'], ['continue', '--routed', 'maybe'], ['continue', '--routed', 'fix', '--budget', '0'], ['sla', '--now', 'later'], ['age', '--base', 'x', '--opened', '2026-10-24']]) {
+    for (const argv of [[], ['nope'], ['route'], ['route', 'x', '--kind', 'bug'], ['route', '5'], ['continue', '--routed', 'maybe'], ['continue', '--routed', 'fix', '--budget', '0'], ['sla', '--now', 'later'], ['age', '--base', 'x', '--opened', '2026-10-24'], ['tell', '88'], ['tell', 'x', '--commit', 'HEAD'], ['tell', '88', '--commit', '--dry-run']]) {
       const err = console.error;
       console.error = () => {};
       try {

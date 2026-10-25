@@ -83,7 +83,11 @@ scripts/plan/support.mjs cap` says `room` (fewer than
 triage files today, the diagnosis in its `next:`. An
 enhancement whose size is a scope or taste call is no fix:
 label it `triage:needs-user` and stop. Report `fix` (fixed
-now) or `asap` (plotted) to `/march` Step 1.
+now) or `asap` (plotted) to `/march` Step 1. The fix commit's
+body carries `Refs #N`, never `Closes` or `Fixes`; once it
+lands, `node scripts/plan/support.mjs tell <N> --commit <sha>`
+comments and closes the issue, or holds a published package's
+fix open for its release (`skills/triage.md` §4).
 
 ### Step 5 — Retro and report
 
@@ -125,5 +129,6 @@ now) or `asap` (plotted) to `/march` Step 1.
 /plot asap "<bug as diagnosed>" and do     # fix now, planned and archived
 /plot asap "<bug as diagnosed>"            # plot it
 node scripts/plan/support.mjs cap          # from an issue: room | full against asap_cap
+node scripts/plan/support.mjs tell <N> --commit <sha>   # the fix landed: comment + close
 node scripts/worktree.mjs close <path>
 ```

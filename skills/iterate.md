@@ -144,7 +144,10 @@ the commit body says why.
    local session. Never bump the CLI's version or tag
    `cli-v*`: the owner releases.
 7. **Commit + land:** `fix|docs|templates: <subject>`, body
-   cites the finding, `Closes #N` when mirrored.
+   cites the finding, `Closes #N` when the loop mirrored it.
+   A `[user-issue #N]` row carries `Refs #N` instead, and once
+   it lands `support.mjs tell <N> --commit <sha>` comments and
+   closes the issue (`skills/triage.md` §4).
 8. **Tick:** finding `[ ]` → `[x] (commit <hash>)`; CRITIQUE
    rows move Pending → Done. Then `node
    scripts/plan/state.mjs compact --write` deletes Done rows

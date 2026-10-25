@@ -250,7 +250,6 @@ asap_cap: 3                 # nexus: 3
 
 ## Acceptance
 
-- **A6** A support fix commit carries `Refs #N` and never `Closes`/`Fixes`; after it lands the issue gets a comment naming the commit and is closed, except a `packages/cli` fix, which says it lands in the next release and stays open.
 - **A8** A collaborator opening an issue labeled `bug` on nexus starts a march run (event `workflow_dispatch`, reason `issue-<n>`) within 15 minutes when nothing is pending in the `march` group; an outsider's issue, a `loop:opened` mirror and a loop-filed issue start none.
 - **A9** `nudge-check.mjs`, tested against stubbed `gh run list` JSON, skips when a march or night run is queued or pending, and when 6 event ticks started in the last 24h; it never cancels a pending night run.
 - **A11** Tagging `cli-vX.Y.Z` comments "Fixed in @usenexus/cli X.Y.Z" on and closes every open issue labeled `triage:loop-queued` or `bug` referenced by `Refs #N` in the release range; any other referenced issue is left alone and listed in the step summary.
@@ -263,12 +262,11 @@ asap_cap: 3                 # nexus: 3
 
 ## Chunks
 
-Measure: 6 open · 7 closed · next A14
+Measure: 5 open · 8 closed · next A14
 
-- [ ] **54.4** A fixed issue is told and closed · S · closes A6 · needs —
 - [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
   - After landing: `gh variable set NEXUS_SUPPORT --body fix-all` on nexus, then watch one test issue through (a collaborator bug, an outsider issue, a loop-filed issue).
-- [ ] **54.7** A cli release closes the issues it fixed · S · closes A11 · needs 54.4
+- [ ] **54.7** A cli release closes the issues it fixed · S · closes A11 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **54.8** Support knob docs, digest support line, needs-user escalation · S · closes A12, A13 · needs 54.6

@@ -94,7 +94,25 @@ you add, as `/plot` does).
    `triage: <K> issues routed`. Then each `bug` route, oldest
    first, through `skills/bug.md` (one run each).
 
-## 4. Hard rules
+## 4. Closing the loop
+
+Whatever skill ships the fix for issue `#N` (`/bug`'s `/plot
+… and do`, `/next` on its Asap chunk, `/iterate` on its
+`[user-issue #N]` row) closes the loop the same way:
+
+1. **The fix commit carries `Refs #N`**, never `Closes #N` or
+   `Fixes #N`: a closing keyword shuts the issue on push,
+   before the fix ships (#81 closed that way, unfixed).
+2. **Once it lands on main:** `node scripts/plan/support.mjs
+   tell <N> --commit <sha>`. It comments "Fixed in <sha>
+   (<subject>)" and closes the issue. A fix under
+   `packages/cli` comments that it lands in the next
+   `@usenexus/cli` release and leaves the issue open; the
+   release closes it. `refuse` (the commit lacks `Refs #N`)
+   and `wait` (not on main yet) write nothing; `skip` means no
+   `gh`, and the next tick tells it.
+
+## 5. Hard rules
 
 1. Never delete or edit a reporter's words; quote them.
 2. `loop:opened` issues are never triaged (self-echo).
@@ -113,7 +131,7 @@ you add, as `/plot` does).
    in quotes, at most 120 characters. A tick started for an
    issue receives only its number; read the rest with `gh`.
 
-## 5. Failure modes
+## 6. Failure modes
 
 1. **`gh` missing / unauthenticated** — exit 3 with a
    one-liner; the march falls through.
@@ -121,7 +139,7 @@ you add, as `/plot` does).
 3. **Label creation fails hard** — route without the label,
    note it in the comment.
 
-## 6. Quick reference
+## 7. Quick reference
 
 ```bash
 gh issue list --repo daretodave/nexus --state open \
@@ -129,6 +147,7 @@ gh issue list --repo daretodave/nexus --state open \
   --json number,title
 node scripts/plan/triage-match.mjs <N>   # spec | ambiguous | none | covered (--text, --json, --no-prs)
 node scripts/plan/support.mjs route <N> --kind bug   # bug (skills/bug.md now) | stock (route as today)
+node scripts/plan/support.mjs tell <N> --commit <sha>   # the fix landed: comment + close (packages/cli: held for the release)
 plan/pending/triage-<N>.md           # the ## Add to the spec it belongs to
 plan/AUDIT.md                        # routing target
 plan/CANDIDATES.md             # lesson-shaped routing target

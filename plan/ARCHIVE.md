@@ -225,3 +225,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 55.3 · A shipped tick chains the next while work is ready · f384305..f384305
 - 2026-10-25 · 56.6 · The critique GUI pass · 18bce61..18bce61
 - 2026-10-25 · 57.9 · nexus generators: cli-ci-red, cli-deps, ui-walk · 2abab82..2abab82
+- 2026-10-25 · 54.4 · A fixed issue is told and closed · ad91b9f..ad91b9f

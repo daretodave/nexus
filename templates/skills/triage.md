@@ -238,7 +238,8 @@ gh issue comment "$NUM" --repo "$GH_REPO" --body "$(cat <<'EOF'
 Triaged → bug. The loop will address this; tracked in
 [plan/AUDIT.md](https://github.com/<REPO_SLUG>/blob/<DEFAULT_BRANCH>/plan/AUDIT.md)
 under external-issue category. A future /iterate tick will ship
-the fix and reference this issue's number in the commit body.
+the fix with `Refs #<N>` in the commit body and close this
+issue once the fix lands.
 EOF
 )"
 
@@ -255,7 +256,7 @@ gh issue close "$NUM" --repo "$GH_REPO" --reason "not planned"
 - category: external-issue
 - impact: <0-10>
 - ease: <0-10>
-- next: /iterate will pick up; reference #<N> in commit body.
+- next: /iterate will pick up; `Refs #<N>` in the commit body (§6).
 ```
 
 `data/BACKLOG.md` row:
@@ -303,25 +304,41 @@ plan/AUDIT.md +<X> rows. data/BACKLOG.md +<Y> rows.
 loop next: <iterate | ship-data | ship-a-chunk | march>.
 ```
 
-## 6. Closing the loop (when iterate / ship-data ships a fix)
+## 6. Closing the loop (when a skill ships a fix)
 
-When a downstream skill addresses a triaged issue, it should
-update the issue:
+Whatever skill ships the fix for issue `#N` (`/bug`'s `/plot
+… and do`, `/next` on its Asap chunk, `/iterate` or
+`/ship-data` on its row) closes the loop the same way:
 
-In commit body:
+1. **The fix commit carries `Refs #N`**, never `Closes #N` or
+   `Fixes #N`. A closing keyword shuts the issue on push,
+   before the fix ships or deploys:
 
-```
-- Closes #<N>: <fix description>
-```
+   ```
+   fix: <what the reporter saw, fixed>
 
-After push, post follow-up comment:
+   <root cause>
 
-```bash
-gh issue comment <N> --repo "$GH_REPO" --body "Shipped in <commit>. Live after deploy ready."
-gh issue close <N> --repo "$GH_REPO"   # if not already auto-closed by Closes #N trailer
-```
+   Refs #<N>
+   ```
 
-This is documented in `skills/iterate.md` §5.
+2. **Once it lands on `<DEFAULT_BRANCH>`:**
+
+   ```bash
+   node scripts/plan/support.mjs tell <N> --commit <sha>   # --dry-run prints the gh calls
+   ```
+
+   It comments "Fixed in <sha> (<subject>)" and closes the
+   issue. A fix under a published package (`packages/<dir>/`
+   whose `package.json` has a name and is not private)
+   comments that it lands in that package's next release and
+   leaves the issue open: the release closes it. `refuse`
+   (the commit lacks `Refs #N`) and `wait` (not on the
+   default branch yet) write nothing; `skip` means no `gh`,
+   and the next tick tells it.
+
+The loop's own mirror issues (`loop:opened`, `/iterate` Step
+2.5) are not reporters' issues: their `Closes #N` stays.
 
 ## 7. Hard rules
 

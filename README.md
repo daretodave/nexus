@@ -523,7 +523,7 @@ nexus/
 │   ├── __tests__/critique-gui.test.mjs # its suite, plus the pass in the skill and its command (scripts leg)
 │   ├── plan/locks.mjs                 # lock timeouts: past max_age a lock takes its fallback or asks once (twin)
 │   ├── plan/state.mjs                 # the state diet: queue headers and size (the state-size leg); compact old Done rows (twin)
-│   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going, the Step 1.5 SLA, aged user rows (twin)
+│   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going, the Step 1.5 SLA, aged user rows, a landed fix told and closed (twin)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
@@ -723,7 +723,7 @@ nexus/
     │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react
     │   ├── plan/locks.mjs             # lock timeouts: Held lines, lane locks, owner-blocked rows; release, fallback or one ask
     │   ├── plan/state.mjs             # the state diet: queue headers <= 20 lines, <= 256 KB; delete Done rows past 30 days
-    │   ├── plan/support.mjs           # Support level (NEXUS_SUPPORT over bearings): route a collaborator's bug to /bug, asap_cap, march keeps going, Step 1.5 plots a queued issue past sla_hours, user rows age +1/12h
+    │   ├── plan/support.mjs           # Support level (NEXUS_SUPPORT over bearings): route a collaborator's bug to /bug, asap_cap, march keeps going, Step 1.5 plots a queued issue past sla_hours, user rows age +1/12h, tell closes a landed fix's issue
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
     │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
     │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
