@@ -151,6 +151,20 @@ fails the `workflows` leg.
 - Dispatch: `gh workflow run march.yml -f verb=march -f
   reason=issue-<number>`. No new verb: Step 1 already picks up
   an untriaged or `loop:do` issue, and Step 1 now continues.
+- Built as: one `nudge-check.mjs`, under
+  `templates/scripts/cloud/`, which nexus's `nudge.yml` runs in
+  place like `quota.mjs` (the gate holds nexus's copy to the
+  template's). An expression cannot intersect two lists, so the
+  `if:` requires only some label and the script matches
+  `NEXUS_URGENT_LABELS`. A `loop:do` added later skips the
+  author check, since labeling takes triage rights. The script
+  repeats every `if:` check, and it skips a second tick for the
+  same issue within the hour, because an issue opened with
+  `loop:do` fires `opened` and `labeled`. The job adds
+  `contents: read` for its sparse checkout and runs in its own
+  `nudge` concurrency group. The CLI's Cloud step and
+  bootstrap's `install-workflow` write both files, which stay
+  inert until `NEXUS_SUPPORT` is set.
 
 ### march.yml: reason, dispatch ceiling, hard quota
 
@@ -250,8 +264,6 @@ asap_cap: 3                 # nexus: 3
 
 ## Acceptance
 
-- **A8** A collaborator opening an issue labeled `bug` on nexus starts a march run (event `workflow_dispatch`, reason `issue-<n>`) within 15 minutes when nothing is pending in the `march` group; an outsider's issue, a `loop:opened` mirror and a loop-filed issue start none.
-- **A9** `nudge-check.mjs`, tested against stubbed `gh run list` JSON, skips when a march or night run is queued or pending, and when 6 event ticks started in the last 24h; it never cancels a pending night run.
 - **A11** Tagging `cli-vX.Y.Z` comments "Fixed in @usenexus/cli X.Y.Z" on and closes every open issue labeled `triage:loop-queued` or `bug` referenced by `Refs #N` in the release range; any other referenced issue is left alone and listed in the step summary.
 - **A12** With `NEXUS_SUPPORT` unset an adopter runs as today (no event ticks, AUDIT routing); the knobs are documented in `customization/` and `templates/.github/CLOUD_LOOP.md`, `nudge.yml` is in the README tree, and nexus runs `fix-all`.
 - **A13** `/digest` prints open user issues, mean time to first response and mean time to close over 7 days, and a `triage:needs-user` issue older than `escalate_days` tops "Needs you" and is notified.
@@ -262,11 +274,8 @@ asap_cap: 3                 # nexus: 3
 
 ## Chunks
 
-Measure: 5 open · 8 closed · next A14
+Measure: 3 open · 10 closed · next A14
 
-- [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs —
-  - Local: touches .github/workflows (cloud token cannot push it).
-  - After landing: `gh variable set NEXUS_SUPPORT --body fix-all` on nexus, then watch one test issue through (a collaborator bug, an outsider issue, a loop-filed issue).
 - [ ] **54.7** A cli release closes the issues it fixed · S · closes A11 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **54.8** Support knob docs, digest support line, needs-user escalation · S · closes A12, A13 · needs 54.6
+- [ ] **54.8** Support knob docs, digest support line, needs-user escalation · S · closes A12, A13 · needs —

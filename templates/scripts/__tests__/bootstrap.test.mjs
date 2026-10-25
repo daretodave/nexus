@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { LOOP_FILES, PR_MODE_FILES, cadenceOf, cloudLoopActions, fillPlaceholders, loopMode } from '../bootstrap.mjs';
+import { EVENT_FILES, LOOP_FILES, PR_MODE_FILES, cadenceOf, cloudLoopActions, fillPlaceholders, loopMode } from '../bootstrap.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const manifest = (cloud = {}, project = {}) => ({
@@ -73,6 +73,15 @@ describe('bootstrap: cloud_loop.mode', () => {
       }
     }
     for (const f of LOOP_FILES) assert.ok(fs.existsSync(path.join(templates, f)), f);
+  });
+
+  it('installs the event tick and the check it runs, inert until NEXUS_SUPPORT is set', () => {
+    const templates = path.resolve(HERE, '..', '..');
+    assert.deepEqual(EVENT_FILES, ['.github/workflows/nudge.yml', 'scripts/cloud/nudge-check.mjs']);
+    for (const f of EVENT_FILES) assert.ok(fs.existsSync(path.join(templates, f)), f);
+    const yml = fs.readFileSync(path.join(templates, '.github', 'workflows', 'nudge.yml'), 'utf8');
+    for (const m of yml.matchAll(/node (scripts\/cloud\/[\w-]+\.mjs)/g)) assert.ok(EVENT_FILES.includes(m[1]), `nudge.yml runs ${m[1]}, which bootstrap never installs`);
+    assert.match(yml, /vars\.NEXUS_SUPPORT != '' && vars\.NEXUS_SUPPORT != 'off'/);
   });
 });
 

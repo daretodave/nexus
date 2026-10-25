@@ -613,7 +613,7 @@ nexus/
 ├── plan/                              # nexus's OWN state files (specs + chunks, pending, archive, queues)
 ├── identity/                          # nexus's OWN identity layer: footguns.md (the ladder) + decisions/
 ├── .claude/                           # nexus's OWN commands + settings.json + guard and steer hooks
-├── .github/                           # nexus's OWN cloud loop (march.yml + pr-flow.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml + probe.yml (temporary: spec 55.6's latency probe)
+├── .github/                           # nexus's OWN cloud loop (march.yml + nudge.yml + pr-flow.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml + probe.yml (temporary: spec 55.6's latency probe)
 ├── packages/
 │   └── cli/                           # @usenexus/cli — npx GUI for Claude Code (React+Vite; design/handoff/ is its UI source of truth; publish.yml ships it, cli-ci.yml tests it)
 └── templates/
@@ -690,6 +690,7 @@ nexus/
     │   ├── workflows/pr-flow.yml      # PR mode: a closed PR's claims are released
     │   ├── workflows/pr-resolve.yml   # PR mode: main merged into conflicted PRs
     │   ├── workflows/claims-board.yml # optional: one issue showing the live claims (NEXUS_CLAIMS_BOARD)
+    │   ├── workflows/nudge.yml        # the event tick: a collaborator's bug dispatches march now (off until NEXUS_SUPPORT)
     │   ├── actions/setup/action.yml   # the project's toolchain, shared by every tick job
     │   ├── workflows/night.yml        # the night shift: /digest + breadth checks
     │   ├── workflows/heartbeat.yml    # the immune system: model-free watchdog
@@ -751,6 +752,7 @@ nexus/
     │   ├── cloud/idle.mjs             # idle probe: a scheduled tick skips the model when nothing changed; the no-op reason
     │   ├── cloud/chain.mjs            # self-chaining: a tick that shipped dispatches the next while work is ready, every guard holding
     │   ├── cloud/cadence.mjs          # the cadence presets (calm, steady, eager, sprint, off): NEXUS_CADENCE into ceiling, chain max, idle backoff, heartbeat hours; apply writes the cron
+    │   ├── cloud/nudge-check.mjs      # nudge.yml's check: who starts a tick, the queue, NEXUS_EVENT_MAX; the one dispatch
     │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
     │   ├── design/ingest.mjs          # /design ingest: an export folder -> design/handoff/<date>/ + manifest.json (sha256 per file) + README; check, rehash
     │   ├── design/render.mjs          # a handoff's boards as PNGs at their size, night or dawn, via the installed Chrome (+ board-runtime.js)
@@ -791,6 +793,7 @@ nexus/
     │   ├── __tests__/idle.test.mjs    # the idle probe's skip rules and the no-op reason, gh and git stubbed
     │   ├── __tests__/chain.test.mjs   # the chain's guards, one test each, and the one dispatch, gh and git stubbed
     │   ├── __tests__/cadence.test.mjs # the presets: the variable switches every field, overrides, apply on the template workflows
+    │   ├── __tests__/nudge-check.test.mjs # the nudge's filters, queue and event budget, gh stubbed
     │   ├── __tests__/heartbeat-quota.test.mjs # heartbeat's cadence step in bash: no flatline while paused
     │   ├── __tests__/heartbeat-red.test.mjs # heartbeat's red-gate step in bash: a failed CI run on main opens one issue
     │   ├── __tests__/heartbeat-motion.test.mjs # heartbeat's motion step in bash: one stall issue, none while paused

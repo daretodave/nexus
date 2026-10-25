@@ -66,6 +66,12 @@ export const LOOP_FILES = [
 export const CADENCES = ['calm', 'steady', 'eager', 'sprint', 'off']
 export const DEFAULT_CADENCE = 'steady'
 const HEARTBEAT_PATH = '.github/workflows/heartbeat.yml'
+// The event tick (spec 54) and the check it runs: written beside march.yml, inert until the repo variable
+// NEXUS_SUPPORT is set (unset, the cron alone triages issues, as before).
+export const EVENT_FILES = [
+  '.github/workflows/nudge.yml',
+  'scripts/cloud/nudge-check.mjs',
+]
 
 // ─────────────────────────────────────────────────────────────
 // Logging
@@ -951,8 +957,9 @@ async function execCloudLoop(a, state, manifest) {
     } else {
       log.warn(`no ${action}: copy nexus/templates/.github/actions/setup/action.yml to ${SETUP_ACTION_PATH}`)
     }
-    // The quota governor, the lost-to-background mark and the idle probe the workflow's steps run.
-    for (const f of LOOP_FILES) {
+    // The quota governor, the lost-to-background mark, the idle probe and the chain the workflow's steps run, and
+    // the event tick (off until NEXUS_SUPPORT is set).
+    for (const f of [...LOOP_FILES, ...EVENT_FILES]) {
       if (fs.existsSync(f)) {
         log.info(`kept your ${f}`)
         continue

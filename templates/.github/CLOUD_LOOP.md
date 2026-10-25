@@ -454,6 +454,33 @@ PNG a screen. `plan/bearings.md`'s knobs decide it:
   readable by any signed-in user. Turn it on with `gh variable
   set NEXUS_UI_ARTIFACTS --body 1`. Screenshots are never
   committed.
+## Event ticks (nudge.yml)
+
+A collaborator's bug need not wait for the next cron slot.
+`.github/workflows/nudge.yml` listens to `issues` (opened,
+reopened, labeled) and, shell only, dispatches ONE march run,
+`gh workflow run march.yml -f verb=march -f
+reason=issue-<n>`; the tick's triage step picks the issue up.
+It is off until the repo variable `NEXUS_SUPPORT` is set to
+anything but `off`: unset, the cron alone triages issues.
+
+| Check | Holds when |
+|---|---|
+| who | not a bot, no `loop:opened` label, not loop-filed (author `NEXUS_LOOP_ACTOR`, default the repository owner, AND a `Cloud-Run:` body line) |
+| trigger | opened or reopened by an OWNER, MEMBER or COLLABORATOR (`NEXUS_SUPPORT_TRUST=everyone`: anyone) with a label from `NEXUS_URGENT_LABELS` (default `loop:do bug`); or `loop:do` just added, by anyone who can label |
+| queue | no march or night run is queued or pending (a dispatch would cancel it, and a pending march triages the issue anyway); a run in progress is fine |
+| repeat | no tick for the same issue started in the last hour |
+| budget | under `NEXUS_EVENT_MAX` (default 6) event ticks, runs titled `issue-<n>`, in 24h |
+
+- Only the issue NUMBER crosses into the tick; issue text
+  never reaches a script or a prompt (the job `if:` reads the
+  payload in the expression context, and
+  `scripts/cloud/nudge-check.mjs` reads labels and the marker
+  from the payload file).
+- It fails closed: a run list it cannot read means no
+  dispatch. The dispatched run passes the dispatch ceiling and
+  the quota gate like any other.
+- Each nudge writes one `nudge: ...` line to its step summary.
 
 ## Operating it
 

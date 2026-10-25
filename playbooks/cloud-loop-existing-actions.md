@@ -213,6 +213,9 @@ cp -n ../nexus/templates/scripts/cloud/lost.mjs           scripts/cloud/lost.mjs
 cp -n ../nexus/templates/scripts/cloud/idle.mjs           scripts/cloud/idle.mjs
 cp -n ../nexus/templates/scripts/cloud/chain.mjs          scripts/cloud/chain.mjs
 cp -n ../nexus/templates/scripts/cloud/cadence.mjs        scripts/cloud/cadence.mjs
+# the event tick (inert until NEXUS_SUPPORT is set):
+cp -n ../nexus/templates/.github/workflows/nudge.yml      .github/workflows/nudge.yml
+cp -n ../nexus/templates/scripts/cloud/nudge-check.mjs    scripts/cloud/nudge-check.mjs
 # the night shift, if you run /digest:
 cp -n ../nexus/templates/.github/workflows/night.yml      .github/workflows/night.yml
 # pull-request mode:
@@ -235,6 +238,9 @@ if (-not (Test-Path scripts\cloud\lost.mjs)) { Copy-Item ..\nexus\templates\scri
 if (-not (Test-Path scripts\cloud\idle.mjs)) { Copy-Item ..\nexus\templates\scripts\cloud\idle.mjs scripts\cloud\idle.mjs }
 if (-not (Test-Path scripts\cloud\chain.mjs)) { Copy-Item ..\nexus\templates\scripts\cloud\chain.mjs scripts\cloud\chain.mjs }
 if (-not (Test-Path scripts\cloud\cadence.mjs)) { Copy-Item ..\nexus\templates\scripts\cloud\cadence.mjs scripts\cloud\cadence.mjs }
+# the event tick (inert until NEXUS_SUPPORT is set):
+if (-not (Test-Path .github\workflows\nudge.yml)) { Copy-Item ..\nexus\templates\.github\workflows\nudge.yml .github\workflows\nudge.yml }
+if (-not (Test-Path scripts\cloud\nudge-check.mjs)) { Copy-Item ..\nexus\templates\scripts\cloud\nudge-check.mjs scripts\cloud\nudge-check.mjs }
 # the night shift, if you run /digest:
 if (-not (Test-Path .github\workflows\night.yml)) { Copy-Item ..\nexus\templates\.github\workflows\night.yml .github\workflows\night.yml }
 # pull-request mode:

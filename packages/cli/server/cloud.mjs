@@ -4,7 +4,8 @@
 // substitution (templates/scripts/bootstrap.mjs fillPlaceholders: <PROJECT>, <DEFAULT_BRANCH>,
 // <PROJECT_PKG_PREFIX>), with the shared toolchain action, the quota governor (scripts/cloud/quota.mjs), the
 // lost-to-background mark (scripts/cloud/lost.mjs), the idle probe (scripts/cloud/idle.mjs), the chain step
-// (scripts/cloud/chain.mjs) and the cadence presets (scripts/cloud/cadence.mjs) beside it when the repo has none (every march job uses them). The CLI ships these files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
+// (scripts/cloud/chain.mjs) and the cadence presets (scripts/cloud/cadence.mjs) beside it when the repo has none (every march job uses them), and the event tick
+// (.github/workflows/nudge.yml with scripts/cloud/nudge-check.mjs; inert until NEXUS_SUPPORT is set). The CLI ships these files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
 // templates/ directly. Which way a tick lands is the repo variable NEXUS_LOOP_MODE, not a line in the file: in owner
 // mode an unset variable is set to owner (best effort), as bootstrap's set-loop-mode does.
 //
@@ -43,7 +44,13 @@ export const KIT_FILES = {
   idle: ['scripts/cloud/idle.mjs', 'scripts/cloud/idle.mjs'],
   chain: ['scripts/cloud/chain.mjs', 'scripts/cloud/chain.mjs'],
   cadence: ['scripts/cloud/cadence.mjs', 'scripts/cloud/cadence.mjs'],
+  nudge: ['workflows/nudge.yml', '.github/workflows/nudge.yml'],
+  nudgeCheck: ['scripts/cloud/nudge-check.mjs', 'scripts/cloud/nudge-check.mjs'],
 };
+/** The event tick (spec 54): off until the repo variable NEXUS_SUPPORT is set, so it lands beside march.yml inert. */
+export const NUDGE_PATH = '.github/workflows/nudge.yml';
+/** The nudge's check, which nudge.yml runs: written beside it when missing. */
+export const NUDGE_CHECK_PATH = 'scripts/cloud/nudge-check.mjs';
 /** The quota governor every march job runs (its gate and read steps): written beside the workflow when missing. */
 export const QUOTA_PATH = 'scripts/cloud/quota.mjs';
 /** The lost-to-background mark every march job runs after the model: written beside the workflow when missing. */
@@ -493,7 +500,7 @@ async function workflowFiles(repo, place, cron) {
   const files = { [WORKFLOW_PATH]: yml };
   const setup = kitFile('setup');
   if (setup && await showFile(repo, place.base, SETUP_ACTION_PATH) == null) files[SETUP_ACTION_PATH] = await fillTemplate(fs.readFileSync(setup, 'utf8'), v);
-  for (const [name, rel] of [['quota', QUOTA_PATH], ['lost', LOST_PATH], ['idle', IDLE_PATH], ['chain', CHAIN_PATH], ['cadence', CADENCE_PATH]]) {
+  for (const [name, rel] of [['quota', QUOTA_PATH], ['lost', LOST_PATH], ['idle', IDLE_PATH], ['chain', CHAIN_PATH], ['cadence', CADENCE_PATH], ['nudge', NUDGE_PATH], ['nudgeCheck', NUDGE_CHECK_PATH]]) {
     const src = kitFile(name);
     if (src && await showFile(repo, place.base, rel) == null) files[rel] = fs.readFileSync(src, 'utf8').replace(/\r\n/g, '\n');
   }

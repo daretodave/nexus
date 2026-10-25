@@ -794,6 +794,12 @@ auth's accessible resources.
   quota gate and read steps, and march the Cadence step, the
   lost-to-background check, the idle probe, the no-op reason
   and the chain step, in either mode.
+- **`install-workflow` also writes the event tick**,
+  `.github/workflows/nudge.yml` and the
+  `scripts/cloud/nudge-check.mjs` it runs, where missing
+  (`EVENT_FILES`). It stays inert until the repo variable
+  `NEXUS_SUPPORT` is set: unset, the cron alone triages
+  issues, as before.
 - **`pr-resolve.yml` carries `<DEFAULT_BRANCH>`** in its
   `push: branches:` filter. `install-pr-workflows` fills it
   (and every bracket placeholder) from

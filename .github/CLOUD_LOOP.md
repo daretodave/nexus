@@ -84,6 +84,15 @@ the failure mode of the thing it watches.
   hand) reaches the gates through `env:` only. An issue a tick
   opens carries a `Cloud-Run: <run url>` body line and no
   urgent label (prompt rule 9), so it never starts a tick.
+- **Event ticks:** `nudge.yml` (the template's, running
+  `templates/scripts/cloud/nudge-check.mjs` in place) turns a
+  collaborator's issue opened with `bug` or `loop:do`, or any
+  issue the owner labels `loop:do`, into one march run titled
+  `issue-<n>`, unless a march or night run is pending, a tick
+  for that issue started in the last hour, or
+  `NEXUS_EVENT_MAX` (6) event ticks ran in 24h. Off until
+  `NEXUS_SUPPORT` is set (nexus: `fix-all`). The template's
+  `CLOUD_LOOP.md` "Event ticks" has the checks.
 - **Quota governor:** every march and night tick writes its
   `seven_day` utilization to the step summary and caches it
   (`templates/scripts/cloud/quota.mjs`, run in place). The

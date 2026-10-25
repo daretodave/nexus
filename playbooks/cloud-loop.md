@@ -70,6 +70,7 @@ A few new files relative to the standard nexus overlay:
 .github/
 ├── workflows/
 │   ├── march.yml          # the cron workflow (owner job, or PR-mode jobs)
+│   ├── nudge.yml          # the event tick: a collaborator's bug starts a tick (off until NEXUS_SUPPORT)
 │   ├── pr-flow.yml        # PR mode: a closed PR's claims leave the claims branch
 │   └── pr-resolve.yml     # PR mode: main merged into conflicted PRs
 ├── actions/setup/action.yml  # the project's toolchain, shared by every tick job
@@ -80,6 +81,7 @@ scripts/
 ├── cloud/idle.mjs         # idle probe (skip the model when nothing changed) + no-op reason
 ├── cloud/chain.mjs        # a tick that shipped chains the next while work is ready
 ├── cloud/cadence.mjs      # the cadence presets: NEXUS_CADENCE into ceiling, chain, backoff
+├── cloud/nudge-check.mjs  # nudge.yml's check: who starts a tick, the queue, the event budget
 ├── cloud/tick.mjs         # PR mode: pick + claim, fence, land, release
 ├── pr/resolve.mjs         # PR mode: pr-resolve's resolver
 └── workflow-lint.mjs      # the workflow rules, for your gate
@@ -123,6 +125,9 @@ cp ../nexus/templates/scripts/cloud/lost.mjs           scripts/cloud/lost.mjs
 cp ../nexus/templates/scripts/cloud/idle.mjs           scripts/cloud/idle.mjs
 cp ../nexus/templates/scripts/cloud/chain.mjs          scripts/cloud/chain.mjs
 cp ../nexus/templates/scripts/cloud/cadence.mjs        scripts/cloud/cadence.mjs
+# the event tick (inert until NEXUS_SUPPORT is set):
+cp ../nexus/templates/.github/workflows/nudge.yml      .github/workflows/nudge.yml
+cp ../nexus/templates/scripts/cloud/nudge-check.mjs    scripts/cloud/nudge-check.mjs
 # pull-request mode (NEXUS_LOOP_MODE unset) also needs these:
 cp ../nexus/templates/.github/workflows/pr-flow.yml    .github/workflows/pr-flow.yml
 cp ../nexus/templates/.github/workflows/pr-resolve.yml .github/workflows/pr-resolve.yml
@@ -143,6 +148,9 @@ Copy-Item ..\nexus\templates\scripts\cloud\lost.mjs           scripts\cloud\lost
 Copy-Item ..\nexus\templates\scripts\cloud\idle.mjs           scripts\cloud\idle.mjs
 Copy-Item ..\nexus\templates\scripts\cloud\chain.mjs          scripts\cloud\chain.mjs
 Copy-Item ..\nexus\templates\scripts\cloud\cadence.mjs        scripts\cloud\cadence.mjs
+# the event tick (inert until NEXUS_SUPPORT is set):
+Copy-Item ..\nexus\templates\.github\workflows\nudge.yml      .github\workflows\nudge.yml
+Copy-Item ..\nexus\templates\scripts\cloud\nudge-check.mjs    scripts\cloud\nudge-check.mjs
 # pull-request mode (NEXUS_LOOP_MODE unset) also needs these:
 Copy-Item ..\nexus\templates\.github\workflows\pr-flow.yml    .github\workflows\pr-flow.yml
 Copy-Item ..\nexus\templates\.github\workflows\pr-resolve.yml .github\workflows\pr-resolve.yml

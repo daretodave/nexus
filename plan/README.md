@@ -31,7 +31,7 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 54 | Support issues are fixed the same day | [54-support-lane.md](54-support-lane.md) | planned · priority 1 | 3 left |
+| 54 | Support issues are fixed the same day | [54-support-lane.md](54-support-lane.md) | planned · priority 1 | 2 left |
 | 55 | Cadence that actually delivers | [55-cadence-that-delivers.md](55-cadence-that-delivers.md) | planned · priority 2 | 4 left |
 | 57 | Anti-lull: the queue refills itself | [57-queue-refills-itself.md](57-queue-refills-itself.md) | planned · priority 4 | 1 left |
 | 58 | One command keeps a project on the current kit | [58-upgrade.md](58-upgrade.md) | planned · priority 5 | 7 left |

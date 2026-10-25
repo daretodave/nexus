@@ -1,0 +1,82 @@
+name: nudge
+
+# The event tick (spec 54): a collaborator's bug starts a march
+# tick now instead of at the next cron slot. Shell only, no
+# model, no secret. It dispatches march.yml with the issue
+# NUMBER as the reason (verb=march, reason=issue-<n>); the tick
+# triages the issue as data. Issue text never reaches a script
+# or a prompt: the job `if:` reads the payload in the expression
+# context, and scripts/cloud/nudge-check.mjs reads labels and
+# the loop-filed marker from the payload file.
+#
+# Off until the repo variable NEXUS_SUPPORT is set to anything
+# but `off` (unset: the cron alone triages, as before). The
+# knobs, all repo variables:
+#   NEXUS_SUPPORT        off | triage-only | fix-small | fix-all
+#   NEXUS_SUPPORT_TRUST  collaborators (default) | everyone
+#   NEXUS_URGENT_LABELS  labels that start a tick on opened or
+#                        reopened (default `loop:do bug`; `none`
+#                        for none); `loop:do` added later always does
+#   NEXUS_LOOP_ACTOR     the login the loop opens issues as
+#                        (default the repository owner)
+#   NEXUS_EVENT_MAX      event ticks per 24 hours (default 6)
+# march.yml's dispatch ceiling (NEXUS_DISPATCH_MAX) and quota
+# gate bound every tick this starts.
+
+run-name: nudge issue-${{ github.event.issue.number }} ${{ github.event.action }}
+
+on:
+  issues:
+    types: [opened, reopened, labeled]
+
+# One nudge at a time, so the second sees the run the first
+# dispatched; a nudge never cancels another.
+concurrency:
+  group: nudge
+  cancel-in-progress: false
+
+jobs:
+  nudge:
+    # The cheap checks, in the expression context (never in a
+    # run script): support on, no bot, not the loop's mirror, not
+    # loop-filed (the loop actor AND a Cloud-Run: line), and
+    # either loop:do just added (labeling takes triage rights,
+    # so it lifts an outsider's issue) or a collaborator's issue
+    # opened with a label. nudge-check.mjs repeats them, matches
+    # NEXUS_URGENT_LABELS, and reads the queue.
+    if: >-
+      vars.NEXUS_SUPPORT != '' && vars.NEXUS_SUPPORT != 'off'
+      && github.event.sender.type != 'Bot'
+      && !contains(github.event.issue.labels.*.name, 'loop:opened')
+      && !(github.event.issue.user.login == (vars.NEXUS_LOOP_ACTOR || github.repository_owner)
+           && contains(github.event.issue.body, 'Cloud-Run:'))
+      && ((github.event.action == 'labeled' && github.event.label.name == 'loop:do')
+          || (github.event.action != 'labeled'
+              && github.event.issue.labels[0] != null
+              && (vars.NEXUS_SUPPORT_TRUST == 'everyone'
+                  || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association))))
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      actions: write    # gh run list (the queue, the event count) and gh workflow run
+      contents: read    # the checkout of nudge-check.mjs
+      issues: read
+    steps:
+      - name: Checkout (the nudge's script only)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            templates/scripts/cloud
+            .github/workflows
+
+      - name: Nudge check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SUPPORT: ${{ vars.NEXUS_SUPPORT }}
+          TRUST: ${{ vars.NEXUS_SUPPORT_TRUST || 'collaborators' }}
+          URGENT: ${{ vars.NEXUS_URGENT_LABELS || 'loop:do bug' }}
+          LOOP_ACTOR: ${{ vars.NEXUS_LOOP_ACTOR || github.repository_owner }}
+          EVENT_MAX: ${{ vars.NEXUS_EVENT_MAX || '6' }}
+        run: node templates/scripts/cloud/nudge-check.mjs --support "$SUPPORT" --trust "$TRUST" --urgent "$URGENT" --loop-actor "$LOOP_ACTOR" --max "$EVENT_MAX"

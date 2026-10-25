@@ -66,7 +66,9 @@
 //                 there and never a secret or token, and no run
 //                 script, nor an agent's with: prompt,
 //                 direct_prompt or claude_args, interpolates
-//                 outsider text; each
+//                 outsider text; nudge.yml (both copies) keeps
+//                 its trust filters in the job if:, no model, no
+//                 secret, two minutes; each
 //                 composite action in .github/actions/ and
 //                 templates/.github/actions/ keeps the run-script
 //                 rule and reads no secret
@@ -954,6 +956,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/idle.test.mjs',
   'templates/scripts/__tests__/chain.test.mjs',
   'templates/scripts/__tests__/cadence.test.mjs',
+  'templates/scripts/__tests__/nudge-check.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
   'templates/scripts/__tests__/loop-issue.test.mjs',
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
@@ -1103,7 +1106,48 @@ async function legWorkflows() {
   const { problems, files } = lintDirs(['.github/workflows', '.github/actions', 'templates/.github/workflows', 'templates/.github/actions'].map((d) => path.join(ROOT, d)))
   const failures = problems.map((p) => { const m = /^(.*?\.ya?ml)(:.*)$/s.exec(p); return m ? normalize(path.relative(ROOT, m[1])) + m[2] : p })
   failures.push(...marchGovernorCheck())
-  return { failures, note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts; march.yml's reason, dispatch ceiling, loop-filed marker and chain step` }
+  failures.push(...nudgeCheck())
+  return { failures, note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts; march.yml's reason, dispatch ceiling, loop-filed marker and chain step; nudge.yml's filters and twin` }
+}
+
+// Spec 54: the event tick. templates/.github/workflows/nudge.yml
+// listens to issues (opened, reopened, labeled), runs no model and
+// reads no secret, holds its trust filters in the job `if:`
+// (NEXUS_SUPPORT, no bot, no loop:opened mirror, no loop-filed
+// Cloud-Run: issue, a collaborator's author_association, loop:do
+// for labeled) and runs nudge-check.mjs with nothing interpolated
+// into the script, in two minutes at most. nexus's own copy is the
+// template with the script run in place (templates/scripts/cloud/).
+// The checks themselves are nudge-check.test.mjs's.
+function nudgeCheck(readFile = read, exists = (f) => fs.existsSync(path.join(ROOT, f))) {
+  const failures = []
+  const tpl = 'templates/.github/workflows/nudge.yml'
+  const own = '.github/workflows/nudge.yml'
+  if (!exists(tpl)) return [`${tpl}: missing (the event tick, spec 54)`]
+  const text = readFile(tpl).replace(/\r\n/g, '\n')
+  if (!/^\s{2}issues:\s*\n\s{4}types:\s*\[opened, reopened, labeled\]\s*$/m.test(text)) failures.push(`${tpl}: must run on issues: types: [opened, reopened, labeled]`)
+  if (/\bsecrets\./.test(text) || /claude-code-action/.test(text)) failures.push(`${tpl}: the nudge reads no secret and runs no model`)
+  const t = /^\s+timeout-minutes:\s*(\d+)\s*$/m.exec(text)
+  if (!t || Number(t[1]) > 2) failures.push(`${tpl}: timeout-minutes must be at most 2`)
+  if (!/^\s+actions:\s*write\b/m.test(text)) failures.push(`${tpl}: the dispatch needs \`actions: write\``)
+  const cond = /^ {4}if: >-?\n((?: {6}.*\n)+)/m.exec(text)?.[1] ?? ''
+  for (const [want, why] of [
+    ['vars.NEXUS_SUPPORT', 'NEXUS_SUPPORT set and not off'],
+    ["github.event.sender.type != 'Bot'", 'no bot sender'],
+    ["'loop:opened'", 'no loop:opened mirror'],
+    ["'Cloud-Run:'", 'no loop-filed issue'],
+    ['github.event.issue.author_association', "a collaborator's issue"],
+    ["github.event.label.name == 'loop:do'", 'labeled passes only for loop:do'],
+  ]) if (!cond.includes(want)) failures.push(`${tpl}: the job if: never checks ${why} (${want})`)
+  const runs = [...text.matchAll(/^\s+run:\s*(.*)$/gm)].map((m) => m[1])
+  if (!runs.some((r) => /^node scripts\/cloud\/nudge-check\.mjs\b/.test(r))) failures.push(`${tpl}: no step runs scripts/cloud/nudge-check.mjs`)
+  if (runs.some((r) => r.includes('${{'))) failures.push(`${tpl}: a run script interpolates an expression (pass it through env:)`)
+  if (!exists(own)) failures.push(`${own}: missing (nexus runs the event tick)`)
+  else {
+    const want = text.replace('\n            scripts/cloud\n', '\n            templates/scripts/cloud\n').replace('run: node scripts/cloud/nudge-check.mjs', 'run: node templates/scripts/cloud/nudge-check.mjs')
+    if (readFile(own).replace(/\r\n/g, '\n') !== want) failures.push(`${own}: must be ${tpl} with the script run in place (templates/scripts/cloud/)`)
+  }
+  return failures
 }
 
 // Spec 54: both march.yml copies take a `reason` input shown in the

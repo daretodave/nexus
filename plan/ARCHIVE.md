@@ -229,3 +229,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 55.5 · Cadence presets, the variable and bootstrap · 4336951..4336951
 - 2026-10-25 · 56.7 · Adopter twin: UI knobs, ui-walk.mjs, reader Path A2 · 6bf30bf..6bf30bf
 - 2026-10-25 · 56 · spec complete: the cloud tick builds, gates and walks the CLI and fixes what it sees under the magic guard (iterate dimension H, expand signal F, the critique GUI pass, the digest's unreleased CLI fixes), and adopters get the same anonymous walk of their own site behind the UI: knobs (scripts/ui-walk.mjs, reader Path A2) · 14946c9e..6bf30bf
+- 2026-10-25 · 54.6 · nudge.yml starts a tick for a collaborator's bug · 3067671..3067671
