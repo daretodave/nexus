@@ -160,6 +160,8 @@ describe('the CLI', () => {
     fs.writeFileSync(path.join(dir, 'plan', 'bearings.md'), posture(['- Improve: bold']));
     fs.writeFileSync(path.join(dir, 'scripts', 'generators', 'docs-rot.mjs'), '');
     fs.writeFileSync(path.join(dir, 'scripts', 'generators', 'README.md'), '');
+    // research is gated by its own Research knob, so bold's `project` set never lists it.
+    fs.writeFileSync(path.join(dir, 'scripts', 'generators', 'research.mjs'), '');
     return dir;
   };
   const run = (argv, io = {}) => {

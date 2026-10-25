@@ -20,12 +20,12 @@
 //   Cadence        calm    steady        steady            eager              (NEXUS_CADENCE)
 //
 // Generators: `generic` is the kit's three (issue-age, stale-candidate, motion, at the lines below); `project` adds
-// every other scripts/generators/<name>.mjs the repo carries, at `weekly · target 2 · cap 2/wk`. A `## Generators`
-// section holding a list line (a generator, or `- (none)`) is an override; one holding only prose or a commented
-// example defers to the dial. UI: the dial sets when the walk runs, never where; `UI: none` is an override (nothing
-// browses, whatever `UI cadence:` says), a `UI cadence:` line is one, and a `UI: url|dev` target with no cadence line
-// walks at `critique` when the dial says none (as it did before the dial). With no target at all the walk has
-// nothing to open, whatever the cadence.
+// every other scripts/generators/<name>.mjs the repo carries, at `weekly · target 2 · cap 2/wk` (never `research`,
+// which its own Research knob gates). A `## Generators` section holding a list line (a generator, or `- (none)`) is
+// an override; one holding only prose or a commented example defers to the dial. UI: the dial sets when the walk
+// runs, never where; `UI: none` is an override (nothing browses, whatever `UI cadence:` says), a `UI cadence:` line is
+// one, and a `UI: url|dev` target with no cadence line walks at `critique` when the dial says none (as it did before
+// the dial). With no target at all the walk has nothing to open, whatever the cadence.
 //
 // Skills read knobs through this script, never by grepping bearings themselves.
 //
@@ -136,11 +136,14 @@ export function dialGenerators(value, project = []) {
   return [...generic, ...project.filter((n) => !have.has(n)).sort().map((name) => ({ name, line: `${name} · ${PROJECT_LINE}` }))];
 }
 
-/** The repo's own generators: the names of scripts/generators/*.mjs under root (none when the folder is missing). */
+/** Generators a knob of their own gates, never listed as a project generator: research (the Research knob). */
+export const KNOB_GATED = Object.freeze(['research']);
+
+/** The repo's own generators: the names of scripts/generators/*.mjs under root, less KNOB_GATED (none when the folder is missing). */
 export function projectGenerators(root = process.cwd()) {
   const dir = path.join(root, 'scripts', 'generators');
   try {
-    return fs.readdirSync(dir).filter((n) => /^[a-z0-9][a-z0-9-]*\.mjs$/.test(n)).map((n) => n.replace(/\.mjs$/, '')).sort();
+    return fs.readdirSync(dir).filter((n) => /^[a-z0-9][a-z0-9-]*\.mjs$/.test(n)).map((n) => n.replace(/\.mjs$/, '')).filter((n) => !KNOB_GATED.includes(n)).sort();
   } catch {
     return [];
   }

@@ -534,6 +534,7 @@ nexus/
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
+│   ├── generators/research.mjs        # field research: the brief, then the tick's web findings become field candidates (twin)
 │   ├── generators/cli-ci-red.mjs      # a red cli-ci run on main becomes one AUDIT HIGH row per red streak (nexus only)
 │   ├── generators/cli-deps.mjs        # a packages/cli dependency a breaking release behind becomes one AUDIT row (nexus only)
 │   ├── generators/ui-walk.mjs         # the GUI walk's findings become /iterate H rows, at most 3 Pending (nexus only)
@@ -738,6 +739,7 @@ nexus/
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
     │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
     │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
+    │   ├── generators/research.mjs    # generator: under the Research knob, the tick's web findings -> at most 3 field candidates, no names, no URLs
     │   ├── plan/secrets-manifest.mjs  # nexus.secrets.json's shape + the .env.example import (plan-check reads it)
     │   ├── secrets.mjs                # secrets by name: status, set (stdin), import (--store a real .env), names, check, push (owner mode), audit, request; never a value
     │   ├── secrets-vault.mjs          # the vault: .env (local), .env.workspace (workspace root), the keychain; get/resolve for code only
@@ -795,6 +797,7 @@ nexus/
     │   ├── __tests__/support.test.mjs # the Support level, the routing table, the asap_cap count, continue at half the budget, user rows aged to 4.4, the SLA step and its cap, the digest line and escalation
     │   ├── __tests__/improve.test.mjs # the dial table at every position, overrides for one knob only, absent reads gentle, a disagreeing variable warns, the upgrade's registry valued at every position
     │   ├── __tests__/improve-readers.test.mjs # every knob reader through the dial: support, promote, motion, loop-rows, refill, lanes, ui-walk; the Cadence step and the nudge only when their variable is unset
+    │   ├── __tests__/research.test.mjs # field research: the knob and cadence, the 8-fetch budget, 3 a run, no names or URLs, +0 re-evidence, sources in the job summary only
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver

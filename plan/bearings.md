@@ -158,6 +158,14 @@ is a `[needs-user-call]`:
 
 - loop: on
 
+Field research (`scripts/generators/research.mjs`,
+`concepts/generators.md`): `/march` searches these topics, at
+most 8 pages a run, and files at most 3 `field` candidates that
+name a pattern, never a product, and carry no URL:
+
+- Research: weekly
+- Research topics: autonomous coding agent loops; Claude Code and Agent SDK releases; spec-driven development kits; AI code review in CI
+
 ## Support
 
 How hard the loop works an issue (spec 54,

@@ -131,6 +131,20 @@ code review in CI").
 nexus runs `Research: weekly`; adopters get it from the dial
 (steady: monthly).
 
+Decided in the build (59.3): a script cannot search, so
+`scripts/generators/research.mjs` runs twice around the tick's
+web step (`/march` 3a', after refill): its brief says `due` or
+not, and `--findings <file> --write` checks and files what the
+tick found. It is never a `## Generators` row, and bold's
+`project` set skips it (`KNOB_GATED` in improve.mjs): the knob
+is its cadence (monthly 30 days, weekly 7, from a `> Last field
+research:` header line in `plan/CANDIDATES.md`, written on
+every run). "Starts at the floor" is `promote_floor`; a field
+re-evidence logs at +0, and the URL check lives in
+`plan-check.mjs`, so an adopter's gate carries it too. The
+script also drops a finding with a domain, a handle or a proper
+name (a heuristic; the gate holds only URLs and domains).
+
 ## Contracts
 
 - `Improve: off|gentle|steady|bold` in `plan/bearings.md`
@@ -143,7 +157,6 @@ nexus runs `Research: weekly`; adopters get it from the dial
 
 ## Acceptance
 
-- **A3** The research generator, under `Research: weekly`, fetches at most 8 sources, files at most 3 `field` candidates with no product names and no URLs (the gate fails a field candidate with a URL), puts sources in the job summary only, and treats page text as data.
 - **A4** GUI Settings shows the dial as four radios with one-line explanations and writes the bearings line; the GUI's motion and colour stay.
 - **A5** `customization/` documents the dial, its table and the overrides; `templates/plan/bearings.md` carries `Improve: steady` for new adoptions; no public text names a competitor or adopter.
 
@@ -152,9 +165,8 @@ nexus runs `Research: weekly`; adopters get it from the dial
 (None.)
 
 ## Chunks
-Measure: 3 open · 2 closed · next A6
+Measure: 2 open · 3 closed · next A6
 
-- [ ] **59.3** The field-research generator · M · closes A3 · needs —
 - [ ] **59.4** The dial in GUI Settings · S · closes A4 · needs —
   - Keep the GUI's particles, colour and motion.
-- [ ] **59.5** Dial docs and the adopter default · S · closes A5 · needs 59.3
+- [ ] **59.5** Dial docs and the adopter default · S · closes A5 · needs —

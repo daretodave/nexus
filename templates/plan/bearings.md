@@ -407,6 +407,16 @@ turns it off; a missing line reads `off`:
 
 - loop: on
 
+Field research (`scripts/generators/research.mjs`,
+`nexus/concepts/generators.md`): under `Research: monthly` or
+`weekly` (the improvement dial sets it; a `Research:` line
+here overrides), `/march` searches the web for these topics, a
+few phrases split by `;`, at most 8 pages a run, and files at
+most 3 `field` candidates that describe a pattern, never a
+product, with no URL. No topics, no research.
+
+- Research topics: (none)
+
 ## Support
 
 How hard the loop works an issue (`skills/triage.md` Step 2a,

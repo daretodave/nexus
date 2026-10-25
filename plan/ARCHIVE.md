@@ -245,3 +245,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 58.8 · --write, --land, --rollback and the first-tick watch · 0d73a09..0d73a09
 - 2026-10-25 · 59.2 · Skills read knobs through the resolver · fbc60a5..fbc60a5
 - 2026-10-25 · 58.13 · Upgrade a repo on GitHub as a pull request, no checkout · 3dc4bde..3dc4bde
+- 2026-10-25 · 59.3 · The field-research generator · 50601b3..50601b3

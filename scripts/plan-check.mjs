@@ -25,6 +25,9 @@
 //   - plan/README.md links every spec, links no spec that is gone,
 //     its `N left` counts match, and its Asap/Held lanes name only
 //     chunks (or specs) still in the plan; ARCHIVE.md lines parse
+//   - a field candidate in CANDIDATES.md (`- source signals: field
+//     (<date>): …`, or a `· field ·` re-evidence line) carries no URL
+//     and no bare domain: its sources live in the job summary only
 //   - an auto-promoted Held line keeps its shape (`- NN ·
 //     auto-promoted, veto until YYYY-MM-DD (#N) · max_age: <n>d ·
 //     …`) and holds a spec still in the plan; every other Held line
@@ -164,7 +167,7 @@ export function parseSpec(file, text) {
 
 // `manifest`: the names nexus.secrets.json declares (a Set), null when
 // there is no manifest, or left out to skip the secrets check.
-export function checkPlan({ specs, readme, archive, manifest }) {
+export function checkPlan({ specs, readme, archive, manifest, candidates = null }) {
   const failures = []
   const chunkIds = new Map()
   for (const s of specs) for (const c of s.chunks) {
@@ -212,6 +215,7 @@ export function checkPlan({ specs, readme, archive, manifest }) {
   }
   if (specs.length > 0 && readme === null) failures.push('plan/README.md missing: the roadmap must list every spec')
   if (readme !== null) failures.push(...checkRoadmap(specs, readme, chunkIds, specNums))
+  if (candidates) failures.push(...fieldUrlProblems(candidates))
   if (archive !== null) {
     let fenced = false
     archive.split(/\r?\n/).forEach((line, i) => {
@@ -364,6 +368,44 @@ export function checkHistory(before, after, archive, pendingIds = new Set()) {
   return failures
 }
 
+// --- field candidates (spec 59) --------------------------------------------
+// The field-research generator (scripts/generators/research.mjs) files
+// candidates that describe a pattern seen in the wider tooling. Their
+// sources go in the tick's job summary only: a field candidate (or a
+// field re-evidence line) that carries a URL or a bare domain fails.
+
+export const DOMAIN_RE = /\b[a-z0-9][a-z0-9-]*\.(?:com|io|ai|dev|org|net|co|app)\b/i
+
+/** The URLs (and bare domains) in a text: [] when it carries none. The gate's check on a field candidate. */
+export function urls(text = '') {
+  const out = []
+  for (const m of String(text).matchAll(/\bhttps?:\/\/\S+|\bwww\.\S+/gi)) out.push(m[0])
+  for (const m of String(text).matchAll(new RegExp(DOMAIN_RE.source, 'gi'))) if (!out.some((u) => u.includes(m[0]))) out.push(m[0])
+  return out
+}
+
+/**
+ * Every problem a candidates file's field text carries: a field candidate (one whose source signals read `field (`)
+ * holding a URL anywhere in its row, or a `· field ·` re-evidence line holding one. The gate fails each.
+ */
+export function fieldUrlProblems(text = '', label = 'plan/CANDIDATES.md') {
+  const lines = String(text ?? '').replace(/\r\n/g, '\n').split('\n')
+  const problems = []
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^### /.test(lines[i])) continue
+    let end = lines.findIndex((l, j) => j > i && /^#{2,3} /.test(l))
+    if (end < 0) end = lines.length
+    const body = lines.slice(i, end)
+    const fieldRow = body.some((l) => /^- source signals:.*\bfield \(\d{4}-\d{2}-\d{2}\)/.test(l))
+    body.forEach((l, k) => {
+      if (!fieldRow && !/ · field · /.test(l)) return
+      const u = urls(l)
+      if (u.length) problems.push(`${label}:${i + k + 1}: a field candidate carries a URL (${u[0].slice(0, 60)}); sources go in the tick's job summary, never the plan`)
+    })
+  }
+  return problems
+}
+
 // --- I/O -------------------------------------------------------------------
 
 // `readFile(name)` reads one file of the folder (null when it isn't
@@ -376,6 +418,7 @@ export function loadPlanDir(dirAbs, label = 'plan', readFile = null) {
     specs: files.map((f) => parseSpec(`${label}/${f}`, read(f))),
     readme: read('README.md'),
     archive: read('ARCHIVE.md'),
+    candidates: read('CANDIDATES.md'),
     // A pending close (plan/pending/, scripts/plan/pending.mjs) counts
     // as closed: by its file name (`<chunk id>.md`) or its `close:` line.
     pendingIds: new Set(fs.existsSync(path.join(dirAbs, 'pending'))

@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseChunk, parseSpec, checkPlan, checkHistory, archived, parseAutoHeld, parseLock, laneText, runCheck, loadPlanDir } from '../plan-check.mjs'
+import { parseChunk, parseSpec, checkPlan, checkHistory, archived, parseAutoHeld, parseLock, laneText, runCheck, loadPlanDir, fieldUrlProblems, urls } from '../plan-check.mjs'
 
 const spec = (body) => parseSpec('plan/07-search.md', `# 07 — Search\n\n${body}`)
 
@@ -326,5 +326,27 @@ test('runCheck reads nexus.secrets.json beside plan/, and reports a manifest tha
     assert.doesNotMatch(red, /fake-not-a-secret/)
     put('nexus.secrets.json', '{ not json')
     assert.match(runCheck({ repoAbs: dir }).failures.join('\n'), /nexus\.secrets\.json: not JSON/)
+  } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('a field candidate carrying a URL or a bare domain fails; an internal row, or field text without one, passes (spec 59)', () => {
+  const field = (extra = '') => ['# Candidates', '', '## Pending', '', '### [ ] [score 6.0] Runs resume across machines', '- proposed: 2026-10-25 (research)', `- source signals: field (2026-10-25): a hosted agent platform resumes runs across machines${extra}`, '- generator: research · filed 2026-10-25', ''].join('\n')
+  assert.deepEqual(fieldUrlProblems(field()), [])
+  assert.match(fieldUrlProblems(field(', per https://example.test/post')).join('\n'), /:7: a field candidate carries a URL \(https:\/\/example\.test/)
+  assert.match(fieldUrlProblems(field(' (see example.com)')).join('\n'), /carries a URL \(example\.com/)
+  assert.deepEqual(urls('scripts/plan/promote.mjs and plan/CANDIDATES.md'), [], 'a file name is no domain')
+  const internal = ['## Pending', '', '### [ ] [score 7.0] An internal row', '- source signals: AUDIT rows, https://github.com/o/r/issues/1', ''].join('\n')
+  assert.deepEqual(fieldUrlProblems(internal), [], 'only field text is held to it')
+  const evidenced = `${internal}${['- re-evidence:', '  - 2026-10-25 · field · +0 · a pattern seen at www.example.test', ''].join('\n')}`
+  assert.equal(fieldUrlProblems(evidenced).length, 1, 'a field re-evidence line is')
+  assert.equal(checkPlan({ specs: [], readme: null, archive: null, candidates: field(' https://x.test') }).length, 1, 'checkPlan carries it')
+})
+
+test('runCheck reads CANDIDATES.md beside the specs and fails a field candidate with a URL', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-field-'))
+  try {
+    fs.mkdirSync(path.join(dir, 'plan'))
+    fs.writeFileSync(path.join(dir, 'plan', 'CANDIDATES.md'), '# Candidates\n\n## Pending\n\n### [ ] [score 6.0] X\n- source signals: field (2026-10-25): a pattern, from https://example.test\n')
+    assert.match(runCheck({ repoAbs: dir }).failures.join('\n'), /plan\/CANDIDATES\.md:6: a field candidate carries a URL/)
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })
