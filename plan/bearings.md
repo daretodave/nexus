@@ -7,13 +7,15 @@
 ## What we're building
 
 nexus — the methodology + template kit for autonomous-loop
-projects. The product is prose and templates; the users are
-adopters (humans and their agents) turning repos into
-self-shipping projects.
+projects, and the GUI that runs it. The product is prose,
+templates and `@usenexus/cli`; the users are adopters (humans
+and their agents) turning repos into self-shipping projects.
 
-**Surface:** `kit` — a docs/templates repo. No site, no
-service, no data layer. (This value is nexus-specific; adopter
-projects use `site | service | library | cli | hybrid`.)
+**Surface:** `hybrid: kit + cli` — a docs/templates kit plus
+the GUI in `packages/cli` (its own tests, build and `cli-ci`
+gate). No hosted site, no service, no data layer. (`kit` is
+nexus-specific; adopter projects use `site | service |
+library | cli | hybrid`.)
 
 **Auth:** `none`.
 
@@ -115,8 +117,8 @@ unless named here:
 
 ## Decisions standing for the loop
 
-1. Adopter-facing improvements outrank kit-internal polish at
-   equal score.
+1. Adopter-facing improvements (docs, templates or the GUI)
+   outrank internal polish at equal score.
 2. A doc that promises a file the kit doesn't ship is a HIGH
    finding — either ship the file or fix the promise; never
    leave the gap.
@@ -129,10 +131,11 @@ unless named here:
    enforces the second half).
 5. Model ids appear in as few places as possible and always
    with a "check current ids" caveat.
-6. Keep skills for THIS repo lean (~100–200 lines): a docs
-   repo has simpler procedures than a product repo. Don't
+6. Keep skills for THIS repo lean (~100–200 lines): a kit
+   has simpler procedures than a product repo. Don't
    cargo-cult product steps (SEO, deploy confirmation) that
-   have no meaning here.
+   have no meaning here; a `packages/**` chunk takes the
+   code branch in `skills/ship-a-chunk.md`, nothing more.
 7. Anything the GUI commits for a person lands from a
    temporary worktree of origin, never their checkout, and
    runs the repo's own hooks through wrappers that unset the

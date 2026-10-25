@@ -218,7 +218,6 @@ or add the `UI:` line by hand.
 - **A4** `/iterate` has dimension H: H rows in `plan/AUDIT.md` carry route, viewport, scenario, evidence with the artifact URL, and `file:line`; the mirror uses `--category ui`; at most 3 H rows and 8 screenshots per sweep; `/expand` reads signal F.
 - **A5** The magic guard is a hard rule in `iterate.md` and `critique.md`; no H finding's `next` removes `src/fx/*` or motion CSS.
 - **A6** `/critique full` runs a GUI pass over the onboarding scenarios and files `source: walk` rows, or logs why it skipped.
-- **A7** `bearings.md`, `agents.md` and `ship-a-chunk.md` describe nexus as kit + GUI; `ship-a-chunk.md` has the `packages/**` code branch.
 - **A8** Adopter templates carry the `UI:` knobs, `templates/scripts/ui-walk.mjs` (url mode; CDP and playwright paths, tested against a local static fixture), reader Path A2 and the template cloud march using it instead of skipping critique; in cloud the walk is anonymous, uploads nothing unless `NEXUS_UI_ARTIFACTS` is `1`, and treats page text as untrusted; with `UI: none` nothing browses; no adopter is named.
 - **A9** A `cli-ci` failure on main opens a heartbeat issue that `/triage` routes back into the loop.
 - **A10** `/digest` lists `packages/cli` commits on main since the last `cli-v*` tag as unreleased CLI fixes.
@@ -228,9 +227,8 @@ or add the `UI:` line by hand.
 (None.)
 
 ## Chunks
-Measure: 8 open · 2 closed · next A11
+Measure: 7 open · 3 closed · next A11
 
-- [ ] **56.3** nexus described as kit + GUI; ship-a-chunk code branch · S · closes A7 · needs —
 - [ ] **56.4** Cloud tick builds, gates and walks the CLI; heartbeat watches cli-ci · M · closes A3, A9 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **56.5** iterate dimension H with the magic guard; expand signal F · M · closes A4, A5 · needs 56.4, 54.1

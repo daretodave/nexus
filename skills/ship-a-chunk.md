@@ -3,8 +3,9 @@
 > **Full autonomy, no review checkpoint.** Ship one chunk of
 > the kit's plan end-to-end: docs written, templates landed,
 > cross-links wired, gate taught, verify green, the chunk
-> closed, commit + land. A docs kit's chunk is prose and
-> templates, not pages — the procedure reflects that.
+> closed, commit + land. Most chunks are prose and templates;
+> a `packages/**` chunk is code in the GUI and takes the code
+> branch (Step 4b) — the procedure reflects both.
 
 ## 1. Purpose
 
@@ -86,6 +87,33 @@ Write/edit the docs and templates the chunk names. Hard-wrap
 recurring stems. Templates get placeholders from the
 documented vocabulary only.
 
+### Step 4b — The code branch (`packages/**`)
+
+A chunk that changes `packages/cli` (the GUI) is code, built
+the way the package's own tests expect:
+
+1. **Contract first.** The spec's Contracts (a shape, a route,
+   a flag) land as the module's exported surface before its
+   body.
+2. **Tests first** for anything stateful: a failing
+   `test/<name>.test.mjs` beside the change, gh and the model
+   only through injected seams (`plan/bearings.md` GUI row).
+3. **Build it**, then in `packages/cli`, foreground:
+
+   ```bash
+   npm ci --ignore-scripts   # only when node_modules is missing; no lifecycle scripts while ACTIONS_PAT sits in .git/config
+   npm test               # the whole package suite, green
+   npm run build          # when src/ changed
+   ```
+
+4. **Keep the magic.** Never remove or dim `src/fx/*` or the
+   particle, colour or motion CSS; a cost or distraction is
+   fixed by making it cheaper.
+5. Never bump the package's version or tag `cli-v*` here: the
+   owner releases. `cli-ci` stays the package's CI gate;
+   `node scripts/verify.mjs` still runs (Step 7) for the
+   kit files the chunk touches.
+
 ### Step 5 — Wire
 
 Every new doc: linked from ≥1 existing doc, added to the
@@ -115,9 +143,10 @@ In the same working tree, before the gate:
 
 ```bash
 node scripts/verify.mjs
+npm --prefix packages/cli test   # code branch only (Step 4b)
 ```
 
-Foreground. The `chunks` leg checks Step 6 against HEAD. Red →
+Foreground, both. The `chunks` leg checks Step 6 against HEAD. Red →
 fix root cause; ≤3 iterations on the same root cause, then §6
 failure modes.
 
@@ -125,7 +154,7 @@ failure modes.
 
 ```bash
 git add <explicit files>
-git commit -m "<feat|docs|templates|playbook|ci>: <subject> (<NN.k>)"
+git commit -m "<feat|fix|docs|templates|playbook|ci>: <subject> (<NN.k>)"
 # land per owner mode: skills/next/land.md §6
 ```
 
@@ -144,7 +173,9 @@ Return cleanly.
 
 ## 5. Hard rules
 
-1. Verify gate foreground, non-negotiable, no `--no-verify`.
+1. Verify gate foreground, non-negotiable, no `--no-verify`;
+   a `packages/**` diff also needs a green `npm test` in
+   `packages/cli` first.
 2. Commit + land atomic; no dirty tree at turn end.
 3. No `Co-Authored-By`, no emojis (cloud `Cloud-Run:` trailer
    is the one carve-out).
@@ -193,10 +224,12 @@ plan/bearings.md                     # voice + contracts
 plan/<NN>-<slug>.md + plan/README.md # the close, same commit
 plan/ARCHIVE.md                      # one line per closed chunk
 scripts/verify.mjs                   # when a new invariant lands
+packages/cli/{src,server,test}/      # the code branch (Step 4b)
 
 # Commands
 git pull --ff-only
 node scripts/verify.mjs
+npm --prefix packages/cli test       # code branch: green first
 git add <explicit> && git commit   # then land per owner mode (next/land.md §6)
 node templates/scripts/loop-issue.mjs spec-open|spec-close ...
 ```

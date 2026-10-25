@@ -283,7 +283,32 @@ function legTree() {
       }
     }
   }
-  return { failures, note: `${checked} tree entries, ${reverseChecked} files reverse-checked` }
+  const shape = repoShapeCheck()
+  failures.push(...shape.failures)
+  return { failures, note: `${checked} tree entries, ${reverseChecked} files reverse-checked, ${shape.dirs} top-level dirs in agents.md's repo shape` }
+}
+
+// agents.md's repo shape names every tracked top-level directory,
+// so a cold agent never mistakes a surface for out of scope (spec
+// 56: the shape once had no packages/ row, and the loop read nexus
+// as docs-only). skills/ship-a-chunk.md keeps its packages/** code
+// branch for the same reason.
+function repoShapeCheck() {
+  const failures = []
+  const text = read('agents.md')
+  const block = (text.split(/^## Repo shape\s*$/m)[1] || '').match(/```[^\n]*\n([\s\S]*?)```/)
+  if (!block) return { failures: ['agents.md: could not find the fenced block under "## Repo shape"'], dirs: 0 }
+  const listed = new Set(block[1].split(/\r?\n/).map((l) => (l.match(/^([^\s/]+)\//) || [])[1]).filter(Boolean))
+  const tracked = execSync('git ls-files', { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
+  const dirs = new Set(tracked.split(/\r?\n/).filter((f) => f.includes('/')).map((f) => f.split('/')[0]))
+  for (const d of [...dirs].sort()) {
+    if (!listed.has(d)) failures.push(`agents.md repo shape: no row for the tracked top-level directory ${d}/`)
+  }
+  const sac = fs.existsSync(path.join(ROOT, 'skills/ship-a-chunk.md')) ? read('skills/ship-a-chunk.md') : ''
+  if (dirs.has('packages') && !(/code branch \(`packages\/\*\*`\)/.test(sac) && sac.includes('npm --prefix packages/cli test'))) {
+    failures.push('skills/ship-a-chunk.md: lost its packages/** code branch (Step 4b, a green `npm --prefix packages/cli test`)')
+  }
+  return { failures, dirs: dirs.size }
 }
 
 // --- leg: discover (no orphan docs) --------------------------------------

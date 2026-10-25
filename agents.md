@@ -137,6 +137,9 @@ skills/              nexus's OWN skills (the loop that ships the kit).
 plan/                nexus's OWN state files (roadmap, specs, archive, queues).
 scripts/             The kit's verify gate (verify.mjs), the
                      diagram generator (diagrams.mjs).
+packages/cli/        The GUI (`@usenexus/cli`): its own tests
+                     (`npm test`), build and `cli-ci` gate.
+identity/            The kit's identity layer (footguns, decisions).
 assets/              Generated SVG diagrams; never hand-edited.
                      gifs/ holds the README's recorded GUI GIFs.
 .claude/             nexus's OWN Claude Code config (commands,
@@ -146,7 +149,7 @@ assets/              Generated SVG diagrams; never hand-edited.
 
 Note the split: `templates/skills/` is what adopters get;
 `skills/` is what this repo runs. Same shapes, different
-verbs — a docs kit ships docs, not pages.
+verbs — a kit ships docs, templates and the GUI.
 
 ## How work happens
 
