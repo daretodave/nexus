@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  cronField, cronLines, decide, dispatchLatency, hookLine, main, parseCron, percentile, scheduleLag, slotAtOrBefore,
+  cronAt, cronField, cronHistory, cronLines, decide, dispatchLatency, hookLine, main, parseCron, percentile, scheduleLag, slotAtOrBefore,
 } from '../cloud/probe-latency.mjs';
 
 const MARCH = "on:\n  schedule:\n    # 4 ticks/day\n    - cron: '0 2,8,14,20 * * *'\n  workflow_dispatch:\n";
@@ -80,6 +80,32 @@ describe('measures', () => {
     assert.equal(lag.createdP50, 30 * 60);
     assert.equal(lag.createdP90, (3 * 60 + 54) * 60);
     assert.equal(lag.startedP90, (3 * 60 + 55) * 60);
+  });
+
+  it('a cron change inside the window scores each run against the cron of its day', () => {
+    const periods = [
+      { from: '2026-10-01T00:00:00Z', cron: '0 2,8,14,20 * * *' },
+      { from: '2026-10-25T20:53:00Z', cron: '17 */3 * * *' },
+    ];
+    assert.equal(cronAt(periods, Date.parse('2026-09-01T00:00:00Z')), '0 2,8,14,20 * * *');
+    assert.equal(cronAt(periods, Date.parse('2026-10-25T21:00:00Z')), '17 */3 * * *');
+    // 07:00 under the old cron is 5h behind the 02:00 slot, not 1h43m behind a 05:17 slot the run never had.
+    const lag = scheduleLag([{ created_at: '2026-10-24T07:00:00Z', run_started_at: '2026-10-24T07:00:00Z' }], periods);
+    assert.equal(lag.createdP50, 5 * 3600);
+  });
+
+  it('the cron history comes from the march file in git, oldest first, repeats folded', () => {
+    const gh = ghStub([
+      ['log -G cron:', tsv([['c3', '2026-10-25T16:53:29-04:00'], ['c2', '2026-10-10T00:00:00Z'], ['c1', '2026-09-01T00:00:00Z']])],
+      ['show c3:', "    - cron: '17 */3 * * *'\n"],
+      ['show c2:', MARCH],
+      ['show c1:', MARCH],
+    ]);
+    assert.deepEqual(cronHistory(gh.run, 'm.yml'), [
+      { from: '2026-09-01T00:00:00Z', cron: '0 2,8,14,20 * * *' },
+      { from: '2026-10-25T16:53:29-04:00', cron: '17 */3 * * *' },
+    ]);
+    assert.deepEqual(cronHistory(ghStub([]).run, 'm.yml'), []);
   });
 
   it('the decision rule splits at ten minutes', () => {

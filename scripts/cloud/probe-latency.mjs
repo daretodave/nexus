@@ -9,7 +9,8 @@
 //       [--days 14] [--hook-run <run id>] [--json]
 //       Dispatch latency: p50/p90 of run_started_at - created_at over the probe's workflow_dispatch runs.
 //       Schedule lag: p50/p90 of created_at and run_started_at behind the cron slot each scheduled march run belongs
-//       to, over the last DAYS days (the cron read from the march file). --hook-run reads that run's log for the
+//       to, over the last DAYS days. Each run is scored against the cron in force when it was created (git history of
+//       the march file), so a cron change inside the window does not misplace the older runs; --march pins one file. --hook-run reads that run's log for the
 //       HOOK_PROBE_RESULT= line march.yml's Hook probe report step prints. Then the spec's decision rule, applied.
 //
 // gh is the only dependency (GH_REPO or the current checkout's origin picks the repo). Zero npm dependencies.
@@ -109,15 +110,24 @@ export function dispatchLatency(runs) {
   return { runs: secs.length, p50: percentile(secs, 50), p90: percentile(secs, 90) };
 }
 
-/** Schedule lag over scheduled runs: created_at and run_started_at behind the slot each belongs to. */
-export function scheduleLag(runs, cronLine) {
-  const matches = parseCron(cronLine);
+/** The cron in force at `t` (ms) from periods [{ from, cron }] oldest first; before the first, the first. */
+export function cronAt(periods, t) {
+  let pick = periods[0];
+  for (const p of periods) if (Date.parse(p.from) <= t) pick = p;
+  return pick.cron;
+}
+
+/** Schedule lag over scheduled runs: created_at and run_started_at behind the slot each belongs to.
+ *  `cron` is one cron line, or periods [{ from, cron }] (oldest first) when the cron changed over the window. */
+export function scheduleLag(runs, cron) {
+  const periods = Array.isArray(cron) ? cron : [{ from: '1970-01-01T00:00:00Z', cron }];
+  const parsed = new Map(periods.map((p) => [p.cron, parseCron(p.cron)]));
   const created = [];
   const started = [];
   for (const r of runs) {
     const c = Date.parse(r.created_at);
     if (!Number.isFinite(c)) continue;
-    const slot = slotAtOrBefore(matches, new Date(c));
+    const slot = slotAtOrBefore(parsed.get(cronAt(periods, c)), new Date(c));
     if (!slot) continue;
     created.push((c - slot.getTime()) / 1000);
     const s = secondsBetween(slot.toISOString(), r.run_started_at);
@@ -178,6 +188,27 @@ export function listRuns(run, workflow, event, sinceIso) {
     const [id, ev, created_at, run_started_at, status] = l.split('\t');
     return { id: Number(id), event: ev, created_at, run_started_at: run_started_at || null, status };
   });
+}
+
+/** The march file's first cron line over its git history, as periods [{ from, cron }] oldest first; [] when git
+ *  cannot say. `from` is the commit time of the change, close enough to the push for hour-scale lag. */
+export function cronHistory(run, file) {
+  const r = run('git', ['log', '-G', 'cron:', '--format=%H%x09%cI', '--', file]);
+  if (!r.ok) return [];
+  const periods = [];
+  for (const line of r.stdout.split(/\r?\n/).filter(Boolean).reverse()) {
+    const [sha, from] = line.split('\t');
+    const show = run('git', ['show', `${sha}:${file}`]);
+    const cron = show.ok ? cronLines(show.stdout)[0] : undefined;
+    if (cron && (!periods.length || periods[periods.length - 1].cron !== cron)) periods.push({ from, cron });
+  }
+  return periods;
+}
+
+/** Periods that touch the window starting at `since`, for the report line. */
+function periodsInWindow(periods, since) {
+  const t = Date.parse(since);
+  return periods.filter((p, i) => i === periods.length - 1 || Date.parse(periods[i + 1].from) > t);
 }
 
 // ---- entry ------------------------------------------------------------------------------------------------------
@@ -251,14 +282,20 @@ export async function main(argv, deps = {}) {
       return 2;
     }
     const dispatch = dispatchLatency(probes);
-    const lag = crons.length ? scheduleLag(scheduled, crons[0]) : null;
+    // The cron in force per run: git history of the default march file, else the one file's first cron.
+    const history = opts.march ? [] : periodsInWindow(cronHistory(run, marchFile), since);
+    const cronSpec = history.length > 1 ? history : crons[0];
+    const lag = crons.length || history.length ? scheduleLag(scheduled, cronSpec ?? history[0].cron) : null;
+    const cronLabel = history.length > 1
+      ? history.map((p, i) => (i ? `then '${p.cron}' from ${p.from.slice(0, 10)}` : `'${p.cron}'`)).join(', ')
+      : `'${crons[0] ?? history[0]?.cron}'`;
     let hook = null;
     if (opts['hook-run']) {
       const r = run('gh', ['run', 'view', String(opts['hook-run']), '--log']);
       hook = r.ok ? (hookLine(r.stdout) ?? 'hook probe: no line in that run (was it dispatched with hook_probe=true?)') : `hook probe: cannot read run ${opts['hook-run']}`;
     }
     const decision = decide(dispatch.p50);
-    const report = { dispatch, schedule: lag && { cron: crons[0], days, ...lag }, hook, decision, measured: now.toISOString() };
+    const report = { dispatch, schedule: lag && { cron: history.length > 1 ? history : crons[0], days, ...lag }, hook, decision, measured: now.toISOString() };
     if (opts.json) {
       out(JSON.stringify(report, null, 2));
       return 0;
@@ -266,7 +303,7 @@ export async function main(argv, deps = {}) {
     out(`dispatch start latency (${workflow}, ${dispatch.runs} runs): p50 ${fmtDuration(dispatch.p50)}, p90 ${fmtDuration(dispatch.p90)}` +
       (dispatch.runs < WANT_RUNS ? ` -- A3 wants ${WANT_RUNS} runs` : ''));
     if (lag) {
-      out(`march schedule lag ('${crons[0]}', ${days} days, ${lag.runs} runs): created p50 ${fmtDuration(lag.createdP50)}, p90 ${fmtDuration(lag.createdP90)}; ` +
+      out(`march schedule lag (${cronLabel}, ${days} days, ${lag.runs} runs): created p50 ${fmtDuration(lag.createdP50)}, p90 ${fmtDuration(lag.createdP90)}; ` +
         `started p50 ${fmtDuration(lag.startedP50)}, p90 ${fmtDuration(lag.startedP90)}`);
     } else {
       out(`march schedule lag: ${marchFile} declares no cron`);
