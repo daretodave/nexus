@@ -89,7 +89,12 @@ Then re-sync the skills that read the plan (`march`,
 `oversight`, `expand`, `triage`, `digest`) and
 `scripts/pulse.mjs` from `../nexus/templates/`, and re-apply
 any local edits you'd made to them (a `git diff` against your
-previous copy shows what those were). Sweep the eight
+previous copy shows what those were). A local edit to
+`march.md` or `iterate.md` belongs in a project lane
+(`skills/march.lanes.md`, `skills/iterate.lanes.md`), which a
+re-sync never overwrites
+([`../customization/project-lanes.md`](../customization/project-lanes.md)).
+Sweep the eight
 placeholders over the new files exactly as
 [`new-project.md`](./new-project.md) §4 does.
 

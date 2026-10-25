@@ -110,6 +110,23 @@ entries. Coverage gaps from cross-grep.
 
 - Heavy images, unused CSS, bundle size regressions.
 
+#### Y, X, … Project lanes (`skills/iterate.lanes.md`)
+
+Your project's own dimensions, appended after the stock ones.
+A re-sync of the kit's skills replaces this file and never
+touches the lanes file, so a dimension only this project
+audits lives there:
+
+```bash
+node scripts/plan/lanes.mjs iterate dimensions   # run | judge | skip <lane> · letter Y, then `stock` or `N lanes at dimensions`
+```
+
+`stock`: no extra dimensions. Otherwise audit each `run` lane,
+and each `judge` lane whose `when` prose holds now, per its
+`run` line. Its findings carry its letter (Y for the first
+lane, X for the next) and score on the same scale as A to G.
+A lane named in `Lanes off` in `plan/bearings.md` is skipped.
+
 ### Scoring
 
 - Impact 0–10: how many readers / pages / queries affected?
@@ -381,6 +398,7 @@ Return cleanly. Loop's next tick re-audits.
 plan/AUDIT.md                            # latest findings
 plan/CRITIQUE.md                         # external-critique queue
 plan/bearings.md                         # voice + standing decisions
+skills/iterate.lanes.md                  # this project's own dimensions (scripts/plan/lanes.mjs)
 data/                                    # GitHub-as-DB
 
 # Sub-agents

@@ -122,6 +122,14 @@ Why this order:
 - **Iterate last** because iteration is the catch-all — when
   there's nothing scheduled, audit + improve.
 
+A project's own steps sit at fixed hooks around that order:
+`pre` lanes before triage (yielding to a ready Asap chunk),
+`queue` lanes between ready chunks and pending data, and
+extra `/iterate` dimensions after the stock ones. They live in
+`skills/march.lanes.md` and `skills/iterate.lanes.md`, which a
+re-sync of the kit's skills never overwrites; see
+[`../customization/project-lanes.md`](../customization/project-lanes.md).
+
 `/loop /march` is the autonomous entry point. Each tick
 re-dispatches; the loop self-balances.
 

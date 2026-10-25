@@ -9,6 +9,10 @@
 > Adopt when one human can supervise more throughput than one
 > session delivers; skip while you're still climbing the
 > intervention spectrum with a single loop.
+>
+> Not to be confused with project lanes, a single loop's own
+> steps at its march and iterate hooks
+> ([`project-lanes.md`](./project-lanes.md)).
 
 The single-loop methodology serializes everything: one tick,
 one verb, one commit. That's the right default — but an

@@ -107,6 +107,12 @@ the aged ones promote themselves behind a veto window
 - promote_per_week: 2
 - veto_days: 3
 
+Project lanes (`skills/march.lanes.md`,
+`skills/iterate.lanes.md`; `scripts/plan/lanes.mjs`) run
+unless named here:
+
+- Lanes off: none
+
 ## Decisions standing for the loop
 
 1. Adopter-facing improvements outrank kit-internal polish at

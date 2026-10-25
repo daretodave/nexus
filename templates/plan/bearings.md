@@ -326,6 +326,12 @@ strict) turns it off; a missing key reads `owner`.
 - promote_per_week: 1
 - veto_days: 3
 
+Project lanes (`skills/march.lanes.md`,
+`skills/iterate.lanes.md`; `scripts/plan/lanes.mjs`) run
+unless named here:
+
+- Lanes off: none
+
 ## Decisions standing for the autonomous loop
 
 (These exist so the loop never asks the user. Add to this list

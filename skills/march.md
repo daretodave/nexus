@@ -10,12 +10,18 @@
 Pick the right verb each tick:
 
 ```
+pre lanes (skills/march.lanes.md) →  each lane that is due
 unlabeled issues exist            →  /triage
 ELSE critique due (rate-limited)  →  /critique
 ELSE ready chunk                  →  /next top
+ELSE queue lanes                  →  each lane that is due
 ELSE expand due + bold posture    →  /expand
 ELSE                              →  /iterate
 ```
+
+Project lanes (`skills/march.lanes.md`, never overwritten by
+a kit re-sync) are where a project's own steps live; with no
+lane blocks there, dispatch is the stock order above.
 
 No data step (the kit has no data layer) and no deploy gate
 (`agents.md` rule 4). Everything else is the standard march
@@ -86,7 +92,22 @@ Any veto or release: `node scripts/plan/promote.mjs sweep
 issue: `gh issue close <N> --comment "veto window passed; this
 spec is now built"`. Landing first matters: a closed issue
 whose Held line still exists reads as a veto, whoever closed
-it. The sweep is housekeeping; the tick goes on to Step 1.
+it. The sweep is housekeeping; the tick goes on to the `pre`
+lanes.
+
+### Step 0.5 — Pre lanes
+
+```bash
+node scripts/plan/lanes.mjs march pre    # run | judge | skip <lane>, then `stock` or `N lanes at pre`
+```
+
+`stock`: go on to Step 1. Otherwise, in file order, run each
+`run` lane and each `judge` lane whose `when` prose holds now,
+under the child skill's contract. A lane that returns
+`end-tick` is the tick's work: land it and return. A `pre`
+lane yields to the Asap lane (the script skips it while an
+Asap chunk is ready); `Lanes off: <name>` in
+`plan/bearings.md` turns one off.
 
 ### Step 1 — Triage gate (cheapest; concierge first)
 
@@ -129,6 +150,10 @@ return.
   landed). March stays the 30-40 minute run; `/next` is the
   one-chunk unit inside it. A cloud tick dispatches the
   builder foreground (`run_in_background: false`).
+- **3a'. Queue lanes?** No ready chunk: `node
+  scripts/plan/lanes.mjs march queue`, then as Step 0.5 (a
+  lane returning `end-tick` ends the tick; `stock` or every
+  lane `continue` falls through to 3b).
 - **3b. Expand due?** Posture `bold` (see
   `plan/bearings.md`) AND (≥20 commits or >7 days since
   `plan/CANDIDATES.md` last pass) AND at least one
@@ -169,6 +194,7 @@ plan/AUDIT.md                        # iterate queue
 plan/CRITIQUE.md                     # critique queue + rate-limit metadata
 plan/CANDIDATES.md             # expand output + rate-limit metadata
 node scripts/plan/promote.mjs sweep  # Step 0: veto or release auto-promoted Held specs
+node scripts/plan/lanes.mjs march pre|queue  # project lanes (skills/march.lanes.md)
 gh issue list ...                    # triage gate
 node scripts/verify.mjs              # the gate every child runs
 ```

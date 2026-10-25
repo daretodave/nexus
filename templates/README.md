@@ -54,10 +54,12 @@ templates/
 │   ├── design/port.md                 (the port chunk run as a Workflow, scripts/design/port.workflow.js; the port map, port.json, and its check)
 │   ├── plan-a-spec.md
 │   ├── iterate.md
+│   ├── iterate.lanes.md               (this project's own audit dimensions; a kit re-sync never overwrites it)
 │   ├── critique.md
 │   ├── triage.md
 │   ├── expand.md
 │   ├── march.md
+│   ├── march.lanes.md                 (this project's own march steps at the pre and queue hooks; a kit re-sync never overwrites it)
 │   ├── oversight.md
 │   ├── jot.md
 │   ├── digest.md                      (the night shift; pairs with .github/workflows/night.yml)
@@ -117,6 +119,7 @@ templates/
 │   ├── plan/order.mjs                 (the plan in /next's pick order, simulated: /plot's before and after, the GUI's next up)
 │   ├── plan/triage-match.mjs          (/triage: the open spec an issue belongs to, by scored keywords; an open PR's pending files that already cover it)
 │   ├── plan/promote.mjs               (aged promotion behind a Held veto: /expand's pick, the Held line, /march's veto sweep; gh read only)
+│   ├── plan/lanes.mjs                 (project lanes: which lanes run at a march or iterate hook, Lanes off, the Asap yield; check; a skills re-sync that keeps lanes files)
 │   ├── plan/secrets-manifest.mjs      (nexus.secrets.json's shape and the .env.example import; plan-check imports it)
 │   ├── secrets.mjs                    (secrets by name: status, set from stdin, import names or --store a real .env, list, check, push to sinks, audit, request; never prints a value)
 │   ├── secrets-vault.mjs              (the vault: .env in the repo, .env.workspace at the workspace root, the opt-in keychain; values to code only)
@@ -160,6 +163,7 @@ templates/
 │   ├── __tests__/order.test.mjs       (the simulated pick order, pure)
 │   ├── __tests__/triage-match.test.mjs  (an issue to its spec, ambiguous, none, already in an open PR; pure: the PR lister injected)
 │   ├── __tests__/promote.test.mjs     (the pick, the weekly cap, the veto and the release; pure: issue states injected)
+│   ├── __tests__/lanes.test.mjs       (lane blocks, Lanes off, the Asap yield, dimension letters, a re-sync that keeps lanes files; when scripts injected)
 │   ├── __tests__/workflow-lint.test.mjs  (the workflow rules, pure)
 │   ├── __tests__/tick.test.mjs        (the PR-mode tick: fence, candidates, PR text; pure)
 │   ├── __tests__/resolve.test.mjs     (the resolver's pure parts)

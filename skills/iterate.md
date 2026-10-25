@@ -41,6 +41,12 @@ Dimensions (score each finding `impact × ease / 10`, 0–10):
 - **G. lessons** — new bullets in sibling adopters'
   lessons files (`../<sibling>/plan/lessons.md`,
   `NEXUS_LESSONS.md` anywhere) that the kit hasn't absorbed.
+- **Project lanes** — `node scripts/plan/lanes.mjs iterate
+  dimensions` lists the extra dimensions in
+  `skills/iterate.lanes.md` (lettered back from Y; `stock`
+  means none). Audit each `run` lane, and each `judge` lane
+  whose `when` holds, as one more dimension; its findings
+  carry its letter and compete on the same scale.
 
 Queue sources compete with audit findings, same scale:
 `plan/CRITIQUE.md` Pending (HIGH→8–10, MED→5–7, LOW→2–4
@@ -101,6 +107,7 @@ verbatim when regenerating the audit block.
 plan/AUDIT.md                        # queue + bias + durable rows
 plan/CRITIQUE.md                     # external queue
 ../<sibling>/plan/lessons.md         # lessons source (if present)
+node scripts/plan/lanes.mjs iterate dimensions  # project lanes (skills/iterate.lanes.md)
 node scripts/verify.mjs
 node templates/scripts/loop-issue.mjs open|close-comment ...
 git add <explicit> && git commit   # then land per owner mode (next/land.md §6)

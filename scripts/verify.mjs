@@ -421,9 +421,47 @@ const LINE_BUDGETS = {
   'design.md': 150,
 }
 
+// A `<skill>.lanes.md` beside a skill is that project's lanes file
+// (scripts/plan/lanes.mjs), not a skill: no anatomy, no command pointer.
+const LANES_FILE = /\.lanes\.md$/
+const skillDir = (rel) => globDir(rel).filter((f) => !LANES_FILE.test(f))
+
+// The project-lanes extension point: march.md reads its lanes file
+// at pre and queue, iterate.md at dimensions; the kit ships both
+// lanes files with no live lane (a commented example only), and
+// every lanes file present parses clean.
+const LANE_HOOKS = { 'march.md': ['lanes.mjs march pre', 'lanes.mjs march queue'], 'iterate.md': ['lanes.mjs iterate dimensions'] }
+
+async function lanesCheck() {
+  const failures = []
+  const { parseLanes } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/lanes.mjs')).href)
+  let files = 0
+  for (const base of ['templates/skills', 'skills']) {
+    for (const [skill, hooks] of Object.entries(LANE_HOOKS)) {
+      const file = `${base}/${skill}`
+      const text = fs.existsSync(path.join(ROOT, file)) ? read(file) : ''
+      for (const h of hooks) if (!text.includes(h)) failures.push(`${file}: never reads its lanes file at \`${h}\` (the project-lanes hook; scripts/plan/lanes.mjs)`)
+      const kind = skill.replace(/\.md$/, '')
+      const lanesRel = `${base}/${kind}.lanes.md`
+      if (!fs.existsSync(path.join(ROOT, lanesRel))) {
+        failures.push(`${lanesRel}: missing (the project-lanes file ${file} reads)`)
+        continue
+      }
+      files++
+      const { lanes, problems } = parseLanes(read(lanesRel), kind, lanesRel)
+      failures.push(...problems)
+      if (base === 'templates/skills') {
+        if (lanes.length) failures.push(`${lanesRel}: the kit ships it with no live lane (${lanes.map((l) => l.name).join(', ')}); keep the example inside a comment`)
+        if (!/<!--[\s\S]*##\s+lane:[\s\S]*-->/.test(read(lanesRel))) failures.push(`${lanesRel}: the commented example lane is gone`)
+      }
+    }
+  }
+  return { failures, files }
+}
+
 async function legAnatomy() {
   const failures = []
-  const skillFiles = [...globDir('templates/skills'), ...globDir('skills')]
+  const skillFiles = [...skillDir('templates/skills'), ...skillDir('skills')]
   for (const file of skillFiles) {
     const text = read(file)
     for (const { name, re } of REQUIRED_SKILL_SECTIONS) {
@@ -450,7 +488,7 @@ async function legAnatomy() {
     }
   }
   // Pairing: every template skill has a command pointer, and vice versa.
-  const skillNames = new Set(globDir('templates/skills').map((f) => path.basename(f)))
+  const skillNames = new Set(skillDir('templates/skills').map((f) => path.basename(f)))
   const commandNames = new Set(globDir('templates/claude/commands').map((f) => path.basename(f)))
   for (const s of skillNames) {
     if (!commandNames.has(s)) failures.push(`templates/skills/${s} has no templates/claude/commands/${s} pointer`)
@@ -459,7 +497,7 @@ async function legAnatomy() {
     if (!skillNames.has(c)) failures.push(`templates/claude/commands/${c} has no templates/skills/${c} source of truth`)
   }
   // Same pairing for nexus's own overlay, when present.
-  const selfSkills = new Set(globDir('skills').map((f) => path.basename(f)))
+  const selfSkills = new Set(skillDir('skills').map((f) => path.basename(f)))
   for (const c of globDir('.claude/commands').map((f) => path.basename(f))) {
     if (!selfSkills.has(c)) failures.push(`.claude/commands/${c} has no skills/${c} source of truth`)
   }
@@ -482,7 +520,9 @@ async function legAnatomy() {
   const { lintSkills } = await import(pathToFileURL(path.join(ROOT, 'scripts/bare-push.mjs')).href)
   const pushes = lintSkills(ROOT)
   failures.push(...pushes.problems)
-  return { failures, note: `${skillFiles.length} skills, ${commandCount} command pointers, ${budgeted} budgets held, no bare push in ${pushes.files}` }
+  const lanes = await lanesCheck()
+  failures.push(...lanes.failures)
+  return { failures, note: `${skillFiles.length} skills, ${commandCount} command pointers, ${budgeted} budgets held, no bare push in ${pushes.files}, ${lanes.files} lanes files clean` }
 }
 
 // --- leg: emoji ------------------------------------------------------------
@@ -693,6 +733,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/order.test.mjs',
   'templates/scripts/__tests__/triage-match.test.mjs',
   'templates/scripts/__tests__/promote.test.mjs',
+  'templates/scripts/__tests__/lanes.test.mjs',
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/quota.test.mjs',
@@ -734,7 +775,7 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
+  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',
   'secrets-run.mjs', 'secrets-scan.mjs',

@@ -10,9 +10,11 @@
 right-thing-to-do every tick:
 
 ```
+pre lanes (march.lanes.md)      →  each lane that is due
 unlabeled issues exist          →  /triage
 ELSE critique due (rate-lim)    →  /critique
 ELSE ready chunk               →  /next top
+ELSE queue lanes                →  each lane that is due
 ELSE pending data               →  /ship-data
 ELSE expand due + bold posture  →  /expand
 ELSE                            →  /iterate
@@ -23,6 +25,12 @@ ever fires. `/expand` only runs when there's no immediate
 delivery, OR when its rate-limit window opens (every ~20
 commits or ~48h) AND the bearings posture is **bold** or
 **autonomous**.
+
+Your project's own steps (a weekly snapshot, a content queue,
+an empty-queue refill) go in `skills/march.lanes.md`, not
+here: a re-sync of the kit's skills replaces this file and
+never touches that one. With no lane blocks there, dispatch is
+the stock order above.
 
 This means: an overnight run can take <PROJECT> from
 "scaffolded" to "shipped, populated, iteratively polished,
@@ -100,7 +108,28 @@ Any veto or release: `node scripts/plan/promote.mjs sweep
 issue: `gh issue close <N> --comment "veto window passed; this
 spec is now built"`. Landing first matters: a closed issue
 whose Held line still exists reads as a veto, whoever closed
-it. The sweep is housekeeping; the tick goes on to Step 1.
+it. The sweep is housekeeping; the tick goes on to the `pre`
+lanes.
+
+### Step 0.5 — Pre lanes
+
+```bash
+node scripts/plan/lanes.mjs march pre    # run | judge | skip <lane>, then `stock` or `N lanes at pre`
+```
+
+`stock`: fall through to Step 1. Otherwise, in file order:
+
+- `run <lane>`: run its `run` (a skill: read and execute it
+  end-to-end, adopting its contract).
+- `judge <lane>`: its `when` is prose; run it only when the
+  prose holds now.
+- `skip <lane>`: nothing (off in `plan/bearings.md`'s `Lanes
+  off`, its `when` script exited non-zero, or it yields to a
+  ready Asap chunk).
+
+A lane that returns `end-tick` is the tick's work: commit,
+land and return. `continue` goes on to the next lane, then
+Step 1.
 
 ### Step 1 — Triage gate (cheapest check)
 
@@ -177,6 +206,18 @@ or a spec ahead of it says `Not chunked yet.`:
 - No `skills/next.md` in this repo (an older adoption):
   `skills/ship-a-chunk.md` end-to-end instead.
 - Return.
+
+#### 3a'. Queue lanes?
+
+No chunk is ready. Run the `queue` lanes the way Step 0.5
+runs the `pre` ones:
+
+```bash
+node scripts/plan/lanes.mjs march queue
+```
+
+A lane returning `end-tick` ends the tick; `stock`, or every
+lane returning `continue`, falls through to 3b.
 
 #### 3b. Pending data?
 
@@ -279,5 +320,6 @@ skills/next.md                       # Step 3a (/next top)
 skills/ship-data.md                  # Step 3b
 skills/expand.md                     # Step 3c (posture-gated)
 scripts/plan/promote.mjs             # Step 0 veto sweep (Promote: aged)
+skills/march.lanes.md                # Step 0.5 + 3a': this project's own lanes (scripts/plan/lanes.mjs)
 skills/iterate.md                    # Step 3d
 ```

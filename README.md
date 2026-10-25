@@ -509,6 +509,7 @@ nexus/
 │   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
 │   ├── plan/triage-match.mjs          # /triage: which open spec an issue belongs to, and the open PR already covering it (twin)
 │   ├── plan/promote.mjs               # aged promotion: /expand's pick, the Held veto line, /march's veto sweep (twin)
+│   ├── plan/lanes.mjs                 # project lanes: what runs at march's pre/queue and iterate's dimensions hooks (twin)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── git/push-policy.mjs            # pre-push: main on origin/upstream is the owner's checkout's alone (owner mode)
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
@@ -553,6 +554,7 @@ nexus/
 │   ├── data-layer.md                  # gh-as-db / hybrid-with-managed-postgres / pure-db / saas-cms / none
 │   ├── sub-agents.md                  # designing your specialists
 │   ├── lanes.md                       # alpha/beta/gamma — three agents, one branch (attended fan-out)
+│   ├── project-lanes.md               # a project's own march/iterate steps in lanes files a kit re-sync never overwrites
 │   ├── claims.md                      # who builds which chunk: orphan claims branch, CAS, session-scoped, 24h TTL
 │   ├── sessions.md                    # many sessions on one machine: notice board, live ledger, worktrees, reboot train
 │   ├── claude-code.md                 # the Claude Code layer — permissions, guard hooks, pager, model routing
@@ -574,6 +576,7 @@ nexus/
 │   ├── tidy.md                        # /tidy — clear dead claims, close idle worktrees (worktree.mjs)
 │   ├── design.md                      # /design — the Claude Design prompt, addenda and ingest (scripts/design/; + design/ingest.md, design/render.md, design/port.md)
 │   ├── rebooting.md                   # /rebooting, /reboot-ready, /reboot-resume — the reboot train
+│   ├── march.lanes.md                 # project lanes for march (+ iterate.lanes.md); empty in nexus but for the example
 │   ├── march.md                       # + ship-a-chunk (/next's build steps), iterate, critique,
 │   │                                  #   triage, expand, oversight, jot
 │   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
@@ -631,10 +634,12 @@ nexus/
     │   ├── design/port.md              # the port chunk as a Workflow (port.workflow.js); port.json and its check
     │   ├── plan-a-spec.md
     │   ├── iterate.md
+    │   ├── iterate.lanes.md            # project lanes: the project's own audit dimensions (never re-synced)
     │   ├── critique.md
     │   ├── triage.md
     │   ├── expand.md
     │   ├── march.md
+    │   ├── march.lanes.md              # project lanes: the project's own march steps, pre + queue hooks (never re-synced)
     │   ├── oversight.md
     │   ├── jot.md                      # user-input quickfire — append a row to plan/CRITIQUE.md
     │   ├── digest.md                   # the night shift — morning briefing + breadth checks
@@ -686,6 +691,7 @@ nexus/
     │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
     │   ├── plan/triage-match.mjs      # /triage: an issue scored against the open specs, open PRs' pending files read (gh read only)
     │   ├── plan/promote.mjs           # aged promotion behind a Held veto: pick, hold, sweep (gh read only)
+    │   ├── plan/lanes.mjs             # project lanes at a hook; check; a skills re-sync that keeps lanes files
     │   ├── plan/secrets-manifest.mjs  # nexus.secrets.json's shape + the .env.example import (plan-check reads it)
     │   ├── secrets.mjs                # secrets by name: status, set (stdin), import (--store a real .env), names, check, push (owner mode), audit, request; never a value
     │   ├── secrets-vault.mjs          # the vault: .env (local), .env.workspace (workspace root), the keychain; get/resolve for code only
@@ -728,6 +734,7 @@ nexus/
     │   ├── __tests__/order.test.mjs   # the simulated pick order
     │   ├── __tests__/triage-match.test.mjs  # an issue to its spec, ambiguous, none, already in PR #N
     │   ├── __tests__/promote.test.mjs # the pick, the weekly cap, the veto and the release
+    │   ├── __tests__/lanes.test.mjs   # lane blocks, Lanes off, the Asap yield, the keeping re-sync
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver

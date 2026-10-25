@@ -344,7 +344,7 @@ Measure: 12 open · 0 closed · next A13
 - [ ] **58.1** The converter parses real v1 plans · S · closes A1 · needs —
 - [ ] **58.2** One computed kit file list and its verify leg · S · closes A2 · needs —
 - [ ] **58.3** `upgrade` dry run: detect, fresh-origin worktree, convert, report · M · closes A3 · needs 58.1, 58.2
-- [ ] **58.4** Carry the train: lanes extraction, skills, README, references · L · closes A4 · needs 58.3, 57.2
+- [ ] **58.4** Carry the train: lanes extraction, skills, README, references · L · closes A4 · needs 58.3
   - Kit text is judged against every historical kit version (`kit-text.json`), never against the `v1.0.0` tag alone.
 - [ ] **58.5** The workflow merge keeps cron, ceiling, model and env · M · closes A5 · needs 58.3
 - [ ] **58.6** Conservative knobs from a registry · S · closes A6 · needs 58.3, 54.8, 55.5, 56.7, 57.8

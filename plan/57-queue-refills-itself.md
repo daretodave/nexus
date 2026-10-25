@@ -298,7 +298,6 @@ The Held line for an auto-promotion:
 ## Acceptance
 
 - **A2** Independent re-evidence raises a Pending row's score by +0.5 (cap +2). Pending above `pending_cap` shrinks by promotion or by at most 5 stale rejections a pass, each with a reason and listed in the digest.
-- **A3** v2 `march.md` and `iterate.md` read `skills/march.lanes.md` / `iterate.lanes.md` at the `pre`, `queue` and `dimensions` hooks. A re-sync of the kit's skills leaves the lanes files untouched, a lane yields to the Asap lane, and `Lanes off` disables one.
 - **A4** A tick with no ready chunk runs the refill lane. `issue-age` and `stale-candidate` honour the generator contract, proven by tests: a dry run writes nothing, a second `--write` run files nothing, and a failing generator does not stop the next.
 - **A5** `pulse --motion` reports shipped units against the 4-week baseline. On a fixture of an adopter's Sep-Oct weekly series, heartbeat opens exactly one `Heartbeat: motion stalled` issue. With `stall_action: promote`, the next tick runs `/expand promote`; with `Promote: owner`, it alerts instead.
 - **A6** `/iterate` dimension I files `category: loop-config` rows whose `next` names a concrete repo variable or bearings line, ships at most one per 7 days, and files a YAML tuning as `[needs-user-call]`.
@@ -312,11 +311,9 @@ The Held line for an auto-promotion:
 
 ## Chunks
 
-Measure: 8 open · 1 closed · next A10
+Measure: 7 open · 2 closed · next A10
 
-- [ ] **57.2** Project lanes extension point · M · closes A3 · needs —
-  - `templates/skills/{march,iterate}.lanes.md` are public API: templates/README and the README tree change in the same commit.
-- [ ] **57.3** Generator contract, refill lane, two generic generators · M · closes A4 · needs 57.2
+- [ ] **57.3** Generator contract, refill lane, two generic generators · M · closes A4 · needs —
 - [ ] **57.4** Motion pulse, heartbeat stall and the motion generator · M · closes A5 · needs 57.3
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **57.5** Lock timeouts, with the Held-line gate check · S · closes A7 · needs —
