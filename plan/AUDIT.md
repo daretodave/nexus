@@ -1,4 +1,4 @@
-# Kit audit — 2026-10-22
+# Kit audit — 2026-10-25
 
 > Bias: none
 
@@ -2237,87 +2237,6 @@ unchanged and still accurate; no fresh sweep run.
 
 ## Pending
 
-### [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand
-- category: external-issue
-- impact: 4, ease: 2
-- evidence: a phase-23 cloud tick landed the durable-alarm fix
-  (GITHUB_TOKEN instead of ACTIONS_PAT for the crash-alarm step,
-  plus named failed-step reporting) in
-  `templates/.github/workflows/march.yml` and `night.yml`
-  (commit `8dc2080`) but could not apply the identical patch to
-  this repo's own `.github/workflows/march.yml` / `night.yml`:
-  the push was rejected because that tick's git credential was
-  the Claude Code Action's own GitHub App installation token, not
-  `ACTIONS_PAT`, and GitHub refuses non-`workflows`-scoped tokens
-  touching top-level `.github/workflows/*.yml`. This directly
-  confirms root-cause (a) in `[user-issue #35]`'s evidence below
-  (the Action overwrites the checkout-configured credential with
-  its own App token before the agent's turn starts) — same
-  blocked class, not yet root-caused to a fix, just newly
-  evidenced. The issue body carries a ready-to-apply unified diff
-  for both files plus a matching `.github/CLOUD_LOOP.md` doc
-  update.
-- next: same resolution pattern as the now-closed
-  `[user-issue #12]` — apply from a local/human `/oversight`
-  session (`git apply` the diff in issue #40, or hand-edit to
-  match), run `node scripts/verify.mjs`, then push directly (a
-  human push carries normal repo-write permissions, not the App
-  token's workflow restriction). Closes #40 when done.
-
-### [user-issue #35] [MED] cloud push token still lacks workflows scope despite the 2026-08-23 re-mint
-- category: external-issue
-- impact: 4, ease: 2
-- evidence: phase 20's cloud ship attempt (run 32663251226,
-  2026-08-23) built and verified all three deliverables, then
-  `git push` was rejected: "refusing to allow a GitHub App to
-  create or update workflow `.github/workflows/march.yml`
-  without `workflows` permission." `gh auth status` in that run
-  reported `claude[bot]` (the Claude Code Action's own GitHub
-  App installation token), not the `ACTIONS_PAT` secret — even
-  though `march.yml`'s `Run /march` step sets
-  `GH_TOKEN: ${{ secrets.ACTIONS_PAT }}` explicitly and the
-  checkout step sets `token: ${{ secrets.ACTIONS_PAT }}`.
-  Non-workflow-file pushes on the same run (this issue's mirror,
-  #34, and the phase-20-blocked commit itself) succeeded fine,
-  isolating the gap to `.github/workflows/*.yml` writes only —
-  consistent with either (a) the Claude Code Action overwriting
-  the checkout-configured git credentials with its own App
-  token before the agent's turn starts, or (b) `ACTIONS_PAT`
-  not actually carrying `workflows` scope despite the re-mint
-  note in `agents.md`.
-- next: needs a local session to inspect the actual `ACTIONS_PAT`
-  scope grants in GitHub's token settings UI and to test whether
-  a plain `git push` (bypassing `gh`/the Action's credential
-  helper) succeeds against `.github/workflows/*.yml` with that
-  token. Same class of environment constraint that blocked
-  #12 pre-rescope — cannot be root-caused further from inside a
-  cloud tick, since any cloud tick reproduces the same
-  credential wiring. Phase 20 stays `[blocked: cloud push token
-  lacks workflows scope 2026-08-23]` until this resolves.
-
-### [user-issue #49] [MED] phase 32 blocked — same cloud push token workflows-scope gap as #35/#40
-- category: external-issue
-- impact: 4, ease: 2
-- evidence: phase 32's cloud ship attempt (2026-08-30) built and
-  verified `.github/workflows/heartbeat.yml` and
-  `templates/.github/workflows/heartbeat.yml` changes in full,
-  then `git push` was rejected for the same reason as #35/#40:
-  "refusing to allow a GitHub App to create or update workflow
-  `.github/workflows/heartbeat.yml` without `workflows`
-  permission." `git remote -v` in that run showed the GitHub App
-  installation token (`ghs_...`) authenticating git push, not
-  `ACTIONS_PAT` — third confirmed occurrence of the same root
-  cause (phase 20, #40, now phase 32). The diff was built and
-  verified green then discarded per agents.md rule 1 (no dirty
-  tree at turn end) rather than left half-committed; full brief
-  at `plan/phases/phase_32_scheduled_workflow_disable_watch.md`.
-- next: same resolution as #35/#40 — a local/human session runs
-  `/ship-a-phase` (or hand-applies the brief) for phase 32,
-  pushing with normal repo-write credentials instead of the
-  cloud tick's App token. Closes #49 when done; also flips phase
-  32 from `[blocked: ...]` to `[x]` in
-  `plan/steps/01_build_plan.md`.
-
 ### [B, 5.6] README.md's "What you get" section has zero prose entry point for the secrets vault
 - category: completeness
 - impact: 7, ease: 8
@@ -2388,6 +2307,34 @@ unchanged and still accurate; no fresh sweep run.
 
 
 ## Done
+
+### [x] [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand — closed 2026-10-21
+- category: external-issue
+- resolution: fixed in `8d21e16` — nexus's own `march.yml` and
+  `night.yml` file the crash alarm with the run's `GITHUB_TOKEN`
+  (not `ACTIONS_PAT`) and name the failed step, matching the
+  template since `8dc2080`; `night.yml` gained `issues: write`.
+  Applied from a local session, since cloud tokens can't push
+  workflow files. Caught by this digest's refresh: the row sat
+  in Pending four days past its close (the AUDIT.md header
+  itself was already a day stale at the 2026-10-22 snapshot).
+
+### [x] [user-issue #35] [MED] cloud push token still lacks workflows scope despite the 2026-08-23 re-mint — closed 2026-10-21
+- category: external-issue
+- resolution: phase 20 shipped as chunk 20.1 from a local
+  session (archive `45b742c7..a1f5f127`, spec 20 complete). The
+  underlying constraint still holds and stays documented in
+  `agents.md` (Operational secrets): cloud ticks can't push
+  `.github/workflows/*.yml` edits, so workflow-file changes land
+  from a local session.
+
+### [x] [user-issue #49] [MED] phase 32 blocked — same cloud push token workflows-scope gap as #35/#40 — closed 2026-10-21
+- category: external-issue
+- resolution: phase 32 shipped as spec 32 (32.1 and 32.2,
+  `b6acc842..fe136587`) from a local session: heartbeat alarms
+  once per unarmed scheduled workflow and checks cadence per
+  workflow. Same documented constraint as #35 for workflow-file
+  pushes.
 
 ### [x] [user-issue #88] [MED] fleet worktree creation can collide with a stale worktree registration ("already used by worktree") — cli 0.5.3
 - category: external-issue
