@@ -407,4 +407,40 @@ fails, and says why, when the GIF is under 5 s, over 8 s or over
 3 MB: the README's budget. Recordings are not byte-stable, so check
 them by eye and by budget, not by diff.
 
+### Walking the demo screens
+
+```
+npm run build
+npm run walk -- [--scenarios fleet-to-tug,stack,grill-me|all] [--routes /,/inbox,...|all]
+                [--viewports desktop,mobile] [--reduced-motion] [--out <dir>] [--settle 1200]
+                [--chrome <path>] [--json]
+```
+
+`scripts/walk.mjs` starts each demo scenario in-process, opens every
+screen (the twelve routes `App.jsx` draws) in a fresh headless Chrome
+context at 1280×800 and 390×844, waits for `document.fonts.ready` and
+a settle time, and writes down what it sees: the final path, console
+errors, page errors, failed requests and 5xx, any 4xx on an endpoint
+the scenario stages, horizontal overflow, buttons and links with no
+name, images with no `alt`, and one PNG. A 404 from an endpoint the
+demo does not stage is the page's "not served" state, so it is
+allow-listed; the allow-list is read from `server/demo.mjs` (and
+`server/demo/repo-start.mjs` for the scenarios that stage a folder),
+so it follows the demo by itself. The walk records with
+`reducedMotion: 'no-preference'`; `--reduced-motion` checks the
+reduced path.
+
+It writes `walk.json` and the PNGs to `--out` (default
+`.scratch/walk/<iso>/` at the repo root, gitignored; screenshots are
+never committed). `walk.json` holds `{ started, ms, chrome }` and one
+row per screen: `{ scenario, route, viewport, path, console[],
+pageErrors[], failed[], overflowPx, unnamed[], noAlt[], png }`. The
+launch token never reaches it. `--json` prints it too.
+
+It observes and never asserts: exit 0 with the findings in the JSON,
+1 when the UI is not built (it says to run `npm run build`) or a demo
+fails to start, 2 on a bad flag or no Chrome. It is never a CI gate
+and never a screenshot diff; the loop reads the findings and decides.
+The rules are plain functions, tested in `test/walk.test.mjs`.
+
 The kit: https://github.com/daretodave/nexus

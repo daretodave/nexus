@@ -198,3 +198,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 55.1 · Quota governor: every tick reads seven_day, a lockout opens one pause issue, the gate skips the model until the reset, and heartbeat stays quiet meanwhile · d63a1d3d..d63a1d3d
 - 2026-10-25 · 56.1 · Demo answers the tokenless hello, so no demo screen logs a 403 · 14946c9e..14946c9e
 - 2026-10-25 · 57.1 · Aged promotion lands in Held with a veto issue · 82ad7e47..82ad7e47
+- 2026-10-25 · 56.2 · npm run walk opens every demo screen in Chrome and writes down what it sees · 18fdd26f..18fdd26f
