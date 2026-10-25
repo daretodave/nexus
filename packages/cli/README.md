@@ -346,12 +346,24 @@ it. There it copies the v2 kit files (the CLI's bundled set, the
 same list as the manual copy list in `playbooks/upgrade.md`), merges
 the v2 lanes and spec table into your roadmap (your own sections
 stay where they are), converts the build plan, retires the v1 files,
-rewrites the v1 references it has a sure spelling for, flips the
-lock, and runs plan-check and its test.
+rewrites every v1 reference outside history files (workflow prompt
+text included), flips the lock, and runs plan-check and its test.
+
+Your loop's own steps come across. Text in `skills/march.md` and
+`skills/iterate.md` that no kit version ever held (the CLI carries
+every header and paragraph the kit's skills have had, so a fork from
+long before `v1.0.0` still reads as kit text) moves verbatim into
+`skills/march.lanes.md` and `skills/iterate.lanes.md`, one lane per
+custom section, under its own header: a march step ahead of the v1
+phase pick becomes a `pre` lane, one after it a `queue` lane, an
+iterate one a `dimensions` lane. A skill or command the kit never
+shipped stays; a command with no skill becomes `skills/<name>.md`,
+and the command points at it.
 
 The report lists every file it touched (`added`, `replaced`,
 `seeded`, `merged`, `converted`, `retired`, `renamed`, `rewritten
-(N refs)`), the archive lines it would append, the warnings, the
+(N refs)`, `moved-to-lane (N)`, `moved-to-skill`, `kept-custom`),
+the archive lines it would append, the warnings, the
 gate, the first dispatch a tick would make (march's pick order
 played forward), and the loop mode. A v1 loop that pushed the
 default branch (`Cloud-Run` commits) prints the `gh variable set

@@ -1,11 +1,13 @@
 // `npx @usenexus/cli upgrade`: a v1 repo (a phase plan) to nexus v2 (specs + chunks), dry run first (spec 58).
 //
 // The flow never reads or writes the local checkout: it fetches the origin's default branch and works in a
-// temporary worktree cut from it (a local tree can be months stale and dirty). There it detects the shape, copies
-// the v2 kit file set (the CLI's bundled kit/upgrade/, else the nexus repo's templates/ in a dev checkout), merges
-// the roadmap, converts the build plan with the kit's converter, retires the v1 files (playbooks/upgrade.md Step 5),
-// rewrites v1 references, flips the lock, runs plan-check and its test, plays march's pick order forward for the
-// first dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
+// temporary worktree cut from it (a local tree can be months stale and dirty). There it detects the shape, reads the
+// repo's own march and iterate steps (kit-text.mjs: anything no kit version ever held), copies the v2 kit file set
+// (the CLI's bundled kit/upgrade/, else the nexus repo's templates/ in a dev checkout), carries those steps into the
+// lanes files verbatim, keeps custom skills and commands (a command with no skill becomes one), merges the roadmap,
+// converts the build plan with the kit's converter, retires the v1 files (playbooks/upgrade.md Step 5), rewrites v1
+// references outside history files, flips the lock, runs plan-check and its test, plays march's pick order forward
+// for the first dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
 //
 //   npx @usenexus/cli upgrade [--repo <dir>] [--json]
 //
@@ -16,6 +18,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { TRAIN, customUnits, fromJson, laneBlocks, mergeText, textOf, toJson } from './kit-text.mjs';
 
 const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /** The CLI's bundled kit file set (scripts/bundle-kit.mjs writes it; templates/ layout plus files.json). */
@@ -30,15 +33,20 @@ export const BUILD_PLAN = 'plan/steps/01_build_plan.md';
 export const RETIRE = Object.freeze(['plan/steps', 'plan/phases', 'skills/ship-a-phase.md', 'skills/plan-a-phase.md',
   '.claude/commands/ship-a-phase.md', '.claude/commands/plan-a-phase.md']);
 
-/** v1 references with a sure v2 spelling, most specific first. */
+/**
+ * v1 references and their v2 spelling, most specific first. The build plan and its folder become the roadmap; a
+ * phase brief (or plan/phases itself) becomes the roadmap too, which lists every spec: a path that always exists, so
+ * a rewritten link never breaks.
+ */
 export const REWRITES = Object.freeze([
-  ['plan/steps/01_build_plan.md', 'plan/README.md'],
-  ['ship-a-phase', 'ship-a-chunk'],
-  ['plan-a-phase', 'plan-a-spec'],
-  ['PHASE_CANDIDATES', 'CANDIDATES'],
+  [/(?:\.\/)?(?:plan\/)?(?:steps\/)?01_build_plan(?:\.md)?/g, 'plan/README.md'],
+  [/plan\/(?:steps|phases)(?:\/[\w*{}-]+(?:\.[\w*{}-]+)*)*\/?/g, 'plan/README.md'],
+  [/ship-a-phase/g, 'ship-a-chunk'],
+  [/plan-a-phase/g, 'plan-a-spec'],
+  [/PHASE_CANDIDATES/g, 'CANDIDATES'],
 ]);
-/** v1 references left after the rewrite: each one is a warning naming its file. */
-export const V1_LEFT = /01_build_plan|plan\/phases|plan\/steps/;
+/** v1 references left after the rewrite (none should be): each one is a warning naming its file. */
+export const V1_LEFT = /01_build_plan|plan\/phases|plan\/steps|ship-a-phase|plan-a-phase|PHASE_CANDIDATES/;
 
 const TEXT = /\.(md|mjs|cjs|js|ts|json|ya?ml|txt|sh|ps1|toml)$/i;
 /** History files keep their v1 words: they record what was. */
@@ -78,17 +86,24 @@ export function detect(dir) {
 }
 
 /**
- * Where the v2 kit comes from: { root, files, from } in templates/ layout (scripts/, skills/, claude/commands/,
+ * Where the v2 kit comes from: { root, files, text, from } in templates/ layout (scripts/, skills/, claude/commands/,
  * plan/ seeds). The bundled kit/upgrade/ first; else, in the nexus repo itself, its templates/ and the list
- * scripts/upgrade-files.mjs computes. Null when neither is there.
+ * scripts/upgrade-files.mjs computes. Null when neither is there. `text` is the kit-text list (kit-text.json: every
+ * header and paragraph the kit's march and iterate skills ever held), or null when the kit carries none.
  */
 export async function kitSource({ bundled = UPGRADE_BUNDLED, nexus = NEXUS_ROOT } = {}) {
   const manifest = path.join(bundled, 'files.json');
-  if (fs.existsSync(manifest)) return { root: bundled, files: JSON.parse(fs.readFileSync(manifest, 'utf8')).files, from: 'bundled' };
+  if (fs.existsSync(manifest)) {
+    let text = null;
+    try { text = JSON.parse(fs.readFileSync(path.join(bundled, 'kit-text.json'), 'utf8')); } catch { /* an older bundle: the current skills only */ }
+    return { root: bundled, files: JSON.parse(fs.readFileSync(manifest, 'utf8')).files, text, from: 'bundled' };
+  }
   const list = path.join(nexus, 'scripts', 'upgrade-files.mjs');
   if (!fs.existsSync(list)) return null;
   const { upgradeFiles } = await import(pathToFileURL(list).href);
-  return { root: path.join(nexus, 'templates'), files: upgradeFiles(nexus).files, from: 'templates' };
+  const kt = path.join(nexus, 'scripts', 'upgrade-kit-text.mjs');
+  const text = fs.existsSync(kt) ? await (await import(pathToFileURL(kt).href)).build(nexus, { history: false }) : null;
+  return { root: path.join(nexus, 'templates'), files: upgradeFiles(nexus).files, text, from: 'templates' };
 }
 
 const kitPath = (kit, f) => path.join(kit.root, ...f.kit.replace(/^templates\//, '').split('/'));
@@ -163,6 +178,90 @@ export function copyKit(dir, kit) {
   return rows;
 }
 
+/**
+ * The repo's own march and iterate text, read before the kit's skills replace them: { [skill]: units } (kit-text.mjs
+ * customUnits), judged against every version the kit ever shipped (`kit.text`) plus the kit's current skill (so a kit
+ * with no list still knows its own text). A skill the repo lacks has no entry.
+ */
+export function customTrain(dir, kit) {
+  const out = {};
+  for (const skill of Object.keys(TRAIN)) {
+    const ours = read(dir, `skills/${skill}`);
+    if (ours == null) continue;
+    const theirs = read(kit.root, `skills/${skill}`);
+    const t = fromJson(toJson(mergeText(kit.text?.[skill], theirs == null ? null : textOf(theirs))));
+    out[skill] = customUnits(ours, t);
+  }
+  return out;
+}
+
+/**
+ * Carry the train: each skill's custom units go into its lanes file (spec 57's extension point) as lane blocks, the
+ * text verbatim under its original header, v1 references rewritten. Appended after what the lanes file holds (the
+ * kit's seed, or the repo's own), never over it. Returns { rows, warnings }.
+ */
+export function carryTrain(dir, train, { today } = {}) {
+  const rows = [];
+  const warnings = [];
+  for (const [skill, units] of Object.entries(train)) {
+    if (!units.length) continue;
+    const { lanes: rel, kind } = TRAIN[skill];
+    const have = read(dir, rel) || '';
+    const taken = new Set([...have.matchAll(/^##\s+lane:\s*(\S+)/gm)].map((m) => m[1]));
+    let refs = 0;
+    const rewrite = (s) => { const r = rewriteText(s); refs += r.n; return r.text; };
+    const { text, names } = laneBlocks(units, { kind, skill, taken, rewrite });
+    const lead = `<!-- Moved from the v1 skills/${skill} by nexus upgrade${today ? ` (${today})` : ''}: the text the kit never shipped, verbatim. Check each lane's hook and when. -->`;
+    write(dir, rel, `${have.replace(/\s*$/, '')}\n\n${lead}\n\n${text}\n`);
+    const sections = units.filter((u) => u.kind === 'section').length;
+    const paras = units.length - sections;
+    const what = [sections && `${sections} custom section${sections === 1 ? '' : 's'}`, paras && `custom paragraphs in ${paras} kit step${paras === 1 ? '' : 's'}`].filter(Boolean).join(' and ');
+    rows.push({ path: rel, status: `moved-to-lane (${names.length})`, note: `${names.join(', ')}${refs ? `; ${refs} v1 ref${refs === 1 ? '' : 's'} rewritten` : ''}` });
+    rows.push({ path: `skills/${skill}`, status: 'replaced', note: `${what} moved to ${rel}` });
+    warnings.push(`skills/${skill}: ${what} moved to ${rel} as lanes ${names.join(', ')}; check each lane's hook and when`);
+  }
+  return { rows, warnings };
+}
+
+/** A command's front matter and body: { front, body }. */
+function splitFront(text) {
+  const t = text.replace(/\r\n/g, '\n');
+  const m = /^---\n[\s\S]*?\n---\n/.exec(t);
+  return m ? { front: m[0], body: t.slice(m[0].length) } : { front: '', body: t };
+}
+
+/**
+ * Custom skills and commands stay. One the kit never shipped is kept as it is (a `kept-custom` row); a
+ * `.claude/commands/` entry with no skill (no skills/<name>.md, and no skills/ file its text names) becomes one:
+ * skills/<name>.md takes its body verbatim, and the command keeps its front matter and points at the skill. Rows.
+ */
+export function keepCustom(dir, kitFiles) {
+  const rows = [];
+  const retired = new Set(RETIRE);
+  const list = (rel) => {
+    try {
+      return fs.readdirSync(path.join(dir, ...rel.split('/')), { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith('.md')).map((e) => `${rel}/${e.name}`);
+    } catch { return []; }
+  };
+  for (const rel of list('skills')) {
+    if (!kitFiles.has(rel) && !retired.has(rel)) rows.push({ path: rel, status: 'kept-custom' });
+  }
+  for (const rel of list('.claude/commands')) {
+    if (kitFiles.has(rel) || retired.has(rel)) continue;
+    const name = path.posix.basename(rel, '.md');
+    const text = read(dir, rel);
+    const named = [...text.matchAll(/skills\/([\w./-]+?\.md)/g)].some((m) => exists(dir, `skills/${m[1]}`));
+    if (exists(dir, `skills/${name}.md`) || named) { rows.push({ path: rel, status: 'kept-custom' }); continue; }
+    const { front, body } = splitFront(text);
+    write(dir, `skills/${name}.md`, `# Skill: ${name}\n\n> Moved from \`.claude/commands/${name}.md\` by the nexus v2 upgrade; the command points here.\n\n---\n\n${body.replace(/^\s+/, '')}`);
+    const arg = /\$ARGUMENTS/.test(body) ? '\nArgument: $ARGUMENTS\n' : '';
+    write(dir, rel, `${front}${front ? '\n' : ''}You are invoked under the \`${name}\` skill. Read \`skills/${name}.md\`\nend to end and follow its procedure; that file is the single\nsource of truth.\n${arg}`);
+    rows.push({ path: `skills/${name}.md`, status: 'moved-to-skill', note: `from ${rel}` });
+    rows.push({ path: rel, status: 'kept-custom', note: `points at skills/${name}.md` });
+  }
+  return rows;
+}
+
 /** The repo's name for `<PROJECT>`: package.json `name`, else the agents.md title, else the folder's name. */
 export function projectName(dir) {
   try {
@@ -201,9 +300,7 @@ export function rewriteText(text) {
   let n = 0;
   let out = text;
   for (const [from, to] of REWRITES) {
-    const parts = out.split(from);
-    n += parts.length - 1;
-    out = parts.join(to);
+    out = out.replace(from, () => { n += 1; return to; });
   }
   return { text: out, n };
 }
@@ -249,7 +346,7 @@ export function retireV1(dir, { skip = new Set() } = {}) {
     if (n) { write(dir, rel, next); rows.push({ path: rel, status: `rewritten (${n} ref${n === 1 ? '' : 's'})` }); }
     if (V1_LEFT.test(next)) left.push(rel);
   }
-  if (left.length) warnings.push(`v1 references with no sure v2 spelling (01_build_plan, plan/phases, plan/steps) remain in: ${left.join(', ')}`);
+  if (left.length) warnings.push(`v1 references remain in: ${left.join(', ')}`);
   return { rows, warnings };
 }
 
@@ -336,7 +433,13 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
     const kitFiles = new Set(kit.files.map((f) => f.repo));
 
     if (shape.shape === 'v1') {
+      // The repo's own march and iterate steps are read before the kit's skills replace them.
+      const train = customTrain(wt.dir, kit);
       report.files.push(...copyKit(wt.dir, kit).filter((r) => r.status !== 'same'));
+      const carried = carryTrain(wt.dir, train, { today });
+      report.files.push(...carried.rows);
+      report.warnings.push(...carried.warnings);
+      report.files.push(...keepCustom(wt.dir, kitFiles));
       const readme = read(wt.dir, 'plan/README.md');
       const merged = mergeRoadmap(readme, fs.readFileSync(path.join(kit.root, 'plan', 'README.md'), 'utf8'), projectName(wt.dir));
       if (merged !== readme?.replace(/\r\n/g, '\n')) { write(wt.dir, 'plan/README.md', merged); report.files.push({ path: 'plan/README.md', status: readme == null ? 'added' : 'merged', note: 'v2 lanes and spec table; its own sections kept' }); }
@@ -383,7 +486,7 @@ export function mergeRows(rows) {
   for (const r of rows) {
     const had = by.get(r.path);
     if (!had) { by.set(r.path, { ...r }); continue; }
-    had.status = `${had.status}, ${r.status}`;
+    if (!had.status.split(', ').includes(r.status)) had.status = `${had.status}, ${r.status}`;
     if (r.note) had.note = had.note ? `${had.note}; ${r.note}` : r.note;
   }
   return [...by.values()].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));

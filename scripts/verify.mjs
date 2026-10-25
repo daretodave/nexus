@@ -82,8 +82,12 @@
 //                 playbooks/upgrade.md names exists, no listed script
 //                 imports a file the list lacks or that is gone, and
 //                 the playbook's generated manual copy list matches
-//                 the list (the CLI bundles the same set), plus the
-//                 script's own node:test suite
+//                 the list (the CLI bundles the same set); and the
+//                 kit-text snapshot (scripts/upgrade-kit-text.json)
+//                 holds every header and paragraph the current
+//                 templates/skills/march.md and iterate.md hold, so
+//                 every kit version stays known to the upgrade; plus
+//                 both scripts' own node:test suites
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds), and heartbeat.yml's
@@ -1059,8 +1063,12 @@ async function legSecrets() {
 async function legUpgrade() {
   const { check } = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-files.mjs')).href)
   const { problems, files } = check(ROOT)
-  const suite = runSuites(['scripts/__tests__/upgrade-files.test.mjs'], 'list')
-  return { failures: [...problems, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; ${suite.note}` }
+  // The kit-text snapshot: a kit edit to march.md or iterate.md lands with --write in the same commit.
+  const kitText = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-kit-text.mjs')).href)
+  const text = await kitText.check(ROOT)
+  const suite = runSuites(['scripts/__tests__/upgrade-files.test.mjs', 'scripts/__tests__/upgrade-kit-text.test.mjs'], 'upgrade')
+  const counts = Object.entries(text.counts).map(([s, c]) => `${s} ${c.paras}`).join(', ')
+  return { failures: [...problems, ...text.problems, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; kit-text snapshot current (paragraphs: ${counts}); ${suite.note}` }
 }
 
 // --- leg: adopt-dryrun ------------------------------------------------------

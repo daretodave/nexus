@@ -212,3 +212,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 55.10 · Patch v1 workflows with the quota gate and offset cron · bafed989..bafed989
 - 2026-10-25 · 56.8 · Digest lists unreleased CLI fixes · f51a3bdd..f51a3bdd
 - 2026-10-25 · 57.5 · Lock timeouts, with the Held-line gate check · 897382ce..897382ce
+- 2026-10-25 · 58.4 · Carry the train: lanes extraction, skills, README, references · fdf601cb..fdf601cb

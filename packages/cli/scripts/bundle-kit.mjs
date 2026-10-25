@@ -5,7 +5,8 @@
 // closure of templates/scripts/secrets.mjs) into kit/secrets/, for "Set up the vault"; and the v2 kit file set an
 // upgrade writes (the nexus repo's scripts/upgrade-files.mjs, the one list playbooks/upgrade.md's manual appendix is
 // generated from) into kit/upgrade/ at its templates/ paths, with kit/upgrade/files.json naming each file, where it
-// lands in a repo, and its kind, plus the seeds `upgrade` merges or flips (the v2 roadmap, the lock). Runs before
+// lands in a repo, and its kind, plus the seeds `upgrade` merges or flips (the v2 roadmap, the lock) and
+// kit/upgrade/kit-text.json (every header and paragraph the kit's march and iterate skills ever held). Runs before
 // every build; the copy is not committed.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { KIT_FILES } from '../server/cloud.mjs';
 import { BUNDLED as VAULT_DIR, vaultFiles } from '../server/vault-setup.mjs';
 import { PLAN_BUNDLED, planKitFiles } from '../server/plan.mjs';
-import { SEEDS, bundleUpgrade, bundledPath } from './bundle-upgrade.mjs';
+import { KIT_TEXT, SEEDS, bundleUpgrade, bundledPath } from './bundle-upgrade.mjs';
 
 const pkg = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const src = path.resolve(pkg, '..', '..', 'templates');
@@ -60,11 +61,11 @@ if (missing.length) {
   console.error(`bundle-kit: the upgrade list's closure reaches files that are gone: ${missing.join(', ')}`);
   process.exit(1);
 }
-console.log(`bundle-kit: copied ${upgrade.length} upgrade files -> kit/upgrade/ (+ files.json)`);
+console.log(`bundle-kit: copied ${upgrade.length} upgrade files -> kit/upgrade/ (+ files.json, ${KIT_TEXT})`);
 
 // Every file a server route loads from kit/ must be there, or the build fails here rather than for a user.
 const want = [...Object.values(KIT_FILES).map(([b]) => b), ...planFiles.map((f) => `scripts/${f}`), ...vault.map((f) => `secrets/${f}`),
-  ...upgrade.map((f) => `upgrade/${bundledPath(f.kit)}`), ...SEEDS.map((s) => `upgrade/${s}`), 'upgrade/files.json'];
+  ...upgrade.map((f) => `upgrade/${bundledPath(f.kit)}`), ...SEEDS.map((s) => `upgrade/${s}`), 'upgrade/files.json', `upgrade/${KIT_TEXT}`];
 const lost = want.filter((f) => !fs.existsSync(path.join(pkg, 'kit', ...f.split('/'))));
 if (lost.length) {
   console.error(`bundle-kit: missing from kit/ after bundling: ${lost.join(', ')}`);

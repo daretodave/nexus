@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { SEEDS, bundleUpgrade, bundledPath } from '../scripts/bundle-upgrade.mjs';
+import { KIT_TEXT, SEEDS, bundleUpgrade, bundledPath } from '../scripts/bundle-upgrade.mjs';
 
 const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NEXUS = path.resolve(PKG, '..', '..');
@@ -25,6 +25,13 @@ test('the upgrade bundle is the computed list, byte for byte, with files.json na
   // The seeds the upgrade merges or flips (the v2 roadmap, the lock) ride along, byte for byte.
   assert.deepEqual(manifest.seeds, [...SEEDS]);
   for (const s of SEEDS) assert.equal(fs.readFileSync(path.join(out, ...s.split('/')), 'utf8'), fs.readFileSync(path.join(NEXUS, 'templates', ...s.split('/')), 'utf8'), s);
+  // kit-text.json: every header and paragraph the kit's march and iterate skills ever held (spec 58, A4).
+  const text = JSON.parse(fs.readFileSync(path.join(out, KIT_TEXT), 'utf8'));
+  const snapshot = JSON.parse(fs.readFileSync(path.join(NEXUS, 'scripts', 'upgrade-kit-text.json'), 'utf8'));
+  for (const skill of ['march.md', 'iterate.md']) {
+    assert.ok(text[skill].headers.length && text[skill].paras.length, skill);
+    for (const p of snapshot[skill].paras) assert.ok(text[skill].paras.includes(p), `${skill}: the bundle holds every snapshot paragraph`);
+  }
   for (const f of files) {
     assert.equal(fs.readFileSync(path.join(out, ...bundledPath(f.kit).split('/')), 'utf8'), fs.readFileSync(path.join(NEXUS, ...f.kit.split('/')), 'utf8'), f.kit);
   }

@@ -157,7 +157,7 @@ test('the dry run reads a fresh fetch of origin in a temporary worktree and writ
   assert.equal(status['.claude/commands/ship-a-phase.md'], 'retired');
   assert.equal(status['plan/CANDIDATES.md'], 'renamed');
   assert.equal(new Set(report.files.map((f) => f.path)).size, report.files.length, 'one row per path');
-  assert.equal(status['skills/survey.md'], 'rewritten (1 ref)');
+  assert.equal(status['skills/survey.md'], 'kept-custom, rewritten (1 ref)', 'a custom skill stays');
   assert.equal(status['agents.md'], 'rewritten (2 refs)', 'origin\'s agents.md, not the dirty local one');
   assert.equal(status['plan/nexus.lock'], 'added');
   assert.ok(!report.files.some((f) => f.path === 'scratch.txt'));

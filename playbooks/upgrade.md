@@ -92,7 +92,9 @@ so first move any local edit you'd made to `march.md` or
 `iterate.md` into a project lane
 (`skills/march.lanes.md`, `skills/iterate.lanes.md`), which a
 re-sync never overwrites
-([`../customization/project-lanes.md`](../customization/project-lanes.md));
+([`../customization/project-lanes.md`](../customization/project-lanes.md);
+`npx @usenexus/cli upgrade` makes this move for you, one lane
+per section no kit version ever held);
 a skill or command of your own that the kit never shipped is
 left alone. Sweep the eight placeholders over the new files
 exactly as [`new-project.md`](./new-project.md) §4 does.

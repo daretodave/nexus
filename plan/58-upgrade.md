@@ -161,11 +161,23 @@ replaced; anything unrecognised is kept.
   section whose header is in the list is kit text and is
   replaced; inside it, a paragraph matching no historical
   hash is kept as custom. A section whose header is not in
-  the list is custom.
+  the list is custom. The list is kept in
+  `scripts/upgrade-kit-text.json` (committed: a shallow CI
+  checkout has no history to read), rebuilt by
+  `node scripts/upgrade-kit-text.mjs --write`; the `upgrade`
+  leg fails when the current templates hold text it lacks.
+  Paragraphs compare with whitespace collapsed, and one that
+  held a placeholder matches with it filled in.
 - **Custom text moves verbatim** into `skills/march.lanes.md`
   and `skills/iterate.lanes.md` (spec 57's lanes extension
   point), under its original header, with the v1 references
-  rewritten. The kit never overwrites the lanes files.
+  rewritten. The kit never overwrites the lanes files. Each
+  custom section is one lane: a march section ahead of the
+  v1 phase pick (`3a. Pending phase?`) is `pre`, one after
+  it `queue`, both `end-tick` (v1 dispatch was first match
+  wins); custom paragraphs inside a kit step are one
+  `<step>-notes` lane that continues; iterate's are
+  `dimensions`. `when` is prose: the moved text says when.
 - **Custom skills and commands stay.** A skill or command the
   kit never shipped is kept as it is; a `.claude/commands/`
   entry with no skill becomes a skill (`skills/<name>.md`)
@@ -175,7 +187,11 @@ replaced; anything unrecognised is kept.
   prompt text included: `01_build_plan`, `plan/phases`,
   `plan/steps`, `ship-a-phase`, `plan-a-phase`,
   `PHASE_CANDIDATES`. History files (`ARCHIVE.md`,
-  `DIGEST.md`, `CHANGELOG*`, dated logs) are left alone.
+  `DIGEST.md`, `CHANGELOG*`, dated logs) are left alone. The
+  build plan and any `plan/steps` or `plan/phases` path
+  become `plan/README.md` (the roadmap lists every spec, and
+  a rewritten link never breaks); the kit's own files are not
+  rewritten (the converter reads v1 names on purpose).
 - `git mv PHASE_CANDIDATES.md CANDIDATES.md`, header
   compacted to the v2 template's.
 
@@ -348,7 +364,6 @@ tick).
 
 ## Acceptance
 
-- **A4** Custom march and iterate text moves verbatim into the lanes files while kit text from any historical kit version is replaced (a fixture forked from a pre-`v1.0.0` kit march.md plus two custom sections yields exactly those two in `march.lanes.md`); custom skills and commands are kept (a command with no skill becomes a skill); the repo's README sections stay and `<PROJECT>` is filled; no v1 reference is left outside history files.
 - **A5** The merged `march.yml` keeps the v1 cron, ceiling, model pin, extra env and concurrency group, the toolchain steps become `.github/actions/setup`, workflow-lint passes, and the report prints the `NEXUS_LOOP_MODE` owner line when the v1 loop pushed to the default branch.
 - **A6** The upgrade writes every spec 54-57 knob at its conservative value (Support triage-only, Promote owner, Generators empty, stall_action alert, dimension I off, UI none, cadence unset, chain 0, idle backoff 0), and a test fails when a kit template names a knob the registry lacks.
 - **A7** On a scratch clone of an editorial v1 origin, `--write` yields 52 archive lines (50 + 2 suffixed), 0 open specs, the weekly snapshot gate, content queue and survey refill verbatim in `march.lanes.md` and the cross-link drain in `iterate.lanes.md`, `march.yml` keeping cron `0 * * * *` and ceiling 60, plan-check and the repo's verify green, and a predicted lane dispatch, not an idle tick; a half-done clone and a 40-minute-cron clone also pass.
@@ -364,13 +379,11 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 10 open · 3 closed · next A14
+Measure: 9 open · 4 closed · next A14
 
-- [ ] **58.4** Carry the train: lanes extraction, skills, README, references · L · closes A4 · needs —
-  - Kit text is judged against every historical kit version (`kit-text.json`), never against the `v1.0.0` tag alone.
 - [ ] **58.5** The workflow merge keeps cron, ceiling, model and env · M · closes A5 · needs —
 - [ ] **58.6** Conservative knobs from a registry · S · closes A6 · needs 54.8, 55.5, 56.7, 57.8
-- [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs 58.4, 58.5, 58.6
+- [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs 58.5, 58.6
   - Fresh clone of the adopter's origin in the scratchpad only; the local checkout is stale and dirty and is never touched. Gaps become fixes in 58.3-58.6's functions plus fixtures.
 - [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs 58.7
 - [ ] **58.9** The GUI Upgrade banner · S · closes A9 · needs —
