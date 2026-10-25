@@ -1,8 +1,9 @@
 # Skill: expand (nexus)
 
 > **Plan growth, posture-gated.** Read the accumulated signals
-> and propose new kit specs as candidates. Candidates are
-> filed, never self-promoted — `/oversight` promotes.
+> and propose new kit specs as candidates. `/oversight`
+> promotes; under `Promote: aged` the strongest aged candidate
+> also promotes itself, held behind a veto window (§6).
 
 ## 1. Purpose
 
@@ -93,15 +94,58 @@ still >3). **Cap 3 candidates per pass.**
    chunks / conflicts / `last re-evidenced` — optional, absent
    until a later pass re-affirms the candidate). Update the
    metadata header.
-5. `node scripts/verify.mjs` → commit + land:
-   `expand: pass <N> — <K> candidates`.
+5. Aged promotion (§6), when the knob allows it.
+6. `node scripts/verify.mjs` → commit + land:
+   `expand: pass <N> — <K> candidates` (with an aged
+   promotion: `…, auto-promoted <NN> (veto until <date>)`).
 
-## 6. Hard rules
+## 6. Aged promotion: the silt valve
+
+A queue nobody promotes silts up. Under `Promote: aged` (or
+`autonomous`) in `plan/bearings.md`'s `## Plan expansion
+posture` (no key reads `owner`: nothing here runs), each pass
+ends by promoting at most one aged candidate, behind a window
+in which the owner can say no.
+
+1. `node scripts/plan/promote.mjs pick`. It prints `pick …`
+   for the best Pending row scoring ≥ `promote_floor` that is
+   `promote_after_days` old or re-evidenced twice (ties: the
+   oldest), while fewer than `promote_per_week`
+   auto-promotions are dated in the last 7 days (vetoed ones
+   count). `none: <why>` ends the step.
+2. Write the spec as `promote` does (§2: unchunked, roadmap
+   row). Move the row to `## Promoted` as `### [promoted
+   <date> → spec <NN>] [score X] <title>` with `- promoted:
+   <date>, auto (expand pass <N>), veto #<issue>` (the line the
+   weekly cap counts; it stays when a veto moves the row).
+3. Open the veto issue (`gh label create loop:veto --force`
+   first; it is idempotent):
+   `gh issue create --title "Auto-promoted: <title> — close to
+   veto" --label loop:opened --label loop:veto`, the body the
+   row's rationale cut at 600 characters, the spec's link, and
+   "close this issue by <date> to veto; left open, the loop
+   builds it". `loop:opened` keeps triage and the support
+   nudge off it.
+4. `node scripts/plan/promote.mjs hold <NN> <issue>` writes the
+   Held line, `veto_days` out:
+   `- NN · auto-promoted, veto until <date> (#<issue>) · max_age: 3d · fallback: release`.
+   Nothing picks a Held spec, so nothing chunks or builds it in
+   the window; `/march` Step 0 vetoes or releases it.
+5. `node scripts/plan-check.mjs --since HEAD` green.
+
+No issue, no promotion: when `gh` cannot open it, undo the
+spec and the row move, and say so in the commit body. `ask …`
+(a contributor's checkout, or pull-request mode) files no spec:
+one `[needs-user-call] promote <title>?` row in
+`plan/AUDIT.md`, deduped by title.
+
+## 7. Hard rules
 
 1. Candidates only — never write a spec or the roadmap
-   (promotion into a spec is `/oversight`'s). `promote` (§2) is
-   the one run-time exception, and it obeys owner mode and
-   never runs under `strict`; its commit is
+   (promotion into a spec is `/oversight`'s). `promote` (§2)
+   and the aged promotion (§6) are the run-time exceptions;
+   both obey owner mode and never run under `strict`.
+   `promote`'s commit is
    `expand: pass <N> — <K> specs added (autonomous)`, the body
    saying "promoted by a then-build /next loop".
 2. Every candidate cites its signals; no vibes-only candidates.
@@ -109,13 +153,13 @@ still >3). **Cap 3 candidates per pass.**
 4. No candidate that breaks template API without a migration
    story in its scope.
 
-## 7. Failure modes
+## 8. Failure modes
 
 1. **No signals clear the threshold** — exit cleanly with
    "expand: no candidates" (no commit).
 2. **`git pull` divergence** — stop.
 
-## 8. Quick reference
+## 9. Quick reference
 
 ```bash
 plan/CANDIDATES.md             # output + metadata header

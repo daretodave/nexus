@@ -73,7 +73,10 @@ its own cadence.
    candidates are pending >21 days or the oldest pending
    candidate exceeds 45 days — a line reading "oversight
    needed: candidate queue silting (N pending >21d, oldest
-   Xd)", and each `rotate <NAME>` line of `node
+   Xd)"; under `Promote: aged` the valve is draining it, so the
+   line reads "auto-promoted <NN> <title> (veto until <date>),
+   Y awaiting" from `node scripts/plan/promote.mjs sweep`, or
+   "auto-promoted none, Y awaiting" — and each `rotate <NAME>` line of `node
    scripts/secrets.mjs audit`, a secret last set over 90
    days ago; the log is local, so a cloud run skips it),
    `Today's intent` (next ready chunk + top finding),

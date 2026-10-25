@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseChunk, parseSpec, checkPlan, checkHistory, archived, runCheck, loadPlanDir } from '../plan-check.mjs'
+import { parseChunk, parseSpec, checkPlan, checkHistory, archived, parseAutoHeld, runCheck, loadPlanDir } from '../plan-check.mjs'
 
 const spec = (body) => parseSpec('plan/07-search.md', `# 07 — Search\n\n${body}`)
 
@@ -114,6 +114,23 @@ test('history: a deleted spec needs its spec-complete line', () => {
     '- 2026-10-20 · 07.2 · x · y', '- 2026-10-20 · 07.3 · x · y',
     '- 2026-10-20 · 07 · spec complete: search · absorbed into identity · deleted in abc',
   ].join('\n')), [])
+})
+
+test('history: a vetoed auto-promotion leaves with its spec-vetoed line', () => {
+  const unchunked = parseSpec('plan/59-thing.md', '# 59 — Thing\n\n## Acceptance\n\n- **A1** x.\n\n## Chunks\n\nMeasure: 1 open · 0 closed · next A2\n\nNot chunked yet.\n')
+  assert.match(checkHistory([unchunked], [], '').join('\n'), /spec vetoed/)
+  assert.deepEqual(checkHistory([unchunked], [], '- 2026-10-28 · 59 · spec vetoed: thing (#123) · plan only'), [])
+})
+
+test('an auto-promoted Held line keeps its shape and holds a spec in the plan', () => {
+  const s = spec(GOOD)
+  const held = (line) => `**Held** (waits):\n\n${line}\n\n## Specs\n\n${README}`
+  assert.deepEqual(checkPlan({ specs: [s], readme: held('- 07 · auto-promoted, veto until 2026-10-28 (#123) · max_age: 3d · fallback: release'), archive: null }), [])
+  assert.deepEqual(checkPlan({ specs: [s], readme: held('- 7 · auto-promoted, veto until 2026-10-28 (#123)'), archive: null }), [])
+  assert.match(checkPlan({ specs: [s], readme: held('- 07 · auto-promoted, veto soon'), archive: null }).join('\n'), /auto-promoted Held line reads/)
+  assert.match(checkPlan({ specs: [s], readme: held('- 09 · auto-promoted, veto until 2026-10-28 (#4)'), archive: null }).join('\n'), /no spec 09 is in the plan/)
+  assert.deepEqual(parseAutoHeld('- 59 · auto-promoted, veto until 2026-10-28 (#123) · max_age: 3d · fallback: release'), { spec: '59', until: '2026-10-28', issue: 123 })
+  assert.equal(parseAutoHeld('- 59 (waits on the owner)'), null)
 })
 
 test('archived() matches the id exactly, with an optional A-ID note', () => {

@@ -313,6 +313,19 @@ aggressive it is.
   Most aggressive; document in Hard Rules below if you choose
   this.
 
+Aged promotion (`skills/expand.md` Step 4b): a candidate nobody
+promotes still ages into the plan. Each `/expand` pass may
+promote one aged, strong candidate as an unchunked spec, held
+in the roadmap's Held lane for `veto_days` with a veto issue
+open; closing the issue vetoes it. `Promote: owner` (or posture
+strict) turns it off; a missing key reads `owner`.
+
+- Promote: aged
+- promote_after_days: 21
+- promote_floor: 6.0
+- promote_per_week: 1
+- veto_days: 3
+
 ## Decisions standing for the autonomous loop
 
 (These exist so the loop never asks the user. Add to this list

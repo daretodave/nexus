@@ -97,7 +97,15 @@ to the guard hook too.
 ## Plan expansion posture
 
 **bold** — `/expand` files candidates to
-`plan/CANDIDATES.md`; promotion happens in `/oversight`.
+`plan/CANDIDATES.md`; promotion happens in `/oversight`, and
+the aged ones promote themselves behind a veto window
+(`skills/expand.md` §6, `scripts/plan/promote.mjs`):
+
+- Promote: aged
+- promote_after_days: 14
+- promote_floor: 6.0
+- promote_per_week: 2
+- veto_days: 3
 
 ## Decisions standing for the loop
 

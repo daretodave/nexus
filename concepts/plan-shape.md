@@ -110,7 +110,19 @@ its `N left`). Whatever builds the next chunk (`/next`, or
 
 and within a spec, the first chunk whose `needs` are done.
 Chunks in the **Held** lane wait on a person's word and are
-never picked. `scripts/plan/order.mjs` plays this order
+never picked. A candidate `/expand` promoted on its own
+(`Promote: aged`) waits there for its veto window, on a line
+`scripts/plan/promote.mjs` writes and `plan-check` parses:
+
+```
+- 59 · auto-promoted, veto until 2026-10-28 (#123) · max_age: 3d · fallback: release
+```
+
+`/march` sweeps those lines at Step 0. A closed issue is a
+veto: the spec, its row and the line go, and `ARCHIVE.md` gets
+`- <date> · 59 · spec vetoed: <title> (#123) · plan only`. An
+open issue past its date is a release: the line goes and the
+spec is picked as usual. `scripts/plan/order.mjs` plays this order
 forward (each pick counted done for what needs it), so
 `/plot` can show where a new task lands before and after it
 slots it in: `/plot asap` appends to the Asap lane, `/plot
@@ -203,10 +215,12 @@ verify composition) makes the shape mechanical:
   the roadmap links every spec and no
   spec that is gone, each row's `N left` is true, and the
   Asap/Held lanes name only chunks (or specs) still in the
-  plan; `ARCHIVE.md` lines parse;
+  plan; an auto-promoted Held line keeps its shape and holds
+  a spec still in the plan; `ARCHIVE.md` lines parse;
 - with `--since <ref>`: a chunk that left the plan has its
   archive line (or was split into suffixed children), a
-  deleted spec has its spec-complete line, and no `next` or
+  deleted spec has its spec-complete line (a vetoed
+  auto-promotion its spec-vetoed line), and no `next` or
   `closed` count went backwards. A ref that does not resolve
   is a failure, never a skipped check.
 

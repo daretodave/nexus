@@ -174,7 +174,10 @@ jobs:
             2. /critique MAY run when its gate opens: the dry-run adoption
                needs only files and mktemp, both available here.
             3. /expand may run; candidates land in plan/CANDIDATES.md.
-               Never promote candidates from cloud.
+               Never promote from cloud unless plan/bearings.md says
+               Promote: aged or autonomous; then /expand's aged promotion
+               (Held line + veto issue) and march Step 0's veto sweep run
+               as written.
             4. The verify gate (node scripts/verify.mjs) is non-negotiable
                and runs FOREGROUND — never run_in_background. There is no
                deploy gate (agents.md rule 4): the push is the deploy.

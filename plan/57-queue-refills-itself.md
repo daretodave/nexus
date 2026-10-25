@@ -297,7 +297,6 @@ The Held line for an auto-promotion:
 
 ## Acceptance
 
-- **A1** With `Promote: aged`, a Pending candidate scoring ≥ the floor and older than `promote_after_days` (or re-evidenced twice) becomes an unchunked spec, a roadmap row, a Held line and a `loop:opened` veto issue in one tick, at most `promote_per_week` per 7 days. Nothing chunks or builds it inside `veto_days`. Closing the issue in the window deletes the spec and rejects the candidate on the next tick; after the window the Held line goes and the spec is built. `Promote: owner` changes nothing.
 - **A2** Independent re-evidence raises a Pending row's score by +0.5 (cap +2). Pending above `pending_cap` shrinks by promotion or by at most 5 stale rejections a pass, each with a reason and listed in the digest.
 - **A3** v2 `march.md` and `iterate.md` read `skills/march.lanes.md` / `iterate.lanes.md` at the `pre`, `queue` and `dimensions` hooks. A re-sync of the kit's skills leaves the lanes files untouched, a lane yields to the Asap lane, and `Lanes off` disables one.
 - **A4** A tick with no ready chunk runs the refill lane. `issue-age` and `stale-candidate` honour the generator contract, proven by tests: a dry run writes nothing, a second `--write` run files nothing, and a failing generator does not stop the next.
@@ -313,18 +312,15 @@ The Held line for an auto-promotion:
 
 ## Chunks
 
-Measure: 9 open · 0 closed · next A10
+Measure: 8 open · 1 closed · next A10
 
-- [ ] **57.1** Aged promotion lands in Held with a veto issue · M · closes A1 · needs —
-  - Edits `skills/expand.md` and its template, the `march.md` Step 0 veto sweep, `oversight.md`, `digest.md`, the bearings keys (nexus `Promote: aged` in the same commit) and march prompt rule 3.
-  - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **57.2** Project lanes extension point · M · closes A3 · needs —
   - `templates/skills/{march,iterate}.lanes.md` are public API: templates/README and the README tree change in the same commit.
 - [ ] **57.3** Generator contract, refill lane, two generic generators · M · closes A4 · needs 57.2
-- [ ] **57.4** Motion pulse, heartbeat stall and the motion generator · M · closes A5 · needs 57.1, 57.3
+- [ ] **57.4** Motion pulse, heartbeat stall and the motion generator · M · closes A5 · needs 57.3
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **57.5** Lock timeouts, with the Held-line gate check · S · closes A7 · needs —
-- [ ] **57.6** Pending stays live: re-evidence scoring and the cap · S · closes A2 · needs 57.1
+- [ ] **57.6** Pending stays live: re-evidence scoring and the cap · S · closes A2 · needs —
 - [ ] **57.7** State diet: header shape, state-size leg, nexus compaction · M · closes A8 · needs —
   - A new leg changes the leg count in `bearings.md` and `agents.md` rule 3 in the same commit.
 - [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 57.4, 55.5, 54.8

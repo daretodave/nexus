@@ -60,11 +60,15 @@ Never dispatched by `/march` — it is its own loop shape (see
    (the candidates line grows the >21-day count alongside the
    existing pending-count and oldest-age numbers, e.g. "17
    pending (6 >21d), oldest 58d"), `Needs you` (blocked rows,
-   needs-user issues, `[needs-user-call]`s, plus — when either
-   ≥5 candidates are pending >21 days or the oldest pending
-   candidate exceeds 45 days — a line reading "oversight
-   needed: candidate queue silting (N pending >21d, oldest
-   Xd)", and each `rotate <NAME>` line of `node
+   needs-user issues, `[needs-user-call]`s, plus the silt line
+   "auto-promoted <NN> <title> (veto until <date>), Y awaiting"
+   — each spec `node scripts/plan/promote.mjs sweep` shows in
+   its veto window, or "auto-promoted none" — whenever any
+   auto-promotion is in its window, ≥5 candidates are pending
+   >21 days, or the oldest pending candidate exceeds 45 days
+   (nexus runs `Promote: aged`; with `owner` the line reads
+   "oversight needed: candidate queue silting (N pending >21d,
+   oldest Xd)"), and each `rotate <NAME>` line of `node
    scripts/secrets.mjs audit`, a secret last set over 90
    days ago; the log is local, so a cloud run skips it),
    `Today's intent` (next ready chunk + top audit

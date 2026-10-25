@@ -11,7 +11,10 @@ Format: `- <date> · <chunk> · <what now works, ≤ 10 words> ·
 <commit or range>`. A finished spec gets one more line,
 `- <date> · <NN> · spec complete: <title> · absorbed into
 identity · deleted in <sha>`; recover its text with
-`git log --diff-filter=D -- plan/<NN>-*.md`.
+`git log --diff-filter=D -- plan/<NN>-*.md`. A spec `/expand`
+promoted on its own and vetoed in its window leaves as
+`- <date> · <NN> · spec vetoed: <title> (#<issue>) · plan
+only` (`/march`'s veto sweep writes it).
 
 ```
 - 2026-01-15 · 01.1 · Project boots; verify gate green on an empty app · a1b2c3d

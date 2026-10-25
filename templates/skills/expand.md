@@ -99,6 +99,17 @@ Three settings:
   trusted and the spec is stable. **Document the choice in
   `bearings.md` Hard Rules** so the user knows.
 
+The same section holds the aged-promotion knobs (Step 4b), one
+`Key: value` line each; a missing key takes the default:
+
+| Key | Values | Default |
+|---|---|---|
+| `Promote` | `owner \| aged \| autonomous` | `owner` (a new adoption's bearings ships `aged`); `strict` forces `owner` |
+| `promote_after_days` | days | 21 |
+| `promote_floor` | score | 6.0 |
+| `promote_per_week` | count | 1 |
+| `veto_days` | days | 3 |
+
 If the bearings section is missing, default to **bold** and add
 the section in the same commit (`bearings: add expand posture
 (default bold)`).
@@ -262,10 +273,55 @@ yet.`, plus a row in `plan/README.md`. Run `node
 scripts/plan-check.mjs --since HEAD`. Document in the commit
 body that this was autonomous (not via oversight).
 
+### Step 4b — Aged promotion (the silt valve)
+
+A queue nobody promotes silts up. Under `Promote: aged` (or
+`autonomous`) in `bearings.md` (§3; no key reads `owner`, and
+this step does nothing), the pass ends by promoting at most
+one aged candidate, behind a window in which the owner can say
+no:
+
+1. `node scripts/plan/promote.mjs pick`. It prints `pick …`
+   for the best Pending row scoring ≥ `promote_floor` that is
+   `promote_after_days` old or re-evidenced twice (ties: the
+   oldest), while fewer than `promote_per_week`
+   auto-promotions are dated in the last 7 days (vetoed ones
+   count). `none: <why>` ends the step.
+2. Write it as an unchunked spec (as autonomous posture does,
+   above) and move its row to `## Promoted` as `### [promoted
+   <date> → spec <NN>] [score X] <title>` with `- promoted:
+   <date>, auto (expand pass <N>), veto #<issue>` (the line the
+   weekly cap counts; it stays when a veto moves the row).
+3. Open the veto issue:
+
+   ```bash
+   gh label create loop:veto --repo "$GH_REPO" --force   # idempotent
+   gh issue create --repo "$GH_REPO" \
+     --title "Auto-promoted: <title> — close to veto" \
+     --label loop:opened --label loop:veto --body "<body>"
+   ```
+
+   The body: the row's rationale cut at 600 characters, the
+   spec's link, and "close this issue by <date> to veto; left
+   open, the loop builds it". `loop:opened` keeps `/triage`
+   off it.
+4. `node scripts/plan/promote.mjs hold <NN> <issue>` writes the
+   Held line, `veto_days` out:
+   `- NN · auto-promoted, veto until <date> (#<issue>) · max_age: 3d · fallback: release`.
+   Nothing picks a Held spec, so nothing chunks or builds it in
+   the window; `/march` Step 0 vetoes or releases it.
+5. `node scripts/plan-check.mjs --since HEAD` green.
+
+No issue, no promotion: when `gh` cannot open it, undo the
+spec and the row move, and say so in the commit body. `ask …`
+(a contributor's checkout, or pull-request mode) files no spec:
+one `[needs-user-call] promote <title>?` row in
+`plan/AUDIT.md`, deduped by title.
+
 ### Step 5 — Commit + land
 
 ```bash
-git add plan/CANDIDATES.md
+git add plan/CANDIDATES.md   # + plan/README.md and plan/<NN>-*.md after an aged promotion
 git commit -m "$(cat <<'EOF'
 expand: pass <N> — <K> candidates filed
 
@@ -283,7 +339,10 @@ EOF
 (If autonomous posture: subject is `expand: pass <N> — <K>
 specs added (autonomous)` and the body lists which spec
 numbers + their topics. A `promote` pass uses the same subject,
-and its body says "promoted by a then-build /next loop".)
+and its body says "promoted by a then-build /next loop". An
+aged promotion (Step 4b) appends `, auto-promoted <NN> (veto
+until <date>)` to the subject and names the veto issue in the
+body.)
 
 If **zero** candidates score above threshold: still update the
 metadata header, commit `expand: pass <N> — no candidates`. The
@@ -324,9 +383,12 @@ oversight will review and promote.
 6. **One commit per pass.**
 7. **No emojis. No `Co-Authored-By:`.**
 8. **Strict posture is real.** If posture is `strict`, exit 0
-   with no-op. Don't sneak candidates in. `promote` (§2) is the
-   one run-time exception to candidates-only, and it obeys this
-   rule and owner mode.
+   with no-op. Don't sneak candidates in. `promote` (§2) and
+   the aged promotion (Step 4b) are the run-time exceptions to
+   candidates-only, and both obey this rule and owner mode.
+9. **No auto-promotion without its veto.** An aged promotion
+   always lands with its Held line and its open veto issue, or
+   not at all.
 
 ## 8. Failure modes
 

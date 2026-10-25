@@ -25,6 +25,9 @@
 //   - plan/README.md links every spec, links no spec that is gone,
 //     its `N left` counts match, and its Asap/Held lanes name only
 //     chunks (or specs) still in the plan; ARCHIVE.md lines parse
+//   - an auto-promoted Held line keeps its shape (`- NN ·
+//     auto-promoted, veto until YYYY-MM-DD (#N) · …`) and holds a
+//     spec still in the plan
 //
 // plan/ is read as it will read once plan/pending/ settles (the
 // settled view, scripts/plan/settled.mjs): each pending file's
@@ -40,8 +43,8 @@
 // a chunk that left the plan has an archive line (or a pending
 // close in plan/pending/, or was split into `<id>a`, `<id>b`, …
 // children), an unresolvable ref is a failure (never a silent
-// skip), a deleted spec has its "spec complete"
-// line, and no spec's `next A#` or closed count went backwards or
+// skip), a deleted spec has its "spec complete" line (a vetoed
+// auto-promotion's "spec vetoed"), and no spec's `next A#` or closed count went backwards or
 // reused an A-ID. The plan only shrinks.
 //
 //   node scripts/plan-check.mjs                  # plan/ in the working tree
@@ -245,8 +248,23 @@ function checkRoadmap(specs, readme, chunkIds, specNums) {
     if (entry && !chunkIds.has(entry[1]) && !specNums.has(entry[1])) {
       failures.push(`${at}: the ${lane} lane names ${entry[1]}, which no spec lists (a closed chunk leaves the lanes)`)
     }
+    if (lane === 'Held' && /\bauto-promoted\b/.test(line)) {
+      const auto = parseAutoHeld(line)
+      if (!auto) failures.push(`${at}: an auto-promoted Held line reads "- NN · auto-promoted, veto until YYYY-MM-DD (#<issue>) · max_age: <n>d · fallback: release"`)
+      else if (!specNums.has(auto.spec)) failures.push(`${at}: the Held lane holds spec ${auto.spec} for its veto window, and no spec ${auto.spec} is in the plan (a veto deletes the line with the spec)`)
+    }
   })
   return failures
+}
+
+// An auto-promotion's Held line (skills/expand.md, the /march veto
+// sweep): the spec it holds, the last day of its veto window and
+// the veto issue. scripts/plan/promote.mjs reads it the same way.
+export const AUTO_HELD = /^- (\d+) · auto-promoted, veto until (\d{4}-\d{2}-\d{2}) \(#(\d+)\)(?: · .*)?$/
+
+export function parseAutoHeld(line) {
+  const m = AUTO_HELD.exec(line.trim())
+  return m ? { spec: m[1].padStart(2, '0'), until: m[2], issue: Number(m[3]) } : null
 }
 
 export function archived(archive, id) {
@@ -274,8 +292,9 @@ export function checkHistory(before, after, archive, pendingIds = new Set()) {
     }
     const now = nowSpecs.get(s.num)
     if (!now) {
-      if (!new RegExp(`^- \\d{4}-\\d{2}-\\d{2} · ${s.num} · spec complete`, 'm').test(archive || '')) {
-        failures.push(`${s.file} was deleted with no "· ${s.num} · spec complete: …" archive line`)
+      // A vetoed auto-promotion leaves too, unchunked: "spec vetoed".
+      if (!new RegExp(`^- \\d{4}-\\d{2}-\\d{2} · ${s.num} · spec (complete|vetoed)`, 'm').test(archive || '')) {
+        failures.push(`${s.file} was deleted with no "· ${s.num} · spec complete: …" (or "spec vetoed: …") archive line`)
       }
       continue
     }

@@ -69,11 +69,17 @@ In parallel where independent:
     and `node scripts/secrets.mjs status`. The owner sets each
     with `node scripts/secrets.mjs set <NAME>` in their own
     terminal, never pasted here; then delete the row.
+11. `node scripts/plan/promote.mjs sweep` — auto-promoted specs
+    still in their veto window (`skills/expand.md` Step 4b; a
+    dry run writes nothing).
 
 ## 4. The briefing (~25 lines max)
 
 ```
 oversight — <ISO date>
+
+auto-promoted (veto window; listed first, before anything else)
+- <NN> <title> · veto until <date> (#<issue>)   (or "none")
 
 shipping
 - last commit: <sha> "<subject>" (<relative time>)
@@ -167,6 +173,16 @@ Generate 1–4 questions via `AskUserQuestion`. Rules:
 > - Reject top — move to `## Rejected` with a one-line reason.
 > - Defer — leave them; next expand pass re-evaluates.
 
+**Auto-promotion in its veto window**
+
+> Spec <NN> "<title>" was auto-promoted from an aged candidate
+> (score <X.Y>, <N> days old); the loop builds it after
+> <date> unless you veto (#<issue>).
+>
+> - (recommended) Let it run — the window closes on its own.
+> - Release now — the loop may build it this tick.
+> - Veto — the spec goes, the candidate is rejected.
+
 **Free-form**
 
 > Anything else to adjust before I hand back to `/march`?
@@ -228,6 +244,13 @@ For each answer:
   `/plan-a-spec <NN>` flow inline to chunk it.
 - **"Reject candidate"** → move row from `## Pending` to
   `## Rejected` with one-line reason.
+- **"Release auto-promotion early"** → remove its Held line;
+  once landed, close its veto issue with "released early by
+  the owner". `/next` picks the spec as usual.
+- **"Veto auto-promotion"** → close its veto issue, then `node
+  scripts/plan/promote.mjs sweep --write` (or leave it to the
+  next tick's sweep): the spec goes and the candidate is
+  rejected as vetoed.
 - **"Other" (free-form)** → interpret conservatively. If clear
   plan edit, apply. If ambiguous, write to `plan/AUDIT.md` as
   `[needs-user-call]` and tell the user.

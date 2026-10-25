@@ -67,7 +67,8 @@ dispatch exactly as below.
 The word never loosens `plan/bearings.md`: posture `strict`
 keeps `/expand` a no-op (`bold` then reads as `balanced`, and
 the report says so), and only posture `autonomous` writes specs
-without `/oversight`.
+without `/oversight` (and `Promote: aged`, one aged candidate a
+pass, held behind its veto window).
 
 ## 3. Procedure
 
@@ -78,6 +79,28 @@ git pull --ff-only
 ```
 
 If divergence, stop per §5.
+
+Then the veto sweep, over the Held lines `/expand`'s aged
+promotion writes (`- NN · auto-promoted, veto until <date>
+(#<issue>) · …`; none, and it prints `clean`):
+
+```bash
+node scripts/plan/promote.mjs sweep      # veto | release | wait, one line each (gh read only)
+```
+
+| Issue state | Window | The tick does |
+|---|---|---|
+| closed | any | **Veto**: the spec file, its roadmap row and its Held line go; the candidate moves to `## Rejected` as `vetoed <date> (#N)`; `ARCHIVE.md` gets a `spec vetoed` line. |
+| open | passed | **Release**: the Held line goes; `/next top` picks the spec as usual. |
+| open | open | Nothing. |
+
+Any veto or release: `node scripts/plan/promote.mjs sweep
+--write`, the gate, one commit (`plan: veto sweep — vetoed
+<NN>, released <NN>`), land. Only then close each released
+issue: `gh issue close <N> --comment "veto window passed; this
+spec is now built"`. Landing first matters: a closed issue
+whose Held line still exists reads as a veto, whoever closed
+it. The sweep is housekeeping; the tick goes on to Step 1.
 
 ### Step 1 — Triage gate (cheapest check)
 
@@ -255,5 +278,6 @@ skills/critique.md                   # Step 2 (rate-limited)
 skills/next.md                       # Step 3a (/next top)
 skills/ship-data.md                  # Step 3b
 skills/expand.md                     # Step 3c (posture-gated)
+scripts/plan/promote.mjs             # Step 0 veto sweep (Promote: aged)
 skills/iterate.md                    # Step 3d
 ```

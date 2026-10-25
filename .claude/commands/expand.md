@@ -12,10 +12,11 @@ Argument handling:
 - `careful` | `bold` | `promote` → the cap and bar, or (owner)
   this pass writes its picks as specs; `skills/expand.md` §2.
 
-Procedure: §5. Hard rules: §6. Failure modes: §7. Signals:
-audit clusters, critique clusters, triage patterns, sibling
-lessons, platform drift. Never write to the build plan
-directly (`promote` is the one documented exception).
+Procedure: §5. Aged promotion: §6. Hard rules: §7. Failure
+modes: §8. Signals: audit clusters, critique clusters, triage
+patterns, sibling lessons, platform drift. Never write to the
+build plan directly (`promote` and the aged promotion, held
+behind its veto window, are the documented exceptions).
 
 When invoked under `/loop` or `/march`, the user is not
 present. After commit + land (or a clean no-candidates exit),

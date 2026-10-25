@@ -50,7 +50,8 @@ exactly as below.
 The word never loosens `plan/bearings.md`: posture `strict`
 keeps `/expand` a no-op (`bold` then reads as `balanced`, and
 the report says so), and only posture `autonomous` writes specs
-without `/oversight`.
+without `/oversight` (and `Promote: aged`, one aged candidate a
+pass, held behind its veto window).
 
 Cloud: `.github/workflows/march.yml` runs one tick per cron
 firing.
@@ -64,6 +65,28 @@ git pull --ff-only
 ```
 
 Divergence → stop per §5.
+
+Then the veto sweep, over the Held lines `/expand`'s aged
+promotion writes (`skills/expand.md` §6; none, and it prints
+`clean`):
+
+```bash
+node scripts/plan/promote.mjs sweep      # veto | release | wait, one line each (gh read only)
+```
+
+| Issue state | Window | The tick does |
+|---|---|---|
+| closed | any | **Veto**: the spec file, its roadmap row and its Held line go; the candidate moves to `## Rejected` as `vetoed <date> (#N)`; `ARCHIVE.md` gets a `spec vetoed` line. |
+| open | passed | **Release**: the Held line goes; `/next top` picks the spec as usual. |
+| open | open | Nothing. |
+
+Any veto or release: `node scripts/plan/promote.mjs sweep
+--write`, the gate, one commit (`plan: veto sweep — vetoed
+<NN>, released <NN>`), land. Only then close each released
+issue: `gh issue close <N> --comment "veto window passed; this
+spec is now built"`. Landing first matters: a closed issue
+whose Held line still exists reads as a veto, whoever closed
+it. The sweep is housekeeping; the tick goes on to Step 1.
 
 ### Step 1 — Triage gate (cheapest; concierge first)
 
@@ -145,6 +168,7 @@ plan/<NN>-<slug>.md                  # each spec's chunks
 plan/AUDIT.md                        # iterate queue
 plan/CRITIQUE.md                     # critique queue + rate-limit metadata
 plan/CANDIDATES.md             # expand output + rate-limit metadata
+node scripts/plan/promote.mjs sweep  # Step 0: veto or release auto-promoted Held specs
 gh issue list ...                    # triage gate
 node scripts/verify.mjs              # the gate every child runs
 ```

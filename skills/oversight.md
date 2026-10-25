@@ -49,9 +49,14 @@ misconfiguration (§6).
    with `node scripts/secrets.mjs set <NAME>` in their own
    terminal, never pasted here; then delete the row.
 
+9. `node scripts/plan/promote.mjs sweep` — auto-promotions
+   still in their veto window (dry: it writes nothing).
+
 ## 4. The briefing (~20 lines)
 
-Shipping (chunks archived since last oversight, verbs mix) · Queues
+Auto-promoted first: each spec in its veto window, as `NN
+<title> · veto until <date> (#N)`, so the owner sees what the
+loop is about to build before anything else · Shipping (chunks archived since last oversight, verbs mix) · Queues
 (AUDIT n / CRITIQUE n / candidates n / needs-user n) · Blocked
 rows with reasons · Flags (anything unusual: fix-streaks,
 stale critique, gate additions). Plain text, no questions yet.
@@ -68,7 +73,12 @@ stale critique, gate additions). Plain text, no questions yet.
    `Not chunked yet.`, add its roadmap row) · unhold (remove
    the Held line, spec amended per the answer) · drop (chunk
    and its A-IDs out, Measure fixed, archive line `dropped:
-   <reason>`) · bias (`> Bias: <dim>` in AUDIT) · prune
+   <reason>`) · release an auto-promotion early (remove its
+   Held line; once landed, close its veto issue with "released
+   early by the owner") · veto one (close its issue; the next
+   tick's sweep deletes the spec, or run `node
+   scripts/plan/promote.mjs sweep --write` now) · bias
+   (`> Bias: <dim>` in AUDIT) · prune
    (delete named rows) · answer `[needs-user-call]` rows
    inline.
 5. `node scripts/verify.mjs` → single commit
