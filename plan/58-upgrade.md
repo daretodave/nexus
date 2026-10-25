@@ -305,11 +305,33 @@ says "a scratch clone". The owner's live cut-over of their
 own editorial loop is outside this spec: it follows 58.7,
 owner-run, in an idle window.
 
+### Remote: a pull request without a checkout
+
+`--repo` also takes a GitHub repo (`owner/name` or its URL).
+The command makes a blobless clone into a temporary folder,
+runs the same path (detect, convert or sync, gate, report),
+and removes the clone after. With `--pr` it pushes
+`nexus/upgrade-<version>` and opens a pull request whose body
+is the report (per-file table, assisted-merge diffs with
+their reasons, new content, knobs written, predicted first
+tick).
+
+- No push access: it forks (`gh repo fork`) and opens the
+  pull request from the fork.
+- An open upgrade pull request from an earlier run is
+  updated in place (its branch force-updated with the new
+  result, a comment saying what changed), never a second one.
+- The gate runs in the temporary clone before the push; a red
+  gate opens nothing and prints the clone's path, kept.
+- `--pr` works on a local `--repo` too, and is what
+  `--land pr` does.
+
 ## Contracts
 
 - `npx @usenexus/cli upgrade [--repo <dir>] [--write]
   [--land owner|pr] [--no-pause] [--no-watch]
-  [--keep-workflow] [--rollback]`. Exit 0: dry run printed,
+  [--keep-workflow] [--rollback] [--pr]` where `--repo` is a
+  folder or a GitHub `owner/name` / URL. Exit 0: dry run printed,
   or written and gated. Exit 1: the gate failed (worktree
   kept, path printed). Exit 2: not a v1 or half-done repo.
 - The upgrade commit's first line:
@@ -330,6 +352,7 @@ owner-run, in an idle window.
 - **A8** `--land owner` lands only in an idle window, disables and re-enables march around the push, dispatches and watches the first v2 tick, and `--rollback` restores v1 in one revert commit (tests with a stubbed `gh`).
 - **A9** The GUI shows the Upgrade banner on a v1 repo and runs the dry run, showing its report.
 - **A11** On a v2 repo the command syncs to the latest kit: untouched kit files are replaced, customised ones three-way merged (a conflict goes to an assisted merge shown as a diff and applied only with a green gate), new kit content is listed and added with knobs at their conservative values, lanes files and custom skills are untouched, and the lock's `ref:` moves in one `plan: sync to nexus <version>` commit (fixtures: an untouched file, a clean merge, a conflict, a new skill).
+- **A13** `upgrade --repo owner/name` works with no local checkout: a blobless temporary clone, the same report as a local run, and with `--pr` a pushed `nexus/upgrade-<version>` branch and a pull request whose body is the report; without push access it forks; a second run updates the open pull request instead of opening another; a red gate opens nothing (tests with a stubbed `gh` and a local bare remote).
 - **A12** The GUI banner offers Sync when a v2 repo's lock is behind the CLI's bundled kit, and the README door and playbook say the same command keeps a v2 repo current.
 - **A10** `playbooks/upgrade.md` is rewritten around the command with a generated manual appendix, `prompts/upgrade.md` exists, and README.md has a "Used v1?" section with the dry-run command and `--write`, linking the playbook; none of them names an adopter repo; the README section ships in the same release as the subcommand.
 
@@ -338,7 +361,7 @@ owner-run, in an idle window.
 (None.)
 
 ## Chunks
-Measure: 11 open · 1 closed · next A13
+Measure: 12 open · 1 closed · next A14
 
 - [ ] **58.2** One computed kit file list and its verify leg · S · closes A2 · needs —
 - [ ] **58.3** `upgrade` dry run: detect, fresh-origin worktree, convert, report · M · closes A3 · needs 58.2
@@ -355,3 +378,4 @@ Measure: 11 open · 1 closed · next A13
   - The README section merges with the `cli-v*` release that carries 58.3-58.9; the owner tags it.
 - [ ] **58.11** v2 to latest: the three-way sync and the assisted merge · L · closes A11 · needs 58.3, 58.6
 - [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs 58.9, 58.10, 58.11
+- [ ] **58.13** Upgrade a repo on GitHub as a pull request, no checkout · M · closes A13 · needs 58.11
