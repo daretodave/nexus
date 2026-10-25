@@ -51,21 +51,59 @@ export async function turnOnCloud({ setSchedule, setWorkflow }, { sched, cron, w
 }
 
 /**
- * The schedule option the step selects (49.1). What the person picked stands; until they pick, a loop workflow that
- * has a schedule selects 'current' (the cron it has), one with none selects 'demand', and a repo with no loop
- * workflow yet starts at 'night'. `found` is GET /api/actions' `schedule` (null: no loop workflow at origin).
+ * The five cadence presets the step offers (spec 55, A9), in the order shown. The kit's scripts/cloud/cadence.mjs
+ * PRESETS owns the table (a test holds these equal to it); the server writes the preset from that file and sets
+ * NEXUS_CADENCE. `cron: null`: no schedule.
+ */
+export const CADENCES = Object.freeze({
+  calm: { label: 'Calm', cron: '17 */6 * * *', every: 6, ceiling: 8, chainMax: 0 },
+  steady: { label: 'Steady', cron: '17 */3 * * *', every: 3, ceiling: 12, chainMax: 0 },
+  eager: { label: 'Eager', cron: '17 */3 * * *', every: 3, ceiling: 20, chainMax: 3 },
+  sprint: { label: 'Sprint', cron: '17 */3 * * *', every: 3, ceiling: 30, chainMax: 8 },
+  off: { label: 'Off', cron: null, every: null, ceiling: 12, chainMax: 0 },
+});
+/** What a new adoption gets (bootstrap's DEFAULT_CADENCE): the step's pick when the repo has no loop workflow yet. */
+export const DEFAULT_CADENCE = 'steady';
+export const isCadence = (k) => Object.hasOwn(CADENCES, k);
+
+/** A preset in a few words, for its option: "every 3 hours · chains up to 3 · 20 commits a day". */
+export function cadenceSub(k) {
+  const c = CADENCES[k];
+  if (!c) return '';
+  if (!c.cron) return 'no schedule · when you press Run one pass';
+  return [`every ${c.every} hours`, c.chainMax ? `chains up to ${c.chainMax}` : null, `${c.ceiling} commits a day`].filter(Boolean).join(' · ');
+}
+
+/** The cron Turn on sends for an option: a preset's own, overnight's from the caller, the current one, or '' (none). */
+export function cronFor(k, { night = '', found = null } = {}) {
+  if (isCadence(k)) return CADENCES[k].cron || '';
+  if (k === 'night') return night;
+  if (k === 'current') return found?.cron || '';
+  return '';
+}
+
+/**
+ * The schedule option the step selects (49.1). What the person picked stands (a word this step no longer offers
+ * reads as unpicked); until they pick, a loop workflow that has a schedule selects 'current' (the cron it has), one
+ * with none selects 'off', and a repo with no loop workflow yet starts at the default preset, steady.
+ * `found` is GET /api/actions' `schedule` (null: no loop workflow at origin).
  */
 export function pickSched(picked, found) {
   const hasCron = !!found?.crons?.length;
-  if (picked === 'current') return hasCron ? 'current' : found ? 'demand' : 'night';
-  if (picked) return picked;
-  return hasCron ? 'current' : found ? 'demand' : 'night';
+  const unpicked = hasCron ? 'current' : found ? 'off' : DEFAULT_CADENCE;
+  if (picked === 'current') return unpicked;
+  if (picked && (isCadence(picked) || picked === 'night')) return picked;
+  return unpicked;
 }
 
-/** Whether Turn on keeps what the workflow has: the current cron, or on demand when that is what it is. */
-export function keepsSchedule(sched, found) {
+/**
+ * Whether Turn on keeps what the workflow has, writing and setting nothing: the current cron, or off when the
+ * workflow has no schedule and off was not picked on purpose (it is what the step selects for it).
+ */
+export function keepsSchedule(sched, found, picked = null) {
   if (!found) return false;
-  return sched === 'current' ? !!found.crons?.length : sched === 'demand' && !found.crons?.length;
+  if (sched === 'current') return !!found.crons?.length;
+  return sched === 'off' && !found.crons?.length && picked !== 'off';
 }
 
 const pad2 = (n) => String(n).padStart(2, '0');

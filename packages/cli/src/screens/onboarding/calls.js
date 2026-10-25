@@ -15,7 +15,7 @@ export const onboardingCalls = {
   setLocal: (patch) => api('/api/local', patch),
   /** POST /api/cloud/workflow {} -> { path, sha, written, branch, pr?, setup?, mode? } (served: the kit's march.yml, landed per owner mode; already there writes nothing; 409 { error, fix } when the gh token lacks the workflow scope) */
   addWorkflow: () => api('/api/cloud/workflow', {}),
-  /** POST /api/cloud/schedule { schedule: 'night'|'two'|'demand', cron } -> { cron, next, path, written, sha, pr? } (served: changes only the cron line, demand takes the schedule out; next is ISO UTC or null) */
+  /** POST /api/cloud/schedule { schedule: 'calm'|'steady'|'eager'|'sprint'|'off'|'night', cron } -> { cron, next, path, written, sha, pr?, cadence?: { name, variable: 'set'|'kept'|null, note? } } (served: a preset writes its cron, ceiling and heartbeat hours (off takes the schedule out) and sets NEXUS_CADENCE in owner mode; night changes only the cron line; next is ISO UTC or null) */
   setSchedule: (schedule, cron) => api('/api/cloud/schedule', { schedule, cron }),
 };
 

@@ -22,8 +22,9 @@ export const DEFAULT_DRAFT = {
   adopt: null, // Plot: 'sent' once Adopt now sent the adopt prompt (a repo nexus is not in yet; spec 52, A1)
   plotHeld: false, // Plot: the person asked to plot before nexus was in; plot once adoption lands
   vault: 'imp', // Secrets: 'imp' | 'empty' | 'skip' (an owner's start; a contributor has nothing to pick)
-  sched: null, // Cloud: null (not picked: the step selects the workflow's own schedule, else 'night') | 'current' | 'night' | 'two' | 'demand'
+  sched: null, // Cloud: null (not picked: the step selects the workflow's own schedule, else 'steady') | 'current' | a preset ('calm' | 'steady' | 'eager' | 'sprint' | 'off') | 'night'
   schedLabel: null, // Cloud: the kept schedule in words, when 'current' was turned on
+  cadenceSet: null, // Cloud: a preset was turned on and NEXUS_CADENCE was set or already it (true), or not (false: the owner sets it)
   cloud: null, // Cloud: null (not decided) | 'on' | 'skipped'
   cloudSaved: null, // Cloud: the schedule call answered (true) or did not (false)
 };
@@ -67,7 +68,10 @@ export const RUN_MODE_LABEL = {
 };
 
 export const SCHED_SUMMARY = {
+  calm: 'Calm, every 6 hours',
+  steady: 'Steady, every 3 hours',
+  eager: 'Eager, every 3 hours, chains up to 3',
+  sprint: 'Sprint, every 3 hours, chains up to 8',
+  off: 'Off, only on demand',
   night: 'Overnight, 01:30 to 06:30',
-  two: 'Every 2 hours, on the hour',
-  demand: 'Only on demand',
 };

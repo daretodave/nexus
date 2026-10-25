@@ -9,8 +9,11 @@
 // templates/ directly. Which way a tick lands is the repo variable NEXUS_LOOP_MODE, not a line in the file: in owner
 // mode an unset variable is set to owner (best effort), as bootstrap's set-loop-mode does.
 //
-// The schedule changes only the `- cron:` line(s) under `on.schedule`; "On demand" takes the schedule block out
-// (workflow_dispatch stays). Everything else in the file is kept byte for byte.
+// The schedule is one of the five cadence presets (spec 55: calm, steady, eager, sprint, off; the kit's
+// scripts/cloud/cadence.mjs owns the table and writes them), or overnight, a custom cron outside them. A preset writes
+// its cron line (off takes the schedule out; workflow_dispatch stays), the ceiling step's `ceiling=` line and, when
+// the repo has heartbeat.yml, its `march_hours=` line, then sets the repo variable NEXUS_CADENCE (owner mode).
+// Overnight changes only the `- cron:` line. Everything else in the file is kept byte for byte.
 //
 // Nothing touches the person's checkout or working tree. Each write lands from a temporary worktree of
 // origin/<default branch>, per owner mode: owner commits and pushes the default branch; contributor commits on
@@ -30,6 +33,8 @@ import { NO_ORIGIN, placeNote, repoPlace } from './place.mjs';
 
 const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const WORKFLOW_PATH = '.github/workflows/march.yml';
+/** The heartbeat a repo may have beside the loop: a preset writes its `march_hours=` line when it is there. */
+export const HEARTBEAT_PATH = '.github/workflows/heartbeat.yml';
 export const SETUP_ACTION_PATH = '.github/actions/setup/action.yml';
 export const CLOUD_BRANCH = 'nexus/cloud-loop';
 export const SCOPE_FIX = 'gh auth refresh -s workflow';
@@ -76,6 +81,30 @@ export async function installerFill() {
   const f = kitFile('bootstrap');
   if (!f) throw Object.assign(new Error('this nexus CLI has no copy of the kit installer (scripts/bootstrap.mjs)'), { status: 500 });
   return (await import(pathToFileURL(f).href)).fillPlaceholders;
+}
+
+/** The kit's cadence presets (scripts/cloud/cadence.mjs: PRESETS, applyPreset), loaded from the kit, never a second copy. */
+export async function kitCadence() {
+  const f = kitFile('cadence');
+  if (!f) throw Object.assign(new Error('this nexus CLI has no copy of the kit\'s cadence presets (scripts/cloud/cadence.mjs)'), { status: 500 });
+  return import(pathToFileURL(f).href);
+}
+
+/**
+ * A cadence preset written into the loop workflow (and heartbeat.yml when given) by the kit's own applyPreset: the
+ * cron line (off: the schedule out, behind the marker a later preset turns back into a cron), the `ceiling=` line and
+ * heartbeat's `march_hours=` line, as bootstrap and `cadence.mjs apply` write them. A cron line not in the template's
+ * shape is set by setCron instead, so the cron always lands. Line ends kept. -> { march, heartbeat }
+ */
+export async function presetTexts(name, { march, heartbeat = null }) {
+  const { applyPreset, PRESETS } = await kitCadence();
+  const lf = (t) => (t == null ? null : String(t).replace(/\r\n/g, '\n'));
+  const back = (t, orig) => (t != null && /\r\n/.test(orig) ? t.replace(/\n/g, '\r\n') : t);
+  const r = applyPreset(name, { march: lf(march), heartbeat: lf(heartbeat) });
+  const want = PRESETS[name].cron;
+  const got = readCrons(r.march);
+  const m = (want == null ? got.length === 0 : got.length === 1 && got[0] === want) ? r.march : setCron(r.march, want);
+  return { march: back(m, march), heartbeat: heartbeat == null ? null : back(r.heartbeat, heartbeat) };
 }
 
 /** A kit template filled for this repo, LF line ends. */
@@ -216,19 +245,36 @@ export function setCron(text, cron) {
   return out.join(eol);
 }
 
+/**
+ * The cadence presets the Cloud step offers (spec 55, A9): each word's cron. scripts/cloud/cadence.mjs PRESETS owns
+ * the table (a test holds these equal to it); saving one writes the rest of the preset from that file (applyPreset).
+ * off: no schedule (dispatch and nudge only).
+ */
+export const CADENCE_CRONS = Object.freeze({ calm: '17 */6 * * *', steady: '17 */3 * * *', eager: '17 */3 * * *', sprint: '17 */3 * * *', off: null });
+
+/** What POST /api/cloud/schedule takes: the five presets, and overnight, a custom cron outside them (the body's cron). */
 export const SCHEDULES = {
+  calm: 'the calm cadence',
+  steady: 'the steady cadence',
+  eager: 'the eager cadence',
+  sprint: 'the sprint cadence',
+  off: 'the off cadence',
   night: 'overnight',
-  two: 'every 2 hours',
-  demand: 'on demand',
 };
 
-/** POST /api/cloud/schedule's body checked: { schedule, cron (null: on demand), human } or { error }. */
+/**
+ * POST /api/cloud/schedule's body checked: { schedule, cadence?, cron (null: no schedule), human } or { error }.
+ * A preset's cron is the preset's own (a cron in the body is ignored); overnight and no word at all need one.
+ */
 export function scheduleRequest(b = {}) {
   const schedule = b.schedule == null ? null : String(b.schedule);
-  if (schedule != null && !SCHEDULES[schedule]) return { error: `schedule is one of ${Object.keys(SCHEDULES).join(', ')}` };
-  if (schedule === 'demand') return { schedule, cron: null, human: SCHEDULES.demand };
+  if (schedule != null && !Object.hasOwn(SCHEDULES, schedule)) return { error: `schedule is one of ${Object.keys(SCHEDULES).join(', ')}` };
+  if (schedule != null && Object.hasOwn(CADENCE_CRONS, schedule)) {
+    const cron = CADENCE_CRONS[schedule];
+    return { schedule, cadence: schedule, cron, human: `${SCHEDULES[schedule]} (${cron ? `cron ${cron}` : 'no schedule'})` };
+  }
   const cron = String(b.cron ?? '').trim().replace(/\s+/g, ' ');
-  if (!cron) return { error: 'cron is required (or schedule: demand)' };
+  if (!cron) return { error: 'cron is required (or a preset: calm, steady, eager, sprint, off)' };
   if (!parseCron(cron)) return { error: `"${cron.slice(0, 60)}" is not a five-field cron this reads` };
   return { schedule, cron, human: schedule ? `${SCHEDULES[schedule]} (cron ${cron})` : `on cron ${cron}` };
 }
@@ -262,7 +308,7 @@ export function describeCron(cron) {
 
 /** The crons in words: each described, or every one shown raw ("`<cron>` UTC") when any is a shape this can't say. */
 export function describeCrons(crons = []) {
-  if (!crons.length) return SCHEDULES.demand;
+  if (!crons.length) return 'on demand';
   const said = crons.map(describeCron);
   return said.every(Boolean) ? said.join('; ') : `${crons.join(', ')} UTC`;
 }
@@ -489,14 +535,18 @@ async function ownerLoopMode(repo, run) {
   return s.ok ? { mode: 'owner', set: true } : { mode: null, note: 'could not set NEXUS_LOOP_MODE (that needs admin on the repo): gh variable set NEXUS_LOOP_MODE --body owner' };
 }
 
-/** The workflow (and the toolchain action when missing) filled for this repo: { rel: text }, cron applied when given. */
-async function workflowFiles(repo, place, cron) {
+/**
+ * The workflow (and the toolchain action when missing) filled for this repo: { rel: text }, with the schedule asked
+ * for when given (scheduleRequest's answer: a preset through presetTexts, else the cron).
+ */
+async function workflowFiles(repo, place, q) {
   const tpl = kitFile('march');
   if (!tpl) throw Object.assign(new Error('this nexus CLI has no copy of the kit\'s march.yml'), { status: 500 });
   const name = await projectName(repo, place.base);
   const v = { name, branch: place.branch };
   let yml = await fillTemplate(fs.readFileSync(tpl, 'utf8'), v);
-  if (cron !== undefined) yml = setCron(yml, cron);
+  if (q?.cadence) yml = (await presetTexts(q.cadence, { march: yml })).march;
+  else if (q) yml = setCron(yml, q.cron);
   const files = { [WORKFLOW_PATH]: yml };
   const setup = kitFile('setup');
   if (setup && await showFile(repo, place.base, SETUP_ACTION_PATH) == null) files[SETUP_ACTION_PATH] = await fillTemplate(fs.readFileSync(setup, 'utf8'), v);
@@ -537,9 +587,28 @@ export async function addWorkflow(repo, { owner = false, run = shRun, now, commi
 }
 
 /**
- * POST /api/cloud/schedule { schedule, cron }: set the loop workflow's cron (or take the schedule out: on demand)
- * and land it per owner mode. A repo with no loop workflow gets it, with this schedule, in the same commit.
- * -> { status, cron, next (ISO, UTC; null on demand), path, written, sha?, pr? }.
+ * A preset chosen sets the repo variable NEXUS_CADENCE to it, which every march job's Cadence step reads (the ceiling,
+ * chain max, idle backoff and heartbeat hours). Owner mode only, best effort: a variable already at it is kept. A
+ * contributor sets no repo variable (as with NEXUS_LOOP_MODE): the answer carries the command for the owner.
+ * -> { name, variable: 'set' | 'kept' | null, note? }
+ */
+async function cadenceVariable(repo, run, name, owner) {
+  const fix = `gh variable set NEXUS_CADENCE --body ${name}`;
+  if (!owner) return { name, variable: null, note: `the cadence needs the repo variable too, which the owner sets once the cron is merged: ${fix}` };
+  const l = await run('gh', ['variable', 'list', '--json', 'name,value'], { cwd: repo });
+  const vars = l.ok ? json(l.stdout) : null;
+  if (Array.isArray(vars) && vars.find((x) => x.name === 'NEXUS_CADENCE')?.value === name) return { name, variable: 'kept' };
+  const s = await run('gh', ['variable', 'set', 'NEXUS_CADENCE', '--body', name], { cwd: repo });
+  return s.ok ? { name, variable: 'set' } : { name, variable: null, note: `could not set NEXUS_CADENCE (that needs admin on the repo): ${fix}` };
+}
+
+/**
+ * POST /api/cloud/schedule { schedule, cron }: set the loop workflow's schedule and land it per owner mode. A preset
+ * (calm, steady, eager, sprint, off) writes its cron (off: none), ceiling and heartbeat hours (presetTexts), then sets
+ * NEXUS_CADENCE (cadenceVariable), even when the files already match (steady, eager and sprint share a cron).
+ * Overnight or a bare cron changes the cron line only. A repo with no loop workflow gets it, with this schedule, in
+ * the same commit.
+ * -> { status, cron, next (ISO, UTC; null with no schedule), path, written, sha?, pr?, cadence?: { name, variable, note? } }.
  */
 export async function saveSchedule(repo, body, { owner = false, run = shRun, now = new Date(), commitTimeoutMs } = {}) {
   const q = scheduleRequest(body);
@@ -551,23 +620,35 @@ export async function saveSchedule(repo, body, { owner = false, run = shRun, now
     const place = await landingPlace(repo, owner, { now });
     if (place.error) return place;
     const have = await loopAt(repo, place.base);
-    let files;
+    let files = {};
     let message;
     if (have) {
       const text = await showFile(repo, place.base, have);
-      const crons = readCrons(text);
-      const same = q.cron == null ? crons.length === 0 : crons.length === 1 && crons[0] === q.cron;
-      if (same) return { status: 200, cron: q.cron, next, path: have, written: false, sha: await lastSha(repo, place.base, have), branch: place.head };
-      files = { [have]: setCron(text, q.cron) };
+      if (q.cadence) {
+        const hb = await showFile(repo, place.base, HEARTBEAT_PATH);
+        const t = await presetTexts(q.cadence, { march: text, heartbeat: hb });
+        if (t.march !== text) files[have] = t.march;
+        if (hb != null && t.heartbeat !== hb) files[HEARTBEAT_PATH] = t.heartbeat;
+      } else {
+        const crons = readCrons(text);
+        const same = q.cron == null ? crons.length === 0 : crons.length === 1 && crons[0] === q.cron;
+        if (!same) files[have] = setCron(text, q.cron);
+      }
       message = `ci: the cloud loop runs ${q.human}`;
     } else {
-      files = await workflowFiles(repo, place, q.cron);
+      files = await workflowFiles(repo, place, q);
       message = `ci: add the nexus cloud loop, run ${q.human}`;
     }
-    const r = await landFiles(repo, place, files, message, { owner, run, commitTimeoutMs });
-    if (r.status !== 200) return r;
-    const out = { ...r, cron: q.cron, next, path: have || WORKFLOW_PATH, written: true };
-    if (!have && owner) Object.assign(out, await ownerLoopMode(repo, run));
+    let out;
+    if (Object.keys(files).length) {
+      const r = await landFiles(repo, place, files, message, { owner, run, commitTimeoutMs });
+      if (r.status !== 200) return r;
+      out = { ...r, cron: q.cron, next, path: have || WORKFLOW_PATH, written: true };
+      if (!have && owner) Object.assign(out, await ownerLoopMode(repo, run));
+    } else {
+      out = { status: 200, cron: q.cron, next, path: have, written: false, sha: await lastSha(repo, place.base, have), branch: place.head };
+    }
+    if (q.cadence) out.cadence = await cadenceVariable(repo, run, q.cadence, owner);
     return out;
   } catch (e) {
     return fail(e.status || 500, String(e.message || e));

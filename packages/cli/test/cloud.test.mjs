@@ -8,11 +8,11 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import {
-  addWorkflow, cronNext, describeCron, describeCrons, fillTemplate, loopSchedule, kitFile, parseCron, readCrons, saveSchedule, scheduleRequest, scopeRefused, setCron,
-  CADENCE_PATH, CHAIN_PATH, IDLE_PATH, LOST_PATH, NUDGE_CHECK_PATH, NUDGE_PATH, QUOTA_PATH, SETUP_ACTION_PATH, WORKFLOW_PATH,
+  addWorkflow, cronNext, describeCron, describeCrons, fillTemplate, loopSchedule, kitFile, parseCron, presetTexts, readCrons, saveSchedule, scheduleRequest, scopeRefused, setCron,
+  CADENCE_CRONS, CADENCE_PATH, CHAIN_PATH, HEARTBEAT_PATH, IDLE_PATH, LOST_PATH, NUDGE_CHECK_PATH, NUDGE_PATH, QUOTA_PATH, SCHEDULES, SETUP_ACTION_PATH, WORKFLOW_PATH,
 } from '../server/cloud.mjs';
 import { removeTree } from './helpers/tmp.mjs';
 
@@ -59,7 +59,11 @@ function fakeGh({ vars = [], prs = [], enable = true } = {}) {
     calls.push(args.join(' '));
     const ok = (stdout) => ({ ok: true, code: 0, stdout, stderr: '' });
     if (args[0] === 'variable' && args[1] === 'list') return ok(JSON.stringify(vars));
-    if (args[0] === 'variable' && args[1] === 'set') { vars.push({ name: args[2], value: args[4] }); return ok(''); }
+    if (args[0] === 'variable' && args[1] === 'set') {
+      const have = vars.find((v) => v.name === args[2]);
+      if (have) have.value = args[4]; else vars.push({ name: args[2], value: args[4] });
+      return ok('');
+    }
     if (args[0] === 'workflow' && args[1] === 'enable') return enable ? ok('') : { ok: false, code: 1, stdout: '', stderr: 'HTTP 403: Resource not accessible by integration' };
     if (args[0] === 'pr' && args[1] === 'list') return ok(JSON.stringify(prs));
     if (args[0] === 'pr' && args[1] === 'create') { prs.push({ url: 'https://example.com/pr/1', number: 1 }); return ok('https://example.com/pr/1\n'); }
@@ -96,13 +100,33 @@ test('cronNext reads the forms the Cloud step writes, in UTC', () => {
   for (const bad of ['', '0 */2 * *', '60 * * * *', '* 24 * * *', '0 */0 * * *', 'a b c d e', '5-1 * * * *']) assert.equal(parseCron(bad), null, bad);
 });
 
-test('scheduleRequest checks the body: a known schedule, a cron this reads, on demand needs none', () => {
-  assert.deepEqual(scheduleRequest({ schedule: 'demand', cron: '' }), { schedule: 'demand', cron: null, human: 'on demand' });
-  assert.deepEqual(scheduleRequest({ schedule: 'two', cron: ' 0  */2 * * * ' }), { schedule: 'two', cron: '0 */2 * * *', human: 'every 2 hours (cron 0 */2 * * *)' });
+test('scheduleRequest checks the body: a preset brings its own cron, overnight and a bare cron need one this reads', () => {
+  assert.deepEqual(Object.keys(SCHEDULES), ['calm', 'steady', 'eager', 'sprint', 'off', 'night'], 'the five presets, then overnight');
+  assert.deepEqual(scheduleRequest({ schedule: 'off', cron: '' }), { schedule: 'off', cadence: 'off', cron: null, human: 'the off cadence (no schedule)' });
+  assert.deepEqual(scheduleRequest({ schedule: 'steady' }), { schedule: 'steady', cadence: 'steady', cron: '17 */3 * * *', human: 'the steady cadence (cron 17 */3 * * *)' });
+  assert.equal(scheduleRequest({ schedule: 'calm', cron: '0 * * * *' }).cron, '17 */6 * * *', 'a preset\'s cron is its own, whatever the body says');
   assert.equal(scheduleRequest({ schedule: 'night', cron: '30 5-10 * * *' }).human, 'overnight (cron 30 5-10 * * *)');
-  assert.ok(scheduleRequest({ schedule: 'weekly', cron: '0 0 * * 0' }).error);
-  assert.ok(scheduleRequest({ schedule: 'two', cron: '' }).error);
-  assert.ok(scheduleRequest({ schedule: 'two', cron: 'every two hours' }).error);
+  assert.equal(scheduleRequest({ schedule: 'night', cron: '30 5-10 * * *' }).cadence, undefined);
+  assert.equal(scheduleRequest({ cron: ' 0  */2 * * * ' }).cron, '0 */2 * * *');
+  for (const gone of ['two', 'demand', 'weekly', 'hasOwnProperty']) assert.ok(scheduleRequest({ schedule: gone, cron: '0 0 * * 0' }).error, gone);
+  assert.ok(scheduleRequest({ schedule: 'night', cron: '' }).error);
+  assert.ok(scheduleRequest({ schedule: 'night', cron: 'every two hours' }).error);
+});
+
+test('the presets the server and the step offer are the kit\'s own table (cadence.mjs PRESETS)', async () => {
+  const { PRESETS, CADENCES: WORDS } = await import(pathToFileURL(kitFile('cadence')).href);
+  const { CADENCES, DEFAULT_CADENCE } = await import('../src/screens/onboarding/cloudFlow.js');
+  assert.deepEqual(Object.keys(CADENCE_CRONS), [...WORDS]);
+  assert.deepEqual(Object.keys(CADENCES), [...WORDS]);
+  for (const w of WORDS) {
+    assert.equal(CADENCE_CRONS[w], PRESETS[w].cron, w);
+    assert.deepEqual([CADENCES[w].cron, CADENCES[w].ceiling, CADENCES[w].chainMax], [PRESETS[w].cron, PRESETS[w].ceiling, PRESETS[w].chainMax], w);
+    if (PRESETS[w].cron) {
+      assert.equal(parseCron(PRESETS[w].cron).hour.length, 24 / CADENCES[w].every, `${w}: every ${CADENCES[w].every} hours`);
+      assert.notEqual(parseCron(PRESETS[w].cron).min[0], 0, `${w}: off the hour`);
+    }
+  }
+  assert.equal(DEFAULT_CADENCE, (await import(pathToFileURL(kitFile('cadence')).href)).DEFAULT_CADENCE);
 });
 
 // ---- the template and its schedule -------------------------------------------------
@@ -201,22 +225,28 @@ test('owner: the workflow is committed and pushed to main from a temporary workt
   assert.equal(sh(fx.origin, 'rev-list', '--count', 'main'), '2');
 });
 
-test('owner: the schedule changes the cron line only, on demand removes it, the same schedule writes nothing', async () => {
+test('owner: a preset writes its cron and sets NEXUS_CADENCE; overnight changes the cron line only; off takes the schedule out', async () => {
   const fx = fixture({ owner: true });
   const head = sh(fx.root, 'rev-parse', 'HEAD');
   const gh = fakeGh({ vars: [{ name: 'NEXUS_LOOP_MODE', value: 'pr' }] });
   const now = new Date('2026-10-22T13:15:00Z');
-  // No workflow yet: it comes with this schedule, in one commit; a set variable is left as it is.
-  const first = await saveSchedule(fx.root, { schedule: 'two', cron: '0 */2 * * *' }, { owner: true, run: gh.run, now });
+  // No workflow yet: it comes with this preset, in one commit; a set NEXUS_LOOP_MODE is left as it is.
+  const first = await saveSchedule(fx.root, { schedule: 'steady', cron: '17 */3 * * *' }, { owner: true, run: gh.run, now });
   assert.equal(first.status, 200, first.error);
-  assert.deepEqual([first.cron, first.next, first.written, first.mode], ['0 */2 * * *', '2026-10-22T14:00:00.000Z', true, 'pr']);
-  assert.equal(sh(fx.origin, 'log', '-1', '--format=%s', 'main'), 'ci: add the nexus cloud loop, run every 2 hours (cron 0 */2 * * *)');
-  assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), ['0 */2 * * *']);
+  assert.deepEqual([first.cron, first.next, first.written, first.mode], ['17 */3 * * *', '2026-10-22T15:17:00.000Z', true, 'pr']);
+  assert.deepEqual(first.cadence, { name: 'steady', variable: 'set' });
+  assert.ok(gh.calls.includes('variable set NEXUS_CADENCE --body steady'));
+  assert.equal(sh(fx.origin, 'log', '-1', '--format=%s', 'main'), 'ci: add the nexus cloud loop, run the steady cadence (cron 17 */3 * * *)');
+  assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), ['17 */3 * * *']);
+  assert.match(fx.at('main', WORKFLOW_PATH), /\n {10}ceiling=12\n/, 'the preset\'s ceiling literal');
 
   const before = fx.at('main', WORKFLOW_PATH);
+  gh.calls.length = 0;
   const night = await saveSchedule(fx.root, { schedule: 'night', cron: '30 5-10 * * *' }, { owner: true, run: gh.run, now });
   assert.equal(night.status, 200, night.error);
   assert.equal(night.next, '2026-10-23T05:30:00.000Z');
+  assert.equal(night.cadence, undefined, 'overnight is a custom cron: no preset, no variable');
+  assert.ok(!gh.calls.some((c) => c.startsWith('variable')));
   assert.equal(sh(fx.origin, 'log', '-1', '--format=%s', 'main'), 'ci: the cloud loop runs overnight (cron 30 5-10 * * *)');
   assert.equal(fx.at('main', WORKFLOW_PATH), setCron(before, '30 5-10 * * *'));
   assert.deepEqual(sh(fx.origin, 'diff', '--name-only', 'main~1', 'main').split('\n'), [WORKFLOW_PATH]);
@@ -225,15 +255,91 @@ test('owner: the schedule changes the cron line only, on demand removes it, the 
   assert.equal(same.written, false);
   assert.equal(same.sha, night.sha);
 
-  const off = await saveSchedule(fx.root, { schedule: 'demand' }, { owner: true, run: gh.run, now });
+  const off = await saveSchedule(fx.root, { schedule: 'off' }, { owner: true, run: gh.run, now });
   assert.equal(off.status, 200, off.error);
-  assert.deepEqual([off.cron, off.next], [null, null]);
-  assert.equal(sh(fx.origin, 'log', '-1', '--format=%s', 'main'), 'ci: the cloud loop runs on demand');
-  assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), []);
-  assert.match(fx.at('main', WORKFLOW_PATH), /workflow_dispatch:/);
-  assert.equal((await saveSchedule(fx.root, { schedule: 'demand' }, { owner: true, run: gh.run, now })).written, false);
-  assert.equal((await saveSchedule(fx.root, { schedule: 'two', cron: 'nope' }, { owner: true, run: gh.run, now })).status, 400);
+  assert.deepEqual([off.cron, off.next, off.cadence], [null, null, { name: 'off', variable: 'set' }]);
+  assert.equal(sh(fx.origin, 'log', '-1', '--format=%s', 'main'), 'ci: the cloud loop runs the off cadence (no schedule)');
+  const offYml = fx.at('main', WORKFLOW_PATH);
+  assert.deepEqual(readCrons(offYml), []);
+  assert.match(offYml, /workflow_dispatch:/);
+  assert.match(offYml, /# schedule: none \(NEXUS_CADENCE off/, 'the marker a later preset turns back into a cron');
+  // Again: nothing to write, and the variable is already off.
+  const again = await saveSchedule(fx.root, { schedule: 'off' }, { owner: true, run: gh.run, now });
+  assert.deepEqual([again.written, again.cadence], [false, { name: 'off', variable: 'kept' }]);
+  assert.equal((await saveSchedule(fx.root, { schedule: 'night', cron: 'nope' }, { owner: true, run: gh.run, now })).status, 400);
   untouched(fx, head);
+});
+
+test('owner: presets that share a cron still change the cadence; off and back puts the cron where it was; heartbeat gets its hours', async () => {
+  const fx = fixture({ owner: true });
+  const head = sh(fx.root, 'rev-parse', 'HEAD');
+  const gh = fakeGh();
+  const hbTpl = fs.readFileSync(path.join(KIT, 'templates', '.github', 'workflows', 'heartbeat.yml'), 'utf8').replace(/\r\n/g, '\n');
+  assert.equal((await addWorkflow(fx.root, { owner: true, run: gh.run })).status, 200);
+  // The repo's heartbeat, as bootstrap installs it, beside the loop.
+  const wt = path.join(fx.base, 'hb');
+  sh(fx.root, 'fetch', '-q', 'origin');
+  sh(fx.root, 'worktree', 'add', '-q', '--detach', wt, 'origin/main');
+  write(path.join(wt, HEARTBEAT_PATH), hbTpl);
+  sh(wt, 'add', '-A');
+  sh(wt, '-c', 'user.email=t@example.com', '-c', 'user.name=T', 'commit', '-q', '-m', 'ci: heartbeat');
+  sh(wt, 'push', '-q', 'origin', 'HEAD:main');
+  sh(fx.root, 'worktree', 'remove', '--force', wt);
+
+  const steady = await saveSchedule(fx.root, { schedule: 'steady' }, { owner: true, run: gh.run });
+  assert.equal(steady.status, 200, steady.error);
+  assert.deepEqual(sh(fx.origin, 'diff', '--name-only', 'main~1', 'main').split('\n'), [WORKFLOW_PATH], 'the template heartbeat is at steady\'s hours already');
+  assert.match(fx.at('main', HEARTBEAT_PATH), /\n +march_hours=14\n/);
+
+  // Eager: the same cron, so only the ceiling and heartbeat lines change, and the variable.
+  gh.calls.length = 0;
+  const eager = await saveSchedule(fx.root, { schedule: 'eager' }, { owner: true, run: gh.run });
+  assert.equal(eager.written, true);
+  assert.deepEqual(sh(fx.origin, 'diff', '--name-only', 'main~1', 'main').split('\n').sort(), [HEARTBEAT_PATH, WORKFLOW_PATH].sort());
+  assert.equal(sh(fx.origin, 'diff', 'main~1', 'main', '--', WORKFLOW_PATH).split('\n').filter((l) => /^[-+] /.test(l)).length, 2, 'one line: the ceiling');
+  assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), ['17 */3 * * *']);
+  assert.match(fx.at('main', WORKFLOW_PATH), /\n {10}ceiling=20\n/);
+  assert.match(fx.at('main', HEARTBEAT_PATH), /\n +march_hours=10\n/);
+  assert.deepEqual(eager.cadence, { name: 'eager', variable: 'set' });
+  assert.ok(gh.calls.includes('variable set NEXUS_CADENCE --body eager'));
+
+  // Files already at the preset (set by hand, say), the variable elsewhere: nothing written, the variable set.
+  const vars = fakeGh({ vars: [{ name: 'NEXUS_CADENCE', value: 'steady' }] });
+  const only = await saveSchedule(fx.root, { schedule: 'eager' }, { owner: true, run: vars.run });
+  assert.deepEqual([only.written, only.cadence], [false, { name: 'eager', variable: 'set' }]);
+  assert.ok(vars.calls.includes('variable set NEXUS_CADENCE --body eager'));
+
+  // Off, then calm: the cron comes back under schedule:.
+  await saveSchedule(fx.root, { schedule: 'off' }, { owner: true, run: gh.run });
+  assert.match(fx.at('main', HEARTBEAT_PATH), /\n +march_hours=none\n/);
+  const calm = await saveSchedule(fx.root, { schedule: 'calm' }, { owner: true, run: gh.run });
+  assert.equal(calm.status, 200, calm.error);
+  const calmYml = fx.at('main', WORKFLOW_PATH);
+  assert.deepEqual(readCrons(calmYml), ['17 */6 * * *']);
+  assert.match(calmYml, /\n {2}schedule:\n {4}- cron: '17 \*\/6 \* \* \*'\n/);
+  assert.match(calmYml, /\n {10}ceiling=8\n/);
+  assert.doesNotMatch(calmYml, /# schedule: none/);
+
+  // A refused variable answers the command to run, and the cron still landed.
+  const refused = fakeGh();
+  const r0 = refused.run;
+  refused.run = async (cmd, args) => (args[0] === 'variable' && args[1] === 'set' ? { ok: false, code: 1, stdout: '', stderr: 'HTTP 403' } : r0(cmd, args));
+  const no = await saveSchedule(fx.root, { schedule: 'sprint' }, { owner: true, run: refused.run });
+  assert.equal(no.status, 200, no.error);
+  assert.equal(no.cadence.variable, null);
+  assert.match(no.cadence.note, /gh variable set NEXUS_CADENCE --body sprint/);
+  assert.match(fx.at('main', WORKFLOW_PATH), /\n {10}ceiling=30\n/);
+  untouched(fx, head);
+});
+
+test('presetTexts keeps CRLF line ends, and sets a cron line not in the template\'s shape', async () => {
+  const crlf = 'name: x\r\non:\r\n  schedule:\r\n    - cron: "0 1 * * *" # one\r\n  workflow_dispatch:\r\njobs: {}\r\n';
+  const t = await presetTexts('steady', { march: crlf });
+  assert.equal(t.march, 'name: x\r\non:\r\n  schedule:\r\n    - cron: "17 */3 * * *" # one\r\n  workflow_dispatch:\r\njobs: {}\r\n');
+  assert.equal(t.heartbeat, null);
+  const off = await presetTexts('off', { march: crlf });
+  assert.deepEqual(readCrons(off.march), []);
+  assert.match(off.march, /\r\n {2}workflow_dispatch:\r\n/);
 });
 
 test('contributor: main is never pushed; the workflow and its schedule ride one nexus/cloud-loop pull request', async () => {
@@ -252,18 +358,22 @@ test('contributor: main is never pushed; the workflow and its schedule ride one 
 
   // The workflow is pending in the PR: asking again finds it there.
   assert.equal((await addWorkflow(fx.root, { owner: false, run: gh.run })).written, false);
-  const s = await saveSchedule(fx.root, { schedule: 'two', cron: '0 */2 * * *' }, { owner: false, run: gh.run });
+  const s = await saveSchedule(fx.root, { schedule: 'eager' }, { owner: false, run: gh.run });
   assert.equal(s.status, 200, s.error);
   assert.equal(s.pr, 'https://example.com/pr/1', 'the open PR is reused');
   assert.equal(gh.calls.filter((c) => c.startsWith('pr create')).length, 1);
   assert.equal(sh(fx.origin, 'rev-list', '--count', 'main..nexus/cloud-loop'), '2');
-  assert.deepEqual(readCrons(fx.at('nexus/cloud-loop', WORKFLOW_PATH)), ['0 */2 * * *']);
+  assert.deepEqual(readCrons(fx.at('nexus/cloud-loop', WORKFLOW_PATH)), ['17 */3 * * *']);
   assert.equal(sh(fx.origin, 'rev-parse', 'main'), main);
+  // A contributor sets no repo variable: the answer says what the owner runs.
+  assert.deepEqual([s.cadence.name, s.cadence.variable], ['eager', null]);
+  assert.match(s.cadence.note, /gh variable set NEXUS_CADENCE --body eager/);
+  assert.ok(!gh.calls.some((c) => c.startsWith('variable')));
 
   // Merged: the next change starts a fresh branch from main.
   sh(fx.origin, 'update-ref', 'refs/heads/main', sh(fx.origin, 'rev-parse', 'nexus/cloud-loop'));
   gh.prs.length = 0;
-  const later = await saveSchedule(fx.root, { schedule: 'demand' }, { owner: false, run: gh.run, now: new Date('2026-10-23T08:00:00Z') });
+  const later = await saveSchedule(fx.root, { schedule: 'off' }, { owner: false, run: gh.run, now: new Date('2026-10-23T08:00:00Z') });
   assert.equal(later.status, 200, later.error);
   assert.equal(later.branch, 'nexus/cloud-loop-202610230800');
   untouched(fx, head);
@@ -309,17 +419,21 @@ async function withServer(repo, gh, fn) {
 
 test('POST /api/cloud/workflow and /api/cloud/schedule are served, per owner mode', async () => {
   const own = fixture({ owner: true });
-  await withServer(own.root, fakeGh(), async (post) => {
+  const ownGh = fakeGh();
+  await withServer(own.root, ownGh, async (post) => {
     const w = await post('/api/cloud/workflow', {});
     assert.equal(w.status, 200, w.body?.error);
     assert.equal(w.body.path, WORKFLOW_PATH);
     assert.equal(w.body.sha, sh(own.origin, 'rev-parse', 'main'));
-    assert.equal((await post('/api/cloud/schedule', { schedule: 'two', cron: 'often' })).status, 400);
-    const s = await post('/api/cloud/schedule', { schedule: 'two', cron: '0 */2 * * *' });
+    assert.equal((await post('/api/cloud/schedule', { schedule: 'night', cron: 'often' })).status, 400);
+    assert.equal((await post('/api/cloud/schedule', { schedule: 'two', cron: '0 */2 * * *' })).status, 400, 'the old words are gone');
+    const s = await post('/api/cloud/schedule', { schedule: 'sprint', cron: '17 */3 * * *' });
     assert.equal(s.status, 200, s.body?.error);
-    assert.equal(s.body.cron, '0 */2 * * *');
-    assert.equal(cronNext('0 */2 * * *', new Date(Date.parse(s.body.next) - 60000)).toISOString(), s.body.next);
-    assert.deepEqual(readCrons(own.at('main', WORKFLOW_PATH)), ['0 */2 * * *']);
+    assert.equal(s.body.cron, '17 */3 * * *');
+    assert.deepEqual(s.body.cadence, { name: 'sprint', variable: 'set' });
+    assert.ok(ownGh.vars.some((v) => v.name === 'NEXUS_CADENCE' && v.value === 'sprint'));
+    assert.equal(cronNext('17 */3 * * *', new Date(Date.parse(s.body.next) - 60000)).toISOString(), s.body.next);
+    assert.deepEqual(readCrons(own.at('main', WORKFLOW_PATH)), ['17 */3 * * *']);
   });
   const contrib = fixture({ owner: false });
   await withServer(contrib.root, fakeGh(), async (post) => {
@@ -328,9 +442,9 @@ test('POST /api/cloud/workflow and /api/cloud/schedule are served, per owner mod
     assert.equal(w.body.pr, 'https://example.com/pr/1');
     assert.equal(w.body.branch, 'nexus/cloud-loop');
     assert.equal(sh(contrib.origin, 'rev-list', '--count', 'main'), '1');
-    const s = await post('/api/cloud/schedule', { schedule: 'demand', cron: '' });
+    const s = await post('/api/cloud/schedule', { schedule: 'off', cron: '' });
     assert.equal(s.status, 200, s.body?.error);
-    assert.deepEqual([s.body.cron, s.body.next, s.body.pr], [null, null, 'https://example.com/pr/1']);
+    assert.deepEqual([s.body.cron, s.body.next, s.body.pr, s.body.cadence.variable], [null, null, 'https://example.com/pr/1', null]);
   });
 });
 
@@ -504,26 +618,26 @@ test('Turn on saves the schedule, then enables a loop workflow that is switched 
     const call = async (p, b) => { const r = await post(p, b); if (r.status !== 200) throw Object.assign(new Error(r.body?.error || `HTTP ${r.status}`), { status: r.status }); return r.body; };
     const calls = { setSchedule: (s, c) => call('/api/cloud/schedule', { schedule: s, cron: c }), setWorkflow: (id, on) => call('/api/actions/workflow', { id, enabled: on }) };
     const off = { id: 77, path: WORKFLOW_PATH, enabled: false };
-    const r = await turnOnCloud(calls, { sched: 'demand', cron: '', wf: off });
+    const r = await turnOnCloud(calls, { sched: 'off', cron: '', wf: off });
     assert.equal(r.enabled, true);
     assert.deepEqual(gh.calls.filter((c) => c.startsWith('workflow')), ['workflow enable 77'], 'gh workflow enable, after the schedule landed');
     assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), []);
 
     // Already on: nothing to enable. Not listed yet (just added): a new workflow starts enabled.
     gh.calls.length = 0;
-    await turnOnCloud(calls, { sched: 'demand', cron: '', wf: { ...off, enabled: true } });
-    await turnOnCloud(calls, { sched: 'demand', cron: '', wf: null });
+    await turnOnCloud(calls, { sched: 'off', cron: '', wf: { ...off, enabled: true } });
+    await turnOnCloud(calls, { sched: 'off', cron: '', wf: null });
     assert.deepEqual(gh.calls.filter((c) => c.startsWith('workflow')), []);
   });
   const refuse = fakeGh({ enable: false });
   await withServer(fx.root, refuse, async (post) => {
     const call = async (p, b) => { const r = await post(p, b); if (r.status !== 200) throw new Error(r.body?.error); return r.body; };
     const calls = { setSchedule: (s, c) => call('/api/cloud/schedule', { schedule: s, cron: c }), setWorkflow: (id, on) => call('/api/actions/workflow', { id, enabled: on }) };
-    await assert.rejects(turnOnCloud(calls, { sched: 'two', cron: '0 */2 * * *', wf: { id: 77, enabled: false } }), /could not switch the loop workflow on.*403/s);
+    await assert.rejects(turnOnCloud(calls, { sched: 'steady', cron: '17 */3 * * *', wf: { id: 77, enabled: false } }), /could not switch the loop workflow on.*403/s);
   });
   // A contributor's schedule waits in a pull request: nothing to enable until it is merged.
   const pending = { setSchedule: async () => ({ cron: null, pr: 'https://example.com/pr/1' }), setWorkflow: async () => { throw new Error('not called'); } };
-  assert.equal((await turnOnCloud(pending, { sched: 'demand', cron: '', wf: { id: 77, enabled: false } })).enabled, false);
+  assert.equal((await turnOnCloud(pending, { sched: 'off', cron: '', wf: { id: 77, enabled: false } })).enabled, false);
 });
 
 test('the Cloud step\'s Turn on goes through turnOnCloud with the listed workflow', () => {
@@ -561,7 +675,7 @@ test('loopSchedule reads the loop workflow crons at origin/<default branch>, and
     [s.path, s.ref, s.crons, s.cron, s.label, s.raw, s.next],
     [WORKFLOW_PATH, 'origin/main', [NEXUS_CRON], NEXUS_CRON, 'Every 6 hours (02:00, 08:00, 14:00, 20:00 UTC)', false, '2026-10-22T14:00:00.000Z'],
   );
-  await saveSchedule(fx.root, { schedule: 'demand' }, { owner: true, run: gh.run });
+  await saveSchedule(fx.root, { schedule: 'off' }, { owner: true, run: gh.run });
   sh(fx.root, 'fetch', '-q', 'origin');
   const none = await loopSchedule(fx.root);
   assert.deepEqual([none.crons, none.cron, none.human, none.next], [[], null, 'on demand', null]);
@@ -572,11 +686,14 @@ test('the step selects the schedule it found; Turn on with it selected commits n
   const found = { crons: [NEXUS_CRON], cron: NEXUS_CRON };
   const demand = { crons: [], cron: null };
   assert.equal(pickSched(null, found), 'current');
-  assert.equal(pickSched(null, demand), 'demand', 'a workflow with no schedule: on demand is its current');
-  assert.equal(pickSched(null, null), 'night', 'no loop workflow yet');
-  assert.equal(pickSched('two', found), 'two', 'what the person picked stands');
-  assert.equal(pickSched('current', demand), 'demand');
-  assert.deepEqual([keepsSchedule('current', found), keepsSchedule('two', found), keepsSchedule('demand', demand), keepsSchedule('demand', found), keepsSchedule('night', null)], [true, false, true, false, false]);
+  assert.equal(pickSched(null, demand), 'off', 'a workflow with no schedule: off is its current');
+  assert.equal(pickSched(null, null), 'steady', 'no loop workflow yet: the adopter default');
+  assert.equal(pickSched('eager', found), 'eager', 'what the person picked stands');
+  assert.equal(pickSched('night', null), 'night');
+  assert.equal(pickSched('current', demand), 'off');
+  assert.equal(pickSched('two', null), 'steady', 'a word the step no longer offers reads as unpicked');
+  assert.deepEqual([keepsSchedule('current', found), keepsSchedule('steady', found), keepsSchedule('off', demand), keepsSchedule('off', found), keepsSchedule('night', null)], [true, false, true, false, false]);
+  assert.equal(keepsSchedule('off', demand, 'off'), false, 'off picked on purpose sets the variable');
   const now = new Date(2026, 9, 22, 9, 0);
   assert.equal(nextLocal(new Date(2026, 9, 22, 14, 0).toISOString(), now), '14:00 today');
   assert.equal(nextLocal(new Date(2026, 9, 23, 2, 0).toISOString(), now), '02:00 tomorrow');
@@ -606,8 +723,10 @@ test('the step selects the schedule it found; Turn on with it selected commits n
     assert.equal(sh(fx.origin, 'rev-parse', 'main'), tip, 'no commit');
     assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), [NEXUS_CRON]);
     // Another option picked: that one is saved.
-    await turnOnCloud(calls, { sched: 'two', cron: '0 */2 * * *', wf: { id: 77, enabled: true }, keep: keepsSchedule('two', s) });
+    const calm = await turnOnCloud(calls, { sched: 'calm', cron: '17 */6 * * *', wf: { id: 77, enabled: true }, keep: keepsSchedule('calm', s) });
     assert.equal(scheduled, 1);
-    assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), ['0 */2 * * *']);
+    assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), ['17 */6 * * *']);
+    assert.deepEqual(calm.cadence, { name: 'calm', variable: 'set' }, 'Turn on hands the variable\'s answer back to the step');
+    assert.ok(gh.calls.includes('variable set NEXUS_CADENCE --body calm'));
   });
 });

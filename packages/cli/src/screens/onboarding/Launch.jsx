@@ -84,12 +84,14 @@ function planLine(d, adopted) {
   return <>Nothing plotted yet · the session adopts nexus first</>;
 }
 
-function cloudLine(d) {
+/** The Cloud line of the summary: what was turned on, and when it first runs (a preset whose variable is unset says so). */
+export function cloudLine(d) {
   if (d.cloud !== 'on') return 'Off · it runs on this machine only';
-  const s = d.sched === 'current' ? `${d.schedLabel || 'The schedule it had'}, kept` : SCHED_SUMMARY[d.sched || 'night'];
+  const s = d.sched === 'current' ? `${d.schedLabel || 'The schedule it had'}, kept` : SCHED_SUMMARY[d.sched] || SCHED_SUMMARY.steady;
   if (!d.cloudSaved) return `${s} · finish it in Cloud loop`;
   if (d.sched === 'current') return `${s} · runs on that schedule`;
-  return `${s} · ${d.sched === 'demand' ? 'runs when you press Run one pass' : d.sched === 'two' ? 'first run within two hours' : 'first run tonight'}`;
+  const when = d.sched === 'off' ? 'runs when you press Run one pass' : d.sched === 'night' ? 'first run tonight' : d.sched === 'calm' ? 'first run within six hours' : 'first run within three hours';
+  return `${s} · ${when}${d.cadenceSet === false ? ' · NEXUS_CADENCE still to set' : ''}`;
 }
 
 export default function Launch() {

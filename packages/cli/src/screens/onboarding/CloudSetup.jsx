@@ -1,8 +1,10 @@
 // Step 6 · Cloud loop, optional (boards CloudSetup, CloudSetupLight). Four
 // steps read from GET /api/actions and GET /api/runs: the loop workflow,
-// the one secret, one real pass, and a schedule. Add it writes the kit's
-// march.yml (POST /api/cloud/workflow), Run one pass dispatches it (POST
-// /api/cloud/run) and Turn on saves the schedule (POST /api/cloud/schedule);
+// the one secret, one real pass, and a schedule: one of the five cadence
+// presets (spec 55) or overnight. Add it writes the kit's march.yml (POST
+// /api/cloud/workflow), Run one pass dispatches it (POST /api/cloud/run) and
+// Turn on saves the schedule (POST /api/cloud/schedule: a preset writes its
+// cron and sets NEXUS_CADENCE);
 // each lands per owner mode (owner: committed to the default branch;
 // contributor: a pull request), and nothing claims to be done that is not.
 import { useEffect, useState } from 'react';
@@ -13,7 +15,7 @@ import { PATHS } from '../../routes.js';
 import { ObFrame, Back } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
-import { landThenGo, turnOnCloud, pickSched, keepsSchedule, nextLocal, cloudGate, BUSY_NOTE } from './cloudFlow.js';
+import { landThenGo, turnOnCloud, pickSched, keepsSchedule, nextLocal, cloudGate, cronFor, cadenceSub, CADENCES, BUSY_NOTE } from './cloudFlow.js';
 import RepoStart, { useRepoStart, Cmds } from './RepoStart.jsx';
 import TokenGuide from './TokenGuide.jsx';
 import { repoCalls } from './calls.js';
@@ -49,18 +51,11 @@ function nextNight(now = new Date()) {
   return `at ${String(slot).padStart(2, '0')}:30`;
 }
 
-const SCHED = {
-  night: { label: 'Overnight', sub: 'every hour at :30, 01:30 to 06:30' },
-  two: { label: 'Every 2 hours', sub: 'all day, on the hour' },
-  demand: { label: 'Only on demand', sub: 'when you press Run one pass' },
-};
-
-function cronFor(k) {
-  return k === 'night' ? nightCron() : k === 'two' ? '0 */2 * * *' : '';
-}
-
-/** The options, the schedule the workflow has first when it has one (49.1); on demand says so when it is the current. */
-function schedOptions(found) {
+/**
+ * The options (spec 55, A9): the schedule the workflow has first when it has one (49.1), the five cadence presets,
+ * then overnight, a custom cron outside them. Off says so when no schedule is what the workflow has.
+ */
+export function schedOptions(found) {
   const out = [];
   if (found?.crons?.length) {
     out.push(['current', {
@@ -69,18 +64,41 @@ function schedOptions(found) {
       now: true,
     }]);
   }
-  for (const [k, s] of Object.entries(SCHED)) out.push([k, found && !found.crons?.length && k === 'demand' ? { ...s, sub: 'current: no schedule; Turn on keeps it' } : s]);
+  for (const [k, c] of Object.entries(CADENCES)) {
+    const sub = found && !found.crons?.length && k === 'off' ? 'current: no schedule; Turn on keeps it' : cadenceSub(k);
+    out.push([k, { label: c.label, sub, preset: true }]);
+  }
+  out.push(['night', { label: 'Overnight', sub: 'custom: every hour at :30, 01:30 to 06:30' }]);
   return out;
 }
 
-function nextLine(k, found) {
+/** The line under the options: when the picked one next runs, its cron, and the variable a preset sets. */
+export function nextLine(k, found) {
   if (k === 'current') {
     const at = nextLocal(found?.next);
     return `${at ? `Next run ${at}, your time` : 'No next run read'} · cron ${found?.crons?.join(', ')} UTC, as it is in ${found?.path}`;
   }
   if (k === 'night') return `Next run ${nextNight()} · cron ${nightCron()}, converted from your time zone`;
-  if (k === 'two') return 'Next run at the top of the next even hour · cron 0 */2 * * *';
-  return 'No schedule. It runs when you press Run one pass, here or in Cloud loop.';
+  const c = CADENCES[k];
+  if (!c) return '';
+  const sets = `sets NEXUS_CADENCE to ${k}`;
+  if (!c.cron) return `No schedule. It runs when you press Run one pass, here or in Cloud loop · ${sets}`;
+  return `Every ${c.every} hours at :17 UTC, off the busy top of the hour · cron ${c.cron} · ${sets}`;
+}
+
+/** Step 4's picker: one radio per option, and the line for the picked one. Rendered alone by the screen tests. */
+export function SchedulePicker({ options, sched, found, onPick }) {
+  return (
+    <>
+      <div className="sched" role="radiogroup" aria-label="Schedule">
+        {options.map(([k, s]) => [
+          <input key={`i-${k}`} type="radio" name="sched" id={`sc-${k}`} checked={sched === k} onChange={() => onPick(k)} />,
+          <label key={`l-${k}`} htmlFor={`sc-${k}`} className={s.now ? 'sched-now' : undefined}><b>{s.label}</b><span>{s.sub}</span></label>,
+        ])}
+      </div>
+      <div className="run-line"><Icon name="clock" size={14} /><span>{nextLine(sched, found)}</span></div>
+    </>
+  );
 }
 
 function dur(a, b) {
@@ -150,12 +168,12 @@ export default function CloudSetup() {
   const found = a?.schedule ?? null;
   const sched = pickSched(d.sched, found);
   const pick = (k) => patch({ sched: k });
-  const cron = sched === 'current' ? found.cron : cronFor(sched);
-  const keep = keepsSchedule(sched, found);
+  const cron = cronFor(sched, { night: nightCron(), found });
+  const keep = keepsSchedule(sched, found, d.sched);
   const options = schedOptions(found);
 
   // Saving the schedule commits (the repo's checks run): Launch comes only once it landed; an error stays here.
-  const turnOn = () => act('sched', () => turnOnCloud({ setSchedule: onboardingCalls.setSchedule, setWorkflow: server.setWorkflow }, { sched, cron, wf, keep }), () => patch({ cloud: 'on', cloudSaved: true, sched, schedLabel: sched === 'current' ? found.label : null }), () => nav(PATHS.onboarding(stepAfter('cloud'))));
+  const turnOn = () => act('sched', () => turnOnCloud({ setSchedule: onboardingCalls.setSchedule, setWorkflow: server.setWorkflow }, { sched, cron, wf, keep }), (r) => patch({ cloud: 'on', cloudSaved: true, sched, schedLabel: sched === 'current' ? found.label : null, cadenceSet: r?.cadence ? r.cadence.variable != null : null }), () => nav(PATHS.onboarding(stepAfter('cloud'))));
   // Until the repo is read, Turn on waits: it must not save the default over a schedule it has not seen yet.
   const busy = Object.values(pending).includes('busy') || actions.status === 'loading';
   const skip = () => patch({ cloud: 'skipped' });
@@ -263,7 +281,7 @@ export default function CloudSetup() {
                   <div className="code" style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--well)' }}>
                     <div><span className="p">on</span>:</div>
                     <div><span className="p">  schedule</span>:</div>
-                    <div>    - <span className="p">cron</span>: <span className="s">"{cron || 'none'}"</span><span className="c">   # {sched === 'demand' ? 'schedule removed' : sched === 'current' ? 'kept as it is, UTC' : 'your time zone, converted'}</span></div>
+                    <div>    - <span className="p">cron</span>: <span className="s">"{cron || 'none'}"</span><span className="c">   # {sched === 'off' ? 'schedule removed' : sched === 'current' ? 'kept as it is, UTC' : sched === 'night' ? 'your time zone, converted' : `the ${sched} cadence, UTC`}</span></div>
                     <div><span className="p">  workflow_dispatch</span>:</div>
                     <div><span className="p">jobs</span>:</div>
                     <div><span className="p">  owner</span>:</div>
@@ -340,13 +358,7 @@ export default function CloudSetup() {
               <div className="cl-h">Pick a schedule</div>
               {waiting ? <div className="cl-wait">Waits for a GitHub repo.</div> : null}
               <div className="cl-body">
-                <div className="sched" role="radiogroup" aria-label="Schedule">
-                  {options.map(([k, s]) => [
-                    <input key={`i-${k}`} type="radio" name="sched" id={`sc-${k}`} checked={sched === k} onChange={() => pick(k)} />,
-                    <label key={`l-${k}`} htmlFor={`sc-${k}`} className={s.now ? 'sched-now' : undefined}><b>{s.label}</b><span>{s.sub}</span></label>,
-                  ])}
-                </div>
-                <div className="run-line"><Icon name="clock" size={14} /><span>{nextLine(sched, found)}</span></div>
+                <SchedulePicker options={options} sched={sched} found={found} onPick={pick} />
               </div>
             </div>
           </div>

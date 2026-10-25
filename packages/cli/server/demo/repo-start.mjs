@@ -7,7 +7,7 @@
 // The names are invented: the folder `lantern`, the person Ada Park (gh login ada-park), the org lantern-labs.
 import { guideFor, manualFor, OWNER_RE, NAME_RE } from '../repo-start.mjs';
 import { checkToken, SECRET_NAME } from '../../shared/oauth-token.mjs';
-import { cronNext, describeCrons } from '../cloud.mjs';
+import { cronNext, describeCrons, scheduleRequest } from '../cloud.mjs';
 
 const PERSON = { name: 'Ada Park', email: 'ada@example.com' };
 const LOGIN = 'ada-park';
@@ -202,9 +202,12 @@ export function createRepoStage(name, { clock }) {
         const b = await readBody();
         if (st.step !== 'github') return answer(409, { error: 'This folder is not on GitHub yet.', place: place() });
         await sleep(clock, 1200);
+        // The live checks (cloud.mjs scheduleRequest): a preset's cron is its own, and it sets NEXUS_CADENCE.
+        const q = scheduleRequest(b);
+        if (q.error) return answer(400, { error: q.error });
         st.workflow = true;
-        const cron = typeof b.cron === 'string' && b.cron ? b.cron : null;
-        return answer(200, { cron, next: cron ? cronNext(cron, new Date(clock.now()))?.toISOString() ?? null : null, path: '.github/workflows/march.yml', written: true, sha: '7e2d9a4' });
+        const cron = q.cron;
+        return answer(200, { cron, next: cron ? cronNext(cron, new Date(clock.now()))?.toISOString() ?? null : null, path: '.github/workflows/march.yml', written: true, sha: '7e2d9a4', ...(q.cadence ? { cadence: { name: q.cadence, variable: 'set' } } : {}) });
       }
       case 'POST /api/cloud/run': {
         await readBody();
