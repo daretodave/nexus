@@ -173,6 +173,40 @@ describe('the settle run', () => {
     assert.match(r.git('diff', '--cached', '--name-only'), /plan\/ARCHIVE\.md/);
   });
 
+  it('stops before the commit when a close empties a spec, instead of dying on the gate\'s refusal', () => {
+    const r = repo();
+    r.put('.owner', '');
+    const TINY = [
+      '# 10 — Tiny',
+      '',
+      '## Acceptance',
+      '',
+      '- **A1** The tiny thing works.',
+      '',
+      '## Chunks',
+      '',
+      'Measure: 1 open · 0 closed · next A2',
+      '',
+      '- [ ] **10.1** The tiny thing · S · closes A1 · needs —',
+      '',
+    ].join('\n');
+    r.put('plan/10-tiny.md', TINY);
+    r.put('plan/README.md', r.read('plan/README.md').replace('| 07 | Search', '| 10 | Tiny | [10-tiny.md](10-tiny.md) | planned | 1 left |\n| 07 | Search'));
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: plot spec 10, tiny');
+    r.put('plan/pending/10.1.md', '---\nclose: 10.1\ndate: 2000-10-16\nsays: The tiny thing works\n---\n');
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: close 10.1');
+    const res = r.run();
+    assert.equal(res.code, 2, res.out);
+    assert.match(res.out, /staged, not committed\. Fix the lines above/);
+    assert.match(res.out, /plan\/10-tiny\.md lists no chunk now: absorb its lasting rules .* delete the file, drop its plan\/README\.md row, and archive "· 10 · spec complete: …" by hand, then re-run settle/);
+    assert.equal(r.git('log', '-1', '--format=%s'), 'plan: close 10.1');
+    assert.ok(r.read('plan/10-tiny.md'), 'the spec is staged, not deleted, until absorbed by hand');
+    assert.doesNotMatch(r.read('plan/10-tiny.md'), /## Acceptance|10\.1/);
+    assert.match(r.git('diff', '--cached', '--name-only'), /plan\/10-tiny\.md/);
+  });
+
   it('skips a file it cannot settle, saying why, and settles the rest', () => {
     const r = repo();
     r.put('.owner', '');

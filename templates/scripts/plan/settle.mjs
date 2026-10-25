@@ -1141,7 +1141,15 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
             if (file && text !== null && text !== r(file)) w(file, text);
           }
           said.push(`spec ${cfg.ladder.spec} lists no chunk now: settle removed it and its rows (the next trap seen twice opens it again)`);
-        } else said.push(`spec ${specNum(p.close)} lists no chunk now: absorb and delete it`);
+        } else if (/^## Acceptance\b/m.test(done.text)) {
+          // Chunks closed out, but acceptance bullets remain uncovered: plan-check's own "no chunks" rule
+          // carries it from here (needs more chunks, not an absorb) — nothing for settle to do.
+          said.push(`spec ${specNum(p.close)} has no chunks left but open acceptance: chunk it next`);
+        } else {
+          // Nothing left at all: plan-check refuses to commit an empty spec by design (its own "nothing left"
+          // rule), so settle stops here instead of attempting the commit and dying on that refusal.
+          left.push(`${specFile} lists no chunk now: absorb its lasting rules into identity/ (or bearings.md), delete the file, drop its plan/README.md row, and archive "· ${specNum(p.close)} · spec complete: …" by hand, then re-run settle`);
+        }
         const range = p.commits ?? commitRange(root, p.file, { branch: cfg.branch }) ?? 'plan only';
         w('plan/ARCHIVE.md', `${archive.replace(/\n*$/, '\n')}- ${p.date} · ${p.close} · ${p.says} · ${range}\n`);
       }
