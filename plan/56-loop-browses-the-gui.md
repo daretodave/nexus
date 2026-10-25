@@ -214,7 +214,6 @@ or add the `UI:` line by hand.
 
 ## Acceptance
 
-- **A1** Every demo screen loads with no 403 from `/api/hello`: a walk of `fleet-to-tug` shows no console error from it.
 - **A2** `npm run walk -- --json` in `packages/cli`, after a build, walks 3 scenarios × 12 routes × 2 viewports and writes `walk.json` plus PNGs under `.scratch/walk/`; unstaged demo endpoints are allow-listed; unit tests cover the finding rules and the allow-list; with no `dist/` it stops and says to build.
 - **A3** A cloud tick runs `npm ci --ignore-scripts` and `npm run build` in `packages/cli` on Node 24, uploads walk screenshots as a run artifact (never committed), precedes every `packages/cli` commit with a green `npm test` in the same log, never tags `cli-v*`; `march.yml`'s comments no longer call nexus a docs-only kit.
 - **A4** `/iterate` has dimension H: H rows in `plan/AUDIT.md` carry route, viewport, scenario, evidence with the artifact URL, and `file:line`; the mirror uses `--category ui`; at most 3 H rows and 8 screenshots per sweep; `/expand` reads signal F.
@@ -230,9 +229,8 @@ or add the `UI:` line by hand.
 (None.)
 
 ## Chunks
-Measure: 10 open · 0 closed · next A11
+Measure: 9 open · 1 closed · next A11
 
-- [ ] **56.1** Demo answers the tokenless hello · S · closes A1 · needs —
 - [ ] **56.2** `npm run walk` and its tests · M · closes A2 · needs —
   - Base it on the scratch probe's `walk.mjs`; the local proof runs `npm run build` first.
 - [ ] **56.3** nexus described as kit + GUI; ship-a-chunk code branch · S · closes A7 · needs —

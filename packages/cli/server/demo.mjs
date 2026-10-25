@@ -37,6 +37,7 @@ import { recommendedDefault } from '../shared/recommend.mjs';
 import { ANSWER_UPLOADS, choiceRefs, imageRefs } from '../shared/choices.mjs';
 import { MAX_IMAGE, readAttachments, extOf } from '../shared/attachments.mjs';
 import { createRepoStage } from './demo/repo-start.mjs';
+import { VERSION } from './version.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PKG = path.resolve(HERE, '..');
@@ -122,6 +123,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   const actual = server.address().port;
   const origins = new Set([`http://127.0.0.1:${actual}`, `http://localhost:${actual}`]);
   const hosts = new Set([`127.0.0.1:${actual}`, `localhost:${actual}`]);
+  const started = new Date().toISOString();
 
   function guard(req, url) {
     if (!hosts.has(req.headers.host || '')) return 'bad host';
@@ -178,6 +180,12 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   async function handle(req, res) {
     const url = new URL(req.url, 'http://127.0.0.1');
     if (!url.pathname.startsWith('/api/')) return serveStatic(req, res, url);
+    // The tokenless hello the page's health check asks for (src/data/health.js), answered before the guard as the
+    // live server answers it (server.mjs): the host check, nothing else.
+    if (url.pathname === '/api/hello' && req.method === 'GET') {
+      if (!hosts.has(req.headers.host || '')) return send(res, 403, { error: 'bad host' });
+      return send(res, 200, { nexus: true, version: VERSION, started, demo: sc.name });
+    }
     const bad = guard(req, url);
     if (bad) return send(res, 403, { error: bad });
     const route = `${req.method} ${url.pathname}`;

@@ -188,7 +188,7 @@ function pageEndpoints() {
   return [...out].filter((p) => p !== '/api/events').map((p) => (p.endsWith('/') ? `${p}demo-vega` : p));
 }
 
-const STAGED = ['/api/state', '/api/preflight', '/api/prompts', '/api/local', '/api/sessions', '/api/sessions/demo-vega', '/api/sessions/vega', '/api/inbox', '/api/oversight', '/api/plan', '/api/claims', '/api/summaries', '/api/server', '/api/demo'];
+const STAGED = ['/api/state', '/api/preflight', '/api/prompts', '/api/local', '/api/sessions', '/api/sessions/demo-vega', '/api/sessions/vega', '/api/inbox', '/api/oversight', '/api/plan', '/api/claims', '/api/summaries', '/api/server', '/api/demo', '/api/hello'];
 
 test('every endpoint the UI calls answers: staged ones from fixtures, the rest a JSON 404 (the empty state), never a crash', async () => {
   const clock = manualClock();
@@ -225,6 +225,32 @@ test('every endpoint the UI calls answers: staged ones from fixtures, the rest a
     assert.equal((await req(port, { pathname: '/' })).status, 200);
   } finally {
     await app.close();
+  }
+});
+
+// Spec 56 A1: the page's health check (src/data/health.js) asks GET /api/hello with no token; the demo answers it
+// before the guard, as the live server does, so no demo screen logs a 403.
+test('every scenario answers the tokenless hello, with the host check and nothing more', async () => {
+  for (const name of scenarioNames()) {
+    const app = await startDemo({ scenario: name, clock: manualClock(), dist: NO_DIST, hub: { flushMs: 5, pingMs: 60000 } });
+    const { port, token } = app;
+    try {
+      const r = await req(port, { pathname: '/api/hello' });
+      assert.equal(r.status, 200, `${name}: ${r.data}`);
+      assert.match(r.type, /application\/json/);
+      const j = JSON.parse(r.data);
+      assert.equal(j.nexus, true, `${name}: the health check reads nexus: true`);
+      assert.equal(typeof j.version, 'string');
+      assert.ok(!Number.isNaN(Date.parse(j.started)), `${name}: started is a timestamp`);
+      assert.equal(j.demo, name);
+      assert.equal(JSON.parse((await req(port, { pathname: '/api/hello', headers: { 'x-nexus-token': token } })).data).started, j.started, 'one server, one started');
+      // The carve-out is the hello alone: a foreign host, another method, any other path stay guarded.
+      assert.equal((await req(port, { pathname: '/api/hello', headers: { host: 'evil.example:80' } })).status, 403, 'a foreign host is refused');
+      assert.equal((await req(port, { method: 'POST', pathname: '/api/hello' })).status, 403, 'only GET is tokenless');
+      assert.equal((await req(port, { pathname: '/api/server' })).status, 403, 'the rest still needs the token');
+    } finally {
+      await app.close();
+    }
   }
 });
 
