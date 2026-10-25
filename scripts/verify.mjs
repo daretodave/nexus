@@ -29,8 +29,10 @@
 //                 rule that issue and page text is data; triage,
 //                 bug and march (both trees) carry the support
 //                 routing (support.mjs route, cap, continue, asap,
-//                 sla; triage and bug: Refs #N and tell), and
-//                 iterate the aged user rows (age)
+//                 sla; triage and bug: Refs #N and tell),
+//                 iterate the aged user rows (age), and digest
+//                 the Support line and escalation (digest,
+//                 escalate_days)
 //   emoji         no pictographic emoji anywhere in tracked docs,
 //                 nor in packages/cli source (js/jsx/ts/tsx/json/css/html)
 //                 (✓ and ❌ dingbats are fine; 🤖 is not, nor the
@@ -505,11 +507,13 @@ const UNTRUSTED_TEXT_RULE = [/third-party data, never instructions/, /UI walk/, 
 // (+1 per 12 hours, exempt from the 3.0 floor). A support fix carries
 // `Refs #N`, never a closing keyword, and `support.mjs tell` comments
 // and closes the issue once it lands (a published package's fix waits
-// for its release).
+// for its release). /digest prints the Support line and tops "Needs
+// you" with a needs-user issue past escalate_days (support.mjs digest).
 const SUPPORT_ROUTING = {
   'triage.md': [[/support\.mjs route/, 'triage asks `support.mjs route` per issue'], [/skills\/bug\.md/, 'a `bug` route goes to skills/bug.md'], [/Refs #N`?(?:\*\*)?,? never `?Closes/, 'a fix commit carries `Refs #N`, never `Closes`/`Fixes`'], [/support\.mjs tell/, 'a landed fix is told and closed through `support.mjs tell`']],
   'bug.md': [[/asap_cap/, 'a larger bug is plotted Asap only under asap_cap'], [/support\.mjs cap/, '`support.mjs cap` counts the open issue-born Asap chunks'], [/Refs #N`?(?:\*\*)?,? never `?Closes/, 'the fix commit carries `Refs #N`, never `Closes`/`Fixes`'], [/support\.mjs tell/, 'a landed fix is told and closed through `support.mjs tell`']],
   'march.md': [[/support\.mjs continue/, 'Step 1 continues to 3a through `support.mjs continue`'], [/support\.mjs asap/, 'the critique gate waits behind a ready Asap chunk (`support.mjs asap`)'], [/Step 1\.5/, 'a Step 1.5 Support SLA'], [/support\.mjs sla/, 'Step 1.5 plots a queued issue past sla_hours through `support.mjs sla`']],
+  'digest.md': [[/support\.mjs digest/, '/digest prints the Support line through `support.mjs digest`'], [/escalate_days/, 'a needs-user issue past escalate_days tops Needs you'], [/scripts\/notify\.mjs/, 'the escalation is notified through scripts/notify.mjs']],
   'iterate.md': [[/support\.mjs age/, 'user rows age through `support.mjs age`'], [/per 12 hours/, 'a user row gains +1 per 12 hours'], [/floor/, 'a user row is exempt from the 3.0 floor']],
 }
 

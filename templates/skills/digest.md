@@ -37,11 +37,20 @@ its own cadence.
    node scripts/pulse.mjs
    node scripts/pulse.mjs --motion
    node scripts/cloud/quota.mjs show
+   node scripts/plan/support.mjs digest --notify
    ```
 
    `quota.mjs show` is the last cached `seven_day` reading
    (night's gate restored it; locally, unknown); `While you
    were out` opens with that line as is.
+
+   `support.mjs digest` is the Support line (spec 54): open
+   user issues, the mean time to first response and the mean
+   time to close over 7 days, one `escalate #N` line per open
+   `triage:needs-user` issue older than `escalate_days`
+   (bearings), and with `--notify` one notification naming
+   them through `scripts/notify.mjs` (numbers only, never issue
+   text). gh read only; `skip` without gh.
 
    `pulse.mjs --motion` is the motion pulse: shipped units
    in the last full week against the 4-week baseline, and
@@ -73,8 +82,9 @@ its own cadence.
    no-ops included), `Shipped`, `Queues now` (the candidates
    line grows the >21-day count alongside the existing
    pending-count and oldest-age numbers, e.g. "9 pending (3
-   >21d), oldest 30d"), `Needs you` (blocked rows, needs-user
-   issues, `[needs-user-call]`s, plus — when either ≥5
+   >21d), oldest 30d", then the Support line as is), `Needs
+   you` (each `escalate #N` line first, then blocked rows,
+   needs-user issues, `[needs-user-call]`s, plus — when either ≥5
    candidates are pending >21 days or the oldest pending
    candidate exceeds 45 days — a line reading "oversight
    needed: candidate queue silting (N pending >21d, oldest
@@ -134,6 +144,7 @@ plan/AUDIT.md                        # breadth failures land here
 plan/CANDIDATES.md             # tuning proposals land here
 node scripts/pulse.mjs               # local queue/plan numbers
 gh run list --workflow march -L 20   # the invisible no-ops
+node scripts/plan/support.mjs digest # the Support line + needs-user escalations
 SMOKE_SAMPLE=full pnpm e2e           # the nightly breadth leg
 pnpm verify
 git commit -m "digest: <YYYY-MM-DD>"   # then land per owner mode (next/land.md §6)

@@ -154,9 +154,13 @@ rows. In cloud the repo variable `NEXUS_SUPPORT` wins over
 this line; the `chunks` leg warns when they disagree. `/march`
 Step 1.5 plots Asap a queued issue open `sla_hours` or more
 whose work is not in the Asap lane (`support.mjs sla`).
+`/digest` prints the Support line and tops "Needs you" with a
+`triage:needs-user` issue open `escalate_days` or more, and
+notifies it (`support.mjs digest`).
 
 - Support: fix-all
 - sla_hours: 12
+- escalate_days: 7
 - asap_cap: 3
 
 ## Generators

@@ -527,7 +527,7 @@ nexus/
 │   ├── __tests__/critique-gui.test.mjs # its suite, plus the pass in the skill and its command (scripts leg)
 │   ├── plan/locks.mjs                 # lock timeouts: past max_age a lock takes its fallback or asks once (twin)
 │   ├── plan/state.mjs                 # the state diet: queue headers and size (the state-size leg); compact old Done rows (twin)
-│   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going, the Step 1.5 SLA, aged user rows, a landed fix told and closed (twin)
+│   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going, the Step 1.5 SLA, aged user rows, a landed fix told and closed, the digest's Support line and needs-user escalation (twin)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
@@ -595,6 +595,7 @@ nexus/
 │   ├── external-services.md           # the setup/ paradigm — pre-flight every dashboard
 │   ├── bootstrap-automation.md        # the executor that drives provider CLIs end-to-end (paired with external-services.md)
 │   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
+│   ├── support.md                     # how hard the loop works an issue: NEXUS_SUPPORT and its variables, the digest's Support line
 │   ├── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
 │   ├── secrets.md                     # nexus.secrets.json: secrets by name, never value; a chunk's secrets field
 │   ├── plot-report.md                 # /plot's nexus-plot block: the report as data, drawn as a card in the cockpit
@@ -728,7 +729,7 @@ nexus/
     │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react
     │   ├── plan/locks.mjs             # lock timeouts: Held lines, lane locks, owner-blocked rows; release, fallback or one ask
     │   ├── plan/state.mjs             # the state diet: queue headers <= 20 lines, <= 256 KB; delete Done rows past 30 days
-    │   ├── plan/support.mjs           # Support level (NEXUS_SUPPORT over bearings): route a collaborator's bug to /bug, asap_cap, march keeps going, Step 1.5 plots a queued issue past sla_hours, user rows age +1/12h, tell closes a landed fix's issue
+    │   ├── plan/support.mjs           # Support level (NEXUS_SUPPORT over bearings): route a collaborator's bug to /bug, asap_cap, march keeps going, Step 1.5 plots a queued issue past sla_hours, user rows age +1/12h, tell closes a landed fix's issue, digest prints the Support line and escalates needs-user past escalate_days
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
     │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
     │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
@@ -785,7 +786,7 @@ nexus/
     │   ├── __tests__/motion.test.mjs  # the motion pulse, one stall issue over a Sep-Oct decline, stall_action, the generator
     │   ├── __tests__/locks.test.mjs   # lock timeouts: release keeps plan-check green; one ask over 30 ticks, re-pinged weekly
     │   ├── __tests__/state.test.mjs   # the state diet: an oversize fixture fails; compact dates rows and keeps the rest
-    │   ├── __tests__/support.test.mjs # the Support level, the routing table, the asap_cap count, continue at half the budget, user rows aged to 4.4, the SLA step and its cap
+    │   ├── __tests__/support.test.mjs # the Support level, the routing table, the asap_cap count, continue at half the budget, user rows aged to 4.4, the SLA step and its cap, the digest line and escalation
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver

@@ -488,6 +488,26 @@ anything but `off`: unset, the cron alone triages issues.
   the quota gate like any other.
 - Each nudge writes one `nudge: ...` line to its step summary.
 
+### The Support knobs
+
+Repo variables (`gh variable set <NAME> --body <value>`); the
+level, routing and digest line are in
+`nexus/customization/support.md`.
+
+| Variable | Values | Default |
+|---|---|---|
+| `NEXUS_SUPPORT` | `off` `triage-only` `fix-small` `fix-all` | unset: `triage-only` from `plan/bearings.md` `Support:`, no event ticks |
+| `NEXUS_SUPPORT_TRUST` | `collaborators` `everyone` | `collaborators` |
+| `NEXUS_URGENT_LABELS` | space-separated labels; empty = no nudge | `loop:do bug` |
+| `NEXUS_LOOP_ACTOR` | the login the loop's token acts as | the repository owner |
+| `NEXUS_EVENT_MAX` | event ticks per 24h | `6` |
+| `NEXUS_DISPATCH_MAX` | `workflow_dispatch` runs per 24h | `12` |
+
+Unset, the loop runs as it always has: the cron triages, a bug
+becomes a `plan/AUDIT.md` row, and `nudge.yml` never
+dispatches. `plan/bearings.md` carries the rest (`sla_hours`,
+`escalate_days`, `asap_cap`).
+
 ## Operating it
 
 ### Pausing the cloud loop

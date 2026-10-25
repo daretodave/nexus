@@ -390,7 +390,7 @@ tick).
 ## Chunks
 Measure: 7 open · 6 closed · next A14
 
-- [ ] **58.6** Conservative knobs from a registry · S · closes A6 · needs 54.8, 57.8
+- [ ] **58.6** Conservative knobs from a registry · S · closes A6 · needs 57.8
 - [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs 58.6
   - Fresh clone of the adopter's origin in the scratchpad only; the local checkout is stale and dirty and is never touched. Gaps become fixes in 58.3-58.6's functions plus fixtures.
 - [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs 58.7

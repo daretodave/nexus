@@ -799,7 +799,8 @@ auth's accessible resources.
   `scripts/cloud/nudge-check.mjs` it runs, where missing
   (`EVENT_FILES`). It stays inert until the repo variable
   `NEXUS_SUPPORT` is set: unset, the cron alone triages
-  issues, as before.
+  issues, as before. The level and its repo variables:
+  [`support.md`](./support.md).
 - **`pr-resolve.yml` carries `<DEFAULT_BRANCH>`** in its
   `push: branches:` filter. `install-pr-workflows` fills it
   (and every bracket placeholder) from

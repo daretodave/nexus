@@ -25,6 +25,7 @@
 //   node scripts/plan/support.mjs sla [--json] [--issues <file>] [--now <iso>]   # march Step 1.5 (gh read only)
 //   node scripts/plan/support.mjs age [--base <score> --opened <iso>] [--issues <file>] [--now <iso>]
 //   node scripts/plan/support.mjs tell <N> --commit <sha> [--ref <branch>] [--dry-run]   # after the fix lands
+//   node scripts/plan/support.mjs digest [--json] [--issues <file>] [--now <iso>] [--notify]   # /digest (gh read only)
 //
 // `sla` is march Step 1.5 under fix-small or fix-all: an open `triage:loop-queued` issue `sla_hours` old (bearings;
 // 24 when absent) whose work is not in the Asap lane prints `plot #N` (no chunk names it: `/plot asap`, the title
@@ -50,6 +51,14 @@
 // open (reopening one a closing keyword shut): the release closes it. It prints `refuse` when the commit does not
 // name the issue, `wait` when the commit is not on the default branch yet, `skip` without gh. Exit 0, 64 on bad
 // usage.
+//
+// `digest` is /digest's Support line: open user issues, the mean time to first response of the issues opened in the
+// last 7 days, and the mean time to close of the issues closed in them. A user issue is any the loop did not file (no
+// `loop:opened` label, no bot author, no `Cloud-Run:` body line; the body is read for that marker only and never
+// printed). The first response is the first comment by anyone but the issue's author. An open `triage:needs-user`
+// issue older than `escalate_days` (bearings; 7 when absent) prints `escalate #N`: it tops the digest's "Needs you",
+// and with --notify one notification names them all through scripts/notify.mjs (numbers and ages only, never issue
+// text). Without gh it prints `skip`.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,10 +69,13 @@ export const COLLABORATORS = ['OWNER', 'MEMBER', 'COLLABORATOR'];
 export const DEFAULT_CAP = 3;
 export const DEFAULT_BUDGET = 60;
 export const DEFAULT_SLA = 24;
+export const DEFAULT_ESCALATE = 7;
+export const PULSE_DAYS = 7;
 export const AGE_STEP_HOURS = 12;
 export const AGE_CAP = 4;
 export const USER_BUMP = 0.5;
 const HOUR = 3600000;
+const DAY = 24 * HOUR;
 
 const knob = (name) => new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${name}[*\`]*[ \\t]*:[*\`]*[ \\t]*([\\w.-]+)`, 'mi');
 
@@ -102,6 +114,102 @@ export function asapCap(bearings = '') {
 export function slaHours(bearings = '') {
   const n = Number(knob('sla_hours').exec(bearings)?.[1]);
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_SLA;
+}
+
+/** `escalate_days` from plan/bearings.md text, else 7. */
+export function escalateDays(bearings = '') {
+  const n = Number(knob('escalate_days').exec(bearings)?.[1]);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_ESCALATE;
+}
+
+const labelNames = (i) => (i.labels ?? []).map((l) => String(l?.name ?? l));
+const login = (a) => String(a?.login ?? a ?? '').toLowerCase();
+
+/** Whether the loop filed an issue: a `loop:opened` label, a bot author, or the `Cloud-Run:` marker in its body. */
+export function loopFiled(i) {
+  if (labelNames(i).includes('loop:opened')) return true;
+  if (i.author?.is_bot || /\[bot\]$/.test(login(i.author))) return true;
+  return /^\s*Cloud-Run:/m.test(String(i.body ?? ''));
+}
+
+const mean = (xs) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
+
+/**
+ * /digest's Support line: { open, response: { mean, answered, opened }, close: { mean, closed }, escalate, escalateDays }.
+ * `issues` come from ghAllIssues (every open issue plus every one updated in 7 days; { number, state, createdAt, closedAt, author, labels, comments, body });
+ * hours are means over the last 7 days, one decimal. `escalate` is every open `triage:needs-user` user issue older
+ * than escalate_days, oldest first: [{ number, days }].
+ */
+export function supportPulse({ issues = [], bearings = '', now = Date.now() }) {
+  const since = now - PULSE_DAYS * DAY;
+  const users = issues.filter((i) => Number.isInteger(i.number) && Number.isFinite(Date.parse(i.createdAt)) && !loopFiled(i));
+  const isOpen = (i) => String(i.state ?? '').toUpperCase() === 'OPEN';
+  const recent = users.filter((i) => Date.parse(i.createdAt) >= since && Date.parse(i.createdAt) <= now);
+  const firsts = recent
+    .map((i) => {
+      const t0 = Date.parse(i.createdAt);
+      const who = login(i.author);
+      const ts = (i.comments ?? []).filter((c) => login(c.author) !== who).map((c) => Date.parse(c.createdAt)).filter((t) => Number.isFinite(t) && t >= t0 && t <= now);
+      return ts.length ? (Math.min(...ts) - t0) / HOUR : null;
+    })
+    .filter((h) => h !== null);
+  const closes = users
+    .filter((i) => !isOpen(i) && Date.parse(i.closedAt) >= since && Date.parse(i.closedAt) <= now)
+    .map((i) => (Date.parse(i.closedAt) - Date.parse(i.createdAt)) / HOUR)
+    .filter((h) => Number.isFinite(h) && h >= 0);
+  const days = escalateDays(bearings);
+  const escalate = users
+    .filter((i) => isOpen(i) && labelNames(i).includes('triage:needs-user') && now - Date.parse(i.createdAt) > days * DAY)
+    .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.number - b.number)
+    .map((i) => ({ number: i.number, days: Math.floor((now - Date.parse(i.createdAt)) / DAY) }));
+  return {
+    open: users.filter(isOpen).length,
+    response: { mean: mean(firsts), answered: firsts.length, opened: recent.length },
+    close: { mean: mean(closes), closed: closes.length },
+    escalate,
+    escalateDays: days,
+  };
+}
+
+/** The Support line /digest prints as is. */
+export function pulseLine(p, level = 'triage-only') {
+  const resp = p.response.answered ? `first response ${p.response.mean}h mean (${p.response.answered} of ${p.response.opened} opened in ${PULSE_DAYS}d)` : `first response none (${p.response.opened} opened in ${PULSE_DAYS}d)`;
+  const close = p.close.closed ? `close ${p.close.mean}h mean (${p.close.closed} closed in ${PULSE_DAYS}d)` : `close none in ${PULSE_DAYS}d`;
+  return `Support (${level}): ${p.open} open user issue${p.open === 1 ? '' : 's'} · ${resp} · ${close}`;
+}
+
+/** Best effort: one notification through scripts/notify.mjs (templates/scripts/notify.mjs in the kit); true when sent. */
+export function notifyVia({ title, body, priority = 'high' }, { root = process.cwd(), run = spawnSync } = {}) {
+  const script = ['scripts/notify.mjs', 'templates/scripts/notify.mjs'].map((r) => path.join(root, r)).find((f) => fs.existsSync(f));
+  if (!script) return false;
+  const res = run(process.execPath, [script, '--title', title, '--body', body, '--priority', priority], { cwd: root, encoding: 'utf8', windowsHide: true });
+  return Boolean(res) && res.status === 0;
+}
+
+/**
+ * gh read only: the issues supportPulse reads, or null. Two calls merged by number, so a repo past any one page
+ * still counts: every open issue (the open count and escalation; the oldest are the likeliest past escalate_days),
+ * and every issue updated in the last PULSE_DAYS (the response and close means).
+ */
+export function ghAllIssues({ run = spawnSync, now = Date.now() } = {}) {
+  const fields = ['--limit', '1000', '--json', 'number,state,createdAt,closedAt,author,labels,comments,body'];
+  const since = new Date(now - PULSE_DAYS * DAY).toISOString().slice(0, 10);
+  const read = (args) => {
+    const res = run('gh', ['issue', 'list', ...args, ...fields], { encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
+    if (!res || res.status !== 0) return null;
+    try {
+      const j = JSON.parse(res.stdout);
+      return Array.isArray(j) ? j : null;
+    } catch {
+      return null;
+    }
+  };
+  const open = read(['--state', 'open']);
+  const recent = open && read(['--state', 'all', '--search', `updated:>=${since}`]);
+  if (!open || !recent) return null;
+  const byNumber = new Map();
+  for (const i of [...recent, ...open]) if (Number.isInteger(i?.number)) byNumber.set(i.number, i);
+  return [...byNumber.values()];
 }
 
 /** A user row's bump after `impact × ease / 10`: +1 per full 12 hours of age, cap +4, never under +0.5. */
@@ -412,9 +520,9 @@ export function stampFile(root, { run = spawnSync } = {}) {
 }
 
 export const USAGE =
-  'usage: support.mjs level [--json] | route <N> --kind <class> [--association A --labels a,b] [--json] | cap [--json] | asap | start | continue --routed fix|asap|none [--started <iso>] [--budget <min>] [--now <iso>] | sla [--json] [--issues <file>] [--now <iso>] | age [--base <score> --opened <iso>] [--issues <file>] [--now <iso>] | tell <N> --commit <sha> [--ref <branch>] [--dry-run]';
+  'usage: support.mjs level [--json] | route <N> --kind <class> [--association A --labels a,b] [--json] | cap [--json] | asap | start | continue --routed fix|asap|none [--started <iso>] [--budget <min>] [--now <iso>] | sla [--json] [--issues <file>] [--now <iso>] | age [--base <score> --opened <iso>] [--issues <file>] [--now <iso>] | tell <N> --commit <sha> [--ref <branch>] [--dry-run] | digest [--json] [--issues <file>] [--now <iso>] [--notify]';
 
-export async function main(argv, { root = process.cwd(), env = process.env, log = console.log, gh = ghIssue, list = ghIssues, asap, commit = gitCommit, state = ghState, act = ghIssueDo } = {}) {
+export async function main(argv, { root = process.cwd(), env = process.env, log = console.log, gh = ghIssue, list = ghIssues, asap, commit = gitCommit, state = ghState, act = ghIssueDo, all = ghAllIssues, notify = notifyVia } = {}) {
   const at = (flag) => {
     const i = argv.indexOf(flag);
     return i < 0 ? undefined : argv[i + 1];
@@ -495,6 +603,34 @@ export async function main(argv, { root = process.cwd(), env = process.env, log 
     }
     const failed = steps.filter((s) => !act(s)).map((s) => s[0]);
     if (failed.length) log(`note: gh ${failed.join(', ')} failed; the fix stands, tell it by hand`);
+    return 0;
+  }
+  if (cmd === 'digest') {
+    const now = at('--now') === undefined ? Date.now() : Date.parse(at('--now'));
+    if (!Number.isFinite(now)) return (console.error(USAGE), 64);
+    const file = at('--issues');
+    let issues = null;
+    if (file) {
+      try {
+        const j = JSON.parse(fs.readFileSync(path.resolve(root, file), 'utf8'));
+        issues = Array.isArray(j) ? j : null;
+      } catch {
+        issues = null;
+      }
+    } else issues = all({ now });
+    if (!issues) return (log('skip · gh unavailable: no Support line (say so under the pulse table)'), 0);
+    const { level } = supportLevel(bearings, env);
+    const p = supportPulse({ issues, bearings, now });
+    if (json) log(JSON.stringify({ level, ...p }));
+    else {
+      log(pulseLine(p, level));
+      for (const e of p.escalate) log(`escalate #${e.number} · triage:needs-user open ${e.days}d, over escalate_days ${p.escalateDays}: top of Needs you`);
+    }
+    if (argv.includes('--notify') && p.escalate.length) {
+      const n = p.escalate.length;
+      const sent = notify({ title: `needs you: ${n} issue${n === 1 ? '' : 's'} past escalate_days`, body: `${p.escalate.map((e) => `#${e.number} ${e.days}d`).join(', ')} (triage:needs-user)`, priority: 'high' }, { root });
+      if (!json) log(sent ? `notified · ${n} escalated` : 'note: notify.mjs missing or failed; the digest still lists them');
+    }
     return 0;
   }
   if (cmd === 'sla' || cmd === 'age') {

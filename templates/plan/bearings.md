@@ -412,10 +412,16 @@ are `plan/AUDIT.md` rows. In cloud the repo variable
 `fix-all`, `/march` Step 1.5 plots Asap a queued issue open
 `sla_hours` or more whose work is not in the Asap lane
 (`support.mjs sla`); the `issue-age` generator reads the same
-`sla_hours`.
+`sla_hours`. At every level `/digest` prints a Support line
+(open user issues, mean time to first response and to close
+over 7 days) and tops "Needs you" with a `triage:needs-user`
+issue open more than `escalate_days`, notified through
+`scripts/notify.mjs` (`support.mjs digest`). The knobs and the
+repo variables: `nexus/customization/support.md`.
 
 - Support: triage-only
 - sla_hours: 24
+- escalate_days: 7
 - asap_cap: 3
 
 ## Generators

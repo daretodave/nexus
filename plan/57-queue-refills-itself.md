@@ -222,7 +222,7 @@ queue rows.
 - At most one loop-config row ships per 7 days, with ease
   capped at 6, so tuning never crowds out real work.
 - It waits on 55.5 (presets, after the quota governor,
-  chaining and idle skip) and 54.8 (the support line) so
+  chaining and idle skip) and 54.8 (the support line, landed) so
   that its levers and inputs exist.
 
 ### Lock timeouts
@@ -337,4 +337,4 @@ The Held line for an auto-promotion:
 
 Measure: 1 open · 8 closed · next A10
 
-- [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 54.8
+- [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs —
