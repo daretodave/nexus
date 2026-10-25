@@ -126,12 +126,38 @@ jobs:
           QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.80' }}
         run: node templates/scripts/cloud/quota.mjs gate --event "$EVENT" --reason "$REASON" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
 
+      # The idle probe (templates/scripts/cloud/idle.mjs, spec 55): a
+      # scheduled tick that finds the repo as the last no-op left it
+      # (origin/main sha, open issue counts by label, the ready count,
+      # the newest issue update; counts and hashes, never issue text)
+      # after NEXUS_IDLE_BACKOFF scheduled no-ops, with nothing ready,
+      # exits before the model. Every NEXUS_IDLE_WAKE_EVERYth skip runs
+      # anyway; dispatch, nudge and chain runs never skip. Fails open.
+      - name: Idle cache restore
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .nexus/idle.json
+          key: nexus-idle-${{ github.run_id }}
+          restore-keys: nexus-idle-
+
+      - name: Idle probe
+        id: idle
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REASON: ${{ github.event.inputs.reason }}
+          BACKOFF: ${{ vars.NEXUS_IDLE_BACKOFF }}
+          WAKE_EVERY: ${{ vars.NEXUS_IDLE_WAKE_EVERY }}
+        run: node templates/scripts/cloud/idle.mjs probe --event "$EVENT" --reason "$REASON" --main main --backoff "$BACKOFF" --wake-every "$WAKE_EVERY" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
       # The runner's checkout is the owner's for this tick: the
       # untracked .owner (gitignored) makes scripts/claims.mjs
       # claim as privileged_agent_session, scripts/plan/settle.mjs
       # settle and the push policy pass main (playbooks/owner-mode.md).
       - name: Owner mode for this checkout
-        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true' && steps.idle.outputs.skip != 'true'
         run: touch .owner
 
       # Git author identity is set via GIT_AUTHOR_* /
@@ -143,7 +169,7 @@ jobs:
 
       - name: Run /march (cloud mode)
         id: run_march
-        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true' && steps.idle.outputs.skip != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -290,6 +316,49 @@ jobs:
           EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: node templates/scripts/cloud/lost.mjs check "$EXEC_FILE" --run-url "$RUN_URL" --fetch main
+
+      # The idle probe's other half: whether this run landed a
+      # Cloud-Run commit, and the fingerprint it left (a scheduled
+      # no-op adds one to the count the next probe reads).
+      - name: Idle record
+        id: idle_record
+        if: always() && (steps.run_march.outcome == 'success' || steps.run_march.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REASON: ${{ github.event.inputs.reason }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node templates/scripts/cloud/idle.mjs record --event "$EVENT" --reason "$REASON" --main main --run-url "$RUN_URL"
+
+      - name: Idle cache save
+        if: always() && hashFiles('.nexus/idle.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .nexus/idle.json
+          key: nexus-idle-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # Every tick that lands nothing says why, in one step-summary
+      # line: `no-op reason: <ceiling | quota | idle skip | no ready
+      # work | lost-to-background | ...>`.
+      - name: No-op reason
+        if: always()
+        env:
+          LANDED: ${{ steps.idle_record.outputs.landed }}
+          CEILING: ${{ steps.ceiling.outputs.skip }}
+          QUOTA_SKIP: ${{ steps.quota_gate.outputs.skip }}
+          QUOTA_REASON: ${{ steps.quota_gate.outputs.reason }}
+          IDLE_SKIP: ${{ steps.idle.outputs.skip }}
+          IDLE_REASON: ${{ steps.idle.outputs.reason }}
+          QUOTA_STATUS: ${{ steps.quota.outputs.status }}
+          RESETS: ${{ steps.quota.outputs.resets }}
+          LOST: ${{ steps.lost.outputs.lost }}
+          MODEL: ${{ steps.run_march.outcome }}
+          READY: ${{ steps.idle.outputs.ready }}
+          EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
+        run: >-
+          node templates/scripts/cloud/idle.mjs noop --landed "$LANDED" --ceiling "$CEILING"
+          --quota-skip "$QUOTA_SKIP" --quota-reason "$QUOTA_REASON" --idle-skip "$IDLE_SKIP" --idle-reason "$IDLE_REASON"
+          --quota-status "$QUOTA_STATUS" --resets "$RESETS" --lost "$LOST" --model "$MODEL" --ready "$READY" "$EXEC_FILE"
 
       - name: Quota cache save
         if: always() && steps.quota.outputs.quota != ''

@@ -205,3 +205,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 56.3 · nexus described as kit + GUI; ship-a-chunk code branch · 8840bb7f..8840bb7f
 - 2026-10-25 · 57.3 · Generator contract, refill lane, two generic generators · 279c4b1e..279c4b1e
 - 2026-10-25 · 58.2 · One computed kit file list and its verify leg · 6454c8e6..6454c8e6
+- 2026-10-25 · 55.4 · Idle ticks skip the model; every no-op says why · 9091de8e..9091de8e

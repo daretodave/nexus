@@ -58,10 +58,11 @@ describe('bootstrap: cloud_loop.mode', () => {
     }
   });
 
-  it('installs every script the workflows it writes run (the quota governor, the lost-to-background mark)', () => {
+  it('installs every script the workflows it writes run (the quota governor, the lost-to-background mark, the idle probe)', () => {
     const templates = path.resolve(HERE, '..', '..');
     assert.ok(LOOP_FILES.includes('scripts/cloud/quota.mjs'));
     assert.ok(LOOP_FILES.includes('scripts/cloud/lost.mjs'));
+    assert.ok(LOOP_FILES.includes('scripts/cloud/idle.mjs'));
     for (const wf of ['march.yml', 'night.yml']) {
       const yml = fs.readFileSync(path.join(templates, '.github', 'workflows', wf), 'utf8');
       // Run in place (node <script>) or copied out before the agent (cp <script>).

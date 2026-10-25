@@ -73,6 +73,16 @@ the failure mode of the thing it watches.
   (`templates/scripts/cloud/lost.mjs`) marks a run whose result
   defers to background work with no `Cloud-Run:` commit:
   `no-op reason: lost-to-background` in the step summary.
+- **Idle probe:** before the model, a scheduled tick that finds
+  the repo as the last no-op left it (main's sha, open issue
+  counts by label, the ready count, the newest issue update)
+  after `NEXUS_IDLE_BACKOFF` scheduled no-ops (3), with nothing
+  ready, exits clean (`templates/scripts/cloud/idle.mjs`, run
+  in place); every `NEXUS_IDLE_WAKE_EVERY`th skip (4) runs
+  anyway, and dispatched runs never skip. Every tick that lands
+  nothing writes one `no-op reason: <why>` line to the step
+  summary. `gh variable set NEXUS_IDLE_BACKOFF --body 0` turns
+  the skip off.
 - **Model:** `claude-sonnet-5` (set in the workflow; ids age —
   verify against current ids before changing).
 - **Pause / resume:** `gh workflow disable march` /
@@ -161,7 +171,8 @@ cloud volume from local work. Nothing else — no
   rule 5 and the guard's background rule keep every dispatch
   foreground (a workflow edit may have dropped the one, a
   settings edit the other).
-- **Ticks no-op forever** — the plan may be out of ready chunks
+- **Ticks no-op forever** — the step summary's `no-op reason:`
+  line names why. The plan may be out of ready chunks
   (or every one is in the Held lane) and the queues drained (a good problem: run `/oversight`
   locally and promote candidates), or GitHub paused the cron
   after 60 days without repo activity (push anything or re-run

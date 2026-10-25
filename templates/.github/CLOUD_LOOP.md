@@ -299,6 +299,27 @@ line:
 The guard only fires where the action loads the project's
 hooks; the check runs either way.
 
+## Idle ticks and the no-op reason
+
+A scheduled tick that finds nothing new still pays for a model
+call to learn so. `scripts/cloud/idle.mjs` decides before the
+model, in the owner job:
+
+| Step | What it does |
+|---|---|
+| Idle probe | Before the model: computes a fingerprint from counts and hashes only (the main branch's sha, open issue counts by label, the ready-chunk count, the newest issue `updated_at`; never issue text) and exits clean, with no model call, when a **scheduled** tick finds it unchanged since the last no-op, the last `NEXUS_IDLE_BACKOFF` scheduled ticks were no-ops, nothing is ready, and this is not every `NEXUS_IDLE_WAKE_EVERY`th skip |
+| Idle record | After the model: whether a commit carries the run's `Cloud-Run:` trailer, and the fingerprint the tick left (`actions/cache`, key `nexus-idle-<run id>`) |
+| No-op reason | Every tick: when nothing landed, ONE step-summary line `no-op reason: <why>` (ceiling, quota, idle skip, no ready work, lost-to-background, a failed model step, or the result's last line) |
+
+- `NEXUS_IDLE_BACKOFF` (repo variable): default `3`; `0`
+  never skips. `NEXUS_IDLE_WAKE_EVERY`: default `4`.
+- Dispatch, nudge and chain runs never skip; a ready chunk
+  always runs; the probe fails open (no cache, gh unreachable,
+  no plan scripts: the tick runs).
+- Pull-request mode has no idle probe (its pick job claims
+  nothing and the model never starts when nothing is ready);
+  its pick, build and release jobs write the no-op reason.
+
 ## Operating it
 
 ### Pausing the cloud loop
@@ -376,6 +397,7 @@ These are encoded in the brief and in `agents.md`'s standing rules:
 | Quota pressure on Max | Cloud + heavy local work overlapping | Drop cloud cadence: change cron to every 4h instead of 2h |
 | `Loop paused: weekly quota until <ISO>` issue | The subscription's weekly quota is used up | Nothing: ticks skip the model until the reset, then the issue closes itself. Far off: `gh workflow disable march` |
 | Ticks skip with `Quota gate (scheduled run): skip` | Cached utilization at or above `NEXUS_QUOTA_MAX` | Expected; raise the cap (`gh variable set NEXUS_QUOTA_MAX --body 0.95`) or switch it off (`--body off`) |
+| Ticks skip with `Idle probe (scheduled run): skip` | Nothing changed since the last no-op, after `NEXUS_IDLE_BACKOFF` scheduled no-ops | Expected; a dispatch runs regardless (`gh workflow run march`), or turn it off (`gh variable set NEXUS_IDLE_BACKOFF --body 0`) |
 | Step summary: `no-op reason: lost-to-background` | The agent handed work to a background call and ended its turn | Check the prompt still says every dispatch passes `run_in_background: false`, and that `.claude/settings.json` wires `guard.mjs pre-agent` |
 
 ## Why this is structured this way

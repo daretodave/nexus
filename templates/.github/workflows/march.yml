@@ -150,6 +150,34 @@ jobs:
           grep -qx '.nexus/' .git/info/exclude 2>/dev/null || echo '.nexus/' >> .git/info/exclude
           node scripts/cloud/quota.mjs gate --event "$EVENT" --reason "$REASON" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
 
+      # The idle probe (scripts/cloud/idle.mjs): a scheduled tick that
+      # finds the repo as the last no-op left it (the main sha, open
+      # issue counts by label, the ready count, the newest issue update;
+      # counts and hashes, never issue text) after NEXUS_IDLE_BACKOFF
+      # scheduled no-ops (default 3; 0 = never skip), with nothing
+      # ready, exits before the model. Every NEXUS_IDLE_WAKE_EVERYth
+      # skip (default 4) runs anyway; dispatch, nudge and chain runs
+      # never skip. Fails open.
+      - name: Idle cache restore
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .nexus/idle.json
+          key: nexus-idle-${{ github.run_id }}
+          restore-keys: nexus-idle-
+
+      - name: Idle probe
+        id: idle
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REASON: ${{ github.event.inputs.reason }}
+          MAIN: ${{ github.event.repository.default_branch }}
+          BACKOFF: ${{ vars.NEXUS_IDLE_BACKOFF }}
+          WAKE_EVERY: ${{ vars.NEXUS_IDLE_WAKE_EVERY }}
+        run: node scripts/cloud/idle.mjs probe --event "$EVENT" --reason "$REASON" --main "$MAIN" --backoff "$BACKOFF" --wake-every "$WAKE_EVERY" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
       # Git author identity is set via GIT_AUTHOR_* /
       # GIT_COMMITTER_* env vars on the action step below, NOT via
       # `git config`: the action runs its own internal git config
@@ -164,14 +192,14 @@ jobs:
       # owner, scripts/plan/settle.mjs settle and the push policy
       # pass <DEFAULT_BRANCH> (nexus/playbooks/owner-mode.md).
       - name: Owner mode for this checkout
-        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true' && steps.idle.outputs.skip != 'true'
         # .git/info/exclude too, so a repo whose .gitignore lacks it
         # never commits the marker.
         run: touch .owner && echo .owner >> .git/info/exclude
 
       - name: Run /march (cloud mode)
         id: run_march
-        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true' && steps.idle.outputs.skip != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           # Default: OAuth token against your Claude Pro/Max
@@ -285,6 +313,50 @@ jobs:
           MAIN: ${{ github.event.repository.default_branch }}
         run: node scripts/cloud/lost.mjs check "$EXEC_FILE" --run-url "$RUN_URL" --fetch "$MAIN"
 
+      # The idle probe's other half: whether this run landed a
+      # Cloud-Run commit, and the fingerprint it left (a scheduled
+      # no-op adds one to the count the next probe reads).
+      - name: Idle record
+        id: idle_record
+        if: always() && (steps.run_march.outcome == 'success' || steps.run_march.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REASON: ${{ github.event.inputs.reason }}
+          MAIN: ${{ github.event.repository.default_branch }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/cloud/idle.mjs record --event "$EVENT" --reason "$REASON" --main "$MAIN" --run-url "$RUN_URL"
+
+      - name: Idle cache save
+        if: always() && hashFiles('.nexus/idle.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .nexus/idle.json
+          key: nexus-idle-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # Every tick that lands nothing says why, in one step-summary
+      # line: `no-op reason: <ceiling | quota | idle skip | no ready
+      # work | lost-to-background | ...>`.
+      - name: No-op reason
+        if: always()
+        env:
+          LANDED: ${{ steps.idle_record.outputs.landed }}
+          CEILING: ${{ steps.ceiling.outputs.skip }}
+          QUOTA_SKIP: ${{ steps.quota_gate.outputs.skip }}
+          QUOTA_REASON: ${{ steps.quota_gate.outputs.reason }}
+          IDLE_SKIP: ${{ steps.idle.outputs.skip }}
+          IDLE_REASON: ${{ steps.idle.outputs.reason }}
+          QUOTA_STATUS: ${{ steps.quota.outputs.status }}
+          RESETS: ${{ steps.quota.outputs.resets }}
+          LOST: ${{ steps.lost.outputs.lost }}
+          MODEL: ${{ steps.run_march.outcome }}
+          READY: ${{ steps.idle.outputs.ready }}
+          EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
+        run: >-
+          node scripts/cloud/idle.mjs noop --landed "$LANDED" --ceiling "$CEILING"
+          --quota-skip "$QUOTA_SKIP" --quota-reason "$QUOTA_REASON" --idle-skip "$IDLE_SKIP" --idle-reason "$IDLE_REASON"
+          --quota-status "$QUOTA_STATUS" --resets "$RESETS" --lost "$LOST" --model "$MODEL" --ready "$READY" "$EXEC_FILE"
+
       - name: Quota cache save
         if: always() && steps.quota.outputs.quota != ''
         uses: actions/cache/save@v4
@@ -387,6 +459,16 @@ jobs:
           CHUNK: ${{ inputs.chunk }}
         run: node scripts/cloud/tick.mjs pick --chunk "$CHUNK"
 
+      # Nothing picked is a no-op: one summary line says why. (The idle
+      # probe lives in the owner job: here a tick with nothing ready
+      # never reaches the model anyway.)
+      - name: No-op reason
+        if: always() && steps.pick.outputs.id == ''
+        env:
+          QUOTA_SKIP: ${{ steps.quota_gate.outputs.skip }}
+          QUOTA_REASON: ${{ steps.quota_gate.outputs.reason }}
+        run: node scripts/cloud/idle.mjs noop --quota-skip "$QUOTA_SKIP" --quota-reason "$QUOTA_REASON" --nothing-picked
+
   build:
     needs: pick
     if: needs.pick.outputs.id != ''
@@ -420,6 +502,7 @@ jobs:
           git switch -c "$BRANCH"
           cp scripts/cloud/quota.mjs "$RUNNER_TEMP/quota.mjs"
           cp scripts/cloud/lost.mjs "$RUNNER_TEMP/lost.mjs"
+          cp scripts/cloud/idle.mjs "$RUNNER_TEMP/idle.mjs"
 
       # The Claude Code CLI, not the action: the action fetches a
       # token of its own, and this step must hold none. Pin the
@@ -521,6 +604,19 @@ jobs:
           echo "the tick committed $n commit(s)"
           if [ "$n" -gt 0 ]; then git bundle create "$RUNNER_TEMP/tick.bundle" "origin/$MAIN..$BRANCH"; fi
 
+      # A build that committed nothing says why, from the copy taken
+      # before the agent (a land that fails is the release job's line).
+      - name: No-op reason
+        if: always() && (steps.bundle.outputs.commits == '' || steps.bundle.outputs.commits == '0')
+        env:
+          QUOTA_STATUS: ${{ steps.quota.outputs.status }}
+          RESETS: ${{ steps.quota.outputs.resets }}
+          LOST: ${{ steps.lost.outputs.lost }}
+          MODEL: ${{ steps.run_next.outcome }}
+        run: >-
+          node "$RUNNER_TEMP/idle.mjs" noop --landed false --quota-status "$QUOTA_STATUS" --resets "$RESETS"
+          --lost "$LOST" --model "$MODEL" "$RUNNER_TEMP/claude.jsonl"
+
       - name: Hand the commits to the land job
         if: steps.bundle.outputs.commits != '0'
         uses: actions/upload-artifact@v4
@@ -614,6 +710,12 @@ jobs:
           CHUNK: ${{ needs.pick.outputs.id }}
           NEXUS_SESSION: cloud-${{ github.run_id }}
         run: node scripts/cloud/tick.mjs release "$CHUNK"
+
+      # The land job failed after the build committed: that is this
+      # tick's no-op reason (a build that committed nothing wrote its own).
+      - name: No-op reason
+        if: needs.land.result == 'failure'
+        run: node scripts/cloud/idle.mjs noop --land-failed true
 
       - name: Open cloud-failed issue if a job crashed
         if: (needs.build.result == 'failure' || needs.land.result == 'failure') && needs.build.outputs.quota_status != 'rejected'

@@ -796,6 +796,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/quota.test.mjs',
   'templates/scripts/__tests__/lost.test.mjs',
+  'templates/scripts/__tests__/idle.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
   'templates/scripts/__tests__/loop-issue.test.mjs',
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
