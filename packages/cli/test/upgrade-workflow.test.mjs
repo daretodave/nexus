@@ -80,7 +80,9 @@ test('the merge keeps cron, ceiling, model, env and concurrency in the v2 owner 
   assert.doesNotMatch(job(m, 'build'), /VERCEL_TOKEN/, 'the pull-request build job holds no token');
   // The job's own env, extra permissions, the checkout token, the custom step ahead of the model.
   assert.match(owner, /^ {4}env:\n {6}TZ: America\/New_York\n {4}permissions:/m);
-  assert.match(owner, /^ {6}actions: read/m);
+  // The v1 job's extra `actions: read` is covered by the kit's own `actions: write` (the chain step dispatches).
+  assert.match(owner, /^ {6}actions: write/m);
+  assert.doesNotMatch(owner, /^ {6}actions: read/m, 'one actions key, never two');
   assert.match(owner, /^ {10}token: \$\{\{ secrets\.ACTIONS_PAT \}\}$/m);
   assert.ok(owner.indexOf('- name: Weekly trend snapshot') > owner.indexOf('- name: Idle probe'));
   assert.ok(owner.indexOf('- name: Weekly trend snapshot') < owner.indexOf('- name: Owner mode for this checkout'));

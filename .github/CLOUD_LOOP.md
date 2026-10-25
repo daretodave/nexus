@@ -61,7 +61,8 @@ the failure mode of the thing it watches.
 - **Dispatch ceiling:** the same step stops a
   `workflow_dispatch` run once `NEXUS_DISPATCH_MAX` (12)
   dispatch runs of any workflow started in the repository in
-  24h (`quota.mjs dispatch`; the job holds `actions: read`).
+  24h (`quota.mjs dispatch`; the job holds `actions: write`,
+  read for this count and write for the chain step).
   It bounds a tick that dispatches runs itself, nudges and
   chained runs; scheduled ticks never skip on it.
 - **Run name and reason:** every run is titled `march <verb>
@@ -96,6 +97,22 @@ the failure mode of the thing it watches.
   nothing writes one `no-op reason: <why>` line to the step
   summary. `gh variable set NEXUS_IDLE_BACKOFF --body 0` turns
   the skip off.
+- **Chained ticks:** the last step, Chain next tick
+  (`templates/scripts/cloud/chain.mjs`, run in place),
+  dispatches ONE next run (`-f chain=<N+1> -f reason=chain`;
+  the job holds `actions: write`) when this tick landed a
+  `Cloud-Run:` commit (or was lost to background work: one
+  `reason=retry`) and every guard holds: `chain + 1` at or
+  under `NEXUS_CHAIN_MAX`, this tick's quota reading parsed
+  and under `NEXUS_QUOTA_MAX`, the weighted budget + 3 at or
+  under the ceiling, no march or night run queued or pending,
+  not within 30 min of night's slot, and a ready chunk or an
+  open `loop:do` or unlabeled issue. It fails closed, and
+  writes one `chain: ...` summary line. `NEXUS_CHAIN_MAX`
+  alone decides whether nexus chains: unset reads as 0 (no
+  chain); spec 55.6's dispatch-latency probe decides whether
+  the owner sets it to 3. Stop: `gh variable set
+  NEXUS_CHAIN_MAX --body 0`.
 - **The CLI gate:** on Node 24, a tick that runs the model
   first installs and builds `packages/cli` (`npm ci
   --ignore-scripts && npm run build`, npm cached on its

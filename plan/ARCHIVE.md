@@ -222,3 +222,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 56.5 · iterate dimension H with the magic guard; expand signal F · adf5772..adf5772
 - 2026-10-25 · 54.5 · march.yml reason, dispatch ceiling, hard quota, loop-filed marker · f429479..f429479
 - 2026-10-25 · 54.3 · User rows age into the queue; the support SLA step · bd38f74..bd38f74
+- 2026-10-25 · 55.3 · A shipped tick chains the next while work is ready · f384305..f384305

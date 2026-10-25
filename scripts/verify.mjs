@@ -928,6 +928,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/quota.test.mjs',
   'templates/scripts/__tests__/lost.test.mjs',
   'templates/scripts/__tests__/idle.test.mjs',
+  'templates/scripts/__tests__/chain.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
   'templates/scripts/__tests__/loop-issue.test.mjs',
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
@@ -1073,7 +1074,7 @@ async function legWorkflows() {
   const { problems, files } = lintDirs(['.github/workflows', '.github/actions', 'templates/.github/workflows', 'templates/.github/actions'].map((d) => path.join(ROOT, d)))
   const failures = problems.map((p) => { const m = /^(.*?\.ya?ml)(:.*)$/s.exec(p); return m ? normalize(path.relative(ROOT, m[1])) + m[2] : p })
   failures.push(...marchGovernorCheck())
-  return { failures, note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts; march.yml's reason, dispatch ceiling and loop-filed marker` }
+  return { failures, note: `${files} workflows and actions: hosted runners for secrets, contexts, no outsider text in run scripts; march.yml's reason, dispatch ceiling, loop-filed marker and chain step` }
 }
 
 // Spec 54: both march.yml copies take a `reason` input shown in the
@@ -1095,9 +1096,31 @@ function marchGovernorCheck(readFile = read) {
     const ceilingEnd = ceiling < 0 ? -1 : text.indexOf('\n      - ', ceiling)
     const step = ceiling < 0 ? '' : text.slice(ceiling, ceilingEnd < 0 ? undefined : ceilingEnd)
     if (!/quota\.mjs dispatch\b/.test(step) || !step.includes('NEXUS_DISPATCH_MAX')) failures.push(`${file}: the ceiling step holds no dispatch ceiling (quota.mjs dispatch against NEXUS_DISPATCH_MAX)`)
-    if (!/^\s+actions:\s*read\b/m.test(text)) failures.push(`${file}: the dispatch ceiling needs \`actions: read\``)
+    if (!/^\s+actions:\s*(read|write)\b/m.test(text)) failures.push(`${file}: the dispatch ceiling needs \`actions: read\``)
     if (!/loop-filed marker/.test(text) || !/never .*`?bug`?, `?loop:do`?/.test(text)) failures.push(`${file}: the prompt never says an issue the tick opens carries the Cloud-Run: loop-filed marker and no urgent label`)
+    failures.push(...marchChainCheck(file, text, step))
   }
+  return failures
+}
+
+// Spec 55: self-chaining. Each march.yml copy takes a numeric `chain`
+// input, its ceiling step hands the chain its ceiling, and every
+// "Chain next tick" step runs chain.mjs with this run's depth, its
+// quota reading and NEXUS_CHAIN_MAX (no other default, so the variable
+// alone decides whether a repo chains), with `actions: write` to
+// dispatch. The guards themselves are chain.test.mjs's.
+function marchChainCheck(file, text, ceilingStep) {
+  const failures = []
+  if (!/^\s{6}chain:\s*\n(?:\s{8}.*\n)*?\s{8}type:\s*number\s*$/m.test(text.replace(/\r\n/g, '\n'))) failures.push(`${file}: no numeric workflow_dispatch \`chain\` input`)
+  if (!/echo "ceiling=\$ceiling" >> "\$GITHUB_OUTPUT"/.test(ceilingStep)) failures.push(`${file}: the ceiling step never outputs \`ceiling\` (the chain step's budget guard reads it)`)
+  const steps = text.replace(/\r\n/g, '\n').split(/\n(?= {6}- )/).filter((s) => /^ {6}- name: Chain next tick\s*$/m.test(s))
+  if (!steps.length) failures.push(`${file}: no "Chain next tick" step`)
+  for (const s of steps) {
+    if (!/cloud\/chain\.mjs\b/.test(s)) failures.push(`${file}: "Chain next tick" does not run chain.mjs`)
+    if (!/CHAIN_MAX: \$\{\{ vars\.NEXUS_CHAIN_MAX \}\}/.test(s)) failures.push(`${file}: "Chain next tick" must read NEXUS_CHAIN_MAX with no default of its own`)
+    if (!/CHAIN: \$\{\{ inputs\.chain \}\}/.test(s) || !/--quota "\$QUOTA"/.test(s)) failures.push(`${file}: "Chain next tick" must pass this run's chain input and quota reading`)
+  }
+  if (!/^\s+actions:\s*write\b/m.test(text)) failures.push(`${file}: the chain step needs \`actions: write\` to dispatch`)
   return failures
 }
 

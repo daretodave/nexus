@@ -3,8 +3,8 @@
 // The workflow is the kit's own templates/.github/workflows/march.yml, filled by the kit installer's own
 // substitution (templates/scripts/bootstrap.mjs fillPlaceholders: <PROJECT>, <DEFAULT_BRANCH>,
 // <PROJECT_PKG_PREFIX>), with the shared toolchain action, the quota governor (scripts/cloud/quota.mjs), the
-// lost-to-background mark (scripts/cloud/lost.mjs) and the idle probe (scripts/cloud/idle.mjs) beside it when the repo
-// has none (every march job uses them). The CLI ships these files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
+// lost-to-background mark (scripts/cloud/lost.mjs), the idle probe (scripts/cloud/idle.mjs) and the chain step
+// (scripts/cloud/chain.mjs) beside it when the repo has none (every march job uses them). The CLI ships these files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
 // templates/ directly. Which way a tick lands is the repo variable NEXUS_LOOP_MODE, not a line in the file: in owner
 // mode an unset variable is set to owner (best effort), as bootstrap's set-loop-mode does.
 //
@@ -41,6 +41,7 @@ export const KIT_FILES = {
   quota: ['scripts/cloud/quota.mjs', 'scripts/cloud/quota.mjs'],
   lost: ['scripts/cloud/lost.mjs', 'scripts/cloud/lost.mjs'],
   idle: ['scripts/cloud/idle.mjs', 'scripts/cloud/idle.mjs'],
+  chain: ['scripts/cloud/chain.mjs', 'scripts/cloud/chain.mjs'],
 };
 /** The quota governor every march job runs (its gate and read steps): written beside the workflow when missing. */
 export const QUOTA_PATH = 'scripts/cloud/quota.mjs';
@@ -48,6 +49,8 @@ export const QUOTA_PATH = 'scripts/cloud/quota.mjs';
 export const LOST_PATH = 'scripts/cloud/lost.mjs';
 /** The idle probe and the no-op reason every march job runs: written beside the workflow when missing. */
 export const IDLE_PATH = 'scripts/cloud/idle.mjs';
+/** The chain step every march job runs last (it dispatches the next tick): written beside the workflow when missing. */
+export const CHAIN_PATH = 'scripts/cloud/chain.mjs';
 
 /** A kit file's path: the CLI's bundled copy first, then the nexus repo's templates (development). Null when neither. */
 export function kitFile(name, { pkg = PKG } = {}) {
@@ -487,7 +490,7 @@ async function workflowFiles(repo, place, cron) {
   const files = { [WORKFLOW_PATH]: yml };
   const setup = kitFile('setup');
   if (setup && await showFile(repo, place.base, SETUP_ACTION_PATH) == null) files[SETUP_ACTION_PATH] = await fillTemplate(fs.readFileSync(setup, 'utf8'), v);
-  for (const [name, rel] of [['quota', QUOTA_PATH], ['lost', LOST_PATH], ['idle', IDLE_PATH]]) {
+  for (const [name, rel] of [['quota', QUOTA_PATH], ['lost', LOST_PATH], ['idle', IDLE_PATH], ['chain', CHAIN_PATH]]) {
     const src = kitFile(name);
     if (src && await showFile(repo, place.base, rel) == null) files[rel] = fs.readFileSync(src, 'utf8').replace(/\r\n/g, '\n');
   }

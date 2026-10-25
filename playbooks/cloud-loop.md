@@ -78,6 +78,7 @@ scripts/
 ├── cloud/quota.mjs        # quota governor: read, cache, gate, dispatch ceiling, pause issue
 ├── cloud/lost.mjs         # lost-to-background mark, after the model
 ├── cloud/idle.mjs         # idle probe (skip the model when nothing changed) + no-op reason
+├── cloud/chain.mjs        # a tick that shipped chains the next while work is ready
 ├── cloud/tick.mjs         # PR mode: pick + claim, fence, land, release
 ├── pr/resolve.mjs         # PR mode: pr-resolve's resolver
 └── workflow-lint.mjs      # the workflow rules, for your gate
@@ -119,6 +120,7 @@ cp ../nexus/templates/scripts/workflow-lint.mjs        scripts/workflow-lint.mjs
 cp ../nexus/templates/scripts/cloud/quota.mjs          scripts/cloud/quota.mjs
 cp ../nexus/templates/scripts/cloud/lost.mjs           scripts/cloud/lost.mjs
 cp ../nexus/templates/scripts/cloud/idle.mjs           scripts/cloud/idle.mjs
+cp ../nexus/templates/scripts/cloud/chain.mjs          scripts/cloud/chain.mjs
 # pull-request mode (NEXUS_LOOP_MODE unset) also needs these:
 cp ../nexus/templates/.github/workflows/pr-flow.yml    .github/workflows/pr-flow.yml
 cp ../nexus/templates/.github/workflows/pr-resolve.yml .github/workflows/pr-resolve.yml
@@ -137,6 +139,7 @@ Copy-Item ..\nexus\templates\scripts\workflow-lint.mjs        scripts\workflow-l
 Copy-Item ..\nexus\templates\scripts\cloud\quota.mjs          scripts\cloud\quota.mjs
 Copy-Item ..\nexus\templates\scripts\cloud\lost.mjs           scripts\cloud\lost.mjs
 Copy-Item ..\nexus\templates\scripts\cloud\idle.mjs           scripts\cloud\idle.mjs
+Copy-Item ..\nexus\templates\scripts\cloud\chain.mjs          scripts\cloud\chain.mjs
 # pull-request mode (NEXUS_LOOP_MODE unset) also needs these:
 Copy-Item ..\nexus\templates\.github\workflows\pr-flow.yml    .github\workflows\pr-flow.yml
 Copy-Item ..\nexus\templates\.github\workflows\pr-resolve.yml .github\workflows\pr-resolve.yml

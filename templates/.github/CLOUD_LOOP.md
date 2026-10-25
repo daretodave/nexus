@@ -271,8 +271,9 @@ same step holds a second one: the **dispatch ceiling**
 repository in the last 24 hours. It bounds a tick that calls
 `gh workflow run` itself (a prompt-injected one), event nudges
 and chained runs alike; scheduled ticks never skip on it, and
-it fails open when `gh` cannot list the runs. The job holds
-`actions: read` for it. The step summary's no-op reason names
+it fails open when `gh` cannot list the runs. The owner job
+holds `actions: write` (read for this count, write for the
+chain step) and the pick job `actions: read`. The step summary's no-op reason names
 which ceiling stopped the tick.
 
 Every run is titled `march <verb> <reason>` (`run-name`): the
@@ -355,6 +356,36 @@ model, in the owner job:
   nothing and the model never starts when nothing is ready);
   its pick, build and release jobs write the no-op reason.
 
+## Chained ticks
+
+A tick that shipped and leaves work ready behind it need not
+wait for the next cron slot. The last step, **Chain next
+tick** (`scripts/cloud/chain.mjs`), dispatches ONE next run,
+`gh workflow run march.yml -f chain=<N+1> -f reason=chain`,
+only when every guard holds (the job holds `actions: write`):
+
+| Guard | Holds when |
+|---|---|
+| depth | `chain + 1` is at or under `NEXUS_CHAIN_MAX` |
+| shipped | this run landed a `Cloud-Run:` commit (pull-request mode: its land job succeeded), or it was marked lost-to-background and is not already the retry (then `reason=retry`, once) |
+| quota | this run's seven_day reading parsed and is under `NEXUS_QUOTA_MAX` (`off`: under 0.97) |
+| budget | the weighted 24h budget + 3 is at or under the ceiling (pull-request mode has none; the dispatch ceiling bounds it) |
+| night | not within 30 min of a cron slot in `night.yml` (no `night.yml`: no guard) |
+| queue | no march or night run is queued or pending (a new pending run would cancel it) |
+| ready | a chunk is ready (Asap included), or (owner mode) an open `loop:do` or unlabeled issue without `loop:opened` |
+
+- `NEXUS_CHAIN_MAX` (repo variable): unset or anything but a
+  whole number reads as `0`, and `0` never chains. Turn it on
+  with `gh variable set NEXUS_CHAIN_MAX --body 3`; off again
+  with `--body 0`.
+- It fails closed: a quota, ceiling, cron or run list it
+  cannot read means no chain. The chained run passes the same
+  ceilings and quota gate as any run, so the dispatch ceiling
+  (`NEXUS_DISPATCH_MAX`) bounds a chain too.
+- Every tick writes one `chain: ...` line to the step summary:
+  `dispatched march.yml (chain=2, reason=chain)`, or `no
+  (<guard>: <why>)`.
+
 ## Operating it
 
 ### Pausing the cloud loop
@@ -433,6 +464,8 @@ These are encoded in the brief and in `agents.md`'s standing rules:
 | `Loop paused: weekly quota until <ISO>` issue | The subscription's weekly quota is used up | Nothing: ticks skip the model until the reset, then the issue closes itself. Far off: `gh workflow disable march` |
 | Ticks skip with `Quota gate (scheduled run): skip` | Cached utilization at or above `NEXUS_QUOTA_MAX` | Expected; raise the cap (`gh variable set NEXUS_QUOTA_MAX --body 0.95`) or switch it off (`--body off`) |
 | Ticks skip with `Idle probe (scheduled run): skip` | Nothing changed since the last no-op, after `NEXUS_IDLE_BACKOFF` scheduled no-ops | Expected; a dispatch runs regardless (`gh workflow run march`), or turn it off (`gh variable set NEXUS_IDLE_BACKOFF --body 0`) |
+| More march runs than the cron promises, titled `march march chain` | Chained ticks: a tick that shipped dispatched the next while work was ready | Expected up to `NEXUS_CHAIN_MAX` deep; stop it with `gh variable set NEXUS_CHAIN_MAX --body 0` |
+| `chain: no (dispatch: gh workflow run failed (HTTP 403 ...))` | The job lacks `actions: write` | Restore `actions: write` on the job that runs Chain next tick |
 | Step summary: `no-op reason: lost-to-background` | The agent handed work to a background call and ended its turn | Check the prompt still says every dispatch passes `run_in_background: false`, and that `.claude/settings.json` wires `guard.mjs pre-agent` |
 
 ## Why this is structured this way

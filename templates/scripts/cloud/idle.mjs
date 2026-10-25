@@ -166,7 +166,7 @@ function shRun(cmd, args) {
 const gitRun = (args) => shRun('git', args);
 
 /** The ready count through the plan's own order.mjs on origin/<main>; null when it cannot say (no plan scripts). */
-async function planReady(cwd, main) {
+export async function planReady(cwd, main) {
   try {
     const order = path.join(HERE, '..', 'plan', 'order.mjs');
     if (!fs.existsSync(order)) return null;

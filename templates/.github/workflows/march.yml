@@ -50,6 +50,14 @@ on:
         required: false
         type: string
         default: ''
+      # How deep in a chain this run is: 0 by hand or on a schedule; the
+      # chain step dispatches the next run with chain=<this + 1>, never
+      # past the repo variable NEXUS_CHAIN_MAX.
+      chain:
+        description: 'Chain depth (0 by hand; set by the Chain next tick step)'
+        required: false
+        type: number
+        default: 0
       chunk:
         description: 'Pull-request mode: build this chunk id (empty: the next ready one)'
         required: false
@@ -77,7 +85,7 @@ jobs:
       contents: write   # push back to <DEFAULT_BRANCH>
       issues: write     # /triage labels + cloud-failed issue
       id-token: write   # Claude Code Action's OIDC handshake
-      actions: read     # the dispatch ceiling counts workflow_dispatch runs
+      actions: write    # the dispatch ceiling counts workflow_dispatch runs; the chain step dispatches
     steps:
       - name: Checkout (full history for /march dispatch)
         id: checkout
@@ -135,6 +143,8 @@ jobs:
             fi
           done
           echo "Cloud-shipped weighted budget in last 24h: $budget / $ceiling (chunk=3, churn=1)"
+          # The chain step counts the budget again after the tick, against this ceiling.
+          echo "ceiling=$ceiling" >> "$GITHUB_OUTPUT"
           if [ "$budget" -ge "$ceiling" ]; then
             echo "Cloud ceiling reached ($ceiling weighted budget/24h). Exiting cleanly — no work this tick."
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -433,6 +443,34 @@ jobs:
             echo "An open 'Cloud march tick crashed' issue already exists — skipping dedupe."
           fi
 
+      # Self-chaining (scripts/cloud/chain.mjs): a tick that landed a
+      # commit (or was lost to background work: one retry) while work
+      # is ready dispatches the next tick now instead of leaving it to
+      # the next cron slot. Every guard must hold: chain + 1 at or under
+      # the repo variable NEXUS_CHAIN_MAX (unset reads as 0: no chain),
+      # this run's quota reading parsed and under NEXUS_QUOTA_MAX, the
+      # weighted budget + 3 at or under the ceiling, no march or night
+      # run queued or pending, not within 30 min of night's slot, and a
+      # ready chunk or an open loop:do or unlabeled issue. Fails closed.
+      # A chained run passes the same ceilings and quota gate as any run.
+      - name: Chain next tick
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LANDED: ${{ steps.idle_record.outputs.landed }}
+          LOST: ${{ steps.lost.outputs.lost }}
+          REASON: ${{ github.event.inputs.reason }}
+          CHAIN: ${{ inputs.chain }}
+          CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
+          QUOTA: ${{ steps.quota.outputs.quota }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
+          CEILING: ${{ steps.ceiling.outputs.ceiling }}
+          MAIN: ${{ github.event.repository.default_branch }}
+        run: >-
+          node scripts/cloud/chain.mjs --landed "$LANDED" --lost "$LOST" --reason "$REASON"
+          --chain "$CHAIN" --chain-max "$CHAIN_MAX" --quota "$QUOTA" --quota-max "$QUOTA_MAX"
+          --ceiling "$CEILING" --main "$MAIN" --workflow march.yml --night .github/workflows/night.yml
+
   # ═════════════════════════════════════════════════════════════
   # Pull-request mode (NEXUS_LOOP_MODE unset or pr): the tick is a
   # contributor. Four jobs, so the agent's job holds no token.
@@ -524,6 +562,7 @@ jobs:
       contents: read
     outputs:
       commits: ${{ steps.bundle.outputs.commits }}
+      quota: ${{ steps.quota.outputs.quota }}
       quota_status: ${{ steps.quota.outputs.status }}
       quota_resets: ${{ steps.quota.outputs.resets }}
       lost: ${{ steps.lost.outputs.lost }}
@@ -799,3 +838,42 @@ jobs:
           RESETS: ${{ needs.build.outputs.quota_resets }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: node scripts/cloud/quota.mjs pause --resets "$RESETS" --run-url "$RUN_URL"
+
+  # Self-chaining, as in the owner job: a tick whose pull request
+  # opened (or whose build was lost to background work: one retry)
+  # dispatches the next tick while a chunk is ready. Pull-request mode
+  # has no commit ceiling (the dispatch ceiling bounds the chain) and
+  # builds chunks only, so issues do not count as ready work here. The
+  # default branch's chain.mjs runs, never the tick's.
+  chain:
+    needs: [pick, build, land]
+    if: always() && needs.pick.outputs.id != '' && (needs.land.result == 'success' || needs.build.outputs.lost == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read         # the plan and the claims branch
+      actions: write         # gh workflow run march.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Chain next tick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LANDED: ${{ needs.land.result == 'success' }}
+          LOST: ${{ needs.build.outputs.lost }}
+          REASON: ${{ github.event.inputs.reason }}
+          CHAIN: ${{ inputs.chain }}
+          CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
+          QUOTA: ${{ needs.build.outputs.quota }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
+          MAIN: ${{ github.event.repository.default_branch }}
+        run: >-
+          node scripts/cloud/chain.mjs --landed "$LANDED" --lost "$LOST" --reason "$REASON"
+          --chain "$CHAIN" --chain-max "$CHAIN_MAX" --quota "$QUOTA" --quota-max "$QUOTA_MAX"
+          --ceiling none --issues false --main "$MAIN" --workflow march.yml --night .github/workflows/night.yml

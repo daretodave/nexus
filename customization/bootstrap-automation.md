@@ -772,10 +772,11 @@ auth's accessible resources.
   a no-op (warn + leave the default) if the field is unset or
   the anchor line has drifted.
 - **`install-workflow` also writes `scripts/cloud/quota.mjs`,
-  `lost.mjs` and `idle.mjs`** where missing (`LOOP_FILES`):
-  every march and night job runs the quota gate and read
-  steps, and march the lost-to-background check, the idle
-  probe and the no-op reason, in either mode.
+  `lost.mjs`, `idle.mjs` and `chain.mjs`** where missing
+  (`LOOP_FILES`): every march and night job runs the quota
+  gate and read steps, and march the lost-to-background check,
+  the idle probe, the no-op reason and the chain step, in
+  either mode.
 - **`pr-resolve.yml` carries `<DEFAULT_BRANCH>`** in its
   `push: branches:` filter. `install-pr-workflows` fills it
   (and every bracket placeholder) from

@@ -51,12 +51,14 @@ export const PR_MODE_FILES = [
   'scripts/pr/resolve.mjs',
 ]
 // Files the march.yml and night.yml jobs run, whatever the mode: the quota governor, the lost-to-background mark
-// march runs after the model (it reads the output through the governor's parser), and the idle probe with its
-// no-op reason (it reads through both).
+// march runs after the model (it reads the output through the governor's parser), the idle probe with its
+// no-op reason (it reads through both), and the chain step that dispatches the next tick (it reads through the
+// governor and the probe).
 export const LOOP_FILES = [
   'scripts/cloud/quota.mjs',
   'scripts/cloud/lost.mjs',
   'scripts/cloud/idle.mjs',
+  'scripts/cloud/chain.mjs',
 ]
 
 // ─────────────────────────────────────────────────────────────

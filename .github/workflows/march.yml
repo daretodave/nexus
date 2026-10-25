@@ -46,6 +46,14 @@ on:
         required: false
         type: string
         default: ''
+      # How deep in a chain this run is (spec 55): 0 by hand or on a
+      # schedule; the Chain next tick step dispatches the next run with
+      # chain=<this + 1>, never past NEXUS_CHAIN_MAX.
+      chain:
+        description: 'Chain depth (0 by hand; set by the Chain next tick step)'
+        required: false
+        type: number
+        default: 0
       # Spec 55.6: does claude-code-action load this repo's .claude
       # hooks? With this set, guard.mjs logs its first call to
       # $RUNNER_TEMP/hook-probe.log and the Hook probe report step
@@ -70,7 +78,7 @@ jobs:
       contents: write   # push to main
       issues: write     # /triage labels + mirrors + crash issue
       id-token: write   # Claude Code Action OIDC
-      actions: read     # the dispatch ceiling counts workflow_dispatch runs
+      actions: write    # the dispatch ceiling counts workflow_dispatch runs; the chain step dispatches
     steps:
       - name: Checkout (full history for /march dispatch)
         id: checkout
@@ -120,6 +128,8 @@ jobs:
             fi
           done
           echo "Cloud-shipped weighted budget in last 24h: $budget / $ceiling (chunk=3, churn=1)"
+          # The chain step counts the budget again after the tick, against this ceiling.
+          echo "ceiling=$ceiling" >> "$GITHUB_OUTPUT"
           if [ "$budget" -ge "$ceiling" ]; then
             echo "Cloud ceiling reached ($ceiling weighted budget/24h). Exiting cleanly — no work this tick."
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -500,3 +510,31 @@ jobs:
           else
             echo "An open 'Cloud march tick crashed' issue already exists — skipping dedupe."
           fi
+
+      # Self-chaining (templates/scripts/cloud/chain.mjs, spec 55): a
+      # tick that landed a commit (or was lost to background work: one
+      # retry) while work is ready dispatches the next tick now instead
+      # of leaving it to the next cron slot. Every guard must hold:
+      # chain + 1 at or under NEXUS_CHAIN_MAX (unset reads as 0, so the
+      # variable alone decides whether nexus chains), this run's quota
+      # reading parsed and under NEXUS_QUOTA_MAX, the weighted budget
+      # + 3 at or under the ceiling, no march or night run queued or
+      # pending, not within 30 min of night's slot, and a ready chunk
+      # or an open loop:do or unlabeled issue. Fails closed. A chained
+      # run passes the same ceilings and quota gate as any run.
+      - name: Chain next tick
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LANDED: ${{ steps.idle_record.outputs.landed }}
+          LOST: ${{ steps.lost.outputs.lost }}
+          REASON: ${{ github.event.inputs.reason }}
+          CHAIN: ${{ inputs.chain }}
+          CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
+          QUOTA: ${{ steps.quota.outputs.quota }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.80' }}
+          CEILING: ${{ steps.ceiling.outputs.ceiling }}
+        run: >-
+          node templates/scripts/cloud/chain.mjs --landed "$LANDED" --lost "$LOST" --reason "$REASON"
+          --chain "$CHAIN" --chain-max "$CHAIN_MAX" --quota "$QUOTA" --quota-max "$QUOTA_MAX"
+          --ceiling "$CEILING" --main main --workflow march.yml --night .github/workflows/night.yml

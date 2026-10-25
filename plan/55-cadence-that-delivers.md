@@ -176,6 +176,18 @@ keep a chain from cancelling a pending night digest. A
 chained run passes the same ceiling and quota gate as any
 run, so spec 54's 24h dispatch ceiling bounds it too.
 
+Built (55.3): the guards run cheapest first (depth, shipped,
+quota, then budget, night, queue, ready), so an unset or 0
+`NEXUS_CHAIN_MAX` stops the chain before any gh call; unset
+or anything but a whole number reads as 0 in nexus and the
+template alike, so the variable alone decides whether a repo
+chains. The ceiling step outputs its `ceiling`; the budget is
+recounted on `origin/<main>` after the tick. The night window
+is 30 min either side of a slot. Pull-request mode's `chain`
+job (after `land`) passes `--ceiling none` (it has no commit
+ceiling; the dispatch ceiling bounds it) and `--issues false`
+(its pick builds chunks only).
+
 ### Idle probe and backoff
 
 A shell step before the model,
@@ -304,7 +316,6 @@ and chain max is 0.
 
 - **A3** The dispatch-vs-schedule start latency is measured from 10 dispatched runs and written into this spec's Design, and the decision rule there has been applied to 55.3 and 55.5.
 - **A4** One dispatched cloud tick has shown whether `.claude` hooks load under claude-code-action, and the answer is written into this spec's Design and march.yml's comments (the two contradicting comments reconciled).
-- **A6** A tick that lands a commit while work is ready dispatches exactly one chained tick (`reason=chain`), and never when chain max, ceiling, quota (including an unparseable quota), a queued or pending march or night run, or night's 30-minute window forbids it (one `chain.mjs` unit test per guard).
 - **A8** Setting `NEXUS_CADENCE` switches ceiling, chain max, idle backoff and heartbeat threshold without a file edit; bootstrap's `cloud_loop.cadence` writes the matching cron and variable; the `cadence-twins` leg fails when the three workflow copies disagree.
 - **A9** The CLI's Cloud step offers the same five presets, and choosing one writes the cron and sets `NEXUS_CADENCE` (server and screen tests).
 - **A10** Heartbeat files one deduped realized-cadence issue when scheduled runs in 72h fall below 40% of what the file's cron promises (replayed against two adopters' 2026-09 run lists as a fixture).
@@ -315,14 +326,12 @@ and chain max is 0.
 (None.)
 
 ## Chunks
-Measure: 7 open · 5 closed · next A13
+Measure: 6 open · 6 closed · next A13
 
 - [ ] **55.6** Probe dispatch latency and hook loading in cloud · S · closes A3, A4 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
   - Tooling landed (probe-latency.mjs, probe.yml, guard hook probe, march.yml hook_probe input); left, owner-run: the ten dispatches and one hook_probe tick, their numbers and answer into Design and march.yml's comments, probe.yml deleted.
-- [ ] **55.3** A shipped tick chains the next while work is ready · M · closes A6 · needs 55.6
-  - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **55.5** Cadence presets, the variable and bootstrap · M · closes A8 · needs 55.3
+- [ ] **55.5** Cadence presets, the variable and bootstrap · M · closes A8 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.7** The CLI Cloud step offers the five presets · M · closes A9 · needs 55.5
 - [ ] **55.8** Heartbeat alarms on realized cadence · S · closes A10 · needs 55.5

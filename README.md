@@ -741,6 +741,7 @@ nexus/
     │   ├── cloud/quota.mjs            # quota governor: seven_day read + cache, the gate (0.97 hard ceiling), the dispatch ceiling, the pause issue
     │   ├── cloud/lost.mjs             # lost-to-background mark: a result parked on background work, no commit
     │   ├── cloud/idle.mjs             # idle probe: a scheduled tick skips the model when nothing changed; the no-op reason
+    │   ├── cloud/chain.mjs            # self-chaining: a tick that shipped dispatches the next while work is ready, every guard holding
     │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
     │   ├── design/ingest.mjs          # /design ingest: an export folder -> design/handoff/<date>/ + manifest.json (sha256 per file) + README; check, rehash
     │   ├── design/render.mjs          # a handoff's boards as PNGs at their size, night or dawn, via the installed Chrome (+ board-runtime.js)
@@ -778,6 +779,7 @@ nexus/
     │   ├── __tests__/quota.test.mjs   # the quota governor on real lockout shapes, gh stubbed
     │   ├── __tests__/lost.test.mjs    # the lost-to-background mark (git stubbed); the guard denies background calls in CI
     │   ├── __tests__/idle.test.mjs    # the idle probe's skip rules and the no-op reason, gh and git stubbed
+    │   ├── __tests__/chain.test.mjs   # the chain's guards, one test each, and the one dispatch, gh and git stubbed
     │   ├── __tests__/heartbeat-quota.test.mjs # heartbeat's cadence step in bash: no flatline while paused
     │   ├── __tests__/heartbeat-red.test.mjs # heartbeat's red-gate step in bash: a failed CI run on main opens one issue
     │   ├── __tests__/heartbeat-motion.test.mjs # heartbeat's motion step in bash: one stall issue, none while paused
