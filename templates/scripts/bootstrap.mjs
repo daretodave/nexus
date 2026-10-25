@@ -50,9 +50,11 @@ export const PR_MODE_FILES = [
   'scripts/cloud/tick.mjs',
   'scripts/pr/resolve.mjs',
 ]
-// Files every march.yml and night.yml job runs, whatever the mode: the quota governor.
+// Files the march.yml and night.yml jobs run, whatever the mode: the quota governor, and the lost-to-background mark
+// march runs after the model (it reads the output through the governor's parser).
 export const LOOP_FILES = [
   'scripts/cloud/quota.mjs',
+  'scripts/cloud/lost.mjs',
 ]
 
 // ─────────────────────────────────────────────────────────────
@@ -926,7 +928,7 @@ async function execCloudLoop(a, state, manifest) {
     } else {
       log.warn(`no ${action}: copy nexus/templates/.github/actions/setup/action.yml to ${SETUP_ACTION_PATH}`)
     }
-    // The quota governor the workflow's gate and read steps run.
+    // The quota governor and the lost-to-background mark the workflow's steps run.
     for (const f of LOOP_FILES) {
       if (fs.existsSync(f)) {
         log.info(`kept your ${f}`)

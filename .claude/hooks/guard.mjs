@@ -4,6 +4,7 @@
 //
 //   PreToolUse (matcher: Bash)  → node "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.mjs pre-bash
 //   PreToolUse (matcher: Read|Grep) → node "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.mjs pre-read
+//   PreToolUse (matcher: Agent|Task) → node "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.mjs pre-agent
 //   Stop                        → node "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.mjs stop
 //
 // Exit-code contract (Claude Code hooks):
@@ -21,10 +22,19 @@
 //               requires inside Claude Code), then check a Bash tool
 //               call against the forbidden list and the vault rails
 //   pre-read    refuse a Read or Grep of a vault file (.env, .env.workspace)
+//   pre-agent   in CI, refuse a subagent dispatch that is not foreground
+//               (the background rule below)
 //   stop        warn (or block, with NEXUS_STRICT_STOP=1) when a
 //               turn ends with a dirty tree / unpushed commits
 //   self-test   run canned commands through the matcher; exit 1
 //               on any mismatch (use in CI / after editing rules)
+//
+// The background rule: in CI (GITHUB_ACTIONS=true) a cloud tick is one
+// single-shot process, so a background Bash call or subagent outlives the
+// turn that would collect it and its work never lands. pre-bash refuses
+// run_in_background: true; pre-agent refuses an Agent dispatch that does
+// not pass run_in_background: false (left out is a background dispatch)
+// and a Task dispatch that passes true. NEXUS_ALLOW_BACKGROUND=1 lifts it.
 //
 // The hook probe: with NEXUS_HOOK_PROBE=1 the first call of any mode
 // (not self-test) creates $RUNNER_TEMP/hook-probe.log with one line,
@@ -180,6 +190,32 @@ function backgroundedGate(input) {
   const bg = input?.tool_input?.run_in_background === true
   return bg && /\b(verify|deploy:check|e2e|test:run)\b/.test(cmd)
 }
+
+// The background rule (spec 55): in CI nothing runs in the background.
+// Off a runner, local /loop and interactive sessions background freely.
+function inCi(env) {
+  return env.GITHUB_ACTIONS === 'true' && env.NEXUS_ALLOW_BACKGROUND !== '1'
+}
+
+function backgroundBash(input, env = process.env) {
+  return inCi(env) && input?.tool_input?.run_in_background === true
+}
+
+// The Agent tool's left-out flag is a background dispatch, so only an
+// explicit false passes; the older Task tool is refused only on true.
+function backgroundAgent(input, env = process.env) {
+  if (!inCi(env)) return false
+  const bg = input?.tool_input?.run_in_background
+  return input?.tool_name === 'Task' ? bg === true : bg !== false
+}
+
+const CI_BACKGROUND_MESSAGE =
+  'guard: no background calls in CI (GITHUB_ACTIONS=true). A cloud tick ' +
+  'is one single-shot process: the job ends with your turn, so a ' +
+  'background Bash call or subagent never reports back and its work ' +
+  'never lands (lost-to-background). Run it foreground: pass ' +
+  'run_in_background: false and wait for it. NEXUS_ALLOW_BACKGROUND=1 ' +
+  'lifts this rule for a runner that keeps the session alive.'
 
 const BACKGROUND_MESSAGE =
   'guard: never run the verify/deploy gate in the background ' +
@@ -815,6 +851,10 @@ async function preBash() {
     process.stderr.write(BACKGROUND_MESSAGE + '\n')
     return 2
   }
+  if (backgroundBash(input)) {
+    process.stderr.write(CI_BACKGROUND_MESSAGE + '\n')
+    return 2
+  }
   for (const rule of RULES) {
     if (rule.test(cmd)) {
       process.stderr.write(rule.message + '\n')
@@ -827,6 +867,12 @@ async function preBash() {
     return 2
   }
   return 0
+}
+
+function preAgent() {
+  if (!backgroundAgent(readStdinJson())) return 0
+  process.stderr.write(CI_BACKGROUND_MESSAGE + '\n')
+  return 2
 }
 
 function preRead() {
@@ -982,7 +1028,7 @@ async function selfTest() {
     ['git log -n 5', null],
     ['pnpm verify', null],
   ]
-  let failed = markerSelfTest() + probeSelfTest() + (await vaultSelfTest())
+  let failed = markerSelfTest() + probeSelfTest() + backgroundSelfTest() + (await vaultSelfTest())
   for (const [cmd, expected] of cases) {
     const hit = RULES.find((r) => r.test(cmd))?.name ?? null
     const ok = hit === expected
@@ -1228,14 +1274,46 @@ function probeSelfTest() {
   return ok ? 0 : 1
 }
 
+// The background rule: denied on a runner, allowed off one and under the
+// escape hatch; the gate rule still fires first for a backgrounded gate.
+function backgroundSelfTest() {
+  const CI = { GITHUB_ACTIONS: 'true' }
+  const bash = (cmd, bg) => ({ tool_name: 'Bash', tool_input: { command: cmd, ...(bg === undefined ? {} : { run_in_background: bg }) } })
+  const agent = (name, bg) => ({ tool_name: name, tool_input: { prompt: 'build 55.2', ...(bg === undefined ? {} : { run_in_background: bg }) } })
+  const cases = [
+    ['bash background in CI', backgroundBash(bash('npm test', true), CI), true],
+    ['bash foreground in CI', backgroundBash(bash('npm test', false), CI), false],
+    ['bash flag left out in CI', backgroundBash(bash('npm test'), CI), false],
+    ['bash background off a runner', backgroundBash(bash('npm test', true), {}), false],
+    ['bash background, NEXUS_ALLOW_BACKGROUND=1', backgroundBash(bash('npm test', true), { ...CI, NEXUS_ALLOW_BACKGROUND: '1' }), false],
+    ['bash background, GITHUB_ACTIONS=false', backgroundBash(bash('npm test', true), { GITHUB_ACTIONS: 'false' }), false],
+    ['Agent background in CI', backgroundAgent(agent('Agent', true), CI), true],
+    ['Agent flag left out in CI', backgroundAgent(agent('Agent'), CI), true],
+    ['Agent foreground in CI', backgroundAgent(agent('Agent', false), CI), false],
+    ['Task background in CI', backgroundAgent(agent('Task', true), CI), true],
+    ['Task flag left out in CI', backgroundAgent(agent('Task'), CI), false],
+    ['Agent background off a runner', backgroundAgent(agent('Agent', true), {}), false],
+    ['Agent background, NEXUS_ALLOW_BACKGROUND=1', backgroundAgent(agent('Agent', true), { ...CI, NEXUS_ALLOW_BACKGROUND: '1' }), false],
+    ['backgrounded gate keeps its own rule', backgroundedGate(bash('node scripts/verify.mjs', true)), true],
+  ]
+  let failed = 0
+  for (const [label, got, want] of cases) {
+    const ok = got === want
+    if (!ok) failed++
+    process.stdout.write(`  ${ok ? 'ok  ' : 'FAIL'}  ${label.padEnd(60)} → ${got ? 'denied' : 'allowed'}\n`)
+  }
+  return failed
+}
+
 // --- entry ---------------------------------------------------------------
 
 try {
   const mode = process.argv[2]
-  if (mode === 'pre-bash' || mode === 'pre-read' || mode === 'stop') probeHook(mode)
+  if (mode === 'pre-bash' || mode === 'pre-read' || mode === 'pre-agent' || mode === 'stop') probeHook(mode)
   const code =
     mode === 'pre-bash' ? await preBash()
     : mode === 'pre-read' ? preRead()
+    : mode === 'pre-agent' ? preAgent()
     : mode === 'stop' ? stopCheck()
     : mode === 'self-test' ? await selfTest()
     : (process.stderr.write(`guard: unknown mode "${mode}"\n`), 0)

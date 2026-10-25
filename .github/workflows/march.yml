@@ -278,6 +278,19 @@ jobs:
           EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
         run: node templates/scripts/cloud/quota.mjs read "$EXEC_FILE"
 
+      # The lost-to-background mark (spec 55): a result that defers to
+      # background work, with no commit carrying this run's Cloud-Run
+      # trailer, is marked in the step summary and the `lost` output.
+      # guard.mjs denies background calls in CI; this check holds
+      # wherever the action loads no project hooks.
+      - name: Lost-to-background check
+        id: lost
+        if: always() && (steps.run_march.outcome == 'success' || steps.run_march.outcome == 'failure')
+        env:
+          EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node templates/scripts/cloud/lost.mjs check "$EXEC_FILE" --run-url "$RUN_URL" --fetch main
+
       - name: Quota cache save
         if: always() && steps.quota.outputs.quota != ''
         uses: actions/cache/save@v4

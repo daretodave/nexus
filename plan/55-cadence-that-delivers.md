@@ -294,7 +294,6 @@ and chain max is 0.
 
 - **A3** The dispatch-vs-schedule start latency is measured from 10 dispatched runs and written into this spec's Design, and the decision rule there has been applied to 55.3 and 55.5.
 - **A4** One dispatched cloud tick has shown whether `.claude` hooks load under claude-code-action, and the answer is written into this spec's Design and march.yml's comments (the two contradicting comments reconciled).
-- **A5** In CI, a background subagent or background Bash call is denied by `guard.mjs`, and a result that defers to a background job with no commit is marked `lost-to-background`.
 - **A6** A tick that lands a commit while work is ready dispatches exactly one chained tick (`reason=chain`), and never when chain max, ceiling, quota (including an unparseable quota), a queued or pending march or night run, or night's 30-minute window forbids it (one `chain.mjs` unit test per guard).
 - **A7** A scheduled tick with an unchanged fingerprint after K no-ops exits before the model step; dispatch, nudge and chain runs and any tick with a ready chunk always run; every Nth skip still runs; every tick that lands nothing prints a one-line no-op reason.
 - **A8** Setting `NEXUS_CADENCE` switches ceiling, chain max, idle backoff and heartbeat threshold without a file edit; bootstrap's `cloud_loop.cadence` writes the matching cron and variable; the `cadence-twins` leg fails when the three workflow copies disagree.
@@ -308,14 +307,12 @@ and chain max is 0.
 (None.)
 
 ## Chunks
-Measure: 10 open · 2 closed · next A13
+Measure: 9 open · 3 closed · next A13
 
 - [ ] **55.6** Probe dispatch latency and hook loading in cloud · S · closes A3, A4 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
   - Tooling landed (probe-latency.mjs, probe.yml, guard hook probe, march.yml hook_probe input); left, owner-run: the ten dispatches and one hook_probe tick, their numbers and answer into Design and march.yml's comments, probe.yml deleted.
-- [ ] **55.2** Background-call guard and lost-to-background mark · S · closes A5 · needs 55.6
-  - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **55.3** A shipped tick chains the next while work is ready · M · closes A6 · needs 55.2, 55.6, 54.2, 54.5
+- [ ] **55.3** A shipped tick chains the next while work is ready · M · closes A6 · needs 55.6, 54.2, 54.5
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.4** Idle ticks skip the model; every no-op says why · M · closes A7 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).

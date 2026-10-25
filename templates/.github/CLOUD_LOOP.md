@@ -284,6 +284,21 @@ tick's own model output and acts before the next tick spends:
   workflow token opened it. An issue anyone else opens with
   that title never pauses the loop or silences the alarm.
 
+## Lost to background
+
+A tick is one single-shot process: work handed to a background
+Bash call or subagent outlives the turn that would collect it,
+the job exits clean, and nothing lands. Two checks hold the
+line:
+
+| Check | What it does |
+|---|---|
+| `guard.mjs` background rule | With `GITHUB_ACTIONS=true`, denies a `run_in_background: true` Bash call and any Agent dispatch that does not pass `run_in_background: false` (`pre-bash`, `pre-agent`). `NEXUS_ALLOW_BACKGROUND=1` lifts it |
+| Lost-to-background check | After the model: a result that defers to background work (`background`, `I'll wait`, `resume once`) with no commit carrying the run's `Cloud-Run:` trailer writes `no-op reason: lost-to-background (...)` to the step summary and sets the step's `lost` output (`scripts/cloud/lost.mjs`) |
+
+The guard only fires where the action loads the project's
+hooks; the check runs either way.
+
 ## Operating it
 
 ### Pausing the cloud loop
@@ -361,6 +376,7 @@ These are encoded in the brief and in `agents.md`'s standing rules:
 | Quota pressure on Max | Cloud + heavy local work overlapping | Drop cloud cadence: change cron to every 4h instead of 2h |
 | `Loop paused: weekly quota until <ISO>` issue | The subscription's weekly quota is used up | Nothing: ticks skip the model until the reset, then the issue closes itself. Far off: `gh workflow disable march` |
 | Ticks skip with `Quota gate (scheduled run): skip` | Cached utilization at or above `NEXUS_QUOTA_MAX` | Expected; raise the cap (`gh variable set NEXUS_QUOTA_MAX --body 0.95`) or switch it off (`--body off`) |
+| Step summary: `no-op reason: lost-to-background` | The agent handed work to a background call and ended its turn | Check the prompt still says every dispatch passes `run_in_background: false`, and that `.claude/settings.json` wires `guard.mjs pre-agent` |
 
 ## Why this is structured this way
 

@@ -271,6 +271,20 @@ jobs:
           EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
         run: node scripts/cloud/quota.mjs read "$EXEC_FILE"
 
+      # The lost-to-background mark (spec 55): a result that defers to
+      # background work, with no commit carrying this run's Cloud-Run
+      # trailer, is marked in the step summary and the `lost` output.
+      # guard.mjs denies background calls in CI; this check holds
+      # wherever the action loads no project hooks.
+      - name: Lost-to-background check
+        id: lost
+        if: always() && (steps.run_march.outcome == 'success' || steps.run_march.outcome == 'failure')
+        env:
+          EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MAIN: ${{ github.event.repository.default_branch }}
+        run: node scripts/cloud/lost.mjs check "$EXEC_FILE" --run-url "$RUN_URL" --fetch "$MAIN"
+
       - name: Quota cache save
         if: always() && steps.quota.outputs.quota != ''
         uses: actions/cache/save@v4
@@ -386,6 +400,7 @@ jobs:
       commits: ${{ steps.bundle.outputs.commits }}
       quota_status: ${{ steps.quota.outputs.status }}
       quota_resets: ${{ steps.quota.outputs.resets }}
+      lost: ${{ steps.lost.outputs.lost }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -404,6 +419,7 @@ jobs:
         run: |
           git switch -c "$BRANCH"
           cp scripts/cloud/quota.mjs "$RUNNER_TEMP/quota.mjs"
+          cp scripts/cloud/lost.mjs "$RUNNER_TEMP/lost.mjs"
 
       # The Claude Code CLI, not the action: the action fetches a
       # token of its own, and this step must hold none. Pin the
@@ -474,6 +490,16 @@ jobs:
         id: quota
         if: always()
         run: node "$RUNNER_TEMP/quota.mjs" read "$RUNNER_TEMP/claude.jsonl" --cache .nexus/quota.json
+
+      # The lost-to-background mark, from the copy taken before the
+      # agent: a result that defers to background work with no commit
+      # on this branch carrying the run's Cloud-Run trailer.
+      - name: Lost-to-background check
+        id: lost
+        if: always()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node "$RUNNER_TEMP/lost.mjs" check "$RUNNER_TEMP/claude.jsonl" --run-url "$RUN_URL"
 
       - name: Quota cache save
         if: always() && steps.quota.outputs.quota != ''

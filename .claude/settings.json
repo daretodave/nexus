@@ -151,6 +151,15 @@
         ]
       },
       {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-agent"
+          }
+        ]
+      },
+      {
         "matcher": "*",
         "hooks": [
           {

@@ -184,6 +184,12 @@ Two of them carry this layer. The template ships one script —
         "hooks": [
           { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-read" }
         ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-agent" }
+        ]
       }
     ],
     "Stop": [
@@ -209,6 +215,7 @@ on stdin, checks the command string, and **exits 2 to block**
 | `push --force`, `push -f` (incl. `--force-with-lease`) | No force-push. |
 | `reset --hard`, `clean -fd`, `checkout -- .`, `branch -D` on `<DEFAULT_BRANCH>` | No destructive resets. |
 | `run_in_background: true` where the command matches `verify`, `deploy:check`, or `e2e` | Never background the gate — this is the post-result exit hang (see [`../playbooks/cloud-loop.md`](../playbooks/cloud-loop.md)). |
+| Any `run_in_background: true` with `GITHUB_ACTIONS=true` | Nothing runs in the background in CI: the job ends with the turn, so the work never lands. `NEXUS_ALLOW_BACKGROUND=1` lifts it. |
 | `Co-Authored-By` or an emoji inside a `git commit -m` body | Plain commit bodies. (`Cloud-Run:` trailers pass — the one carve-out.) |
 | Reading `.env` or `.env.workspace`, printing a secret's variable, a vault value on the command line | The model sees names, never values ([`secrets.md`](./secrets.md#the-rails); `pre-read` holds the same line for the Read and Grep tools). |
 
@@ -221,6 +228,19 @@ rule 5. If the push was rejected, run git pull --ff-only and
 re-apply; if history is genuinely wrong, stop and file
 [needs-user-call] per your skill's failure modes.
 ```
+
+### `pre-agent` — foreground subagents in CI
+
+Runs before every Agent (or Task) dispatch. With
+`GITHUB_ACTIONS=true` it **exits 2** unless an Agent call passes
+`run_in_background: false` (a Task call, only when it passes
+`true`): the Agent tool's left-out flag is a
+background dispatch, and a cloud tick is one single-shot
+process, so a background builder's work never lands. Off a
+runner it allows everything; `NEXUS_ALLOW_BACKGROUND=1` lifts
+it on a runner that keeps the session alive. The cloud loop's
+Lost-to-background check marks a run the guard did not catch
+([`../templates/.github/CLOUD_LOOP.md`](../templates/.github/CLOUD_LOOP.md)).
 
 ### `stop` — the atomic-act check
 

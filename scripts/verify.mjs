@@ -44,7 +44,8 @@
 //   scripts       the node:test suites of the plan, claims and push
 //                 policy scripts adopters copy (templates/scripts/plan/,
 //                 claims, git/push-policy, announce, ledger, the
-//                 steer hook), and both guard hooks' self-tests:
+//                 steer hook), both guard hooks' self-tests and
+//                 their wiring in both settings.json files:
 //                 pure, no git, no network, about a second; and
 //                 nexus's own copies in scripts/ and
 //                 .claude/hooks/steer.mjs match them byte for byte
@@ -737,6 +738,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/quota.test.mjs',
+  'templates/scripts/__tests__/lost.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
   'templates/scripts/__tests__/loop-issue.test.mjs',
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
@@ -824,13 +826,34 @@ async function legScripts() {
       failures.push(`${g} self-test failed:`, ...`${err.stdout || ''}`.split(/\r?\n/).filter((l) => /FAIL/.test(l)).slice(0, 10))
     }
   }
+  // Each guard mode is wired to its tools in both settings files: a mode
+  // nothing calls is a rule that never fires (pre-agent: the background
+  // rule for subagents, spec 55).
+  for (const s of ['.claude/settings.json', 'templates/claude/settings.json']) {
+    let pre = []
+    let stop = []
+    try {
+      const hooks = JSON.parse(read(s)).hooks ?? {}
+      pre = hooks.PreToolUse ?? []
+      stop = hooks.Stop ?? []
+    } catch (err) {
+      failures.push(`${s}: unparseable (${err.message})`)
+      continue
+    }
+    const wires = (list, matcher, mode) => list.some((h) => (matcher === null || String(h.matcher ?? '').split('|').includes(matcher)) &&
+      (h.hooks ?? []).some((c) => new RegExp(`guard\\.mjs ${mode}$`).test(String(c.command ?? ''))))
+    for (const [tool, mode] of [['Bash', 'pre-bash'], ['Read', 'pre-read'], ['Grep', 'pre-read'], ['Agent', 'pre-agent'], ['Task', 'pre-agent']]) {
+      if (!wires(pre, tool, mode)) failures.push(`${s}: PreToolUse does not wire guard.mjs ${mode} on ${tool}`)
+    }
+    if (!wires(stop, null, 'stop')) failures.push(`${s}: Stop does not wire guard.mjs stop`)
+  }
   // No script resolves a file path through URL.pathname (it keeps %20
   // and a /C:/ drive): fileURLToPath only, in every script dir.
   const { lintTree } = await import(pathToFileURL(path.join(ROOT, 'scripts/url-path-lint.mjs')).href)
   const urls = lintTree(ROOT)
   failures.push(...urls.problems)
   const suites = runSuites(PURE_SUITES, 'pure')
-  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length + HOOK_TWINS.length} dogfood twins match; 2 guard self-tests green; 2 footgun lists lint clean; no URL.pathname file paths in ${urls.files} scripts` }
+  return { failures: [...failures, ...suites.failures], note: `${suites.note}; ${DOGFOOD_TWINS.length + HOOK_TWINS.length} dogfood twins match; 2 guard self-tests green, every guard mode wired in 2 settings files; 2 footgun lists lint clean; no URL.pathname file paths in ${urls.files} scripts` }
 }
 
 function runSuites(suites, label) {

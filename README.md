@@ -710,6 +710,7 @@ nexus/
     │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env
     │   ├── cloud/tick.mjs             # PR-mode tick: pick + claim, fence, land the PR, release
     │   ├── cloud/quota.mjs            # quota governor: seven_day read + cache, the gate, the pause issue
+    │   ├── cloud/lost.mjs             # lost-to-background mark: a result parked on background work, no commit
     │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
     │   ├── design/ingest.mjs          # /design ingest: an export folder -> design/handoff/<date>/ + manifest.json (sha256 per file) + README; check, rehash
     │   ├── design/render.mjs          # a handoff's boards as PNGs at their size, night or dawn, via the installed Chrome (+ board-runtime.js)
@@ -740,6 +741,7 @@ nexus/
     │   ├── __tests__/resolve.test.mjs # the resolver
     │   ├── __tests__/tick-run.test.mjs # the PR-mode tick over git (offline)
     │   ├── __tests__/quota.test.mjs   # the quota governor on real lockout shapes, gh stubbed
+    │   ├── __tests__/lost.test.mjs    # the lost-to-background mark (git stubbed); the guard denies background calls in CI
     │   ├── __tests__/heartbeat-quota.test.mjs # heartbeat's cadence step in bash: no flatline while paused
     │   ├── __tests__/upgrade-plan.test.mjs # the v1 to v2 converter, pure
     │   ├── __tests__/upgrade-plan-run.test.mjs # the converter over git, dry run and --write (offline)

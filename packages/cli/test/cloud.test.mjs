@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.mjs';
 import {
   addWorkflow, cronNext, describeCron, describeCrons, fillTemplate, loopSchedule, kitFile, parseCron, readCrons, saveSchedule, scheduleRequest, scopeRefused, setCron,
-  QUOTA_PATH, SETUP_ACTION_PATH, WORKFLOW_PATH,
+  LOST_PATH, QUOTA_PATH, SETUP_ACTION_PATH, WORKFLOW_PATH,
 } from '../server/cloud.mjs';
 import { removeTree } from './helpers/tmp.mjs';
 
@@ -108,7 +108,7 @@ test('scheduleRequest checks the body: a known schedule, a cron this reads, on d
 // ---- the template and its schedule -------------------------------------------------
 
 test('the workflow is the kit template filled by the installer\'s own placeholders', async () => {
-  assert.ok(kitFile('march') && kitFile('bootstrap') && kitFile('setup') && kitFile('quota'));
+  assert.ok(kitFile('march') && kitFile('bootstrap') && kitFile('setup') && kitFile('quota') && kitFile('lost'));
   const yml = await fillTemplate(TEMPLATE, { name: 'widget', branch: 'trunk' });
   assert.doesNotMatch(yml, /<PROJECT>|<DEFAULT_BRANCH>|<PROJECT_PKG_PREFIX>/);
   assert.match(yml, /You are running widget's autonomous loop/);
@@ -177,6 +177,8 @@ test('owner: the workflow is committed and pushed to main from a temporary workt
   assert.doesNotMatch(fx.at('main', SETUP_ACTION_PATH), /<PROJECT_PKG_PREFIX>/);
   assert.match(yml, /node scripts\/cloud\/quota\.mjs gate/);
   assert.match(fx.at('main', QUOTA_PATH), /the quota governor/, 'the script the workflow runs lands with it');
+  assert.match(yml, /node scripts\/cloud\/lost\.mjs check/);
+  assert.match(fx.at('main', LOST_PATH), /the lost-to-background mark/, 'and the post-tick check beside it');
   assert.equal(r.mode, 'owner', 'an unset NEXUS_LOOP_MODE is set to owner');
   assert.ok(gh.calls.includes('variable set NEXUS_LOOP_MODE --body owner'));
   assert.ok(!gh.calls.some((c) => c.startsWith('pr ')));

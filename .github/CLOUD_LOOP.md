@@ -67,6 +67,12 @@ the failure mode of the thing it watches.
   and the first tick after the reset closes it. Only a
   labelled pause issue, or one the workflow token opened,
   counts: an outsider's issue with that title is ignored.
+- **Lost to background:** in CI, `guard.mjs` denies a
+  background Bash call or subagent (`NEXUS_ALLOW_BACKGROUND=1`
+  lifts it), and the Lost-to-background check
+  (`templates/scripts/cloud/lost.mjs`) marks a run whose result
+  defers to background work with no `Cloud-Run:` commit:
+  `no-op reason: lost-to-background` in the step summary.
 - **Model:** `claude-sonnet-5` (set in the workflow; ids age —
   verify against current ids before changing).
 - **Pause / resume:** `gh workflow disable march` /
@@ -150,9 +156,11 @@ cloud volume from local work. Nothing else — no
   async agent launch just before the end** — a subagent was
   dispatched without `run_in_background: false`. The job is
   single-shot: the tick's turn ended, the job exited clean, and
-  the builder's work never landed. Re-run; the prompt's rule 5
-  keeps every dispatch foreground (a workflow edit may have
-  dropped it).
+  the builder's work never landed. The step summary reads
+  `no-op reason: lost-to-background`. Re-run; the prompt's
+  rule 5 and the guard's background rule keep every dispatch
+  foreground (a workflow edit may have dropped the one, a
+  settings edit the other).
 - **Ticks no-op forever** — the plan may be out of ready chunks
   (or every one is in the Held lane) and the queues drained (a good problem: run `/oversight`
   locally and promote candidates), or GitHub paused the cron
