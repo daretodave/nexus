@@ -501,6 +501,8 @@ nexus/
 │   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
 │   ├── gifs.mjs                       # every GIF the README shows: exists, 5-8 s, 3 MB at most, alt text, its poster (the gifs leg)
 │   ├── __tests__/gifs.test.mjs        # the checker's own suite (run by the gifs leg)
+│   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of the no-model probe.yml, march's schedule lag, the hook probe line
+│   ├── __tests__/probe-latency.test.mjs # its suite, gh stubbed (run by the scripts leg)
 │   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
@@ -579,7 +581,7 @@ nexus/
 ├── plan/                              # nexus's OWN state files (specs + chunks, pending, archive, queues)
 ├── identity/                          # nexus's OWN identity layer: footguns.md (the ladder) + decisions/
 ├── .claude/                           # nexus's OWN commands + settings.json + guard and steer hooks
-├── .github/                           # nexus's OWN cloud loop (march.yml + pr-flow.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml
+├── .github/                           # nexus's OWN cloud loop (march.yml + pr-flow.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml + probe.yml (temporary: spec 55.6's latency probe)
 ├── packages/
 │   └── cli/                           # @usenexus/cli — npx GUI for Claude Code (React+Vite; design/handoff/ is its UI source of truth; publish.yml ships it, cli-ci.yml tests it)
 └── templates/

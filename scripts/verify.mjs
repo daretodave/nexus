@@ -712,6 +712,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/design-port.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
+  'scripts/__tests__/probe-latency.test.mjs',
 ]
 const GIT_SUITES = [
   'templates/scripts/__tests__/settle-run.test.mjs',

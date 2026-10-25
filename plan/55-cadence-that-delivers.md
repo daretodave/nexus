@@ -122,7 +122,9 @@ the last 14 days. `probe.yml` is deleted in the same chunk
 once the numbers are in.
 
 In the same chunk, one dispatched march tick runs with
-`NEXUS_HOOK_PROBE=1`: `guard.mjs` appends a line to
+`NEXUS_HOOK_PROBE=1` (march.yml's boolean `hook_probe`
+dispatch input sets it, so no repo variable is touched):
+`guard.mjs` appends a line to
 `$RUNNER_TEMP/hook-probe.log` on its first call, and a shell
 step after the model reports whether that file exists.
 
@@ -310,6 +312,7 @@ Measure: 10 open · 2 closed · next A13
 
 - [ ] **55.6** Probe dispatch latency and hook loading in cloud · S · closes A3, A4 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
+  - Tooling landed (probe-latency.mjs, probe.yml, guard hook probe, march.yml hook_probe input); left, owner-run: the ten dispatches and one hook_probe tick, their numbers and answer into Design and march.yml's comments, probe.yml deleted.
 - [ ] **55.2** Background-call guard and lost-to-background mark · S · closes A5 · needs 55.6
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.3** A shipped tick chains the next while work is ready · M · closes A6 · needs 55.2, 55.6, 54.2, 54.5

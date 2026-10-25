@@ -1,0 +1,20 @@
+name: probe
+
+# Spec 55.6, temporary: how long does a workflow_dispatch run wait
+# for a runner? No model, no secrets, no writes: one echo step.
+# scripts/cloud/probe-latency.mjs dispatches it 10 times, 30 min
+# apart, and reports p50/p90 of run_started_at - created_at. Delete
+# this file in the commit that writes the numbers into
+# plan/55-cadence-that-delivers.md.
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: echo "probe run ${{ github.run_id }} started"

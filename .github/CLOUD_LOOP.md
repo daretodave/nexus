@@ -125,7 +125,9 @@ cloud volume from local work. Nothing else — no
   in `workflows/march.yml` and
   [`customization/claude-code.md`](../customization/claude-code.md)
   for why bypass-on-a-disposable-runner is the sanctioned
-  posture (guard hooks enforce the hard rules in every mode).
+  posture (where hooks load, the guard enforces the hard rules
+  in every mode; whether the action loads them is the hook
+  probe's question, below).
 - **`Cloud march tick crashed` issue appears** — read the run
   link. One-off infra flake → `gh run rerun`. Repeated →
   disable and debug locally per
@@ -156,6 +158,16 @@ cloud volume from local work. Nothing else — no
   locally and promote candidates), or GitHub paused the cron
   after 60 days without repo activity (push anything or re-run
   manually to revive).
+- **Do the hooks load here? Do dispatched runs start late?** —
+  spec 55.6's probes, owner-run. `gh workflow run march.yml -f
+  hook_probe=true` runs a normal tick whose Hook probe report
+  step prints `HOOK_PROBE_RESULT=hooks loaded (...)` or
+  `HOOK_PROBE_RESULT=no hook call reached guard.mjs`. `node
+  scripts/cloud/probe-latency.mjs dispatch` sends ten no-model
+  `probe.yml` runs 30 minutes apart; `... report --hook-run
+  <run id>` prints their dispatch p50/p90, march's schedule
+  lag over 14 days, the hook line and spec 55's decision rule.
+  `probe.yml` goes once the numbers are in the spec.
 
 ## The other shapes
 

@@ -26,6 +26,11 @@
 //   self-test   run canned commands through the matcher; exit 1
 //               on any mismatch (use in CI / after editing rules)
 //
+// The hook probe: with NEXUS_HOOK_PROBE=1 the first call of any mode
+// (not self-test) creates $RUNNER_TEMP/hook-probe.log with one line,
+// so a workflow step after the model can say whether the agent's
+// harness loaded this hook at all (march.yml's Hook probe report).
+//
 // Zero dependencies. Never throws: an unexpected error prints to
 // stderr and exits 0 (fail-open) so a guard bug can't wedge the
 // loop — the provider-level backstops still hold.
@@ -791,6 +796,21 @@ function markHooked(input, env = process.env) {
   return written
 }
 
+// The hook probe (spec 55): the first call with NEXUS_HOOK_PROBE=1
+// leaves one line in $RUNNER_TEMP/hook-probe.log (the OS temp dir off
+// a runner); later calls leave it as it is. Returns the file it
+// created, or null. Best-effort and silent, like the marker.
+function probeHook(mode, env = process.env) {
+  if (env.NEXUS_HOOK_PROBE !== '1') return null
+  const file = path.join(env.RUNNER_TEMP || os.tmpdir(), 'hook-probe.log')
+  try {
+    fs.writeFileSync(file, `${new Date().toISOString()} guard.mjs ${mode}\n`, { flag: 'wx' })
+    return file
+  } catch {
+    return null
+  }
+}
+
 async function preBash() {
   const input = readStdinJson()
   markHooked(input)
@@ -966,7 +986,7 @@ async function selfTest() {
     ['git log -n 5', null],
     ['pnpm verify', null],
   ]
-  let failed = markerSelfTest() + (await vaultSelfTest())
+  let failed = markerSelfTest() + probeSelfTest() + (await vaultSelfTest())
   for (const [cmd, expected] of cases) {
     const hit = RULES.find((r) => r.test(cmd))?.name ?? null
     const ok = hit === expected
@@ -1190,10 +1210,33 @@ function markerSelfTest() {
   return ok ? 0 : 1
 }
 
+// The probe writes nothing unless asked, writes once when asked, and
+// never overwrites the first call's line.
+function probeSelfTest() {
+  let ok = false
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-probe-'))
+  try {
+    const log = path.join(tmp, 'hook-probe.log')
+    const off = probeHook('pre-bash', { RUNNER_TEMP: tmp })
+    const first = probeHook('pre-read', { RUNNER_TEMP: tmp, NEXUS_HOOK_PROBE: '1' })
+    const again = probeHook('stop', { RUNNER_TEMP: tmp, NEXUS_HOOK_PROBE: '1' })
+    const lines = fs.readFileSync(log, 'utf-8').trim().split('\n')
+    ok = off === null && first === log && again === null && lines.length === 1 && / guard\.mjs pre-read$/.test(lines[0])
+  } catch {
+    ok = false
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true })
+  }
+  const label = 'hook probe: NEXUS_HOOK_PROBE=1 logs the first call once'
+  process.stdout.write(`  ${ok ? 'ok  ' : 'FAIL'}  ${label.padEnd(60)} → $RUNNER_TEMP/hook-probe.log\n`)
+  return ok ? 0 : 1
+}
+
 // --- entry ---------------------------------------------------------------
 
 try {
   const mode = process.argv[2]
+  if (mode === 'pre-bash' || mode === 'pre-read' || mode === 'stop') probeHook(mode)
   const code =
     mode === 'pre-bash' ? await preBash()
     : mode === 'pre-read' ? preRead()

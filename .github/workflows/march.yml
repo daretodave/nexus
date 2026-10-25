@@ -28,6 +28,15 @@ on:
         type: choice
         default: march
         options: [march, next, critique, iterate, expand, triage, digest]
+      # Spec 55.6: does claude-code-action load this repo's .claude
+      # hooks? With this set, guard.mjs logs its first call to
+      # $RUNNER_TEMP/hook-probe.log and the Hook probe report step
+      # says whether the file exists. The tick itself runs as usual.
+      hook_probe:
+        description: 'Hook probe: report whether .claude hooks loaded in this tick'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: march
@@ -148,10 +157,13 @@ jobs:
           # turned ticks 1-3 into read-only sightseeing ("This
           # command requires approval" x many). The runner is a
           # disposable, repo-scoped container - the kit's
-          # sanctioned bypass context. The hard rules stay
-          # mechanically enforced: .claude/hooks/guard.mjs runs in
-          # EVERY permission mode, and the GITHUB_TOKEN's blast
-          # radius is this repo.
+          # sanctioned bypass context. Where hooks load,
+          # .claude/hooks/guard.mjs runs in every permission mode,
+          # bypass included; whether claude-code-action loads the
+          # project's hooks at all is unverified until a tick
+          # dispatched with hook_probe=true says so (spec 55.6), so
+          # nothing in cloud relies on the guard: the brief's rules,
+          # the gate and the token's blast radius (this repo) hold.
           #
           # CLI-flag STRING form, not JSON: tick 3 proved the JSON
           # key "permissionMode" is dropped on the way to the SDK
@@ -220,9 +232,15 @@ jobs:
           GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
           # This tick's claims session (scripts/claims.mjs).
           NEXUS_SESSION: cloud-${{ github.run_id }}
-          # claude-code-action may not load project hooks, so claims.mjs
-          # would refuse whoami/claim without this (customization/claims.md).
+          # The same unverified question as the permission note above:
+          # if claude-code-action loads no project hooks, claims.mjs
+          # finds no hook marker and refuses whoami/claim, so this
+          # skips that check (customization/claims.md) until the hook
+          # probe settles it.
           NEXUS_NO_HOOK_CHECK: '1'
+          # The hook probe (spec 55.6): '1' only on a dispatch with
+          # hook_probe=true; guard.mjs ignores anything else.
+          NEXUS_HOOK_PROBE: ${{ inputs.hook_probe && '1' || '' }}
           # Author identity: display name "nexus", attributed to the
           # PAT's account via its noreply email. The Cloud-Run:
           # trailer (not the author) is the ceiling discriminator,
@@ -231,6 +249,24 @@ jobs:
           GIT_AUTHOR_EMAIL:    '7341502+daretodave@users.noreply.github.com'
           GIT_COMMITTER_NAME:  'nexus'
           GIT_COMMITTER_EMAIL: '7341502+daretodave@users.noreply.github.com'
+
+      # Spec 55.6's answer, in the log and the step summary:
+      # scripts/cloud/probe-latency.mjs report --hook-run <id> reads it.
+      - name: Hook probe report
+        # Only when the model step ran: a ceiling or quota skip is no answer.
+        if: always() && inputs.hook_probe && (steps.run_march.outcome == 'success' || steps.run_march.outcome == 'failure')
+        run: |
+          # gh run view --log prints this script in the step header,
+          # so the answer goes out behind a marker the script only
+          # ever spells followed by shell text, which the reader skips.
+          log="$RUNNER_TEMP/hook-probe.log"
+          if [ -f "$log" ]; then
+            line="hooks loaded ($(head -n 1 "$log"))"
+          else
+            line="no hook call reached guard.mjs (project hooks did not load)"
+          fi
+          echo "HOOK_PROBE_RESULT=$line"
+          echo "hook probe: $line" >> "$GITHUB_STEP_SUMMARY"
 
       # The tick's own reading, from the action's execution file:
       # one summary line, the `quota` output, and the cache the next
