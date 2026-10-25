@@ -207,3 +207,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 58.2 · One computed kit file list and its verify leg · 6454c8e6..6454c8e6
 - 2026-10-25 · 55.4 · Idle ticks skip the model; every no-op says why · 9091de8e..9091de8e
 - 2026-10-25 · 56.4 · Cloud tick builds, gates and walks the CLI; heartbeat watches cli-ci · 095ee891..095ee891
+- 2026-10-25 · 57.4 · Motion pulse, heartbeat stall and the motion generator · 2ff0b964..2ff0b964

@@ -1,11 +1,14 @@
 name: heartbeat
 
-# The immune system (loop shape 3): no model, no writes - pure
-# shell watching the other loops. Cancels wedged runs so the
-# shared concurrency group unblocks (the next cron firing
-# resumes naturally), and turns "silently dead since Tuesday"
-# into a deduped issue. Watchers must be dumber than the thing
-# they watch.
+# The immune system (loop shape 3): no model; shell plus one
+# offline node script (the motion pulse); its only writes are
+# deduped alarm issues. It watches the other loops: cancels
+# wedged runs so the shared concurrency group unblocks (the
+# next cron firing resumes naturally), and turns "silently
+# dead since Tuesday" into a deduped issue. Watchers must be
+# dumber than the thing they watch. The motion pulse only
+# counts commits: a loop that runs and ships nothing is an
+# alarm too.
 
 on:
   schedule:
@@ -14,6 +17,7 @@ on:
 
 permissions:
   actions: write            # gh run cancel
+  contents: read            # the checkout the motion pulse counts
   issues: write             # the alarm
 
 jobs:
@@ -25,6 +29,13 @@ jobs:
       # The token sits on each step, never here: a job's env is
       # handed to every step (scripts/workflow-lint.mjs).
     steps:
+      # Full history: the motion pulse counts shipped commits over
+      # the last five full weeks.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       # The watch list is a repo variable (space-separated workflow
       # names), so a repo with more cloud writers (pr-resolve, a
       # deploy loop) watches them with no edit here. Add your CI
@@ -174,3 +185,35 @@ jobs:
 
           check_cadence march 14   # 6h cadence, two missed ticks tolerated
           check_cadence night 48   # daily cadence, one skipped day tolerated
+
+      # Motion, not liveness: ticks that succeed and ship nothing
+      # look healthy to the cadence check. The motion pulse
+      # (scripts/plan/motion.mjs, the lines pulse --motion prints)
+      # counts shipped units, feat/fix/content commits and chunk
+      # closes, in the last full ISO week against the 4-week
+      # baseline. Under plan/bearings.md's Motion floor it opens ONE
+      # "Heartbeat: motion stalled" issue (loop:opened, loop:stall);
+      # a week that recovers closes it. stall_action decides what
+      # follows: alert (notify.mjs and a digest line), promote (the
+      # next march tick runs /expand promote) or off.
+      - name: Alarm if motion has stalled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -f scripts/plan/motion.mjs ]; then
+            echo "motion: no scripts/plan/motion.mjs - nothing to measure."
+            exit 0
+          fi
+          # A weekly quota pause ships nothing on purpose.
+          paused=$(gh issue list --state open --label loop:paused-quota --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "${paused:-0}" != "0" ]; then
+            echo "motion: loop paused on the weekly quota - motion skipped."
+            exit 0
+          fi
+          runs="${RUNNER_TEMP:-.}/march-runs.json"
+          if gh run list --workflow march --status success -L 100 \
+            --json databaseId,conclusion,createdAt,url > "$runs" 2>/dev/null; then
+            node scripts/plan/motion.mjs alarm --runs "$runs"
+          else
+            node scripts/plan/motion.mjs alarm
+          fi

@@ -181,21 +181,29 @@ queue rows.
   chunk closes from `ARCHIVE.md`. It excludes `audit`,
   `digest`, `expand`, `critique`, `triage`, `plan` and
   `jot`. It compares this week with the trailing 4-week
-  baseline.
+  baseline. "This week" is the last full ISO week (decided in
+  57.4: a partial week would alarm every quiet Monday); the
+  week in progress clears a stall once it reaches the floor,
+  and five empty full weeks after earlier shipping read
+  `stalled` even though the baseline is then 0.
 - pulse stays offline: the idle-tick ratio (successful march
   runs with no `Cloud-Run:` commit) is computed only when the
   caller passes `--runs <file>`, the JSON of `gh run list`.
-- `heartbeat.yml` runs it. Below the motion floor it opens one
-  deduped issue, `Heartbeat: motion stalled`, labelled
-  `loop:opened` and `loop:stall`, and closes it when a week
-  recovers.
+- `heartbeat.yml` runs it (as `scripts/plan/motion.mjs
+  alarm`, which prints the same lines and owns the issue
+  writes, so pulse itself stays offline). Below the motion
+  floor it opens one deduped issue, `Heartbeat: motion
+  stalled`, labelled `loop:opened` and `loop:stall`, and
+  closes it when a week recovers.
 - `stall_action` decides what follows:
   - `alert` (default): `notify.mjs` plus a digest line.
   - `promote`: the next march tick sees the open `loop:stall`
-    issue at the `pre` hook and runs `/expand promote` under
-    the `Promote` knob. With `Promote: owner` it falls back
-    to `alert`.
-  - `off`: nothing.
+    issue at the `pre` hook and runs only expand's aged
+    promotion (pick, spec, veto issue, Held line; the expand
+    rate limit skipped, `promote_per_week` still binding),
+    never a bare `/expand promote` pass. With
+    `Promote: owner` it falls back to `alert`.
+  - `off`: nothing, not even the issue.
 
 ### Iterate dimension I: loop
 
@@ -305,7 +313,6 @@ The Held line for an auto-promotion:
 ## Acceptance
 
 - **A2** Independent re-evidence raises a Pending row's score by +0.5 (cap +2). Pending above `pending_cap` shrinks by promotion or by at most 5 stale rejections a pass, each with a reason and listed in the digest.
-- **A5** `pulse --motion` reports shipped units against the 4-week baseline. On a fixture of an adopter's Sep-Oct weekly series, heartbeat opens exactly one `Heartbeat: motion stalled` issue. With `stall_action: promote`, the next tick runs `/expand promote`; with `Promote: owner`, it alerts instead.
 - **A6** `/iterate` dimension I files `category: loop-config` rows whose `next` names a concrete repo variable or bearings line, ships at most one per 7 days, and files a YAML tuning as `[needs-user-call]`.
 - **A7** Every lane lock, Held line and owner-blocked row carries `until:` and `max_age:`. Past `max_age` it relaxes to its fallback or files exactly one needs-user ask, re-pinged weekly; `plan-check` rejects a Held line without them.
 - **A8** Queue-file headers are ≤ 20 lines, the `state-size` leg fails an oversize fixture, and nexus's `AUDIT.md` is compacted, with no Done row older than 30 days.
@@ -317,13 +324,11 @@ The Held line for an auto-promotion:
 
 ## Chunks
 
-Measure: 6 open · 3 closed · next A10
+Measure: 5 open · 4 closed · next A10
 
-- [ ] **57.4** Motion pulse, heartbeat stall and the motion generator · M · closes A5 · needs —
-  - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **57.5** Lock timeouts, with the Held-line gate check · S · closes A7 · needs —
 - [ ] **57.6** Pending stays live: re-evidence scoring and the cap · S · closes A2 · needs —
 - [ ] **57.7** State diet: header shape, state-size leg, nexus compaction · M · closes A8 · needs —
   - A new leg changes the leg count in `bearings.md` and `agents.md` rule 3 in the same commit.
-- [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 57.4, 55.5, 54.8
+- [ ] **57.8** Iterate dimension I files loop-config rows · S · closes A6 · needs 55.5, 54.8
 - [ ] **57.9** nexus generators: cli-ci-red, cli-deps, ui-walk · M · closes A9 · needs 56.5

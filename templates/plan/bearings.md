@@ -326,6 +326,20 @@ strict) turns it off; a missing key reads `owner`.
 - promote_per_week: 1
 - veto_days: 3
 
+The motion heartbeat (`heartbeat.yml`, `scripts/plan/motion.mjs`):
+runs that succeed and ship nothing still look alive, so the
+heartbeat also counts shipped units (feat/fix/content commits,
+chunk closes) in the last full week against the 4-week
+baseline. Under `Motion floor` (a percent of the baseline; 0%
+turns it off) it opens one `Heartbeat: motion stalled` issue.
+`stall_action` decides what follows: `alert` (notify.mjs and a
+digest line), `promote` (the next `/march` tick runs expand's
+aged promotion, one candidate behind its veto window; with
+`Promote: owner` it alerts instead) or `off`.
+
+- Motion floor: 50%
+- stall_action: alert
+
 Project lanes (`skills/march.lanes.md`,
 `skills/iterate.lanes.md`; `scripts/plan/lanes.mjs`) run
 unless named here:
@@ -342,11 +356,12 @@ each, `- <name> · <cadence> · target <n> · cap <n>/wk`, its
 script at `scripts/generators/<name>.mjs`. Cadence is `tick`,
 `daily`, `weekly` or `<n>d`; the queue fills until `target` of
 its rows are Pending, at most `cap` a week. None listed means
-refill is a no-op. The kit ships two:
+refill is a no-op. The kit ships three:
 
 <!--
 - issue-age · daily · target 3 · cap 5/wk
 - stale-candidate · weekly · target 2 · cap 2/wk
+- motion · daily · target 1 · cap 1/wk
 -->
 
 - (none)

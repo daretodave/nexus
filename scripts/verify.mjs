@@ -490,7 +490,45 @@ async function lanesCheck() {
     }
   }
   failures.push(...(await generatorsCheck()))
+  failures.push(...motionCheck())
   return { failures, files }
+}
+
+// The motion heartbeat (spec 57): both heartbeat.yml copies check out
+// full history and run the motion alarm; both bearings name the
+// Motion floor and stall_action (the template's stall_action stays
+// alert, the conservative adopter default); both march.md copies
+// react to an open stall issue at Step 0.5.
+function motionCheck() {
+  const failures = []
+  for (const file of ['.github/workflows/heartbeat.yml', 'templates/.github/workflows/heartbeat.yml']) {
+    if (!fs.existsSync(path.join(ROOT, file))) continue
+    const text = read(file)
+    if (!text.includes('scripts/plan/motion.mjs alarm')) failures.push(`${file}: no motion step (node scripts/plan/motion.mjs alarm)`)
+    if (!/fetch-depth:\s*0\b/.test(text)) failures.push(`${file}: the motion pulse needs full history (actions/checkout with fetch-depth: 0)`)
+  }
+  for (const file of ['plan/bearings.md', 'templates/plan/bearings.md']) {
+    const text = read(file)
+    if (!/^[-*]\s+Motion floor:\s*\d+%/m.test(text)) failures.push(`${file}: no \`- Motion floor: <n>%\` line (the motion alarm reads it)`)
+    const m = /^[-*]\s+stall_action:\s*(\S+)/m.exec(text)
+    if (!m || !['alert', 'promote', 'off'].includes(m[1])) failures.push(`${file}: no \`- stall_action: alert | promote | off\` line`)
+    else if (file.startsWith('templates/') && m[1] !== 'alert') failures.push(`${file}: stall_action ships as alert (the adopter default), not ${m[1]}`)
+  }
+  for (const file of ['skills/march.md', 'templates/skills/march.md']) {
+    if (!fs.existsSync(path.join(ROOT, file))) continue
+    const text = read(file)
+    const at = text.indexOf('motion.mjs react')
+    if (at < 0) {
+      failures.push(`${file}: Step 0.5 never reacts to an open motion-stall issue (node scripts/plan/motion.mjs react)`)
+      continue
+    }
+    // `promote #N` must go through the aged promotion (veto issue + Held
+    // line), never a bare `/expand promote` pass that writes picks straight in.
+    const end = text.indexOf('### Step 1', at)
+    const step = text.slice(at, end < 0 ? undefined : end)
+    if (/run\s+`\/expand promote`/.test(step) || !step.includes('promote.mjs hold')) failures.push(`${file}: Step 0.5's \`promote #N\` must run only expand's aged promotion (promote.mjs pick -> spec -> loop:veto issue -> promote.mjs hold), not \`/expand promote\``)
+  }
+  return failures
 }
 
 // The refill lane (spec 57): both march.md copies run it at 3a';
@@ -792,6 +830,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/promote.test.mjs',
   'templates/scripts/__tests__/lanes.test.mjs',
   'templates/scripts/__tests__/refill.test.mjs',
+  'templates/scripts/__tests__/motion.test.mjs',
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
   'templates/scripts/__tests__/quota.test.mjs',
@@ -829,6 +868,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/secrets-scan-run.test.mjs',
   'templates/scripts/__tests__/heartbeat-quota.test.mjs',
   'templates/scripts/__tests__/heartbeat-red.test.mjs',
+  'templates/scripts/__tests__/heartbeat-motion.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run
@@ -837,8 +877,8 @@ const GIT_SUITES = [
 const DOGFOOD_TWINS = [
   'owner.mjs', 'claims.mjs', 'claims-codec.mjs', 'git/push-policy.mjs',
   'plan/pending.mjs', 'plan/settle.mjs', 'plan/settled.mjs', 'plan/config.mjs', 'plan/footguns.mjs',
-  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs',
-  'generators/issue-age.mjs', 'generators/stale-candidate.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
+  'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs',
+  'generators/issue-age.mjs', 'generators/stale-candidate.mjs', 'generators/motion.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
   'secrets-audit.mjs',
   'secrets-run.mjs', 'secrets-scan.mjs',

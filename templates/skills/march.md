@@ -132,6 +132,26 @@ A lane that returns `end-tick` is the tick's work: commit,
 land and return. `continue` goes on to the next lane, then
 Step 1.
 
+Then the motion stall. The heartbeat opens one `Heartbeat:
+motion stalled` issue when the last full week shipped under
+`Motion floor` (`plan/bearings.md`):
+
+```bash
+node scripts/plan/motion.mjs react      # promote #N | alert #N | off #N | none (gh read only)
+```
+
+- `promote #N` (`stall_action: promote`, under `Promote: aged`
+  or `autonomous`): run only the aged promotion now
+  (`skills/expand.md` Step 4b: `promote.mjs pick` → the spec
+  → the `loop:veto` issue → `promote.mjs hold`), the expand
+  rate limit skipped. Never a bare `/expand promote` pass:
+  that one writes every pick straight in, with no veto
+  window. So `promote_per_week` bounds a long stall and the
+  owner keeps the veto window. Then Step 1.
+- `alert #N`, `off #N`, `none`: go on. The alert already went
+  out (the issue, `notify.mjs`); the digest repeats it, and
+  the heartbeat closes the issue when a week recovers.
+
 ### Step 1 — Triage gate (cheapest check)
 
 Load `GH_TOKEN` from `.env` and count unlabeled open issues:
@@ -340,5 +360,6 @@ skills/expand.md                     # Step 3c (posture-gated)
 scripts/plan/promote.mjs             # Step 0 veto sweep (Promote: aged)
 skills/march.lanes.md                # Step 0.5 + 3a': this project's own lanes (scripts/plan/lanes.mjs)
 scripts/plan/refill.mjs              # Step 3a': the stock refill lane runs plan/bearings.md's generators
+scripts/plan/motion.mjs react        # Step 0.5: an open motion stall under stall_action promote
 skills/iterate.md                    # Step 3d
 ```

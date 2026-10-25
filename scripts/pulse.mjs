@@ -8,6 +8,12 @@
 // CANDIDATES pending count + oldest-pending age.
 //
 //   node scripts/pulse.mjs
+//   node scripts/pulse.mjs --motion [--runs <file>] [--today YYYY-MM-DD]
+//
+// --motion is the motion pulse (scripts/plan/motion.mjs): shipped
+// units (feat/fix/content commits, chunk closes) in the last full
+// ISO week against the 4-week baseline, the `Motion floor` verdict
+// and, given `gh run list` JSON in --runs, the idle-tick ratio.
 //
 // Reads git log and plan/ locally. No network calls, ever — the
 // gh-backed numbers (workflow runs, issue labels) stay in the
@@ -19,8 +25,13 @@ import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { main as motion } from './plan/motion.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+if (process.argv.includes('--motion')) {
+  process.exit(motion(['report', ...process.argv.slice(2).filter((a) => a !== '--motion')], { root: ROOT }))
+}
 
 function readSafe(rel) {
   try {

@@ -35,12 +35,17 @@ its own cadence.
    gh run list --workflow march -L 20 \
      --json displayTitle,conclusion,createdAt,updatedAt
    node scripts/pulse.mjs
+   node scripts/pulse.mjs --motion
    node scripts/cloud/quota.mjs show
    ```
 
    `quota.mjs show` is the last cached `seven_day` reading
    (night's gate restored it; locally, unknown); `While you
    were out` opens with that line as is.
+
+   `pulse.mjs --motion` is the motion pulse: shipped units
+   in the last full week against the 4-week baseline, and
+   `ok` or `stalled` under `Motion floor`.
 
    `pulse.mjs` gives the local numbers in one shot: specs and
    chunks left, held chunks, AUDIT pending, CRITIQUE pending +
@@ -76,8 +81,11 @@ its own cadence.
    Xd)"; under `Promote: aged` the valve is draining it, so the
    line reads "auto-promoted <NN> <title> (veto until <date>),
    Y awaiting" from `node scripts/plan/promote.mjs sweep`, or
-   "auto-promoted none, Y awaiting" — and each `rotate <NAME>` line of `node
-   scripts/secrets.mjs audit`, a secret last set over 90
+   "auto-promoted none, Y awaiting" — a `motion stalled: <the
+   pulse's shipped line>` line whenever `--motion` reads
+   `stalled` (the alert `stall_action: alert` promises), and
+   each `rotate <NAME>` line of `node scripts/secrets.mjs
+   audit`, a secret last set over 90
    days ago; the log is local, so a cloud run skips it),
    `Today's intent` (next ready chunk + top finding),
    `Tuning proposals` (step 5, or "none").

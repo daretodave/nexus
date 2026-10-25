@@ -109,6 +109,22 @@ lane yields to the Asap lane (the script skips it while an
 Asap chunk is ready); `Lanes off: <name>` in
 `plan/bearings.md` turns one off.
 
+Then the motion stall (the heartbeat opens `Heartbeat: motion
+stalled` when a full week ships under `Motion floor`):
+
+```bash
+node scripts/plan/motion.mjs react      # promote #N | alert #N | off #N | none (gh read only)
+```
+
+`promote #N` (`stall_action: promote` under `Promote: aged`):
+run only `skills/expand.md` §6's aged promotion now, the
+expand rate limit skipped (`promote.mjs pick` → the spec →
+the `loop:veto` issue → `promote.mjs hold`), never a bare
+`/expand promote` pass: that one writes every pick straight
+in, with no veto window. So `promote_per_week` bounds a long
+stall and the owner keeps the window. Then Step 1. `alert`, `off` and `none`: go on; the
+heartbeat closes the issue when a week recovers.
+
 ### Step 1 — Triage gate (cheapest; concierge first)
 
 ```bash
@@ -202,6 +218,7 @@ plan/CRITIQUE.md                     # critique queue + rate-limit metadata
 plan/CANDIDATES.md             # expand output + rate-limit metadata
 node scripts/plan/promote.mjs sweep  # Step 0: veto or release auto-promoted Held specs
 node scripts/plan/lanes.mjs march pre|queue  # project lanes (skills/march.lanes.md)
+node scripts/plan/motion.mjs react    # Step 0.5: an open motion stall under stall_action promote
 node scripts/plan/refill.mjs --write # 3a': the stock refill lane runs bearings' generators
 gh issue list ...                    # triage gate
 node scripts/verify.mjs              # the gate every child runs

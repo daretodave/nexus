@@ -33,6 +33,7 @@ ELSE                       →  /iterate (picks up what refill filed)
 
 - issue-age · daily · target 3 · cap 5/wk
 - stale-candidate · weekly · target 2 · cap 2/wk
+- motion · daily · target 1 · cap 1/wk
 ```
 
 | Field | Meaning |
@@ -77,16 +78,24 @@ node scripts/plan/refill.mjs           # dry run: every generator, nothing writt
 node scripts/plan/refill.mjs --write   # what the refill lane runs
 ```
 
-## The two the kit ships
+## The three the kit ships
 
 | Generator | Files | When |
 |---|---|---|
 | `issue-age` | one AUDIT HIGH row, `[user-issue #N] [HIGH] "<title>" open past the <h>h SLA` | an open issue without `loop:opened` is `sla_hours` old (24 when unset) and no queue row names `#N` |
 | `stale-candidate` | one `[needs-user-call] promote <title>?` row, the ask `/expand` writes | a Pending candidate scoring `promote_floor`+ is `promote_after_days` old and no promote rule reaches it: `Promote: owner`, or a contributor's checkout |
+| `motion` | one `[loop] [HIGH] motion stalled in <week>` row about the loop itself | `node scripts/pulse.mjs --motion` reads `stalled`: the last full week shipped under `Motion floor` against the 4-week baseline; one row a week at most |
 
 Where aged promotion does reach a candidate (`Promote: aged`
 in an owner checkout), `stale-candidate` files nothing: the
 silt valve in `/expand` handles it.
+
+`motion` is the queue half of the motion heartbeat:
+`heartbeat.yml` opens one `Heartbeat: motion stalled` issue
+for the owner, and the row gives `/iterate` the work of
+finding why nothing ships. Both read the same count
+(`scripts/plan/motion.mjs`): feat, fix and content commits
+plus chunk closes; housekeeping verbs never count.
 
 ## Domain generators: patterns
 

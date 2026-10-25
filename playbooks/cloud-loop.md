@@ -331,6 +331,9 @@ Each piece is independently opt-in:
   "The other shapes". Name your CI gate in the repo variable
   `NEXUS_HEARTBEAT_WATCH` (with `march night`) and a red push
   run on the default branch opens one issue for `/triage`.
+  Its motion step runs `scripts/plan/motion.mjs` (copied
+  with the plan scripts; skipped when absent) and reads
+  `Motion floor` and `stall_action` from `plan/bearings.md`.
 - **`nightly-smoke.yml`** — only if hermetic e2e is adopted
   and `night.yml` isn't already running its own
   `SMOKE_SAMPLE=full` breadth step (see

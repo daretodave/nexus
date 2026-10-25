@@ -58,8 +58,8 @@ read a commit log.
 ## 3. The heartbeat (the immune system)
 
 A tiny scheduled workflow with **no model in it at all** —
-pure shell + platform CLI. Every few hours it checks the
-other loops' vital signs:
+shell, the platform CLI and one counting script. Every few
+hours it checks the other loops' vital signs:
 
 - A run wedged `in_progress` past its honest duration →
   cancel it (the concurrency group unblocks; the next cron
@@ -79,6 +79,14 @@ other loops' vital signs:
   next triage routes into the loop's queue as a bug.
   Scheduled loops have no push runs, so one watch list
   holds both.
+- Ticks that succeed and ship nothing → the motion pulse.
+  Liveness is not motion: the heartbeat counts shipped units
+  (feat/fix/content commits, chunk closes) in the last full
+  week against the 4-week baseline, and under the motion
+  floor opens one deduped `Heartbeat: motion stalled` issue,
+  closed when a week recovers. What follows is a bearings
+  knob (`stall_action`): alert, have the next tick promote a
+  candidate behind its veto window, or nothing.
 
 The heartbeat never fixes anything and never writes to the
 repo. It converts "the loop silently died Tuesday" into "you

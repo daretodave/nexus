@@ -504,7 +504,7 @@ nexus/
 │   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of the no-model probe.yml, march's schedule lag, the hook probe line
 │   ├── __tests__/probe-latency.test.mjs # its suite, gh stubbed (run by the scripts leg)
 │   ├── __tests__/march-cli-gate.test.mjs # march.yml builds, gates and walks the CLI; heartbeat watches cli-ci (scripts leg)
-│   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, no network
+│   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, --motion, no network
 │   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
 │   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
 │   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
@@ -512,8 +512,10 @@ nexus/
 │   ├── plan/promote.mjs               # aged promotion: /expand's pick, the Held veto line, /march's veto sweep (twin)
 │   ├── plan/lanes.mjs                 # project lanes: what runs at march's pre/queue and iterate's dimensions hooks (twin)
 │   ├── plan/refill.mjs                # the stock refill lane: runs the generators plan/bearings.md lists (twin)
+│   ├── plan/motion.mjs                # the motion pulse and heartbeat.yml's motion-stall alarm (twin)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
+│   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
 │   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
 │   ├── git/push-policy.mjs            # pre-push: main on origin/upstream is the owner's checkout's alone (owner mode)
 │   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
@@ -678,7 +680,7 @@ nexus/
     │   ├── deploy-check.mjs           # multi-provider deploy gate
     │   ├── loop-issue.mjs             # GitHub issue mirror (findings + specs)
     │   ├── notify.mjs                 # the pager — blocked is loud
-    │   ├── pulse.mjs                  # offline instrument panel: queue/plan/candidate counts, no network
+    │   ├── pulse.mjs                  # offline instrument panel: queue/plan/candidate counts; --motion: shipped vs baseline
     │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
     │   ├── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
     │   ├── refresh-critique-session.mjs # Pattern B session refresh (omit unless Auth: is set)
@@ -700,8 +702,10 @@ nexus/
     │   ├── plan/promote.mjs           # aged promotion behind a Held veto: pick, hold, sweep (gh read only)
     │   ├── plan/lanes.mjs             # project lanes at a hook; check; a skills re-sync that keeps lanes files
     │   ├── plan/refill.mjs            # the stock refill lane: each listed generator under its target, weekly cap and cadence
+    │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
     │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
+    │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
     │   ├── plan/secrets-manifest.mjs  # nexus.secrets.json's shape + the .env.example import (plan-check reads it)
     │   ├── secrets.mjs                # secrets by name: status, set (stdin), import (--store a real .env), names, check, push (owner mode), audit, request; never a value
     │   ├── secrets-vault.mjs          # the vault: .env (local), .env.workspace (workspace root), the keychain; get/resolve for code only
@@ -748,6 +752,7 @@ nexus/
     │   ├── __tests__/promote.test.mjs # the pick, the weekly cap, the veto and the release
     │   ├── __tests__/lanes.test.mjs   # lane blocks, Lanes off, the Asap yield, the keeping re-sync
     │   ├── __tests__/refill.test.mjs  # the refill lane and both generators: dry runs write nothing, a rerun files nothing
+    │   ├── __tests__/motion.test.mjs  # the motion pulse, one stall issue over a Sep-Oct decline, stall_action, the generator
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver
@@ -757,6 +762,7 @@ nexus/
     │   ├── __tests__/idle.test.mjs    # the idle probe's skip rules and the no-op reason, gh and git stubbed
     │   ├── __tests__/heartbeat-quota.test.mjs # heartbeat's cadence step in bash: no flatline while paused
     │   ├── __tests__/heartbeat-red.test.mjs # heartbeat's red-gate step in bash: a failed CI run on main opens one issue
+    │   ├── __tests__/heartbeat-motion.test.mjs # heartbeat's motion step in bash: one stall issue, none while paused
     │   ├── __tests__/upgrade-plan.test.mjs # the v1 to v2 converter, pure
     │   ├── __tests__/upgrade-plan-run.test.mjs # the converter over git, dry run and --write (offline)
     │   ├── __tests__/plot-run.test.mjs # a plot: settle, plan-check and order agree (offline)

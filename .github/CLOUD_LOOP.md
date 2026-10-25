@@ -227,7 +227,14 @@ genus: [`concepts/loop-shapes.md`](../concepts/loop-shapes.md)):
   when the newest push run of a watched gate on main failed,
   one deduped `Heartbeat: cli-ci is red on main` issue opens,
   and `/triage` routes it into `plan/AUDIT.md` as a bug the
-  loop fixes. It never re-enables a workflow
+  loop fixes. Liveness is not motion, so it also runs the
+  motion pulse (`scripts/plan/motion.mjs`): when the last
+  full week shipped under `Motion floor` (feat/fix/content
+  commits and chunk closes against the 4-week baseline) it
+  opens one `Heartbeat: motion stalled` issue (`loop:opened`,
+  `loop:stall`) and closes it when a week recovers; nexus's
+  `stall_action: promote` has the next tick promote one aged
+  candidate behind its Held veto window. It never re-enables a workflow
   and never writes to the repo; it only tells on the others.
 - **The concierge lane.** Two remote controls: label any
   issue `loop:do` and the next tick triages it straight to

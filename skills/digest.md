@@ -34,12 +34,17 @@ Never dispatched by `/march` — it is its own loop shape (see
      --json displayTitle,conclusion,createdAt,updatedAt
    gh run list --workflow heartbeat -L 5 --json conclusion
    node scripts/pulse.mjs
+   node scripts/pulse.mjs --motion
    node templates/scripts/cloud/quota.mjs show
    ```
 
    `quota.mjs show` is the last cached `seven_day` reading
    (night's gate restored it); `While you were out` opens with
    that line as is.
+
+   `pulse.mjs --motion` is the motion pulse: shipped units
+   in the last full week against the 4-week baseline, and
+   `ok` or `stalled` under `Motion floor`.
 
    `pulse.mjs` gives the local numbers in one shot: specs,
    chunks left and held, AUDIT pending, CRITIQUE pending +
@@ -68,8 +73,10 @@ Never dispatched by `/march` — it is its own loop shape (see
    >21 days, or the oldest pending candidate exceeds 45 days
    (nexus runs `Promote: aged`; with `owner` the line reads
    "oversight needed: candidate queue silting (N pending >21d,
-   oldest Xd)"), and each `rotate <NAME>` line of `node
-   scripts/secrets.mjs audit`, a secret last set over 90
+   oldest Xd)"), a `motion stalled: <the pulse's shipped
+   line>` line whenever `--motion` reads `stalled`, and each
+   `rotate <NAME>` line of `node scripts/secrets.mjs
+   audit`, a secret last set over 90
    days ago; the log is local, so a cloud run skips it),
    `Today's intent` (next ready chunk + top audit
    finding), `Tuning proposals` (see step 4, or "none").

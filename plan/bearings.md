@@ -109,6 +109,14 @@ the aged ones promote themselves behind a veto window
 - promote_per_week: 2
 - veto_days: 3
 
+The motion heartbeat (`scripts/plan/motion.mjs`,
+`heartbeat.yml`): a last full week shipping under the floor
+opens one `Heartbeat: motion stalled` issue; nexus answers it
+by promoting (the next tick runs expand §6 aged promotion):
+
+- Motion floor: 50%
+- stall_action: promote
+
 Project lanes (`skills/march.lanes.md`,
 `skills/iterate.lanes.md`; `scripts/plan/lanes.mjs`) run
 unless named here:
@@ -124,6 +132,7 @@ these before `/expand` (`scripts/plan/refill.mjs`,
 
 - issue-age · daily · target 3 · cap 5/wk
 - stale-candidate · weekly · target 2 · cap 2/wk
+- motion · daily · target 1 · cap 1/wk
 
 ## Decisions standing for the loop
 
