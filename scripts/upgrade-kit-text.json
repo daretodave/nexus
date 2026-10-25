@@ -39,6 +39,7 @@
       "215430802ceb9c674dd706d789e50f6e4f5eebce",
       "2376d2e755c1d379d6e9cfbca0a55884d9c7722c",
       "23fb9a677ce7d9f69b1baa749a34d9a2bf4426aa",
+      "26313fe4550cff70d5441942c7d22da80e88b87c",
       "27ccca71390ee5125266f249662e2d9eafe3045a",
       "289b84d99fb41dfe7ff2ba86ea0c13602ac4a83b",
       "295e91e12f1d7156efefb3bab31d0ecfedcbb644",
@@ -147,6 +148,7 @@
       "f303f2bb3603bf737fd1606e9e7ef73077abbe8f",
       "f68f739a081e3640b0dbe79ae231d23f2f33642e",
       "f9a58610de2800192aaf065c2716a8a38b8f6f33",
+      "fcb7ec6adec5da14e5a51aa0e7217630baabdba9",
       "fe627f2802faf6144947e6b7616f7e6e172ac056",
       "ff6de23a764b5f56ccdf54b8016fe05ff472c13a",
       "ff755114674a533a48b190cb6496eefba51fbb56"
@@ -271,10 +273,12 @@
       "68a1b385d62ac5503c4cf0127892d624e83feab1",
       "6aee852f72233aacda373b4e64ec8467f2cd4f0b",
       "6c8c41e3309e719d6c84f15331f17949401c0c73",
+      "6da72999a2dac339ef09e6f35f2a98389e64490f",
       "6f0d765a40d71bef4dec9a532c4f8d01d5fd6776",
       "6f20e04359bd58535459942352c5105cce634642",
       "6fe5606eba401cfa172d8277faf7d189c7ab8f8c",
       "728bcaa0816412c31beb12427ac62396cda9b7e0",
+      "731d935ca3cb4f786a90b15f389f0d34b1bbe9c7",
       "73d062e363fd5952203f335b41fa2b920bc4bcfc",
       "751e57505c5e350878663175ed6e72b80acdb900",
       "7dcd215d4ee94265b68d76b80c3b9467faae3444",
@@ -325,7 +329,8 @@
       "f5c2629ca7f280cdf29257c9efc21abc5afe25c1",
       "f761b9f62348971c377efe804588f48bbb0f0dd6",
       "f84193c1d1deae2347a38164fe837b532cea4596",
-      "fc6af4a28635ded22d1aa3bbaf26834f4a903feb"
+      "fc6af4a28635ded22d1aa3bbaf26834f4a903feb",
+      "fcb7ec6adec5da14e5a51aa0e7217630baabdba9"
     ],
     "patterns": [
       "**A reporter's issue** (a `[user-issue #N]` row, carried in from `/triage`) is different: the body carries `Refs #N`, never `Closes` or `Fixes`, and once the commit lands `node scripts/plan/support.mjs tell <N> --commit <sha>` comments and closes it (`skills/triage.md` §6).",

@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { DIAL, GENERIC_GENERATORS, POSITIONS, dialOf, generatorsSection, lineValues, main, parseVars, projectGenerators, pulseLine, registryGaps, render, resolve, uiTarget } from '../plan/improve.mjs';
+import { DIAL, GENERIC_GENERATORS, POSITIONS, cloudValue, dialOf, dialRow, knobOf, generatorsSection, lineValues, main, parseVars, projectGenerators, pulseLine, registryGaps, render, resolve, uiTarget } from '../plan/improve.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const NEXUS = path.resolve(HERE, '..', '..', '..');
@@ -204,6 +204,44 @@ describe('the CLI', () => {
     try {
       assert.match(run(['--root', dir]).out, /^Improve gentle \(default\)$/m);
       assert.equal(run(['--loud']).code, 64);
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+});
+
+describe('one knob (spec 59, A2: what the skills, scripts and cloud steps read)', () => {
+  it('knobOf gives one knob entry by its name or its variable, with the dial and the warnings', () => {
+    const k = knobOf(posture(['- Improve: steady', '- Promote: owner']), 'promote');
+    assert.deepEqual([k.knob, k.value, k.source, k.dial, k.improve.value], ['Promote', 'owner', 'override', 'aged', 'steady']);
+    assert.equal(knobOf(posture(['- Improve: bold']), 'NEXUS_CADENCE').value, 'eager');
+    assert.equal(knobOf('', 'loop').value, 'off', 'no line: gentle');
+    assert.match(knobOf(posture(['- Support: off']), 'Support', { vars: { NEXUS_SUPPORT: 'fix-all' } }).warnings[0], /disagrees/);
+    assert.equal(dialRow('nope'), null);
+    assert.throws(() => knobOf('', 'nope'), /no knob nope/);
+  });
+
+  it('cloudValue speaks only under a dial above or below gentle, and never reads the variables', () => {
+    assert.equal(cloudValue('', 'Cadence'), '', 'no line: the step default stands');
+    assert.equal(cloudValue(posture(['- Improve: gentle']), 'Support'), '', 'gentle is the loop as it ran');
+    assert.equal(cloudValue(posture(['- Improve: gentle', '- Support: fix-all']), 'Support'), '', 'an override under gentle stays out of the cloud');
+    assert.equal(cloudValue(posture(['- Improve: bold']), 'Cadence'), 'eager');
+    assert.equal(cloudValue(posture(['- Improve: off']), 'Support'), 'off');
+    assert.equal(cloudValue(posture(['- Improve: steady', '- Support: triage-only']), 'Support', { vars: { NEXUS_SUPPORT: 'fix-all' } }), 'triage-only');
+  });
+
+  it('the CLI prints one knob with --knob, the cloud value with --cloud, and 64 on an unknown knob', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-improve-'));
+    try {
+      fs.mkdirSync(path.join(dir, 'plan'));
+      fs.writeFileSync(path.join(dir, 'plan', 'bearings.md'), posture(['- Improve: steady']));
+      const out = [];
+      const err = [];
+      const io = { out: (s) => out.push(s), err: (s) => err.push(s), env: {}, gh: () => null };
+      assert.equal(main(['--root', dir, '--knob', 'Support'], io), 0);
+      assert.equal(main(['--root', dir, '--cloud', 'Cadence'], io), 0);
+      assert.equal(main(['--root', dir, '--knob', 'loop'], { ...io, env: { NEXUS_SUPPORT: 'off' } }), 0);
+      assert.deepEqual(out, ['fix-small', 'steady', 'on']);
+      assert.match(err.join(' '), /NEXUS_SUPPORT=off disagrees/, 'warnings go to stderr, the value stays alone on stdout');
+      assert.equal(main(['--root', dir, '--knob', 'nope'], io), 64);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   });
 });

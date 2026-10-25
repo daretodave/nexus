@@ -65,6 +65,7 @@ describe('bootstrap: cloud_loop.mode', () => {
     assert.ok(LOOP_FILES.includes('scripts/cloud/idle.mjs'));
     assert.ok(LOOP_FILES.includes('scripts/cloud/chain.mjs'));
     assert.ok(LOOP_FILES.includes('scripts/cloud/cadence.mjs'));
+    assert.ok(LOOP_FILES.includes('scripts/plan/improve.mjs'), 'the Cadence step and the nudge read the dial');
     for (const wf of ['march.yml', 'night.yml', 'heartbeat.yml']) {
       const yml = fs.readFileSync(path.join(templates, '.github', 'workflows', wf), 'utf8');
       // Run in place (node <script>) or copied out before the agent (cp <script>).
@@ -75,13 +76,15 @@ describe('bootstrap: cloud_loop.mode', () => {
     for (const f of LOOP_FILES) assert.ok(fs.existsSync(path.join(templates, f)), f);
   });
 
-  it('installs the event tick and the check it runs, inert until NEXUS_SUPPORT is set', () => {
+  it('installs the event tick and the check it runs, inert until NEXUS_SUPPORT or a dial above gentle sets Support', () => {
     const templates = path.resolve(HERE, '..', '..');
     assert.deepEqual(EVENT_FILES, ['.github/workflows/nudge.yml', 'scripts/cloud/nudge-check.mjs']);
     for (const f of EVENT_FILES) assert.ok(fs.existsSync(path.join(templates, f)), f);
     const yml = fs.readFileSync(path.join(templates, '.github', 'workflows', 'nudge.yml'), 'utf8');
     for (const m of yml.matchAll(/node (scripts\/cloud\/[\w-]+\.mjs)/g)) assert.ok(EVENT_FILES.includes(m[1]), `nudge.yml runs ${m[1]}, which bootstrap never installs`);
-    assert.match(yml, /vars\.NEXUS_SUPPORT != '' && vars\.NEXUS_SUPPORT != 'off'/);
+    assert.match(yml, /vars\.NEXUS_SUPPORT != 'off'/);
+    assert.match(yml, /--dial "\$\(node scripts\/plan\/improve\.mjs --cloud Support\)"/);
+    assert.ok(LOOP_FILES.includes('scripts/plan/improve.mjs'), 'the dial the nudge reads is installed');
   });
 });
 

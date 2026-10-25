@@ -5,7 +5,7 @@
 // line is the one thing a variable cannot change (GitHub reads it from the file): bootstrap, the CLI's Cloud step or a
 // hand edit writes it, through the same functions this file exports.
 //
-//   node scripts/cloud/cadence.mjs resolve [--cadence <word>] [--ceiling <N>] [--chain-max <N>]
+//   node scripts/cloud/cadence.mjs resolve [--cadence <word>] [--dial <word>] [--ceiling <N>] [--chain-max <N>]
 //                                          [--idle-backoff <N>] [--heartbeat-hours <N|none>]
 //   node scripts/cloud/cadence.mjs apply <word> [--march <path>] [--heartbeat <path>] [--cron <expr>]
 //                                        [--ceiling <N>] [--write]
@@ -23,7 +23,8 @@
 //
 // resolve: the Cadence step every march job (and heartbeat) runs first. Each field is, in order: its own repo variable
 // when set (NEXUS_DAILY_CEILING, NEXUS_CHAIN_MAX, NEXUS_IDLE_BACKOFF, NEXUS_HEARTBEAT_HOURS: a per-field variable
-// overrides the preset), else the preset NEXUS_CADENCE names, else empty: the workflow's own literal or the script's
+// overrides the preset), else the preset NEXUS_CADENCE names (unset: the one --dial names, the improvement dial's
+// cadence from `node scripts/plan/improve.mjs --cloud Cadence`), else empty: the workflow's own literal or the script's
 // default stands (an upgraded v1 repo with no NEXUS_CADENCE keeps its cron and ceiling literals, and chains nothing).
 // Sets the outputs `cadence`, `ceiling`, `chain_max`, `idle_backoff` and `heartbeat_hours` (`none`: the off preset,
 // no schedule to watch), and writes one `cadence: ...` line to the step summary. An unknown word is a warning and
@@ -75,11 +76,15 @@ const whole = (v, min) => {
  * NEXUS_CHAIN_MAX and NEXUS_IDLE_BACKOFF pass through as set (chain.mjs and idle.mjs read their own values, and read
  * a bad one conservatively); the ceiling and the heartbeat hours are checked here, and a bad one falls to the next.
  */
-export function resolve({ cadence, ceiling, chainMax, idleBackoff, heartbeatHours } = {}) {
+export function resolve({ cadence, ceiling, chainMax, idleBackoff, heartbeatHours, dial } = {}) {
   const warnings = [];
   const word = String(cadence ?? '').trim();
-  const name = presetOf(word);
-  if (word && !name) warnings.push(`NEXUS_CADENCE ${JSON.stringify(word)} is not one of ${CADENCES.join(' | ')}: read as unset`);
+  const set = presetOf(word);
+  if (word && !set) warnings.push(`NEXUS_CADENCE ${JSON.stringify(word)} is not one of ${CADENCES.join(' | ')}: read as unset`);
+  // Unset, the improvement dial's cadence stands in (scripts/plan/improve.mjs --cloud Cadence: only under an
+  // `Improve:` line other than gentle); the variable always wins.
+  const fromDial = set ? null : presetOf(dial);
+  const name = set ?? fromDial;
   const p = name ? PRESETS[name] : null;
   const out = { cadence: name ?? '', ceiling: '', chain_max: '', idle_backoff: '', heartbeat_hours: '' };
   const from = { ceiling: '', chain_max: '', idle_backoff: '', heartbeat_hours: '' };
@@ -101,13 +106,13 @@ export function resolve({ cadence, ceiling, chainMax, idleBackoff, heartbeatHour
   if (h !== null) [out.heartbeat_hours, from.heartbeat_hours] = [String(h), 'NEXUS_HEARTBEAT_HOURS'];
   else if (p) [out.heartbeat_hours, from.heartbeat_hours] = [p.heartbeatHours === null ? 'none' : String(p.heartbeatHours), name];
 
-  return { ...out, from, warnings };
+  return { ...out, from, warnings, dial: Boolean(fromDial) };
 }
 
 /** The one summary line: `cadence: steady (ceiling 12, chain max 0, idle backoff 3, heartbeat 14h)`. */
 export function describe(r) {
   const v = (k, unit = '') => (r[k] === '' ? 'the workflow default' : r[k] === 'none' ? 'none' : `${r[k]}${unit}`);
-  const head = r.cadence ? `cadence: ${r.cadence}` : 'cadence: NEXUS_CADENCE unset';
+  const head = r.cadence ? `cadence: ${r.cadence}${r.dial ? ' (the Improve dial; NEXUS_CADENCE unset)' : ''}` : 'cadence: NEXUS_CADENCE unset';
   const over = Object.entries(r.from ?? {}).filter(([, s]) => s.startsWith('NEXUS_')).map(([, s]) => s);
   return `${head} (ceiling ${v('ceiling')}, chain max ${v('chain_max')}, idle backoff ${v('idle_backoff')}, heartbeat ${v('heartbeat_hours', 'h')})${over.length ? `; set by ${over.join(', ')}` : ''}`;
 }
@@ -319,7 +324,7 @@ function flags(rest) {
   return out;
 }
 
-const USAGE = 'usage: node scripts/cloud/cadence.mjs resolve [--cadence <word>] [--ceiling <N>] [--chain-max <N>] [--idle-backoff <N>] [--heartbeat-hours <N|none>] | apply <word> [--march <path>] [--heartbeat <path>] [--cron <expr>] [--ceiling <N>] [--write] | realized --runs <file> [--march <path> | --cron <expr>] [--since <ISO>] [--now <ISO>] [--hours <N>] [--floor <0..1>] | show';
+const USAGE = 'usage: node scripts/cloud/cadence.mjs resolve [--cadence <word>] [--dial <word>] [--ceiling <N>] [--chain-max <N>] [--idle-backoff <N>] [--heartbeat-hours <N|none>] | apply <word> [--march <path>] [--heartbeat <path>] [--cron <expr>] [--ceiling <N>] [--write] | realized --runs <file> [--march <path> | --cron <expr>] [--since <ISO>] [--now <ISO>] [--hours <N>] [--floor <0..1>] | show';
 
 export function main(argv, { env = process.env, log = console.log, warn = console.error } = {}) {
   const [cmd, ...rest] = argv;
@@ -333,7 +338,7 @@ export function main(argv, { env = process.env, log = console.log, warn = consol
     return 0;
   }
   if (cmd === 'resolve' && !f._.length) {
-    const r = resolve({ cadence: f.cadence, ceiling: f.ceiling, chainMax: f['chain-max'], idleBackoff: f['idle-backoff'], heartbeatHours: f['heartbeat-hours'] });
+    const r = resolve({ cadence: f.cadence, ceiling: f.ceiling, chainMax: f['chain-max'], idleBackoff: f['idle-backoff'], heartbeatHours: f['heartbeat-hours'], dial: f.dial });
     for (const w of r.warnings) warn(`cadence: ${w}`);
     const line = describe(r);
     log(line);

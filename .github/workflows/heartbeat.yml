@@ -133,7 +133,7 @@ jobs:
         env:
           CADENCE: ${{ vars.NEXUS_CADENCE }}
           HEARTBEAT_HOURS: ${{ vars.NEXUS_HEARTBEAT_HOURS }}
-        run: node templates/scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --heartbeat-hours "$HEARTBEAT_HOURS" || true
+        run: node templates/scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --dial "$(node scripts/plan/improve.mjs --cloud Cadence)" --heartbeat-hours "$HEARTBEAT_HOURS" || true
 
       - name: Alarm if march or night has not succeeded a tick in time
         env:

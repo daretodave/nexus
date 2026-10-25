@@ -53,13 +53,15 @@ export const PR_MODE_FILES = [
 // Files the march.yml and night.yml jobs run, whatever the mode: the quota governor, the lost-to-background mark
 // march runs after the model (it reads the output through the governor's parser), the idle probe with its
 // no-op reason (it reads through both), the chain step that dispatches the next tick (it reads through the
-// governor and the probe), and the cadence step that turns NEXUS_CADENCE into the ceiling, chain depth and backoff.
+// governor and the probe), the cadence step that turns NEXUS_CADENCE into the ceiling, chain depth and backoff, and
+// the improvement dial's resolver the cadence step and the nudge read an unset variable's value from.
 export const LOOP_FILES = [
   'scripts/cloud/quota.mjs',
   'scripts/cloud/lost.mjs',
   'scripts/cloud/idle.mjs',
   'scripts/cloud/chain.mjs',
   'scripts/cloud/cadence.mjs',
+  'scripts/plan/improve.mjs',
 ]
 // The cadence presets (scripts/cloud/cadence.mjs PRESETS, which owns the table; a test holds the two lists equal).
 // The manifest's cloud_loop.cadence names one; a new adoption gets DEFAULT_CADENCE.
@@ -67,7 +69,7 @@ export const CADENCES = ['calm', 'steady', 'eager', 'sprint', 'off']
 export const DEFAULT_CADENCE = 'steady'
 const HEARTBEAT_PATH = '.github/workflows/heartbeat.yml'
 // The event tick (spec 54) and the check it runs: written beside march.yml, inert until the repo variable
-// NEXUS_SUPPORT is set (unset, the cron alone triages issues, as before).
+// NEXUS_SUPPORT is set or an `Improve:` dial other than gentle sets Support (else the cron alone triages issues).
 export const EVENT_FILES = [
   '.github/workflows/nudge.yml',
   'scripts/cloud/nudge-check.mjs',

@@ -163,7 +163,7 @@ test('the dry run reads a fresh fetch of origin in a temporary worktree and writ
   assert.ok(!report.files.some((f) => f.path === 'scratch.txt'));
   // The conservative knobs (A6): no v1 bearings, so one is added holding them; the vars are report lines.
   assert.equal(status['plan/bearings.md'], 'added');
-  assert.deepEqual(report.knobs.filter((k) => k.status === 'written').map((k) => `${k.knob} ${k.value}`), ['Support triage-only', 'Promote owner', 'Generators (none)', 'stall_action alert', 'loop off', 'UI none']);
+  assert.deepEqual(report.knobs.filter((k) => k.status === 'written').map((k) => `${k.knob} ${k.value}`), ['Improve gentle', 'Support triage-only', 'Promote owner', 'Generators (none)', 'stall_action alert', 'loop off', 'UI none']);
 
   // The gate, the warnings, the predicted first dispatch and the loop mode.
   assert.deepEqual(report.gate.map((g) => [g.name, g.ok]), [['plan-check', true], ['plan-check test', true], ['workflow-lint', true]]);

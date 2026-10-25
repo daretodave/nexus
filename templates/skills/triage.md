@@ -5,6 +5,14 @@
 > **If there are no unlabeled issues, exit fast** — that's
 > "keep humming."
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 GitHub issues are the user's primary inbox to the loop. Without
@@ -148,8 +156,10 @@ For each issue, decide:
 
 How hard the loop works an issue is the Support level: the
 repo variable `NEXUS_SUPPORT` when the tick's environment
-carries it, else `Support:` in `plan/bearings.md`, else
-`triage-only` (everything below routes as it always has).
+carries it, else the resolver's (`node scripts/plan/improve.mjs
+--knob Support`: a `Support:` line in `plan/bearings.md`, else
+the `Improve:` dial; no dial line reads `triage-only`, and
+everything below routes as it always has).
 
 ```bash
 node scripts/plan/support.mjs route "$NUM" --kind <category>   # bug | stock, one line with why (gh read only)

@@ -413,6 +413,8 @@ export function flippedLock(seed, today) {
  * knobsMissing() names a template knob with no row: a test and the verify gate's upgrade leg fail on it.
  */
 export const KNOBS = Object.freeze([
+  // Spec 59: the improvement dial itself, at gentle (the loop as it ran); dial: false, it is the dial, not a knob it sets.
+  { knob: 'Improve', at: 'bearings', value: 'gentle', write: true, dial: false, accepts: ['off', 'gentle', 'steady', 'bold'] },
   // Spec 54-57: written at the value that keeps today's behaviour.
   { knob: 'Support', at: 'bearings', value: 'triage-only', write: true, dial: true, accepts: ['off', 'triage-only', 'fix-small', 'fix-all'] },
   { knob: 'NEXUS_SUPPORT', at: 'var', value: null, write: true, dial: true },
@@ -511,7 +513,7 @@ export function writeKnobs(bearings, { today, registry = KNOBS, keeps = "the v1 
   }
   const blocks = [];
   if (lines.length) {
-    blocks.push(`## Loop knobs\n\nWritten by \`nexus upgrade\`${today ? ` (${today})` : ''} at the values that keep ${keeps}\nbehaviour. Turn each up on its own, later: \`Support:\`\n(\`nexus/customization/support.md\`), \`Promote:\` and \`stall_action\`\n(aged promotion, the motion heartbeat), \`loop:\` (\`/iterate\` dimension\nI), \`UI:\` (the browser walk).\n\n${lines.join('\n').replace(/^\n/, '')}`);
+    blocks.push(`## Loop knobs\n\nWritten by \`nexus upgrade\`${today ? ` (${today})` : ''} at the values that keep ${keeps}\nbehaviour. Turn them up together with \`Improve:\` (off, gentle, steady, bold;\nthe lines below override it), or each on its own, later: \`Support:\`\n(\`nexus/customization/support.md\`), \`Promote:\` and \`stall_action\`\n(aged promotion, the motion heartbeat), \`loop:\` (\`/iterate\` dimension\nI), \`UI:\` (the browser walk).\n\n${lines.join('\n').replace(/^\n/, '')}`);
   }
   if (generators) blocks.push('## Generators\n\nWhen no chunk is ready, `/march`\'s stock `refill` lane runs each\ngenerator listed here (`nexus/concepts/generators.md`). None listed\nmeans refill is a no-op.\n\n- (none)');
   if (!blocks.length) return { text, knobs };
@@ -660,7 +662,7 @@ export async function predict(dir, kit, { mode }) {
   const { lanes } = parseLanes(read(dir, 'skills/march.lanes.md') || '', 'march');
   // Only a lane that ends the tick decides the dispatch; a `continue` lane (a v1 step's carried notes) runs and the
   // tick goes on. A lane with a `when` may not fire, so the chain plays on to the first sure thing.
-  const at = (hook) => withStock(lanes, { kind: 'march', hook, bearings }).filter((l) => l.hook === hook && !off.has(l.name) && l.return === 'end-tick');
+  const at = (hook) => withStock(lanes, { kind: 'march', hook, bearings, root: dir }).filter((l) => l.hook === hook && !off.has(l.name) && l.return === 'end-tick');
   const lane = (l) => ({ kind: 'lane', text: `lane ${l.name} (${l.hook}: ${short(l.run)}${conditional(l) ? `, when ${short(l.when)}` : ''})`, sure: !conditional(l), name: l.name });
   const asap = first?.lane === 'asap';
   const chain = [...(asap ? [] : at('pre').map(lane)), ...(chunk ? [{ ...chunk, sure: true }] : []), ...at('queue').map(lane)];

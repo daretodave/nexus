@@ -29,12 +29,17 @@
 //
 // Skills read knobs through this script, never by grepping bearings themselves.
 //
-//   node scripts/plan/improve.mjs [--json] [--line] [--bearings <file>] [--root <dir>] [--vars <file>] [--gh]
+//   node scripts/plan/improve.mjs [--json] [--line] [--knob <name>] [--cloud <name>] [--bearings <file>]
+//                                 [--root <dir>] [--vars <file>] [--gh]
 //
 // Prints `Improve <dial> (bearings|default)`, then one line per knob, `<knob> <value> (dial|override)`, then a
 // `warn: ...` line per disagreement. --line prints only /digest's pulse line (the dial and any overrides). --json
 // prints { improve, knobs, warnings }. The variables come from the environment (a cloud tick's env), or from
-// --vars (`gh variable list --json name,value`) or --gh (that command, read only). Exit 0, 64 on bad usage.
+// --vars (`gh variable list --json name,value`) or --gh (that command, read only). --knob <name> prints that knob's
+// value alone (a name from the table, or its variable: `--knob Support`, `--knob NEXUS_CADENCE`), its warnings on
+// stderr: what a skill reads. --cloud <name> prints what a cloud step takes when the knob's repo variable is unset:
+// the value under an `Improve:` line other than gentle, else an empty line (the step's own default stands; gentle is
+// the loop as it ran). Exit 0, 64 on bad usage or an unknown knob.
 //
 // Zero dependencies.
 import { spawnSync } from 'node:child_process';
@@ -203,6 +208,35 @@ export function resolve(bearings = '', { vars = {}, project = [] } = {}) {
   return { improve: { value: pos, source: dial.source }, knobs, warnings };
 }
 
+/** A knob's row in the dial table, by its name or its repo variable (any case), or null. */
+export function dialRow(name) {
+  const n = String(name ?? '').trim().toLowerCase();
+  return DIAL.find((r) => r.knob.toLowerCase() === n || (r.var && r.var.toLowerCase() === n)) ?? null;
+}
+
+/**
+ * One knob's effective entry ({ knob, value, source, from, dial, ... }, as resolve() gives it), plus `improve` (the
+ * dial's { value, source }) and `warnings`. The scripts that act on a knob (support, promote, motion, loop-rows,
+ * refill, lanes, ui-walk) read it here, never with a regex of their own. Throws on a knob the table lacks.
+ */
+export function knobOf(bearings = '', name, opts = {}) {
+  const row = dialRow(name);
+  if (!row) throw new Error(`improve: no knob ${name} (${DIAL.map((r) => r.knob).join(', ')})`);
+  const r = resolve(bearings, opts);
+  return { ...r.knobs.find((k) => k.knob === row.knob), improve: r.improve, warnings: r.warnings };
+}
+
+/**
+ * What a cloud step takes for a knob whose repo variable is unset (the nudge's Support, the Cadence step's
+ * cadence): the resolved value when plan/bearings.md carries an `Improve:` line other than gentle, else ''. Gentle,
+ * or no line, leaves the step's own default standing (no event ticks, the workflow's literals): the loop as it ran.
+ * The variables never enter here; the step passes its own, and the variable wins.
+ */
+export function cloudValue(bearings = '', name, opts = {}) {
+  const k = knobOf(bearings, name, { ...opts, vars: {} });
+  return k.improve.source === 'bearings' && k.improve.value !== DEFAULT_POSITION ? k.value : '';
+}
+
 /** /digest's pulse line: the dial and every override, one line. */
 export function pulseLine(result) {
   const over = result.knobs.filter((k) => k.source === 'override').map((k) => `${k.knob} ${k.knob === 'Generators' && k.list?.length > 1 ? `${k.list.length} listed` : k.value}`);
@@ -267,7 +301,7 @@ export function main(argv, io = {}) {
     const r = spawnSync('gh', ['variable', 'list', '--json', 'name,value'], { encoding: 'utf8' });
     return r.status === 0 ? r.stdout : null;
   });
-  const flags = { json: false, line: false, gh: false };
+  const flags = { json: false, line: false, gh: false, knob: null, cloud: null };
   let bearingsPath = null;
   let root = io.cwd ?? process.cwd();
   let varsPath = null;
@@ -276,10 +310,11 @@ export function main(argv, io = {}) {
     if (a === '--json') flags.json = true;
     else if (a === '--line') flags.line = true;
     else if (a === '--gh') flags.gh = true;
+    else if ((a === '--knob' || a === '--cloud') && argv[i + 1]) flags[a.slice(2)] = argv[++i];
     else if (a === '--bearings' && argv[i + 1]) bearingsPath = argv[++i];
     else if (a === '--root' && argv[i + 1]) root = argv[++i];
     else if (a === '--vars' && argv[i + 1]) varsPath = argv[++i];
-    else { err(`improve: unknown argument ${a}\nusage: node scripts/plan/improve.mjs [--json] [--line] [--bearings <file>] [--root <dir>] [--vars <file>] [--gh]`); return 64; }
+    else { err(`improve: unknown argument ${a}\nusage: node scripts/plan/improve.mjs [--json] [--line] [--knob <name>] [--cloud <name>] [--bearings <file>] [--root <dir>] [--vars <file>] [--gh]`); return 64; }
   }
   const file = bearingsPath ?? path.join(root, 'plan', 'bearings.md');
   let bearings = '';
@@ -293,7 +328,16 @@ export function main(argv, io = {}) {
     const read = parseVars(source);
     for (const n of VAR_NAMES) { if (read[n]) vars[n] = read[n]; else delete vars[n]; }
   }
-  const result = resolve(bearings, { vars, project: projectGenerators(root) });
+  const opts = { vars, project: projectGenerators(root) };
+  const one = flags.knob ?? flags.cloud;
+  if (one) {
+    if (!dialRow(one)) { err(`improve: no knob ${one} (${DIAL.map((r) => r.knob).join(', ')})`); return 64; }
+    const k = knobOf(bearings, one, opts);
+    for (const w of k.warnings) err(`warn: ${w}`);
+    out(flags.cloud ? cloudValue(bearings, one, opts) : k.value);
+    return 0;
+  }
+  const result = resolve(bearings, opts);
   if (flags.json) out(JSON.stringify(result, null, 2));
   else if (flags.line) out(pulseLine(result));
   else out(render(result));

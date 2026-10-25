@@ -4,6 +4,14 @@
 > finding, ship the fix, drain the queues. The endgame once
 > no chunk is ready — and between chunks, the polish engine.
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 The kit rots in specific ways: docs drift from templates,
@@ -121,8 +129,9 @@ the commit body says why.
 
 ## 3b. Dimension I: the loop
 
-Runs when `plan/bearings.md` says `loop: on` (a missing line
-reads `off`; posture `strict` reads `off` whatever it says).
+Runs when the resolver reads `loop on` (a `loop:` line, else
+the `Improve:` dial; no line at all reads `off`; posture
+`strict` reads `off` whatever it says).
 `node scripts/plan/loop-rows.mjs status` prints both that and
 whether an I row may ship today.
 

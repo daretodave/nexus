@@ -189,6 +189,7 @@ templates/
 │   ├── __tests__/workflow-lint.test.mjs  (the workflow rules, pure)
 │   ├── __tests__/support.test.mjs     (the Support level, the routing table by level and author, the asap_cap count, continue at half the budget, the aged user rows, the SLA step under asap_cap, the digest line and escalation; gh injected)
 │   ├── __tests__/improve.test.mjs     (the dial table at every position, an override line winning for its knob only, absent read as gentle, a disagreeing variable warned, the CLI's text, JSON and pulse line; gh injected)
+│   ├── __tests__/improve-readers.test.mjs  (every knob reader through the dial: Support, Promote, stall_action, loop, the refill generators, the UI walk; the Cadence step and the nudge take it only when their variable is unset)
 │   ├── __tests__/tick.test.mjs        (the PR-mode tick: fence, candidates, PR text; pure)
 │   ├── __tests__/resolve.test.mjs     (the resolver's pure parts)
 │   ├── __tests__/tick-run.test.mjs    (the PR-mode tick's pick, release and fence over git; slower, offline)

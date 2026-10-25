@@ -5,7 +5,7 @@
 // <PROJECT_PKG_PREFIX>), with the shared toolchain action, the quota governor (scripts/cloud/quota.mjs), the
 // lost-to-background mark (scripts/cloud/lost.mjs), the idle probe (scripts/cloud/idle.mjs), the chain step
 // (scripts/cloud/chain.mjs) and the cadence presets (scripts/cloud/cadence.mjs) beside it when the repo has none (every march job uses them), and the event tick
-// (.github/workflows/nudge.yml with scripts/cloud/nudge-check.mjs; inert until NEXUS_SUPPORT is set). The CLI ships these files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
+// (.github/workflows/nudge.yml with scripts/cloud/nudge-check.mjs; inert until NEXUS_SUPPORT is set, or an `Improve:` dial above gentle sets Support). The CLI ships these files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
 // templates/ directly. Which way a tick lands is the repo variable NEXUS_LOOP_MODE, not a line in the file: in owner
 // mode an unset variable is set to owner (best effort), as bootstrap's set-loop-mode does.
 //

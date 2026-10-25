@@ -10,6 +10,14 @@
 > `bearings.md` to make `/expand` a no-op (the plan grows only
 > via manual `/plan-a-spec` or `/oversight`).
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 The autonomous loop is good at consuming the plan. It is
@@ -104,7 +112,7 @@ The same section holds the aged-promotion knobs (Step 4b), one
 
 | Key | Values | Default |
 |---|---|---|
-| `Promote` | `owner \| aged \| autonomous` | `owner` (a new adoption's bearings ships `aged`); `strict` forces `owner` |
+| `Promote` | `owner \| aged \| autonomous` | the `Improve:` dial's (steady and bold `aged`), else `owner` (a new adoption's bearings ships `aged`); `strict` forces `owner` |
 | `promote_after_days` | days | 21 |
 | `promote_floor` | score | 6.0 |
 | `promote_per_week` | count | 1 |
@@ -289,8 +297,9 @@ body that this was autonomous (not via oversight).
 ### Step 4b — Aged promotion (the silt valve)
 
 A queue nobody promotes silts up. Under `Promote: aged` (or
-`autonomous`) in `bearings.md` (§3; no key reads `owner`, and
-this step does nothing), the pass ends by promoting at most
+`autonomous`), as the resolver reads it (a `Promote:` line in
+`bearings.md`, §3, else the `Improve:` dial; no line at all
+reads `owner`, and this step does nothing), the pass ends by promoting at most
 one aged candidate, behind a window in which the owner can say
 no:
 

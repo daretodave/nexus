@@ -81,6 +81,20 @@ before the dial). A set variable is an override (`from: var`
 in `--json`). The registry rows carry `dial: true|false`, and
 `gentle` equals each row's conservative value.
 
+Decided in the build (59.2): the scripts that act on a knob
+(support, promote, motion, loop-rows, refill and lanes, the UI
+walk) take it from the resolver (`knobOf`); skills name
+`improve.mjs` (`--knob <name>` for one value). A cloud step
+takes the dial only when its variable is unset and only under
+an `Improve:` line other than gentle (`improve.mjs --cloud
+<knob>`, passed as `--dial` to `cadence.mjs resolve` and
+`nudge-check.mjs`): gentle, or no line, leaves the workflow
+literals and an inert nudge, so an upgraded loop runs
+unchanged. The nudge's job `if:` now only refuses
+`NEXUS_SUPPORT` off; an unset variable starts a short job that
+reads the dial. Bootstrap installs `scripts/plan/improve.mjs`
+with the loop files.
+
 The repo variables stay the cloud's source of truth for the
 knobs that live there (`NEXUS_SUPPORT`, `NEXUS_CADENCE`); the
 resolver warns when a variable and the dial disagree, and
@@ -129,7 +143,6 @@ nexus runs `Research: weekly`; adopters get it from the dial
 
 ## Acceptance
 
-- **A2** The skills that read expansion knobs (march, triage, expand, iterate, critique, digest, nudge and the cadence step) read them through the resolver; absent dial reads as gentle; nexus runs `Improve: bold`; the upgrade writes `Improve: gentle`.
 - **A3** The research generator, under `Research: weekly`, fetches at most 8 sources, files at most 3 `field` candidates with no product names and no URLs (the gate fails a field candidate with a URL), puts sources in the job summary only, and treats page text as data.
 - **A4** GUI Settings shows the dial as four radios with one-line explanations and writes the bearings line; the GUI's motion and colour stay.
 - **A5** `customization/` documents the dial, its table and the overrides; `templates/plan/bearings.md` carries `Improve: steady` for new adoptions; no public text names a competitor or adopter.
@@ -139,10 +152,9 @@ nexus runs `Research: weekly`; adopters get it from the dial
 (None.)
 
 ## Chunks
-Measure: 4 open · 1 closed · next A6
+Measure: 3 open · 2 closed · next A6
 
-- [ ] **59.2** Skills read knobs through the resolver · M · closes A2 · needs —
 - [ ] **59.3** The field-research generator · M · closes A3 · needs —
 - [ ] **59.4** The dial in GUI Settings · S · closes A4 · needs —
   - Keep the GUI's particles, colour and motion.
-- [ ] **59.5** Dial docs and the adopter default · S · closes A5 · needs 59.2, 59.3
+- [ ] **59.5** Dial docs and the adopter default · S · closes A5 · needs 59.3

@@ -7,6 +7,14 @@
 > instrument panel, delivered instead of fetched. See
 > `nexus/concepts/loop-shapes.md` §2.
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 The dispatcher's ticks are visible one at a time; nobody
@@ -38,7 +46,12 @@ its own cadence.
    node scripts/pulse.mjs --motion
    node scripts/cloud/quota.mjs show
    node scripts/plan/support.mjs digest --notify
+   node scripts/plan/improve.mjs --line
    ```
+
+   `improve.mjs --line` is the dial line: `Improve: <position>`
+   and every knob a line of its own overrides; `Queues now`
+   carries it as is.
 
    `quota.mjs show` is the last cached `seven_day` reading
    (night's gate restored it; locally, unknown); `While you

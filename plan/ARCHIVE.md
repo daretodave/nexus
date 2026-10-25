@@ -243,3 +243,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 59.1 · The dial and its resolver · 029458f..029458f
 - 2026-10-25 · 58.11 · v2 to latest: the three-way sync and the assisted merge · 0cc9aa6..991d816
 - 2026-10-25 · 58.8 · --write, --land, --rollback and the first-tick watch · 0d73a09..0d73a09
+- 2026-10-25 · 59.2 · Skills read knobs through the resolver · fbc60a5..fbc60a5

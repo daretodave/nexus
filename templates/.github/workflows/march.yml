@@ -115,7 +115,10 @@ jobs:
       # ceiling, how deep a shipped tick chains and the idle backoff at
       # run time, with no file edit; a per-field variable
       # (NEXUS_DAILY_CEILING, NEXUS_CHAIN_MAX, NEXUS_IDLE_BACKOFF)
-      # overrides its preset. Unset, the ceiling literal below and the
+      # overrides its preset. Unset, the improvement dial's cadence
+      # stands in (an `Improve:` line other than gentle in
+      # plan/bearings.md; scripts/plan/improve.mjs --cloud Cadence).
+      # With neither, the ceiling literal below and the
       # scripts' defaults stand, and nothing chains. The cron line is the
       # one thing it cannot change: `node scripts/cloud/cadence.mjs apply
       # <preset> --write` (or bootstrap) writes it. Fails open.
@@ -126,7 +129,7 @@ jobs:
           CEILING: ${{ vars.NEXUS_DAILY_CEILING }}
           CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
           IDLE_BACKOFF: ${{ vars.NEXUS_IDLE_BACKOFF }}
-        run: node scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --ceiling "$CEILING" --chain-max "$CHAIN_MAX" --idle-backoff "$IDLE_BACKOFF" || true
+        run: node scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --dial "$(node scripts/plan/improve.mjs --cloud Cadence)" --ceiling "$CEILING" --chain-max "$CHAIN_MAX" --idle-backoff "$IDLE_BACKOFF" || true
 
       - name: Daily commit ceiling check
         id: ceiling
@@ -917,7 +920,7 @@ jobs:
           CEILING: ${{ vars.NEXUS_DAILY_CEILING }}
           CHAIN_MAX: ${{ vars.NEXUS_CHAIN_MAX }}
           IDLE_BACKOFF: ${{ vars.NEXUS_IDLE_BACKOFF }}
-        run: node scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --ceiling "$CEILING" --chain-max "$CHAIN_MAX" --idle-backoff "$IDLE_BACKOFF" || true
+        run: node scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --dial "$(node scripts/plan/improve.mjs --cloud Cadence)" --ceiling "$CEILING" --chain-max "$CHAIN_MAX" --idle-backoff "$IDLE_BACKOFF" || true
 
       - name: Chain next tick
         env:

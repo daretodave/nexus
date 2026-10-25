@@ -4,6 +4,14 @@
 > of the shipping skills. Designed for `/loop`. The
 > autonomous-beast entry point.
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 `/loop /march` is the autonomous-beast mode. It picks the
@@ -314,8 +322,10 @@ A lane returning `end-tick` ends the tick; `stock`, or every
 lane returning `continue`, falls through to 3b.
 
 The first `queue` lane is the stock **refill** lane whenever
-`## Generators` in `plan/bearings.md` lists one (none listed:
-it is not there). It runs each listed generator
+`## Generators` in `plan/bearings.md` lists one, or, with no
+list, the `Improve:` dial names some (steady the kit's three,
+bold every `scripts/generators/<name>.mjs` too; none: it is
+not there). It runs each listed generator
 (`nexus/concepts/generators.md`), which files rows into
 `plan/AUDIT.md` while its own rows are under their target and
 its weekly cap:

@@ -5,6 +5,14 @@
 > loop. Drains queues from `/critique` and `/triage` alongside
 > its own audit.
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 Specs ship the structure. After their chunks ship, the project
@@ -123,7 +131,8 @@ entries. Coverage gaps from cross-grep.
 #### H. UI (the scripted walk)
 
 Runs only when `plan/bearings.md` says `UI: url <base>` and
-`UI cadence:` is `iterate` or `both`
+the UI cadence (a `UI cadence:` line, else the `Improve:` dial:
+bold walks `both`) is `iterate` or `both`
 (`node scripts/ui-walk.mjs --knobs` prints `walks.iterate`).
 `UI: none`, the default, browses nothing and H is skipped.
 
@@ -159,8 +168,9 @@ Runs only when `plan/bearings.md` says `UI: url <base>` and
 
 #### I. Loop (how the loop itself runs)
 
-Runs when `plan/bearings.md` says `loop: on` (the default for a
-new adoption; a missing line reads `off`, as on an upgrade, and
+Runs when the resolver reads `loop on` (a `loop:` line, the
+default for a new adoption, else the `Improve:` dial: steady and
+bold on; no line at all reads `off`, as on an upgrade, and
 posture `strict` reads `off` whatever it says). `node
 scripts/plan/loop-rows.mjs status` prints that, and whether an
 I row may ship today.

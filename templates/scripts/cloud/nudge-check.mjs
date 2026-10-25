@@ -4,13 +4,16 @@
 // most one: `gh workflow run march.yml -f verb=march -f reason=issue-<number>`. No model, no issue text in or out:
 // only the issue NUMBER crosses into the tick, which triages the issue as data (spec 54).
 //
-//   node scripts/cloud/nudge-check.mjs [--event-file <path>] [--support <level>] [--trust <collaborators|everyone>]
+//   node scripts/cloud/nudge-check.mjs [--event-file <path>] [--support <level>] [--dial <level>]
+//                                      [--trust <collaborators|everyone>]
 //                                      [--urgent "<label> <label>"] [--loop-actor <login>] [--max <N>]
 //                                      [--workflow <file>] [--night <path>] [--dry-run]
 //
 // The checks, in order; the first that fails names the reason and nothing is dispatched.
 //
-//   support   --support (NEXUS_SUPPORT) is set and not `off`. Unset: no event ticks (the adopter default).
+//   support   --support (NEXUS_SUPPORT) is set and not `off`. Unset, --dial stands in: the Support level the
+//             improvement dial resolves (`node scripts/plan/improve.mjs --cloud Support`, which prints one only under
+//             an `Improve:` line other than gentle). Neither: no event ticks (the adopter default).
 //   issue     the event payload (--event-file, default $GITHUB_EVENT_PATH) is an issues event with a whole issue
 //             number, the sender is not a Bot, the issue carries no loop:opened label (the loop's own mirror), and it
 //             is not loop-filed: authored by --loop-actor (NEXUS_LOOP_ACTOR, default the repository owner) AND its
@@ -80,7 +83,9 @@ const labelNames = (labels) => (Array.isArray(labels) ? labels : []).map((l) => 
 // ---- the checks ------------------------------------------------------------------------------------------------
 // Each returns { ok, why }.
 
-export function supportCheck({ support }) {
+export function supportCheck({ support, dial = null }) {
+  if (support === null && dial === 'off') return { ok: false, why: 'NEXUS_SUPPORT is unset and the Improve dial sets Support off' };
+  if (support === null && dial) return { ok: true, why: `NEXUS_SUPPORT is unset; the Improve dial sets Support ${dial}` };
   if (support === null) return { ok: false, why: 'NEXUS_SUPPORT is unset: no event ticks' };
   if (support === 'off') return { ok: false, why: 'NEXUS_SUPPORT is off' };
   return { ok: true, why: `NEXUS_SUPPORT is ${support}` };
@@ -179,7 +184,7 @@ export async function decide(f) {
   const checked = [];
   let facts = null;
   const steps = [
-    ['support', async () => supportCheck({ support: supportOf(await get('support')) })],
+    ['support', async () => supportCheck({ support: supportOf(await get('support')), dial: supportOf(await get('dial')) })],
     ['issue', async () => {
       facts = issueFacts(await get('payload'));
       return issueCheck({ facts, loopActor: await get('loopActor') });
@@ -247,7 +252,7 @@ function emit(env, outputs, summary) {
 export async function main(argv, { env = process.env, run = shRun, now = new Date(), exists = fs.existsSync, readFile = (p) => fs.readFileSync(p, 'utf8') } = {}) {
   const f = flags(argv);
   if (f._.length) {
-    console.error('usage: node scripts/cloud/nudge-check.mjs [--event-file <path>] [--support <level>] [--trust <collaborators|everyone>] [--urgent "<labels>"] [--loop-actor <login>] [--max <N>] [--workflow <file>] [--night <path>] [--dry-run]');
+    console.error('usage: node scripts/cloud/nudge-check.mjs [--event-file <path>] [--support <level>] [--dial <level>] [--trust <collaborators|everyone>] [--urgent "<labels>"] [--loop-actor <login>] [--max <N>] [--workflow <file>] [--night <path>] [--dry-run]');
     return 2;
   }
   const workflow = f.workflow || 'march.yml';
@@ -256,6 +261,7 @@ export async function main(argv, { env = process.env, run = shRun, now = new Dat
   let runs;
   const d = await decide({
     support: f.support,
+    dial: f.dial,
     trust: f.trust,
     urgent: f.urgent,
     loopActor: f['loop-actor'],

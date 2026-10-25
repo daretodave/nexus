@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { knobOf } from './plan/improve.mjs';
 
 export const VIEWPORTS = Object.freeze({ desktop: { width: 1280, height: 800 }, mobile: { width: 390, height: 844 } });
 export const DEFAULT_ROUTES = Object.freeze(['/']);
@@ -133,7 +134,7 @@ const knobLine = (text, name) => {
  * The UI knobs from plan/bearings.md's text:
  *   **UI:** none | url <base> | dev "<cmd>" <port>     (absent: none)
  *   **UI routes:** `/`, `/pricing`                     (absent: /)
- *   **UI cadence:** critique | iterate | both          (absent: critique)
+ *   **UI cadence:** none | critique | iterate | both   (absent: the Improve dial's, scripts/plan/improve.mjs; critique)
  *   **UI magic:** keep | open                          (absent: keep)
  * -> { mode, base, cmd, port, routes, cadence, magic, walks: { critique, iterate }, problems[] }
  */
@@ -156,12 +157,18 @@ export function readUiKnobs(text) {
     const raw = routes.replace(/`/g, '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
     try { if (raw.length) k.routes = cleanRoutes(raw); } catch (e) { problems.push(`UI routes: ${e.message}`); }
   }
+  // The cadence comes through the improvement dial (scripts/plan/improve.mjs): a `UI cadence:` line, else the
+  // `Improve:` dial's (steady critique, bold both), else critique for a target; `none` walks nothing.
+  // With no target (UI: none) nothing browses whatever the cadence, which then reads as its line says.
   const cadence = knobLine(t, 'UI cadence');
+  let said = null;
   if (cadence !== null) {
     const v = unquote(cadence).toLowerCase();
-    if (['critique', 'iterate', 'both'].includes(v)) k.cadence = v;
-    else problems.push(`UI cadence: takes critique, iterate or both, not "${v}"`);
+    if (['none', 'critique', 'iterate', 'both'].includes(v)) said = v;
+    else problems.push(`UI cadence: takes none, critique, iterate or both, not "${v}"`);
   }
+  const dialed = knobOf(t, 'UI', { vars: {} }).value;
+  k.cadence = dialed === 'none' && k.mode === 'none' ? said ?? 'critique' : dialed;
   const magic = knobLine(t, 'UI magic');
   if (magic !== null) {
     const v = unquote(magic).toLowerCase();
@@ -169,7 +176,7 @@ export function readUiKnobs(text) {
     else problems.push(`UI magic: takes keep or open, not "${v}"`);
   }
   const on = k.mode === 'url';
-  k.walks = { critique: on && k.cadence !== 'iterate', iterate: on && k.cadence !== 'critique' };
+  k.walks = { critique: on && ['critique', 'both'].includes(k.cadence), iterate: on && ['iterate', 'both'].includes(k.cadence) };
   k.problems = problems;
   return k;
 }

@@ -102,6 +102,13 @@ to the guard hook too.
 
 ## Plan expansion posture
 
+The improvement dial (spec 59, `scripts/plan/improve.mjs`) sets
+every expansion knob's default; each line below overrides its
+knob only. Skills read the knobs through the resolver
+(`node scripts/plan/improve.mjs`), never from this file:
+
+- Improve: bold
+
 **bold** — `/expand` files candidates to
 `plan/CANDIDATES.md`; promotion happens in `/oversight`, and
 the aged ones promote themselves behind a veto window

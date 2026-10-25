@@ -18,7 +18,8 @@
 // one whose only lane is inside an HTML comment or a code fence, is stock dispatch.
 //
 // One lane is stock: `refill`, at the `queue` hook ahead of the file's own lanes, runs the generators listed under
-// `## Generators` in plan/bearings.md (scripts/plan/refill.mjs). With none listed it is not there at all; `Lanes off:
+// `## Generators` in plan/bearings.md, else the improvement dial's (scripts/plan/refill.mjs, scripts/plan/improve.mjs).
+// With none it is not there at all; `Lanes off:
 // refill` turns it off, and a project lane named `refill` replaces it.
 //
 //   node scripts/plan/lanes.mjs march pre [--asap ready|none] [--support ready|none] [--json]
@@ -37,7 +38,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { parseGenerators } from './refill.mjs';
+import { effectiveGenerators } from './refill.mjs';
 
 export const HOOKS = Object.freeze({ march: ['pre', 'queue'], iterate: ['dimensions'] });
 export const FILES = Object.freeze({ march: 'skills/march.lanes.md', iterate: 'skills/iterate.lanes.md' });
@@ -164,17 +165,22 @@ export function select(lanes, { hook, off = new Set(), asapReady = false, suppor
   return out;
 }
 
-/** The stock refill lane for `bearings`' `## Generators` list, or null when it lists none. */
-export function stockRefill(bearings = '') {
-  const n = parseGenerators(bearings).generators.length;
+/**
+ * The stock refill lane for the generators refill runs (`bearings`' `## Generators` list, else the improvement
+ * dial's; `root` finds the repo's own generators for bold), or null when there are none.
+ */
+export function stockRefill(bearings = '', { root = null } = {}) {
+  const g = effectiveGenerators(bearings, { root });
+  const n = g.generators.length;
   if (!n) return null;
-  return { name: 'refill', hook: 'queue', when: 'always', run: 'node scripts/plan/refill.mjs --write', return: 'continue', line: 0, stock: `${n} generator${n === 1 ? '' : 's'} in plan/bearings.md` };
+  const where = g.from === 'dial' ? 'from the Improve dial' : 'in plan/bearings.md';
+  return { name: 'refill', hook: 'queue', when: 'always', run: 'node scripts/plan/refill.mjs --write', return: 'continue', line: 0, stock: `${n} generator${n === 1 ? '' : 's'} ${where}` };
 }
 
 /** A hook's lanes with the stock ones added: at `queue`, refill first, unless the file has its own `refill`. */
-export function withStock(lanes, { kind, hook, bearings = '' }) {
+export function withStock(lanes, { kind, hook, bearings = '', root = null }) {
   if (kind !== 'march' || hook !== 'queue' || lanes.some((l) => l.name === 'refill')) return lanes;
-  const refill = stockRefill(bearings);
+  const refill = stockRefill(bearings, { root });
   return refill ? [refill, ...lanes] : lanes;
 }
 
@@ -288,7 +294,7 @@ export async function main(argv, { root = process.cwd(), log = console.log, chec
   const bearings = readSafe(path.join(root, 'plan', 'bearings.md'));
   const asapIsReady = hook === 'pre' && lanes.some((l) => l.hook === 'pre') ? (asapFlag ?? (await asap(root))) : false;
   const picked = select(
-    withStock(lanes.filter((l) => !problems.some((p) => p.includes(`lane ${l.name}:`))), { kind: cmd, hook, bearings }),
+    withStock(lanes.filter((l) => !problems.some((p) => p.includes(`lane ${l.name}:`))), { kind: cmd, hook, bearings, root }),
     { hook, off: lanesOff(bearings), asapReady: asapIsReady, supportReady: supportFlag ?? false, check },
   );
   if (argv.includes('--json')) {

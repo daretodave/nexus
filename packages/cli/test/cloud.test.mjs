@@ -210,7 +210,8 @@ test('owner: the workflow is committed and pushed to main from a temporary workt
   assert.match(fx.at('main', CADENCE_PATH), /the cadence presets/, 'and the cadence presets beside them');
   const nudge = fx.at('main', NUDGE_PATH);
   assert.match(nudge, /node scripts\/cloud\/nudge-check\.mjs --support/, 'the event tick lands beside them');
-  assert.match(nudge, /vars\.NEXUS_SUPPORT != ''/, 'inert until NEXUS_SUPPORT is set');
+  assert.match(nudge, /vars\.NEXUS_SUPPORT != 'off'/, 'off when NEXUS_SUPPORT is off');
+  assert.match(nudge, /--dial "\$\(node scripts\/plan\/improve\.mjs --cloud Support\)"/, 'unset, inert until the dial sets Support (never at gentle)');
   assert.match(fx.at('main', NUDGE_CHECK_PATH), /the event tick/, 'with the check it runs');
   assert.equal(r.mode, 'owner', 'an unset NEXUS_LOOP_MODE is set to owner');
   assert.ok(gh.calls.includes('variable set NEXUS_LOOP_MODE --body owner'));

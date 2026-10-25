@@ -2,7 +2,8 @@
 //
 // The knob is `Support:` in plan/bearings.md (`off | triage-only | fix-small | fix-all`), and the repo variable
 // NEXUS_SUPPORT when the tick's environment carries it: the variable wins, and a disagreement is printed as a note.
-// Neither set reads `triage-only`: triage routes as it always has (an AUDIT row per bug). `off` routes the same way;
+// With neither, the improvement dial sets it (`Improve:`, scripts/plan/improve.mjs, which reads all three); no dial
+// line reads `triage-only`: triage routes as it always has (an AUDIT row per bug). `off` routes the same way;
 // it only means no event ticks.
 //
 //   level    triage-only    fix-small                   fix-all
@@ -63,6 +64,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { knobOf } from './improve.mjs';
 
 export const LEVELS = ['off', 'triage-only', 'fix-small', 'fix-all'];
 export const COLLABORATORS = ['OWNER', 'MEMBER', 'COLLABORATOR'];
@@ -79,24 +81,28 @@ const DAY = 24 * HOUR;
 
 const knob = (name) => new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${name}[*\`]*[ \\t]*:[*\`]*[ \\t]*([\\w.-]+)`, 'mi');
 
-/** `Support:` from plan/bearings.md text, or null when absent or not a level. */
+/** `Support:` from plan/bearings.md text (through the dial's resolver), or null when absent or not a level. */
 export function bearingsLevel(bearings = '') {
-  const m = knob('Support').exec(bearings);
-  const v = m?.[1]?.toLowerCase();
-  return LEVELS.includes(v) ? v : null;
+  const k = knobOf(bearings, 'Support', { vars: {} });
+  return k.from === 'bearings' ? k.value : null;
 }
 
-/** The level in force: { level, source, note }. A set NEXUS_SUPPORT wins over bearings; neither is triage-only. */
+/**
+ * The level in force: { level, source, note }, read through the improvement dial (scripts/plan/improve.mjs). A set
+ * NEXUS_SUPPORT wins (`env`), then a `Support:` line (`bearings`), then the `Improve:` dial (`dial`); no line at all
+ * is the gentle dial, triage-only (`default`).
+ */
 export function supportLevel(bearings = '', env = process.env) {
-  const fromBearings = bearingsLevel(bearings);
+  const k = knobOf(bearings, 'Support', { vars: {} });
+  const own = k.from === 'bearings' ? `Support: ${k.value} in plan/bearings.md` : `the dial (Improve: ${k.improve.value} sets ${k.value})`;
   const raw = (env.NEXUS_SUPPORT ?? '').trim().toLowerCase();
   if (raw && LEVELS.includes(raw)) {
-    const note = fromBearings && fromBearings !== raw ? `NEXUS_SUPPORT (${raw}) overrides Support: ${fromBearings} in plan/bearings.md` : null;
+    const note = k.value !== raw && (k.from === 'bearings' || k.improve.source === 'bearings') ? `NEXUS_SUPPORT (${raw}) overrides ${own}` : null;
     return { level: raw, source: 'env', note };
   }
   const bad = raw ? `NEXUS_SUPPORT=${raw} is not a level (${LEVELS.join(', ')}); ignored` : null;
-  if (fromBearings) return { level: fromBearings, source: 'bearings', note: bad };
-  return { level: 'triage-only', source: 'default', note: bad };
+  const source = k.from === 'bearings' ? 'bearings' : k.improve.source === 'bearings' ? 'dial' : 'default';
+  return { level: k.value, source, note: bad };
 }
 
 /** NEXUS_SUPPORT_TRUST: `everyone`, else `collaborators`. */

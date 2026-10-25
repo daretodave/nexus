@@ -8,6 +8,14 @@
 > **Rate-limited** by `/march` (≥12 commits + ≥24h spacing,
 > green-deploy required). Cap of 6 filed findings per pass.
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 The autonomous loop is good at shipping what it was told to
@@ -117,8 +125,9 @@ etc.) and the next pass re-runs.
 
 - **`UI: none`** (the default, or no `UI:` line): nothing
   browses. No walk; in CI the reader uses WebFetch.
-- **`UI: url <base>`** with `UI cadence: critique` or
-  `both`: when browser tools aren't there, run
+- **`UI: url <base>`** with a UI cadence of `critique` or
+  `both` (a `UI cadence:` line, else the `Improve:` dial's;
+  `critique` when neither says): when browser tools aren't there, run
   `node scripts/ui-walk.mjs --json` (foreground) before Step
   2. It walks `UI routes:` at desktop (1280x800) and mobile
   (390x844) and writes `.nexus/walk/<iso>/walk.json` plus one

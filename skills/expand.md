@@ -5,6 +5,14 @@
 > promotes; under `Promote: aged` the strongest aged candidate
 > also promotes itself, held behind a veto window (§6).
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 The kit's roadmap should grow from evidence: clustered audit
@@ -113,8 +121,10 @@ still >3). **Cap 3 candidates per pass.**
 ## 6. Aged promotion: the silt valve
 
 A queue nobody promotes silts up. Under `Promote: aged` (or
-`autonomous`) in `plan/bearings.md`'s `## Plan expansion
-posture` (no key reads `owner`: nothing here runs), each pass
+`autonomous`), as the resolver reads it (a `Promote:` line in
+`plan/bearings.md`'s `## Plan expansion posture`, else the
+`Improve:` dial; no line at all reads `owner`: nothing here
+runs), each pass
 ends by promoting at most one aged candidate, behind a window
 in which the owner can say no.
 

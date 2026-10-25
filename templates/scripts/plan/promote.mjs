@@ -9,7 +9,8 @@
 //
 // The knobs live in plan/bearings.md (under `## Plan expansion posture`), one `Key: value` line each:
 //
-//   Promote             owner | aged | autonomous     (absent: owner, the conservative default for an upgrade)
+//   Promote             owner | aged | autonomous     (absent: the `Improve:` dial's, scripts/plan/improve.mjs;
+//                                                      owner with no dial line, the conservative upgrade default)
 //   promote_after_days  a candidate this old is eligible (21)
 //   promote_floor       ... when its score is at least this (6.0)
 //   promote_per_week    auto-promotions dated in the last 7 days, vetoed ones included, cap the next (1)
@@ -50,6 +51,7 @@ import { pathToFileURL } from 'node:url';
 import { parseAutoHeld } from '../plan-check.mjs';
 import { isOwner } from '../owner.mjs';
 import { loadConfig } from './config.mjs';
+import { knobOf } from './improve.mjs';
 
 export const KNOBS = Object.freeze({ promote: 'owner', afterDays: 21, floor: 6.0, perWeek: 1, vetoDays: 3, pendingCap: 15 });
 const KEYS = { Promote: 'promote', promote_after_days: 'afterDays', promote_floor: 'floor', promote_per_week: 'perWeek', veto_days: 'vetoDays', pending_cap: 'pendingCap' };
@@ -65,14 +67,17 @@ export const today = () => new Date().toISOString().slice(0, 10);
 export const addDays = (date, n) => new Date(Date.parse(`${date}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
 export const daysBetween = (from, to) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY);
 
-/** The promotion knobs from plan/bearings.md text, over the defaults. `- **Promote:** aged`, `Promote: aged` alike. */
+/**
+ * The promotion knobs from plan/bearings.md text, over the defaults. `Promote` comes through the improvement dial
+ * (scripts/plan/improve.mjs: a `Promote:` line, else the `Improve:` dial, else owner); the numbers are settings, read
+ * here. `- **promote_floor:** 6`, `promote_floor: 6` alike.
+ */
 export function knobs(bearings = '') {
-  const out = { ...KNOBS };
+  const out = { ...KNOBS, promote: knobOf(bearings, 'Promote', { vars: {} }).value };
   for (const [key, name] of Object.entries(KEYS)) {
+    if (name === 'promote') continue;
     const m = new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${key}[*\`]*[ \\t]*:[*\`]*[ \\t]*[*\`]*([^\\s*\`]+)`, 'm').exec(bearings);
-    if (!m) continue;
-    if (name === 'promote') out.promote = ['owner', 'aged', 'autonomous'].includes(m[1].toLowerCase()) ? m[1].toLowerCase() : 'owner';
-    else if (Number.isFinite(parseFloat(m[1]))) out[name] = parseFloat(m[1]);
+    if (m && Number.isFinite(parseFloat(m[1]))) out[name] = parseFloat(m[1]);
   }
   return out;
 }

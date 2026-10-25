@@ -10,8 +10,10 @@ name: nudge
 # the loop-filed marker from the payload file.
 #
 # Off until the repo variable NEXUS_SUPPORT is set to anything
-# but `off` (unset: the cron alone triages, as before). The
-# knobs, all repo variables:
+# but `off`, or, unset, until the improvement dial sets Support
+# (an `Improve:` line other than gentle in plan/bearings.md;
+# scripts/plan/improve.mjs --cloud Support). Neither: the cron
+# alone triages, as before. The knobs, all repo variables:
 #   NEXUS_SUPPORT        off | triage-only | fix-small | fix-all
 #   NEXUS_SUPPORT_TRUST  collaborators (default) | everyone
 #   NEXUS_URGENT_LABELS  labels that start a tick on opened or
@@ -38,14 +40,14 @@ concurrency:
 jobs:
   nudge:
     # The cheap checks, in the expression context (never in a
-    # run script): support on, no bot, not the loop's mirror, not
+    # run script): support not off, no bot, not the loop's mirror, not
     # loop-filed (the loop actor AND a Cloud-Run: line), and
     # either loop:do just added (labeling takes triage rights,
     # so it lifts an outsider's issue) or a collaborator's issue
     # opened with a label. nudge-check.mjs repeats them, matches
     # NEXUS_URGENT_LABELS, and reads the queue.
     if: >-
-      vars.NEXUS_SUPPORT != '' && vars.NEXUS_SUPPORT != 'off'
+      vars.NEXUS_SUPPORT != 'off'
       && github.event.sender.type != 'Bot'
       && !contains(github.event.issue.labels.*.name, 'loop:opened')
       && !(github.event.issue.user.login == (vars.NEXUS_LOOP_ACTOR || github.repository_owner)
@@ -59,15 +61,17 @@ jobs:
     timeout-minutes: 2
     permissions:
       actions: write    # gh run list (the queue, the event count) and gh workflow run
-      contents: read    # the checkout of nudge-check.mjs
+      contents: read    # the checkout of nudge-check.mjs and the dial
       issues: read
     steps:
-      - name: Checkout (the nudge's script only)
+      - name: Checkout (the nudge's script and the dial only)
         uses: actions/checkout@v4
         with:
           persist-credentials: false
           sparse-checkout: |
             templates/scripts/cloud
+            scripts/plan
+            plan
             .github/workflows
 
       - name: Nudge check
@@ -79,4 +83,4 @@ jobs:
           URGENT: ${{ vars.NEXUS_URGENT_LABELS || 'loop:do bug' }}
           LOOP_ACTOR: ${{ vars.NEXUS_LOOP_ACTOR || github.repository_owner }}
           EVENT_MAX: ${{ vars.NEXUS_EVENT_MAX || '6' }}
-        run: node templates/scripts/cloud/nudge-check.mjs --support "$SUPPORT" --trust "$TRUST" --urgent "$URGENT" --loop-actor "$LOOP_ACTOR" --max "$EVENT_MAX"
+        run: node templates/scripts/cloud/nudge-check.mjs --support "$SUPPORT" --dial "$(node scripts/plan/improve.mjs --cloud Support)" --trust "$TRUST" --urgent "$URGENT" --loop-actor "$LOOP_ACTOR" --max "$EVENT_MAX"

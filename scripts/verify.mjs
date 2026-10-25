@@ -50,7 +50,14 @@
 //                 so adopters and the kit share one implementation,
 //                 plus that script's own node:test suite; a set
 //                 NEXUS_SUPPORT that disagrees with bearings'
-//                 Support: line is a warning in its note
+//                 Support: line is a warning in its note; and the
+//                 knob readers go through the improvement dial
+//                 (spec 59): march, triage, expand, iterate,
+//                 critique and digest (both trees) name
+//                 scripts/plan/improve.mjs, the scripts that act
+//                 on a knob import it, every Cadence step and the
+//                 nudge pass its --cloud value, and plan/bearings.md
+//                 says Improve: bold
 //   scripts       the node:test suites of the plan, claims and push
 //                 policy scripts adopters copy (templates/scripts/plan/,
 //                 claims, git/push-policy, announce, ledger, the
@@ -935,6 +942,9 @@ async function legChunks() {
   // (or a bearings override) warns the same way (spec 59).
   const { resolve: resolveDial } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/improve.mjs')).href)
   for (const w of resolveDial(read('plan/bearings.md'), { vars: process.env }).warnings) if (!w.startsWith('NEXUS_SUPPORT=')) notes.push(`warn: ${w}`)
+  const dial = await dialReaders()
+  failures.push(...dial.failures)
+  notes.push(dial.note)
   // The checker's own unit tests (node:test, no deps, well under a
   // second): a gate whose rules regress silently is no gate.
   try {
@@ -945,6 +955,54 @@ async function legChunks() {
     failures.push('templates/scripts/__tests__/plan-check.test.mjs failed:', ...out.split(/\r?\n/).filter((l) => /^\s*(✖|not ok|Error|AssertionError)/.test(l)).slice(0, 20))
   }
   return { failures, note: notes.join('; ') }
+}
+
+// Spec 59 (A2): every reader of an expansion knob goes through the
+// dial's resolver (scripts/plan/improve.mjs), never a regex of its
+// own: the skills say so, the scripts that act on a knob import it,
+// and the cloud steps (each Cadence step, the nudge) pass the value
+// `improve.mjs --cloud <knob>` prints, which the repo variable
+// still beats. nexus itself runs the dial at bold.
+export const DIAL_SKILLS = Object.freeze(['march.md', 'triage.md', 'expand.md', 'iterate.md', 'critique.md', 'digest.md'])
+export const DIAL_SCRIPTS = Object.freeze({
+  'templates/scripts/plan/support.mjs': './improve.mjs', 'templates/scripts/plan/promote.mjs': './improve.mjs',
+  'templates/scripts/plan/motion.mjs': './improve.mjs', 'templates/scripts/plan/loop-rows.mjs': './improve.mjs',
+  'templates/scripts/plan/refill.mjs': './improve.mjs', 'templates/scripts/ui-walk.mjs': './plan/improve.mjs',
+})
+export const DIAL_STEPS = Object.freeze([
+  ['templates/.github/workflows/march.yml', /cadence\.mjs resolve/, 'Cadence'],
+  ['.github/workflows/march.yml', /cadence\.mjs resolve/, 'Cadence'],
+  ['templates/.github/workflows/heartbeat.yml', /cadence\.mjs resolve/, 'Cadence'],
+  ['.github/workflows/heartbeat.yml', /cadence\.mjs resolve/, 'Cadence'],
+  ['templates/.github/workflows/nudge.yml', /nudge-check\.mjs/, 'Support'],
+  ['.github/workflows/nudge.yml', /nudge-check\.mjs/, 'Support'],
+])
+export async function dialReaders(readFile = read, exists = (f) => fs.existsSync(path.join(ROOT, f))) {
+  const failures = []
+  for (const tree of ['skills', 'templates/skills']) {
+    for (const f of DIAL_SKILLS) {
+      const file = `${tree}/${f}`
+      if (exists(file) && !readFile(file).includes('scripts/plan/improve.mjs')) failures.push(`${file}: reads expansion knobs, but never names the dial's resolver (node scripts/plan/improve.mjs)`)
+    }
+  }
+  for (const [file, from] of Object.entries(DIAL_SCRIPTS)) {
+    if (exists(file) && !readFile(file).includes(`from '${from}'`)) failures.push(`${file}: acts on an expansion knob without importing the dial's resolver (${from})`)
+  }
+  let steps = 0
+  for (const [file, re, knob] of DIAL_STEPS) {
+    if (!exists(file)) continue
+    const what = knob === 'Support' ? 'nudge-check.mjs' : 'cadence.mjs resolve'
+    const runs = readFile(file).replace(/\r\n/g, '\n').split('\n').filter((l) => /^\s+run:/.test(l) && re.test(l))
+    if (!runs.length) failures.push(`${file}: no step runs ${what}`)
+    for (const r of runs) {
+      steps++
+      if (!r.includes(`--dial "$(node scripts/plan/improve.mjs --cloud ${knob})"`)) failures.push(`${file}: a step runs ${what} without the dial's ${knob} (--dial "$(node scripts/plan/improve.mjs --cloud ${knob})")`)
+    }
+  }
+  const { dialOf } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/improve.mjs')).href)
+  const own = dialOf(readFile('plan/bearings.md'))
+  if (own.value !== 'bold' || own.source !== 'bearings') failures.push(`plan/bearings.md: nexus runs the improvement dial at bold (- Improve: bold under ## Plan expansion posture), not ${own.value} (${own.source})`)
+  return { failures, note: `${DIAL_SKILLS.length * 2} skills, ${Object.keys(DIAL_SCRIPTS).length} scripts and ${steps} cloud steps read knobs through the dial (Improve: ${own.value})` }
 }
 
 // --- legs: scripts, scripts-git ---------------------------------------------
@@ -995,6 +1053,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/design-port.test.mjs',
   'templates/scripts/__tests__/support.test.mjs',
   'templates/scripts/__tests__/improve.test.mjs',
+  'templates/scripts/__tests__/improve-readers.test.mjs',
   'templates/scripts/__tests__/ui-walk.test.mjs',
   'scripts/__tests__/url-path-lint.test.mjs',
   'scripts/__tests__/bare-push.test.mjs',
@@ -1308,6 +1367,9 @@ async function legUpgrade() {
   // The improvement dial (spec 59, A1): every registry knob the dial sets has a value at every position.
   const { registryGaps } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/improve.mjs')).href)
   knobs.push(...registryGaps(KNOBS).map((g) => `packages/cli/server/upgrade.mjs KNOBS vs templates/scripts/plan/improve.mjs DIAL: ${g}`))
+  // The upgrade writes the dial itself at gentle, so an upgraded loop runs as it did (spec 59, A2).
+  const dialRow = KNOBS.find((k) => k.knob === 'Improve')
+  if (!dialRow || dialRow.at !== 'bearings' || !dialRow.write || dialRow.value !== 'gentle') knobs.push('packages/cli/server/upgrade.mjs KNOBS: the upgrade writes `Improve: gentle` (a bearings row, write: true, value gentle)')
   const suite = runSuites(['scripts/__tests__/upgrade-files.test.mjs', 'scripts/__tests__/upgrade-kit-text.test.mjs'], 'upgrade')
   const counts = Object.entries(text.counts).map(([s, c]) => `${s} ${c.paras}`).join(', ')
   return { failures: [...problems, ...text.problems, ...knobs, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; kit-text snapshot current (paragraphs: ${counts}); ${KNOBS.length} knobs registered, ${KNOBS.filter((k) => k.dial).length} valued at every dial position; ${suite.note}` }

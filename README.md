@@ -794,6 +794,7 @@ nexus/
     │   ├── __tests__/state.test.mjs   # the state diet: an oversize fixture fails; compact dates rows and keeps the rest
     │   ├── __tests__/support.test.mjs # the Support level, the routing table, the asap_cap count, continue at half the budget, user rows aged to 4.4, the SLA step and its cap, the digest line and escalation
     │   ├── __tests__/improve.test.mjs # the dial table at every position, overrides for one knob only, absent reads gentle, a disagreeing variable warns, the upgrade's registry valued at every position
+    │   ├── __tests__/improve-readers.test.mjs # every knob reader through the dial: support, promote, motion, loop-rows, refill, lanes, ui-walk; the Cadence step and the nudge only when their variable is unset
     │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
     │   ├── __tests__/tick.test.mjs    # the PR-mode tick
     │   ├── __tests__/resolve.test.mjs # the resolver

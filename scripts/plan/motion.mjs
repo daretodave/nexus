@@ -33,6 +33,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { knobs } from './promote.mjs';
+import { knobOf } from './improve.mjs';
 
 export const SHIP_VERBS = Object.freeze(['feat', 'fix', 'content']);
 export const BASELINE_WEEKS = 4;
@@ -91,10 +92,12 @@ export function floorPct(bearings = '') {
   return Number.isFinite(n) && n >= 0 ? n : FLOOR_PCT;
 }
 
-/** `stall_action` from plan/bearings.md text: alert (the default) | promote | off. */
+/**
+ * `stall_action` through the improvement dial (scripts/plan/improve.mjs): alert | promote | off from its own line in
+ * plan/bearings.md, else the `Improve:` dial's (alert with no dial line).
+ */
 export function stallAction(bearings = '') {
-  const m = keyLine(bearings, 'stall_action');
-  const v = m ? m[1].toLowerCase() : 'alert';
+  const v = knobOf(bearings, 'stall_action', { vars: {} }).value;
   return STALL_ACTIONS.includes(v) ? v : 'alert';
 }
 

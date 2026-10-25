@@ -11,7 +11,9 @@
 // target    the generator runs while fewer than n of its rows are Pending (the queue fills until the target holds)
 // cap       at most n rows a week (its rows stamped in the last 7 days, Pending or Done)
 //
-// No section, or no line in it, and refill is a no-op (the adopter default). Every row a generator files carries
+// No section, or no list line in it, and the improvement dial lists them (`Improve:`, scripts/plan/improve.mjs:
+// steady the kit's three generic generators, bold every scripts/generators/<name>.mjs too); with no dial line either,
+// refill is a no-op (the adopter default). Every row a generator files carries
 // `- generator: <name> · filed <date>`; this script counts those stamps for the target, the cap and the cadence, so
 // the state is the queue files themselves and a fresh cloud checkout reads it the same as a local loop.
 //
@@ -32,6 +34,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { generatorsSection, knobOf, projectGenerators } from './improve.mjs';
 
 const DAY = 86400000;
 const NAME = /^[a-z0-9][a-z0-9-]*$/;
@@ -82,6 +85,19 @@ export function parseGenerators(bearings = '') {
     else generators.push({ name, cadence, days, target: Number(t[1]), cap: Number(c[1]) });
   }
   return { generators, problems };
+}
+
+/**
+ * The generators refill runs: the `## Generators` list when the section holds a list line (`- (none)` included), else
+ * the improvement dial's (`Improve:`, scripts/plan/improve.mjs: steady the kit's generic three, bold those plus every
+ * other scripts/generators/<name>.mjs under `root`; off, gentle and no dial line none). { generators, problems,
+ * from: bearings | dial }.
+ */
+export function effectiveGenerators(bearings = '', { root = null } = {}) {
+  const text = String(bearings ?? '');
+  if (generatorsSection(text) !== null) return { ...parseGenerators(text), from: 'bearings' };
+  const k = knobOf(text, 'Generators', { vars: {}, project: root ? projectGenerators(root) : [] });
+  return { ...parseGenerators(['## Generators', '', ...k.list.map((l) => `- ${l}`)].join('\n')), from: 'dial' };
 }
 
 /** The `- generator: <name> · filed <date>` line every generated row carries. */
@@ -175,7 +191,7 @@ const lastLine = (text) => text.replace(/\r\n/g, '\n').split('\n').map((l) => l.
 
 /** Run every listed generator: [{ name, action: 'filed' | 'clean' | 'skip' | 'broke', why, filed }]. */
 export function refill(root, { write = false, date = today(), spawn = spawnGenerator(root), given = null } = {}) {
-  const { generators, problems } = given ?? parseGenerators(readSafe(path.join(root, 'plan', 'bearings.md')));
+  const { generators, problems } = given ?? effectiveGenerators(readSafe(path.join(root, 'plan', 'bearings.md')), { root });
   const results = [];
   for (const gen of generators) {
     // Re-read the stamps each time: a generator that just filed changes what the next one sees.

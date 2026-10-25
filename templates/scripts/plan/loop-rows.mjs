@@ -16,8 +16,9 @@
 // scripts/plan/locks.mjs ages. A shipped row reads `### [x] [I, <score>] <line> — closed <YYYY-MM-DD>`, and at most
 // one ships per 7 days.
 //
-// `loop: on | off` in plan/bearings.md (under `## Plan expansion posture`) turns the dimension on; a missing line reads
-// `off`, so an upgraded repo stays as it was until its owner opts in.
+// `loop: on | off` in plan/bearings.md (under `## Plan expansion posture`) turns the dimension on; a missing line
+// takes the improvement dial's (`Improve:`, scripts/plan/improve.mjs: steady and bold on), and with no dial line
+// reads `off`, so an upgraded repo stays as it was until its owner opts in.
 //
 //   node scripts/plan/loop-rows.mjs check  [--file plan/AUDIT.md]
 //   node scripts/plan/loop-rows.mjs status [--file plan/AUDIT.md] [--today YYYY-MM-DD]
@@ -30,6 +31,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseLock } from '../plan-check.mjs';
 import { addDays, daysBetween, today } from './promote.mjs';
+import { knobOf } from './improve.mjs';
 
 export const CATEGORY = 'loop-config';
 export const EASE_CAP = 6;
@@ -125,12 +127,15 @@ export function room(rows, date = today()) {
   return { room: false, last, until: addDays(last, SHIP_DAYS) };
 }
 
-/** `loop:` from plan/bearings.md text: on | off (a missing or unreadable line reads off). */
+/**
+ * `loop:` through the improvement dial (scripts/plan/improve.mjs): on | off from its own line in plan/bearings.md,
+ * else the `Improve:` dial's (steady and bold: on); no line and no dial line reads off.
+ */
 export function loopOn(bearings = '') {
-  const m = /^[ \t]*(?:[-*][ \t]+)?[*`]*loop[*`]*[ \t]*:[*`]*[ \t]*[*`]*([^\s*`]+)/m.exec(bearings);
-  if (!m) return { on: false, why: 'no loop line in plan/bearings.md' };
-  const v = m[1].toLowerCase();
-  return v === 'on' ? { on: true, why: 'loop: on' } : { on: false, why: `loop: ${v}` };
+  const k = knobOf(bearings, 'loop', { vars: {} });
+  if (k.from === 'bearings') return { on: k.value === 'on', why: `loop: ${k.value}` };
+  if (k.improve.source === 'bearings') return { on: k.value === 'on', why: `Improve: ${k.improve.value} sets loop ${k.value}` };
+  return { on: false, why: 'no loop line in plan/bearings.md' };
 }
 
 /** The breaches in an audit file's text, `rel` naming it. */

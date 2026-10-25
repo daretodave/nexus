@@ -4,6 +4,14 @@
 > repo, classify, label, comment, route into the queues. Exits
 > in under a second when the inbox is clean.
 
+**Knobs.** Every expansion knob this skill reads (Support,
+Promote, Generators, stall_action, loop, UI, Research,
+Cadence) comes through the improvement dial's resolver,
+`node scripts/plan/improve.mjs` (`--knob <name>` prints one
+value): the `Improve:` line in `plan/bearings.md`, absent read
+as `gentle`, and any line of its own that overrides it. Never
+grep bearings for a knob by hand.
+
 ## 1. Purpose
 
 Issues are the kit's inbox: adopters reporting friction,
@@ -36,7 +44,8 @@ you add, as `/plot` does).
    the classification — skip re-deriving it from prose.
    **Support** (spec 54): `node scripts/plan/support.mjs
    route <N> --kind <class>` reads the level (`NEXUS_SUPPORT`,
-   else `Support:` in `plan/bearings.md`), the author
+   else the resolver's Support: a `Support:` line, else the
+   `Improve:` dial), the author
    association and labels, never the text. `stock` → steps 4
    and 5. `bug` → label `triage:loop-queued` plus the class
    (a `loop:do` comes off), skip 4 and 5, and once step 7
