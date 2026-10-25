@@ -77,6 +77,13 @@
 //                 it is on; values of 8+ characters), each hit named
 //                 by file, line and secret, never shown
 //                 (scripts/secrets-scan.mjs). No vault: green, noted
+//   upgrade       the v2 kit file list is one computed closure
+//                 (scripts/upgrade-files.mjs): every templates/ path
+//                 playbooks/upgrade.md names exists, no listed script
+//                 imports a file the list lacks or that is gone, and
+//                 the playbook's generated manual copy list matches
+//                 the list (the CLI bundles the same set), plus the
+//                 script's own node:test suite
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds), and heartbeat.yml's
@@ -968,6 +975,18 @@ async function legSecrets() {
   return { failures: hits.map(describeHit), note: `${scanned} added lines (vs HEAD, and untracked) hold none of ${values.size} vault values` }
 }
 
+// --- leg: upgrade -------------------------------------------------------------
+// The playbook's manual copy list and the CLI's bundled kit come from
+// one computed closure; a script that grows an import, a skill that
+// calls a new script, or a playbook path that goes stale is red here.
+
+async function legUpgrade() {
+  const { check } = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-files.mjs')).href)
+  const { problems, files } = check(ROOT)
+  const suite = runSuites(['scripts/__tests__/upgrade-files.test.mjs'], 'list')
+  return { failures: [...problems, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; ${suite.note}` }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -1013,6 +1032,7 @@ const LEGS = {
   diagrams: () => legDiagrams(),
   gifs: () => legGifs(),
   secrets: () => legSecrets(),
+  upgrade: () => legUpgrade(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
   design: () => legDesign(),

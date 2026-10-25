@@ -132,14 +132,19 @@ twin change together:
 ### One computed file list
 
 `scripts/upgrade-files.mjs` computes the v2 kit file set from
-the import closures of `plan-check`, `upgrade-plan`,
-`claims`, the scripts `next`/`plot` call, and
-`cloud/tick.mjs`, plus the fixed non-script files (skills,
-commands, `.github/actions/setup`). `packages/cli`'s
-`bundle-kit.mjs` reads it; the playbook's manual appendix is
-generated from it. A verify leg, `upgrade`, fails when a file
-the playbook names does not exist or when a closure reaches a
-file the list lacks.
+the import closures (static, dynamic and `new URL(..,
+import.meta.url)`) of `plan-check`, `upgrade-plan`, `claims`,
+`cloud/tick.mjs` and every script a listed skill or command
+calls (`next`/`plot` among them: a skill the list ships must
+find its scripts), plus the fixed non-script files (skills,
+commands, `.github/actions/setup`, plan-check's test; the
+lanes files as `lane`, seeded only). `packages/cli`'s
+`bundle-kit.mjs` reads it into `kit/upgrade/` with
+`files.json`; the playbook's manual appendix is generated
+from it (`--write`). A verify leg, `upgrade`, fails when a
+file the playbook names does not exist, when a listed script
+imports a file the list lacks or that is gone, or when the
+appendix drifts.
 
 ### Carrying the train
 
@@ -343,7 +348,6 @@ tick).
 
 ## Acceptance
 
-- **A2** The playbook's manual copy list and the CLI's bundled kit come from one computed closure; the `upgrade` verify leg fails when a named file is missing or a closure reaches a file the list lacks.
 - **A3** `npx @usenexus/cli upgrade` with no flags works from a fresh fetch of origin in a temporary worktree, writes nothing (the local tree's `git status` is unchanged), and prints the per-file report, the archive diff, the warnings, the predicted first dispatch and the loop-mode line; on a half-done repo it reports and finishes Step 5 only; on a v2 repo it exits 0 with "already on v2".
 - **A4** Custom march and iterate text moves verbatim into the lanes files while kit text from any historical kit version is replaced (a fixture forked from a pre-`v1.0.0` kit march.md plus two custom sections yields exactly those two in `march.lanes.md`); custom skills and commands are kept (a command with no skill becomes a skill); the repo's README sections stay and `<PROJECT>` is filled; no v1 reference is left outside history files.
 - **A5** The merged `march.yml` keeps the v1 cron, ceiling, model pin, extra env and concurrency group, the toolchain steps become `.github/actions/setup`, workflow-lint passes, and the report prints the `NEXUS_LOOP_MODE` owner line when the v1 loop pushed to the default branch.
@@ -361,10 +365,9 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 12 open · 1 closed · next A14
+Measure: 11 open · 2 closed · next A14
 
-- [ ] **58.2** One computed kit file list and its verify leg · S · closes A2 · needs —
-- [ ] **58.3** `upgrade` dry run: detect, fresh-origin worktree, convert, report · M · closes A3 · needs 58.2
+- [ ] **58.3** `upgrade` dry run: detect, fresh-origin worktree, convert, report · M · closes A3 · needs —
 - [ ] **58.4** Carry the train: lanes extraction, skills, README, references · L · closes A4 · needs 58.3
   - Kit text is judged against every historical kit version (`kit-text.json`), never against the `v1.0.0` tag alone.
 - [ ] **58.5** The workflow merge keeps cron, ceiling, model and env · M · closes A5 · needs 58.3

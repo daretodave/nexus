@@ -496,7 +496,7 @@ nexus/
 │   ├── gifs/fleet-to-tug.gif          # the GUI in motion, recorded from a demo scenario (npm run record in packages/cli)
 │   └── gifs/fleet-to-tug.png          # its still poster, for readers who ask for less motion
 ├── scripts/
-│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams · gifs · secrets (opt-in: scripts-git · adopt-dryrun · design)
+│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams · gifs · secrets · upgrade (opt-in: scripts-git · adopt-dryrun · design)
 │   ├── diagrams.mjs                   # writes every assets/*.svg from one style table; --check is the gate's diagrams leg
 │   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
 │   ├── gifs.mjs                       # every GIF the README shows: exists, 5-8 s, 3 MB at most, alt text, its poster (the gifs leg)
@@ -524,6 +524,8 @@ nexus/
 │   ├── design/port-map.mjs            # a handoff's port.json: every board ported, skipped with a reason, or pending; the opt-in design leg (twin)
 │   ├── design/port.workflow.js        # the port recipe as a Workflow script: foundation, pages, integrate, fidelity per theme, land (twin)
 │   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
+│   ├── upgrade-files.mjs              # the v2 kit file list, computed from import closures: the CLI's bundled kit and upgrade.md's copy list (the upgrade leg)
+│   ├── __tests__/upgrade-files.test.mjs # its suite (run by the upgrade leg)
 │   ├── secrets.mjs                    # npm run secrets: status, set, import, names, check, push, audit, request, run, scan; never a value (+ plan/secrets-manifest.mjs, secrets-vault.mjs, secrets-keychain.mjs, secrets-sinks.mjs, secrets-audit.mjs, secrets-run.mjs, secrets-scan.mjs; twins)
 │   ├── design/prompt.mjs              # /design prompt and /design addendum: the Claude Design paste prompt drafted from the plan (the template's twin)
 │   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's plan starters + copy + placeholder-sweep + prune steps (Git Bash on Windows)
