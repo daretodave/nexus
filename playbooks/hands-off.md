@@ -222,13 +222,18 @@ credential. Before every long window:
    spend cap at the provider console too — the loop cannot
    check your invoice.
 3. **Measure one week before raising anything.** Run the
-   default cadence (~7 ticks/day) for a week, read your usage
-   page, then decide. Raising the model and the cadence in the
-   same week teaches you nothing about which one hurt.
+   default cadence (`steady`: 8 scheduled ticks a day) for a
+   week, read your usage page, then decide. Raising the model
+   and the cadence in the same week teaches you nothing about
+   which one hurt.
 4. **Cadence guidance:** local `/loop 30m /march` while you're
-   in the building; cloud every 2h while you're not. Below 2h
-   cloud cadence, ticks start queuing behind the concurrency
-   group and you're paying for waiting.
+   in the building; a cloud preset while you're not
+   (`calm` every 6h, `steady` every 3h, `eager` and `sprint`
+   every 3h plus chained ticks while work is ready, `off` on
+   demand; the table is in [`cloud-loop.md`](./cloud-loop.md)
+   Step 3). Faster than every 3h, ticks queue behind the
+   concurrency group and you pay for waiting; the quota
+   governor pauses every preset on a weekly lockout.
    The GUI's Infinite picker starts `/loop /march [careful|bold]`
    (march picks each pass) or `/loop /next [then expand|then build]`
    (heads down until the plan runs dry, then stop, propose, or

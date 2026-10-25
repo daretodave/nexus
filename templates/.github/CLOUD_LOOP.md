@@ -31,9 +31,9 @@ your monthly cap (2000 min on Pro, 3000 on Pro+).
 
 If you authenticate via `ANTHROPIC_API_KEY` instead, expect
 roughly:
-- Sonnet 5: ~$0.40–0.60/tick → ~$3–5/day at 7 ticks
+- Sonnet 5: ~$0.40–0.60/tick → ~$3–5/day at 8 ticks (steady)
   (ids age — check `/model`)
-- Opus 5.5: ~$2.00–3.00/tick → ~$15–20/day at 7 ticks
+- Opus 5.5: ~$2.00–3.00/tick → ~$16–24/day at 8 ticks (steady)
   (ids age — check `/model`)
 
 The 12-point/24h weighted ceiling caps the worst case either
@@ -592,7 +592,7 @@ These are encoded in the brief and in `agents.md`'s standing rules:
 | PR-mode tick: `fence:` lines, land failed | The tick edited a shared plan file or a workflow | Read the fence's lines; the claim was released; the next tick picks again |
 | PR-mode tick: `nothing claimed until the owner merges` | `NEXUS_PR_LIMIT` loop PRs are open | Review and merge (or close) them |
 | PR-mode PR's checks never start | Opened with the workflow's own token | Set up the app (`NEXUS_APP_ID`), or re-run the checks from the PR |
-| Quota pressure on Max | Cloud + heavy local work overlapping | Drop cloud cadence: change cron to every 4h instead of 2h |
+| Quota pressure on Max | Cloud + heavy local work overlapping | Drop a preset: `node scripts/cloud/cadence.mjs apply calm --write` (every 6h), commit `march.yml`, then `gh variable set NEXUS_CADENCE --body calm` |
 | `Loop paused: weekly quota until <ISO>` issue | The subscription's weekly quota is used up | Nothing: ticks skip the model until the reset, then the issue closes itself. Far off: `gh workflow disable march` |
 | Ticks skip with `Quota gate (scheduled run): skip` | Cached utilization at or above `NEXUS_QUOTA_MAX` | Expected; raise the cap (`gh variable set NEXUS_QUOTA_MAX --body 0.95`) or switch it off (`--body off`) |
 | Ticks skip with `Idle probe (scheduled run): skip` | Nothing changed since the last no-op, after `NEXUS_IDLE_BACKOFF` scheduled no-ops | Expected; a dispatch runs regardless (`gh workflow run march`), or turn it off (`gh variable set NEXUS_IDLE_BACKOFF --body 0`) |

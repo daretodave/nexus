@@ -29,10 +29,12 @@ run-name: march ${{ inputs.verb || 'march' }} ${{ inputs.reason }}
 
 on:
   schedule:
-    # Every 2h, off-peak UTC. Adjust to match your timezone — GH cron
-    # always runs in UTC. The example below = ~7 ticks/day, weighted
-    # toward 22:00-12:00 UTC (US East off-peak).
-    - cron: '0 1,3,5,7,9,11,23 * * *'
+    # The steady preset: every 3h at :17 UTC, 8 ticks a day, off the
+    # busy top of the hour (GitHub delays and drops :00 runs first).
+    # Switch with scripts/cloud/cadence.mjs apply <calm | steady |
+    # eager | sprint | off> plus NEXUS_CADENCE; keep a hand-written
+    # minute off :00. GH cron always runs in UTC.
+    - cron: '17 */3 * * *'
   workflow_dispatch:
     inputs:
       verb:

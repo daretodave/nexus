@@ -19,7 +19,9 @@
 //     own default values, so paths and values may differ); the first
 //     occurrence of a name is compared (the template's owner job);
 //   - the bundled kit, when built, holds the template's march.yml
-//     steps and cadence.mjs byte for byte.
+//     steps and cadence.mjs byte for byte;
+//   - no shipped cron (a workflow's `- cron:` line, or a cron a
+//     shipped doc writes out) fires at minute :00 (offTheHour).
 //
 //   node scripts/cadence-twins.mjs     # print what it found; exit 1 on a problem
 //
@@ -115,8 +117,59 @@ export function check(root = ROOT, { exists = (rel) => fs.existsSync(path.join(r
   return { problems, note }
 }
 
+// ---- off the hour (spec 55, A11) -----------------------------------------------
+// GitHub delays and drops scheduled runs at minute :00 first, so no cron
+// the kit ships fires there: not a workflow's `- cron:` line (nexus's,
+// the templates', the bundled kit's) and not a cron a shipped doc
+// recommends (a backticked or quoted five-field cron). The CLI's preset
+// and overnight crons are held off :00 by their own tests.
+
+/** Where shipped crons live: workflow dirs (every `- cron:` line) and doc roots (every cron-shaped code span). */
+export const CRON_WORKFLOW_DIRS = Object.freeze(['.github/workflows', 'templates/.github/workflows', `${KIT}/workflows`])
+export const CRON_DOC_ROOTS = Object.freeze(['README.md', 'concepts', 'playbooks', 'customization', 'prompts', 'templates', 'skills'])
+
+/** True when a cron's minute field includes :00 (`0`, `*`, `*\/n`, `0-n`, or a list holding one). */
+export function firesOnTheHour(cron) {
+  const minute = String(cron ?? '').trim().split(/\s+/)[0] ?? ''
+  return minute.split(',').some((p) => /^(?:0|\*)(?:\/\d+)?$/.test(p) || /^0+-\d+(?:\/\d+)?$/.test(p) || /^0+$/.test(p))
+}
+
+const FIELD = '[\\d*/,-]+'
+const DOC_CRON = new RegExp(`[\`'"](${FIELD} ${FIELD} ${FIELD} ${FIELD} [\\d*/,A-Za-z-]+)[\`'"]`, 'g')
+const YML_CRON = /^\s*-\s*cron:\s*['"]?([^'"#\n]+?)['"]?\s*(?:#.*)?$/gm
+
+function walk(root, rel) {
+  const abs = path.join(root, rel)
+  if (!fs.existsSync(abs)) return []
+  if (fs.statSync(abs).isFile()) return [rel]
+  return fs.readdirSync(abs, { withFileTypes: true }).flatMap((e) => {
+    if (e.name === 'node_modules' || e.name === '__tests__' || e.name.startsWith('.git')) return []
+    const r = `${rel}/${e.name}`
+    return e.isDirectory() ? walk(root, r) : [r]
+  })
+}
+
+/** Every shipped cron that fires at minute :00, as problems naming the file and the cron. */
+export function offTheHour(root = ROOT, { list = (rel) => walk(root, rel), readFile = (rel) => fs.readFileSync(path.join(root, rel), 'utf-8') } = {}) {
+  const problems = []
+  let crons = 0
+  const flag = (file, cron) => {
+    crons++
+    if (firesOnTheHour(cron)) problems.push(`${file}: cron '${cron}' fires at minute :00, the busiest slot GitHub delays and drops first (move the minute off the hour, e.g. 17)`)
+  }
+  const workflows = new Set(CRON_WORKFLOW_DIRS.flatMap((d) => list(d)).filter((f) => /\.ya?ml$/.test(f)))
+  for (const f of workflows) for (const m of readFile(f).matchAll(YML_CRON)) flag(f, m[1].trim())
+  for (const f of new Set(CRON_DOC_ROOTS.flatMap((d) => list(d)).filter((x) => x.endsWith('.md')))) {
+    for (const m of readFile(f).matchAll(DOC_CRON)) flag(f, m[1])
+  }
+  return { problems, note: `${crons} shipped crons off minute :00` }
+}
+
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const { problems, note } = check()
+  const r = check()
+  const hour = offTheHour()
+  const problems = [...r.problems, ...hour.problems]
+  const note = `${r.note}; ${hour.note}`
   for (const p of problems) console.log(`  ${p}`)
   console.log(problems.length ? `cadence-twins: ${problems.length} problem(s)` : `cadence-twins: ok (${note})`)
   process.exitCode = problems.length ? 1 : 0

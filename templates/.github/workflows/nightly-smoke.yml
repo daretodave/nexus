@@ -13,7 +13,7 @@ name: nightly-smoke
 
 on:
   schedule:
-    - cron: '0 11 * * *'   # daily, off-peak; GH cron is UTC - adjust to land after your traffic trough
+    - cron: '23 11 * * *'  # daily, off-peak and off the hour; GH cron is UTC - adjust to land after your traffic trough
   workflow_dispatch:
 
 permissions:

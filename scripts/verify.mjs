@@ -81,7 +81,10 @@
 //                 subcommand and flags; paths and defaults may
 //                 differ), and the CLI's bundled kit
 //                 (packages/cli/kit, when built) holds them and
-//                 cadence.mjs byte for byte as templates/ does
+//                 cadence.mjs byte for byte as templates/ does;
+//                 and no shipped cron (workflow `- cron:` lines,
+//                 crons written out in shipped docs) fires at
+//                 minute :00
 //   diagrams      every assets/*.svg is byte-identical to what
 //                 scripts/diagrams.mjs generates (regenerated in
 //                 memory; a hand edit, a missing or a stray SVG is
@@ -1223,10 +1226,11 @@ function marchChainCheck(file, text, ceilingStep) {
 // the CLI's bundled kit (scripts/cadence-twins.mjs), plus its suite.
 
 async function legCadenceTwins() {
-  const { check } = await import(pathToFileURL(path.join(ROOT, 'scripts/cadence-twins.mjs')).href)
+  const { check, offTheHour } = await import(pathToFileURL(path.join(ROOT, 'scripts/cadence-twins.mjs')).href)
   const { problems, note } = check(ROOT)
+  const hour = offTheHour(ROOT)
   const suite = runSuites(['scripts/__tests__/cadence-twins.test.mjs'], 'checker')
-  return { failures: [...problems, ...suite.failures], note: `${note}; ${suite.note}` }
+  return { failures: [...problems, ...hour.problems, ...suite.failures], note: `${note}; ${hour.note}; ${suite.note}` }
 }
 
 // --- leg: diagrams ------------------------------------------------------------

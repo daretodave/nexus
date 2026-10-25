@@ -235,3 +235,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 54.8 · Support knob docs, digest support line, needs-user escalation · 6882421..6882421
 - 2026-10-25 · 54 · spec complete: a collaborator's bug starts a tick within minutes (nudge.yml, behind NEXUS_SUPPORT and the dispatch ceiling), is fixed now or built Asap under the SLA, told and closed by Refs #N and the cli release reply, issue text is data everywhere, and the digest prints the Support line and escalates needs-user issues past escalate_days · 8c094b6..6882421
 - 2026-10-25 · 55.8 · Heartbeat alarms on realized cadence · c123ee3..c123ee3
+- 2026-10-25 · 55.9 · Crons off the hour, cadence docs, nexus on eager · 0e2ac8b..0e2ac8b

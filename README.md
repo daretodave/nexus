@@ -501,7 +501,7 @@ nexus/
 │   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
 │   ├── gifs.mjs                       # every GIF the README shows: exists, 5-8 s, 3 MB at most, alt text, its poster (the gifs leg)
 │   ├── __tests__/gifs.test.mjs        # the checker's own suite (run by the gifs leg)
-│   ├── cadence-twins.mjs              # the Cadence, Quota gate and Chain steps agree across nexus, templates/ and the CLI kit (the cadence-twins leg)
+│   ├── cadence-twins.mjs              # the Cadence, Quota gate and Chain steps agree across nexus, templates/ and the CLI kit, and no shipped cron fires at :00 (the cadence-twins leg)
 │   ├── __tests__/cadence-twins.test.mjs # the checker's own suite (run by the cadence-twins leg)
 │   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of the no-model probe.yml, march's schedule lag, the hook probe line
 │   ├── __tests__/probe-latency.test.mjs # its suite, gh stubbed (run by the scripts leg)

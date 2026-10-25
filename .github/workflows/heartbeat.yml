@@ -198,7 +198,7 @@ jobs:
 
           # march: the cadence's hours (the Cadence step), else this
           # literal; bootstrap writes the preset's value here.
-          march_hours=14
+          march_hours=10
           if [ -n "${CADENCE_HOURS:-}" ]; then march_hours=$CADENCE_HOURS; fi
           if [ "$march_hours" = none ]; then
             echo "march: NEXUS_CADENCE off (no schedule) - cadence skipped."

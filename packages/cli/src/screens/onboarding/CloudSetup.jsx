@@ -15,7 +15,7 @@ import { PATHS } from '../../routes.js';
 import { ObFrame, Back } from './frame.jsx';
 import { useDraft } from './draft.js';
 import { onboardingCalls } from './calls.js';
-import { landThenGo, turnOnCloud, pickSched, keepsSchedule, nextLocal, cloudGate, cronFor, cadenceSub, CADENCES, BUSY_NOTE } from './cloudFlow.js';
+import { landThenGo, turnOnCloud, pickSched, keepsSchedule, nextLocal, cloudGate, cronFor, cadenceSub, CADENCES, BUSY_NOTE, nightCron, nextNight, nightSub } from './cloudFlow.js';
 import RepoStart, { useRepoStart, Cmds } from './RepoStart.jsx';
 import TokenGuide from './TokenGuide.jsx';
 import { repoCalls } from './calls.js';
@@ -24,32 +24,6 @@ import '../../styles/repo-start.css';
 import { usePlotLive, PlotAskStrip } from './PlotAsk.jsx';
 
 const LOOP_FILE = /(?:^|\/)(nexus-loop|march)\.ya?ml$/;
-const NIGHT_HOURS = [1, 2, 3, 4, 5, 6];
-
-function ranges(hours) {
-  const out = [];
-  for (const h of hours) {
-    const last = out[out.length - 1];
-    if (last && h === last[1] + 1) last[1] = h; else out.push([h, h]);
-  }
-  return out.map(([a, b]) => (a === b ? `${a}` : b === a + 1 ? `${a},${b}` : `${a}-${b}`)).join(',');
-}
-
-/** GitHub cron runs in UTC: 01:30 to 06:30 here, converted. */
-function nightCron(now = new Date()) {
-  const off = now.getTimezoneOffset();
-  const mins = NIGHT_HOURS.map((h) => (((h * 60 + 30 + off) % 1440) + 1440) % 1440);
-  const m = mins[0] % 60;
-  const hours = [...new Set(mins.map((x) => Math.floor(x / 60)))].sort((a, b) => a - b);
-  return `${m} ${ranges(hours)} * * *`;
-}
-
-function nextNight(now = new Date()) {
-  const t = now.getHours() * 60 + now.getMinutes();
-  const slot = NIGHT_HOURS.find((h) => h * 60 + 30 > t);
-  if (slot == null || t < 90) return 'tonight at 01:30';
-  return `at ${String(slot).padStart(2, '0')}:30`;
-}
 
 /**
  * The options (spec 55, A9): the schedule the workflow has first when it has one (49.1), the five cadence presets,
@@ -68,7 +42,7 @@ export function schedOptions(found) {
     const sub = found && !found.crons?.length && k === 'off' ? 'current: no schedule; Turn on keeps it' : cadenceSub(k);
     out.push([k, { label: c.label, sub, preset: true }]);
   }
-  out.push(['night', { label: 'Overnight', sub: 'custom: every hour at :30, 01:30 to 06:30' }]);
+  out.push(['night', { label: 'Overnight', sub: nightSub() }]);
   return out;
 }
 

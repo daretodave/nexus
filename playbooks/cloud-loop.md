@@ -190,19 +190,33 @@ In `.github/CLOUD_LOOP.md`:
 
 ## Step 3 — adjust the schedule
 
-The default cron is `0 1,3,5,7,9,11,23 * * *` UTC — every
-2h between 18:00 and 06:00 ET (off-peak US East). Adjust to
-your timezone. GitHub cron always runs in UTC.
+The pace is one of five presets
+(`scripts/cloud/cadence.mjs` owns the table). The template
+ships `steady`; GitHub cron always runs in UTC.
 
-Conservative starting cadences:
-- **Hourly UTC, no off-peak filter** — `0 */2 * * *`. Easy
-  default, 12 ticks/day, the ceiling bounds spend.
-- **Off-peak only** — fill in 2-hour slots that cover your
-  evenings + weekends.
-- **Weekdays off-peak only** — `0 */2 * * 1-5` (Mon-Fri).
+| Preset | Cron | Scheduled ticks a day | Ceiling | Chains up to |
+|---|---|---|---|---|
+| calm | `17 */6 * * *` | 4 | 8 | 0 |
+| steady | `17 */3 * * *` | 8 | 12 | 0 |
+| eager | `17 */3 * * *` | 8, plus chains | 20 | 3 |
+| sprint | `17 */3 * * *` | 8, plus chains | 30 | 8 |
+| off | none (dispatch and nudge only) | 0 | 12 | 0 |
 
-Don't go below every 2h on the first run. The ceiling
-defaults to 12 weighted-budget points / 24h (a chunk-shipping
+Switch with `node scripts/cloud/cadence.mjs apply <preset>
+--write` (it rewrites the cron, ceiling and heartbeat lines;
+commit them), then `gh variable set NEXUS_CADENCE --body
+<preset>` so the ceiling, chain depth and idle backoff follow
+at run time. The GUI's Cloud step does both.
+
+Every preset fires at minute :17. Keep a hand-written cron
+off :00 too: GitHub delays and drops scheduled runs at the
+top of the hour first, and the gate fails a shipped cron
+there. Even off the hour GitHub may deliver fewer runs than
+the cron promises; the heartbeat opens one issue when march
+realizes under 40% of its slots over 72h.
+
+Start on `steady` and measure a week before moving up. The
+ceiling is weighted-budget points per 24h (a chunk-shipping
 commit costs 3, a churn commit costs 1 — see
 `.github/CLOUD_LOOP.md` "The daily ceiling"); cadence above
 what the ceiling can spend just wastes invocations.

@@ -42,6 +42,14 @@ describe('the presets', () => {
     assert.equal(DEFAULT_CADENCE, 'steady');
   });
 
+  it('the template workflows ship the default preset as written: applying steady changes nothing (spec 55, A11)', () => {
+    const before = { march: tpl('.github/workflows/march.yml'), heartbeat: tpl('.github/workflows/heartbeat.yml') };
+    const r = applyPreset(DEFAULT_CADENCE, before);
+    assert.equal(cronOf(before.march), PRESETS.steady.cron);
+    assert.equal(r.march, before.march);
+    assert.equal(r.heartbeat, before.heartbeat);
+  });
+
   it('bootstrap names the same five words and the same default', () => {
     assert.deepEqual(BOOTSTRAP_CADENCES, [...CADENCES]);
     assert.equal(BOOTSTRAP_DEFAULT, DEFAULT_CADENCE);

@@ -70,3 +70,17 @@ test('Launch says what was turned on: the preset, its first run, and a variable 
   assert.equal(cloudLine({ cloud: 'on', cloudSaved: false, sched: null }), 'Steady, every 3 hours · finish it in Cloud loop');
   assert.equal(cloudLine({ cloud: 'skipped' }), 'Off · it runs on this machine only');
 });
+
+test('overnight never sends a cron at minute :00, even from a half-hour time zone (spec 55, A11)', async () => {
+  const { nightCron, nightMinute, nextNight, nightSub } = await import('../src/screens/onboarding/cloudFlow.js');
+  assert.equal(nightCron(0), '30 1-6 * * *', 'UTC');
+  assert.equal(nightCron(300), '30 6-11 * * *', 'UTC-5');
+  assert.equal(nightCron(-60), '30 0-5 * * *', 'UTC+1');
+  assert.equal(nightCron(-330), '17 0,1,20-23 * * *', 'UTC+5:30: :47 local, :17 UTC');
+  assert.equal(nightCron(-345), '45 0,19-23 * * *', 'UTC+5:45');
+  assert.equal(nightMinute(-570), 47, 'UTC+9:30');
+  assert.equal(nightSub(-330), 'custom: every hour at :47, 01:47 to 06:47');
+  assert.equal(nightSub(0), 'custom: every hour at :30, 01:30 to 06:30');
+  for (let off = -840; off <= 720; off += 15) assert.notEqual(nightCron(off).split(' ')[0], '0', `offset ${off}`);
+  assert.match(nextNight(new Date()), /^(tonight at|at) \d\d:(30|47)$/);
+});

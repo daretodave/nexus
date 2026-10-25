@@ -438,7 +438,7 @@ claude -p "/march" --permission-mode acceptEdits
   any bypass flag.
 - Schedule it with Task Scheduler (Windows), launchd (macOS),
   or cron (Linux). Same cadence guidance as the cloud loop:
-  every 2h is plenty; serialize runs (don't let tick N+1 start
+  every 3h is plenty, at a minute off :00; serialize runs (don't let tick N+1 start
   while N lives — a simple lockfile in the wrapper script
   does it).
 - Log stdout to a file per tick; the transcript is your only

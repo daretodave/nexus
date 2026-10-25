@@ -120,3 +120,49 @@ export function nextLocal(iso, now = new Date()) {
   if (diff === 1) return `${at} tomorrow`;
   return `${DAYS[t.getDay()]} ${at}`;
 }
+
+// ---- overnight: a custom cron outside the presets ---------------------------------------------------------------
+
+/** Overnight runs every hour from 01:30 to 06:30 the person's own time. */
+export const NIGHT_HOURS = Object.freeze([1, 2, 3, 4, 5, 6]);
+
+/**
+ * The local minute overnight runs at: :30, except where that is minute :00 in UTC (a half-hour time zone), the busy
+ * top of the hour GitHub delays and drops first (spec 55, A11): there :47 local, :17 UTC. `offset` is
+ * Date#getTimezoneOffset's (minutes behind UTC).
+ */
+export function nightMinute(offset = new Date().getTimezoneOffset()) {
+  return (((30 + offset) % 60) + 60) % 60 === 0 ? 47 : 30;
+}
+
+function hourRanges(hours) {
+  const out = [];
+  for (const h of hours) {
+    const last = out[out.length - 1];
+    if (last && h === last[1] + 1) last[1] = h; else out.push([h, h]);
+  }
+  return out.map(([a, b]) => (a === b ? `${a}` : b === a + 1 ? `${a},${b}` : `${a}-${b}`)).join(',');
+}
+
+/** Overnight as the UTC cron GitHub runs: 01:30 to 06:30 here (nightMinute), converted. Never at minute :00. */
+export function nightCron(offset = new Date().getTimezoneOffset()) {
+  const lm = nightMinute(offset);
+  const mins = NIGHT_HOURS.map((h) => (((h * 60 + lm + offset) % 1440) + 1440) % 1440);
+  const hours = [...new Set(mins.map((x) => Math.floor(x / 60)))].sort((a, b) => a - b);
+  return `${mins[0] % 60} ${hourRanges(hours)} * * *`;
+}
+
+/** When overnight next runs, in the person's own time: "tonight at 01:30", "at 03:30". */
+export function nextNight(now = new Date()) {
+  const lm = nightMinute(now.getTimezoneOffset());
+  const t = now.getHours() * 60 + now.getMinutes();
+  const slot = NIGHT_HOURS.find((h) => h * 60 + lm > t);
+  if (slot == null || t < 60 + lm) return `tonight at 01:${pad2(lm)}`;
+  return `at ${pad2(slot)}:${pad2(lm)}`;
+}
+
+/** Overnight's option line: "custom: every hour at :30, 01:30 to 06:30". */
+export function nightSub(offset = new Date().getTimezoneOffset()) {
+  const m = pad2(nightMinute(offset));
+  return `custom: every hour at :${m}, 01:${m} to 06:${m}`;
+}

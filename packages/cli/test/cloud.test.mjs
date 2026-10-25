@@ -137,7 +137,7 @@ test('the workflow is the kit template filled by the installer\'s own placeholde
   assert.doesNotMatch(yml, /<PROJECT>|<DEFAULT_BRANCH>|<PROJECT_PKG_PREFIX>/);
   assert.match(yml, /You are running widget's autonomous loop/);
   assert.match(yml, /origin\/trunk/);
-  assert.deepEqual(readCrons(yml), ['0 1,3,5,7,9,11,23 * * *']);
+  assert.deepEqual(readCrons(yml), ['17 */3 * * *'], 'the template ships steady, off the hour');
   assert.equal(yml.split('\n').length, TEMPLATE.split('\n').length, 'line for line');
 });
 
@@ -288,7 +288,9 @@ test('owner: presets that share a cron still change the cadence; off and back pu
 
   const steady = await saveSchedule(fx.root, { schedule: 'steady' }, { owner: true, run: gh.run });
   assert.equal(steady.status, 200, steady.error);
-  assert.deepEqual(sh(fx.origin, 'diff', '--name-only', 'main~1', 'main').split('\n'), [WORKFLOW_PATH], 'the template heartbeat is at steady\'s hours already');
+  assert.equal(steady.written, false, 'the template march.yml and heartbeat ship steady already');
+  assert.deepEqual(sh(fx.origin, 'diff', '--name-only', 'main~1', 'main').split('\n'), [HEARTBEAT_PATH], 'nothing committed past the heartbeat');
+  assert.deepEqual(readCrons(fx.at('main', WORKFLOW_PATH)), ['17 */3 * * *']);
   assert.match(fx.at('main', HEARTBEAT_PATH), /\n +march_hours=14\n/);
 
   // Eager: the same cron, so only the ceiling and heartbeat lines change, and the variable.

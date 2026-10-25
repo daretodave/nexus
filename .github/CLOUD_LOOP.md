@@ -50,8 +50,14 @@ the failure mode of the thing it watches.
 
 ## Daily operation
 
-- **Cadence:** 02:00 / 08:00 / 14:00 / 20:00 UTC, plus manual
-  `gh workflow run march` whenever curious.
+- **Cadence:** the `eager` preset: every 3h at :17 UTC
+  (`17 */3 * * *`, off the busy top of the hour), chained
+  ticks up to 3 deep while work is ready, behind the quota
+  governor at `NEXUS_QUOTA_MAX` 0.80 (nexus yields the shared
+  quota first), plus manual `gh workflow run march` whenever
+  curious. Revert: `gh variable set NEXUS_CADENCE --body
+  steady` when realized runs fall under 6 a day after 48h, or
+  utilization passes 0.80 while another loop is starved.
 - **Cadence preset:** the first step, Cadence
   (`templates/scripts/cloud/cadence.mjs`, run in place), turns
   the repo variable `NEXUS_CADENCE` (`calm | steady | eager |
@@ -64,8 +70,7 @@ the failure mode of the thing it watches.
   the file's: `node templates/scripts/cloud/cadence.mjs apply
   <preset> --march .github/workflows/march.yml --heartbeat
   .github/workflows/heartbeat.yml --write` (a local session:
-  the cloud token cannot push a workflow). Spec 55.9 moves
-  nexus to `eager`.
+  the cloud token cannot push a workflow).
 - **Ceiling:** 20 weighted points per 24h, counted by the
   `Cloud-Run:` trailer. The count is weighted, not flat: a
   chunk-shipping commit (one that adds a line to

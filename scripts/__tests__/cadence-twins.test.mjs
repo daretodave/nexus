@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { KIT, check, stepSignature, twinSteps } from '../cadence-twins.mjs';
+import { KIT, check, firesOnTheHour, offTheHour, stepSignature, twinSteps } from '../cadence-twins.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const real = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -91,5 +91,32 @@ describe('check', () => {
     const r = check('.', tree(files));
     assert.deepEqual(r.problems, []);
     assert.match(r.note, /^6 named steps agree/);
+  });
+});
+
+describe('offTheHour (spec 55, A11)', () => {
+  it('reads a minute field that includes :00 as on the hour', () => {
+    for (const c of ['0 */2 * * *', '0 1,3 * * *', '* * * * *', '*/15 * * * *', '0-10 * * * *', '0,30 * * * *', '00 4 * * *']) assert.ok(firesOnTheHour(c), c);
+    for (const c of ['17 */3 * * *', '15 */6 * * *', '30 10 * * *', '7 * * * *', '5-10 * * * *', '10,40 * * * *', '20/10 * * * *']) assert.ok(!firesOnTheHour(c), c);
+  });
+
+  it('fails a workflow cron or a doc cron at :00, names the file, and skips what is not a cron', () => {
+    const files = {
+      '.github/workflows/march.yml': "on:\n  schedule:\n    # every 3h\n    - cron: '17 */3 * * *'\n",
+      'templates/.github/workflows/smoke.yml': 'on:\n  schedule:\n    - cron: "0 11 * * *"   # daily\n',
+      'packages/cli/kit/workflows/march.yml': "on:\n  schedule:\n    - cron: '0 2,8 * * *'\n",
+      'playbooks/cloud-loop.md': 'Steady is `17 */3 * * *`; never `0 */2 * * *`. A viewBox "0 0 24 24" is not a cron.\n',
+      'templates/README.md': 'nothing here\n',
+      'concepts/x.txt': '`0 * * * *` in a file that is not a doc\n',
+    };
+    const list = (rel) => Object.keys(files).filter((f) => f === rel || f.startsWith(`${rel}/`));
+    const r = offTheHour('.', { list, readFile: (rel) => files[rel] });
+    assert.deepEqual(r.problems.map((p) => p.split(':')[0]).sort(), ['packages/cli/kit/workflows/march.yml', 'playbooks/cloud-loop.md', 'templates/.github/workflows/smoke.yml']);
+    assert.match(r.problems.join('\n'), /cron '0 11 \* \* \*' fires at minute :00/);
+    assert.match(r.note, /^5 shipped crons/);
+  });
+
+  it('the real tree ships no cron at :00', () => {
+    assert.deepEqual(offTheHour(ROOT).problems, []);
   });
 });

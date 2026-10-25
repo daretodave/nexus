@@ -26,9 +26,11 @@ run-name: march ${{ inputs.verb || 'march' }} ${{ inputs.reason }}
 
 on:
   schedule:
-    # 4 ticks/day: steady, reviewable motion on the kit and the
-    # GUI, behind the quota governor. GH cron is UTC.
-    - cron: '0 2,8,14,20 * * *'
+    # The eager preset (NEXUS_CADENCE=eager; cadence.mjs apply
+    # writes this line): every 3h at :17, off the busy top of the
+    # hour, chaining while work is ready, behind the quota governor
+    # (NEXUS_QUOTA_MAX 0.80: nexus yields first). GH cron is UTC.
+    - cron: '17 */3 * * *'
   workflow_dispatch:
     inputs:
       verb:

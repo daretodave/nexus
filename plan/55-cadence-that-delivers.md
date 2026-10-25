@@ -341,17 +341,14 @@ and chain max is 0.
 
 - **A3** The dispatch-vs-schedule start latency is measured from 10 dispatched runs and written into this spec's Design, and the decision rule there has been applied to 55.3 and 55.5.
 - **A4** One dispatched cloud tick has shown whether `.claude` hooks load under claude-code-action, and the answer is written into this spec's Design and march.yml's comments (the two contradicting comments reconciled).
-- **A11** No shipped cron (nexus, templates, packages/cli kit, CLI presets, docs) fires at minute :00; `cloud-loop.md` and `hands-off.md` cadence text matches the presets; nexus runs `eager` on `17 */3 * * *`.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 3 open · 9 closed · next A13
+Measure: 2 open · 10 closed · next A13
 
 - [ ] **55.6** Probe dispatch latency and hook loading in cloud · S · closes A3, A4 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
   - Tooling landed (probe-latency.mjs, probe.yml, guard hook probe, march.yml hook_probe input); left, owner-run: the ten dispatches and one hook_probe tick, their numbers and answer into Design and march.yml's comments, probe.yml deleted.
-- [ ] **55.9** Crons off the hour, cadence docs, nexus on eager · S · closes A11 · needs —
-  - Local: touches .github/workflows (cloud token cannot push it).
