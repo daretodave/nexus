@@ -38,11 +38,31 @@ jobs:
         with:
           node-version: 20
 
+      # The quota governor, as in march.yml: the newest cached
+      # seven_day reading, then the gate (a scheduled night run
+      # honours the soft cap too). /digest prints the reading.
+      - name: Quota cache restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}
+          restore-keys: nexus-quota-
+
+      - name: Quota gate
+        id: quota_gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REASON: ${{ github.event.inputs.reason }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.80' }}
+        run: node templates/scripts/cloud/quota.mjs gate --event "$EVENT" --reason "$REASON" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
       # Author identity via env vars on the action step (see
       # march.yml for why `git config` doesn't survive the action).
 
       - name: Run /digest (night shift)
         id: run_digest
+        if: steps.quota_gate.outputs.skip != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -69,8 +89,30 @@ jobs:
           GIT_COMMITTER_NAME:  'nexus'
           GIT_COMMITTER_EMAIL: '7341502+daretodave@users.noreply.github.com'
 
+      - name: Quota read
+        id: quota
+        if: always() && (steps.run_digest.outcome == 'success' || steps.run_digest.outcome == 'failure')
+        env:
+          EXEC_FILE: ${{ steps.run_digest.outputs.execution_file }}
+        run: node templates/scripts/cloud/quota.mjs read "$EXEC_FILE"
+
+      - name: Quota cache save
+        if: always() && steps.quota.outputs.quota != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Pause on the weekly quota
+        if: always() && steps.quota.outputs.status == 'rejected'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESETS: ${{ steps.quota.outputs.resets }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node templates/scripts/cloud/quota.mjs pause --resets "$RESETS" --run-url "$RUN_URL"
+
       - name: Open night-failed issue if action crashed
-        if: failure()
+        if: failure() && steps.quota.outputs.status != 'rejected'
         env:
           # GITHUB_TOKEN, not ACTIONS_PAT: an alarm that shares the
           # PAT's failure mode goes silent exactly when the PAT dies

@@ -80,9 +80,18 @@ The probe (55.6) runs before chaining (55.3) and presets
   `.nexus/quota.json` to `actions/cache` (key
   `nexus-quota-<run_id>`, restore prefix `nexus-quota-`), so
   the next run reads the newest value.
-- On `status: rejected`, the crash step opens or updates ONE
-  issue `Loop paused: weekly quota until <ISO>` (label
-  `loop:paused-quota`) and no crash issue.
+- On `status: rejected`, a "Pause on the weekly quota" step
+  beside the crash step opens or updates ONE issue `Loop
+  paused: weekly quota until <ISO>` (label
+  `loop:paused-quota`), and the crash step stays quiet.
+- Pull-request mode's agent step is the CLI, whose `json`
+  output carries no `rate_limit_event`: it writes
+  `stream-json` instead, the read runs from a copy of
+  `quota.mjs` taken before the agent, the gate sits in `pick`
+  (nothing claimed, nothing built), and a `quota` job
+  (`needs: build`, `always()`) opens the pause issue, so it
+  opens whether the tick landed, released, or failed. Night's tokenless `write` job gates on the
+  cache alone. The cache key carries the run attempt too.
 - A "Quota gate" step beside the ceiling step restores the
   cache and exits clean, with no model call, when:
   - the pause issue is open and now is before `resetsAt`
@@ -264,7 +273,10 @@ spec 58) the workflow's own cron and ceiling literals stand
 and chain max is 0.
 
 - Pause issue: title `Loop paused: weekly quota until <ISO>`,
-  label `loop:paused-quota`, at most one open.
+  label `loop:paused-quota`, at most one open. Issue text is
+  untrusted: the gate and heartbeat count it only when it
+  carries the label or the workflow token
+  (`app/github-actions`) opened it.
 - `.nexus/quota.json`: `{ "utilization": 0.88, "status":
   "allowed_warning", "resetsAt": "2026-10-26T08:00:00Z",
   "run": 40172824384 }`.
@@ -278,8 +290,6 @@ and chain max is 0.
 
 ## Acceptance
 
-- **A1** A `seven_day` `rejected` tick opens one `Loop paused: weekly quota until <ISO>` issue instead of a crash issue; following scheduled ticks exit in under 30 s with no model call until `resetsAt`, then the issue closes itself; heartbeat files no flatline meanwhile (fixture test on run 38781925630's event shape, plus one watched run).
-- **A2** Every march and night tick's step summary shows `seven_day` utilization, and the next scheduled or chained tick exits before the model step when the cached value is at or above `NEXUS_QUOTA_MAX`; nudge, `loop:do` and manual runs ignore that soft cap.
 - **A3** The dispatch-vs-schedule start latency is measured from 10 dispatched runs and written into this spec's Design, and the decision rule there has been applied to 55.3 and 55.5.
 - **A4** One dispatched cloud tick has shown whether `.claude` hooks load under claude-code-action, and the answer is written into this spec's Design and march.yml's comments (the two contradicting comments reconciled).
 - **A5** In CI, a background subagent or background Bash call is denied by `guard.mjs`, and a result that defers to a background job with no commit is marked `lost-to-background`.
@@ -296,18 +306,15 @@ and chain max is 0.
 (None.)
 
 ## Chunks
-Measure: 12 open · 0 closed · next A13
+Measure: 10 open · 2 closed · next A13
 
-- [ ] **55.1** Quota governor: read, pause issue, gate, heartbeat skip · M · closes A1, A2 · needs —
-  - Local: touches .github/workflows (cloud token cannot push it).
-  - Lands before any change that adds runs.
 - [ ] **55.6** Probe dispatch latency and hook loading in cloud · S · closes A3, A4 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.2** Background-call guard and lost-to-background mark · S · closes A5 · needs 55.6
   - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **55.3** A shipped tick chains the next while work is ready · M · closes A6 · needs 55.1, 55.2, 55.6, 54.2, 54.5
+- [ ] **55.3** A shipped tick chains the next while work is ready · M · closes A6 · needs 55.2, 55.6, 54.2, 54.5
   - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **55.4** Idle ticks skip the model; every no-op says why · M · closes A7 · needs 55.1
+- [ ] **55.4** Idle ticks skip the model; every no-op says why · M · closes A7 · needs —
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.5** Cadence presets, the variable and bootstrap · M · closes A8 · needs 55.3, 55.4
   - Local: touches .github/workflows (cloud token cannot push it).
@@ -316,5 +323,5 @@ Measure: 12 open · 0 closed · next A13
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **55.9** Crons off the hour, cadence docs, nexus on eager · S · closes A11 · needs 55.7, 55.8
   - Local: touches .github/workflows (cloud token cannot push it).
-- [ ] **55.10** Patch v1 workflows with the quota gate and offset cron · M · closes A12 · needs 55.1
+- [ ] **55.10** Patch v1 workflows with the quota gate and offset cron · M · closes A12 · needs —
   - Owner-run per adopter repo; proofs on a scratch clone of its origin only, never a local checkout.

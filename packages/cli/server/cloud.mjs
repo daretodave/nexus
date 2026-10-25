@@ -2,8 +2,8 @@
 //
 // The workflow is the kit's own templates/.github/workflows/march.yml, filled by the kit installer's own
 // substitution (templates/scripts/bootstrap.mjs fillPlaceholders: <PROJECT>, <DEFAULT_BRANCH>,
-// <PROJECT_PKG_PREFIX>), with the shared toolchain action beside it when the repo has none (every march job uses
-// it). The CLI ships both files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
+// <PROJECT_PKG_PREFIX>), with the shared toolchain action and the quota governor (scripts/cloud/quota.mjs) beside it
+// when the repo has none (every march job uses them). The CLI ships these files and the installer in kit/ (scripts/bundle-kit.mjs); inside the nexus repo it reads
 // templates/ directly. Which way a tick lands is the repo variable NEXUS_LOOP_MODE, not a line in the file: in owner
 // mode an unset variable is set to owner (best effort), as bootstrap's set-loop-mode does.
 //
@@ -37,7 +37,10 @@ export const KIT_FILES = {
   march: ['workflows/march.yml', '.github/workflows/march.yml'],
   setup: ['actions/setup/action.yml', '.github/actions/setup/action.yml'],
   bootstrap: ['scripts/bootstrap.mjs', 'scripts/bootstrap.mjs'],
+  quota: ['scripts/cloud/quota.mjs', 'scripts/cloud/quota.mjs'],
 };
+/** The quota governor every march job runs (its gate and read steps): written beside the workflow when missing. */
+export const QUOTA_PATH = 'scripts/cloud/quota.mjs';
 
 /** A kit file's path: the CLI's bundled copy first, then the nexus repo's templates (development). Null when neither. */
 export function kitFile(name, { pkg = PKG } = {}) {
@@ -477,6 +480,8 @@ async function workflowFiles(repo, place, cron) {
   const files = { [WORKFLOW_PATH]: yml };
   const setup = kitFile('setup');
   if (setup && await showFile(repo, place.base, SETUP_ACTION_PATH) == null) files[SETUP_ACTION_PATH] = await fillTemplate(fs.readFileSync(setup, 'utf8'), v);
+  const quota = kitFile('quota');
+  if (quota && await showFile(repo, place.base, QUOTA_PATH) == null) files[QUOTA_PATH] = fs.readFileSync(quota, 'utf8').replace(/\r\n/g, '\n');
   return files;
 }
 

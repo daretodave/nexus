@@ -35,7 +35,12 @@ its own cadence.
    gh run list --workflow march -L 20 \
      --json displayTitle,conclusion,createdAt,updatedAt
    node scripts/pulse.mjs
+   node scripts/cloud/quota.mjs show
    ```
+
+   `quota.mjs show` is the last cached `seven_day` reading
+   (night's gate restored it; locally, unknown); `While you
+   were out` opens with that line as is.
 
    `pulse.mjs` gives the local numbers in one shot: specs and
    chunks left, held chunks, AUDIT pending, CRITIQUE pending +

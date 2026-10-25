@@ -50,6 +50,10 @@ export const PR_MODE_FILES = [
   'scripts/cloud/tick.mjs',
   'scripts/pr/resolve.mjs',
 ]
+// Files every march.yml and night.yml job runs, whatever the mode: the quota governor.
+export const LOOP_FILES = [
+  'scripts/cloud/quota.mjs',
+]
 
 // ─────────────────────────────────────────────────────────────
 // Logging
@@ -921,6 +925,16 @@ async function execCloudLoop(a, state, manifest) {
       log.ok(`wrote ${SETUP_ACTION_PATH} (adjust its install steps to your stack)`)
     } else {
       log.warn(`no ${action}: copy nexus/templates/.github/actions/setup/action.yml to ${SETUP_ACTION_PATH}`)
+    }
+    // The quota governor the workflow's gate and read steps run.
+    for (const f of LOOP_FILES) {
+      if (fs.existsSync(f)) {
+        log.info(`kept your ${f}`)
+        continue
+      }
+      fs.mkdirSync(path.dirname(f), { recursive: true })
+      fs.writeFileSync(f, fs.readFileSync(path.join(templates, f), 'utf-8'))
+      log.ok(`wrote ${f}`)
     }
     if (!loopMode(manifest)) {
       log.info('march.yml lands by the repo variable NEXUS_LOOP_MODE: unset means pull requests (scripts/cloud/tick.mjs);')

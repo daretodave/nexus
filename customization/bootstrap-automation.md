@@ -771,6 +771,9 @@ auth's accessible resources.
   manifest (`applyDailyCeiling`, `applyScheduleCron`); both are
   a no-op (warn + leave the default) if the field is unset or
   the anchor line has drifted.
+- **`install-workflow` also writes `scripts/cloud/quota.mjs`**
+  where missing (`LOOP_FILES`): every march and night job runs
+  its quota gate and read steps, in either mode.
 - **`pr-resolve.yml` carries `<DEFAULT_BRANCH>`** in its
   `push: branches:` filter. `install-pr-workflows` fills it
   (and every bracket placeholder) from

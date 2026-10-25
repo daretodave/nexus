@@ -75,6 +75,7 @@ A few new files relative to the standard nexus overlay:
 ├── actions/setup/action.yml  # the project's toolchain, shared by every tick job
 └── CLOUD_LOOP.md          # operator's guide (lives in repo)
 scripts/
+├── cloud/quota.mjs        # quota governor: read, cache, gate, pause issue
 ├── cloud/tick.mjs         # PR mode: pick + claim, fence, land, release
 ├── pr/resolve.mjs         # PR mode: pr-resolve's resolver
 └── workflow-lint.mjs      # the workflow rules, for your gate
@@ -113,6 +114,7 @@ cp ../nexus/templates/.github/workflows/march.yml      .github/workflows/march.y
 cp ../nexus/templates/.github/actions/setup/action.yml .github/actions/setup/action.yml
 cp ../nexus/templates/.github/CLOUD_LOOP.md            .github/CLOUD_LOOP.md
 cp ../nexus/templates/scripts/workflow-lint.mjs        scripts/workflow-lint.mjs
+cp ../nexus/templates/scripts/cloud/quota.mjs          scripts/cloud/quota.mjs
 # pull-request mode (NEXUS_LOOP_MODE unset) also needs these:
 cp ../nexus/templates/.github/workflows/pr-flow.yml    .github/workflows/pr-flow.yml
 cp ../nexus/templates/.github/workflows/pr-resolve.yml .github/workflows/pr-resolve.yml
@@ -128,6 +130,7 @@ Copy-Item ..\nexus\templates\.github\workflows\march.yml      .github\workflows\
 Copy-Item ..\nexus\templates\.github\actions\setup\action.yml .github\actions\setup\action.yml
 Copy-Item ..\nexus\templates\.github\CLOUD_LOOP.md            .github\CLOUD_LOOP.md
 Copy-Item ..\nexus\templates\scripts\workflow-lint.mjs        scripts\workflow-lint.mjs
+Copy-Item ..\nexus\templates\scripts\cloud\quota.mjs          scripts\cloud\quota.mjs
 # pull-request mode (NEXUS_LOOP_MODE unset) also needs these:
 Copy-Item ..\nexus\templates\.github\workflows\pr-flow.yml    .github\workflows\pr-flow.yml
 Copy-Item ..\nexus\templates\.github\workflows\pr-resolve.yml .github\workflows\pr-resolve.yml

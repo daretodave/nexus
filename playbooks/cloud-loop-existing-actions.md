@@ -205,6 +205,7 @@ cp -n ../nexus/templates/.github/workflows/march.yml      .github/workflows/marc
 cp -n ../nexus/templates/.github/workflows/heartbeat.yml  .github/workflows/heartbeat.yml
 cp -n ../nexus/templates/.github/actions/setup/action.yml .github/actions/setup/action.yml
 cp -n ../nexus/templates/.github/CLOUD_LOOP.md            .github/CLOUD_LOOP.md
+cp -n ../nexus/templates/scripts/cloud/quota.mjs          scripts/cloud/quota.mjs
 # the night shift, if you run /digest:
 cp -n ../nexus/templates/.github/workflows/night.yml      .github/workflows/night.yml
 # pull-request mode:
@@ -222,6 +223,7 @@ if (-not (Test-Path .github\workflows\march.yml)) { Copy-Item ..\nexus\templates
 if (-not (Test-Path .github\workflows\heartbeat.yml)) { Copy-Item ..\nexus\templates\.github\workflows\heartbeat.yml .github\workflows\heartbeat.yml }
 if (-not (Test-Path .github\actions\setup\action.yml)) { Copy-Item ..\nexus\templates\.github\actions\setup\action.yml .github\actions\setup\action.yml }
 if (-not (Test-Path .github\CLOUD_LOOP.md)) { Copy-Item ..\nexus\templates\.github\CLOUD_LOOP.md .github\CLOUD_LOOP.md }
+if (-not (Test-Path scripts\cloud\quota.mjs)) { Copy-Item ..\nexus\templates\scripts\cloud\quota.mjs scripts\cloud\quota.mjs }
 # the night shift, if you run /digest:
 if (-not (Test-Path .github\workflows\night.yml)) { Copy-Item ..\nexus\templates\.github\workflows\night.yml .github\workflows\night.yml }
 # pull-request mode:

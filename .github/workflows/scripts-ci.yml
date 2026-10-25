@@ -8,9 +8,9 @@ name: scripts-ci
 on:
   push:
     branches: [main]
-    paths: ['templates/scripts/**', 'scripts/**', '.github/workflows/scripts-ci.yml']
+    paths: ['templates/scripts/**', 'scripts/**', '.github/workflows/scripts-ci.yml', '.github/workflows/heartbeat.yml', 'templates/.github/workflows/heartbeat.yml']
   pull_request:
-    paths: ['templates/scripts/**', 'scripts/**', '.github/workflows/scripts-ci.yml']
+    paths: ['templates/scripts/**', 'scripts/**', '.github/workflows/scripts-ci.yml', '.github/workflows/heartbeat.yml', 'templates/.github/workflows/heartbeat.yml']
   workflow_dispatch:
 
 permissions:

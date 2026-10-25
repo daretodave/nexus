@@ -48,8 +48,30 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # The quota governor, as in march.yml: the newest cached
+      # seven_day reading, then the gate (a scheduled night run
+      # honours the soft cap too). /digest prints the reading.
+      - name: Quota cache restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}
+          restore-keys: nexus-quota-
+
+      - name: Quota gate
+        id: quota_gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REASON: ${{ github.event.inputs.reason }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
+        run: |
+          grep -qx '.nexus/' .git/info/exclude 2>/dev/null || echo '.nexus/' >> .git/info/exclude
+          node scripts/cloud/quota.mjs gate --event "$EVENT" --reason "$REASON" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
       - name: Run /digest (night shift)
         id: run_digest
+        if: steps.quota_gate.outputs.skip != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -76,8 +98,30 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # + whatever your breadth legs need (see march.yml's env)
 
+      - name: Quota read
+        id: quota
+        if: always() && (steps.run_digest.outcome == 'success' || steps.run_digest.outcome == 'failure')
+        env:
+          EXEC_FILE: ${{ steps.run_digest.outputs.execution_file }}
+        run: node scripts/cloud/quota.mjs read "$EXEC_FILE"
+
+      - name: Quota cache save
+        if: always() && steps.quota.outputs.quota != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Pause on the weekly quota
+        if: always() && steps.quota.outputs.status == 'rejected'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESETS: ${{ steps.quota.outputs.resets }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/cloud/quota.mjs pause --resets "$RESETS" --run-url "$RUN_URL"
+
       - name: Open night-failed issue if action crashed
-        if: failure()
+        if: failure() && steps.quota.outputs.status != 'rejected'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -113,9 +157,29 @@ jobs:
       - name: The night's branch
         env:
           BRANCH: nexus/night-${{ github.run_id }}
-        run: git switch -c "$BRANCH"
+        run: |
+          git switch -c "$BRANCH"
+          cp scripts/cloud/quota.mjs "$RUNNER_TEMP/quota.mjs"
+
+      # The quota gate with no token: it reads the cache only (a
+      # lockout, or the soft cap on a scheduled run). march's jobs
+      # open and close the pause issue.
+      - name: Quota cache restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}
+          restore-keys: nexus-quota-
+
+      - name: Quota gate
+        id: quota_gate
+        env:
+          EVENT: ${{ github.event_name }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
+        run: node "$RUNNER_TEMP/quota.mjs" gate --event "$EVENT" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
 
       - name: Claude runs /digest (no token)
+        if: steps.quota_gate.outputs.skip != 'true'
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -148,7 +212,19 @@ jobs:
             --model claude-sonnet-5 \
             --permission-mode bypassPermissions \
             --strict-mcp-config \
-            --output-format json > "$RUNNER_TEMP/claude.json" || echo "claude exited non-zero; the bundle step takes what it committed"
+            --output-format stream-json --verbose > "$RUNNER_TEMP/claude.jsonl" || echo "claude exited non-zero; the bundle step takes what it committed"
+
+      - name: Quota read
+        id: quota
+        if: always()
+        run: node "$RUNNER_TEMP/quota.mjs" read "$RUNNER_TEMP/claude.jsonl" --cache .nexus/quota.json
+
+      - name: Quota cache save
+        if: always() && steps.quota.outputs.quota != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Bundle the night's commit
         id: bundle

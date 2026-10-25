@@ -267,7 +267,7 @@ Measure: 13 open · 0 closed · next A14
 - [ ] **54.3** User rows age into the queue; the support SLA step · S · closes A4, A5 · needs 54.2
   - Seed: re-score the open `source: user` AUDIT rows in the same commit.
 - [ ] **54.4** A fixed issue is told and closed · S · closes A6 · needs 54.2
-- [ ] **54.5** march.yml reason, dispatch ceiling, hard quota, loop-filed marker · M · closes A7, A10 · needs 54.1, 55.1
+- [ ] **54.5** march.yml reason, dispatch ceiling, hard quota, loop-filed marker · M · closes A7, A10 · needs 54.1
   - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **54.6** nudge.yml starts a tick for a collaborator's bug · M · closes A8, A9 · needs 54.3, 54.5
   - Local: touches .github/workflows (cloud token cannot push it).

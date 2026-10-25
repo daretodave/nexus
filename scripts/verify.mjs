@@ -78,7 +78,8 @@
 //                 (scripts/secrets-scan.mjs). No vault: green, noted
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
-//                 spawns git, so tens of seconds). Opt in with
+//                 spawns git, so tens of seconds), and heartbeat.yml's
+//                 cadence step run in bash against a stubbed gh. Opt in with
 //                 `node scripts/verify.mjs scripts-git` or
 //                 `NEXUS_VERIFY_GIT_TESTS=1 node scripts/verify.mjs`
 //   adopt-dryrun  opt-in — mechanizes playbooks/new-project.md's
@@ -676,8 +677,8 @@ async function legChunks() {
 // --- legs: scripts, scripts-git ---------------------------------------------
 // The plan and claims scripts are templates adopters run on their
 // own plan, so their suites gate the kit. The pure suites run on
-// every commit; the end-to-end ones spawn git in scratch repos and
-// are opt-in, like adopt-dryrun.
+// every commit; the end-to-end ones spawn git in scratch repos (or
+// a workflow step's shell) and are opt-in, like adopt-dryrun.
 
 const PURE_SUITES = [
   'templates/scripts/__tests__/pending.test.mjs',
@@ -693,6 +694,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/triage-match.test.mjs',
   'templates/scripts/__tests__/workflow-lint.test.mjs',
   'templates/scripts/__tests__/tick.test.mjs',
+  'templates/scripts/__tests__/quota.test.mjs',
   'templates/scripts/__tests__/resolve.test.mjs',
   'templates/scripts/__tests__/loop-issue.test.mjs',
   'templates/scripts/__tests__/upgrade-plan.test.mjs',
@@ -721,6 +723,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/upgrade-plan-run.test.mjs',
   'templates/scripts/__tests__/plot-run.test.mjs',
   'templates/scripts/__tests__/secrets-scan-run.test.mjs',
+  'templates/scripts/__tests__/heartbeat-quota.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run

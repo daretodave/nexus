@@ -195,3 +195,4 @@ still pending at the move and live on as specs.
 - 2026-10-24 · 39.9 · Package manager is a placeholder end to end, not hardcoded pnpm · f659b2ca..e0379224
 - 2026-10-25 · 39.10 · Settings allowlist, sweep note, and tick order now correct · 72d7184d..0bc8e50b
 - 2026-10-25 · 39.12 · Settle stops cleanly, not a crash, when a spec empties · 7442c908..7442c908
+- 2026-10-25 · 55.1 · Quota governor: every tick reads seven_day, a lockout opens one pause issue, the gate skips the model until the reset, and heartbeat stays quiet meanwhile · d63a1d3d..d63a1d3d

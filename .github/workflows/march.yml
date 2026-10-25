@@ -93,12 +93,36 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # The quota governor (templates/scripts/cloud/quota.mjs, the
+      # template's copy run in place): every loop on the
+      # subscription shares one seven_day window. The newest reading
+      # any march or night run cached comes back first.
+      - name: Quota cache restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}
+          restore-keys: nexus-quota-
+
+      # Skips the model (a clean exit) while the pause issue's reset
+      # is ahead, or, for a scheduled or chained tick, when the cached
+      # utilization is at or above NEXUS_QUOTA_MAX (`off` disables
+      # that soft cap; nexus yields first at 0.80). Fails open.
+      - name: Quota gate
+        id: quota_gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REASON: ${{ github.event.inputs.reason }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.80' }}
+        run: node templates/scripts/cloud/quota.mjs gate --event "$EVENT" --reason "$REASON" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
       # The runner's checkout is the owner's for this tick: the
       # untracked .owner (gitignored) makes scripts/claims.mjs
       # claim as privileged_agent_session, scripts/plan/settle.mjs
       # settle and the push policy pass main (playbooks/owner-mode.md).
       - name: Owner mode for this checkout
-        if: steps.ceiling.outputs.skip != 'true'
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
         run: touch .owner
 
       # Git author identity is set via GIT_AUTHOR_* /
@@ -110,7 +134,7 @@ jobs:
 
       - name: Run /march (cloud mode)
         id: run_march
-        if: steps.ceiling.outputs.skip != 'true'
+        if: steps.ceiling.outputs.skip != 'true' && steps.quota_gate.outputs.skip != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -205,8 +229,36 @@ jobs:
           GIT_COMMITTER_NAME:  'nexus'
           GIT_COMMITTER_EMAIL: '7341502+daretodave@users.noreply.github.com'
 
+      # The tick's own reading, from the action's execution file:
+      # one summary line, the `quota` output, and the cache the next
+      # run's gate reads.
+      - name: Quota read
+        id: quota
+        if: always() && (steps.run_march.outcome == 'success' || steps.run_march.outcome == 'failure')
+        env:
+          EXEC_FILE: ${{ steps.run_march.outputs.execution_file }}
+        run: node templates/scripts/cloud/quota.mjs read "$EXEC_FILE"
+
+      - name: Quota cache save
+        if: always() && steps.quota.outputs.quota != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # A weekly lockout is not a crash: ONE "Loop paused: weekly
+      # quota until <ISO>" issue (label loop:paused-quota), opened or
+      # retitled, and no crash issue. The gate closes it after the reset.
+      - name: Pause on the weekly quota
+        if: always() && steps.quota.outputs.status == 'rejected'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESETS: ${{ steps.quota.outputs.resets }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node templates/scripts/cloud/quota.mjs pause --resets "$RESETS" --run-url "$RUN_URL"
+
       - name: Open cloud-failed issue if action crashed
-        if: failure() && steps.ceiling.outputs.skip != 'true'
+        if: failure() && steps.ceiling.outputs.skip != 'true' && steps.quota.outputs.status != 'rejected'
         env:
           # GITHUB_TOKEN, not ACTIONS_PAT: an alarm that shares the
           # PAT's failure mode goes silent exactly when the PAT dies

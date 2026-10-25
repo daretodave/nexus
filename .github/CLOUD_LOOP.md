@@ -57,6 +57,16 @@ the failure mode of the thing it watches.
   `plan/ARCHIVE.md`) costs 3, a churn commit
   (`/iterate`, `/critique`, `/triage`, `/digest`) costs 1.
   Local commits don't count.
+- **Quota governor:** every march and night tick writes its
+  `seven_day` utilization to the step summary and caches it
+  (`templates/scripts/cloud/quota.mjs`, run in place). The
+  next scheduled tick skips the model at or above
+  `NEXUS_QUOTA_MAX` (0.80 here, so nexus yields first; `off`
+  disables it); a weekly lockout opens one `Loop paused:
+  weekly quota until <ISO>` issue instead of a crash issue,
+  and the first tick after the reset closes it. Only a
+  labelled pause issue, or one the workflow token opened,
+  counts: an outsider's issue with that title is ignored.
 - **Model:** `claude-sonnet-5` (set in the workflow; ids age —
   verify against current ids before changing).
 - **Pause / resume:** `gh workflow disable march` /

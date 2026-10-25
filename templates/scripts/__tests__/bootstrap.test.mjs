@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { PR_MODE_FILES, cloudLoopActions, fillPlaceholders, loopMode } from '../bootstrap.mjs';
+import { LOOP_FILES, PR_MODE_FILES, cloudLoopActions, fillPlaceholders, loopMode } from '../bootstrap.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const manifest = (cloud = {}, project = {}) => ({
@@ -56,6 +56,18 @@ describe('bootstrap: cloud_loop.mode', () => {
     for (const f of ['.github/workflows/pr-flow.yml', '.github/workflows/pr-resolve.yml', 'scripts/cloud/tick.mjs', 'scripts/pr/resolve.mjs']) {
       assert.ok(PR_MODE_FILES.includes(f), f);
     }
+  });
+
+  it('installs every script the workflows it writes run (the quota governor)', () => {
+    const templates = path.resolve(HERE, '..', '..');
+    assert.ok(LOOP_FILES.includes('scripts/cloud/quota.mjs'));
+    for (const wf of ['march.yml', 'night.yml']) {
+      const yml = fs.readFileSync(path.join(templates, '.github', 'workflows', wf), 'utf8');
+      for (const m of yml.matchAll(/node (scripts\/cloud\/[\w-]+\.mjs)/g)) {
+        assert.ok(LOOP_FILES.includes(m[1]) || PR_MODE_FILES.includes(m[1]), `${wf} runs ${m[1]}, which bootstrap never installs`);
+      }
+    }
+    for (const f of LOOP_FILES) assert.ok(fs.existsSync(path.join(templates, f)), f);
   });
 });
 

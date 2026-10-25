@@ -88,6 +88,17 @@ jobs:
           states=$(gh workflow list --all --limit 200 \
             --json name,state --jq '.[] | [.name, .state] | @tsv')
 
+          # A weekly quota lockout (scripts/cloud/quota.mjs) is its own
+          # report: while a "Loop paused: weekly quota" issue is open,
+          # ticks skip the model on purpose and no flatline is filed.
+          # Issue text is untrusted, so only a labelled pause issue, or
+          # one the workflow token opened, counts: an outsider's issue
+          # with that title never silences the alarm.
+          paused=$(gh issue list --state open --label loop:paused-quota --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "${paused:-0}" = "0" ]; then
+            paused=$(gh issue list --state open --author app/github-actions --search 'in:title "Loop paused: weekly quota"' --json number,author --jq '[.[] | select(.author.login == "app/github-actions")] | length' 2>/dev/null || echo 0)
+          fi
+
           # check_cadence <workflow> <threshold_h>: one open issue
           # when the newest successful run is threshold_h or older.
           check_cadence() {
@@ -102,6 +113,10 @@ jobs:
             # every tick the pause lasts.
             if [ "$state" != "active" ]; then
               echo "$wf: $state - cadence skipped (the armed-ness step reports it)."
+              return 0
+            fi
+            if [ "${paused:-0}" != "0" ]; then
+              echo "$wf: loop paused on the weekly quota (a Loop paused issue is open) - cadence skipped."
               return 0
             fi
             # --status success, not completed: a failed run still

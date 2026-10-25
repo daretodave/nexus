@@ -34,7 +34,12 @@ Never dispatched by `/march` — it is its own loop shape (see
      --json displayTitle,conclusion,createdAt,updatedAt
    gh run list --workflow heartbeat -L 5 --json conclusion
    node scripts/pulse.mjs
+   node templates/scripts/cloud/quota.mjs show
    ```
+
+   `quota.mjs show` is the last cached `seven_day` reading
+   (night's gate restored it); `While you were out` opens with
+   that line as is.
 
    `pulse.mjs` gives the local numbers in one shot: specs,
    chunks left and held, AUDIT pending, CRITIQUE pending +
