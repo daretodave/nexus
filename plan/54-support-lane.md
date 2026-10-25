@@ -213,7 +213,12 @@ and change both:
   it. Any other referenced issue is listed in the step
   summary and left alone. `publish.yml` runs it after
   publish with `GITHUB_TOKEN` and `issues: write`, behind
-  `NEXUS_RELEASE_REPLY`.
+  `NEXUS_RELEASE_REPLY`. Built as: a `reply` job after
+  `publish`, the only job holding `issues: write`, run on a
+  `cli-v*` tag unless the variable is `off` (nexus runs it
+  `on`, so unset reads `on`). The range starts at the newest
+  stable `cli-v*` tag before this one, and a prerelease tag
+  (npm's `next`, which `npx` does not serve) closes nothing.
 
 ### Digest and escalation
 
@@ -264,7 +269,6 @@ asap_cap: 3                 # nexus: 3
 
 ## Acceptance
 
-- **A11** Tagging `cli-vX.Y.Z` comments "Fixed in @usenexus/cli X.Y.Z" on and closes every open issue labeled `triage:loop-queued` or `bug` referenced by `Refs #N` in the release range; any other referenced issue is left alone and listed in the step summary.
 - **A12** With `NEXUS_SUPPORT` unset an adopter runs as today (no event ticks, AUDIT routing); the knobs are documented in `customization/` and `templates/.github/CLOUD_LOOP.md`, `nudge.yml` is in the README tree, and nexus runs `fix-all`.
 - **A13** `/digest` prints open user issues, mean time to first response and mean time to close over 7 days, and a `triage:needs-user` issue older than `escalate_days` tops "Needs you" and is notified.
 
@@ -274,8 +278,6 @@ asap_cap: 3                 # nexus: 3
 
 ## Chunks
 
-Measure: 3 open · 10 closed · next A14
+Measure: 2 open · 11 closed · next A14
 
-- [ ] **54.7** A cli release closes the issues it fixed · S · closes A11 · needs —
-  - Local: touches .github/workflows (cloud token cannot push it).
 - [ ] **54.8** Support knob docs, digest support line, needs-user escalation · S · closes A12, A13 · needs —

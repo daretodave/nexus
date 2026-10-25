@@ -111,6 +111,13 @@ Whatever skill ships the fix for issue `#N` (`/bug`'s `/plot
    release closes it. `refuse` (the commit lacks `Refs #N`)
    and `wait` (not on main yet) write nothing; `skip` means no
    `gh`, and the next tick tells it.
+3. **The release closes the rest.** A `cli-v*` tag runs
+   `scripts/release-reply.mjs` from `publish.yml`: each open
+   issue labeled `triage:loop-queued` or `bug` that a `Refs #N`
+   in the release range names gets "Fixed in @usenexus/cli
+   X.Y.Z: npx @usenexus/cli@X.Y.Z" and is closed. Every other
+   referenced issue is left alone and listed in the run's
+   summary. `NEXUS_RELEASE_REPLY=off` stops it.
 
 ## 5. Hard rules
 

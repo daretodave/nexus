@@ -519,6 +519,8 @@ nexus/
 │   ├── plan/motion.mjs                # the motion pulse and heartbeat.yml's motion-stall alarm (twin)
 │   ├── plan/unreleased.mjs            # /digest's unreleased CLI fixes: packages/cli commits on main since the last cli-v* tag
 │   ├── __tests__/unreleased.test.mjs  # its pure suite (scripts leg); __tests__/unreleased-run.test.mjs, a scratch repo (scripts-git)
+│   ├── release-reply.mjs              # publish.yml's reply job: a cli-v* tag closes the open issues its Refs #N fixed (nexus only)
+│   ├── __tests__/release-reply.test.mjs # its suite, git and gh stubbed, plus publish.yml's reply job (scripts leg)
 │   ├── plan/ui-rows.mjs               # /iterate's H rows: their shape, at most 3 Pending, and the magic guard on next
 │   ├── __tests__/iterate-ui.test.mjs  # its suite, plus H, signal F and the magic guard in the skills (scripts leg)
 │   ├── plan/critique-gui.mjs          # /critique's GUI pass: the onboarding walk or its skip line; walk rows checked
