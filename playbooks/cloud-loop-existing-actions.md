@@ -363,48 +363,7 @@ workflow after the merge.
 **Done when:** the files are on the default branch and the
 schedule is off.
 
-## Step 9 — the first tick, watched
-<!-- step: first-tick -->
-
-**Check:**
-
-```bash
-gh run list --workflow march --json databaseId,status,conclusion,createdAt --limit 5
-```
-
-```powershell
-gh run list --workflow march --json databaseId,status,conclusion,createdAt --limit 5
-```
-
-**Do:** dispatch one tick, then watch it. A disabled workflow
-still runs by hand. In pull-request mode, name a small chunk
-to keep the first PR short:
-
-```bash
-gh workflow run march -f chunk=<chunk id>
-gh run watch
-```
-
-```powershell
-gh workflow run march -f chunk=<chunk id>
-gh run watch
-```
-
-Poll the run list every few seconds rather than trusting a
-clock: a run that stays `queued` for two minutes is waiting on
-a runner or the concurrency group, not working.
-
-**Done when:**
-
-- **Owner mode:** the default branch has a commit with the
-  `Cloud-Run:` trailer, and `node scripts/claims.mjs list`
-  shows no leftover claim from `cloud-<run id>`.
-- **Pull-request mode:** a PR from `nexus/<run id>` exists,
-  `node scripts/claims.mjs list` shows its chunk with that PR,
-  and closing the PR (or merging it) makes the claim leave
-  within a minute (`pr-flow`, or your own bot).
-
-## Step 10 — turn it on
+## Step 9 — turn it on
 <!-- step: enable -->
 
 **Check:** `gh workflow list` shows `march` and `heartbeat`
@@ -431,6 +390,46 @@ workflow edit keeps the rules.
 
 **Done when:** the next scheduled tick runs on its own, and
 the heartbeat's first run is green.
+
+## Step 10 — the first tick, watched
+<!-- step: first-tick -->
+
+**Check:**
+
+```bash
+gh run list --workflow march --json databaseId,status,conclusion,createdAt --limit 5
+```
+
+```powershell
+gh run list --workflow march --json databaseId,status,conclusion,createdAt --limit 5
+```
+
+**Do:** dispatch one tick, then watch it. In pull-request
+mode, name a small chunk to keep the first PR short:
+
+```bash
+gh workflow run march -f chunk=<chunk id>
+gh run watch
+```
+
+```powershell
+gh workflow run march -f chunk=<chunk id>
+gh run watch
+```
+
+Poll the run list every few seconds rather than trusting a
+clock: a run that stays `queued` for two minutes is waiting on
+a runner or the concurrency group, not working.
+
+**Done when:**
+
+- **Owner mode:** the default branch has a commit with the
+  `Cloud-Run:` trailer, and `node scripts/claims.mjs list`
+  shows no leftover claim from `cloud-<run id>`.
+- **Pull-request mode:** a PR from `nexus/<run id>` exists,
+  `node scripts/claims.mjs list` shows its chunk with that PR,
+  and closing the PR (or merging it) makes the claim leave
+  within a minute (`pr-flow`, or your own bot).
 
 ## Rolling it back
 
