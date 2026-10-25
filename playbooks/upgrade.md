@@ -110,7 +110,7 @@ writes nothing if that is red; it never deletes the v1 files
 
 | v1 row | becomes |
 |---|---|
-| `[x] Phase N — <title> (commit <sha>)` | one `plan/ARCHIVE.md` line: `- <date> · <NN> · <title, ≤ 10 words> · <sha>` (the date from `git show -s --format=%as <sha>`; a `(this commit)` row takes the commit that ticked it; `NN` is N zero-padded to two digits). A `[-]` partial row too. The sha may also be a trailing `` `<sha>` ``, a range `a..b` or `a → b`, or a ship pair `a + b` (archived `a..b`); the title stops at the first ` — `, `. ` or ` (`. |
+| `[x] Phase N — <title> (commit <sha>)` | one `plan/ARCHIVE.md` line: `- <date> · <NN> · <title, ≤ 10 words> · <sha>` (the date from `git show -s --format=%as <sha>`; a `(this commit)` row takes the commit that ticked it; `NN` is N zero-padded to two digits). A `[-]` partial row too. The sha may also be a trailing `` `<sha>` ``, a range `a..b` or `a → b`, or a ship pair `a + b` (archived `a..b`); the title stops at the first ` — `, `. ` or ` (`, and a trailing `` `<sha>` `` never joins it. |
 | `[x] Phase Na — <title>` (a letter suffix: `4b`, `15a`) | an archive line under the parent number, the suffix leading the title: `- <date> · 15 · 15a: <title> · <sha>` |
 | `[ ] Phase N — <title>` with a brief | a stub spec `plan/<NN>-<slug>.md` (the brief folded into Design, one acceptance ID, `Not chunked yet.`) and a roadmap row; refine it as below |
 | `[ ] Phase N — <title>` with no brief | a stub spec with its Why (from the build plan's per-phase scope), the row's own text past the title in Design, one acceptance ID, and `Not chunked yet.` |

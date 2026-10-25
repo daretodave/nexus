@@ -151,6 +151,7 @@ npx @usenexus/cli --port <n>     a fixed port (default: the last launch's, when 
 npx @usenexus/cli --replace      stop this repo's running nexus the safe way, then start (an upgrade)
 NEXUS_PROVIDER=cli               use `claude -p` stream-json instead of the Agent SDK
 npx @usenexus/cli --demo <name>  a scripted demo (below): no repo, no Claude, no network
+npx @usenexus/cli upgrade        a nexus v1 repo to v2, dry run (below)
 ```
 
 ## Demo: fixtures and a timed beat script
@@ -327,6 +328,42 @@ to approve it, and is listed in `permission_denials`. A question
 (`AskUserQuestion`) is denied with a note to take the recommended
 option. `--permission-mode` can widen this to `acceptEdits`, `auto`
 or `plan`. `bypassPermissions` is refused.
+
+## Upgrade: a v1 repo, dry run first
+
+```
+npx @usenexus/cli upgrade                 the repo in this folder
+npx @usenexus/cli upgrade --repo <dir>    another folder
+npx @usenexus/cli upgrade --json          the report as JSON
+```
+
+`upgrade` moves a nexus v1 repo (a phase plan:
+`plan/steps/01_build_plan.md`) to v2 (specs and chunks). This
+release carries the dry run, and it writes nothing. It never reads
+your checkout either, which can be stale and dirty: it fetches
+origin's default branch and works in a temporary worktree cut from
+it. There it copies the v2 kit files (the CLI's bundled set, the
+same list as the manual copy list in `playbooks/upgrade.md`), merges
+the v2 lanes and spec table into your roadmap (your own sections
+stay where they are), converts the build plan, retires the v1 files,
+rewrites the v1 references it has a sure spelling for, flips the
+lock, and runs plan-check and its test.
+
+The report lists every file it touched (`added`, `replaced`,
+`seeded`, `merged`, `converted`, `retired`, `renamed`, `rewritten
+(N refs)`), the archive lines it would append, the warnings, the
+gate, the first dispatch a tick would make (march's pick order
+played forward), and the loop mode. A v1 loop that pushed the
+default branch (`Cloud-Run` commits) prints the `gh variable set
+NEXUS_LOOP_MODE --body owner` line, because pull-request mode picks
+only chunks. A half-done repo (a lock saying `chunks` beside
+`plan/steps/` or `PHASE_CANDIDATES.md`) gets Step 5 only. A v2 repo
+prints "already on v2".
+
+It exits 0 when the report prints, 1 when the gate is red (the
+worktree is kept and its path printed), and 2 when the repo is not
+v1, has no origin, or a flag names a step this release does not
+carry yet (`--write`, `--land`, `--rollback`, `--pr`).
 
 ## Develop
 

@@ -348,7 +348,6 @@ tick).
 
 ## Acceptance
 
-- **A3** `npx @usenexus/cli upgrade` with no flags works from a fresh fetch of origin in a temporary worktree, writes nothing (the local tree's `git status` is unchanged), and prints the per-file report, the archive diff, the warnings, the predicted first dispatch and the loop-mode line; on a half-done repo it reports and finishes Step 5 only; on a v2 repo it exits 0 with "already on v2".
 - **A4** Custom march and iterate text moves verbatim into the lanes files while kit text from any historical kit version is replaced (a fixture forked from a pre-`v1.0.0` kit march.md plus two custom sections yields exactly those two in `march.lanes.md`); custom skills and commands are kept (a command with no skill becomes a skill); the repo's README sections stay and `<PROJECT>` is filled; no v1 reference is left outside history files.
 - **A5** The merged `march.yml` keeps the v1 cron, ceiling, model pin, extra env and concurrency group, the toolchain steps become `.github/actions/setup`, workflow-lint passes, and the report prints the `NEXUS_LOOP_MODE` owner line when the v1 loop pushed to the default branch.
 - **A6** The upgrade writes every spec 54-57 knob at its conservative value (Support triage-only, Promote owner, Generators empty, stall_action alert, dimension I off, UI none, cadence unset, chain 0, idle backoff 0), and a test fails when a kit template names a knob the registry lacks.
@@ -365,20 +364,19 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 11 open · 2 closed · next A14
+Measure: 10 open · 3 closed · next A14
 
-- [ ] **58.3** `upgrade` dry run: detect, fresh-origin worktree, convert, report · M · closes A3 · needs —
-- [ ] **58.4** Carry the train: lanes extraction, skills, README, references · L · closes A4 · needs 58.3
+- [ ] **58.4** Carry the train: lanes extraction, skills, README, references · L · closes A4 · needs —
   - Kit text is judged against every historical kit version (`kit-text.json`), never against the `v1.0.0` tag alone.
-- [ ] **58.5** The workflow merge keeps cron, ceiling, model and env · M · closes A5 · needs 58.3
-- [ ] **58.6** Conservative knobs from a registry · S · closes A6 · needs 58.3, 54.8, 55.5, 56.7, 57.8
+- [ ] **58.5** The workflow merge keeps cron, ceiling, model and env · M · closes A5 · needs —
+- [ ] **58.6** Conservative knobs from a registry · S · closes A6 · needs 54.8, 55.5, 56.7, 57.8
 - [ ] **58.7** Scratch proof on an editorial v1 clone · M · closes A7 · needs 58.4, 58.5, 58.6
   - Fresh clone of the adopter's origin in the scratchpad only; the local checkout is stale and dirty and is never touched. Gaps become fixes in 58.3-58.6's functions plus fixtures.
 - [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs 58.7
-- [ ] **58.9** The GUI Upgrade banner · S · closes A9 · needs 58.3
+- [ ] **58.9** The GUI Upgrade banner · S · closes A9 · needs —
   - Keep the GUI's particles, colour and motion.
 - [ ] **58.10** Runbook rewrite, upgrade prompt and the README door · M · closes A10 · needs 58.8, 58.9
   - The README section merges with the `cli-v*` release that carries 58.3-58.9; the owner tags it.
-- [ ] **58.11** v2 to latest: the three-way sync and the assisted merge · L · closes A11 · needs 58.3, 58.6
+- [ ] **58.11** v2 to latest: the three-way sync and the assisted merge · L · closes A11 · needs 58.6
 - [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs 58.9, 58.10, 58.11
 - [ ] **58.13** Upgrade a repo on GitHub as a pull request, no checkout · M · closes A13 · needs 58.11

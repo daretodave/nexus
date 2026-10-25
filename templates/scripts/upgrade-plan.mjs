@@ -95,10 +95,11 @@ export function shasIn(text) {
   return one ? [one[1]] : []
 }
 
-// A row's title: cut at the first " — ", ". " or " (", then any
-// parenthetical left out.
+// A row's title: a trailing backtick sha off, cut at the first
+// " — ", ". " or " (", then any parenthetical left out.
 export function cleanTitle(raw) {
-  let t = raw.split(/\s+—\s+|\.\s|\s\(/)[0]
+  const bare = raw.replace(TRAILING, '').replace(/[\s—–-]+$/, '').trim()
+  let t = (bare || raw).split(/\s+—\s+|\.\s|\s\(/)[0]
   for (let prev = null; prev !== t;) { prev = t; t = t.replace(/\s*\([^()]*\)/g, '') }
   t = t.replace(/[\s.;:,]+$/, '').trim()
   return t || raw.replace(/[\s.;:,]+$/, '').trim()

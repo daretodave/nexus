@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // npx @usenexus/cli [--repo <dir>] [--port <n>] [--no-open]
 // npx @usenexus/cli run "<prompt>" [--cwd <dir>]   one turn headless, JSON out
+// npx @usenexus/cli upgrade [--repo <dir>] [--json]   a v1 repo to v2, dry run (server/upgrade.mjs)
 // npx @usenexus/cli --demo <scenario> [--speed <n>] [--loop]   fixtures and a beat script, no repo
 //
 // Starts the nexus GUI on 127.0.0.1 (random port, per-launch token) for
@@ -22,6 +23,14 @@ const argv = process.argv.slice(2);
 if (argv[0] === 'run') {
   const { runCli } = await import('../server/headless.mjs');
   const code = await runCli(argv.slice(1));
+  await new Promise((r) => process.stdout.write('', r));
+  process.exit(code);
+}
+
+// `nexus upgrade`: a v1 repo to v2, dry run first, from a fresh fetch of origin (server/upgrade.mjs).
+if (argv[0] === 'upgrade') {
+  const { runUpgrade } = await import('../server/upgrade.mjs');
+  const code = await runUpgrade(argv.slice(1));
   await new Promise((r) => process.stdout.write('', r));
   process.exit(code);
 }
@@ -50,6 +59,8 @@ if (flag('--help') || flag('-h')) {
                                     way (every session parked), then start:
                                     how a newer version takes over
   npx @usenexus/cli run "<prompt>"  one turn headless, JSON out (run --help)
+  npx @usenexus/cli upgrade         a nexus v1 repo to v2: a dry run from a
+                                    fresh fetch of origin (upgrade --help)
   npx @usenexus/cli --demo <name>   a scripted demo: fixtures and a timed beat
                                     script, no repo, no Claude, no network, no
                                     writes (--demo list names them; --speed <n>

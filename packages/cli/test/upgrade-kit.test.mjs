@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { bundleUpgrade, bundledPath } from '../scripts/bundle-upgrade.mjs';
+import { SEEDS, bundleUpgrade, bundledPath } from '../scripts/bundle-upgrade.mjs';
 
 const PKG = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NEXUS = path.resolve(PKG, '..', '..');
@@ -20,7 +20,11 @@ test('the upgrade bundle is the computed list, byte for byte, with files.json na
   assert.deepEqual(missing, []);
   const { upgradeFiles } = await import(pathToFileURL(LIST).href);
   assert.deepEqual(files, upgradeFiles(NEXUS).files);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(out, 'files.json'), 'utf8')).files, files);
+  const manifest = JSON.parse(fs.readFileSync(path.join(out, 'files.json'), 'utf8'));
+  assert.deepEqual(manifest.files, files);
+  // The seeds the upgrade merges or flips (the v2 roadmap, the lock) ride along, byte for byte.
+  assert.deepEqual(manifest.seeds, [...SEEDS]);
+  for (const s of SEEDS) assert.equal(fs.readFileSync(path.join(out, ...s.split('/')), 'utf8'), fs.readFileSync(path.join(NEXUS, 'templates', ...s.split('/')), 'utf8'), s);
   for (const f of files) {
     assert.equal(fs.readFileSync(path.join(out, ...bundledPath(f.kit).split('/')), 'utf8'), fs.readFileSync(path.join(NEXUS, ...f.kit.split('/')), 'utf8'), f.kit);
   }

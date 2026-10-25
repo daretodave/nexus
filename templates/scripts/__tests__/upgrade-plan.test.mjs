@@ -231,6 +231,9 @@ test('cleanTitle cuts at the first " — ", ". " or " ("', async () => {
   assert.equal(cleanTitle('Survey refill (when the queue runs dry) — `1515151`'), 'Survey refill')
   assert.equal(cleanTitle('Polish: 404, about, footer'), 'Polish: 404, about, footer')
   assert.equal(cleanTitle('Checkout flow — needs a local session'), 'Checkout flow')
+  // A trailing backtick sha is the ship sha, never part of the title.
+  assert.equal(cleanTitle('Content queue `0ffc0cc`'), 'Content queue')
+  assert.equal(cleanTitle('Cross-links `7a8aaf2`.'), 'Cross-links')
 })
 
 test('the measured format: every done phase archived once with its ship sha, suffixed ones under their parent', () => {
