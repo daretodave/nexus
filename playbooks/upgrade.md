@@ -129,18 +129,23 @@ writes nothing if that is red; it never deletes the v1 files
 
 | v1 row | becomes |
 |---|---|
-| `[x] Phase N — <title> (commit <sha>)` | one `plan/ARCHIVE.md` line: `- <date> · <NN> · <title, ≤ 10 words> · <sha>` (the date from `git show -s --format=%as <sha>`; a `(this commit)` row takes the commit that ticked it; `NN` is N zero-padded to two digits). A `[-]` partial row too. |
+| `[x] Phase N — <title> (commit <sha>)` | one `plan/ARCHIVE.md` line: `- <date> · <NN> · <title, ≤ 10 words> · <sha>` (the date from `git show -s --format=%as <sha>`; a `(this commit)` row takes the commit that ticked it; `NN` is N zero-padded to two digits). A `[-]` partial row too. The sha may also be a trailing `` `<sha>` ``, a range `a..b` or `a → b`, or a ship pair `a + b` (archived `a..b`); the title stops at the first ` — `, `. ` or ` (`. |
+| `[x] Phase Na — <title>` (a letter suffix: `4b`, `15a`) | an archive line under the parent number, the suffix leading the title: `- <date> · 15 · 15a: <title> · <sha>` |
 | `[ ] Phase N — <title>` with a brief | a stub spec `plan/<NN>-<slug>.md` (the brief folded into Design, one acceptance ID, `Not chunked yet.`) and a roadmap row; refine it as below |
-| `[ ] Phase N — <title>` with no brief | a stub spec with its Why (from the build plan's per-phase scope), one acceptance ID, and `Not chunked yet.` |
+| `[ ] Phase N — <title>` with no brief | a stub spec with its Why (from the build plan's per-phase scope), the row's own text past the title in Design, one acceptance ID, and `Not chunked yet.` |
+| `[ ] Phase Na — <title>` | a stub spec as above at the next free spec number (its parent's may already be a spec), with a warning |
 | `[blocked: <reason> <date>] Phase N` | a spec as above, plus a Held line `- **<NN>** · blocked: <reason> <date>` |
 | `[skipped] Phase N` | one archive line `- <date> · <NN> · dropped: <reason> · (this commit)` |
 | Carry-overs / known gaps | by hand: an acceptance ID in the spec it belongs to, or a `plan/AUDIT.md` row |
-| Phase log | an archive line for any phase the status block lacks; otherwise its shas date the rows above |
+| Phase log (bulleted `- phase N — <sha> — <summary>` or bare `phase N — …` lines) | an archive line for any phase the status block lacks; otherwise its shas date the rows above. No phase is archived twice. |
 
-What it leaves to you is in its warnings: carry-overs, a `[-]`
-partial row's gaps, and a shipped row whose commit it could
-not find (archived as `unknown`; put the sha in). Then refine
-each stub spec it wrote, as below.
+No `plan/ARCHIVE.md` yet is fine: it starts one. What it
+leaves to you is in its warnings: carry-overs, a `[-]` partial
+row's gaps, a shipped row whose commit it could not find
+(archived as `unknown`; put the sha in), an open suffixed
+phase's new number, and any Status row it could not parse
+(named, with the listed and parsed counts). Then refine each
+stub spec it wrote, as below.
 
 Keep the phase number as the spec number, so history lines up:
 phase 12's spec is `plan/12-<slug>.md` and its chunks are

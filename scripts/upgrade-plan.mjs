@@ -11,7 +11,16 @@
 //   - `[x]` rows (and `[-]` partial rows) and phase-log entries
 //     become ARCHIVE.md lines: `- <date> · <NN> · <title> · <sha>`,
 //     the date from git (`%as` of the row's commit; a
-//     `(this commit)` row takes the commit that ticked it)
+//     `(this commit)` row takes the commit that ticked it). A
+//     letter-suffixed phase (`Phase 15a`) archives under its
+//     parent number with the suffix leading its title
+//     (`· 15 · 15a: …`); an open one becomes a stub spec at the
+//     next free number, with a warning
+//   - a ship sha is read from `(commit <sha>)`, a range
+//     (`a..b`, `a → b`), an `a + b` pair (archived `a..b`), a
+//     trailing backtick sha or a lone sha; the phase log may be
+//     bulleted or bare `phase N[a] — <sha> — <summary>` lines
+//   - a missing ARCHIVE.md starts from an empty archive
 //   - `[skipped]` rows become `- <today> · <NN> · dropped: … ·
 //     (this commit)`
 //   - `[ ]` rows become spec stubs `plan/<NN>-<slug>.md`: the
@@ -71,30 +80,60 @@ function bullets(lines) {
   return out.filter(Boolean)
 }
 
-function shasIn(text) {
-  const range = text.match(new RegExp(`\\b(${SHA})\\s*(?:→|->|\\.\\.)\\s*(${SHA})\\b`))
+// A ship sha: a range (`a..b`, `a → b`) or an `a + b` pair, else
+// `(commit <sha>)`, a trailing backtick sha, or a lone sha.
+// Backticks around a sha are allowed everywhere.
+const TICKED = `\`?(${SHA})\`?`
+const RANGE = new RegExp(`(?:^|[\\s(\`])${TICKED}\\s*(?:→|->|\\.\\.|\\+)\\s*${TICKED}(?=$|[\\s).,;:\`])`)
+const COMMIT = new RegExp(`\\(commit ${TICKED}\\)`)
+const TRAILING = new RegExp(`\`(${SHA})\`[\\s).,;]*$`)
+const LONE = new RegExp(`^${TICKED}$`)
+export function shasIn(text) {
+  const range = text.match(RANGE)
   if (range) return [range[1], range[2]]
-  const one = text.match(new RegExp(`\\(commit (${SHA})\\)`)) || text.match(new RegExp(`^(${SHA})$`))
+  const one = text.match(COMMIT) || text.match(TRAILING) || text.match(LONE)
   return one ? [one[1]] : []
 }
 
-// A row's title: parentheticals out, cut at the first " — ".
-function cleanTitle(raw) {
-  let t = raw
+// A row's title: cut at the first " — ", ". " or " (", then any
+// parenthetical left out.
+export function cleanTitle(raw) {
+  let t = raw.split(/\s+—\s+|\.\s|\s\(/)[0]
   for (let prev = null; prev !== t;) { prev = t; t = t.replace(/\s*\([^()]*\)/g, '') }
-  return t.split(/\s+—\s+/)[0].replace(/[\s.;:,]+$/, '').trim()
+  t = t.replace(/[\s.;:,]+$/, '').trim()
+  return t || raw.replace(/[\s.;:,]+$/, '').trim()
 }
 
 const words = (t, n) => t.split(/\s+/).slice(0, n).join(' ').replace(/[;:,]+$/, '')
 
+// The phase log's entries, bulleted (`- phase N — sha — summary`)
+// or bare (`phase N — sha — summary`), wrapped lines joined.
+function logEntries(lines) {
+  const out = []
+  for (const line of lines || []) {
+    if (/^(?:- )?phase \d/i.test(line)) out.push(line.trim().replace(/^- /, ''))
+    else if (out.length && /^\s+\S/.test(line) && !/^\s+- /.test(line)) out[out.length - 1] += ` ${line.trim()}`
+    else if (out.length) out.push(null)
+  }
+  return out.filter(Boolean)
+}
+
+// A phase id: its number plus an optional letter suffix (`15a`).
+const idOf = (num, suffix) => `${+num}${suffix || ''}`
+const byIdOrder = (a, b) => (a.num - b.num) || (a.suffix < b.suffix ? -1 : a.suffix > b.suffix ? 1 : 0)
+
 export function parseBuildPlan(text) {
   const secs = sectionsOf(text)
   const rows = []
+  const unparsed = []
+  let listed = 0
   for (const b of bullets(find(secs, /^Status/))) {
-    const m = b.match(/^- \[([^\]]*)\]\s*Phase (\d+)\s*[—–-]\s*(.*)$/)
-    if (!m) continue
-    const [, mark, num, rest] = m
-    const row = { num: +num, raw: rest, title: cleanTitle(rest), shas: shasIn(rest), status: null, reason: null, date: null }
+    if (!/^- \[/.test(b)) continue
+    listed++
+    const m = b.match(/^- \[([^\]]*)\]\s*Phase (\d+)([a-z]?)\s*[—–:-]\s*(.*)$/)
+    if (!m) { unparsed.push(b); continue }
+    const [, mark, num, suffix, rest] = m
+    const row = { id: idOf(num, suffix), num: +num, suffix, raw: rest, title: cleanTitle(rest), shas: shasIn(rest), status: null, reason: null, date: null }
     if (mark === 'x') row.status = 'done'
     else if (mark === ' ') row.status = 'open'
     else if (mark === '-') row.status = 'partial'
@@ -105,28 +144,30 @@ export function parseBuildPlan(text) {
       const d = r.match(/^(.*?)\s*(\d{4}-\d{2}-\d{2})$/)
       row.reason = (d ? d[1] : r) || 'blocked'
       row.date = d ? d[2] : null
-    } else continue
+    } else { unparsed.push(b); continue }
     rows.push(row)
   }
   const log = new Map()
-  for (const b of bullets(find(secs, /^Phase log/))) {
-    const m = b.match(/^- phase (\d+)\s+[—–-]\s+(.+?)\s+[—–-]\s+(.*)$/i)
-    if (m) log.set(+m[1], { shas: shasIn(m[2].trim()), summary: m[3].trim() })
+  for (const e of logEntries(find(secs, /^Phase log/))) {
+    const m = e.match(/^phase (\d+)([a-z]?)\s+[—–-]\s+(.+?)\s+[—–-]\s+(.*)$/i)
+    if (!m) continue
+    const id = idOf(m[1], m[2])
+    if (!log.has(id)) log.set(id, { id, num: +m[1], suffix: m[2], shas: shasIn(m[3].trim()), summary: m[4].trim() })
   }
   const scopes = new Map()
   const scope = find(secs, /^Per-phase scope/)
   if (scope) {
     let cur = null
     for (const line of scope) {
-      const h = line.match(/^### Phase (\d+)\b/)
-      if (h) { cur = +h[1]; scopes.set(cur, []); continue }
+      const h = line.match(/^### Phase (\d+)([a-z]?)\b/)
+      if (h) { cur = idOf(h[1], h[2]); scopes.set(cur, []); continue }
       if (/^---\s*$/.test(line)) { cur = null; continue }
       if (cur !== null) scopes.get(cur).push(line)
     }
     for (const [k, v] of scopes) scopes.set(k, v.join('\n').trim())
   }
   const carryOvers = bullets(find(secs, /^Carry-overs/)).length
-  return { rows, log, scopes, carryOvers }
+  return { rows, log, scopes, carryOvers, listed, unparsed }
 }
 
 function slug(title, num) {
@@ -148,15 +189,25 @@ function foldBrief(text) {
   return out.join('\n').trim()
 }
 
-function specStub(row, brief, scope, today) {
-  const nn = pad(row.num)
-  const why = [scope || `Phase ${row.num} of the v1 build plan: ${row.raw.trim()}`]
+// The row's own text past its title: what the v1 status line said
+// the phase covers.
+function inlineScope(row) {
+  let rest = row.raw.replace(/\s+/g, ' ').trim()
+  if (rest.startsWith(row.title)) rest = rest.slice(row.title.length)
+  rest = rest.replace(/^[\s.;:,—–-]+/, '').trim()
+  return /[a-z]{3}/i.test(rest) ? rest : ''
+}
+
+function specStub(row, nn, brief, scope, today) {
+  const why = [scope || `Phase ${row.id} of the v1 build plan: ${row.title}.`]
   if (row.status === 'blocked') why.push(`Blocked${row.date ? ` since ${row.date}` : ''}: ${row.reason}. It waits in the roadmap's Held lane.`)
+  const inline = inlineScope(row)
+  const design = [...(brief ? [foldBrief(brief)] : []), ...(inline ? [`The v1 row's scope: ${inline}`] : [])]
   return `# ${nn} — ${row.title}
 
 > ${row.title}.
 
-Converted from v1 phase ${row.num} by \`scripts/upgrade-plan.mjs\`
+Converted from v1 phase ${row.id} by \`scripts/upgrade-plan.mjs\`
 on ${today}. Before building it: map the brief across
 (nexus/playbooks/upgrade.md Step 4), give each observable
 outcome its own acceptance ID, and chunk it.
@@ -167,11 +218,11 @@ ${why.join('\n\n')}
 
 ## Design
 
-${brief ? foldBrief(brief) : '(No v1 brief: decide the design before chunking.)'}
+${design.length ? design.join('\n\n') : '(No v1 brief: decide the design before chunking.)'}
 
 ## Acceptance
 
-- **A1** ${row.title}: done as v1 phase ${row.num} described.
+- **A1** ${row.title}: done as v1 phase ${row.id} described.
 
 ## Open questions
 
@@ -219,65 +270,101 @@ function updateRoadmap(readme, keep, newRows, held) {
 }
 
 // convert(): the whole conversion, pure. `git` answers
-// dateOf(sha) → 'YYYY-MM-DD' | null and flipOf(num) → { sha, date }
-// | null (the commit that ticked the row). `existing` is the specs
-// already in the plan folder: [{ name, text }].
+// dateOf(sha) → 'YYYY-MM-DD' | null and flipOf(id) → { sha, date }
+// | null (the commit that ticked the row; id is `15` or `15a`).
+// `existing` is the specs already in the plan folder:
+// [{ name, text }]. A null `archive` (no ARCHIVE.md yet) starts
+// from an empty one.
+export const EMPTY_ARCHIVE = `# Archive
+
+> Append-only: one line per finished chunk, added in the commit
+> that closes it. Never edited or reordered.
+
+---
+
+`
+
 export function convert({ buildPlan, briefs = {}, readme, archive, existing = [], git, today, label = 'plan' }) {
   if (readme === null || readme === undefined) throw new Error(`${label}/README.md missing: do nexus/playbooks/upgrade.md Step 3 first`)
-  if (archive === null || archive === undefined) throw new Error(`${label}/ARCHIVE.md missing: do nexus/playbooks/upgrade.md Step 2 first`)
-  const { rows, log, scopes, carryOvers } = parseBuildPlan(buildPlan)
+  const created = archive === null || archive === undefined
+  if (created) archive = EMPTY_ARCHIVE
+  const { rows, log, scopes, carryOvers, listed, unparsed } = parseBuildPlan(buildPlan)
   const warnings = []
+  if (listed !== rows.length) {
+    const named = unparsed.map((b) => `"${b.length > 72 ? `${b.slice(0, 69)}...` : b}"`).join(', ')
+    warnings.push(`Status lists ${listed} row(s) but ${rows.length} parsed; not converted: ${named || '(none named)'}`)
+  }
   // The template archive's example lines sit in a fence: they are not history.
   let fenced = false
   const live = archive.split(/\r?\n/).filter((l) => { if (/^\s*(```|~~~)/.test(l)) { fenced = !fenced; return false } return !fenced }).join('\n')
-  const isArchived = (nn) => archived(live, nn)
-  const byNum = new Map(rows.map((r) => [r.num, r]))
+  // A plain phase's line is `· NN · <title>`; a suffixed one's is
+  // `· NN · 15a: <title>`, so neither hides the other.
+  const isArchived = (p) => (p.suffix
+    ? new RegExp(`^- \\d{4}-\\d{2}-\\d{2} · ${pad(p.num)} · ${p.id}: `, 'm').test(live)
+    : archived(live.split('\n').filter((l) => !/^- \S+ · \d+ · \d+[a-z]: /.test(l)).join('\n'), pad(p.num)))
+  const byId = new Map()
+  for (const r of rows) if (!byId.has(r.id)) byId.set(r.id, r)
   const existingNums = new Map(existing.map((s) => [+(s.name.match(SPEC_FILE) || [])[1], s.name]))
-  const briefFor = (n) => {
-    const f = Object.keys(briefs).find((b) => new RegExp(`^phase_${n}_.*\\.md$`).test(b))
+  const converted = (id) => existing.some((s) => new RegExp(`^Converted from v1 phase ${id} by`, 'm').test(s.text || ''))
+  const briefFor = (id) => {
+    const f = Object.keys(briefs).find((b) => new RegExp(`^phase_0*${id}_.*\\.md$`).test(b))
     return f ? briefs[f] : null
   }
+  // The next free spec number: past every phase, spec and archive line.
+  let free = Math.max(0, ...rows.map((r) => r.num), ...[...log.values()].map((e) => e.num), ...existingNums.keys(),
+    ...[...live.matchAll(/^- \S+ · (\d+) · /gm)].map((m) => +m[1])) + 1
+  const tag = (p) => `${pad(p.num)}${p.suffix}`
+  const titled = (p, t) => (p.suffix ? `${p.id}: ${t}` : t)
 
-  // Archive lines.
+  // Archive lines: one per shipped phase, never two.
   const lines = []
-  const shipped = [...rows.filter((r) => r.status === 'done' || r.status === 'partial').map((r) => r.num),
-    ...[...log.keys()].filter((n) => !byNum.has(n))]
-  for (const n of shipped) {
-    const nn = pad(n)
-    if (isArchived(nn)) continue
-    const row = byNum.get(n)
-    const entry = log.get(n)
-    const title = words(row ? row.title : cleanTitle(entry.summary), 10)
+  const seen = new Set()
+  const shipped = [...rows.filter((r) => r.status === 'done' || r.status === 'partial'),
+    ...[...log.values()].filter((e) => !byId.has(e.id))]
+  for (const p of shipped) {
+    if (seen.has(p.id)) continue
+    seen.add(p.id)
+    const nn = pad(p.num)
+    if (isArchived(p)) continue
+    const row = byId.get(p.id)
+    const entry = log.get(p.id)
+    const title = titled(p, words(row ? row.title : cleanTitle(entry.summary), 10))
     let shas = row?.shas.length ? row.shas : entry?.shas || []
     let date = null
     if (shas.length) date = git.dateOf(shas[shas.length - 1])
     if (!date) {
-      const flip = git.flipOf(n)
+      const flip = git.flipOf(p.suffix ? p.id : p.num)
       if (flip) { date = flip.date; if (!shas.length) shas = [flip.sha] }
     }
-    if (!shas.length) warnings.push(`${nn}: shipped, but no commit in the row, the log or the history; archived as "unknown": put the sha in by hand`)
+    if (!shas.length) warnings.push(`${tag(p)}: shipped, but no commit in the row, the log or the history; archived as "unknown": put the sha in by hand`)
     if (!date) date = today
-    if (row?.status === 'partial') warnings.push(`${nn}: shipped partial ([-]); its carry-overs need an acceptance ID in a spec or a plan/AUDIT.md row`)
-    lines.push({ date, n, text: `- ${date} · ${nn} · ${title} · ${shas.length ? shas.join('..') : 'unknown'}` })
+    if (row?.status === 'partial') warnings.push(`${tag(p)}: shipped partial ([-]); its carry-overs need an acceptance ID in a spec or a plan/AUDIT.md row`)
+    lines.push({ date, p, text: `- ${date} · ${nn} · ${title} · ${shas.length ? shas.join('..') : 'unknown'}` })
   }
   for (const r of rows.filter((x) => x.status === 'skipped')) {
-    const nn = pad(r.num)
-    if (isArchived(nn)) continue
-    lines.push({ date: today, n: r.num, text: `- ${today} · ${nn} · dropped: ${words(r.reason || r.title, 9)} · (this commit)` })
+    if (seen.has(r.id)) continue
+    seen.add(r.id)
+    if (isArchived(r)) continue
+    lines.push({ date: today, p: r, text: `- ${today} · ${pad(r.num)} · ${titled(r, `dropped: ${words(r.reason || r.title, 9)}`)} · (this commit)` })
   }
-  lines.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.n - b.n))
+  lines.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : byIdOrder(a.p, b.p)))
   if (carryOvers) warnings.push(`${carryOvers} carry-over bullet(s) in the build plan: each becomes an acceptance ID in its spec or a plan/AUDIT.md row, by hand`)
 
-  // Spec stubs, roadmap rows, Held lines.
+  // Spec stubs, roadmap rows, Held lines. A suffixed open phase
+  // takes the next free number: its parent's may be a spec already.
   const files = []
   const newRows = []
   const held = []
   for (const r of rows.filter((x) => x.status === 'open' || x.status === 'blocked')) {
-    const nn = pad(r.num)
-    if (existingNums.has(r.num)) continue
-    const name = `${nn}-${slug(r.title, r.num)}.md`
-    files.push({ path: `${label}/${name}`, kind: 'new', content: specStub(r, briefFor(r.num), scopes.get(r.num), today) })
-    newRows.push(`| ${r.num} | ${r.title.replace(/\|/g, '/')} | [${name}](${name}) | ${r.status === 'blocked' ? 'held' : 'planned'} | not chunked |`)
+    if (seen.has(r.id)) continue
+    seen.add(r.id)
+    if (r.suffix ? converted(r.id) : existingNums.has(r.num)) continue
+    const num = r.suffix ? free++ : r.num
+    const nn = pad(num)
+    if (r.suffix) warnings.push(`${tag(r)}: an open letter-suffixed phase; its stub spec is ${nn} (the next free number), not ${pad(r.num)}`)
+    const name = `${nn}-${slug(r.title, num)}.md`
+    files.push({ path: `${label}/${name}`, kind: 'new', content: specStub(r, nn, briefFor(r.id), scopes.get(r.id), today) })
+    newRows.push(`| ${num} | ${r.title.replace(/\|/g, '/')} | [${name}](${name}) | ${r.status === 'blocked' ? 'held' : 'planned'} | not chunked |`)
     if (r.status === 'blocked') held.push(`- **${nn}** · blocked: ${r.reason}${r.date ? ` ${r.date}` : ''}`)
   }
 
@@ -285,6 +372,7 @@ export function convert({ buildPlan, briefs = {}, readme, archive, existing = []
   const nextReadme = updateRoadmap(readme, keep, newRows, held)
   if (nextReadme !== readme.replace(/\r\n/g, '\n')) files.push({ path: `${label}/README.md`, kind: 'update', content: nextReadme })
   if (lines.length) {
+    if (created) warnings.push(`${label}/ARCHIVE.md was missing: it is created with the converted lines`)
     const base = archive.replace(/\r\n/g, '\n').replace(/\n*$/, '\n')
     files.push({ path: `${label}/ARCHIVE.md`, kind: 'append', added: lines.map((l) => l.text), content: `${base}${lines.map((l) => `${l.text}\n`).join('')}` })
   }

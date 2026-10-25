@@ -200,3 +200,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 57.1 · Aged promotion lands in Held with a veto issue · 82ad7e47..82ad7e47
 - 2026-10-25 · 56.2 · npm run walk opens every demo screen in Chrome and writes down what it sees · 18fdd26f..18fdd26f
 - 2026-10-25 · 57.2 · Project lanes extension point · d313b211..d313b211
+- 2026-10-25 · 58.1 · The converter parses real v1 plans · 83bd586a..83bd586a

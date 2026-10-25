@@ -108,9 +108,9 @@ test('parseBuildPlan reads every status, wrapped rows, the blocked marker on its
   assert.equal(rows[5].date, '2026-08-23')
   assert.equal(rows[5].title, 'Checkout flow')
   assert.equal(rows[6].title, 'Admin console')
-  assert.deepEqual(log.get(9).shas, ['fe75c78'])
-  assert.deepEqual(log.get(3).shas, [])
-  assert.match(scopes.get(8), /404 page/)
+  assert.deepEqual(log.get('9').shas, ['fe75c78'])
+  assert.deepEqual(log.get('3').shas, [])
+  assert.match(scopes.get('8'), /404 page/)
   assert.equal(carryOvers, 1)
 })
 
@@ -175,4 +175,120 @@ test('a second run adds nothing: archived phases and written specs are skipped',
 
 test('a v1 roadmap is refused: Step 3 comes first', () => {
   assert.throws(() => run({ readme: '# Plan\n\nNo spec table here.\n' }), /Step 3/)
+})
+
+// The measured v1 format: an editorial loop's build plan, as a
+// scratch clone showed it. Backtick shas, an `a + b` ship pair,
+// letter-suffixed phases, titles that run on past a full stop,
+// an unbulleted phase log, and one row nothing can parse.
+export const MEASURED_PLAN = `# 01 — Build plan
+
+## Status (at-a-glance)
+
+- [x] Phase 1 — Scaffold. Framework, layout and the deploy pipeline — \`a1b2c3d\`
+- [x] Phase 2 — Content model (schema, loaders, front matter) — shipped 1234abc + 5678def
+- [x] Phase 3 — Article pages — \`3333aaa\`
+- [x] Phase 4 — Content queue. One article per tick from the queue file
+- [x] Phase 4b — Trend snapshots. A weekly gate pulls the trend
+      board before the queue runs — \`4b4b4b4\`
+- [x] Phase 15 — Survey refill (when the queue runs dry) — \`1515151\`
+- [x] Phase 15a — Cross-link drain. Every new article links two old ones — \`15a15a1\`
+- [ ] Phase 16 — Newsletter. A weekly digest, opt-in only
+- [ ] Phase 16a — Newsletter archive. One page per sent issue
+- [x] Phasee 17 — a typo row nothing parses
+
+## Phase log (commit hashes)
+
+phase 4 — 4444ddd — content queue
+phase 4b — \`4b4b4b4\` — trend snapshots
+phase 15 — 1515151 — survey refill
+phase 14 — 1414aaa + 1414bbb — a phase only the log knows
+`
+
+const MEASURED_DATES = {
+  a1b2c3d: '2026-03-01', '5678def': '2026-03-02', '3333aaa': '2026-03-03', '4444ddd': '2026-03-04',
+  '4b4b4b4': '2026-03-05', '1414bbb': '2026-03-06', '1515151': '2026-03-07', '15a15a1': '2026-03-08',
+}
+const measuredGit = { dateOf: (sha) => MEASURED_DATES[sha] ?? null, flipOf: () => null }
+const measured = (over = {}) => run({ buildPlan: MEASURED_PLAN, briefs: {}, git: measuredGit, today: '2026-10-25', ...over })
+
+test('shasIn reads a lone sha, a backtick sha, an a + b pair, a range and (commit sha)', async () => {
+  const { shasIn } = await import('../upgrade-plan.mjs')
+  assert.deepEqual(shasIn('84ea179'), ['84ea179'])
+  assert.deepEqual(shasIn('`84ea179`'), ['84ea179'])
+  assert.deepEqual(shasIn('Article pages — `3333aaa`'), ['3333aaa'])
+  assert.deepEqual(shasIn('shipped 1234abc + 5678def'), ['1234abc', '5678def'])
+  assert.deepEqual(shasIn('`1234abc` + `5678def`'), ['1234abc', '5678def'])
+  assert.deepEqual(shasIn('b27d21f → cf05598: the first deploy'), ['b27d21f', 'cf05598'])
+  assert.deepEqual(shasIn('Data layer (commit 84ea179)'), ['84ea179'])
+  assert.deepEqual(shasIn('Search (this commit)'), [])
+  assert.deepEqual(shasIn('Phase 2 + 3 together'), [])
+})
+
+test('cleanTitle cuts at the first " — ", ". " or " ("', async () => {
+  const { cleanTitle } = await import('../upgrade-plan.mjs')
+  assert.equal(cleanTitle('Scaffold. Framework, layout and the deploy pipeline — `a1b2c3d`'), 'Scaffold')
+  assert.equal(cleanTitle('Survey refill (when the queue runs dry) — `1515151`'), 'Survey refill')
+  assert.equal(cleanTitle('Polish: 404, about, footer'), 'Polish: 404, about, footer')
+  assert.equal(cleanTitle('Checkout flow — needs a local session'), 'Checkout flow')
+})
+
+test('the measured format: every done phase archived once with its ship sha, suffixed ones under their parent', () => {
+  const { rows, log } = parseBuildPlan(MEASURED_PLAN)
+  assert.deepEqual(rows.map((r) => r.id), ['1', '2', '3', '4', '4b', '15', '15a', '16', '16a'])
+  assert.deepEqual([...log.keys()], ['4', '4b', '15', '14'], 'the unbulleted log is read')
+  const { files, failures } = measured()
+  assert.deepEqual(failures, [])
+  const added = files.find((f) => f.path === 'plan/ARCHIVE.md').added
+  assert.deepEqual(added, [
+    '- 2026-03-01 · 01 · Scaffold · a1b2c3d',
+    '- 2026-03-02 · 02 · Content model · 1234abc..5678def',
+    '- 2026-03-03 · 03 · Article pages · 3333aaa',
+    '- 2026-03-04 · 04 · Content queue · 4444ddd',
+    '- 2026-03-05 · 04 · 4b: Trend snapshots · 4b4b4b4',
+    '- 2026-03-06 · 14 · a phase only the log knows · 1414aaa..1414bbb',
+    '- 2026-03-07 · 15 · Survey refill · 1515151',
+    '- 2026-03-08 · 15 · 15a: Cross-link drain · 15a15a1',
+  ])
+  assert.equal(new Set(added.map((l) => l.split(' · ').slice(1, 3).join(' · '))).size, added.length, 'no phase archived twice')
+})
+
+test('the measured format: a parsed-vs-listed mismatch is a warning naming the unparsed row', () => {
+  const { warnings } = measured()
+  const w = warnings.find((x) => /Status lists 10 row\(s\) but 9 parsed/.test(x))
+  assert.ok(w, warnings.join('\n'))
+  assert.match(w, /Phasee 17/)
+})
+
+test('an open suffixed phase becomes a stub at the next free number, with a warning; the inline scope fills Design', () => {
+  const { files, warnings } = measured()
+  const paths = files.map((f) => f.path).sort()
+  assert.deepEqual(paths, ['plan/16-newsletter.md', 'plan/17-newsletter-archive.md', 'plan/ARCHIVE.md', 'plan/README.md'])
+  assert.ok(warnings.some((w) => /16a: an open letter-suffixed phase; its stub spec is 17/.test(w)), warnings.join('\n'))
+  const news = files.find((f) => f.path === 'plan/16-newsletter.md').content
+  assert.match(news, /^## Design\n\nThe v1 row's scope: A weekly digest, opt-in only$/m)
+  const arch = files.find((f) => f.path === 'plan/17-newsletter-archive.md').content
+  assert.match(arch, /^Converted from v1 phase 16a by/m)
+  assert.match(arch, /The v1 row's scope: One page per sent issue/)
+  const readme = files.find((f) => f.path === 'plan/README.md').content
+  assert.match(readme, /^\| 17 \| Newsletter archive \| \[17-newsletter-archive\.md\]\(17-newsletter-archive\.md\) \| planned \| not chunked \|$/m)
+})
+
+test('the measured format converts twice to nothing new: suffixed lines and stubs are recognised', () => {
+  const first = measured()
+  const get = (p) => first.files.find((f) => f.path === p).content
+  const existing = first.files.filter((f) => /\/\d{2}-/.test(f.path)).map((f) => ({ name: f.path.slice(5), text: f.content }))
+  const again = measured({ readme: get('plan/README.md'), archive: get('plan/ARCHIVE.md'), existing })
+  assert.deepEqual(again.files, [])
+  assert.deepEqual(again.failures, [])
+})
+
+test('a missing ARCHIVE.md starts from an empty archive instead of refusing', () => {
+  const { files, failures, warnings } = measured({ archive: null })
+  assert.deepEqual(failures, [])
+  const archive = files.find((f) => f.path === 'plan/ARCHIVE.md')
+  assert.match(archive.content, /^# Archive\n/)
+  assert.equal(archive.added.length, 8)
+  assert.ok(archive.content.endsWith('- 2026-03-08 · 15 · 15a: Cross-link drain · 15a15a1\n'))
+  assert.ok(warnings.some((w) => /ARCHIVE\.md was missing/.test(w)))
 })

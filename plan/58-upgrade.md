@@ -321,7 +321,6 @@ owner-run, in an idle window.
 
 ## Acceptance
 
-- **A1** The converter on the measured v1 format archives every done phase, letter-suffixed ones included, each with its ship sha (fixture shapes: a lone sha, a backtick sha, an `a + b` pair, an unbulleted log line), titles cut at the first sentence, no phase archived twice, and warns on a parsed-vs-listed row mismatch.
 - **A2** The playbook's manual copy list and the CLI's bundled kit come from one computed closure; the `upgrade` verify leg fails when a named file is missing or a closure reaches a file the list lacks.
 - **A3** `npx @usenexus/cli upgrade` with no flags works from a fresh fetch of origin in a temporary worktree, writes nothing (the local tree's `git status` is unchanged), and prints the per-file report, the archive diff, the warnings, the predicted first dispatch and the loop-mode line; on a half-done repo it reports and finishes Step 5 only; on a v2 repo it exits 0 with "already on v2".
 - **A4** Custom march and iterate text moves verbatim into the lanes files while kit text from any historical kit version is replaced (a fixture forked from a pre-`v1.0.0` kit march.md plus two custom sections yields exactly those two in `march.lanes.md`); custom skills and commands are kept (a command with no skill becomes a skill); the repo's README sections stay and `<PROJECT>` is filled; no v1 reference is left outside history files.
@@ -339,11 +338,10 @@ owner-run, in an idle window.
 (None.)
 
 ## Chunks
-Measure: 12 open · 0 closed · next A13
+Measure: 11 open · 1 closed · next A13
 
-- [ ] **58.1** The converter parses real v1 plans · S · closes A1 · needs —
 - [ ] **58.2** One computed kit file list and its verify leg · S · closes A2 · needs —
-- [ ] **58.3** `upgrade` dry run: detect, fresh-origin worktree, convert, report · M · closes A3 · needs 58.1, 58.2
+- [ ] **58.3** `upgrade` dry run: detect, fresh-origin worktree, convert, report · M · closes A3 · needs 58.2
 - [ ] **58.4** Carry the train: lanes extraction, skills, README, references · L · closes A4 · needs 58.3
   - Kit text is judged against every historical kit version (`kit-text.json`), never against the `v1.0.0` tag alone.
 - [ ] **58.5** The workflow merge keeps cron, ceiling, model and env · M · closes A5 · needs 58.3

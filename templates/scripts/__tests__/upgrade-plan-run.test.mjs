@@ -110,3 +110,17 @@ test('a repo with no v1 build plan is refused, nothing written', () => {
   assert.match(res.stderr + res.stdout, /01_build_plan\.md/)
   assert.equal(r.git(['status', '--porcelain']), '')
 })
+
+test('--write before the archive is copied in starts ARCHIVE.md from empty and stays plan-check green', () => {
+  const r = v1Repo()
+  fs.rmSync(path.join(r.dir, 'plan/ARCHIVE.md'))
+  r.commit('plan: no archive yet', '2026-10-22')
+  const res = node(r.dir, [UPGRADE, '--write'])
+  assert.equal(res.status, 0, res.stdout + res.stderr)
+  assert.match(res.stdout, /ARCHIVE\.md was missing/)
+  const archive = fs.readFileSync(path.join(r.dir, 'plan/ARCHIVE.md'), 'utf-8')
+  assert.match(archive, /^# Archive\n/)
+  assert.match(archive, new RegExp(`^- 2026-05-17 · 01 · Bootstrap · ${r.one}$`, 'm'))
+  const check = node(r.dir, [PLAN_CHECK])
+  assert.equal(check.status, 0, check.stdout + check.stderr)
+})
