@@ -242,7 +242,9 @@ git push origin main
 
 The upgrade is one commit. `git revert <sha>` returns the v1
 plan, skills and lock; the kit at the `v1.0.0` tag still
-matches them.
+matches them. `npx @usenexus/cli upgrade --rollback` does it
+from a fresh fetch of origin, one commit with the lock pinned
+to `v1.0.0`, and `--land owner` lands it between two ticks.
 
 ## You're done when
 

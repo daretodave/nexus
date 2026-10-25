@@ -456,7 +456,6 @@ tick).
 
 ## Acceptance
 
-- **A8** `--land owner` lands only in an idle window, disables and re-enables march around the push, dispatches and watches the first v2 tick, and `--rollback` restores v1 in one revert commit (tests with a stubbed `gh`).
 - **A13** `upgrade --repo owner/name` works with no local checkout: a blobless temporary clone, the same report as a local run, and with `--pr` a pushed `nexus/upgrade-<version>` branch and a pull request whose body is the report; without push access it forks; a second run updates the open pull request instead of opening another; a red gate opens nothing (tests with a stubbed `gh` and a local bare remote).
 - **A12** The GUI banner offers Sync when a v2 repo's lock is behind the CLI's bundled kit, and the README door and playbook say the same command keeps a v2 repo current.
 - **A10** `playbooks/upgrade.md` is rewritten around the command with a generated manual appendix, `prompts/upgrade.md` exists, and README.md has a "Used v1?" section with the dry-run command and `--write`, linking the playbook; none of them names an adopter repo; the README section ships in the same release as the subcommand.
@@ -466,10 +465,9 @@ tick).
 (None.)
 
 ## Chunks
-Measure: 4 open · 9 closed · next A14
+Measure: 3 open · 10 closed · next A14
 
-- [ ] **58.8** `--write`, `--land`, `--rollback` and the first-tick watch · M · closes A8 · needs —
-- [ ] **58.10** Runbook rewrite, upgrade prompt and the README door · M · closes A10 · needs 58.8
+- [ ] **58.10** Runbook rewrite, upgrade prompt and the README door · M · closes A10 · needs —
   - The README section merges with the `cli-v*` release that carries 58.3-58.9; the owner tags it.
 - [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs 58.10
 - [ ] **58.13** Upgrade a repo on GitHub as a pull request, no checkout · M · closes A13 · needs —

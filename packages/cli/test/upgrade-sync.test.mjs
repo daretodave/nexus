@@ -406,7 +406,7 @@ test('the pieces: bumpLock, merge3, likeness and relocation, the helper\'s answe
   assert.equal(detect(h).shape, 'v2');
 });
 
-test('--write on a v1 repo is not in this release yet (exit 2); the sync is', async () => {
+test('--write on a v1 repo takes the v1 path (one upgrade commit on nexus/upgrade-v2), not the sync', async () => {
   const bare = tmp('nexus-sync-v1-origin-');
   git(bare, 'init', '-q', '--bare', '-b', 'main');
   const seed = tmp('nexus-sync-v1-seed-');
@@ -418,7 +418,8 @@ test('--write on a v1 repo is not in this release yet (exit 2); the sync is', as
   const local = tmp('nexus-sync-v1-local-');
   git(local, 'clone', '-q', bare, '.');
   const r = await upgrade({ repo: local, write: true });
-  assert.equal(r.code, 2);
-  assert.match(r.report.error, /--write on a v1 repo is not in this release yet/);
+  assert.equal(r.code, 0, JSON.stringify(r.report.gate, null, 2) + (r.report.error || ''));
+  assert.equal(r.report.sync, undefined);
+  assert.deepEqual([r.report.commit.branch, r.report.commit.subject], ['nexus/upgrade-v2', 'plan: upgrade to nexus v2 (specs + chunks)']);
   assert.equal(git(local, 'worktree', 'list').split('\n').length, 1);
 });

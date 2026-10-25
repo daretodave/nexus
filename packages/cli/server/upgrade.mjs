@@ -12,7 +12,11 @@
 // plan-check, its test and workflow-lint (a problem the origin's own workflow already had is a warning) and, with
 // --verify, the repo's own verify, plays march's pick order forward for the first dispatch, and reports. A dry run removes the worktree; a red gate keeps it and prints its path.
 //
-//   npx @usenexus/cli upgrade [--repo <dir>] [--json] [--keep-workflow] [--verify]
+//   npx @usenexus/cli upgrade [--repo <dir>] [--json] [--keep-workflow] [--verify] [--write]
+//                             [--land [owner|pr]] [--no-pause] [--no-watch] [--rollback]
+//
+// --write commits the upgrade on nexus/upgrade-v2 (gate green only); --land carries it to the default branch between
+// two ticks and watches the first v2 tick; --rollback reverts it in one commit (upgrade-land.mjs).
 //
 // On a v2 repo the same command is the sync to the current kit (sync.mjs: a three-way merge per kit file against the
 // kit at the lock's ref, an assisted merge for a conflict, new content added, the lock's ref moved; --write commits it).
@@ -703,7 +707,6 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
       red = r.code === 1;
       return { code: r.code, report };
     }
-    if (commit) return { code: 2, report: { ...report, error: `--write on a ${shape.shape === 'half' ? 'half-done' : 'v1'} repo is not in this release yet; the dry run is (run it without --write). On a v2 repo, --write commits the sync.` } };
     if (shape.shape === 'none') return { code: 2, report: { ...report, error: `not a nexus v1 repo: ${shape.why}` } };
     kit = kit || await kitSource();
     if (!kit) return { code: 2, report: { ...report, error: 'no bundled kit (kit/upgrade/files.json) and no nexus templates/ beside the CLI' } };
@@ -776,12 +779,45 @@ export async function upgrade({ repo, today = new Date().toISOString().slice(0, 
     report.dispatch.live = report.loop.pushes > 0;
     // A live v1 loop: until NEXUS_LOOP_MODE=owner is set, the first v2 tick runs in PR mode, which may be idle.
     if (report.dispatch.live) report.dispatch.pr = await guess('pr');
+    // --write: the whole upgrade as one commit on nexus/upgrade-v2, only with the gate green. --land carries it on.
+    if (commit && !red) {
+      const c = commitUpgrade(wt.dir, report);
+      if (c.error) { red = true; report.error = c.error; } else report.commit = c;
+    }
   } finally {
     if (red || keep) report.worktree = wt.dir;
     else wt.remove();
   }
   report.files = mergeRows(report.files);
   return { code: red ? 1 : 0, report };
+}
+
+/**
+ * The upgrade as one commit in the worktree `dir`, on BRANCH (cut there, so it lives in the local repo's refs and
+ * outlasts the worktree): { sha, branch, subject } or { error }. The body says what moved and the predicted first tick.
+ */
+export function commitUpgrade(dir, report) {
+  for (const s of [['checkout', '-q', '-B', BRANCH], ['add', '-A']]) {
+    const r = gitIn(dir, s);
+    if (!r.ok) return { error: `git ${s[0]} failed: ${r.err}` };
+  }
+  const rows = mergeRows(report.files);
+  const by = new Map();
+  for (const f of rows) { const k = f.status.replace(/ \(.*$/, '').split(', ')[0]; by.set(k, (by.get(k) || 0) + 1); }
+  const o = report.origin;
+  const body = [
+    `From origin/${o.branch} at ${o.sha.slice(0, 12)}, ${report.shape === 'half' ? 'finishing a half-done upgrade (Step 5 only)' : 'v1 (phases) to v2 (specs + chunks)'}.`,
+    '',
+    `${rows.length} files: ${[...by].map(([k, n]) => `${n} ${k}`).join(', ')}.`,
+    ...(report.archive.length ? [`${report.archive.length} archive line${report.archive.length === 1 ? '' : 's'} appended.`] : []),
+    ...(report.warnings.length ? [`${report.warnings.length} warning${report.warnings.length === 1 ? '' : 's'} in the report.`] : []),
+    ...(report.dispatch ? [`First tick (predicted): ${report.dispatch.text}`] : []),
+    '',
+    'npx @usenexus/cli upgrade --rollback reverts this commit.',
+  ].join('\n');
+  const c = gitIn(dir, ['commit', '-q', '-m', COMMIT_SUBJECT, '-m', body]);
+  if (!c.ok) return { error: `git commit failed: ${c.err || c.out}` };
+  return { sha: gitIn(dir, ['rev-parse', 'HEAD']).out, branch: BRANCH, subject: COMMIT_SUBJECT };
 }
 
 /** One row per path, sorted: a file two steps touched reads `merged, rewritten (3 refs)`. */
@@ -877,9 +913,11 @@ export function render(report, { color = false } = {}) {
       : `  pr: no Cloud-Run commit on ${l.branch}; the v2 loop lands each chunk as a pull request (--land pr)`);
   }
   out.push('');
-  out.push(report.worktree ? `worktree kept: ${report.worktree}` : 'The worktree is removed. --write (a later release) commits this as one commit on nexus/upgrade-v2.');
+  if (report.commit) out.push(`committed ${report.commit.sha.slice(0, 7)} on ${report.commit.branch}: ${report.commit.subject} (nothing pushed; --land owner|pr carries it to ${report.origin.branch})`);
+  else out.push(report.worktree ? `worktree kept: ${report.worktree}` : `The worktree is removed. --write commits this as one commit on ${BRANCH}; --land owner|pr carries it to ${report.origin?.branch || 'the default branch'}.`);
   return out.join('\n');
 }
+
 
 export const UPGRADE_HELP = `nexus upgrade: move a nexus v1 repo (a phase plan) to v2 (specs + chunks),
 or bring a v2 repo up to the kit this CLI carries (the sync).
@@ -901,6 +939,34 @@ or bring a v2 repo up to the kit this CLI carries (the sync).
   npx @usenexus/cli upgrade --verify        also run the repo's own verify
                                             (package.json "verify", its
                                             install first) in the worktree
+  npx @usenexus/cli upgrade --write         ...and, with the gate green, commit
+                                            it: one commit, plan: upgrade to
+                                            nexus v2 (specs + chunks), on
+                                            branch nexus/upgrade-v2; nothing
+                                            is pushed
+  npx @usenexus/cli upgrade --land owner    --write, then land it between two
+                                            ticks: wait for an idle window (no
+                                            march run queued or running, the
+                                            next cron 10+ min away), pause
+                                            march, set NEXUS_LOOP_MODE=owner
+                                            (when the v1 loop pushed the
+                                            default branch), push, resume
+                                            march, dispatch the first v2 tick
+                                            and watch it (its jobs and commit)
+  npx @usenexus/cli upgrade --land pr       --write, then push the branch and
+                                            open a pull request whose body is
+                                            the report; its merge is the
+                                            cut-over. --land alone: owner when
+                                            the v1 loop pushed the default
+                                            branch, else pr
+  npx @usenexus/cli upgrade --no-pause      --land owner without pausing march
+  npx @usenexus/cli upgrade --no-watch      --land owner: dispatch, don't watch
+  npx @usenexus/cli upgrade --rollback      revert the upgrade commit on a fresh
+                                            fetch of origin in one commit (the
+                                            lock pinned back to v1.0.0) on
+                                            nexus/rollback-v2; with --land it
+                                            reaches the default branch the same
+                                            way (no dispatch: the v1 cron runs)
 
   On a v2 repo (plan/nexus.lock says chunks and names its ref:):
   npx @usenexus/cli upgrade                 the sync, dry: every kit file
@@ -914,33 +980,81 @@ or bring a v2 repo up to the kit this CLI carries (the sync).
   npx @usenexus/cli upgrade --write         ...and commit it, plan: sync to
                                             nexus <version>, on branch
                                             nexus/upgrade-<version> (an assisted
-                                            merge only with the gate green)
+                                            merge only with the gate green);
+                                            --land owner|pr carries it on
   npx @usenexus/cli upgrade --no-assist     leave a conflicting file as the
                                             repo's and list it (no helper model)
 
-  Exit 0: the report printed (or the sync committed). Exit 1: the gate
-  failed (the worktree is kept and its path printed). Exit 2: not a nexus
-  repo, no origin, the kit at the lock's ref out of reach, or a flag this
-  release does not carry yet.
+  Exit 0: the report printed (or committed, or landed). Exit 1: the gate
+  failed (the worktree is kept and its path printed), or the landing
+  stopped (march is always resumed once paused). Exit 2: not a nexus repo,
+  no origin, the kit at the lock's ref out of reach, nothing to roll back,
+  or a flag this release does not carry yet.
 
   The runbook: https://github.com/daretodave/nexus/blob/main/playbooks/upgrade.md`;
 
-/** Flags spec 58 names that a later release carries: refused here rather than ignored. (--write: a v2 sync only.) */
-export const LATER = Object.freeze(['--land', '--rollback', '--pr', '--no-pause', '--no-watch']);
+/** Flags spec 58 names that a later release carries: refused here rather than ignored. */
+export const LATER = Object.freeze(['--pr']);
+/** The flags this release reads (`--repo` and `--land` take a value; `--land`'s is optional). */
+const KNOWN = new Set(['--repo', '--json', '--keep-workflow', '--verify', '--write', '--no-assist', '--land', '--rollback', '--no-pause', '--no-watch']);
+const LAND_HOW = new Set(['owner', 'pr']);
 
-/** `nexus upgrade <args>`: the exit code. */
+/** The live march.yml's cron lines at `sha` in `root`, read with the kit's cadence.mjs. */
+async function liveCrons(root, sha, kit) {
+  const { cronTools } = await import('./upgrade-land.mjs');
+  const lib = kit ? await cronTools(kit.root) : null;
+  const yml = gitIn(root, ['show', `${sha}:${MARCH_YML}`]);
+  return { lib, crons: lib && yml.ok ? lib.cronsOf(yml.out) : [] };
+}
+
+/** `nexus upgrade <args>`: the exit code. `opts.land` reaches land() (tests pass a stubbed gh, now and sleep). */
 export async function runUpgrade(argv, { out = (s) => process.stdout.write(`${s}\n`), err = (s) => process.stderr.write(`${s}\n`), cwd = process.cwd(), color = process.stdout.isTTY && !process.env.NO_COLOR, today, opts = {} } = {}) {
   if (argv.includes('--help') || argv.includes('-h')) { out(UPGRADE_HELP); return 0; }
   const later = argv.filter((a) => LATER.includes(a));
   if (later.length) { err(`nexus upgrade: ${later.join(', ')} ${later.length === 1 ? 'is' : 'are'} not in this release yet; the dry run is (run it with no flags)`); return 2; }
-  const known = new Set(['--repo', '--json', '--keep-workflow', '--verify', '--write', '--no-assist']);
   const i = argv.indexOf('--repo');
-  const bad = argv.filter((a, k) => !known.has(a) && !(i >= 0 && k === i + 1));
+  const l = argv.indexOf('--land');
+  const landHow = l >= 0 && LAND_HOW.has(argv[l + 1]) ? argv[l + 1] : null;
+  const bad = argv.filter((a, k) => !KNOWN.has(a) && !(i >= 0 && k === i + 1) && !(landHow && k === l + 1));
   if (bad.length || (i >= 0 && !argv[i + 1])) { err(`nexus upgrade: unknown argument ${bad[0] ?? '--repo (needs a folder)'}\n\n${UPGRADE_HELP}`); return 2; }
   const repo = path.resolve(cwd, i >= 0 ? argv[i + 1] : '.');
   if (!fs.existsSync(repo) || !fs.statSync(repo).isDirectory()) { err(`nexus upgrade: ${repo} is not a folder`); return 2; }
-  const { code, report } = await upgrade({ repo, today, keepWorkflow: argv.includes('--keep-workflow'), verify: argv.includes('--verify'), write: argv.includes('--write'), ...(argv.includes('--no-assist') ? { assist: null } : {}), ...opts });
-  if (argv.includes('--json')) out(JSON.stringify({ code, ...report }, null, 2));
-  else (code === 2 ? err : out)(render(report, { color }));
-  return code;
+  const landing = l >= 0;
+  const red = RED(color);
+  const landOpts = { pause: !argv.includes('--no-pause'), watch: !argv.includes('--no-watch'), log: (s) => err(`  ${s}`), ...(opts.land || {}) };
+  const { land, renderLand, rollbackCommit, renderRollback, ROLLBACK_SUBJECT } = await import('./upgrade-land.mjs');
+
+  if (argv.includes('--rollback')) {
+    const { code, report } = rollbackCommit({ repo });
+    let res = null;
+    if (code === 0 && report.commit && landing) {
+      const kit = opts.kit || await kitSource();
+      const { lib, crons } = await liveCrons(report.repo, report.origin.sha, kit);
+      res = await land({ repo: report.repo, sha: report.commit.sha, branch: report.commit.branch, base: report.origin.branch, how: landHow || report.loop?.mode || 'owner', crons, lib, dispatch: false, title: ROLLBACK_SUBJECT, body: `${renderRollback(report)}\n`, ...landOpts });
+    }
+    if (argv.includes('--json')) out(JSON.stringify({ code: res && !res.ok ? 1 : code, ...report, ...(res ? { land: res } : {}) }, null, 2));
+    else {
+      (code === 0 ? out : err)(renderRollback(report));
+      if (res) (res.ok ? out : err)(renderLand(res, { red }).join('\n'));
+    }
+    return res && !res.ok ? 1 : code;
+  }
+
+  const { code, report } = await upgrade({ repo, today, keepWorkflow: argv.includes('--keep-workflow'), verify: argv.includes('--verify'), write: argv.includes('--write') || landing, ...(argv.includes('--no-assist') ? { assist: null } : {}), ...opts });
+  let res = null;
+  if (code === 0 && report.commit && landing) {
+    const how = landHow || (report.loop?.mode === 'owner' ? 'owner' : 'pr');
+    const kit = opts.kit || await kitSource();
+    const { lib, crons } = await liveCrons(report.repo, report.origin.sha, kit);
+    // The owner-mode prediction is the one to hold the tick to (NEXUS_LOOP_MODE is set before the push).
+    res = await land({ repo: report.repo, sha: report.commit.sha, branch: report.commit.branch, base: report.origin.branch, how, loopMode: report.loop?.mode || null, predicted: report.dispatch, crons, lib, title: report.commit.subject, body: `\`\`\`\n${render(report)}\n\`\`\`\n`, ...landOpts });
+    report.land = res;
+  }
+  if (argv.includes('--json')) out(JSON.stringify({ code: res && !res.ok ? 1 : code, ...report }, null, 2));
+  else {
+    (code === 2 ? err : out)(render(report, { color }));
+    if (res) (res.ok ? out : err)(renderLand(res, { predicted: res.how === 'owner' ? report.dispatch : null, red }).join('\n'));
+  }
+  return res && !res.ok ? 1 : code;
 }
+

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // npx @usenexus/cli [--repo <dir>] [--port <n>] [--no-open]
 // npx @usenexus/cli run "<prompt>" [--cwd <dir>]   one turn headless, JSON out
-// npx @usenexus/cli upgrade [--repo <dir>] [--json]   a v1 repo to v2, dry run (server/upgrade.mjs)
+// npx @usenexus/cli upgrade [--repo <dir>] [--write] [--land owner|pr] [--rollback]   a v1 repo to v2, dry run first (server/upgrade.mjs)
 // npx @usenexus/cli --demo <scenario> [--speed <n>] [--loop]   fixtures and a beat script, no repo
 //
 // Starts the nexus GUI on 127.0.0.1 (random port, per-launch token) for
