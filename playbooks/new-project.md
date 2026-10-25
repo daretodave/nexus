@@ -346,7 +346,16 @@ Copy-Item -Recurse ..\nexus\templates\data .\data
 
 If you copy it, add `./data` to the search-and-replace
 scope below — both one-liners already include it, so nothing
-else to change.)
+else to change. Both one-liners also include
+`./.env.example` unconditionally, even if you skipped
+copying `.env.example`/`nexus.secrets.json` entirely (e.g.
+a zero-dependency library with no secrets at all — see
+`customization/secrets.md`'s "a repo with no secrets needs
+no manifest"). That's fine: `grep -rl`'s trailing
+`2>/dev/null` (and the PowerShell twin's
+`-ErrorAction SilentlyContinue` below) silently skips a
+path that doesn't exist, so the sweep never needs
+`.env.example` to be there.)
 
 ### Replace placeholders
 
