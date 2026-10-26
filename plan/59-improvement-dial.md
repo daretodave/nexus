@@ -95,6 +95,20 @@ unchanged. The nudge's job `if:` now only refuses
 reads the dial. Bootstrap installs `scripts/plan/improve.mjs`
 with the loop files.
 
+Decided in the build (59.4): Settings never writes a plan file
+in the checkout it runs from. A choice lands as one pending
+file, `plan/pending/improve-<stamp>.md` (`## Edit
+plan/bearings.md`: the value swapped in place, or the line added
+under `## Plan expansion posture`, or that section at the end),
+the way a board reorder lands (`server/reorder.mjs`
+`landPending`): owner, settled and pushed; contributor, a pull
+request. The radios show what origin's default branch holds
+(what the loop runs on) and say when the checkout has not
+pulled it yet; the overrides come from the repo's own resolver.
+Settings writes no repo variable: an unset one already takes
+the dial in the cloud (59.2), and setting one would pin it as an
+override the next dial change could not move.
+
 The repo variables stay the cloud's source of truth for the
 knobs that live there (`NEXUS_SUPPORT`, `NEXUS_CADENCE`); the
 resolver warns when a variable and the dial disagree, and
@@ -157,7 +171,6 @@ name (a heuristic; the gate holds only URLs and domains).
 
 ## Acceptance
 
-- **A4** GUI Settings shows the dial as four radios with one-line explanations and writes the bearings line; the GUI's motion and colour stay.
 - **A5** `customization/` documents the dial, its table and the overrides; `templates/plan/bearings.md` carries `Improve: steady` for new adoptions; no public text names a competitor or adopter.
 
 ## Open questions
@@ -165,8 +178,6 @@ name (a heuristic; the gate holds only URLs and domains).
 (None.)
 
 ## Chunks
-Measure: 2 open · 3 closed · next A6
+Measure: 1 open · 4 closed · next A6
 
-- [ ] **59.4** The dial in GUI Settings · S · closes A4 · needs —
-  - Keep the GUI's particles, colour and motion.
 - [ ] **59.5** Dial docs and the adopter default · S · closes A5 · needs —

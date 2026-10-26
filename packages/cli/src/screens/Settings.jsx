@@ -9,7 +9,9 @@
 // (POST /api/prefs aiSummaries, on by default); so is the permission mode
 // for new sessions (POST /api/prefs permissionMode, Ask by default, spec 49
 // A10); so is the change feed on the top bar (POST /api/prefs changeFeed, on
-// by default); the theme is per browser.
+// by default); the theme is per browser. The improvement dial (spec 59, A4)
+// is the plan's own Improve: line (GET and POST /api/improve: landed as a
+// pending file, never written into this checkout).
 // Secrets (the second and third handoffs): names only, from GET /api/secrets
 // once the server serves it (42.7); the rotate nudge has no store yet, so a
 // change there says it lasts until the page reloads.
@@ -26,6 +28,8 @@ import { PermissionModes } from './cloud-settings/permission-mode.jsx';
 import '../styles/permission-mode.css';
 import { ModelPrefs } from './cloud-settings/model-pref.jsx';
 import '../styles/model.css';
+import { ImproveDial } from './cloud-settings/improve-dial.jsx';
+import '../styles/improve-dial.css';
 import { useReducedMotion } from '../fx/pref.js';
 
 const SEC = { padding: '18px 26px', gap: 28 };
@@ -154,6 +158,19 @@ export default function Settings() {
       setModelMine(p.model ?? null); setEffortMine(p.effort ?? null);
       app?.reload?.(); setSave('saved');
     } catch (e) { setSave({ error: e.message }); }
+  };
+
+  // The improvement dial (spec 59): plan/bearings.md's Improve: line, landed by the server as a pending file.
+  const dialRes = useResource('/api/improve');
+  const dialView = dialRes.status === 'ready' ? dialRes.data : null;
+  const [dial, setDial] = useState({ value: null, busy: null, note: null, error: null });
+  const changeDial = async (value) => {
+    setDial({ value: null, busy: value, note: null, error: null });
+    try {
+      const r = await api('/api/improve', { value });
+      setDial({ value: null, busy: null, note: r.note || null, error: null });
+      dialRes.reload?.();
+    } catch (e) { setDial({ value: null, busy: null, note: null, error: e.message }); }
   };
 
   const [tip, setTip] = useState(false);
@@ -300,6 +317,15 @@ export default function Settings() {
                   Each push gets one plain sentence{ai ? <>, written by {models?.helper?.label || 'Claude Haiku'} from its commits (the AI helpers switch above)</> : <>, taken from its first commit (turn the AI helpers on for a plainer one)</>}. Deploys are read from what your host reports to GitHub, so they cost nothing; a repo with no deploys says nothing about them. Kept in <span className="file-tag">.nexus/feed/</span> on this machine.
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section className="set-sec" style={SEC}>
+            <div><h2 className="set-h">Improvement dial</h2><p className="set-d">How hard the loop pushes beyond the plan. One line in <span className="file-tag">plan/bearings.md</span>; a knob's own line there still wins.</p></div>
+            <div style={{ minWidth: 0 }}>
+              {dialRes.status === 'missing'
+                ? <span className="t-body-s c-3">This server has no /api/improve yet: set <code className="t-mono-s">Improve:</code> in plan/bearings.md by hand.</span>
+                : <ImproveDial view={dialView} value={dial.value ?? dialView?.value} busy={dial.busy} note={dial.note} error={dial.error} onChange={changeDial} />}
             </div>
           </section>
 

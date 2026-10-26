@@ -1,0 +1,23 @@
+/* Settings' "Improvement dial" (spec 59, A4): nexus.css's .check drawn as a radio, a pip meter per position lit with
+   the aurora, and a slow glow on the position being landed. Tokens only, so Dark and Light both follow; transform and
+   opacity only, so the motion stays cheap; reduced motion stills it. */
+.dial-modes { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.dial-list { display: flex; flex-direction: column; gap: 10px; }
+.dial-opt input { border-radius: 50%; }
+.dial-opt input:checked { background: var(--well); border-color: var(--accent); box-shadow: 0 0 14px -3px var(--glow); }
+.dial-opt .dial-dot { position: absolute; left: 5px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--aurora-grad); opacity: 0; transform: scale(.4); transition: opacity .2s ease, transform .2s ease; pointer-events: none; }
+.dial-opt input:checked + .dial-dot { opacity: 1; transform: scale(1); }
+.dial-pips { display: inline-flex; gap: 3px; margin-left: 10px; vertical-align: middle; }
+.dial-pips i { display: block; width: 14px; height: 4px; border-radius: 2px; background: var(--line); }
+.dial-pips i.on { background: var(--aurora-grad); }
+.dial-opt input:checked ~ .check-text .dial-pips i.on { box-shadow: 0 0 8px -2px var(--glow); }
+.dial-opt.is-landing .dial-dot { opacity: 1; animation: dial-landing 1.4s ease-in-out infinite; }
+.dial-note { margin: 0; max-width: 640px; }
+.dial-note .ic { vertical-align: -2px; }
+.dial-warn { display: flex; align-items: flex-start; gap: 8px; max-width: 600px; margin: 0; padding: 10px 12px; border-radius: 12px; font-size: 13px; line-height: 20px; color: var(--text); background: color-mix(in oklab, var(--st-failed) 12%, var(--surface-solid)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-failed) 60%, transparent); }
+.dial-warn .ic { flex: none; margin-top: 3px; color: var(--st-failed); }
+@keyframes dial-landing { 0%, 100% { transform: scale(.7); opacity: .55; } 50% { transform: scale(1.15); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .dial-opt .dial-dot { transition: none; }
+  .dial-opt.is-landing .dial-dot { animation: none; }
+}

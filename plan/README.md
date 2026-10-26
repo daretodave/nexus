@@ -33,7 +33,7 @@ line goes; each line is a lock that times out, so it carries
 |---|---|---|---|---|
 | 55 | Cadence that actually delivers | [55-cadence-that-delivers.md](55-cadence-that-delivers.md) | planned · priority 2 | 1 left |
 | 58 | One command keeps a project on the current kit | [58-upgrade.md](58-upgrade.md) | planned · priority 5 | 1 left |
-| 59 | One improvement dial, and a loop that reads the field | [59-improvement-dial.md](59-improvement-dial.md) | planned · priority 6 | 2 left |
+| 59 | One improvement dial, and a loop that reads the field | [59-improvement-dial.md](59-improvement-dial.md) | planned · priority 6 | 1 left |
 | 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 7 | 5 left |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33

@@ -27,6 +27,7 @@ import * as local from './local.mjs';
 import * as gh from './gh.mjs';
 import { readPlan } from './plan.mjs';
 import { landReorder } from './reorder.mjs';
+import { improveView, landImprove } from './improve.mjs';
 import { createSummaries } from './summaries.mjs';
 import { createChangeFeed } from './feed.mjs';
 import { runGit } from './feed-push.mjs';
@@ -1205,6 +1206,9 @@ export async function startServer({ repo, port = 0, token = crypto.randomBytes(2
         case 'GET /api/claims': { const who = url.searchParams.get('session') || ''; return send(res, 200, await kept(`claims:${who}`, async () => listClaims(repo, await claimsCtx(who)))); }
         case 'GET /api/plan': { const mark = url.searchParams.get('mark') || ''; return send(res, 200, await kept(`plan:${mark}`, () => readPlan(repo, { mark: mark.split(',').filter(Boolean) }))); }
         case 'POST /api/plan/reorder': { const b = await body(req); return send(res, 200, await landReorder(repo, b, { owner: (await local.localView(repo)).effective, gh: reorderGh })); }
+        // The improvement dial (spec 59, A4; improve.mjs): read with its overrides; a change lands as a pending file, as a reorder does.
+        case 'GET /api/improve': return send(res, 200, await improveView(repo));
+        case 'POST /api/improve': { const b = await body(req); return send(res, 200, await landImprove(repo, b, { owner: (await local.localView(repo)).effective, gh: reorderGh })); }
         case 'GET /api/summaries': return send(res, 200, await kept('summaries', () => summaries.get()));
         // Onboarding's Plot step (spec 47, A1; explode.mjs): split thoughts into ideas (no write), and plot the kept ones.
         case 'POST /api/explode': { const b = await body(req); const { status, ...r } = await explode({ repo, text: b.text, team: b.team, query: explodeQuery ?? summaryQuery ?? (injected ? false : undefined) }); return send(res, status, r); }

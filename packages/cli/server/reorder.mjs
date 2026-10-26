@@ -206,25 +206,24 @@ export const COMMIT_TIMEOUT = 30 * 60 * 1000; // a pre-commit hook may run the r
 const PUSH_TIMEOUT = 10 * 60 * 1000;
 
 /**
- * Land a reorder (POST /api/plan/reorder). body: { id, after }. owner: effective owner mode. `run` is every child
- * (git, node, gh) with runClean's signature and answer ({ ok, code, out, err, timedOut }); tests wrap it. `gh` runs gh
- * (args, opts) the same way. Returns what landed:
- *   owner        { landed: 'main', commit, settled, ... }   (settled false: the pending file waits for the next settle)
- *   contributor  { landed: 'pr', branch, pr, url, ... }
- * Throws { status, message }: 400/404 a refused move, 409 a hook's refusal or a rejected push (nothing landed), 504 a
- * hook that ran over, 502 git or gh failing.
+ * Land one pending file the GUI wrote (a reorder, the improvement dial): `write(tmp, { now })` writes it into the
+ * temporary worktree and answers { file, subject, what, base, prBody, prNote, done(branch, settleNote) }: `base` holds
+ * the fields every answer carries, `done` the owner's note. `kind` names the branch (`nexus/<kind>-<stamp>`) and the
+ * temp folder; `nothing` says what did not happen on a refusal (`nothing moved`), `again` what to do after a push
+ * another landing beat (`move it again`). Returns, owner { ...base, landed: 'main', commit, settled, note },
+ * contributor { ...base, landed: 'pr', branch, base, pr, url, note }; throws as landReorder does.
  */
-export async function landReorder(repo, body = {}, { owner = false, now = new Date(), run = runClean, gh = null } = {}) {
+export async function landPending(repo, { kind, write, nothing = 'nothing changed', again = 'try again' }, { owner = false, now = new Date(), run = runClean, gh = null } = {}) {
   const origin = await run('git', ['remote', 'get-url', 'origin'], { cwd: repo });
-  if (!origin.ok) throw bad('this repo has no origin remote: a reorder lands on origin, so nothing moved', 409);
+  if (!origin.ok) throw bad(`this repo has no origin remote: a plan change lands on origin, so ${nothing}`, 409);
   const branch = await defaultBranch(repo);
   const fetched = await run('git', ['fetch', '-q', 'origin', `+refs/heads/${branch}:refs/remotes/origin/${branch}`], { cwd: repo, timeout: PUSH_TIMEOUT });
-  if (!fetched.ok) throw bad(`git fetch origin ${branch} failed, nothing moved:\n${tailOf(fetched)}`, 502);
+  if (!fetched.ok) throw bad(`git fetch origin ${branch} failed, ${nothing}:\n${tailOf(fetched)}`, 502);
 
   const { stamp } = clock(now);
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-reorder-'));
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), `nexus-${kind}-`));
   const tmp = path.join(work, 'wt');
-  const prBranch = owner ? null : `nexus/reorder-${stamp}`;
+  const prBranch = owner ? null : `nexus/${kind}-${stamp}`;
   // The repo's hooks run through the wrappers from the first git that can fire one (worktree add: post-checkout).
   const hooks = await safeHooks(repo);
   const add = await run('git', [...hooks.args, 'worktree', 'add', '-q', ...(owner ? ['--detach'] : ['--no-track', '-b', prBranch]), tmp, `origin/${branch}`], { cwd: repo, timeout: COMMIT_TIMEOUT });
@@ -233,33 +232,30 @@ export async function landReorder(repo, body = {}, { owner = false, now = new Da
     await run('git', ['worktree', 'prune'], { cwd: repo });
     if (prBranch) await run('git', ['branch', '-D', '-q', prBranch], { cwd: repo });
     fs.rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-    throw bad(`could not open a worktree of origin/${branch}, nothing moved:\n${tailOf(add)}`, 502);
+    throw bad(`could not open a worktree of origin/${branch}, ${nothing}:\n${tailOf(add)}`, 502);
   }
   try {
-    const w = await writeReorder(tmp, body, { now });
+    const w = await write(tmp, { now });
     const git = (args, o = {}) => run('git', [...hooks.args, ...args], { cwd: tmp, ...o });
     const refused = (r, what) => (r.timedOut
-      ? bad(`${what} ran past ${Math.round(COMMIT_TIMEOUT / 60000)} minutes (your repo's checks), so nothing moved`, 504)
-      : bad(`${what} was refused (a hook said no), nothing moved:\n${tailOf(r)}`, 409));
-    const what = `${w.id} ${w.after ? `after ${w.after}` : `to the top of spec ${w.spec}`}`;
-    const subject = `plan: reorder ${what}`;
-    const base = { ok: true, id: w.id, after: w.after, spec: w.spec, file: w.file, order: w.order, mode: owner ? 'owner' : 'contributor', branch };
+      ? bad(`${what} ran past ${Math.round(COMMIT_TIMEOUT / 60000)} minutes (your repo's checks), so ${nothing}`, 504)
+      : bad(`${what} was refused (a hook said no), ${nothing}:\n${tailOf(r)}`, 409));
+    const base = { ok: true, ...w.base, file: w.file, mode: owner ? 'owner' : 'contributor', branch };
 
     const staged = await git(['add', '--', w.file]);
-    if (!staged.ok) throw bad(`git add failed, nothing moved:\n${tailOf(staged)}`, 502);
-    const c = await git(['commit', '-q', '-m', subject], { timeout: COMMIT_TIMEOUT });
+    if (!staged.ok) throw bad(`git add failed, ${nothing}:\n${tailOf(staged)}`, 502);
+    const c = await git(['commit', '-q', '-m', w.subject], { timeout: COMMIT_TIMEOUT });
     if (!c.ok) throw refused(c, 'the commit');
 
     if (!owner) {
       const p = await git(['push', '-q', '-u', 'origin', prBranch], { timeout: PUSH_TIMEOUT });
-      if (!p.ok) throw bad(`git push ${prBranch} was refused, nothing moved:\n${tailOf(p)}`, 409);
+      if (!p.ok) throw bad(`git push ${prBranch} was refused, ${nothing}:\n${tailOf(p)}`, 409);
       const ghRun = gh || ((args, o) => run('gh', args, o));
-      const bodyText = `${what}, from the nexus GUI's board. One pending file (${w.file}); the owner's settle applies it.`;
-      const pr = await ghRun(['pr', 'create', '--base', branch, '--head', prBranch, '--title', subject, '--body', bodyText], { cwd: tmp, timeout: PUSH_TIMEOUT });
+      const pr = await ghRun(['pr', 'create', '--base', branch, '--head', prBranch, '--title', w.subject, '--body', w.prBody], { cwd: tmp, timeout: PUSH_TIMEOUT });
       if (!pr.ok) throw bad(`${prBranch} is pushed, but gh pr create failed (open the pull request by hand):\n${tailOf(pr)}`, 502);
       const url = (/(https?:\/\/\S+\/pull\/(\d+))/.exec(pr.out || '') || [])[1] || null;
       const n = url ? Number(/\/pull\/(\d+)/.exec(url)[1]) : null;
-      return { ...base, landed: 'pr', branch: prBranch, base: branch, pr: n, url, note: `Opened PR${n ? ` #${n}` : ''}: ${what}. The order changes once it merges and the owner settles.` };
+      return { ...base, landed: 'pr', branch: prBranch, base: branch, pr: n, url, note: `Opened PR${n ? ` #${n}` : ''}: ${w.what}. ${w.prNote}` };
     }
 
     // Owner: settle folds the pending file in, the way /next's orient does.
@@ -281,10 +277,10 @@ export async function landReorder(repo, body = {}, { owner = false, now = new Da
       settleNote = ` This repo has no settle script: the pending file waits on ${branch} for a settle to fold it in.`;
     }
     const p = await git(['push', '-q', 'origin', `HEAD:refs/heads/${branch}`], { timeout: PUSH_TIMEOUT });
-    if (!p.ok) throw bad(`the push to ${branch} was refused (another landing got there first?), nothing moved: move it again.\n${tailOf(p)}`, 409);
+    if (!p.ok) throw bad(`the push to ${branch} was refused (another landing got there first?), ${nothing}: ${again}.\n${tailOf(p)}`, 409);
     await run('git', ['fetch', '-q', 'origin', `+refs/heads/${branch}:refs/remotes/origin/${branch}`], { cwd: repo });
     const head = await git(['rev-parse', '--short', 'HEAD']);
-    return { ...base, landed: 'main', commit: head.out.trim(), settled, note: `Reordered on ${branch}: ${what}.${settleNote} Pull to see it in this checkout.` };
+    return { ...base, landed: 'main', commit: head.out.trim(), settled, note: w.done(branch, settleNote) };
   } finally {
     // Every child above was awaited to its exit (runClean answers on close, after killing a tree that ran over).
     hooks.cleanup();
@@ -293,4 +289,34 @@ export async function landReorder(repo, body = {}, { owner = false, now = new Da
     fs.rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     await run('git', ['worktree', 'prune'], { cwd: repo });
   }
+}
+
+/**
+ * Land a reorder (POST /api/plan/reorder). body: { id, after }. owner: effective owner mode. `run` is every child
+ * (git, node, gh) with runClean's signature and answer ({ ok, code, out, err, timedOut }); tests wrap it. `gh` runs gh
+ * (args, opts) the same way. Returns what landed:
+ *   owner        { landed: 'main', commit, settled, ... }   (settled false: the pending file waits for the next settle)
+ *   contributor  { landed: 'pr', branch, pr, url, ... }
+ * Throws { status, message }: 400/404 a refused move, 409 a hook's refusal or a rejected push (nothing landed), 504 a
+ * hook that ran over, 502 git or gh failing.
+ */
+export function landReorder(repo, body = {}, opts = {}) {
+  return landPending(repo, {
+    kind: 'reorder',
+    nothing: 'nothing moved',
+    again: 'move it again',
+    async write(tmp, { now }) {
+      const w = await writeReorder(tmp, body, { now });
+      const what = `${w.id} ${w.after ? `after ${w.after}` : `to the top of spec ${w.spec}`}`;
+      return {
+        file: w.file,
+        what,
+        subject: `plan: reorder ${what}`,
+        base: { id: w.id, after: w.after, spec: w.spec, order: w.order },
+        prBody: `${what}, from the nexus GUI's board. One pending file (${w.file}); the owner's settle applies it.`,
+        prNote: 'The order changes once it merges and the owner settles.',
+        done: (branch, settleNote) => `Reordered on ${branch}: ${what}.${settleNote} Pull to see it in this checkout.`,
+      };
+    },
+  }, opts);
 }

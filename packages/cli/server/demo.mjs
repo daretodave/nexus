@@ -19,6 +19,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { PERMISSION_MODES } from './provider.mjs';
+import { POSITIONS as DIAL_POSITIONS } from './improve.mjs';
 import { ADOPT_PASTE } from './server.mjs';
 import { createWorld } from './demo/world.mjs';
 import { SCENARIOS, scenarioNames } from './demo/scenarios.mjs';
@@ -149,6 +150,7 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
   }
 
   let demoDrafts = {};
+  let dial = { value: 'steady', source: 'bearings', positions: DIAL_POSITIONS, file: 'plan/bearings.md', overrides: [], warnings: [], resolver: true };
   const repoPath = `/demo/${world.info().name}`;
   const state = () => {
     const i = world.info();
@@ -203,6 +205,17 @@ export async function startDemo({ scenario, port = 0, token = crypto.randomBytes
         case 'GET /api/preflight': return send(res, 200, preflight());
         case 'GET /api/prompts': return send(res, 200, { paste: ADOPT_PASTE, adopt: '', pitch: '' });
         case 'POST /api/prefs': { const b = await body(req); prefs = { ...prefs, ...b }; return send(res, 200, prefs); }
+        // The improvement dial (spec 59, A4; improve.mjs), held in memory: a change "lands" at once.
+        case 'GET /api/improve': return send(res, 200, dial);
+        case 'POST /api/improve': {
+          const b = await body(req);
+          const v = String(b.value || '');
+          if (!DIAL_POSITIONS.includes(v)) return send(res, 400, { error: `Improve: ${v} is not a dial position (${DIAL_POSITIONS.join(', ')})` });
+          if (v === dial.value && dial.source === 'bearings') return send(res, 400, { error: `Improve: ${v} is already there: nothing changes` });
+          const from = dial.value;
+          dial = { ...dial, value: v, source: 'bearings' };
+          return send(res, 200, { ok: true, value: v, from, landed: 'main', mode: 'owner', note: `Set on main: Improve: ${v} (was ${from}). The next tick reads it; pull to see it in this checkout.` });
+        }
         case 'GET /api/local': return send(res, 200, local);
         case 'POST /api/local': {
           const b = await body(req);

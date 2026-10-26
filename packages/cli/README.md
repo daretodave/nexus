@@ -133,7 +133,13 @@ You need no API key.
   vault itself is still to come).
   Owner mode and run mode live in the checkout's untracked
   `.nexus/local.json`, read and written through `/api/local` by
-  Settings and the cockpit alike.
+  Settings and the cockpit alike. The improvement dial (off, gentle,
+  steady, bold: how hard the loop pushes beyond the plan) is the plan's
+  own `Improve:` line in `plan/bearings.md`: four radios, each with one
+  line on what it turns on, and the knob lines that override it listed
+  under them. A choice lands the way a board reorder does, as a pending
+  file from a temporary worktree (owner: settled and pushed; contributor:
+  a pull request), never written into the checkout.
 
 Some of this waits on server endpoints that are not built yet (the
 reboot train's Pause all, chunking in the page). Until they land, those
