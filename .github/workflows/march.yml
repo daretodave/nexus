@@ -393,6 +393,10 @@ jobs:
           # and built this tick (the repo variable NEXUS_CLI_GATE
           # unset or '1', and the step green).
           NEXUS_CLI_GATE: ${{ steps.cli_build.outcome == 'success' && '1' || '0' }}
+          # The support lane (spec 54): the repo variables win over
+          # bearings' Support line; unset reads bearings.
+          NEXUS_SUPPORT: ${{ vars.NEXUS_SUPPORT }}
+          NEXUS_SUPPORT_TRUST: ${{ vars.NEXUS_SUPPORT_TRUST }}
           # Author identity: display name "nexus", attributed to the
           # PAT's account via its noreply email. The Cloud-Run:
           # trailer (not the author) is the ceiling discriminator,
@@ -410,6 +414,9 @@ jobs:
         with:
           name: walk-${{ github.run_id }}
           path: .scratch/walk/**
+          # .scratch is a dot folder, which upload-artifact skips
+          # unless told otherwise.
+          include-hidden-files: true
           retention-days: 14
           if-no-files-found: ignore
 
