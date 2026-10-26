@@ -543,7 +543,7 @@ nexus/
 │   ├── __tests__/gifs.test.mjs        # the checker's own suite (run by the gifs leg)
 │   ├── cadence-twins.mjs              # the Cadence, Quota gate and Chain steps agree across nexus, templates/ and the CLI kit, and no shipped cron fires at :00 (the cadence-twins leg)
 │   ├── __tests__/cadence-twins.test.mjs # the checker's own suite (run by the cadence-twins leg)
-│   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of the no-model probe.yml, march's schedule lag, the hook probe line
+│   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of a no-model probe.yml (added to re-measure), march's schedule lag, the hook probe line
 │   ├── __tests__/probe-latency.test.mjs # its suite, gh stubbed (run by the scripts leg)
 │   ├── cloud/patch-v1.mjs             # owner-run: a v1 repo's march.yml + night.yml get the quota gate and an off-:00 cron (dry run, --write)
 │   ├── __tests__/patch-v1.test.mjs    # its suite, git stubbed, the patched march.yml through workflow-lint (scripts leg)
@@ -661,7 +661,7 @@ nexus/
 ├── plan/                              # nexus's OWN state files (specs + chunks, pending, archive, queues)
 ├── identity/                          # nexus's OWN identity layer: footguns.md (the ladder) + decisions/
 ├── .claude/                           # nexus's OWN commands + settings.json + guard and steer hooks
-├── .github/                           # nexus's OWN cloud loop (march.yml + nudge.yml + pr-flow.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml + probe.yml (temporary: spec 55.6's latency probe)
+├── .github/                           # nexus's OWN cloud loop (march.yml + nudge.yml + pr-flow.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml
 ├── packages/
 │   └── cli/                           # @usenexus/cli — npx GUI for Claude Code (React+Vite; design/handoff/ is its UI source of truth; publish.yml ships it, cli-ci.yml tests it)
 └── templates/

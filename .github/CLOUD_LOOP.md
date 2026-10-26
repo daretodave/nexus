@@ -249,15 +249,17 @@ cloud volume from local work. Nothing else — no
   after 60 days without repo activity (push anything or re-run
   manually to revive).
 - **Do the hooks load here? Do dispatched runs start late?** —
-  spec 55.6's probes, owner-run. `gh workflow run march.yml -f
-  hook_probe=true` runs a normal tick whose Hook probe report
-  step prints `HOOK_PROBE_RESULT=hooks loaded (...)` or
-  `HOOK_PROBE_RESULT=no hook call reached guard.mjs`. `node
-  scripts/cloud/probe-latency.mjs dispatch` sends ten no-model
-  `probe.yml` runs 30 minutes apart; `... report --hook-run
-  <run id>` prints their dispatch p50/p90, march's schedule
-  lag over 14 days, the hook line and spec 55's decision rule.
-  `probe.yml` goes once the numbers are in the spec.
+  answered 2026-10-25 (decision D8): hooks load, a dispatched
+  run starts within seconds, and a scheduled one starts about
+  4h after its slot (p50; p90 5.3h). To ask again: `gh workflow
+  run march.yml -f hook_probe=true` runs a normal tick whose
+  Hook probe report step prints `HOOK_PROBE_RESULT=hooks loaded
+  (...)` or `HOOK_PROBE_RESULT=no hook call reached guard.mjs`;
+  for latency, add a one-step `workflow_dispatch`-only
+  `probe.yml`, then `node scripts/cloud/probe-latency.mjs
+  dispatch` (ten runs, 30 minutes apart) and `... report
+  --hook-run <run id>`. Delete `probe.yml` after: its
+  dispatches count toward NEXUS_DISPATCH_MAX.
 - **A v1 adopter still burns the quota ungated?** — `node
   scripts/cloud/patch-v1.mjs --repo <fresh clone of its
   origin>` (spec 55.10, owner-run per repo) prints the diff

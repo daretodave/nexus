@@ -393,8 +393,8 @@ jobs:
       # The lost-to-background mark (spec 55): a result that defers to
       # background work, with no commit carrying this run's Cloud-Run
       # trailer, is marked in the step summary and the `lost` output.
-      # guard.mjs denies background calls in CI; this check holds
-      # wherever the action loads no project hooks.
+      # guard.mjs denies background calls in CI (hooks load there,
+      # spec 55.6); this check is the second line behind it.
       - name: Lost-to-background check
         id: lost
         if: always() && (steps.run_march.outcome == 'success' || steps.run_march.outcome == 'failure')

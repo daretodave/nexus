@@ -287,13 +287,12 @@ jobs:
           # turned ticks 1-3 into read-only sightseeing ("This
           # command requires approval" x many). The runner is a
           # disposable, repo-scoped container - the kit's
-          # sanctioned bypass context. Where hooks load,
-          # .claude/hooks/guard.mjs runs in every permission mode,
-          # bypass included; whether claude-code-action loads the
-          # project's hooks at all is unverified until a tick
-          # dispatched with hook_probe=true says so (spec 55.6), so
-          # nothing in cloud relies on the guard: the brief's rules,
-          # the gate and the token's blast radius (this repo) hold.
+          # sanctioned bypass context. claude-code-action does load
+          # the project's .claude hooks (spec 55.6: a hook_probe tick,
+          # run 40254359071, logged guard.mjs firing), so
+          # .claude/hooks/guard.mjs runs here in every permission mode,
+          # bypass included. The brief's rules, the gate and the
+          # token's blast radius (this repo) still hold on their own.
           #
           # CLI-flag STRING form, not JSON: tick 3 proved the JSON
           # key "permissionMode" is dropped on the way to the SDK
@@ -382,11 +381,10 @@ jobs:
           GH_TOKEN: ${{ secrets.ACTIONS_PAT }}
           # This tick's claims session (scripts/claims.mjs).
           NEXUS_SESSION: cloud-${{ github.run_id }}
-          # The same unverified question as the permission note above:
-          # if claude-code-action loads no project hooks, claims.mjs
-          # finds no hook marker and refuses whoami/claim, so this
-          # skips that check (customization/claims.md) until the hook
-          # probe settles it.
+          # Hooks load in cloud (spec 55.6), but claims.mjs's check
+          # wants the guard's per-session marker under .nexus/hooks,
+          # which no cloud tick has yet been seen to leave; until one
+          # does, this skips that check (customization/claims.md).
           NEXUS_NO_HOOK_CHECK: '1'
           # The hook probe (spec 55.6): '1' only on a dispatch with
           # hook_probe=true; guard.mjs ignores anything else.
@@ -453,8 +451,8 @@ jobs:
       # The lost-to-background mark (spec 55): a result that defers to
       # background work, with no commit carrying this run's Cloud-Run
       # trailer, is marked in the step summary and the `lost` output.
-      # guard.mjs denies background calls in CI; this check holds
-      # wherever the action loads no project hooks.
+      # guard.mjs denies background calls in CI (hooks load there,
+      # spec 55.6); this check is the second line behind it.
       - name: Lost-to-background check
         id: lost
         if: always() && (steps.run_march.outcome == 'success' || steps.run_march.outcome == 'failure')
