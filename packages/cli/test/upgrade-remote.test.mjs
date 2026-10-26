@@ -182,6 +182,17 @@ test('--pr with push access: the branch on the repo, a pull request whose body i
   assert.equal(branchOf(a.bare, 'main'), git(a.seed, 'rev-parse', 'HEAD'), 'the default branch is untouched');
 });
 
+test('--pr, the push denied with push access granted: no pull request, and the hint to let git sign with gh', async () => {
+  const a = adopter();
+  put(a.bare, 'hooks/pre-receive', '#!/bin/sh\necho "Permission to acme/app.git denied to me." >&2\nexit 1\n');
+  fs.chmodSync(path.join(a.bare, 'hooks/pre-receive'), 0o755);
+  const f = fakeGh();
+  const out = sink();
+  assert.notEqual(await runUpgrade(['--repo', 'acme/app', '--pr'], { out, err: out, opts: opts({ gh: f.gh, urlOf: () => fileUrl(a.bare) }) }), 0);
+  assert.equal(f.made(), 0);
+  assert.match(out.text(), /none opened: git push nexus\/upgrade-2\.1\.0 to .* failed: [\s\S]*denied[\s\S]*\(gh can push here: let git sign with it, gh auth setup-git\)/);
+});
+
 test('a second run updates the open pull request in place: branch force-updated, a comment, never a second one', async () => {
   const a = adopter();
   const f = fakeGh();

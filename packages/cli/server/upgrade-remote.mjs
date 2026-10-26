@@ -205,7 +205,8 @@ export function openPr({ dir, slug, commit, base, body, gh = ghCli, urlOf = gith
   }
   // A branch already there is replaced only with a lease on the sha just read: a push someone made since is not lost.
   const push = gitIn(dir, ['push', '--quiet', ...(was ? [`--force-with-lease=refs/heads/${branch}:${was}`] : []), url, `${commit.sha}:refs/heads/${branch}`]);
-  if (!push.ok) return fail(`git push ${branch} to ${redactUrl(url)} failed: ${redactUrl(push.err)}`);
+  // A 403 with push access granted is git signing with another stored credential than gh's.
+  if (!push.ok) return fail(`git push ${branch} to ${redactUrl(url)} failed: ${redactUrl(push.err)}${/\b403\b|denied/i.test(push.err) ? ' (gh can push here: let git sign with it, gh auth setup-git)' : ''}`);
   const b = tempText(body);
   try {
     if (open) {
