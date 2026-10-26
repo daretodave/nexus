@@ -56,8 +56,11 @@
 //                 critique and digest (both trees) name
 //                 scripts/plan/improve.mjs, the scripts that act
 //                 on a knob import it, every Cadence step and the
-//                 nudge pass its --cloud value, and plan/bearings.md
-//                 says Improve: bold
+//                 nudge pass its --cloud value, plan/bearings.md
+//                 says Improve: bold, templates/plan/bearings.md
+//                 ships Improve: steady (a new adoption's default),
+//                 and customization/improvement-dial.md documents
+//                 the dial at every position and every override
 //   scripts       the node:test suites of the plan, claims and push
 //                 policy scripts adopters copy (templates/scripts/plan/,
 //                 claims, git/push-policy, announce, ledger, the
@@ -1005,6 +1008,21 @@ export async function dialReaders(readFile = read, exists = (f) => fs.existsSync
   const { dialOf } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/improve.mjs')).href)
   const own = dialOf(readFile('plan/bearings.md'))
   if (own.value !== 'bold' || own.source !== 'bearings') failures.push(`plan/bearings.md: nexus runs the improvement dial at bold (- Improve: bold under ## Plan expansion posture), not ${own.value} (${own.source})`)
+  if (exists('templates/plan/bearings.md')) {
+    const tpl = dialOf(readFile('templates/plan/bearings.md'))
+    if (tpl.value !== 'steady' || tpl.source !== 'bearings') failures.push(`templates/plan/bearings.md: a new adoption ships the improvement dial at steady (- Improve: steady under ## Plan expansion posture), not ${tpl.value} (${tpl.source})`)
+  }
+  const DIAL_DOC = 'customization/improvement-dial.md'
+  if (!exists(DIAL_DOC)) failures.push(`${DIAL_DOC}: missing (the improvement dial's table and overrides)`)
+  else {
+    const doc = readFile(DIAL_DOC)
+    const { POSITIONS, DIAL } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/improve.mjs')).href)
+    for (const p of POSITIONS) if (!doc.includes(`\`${p}\``)) failures.push(`${DIAL_DOC}: never names the dial position \`${p}\``)
+    for (const r of DIAL) {
+      const name = r.line ?? r.var ?? r.knob
+      if (!doc.includes(name)) failures.push(`${DIAL_DOC}: the ${r.knob} knob has no row naming its override (${name})`)
+    }
+  }
   return { failures, note: `${DIAL_SKILLS.length * 2} skills, ${Object.keys(DIAL_SCRIPTS).length} scripts and ${steps} cloud steps read knobs through the dial (Improve: ${own.value})` }
 }
 

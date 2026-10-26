@@ -124,7 +124,7 @@ project's own audits. A script cannot search the web, so the
 run has two halves: the script decides and files, and the tick
 does the searching in between. It is not listed under
 `## Generators`. The `Research:` knob gates it (`off | monthly
-| weekly`; the improvement dial sets it, `scripts/plan/improve.mjs`,
+| weekly`; the [improvement dial](../customization/improvement-dial.md) sets it,
 and a `Research:` line in bearings overrides), and one bearings
 line feeds it:
 

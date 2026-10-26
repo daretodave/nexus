@@ -248,3 +248,5 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 59.3 · The field-research generator · 50601b3..50601b3
 - 2026-10-25 · 58.10 · Runbook rewrite, upgrade prompt and the README door · 58b15b7..58b15b7
 - 2026-10-25 · 59.4 · The dial in GUI Settings · 46b3212..46b3212
+- 2026-10-25 · 59.5 · Dial docs and the adopter default · d9f30bf..d9f30bf
+- 2026-10-25 · 59 · spec complete: one Improve: line (off, gentle, steady, bold) sets every expansion knob's default through scripts/plan/improve.mjs with each knob still overridable on its own, skills, scripts and cloud steps read knobs through the resolver, GUI Settings lands a dial change as a pending file, the field-research generator files nameless, URL-free candidates at the floor, and new adoptions ship Improve: steady with conservative overrides (customization/improvement-dial.md) · 029458f..d9f30bf

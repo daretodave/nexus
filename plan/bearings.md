@@ -102,7 +102,8 @@ to the guard hook too.
 
 ## Plan expansion posture
 
-The improvement dial (spec 59, `scripts/plan/improve.mjs`) sets
+The improvement dial (`scripts/plan/improve.mjs`,
+[customization/improvement-dial.md](../customization/improvement-dial.md)) sets
 every expansion knob's default; each line below overrides its
 knob only. Skills read the knobs through the resolver
 (`node scripts/plan/improve.mjs`), never from this file:

@@ -302,7 +302,10 @@ shape that you must fill in:
 
 - `plan/bearings.md` — needs your stack, URL contract, voice,
   and the `Surface:` declaration (gates the optional branding
-  capability).
+  capability). It ships `Improve: steady`, the improvement
+  dial's default for a new adoption, with a few conservative
+  knob overrides kept
+  ([`customization/improvement-dial.md`](../customization/improvement-dial.md)).
 - `plan/README.md` — needs your specs, one row each (ours
   lists the two starters; replace and extend)
 - `plan/01-bootstrap.md` — needs your stack's bootstrap

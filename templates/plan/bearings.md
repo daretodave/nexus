@@ -329,6 +329,18 @@ working defaults.>
 
 ## Plan expansion posture
 
+The improvement dial sets how hard the loop pushes beyond the
+plan: `off` (build only what you planned), `gentle` (the loop
+as an upgraded repo ran it), `steady` (the default for a new
+adoption) or `bold` (the kit's own). It sets every expansion
+knob's default; each knob line below overrides its knob only,
+so a line that repeats the dial's value still pins it (delete
+one to hand that knob to the dial). Skills read the knobs
+through `node scripts/plan/improve.mjs`, never from this file.
+The table and the overrides: `nexus/customization/improvement-dial.md`.
+
+- Improve: steady
+
 `/expand` reads accumulated signals (audit findings, critique
 findings, GH issues, spec drift, design landings, data growth)
 and proposes new candidates (future specs). The posture controls how

@@ -34,7 +34,9 @@ scheduled tick would have.
 
 `Support:` in `plan/bearings.md`, and the repo variable
 `NEXUS_SUPPORT`. In cloud the variable wins, and `support.mjs
-level` prints a note when the two disagree. Neither set reads
+level` prints a note when the two disagree. Neither set, the
+[improvement dial](./improvement-dial.md) decides (`steady`
+`fix-small`, `bold` `fix-all`); no dial line reads
 `triage-only`.
 
 | Level | Collaborator bug | Collaborator enhancement | Outsider issue | Event ticks |

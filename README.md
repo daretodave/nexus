@@ -639,6 +639,7 @@ nexus/
 │   ├── bootstrap-automation.md        # the executor that drives provider CLIs end-to-end (paired with external-services.md)
 │   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
 │   ├── support.md                     # how hard the loop works an issue: NEXUS_SUPPORT and its variables, the digest's Support line
+│   ├── improvement-dial.md            # Improve: off|gentle|steady|bold sets every expansion knob's default; the table, the overrides
 │   ├── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
 │   ├── secrets.md                     # nexus.secrets.json: secrets by name, never value; a chunk's secrets field
 │   ├── plot-report.md                 # /plot's nexus-plot block: the report as data, drawn as a card in the cockpit
