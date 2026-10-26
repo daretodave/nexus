@@ -750,6 +750,7 @@ nexus/
     │   ├── loop-issue.mjs             # GitHub issue mirror (findings + specs)
     │   ├── notify.mjs                 # the pager — blocked is loud
     │   ├── pulse.mjs                  # offline instrument panel: queue/plan/candidate counts; --motion: shipped vs baseline
+    │   ├── __tests__/pulse.test.mjs   # pulse in a scratch repo: open rows only, a Pending-less file whole, the project name
     │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
     │   ├── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
     │   ├── refresh-critique-session.mjs # Pattern B session refresh (omit unless Auth: is set)

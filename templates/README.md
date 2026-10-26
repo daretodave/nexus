@@ -101,6 +101,7 @@ templates/
 │   ├── loop-issue.mjs                 (GitHub issue mirror)
 │   ├── notify.mjs                     (the pager — blocked is loud)
 │   ├── pulse.mjs                      (offline instrument panel: queue/plan/candidate counts, no network; --motion: shipped units in the last full week against the 4-week baseline)
+│   ├── __tests__/pulse.test.mjs       (pulse in a scratch repo: open finding rows only, a file with no Pending heading read whole, a timestamped Last pass, the name from package.json)
 │   ├── bootstrap.mjs                  (provider-CLI executor, opt-in)
 │   ├── lint-migration.mjs             (additive-migration linter, pairs with ship-migration.md)
 │   ├── refresh-critique-session.mjs   (Pattern B session refresh, omit unless Auth: is set)

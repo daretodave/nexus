@@ -1096,6 +1096,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/push-policy-hook.test.mjs',
   'templates/scripts/__tests__/install-hooks-run.test.mjs',
   'templates/scripts/__tests__/worktree.test.mjs',
+  'templates/scripts/__tests__/pulse.test.mjs',
   'templates/scripts/__tests__/tick-run.test.mjs',
   'templates/scripts/__tests__/progress-run.test.mjs',
   'templates/scripts/__tests__/upgrade-plan-run.test.mjs',

@@ -49,17 +49,22 @@ function ago(iso) {
   return `${Math.round(hours / 24)}d ago`
 }
 
+// The `## Pending` section; a file that keeps its open rows under
+// another heading is read whole (countRows skips addressed rows).
 function pendingSection(text) {
   const lines = text.split(/\r?\n/)
   const start = lines.findIndex((l) => /^## Pending\s*$/.test(l))
-  if (start === -1) return []
+  if (start === -1) return lines
   const rest = lines.slice(start + 1)
   const end = rest.findIndex((l) => /^## /.test(l))
   return end === -1 ? rest : rest.slice(0, end)
 }
 
+// A finding row is `### [...]`: a `### [x]` one is addressed (some
+// files leave those under Pending), and a heading with no bracket
+// (a pass summary) is no finding.
 function countRows(section) {
-  return section.filter((l) => /^### /.test(l)).length
+  return section.filter((l) => /^### \[(?!x\])/i.test(l)).length
 }
 
 function header(text, key) {
@@ -68,13 +73,26 @@ function header(text, key) {
   return m ? m[1].trim() : null
 }
 
+// The leading date or timestamp of a header value
+// (`2026-05-10T20:35:00Z at commit 931c8a7`), as ISO; null if none.
+function stamp(value) {
+  const m = /^(\d{4}-\d{2}-\d{2})(T[\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?/.exec(value ?? '')
+  if (!m) return null
+  return m[2] ? `${m[1]}${m[2]}` : `${m[1]}T00:00:00Z`
+}
+
 function printRow(label, value) {
   console.log(`  ${label.padEnd(18)}${value}`)
 }
 
 // --- last commit --------------------------------------------------------
 
-console.log(`pulse — <PROJECT_LOWER>`)
+// The project: package.json's name (its scope dropped), else the folder's.
+let project = path.basename(ROOT)
+try {
+  project = JSON.parse(readSafe('package.json') ?? '{}').name?.replace(/^@[^/]+\//, '') || project
+} catch {}
+console.log(`pulse — ${project}`)
 console.log('')
 
 try {
@@ -128,7 +146,8 @@ if (critique === null) {
 } else {
   const count = countRows(pendingSection(critique))
   const lastPass = header(critique, 'Last pass')
-  const age = lastPass && lastPass !== 'never' ? `, last pass ${ago(`${lastPass}T00:00:00Z`)}` : ''
+  const at = stamp(lastPass)
+  const age = at ? `, last pass ${ago(at)}` : ''
   printRow('critique', `${count} pending${age}`)
 }
 
