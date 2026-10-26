@@ -1,27 +1,272 @@
-# Playbook: upgrade (v1 phases → v2 chunks)
+# Playbook: upgrade (one command keeps a repo on the current kit)
 
-> nexus v2 replaced the phase plan (a build-plan status block
-> plus one brief per phase) with specs, chunks and acceptance
-> IDs. That is a breaking change, so nothing moves on its own:
-> a repo stays on v1 until someone runs this playbook. Pin
-> first, convert second, gate third. About an hour by hand for
-> a plan of twenty phases; an agent handed this file does it in
-> one sitting.
+> `npx @usenexus/cli upgrade` moves a v1 repo (a phase plan) to
+> v2 (specs and chunks), and brings any v2 repo up to the kit
+> the CLI carries. It is a dry run until you say `--write`; it
+> works from a fresh fetch of your origin, never your checkout;
+> it carries a live loop's own steps across unchanged; it lands
+> between two ticks; one revert rolls it back. Nothing moves on
+> its own: a repo stays where it is until someone types the
+> command. The by-hand route is at the end, for a repo the
+> command cannot reach.
 
 ---
 
 ## Which version am I on
 
-| You have | You're on | Read the kit at |
+| You have | You're on | The command does |
 |---|---|---|
-| `plan/steps/01_build_plan.md` and `plan/phases/`, no `plan/nexus.lock` | v1 (phases) | the `v1.0.0` tag |
-| `plan/nexus.lock` with `shape: phases` | v1, pinned | the lock's `ref:` |
-| `plan/nexus.lock` with `shape: chunks` | v2 | the lock's `ref:` |
+| `plan/steps/01_build_plan.md` and `plan/phases/`, no `plan/nexus.lock` | v1 (phases) | the upgrade, v1 to v2 |
+| `plan/nexus.lock` with `shape: phases` | v1, pinned | the upgrade, v1 to v2 |
+| `plan/nexus.lock` with `shape: chunks` beside `plan/steps/` or `PHASE_CANDIDATES.md` | half-done | finishes [Step 5](#step-5--retire-the-v1-files) only |
+| `plan/nexus.lock` with `shape: chunks` | v2 | the sync, to the kit the CLI carries |
 
 The `v1.0.0` tag is the last phase-shape release:
 `https://github.com/daretodave/nexus/tree/v1.0.0`. Everything
 a v1 repo copied (skills, templates, playbooks) is there,
-unchanged, for as long as you want it.
+unchanged, for as long as you want to stay.
+
+## Quick reference
+
+| Command | Does |
+|---|---|
+| `npx @usenexus/cli upgrade` | Dry run on the repo in this folder: the report, nothing written. |
+| `... upgrade --repo <dir>` | The same for another folder. |
+| `... upgrade --repo owner/name` | The same for a repo on GitHub, no checkout (a URL works too). |
+| `... upgrade --verify` | Also run the repo's own verify (its frozen install first). |
+| `... upgrade --keep-workflow` | Leave `march.yml` as it is; report what the merge would keep. |
+| `... upgrade --json` | The report as JSON. |
+| `... upgrade --write` | With the gate green, one commit on a branch; nothing pushed. |
+| `... upgrade --land owner` | `--write`, then land it between two ticks and watch the first. |
+| `... upgrade --land pr` / `--pr` | `--write`, push the branch, open a pull request whose body is the report. |
+| `... upgrade --repo owner/name --pr` | The pull request, from a temporary clone (a fork without push access). |
+| `... upgrade --no-assist` | Sync only: leave a conflicting file as the repo's, listed. |
+| `... upgrade --rollback` | Revert the upgrade commit; the lock back to `v1.0.0`. |
+
+Exit 0: the report printed (or committed, landed, opened).
+Exit 1: the gate failed; the worktree is kept and its path
+printed. Exit 2: not a nexus repo, no origin, or flags that do
+not go together. Both shells run every line the same.
+
+## The dry run
+
+```bash
+npx @usenexus/cli upgrade
+```
+
+It writes nothing anywhere you look. Your checkout can be
+months stale and dirty, so the command never reads it: it
+fetches origin's default branch and works in a temporary
+worktree cut from it, checked out with origin's line endings.
+There it:
+
+1. **Detects** the shape (the table above).
+2. **Copies the v2 kit**: the [manual copy list](#manual-copy-list),
+   the CLI's bundled copy of it.
+3. **Merges the roadmap**: `plan/README.md` gains the v2
+   lanes and spec table; your own sections stay where they
+   are; `<PROJECT>` is filled from `package.json` `name`, else
+   the `agents.md` title.
+4. **Converts** the build plan (the [table in Step 4](#step-4--convert-the-build-plan)).
+5. **Carries the train** and **merges the workflow** (below).
+6. **Writes the conservative knobs** (below).
+7. **Flips the lock** to `version: 2.0.0`, `shape: chunks`.
+8. **Gates**: plan-check, its test and workflow-lint, in the
+   worktree. `--verify` adds your own verify command; without
+   it the report names the command and skips it.
+9. **Predicts the first dispatch**: march's pick order played
+   forward over the result, lanes included.
+
+Then it prints the report and removes the worktree.
+
+### Reading the report
+
+| Part | What to check |
+|---|---|
+| Files | Every file it touched, one row each: `added`, `replaced`, `seeded`, `merged`, `converted`, `retired`, `renamed`, `rewritten (N refs)`, `moved-to-lane (N)`, `moved-to-skill`, `kept-custom`. A `kept-custom` you expected to be kit text, or a `replaced` you had edited, is the row to read first. |
+| Archive lines | One line per shipped phase. Count them against your `[x]` rows; a sha shown as `unknown` needs yours. |
+| Warnings | Unparsed status rows, an open suffixed phase's new number, carry-overs to place by hand. |
+| Gate | Green or red, leg by leg. A workflow-lint problem your origin already had, in a file only rewritten, is a warning. |
+| Knobs | What it wrote and at what value (below). |
+| First dispatch | What the first v2 tick will pick. **Idle on a repo whose v1 loop was live is a red warning**: fix it before you write. |
+| Loop mode | The `gh variable set NEXUS_LOOP_MODE --body owner` line, when the v1 loop pushed the default branch. |
+
+Run it again after any fix; it starts from origin every time.
+
+## Carrying a live loop across
+
+The rule: nothing you wrote is dropped; kit text is replaced;
+anything unrecognised is kept. The worked example is a v1 repo
+whose cloud loop runs an editorial content queue: its
+`march.md` carries a weekly snapshot gate, the queue itself
+and an empty-queue refill, and every content commit of the
+last week came from them.
+
+- **Your steps become lanes.** The CLI carries every header
+  and paragraph the kit's `march.md` and `iterate.md` ever
+  held, so a fork from long before `v1.0.0` still reads as
+  kit text. A section the kit never had moves verbatim into
+  `skills/march.lanes.md` or `skills/iterate.lanes.md`
+  ([project lanes](../customization/project-lanes.md)), one
+  lane per section: ahead of the v1 phase pick a `pre` lane,
+  after it a `queue` lane, both ending the tick (v1 dispatch
+  was first match wins); iterate's are `dimensions`. Your
+  paragraphs inside a kit step become one `<step>-notes` lane
+  that continues. Words outside the procedure move under one
+  notes header, never as a lane. The kit never overwrites a
+  lanes file.
+- **Your skills and commands stay.** One the kit never shipped
+  is kept; a command with no skill becomes `skills/<name>.md`.
+- **v1 references are rewritten** across the repo, workflow
+  prompts included: `01_build_plan`, `plan/phases`,
+  `plan/steps`, `ship-a-phase`, `plan-a-phase`,
+  `PHASE_CANDIDATES`. History files (`ARCHIVE.md`,
+  `DIGEST.md`, changelogs, dated logs) are left alone.
+- **The workflow is merged, not replaced.** `march.yml` takes
+  the v2 owner-job shape and keeps your cron, ceiling number,
+  model pin, every extra `env:` entry (deploy tokens by name),
+  concurrency group, any step the kit never shipped and any
+  prompt line no kit version held. The toolchain steps move
+  into `.github/actions/setup/action.yml`; a step that reads a
+  secret stays in the job. Other workflows change only by the
+  reference rewrites. `--keep-workflow` skips the merge.
+
+### Conservative knobs
+
+Every knob the kit added since v1 is written at the value that
+keeps today's behaviour, so the train runs unchanged; turn
+them up later, one at a time.
+
+| Knob | Written |
+|---|---|
+| `Improve:` (bearings) | `gentle` |
+| `Support:` / `NEXUS_SUPPORT` | `triage-only` / unset |
+| `Promote:` | `owner` |
+| `## Generators` | empty |
+| `stall_action` | `alert` |
+| `loop` (iterate dimension) | `off` |
+| `UI:` | `none` |
+| `NEXUS_CADENCE`, `NEXUS_CHAIN_MAX` | unset, `0` |
+| `NEXUS_IDLE_BACKOFF` | `0` (never skip) |
+| `NEXUS_QUOTA_MAX` | unset (the kit default) |
+
+The bearings knobs go in a `## Loop knobs` block of
+`plan/bearings.md`; a knob line you already have is kept. The
+repo variables are printed as `gh variable set` lines, never
+set by the dry run.
+
+## Write, land, watch
+
+```bash
+npx @usenexus/cli upgrade --write
+```
+
+With the gate green, one commit, `plan: upgrade to nexus v2
+(specs + chunks)`, on branch `nexus/upgrade-v2`. Nothing is
+pushed. How it reaches the default branch:
+
+- **`--land owner`** (the default when the v1 history shows
+  `Cloud-Run` commits on the default branch): waits for an
+  idle window (no march run queued or running, the next cron
+  ten minutes or more away), pauses march, sets
+  `NEXUS_LOOP_MODE=owner`, pushes, resumes march, dispatches
+  the first v2 tick and watches it, printing its dispatch and
+  its commit. March is always resumed once paused. A tick
+  that no-ops where the report predicted work prints the
+  `--rollback` line. `--no-pause` and `--no-watch` skip those
+  two steps.
+- **`--land pr`** (else): pushes the branch and opens a pull
+  request whose body is the report. Its merge is the
+  cut-over.
+
+### A repo on GitHub, no checkout
+
+```bash
+npx @usenexus/cli upgrade --repo owner/name
+npx @usenexus/cli upgrade --repo owner/name --pr
+```
+
+`--repo` takes `owner/name` or its URL: a blobless clone into
+a temporary folder, the same path, the same report, the clone
+removed after. `--pr` commits, pushes `nexus/upgrade-<version>`
+and opens the pull request (from a fork when you cannot push).
+An open upgrade pull request from an earlier run is updated in
+place, never a second one. A red gate opens nothing and keeps
+the clone. `--pr` on a local checkout does the same, and
+`--write` on a GitHub repo without `--pr` is refused.
+
+## On v2: the same command syncs to latest
+
+```bash
+npx @usenexus/cli upgrade
+npx @usenexus/cli upgrade --write
+```
+
+On a v2 repo the command brings the kit up to the one the CLI
+carries. The lock's `ref:` names the kit commit the repo
+follows, so every kit file has three versions: the kit at
+`ref:`, the kit now, and your copy.
+
+| Your copy | The sync |
+|---|---|
+| untouched since `ref:` | replaced with the kit now |
+| changed, and so is the kit | a three-way merge; a conflict goes to an assisted merge (one headless turn per file on your own Claude Code login), shown as a diff, applied only with your gate green |
+| new kit content of a kind you take | added; a new knob at its conservative value |
+| a lanes file, a skill the kit never shipped | never touched |
+
+`--write` makes one commit, `plan: sync to nexus <version>`,
+on `nexus/upgrade-<version>`; `--land` and `--pr` carry it as
+above. A CLI older than the repo's kit refuses before any
+write. Run it again whenever the kit moves.
+
+## Refining the stub specs
+
+The converter writes each pending phase as a stub spec
+(`Not chunked yet.`). Refine the next one or two before the
+loop needs them. Keep the phase number as the spec number, so
+history lines up: phase 12's spec is `plan/12-<slug>.md` and
+its chunks are `12.1`, `12.2`, ….
+
+**A brief becomes a spec.** The brief's sections map across:
+
+| Brief section | Spec section |
+|---|---|
+| Outcome / Scope | the `>` one-line outcome, and `## Why` |
+| Routes, reads, components, composition, states, responsive, "Decisions made upfront" | `## Design` |
+| Stack pins, schemas, output formats | `## Contracts` |
+| Outputs, the tests matrix, the DoD | `## Acceptance`: one `- **A<n>**` bullet per observable outcome |
+| Follow-ups (out of scope) | a candidate in `plan/CANDIDATES.md`, or nothing |
+
+Then chunk it: S/M/L vertical slices (L = one session at
+most), each `closes` the A-IDs it finishes, every A-ID
+covered, `needs` chaining them, and a true `Measure:` line
+(`N open · 0 closed · next A<N+1>`). The model, with every
+rule: [`concepts/plan-shape.md`](../concepts/plan-shape.md).
+
+## Rolling back
+
+```bash
+npx @usenexus/cli upgrade --rollback
+npx @usenexus/cli upgrade --rollback --land owner
+```
+
+The upgrade is one commit. `--rollback` reverts it on a fresh
+fetch of origin in one commit, the lock pinned back to
+`v1.0.0`, on `nexus/rollback-v2`; with `--land` it reaches the
+default branch the same way (no dispatch: the v1 cron runs).
+By hand, `git revert <sha>` does the same. The kit at the
+`v1.0.0` tag still matches the v1 files.
+
+## Half-done upgrades
+
+A lock that says `shape: chunks` beside a live `plan/steps/`
+or `PHASE_CANDIDATES.md` is an upgrade stopped part way. The
+command finishes [Step 5](#step-5--retire-the-v1-files) only:
+retires `steps/`, renames the candidates file, rewrites the
+references. A build queue kept on purpose (`plan/settle.json`
+`queue` under `plan/steps/`) is v2, not half-done.
+
+## Before upgrading: the v1 quota patch
 
 A v1 cloud loop has no quota governor: it spends the shared
 weekly quota with no gate and fires at minute :00, the
@@ -30,9 +275,9 @@ run nexus's patcher against a fresh clone of your origin,
 never your working checkout:
 
 ```bash
-git clone <your origin> /tmp/v1-patch
-node ../nexus/scripts/cloud/patch-v1.mjs --repo /tmp/v1-patch          # dry run: the diff
-node ../nexus/scripts/cloud/patch-v1.mjs --repo /tmp/v1-patch --write  # apply; never commits
+git clone <your origin> ../v1-patch
+node ../nexus/scripts/cloud/patch-v1.mjs --repo ../v1-patch          # dry run: the diff
+node ../nexus/scripts/cloud/patch-v1.mjs --repo ../v1-patch --write  # apply; never commits
 ```
 
 It adds the Quota gate, Quota read and pause steps (and
@@ -40,6 +285,14 @@ It adds the Quota gate, Quota read and pause steps (and
 moves each cron minute off :00 with the hours kept, and
 leaves every other line alone. Review, commit and push from
 that clone.
+
+---
+
+## By hand
+
+For a repo the command cannot reach, or to see each move. The
+command does all six steps in one; these are the same steps,
+one at a time, from your repo root with nexus at `../nexus`.
 
 ## Step 1 — pin v1 (do this either way)
 
@@ -86,22 +339,17 @@ from `../nexus/templates/` into your repo. The list is
 computed, not hand-kept: the import closures of plan-check,
 the converter, claims, the cloud tick, workflow-lint and every
 script a skill or the v2 `march.yml` calls, plus every skill,
-every command and the shared
-toolchain action (`scripts/upgrade-files.mjs` in nexus; the
-CLI bundles the same set). It overwrites the kit's skills,
-so first move any local edit you'd made to `march.md` or
-`iterate.md` into a project lane
-(`skills/march.lanes.md`, `skills/iterate.lanes.md`), which a
-re-sync never overwrites
-([`../customization/project-lanes.md`](../customization/project-lanes.md);
-`npx @usenexus/cli upgrade` makes this move for you, one lane
-per section no kit version ever held);
-a skill or command of your own that the kit never shipped is
-left alone. A test your repo already carries for a kit script
-(an older copy of the kit's own) is replaced by the kit's, or
-the new script fails it; the list's closing note names them.
-Sweep the eight placeholders over the new files
-exactly as [`new-project.md`](./new-project.md) §4 does.
+every command and the shared toolchain action
+(`scripts/upgrade-files.mjs` in nexus; the CLI bundles the
+same set). It overwrites the kit's skills, so first move any
+section you added to `march.md` or `iterate.md` into a project
+lane, as [Carrying a live loop across](#carrying-a-live-loop-across)
+describes; a skill or command of your own is left alone. A
+test your repo already carries for a kit script (an older
+copy of the kit's own) is replaced by the kit's, or the new
+script fails it; the list's closing note names them. Sweep
+the eight placeholders over the new files exactly as
+[`new-project.md`](./new-project.md) §4 does.
 
 Two fill-ins were renamed: `<PHASE_N>` → `<SPEC_N>` and
 `<PHASE_M>` → `<SPEC_M>`, in `setup/00_files.md`'s index, whose
@@ -111,32 +359,32 @@ spec number).
 
 ## Step 3 — write the roadmap
 
-Replace `plan/README.md` with the v2 roadmap,
-`../nexus/templates/plan/README.md` (its layout notes, audit
-format and lessons section carry over; the lanes and spec
-table are new). Leave the Asap and Held lanes empty for now.
+Add the v2 lanes and the spec table from
+`../nexus/templates/plan/README.md` to your `plan/README.md`,
+keeping your own sections where they are, and fill
+`<PROJECT>`. Leave the Asap and Held lanes empty for now.
 
 ## Step 4 — convert the build plan
 
 `templates/scripts/upgrade-plan.mjs` does the mechanical half.
-From your repo root, read what it would write, then write it:
+Read what it would write, then write it:
 
 ```bash
 node ../nexus/templates/scripts/upgrade-plan.mjs
 node ../nexus/templates/scripts/upgrade-plan.mjs --write
 ```
 
-Both run the same in PowerShell. It is a dry run unless you
-pass `--write`; it runs `plan-check` over the result first and
-writes nothing if that is red; it never deletes the v1 files
-(Step 5 does) and a second run adds nothing. It walks
+It is a dry run unless you pass `--write`; it runs
+`plan-check` over the result first and writes nothing if that
+is red; it never deletes the v1 files (Step 5 does) and a
+second run adds nothing. It walks
 `plan/steps/01_build_plan.md` top to bottom like this:
 
 | v1 row | becomes |
 |---|---|
 | `[x] Phase N — <title> (commit <sha>)` | one `plan/ARCHIVE.md` line: `- <date> · <NN> · <title, ≤ 10 words> · <sha>` (the date from `git show -s --format=%as <sha>`; a `(this commit)` row takes the commit that ticked it; `NN` is N zero-padded to two digits). A `[-]` partial row too. The sha may also be a trailing `` `<sha>` ``, a range `a..b` or `a → b`, or a ship pair `a + b` (archived `a..b`); the title stops at the first ` — `, `. ` or ` (`, and a trailing `` `<sha>` `` never joins it. |
 | `[x] Phase Na — <title>` (a letter suffix: `4b`, `15a`) | an archive line under the parent number, the suffix leading the title: `- <date> · 15 · 15a: <title> · <sha>` |
-| `[ ] Phase N — <title>` with a brief | a stub spec `plan/<NN>-<slug>.md` (the brief folded into Design, one acceptance ID, `Not chunked yet.`) and a roadmap row; refine it as below |
+| `[ ] Phase N — <title>` with a brief | a stub spec `plan/<NN>-<slug>.md` (the brief folded into Design, one acceptance ID, `Not chunked yet.`) and a roadmap row; refine it as [above](#refining-the-stub-specs) |
 | `[ ] Phase N — <title>` with no brief | a stub spec with its Why (from the build plan's per-phase scope), the row's own text past the title in Design, one acceptance ID, and `Not chunked yet.` |
 | `[ ] Phase Na — <title>` | a stub spec as above at the next free spec number (its parent's may already be a spec), with a warning |
 | `[blocked: <reason> <date>] Phase N` | a spec as above, plus a Held line `- **<NN>** · blocked: <reason> · since: <date> · until: the owner unblocks it · max_age: 14d` (a lock that times out) |
@@ -149,28 +397,7 @@ leaves to you is in its warnings: carry-overs, a `[-]` partial
 row's gaps, a shipped row whose commit it could not find
 (archived as `unknown`; put the sha in), an open suffixed
 phase's new number, and any Status row it could not parse
-(named, with the listed and parsed counts). Then refine each
-stub spec it wrote, as below.
-
-Keep the phase number as the spec number, so history lines up:
-phase 12's spec is `plan/12-<slug>.md` and its chunks are
-`12.1`, `12.2`, ….
-
-**A brief becomes a spec.** The brief's sections map across:
-
-| Brief section | Spec section |
-|---|---|
-| Outcome / Scope | the `>` one-line outcome, and `## Why` |
-| Routes, reads, components, composition, states, responsive, "Decisions made upfront" | `## Design` |
-| Stack pins, schemas, output formats | `## Contracts` |
-| Outputs, the tests matrix, the DoD | `## Acceptance`: one `- **A<n>**` bullet per observable outcome |
-| Follow-ups (out of scope) | a candidate in `plan/CANDIDATES.md`, or nothing |
-
-Then chunk it: S/M/L vertical slices (L = one session at
-most), each `closes` the A-IDs it finishes, every A-ID
-covered, `needs` chaining them, and a true `Measure:` line
-(`N open · 0 closed · next A<N+1>`). The model, with every
-rule: [`concepts/plan-shape.md`](../concepts/plan-shape.md).
+(named, with the listed and parsed counts).
 
 ## Step 5 — retire the v1 files
 
@@ -203,18 +430,8 @@ chunk's requirements are in `plan/<NN>-<slug>.md`; what
 shipped is `plan/ARCHIVE.md`), `CLAUDE.md`'s pointer, and
 `.github/workflows/march.yml` (the ceiling's ship
 discriminator and the skill list: copy both from
-`../nexus/templates/.github/workflows/march.yml`).
-
-`npx @usenexus/cli upgrade` merges `march.yml` for you
-instead: the v2 owner job, with your cron, ceiling number,
-model pin, every extra `env:` entry (deploy tokens by name),
-concurrency group, any step the kit never shipped and any
-prompt line no kit version held kept; the job's toolchain
-steps (package manager, install, browser install) move into
-`.github/actions/setup/action.yml`, and workflow-lint gates
-the result. `--keep-workflow` leaves the file as it is and
-reports what the merge would keep. Your other workflows
-change only by the reference rewrites above.
+`../nexus/templates/.github/workflows/march.yml`, keeping
+your cron, ceiling number, model pin and env).
 
 ## Step 6 — gate it and flip the lock
 
@@ -230,7 +447,8 @@ node --test scripts/__tests__/plan-check.test.mjs
 Both run the same in PowerShell. When they're green, rewrite
 the lock to v2 (`version:` and `ref:` from
 `../nexus/templates/plan/nexus.lock`, `shape: chunks`, today's
-date) and commit everything as one atomic act:
+date), write the conservative knobs by hand, and commit
+everything as one atomic act:
 
 ```bash
 git add -A plan skills .claude scripts agents.md CLAUDE.md
@@ -238,11 +456,8 @@ git commit -m "plan: upgrade to nexus v2 (specs + chunks)"
 git push origin main
 ```
 
-## Rolling back
-
-The upgrade is one commit. `git revert <sha>` returns the v1
-plan, skills and lock; the kit at the `v1.0.0` tag still
-matches them.
+A live loop: push between two ticks, and set
+`NEXUS_LOOP_MODE` to `owner` first when it pushed main.
 
 ## You're done when
 
@@ -251,12 +466,15 @@ matches them.
       phase is one line in `plan/ARCHIVE.md`.
 - [ ] Every pending phase is a spec with a row in
       `plan/README.md`; the next one or two are chunked.
+- [ ] Every step your loop ran on v1 is in a lanes file or a
+      skill of its own, and the predicted first dispatch is
+      the work you expected.
 - [ ] `node scripts/plan-check.mjs` is green, and it runs in
       your verify gate.
 - [ ] Nothing in the repo still names `01_build_plan`,
       `plan/phases`, `ship-a-phase` or `plan-a-phase`.
-- [ ] One `/ship-a-chunk` (or `/march`) tick picks the chunk
-      you expected and closes it with an archive line.
+- [ ] The first v2 tick picks what the report predicted and
+      lands a commit.
 
 ## Manual copy list
 
@@ -554,6 +772,12 @@ The kit's tests of the scripts above go only over a copy your repo already has (
 
 ## See also
 
+- [`prompts/upgrade.md`](../prompts/upgrade.md): the same
+  upgrade handed to any agent.
+- [`packages/cli/README.md`](../packages/cli/README.md): the
+  command's full reference.
+- [`customization/project-lanes.md`](../customization/project-lanes.md):
+  where your loop's own steps live.
 - [`concepts/plan-shape.md`](../concepts/plan-shape.md): the
   model.
 - [`new-project.md`](./new-project.md) §3: the v2 plan, from

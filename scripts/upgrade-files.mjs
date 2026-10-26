@@ -30,7 +30,10 @@
 //
 // --check fails when a templates/ path the playbook names does not
 // exist, when the appendix drifts from the list, or when a listed
-// script reaches (by import) a file the list lacks or that is gone.
+// script reaches (by import) a file the list lacks or that is gone;
+// and (doorCheck) when README.md's "Used v1?" section, the paste
+// prompt (prompts/upgrade.md) or the playbook stops pointing at the
+// command, or names an adopter repo.
 //
 // syncFiles() is the set a v2 repo's sync walks (the CLI's
 // `upgrade` on a v2 repo): the list plus every kit workflow, the
@@ -340,10 +343,82 @@ export function writeAppendix(root = ROOT) {
   return true
 }
 
+// --- the door (spec 58, A10) --------------------------------------------------
+// The README's "Used v1?" section, the upgrade prompt and the
+// playbook all point at the command; none of them names an adopter
+// repo. Adopter names are held as hashes so this file names no one
+// either; a `<owner>/<name>` slug other than the kit's own is caught
+// by shape.
+
+export const PROMPT = 'prompts/upgrade.md'
+export const DOOR = /^##+ Used v1\?.*$/m
+/** sha256 (first 16 hex) of each adopter name the public upgrade docs must never carry, lower-cased. */
+export const UNNAMED = Object.freeze(['15b78eb7e1eec627', '4bb96cfac19d3c7f', 'a11b8ef120d0b35e', 'ee8c55d3ab0bee76'])
+const KIT_SLUG = 'daretodave/nexus'
+
+/** The README section under the "Used v1?" heading, up to the next heading of its level or above (null when absent). */
+export function doorSection(readme) {
+  const t = readme.replace(/\r\n/g, '\n')
+  const m = DOOR.exec(t)
+  if (!m) return null
+  const level = m[0].match(/^#+/)[0].length
+  const rest = t.slice(m.index + m[0].length)
+  const end = rest.search(new RegExp(`^#{1,${level}} |^---$`, 'm'))
+  return m[0] + (end < 0 ? rest : rest.slice(0, end))
+}
+
+/** Adopter names and foreign repo slugs in a public text: [{ what, line }]. */
+export async function namesIn(text, unnamed = UNNAMED) {
+  const { createHash } = await import('node:crypto')
+  const hash = (w) => createHash('sha256').update(w).digest('hex').slice(0, 16)
+  const out = []
+  text.replace(/\r\n/g, '\n').split('\n').forEach((line, i) => {
+    for (const w of line.toLowerCase().match(/[a-z][a-z0-9-]*/g) || []) {
+      if (unnamed.includes(hash(w))) out.push({ what: 'an adopter repo name', line: i + 1 })
+    }
+    for (const s of line.matchAll(/(?:github\.com\/|\bgh repo clone )([\w.-]+\/[\w.-]+)/g)) {
+      if (s[1].replace(/\.git$/, '') !== KIT_SLUG) out.push({ what: `the repo ${s[1]}`, line: i + 1 })
+    }
+  })
+  return out
+}
+
+/** The door's problems: README's section, the prompt and the playbook point at the command, and name no adopter. */
+export async function doorCheck(root = ROOT, unnamed = UNNAMED) {
+  const problems = []
+  const read = (rel) => {
+    const abs = path.join(root, ...rel.split('/'))
+    return fs.existsSync(abs) ? fs.readFileSync(abs, 'utf8') : null
+  }
+  const readme = read('README.md') ?? ''
+  const door = doorSection(readme)
+  if (door === null) problems.push('README.md: no "Used v1?" section beside the doors (spec 58, A10)')
+  else {
+    if (!door.includes('npx @usenexus/cli upgrade')) problems.push('README.md "Used v1?": does not give the dry run, `npx @usenexus/cli upgrade`')
+    if (!/npx @usenexus\/cli upgrade --write\b/.test(door)) problems.push('README.md "Used v1?": does not give `npx @usenexus/cli upgrade --write`')
+    if (!door.includes('](./playbooks/upgrade.md)')) problems.push('README.md "Used v1?": does not link playbooks/upgrade.md')
+    if (!door.includes('](./prompts/upgrade.md)')) problems.push('README.md "Used v1?": does not link prompts/upgrade.md')
+  }
+  const prompt = read(PROMPT)
+  if (prompt === null) problems.push(`${PROMPT}: missing (the upgrade's paste prompt)`)
+  else if (!prompt.includes('npx @usenexus/cli upgrade') || !prompt.includes('playbooks/upgrade.md')) problems.push(`${PROMPT}: does not run \`npx @usenexus/cli upgrade\` from playbooks/upgrade.md`)
+  const playbook = read(PLAYBOOK)
+  if (playbook !== null && !playbook.includes('npx @usenexus/cli upgrade')) problems.push(`${PLAYBOOK}: not written around \`npx @usenexus/cli upgrade\``)
+  // The door ships with the command: a README that offers it while the CLI does not dispatch it is red.
+  const bin = read('packages/cli/bin/nexus.mjs')
+  if (door !== null && bin !== null && !/argv\[0\] === 'upgrade'/.test(bin)) problems.push('README.md "Used v1?": packages/cli/bin/nexus.mjs does not dispatch `upgrade`')
+  for (const [label, text] of [['README.md "Used v1?"', door], [PROMPT, prompt], [PLAYBOOK, playbook]]) {
+    if (text === null) continue
+    for (const n of await namesIn(text, unnamed)) problems.push(`${label}:${n.line} names ${n.what}; public upgrade docs describe patterns, never an adopter`)
+  }
+  return { problems }
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const arg = process.argv[2]
   if (arg === '--check') {
-    const { problems, files } = check()
+    const { files, problems: listed } = check()
+    const problems = [...listed, ...(await doorCheck()).problems]
     for (const p of problems) console.error(`upgrade-files: ${p}`)
     if (!problems.length) console.log(`upgrade-files: ${files.length} files; the closure is closed and ${PLAYBOOK} matches`)
     process.exit(problems.length ? 1 : 0)

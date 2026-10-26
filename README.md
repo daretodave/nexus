@@ -70,6 +70,44 @@ spec yet? [Start from the pitch](#tldr--i-have-a-pitch-no-spec-yet).
 Ten minutes to read each; [Pick a playbook](#pick-a-playbook)
 routes the rest (no spec yet, polyrepo, cloud loop).
 
+## Used v1? On v2?
+
+**Used v1?** A repo on the phase plan moves to specs and
+chunks with one command. Run it at the repo's root; it is a
+dry run, it reads a fresh fetch of your origin, and it never
+touches your checkout:
+
+```bash
+npx @usenexus/cli upgrade            # the report: files, archive lines, the first tick it predicts
+npx @usenexus/cli upgrade --write    # one commit on nexus/upgrade-v2, nothing pushed
+```
+
+A live loop's own steps come across as project lanes, its
+workflow is merged rather than replaced, and every new knob is
+written at the value that keeps today's behaviour.
+`--land owner` lands it between two ticks and watches the
+first; `--rollback` undoes it in one commit.
+
+**On v2?** The same command syncs the repo to the latest kit:
+untouched kit files replaced, your edits merged three ways,
+new content added at conservative values. Run it whenever the
+kit moves.
+
+**No checkout?** `npx @usenexus/cli upgrade --repo owner/name
+--pr` does it from a temporary clone and opens a pull request
+whose body is the report.
+
+The runbook, and the by-hand route:
+[`playbooks/upgrade.md`](./playbooks/upgrade.md). Any other
+agent, paste this at the repo's root (what it authorizes:
+[`prompts/upgrade.md`](./prompts/upgrade.md)):
+
+```
+Clone https://github.com/daretodave/nexus.git to ../nexus
+(or use ./.nexus if submoduled) if you haven't already, then
+read and follow ../nexus/prompts/upgrade.md exactly, in order.
+```
+
 ---
 
 ## How it works
@@ -489,7 +527,8 @@ nexus/
 ├── prompts/                           # canonical paste-prompts — versioned, public API
 │   ├── README.md                      # what these are, how the short paste uses them
 │   ├── adopt.md                       # the full "Adopt nexus" agent prompt
-│   └── pitch.md                       # the full pitch-to-adopted agent prompt
+│   ├── pitch.md                       # the full pitch-to-adopted agent prompt
+│   └── upgrade.md                     # the upgrade agent prompt: dry run, report read back, a landing only on your say-so
 ├── package.json                       # the kit's own verify gate wiring
 ├── nexus.secrets.json                 # nexus's own secrets by name, never a value (customization/secrets.md)
 ├── assets/                            # generated SVG diagrams (scripts/diagrams.mjs); hand edits fail the gate
@@ -570,7 +609,7 @@ nexus/
 │   ├── cloud-loop-existing-actions.md # adding it beside your own Actions and local workflow (the GUI's checklist)
 │   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
 │   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
-│   ├── upgrade.md                     # an older plan shape → specs + chunks; pin with plan/nexus.lock
+│   ├── upgrade.md                     # npx @usenexus/cli upgrade: v1 to specs + chunks, a v2 repo to the latest kit; the by-hand route and its generated copy list
 │   ├── owner-mode.md                  # how work lands: .owner pushes main + settles, else next/<id> PRs; rulesets
 │   ├── design-handoff.md              # the Claude Design round trip: prompt, addenda, link, ingest, port, skip list
 │   ├── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos

@@ -337,11 +337,15 @@ npx @usenexus/cli upgrade --repo <dir>    another folder
 npx @usenexus/cli upgrade --json          the report as JSON
 npx @usenexus/cli upgrade --keep-workflow leave march.yml as it is (report only)
 npx @usenexus/cli upgrade --verify        also run your own verify in the worktree
+npx @usenexus/cli upgrade --write         ...committed on nexus/upgrade-v2, nothing pushed
+npx @usenexus/cli upgrade --land owner    ...landed between two ticks, the first one watched
+npx @usenexus/cli upgrade --land pr       ...pushed and opened as a pull request
+npx @usenexus/cli upgrade --rollback      the upgrade commit reverted, the lock back to v1.0.0
 ```
 
 `upgrade` moves a nexus v1 repo (a phase plan:
-`plan/steps/01_build_plan.md`) to v2 (specs and chunks). This
-release carries the dry run, and it writes nothing. It never reads
+`plan/steps/01_build_plan.md`) to v2 (specs and chunks). Bare, it
+is a dry run and writes nothing. It never reads
 your checkout either, which can be stale and dirty: it fetches
 origin's default branch and works in a temporary worktree cut from
 it. There it copies the v2 kit files (the CLI's bundled set, the
@@ -420,6 +424,16 @@ unset" and prints `gh variable set NEXUS_CHAIN_MAX --body 0` and
 `plan/steps/` or `PHASE_CANDIDATES.md`) gets Step 5 only, unless
 `plan/settle.json` names a build queue there (`queue`): that repo
 keeps the queue on purpose, and is v2. A v2 repo syncs (below).
+
+`--write` commits the result, with the gate green, as one commit,
+`plan: upgrade to nexus v2 (specs + chunks)`, on branch
+`nexus/upgrade-v2`; nothing is pushed. `--land owner` (the default
+when the v1 loop pushed the default branch) waits for an idle
+window, pauses march, sets `NEXUS_LOOP_MODE=owner`, pushes, resumes
+march, dispatches the first v2 tick and watches it; `--land pr`
+pushes the branch and opens a pull request instead. `--rollback`
+reverts the upgrade commit on a fresh fetch of origin. The runbook,
+and the by-hand route: `playbooks/upgrade.md` in the kit.
 
 It exits 0 when the report prints, 1 when the gate is red (the
 worktree is kept and its path printed), and 2 when the repo is not

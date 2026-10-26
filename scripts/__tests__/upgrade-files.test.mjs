@@ -7,8 +7,9 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createHash } from 'node:crypto'
 import {
-  appendix, BEGIN, callsOf, check, closure, END, importsOf, namedPaths, repoPath, syncFiles, upgradeFiles, writeAppendix,
+  appendix, BEGIN, callsOf, check, closure, doorCheck, doorSection, END, importsOf, namedPaths, namesIn, repoPath, syncFiles, UNNAMED, upgradeFiles, writeAppendix,
 } from '../upgrade-files.mjs'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -192,4 +193,62 @@ test('the kit itself: the list holds plan-check closure, next and plot callees, 
     assert.ok(kits.has(`templates/scripts/${want}`), want)
   }
   for (const want of ['templates/skills/next.md', 'templates/skills/plot.md', 'templates/claude/commands/next.md', 'templates/.github/actions/setup/action.yml']) assert.ok(kits.has(want), want)
+})
+
+// --- the door (spec 58, A10) ---
+// A made-up adopter name, hashed the way UNNAMED is, so no test names a real one.
+
+const FAKE = createHash('sha256').update('zorblat').digest('hex').slice(0, 16)
+const FENCE = '```'
+const DOOR_README = [
+  '# kit', '', '## Three doors in', '', 'Pick one.', '',
+  '## Used v1? On v2?', '',
+  `${FENCE}bash`, 'npx @usenexus/cli upgrade', 'npx @usenexus/cli upgrade --write', FENCE, '',
+  'The runbook: [x](./playbooks/upgrade.md); any agent: [y](./prompts/upgrade.md).', '',
+  '---', '', '## How it works', '', 'A loop like zorblat.', '',
+].join('\n')
+const DOOR_KIT = {
+  'README.md': DOOR_README,
+  'prompts/upgrade.md': '# prompt\n\nRead ../nexus/playbooks/upgrade.md, then run npx @usenexus/cli upgrade.\n',
+  'playbooks/upgrade.md': '# upgrade\n\n`npx @usenexus/cli upgrade`, the kit at https://github.com/daretodave/nexus/tree/v1.0.0.\n',
+  'packages/cli/bin/nexus.mjs': "if (argv[0] === 'upgrade') {}\n",
+}
+const without = (rel) => Object.fromEntries(Object.entries(DOOR_KIT).filter(([k]) => k !== rel))
+
+test('doorSection is the Used v1? section up to the next heading or rule, null when absent', () => {
+  const s = doorSection(DOOR_README)
+  assert.match(s, /^## Used v1\? On v2\?/)
+  assert.ok(s.includes('--write'))
+  assert.ok(!s.includes('How it works'))
+  assert.equal(doorSection('# kit\n\n## Three doors in\n'), null)
+})
+
+test('doorCheck is green on a door that gives the dry run and --write and links the playbook and prompt', async () => {
+  assert.deepEqual((await doorCheck(kit(DOOR_KIT), [FAKE])).problems, [])
+})
+
+test('doorCheck is red without the section, the prompt, --write, or a CLI that dispatches upgrade', async () => {
+  const none = await doorCheck(kit({ ...DOOR_KIT, 'README.md': '# kit\n' }), [FAKE])
+  assert.deepEqual(none.problems, ['README.md: no "Used v1?" section beside the doors (spec 58, A10)'])
+  assert.deepEqual((await doorCheck(kit(without('prompts/upgrade.md')), [FAKE])).problems, ['prompts/upgrade.md: missing (the upgrade\'s paste prompt)'])
+  const noWrite = await doorCheck(kit({ ...DOOR_KIT, 'README.md': DOOR_README.replace('upgrade --write', 'upgrade --json') }), [FAKE])
+  assert.deepEqual(noWrite.problems, ['README.md "Used v1?": does not give `npx @usenexus/cli upgrade --write`'])
+  const noLink = await doorCheck(kit({ ...DOOR_KIT, 'README.md': DOOR_README.replace('](./playbooks/upgrade.md)', ']') }), [FAKE])
+  assert.deepEqual(noLink.problems, ['README.md "Used v1?": does not link playbooks/upgrade.md'])
+  const noCli = await doorCheck(kit({ ...DOOR_KIT, 'packages/cli/bin/nexus.mjs': "if (argv[0] === 'run') {}\n" }), [FAKE])
+  assert.deepEqual(noCli.problems, ['README.md "Used v1?": packages/cli/bin/nexus.mjs does not dispatch `upgrade`'])
+})
+
+test('doorCheck is red when the door, prompt or playbook names an adopter or a foreign repo; the kit slug is fine', async () => {
+  const named = await doorCheck(kit({ ...DOOR_KIT, 'prompts/upgrade.md': `${DOOR_KIT['prompts/upgrade.md']}Like the Zorblat loop.\n` }), [FAKE])
+  assert.deepEqual(named.problems, ['prompts/upgrade.md:4 names an adopter repo name; public upgrade docs describe patterns, never an adopter'])
+  const slugs = await namesIn('see https://github.com/someone/thing, and https://github.com/daretodave/nexus.git', [FAKE])
+  assert.deepEqual(slugs, [{ what: 'the repo someone/thing', line: 1 }])
+  // README's other sections are not the door's business (the fixture's "How it works" names the fake).
+  assert.deepEqual((await doorCheck(kit(DOOR_KIT), [FAKE])).problems, [])
+})
+
+test('the kit itself: the door, the prompt and the playbook point at the command and name no adopter', async () => {
+  assert.ok(UNNAMED.length > 0)
+  assert.deepEqual((await doorCheck(REPO)).problems, [])
 })

@@ -467,15 +467,12 @@ too, so the pull request body has it.
 ## Acceptance
 
 - **A12** The GUI banner offers Sync when a v2 repo's lock is behind the CLI's bundled kit, and the README door and playbook say the same command keeps a v2 repo current.
-- **A10** `playbooks/upgrade.md` is rewritten around the command with a generated manual appendix, `prompts/upgrade.md` exists, and README.md has a "Used v1?" section with the dry-run command and `--write`, linking the playbook; none of them names an adopter repo; the README section ships in the same release as the subcommand.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 2 open · 11 closed · next A14
+Measure: 1 open · 12 closed · next A14
 
-- [ ] **58.10** Runbook rewrite, upgrade prompt and the README door · M · closes A10 · needs —
-  - The README section merges with the `cli-v*` release that carries 58.3-58.9; the owner tags it.
-- [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs 58.10
+- [ ] **58.12** The Sync banner and the "already on v2" door · S · closes A12 · needs —

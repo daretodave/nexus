@@ -116,8 +116,11 @@
 //                 does a script a kit workflow calls: a v2 sync adds
 //                 the workflows and their scripts, syncFiles), and
 //                 the playbook's generated manual copy list matches
-//                 the list (the CLI bundles the same set); and the
-//                 kit-text snapshot (scripts/upgrade-kit-text.json)
+//                 the list (the CLI bundles the same set); README.md's
+//                 "Used v1?" door, prompts/upgrade.md and the playbook
+//                 point at `npx @usenexus/cli upgrade` (the door only
+//                 while the CLI dispatches it) and name no adopter
+//                 repo (doorCheck); and the kit-text snapshot (scripts/upgrade-kit-text.json)
 //                 holds every header and paragraph the current
 //                 templates/skills/march.md and iterate.md hold, so
 //                 every kit version stays known to the upgrade; every
@@ -1357,8 +1360,10 @@ async function legSecrets() {
 // calls a new script, or a playbook path that goes stale is red here.
 
 async function legUpgrade() {
-  const { check } = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-files.mjs')).href)
+  const { check, doorCheck } = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-files.mjs')).href)
   const { problems, files } = check(ROOT)
+  // The door (spec 58, A10): README's "Used v1?", prompts/upgrade.md and the playbook point at the command and name no adopter.
+  problems.push(...(await doorCheck(ROOT)).problems)
   // The kit-text snapshot: a kit edit to march.md or iterate.md lands with --write in the same commit.
   const kitText = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-kit-text.mjs')).href)
   const text = await kitText.check(ROOT)
@@ -1373,7 +1378,7 @@ async function legUpgrade() {
   if (!dialRow || dialRow.at !== 'bearings' || !dialRow.write || dialRow.value !== 'gentle') knobs.push('packages/cli/server/upgrade.mjs KNOBS: the upgrade writes `Improve: gentle` (a bearings row, write: true, value gentle)')
   const suite = runSuites(['scripts/__tests__/upgrade-files.test.mjs', 'scripts/__tests__/upgrade-kit-text.test.mjs'], 'upgrade')
   const counts = Object.entries(text.counts).map(([s, c]) => `${s} ${c.paras}`).join(', ')
-  return { failures: [...problems, ...text.problems, ...knobs, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current; kit-text snapshot current (paragraphs: ${counts}); ${KNOBS.length} knobs registered, ${KNOBS.filter((k) => k.dial).length} valued at every dial position; ${suite.note}` }
+  return { failures: [...problems, ...text.problems, ...knobs, ...suite.failures], note: `${files.length} kit files, closure closed, playbooks/upgrade.md's copy list current, the README door and prompts/upgrade.md on the command; kit-text snapshot current (paragraphs: ${counts}); ${KNOBS.length} knobs registered, ${KNOBS.filter((k) => k.dial).length} valued at every dial position; ${suite.note}` }
 }
 
 // --- leg: state-size ----------------------------------------------------------
