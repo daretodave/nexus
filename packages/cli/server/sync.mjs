@@ -57,17 +57,85 @@ function gitRaw(cwd, args, { env } = {}) {
 
 const isGitDir = (dir) => !!dir && fs.existsSync(path.join(dir, '.git')) && fs.existsSync(path.join(dir, 'templates'));
 
+/** How many commits a build's trail names at most (a build past its tag by more reads as the tag's core alone). */
+export const TRAIL_MAX = 2000;
+
 /**
  * The kit commit a nexus checkout is at: { ref, version }. version is the newest `v*` tag's number, with `+<short
  * sha>` when the commit is past it (a shallow checkout with no tags: the template lock's version). Null outside git.
+ * With `trail`, also `trail`: the 12-character shas of the commits past that tag (at most TRAIL_MAX), so a CLI with
+ * no nexus history beside it can still tell a lock at `<core>+<short sha>` is behind its build (kitBehind).
  */
-export function kitBuild(nexus = NEXUS_ROOT) {
+export function kitBuild(nexus = NEXUS_ROOT, { trail = false } = {}) {
   const sha = gitIn(nexus, ['rev-parse', 'HEAD']);
   if (!sha.ok || !/^[0-9a-f]{40}$/.test(sha.out)) return null;
   const tag = gitIn(nexus, ['describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*', 'HEAD']);
   const at = tag.ok && gitIn(nexus, ['rev-parse', `${tag.out}^{commit}`]).out === sha.out;
   const base = tag.ok ? tag.out.replace(/^v/, '') : lockField(read(nexus, 'templates/plan/nexus.lock'), 'version') || '0.0.0';
-  return { ref: sha.out, version: at ? base : `${base}+${sha.out.slice(0, 7)}` };
+  const build = { ref: sha.out, version: at ? base : `${base}+${sha.out.slice(0, 7)}` };
+  if (trail) {
+    const r = gitIn(nexus, ['rev-list', `--max-count=${TRAIL_MAX}`, tag.ok ? `${tag.out}..HEAD` : 'HEAD']);
+    build.trail = r.ok && r.out ? r.out.split(/\s+/).map((s) => s.slice(0, 12)) : [];
+  }
+  return build;
+}
+
+/** The sha a lock names: its `ref:` when that is one, else the `+<short sha>` its `version:` carries, else null. */
+const lockSha = (lock) => {
+  if (/^[0-9a-f]{7,40}$/.test(String(lock?.ref || ''))) return lock.ref;
+  const m = /\+([0-9a-f]{7,40})$/.exec(String(lock?.version || ''));
+  return m ? m[1] : null;
+};
+const sameSha = (a, b) => !!a && !!b && (a.startsWith(b) || b.startsWith(a));
+
+/**
+ * Whether a v2 repo's lock ({ version, ref }, repo.mjs kitLock) is behind `build` (this CLI's kit: { ref, version,
+ * trail? }), so a sync would move it forward. The GUI's Sync banner reads it on every state read, so it asks git only
+ * of a nexus checkout beside the CLI (a dev run: is the lock's ref an ancestor of the build?) and otherwise reads the
+ * build alone: a lock sha in the build's trail is behind; else the versions' semver cores; on equal cores, a lock at
+ * the tag itself (no `+sha`) is behind a build past it. Unknown reads as not behind: the banner never offers a sync
+ * the CLI cannot tell is forward (the sync itself still refuses to run backwards).
+ */
+export function kitBehind({ lock, build, nexus = null }) {
+  if (!lock || !build?.ref) return false;
+  const sha = lockSha(lock);
+  if (sameSha(sha, build.ref) || (lock.version && lock.version === build.version)) return false;
+  if (lock.ref && isGitDir(nexus)) {
+    const at = gitIn(nexus, ['rev-parse', '--verify', '--quiet', `${lock.ref}^{commit}`]);
+    if (at.ok && at.out) {
+      if (at.out === build.ref) return false;
+      const r = spawnSync('git', ['merge-base', '--is-ancestor', at.out, build.ref], { cwd: nexus, stdio: 'ignore', windowsHide: true });
+      if (r.status === 0) return true;
+      if (r.status === 1) return false;
+    }
+  }
+  if (sha && Array.isArray(build.trail) && build.trail.some((t) => sameSha(t, sha))) return true;
+  const a = semverCore(lock.version);
+  const b = semverCore(build.version);
+  if (!a || !b) return false;
+  for (let i = 0; i < 3; i += 1) if (a[i] !== b[i]) return a[i] < b[i];
+  return !String(lock.version).includes('+') && String(build.version).includes('+');
+}
+
+let cliBuildMemo;
+/**
+ * The kit this CLI carries: { build, nexus }. build ({ ref, version, trail? }) is the bundled kit/upgrade/files.json's,
+ * else (a dev run beside the nexus checkout) kitBuild of that checkout; nexus is the checkout kitBehind may ask, set
+ * only in a dev run. Null when neither. Read once per process: the bundle never changes under a running CLI.
+ */
+export function cliBuild({ bundled = path.join(PKG, 'kit', 'upgrade'), nexus = NEXUS_ROOT, fresh = false } = {}) {
+  if (cliBuildMemo !== undefined && !fresh) return cliBuildMemo;
+  let out = null;
+  try {
+    const m = JSON.parse(fs.readFileSync(path.join(bundled, 'files.json'), 'utf8'));
+    if (m.build?.ref) out = { build: m.build, nexus: null };
+  } catch { /* no bundle: a dev run */ }
+  if (!out && isGitDir(nexus)) {
+    const build = kitBuild(nexus);
+    if (build) out = { build, nexus };
+  }
+  if (!fresh) cliBuildMemo = out;
+  return out;
 }
 
 /**

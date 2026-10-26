@@ -1,6 +1,8 @@
 // The Upgrade banner (spec 58, A9): on the repo view of a nexus v1 repo (or one part way to v2), "This repo is on
 // nexus v1" and an Upgrade button that runs `nexus upgrade`'s dry run on the server (POST /api/upgrade/dry: a fresh
-// fetch of origin in a scratch worktree, nothing written) and shows its report here. Words: fleet/upgrade.js.
+// fetch of origin in a scratch worktree, nothing written) and shows its report here. On a v2 repo whose lock is
+// behind the CLI's kit (A12) the same banner reads "nexus <version> is out" with a Sync button: the same command,
+// which on v2 is the sync, and its report. Words: fleet/upgrade.js.
 // It wears the GUI's colour and motion: an aurora edge that sweeps while the dry run works, a lit star, and a few
 // drifting motes behind the words (none when Settings > Appearance turns effects off or the system asks for less
 // motion; the CSS kill-switch stops the rest).
@@ -91,7 +93,7 @@ export default function UpgradeBanner({ info }) {
 
   if (!b) return null;
   return (
-    <section className={cx('upg', `is-${b.shape}`, running && 'is-running')} aria-label="Upgrade" aria-busy={running || undefined}>
+    <section className={cx('upg', `is-${b.shape}`, running && 'is-running')} aria-label={b.action === 'Sync' ? 'Sync' : 'Upgrade'} aria-busy={running || undefined}>
       {fxActive(level, reduced) ? <UpgradeMotes /> : null}
       <div className="upg-bar">
         <span className="cstar is-lit upg-star" aria-hidden="true" />
@@ -103,7 +105,7 @@ export default function UpgradeBanner({ info }) {
           <Icon name="arrowUp" size={14} />{running ? 'Dry run…' : last ? 'Run again' : b.action}
         </button>
       </div>
-      {running ? <div className="upg-progress" role="status">Fetching origin into a scratch worktree, converting the plan and running the gate. Your checkout is not touched.</div> : null}
+      {running ? <div className="upg-progress" role="status">{b.progress}</div> : null}
       {error ? <div className="upg-error" role="alert">{error}</div> : null}
       {!running ? <UpgradeReport last={last} /> : null}
     </section>

@@ -91,7 +91,8 @@ first; `--rollback` undoes it in one commit.
 **On v2?** The same command syncs the repo to the latest kit:
 untouched kit files replaced, your edits merged three ways,
 new content added at conservative values. Run it whenever the
-kit moves.
+kit moves; the GUI says when it has, with a `nexus <version>
+is out` banner whose Sync button runs the dry run.
 
 **No checkout?** `npx @usenexus/cli upgrade --repo owner/name
 --pr` does it from a temporary clone and opens a pull request

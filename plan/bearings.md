@@ -228,6 +228,12 @@ these before `/expand` (`scripts/plan/refill.mjs`,
    GIT_* a linked worktree leaks (GIT_DIR, the index, and
    GIT_CONFIG_PARAMETERS); kit hooks unset them too. A gate's
    own scratch repos otherwise write the real one (spec 47).
+8. A kit upgrade or sync moves a repo only when someone runs
+   it, works from a fresh fetch of origin, never goes
+   backwards, and drops nothing the adopter wrote: kit text is
+   replaced, custom text moves to lanes or is merged, and new
+   knobs arrive at their conservative values
+   ([upgrade playbook](../playbooks/upgrade.md), spec 58).
 
 ## Hard rules
 

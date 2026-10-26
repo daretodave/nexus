@@ -10,6 +10,7 @@ import { nextSpec } from './explode.mjs';
 import { choicesWords } from '../shared/choices.mjs';
 import { placeOf } from './place.mjs';
 import { detect } from './upgrade.mjs';
+import { cliBuild, kitBehind } from './sync.mjs';
 
 export const CHUNK_ID = /^[0-9]{1,3}(?:\.[0-9a-z]+)?$/;
 
@@ -40,6 +41,7 @@ export async function repoInfo(repo) {
     adopted: isAdopted(repo),
     kit: kitLock(repo),
     shape: kitShape(top.ok ? top.stdout.trim() : repo),
+    sync: kitSync(top.ok ? top.stdout.trim() : repo),
     nextSpec: nextSpecOf(repo),
   };
 }
@@ -71,6 +73,21 @@ export function kitLock(repo) {
  */
 export function kitShape(repo) {
   try { return detect(repo).shape; } catch { return 'none'; }
+}
+
+const behindMemo = new Map();
+/**
+ * The Sync banner's offer (spec 58, A12): { version, from } when the repo is on v2 and its lock is behind the kit
+ * this CLI carries (sync.mjs kitBehind), else null. version is the CLI's kit (what a sync moves to), from the lock's
+ * version. Read on every state read, so the answer per lock and build is kept for the process. `build` is a seam
+ * (tests): { build, nexus } as sync.mjs cliBuild returns it.
+ */
+export function kitSync(repo, { build = cliBuild() } = {}) {
+  const lock = kitLock(repo);
+  if (!lock || !build?.build?.ref || kitShape(repo) !== 'v2') return null;
+  const key = `${lock.version}|${lock.ref}|${build.build.ref}|${build.build.version}|${build.nexus || ''}`;
+  if (!behindMemo.has(key)) behindMemo.set(key, kitBehind({ lock, build: build.build, nexus: build.nexus }));
+  return behindMemo.get(key) ? { version: build.build.version, from: lock.version || lock.ref } : null;
 }
 
 /** Effective owner mode (server/local.mjs): `.owner` at the primary root, not switched off in .nexus/local.json. */

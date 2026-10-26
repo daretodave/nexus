@@ -32,6 +32,10 @@ test('the upgrade bundle is the computed list, byte for byte, with files.json na
   for (const f of manifest.sync) assert.ok(fs.existsSync(path.join(out, ...bundledPath(f.kit).split('/'))), f.kit);
   assert.match(manifest.build.ref, /^[0-9a-f]{40}$/);
   assert.match(manifest.build.version, /^\d+\.\d+\.\d+/);
+  // The commits past the build's tag (the Sync banner's trail, spec 58 A12): 12-character shas, the build's own first.
+  assert.ok(Array.isArray(manifest.build.trail));
+  for (const s of manifest.build.trail) assert.match(s, /^[0-9a-f]{12}$/);
+  if (manifest.build.version.includes('+')) assert.equal(manifest.build.trail[0], manifest.build.ref.slice(0, 12));
   for (const s of SEEDS) assert.equal(fs.readFileSync(path.join(out, ...s.split('/')), 'utf8'), fs.readFileSync(path.join(NEXUS, 'templates', ...s.split('/')), 'utf8'), s);
   // kit-text.json: every header and paragraph the kit's march and iterate skills ever held (spec 58, A4).
   const text = JSON.parse(fs.readFileSync(path.join(out, KIT_TEXT), 'utf8'));

@@ -25,8 +25,9 @@ const KIT_TEXT_SCRIPT = ['scripts', 'upgrade-kit-text.mjs'];
  * Copies the list from the nexus repo at `nexus` into `out` (emptied first): { files, sync, missing }. Nothing is
  * copied when the closure reaches a file that is gone, a seed is missing, or the kit-text script is. files.json also
  * carries `sync` (what a v2 repo's sync adds to the list: the kit's workflows and the scripts they call, the nexus
- * repo's scripts/upgrade-files.mjs syncFiles) and `build` ({ ref, version }: the kit commit this bundle was cut from,
- * which a synced repo's lock moves to; server/sync.mjs kitBuild).
+ * repo's scripts/upgrade-files.mjs syncFiles) and `build` ({ ref, version, trail }: the kit commit this bundle was
+ * cut from, which a synced repo's lock moves to, and the commits past its tag, which tell the GUI's Sync banner a
+ * lock is behind; server/sync.mjs kitBuild).
  */
 export async function bundleUpgrade({ nexus, out }) {
   const list = await import(pathToFileURL(path.join(nexus, 'scripts', 'upgrade-files.mjs')).href);
@@ -45,7 +46,7 @@ export async function bundleUpgrade({ nexus, out }) {
     fs.mkdirSync(path.dirname(to), { recursive: true });
     fs.copyFileSync(path.join(nexus, ...kit.split('/')), to);
   }
-  fs.writeFileSync(path.join(out, 'files.json'), `${JSON.stringify({ files, sync, seeds: SEEDS, build: kitBuild(nexus) }, null, 2)}\n`);
+  fs.writeFileSync(path.join(out, 'files.json'), `${JSON.stringify({ files, sync, seeds: SEEDS, build: kitBuild(nexus, { trail: true }) }, null, 2)}\n`);
   const { build } = await import(pathToFileURL(textScript).href);
   fs.writeFileSync(path.join(out, KIT_TEXT), `${JSON.stringify(await build(nexus), null, 2)}\n`);
   return { files, sync, missing };

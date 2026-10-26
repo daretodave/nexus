@@ -1,5 +1,5 @@
-/* The Upgrade banner (screens/fleet/UpgradeBanner.jsx; spec 58, A9): a card at the head of the repo view, in the
-   GUI's own colour and motion. An aurora edge breathes at rest and sweeps while the dry run works; a lit star; a few
+/* The Upgrade banner (screens/fleet/UpgradeBanner.jsx; spec 58, A9; its Sync face, A12): a card at the head of the
+   repo view, in the GUI's own colour and motion. An aurora edge breathes at rest and sweeps while the dry run works; a lit star; a few
    CSS motes drift behind the words (cheap: eight spans, transform and opacity only). Theme tokens only, so day and
    night both hold; reduced motion stops every animation and keeps the colour. */
 
@@ -21,6 +21,8 @@
   background-size: 40% 100%; opacity: 1; animation: upg-sweep 1.8s var(--ease-breathe) infinite;
 }
 .upg.is-half { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-blocked) 40%, var(--line)), 0 0 40px -22px var(--glow); }
+/* the Sync banner (A12): a newer kit is out; the same card, a fresh-news green edge */
+.upg.is-v2 { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--st-done) 38%, var(--line)), 0 0 40px -22px var(--glow); }
 
 .upg-sky { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .upg-sky i {
@@ -35,6 +37,7 @@
 .upg-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .upg-star { animation: nx-glow var(--dur-breathe) var(--ease-breathe) infinite alternate; }
 .upg.is-half .upg-star { background: var(--st-blocked); box-shadow: 0 0 0 4px color-mix(in oklab, var(--st-blocked) 16%, transparent), 0 0 18px 2px color-mix(in oklab, var(--st-blocked) 45%, transparent); }
+.upg.is-v2 .upg-star { background: var(--st-done); box-shadow: 0 0 0 4px color-mix(in oklab, var(--st-done) 16%, transparent), 0 0 18px 2px color-mix(in oklab, var(--st-done) 45%, transparent); }
 .upg.is-running .upg-star { animation: nx-breathe .9s var(--ease-breathe) infinite alternate; }
 .upg-words { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 2px; }
 .upg-title { font-size: 15px; line-height: 21px; font-weight: 600; color: var(--text); }

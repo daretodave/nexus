@@ -204,13 +204,14 @@ const DOOR_README = [
   '# kit', '', '## Three doors in', '', 'Pick one.', '',
   '## Used v1? On v2?', '',
   `${FENCE}bash`, 'npx @usenexus/cli upgrade', 'npx @usenexus/cli upgrade --write', FENCE, '',
+  '**On v2?** The same command syncs the repo to the latest kit.', '',
   'The runbook: [x](./playbooks/upgrade.md); any agent: [y](./prompts/upgrade.md).', '',
   '---', '', '## How it works', '', 'A loop like zorblat.', '',
 ].join('\n')
 const DOOR_KIT = {
   'README.md': DOOR_README,
   'prompts/upgrade.md': '# prompt\n\nRead ../nexus/playbooks/upgrade.md, then run npx @usenexus/cli upgrade.\n',
-  'playbooks/upgrade.md': '# upgrade\n\n`npx @usenexus/cli upgrade`, the kit at https://github.com/daretodave/nexus/tree/v1.0.0.\n',
+  'playbooks/upgrade.md': '# upgrade\n\n`npx @usenexus/cli upgrade`, the kit at https://github.com/daretodave/nexus/tree/v1.0.0.\n\n## On v2: the same command syncs to latest\n',
   'packages/cli/bin/nexus.mjs': "if (argv[0] === 'upgrade') {}\n",
 }
 const without = (rel) => Object.fromEntries(Object.entries(DOOR_KIT).filter(([k]) => k !== rel))
@@ -237,6 +238,13 @@ test('doorCheck is red without the section, the prompt, --write, or a CLI that d
   assert.deepEqual(noLink.problems, ['README.md "Used v1?": does not link playbooks/upgrade.md'])
   const noCli = await doorCheck(kit({ ...DOOR_KIT, 'packages/cli/bin/nexus.mjs': "if (argv[0] === 'run') {}\n" }), [FAKE])
   assert.deepEqual(noCli.problems, ['README.md "Used v1?": packages/cli/bin/nexus.mjs does not dispatch `upgrade`'])
+})
+
+test('doorCheck is red when the door or the playbook stops saying the same command syncs a v2 repo (A12)', async () => {
+  const noV2 = await doorCheck(kit({ ...DOOR_KIT, 'README.md': DOOR_README.replace('**On v2?** The same command syncs the repo to the latest kit.', 'Upgrade once.') }), [FAKE])
+  assert.deepEqual(noV2.problems, ['README.md "Used v1?": does not say the same command syncs a v2 repo to the latest kit ("On v2?", spec 58, A12)'])
+  const noSection = await doorCheck(kit({ ...DOOR_KIT, 'playbooks/upgrade.md': DOOR_KIT['playbooks/upgrade.md'].replace('## On v2', '## Later') }), [FAKE])
+  assert.deepEqual(noSection.problems, ['playbooks/upgrade.md: no "## On v2" section saying the same command syncs a v2 repo (spec 58, A12)'])
 })
 
 test('doorCheck is red when the door, prompt or playbook names an adopter or a foreign repo; the kit slug is fine', async () => {

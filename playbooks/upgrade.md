@@ -219,6 +219,15 @@ on `nexus/upgrade-<version>`; `--land` and `--pr` carry it as
 above. A CLI older than the repo's kit refuses before any
 write. Run it again whenever the kit moves.
 
+The GUI tells you when it has. On a v2 repo whose lock's
+`ref:` is behind the kit the CLI carries, the repo view leads
+with `nexus <version> is out` and a **Sync** button: the
+same dry run, on the server, and its report (what would be
+replaced, merged, assisted or added, the gate, the first tick).
+Nothing is written; take it from there with `--write` or
+`--pr`. A repo already on the CLI's kit, or one the CLI cannot
+tell is behind, gets no banner.
+
 ## Refining the stub specs
 
 The converter writes each pending phase as a stub spec

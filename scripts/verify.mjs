@@ -122,8 +122,9 @@
 //                 the list (the CLI bundles the same set); README.md's
 //                 "Used v1?" door, prompts/upgrade.md and the playbook
 //                 point at `npx @usenexus/cli upgrade` (the door only
-//                 while the CLI dispatches it) and name no adopter
-//                 repo (doorCheck); and the kit-text snapshot (scripts/upgrade-kit-text.json)
+//                 while the CLI dispatches it), the door and the
+//                 playbook say it syncs a v2 repo too ("On v2"),
+//                 and none names an adopter repo (doorCheck); and the kit-text snapshot (scripts/upgrade-kit-text.json)
 //                 holds every header and paragraph the current
 //                 templates/skills/march.md and iterate.md hold, so
 //                 every kit version stays known to the upgrade; every
@@ -1380,7 +1381,8 @@ async function legSecrets() {
 async function legUpgrade() {
   const { check, doorCheck } = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-files.mjs')).href)
   const { problems, files } = check(ROOT)
-  // The door (spec 58, A10): README's "Used v1?", prompts/upgrade.md and the playbook point at the command and name no adopter.
+  // The door (spec 58, A10, A12): README's "Used v1?", prompts/upgrade.md and the playbook point at the command, say it
+  // syncs a v2 repo too, and name no adopter.
   problems.push(...(await doorCheck(ROOT)).problems)
   // The kit-text snapshot: a kit edit to march.md or iterate.md lands with --write in the same commit.
   const kitText = await import(pathToFileURL(path.join(ROOT, 'scripts/upgrade-kit-text.mjs')).href)

@@ -33,7 +33,8 @@
 // script reaches (by import) a file the list lacks or that is gone;
 // and (doorCheck) when README.md's "Used v1?" section, the paste
 // prompt (prompts/upgrade.md) or the playbook stops pointing at the
-// command, or names an adopter repo.
+// command, stops saying it syncs a v2 repo, or names an adopter
+// repo.
 //
 // syncFiles() is the set a v2 repo's sync walks (the CLI's
 // `upgrade` on a v2 repo): the list plus every kit workflow, the
@@ -343,9 +344,10 @@ export function writeAppendix(root = ROOT) {
   return true
 }
 
-// --- the door (spec 58, A10) --------------------------------------------------
+// --- the door (spec 58, A10, A12) ---------------------------------------------
 // The README's "Used v1?" section, the upgrade prompt and the
-// playbook all point at the command; none of them names an adopter
+// playbook all point at the command, and the section and the
+// playbook say it syncs a v2 repo too ("On v2"); none of them names an adopter
 // repo. Adopter names are held as hashes so this file names no one
 // either; a `<owner>/<name>` slug other than the kit's own is caught
 // by shape.
@@ -398,12 +400,15 @@ export async function doorCheck(root = ROOT, unnamed = UNNAMED) {
     if (!/npx @usenexus\/cli upgrade --write\b/.test(door)) problems.push('README.md "Used v1?": does not give `npx @usenexus/cli upgrade --write`')
     if (!door.includes('](./playbooks/upgrade.md)')) problems.push('README.md "Used v1?": does not link playbooks/upgrade.md')
     if (!door.includes('](./prompts/upgrade.md)')) problems.push('README.md "Used v1?": does not link prompts/upgrade.md')
+    // The already-on-v2 door (A12): the same command keeps a v2 repo current.
+    if (!/\bOn v2\?/.test(door) || !/\bsync/i.test(door)) problems.push('README.md "Used v1?": does not say the same command syncs a v2 repo to the latest kit ("On v2?", spec 58, A12)')
   }
   const prompt = read(PROMPT)
   if (prompt === null) problems.push(`${PROMPT}: missing (the upgrade's paste prompt)`)
   else if (!prompt.includes('npx @usenexus/cli upgrade') || !prompt.includes('playbooks/upgrade.md')) problems.push(`${PROMPT}: does not run \`npx @usenexus/cli upgrade\` from playbooks/upgrade.md`)
   const playbook = read(PLAYBOOK)
   if (playbook !== null && !playbook.includes('npx @usenexus/cli upgrade')) problems.push(`${PLAYBOOK}: not written around \`npx @usenexus/cli upgrade\``)
+  if (playbook !== null && !/^## On v2\b/m.test(playbook)) problems.push(`${PLAYBOOK}: no "## On v2" section saying the same command syncs a v2 repo (spec 58, A12)`)
   // The door ships with the command: a README that offers it while the CLI does not dispatch it is red.
   const bin = read('packages/cli/bin/nexus.mjs')
   if (door !== null && bin !== null && !/argv\[0\] === 'upgrade'/.test(bin)) problems.push('README.md "Used v1?": packages/cli/bin/nexus.mjs does not dispatch `upgrade`')

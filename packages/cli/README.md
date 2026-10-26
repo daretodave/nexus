@@ -550,6 +550,16 @@ prints it. One dry run runs at a time, and the last report stays
 for a tab opened later (`GET /api/upgrade`, `POST
 /api/upgrade/dry`). Nothing is written.
 
+A v2 repo gets the same banner when the kit has moved past it:
+when its `plan/nexus.lock` `ref:` is behind the kit this CLI
+carries, the Fleet view reads "nexus <version> is out" with a
+**Sync** button that runs the same dry run, which on v2 is the
+sync, and shows its report (files replaced, merged, assisted and
+added, the gate, the first dispatch). The CLI tells behind from
+its own bundle (`kit/upgrade/files.json` `build`: the kit commit,
+its version and the commits past its tag), with no network call;
+a lock it cannot place gets no banner.
+
 ## Develop
 
 ```
