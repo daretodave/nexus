@@ -169,6 +169,30 @@ test('the other shapes: no schedule, workflow-env secrets, a secret toolchain st
   assert.deepEqual(lintAction(SETUP_ACTION, r.action), []);
 });
 
+test('a v1 step that ran after the model step stays after it, its steps.<id> pointed at the kit model step', () => {
+  // A v1 job whose model step was `claude_run`, with a problem check after it reading that run's transcript.
+  const lines = V1.replace('        id: run_march\n', '        id: claude_run\n').split('\n');
+  const at = lines.findIndex((l) => l === '      - name: Open cloud-failed issue if action crashed');
+  lines.splice(at, 0,
+    '      - name: Inspect execution for problem signals',
+    '        id: inspect',
+    '        if: always()',
+    '        run: echo "${{ steps.claude_run.outputs.execution_file }} ${{ steps.claude_run.outcome }}"',
+    '');
+  const v1 = readV1(lines.join('\n'));
+  assert.deepEqual(v1.custom.map((s) => [s.name, s.after]), [['Weekly trend snapshot', false], ['Inspect execution for problem signals', true]]);
+  const r = mergeWorkflow({ v1Text: lines.join('\n'), template: TEMPLATE, actionTemplate: ACTION, fills: FILLS, kitPrompt: KIT_PROMPT });
+  const owner = job(r.march, 'owner');
+  const run = owner.indexOf('- name: Run /march (cloud mode)');
+  const inspect = owner.indexOf('- name: Inspect execution for problem signals');
+  assert.ok(owner.indexOf('- name: Weekly trend snapshot') < run, 'the pre-model step stays ahead');
+  assert.ok(inspect > run && inspect < owner.indexOf('- name: Quota read'), 'the post-model step directly after the model step');
+  assert.match(owner, /steps\.run_march\.outputs\.execution_file \}\} \$\{\{ steps\.run_march\.outcome \}\}/);
+  assert.doesNotMatch(r.march, /steps\.claude_run\./);
+  assert.deepEqual(lintWorkflow(MARCH_YML, r.march), []);
+  assert.ok(r.warnings.some((w) => /1 ahead of the model step, 1 after it, as in v1/.test(w)), r.warnings.join('\n'));
+});
+
 test('the v1.0.0 template as it shipped carries no prompt line: every line is in the kit-text history', () => {
   const shipped = V1.replace(/\n {12}Editorial voice:[^\n]*\n/, '\n');
   const r = mergeWorkflow({ v1Text: shipped, template: TEMPLATE, actionTemplate: ACTION, fills: FILLS, kitPrompt: KIT_PROMPT });

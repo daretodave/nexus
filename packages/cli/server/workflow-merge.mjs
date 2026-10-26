@@ -187,12 +187,14 @@ export function readV1(yml) {
   const fence = steps.indexOf(ceilingStep ?? claude);
   const toolchain = [];
   const custom = [];
+  const claudeK = steps.indexOf(claude);
   steps.forEach((s, k) => {
     if (s === checkout || s === claude || s === ceilingStep) return;
     if (s.lines.some((l) => SETUP.test(l))) return;
     if (k < fence) { toolchain.push(s); return; }
     if (KIT_STEPS.has(String(s.name || '').toLowerCase())) return;
-    custom.push(s);
+    // `after`: it ran after the model step in v1 (it reads that run's outputs), so it stays after it.
+    custom.push({ ...s, after: k > claudeK });
   });
   return {
     lines, v2, job: job.id,
@@ -201,7 +203,7 @@ export function readV1(yml) {
     workflowEnv: entriesUnder(lines, topKey(lines, 'env')),
     jobEnv: entriesUnder(lines, childKey(lines, job.line, 'env')),
     permissions: entriesUnder(lines, childKey(lines, job.line, 'permissions')),
-    claude, claudeEnv, inputs, args, model, ceilingStep, ceiling: ceilingOf(ceilingStep), checkoutWith,
+    claude, claudeId: claude.id ?? null, claudeEnv, inputs, args, model, ceilingStep, ceiling: ceilingOf(ceilingStep), checkoutWith,
     toolchain, custom, usesSetup: steps.some((s) => s.lines.some((l) => SETUP.test(l))),
     prompt: promptOf(claude.lines.join('\n')),
   };
@@ -381,14 +383,24 @@ export function mergeMarch(v1, template, { kitPrompt = null } = {}) {
     kept.model = v1.model;
   }
 
-  // Steps the kit never shipped: kept, ahead of the owner-mode step (after the control plane, before the model).
+  // Steps the kit never shipped, on their v1 side of the model step: one that ran before it is kept ahead of the
+  // owner-mode step (after the control plane), one that ran after it directly after it. A reference to the v1 model
+  // step's id (`steps.<id>.outputs.execution_file`) is pointed at the kit's.
   if (v1.custom.length) {
-    const anchor = stepBy((s) => /owner mode for this checkout/i.test(s.name || '')) ?? run;
-    const ind = anchor.indent;
-    const add = v1.custom.flatMap((s) => [...reindent([...s.leadLines, ...s.lines], s.indent, ind), '']);
-    splice(lines, anchor.lead, anchor.lead, add);
+    const toId = run.id ?? 'run_march';
+    const ref = v1.claudeId && v1.claudeId !== toId ? new RegExp(`\\bsteps\\.${v1.claudeId.replace(/[-]/g, '\\-')}\\.`, 'g') : null;
+    const block = (list, ind) => list.flatMap((s) => [...reindent([...s.leadLines, ...s.lines], s.indent, ind), ''])
+      .map((l) => (ref ? l.replace(ref, `steps.${toId}.`) : l));
+    const before = v1.custom.filter((s) => !s.after);
+    const after = v1.custom.filter((s) => s.after);
+    if (after.length) splice(lines, run.end, run.end, ['', ...block(after, run.indent)].slice(0, -1));
+    if (before.length) {
+      const anchor = stepBy((s) => /owner mode for this checkout/i.test(s.name || '')) ?? stepBy((s) => s.start === runStart);
+      splice(lines, anchor.lead, anchor.lead, block(before, anchor.indent));
+    }
     kept.steps = v1.custom.map((s) => s.name || s.id || s.uses || '(unnamed)');
-    warnings.push(`${MARCH_YML}: ${kept.steps.length} v1 step(s) the kit never shipped kept in the owner job, ahead of the model step: ${kept.steps.join(', ')}; check each still applies`);
+    const where = [before.length && `${before.length} ahead of the model step`, after.length && `${after.length} after it`].filter(Boolean).join(', ');
+    warnings.push(`${MARCH_YML}: ${kept.steps.length} v1 step(s) the kit never shipped kept in the owner job (${where}, as in v1): ${kept.steps.join(', ')}; check each still applies`);
   }
   // Toolchain steps that stay in the job (they read a secret, or the repo keeps its own setup action): in v1 order,
   // directly ahead of the owner job's setup action, so a step the install depends on (a private registry's .npmrc)

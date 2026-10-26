@@ -48,6 +48,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Script entries whose closures are always in the set (relative to templates/scripts). */
 export const ENTRIES = Object.freeze(['plan-check.mjs', 'upgrade-plan.mjs', 'claims.mjs', 'cloud/tick.mjs', 'workflow-lint.mjs'])
+/** Folders whose every script is an entry: plan/refill.mjs runs a generator by the name bearings lists, which no
+ * import or call scan reaches, and the improvement dial lists the stock ones from steady up. */
+export const ENTRY_DIRS = Object.freeze(['generators'])
 /** Workflows the upgrade merges into a repo (never copies): the scripts they call ship, or the first tick fails. */
 export const WORKFLOWS = Object.freeze(['.github/workflows/march.yml'])
 /** Fixed non-script files: whole directories (recursive) and single files, relative to templates/. */
@@ -133,7 +136,12 @@ export function fixedFiles(root = ROOT) {
 export function entries(root = ROOT) {
   const t = path.join(root, 'templates')
   const out = [...ENTRIES]
-  const sources = [...fixedFiles(root).filter((k) => k.endsWith('.md')), ...WORKFLOWS.map((w) => `templates/${w}`)]
+  for (const d of ENTRY_DIRS) {
+    let names = []
+    try { names = fs.readdirSync(path.join(t, 'scripts', d)) } catch {}
+    for (const n of names.filter((n) => SCRIPT.test(n)).sort()) if (!out.includes(`${d}/${n}`)) out.push(`${d}/${n}`)
+  }
+  const sources =[...fixedFiles(root).filter((k) => k.endsWith('.md')), ...WORKFLOWS.map((w) => `templates/${w}`)]
   for (const kit of sources) {
     const abs = path.join(root, ...kit.split('/'))
     if (!fs.existsSync(abs)) continue
