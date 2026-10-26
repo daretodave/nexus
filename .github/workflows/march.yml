@@ -145,7 +145,9 @@ jobs:
           # A set NEXUS_CADENCE or NEXUS_DAILY_CEILING wins over the literal.
           if [ -n "$CADENCE_CEILING" ]; then ceiling=$CADENCE_CEILING; fi
           budget=0
-          for sha in $(git log --since="$since" --grep='Cloud-Run:' --format='%H'); do
+          # The trailer line only (^Cloud-Run: <run url>): a message that
+          # mentions the trailer in prose is not a cloud commit.
+          for sha in $(git log --since="$since" -E --grep='^Cloud-Run: https?://' --format='%H'); do
             if git diff-tree --no-commit-id --name-only -r "$sha" | grep -qx 'plan/ARCHIVE.md' \
                && git show "$sha" -- plan/ARCHIVE.md | grep -q '^+- '; then
               budget=$((budget + 3))   # chunk-shipping commit

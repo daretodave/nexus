@@ -261,10 +261,11 @@ function shRun(cmd, args) {
 
 const gitRun = (args) => shRun('git', args);
 
-/** The weighted 24h budget on origin/<main>, as the ceiling step counts it; null when git cannot say. */
+/** The weighted 24h budget on origin/<main>, as the ceiling step counts it (the trailer line only, never a prose
+ *  mention); null when git cannot say. */
 export function readBudget({ git, main, now }) {
   const since = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
-  const log = git(['log', `origin/${main}`, `--since=${since}`, '--grep=Cloud-Run:', '--format=%H']);
+  const log = git(['log', `origin/${main}`, `--since=${since}`, '-E', '--grep=^Cloud-Run: https?://', '--format=%H']);
   if (!log.ok) return null;
   const commits = [];
   for (const sha of log.stdout.split(/\s+/).filter(Boolean)) {

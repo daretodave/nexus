@@ -3,13 +3,14 @@
 // pending march or night run, or night's 30-minute window forbids it. One test per guard, then the command end to
 // end. node:test, gh and git stubbed.
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import {
   budgetGuard, budgetOf, ceilingOf, chainMaxOf, chainOf, cronFires, cronsIn, decide, depthGuard, issueWork, main,
-  nightGuard, parseCron, queueGuard, quotaGuard, readyGuard, shippedGuard,
+  nightGuard, parseCron, queueGuard, quotaGuard, readBudget, readyGuard, shippedGuard,
 } from '../cloud/chain.mjs';
 
 const NIGHT = "on:\n  schedule:\n    - cron: '30 10 * * *'   # daily\n  workflow_dispatch:\n";
@@ -111,6 +112,29 @@ describe('the guards', () => {
       { labels: [{ name: 'triage:loop-queued' }] },
     ];
     assert.equal(issueWork(issues), 2);
+  });
+});
+
+describe('the budget count', () => {
+  it('counts the Cloud-Run trailer line only, never a message that mentions it in prose', () => {
+    const dir = tmp();
+    const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
+    const git = (args) => {
+      const r = spawnSync('git', args, { cwd: dir, env, encoding: 'utf8' });
+      return { ok: r.status === 0, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
+    };
+    git(['init', '-q', '-b', 'main']);
+    fs.mkdirSync(path.join(dir, 'plan'));
+    const land = (file, line, msg) => {
+      fs.appendFileSync(path.join(dir, file), line + '\n');
+      git(['add', '-A']);
+      git(['commit', '-q', '-m', msg]);
+    };
+    land('plan/ARCHIVE.md', '- 2026-10-25 · 1.1 · a chunk · abc', 'feat: a cloud chunk\n\nCloud-Run: https://github.com/o/r/actions/runs/1');
+    land('notes.md', 'x', 'fix: a cloud churn commit\n\nCloud-Run: https://github.com/o/r/actions/runs/2');
+    land('plan/ARCHIVE.md', '- 2026-10-25 · 1.2 · a local chunk · def', "feat: a local chunk\n\nAn issue whose body carries a 'Cloud-Run: <url>' line starts no run.");
+    git(['update-ref', 'refs/remotes/origin/main', 'HEAD']);
+    assert.equal(readBudget({ git, main: 'main', now: new Date(Date.now() + 60000) }), budgetOf([{ chunk: true }, { chunk: false }]));
   });
 });
 
