@@ -779,7 +779,7 @@ jobs:
         with:
           node-version: 22
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: tick-${{ github.run_id }}
           path: ${{ runner.temp }}/tick
@@ -799,7 +799,7 @@ jobs:
       - name: The loop's app token
         id: app
         if: vars.NEXUS_APP_ID != ''
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ vars.NEXUS_APP_ID }}
           private-key: ${{ secrets.NEXUS_APP_PRIVATE_KEY }}
