@@ -315,8 +315,10 @@ genus: [`concepts/loop-shapes.md`](../concepts/loop-shapes.md)):
   the top with a priority bump; or run a specific verb from
   anywhere — `gh workflow run march -f verb=critique`.
 
-All writers share one concurrency group; the heartbeat is the
-only loop allowed to run beside them.
+march's writers share one concurrency group. The night shift
+has its own (a digest pending behind a long tick was cancelled
+by march's next cron); it writes only its own files and lands
+by rebase. The heartbeat never writes.
 
 ## Reviewing the loop's work
 

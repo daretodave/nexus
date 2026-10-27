@@ -3,8 +3,8 @@ name: night
 # The night shift (loop shape 2 - see nexus/concepts/loop-shapes.md):
 # one /digest tick a day. Writes plan/DIGEST.md - the morning
 # briefing - and runs the breadth checks (SMOKE_SAMPLE=full etc.)
-# that must never run on the per-commit path. Shares the march
-# concurrency group so cloud writers never race.
+# that must never run on the per-commit path. Runs in its own
+# concurrency group (below) and lands by rebase.
 #
 # NEXUS_LOOP_MODE switches it as it does march.yml: `owner` runs
 # the `digest` job, which pushes <DEFAULT_BRANCH>; unset (or pr)
@@ -18,7 +18,11 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: march              # one cloud writer at a time, ever
+  # Its own group, not march's: GitHub keeps one pending run per
+  # group and cancels it when the next queues, so a digest waiting
+  # behind a long tick was evicted by march's next cron. It writes
+  # only its own files and lands by rebase (skills/next/land.md).
+  group: night
   cancel-in-progress: false
 
 jobs:

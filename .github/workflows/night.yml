@@ -2,8 +2,8 @@ name: night
 
 # The night shift (loop shape 2): one /digest tick a day.
 # Writes plan/DIGEST.md - the morning briefing - and does the
-# breadth work the per-commit path must not. Shares the march
-# concurrency group so writers never race.
+# breadth work the per-commit path must not. Runs in its own
+# concurrency group (below) and lands by rebase.
 
 on:
   schedule:
@@ -11,7 +11,11 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: march              # one cloud writer at a time, ever
+  # Its own group, not march's: GitHub keeps one pending run per
+  # group and cancels it when the next queues, so a digest waiting
+  # behind a long tick was evicted by march's next cron. It writes
+  # only its own files and lands by rebase (skills/next/land.md).
+  group: night
   cancel-in-progress: false
 
 jobs:

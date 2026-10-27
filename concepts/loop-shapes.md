@@ -204,9 +204,13 @@ The shapes are one organism, not a menu of rivals:
 | Lanes | attended bursts | session | yes | the claims board |
 | Meta-loop | rides night shift | — | candidates only | the pulse |
 
-Serialization rule: every cloud shape that writes shares one
-concurrency group with the dispatcher. The heartbeat (which
-never writes) is the only loop allowed to run beside them.
+Serialization rule: every cloud shape that writes the code
+shares one concurrency group with the dispatcher. The night
+shift is the exception: it writes only its own files (the
+digest, findings, candidates) and lands by rebase, in its own
+group, because GitHub cancels a pending run when the next one
+queues in the same group, and the dispatcher's cron would
+evict it. The heartbeat never writes.
 
 Start with the dispatcher. Add the heartbeat the first time
 something wedges. Add the night shift when you stop reading
