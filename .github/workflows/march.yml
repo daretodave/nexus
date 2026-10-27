@@ -390,6 +390,11 @@ jobs:
           # which no cloud tick has yet been seen to leave; until one
           # does, this skips that check (customization/claims.md).
           NEXUS_NO_HOOK_CHECK: '1'
+          # A gate leg can outrun the Bash tool's 10-minute default
+          # ceiling (a hermetic e2e walk does). Foreground is the rule
+          # (backgrounded, it is lost when the turn ends), so the
+          # ceiling is raised to an hour, under the job's own timeout.
+          BASH_MAX_TIMEOUT_MS: '3600000'
           # The hook probe (spec 55.6): '1' only on a dispatch with
           # hook_probe=true; guard.mjs ignores anything else.
           NEXUS_HOOK_PROBE: ${{ inputs.hook_probe && '1' || '' }}

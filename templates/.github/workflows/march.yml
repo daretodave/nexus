@@ -360,6 +360,11 @@ jobs:
           # claude-code-action may not load project hooks, so claims.mjs
           # would refuse whoami/claim without this (customization/claims.md).
           NEXUS_NO_HOOK_CHECK: '1'
+          # A gate leg can outrun the Bash tool's 10-minute default
+          # ceiling (a hermetic e2e walk does). Foreground is the rule
+          # (backgrounded, it is lost when the turn ends), so the
+          # ceiling is raised to an hour, under the job's own timeout.
+          BASH_MAX_TIMEOUT_MS: '3600000'
           #
           # Default (commented): bot-author mode, the action's own
           # identity. To switch to user-author mode, uncomment and
@@ -653,6 +658,11 @@ jobs:
           NEXUS_SESSION: cloud-${{ github.run_id }}
           NEXUS_CONTRIBUTOR: '1'
           NEXUS_NO_HOOK_CHECK: '1'
+          # A gate leg can outrun the Bash tool's 10-minute default
+          # ceiling (a hermetic e2e walk does). Foreground is the rule
+          # (backgrounded, it is lost when the turn ends), so the
+          # ceiling is raised to an hour, under the job's own timeout.
+          BASH_MAX_TIMEOUT_MS: '3600000'
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GIT_AUTHOR_NAME: nexus-cloud
           GIT_AUTHOR_EMAIL: nexus-cloud@users.noreply.github.com

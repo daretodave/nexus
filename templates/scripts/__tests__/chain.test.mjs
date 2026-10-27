@@ -318,4 +318,12 @@ describe('the dispatched tick', () => {
     const yml = fs.readFileSync(path.join(import.meta.dirname, '..', '..', '.github', 'workflows', 'march.yml'), 'utf8');
     assert.match(yml, /uses: anthropics\/claude-code-action@v1\r?\n\s+with:[\s\S]*?\n\s+allowed_bots: github-actions\r?\n/);
   });
+
+  // A gate leg past the Bash tool's 10-minute ceiling gets backgrounded, and backgrounded work is lost with the turn.
+  it('every Claude step raises the foreground ceiling past a long gate leg', () => {
+    const yml = fs.readFileSync(path.join(import.meta.dirname, '..', '..', '.github', 'workflows', 'march.yml'), 'utf8');
+    const steps = yml.split(/\r?\n/).filter((l) => /^\s+NEXUS_NO_HOOK_CHECK: '1'$/.test(l)).length;
+    assert.ok(steps > 0);
+    assert.equal(yml.split(/\r?\n/).filter((l) => /^\s+BASH_MAX_TIMEOUT_MS: '\d+'$/.test(l)).length, steps);
+  });
 });
