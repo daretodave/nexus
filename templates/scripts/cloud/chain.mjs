@@ -28,6 +28,7 @@
 //   ready    scripts/plan/order.mjs finds a chunk ready now (an Asap row included) or a spec waiting to be chunked,
 //            or (unless --issues false) an open issue labeled loop:do, or carrying no label at all, without
 //            loop:opened. Counts and labels only, never issue text.
+//            A retry skips it: it re-runs the work the lost tick had already picked.
 //
 // When they all hold: `gh workflow run <workflow> --ref <main> -f chain=<N+1> -f reason=chain|retry` (--dry-run
 // prints it instead). Sets the outputs `chained` (true|false), `guard` (the one that failed, empty when chained) and
@@ -236,7 +237,8 @@ export async function decide(facts) {
     ['budget', async () => budgetGuard({ budget: await get('budget'), ceiling: await get('ceiling') })],
     ['night', async () => nightGuard({ crons: await get('nightCrons'), now: await get('now') })],
     ['queue', async () => queueGuard({ runs: await get('runs'), runId: await get('runId') })],
-    ['ready', async () => readyGuard({ ready: await get('ready'), issues: await get('issues') })],
+    // A retry re-runs work the lost tick had already picked (a lane, a critique pass), so it needs no ready chunk.
+    ['ready', async () => (next === 'retry' ? { ok: true, why: 'the retry re-runs the lost work; it needs nothing ready' } : readyGuard({ ready: await get('ready'), issues: await get('issues') }))],
   ];
   for (const [name, check] of steps) {
     let r;

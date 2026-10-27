@@ -178,6 +178,15 @@ describe('decide', () => {
     assert.equal(d.next, 'retry');
   });
 
+  it('a lost run retries even with nothing ready: the retry re-runs the lane or pass the lost tick had picked', async () => {
+    let asked = 0;
+    const d = await decide(facts({ landed: 'false', lost: 'true', ready: () => { asked++; return 0; }, issues: 0 }));
+    assert.equal(d.chain, true);
+    assert.equal(d.next, 'retry');
+    assert.equal(asked, 0, 'the retry never reads the plan');
+    assert.equal((await decide(facts({ ready: 0, issues: 0 }))).guard, 'ready', 'a shipped run still needs work ready');
+  });
+
   it('a fact that throws fails closed', async () => {
     const d = await decide(facts({ runs: () => { throw new Error('boom'); } }));
     assert.equal(d.chain, false);

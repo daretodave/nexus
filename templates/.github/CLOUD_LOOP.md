@@ -375,7 +375,7 @@ only when every guard holds (the job holds `actions: write`):
 | budget | the weighted 24h budget + 3 is at or under the ceiling (pull-request mode has none; the dispatch ceiling bounds it) |
 | night | not within 30 min of a cron slot in `night.yml` (no `night.yml`: no guard) |
 | queue | no march or night run is queued or pending (a new pending run would cancel it) |
-| ready | a chunk is ready (Asap included), or (owner mode) an open `loop:do` or unlabeled issue without `loop:opened` |
+| ready | a chunk is ready (Asap included), or (owner mode) an open `loop:do` or unlabeled issue without `loop:opened`; a retry skips it (it re-runs the lost work) |
 
 - `NEXUS_CHAIN_MAX` (repo variable) overrides the cadence
   preset's chain max (`eager` 3, `sprint` 8, the rest 0).
