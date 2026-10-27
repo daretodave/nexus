@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   detect, mergeRoadmap, rewriteText, projectName, flippedLock, isHistory, kitSource, copyKit, upgrade, render, runUpgrade, redactUrl,
+  strayCandidates,
 } from '../server/upgrade.mjs';
 
 const scratch = [];
@@ -276,4 +277,17 @@ test('--pr with --land or --rollback is refused, an unknown flag too; --help pri
   const help = sink();
   assert.equal(await runUpgrade(['--help'], { out: help }), 0);
   assert.match(help.text(), /npx @usenexus\/cli upgrade --repo <dir>/);
+});
+
+test('strayCandidates names the live candidates a v1 project filed in its own form, which v2 promotion cannot read', () => {
+  const text = [
+    '# Candidates', '', '## Pending', '', '### [ ] [score 6.0] Already in the row form', '- proposed: 2026-10-27', '',
+    '## Considered (awaiting promotion)', '', '```md', '### <NN>. <Phase title>', '```', '',
+    '### 34. Shard the crawl', '**Score:** 6.6', '',
+    '### 31. Old work ~~(resolved — shipped)~~', '',
+    '### 09. Honesty sweep — PROMOTED as Phase 43', '',
+    '## Considered (below threshold)', '', '### B1. Below the line', '',
+    '## Promoted', '', '### 12. Brand spelling', '',
+  ].join('\n');
+  assert.deepEqual(strayCandidates(text), ['34. Shard the crawl']);
 });

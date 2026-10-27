@@ -359,6 +359,33 @@ function walk(dir, rel = '') {
 }
 
 /**
+ * The candidate headings a v1 project filed in its own form (`### 34. Title`, a bold Score line) under a live section
+ * (Pending, or Considered awaiting promotion): the v2 tooling reads only `### [ ] [score X] <title>` rows. A heading
+ * struck through, or marked promoted, absorbed, rejected or retired, is history, not live. Code fences and comments
+ * (a template's placeholder) are skipped.
+ */
+export function strayCandidates(text) {
+  const out = [];
+  let live = false;
+  let fence = false;
+  let comment = false;
+  for (const line of String(text).split(/\r?\n/)) {
+    if (/^\s*```/.test(line)) { fence = !fence; continue; }
+    if (fence) continue;
+    if (comment) { if (line.includes('-->')) comment = false; continue; }
+    if (line.includes('<!--') && !line.includes('-->')) { comment = true; continue; }
+    const h2 = /^## (.+)$/.exec(line);
+    if (h2) { live = /pending|awaiting/i.test(h2[1]); continue; }
+    const h3 = /^### (.+)$/.exec(line);
+    if (!live || !h3) continue;
+    const t = h3[1].trim();
+    if (t.startsWith('[') || /~~|\b(promoted|absorbed|rejected|retired|superseded|resolved)\b/i.test(t) || /^<[^>]+>/.test(t)) continue;
+    out.push(t);
+  }
+  return out;
+}
+
+/**
  * Step 5: retire the v1 files, rename PHASE_CANDIDATES.md, rewrite v1 references outside history files and the
  * kit's own files (`skip`). Returns { rows, warnings }.
  */
@@ -379,6 +406,8 @@ export function retireV1(dir, { skip = new Set() } = {}) {
       rows.push({ path: 'plan/CANDIDATES.md', status: 'renamed', note: 'from plan/PHASE_CANDIDATES.md' });
     }
   }
+  const stray = strayCandidates(read(dir, 'plan/CANDIDATES.md') || '');
+  if (stray.length) warnings.push(`plan/CANDIDATES.md: ${stray.length} live candidate${stray.length === 1 ? '' : 's'} outside the \`### [ ] [score X] <title>\` row form (${stray.slice(0, 2).map((t) => `\`${t.length > 50 ? `${t.slice(0, 47)}...` : t}\``).join(', ')}${stray.length > 2 ? ', ...' : ''}): /expand and aged promotion read only that form under ## Pending, so they are never picked; move the live ones there in it`);
   const left = [];
   for (const rel of walk(dir)) {
     if (!TEXT.test(rel) || isHistory(rel) || skip.has(rel)) continue;
