@@ -121,6 +121,14 @@ describe('apply: writing a preset into the files', () => {
     assert.equal(cronOf(r.text), '17 */6 * * *');
   });
 
+  it('reads and rewrites a cron line that carries its own trailing comment', () => {
+    const commented = "on:\n  schedule:\n    - cron: '*/40 * * * *'   # every 40 min UTC\n  workflow_dispatch:\n";
+    assert.equal(cronOf(commented), '*/40 * * * *');
+    const r = setCron(commented, '17 */3 * * *');
+    assert.ok(r.found && r.changed);
+    assert.equal(cronOf(r.text), '17 */3 * * *');
+  });
+
   it('off takes the schedule out behind the marker; a later preset puts it back', () => {
     const off = setCron(MARCH, null).text;
     assert.equal(cronOf(off), null);

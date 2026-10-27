@@ -119,7 +119,8 @@ export function describe(r) {
 
 // ---- writing a preset into the files ---------------------------------------------------------------------------
 
-const CRON_BLOCK = /\n {2}schedule:\n((?: {4}#.*\n)*) {4}- cron: '[^']*'\n/;
+// A trailing comment on the cron line is allowed (an adopter's own, like `# every 40 min UTC`).
+const CRON_BLOCK = /\n {2}schedule:\n((?: {4}#.*\n)*) {4}- cron: '[^']*'[^\n]*\n/;
 const OFF_LINE = /\n {2}# schedule: none \(NEXUS_CADENCE off[^\n]*\n/;
 
 /** The workflow's cron line(s): null when it has no schedule. */
