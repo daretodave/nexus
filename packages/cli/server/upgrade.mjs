@@ -812,6 +812,13 @@ export function commitUpgrade(dir, report) {
     if (!r.ok) return { error: `git ${s[0]} failed: ${r.err}` };
   }
   const rows = mergeRows(report.files);
+  // Every file the upgrade wrote goes in, even one a broad .gitignore pattern matches (a bare setup/ catching
+  // .github/actions/setup/): add -A skips it silently, and the first v2 tick then fails on the missing file.
+  const wrote = rows.map((f) => f.path).filter((p) => fs.existsSync(path.join(dir, p)));
+  if (wrote.length) {
+    const r = gitIn(dir, ['add', '-f', '--', ...wrote]);
+    if (!r.ok) return { error: `git add failed: ${r.err}` };
+  }
   const by = new Map();
   for (const f of rows) { const k = f.status.replace(/ \(.*$/, '').split(', ')[0]; by.set(k, (by.get(k) || 0) + 1); }
   const o = report.origin;

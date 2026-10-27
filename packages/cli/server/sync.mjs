@@ -746,7 +746,8 @@ export async function sync({ dir, local = null, kit, ref, branch = 'main', today
 
     if (write) {
       const b = syncBranch(to.version);
-      const steps = [['checkout', '-q', '-B', b], ['add', '-A', '--', ...[...written].sort()]];
+      // -f: a file the kit wrote goes in even when a broad .gitignore pattern matches it.
+      const steps = [['checkout', '-q', '-B', b], ['add', '-A', '-f', '--', ...[...written].sort()]];
       for (const s of steps) {
         const r = gitIn(dir, s);
         if (!r.ok) return { code: 1, report: { ...report, error: `git ${s[0]} failed: ${r.err}` } };

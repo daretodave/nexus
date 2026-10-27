@@ -435,8 +435,9 @@ export function setupAction(v1, template) {
     return { text: fake.join('\n').replace(/\n{3,}/g, '\n\n'), moved: [], stay };
   }
   const body = moved.flatMap((s) => {
-    const out = reindent([...s.leadLines, ...s.lines], s.indent, stepInd);
     const keyInd = stepInd + 2;
+    // A composite step takes no timeout-minutes (the action fails to load with one): the job's timeout bounds it.
+    const out = reindent([...s.leadLines, ...s.lines], s.indent, stepInd).filter((l) => !new RegExp(`^\\s{${keyInd}}timeout-minutes:`).test(l));
     const hasShell = out.some((l) => new RegExp(`^\\s{${keyInd}}shell:`).test(l) || new RegExp(`^\\s{${stepInd}}-\\s+shell:`).test(l));
     const runAt = out.findIndex((l) => new RegExp(`^\\s{${keyInd}}run:`).test(l) || new RegExp(`^\\s{${stepInd}}-\\s+run:`).test(l));
     if (runAt >= 0 && !hasShell) {

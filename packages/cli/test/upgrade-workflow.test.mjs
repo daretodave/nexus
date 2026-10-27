@@ -112,6 +112,14 @@ test('the v1 toolchain steps become the composite setup action, each run step gi
   assert.doesNotMatch(job(march, 'owner'), /pnpm install --frozen-lockfile/);
 });
 
+test('a moved toolchain step drops timeout-minutes, which a composite action step does not take', () => {
+  const v1 = V1.replace(/( {6}- name: Install dependencies\n {8}run: pnpm install --frozen-lockfile\n)/, '$1        timeout-minutes: 5\n');
+  assert.notEqual(v1, V1);
+  const { action } = mergeWorkflow({ v1Text: v1, template: TEMPLATE, actionTemplate: ACTION, fills: FILLS, kitPrompt: KIT_PROMPT });
+  assert.match(action, /run: pnpm install --frozen-lockfile/);
+  assert.doesNotMatch(action, /timeout-minutes/);
+});
+
 // A smaller v1, customised the other ways: dispatch only, a workflow env with a secret, a toolchain step that reads a
 // secret, the `-ge N` ceiling form, the model as an action input, an API key instead of the OAuth token.
 const ODD = `name: march
@@ -222,7 +230,7 @@ test('nothing to merge: no march.yml, no model step, or already the v2 shape; th
 });
 
 /** A live editorial v1 repo on a bare origin: the fixture march.yml, Cloud-Run commits, a pnpm lockfile. */
-function repo() {
+function repo(extra = {}) {
   const bare = tmp('nexus-wf-origin-');
   git(bare, 'init', '-q', '--bare', '-b', 'main');
   const seed = tmp('nexus-wf-seed-');
@@ -236,6 +244,7 @@ function repo() {
   put(seed, 'plan/steps/01_build_plan.md', `# 01 — Build plan\n\n## Status (at-a-glance)\n\n- [x] Phase 1 — Bootstrap (commit ${one})\n- [ ] Phase 2 — Search\n\n## Phase log (commit hashes)\n\n`);
   put(seed, '.github/workflows/march.yml', V1);
   put(seed, '.github/workflows/night.yml', 'name: night\non:\n  workflow_dispatch:\njobs:\n  digest:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo plan/steps/01_build_plan.md\n');
+  for (const [rel, text] of Object.entries(extra)) put(seed, rel, text);
   commit(seed, 'plan: the v1 plan\n\nCloud-Run: https://example.invalid/runs/2');
   git(seed, 'push', '-q', 'origin', 'main');
   const local = tmp('nexus-wf-local-');
@@ -267,6 +276,16 @@ test('the dry run merges march.yml in its worktree, gates it with workflow-lint,
   } finally {
     git(local, 'worktree', 'remove', '--force', report.worktree);
   }
+});
+
+test('--write commits every file the upgrade wrote, even one a broad .gitignore pattern matches', async () => {
+  // A bare setup/ (meant for a top-level folder) also matches .github/actions/setup/: add -A alone skips the action.
+  const local = repo({ '.gitignore': 'setup/\n' });
+  const { code, report } = await upgrade({ repo: local, today: '2026-10-25', write: true });
+  assert.equal(code, 0, report.error || JSON.stringify(report.gate, null, 2));
+  const tree = git(local, 'ls-tree', '-r', '--name-only', report.commit.branch).split('\n');
+  assert.ok(tree.includes(SETUP_ACTION), 'the setup action is in the upgrade commit');
+  assert.ok(tree.includes(MARCH_YML));
 });
 
 test('--keep-workflow leaves march.yml as it is and reports what the merge would keep', async () => {
