@@ -277,6 +277,10 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Chained, retried and nudged ticks are dispatched with the
+          # run's own GITHUB_TOKEN, so their actor is github-actions[bot];
+          # the action refuses a bot actor unless it is listed here.
+          allowed_bots: github-actions
           # Always-on transcript: the operator manual's "read the
           # closing /oversight audit block" is impossible without
           # it, and a no-op tick must say why it no-op'd. Public

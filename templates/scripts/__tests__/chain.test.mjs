@@ -310,3 +310,12 @@ describe('the command', () => {
     assert.equal(await main(['now'], { env: {} }), 2);
   });
 });
+
+describe('the dispatched tick', () => {
+  // A chained or retried run is dispatched with GITHUB_TOKEN, so its actor is github-actions[bot]; the Claude
+  // action refuses a bot actor it is not told about, and the chain would crash at the model step every time.
+  it("march lets the chain's own bot actor through", () => {
+    const yml = fs.readFileSync(path.join(import.meta.dirname, '..', '..', '.github', 'workflows', 'march.yml'), 'utf8');
+    assert.match(yml, /uses: anthropics\/claude-code-action@v1\r?\n\s+with:[\s\S]*?\n\s+allowed_bots: github-actions\r?\n/);
+  });
+});

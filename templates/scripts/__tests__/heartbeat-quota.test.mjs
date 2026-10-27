@@ -102,7 +102,9 @@ describe('heartbeat reads the cadence', { skip: !bashOk && 'no posix bash here' 
     });
 
     it(`${rel}: no cadence output leaves the literal`, () => {
-      assert.match(runCadence(rel, 'none').out, /march: last successful tick \d+h ago \(alarm at 14h\)/);
+      // Each copy carries its own literal (the kit's steady 14, a repo on eager 10).
+      const literal = cadenceScript(rel).match(/march_hours=(\d+)/)[1];
+      assert.match(runCadence(rel, 'none').out, new RegExp(`march: last successful tick \\d+h ago \\(alarm at ${literal}h\\)`));
     });
   }
 });

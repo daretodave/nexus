@@ -275,6 +275,10 @@ jobs:
           # subscription. $0 marginal cost; quota shared with local.
           # Alternative: ANTHROPIC_API_KEY env var (pay-per-token).
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Chained, retried and nudged ticks are dispatched with the
+          # run's own GITHUB_TOKEN, so their actor is github-actions[bot];
+          # the action refuses a bot actor unless it is listed here.
+          allowed_bots: github-actions
           # Sonnet for cheap-on-quota dispatch. Upgrade to
           # claude-opus-5-5 once you've measured a week of weekly-cap
           # consumption and confirmed headroom.
