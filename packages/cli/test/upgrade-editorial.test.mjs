@@ -67,12 +67,12 @@ test('the editorial fork: the snapshot gate is pre, the queue and the refill are
   assert.deepEqual(m.problems, []);
   assert.deepEqual(m.lanes.map((l) => [l.name, l.hook, l.return]), [
     ['sync-notes', 'pre', 'continue'],
-    ['weekly-snapshot-gate-phase-31-amendment', 'pre', 'end-tick'],
+    ['weekly-snapshot-gate-phase-31-amendment', 'pre', 'section'],
     ['critique-gate-notes', 'pre', 'continue'],
     ['dispatch-notes', 'pre', 'continue'],
     ['pending-phase-notes', 'queue', 'continue'],
-    ['content-queue-post-phase-24', 'queue', 'end-tick'],
-    ['empty-queue-refill-post-phase-30', 'queue', 'end-tick'],
+    ['content-queue-post-phase-24', 'queue', 'section'],
+    ['empty-queue-refill-post-phase-30', 'queue', 'section'],
     ['done-notes', 'queue', 'continue'],
   ]);
   // Verbatim: the snapshot gate, the queue and the refill under their own headers.

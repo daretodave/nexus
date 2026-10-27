@@ -8,7 +8,7 @@
 //   - hook: pre | queue | dimensions
 //   - when: <prose> | script <path>      (exit 0 = run; absent: always)
 //   - run: <skill or command>
-//   - return: continue | end-tick        (absent: continue)
+//   - return: continue | end-tick | section   (absent: continue; section: the run text says where the tick ends)
 //
 // march.md reads march.lanes.md at two hooks: `pre` (after Step 0's sync and veto sweep, before triage) and `queue`
 // (after 3a's ready chunk, before the next queue step). iterate.md reads iterate.lanes.md at `dimensions`: each lane
@@ -42,7 +42,7 @@ import { effectiveGenerators } from './refill.mjs';
 
 export const HOOKS = Object.freeze({ march: ['pre', 'queue'], iterate: ['dimensions'] });
 export const FILES = Object.freeze({ march: 'skills/march.lanes.md', iterate: 'skills/iterate.lanes.md' });
-export const RETURNS = Object.freeze(['continue', 'end-tick']);
+export const RETURNS = Object.freeze(['continue', 'end-tick', 'section']);
 const NAME = /^[a-z0-9][a-z0-9-]*$/;
 const LETTERS = 'YXWVUTSRQPON';
 

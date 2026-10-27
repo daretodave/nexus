@@ -47,7 +47,7 @@ is no lane.
 - hook: pre | queue | dimensions
 - when: <prose> | script <path>   # exit 0 = run
 - run: <skill or command>
-- return: continue | end-tick
+- return: continue | end-tick | section
 ```
 
 - `name`: lowercase words joined by hyphens, unique in the file.
@@ -56,7 +56,10 @@ is no lane.
 - `run`: a skill (read and executed end-to-end, its contract
   adopted) or a command.
 - `return`: `end-tick` makes the lane the tick's work (commit,
-  land, return); `continue` (the default) goes on.
+  land, return); `continue` (the default) goes on; `section`
+  hands the choice to the lane's own text, the way a step
+  moved out of a v1 skill says "return" on one branch and
+  "fall through" on another (`nexus upgrade` writes it).
 
 ## The hooks
 

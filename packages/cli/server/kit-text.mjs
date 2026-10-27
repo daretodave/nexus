@@ -231,7 +231,8 @@ export function laneName(header, fallback = 'custom') {
 /**
  * The lane blocks for one skill's custom units: { text, names }. Each unit becomes one lane (spec 57's block), its
  * text verbatim under it. march: a unit ahead of the pick step is a `pre` lane, else `queue`; a custom section ends
- * the tick (v1 dispatch was first match wins), custom paragraphs in a kit step continue. iterate: a `dimensions`
+ * where its own text says (`section`: a v1 step returns on one branch and falls through on another), custom
+ * paragraphs in a kit step continue. iterate: a `dimensions`
  * lane. A `ref` unit is no lane: it goes verbatim under one notes header after the lanes (`notes` counts them).
  * `taken` holds names already in the lanes file; `rewrite` maps the moved text (the v1 references).
  */
@@ -247,7 +248,7 @@ export function laneBlocks(units, { kind, skill, taken = new Set(), rewrite = (s
     taken.add(name);
     names.push(name);
     const hook = kind === 'iterate' ? 'dimensions' : u.before ? 'pre' : 'queue';
-    const ret = kind === 'march' && u.kind === 'section' ? 'end-tick' : 'continue';
+    const ret = kind === 'march' && u.kind === 'section' ? 'section' : 'continue';
     const what = u.kind === 'section' ? 'the section below' : 'the paragraphs below';
     return [
       `## lane: ${name}`,

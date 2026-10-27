@@ -662,10 +662,11 @@ export async function predict(dir, kit, { mode }) {
   const bearings = read(dir, 'plan/bearings.md') || '';
   const off = lanesOff(bearings);
   const { lanes } = parseLanes(read(dir, 'skills/march.lanes.md') || '', 'march');
-  // Only a lane that ends the tick decides the dispatch; a `continue` lane (a v1 step's carried notes) runs and the
-  // tick goes on. A lane with a `when` may not fire, so the chain plays on to the first sure thing.
-  const at = (hook) => withStock(lanes, { kind: 'march', hook, bearings, root: dir }).filter((l) => l.hook === hook && !off.has(l.name) && l.return === 'end-tick');
-  const lane = (l) => ({ kind: 'lane', text: `lane ${l.name} (${l.hook}: ${short(l.run)}${conditional(l) ? `, when ${short(l.when)}` : ''})`, sure: !conditional(l), name: l.name });
+  // Only a lane that may end the tick decides the dispatch; a `continue` lane (a v1 step's carried notes) runs and
+  // the tick goes on. A lane with a `when`, or a `section` lane (its text may fall through), may not end it, so the
+  // chain plays on to the first sure thing.
+  const at = (hook) => withStock(lanes, { kind: 'march', hook, bearings, root: dir }).filter((l) => l.hook === hook && !off.has(l.name) && (l.return === 'end-tick' || l.return === 'section'));
+  const lane = (l) => ({ kind: 'lane', text: `lane ${l.name} (${l.hook}: ${short(l.run)}${conditional(l) ? `, when ${short(l.when)}` : ''})`, sure: !conditional(l) && l.return === 'end-tick', name: l.name });
   const asap = first?.lane === 'asap';
   const chain = [...(asap ? [] : at('pre').map(lane)), ...(chunk ? [{ ...chunk, sure: true }] : []), ...at('queue').map(lane)];
   if (/^- \[ \]/m.test(read(dir, 'data/BACKLOG.md') || '')) chain.push({ kind: 'data', text: '/ship-data (data/BACKLOG.md has a pending row)', sure: true });

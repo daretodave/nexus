@@ -76,8 +76,8 @@ test('A4: a march.md forked before v1.0.0 plus two custom sections yields exactl
   const parsed = parseLanes(lanesMd, 'march');
   assert.deepEqual(parsed.problems, []);
   assert.deepEqual(parsed.lanes.map((l) => [l.name, l.hook, l.return]), [
-    ['weekly-trend-snapshot-gate', 'pre', 'end-tick'],
-    ['content-queue', 'queue', 'end-tick'],
+    ['weekly-trend-snapshot-gate', 'pre', 'section'],
+    ['content-queue', 'queue', 'section'],
   ]);
   // Verbatim, under the original header; only the v1 reference changed.
   assert.ok(lanesMd.includes(sectionText(march, MARCH_CUSTOM[0])));

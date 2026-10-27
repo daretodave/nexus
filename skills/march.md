@@ -130,7 +130,9 @@ node scripts/plan/lanes.mjs march pre    # run | judge | skip <lane>, then `stoc
 `stock`: go on to Step 1. Otherwise, in file order, run each
 `run` lane and each `judge` lane whose `when` prose holds now,
 under the child skill's contract. A lane that returns
-`end-tick` is the tick's work: land it and return. A `pre`
+`end-tick` is the tick's work: land it and return; a
+`section` lane (a step moved out of a v1 skill) returns or
+falls through where its own text says. A `pre`
 lane yields to the Asap lane (the script skips it while an
 Asap chunk is ready); `Lanes off: <name>` in
 `plan/bearings.md` turns one off.

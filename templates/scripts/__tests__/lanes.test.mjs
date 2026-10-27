@@ -47,6 +47,12 @@ describe('parseLanes', () => {
     assert.equal(lanes[0].return, 'end-tick');
   });
 
+  it('reads return: section, the moved v1 step whose own text says return or fall through', () => {
+    const { lanes, problems } = parseLanes(block('gate', { hook: 'pre', run: 'the section below', return: 'section' }), 'march');
+    assert.deepEqual(problems, []);
+    assert.equal(lanes[0].return, 'section');
+  });
+
   it('names a wrong hook, a missing run, a bad return, a bad name and a duplicate', () => {
     const text = [
       block('dims', { hook: 'dimensions', run: 'x' }),

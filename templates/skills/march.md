@@ -160,7 +160,9 @@ node scripts/plan/lanes.mjs march pre    # run | judge | skip <lane>, then `stoc
 
 A lane that returns `end-tick` is the tick's work: commit,
 land and return. `continue` goes on to the next lane, then
-Step 1.
+Step 1. `section` (a step moved out of a v1 skill) does what
+its own text says: where it says return, the tick ends as
+`end-tick`; where it says fall through, as `continue`.
 
 Then the motion stall. The heartbeat opens one `Heartbeat:
 motion stalled` issue when the last full week shipped under
@@ -318,8 +320,9 @@ runs the `pre` ones:
 node scripts/plan/lanes.mjs march queue
 ```
 
-A lane returning `end-tick` ends the tick; `stock`, or every
-lane returning `continue`, falls through to 3b.
+A lane returning `end-tick` ends the tick (a `section` lane,
+where its text says return); `stock`, or every lane returning
+`continue`, falls through to 3b.
 
 The first `queue` lane is the stock **refill** lane whenever
 `## Generators` in `plan/bearings.md` lists one, or, with no
