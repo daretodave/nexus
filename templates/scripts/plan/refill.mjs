@@ -12,7 +12,7 @@
 // cap       at most n rows a week (its rows stamped in the last 7 days, Pending or Done)
 //
 // No section, or no list line in it, and the improvement dial lists them (`Improve:`, scripts/plan/improve.mjs:
-// steady the kit's three generic generators, bold every scripts/generators/<name>.mjs too); with no dial line either,
+// steady the kit's four generic generators, bold every scripts/generators/<name>.mjs too); with no dial line either,
 // refill is a no-op (the adopter default). Every row a generator files carries
 // `- generator: <name> · filed <date>`; this script counts those stamps for the target, the cap and the cadence, so
 // the state is the queue files themselves and a fresh cloud checkout reads it the same as a local loop.
@@ -89,7 +89,7 @@ export function parseGenerators(bearings = '') {
 
 /**
  * The generators refill runs: the `## Generators` list when the section holds a list line (`- (none)` included), else
- * the improvement dial's (`Improve:`, scripts/plan/improve.mjs: steady the kit's generic three, bold those plus every
+ * the improvement dial's (`Improve:`, scripts/plan/improve.mjs: steady the kit's generic four, bold those plus every
  * other scripts/generators/<name>.mjs under `root`; off, gentle and no dial line none). { generators, problems,
  * from: bearings | dial }.
  */
@@ -134,9 +134,12 @@ export function plan(gen, all, date = today()) {
 
 const readSafe = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n') : '');
 
-/** The queue files' rows only (each file from its first `## ` heading on), joined: what a generator dedups against. */
-export function queueText(root) {
-  return QUEUE_FILES.map((rel) => {
+/**
+ * The queue files' rows only (each file from its first `## ` heading on), joined: what a generator dedups against.
+ * `files` widens it (mirror-orphan adds plan/CRITIQUE.md, where /iterate also records a mirror's `- issue: #N`).
+ */
+export function queueText(root, files = QUEUE_FILES) {
+  return files.map((rel) => {
     const text = readSafe(path.join(root, rel));
     const at = text.search(/^## /m);
     return at < 0 ? '' : text.slice(at);

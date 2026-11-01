@@ -16,10 +16,11 @@
 //   stall_action   off     alert         alert             promote
 //   loop           off     off           on                on                 (/iterate dimension I)
 //   UI             none    none          critique          both               (the UI walk's cadence)
-//   Research       off     off           monthly           weekly             (the field-research generator)
+//   Research       off     off           monthly           weekly             (the field-research generator; an
+//                                                                              override may also say <n>d, every n days)
 //   Cadence        calm    steady        steady            eager              (NEXUS_CADENCE)
 //
-// Generators: `generic` is the kit's three (issue-age, stale-candidate, motion, at the lines below); `project` adds
+// Generators: `generic` is the kit's four (issue-age, mirror-orphan, stale-candidate, motion, at the lines below); `project` adds
 // every other scripts/generators/<name>.mjs the repo carries, at `weekly · target 2 · cap 2/wk` (never `research`,
 // which its own Research knob gates). A `## Generators` section holding a list line (a generator, or `- (none)`) is
 // an override; one holding only prose or a commented example defers to the dial. UI: the dial sets when the walk
@@ -53,6 +54,7 @@ export const DEFAULT_POSITION = 'gentle';
 /** The kit's generic generators, at the lines concepts/generators.md and the bearings template carry. */
 export const GENERIC_GENERATORS = Object.freeze([
   'issue-age · daily · target 3 · cap 5/wk',
+  'mirror-orphan · daily · target 3 · cap 5/wk',
   'stale-candidate · weekly · target 2 · cap 2/wk',
   'motion · daily · target 1 · cap 1/wk',
 ]);
@@ -61,7 +63,8 @@ export const PROJECT_LINE = 'weekly · target 2 · cap 2/wk';
 
 /**
  * The dial table: one row per expansion knob, a value at every position. `line` is the bearings line that overrides
- * it (null: none), `var` the repo variable that does, `accepts` the values an override may take. The upgrade's knob
+ * it (null: none), `var` the repo variable that does, `accepts` the values an override may take (and `pattern`, when
+ * set, a shape it may take too: Research's `<n>d`). The upgrade's knob
  * registry (packages/cli/server/upgrade.mjs KNOBS) marks each knob the dial sets `dial: true`; registryGaps() fails a
  * registry row the table lacks, or a row here missing a position.
  */
@@ -72,9 +75,15 @@ export const DIAL = Object.freeze([
   { knob: 'stall_action', line: 'stall_action', accepts: ['off', 'alert', 'promote'], at: { off: 'off', gentle: 'alert', steady: 'alert', bold: 'promote' } },
   { knob: 'loop', line: 'loop', accepts: ['on', 'off'], at: { off: 'off', gentle: 'off', steady: 'on', bold: 'on' } },
   { knob: 'UI', line: 'UI cadence', accepts: ['none', 'critique', 'iterate', 'both'], at: { off: 'none', gentle: 'none', steady: 'critique', bold: 'both' } },
-  { knob: 'Research', line: 'Research', accepts: ['off', 'monthly', 'weekly'], at: { off: 'off', gentle: 'off', steady: 'monthly', bold: 'weekly' } },
+  { knob: 'Research', line: 'Research', accepts: ['off', 'monthly', 'weekly'], pattern: /^[1-9]\d*d$/, at: { off: 'off', gentle: 'off', steady: 'monthly', bold: 'weekly' } },
   { knob: 'Cadence', line: null, var: 'NEXUS_CADENCE', accepts: ['calm', 'steady', 'eager', 'sprint', 'off'], at: { off: 'calm', gentle: 'steady', steady: 'steady', bold: 'eager' } },
 ].map((r) => Object.freeze({ ...r, at: Object.freeze(r.at) })));
+
+/** Whether a knob row takes `value` as an override: one of its `accepts`, or its `pattern`'s shape. */
+export function takes(row, value) {
+  if (!row?.accepts) return true;
+  return row.accepts.includes(value) || Boolean(row.pattern?.test(value));
+}
 
 /** Bearings text with HTML comments and fenced code blanked (line numbers kept): an example is no setting. */
 export function plain(text = '') {
@@ -87,17 +96,17 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Every value a `<key>: <value>` line carries (bullet, bold and backticks allowed; a trailing `# note`, `(note)` or
- * `— note` too), first first. Case-sensitive key, lowercased value. A line whose value runs on (`off | gentle`) is
- * prose, not a setting.
+ * `— note` too), first first. Case-sensitive key, lowercased value (a word, or a count like
+ * `3d`). A line whose value runs on (`off | gentle`) is prose, not a setting.
  */
 export function lineValues(text, key) {
-  const re = new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${esc(key)}[*\`]*[ \\t]*:[*\`]*[ \\t]*[*\`]*([A-Za-z][\\w-]*)[*\`]*[ \\t]*(?:$|#|\\(|—|--)`, 'gm');
+  const re = new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${esc(key)}[*\`]*[ \\t]*:[*\`]*[ \\t]*[*\`]*([A-Za-z0-9][\\w-]*)[*\`]*[ \\t]*(?:$|#|\\(|—|--)`, 'gm');
   return [...plain(text).matchAll(re)].map((m) => m[1].toLowerCase());
 }
 
-/** The first value of `key` the knob accepts, or null. */
-function own(text, key, accepts) {
-  return lineValues(text, key).find((v) => !accepts || accepts.includes(v)) ?? null;
+/** The first value of `key` the knob row takes (takes()), or null. */
+function own(text, key, row) {
+  return lineValues(text, key).find((v) => takes(row, v)) ?? null;
 }
 
 /** The dial: { value, source: bearings | default, problem }. An unknown value reads gentle, with a problem. */
@@ -184,18 +193,18 @@ export function resolve(bearings = '', { vars = {}, project = [] } = {}) {
       extra = { preset: section ? null : atDial, list: list.map((g) => g.line) };
     } else if (row.knob === 'UI') {
       const target = uiTarget(bearings);
-      const cadence = own(bearings, 'UI cadence', row.accepts);
+      const cadence = own(bearings, 'UI cadence', row);
       if (target === 'none') { value = 'none'; from = 'bearings'; }
       else if (cadence) { value = cadence; from = 'bearings'; }
       else if ((target === 'url' || target === 'dev') && atDial === 'none') { value = 'critique'; from = 'bearings'; }
       extra = { target: target ?? 'none' };
     } else if (row.line) {
-      const v = own(bearings, row.line, row.accepts);
+      const v = own(bearings, row.line, row);
       if (v) { value = v; from = 'bearings'; }
     }
     if (row.var) {
       const raw = varValue(vars, row.var);
-      if (raw && !row.accepts.includes(raw)) warnings.push(`${row.var}=${raw} is not a ${row.knob} value (${row.accepts.join(', ')}); ignored`);
+      if (raw && !takes(row, raw)) warnings.push(`${row.var}=${raw} is not a ${row.knob} value (${row.accepts.join(', ')}); ignored`);
       else if (raw) {
         if (raw !== value) {
           const said = from === 'bearings' ? `${row.line}: ${value} in plan/bearings.md` : `the dial (Improve: ${pos} sets ${row.knob} ${value})`;

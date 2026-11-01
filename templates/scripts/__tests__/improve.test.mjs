@@ -19,8 +19,8 @@ const inNexus = fs.existsSync(UPGRADE);
 const TABLE = {
   off: { Support: 'off', Promote: 'owner', Generators: 'none', stall_action: 'off', loop: 'off', UI: 'none', Research: 'off', Cadence: 'calm' },
   gentle: { Support: 'triage-only', Promote: 'owner', Generators: 'none', stall_action: 'alert', loop: 'off', UI: 'none', Research: 'off', Cadence: 'steady' },
-  steady: { Support: 'fix-small', Promote: 'aged', Generators: 'issue-age,stale-candidate,motion', stall_action: 'alert', loop: 'on', UI: 'critique', Research: 'monthly', Cadence: 'steady' },
-  bold: { Support: 'fix-all', Promote: 'aged', Generators: 'issue-age,stale-candidate,motion,cli-deps,docs-rot', stall_action: 'promote', loop: 'on', UI: 'both', Research: 'weekly', Cadence: 'eager' },
+  steady: { Support: 'fix-small', Promote: 'aged', Generators: 'issue-age,mirror-orphan,stale-candidate,motion', stall_action: 'alert', loop: 'on', UI: 'critique', Research: 'monthly', Cadence: 'steady' },
+  bold: { Support: 'fix-all', Promote: 'aged', Generators: 'issue-age,mirror-orphan,stale-candidate,motion,cli-deps,docs-rot', stall_action: 'promote', loop: 'on', UI: 'both', Research: 'weekly', Cadence: 'eager' },
 };
 const values = (r) => Object.fromEntries(r.knobs.map((k) => [k.knob, k.value]));
 const sources = (r) => Object.fromEntries(r.knobs.map((k) => [k.knob, k.source]));
@@ -77,6 +77,14 @@ describe('overrides', () => {
     assert.equal(values(r).Research, 'monthly');
   });
 
+  it('Research takes <n>d (n a positive integer) beside off, monthly and weekly', () => {
+    const research = (line) => resolve(posture(['- Improve: steady', line])).knobs.find((k) => k.knob === 'Research');
+    assert.deepEqual([research('- Research: 3d').value, research('- Research: 3d').source], ['3d', 'override']);
+    assert.equal(research('Research: **14d**').value, '14d');
+    assert.equal(research('- Research: weekly').value, 'weekly');
+    for (const bad of ['- Research: 0d', '- Research: 3', '- Research: d', '- Research: 3days', '- Research: -2d']) assert.equal(research(bad).value, 'monthly', bad);
+  });
+
   it('a Generators list overrides; `- (none)` overrides to none; prose or a commented example defers to the dial', () => {
     const listed = resolve(posture(['- Improve: gentle', '', '## Generators', '', '- motion · daily · target 1 · cap 1/wk']));
     assert.deepEqual([values(listed).Generators, sources(listed).Generators], ['motion', 'override']);
@@ -84,14 +92,14 @@ describe('overrides', () => {
     const none = resolve(posture(['- Improve: bold', '', '## Generators', '', '- (none)']));
     assert.deepEqual([values(none).Generators, sources(none).Generators], ['none', 'override']);
     const prose = resolve(posture(['- Improve: steady', '', '## Generators', '', 'None listed means refill is a no-op.', '<!--', '- motion · daily · target 1 · cap 1/wk', '-->']));
-    assert.deepEqual([values(prose).Generators, sources(prose).Generators], ['issue-age,stale-candidate,motion', 'dial']);
+    assert.deepEqual([values(prose).Generators, sources(prose).Generators], ['issue-age,mirror-orphan,stale-candidate,motion', 'dial']);
     assert.deepEqual(prose.knobs.find((k) => k.knob === 'Generators').list, GENERIC_GENERATORS);
     assert.equal(generatorsSection('# Bearings\n'), null);
   });
 
   it('the bold dial adds the repo\'s own generators at the project line', () => {
     const r = resolve('Improve: bold', { project: ['zeta', 'issue-age'] });
-    assert.deepEqual(r.knobs.find((k) => k.knob === 'Generators').list.slice(3), ['zeta · weekly · target 2 · cap 2/wk']);
+    assert.deepEqual(r.knobs.find((k) => k.knob === 'Generators').list.slice(4), ['zeta · weekly · target 2 · cap 2/wk']);
   });
 
   it('UI: the dial sets the cadence; UI: none wins; a target with no cadence line walks at critique under a none dial', () => {
@@ -177,7 +185,7 @@ describe('the CLI', () => {
       assert.deepEqual(projectGenerators(dir), ['docs-rot']);
       const text = run(['--root', dir]);
       assert.equal(text.code, 0);
-      assert.match(text.out, /^Generators issue-age,stale-candidate,motion,docs-rot \(dial\)$/m);
+      assert.match(text.out, /^Generators issue-age,mirror-orphan,stale-candidate,motion,docs-rot \(dial\)$/m);
       const json = JSON.parse(run(['--root', dir, '--json']).out);
       assert.deepEqual(json.improve, { value: 'bold', source: 'bearings' });
       assert.equal(json.knobs.length, DIAL.length);

@@ -49,9 +49,9 @@ describe('the dial moves every reader', () => {
     assert.equal(knobs(steady).promote, 'aged');
     assert.equal(stallAction(steady), 'alert');
     assert.deepEqual(loopOn(steady), { on: true, why: 'Improve: steady sets loop on' });
-    assert.deepEqual(names(effectiveGenerators(steady)), ['issue-age', 'stale-candidate', 'motion']);
+    assert.deepEqual(names(effectiveGenerators(steady)), ['issue-age', 'mirror-orphan', 'stale-candidate', 'motion']);
     assert.equal(effectiveGenerators(steady).problems.length, 0, 'the dial\'s lines parse as the generator contract');
-    assert.match(stockRefill(steady).stock, /3 generators from the Improve dial/);
+    assert.match(stockRefill(steady).stock, /4 generators from the Improve dial/);
   });
   it('bold: fix-all, stall promote (and it promotes, Promote aged), the repo\'s own generators, both UI walks', () => {
     const bold = posture(['- Improve: bold']);
@@ -61,7 +61,7 @@ describe('the dial moves every reader', () => {
       fs.writeFileSync(path.join(root, 'scripts', 'generators', 'docs-rot.mjs'), '');
       assert.equal(supportLevel(bold, {}).level, 'fix-all');
       assert.deepEqual(effectiveAction(bold).action, 'promote');
-      assert.deepEqual(names(effectiveGenerators(bold, { root })), ['issue-age', 'stale-candidate', 'motion', 'docs-rot']);
+      assert.deepEqual(names(effectiveGenerators(bold, { root })), ['issue-age', 'mirror-orphan', 'stale-candidate', 'motion', 'docs-rot']);
       assert.equal(effectiveGenerators(bold, { root }).generators.at(-1).cadence, 'weekly');
       const ui = readUiKnobs(`${bold}\n**UI:** \`url https://example.invalid\`\n`);
       assert.deepEqual(ui.walks, { critique: true, iterate: true });
@@ -92,7 +92,7 @@ describe('a knob line of its own beats the dial; the variable beats both', () =>
     assert.deepEqual(names(effectiveGenerators(listed)), ['motion']);
     assert.equal(effectiveGenerators(listed).from, 'bearings');
     assert.deepEqual(names(effectiveGenerators(`${posture(['- Improve: bold'])}\n## Generators\n\n- (none)\n`)), []);
-    assert.deepEqual(names(effectiveGenerators(`${posture(['- Improve: steady'])}\n## Generators\n\nNone yet.\n`)), ['issue-age', 'stale-candidate', 'motion']);
+    assert.deepEqual(names(effectiveGenerators(`${posture(['- Improve: steady'])}\n## Generators\n\nNone yet.\n`)), ['issue-age', 'mirror-orphan', 'stale-candidate', 'motion']);
     assert.deepEqual(parseGenerators(posture(['- Improve: steady'])).generators, [], 'parseGenerators stays the section alone');
   });
   it('UI cadence: a line wins, none walks nothing, and no target walks nothing whatever the dial', () => {

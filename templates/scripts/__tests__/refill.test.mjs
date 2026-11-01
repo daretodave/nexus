@@ -1,6 +1,6 @@
-// refill.mjs (the refill lane) and the two generic generators under scripts/generators/: the `## Generators` list
-// parses, a generator runs only while under its target, its weekly cap and its cadence, a failing generator is logged
-// and the next one still runs; issue-age and stale-candidate honour the generator contract (a dry run writes nothing,
+// refill.mjs (the refill lane) and the issue and candidate generators under scripts/generators/: the `## Generators`
+// list parses, a generator runs only while under its target, its weekly cap and its cadence, a failing generator is
+// logged and the next one still runs; issue-age, mirror-orphan and stale-candidate honour the generator contract (a dry run writes nothing,
 // a second --write run files nothing, the last line is `filed N` or `clean`); march's queue hook carries the stock
 // refill lane only when generators are listed. node:test, no deps; gh and owner mode injected or stubbed by file.
 import assert from 'node:assert/strict';
@@ -13,6 +13,7 @@ import { describe, it } from 'node:test';
 import { appendRows, cadenceDays, main, parseGenerators, plan, refill, spawnGenerator, stampLine, stamps, today } from '../plan/refill.mjs';
 import { main as lanesMain, stockRefill } from '../plan/lanes.mjs';
 import * as issueAge from '../generators/issue-age.mjs';
+import * as mirrorOrphan from '../generators/mirror-orphan.mjs';
 import * as staleCandidate from '../generators/stale-candidate.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -222,6 +223,85 @@ describe('issue-age', () => {
     const r = spawnSync(process.execPath, [path.join(KIT, 'generators', 'issue-age.mjs'), '--today', TODAY, '--issues', 'issues.json'], { cwd: root, encoding: 'utf8' });
     assert.equal(r.status, 0, r.stderr);
     assert.equal(r.stdout.trim().split('\n').pop(), 'filed 2 (dry run)');
+  });
+});
+
+describe('mirror-orphan', () => {
+  const L = (...names) => names.map((name) => ({ name }));
+  const issues = [
+    { number: 12, title: 'Card grid "overflows"\non mobile', createdAt: '2026-10-20T00:00:00Z', labels: L('loop:opened', 'severity:high', 'source:reader', 'bug') },
+    { number: 123, title: 'Rowed in critique', createdAt: '2026-10-19T00:00:00Z', labels: L('loop:opened', 'severity:med', 'source:user', 'enhancement') },
+    { number: 7, title: 'Low one', createdAt: '2026-10-21T00:00:00Z', labels: L('loop:opened', 'severity:low', 'source:audit') },
+    { number: 8, title: 'No severity', createdAt: '2026-10-22T00:00:00Z', labels: ['loop:opened', 'source:audit'] },
+    { number: 30, title: 'Spec 04 mirror', createdAt: '2026-10-01T00:00:00Z', labels: L('loop:opened', 'loop:spec') },
+    { number: 31, title: 'Auto-promoted: x, close to veto', createdAt: '2026-10-02T00:00:00Z', labels: L('loop:opened', 'loop:veto') },
+    { number: 32, title: 'Lock past max_age: y', createdAt: '2026-10-03T00:00:00Z', labels: L('loop:opened') },
+    { number: 33, title: 'A reporter', createdAt: '2026-10-04T00:00:00Z', labels: L('bug', 'source:user') },
+    { number: 9, title: 'In the audit', createdAt: '2026-10-05T00:00:00Z', labels: L('loop:opened', 'severity:med', 'source:audit') },
+  ];
+  const repo = () => tmpRepo({
+    'plan/AUDIT.md': '# Audit\n> header names #7 and #8, which is no row\n\n## Pending\n\n### [MED] something\n- issue: #9\n\n## Done\n',
+    'plan/CRITIQUE.md': '# Critique\n\n## Pending\n\n### [MED] rowed\n- issue: #123\n',
+  });
+  const run = (root, argv) => capture((log) => mirrorOrphan.main(argv, { root, log, issues: () => issues }));
+
+  it('selects loop:opened issues with a source label that no row names; never a spec mirror, a veto or a lock ask', () => {
+    const queue = '### x\n- issue: #123\n';
+    assert.deepEqual(mirrorOrphan.orphans(issues, { queue }).map((i) => [i.number, i.severity]), [[9, 'med'], [12, 'high'], [7, 'low'], [8, 'med']]);
+    assert.equal(mirrorOrphan.isMirror(issues[4]), false, 'a spec mirror carries no source label');
+    assert.equal(mirrorOrphan.isMirror(issues[6]), false, 'a lock ask carries loop:opened alone');
+    assert.equal(mirrorOrphan.isMirror(issues[7]), false, 'a reporter\'s issue is issue-age\'s, never this one\'s');
+  });
+
+  it('#12 is not named by a row that names #123, nor #123 by one naming #12', () => {
+    assert.deepEqual(mirrorOrphan.orphans(issues.slice(0, 2), { queue: '- issue: #123\n' }).map((i) => i.number), [12]);
+    assert.deepEqual(mirrorOrphan.orphans(issues.slice(0, 2), { queue: '- issue: #12\n' }).map((i) => i.number), [123]);
+  });
+
+  it('a dry run writes nothing; --write files one AUDIT row each, oldest first, deduped against AUDIT and CRITIQUE', () => {
+    const root = repo();
+    const before = snapshot(root);
+    const dry = run(root, ['--today', TODAY]);
+    assert.equal(dry.last, 'filed 3 (dry run)');
+    assert.match(dry.out, /would file #12 · high[\s\S]*would file #7 · low[\s\S]*would file #8 · med/);
+    assert.deepEqual(snapshot(root), before);
+    assert.equal(run(root, ['--write', '--today', TODAY]).last, 'filed 3');
+    const audit = fs.readFileSync(path.join(root, 'plan/AUDIT.md'), 'utf8');
+    const block = audit.slice(audit.indexOf('### [mirror #12]'), audit.indexOf('### [mirror #7]'));
+    assert.equal(block.trim(), [
+      '### [mirror #12] [HIGH] "Card grid \'overflows\' on mobile" — mirrored issue with no plan row',
+      '- category: bug',
+      '- impact: 8',
+      '- ease: 5',
+      '- evidence: issue #12 (loop:opened, source:reader, severity:high) opened 2026-10-20 by /iterate\'s mirror; no row in plan/AUDIT.md, plan/CANDIDATES.md or plan/CRITIQUE.md names it, so no pass would see it.',
+      '- issue: #12',
+      '- next: /iterate picks it like any row; if already fixed on main, close #12 citing the commit',
+      '- generator: mirror-orphan · filed 2026-10-25',
+    ].join('\n'));
+    assert.match(audit, /### \[mirror #7\] \[LOW\] "Low one" — mirrored issue with no plan row\n- category: mirror-orphan\n- impact: 4\n/);
+    assert.match(audit, /### \[mirror #8\] \[MED\] "No severity"[^\n]*\n- category: mirror-orphan\n- impact: 6\n/);
+    assert.match(audit, /- generator: mirror-orphan · filed 2026-10-25\n\n## Done/);
+    assert.ok(!audit.includes('[mirror #123]') && !audit.includes('[mirror #9]'));
+    assert.equal(run(root, ['--write', '--today', TODAY]).last, 'clean');
+  });
+
+  it('honours --limit, reads --issues from a file, breaks (exit 1) when it cannot read issues, 64 on bad usage', () => {
+    const root = repo();
+    fs.writeFileSync(path.join(root, 'issues.json'), JSON.stringify(issues));
+    const r = capture((log) => mirrorOrphan.main(['--limit', '1', '--today', TODAY, '--issues', 'issues.json'], { root, log, issues: () => { throw new Error('unused'); } }));
+    assert.equal(r.last, 'filed 1 (dry run)');
+    assert.match(r.out, /would file #12/);
+    assert.equal(mirrorOrphan.main(['--today', TODAY], { root, log: () => {}, issues: () => { throw new Error('gh: not logged in'); } }), 1);
+    assert.equal(mirrorOrphan.main(['--limit', 'many'], { root, log: () => {} }), 64);
+    assert.equal(mirrorOrphan.main(['--today', '25-10-2026'], { root, log: () => {} }), 64);
+    const cli = spawnSync(process.execPath, [path.join(KIT, 'generators', 'mirror-orphan.mjs'), '--today', TODAY, '--issues', 'issues.json'], { cwd: root, encoding: 'utf8' });
+    assert.equal(cli.status, 0, cli.stderr);
+    assert.equal(cli.stdout.trim().split('\n').pop(), 'filed 3 (dry run)');
+  });
+
+  it('is one of the kit\'s generic generators, at daily · target 3 · cap 5/wk', async () => {
+    const { GENERIC_GENERATORS } = await import('../plan/improve.mjs');
+    assert.ok(GENERIC_GENERATORS.includes('mirror-orphan · daily · target 3 · cap 5/wk'));
   });
 });
 

@@ -118,8 +118,26 @@ lock sweep — released <slug>`), land. `fallback` is the
 lock's own `fallback:`: apply it now, then remove the lock or
 give it a new `since:`. `ask` filed (or re-pinged weekly) the
 one `Lock past max_age: <slug>` issue, a needs-user ask; an
-ask whose lock is gone is closed. Both sweeps are
-housekeeping; the tick goes on to the `pre` lanes.
+ask whose lock is gone is closed.
+
+Then the queue depth, only with `promote_queue_depth` above 0
+in `plan/bearings.md` (0, the default, leaves aged promotion
+to `/expand` alone); posture strict skips it:
+
+```bash
+node scripts/plan/promote.mjs due      # pick … | ask … | none: <why> (open specs vs the depth, then pick's rules)
+```
+
+`pick …` (fewer open specs than the depth: unchunked, or a
+chunk left; a Held spec counts): run only the aged promotion
+now, `skills/expand.md` §6 steps 2 to 5 for that candidate,
+the expand rate limit skipped; the floor, the age gate,
+`promote_per_week`, `promote_prefer` and owner mode already
+held inside `due`. Gate, one commit (`plan: depth promotion —
+auto-promoted <NN> (veto until <date>)`), land. `ask …` files
+§6's one needs-user row; `none: …` is nothing. The sweeps and
+the depth promotion are housekeeping; the tick goes on to the
+`pre` lanes.
 
 ### Step 0.5 — Pre lanes
 
@@ -294,6 +312,7 @@ plan/CRITIQUE.md                     # critique queue + rate-limit metadata
 plan/CANDIDATES.md             # expand output + rate-limit metadata
 node scripts/plan/promote.mjs sweep  # Step 0: veto or release auto-promoted Held specs
 node scripts/plan/locks.mjs sweep    # Step 0: locks past max_age relax or ask once
+node scripts/plan/promote.mjs due    # Step 0: the depth promotion (promote_queue_depth above 0)
 node scripts/plan/lanes.mjs march pre|queue  # project lanes (skills/march.lanes.md)
 node scripts/plan/motion.mjs react    # Step 0.5: an open motion stall under stall_action promote
 node scripts/plan/refill.mjs --write # 3a': the stock refill lane runs bearings' generators

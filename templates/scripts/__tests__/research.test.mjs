@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { addFieldEvidence, clean, due, lastRun, main, MAX_FETCHES, namesProblem, stampRun, topics } from '../generators/research.mjs';
+import { addFieldEvidence, cadenceDays, clean, due, lastRun, main, MAX_FETCHES, namesProblem, stampRun, topics } from '../generators/research.mjs';
 import { fieldUrlProblems } from '../plan-check.mjs';
 import { parseCandidates, reevidence } from '../plan/promote.mjs';
 
@@ -65,6 +65,18 @@ describe('the knob and the topics', () => {
     assert.equal(due('weekly', '2026-10-18', TODAY, ['a']).due, true);
     assert.equal(due('monthly', '2026-10-01', TODAY, ['a']).due, false);
     assert.equal(due('monthly', '2026-09-25', TODAY, ['a']).due, true);
+  });
+
+  it('takes <n>d as every n days (3d: about twice a week), and nothing else that looks like it', () => {
+    assert.deepEqual([cadenceDays('monthly'), cadenceDays('weekly'), cadenceDays('3d'), cadenceDays('14D')], [30, 7, 3, 14]);
+    for (const bad of ['off', '0d', '3', 'd', '-3d', '1.5d', 'daily', 'toString']) assert.equal(cadenceDays(bad), null, bad);
+    assert.equal(due('3d', '2026-10-23', TODAY, ['a']).due, false);
+    assert.equal(due('3d', '2026-10-22', TODAY, ['a']).due, true);
+    assert.match(due('3d', '2026-10-23', TODAY, ['a']).why, /\(2d of 3\)$/);
+    const every3 = repo({ bearingsLines: ['- Improve: off', '- Research: 3d', '- Research topics: agent loops'] });
+    try {
+      assert.match(run(every3, ['--today', TODAY]).out, /^due · Research: 3d, never run$/m);
+    } finally { fs.rmSync(every3, { recursive: true, force: true }); }
   });
 
   it('takes the knob from the dial (steady: monthly, gentle: off) unless a Research: line overrides it', () => {

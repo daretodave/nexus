@@ -106,8 +106,17 @@ still >3). **Cap 3 candidates per pass.**
    duplicate — re-evidence the row (§6a).
 4. File to `## Pending` (standard candidate schema: proposed /
    source signals / rationale / proposed scope / estimated
-   chunks / conflicts; `filed score` and `re-evidence` arrive
-   with the first re-evidence). Update the metadata header
+   chunks / kind / conflicts; `filed score` and `re-evidence`
+   arrive with the first re-evidence). Every candidate carries
+   `- kind: product | guard`: `product` is something a user of
+   the kit sees or uses (a template, a skill's behaviour, the
+   GUI, a doc an adopter reads), `guard` is a check, a gate or
+   loop hygiene (a verify leg, a lint, a checker for a defect
+   class); untagged rows rank as before the line. Under
+   `promote_prefer: product` (bearings), a pass that files any
+   candidates files at least one `product` (from the README's
+   promises, field research, adopter friction), or its commit
+   body says in one line why none was possible. Update the metadata header
    (`Last pass`, `Pass count`, `Posture`, and nothing else:
    the pass narrative goes in the commit body).
 5. Aged promotion (§6), when the knob allows it.
@@ -131,9 +140,14 @@ in which the owner can say no.
 1. `node scripts/plan/promote.mjs pick`. It prints `pick …`
    for the best Pending row scoring ≥ `promote_floor` that is
    `promote_after_days` old or re-evidenced twice (ties: the
-   oldest), while fewer than `promote_per_week`
+   oldest; under `promote_prefer: product` an eligible
+   `product` row first), while fewer than `promote_per_week`
    auto-promotions are dated in the last 7 days (vetoed ones
-   count). `none: <why>` ends the step.
+   count). `none: <why>` ends the step. With
+   `promote_queue_depth` above 0, `/march` Step 0 runs these
+   same steps from `promote.mjs due` whenever fewer specs than
+   the depth are open (the knobs:
+   `templates/skills/expand.md` §3).
 2. Write the spec as `promote` does (§2: unchunked, roadmap
    row). Move the row to `## Promoted` as `### [promoted
    <date> → spec <NN>] [score X] <title>` with `- promoted:

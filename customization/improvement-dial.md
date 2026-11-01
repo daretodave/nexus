@@ -55,11 +55,11 @@ set repo variable) wins over its column.
 | stall_action | `off` | `alert` | `alert` | `promote` | `stall_action:` |
 | loop (`/iterate` dimension I) | `off` | `off` | `on` | `on` | `loop:` |
 | UI walk cadence | none | none | `critique` | `both` | `UI cadence:`, or `UI: none` |
-| Research | `off` | `off` | `monthly` | `weekly` | `Research:` |
+| Research | `off` | `off` | `monthly` | `weekly` | `Research:` (also `<n>d`, every n days) |
 | Cadence | `calm` | `steady` | `steady` | `eager` | `NEXUS_CADENCE` |
 
-- **Generators.** `generic` is the kit's three (`issue-age`,
-  `stale-candidate`, `motion`, at the lines the bearings
+- **Generators.** `generic` is the kit's four (`issue-age`,
+  `mirror-orphan`, `stale-candidate`, `motion`, at the lines the bearings
   template shows in its comment); `project` adds every other
   `scripts/generators/<name>.mjs` the repo carries, at `weekly
   · target 2 · cap 2/wk`. The field-research generator is
@@ -69,7 +69,9 @@ set repo variable) wins over its column.
   no `UI: url|dev` target there is nothing to open, whatever
   the cadence.
 - **Research.** It also needs a `Research topics:` line; with
-  none, no research runs at any position.
+  none, no research runs at any position. An override may say
+  `<n>d` (n a positive whole number) for every n days: `3d`
+  is about twice a week.
 - **Cadence.** Lives in the repo variable. A cloud step takes
   the dial's value only when the variable is unset and the
   line says something other than `gentle`.

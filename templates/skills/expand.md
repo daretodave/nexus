@@ -118,6 +118,8 @@ The same section holds the aged-promotion knobs (Step 4b), one
 | `promote_per_week` | count | 1 |
 | `veto_days` | days | 3 |
 | `pending_cap` | count | 15 (Step 4c) |
+| `promote_queue_depth` | count | 0: aged promotion runs only here. Above 0, `/march` Step 0 also runs it (`promote.mjs due`) whenever fewer specs than this are open (unchunked, or with a chunk left), so the next spec is promoted while one is still in build; every other rule here holds |
+| `promote_prefer` | `product \| none` | `none`: the pick ranks by score alone. `product`: an eligible `- kind: product` candidate wins over any `guard` or untagged one, whatever their scores, and each pass that files candidates files at least one `product` (Step 2) |
 
 If the bearings section is missing, default to **bold** and add
 the section in the same commit (`bearings: add expand posture
@@ -241,8 +243,27 @@ For each signal cluster, draft a candidate:
 - rationale: <why this is real, not noise>
 - proposed scope: <1-chunk | N-chunk spec>
 - estimated chunks: <N>
+- kind: <product | guard>
 - conflicts: <with spec / contract / existing plan; or "none">
 ```
+
+`kind` is what the candidate builds: `product` is something an
+end user of the project sees or uses (a page, a feature, a
+flow, content, a data surface); `guard` is a check, a gate, a
+test or loop and process hygiene (a checker for a defect
+class, a verify leg, a lint). Every candidate carries one. A
+row without it reads as untagged, ranked as before the line
+existed.
+
+Most signals above are reactive (audit, critique, triage,
+commit patterns) and turn into guards. Under `promote_prefer:
+product` (§3), a pass that files any candidates files at least
+one `product`, sourced from the spec (D: a paragraph no spec
+covers yet), field research, data growth (F) or a reader- or
+user-facing gap (B, E, H), scored by §5 like any other. When
+none is possible, the commit body says why in one line (the
+spec is fully planned, no surface has a gap); never invent one
+to fill the quota.
 
 Score per §5. Sort. Take top 3. If a signal reinforces a
 candidate already sitting in `## Pending` rather than
@@ -306,9 +327,13 @@ no:
 1. `node scripts/plan/promote.mjs pick`. It prints `pick …`
    for the best Pending row scoring ≥ `promote_floor` that is
    `promote_after_days` old or re-evidenced twice (ties: the
-   oldest), while fewer than `promote_per_week`
+   oldest; under `promote_prefer: product` an eligible
+   `product` row first), while fewer than `promote_per_week`
    auto-promotions are dated in the last 7 days (vetoed ones
-   count). `none: <why>` ends the step.
+   count). `none: <why>` ends the step. (`/march` Step 0 runs
+   these same steps from `promote.mjs due` when
+   `promote_queue_depth` is above 0 and the plan is running
+   low.)
 2. Write it as an unchunked spec (as autonomous posture does,
    above) and move its row to `## Promoted` as `### [promoted
    <date> → spec <NN>] [score X] <title>` with `- promoted:

@@ -10,7 +10,7 @@ import { describe, it } from 'node:test';
 import { checkHistory, checkPlan, loadPlanDir } from '../plan-check.mjs';
 import { lanes } from '../plan/order.mjs';
 import {
-  KNOBS, addHeld, apply, autoHeld, capCut, cutStale, cuts, decide, heldLine, knobs, main, parseCandidates, pick, reevidence, rejectCandidate,
+  KNOBS, addHeld, apply, autoHeld, capCut, cutStale, cuts, decide, due, heldLine, knobs, main, openSpecs, parseCandidates, pick, reevidence, rejectCandidate,
 } from '../plan/promote.mjs';
 
 const row = (score, title, proposed, extra = []) => [`### [ ] [score ${score}] ${title}`, `- proposed: ${proposed} (expand pass 3)`, ...extra, '- rationale: x', ''].join('\n');
@@ -34,8 +34,18 @@ describe('knobs', () => {
     assert.deepEqual(knobs(''), KNOBS);
     assert.equal(KNOBS.promote, 'owner');
     const k = knobs('## Plan expansion posture\n\n- **Promote:** aged\n- `promote_after_days`: 14\n- promote_floor: 6.5\n- promote_per_week: 2\n- veto_days: 3\n');
-    assert.deepEqual(k, { promote: 'aged', afterDays: 14, floor: 6.5, perWeek: 2, vetoDays: 3, pendingCap: 15 });
+    assert.deepEqual(k, { promote: 'aged', afterDays: 14, floor: 6.5, perWeek: 2, vetoDays: 3, pendingCap: 15, queueDepth: 0, prefer: 'none' });
     assert.equal(knobs('Promote: whenever').promote, 'owner');
+  });
+  it('reads promote_queue_depth (0 by default) and promote_prefer (product | none; anything else is none)', () => {
+    assert.equal(KNOBS.queueDepth, 0);
+    assert.equal(KNOBS.prefer, 'none');
+    assert.equal(knobs('- promote_queue_depth: 2').queueDepth, 2);
+    assert.equal(knobs('- **promote_queue_depth:** 3').queueDepth, 3);
+    assert.equal(knobs('- promote_prefer: product').prefer, 'product');
+    assert.equal(knobs('- **promote_prefer:** `product`').prefer, 'product');
+    assert.equal(knobs('- promote_prefer: features').prefer, 'none');
+    assert.equal(knobs('<!--\n- promote_prefer: product\n-->').prefer, 'none');
   });
 });
 
@@ -46,6 +56,12 @@ describe('parseCandidates', () => {
     assert.deepEqual(pending.map((c) => c.reEvidence), [0, 0, 2, 1, 0]);
     assert.equal(pending[0].proposed, '2026-09-01');
     assert.deepEqual(auto, ['2026-10-24']);
+    assert.deepEqual(pending.map((c) => c.kind), [null, null, null, null, null]);
+  });
+  it('reads an optional `- kind: product | guard` line; another word is untagged', () => {
+    const text = ['## Pending', '', row('7', 'A', '2026-09-01', ['- kind: product']), row('7', 'B', '2026-09-01', ['- kind: `Guard`']),
+      row('7', 'C', '2026-09-01', ['- kind: feature']), row('7', 'D', '2026-09-01')].join('\n');
+    assert.deepEqual(parseCandidates(text).pending.map((c) => c.kind), ['product', 'guard', null, null]);
   });
 });
 
@@ -71,6 +87,36 @@ describe('pick', () => {
     const r = pick(c, AGED, { date: '2026-10-25', owner: false });
     assert.equal(r.pick, null);
     assert.equal(r.ask.title, 'Fresh but loud');
+  });
+});
+
+describe('pick under promote_prefer', () => {
+  const text = ['## Pending', '',
+    row('9.0', 'Guard, loudest', '2026-08-01', ['- kind: guard']),
+    row('8.5', 'Untagged, loud', '2026-08-01'),
+    row('6.5', 'Product, newer', '2026-09-01', ['- kind: product']),
+    row('6.5', 'Product, older', '2026-08-15', ['- kind: product']),
+    row('5.5', 'Product under the floor', '2026-07-01', ['- kind: product']),
+    row('9.5', 'Product too young', '2026-10-20', ['- kind: product']),
+  ].join('\n');
+  const c = parseCandidates(text);
+  it('none (the default) ranks by score alone, as before the knob', () => {
+    assert.equal(pick(c, AGED, { date: '2026-10-25' }).pick.title, 'Guard, loudest');
+  });
+  it('product: an eligible product row beats a higher-scoring guard or untagged one; within a kind, score then age', () => {
+    const k = { ...AGED, prefer: 'product' };
+    assert.equal(pick(c, k, { date: '2026-10-25' }).pick.title, 'Product, older');
+    assert.equal(pick(c, k, { date: '2026-10-25', owner: false }).ask.title, 'Product, older');
+    const onlyGuard = { ...c, pending: c.pending.filter((x) => x.kind !== 'product' || x.score < 6) };
+    assert.equal(pick(onlyGuard, k, { date: '2026-10-25' }).pick.title, 'Guard, loudest', 'no eligible product row: today\'s order');
+    const noGuard = { ...c, pending: c.pending.filter((x) => x.kind !== 'guard' && x.kind !== 'product') };
+    assert.equal(pick(noGuard, k, { date: '2026-10-25' }).pick.title, 'Untagged, loud');
+  });
+  it('product never lifts a row past the floor, the age gate or the weekly cap', () => {
+    const k = { ...AGED, prefer: 'product', perWeek: 1 };
+    assert.equal(pick({ ...c, auto: ['2026-10-24'] }, k, { date: '2026-10-25' }).pick, null);
+    const young = { ...c, pending: c.pending.filter((x) => x.title === 'Product too young' || x.title === 'Product under the floor') };
+    assert.equal(pick(young, k, { date: '2026-10-25' }).pick, null);
   });
 });
 
@@ -163,7 +209,56 @@ describe('apply', () => {
   });
 });
 
+describe('openSpecs and due (promote_queue_depth)', () => {
+  const spec = (num, chunks, unchunked = false) => ({ num, chunks: chunks.map((id) => ({ id })), unchunked });
+  const readme = ['| # | Initiative | Spec | Status | Progress |', '|---|---|---|---|---|',
+    '| 07 | Search | [07-search.md](07-search.md) | planned | 2 left |',
+    '| 59 | Thing | [59-thing.md](59-thing.md) | planned | not chunked |',
+    '| 60 | Done | [60-done.md](60-done.md) | planned | 0 left |',
+    '| 61 | Closing | [61-closing.md](61-closing.md) | planned | 1 left |',
+    '| 62 | No file | [62-gone.md](62-gone.md) | planned | 1 left |'].join('\n');
+  const plan = { readme, pendingIds: new Set(['61.1']), specs: [spec('07', ['07.1', '07.2']), spec('59', [], true), spec('60', []), spec('61', ['61.1'])] };
+  it('counts table rows whose spec is unchunked or has a chunk no pending close closes', () => {
+    assert.deepEqual(openSpecs(plan), [{ num: '07', file: '07-search.md', left: 2, unchunked: false }, { num: '59', file: '59-thing.md', left: 0, unchunked: true }]);
+    assert.deepEqual(openSpecs({}), []);
+  });
+  const c = parseCandidates(CANDIDATES);
+  const open2 = openSpecs(plan);
+  it('depth 0 (the default) is never due: aged promotion stays with /expand', () => {
+    const r = due(c, AGED, open2, { date: '2026-10-25' });
+    assert.equal(r.pick, null);
+    assert.match(r.reason, /promote_queue_depth: 0/);
+  });
+  it('due while fewer specs are open than the depth, and then every pick rule holds', () => {
+    assert.match(due(c, { ...AGED, queueDepth: 2 }, open2, { date: '2026-10-25' }).reason, /^2 open specs, depth 2$/);
+    const r = due(c, { ...AGED, queueDepth: 3 }, open2, { date: '2026-10-25' });
+    assert.equal(r.pick.title, 'Fresh but loud');
+    assert.match(r.reason, /^2 open specs under depth 3; /);
+    assert.equal(due(c, { ...KNOBS, queueDepth: 3 }, open2, { date: '2026-10-25' }).pick, null, 'Promote: owner still promotes nothing');
+    assert.equal(due({ ...c, auto: ['2026-10-24'] }, { ...AGED, queueDepth: 3, perWeek: 1 }, open2, { date: '2026-10-25' }).pick, null, 'promote_per_week still caps');
+    assert.equal(due(c, { ...AGED, queueDepth: 3 }, open2, { date: '2026-10-25', owner: false }).ask.title, 'Fresh but loud', 'a contributor still asks');
+  });
+});
+
 describe('main', () => {
+  it('due reads the roadmap: a Held spec counts as open, and depth 0 prints why it never runs', () => {
+    const root = repo();
+    const out = [];
+    const opts = { root, log: (l) => out.push(l), owner: () => true };
+    const bearingsFile = path.join(root, 'plan', 'bearings.md');
+    main(['due', '--today', '2026-11-05'], opts);
+    assert.equal(out[0], 'none: promote_queue_depth: 0 (aged promotion runs only in /expand)');
+    fs.writeFileSync(bearingsFile, '## Plan expansion posture\n\n- Promote: aged\n- promote_queue_depth: 2\n');
+    main(['due', '--today', '2026-11-05'], opts);
+    assert.equal(out[1], 'none: 2 open specs, depth 2');
+    fs.writeFileSync(bearingsFile, '## Plan expansion posture\n\n- Promote: aged\n- promote_queue_depth: 3\n');
+    main(['due', '--today', '2026-11-05'], opts);
+    assert.match(out[2], /^pick \[score 8\] Fresh but loud/);
+    main(['due', '--today', '2026-11-05', '--json'], opts);
+    const j = JSON.parse(out[3]);
+    assert.equal(j.open, 2);
+    assert.equal(j.knobs.queueDepth, 3);
+  });
   it('sweep without --write prints and writes nothing; with --write it applies', () => {
     const root = repo();
     const readmeFile = path.join(root, 'plan', 'README.md');

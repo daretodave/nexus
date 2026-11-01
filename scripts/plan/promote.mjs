@@ -16,10 +16,16 @@
 //   promote_per_week    auto-promotions dated in the last 7 days, vetoed ones included, cap the next (1)
 //   veto_days           the window the Held line holds the spec for (3)
 //   pending_cap         Pending rows above this are cut, the lowest-scoring 60+ days old first, 5 a pass (15)
+//   promote_queue_depth /march promotes (`due`) while fewer open specs than this have work left; 0 leaves aged
+//                       promotion to /expand alone, as before the knob (0)
+//   promote_prefer      product | none: under product the pick takes an eligible `- kind: product` candidate over
+//                       any other, whatever their scores (none)
 //
 // A Pending candidate (plan/CANDIDATES.md, `### [ ] [score X] <title>`) is eligible when its score is at least the
 // floor and it is `promote_after_days` old (its `- proposed:` date) or re-evidenced twice (dates in its prose, plus
-// independent `- re-evidence:` lines). The pick is the highest score, ties to the oldest. Auto-promotions are counted from `- promoted: <date>, auto` lines anywhere in the
+// independent `- re-evidence:` lines). The pick is the highest score, ties to the oldest; under `promote_prefer:
+// product` every eligible `- kind: product` row ranks first (untagged and `guard` rows rank together after it, as
+// before the knob). Auto-promotions are counted from `- promoted: <date>, auto` lines anywhere in the
 // file (a vetoed row keeps its line, so a veto never frees a slot for an immediate retry).
 //
 // Pending stays live. `reevidence` records a signal that reinforces a Pending row on the row itself, under
@@ -32,6 +38,7 @@
 // oldest) move to `## Rejected` as `stale: below cap cut <date>`, at most 5 a pass; `cuts` lists them for the digest.
 //
 //   node scripts/plan/promote.mjs pick [--today YYYY-MM-DD] [--json]          # the candidate this pass promotes
+//   node scripts/plan/promote.mjs due [--today YYYY-MM-DD] [--json]           # /march's depth promotion: pick, gated
 //   node scripts/plan/promote.mjs hold <NN> <issue> [--today YYYY-MM-DD]       # write the spec's Held line
 //   node scripts/plan/promote.mjs sweep [--today YYYY-MM-DD] [--issues <file>] [--write] [--json]
 //   node scripts/plan/promote.mjs reevidence "<title words>" <letter> [#<issue>|<sha>] [--note <text>] [--today D] [--write]
@@ -39,7 +46,9 @@
 //   node scripts/plan/promote.mjs cuts [--since YYYY-MM-DD]                   # the cap cuts, for the digest
 //
 // `pick` prints `pick …`, `ask …` (an eligible candidate a contributor's checkout cannot promote: one needs-user ask)
-// or `none: <why>`. `sweep` prints one `veto|release|wait <NN> #<issue>` line per auto-promoted Held line; with
+// or `none: <why>`. `due` prints the same, after one more gate: `promote_queue_depth` above 0, and fewer open specs
+// than it (a roadmap row whose spec is unchunked or has a chunk left that no pending close closes; a Held spec in its
+// veto window counts, so the next promotion waits for it). `sweep` prints one `veto|release|wait <NN> #<issue>` line per auto-promoted Held line; with
 // `--write` it makes the veto and release plan edits (the skill then closes a released issue with gh). Issue states
 // come from `gh issue view` (read only), or from `--issues <file>` (`{"123": "CLOSED"}`) in tests and dry runs; a
 // state gh cannot read is a `wait`. `reevidence` and `cap` print what they would write, and write it with `--write`.
@@ -48,13 +57,20 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { parseAutoHeld } from '../plan-check.mjs';
+import { loadPlanDir, parseAutoHeld } from '../plan-check.mjs';
 import { isOwner } from '../owner.mjs';
 import { loadConfig } from './config.mjs';
-import { knobOf } from './improve.mjs';
+import { knobOf, lineValues } from './improve.mjs';
 
-export const KNOBS = Object.freeze({ promote: 'owner', afterDays: 21, floor: 6.0, perWeek: 1, vetoDays: 3, pendingCap: 15 });
-const KEYS = { Promote: 'promote', promote_after_days: 'afterDays', promote_floor: 'floor', promote_per_week: 'perWeek', veto_days: 'vetoDays', pending_cap: 'pendingCap' };
+export const KNOBS = Object.freeze({ promote: 'owner', afterDays: 21, floor: 6.0, perWeek: 1, vetoDays: 3, pendingCap: 15, queueDepth: 0, prefer: 'none' });
+const KEYS = {
+  Promote: 'promote', promote_after_days: 'afterDays', promote_floor: 'floor', promote_per_week: 'perWeek', veto_days: 'vetoDays', pending_cap: 'pendingCap',
+  promote_queue_depth: 'queueDepth',
+};
+/** The values `promote_prefer` takes; anything else reads as none. */
+export const PREFER = Object.freeze(['product', 'none']);
+/** The values a candidate's `- kind:` line takes; a row without one (or with another word) is untagged. */
+export const KINDS = Object.freeze(['product', 'guard']);
 /** Re-evidence: +0.5 a signal, at most +2 over the filed score. A cap cut: rows this old, at most this many a pass. */
 export const BUMP = 0.5;
 export const BUMP_CAP = 2;
@@ -79,6 +95,7 @@ export function knobs(bearings = '') {
     const m = new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?[*\`]*${key}[*\`]*[ \\t]*:[*\`]*[ \\t]*[*\`]*([^\\s*\`]+)`, 'm').exec(bearings);
     if (m && Number.isFinite(parseFloat(m[1]))) out[name] = parseFloat(m[1]);
   }
+  out.prefer = lineValues(bearings, 'promote_prefer').find((v) => PREFER.includes(v)) ?? KNOBS.prefer;
   return out;
 }
 
@@ -107,7 +124,7 @@ function field(body, name) {
   return out.join(' ');
 }
 
-/** plan/CANDIDATES.md: the Pending rows (title, score, proposed, re-evidence dates) and every auto-promotion date. */
+/** plan/CANDIDATES.md: the Pending rows (title, score, proposed, re-evidence count, kind) and every auto-promotion date. */
 export function parseCandidates(text = '') {
   const lines = text.split(/\r?\n/);
   const [start, end] = section(lines, 'Pending');
@@ -123,7 +140,8 @@ export function parseCandidates(text = '') {
     const reEvidence = [...new Set(reText.match(DATE) ?? [])].filter((d) => d !== proposed);
     // ... plus each independent entry the reevidence command wrote under `- re-evidence:`.
     const logged = (field(body, 're-evidence').match(/ · independent\b/g) ?? []).length;
-    pending.push({ title: m[2].trim(), score: Number(m[1]), proposed, reEvidence: reEvidence.length + logged });
+    const kind = (/^- kind:[ \t]*[`*]*(\w+)/i.exec(field(body, 'kind'))?.[1] ?? '').toLowerCase();
+    pending.push({ title: m[2].trim(), score: Number(m[1]), proposed, reEvidence: reEvidence.length + logged, kind: KINDS.includes(kind) ? kind : null });
   }
   const auto = [...text.matchAll(/^- promoted: (\d{4}-\d{2}-\d{2}), auto\b/gm)].map((m) => m[1]);
   return { pending, auto };
@@ -137,15 +155,52 @@ export function pick({ pending, auto }, k, { date = today(), owner = true } = {}
   const none = (reason) => ({ pick: null, ask: null, reason });
   if (k.promote === 'owner') return none('Promote: owner (only /oversight promotes)');
   const recent = auto.filter((d) => daysBetween(d, date) >= 0 && daysBetween(d, date) < 7).length;
+  // promote_prefer: product ranks every eligible product row above the rest; none ranks by score alone.
+  const first = (c) => (k.prefer === 'product' && c.kind === 'product' ? 1 : 0);
   const eligible = pending
     .filter((c) => c.proposed && c.score >= k.floor)
     .map((c) => ({ ...c, age: daysBetween(c.proposed, date) }))
     .filter((c) => c.age >= k.afterDays || c.reEvidence >= 2)
-    .sort((a, b) => b.score - a.score || a.proposed.localeCompare(b.proposed));
+    .sort((a, b) => first(b) - first(a) || b.score - a.score || a.proposed.localeCompare(b.proposed));
   if (!eligible.length) return none(`no Pending candidate scores ${k.floor}+ and is ${k.afterDays}d old or re-evidenced twice`);
   if (!owner) return { pick: null, ask: eligible[0], reason: 'a contributor checkout files one needs-user ask instead' };
   if (recent >= k.perWeek) return none(`${recent} auto-promotion${recent === 1 ? '' : 's'} in the last 7 days (cap ${k.perWeek})`);
   return { pick: eligible[0], ask: null, reason: `${eligible.length} eligible` };
+}
+
+/**
+ * The roadmap's open specs: each table row whose spec file is unchunked or has a chunk left that no pending close
+ * closes, in table order: [{ num, file, left, unchunked }]. Takes plan-check's loadPlanDir result (specs, readme,
+ * pendingIds). A Held spec counts: it is queued, only waiting out its window.
+ */
+export function openSpecs({ specs = [], readme = '', pendingIds = new Set() } = {}) {
+  const byNum = new Map(specs.filter((s) => s.num).map((s) => [s.num, s]));
+  const seen = new Set();
+  const out = [];
+  for (const line of String(readme ?? '').split(/\r?\n/)) {
+    const m = /^\|\s*\d+\s*\|.*?\]\(((\d{2,})-[^)]+\.md)\)/.exec(line);
+    if (!m || seen.has(m[2]) || !byNum.has(m[2])) continue;
+    seen.add(m[2]);
+    const spec = byNum.get(m[2]);
+    const left = spec.chunks.filter((c) => !pendingIds.has(c.id)).length;
+    if (left || spec.unchunked) out.push({ num: m[2], file: m[1], left, unchunked: spec.unchunked });
+  }
+  return out;
+}
+
+/**
+ * /march's depth promotion: pick() behind one more gate, `promote_queue_depth`. 0 (the default) is never due, so
+ * aged promotion stays /expand's alone; above 0 it is due while fewer than that many specs are open (openSpecs()).
+ * Every pick() rule still holds (Promote, the floor, the age gate, promote_per_week, owner mode, promote_prefer).
+ * { pick, ask, reason, open }.
+ */
+export function due(candidates, k, open = [], { date = today(), owner = true } = {}) {
+  const none = (reason) => ({ pick: null, ask: null, reason, open: open.length });
+  if (!(k.queueDepth > 0)) return none(`promote_queue_depth: ${k.queueDepth} (aged promotion runs only in /expand)`);
+  const specs = `${open.length} open spec${open.length === 1 ? '' : 's'}`;
+  if (open.length >= k.queueDepth) return none(`${specs}, depth ${k.queueDepth}`);
+  const r = pick(candidates, k, { date, owner });
+  return { ...r, reason: `${specs} under depth ${k.queueDepth}; ${r.reason}`, open: open.length };
 }
 
 /** The Held line an auto-promotion writes (the contract in concepts/plan-shape.md). */
@@ -412,7 +467,7 @@ function ghState(issue) {
   }
 }
 
-const USAGE = 'usage: promote.mjs pick [--today D] [--json] | hold <NN> <issue> [--today D] | sweep [--today D] [--issues <file>] [--write] [--json]'
+const USAGE = 'usage: promote.mjs pick [--today D] [--json] | due [--today D] [--json] | hold <NN> <issue> [--today D] | sweep [--today D] [--issues <file>] [--write] [--json]'
   + ' | reevidence "<title words>" <letter A-H> [#<issue>|<sha>] [--note <text>] [--today D] [--write] | cap [--today D] [--write] [--json] | cuts [--since D]';
 
 export function main(argv, { root = process.cwd(), owner = () => isOwner(root), state = ghState, log = console.log } = {}) {
@@ -425,8 +480,10 @@ export function main(argv, { root = process.cwd(), owner = () => isOwner(root), 
   const k = knobs(readSafe(path.join(root, 'plan', 'bearings.md')));
   const cfg = loadConfig(root);
   const cmd = argv[0];
-  if (cmd === 'pick') {
-    const r = pick(parseCandidates(readSafe(path.join(root, 'plan', 'CANDIDATES.md'))), k, { date, owner: owner() });
+  if (cmd === 'pick' || cmd === 'due') {
+    const candidates = parseCandidates(readSafe(path.join(root, 'plan', 'CANDIDATES.md')));
+    const r = cmd === 'pick' ? pick(candidates, k, { date, owner: owner() })
+      : due(candidates, k, k.queueDepth > 0 ? openSpecs(loadPlanDir(path.join(root, 'plan'))) : [], { date, owner: owner() });
     if (argv.includes('--json')) log(JSON.stringify({ knobs: k, ...r }, null, 2));
     else {
       const c = r.pick ?? r.ask;

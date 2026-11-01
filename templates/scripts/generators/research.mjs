@@ -1,13 +1,13 @@
 // scripts/generators/research.mjs: the field-research generator. How the wider tooling moves becomes candidates.
 //
 // A generator under spec 57's contract (concepts/generators.md), gated by the `Research:` knob (off | monthly |
-// weekly; the improvement dial sets it, scripts/plan/improve.mjs, and a `Research:` line in plan/bearings.md
+// weekly | <n>d, every n days; the improvement dial sets it, scripts/plan/improve.mjs, and a `Research:` line in plan/bearings.md
 // overrides) and fed by one bearings line, `Research topics: a; b; c`. The web half is the tick's: a script cannot
 // search, so the run has two halves.
 //
 //   node scripts/generators/research.mjs [--today D] [--json]
 //       The brief: the knob, whether a run is due (monthly: 30 days since `> Last field research:` in
-//       plan/CANDIDATES.md, weekly: 7), the topics, the budget (8 fetches, 3 candidates) and the Pending titles a
+//       plan/CANDIDATES.md, weekly: 7, <n>d: n), the topics, the budget (8 fetches, 3 candidates) and the Pending titles a
 //       finding re-evidences instead of filing anew. Writes nothing; last line `clean`.
 //
 //   node scripts/generators/research.mjs --findings <file> [--write] [--limit <n>] [--today D]
@@ -45,6 +45,14 @@ export const MAX_FETCHES = 8;
 export const MAX_FINDINGS = 3;
 /** Days between runs at each knob value. */
 export const CADENCE = Object.freeze({ monthly: 30, weekly: 7 });
+
+/** Days between runs for a knob value: CADENCE's words, or `<n>d` (n a positive integer); null when off or unknown. */
+export function cadenceDays(knob = '') {
+  const v = String(knob ?? '').trim().toLowerCase();
+  if (Object.hasOwn(CADENCE, v)) return CADENCE[v];
+  const m = /^([1-9]\d*)d$/.exec(v);
+  return m ? Number(m[1]) : null;
+}
 /** The longest each finding field may run, after whitespace folds. */
 export const CAPS = Object.freeze({ title: 100, pattern: 200, rationale: 400, scope: 300 });
 export const LAST_RUN = 'Last field research';
@@ -84,13 +92,14 @@ export function stampRun(text, date) {
 
 /** Whether a run is due: { due, why }. */
 export function due(knob, last, date, topicList) {
-  if (!CADENCE[knob]) return { due: false, why: `Research: ${knob}` };
+  const days = cadenceDays(knob);
+  if (!days) return { due: false, why: `Research: ${knob}` };
   if (!topicList.length) return { due: false, why: 'no Research topics: line in plan/bearings.md' };
   if (!last) return { due: true, why: `Research: ${knob}, never run` };
   const age = daysBetween(last, date);
-  return age >= CADENCE[knob]
+  return age >= days
     ? { due: true, why: `Research: ${knob}, last run ${last} (${age}d)` }
-    : { due: false, why: `Research: ${knob}, last run ${last} (${age}d of ${CADENCE[knob]})` };
+    : { due: false, why: `Research: ${knob}, last run ${last} (${age}d of ${days})` };
 }
 
 const URL_RE = /\bhttps?:\/\/|\bwww\./i;
@@ -262,7 +271,7 @@ export function main(argv, { root = process.cwd(), log = console.log, env = proc
     return 0;
   }
 
-  if (!CADENCE[knob.value]) {
+  if (!cadenceDays(knob.value)) {
     log(`Research: ${knob.value}; nothing filed`);
     log('clean');
     return 0;

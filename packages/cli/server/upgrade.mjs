@@ -462,7 +462,7 @@ export const KNOBS = Object.freeze([
   // Spec 59: the field-research generator's knob; off is the absent line, so nothing is written.
   { knob: 'Research', at: 'bearings', value: 'off', write: false, dial: true, accepts: ['off', 'monthly', 'weekly'] },
   // Inert while the knobs above stay down, or settings rather than behaviour: the kit default stands.
-  ...['promote_after_days', 'promote_floor', 'promote_per_week', 'veto_days', 'pending_cap', 'Motion floor', 'Lanes off',
+  ...['promote_after_days', 'promote_floor', 'promote_per_week', 'veto_days', 'pending_cap', 'promote_queue_depth', 'promote_prefer', 'Motion floor', 'Lanes off',
     'Lock max age', 'sla_hours', 'escalate_days', 'asap_cap', 'Research topics'].map((knob) => ({ knob, at: 'bearings', value: null, write: false })),
   ...['UI routes', 'UI cadence', 'UI magic'].map((knob) => ({ knob, at: 'bearings', value: null, write: false, bold: true })),
   ...['NEXUS_ALLOW_BACKGROUND', 'NEXUS_APP_ID', 'NEXUS_CLAIMS_BOARD', 'NEXUS_DAILY_CEILING', 'NEXUS_DISPATCH_MAX',

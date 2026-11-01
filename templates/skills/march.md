@@ -139,8 +139,33 @@ node scripts/plan/locks.mjs sweep --write  # release | fallback | ask, one line 
   max_age: <slug>` issue and `scripts/notify.mjs`, re-pinged
   weekly, closed once the lock is gone.
 
-Both sweeps are housekeeping; the tick goes on to the `pre`
-lanes.
+Then the queue depth: the next spec is promoted while one is
+still in build, so the plan never runs dry before anything new
+arrives. Only with `promote_queue_depth` above 0 in
+`plan/bearings.md` (0, the default, leaves aged promotion to
+`/expand` alone, and this prints `none: …`); posture strict
+skips it, as it skips `/expand`:
+
+```bash
+node scripts/plan/promote.mjs due      # pick … | ask … | none: <why> (open specs vs the depth, then pick's rules)
+```
+
+- `pick …` (fewer open specs than the depth: a roadmap row
+  whose spec is unchunked or has a chunk left; a Held spec in
+  its veto window counts): run only the aged promotion now,
+  `skills/expand.md` Step 4b steps 2 to 5 for that candidate
+  (the spec → the `loop:veto` issue → `promote.mjs hold` →
+  plan-check), the expand rate limit skipped. The floor, the
+  age gate, `promote_per_week`, `promote_prefer` and owner
+  mode already held inside `due`. Gate, one commit (`plan:
+  depth promotion — auto-promoted <NN> (veto until <date>)`,
+  the veto issue in the body), land.
+- `ask …` (a contributor's checkout): the one `[needs-user-call]
+  promote <title>?` row Step 4b files, deduped by title.
+- `none: …`: nothing.
+
+The sweeps and the depth promotion are housekeeping; the tick
+goes on to the `pre` lanes.
 
 ### Step 0.5 — Pre lanes
 
@@ -464,7 +489,7 @@ skills/critique.md                   # Step 2 (rate-limited)
 skills/next.md                       # Step 3a (/next top)
 skills/ship-data.md                  # Step 3b
 skills/expand.md                     # Step 3c (posture-gated)
-scripts/plan/promote.mjs             # Step 0 veto sweep (Promote: aged)
+scripts/plan/promote.mjs             # Step 0 veto sweep (Promote: aged); due: the depth promotion (promote_queue_depth)
 scripts/plan/locks.mjs               # Step 0 lock sweep: past max_age, a fallback or one ask
 skills/march.lanes.md                # Step 0.5 + 3a': this project's own lanes (scripts/plan/lanes.mjs)
 scripts/plan/refill.mjs              # Step 3a': the stock refill lane runs plan/bearings.md's generators

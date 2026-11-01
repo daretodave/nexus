@@ -371,6 +371,20 @@ strict) turns it off; a missing key reads `owner`.
 - promote_per_week: 1
 - veto_days: 3
 
+Two more shape what gets promoted and when.
+`promote_queue_depth` above 0 has `/march` promote the next
+aged candidate (the same rules, the same veto window) whenever
+fewer specs than that are open, so the next spec arrives while
+one is still in build; 0 promotes only inside `/expand`.
+`promote_prefer: product` ranks an eligible candidate tagged
+`- kind: product` (something a user sees or uses) above any
+`guard` (checks, gates, loop hygiene), and has `/expand` file
+at least one product candidate a pass; `none` ranks by score
+alone.
+
+- promote_queue_depth: 0
+- promote_prefer: none
+
 Pending stays live (`skills/expand.md` Steps 2 and 4c): a
 signal that re-evidences a waiting candidate raises its score
 (+0.5 each independent one, at most +2), and past
@@ -420,9 +434,9 @@ turns it off; a missing line reads `off`:
 - loop: on
 
 Field research (`scripts/generators/research.mjs`,
-`nexus/concepts/generators.md`): under `Research: monthly` or
-`weekly` (the improvement dial sets it; a `Research:` line
-here overrides), `/march` searches the web for these topics, a
+`nexus/concepts/generators.md`): under `Research: monthly`,
+`weekly` or `<n>d` (every n days; the improvement dial sets
+it, and a `Research:` line here overrides), `/march` searches the web for these topics, a
 few phrases split by `;`, at most 8 pages a run, and files at
 most 3 `field` candidates that describe a pattern, never a
 product, with no URL. No topics, no research.
@@ -466,10 +480,11 @@ each, `- <name> · <cadence> · target <n> · cap <n>/wk`, its
 script at `scripts/generators/<name>.mjs`. Cadence is `tick`,
 `daily`, `weekly` or `<n>d`; the queue fills until `target` of
 its rows are Pending, at most `cap` a week. None listed means
-refill is a no-op. The kit ships three:
+refill is a no-op. The kit ships four:
 
 <!--
 - issue-age · daily · target 3 · cap 5/wk
+- mirror-orphan · daily · target 3 · cap 5/wk
 - stale-candidate · weekly · target 2 · cap 2/wk
 - motion · daily · target 1 · cap 1/wk
 -->

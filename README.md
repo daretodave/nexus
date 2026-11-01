@@ -572,6 +572,7 @@ nexus/
 │   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going, the Step 1.5 SLA, aged user rows, a landed fix told and closed, the digest's Support line and needs-user escalation (twin)
 │   ├── plan/improve.mjs               # the improvement dial: Improve: sets every expansion knob's default, an override line wins for its knob; each knob's value and source (twin)
 │   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
+│   ├── generators/mirror-orphan.mjs   # a mirrored finding whose plan row is gone becomes one AUDIT row again (twin)
 │   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
 │   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
 │   ├── generators/research.mjs        # field research: the brief, then the tick's web findings become field candidates (twin)
@@ -779,6 +780,7 @@ nexus/
     │   ├── plan/support.mjs           # Support level (NEXUS_SUPPORT over bearings): route a collaborator's bug to /bug, asap_cap, march keeps going, Step 1.5 plots a queued issue past sla_hours, user rows age +1/12h, tell closes a landed fix's issue, digest prints the Support line and escalates needs-user past escalate_days
     │   ├── plan/improve.mjs           # the improvement dial (Improve: off|gentle|steady|bold, absent gentle): every expansion knob's value and source, dial or override; warns when a repo variable disagrees; --line for /digest
     │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
+    │   ├── generators/mirror-orphan.mjs # generator: a loop mirror (loop:opened + source:*) no queue row names -> one AUDIT row (gh read only)
     │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
     │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
     │   ├── generators/research.mjs    # generator: under the Research knob, the tick's web findings -> at most 3 field candidates, no names, no URLs

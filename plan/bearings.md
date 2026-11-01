@@ -195,6 +195,7 @@ these before `/expand` (`scripts/plan/refill.mjs`,
 `scripts/generators/<name>.mjs`:
 
 - issue-age · daily · target 3 · cap 5/wk
+- mirror-orphan · daily · target 3 · cap 5/wk
 - stale-candidate · weekly · target 2 · cap 2/wk
 - motion · daily · target 1 · cap 1/wk
 - cli-ci-red · daily · target 1 · cap 2/wk

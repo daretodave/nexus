@@ -32,6 +32,7 @@ ELSE                       →  /iterate (picks up what refill filed)
 ## Generators
 
 - issue-age · daily · target 3 · cap 5/wk
+- mirror-orphan · daily · target 3 · cap 5/wk
 - stale-candidate · weekly · target 2 · cap 2/wk
 - motion · daily · target 1 · cap 1/wk
 ```
@@ -61,7 +62,9 @@ node scripts/generators/<name>.mjs [--write] [--limit <n>] [--today YYYY-MM-DD]
 1. **Without `--write` it writes nothing.** A dry run prints
    what it would file.
 2. **Idempotent.** It dedups against `plan/AUDIT.md` and
-   `plan/CANDIDATES.md`, so a second run files nothing new.
+   `plan/CANDIDATES.md` (and any other queue its rows could
+   sit in: `mirror-orphan` reads `plan/CRITIQUE.md` too), so a
+   second run files nothing new.
 3. **Its last line is `filed N` or `clean`, and it exits 0.**
    A non-zero exit means it broke, never that it found work.
    Refill logs a broken generator in the tick's summary and
@@ -78,13 +81,23 @@ node scripts/plan/refill.mjs           # dry run: every generator, nothing writt
 node scripts/plan/refill.mjs --write   # what the refill lane runs
 ```
 
-## The three the kit ships
+## The four the kit ships
 
 | Generator | Files | When |
 |---|---|---|
 | `issue-age` | one AUDIT HIGH row, `[user-issue #N] [HIGH] "<title>" open past the <h>h SLA` | an open issue without `loop:opened` is `sla_hours` old (24 when unset) and no queue row names `#N` |
+| `mirror-orphan` | one AUDIT row, `[mirror #N] [<SEV>] "<title>" — mirrored issue with no plan row`, impact from the severity label (high 8, med 6, low 4), carrying `- issue: #N` | an open issue with `loop:opened` and a `source:*` label (the finding `/iterate` Step 2.5 mirrored) that no row in `plan/AUDIT.md`, `plan/CANDIDATES.md` or `plan/CRITIQUE.md` names `#N`: the tick ended before the row landed, or an audit rewrite dropped it |
 | `stale-candidate` | one `[needs-user-call] promote <title>?` row, the ask `/expand` writes | a Pending candidate scoring `promote_floor`+ is `promote_after_days` old and no promote rule reaches it: `Promote: owner`, or a contributor's checkout |
 | `motion` | one `[loop] [HIGH] motion stalled in <week>` row about the loop itself | `node scripts/pulse.mjs --motion` reads `stalled`: the last full week shipped under `Motion floor` against the 4-week baseline; one row a week at most |
+
+`mirror-orphan` is `issue-age`'s mirror image. `issue-age`
+skips every `loop:opened` issue (the loop's own), and
+`/iterate` reads the plan files, never the issues, so a mirror
+whose row was lost stayed open with nothing to pick it up. A
+spec mirror, a veto issue and a lock ask carry `loop:opened`
+without a `source:*` label, and are never orphans. Its row
+goes back into the queue like any finding; one already fixed
+on main is closed citing the commit.
 
 Where aged promotion does reach a candidate (`Promote: aged`
 in an owner checkout), `stale-candidate` files nothing: the
@@ -124,7 +137,8 @@ project's own audits. A script cannot search the web, so the
 run has two halves: the script decides and files, and the tick
 does the searching in between. It is not listed under
 `## Generators`. The `Research:` knob gates it (`off | monthly
-| weekly`; the [improvement dial](../customization/improvement-dial.md) sets it,
+| weekly | <n>d`, the last every n days: `3d` runs about twice
+a week; the [improvement dial](../customization/improvement-dial.md) sets it,
 and a `Research:` line in bearings overrides), and one bearings
 line feeds it:
 
@@ -136,7 +150,8 @@ line feeds it:
 
 1. `node scripts/generators/research.mjs` prints the brief:
    `due` or `not due` (monthly: 30 days since the `> Last
-   field research:` line in `plan/CANDIDATES.md`, weekly: 7),
+   field research:` line in `plan/CANDIDATES.md`, weekly: 7,
+   `<n>d`: n),
    the topics, the budget and the Pending titles. `not due`
    ends the step.
 2. The tick searches each topic, newest first, and opens at
