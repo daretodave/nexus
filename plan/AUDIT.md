@@ -19,6 +19,32 @@
   the #67/#54 precedent if the gap doesn't repeat. No code
   change: the cron already fires off the hour (`17 * * * *`).
 
+### [B, 5.6] skills/next/build.md's builder-brief checklist never tells the lead to pass the Cloud-Run trailer to a delegated builder
+- category: completeness
+- impact: 7, ease: 8
+- evidence: this tick (2026-11-05, cloud run 42112496090)
+  delegated chunk 39.8 to a builder subagent per
+  `skills/next/build.md` §2's checklist (Where/What/How/Limits/
+  Return). The brief named `skills/ship-a-chunk.md` for "How"
+  but never stated the literal `Cloud-Run: <run-url>` trailer
+  line the carve-out (`agents.md` rule 2, `.github/
+  CLOUD_LOOP.md`) requires on every commit this tick ships —
+  the builder has no access to the run URL unless the lead's
+  brief states it. Result: all three of the builder's commits
+  (`b5c7f1b`, `ddc0663`, `ff29fb8`) plus the lead's own `plan:
+  close 39.8` and `plan: settle 39.8` landed on main
+  (`c6640c0..4d75bed`) with no trailer, undercounting this
+  tick's shipped work against the ceiling. Unfixable after the
+  fact: the commits are already on `origin/main` and rewriting
+  them needs a force-push, forbidden outright. Earlier
+  precedent commits (`11bca75`, `6b02306`, chunk 39.9) do carry
+  the trailer, so some past lead manually added the instruction
+  despite the checklist's silence — this chunk's lead didn't.
+- next: add a 6th bullet to `skills/next/build.md` §2's
+  checklist: in a cloud tick (CI/GITHUB_ACTIONS set), the brief
+  states the exact `Cloud-Run: <run-url>` line and tells the
+  builder to append it (blank line first) to every commit.
+
 ### [B, 5.6] README.md's "What you get" section has zero prose entry point for the secrets vault
 - category: completeness
 - impact: 7, ease: 8
