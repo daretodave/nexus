@@ -257,3 +257,4 @@ still pending at the move and live on as specs.
 - 2026-11-05 · 39.8 · templates/agents.md + bearings.md now document DEPLOY_PROVIDER=none · b5c7f1b5..ff29fb89
 - 2026-11-05 · 39.13 · The placeholder gate reads plan/pending through the settled view · f1b70e16..f1b70e16
 - 2026-11-05 · 39.11 · templates/README names each test's gate cost; templates' actions bumped to v5 · 050f6b6d..71321492
+- 2026-11-05 · 39.14 · A merged loop PR's nexus/<run id> branch is deleted · dce403dc..dce403dc

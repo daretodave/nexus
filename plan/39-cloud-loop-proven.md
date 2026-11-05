@@ -46,7 +46,6 @@ would. The chunks below fix them.
 
 ## Acceptance
 
-- **A15** A merged loop PR's `nexus/<run>` branch is deleted (pr-flow, or the adoption sets the repository's delete-on-merge).
 - **A16** Adopting a repo with no GitHub remote yet works literally: new-project.md creates or confirms the remote before adopt.md asks owner or contributor, and adopt.md's recommendation falls back to owner when `gh repo view` finds no remote.
 
 ## Open questions
@@ -54,8 +53,7 @@ would. The chunks below fix them.
 (None.)
 
 ## Chunks
-Measure: 2 open · 14 closed · next A17
+Measure: 1 open · 15 closed · next A17
 
-- [ ] **39.14** Merged loop branches are deleted · S · closes A15 · needs —
 - [ ] **39.15** Adoption works before a GitHub remote exists · S · closes A16 · needs —
   - From critique pass 28 (2026-10-22): `gh repo view --json viewerPermission` exits 1 with "no git remotes found" in a `git init`-only repo, so adopt.md's ask-list item (e) has no recommendation.
