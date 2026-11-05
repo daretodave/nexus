@@ -467,12 +467,21 @@ const RETIRED_PLACEHOLDERS = new Map([
 ])
 const RETIRED_PLACEHOLDER_HOME = 'playbooks/upgrade.md'
 
-function legPlaceholders(files) {
+async function legPlaceholders(files) {
+  const { settledView } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/settled.mjs')).href)
+  const { PENDING_DIR } = await import(pathToFileURL(path.join(ROOT, 'templates/scripts/plan/pending.mjs')).href)
+  const view = settledView(ROOT)
   const failures = []
   let seen = 0
   const tokenRe = /<[A-Z][A-Z0-9_]*(?: [A-Z][A-Z0-9_]*)*>/g
   for (const file of files) {
-    const lines = read(file).split(/\r?\n/)
+    // Pending files are instructions for settle to apply, not document
+    // content yet — their raw `~~~ old` quotes can hold an already-broken
+    // token on purpose (the fix is the `~~~ new` block). Read every other
+    // file through the settled view, the same merged content legChunks
+    // already checks, so a pending Edit/Add is judged on what it becomes.
+    if (file.startsWith(`${PENDING_DIR}/`) && path.basename(file) !== 'README.md') continue
+    const lines = (view.read(file) ?? read(file)).split(/\r?\n/)
     lines.forEach((line, i) => {
       let m
       while ((m = tokenRe.exec(line)) !== null) {
