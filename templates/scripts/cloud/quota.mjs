@@ -178,15 +178,19 @@ export function decide({ cache, pause, kind, max, now }) {
   if (cache?.status === 'rejected' && resets && t < Date.parse(resets)) {
     return { skip: true, reason: `the last run hit the weekly quota; it resets ${resets}`, close };
   }
-  const u = typeof cache?.utilization === 'number' ? cache.utilization : null;
-  const fresh = !(cache?.status === 'rejected' && resets && t >= Date.parse(resets));
+  // A reading from a window that has since reset says nothing about this one, whatever its status. Skipped runs
+  // never reach the model, so they never refresh the cache: honouring a stale reading would hold the loop shut
+  // for good (2026-10-26..11-05, three loops parked on allowed_warning readings whose resets had long passed).
+  const fresh = !(resets && t >= Date.parse(resets));
+  const u = fresh && typeof cache?.utilization === 'number' ? cache.utilization : null;
   if (fresh && u !== null && u >= HARD_MAX) {
     return { skip: true, reason: `seven_day utilization ${u} is at or above the hard ceiling ${HARD_MAX} (every run, a ${kind} one included)`, close };
   }
   if (fresh && max !== null && u !== null && (kind === 'scheduled' || kind === 'chained') && u >= max) {
     return { skip: true, reason: `seven_day utilization ${u} is at or above NEXUS_QUOTA_MAX ${max} (a ${kind} run)`, close };
   }
-  return { skip: false, reason: u === null ? 'no cached reading (the gate fails open)' : `seven_day utilization ${u} under the cap`, close };
+  const why = u !== null ? `seven_day utilization ${u} under the cap` : cache && !fresh ? `the cached reading's window reset at ${resets} (stale; the gate fails open)` : 'no cached reading (the gate fails open)';
+  return { skip: false, reason: why, close };
 }
 
 // ---- the dispatch ceiling -------------------------------------------------------------------------------------

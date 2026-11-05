@@ -175,6 +175,16 @@ describe('the gate decides', () => {
     assert.equal(decide({ cache: rejected, pause: null, kind: 'scheduled', max: 0.9, now: new Date('2026-10-20T00:00:00Z') }).skip, false);
   });
 
+  it('a warning reading whose window has reset no longer counts: the cap and the hard ceiling both let the run go', () => {
+    const after = new Date(Date.parse(WARNING_AT) + 1000);
+    for (const utilization of [0.83, 0.99]) {
+      const cache = { utilization, status: 'allowed_warning', resetsAt: WARNING_AT };
+      const d = decide({ cache, pause: null, kind: 'scheduled', max: 0.8, now: after });
+      assert.equal(d.skip, false, `stale ${utilization}`);
+      assert.match(d.reason, /stale/);
+    }
+  });
+
   it('fails open on no cache', () => {
     assert.equal(decide({ cache: null, pause: null, kind: 'scheduled', max: 0.9, now }).skip, false);
   });
