@@ -188,27 +188,6 @@
 - estimated phases: 1
 - conflicts: none — opens with "skip unless polyrepo/workspace".
 
-### [ ] [score 8.3] README above-the-fold conversion pass
-- proposed: 2026-07-03
-- source signals: conversion happens in the first screenful;
-  today the pitch is stated twice, the paste is 60 lines, and
-  the workspace shape has no front door. Full restructure
-  outline captured 2026-07-03 (ideation session).
-- rationale: hook -> proof -> qualify -> convert -> deepen ->
-  trust -> rules; target ~350 lines from ~690. The march.yml
-  badge whose green is produced by the loop it sells is proof
-  no competitor can hand-copy.
-- proposed scope: README-only editing session: kill the
-  blockquote echo, merge the three qualification sections into
-  one gate above the doors, collapse the two TL;DRs + mermaid
-  into a three-door section, replace eight playbook blurbs with
-  a router table (you have -> do this -> time), ouroboros proof
-  strip up top, date-stamped adoption-receipt diffstat in a
-  details block. Repoint the verify tree leg in the same commit.
-- estimated phases: 1
-- conflicts: depends on prompts/ landing first (the doors paste
-  five lines, not sixty).
-
 ### [ ] [score 8.2] Versioned releases + plan/nexus.lock + upgrade story
 - proposed: 2026-07-03
 - source signals: adopters copy from a moving main and can never
@@ -1315,6 +1294,28 @@
 ## Promoted
 
 (moves to the build plan via /oversight)
+
+### [promoted 2026-11-05 → spec 60] [score 8.3] README above-the-fold conversion pass
+- proposed: 2026-07-03
+- source signals: conversion happens in the first screenful;
+  today the pitch is stated twice, the paste is 60 lines, and
+  the workspace shape has no front door. Full restructure
+  outline captured 2026-07-03 (ideation session).
+- rationale: hook -> proof -> qualify -> convert -> deepen ->
+  trust -> rules; target ~350 lines from ~690. The march.yml
+  badge whose green is produced by the loop it sells is proof
+  no competitor can hand-copy.
+- proposed scope: README-only editing session: kill the
+  blockquote echo, merge the three qualification sections into
+  one gate above the doors, collapse the two TL;DRs + mermaid
+  into a three-door section, replace eight playbook blurbs with
+  a router table (you have -> do this -> time), ouroboros proof
+  strip up top, date-stamped adoption-receipt diffstat in a
+  details block. Repoint the verify tree leg in the same commit.
+- estimated phases: 1
+- conflicts: depends on prompts/ landing first (the doors paste
+  five lines, not sixty) — shipped, phase 21 (`ad8ae3c`).
+- promoted: 2026-11-05, auto (pass 23), veto #94
 
 > 2026-08-23 (/oversight): four standing candidates promoted —
 > step-4 rewrite (9.0 → phase 19), cloud sync-agents rule
