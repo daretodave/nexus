@@ -71,7 +71,7 @@ A few new files relative to the standard nexus overlay:
 ├── workflows/
 │   ├── march.yml          # the cron workflow (owner job, or PR-mode jobs)
 │   ├── nudge.yml          # the event tick: a collaborator's bug starts a tick (off until NEXUS_SUPPORT)
-│   ├── pr-flow.yml        # PR mode: a closed PR's claims leave the claims branch
+│   ├── pr-flow.yml        # PR mode: a closed PR's claims leave the claims branch; a merged loop PR's branch is deleted
 │   └── pr-resolve.yml     # PR mode: main merged into conflicted PRs
 ├── actions/setup/action.yml  # the project's toolchain, shared by every tick job
 └── CLOUD_LOOP.md          # operator's guide (lives in repo)
