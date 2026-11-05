@@ -1,7 +1,7 @@
 # Kit audit
 
-> Last pass: 2026-10-25
-> Pass count: 124
+> Last pass: 2026-11-05
+> Pass count: 125
 > Bias: none
 
 ## Pending
@@ -30,6 +30,41 @@
   `customization/secrets.md`, or fold a one-line mention into
   the `/bootstrap` row (which already says "propagating
   secrets").
+
+### [A, 3.6] plan/bearings.md's locked Stack table still says "Node ≥18", three ticks after the floor moved to 20+
+- category: doc-drift
+- impact: 4, ease: 9
+- evidence: `plan/bearings.md:31` — `| Scripts | Node ≥18, zero
+  dependencies, ESM `.mjs` | ... |` — in the "Stack (locked)"
+  table, which the file's own header calls "law."
+  `package.json:21` reads `"node": ">=20"`;
+  `.github/workflows/march.yml`/`night.yml` pin node-version
+  20/22/24. Three prior AUDIT Done rows (script headers,
+  package.json, playbooks) already reconciled every other
+  "Node ≥18" mention to 20+ — this table cell was never swept
+  because none of those fixes grepped `plan/bearings.md`.
+  Repo-wide grep confirms it's the only remaining stale
+  mention.
+- next: change `plan/bearings.md:31`'s "Node ≥18" to "Node
+  ≥20".
+
+### [C, 2.4] identity/footguns.md:10 links to a README.md anchor that doesn't exist in its target
+- category: link + tree hygiene
+- impact: 3, ease: 8
+- evidence: `identity/footguns.md:10` carries
+  `[README.md](README.md#footguns-the-ladder)`, resolving to
+  `identity/README.md` — which has one heading and no
+  `## Footguns: the ladder` section; the line was copied
+  verbatim from `templates/identity/footguns.md:10`, whose own
+  `templates/identity/README.md:49` does carry a matching
+  heading. nexus's self-hosted `identity/README.md`
+  deliberately condensed that content into a table row
+  instead, orphaning the anchor. The verify gate's `links` leg
+  doesn't catch this (`scripts/verify.mjs:231/233` strips any
+  `#anchor` suffix before checking file existence).
+- next: either restore a `## Footguns: the ladder` heading in
+  `identity/README.md`, or drop the `#footguns-the-ladder`
+  fragment from `identity/footguns.md:10`'s link.
 
 ### [E, 2.1] bash-only syntax ($(...), heredocs, && chaining) survives in skills/ and templates/skills/ outside 52.3's scope
 - category: adopter friction

@@ -1251,6 +1251,67 @@
 - estimated chunks: 1
 - conflicts: none
 
+### [ ] [score 4.8] heartbeat's cadence check counts a quota-gate-skipped tick as a successful run, so a stuck gate stays invisible
+- proposed: 2026-11-05 (digest)
+- kind: guard
+- source signals: `plan/DIGEST.md` had not been rewritten since
+  2026-10-25, 11 days of silence, yet `gh run list --workflow
+  night` shows every intervening run (2026-10-26 through
+  2026-11-04, 10 ticks) concluding `success`. `gh run view
+  41883701561 --json jobs` (2026-11-04's tick) shows why: "Run
+  /digest (night shift)" itself reports `skipped`, but every
+  other step (including the final "Complete job") reports
+  `success`, so the workflow's own overall conclusion is
+  `success` with zero real work done underneath it. Root cause,
+  fixed today in `cc63b38` (this window, see `While you were
+  out`): the quota gate (`templates/scripts/cloud/quota.mjs
+  decide()`) held a cached `allowed_warning` reading whose
+  `resetsAt` had long passed, and a skipped tick never reaches
+  the model to refresh that cache — a self-sustaining skip loop
+  only today's fix broke. `.github/workflows/heartbeat.yml`'s
+  `check_cadence()` (lines 159-194) is the gate built
+  specifically to alarm on exactly this shape of failure ("No
+  successful $wf tick in Nh"), but it measures `gh run list
+  --workflow "$wf" --status success -L 1 --json updatedAt` — the
+  *workflow's* overall conclusion, which a quota-gate skip never
+  flips to failure. The timer reset every single day for 11
+  days straight while the alarm it feeds stayed cold. The same
+  `--status success` filter backs march's own `check_cadence`
+  call and the realized-cadence check two steps down, so march
+  carries the identical blind spot if its own quota gate ever
+  gets stuck the same way (observed only on night this time —
+  march's ticks kept running through the window per `gh run
+  list --workflow march`).
+- rationale: this is the loop's own watchdog failing silently
+  at the one job it exists to do — a false "success" signal is
+  worse than no signal, because it actively suppresses the
+  alarm that would otherwise have caught an 11-day production
+  gap in under 2 days (night's own 48h threshold). Today's
+  `cc63b38` fixes the specific staleness bug that caused this
+  one incident, but the detection gap itself is untouched: the
+  next distinct way a scheduled tick's model step gets skipped
+  (a different gate, a future knob) will be just as invisible.
+- proposed scope: `check_cadence()` in
+  `.github/workflows/heartbeat.yml` (+ its
+  `templates/.github/workflows/heartbeat.yml` twin, agents.md
+  rule 7) stops trusting the bare workflow conclusion and
+  instead resolves the newest run's own named model step (`Run
+  /digest (night shift)` for night, the dispatcher step for
+  march) via `gh run view --json jobs`, counting a tick as
+  "successful" only when that step's own conclusion is
+  `success`, not `skipped`. Needs a human call on exactly how to
+  key the step name per workflow without hardcoding something
+  that breaks on a future step rename, and whether to special-
+  case "no cached quota reading yet" so a brand-new adopter
+  repo doesn't alarm on day one. Touches `.github/workflows/*.yml`,
+  so per `agents.md` "Operational secrets" it lands from a
+  local/human session, not a cloud tick.
+- estimated chunks: 1
+- conflicts: none — complements, doesn't overlap, `cc63b38`
+  (the staleness fix already shipped) and the pending "[score
+  7.0] heartbeat's wedged-run canceller" row above (different
+  step, different failure shape).
+
 ## Promoted
 
 (moves to the build plan via /oversight)

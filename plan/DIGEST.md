@@ -1,108 +1,130 @@
-# Digest — 2026-10-25
+# Digest — 2026-11-05
 
 > Written nightly by `/digest` (see `skills/digest.md`).
 > Overwritten whole each pass; history lives in git.
 
 ## Headline
 
-A ~24h marathon: 8 chunks shipped across specs 39/52/55/56/57
-(spec 52 now complete), two `@usenexus/cli` releases (0.5.3,
-0.5.4), three new specs planned (54–59), and aged candidate
-promotion went live (57.1) — while three long-carried
-`[user-issue #35/#40/#49]` audit rows turned out to have been
-closed four days ago and only now got swept to Done.
+Eleven days of silence, explained: `/digest` itself went dark
+2026-10-25 → 2026-11-04 — not failing, just quietly skipped
+every night by a quota gate holding a stale `allowed_warning`
+reading — and only runs again tonight because `cc63b38` (this
+window) taught the gate that a reading past its own
+`resetsAt` is stale, whatever its status. `march` never missed
+a beat through the same window and just moved to an hourly
+cadence (`79980b2`). The detection gap that let 11 days pass
+unnoticed is itself filed below as a candidate.
 
 ## While you were out
 
-Window: since the last digest commit (2026-10-24 14:07 UTC).
-`seven_day utilization: unknown (no cached reading)` — no
-quota cache available to this run; the next scheduled tick
-restores it from its own cache.
+Window: since the last digest commit (2026-10-25). `seven_day
+utilization: 0.89 (allowed_warning, resets 2026-10-26T08:00:00Z)`
+— the last cached reading, itself the stale one `cc63b38` just
+stopped trusting; the next tick that reaches the model refreshes
+it.
 
 | Tick (UTC) | Verb | Outcome |
 |---|---|---|
-| 10-24 16:37 | *(owner, local)* | `@usenexus/cli` 0.5.3 published — oversight questions read plainly, a talk-it-through breakout, the badge counts what the screen counts, a session's branch never double-checked-out. |
-| 10-24 17:26 → 17:34 | march → next | Shipped `52.3` (worktree-cutting skills call `worktree.mjs` in one node call, no bash-only syntax; a new `dualshell` gate leg catches it) — spec 52 complete, archived. Filed `[E, 2.1]`: the new leg's scope deliberately excludes the rest of `skills/`. |
-| 10-24 22:31 | march → next | Shipped `39.9` — package manager is a placeholder end to end, not hardcoded pnpm. |
-| 10-25 07:39 | march → next | Shipped `39.10` — template settings allowlist, `.env.example` sweep note, tick-order fix. |
-| 10-25 12:05 | *(owner, local)* | `@usenexus/cli` 0.5.4 published — `auto` and "Allow everything" stop asking about reads outside the repo; `body-parser` 2.4.0. |
-| 10-25 13:17 → 13:18 | march → next | Shipped `39.12` — settle stops cleanly (not a crash) when a close empties a spec; fixed inline, same tick. |
-| 10-25 13:35 | *(owner, local)* | Planned specs 54–58: support lane, cadence that delivers, the loop browses the GUI, the queue refills itself, one upgrade command. |
-| 10-25 14:18 | *(owner, local)* | Shipped `55.1` — the quota governor: every tick reads `seven_day`, a lockout opens one pause issue, the gate skips the model until reset, heartbeat stays quiet meanwhile. |
-| 10-25 14:23 | *(owner, local)* | Planned spec 59: one improvement dial over every expansion knob, plus a field-research track that never names anyone. |
-| 10-25 14:23 | *(owner, local)* | Shipped `56.1` — the demo answers the tokenless hello, so no demo screen logs a 403. |
-| 10-25 14:25 | *(owner, local)* | Shipped `57.1` — aged promotion lands in Held with a veto issue; `plan/bearings.md` flips `Promote: owner` → `Promote: aged`. |
+| 10-26 → 11-04 (10 ticks) | night → *(quota-gate skip)* | `/digest` never ran — the cached `allowed_warning` reading's reset had passed, and a skipped tick can't refresh its own cache; every run still reported overall `success` (see Needs you). |
+| 10-26 → 11-05 (continuous) | march → next/iterate | Kept running clean throughout the same window (`gh run list --workflow march`: every sampled tick `success`, several a day) — the stuck gate was night-only. |
+| 11-05 13:31 | *(owner, local)* | `cc63b38` — the quota gate now treats any cached reading past its `resetsAt` as stale and fails open, whatever its status; the skip loop that parked night 10-26..11-04 is broken. |
+| 11-05 13:33 | *(owner, local)* | `79980b2` — `march`'s cadence moves to the `sprint` preset: hourly at `:17` (was every 3h), ceiling 30 (was 20), `NEXUS_CHAIN_MAX` override removed so the preset's chain depth 8 stands. |
+| 11-05 18:08 | night → digest | This tick — the first `/digest` to actually reach the model since 2026-10-25. |
 
-`march` ran 20/20 clean through this window and the one before
-it, then was disabled manually at 13:36 UTC — consistent with
-`CLOUD_LOOP.md`'s "pause before driving the local loop"
-guidance; the owner's local session above picked up right
-after. `heartbeat` ran clean throughout (5/5 sampled, no
-failures).
+`heartbeat` ran clean throughout (5/5 sampled, no failures) —
+its own cadence alarm never fired on night's 11-day gap; see
+Needs you for why.
 
 ## Shipped
 
-- **52.3** (spec 52 complete) — worktree-cutting skills call
-  `worktree.mjs` in one node command; the new `dualshell` gate
-  leg flags bash-only syntax in that scope.
-- **39.9** — package manager is a placeholder end to end.
-- **39.10** — template settings allowlist, sweep note, tick
-  order.
-- **39.12** — settle stops cleanly when a close empties a spec.
-- **55.1** — the quota governor (read `seven_day`, pause on
-  lockout, gate the next tick).
-- **56.1** — the demo answers the tokenless hello (no 403).
-- **57.1** — aged promotion lands in Held with a veto issue;
-  nexus's own `Promote` posture is now `aged`.
-- `@usenexus/cli` 0.5.3 and 0.5.4 published.
-- Specs 54–59 planned (support lane, cadence, GUI browsing,
-  queue refill, upgrade command, improvement dial).
+- Nothing by `/digest` itself (it ships nothing, ever). In the
+  window: `cc63b38` (quota-gate staleness fix) and `79980b2`
+  (march → `sprint` cadence), both owner/local, both outside
+  this tick.
+- Audit refreshed this pass (see Queues now): two new Pending
+  rows (`[A, 3.6]`, `[C, 2.4]`), the two pre-existing rows
+  (`[B, 5.6]`, `[E, 2.1]`) re-verified unchanged.
 
 ## Queues now
 
-- **Build plan:** 7 specs, 54 chunks left, 0 held. Next ready:
-  spec 54 (priority 1), `54.1`.
-- **AUDIT:** 2 pending (refreshed this pass — header was
-  2026-10-22, 3 days stale). `[user-issue #35/#40/#49]` were
-  all closed on GitHub 2026-10-21 and moved to Done; only
-  `[B, 5.6]` (README's secrets-vault entry-point gap, top
-  score) and `[E, 2.1]` (bash-only syntax outside 52.3's scope)
-  remain.
-- **CRITIQUE:** 7 pending, last pass 38h ago (pass 30,
-  2026-10-24).
-- **CANDIDATES:** 32 pending (30 >21d), oldest 116d (proposed
-  2026-07-02) — unchanged count and age profile.
-- **Issues:** 0 open.
+- **Build plan:** 1 spec, 5 chunks left, 0 held. Next ready:
+  spec 39 (priority 7), `39.8`.
+- **AUDIT:** 4 pending (refreshed this pass — header was
+  2026-10-25, 11 days stale; fresh A-G sweep delegated to a
+  research agent to protect context, dimension H skipped —
+  no `NEXUS_CLI_GATE`, no `node_modules`/`dist` — dimension I
+  not separately filed, folded into this digest's own Tuning
+  proposals instead). New: `[A, 3.6]` `plan/bearings.md`'s
+  locked Stack table still says "Node ≥18"; `[C, 2.4]`
+  `identity/footguns.md:10`'s `#footguns-the-ladder` anchor
+  doesn't resolve in `identity/README.md`. Unchanged: `[B, 5.6]`
+  (README's secrets-vault entry-point gap, top score), `[E,
+  2.1]` (bash-only syntax outside 52.3's scope).
+- **CRITIQUE:** 6 pending, last pass 13d ago.
+- **CANDIDATES:** 31 pending (30 >21d), oldest 127d (proposed
+  2026-07-02) — one new row filed this pass (see Tuning
+  proposals).
+- **Support:** 0 open user issues · first response none (0
+  opened in 7d) · close none in 7d.
+- **Unreleased CLI fixes:** 1 since `cli-v0.6.5` —
+  `ca3c79f` feat: loop throughput (mirror-orphan generator,
+  depth promotion, product-first pick, Research `<n>d`).
 
 ## Needs you
 
-- Candidate queue silting (30 pending >21d, oldest 116d) still
-  clears both auto-promotion thresholds, but
-  `node scripts/plan/promote.mjs sweep` reports **auto-promoted
-  none** — nothing is in a veto window right now. `57.1`
-  (shipped today) just switched nexus's own posture from
-  `Promote: owner` to `Promote: aged`, so the next `/expand`
-  pass is where a pick actually happens; this digest only
-  reports state, it doesn't promote anything itself.
+- Candidate queue silting (30 pending >21d, oldest 127d) clears
+  both auto-promotion thresholds, but `node
+  scripts/plan/promote.mjs sweep` reports **auto-promoted
+  none** — nothing is in a veto window right now.
+  `Promote: aged` is nexus's own posture, so the next
+  `/expand` pass is where a pick actually happens; this digest
+  only reports state.
+- `motion stalled`: shipped 25 / baseline 153.25 ·
+  2026-W44 against 2026-W40..2026-W43 (1 so far in 2026-W45) —
+  under the 76.63 floor. Partly explained by the same window
+  this digest just diagnosed: `march` kept shipping through
+  it, but the loop was carrying an undiagnosed quota-gate skip
+  on its sibling workflow; worth re-checking after a clean full
+  week on the new `sprint` cadence before tuning further.
 - No `triage:needs-user` issues, no `[needs-user-call]` rows,
   no secrets overdue for rotation (`secrets.mjs audit`: 0
   events).
-- Durable rows `[user-issue #35/#40/#49]` are resolved and
-  archived to AUDIT.md's Done section this pass (see Queues
-  now) — nothing left to act on there.
+- **New finding, not yet actioned:** `heartbeat.yml`'s cadence
+  alarm measures a workflow's overall run conclusion, which a
+  quota-gate skip never flips to failure — it reported
+  `success` all 10 days night sat dark, so the alarm built
+  specifically to catch this never fired. Filed as a
+  `plan/CANDIDATES.md` tuning proposal (score 4.8) rather than
+  edited directly, per this skill's meta-loop rail; `/oversight`
+  decides.
 
 ## Today's intent
 
-Next ready chunk for the dispatcher: spec 54's `54.1` (issue
-and page text is data; lint scans prompt inputs, S). Audit's
-top finding once no chunk is ready: `[B, 5.6]` (README's
-secrets-vault entry-point gap).
+Next ready chunk for the dispatcher: spec 39's `39.8` (a
+no-deploy-host path in the templates, S). Audit's top finding
+once no chunk is ready: `[B, 5.6]` (README's secrets-vault
+entry-point gap).
 
 ## Tuning proposals
 
-None this pass. Every sampled tick ran clean (march 20/20,
-heartbeat 5/5) across an unusually productive window; no
-ceiling skips, no gate mistunes, no starved queue beyond the
-already-known candidate silt (above, now being addressed by
-today's `Promote: aged` switch rather than a fresh gate
-tuning).
+One: **heartbeat's cadence check counts a quota-gate-skipped
+tick as a successful run** (`plan/CANDIDATES.md`, score 4.8,
+proposed 2026-11-05). `check_cadence()`
+(`.github/workflows/heartbeat.yml:159-194`) alarms on "no
+successful tick in Nh" by reading `gh run list --workflow
+"$wf" --status success` — but a quota-gate skip leaves every
+step after the gate `skipped`, not `failed`, so the workflow's
+own conclusion still reads `success` and the alarm's timer
+keeps resetting even when zero real work happens underneath
+it. That's exactly how night's 11-day gap (`cc63b38`'s root
+cause) went unreported: the one watchdog built for this never
+tripped. March's own cadence check shares the same `--status
+success` filter, so it carries the identical blind spot,
+untested only because march's ticks never actually stalled
+this window. Proposal (not applied): key `check_cadence()` off
+the newest run's own named model step via `gh run view --json
+jobs`, not the bare workflow conclusion. Needs a human call on
+how to name the step per workflow without hardcoding something
+a future rename breaks, and whether a brand-new adopter repo
+(no cached quota reading yet) needs a special case. Never
+edited directly — proposal only; `/oversight` promotes.
