@@ -188,26 +188,6 @@
 - estimated phases: 1
 - conflicts: none — opens with "skip unless polyrepo/workspace".
 
-### [ ] [score 8.2] Versioned releases + plan/nexus.lock + upgrade story
-- proposed: 2026-07-03
-- source signals: adopters copy from a moving main and can never
-  diff what changed; every packaging doorway needs something
-  stable to pin against.
-- rationale: "copy once, drift forever" becomes "pin, then
-  upgrade deliberately" — dependency semantics with nothing but
-  git tags and one JSON lock (kitVersion, kitCommit, per-file
-  hashAtCopy). Three-way merge separates "stale, cleanly
-  bumped" from "customized, needs eyes".
-- proposed scope: KIT_VERSION + CHANGELOG.md keyed by template
-  path; `scripts/kit-manifest.mjs` (hermetic sha256 walk);
-  lock-writing step in prompts/adopt.md; `playbooks/upgrade.md`
-  (git merge-file three-way; [needs-user-call] AUDIT rows for
-  conflicted files; pre-lock fallback via re-hash against
-  historical tags); verify legs for version/CHANGELOG sync.
-- estimated phases: 2
-- conflicts: prompts/ should land first (the lock step lives
-  there); permanent CHANGELOG discipline cost — worth it.
-
 ### [ ] [score 7.9] Handshake runbook profile for setup/
 - proposed: 2026-07-03
 - source signals: a sibling adopter's runbooks follow a proven handshake
@@ -1316,6 +1296,32 @@
 - conflicts: depends on prompts/ landing first (the doors paste
   five lines, not sixty) — shipped, phase 21 (`ad8ae3c`).
 - promoted: 2026-11-05, auto (pass 23), veto #94
+
+### [promoted 2026-11-05 → spec 61] [score 8.2] Versioned releases + plan/nexus.lock + upgrade story
+- proposed: 2026-07-03
+- source signals: adopters copy from a moving main and can never
+  diff what changed; every packaging doorway needs something
+  stable to pin against.
+- rationale: "copy once, drift forever" becomes "pin, then
+  upgrade deliberately" — dependency semantics with nothing but
+  git tags and one JSON lock (kitVersion, kitCommit, per-file
+  hashAtCopy). Three-way merge separates "stale, cleanly
+  bumped" from "customized, needs eyes".
+- proposed scope: KIT_VERSION + CHANGELOG.md keyed by template
+  path; `scripts/kit-manifest.mjs` (hermetic sha256 walk);
+  lock-writing step in prompts/adopt.md; `playbooks/upgrade.md`
+  (git merge-file three-way; [needs-user-call] AUDIT rows for
+  conflicted files; pre-lock fallback via re-hash against
+  historical tags); verify legs for version/CHANGELOG sync.
+  Narrowed at promotion: `plan/nexus.lock`, the `v1.0.0`/
+  `v2.0.0` tags and `packages/cli/server/sync.mjs`'s three-way
+  merge already shipped most of this; spec 61 scopes to the one
+  gap with no shipped equivalent, a `CHANGELOG.md` keyed by
+  template path.
+- estimated phases: 2
+- conflicts: prompts/ should land first (the lock step lives
+  there); permanent CHANGELOG discipline cost — worth it.
+- promoted: 2026-11-05, auto (pass 23), veto #95
 
 > 2026-08-23 (/oversight): four standing candidates promoted —
 > step-4 rewrite (9.0 → phase 19), cloud sync-agents rule
