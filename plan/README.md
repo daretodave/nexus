@@ -32,7 +32,7 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 7 | 4 left |
+| 39 | The pull-request cloud loop, proven end to end | [39-cloud-loop-proven.md](39-cloud-loop-proven.md) | planned · priority 7 | 3 left |
 | 60 | README above-the-fold conversion pass | [60-readme-above-the-fold.md](60-readme-above-the-fold.md) | planned | not chunked yet |
 | 61 | Versioned releases + plan/nexus.lock + upgrade story | [61-versioned-releases-upgrade-story.md](61-versioned-releases-upgrade-story.md) | planned | not chunked yet |
 

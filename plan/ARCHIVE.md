@@ -255,3 +255,4 @@ still pending at the move and live on as specs.
 - 2026-10-25 · 55.6 · Probe dispatch latency and hook loading in cloud · 13bbc04..a4b28f9
 - 2026-10-25 · 55 · spec complete: a quota governor gates every tick, a tick that shipped chains the next while work is ready (dispatch starts in seconds, the cron lags hours: D8), five cadence presets set cron, ceiling, chain max and idle backoff from one variable, the heartbeat alarms on realized cadence, crons sit off the hour, the lost-to-background mark catches deferred work, hooks load in cloud, and nexus runs eager · 13bbc04..a4b28f9
 - 2026-11-05 · 39.8 · templates/agents.md + bearings.md now document DEPLOY_PROVIDER=none · b5c7f1b5..ff29fb89
+- 2026-11-05 · 39.13 · The placeholder gate reads plan/pending through the settled view · f1b70e16..f1b70e16

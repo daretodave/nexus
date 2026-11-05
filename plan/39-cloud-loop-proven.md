@@ -47,7 +47,6 @@ would. The chunks below fix them.
 ## Acceptance
 
 - **A12** templates/README says which kit script tests belong in an adopter's gate and what they cost, and the workflows use the Node 24 action majors.
-- **A14** The gate's placeholder check reads pending files as settled, as the chunks check does, so a pending Add with an unknown placeholder fails before it settles.
 - **A15** A merged loop PR's `nexus/<run>` branch is deleted (pr-flow, or the adoption sets the repository's delete-on-merge).
 - **A16** Adopting a repo with no GitHub remote yet works literally: new-project.md creates or confirms the remote before adopt.md asks owner or contributor, and adopt.md's recommendation falls back to owner when `gh repo view` finds no remote.
 
@@ -56,11 +55,10 @@ would. The chunks below fix them.
 (None.)
 
 ## Chunks
-Measure: 4 open · 12 closed · next A17
+Measure: 3 open · 13 closed · next A17
 
 - [ ] **39.11** The adopter gate's cost, and actions on Node 24 majors · S · closes A12 · needs —
   - checkout and setup-node v4 warn that they target the deprecated Node 20.
-- [ ] **39.13** The placeholder check reads the settled view · S · closes A14 · needs —
 - [ ] **39.14** Merged loop branches are deleted · S · closes A15 · needs —
 - [ ] **39.15** Adoption works before a GitHub remote exists · S · closes A16 · needs —
   - From critique pass 28 (2026-10-22): `gh repo view --json viewerPermission` exits 1 with "no git remotes found" in a `git init`-only repo, so adopt.md's ask-list item (e) has no recommendation.
