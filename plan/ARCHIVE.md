@@ -258,3 +258,5 @@ still pending at the move and live on as specs.
 - 2026-11-05 · 39.13 · The placeholder gate reads plan/pending through the settled view · f1b70e16..f1b70e16
 - 2026-11-05 · 39.11 · templates/README names each test's gate cost; templates' actions bumped to v5 · 050f6b6d..71321492
 - 2026-11-05 · 39.14 · A merged loop PR's nexus/<run id> branch is deleted · dce403dc..dce403dc
+- 2026-11-05 · 39.15 · Adoption into a remote-less repo now has an owner default · 4eae1dc4..4eae1dc4
+- 2026-11-05 · 39 · spec complete: a real pull-request-mode tick ran end to end in a scratch adopter repo from pick to release, bootstrap installs either loop mode from the manifest with `pr-resolve.yml` following `<DEFAULT_BRANCH>`, nexus's own repo releases a closed contributor PR's claims and deletes its branch, template script tests pass once copied into a fresh adopter, and adoption now works before a GitHub remote exists · d9c843bd..4eae1dc4
