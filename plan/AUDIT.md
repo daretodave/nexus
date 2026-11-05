@@ -6,6 +6,35 @@
 
 ## Pending
 
+### [user-issue #93] [HIGH] heartbeat: no successful march tick in 13h (schedule throttling, not a code defect)
+- category: external-issue
+- evidence: opened by the workflow token (`app/github-actions`)
+  at 2026-11-05T19:55:45Z. `gh run list --workflow march -L 15`
+  shows every recent run completed `success` — the gap was
+  between the 06:46 and 21:06 schedule firings (GitHub dropped
+  the intermediate hourly slots), not a failing tick or expired
+  auth. Same shape as #67 (closed non-reproducible,
+  `plan/AUDIT.md`'s own archive below).
+- next: watch for recurrence over the next few ticks; close per
+  the #67/#54 precedent if the gap doesn't repeat. No code
+  change: the cron already fires off the hour (`17 * * * *`).
+
+### [user-issue #91] [HIGH] heartbeat: march realized cadence below 40% (GitHub scheduler throttling, not a cron misconfiguration)
+- category: external-issue
+- evidence: opened 2026-10-26; body reports 2 of 9 promised
+  hourly slots ran in 26h.
+  `.github/workflows/march.yml`'s cron is `17 * * * *` — already
+  off minute :00 (`node scripts/cadence-twins.mjs`'s own
+  offTheHour check passes). `gh run list --workflow march
+  --event schedule -L 20` shows mostly-regular hourly firings
+  since, consistent with transient GitHub-side scheduler
+  throttling under load (the exact failure mode spec 55 built
+  this alarm to surface), not a misconfigured cron.
+- next: watch for recurrence; close if the alarm doesn't
+  reopen. If it keeps tripping, the remaining lever is a slower
+  cadence preset (fewer promised slots for GitHub to drop) — an
+  owner call, not a loop fix.
+
 ### [B, 5.6] README.md's "What you get" section has zero prose entry point for the secrets vault
 - category: completeness
 - impact: 7, ease: 8
