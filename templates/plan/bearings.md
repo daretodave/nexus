@@ -598,6 +598,13 @@ ready, 1 error, 2 timeout, 3 config/auth.
 Implementation: `scripts/deploy-check.mjs`. Provider-specific
 block enabled for <HOSTING_PROVIDER>.
 
+**No deploy host yet** (a library, package, or CLI with nothing
+to deploy)? Set `DEPLOY_PROVIDER=none`: `pnpm deploy:check`
+prints a skip note and exits 0 — no script edits needed. The
+push is the ship; re-wire `<HOSTING_PROVIDER>` the day a real
+deploy target exists. See `nexus/playbooks/ci-providers.md`
+"No deploy yet".
+
 **Red deploy = blocked tick.** Read log, patch root cause,
 push again. Up to 3 same-root-cause iterations; otherwise stop
 per the skill's failure modes.
