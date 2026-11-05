@@ -26,11 +26,12 @@ run-name: march ${{ inputs.verb || 'march' }} ${{ inputs.reason }}
 
 on:
   schedule:
-    # The eager preset (NEXUS_CADENCE=eager; cadence.mjs apply
-    # writes this line): every 3h at :17, off the busy top of the
-    # hour, chaining while work is ready, behind the quota governor
+    # The sprint preset at an hourly cron (NEXUS_CADENCE=sprint;
+    # cadence.mjs apply sprint --cron writes this line): hourly at
+    # :17, off the busy top of the hour, matching the sibling loops,
+    # chaining while work is ready, behind the quota governor
     # (NEXUS_QUOTA_MAX 0.80: nexus yields first). GH cron is UTC.
-    - cron: '17 */3 * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       verb:
@@ -141,7 +142,7 @@ jobs:
           # add a line to plan/ARCHIVE.md? That's the one thing only
           # a chunk close (ship-a-chunk Step 6) does.
           since="$(date -u -d '24 hours ago' '+%Y-%m-%d %H:%M:%S')"
-          ceiling=20
+          ceiling=30
           # A set NEXUS_CADENCE or NEXUS_DAILY_CEILING wins over the literal.
           if [ -n "$CADENCE_CEILING" ]; then ceiling=$CADENCE_CEILING; fi
           budget=0
