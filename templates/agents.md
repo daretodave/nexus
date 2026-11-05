@@ -14,8 +14,9 @@ canonical source.
 
 Shipped work that isn't committed is rolled-back work waiting to
 happen. Shipped work that's committed but not pushed is invisible
-to <HOSTING_PROVIDER> and to future loop ticks. The autonomous
-loop assumes `origin/<DEFAULT_BRANCH>` is the source of truth.
+to <HOSTING_PROVIDER> (where one exists) and to future loop ticks.
+The autonomous loop assumes `origin/<DEFAULT_BRANCH>` is the
+source of truth.
 
 How work lands depends on the checkout, never on the skill
 (`node scripts/claims.mjs whoami` prints which):
@@ -101,6 +102,14 @@ non-zero on `error` / `failed` / timeout.
 Every shipping skill calls it as Step 12 (or equivalent). A red
 deploy is treated identically to a red verify gate: read the log,
 patch, push again. Repeated failures escalate per failure modes.
+
+**No deploy host yet** (a library, package, or CLI with nothing
+to deploy)? Set `DEPLOY_PROVIDER=none` — the push is the ship.
+`pnpm deploy:check` exits 0 with a note instead of polling a
+host that doesn't exist, and skills skip deploy-confirmation
+steps. Re-wire `<HOSTING_PROVIDER>` the day a real deploy target
+ships. See `nexus/playbooks/ci-providers.md` "No deploy yet" for
+the full writeup.
 
 ### 5. No `--no-verify`. No force-push. No destructive resets.
 
