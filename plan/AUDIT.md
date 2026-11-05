@@ -148,6 +148,43 @@
   `SYNTAX_SCOPED_SKILLS` (`scripts/verify.mjs`) to all of `skills/` +
   `templates/skills/` once they're clean.
 
+### [A, 39.11] nexus's own `.github/workflows/*.yml` still pin `actions/checkout@v4` / `actions/setup-node@v4`, now behind the just-bumped `templates/` copies
+- category: doc-drift
+- impact: 5, ease: 6
+- evidence: chunk 39.11 (2026-11-05, this run) bumped every
+  `actions/checkout@v4` and `actions/setup-node@v4` under
+  `templates/.github/workflows/` and `templates/.github/actions/`
+  to `@v5` (GitHub deprecating the Node 20 runtime both majors
+  ran on). Root `.github/workflows/{cli-ci,heartbeat,march,night,
+  nudge,pr-flow,publish,scripts-ci}.yml` still pin `@v4` — left
+  untouched because a cloud tick's token can't push
+  `.github/workflows/*.yml` (`agents.md` "Operational secrets").
+  One pair is tighter than drift: `nudge.yml`'s `workflows` gate
+  leg (`scripts/verify.mjs`'s `nudgeCheck`) requires the root and
+  template copies byte-identical past a path substitution, so its
+  `checkout@v4` had to stay pinned in the template too (reverted
+  mid-chunk; `identity/footguns.md`'s `nudge-twin-version-bump`
+  line) — it can only move to `@v5` together with the root copy.
+- next: a local session bumps every root workflow's
+  `checkout`/`setup-node` to `@v5` (pushing `.github/workflows/`
+  needs a human token), syncing `nudge.yml`'s pair at the same
+  time so the twin check stays green.
+
+### [B, 39.11] `templates/scripts/__tests__/design-render-run.test.mjs` runs in no gate at all
+- category: completeness
+- impact: 6, ease: 7
+- evidence: chunk 39.11's builder (2026-11-05, this run), while
+  tightening `templates/README.md`'s per-test gate-cost notes,
+  found every other `templates/scripts/__tests__/*.test.mjs` file
+  listed in `scripts/verify.mjs`'s `PURE_SUITES` or `GIT_SUITES`
+  (the `scripts` leg) except this one — it only runs if someone
+  invokes it by hand. Its sibling `design-render.test.mjs` (the
+  pure half) is wired; this Chrome-spawning `-run` half is not.
+- next: add it to `GIT_SUITES` (it already self-skips without a
+  local Chrome, matching `ui-walk-run.test.mjs`'s pattern) so the
+  `scripts` leg actually exercises it, or say in a commit why it
+  stays out.
+
 
 ## Done
 
