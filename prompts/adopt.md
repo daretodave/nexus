@@ -73,6 +73,10 @@ Then:
     request); owner (Recommended) when the person owns the
     repo (`gh repo view --json viewerPermission` says ADMIN,
     or the remote's owner is theirs), contributor otherwise.
+    `gh repo view` errors with "no git remotes found" (the
+    playbook's remote step didn't run, or was skipped): still
+    recommend owner — a solo greenfield repo with no remote has
+    no other contributor to be a contributor against.
     Ask them all before your first write, in one batch
     shaped per ../nexus/concepts/asking-well.md (two batches
     if more than four apply, both before the first write).
