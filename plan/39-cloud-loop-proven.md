@@ -46,7 +46,6 @@ would. The chunks below fix them.
 
 ## Acceptance
 
-- **A9** A library with no deploy host adopts cleanly: agents.md rules 1 and 4 and bearings.md have a "no deploy gate" path.
 - **A12** templates/README says which kit script tests belong in an adopter's gate and what they cost, and the workflows use the Node 24 action majors.
 - **A14** The gate's placeholder check reads pending files as settled, as the chunks check does, so a pending Add with an unknown placeholder fails before it settles.
 - **A15** A merged loop PR's `nexus/<run>` branch is deleted (pr-flow, or the adoption sets the repository's delete-on-merge).
@@ -57,9 +56,8 @@ would. The chunks below fix them.
 (None.)
 
 ## Chunks
-Measure: 5 open · 11 closed · next A17
+Measure: 4 open · 12 closed · next A17
 
-- [ ] **39.8** A no-deploy-host path in the templates · S · closes A9 · needs —
 - [ ] **39.11** The adopter gate's cost, and actions on Node 24 majors · S · closes A12 · needs —
   - checkout and setup-node v4 warn that they target the deprecated Node 20.
 - [ ] **39.13** The placeholder check reads the settled view · S · closes A14 · needs —
