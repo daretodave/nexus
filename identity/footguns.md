@@ -17,6 +17,7 @@ merges with git's `union` driver):
 
 - **fake-gh-path** · a Windows path (C:/...) put on PATH in Git Bash splits at its colon, so a fake gh never shadows the real one and a test files a real issue → prepend the POSIX form (/c/...) and run `command -v gh` before any test that stubs it · seen 1× · last 2026-10-21 · open
 - **npm-install-lockfile-drift** · `npm install` in `packages/cli` rewrites `package-lock.json`'s optional-dep `libc` fields on an npm version mismatch → diff `package-lock.json` before committing; revert npm-version-only drift · seen 1× · last 2026-10-24 · open
+- **nudge-twin-version-bump** · bumping an action version in `templates/.github/workflows/nudge.yml` breaks the `workflows` leg's byte-identity twin check against `.github/workflows/nudge.yml`, which a cloud tick's token can't push → bump both copies together from a local session, or leave nudge.yml's action pins alone until then · seen 1× · last 2026-11-05 · open
 ## Watch (seen once: searched before adding a line, not read before building)
 
 ## Guarded (automated: the line says by what)
