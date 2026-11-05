@@ -65,7 +65,7 @@ jobs:
       issues: read
     steps:
       - name: Checkout (the nudge's script and the dial only)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
           sparse-checkout: |
