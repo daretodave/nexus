@@ -42,7 +42,7 @@ iterations; then stop per the skill's failure modes.
 | **AWS Amplify** | AWS access key + secret | Amplify API | `status` | More complex auth; usually wrapped in CLI. |
 | **Azure Static Web Apps** | bearer token | `/staticSites/{name}/builds` | `status` | Enterprise-y. |
 | **Self-hosted (rsync, Docker, k8s)** | varies | varies | varies | Write a custom check; see "Self-hosted" below. |
-| **No provider yet** | n/a | n/a | n/a | Skip the gate; treat as a TODO. See "No deploy yet". |
+| **No provider yet** | n/a | n/a | n/a | Set `DEPLOY_PROVIDER=none`; already built in. See "No deploy yet". |
 
 ---
 
@@ -278,15 +278,22 @@ without published artifacts), the deploy gate doesn't apply.
 
 Two paths:
 
-**A. Skip the gate.** Add to `bearings.md`:
+**A. Set `DEPLOY_PROVIDER=none`.** Already built into
+`deploy-check.mjs` — no script edits needed:
 
-> The project does not yet deploy. `pnpm deploy:check` is a
-> no-op until chunk NN.k (`<deploy-target>`) ships.
+```bash
+# .env
+DEPLOY_PROVIDER=none
+```
 
-Define `pnpm deploy:check` as `echo "no deploy gate yet" && exit 0`.
+`pnpm deploy:check` prints `No deploy gate configured
+(DEPLOY_PROVIDER=none). Skipping.` and exits `0`. The shipping
+skills run it, get success, move on. Add to `bearings.md`:
 
-The shipping skills will run it, get success, move on. Re-wire
-when you ship a deploy target.
+> The project does not yet deploy. `DEPLOY_PROVIDER=none` until
+> chunk NN.k (`<deploy-target>`) ships.
+
+Re-wire to the real provider the day a deploy target exists.
 
 **B. Use a build-only gate.** If your project produces an
 artifact (npm package, Docker image, binary), the "deploy" might
