@@ -19,22 +19,6 @@
   the #67/#54 precedent if the gap doesn't repeat. No code
   change: the cron already fires off the hour (`17 * * * *`).
 
-### [user-issue #91] [HIGH] heartbeat: march realized cadence below 40% (GitHub scheduler throttling, not a cron misconfiguration)
-- category: external-issue
-- evidence: opened 2026-10-26; body reports 2 of 9 promised
-  hourly slots ran in 26h.
-  `.github/workflows/march.yml`'s cron is `17 * * * *` — already
-  off minute :00 (`node scripts/cadence-twins.mjs`'s own
-  offTheHour check passes). `gh run list --workflow march
-  --event schedule -L 20` shows mostly-regular hourly firings
-  since, consistent with transient GitHub-side scheduler
-  throttling under load (the exact failure mode spec 55 built
-  this alarm to surface), not a misconfigured cron.
-- next: watch for recurrence; close if the alarm doesn't
-  reopen. If it keeps tripping, the remaining lever is a slower
-  cadence preset (fewer promised slots for GitHub to drop) — an
-  owner call, not a loop fix.
-
 ### [B, 5.6] README.md's "What you get" section has zero prose entry point for the secrets vault
 - category: completeness
 - impact: 7, ease: 8
@@ -140,6 +124,29 @@
 
 
 ## Done
+
+### [x] [user-issue #91] [HIGH] heartbeat: march realized cadence below 40% — the recommended lever was overtaken by the owner's own same-day change — this commit (closes #91)
+- category: external-issue
+- closed: recurrence was real — `gh run list --workflow march
+  --event schedule -L 20` this tick still shows irregular
+  multi-hour gaps under the cron that was in effect through
+  this morning, so the alarm was not a false positive. But the
+  row's one remaining lever ("the remaining lever is a slower
+  cadence preset … an owner call, not a loop fix") was overtaken
+  same-day by the owner's own `79980b2` ("cloud: march runs the
+  sprint preset hourly — nexus keeps pace with its sibling
+  loops", 2026-11-05 08:33 -0500): `.github/workflows/march.yml`
+  moved to hourly (`17 * * * *`, was every 3h) — the opposite
+  direction, chosen with full knowledge of the throttling
+  tradeoff. Re-opening that question for the owner would just
+  ask them to reverse a call they made hours earlier; the only
+  other lever (another cron edit) is a workflow-file push a
+  cloud tick can't land anyway (`agents.md`'s Operational
+  secrets note). Closing returns #91 to the heartbeat's own
+  dedup gate (`in:title ... open` before it reopens one): a
+  fresh issue fires on its own if the realized cadence stays
+  under 40% under the new hourly schedule, judged on its own
+  evidence instead of this one's stale recommendation.
 
 ### [x] [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand — closed 2026-10-21
 - category: external-issue
