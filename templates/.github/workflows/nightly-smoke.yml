@@ -29,7 +29,7 @@ jobs:
       # so only the alarm step holds one.
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ─────────────────────────────────────────────────────
       # Project-specific install - mirror march.yml's toolchain
@@ -38,7 +38,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
       - name: Set up Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm

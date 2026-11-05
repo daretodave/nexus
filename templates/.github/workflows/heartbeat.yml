@@ -31,7 +31,7 @@ jobs:
     steps:
       # Full history: the motion pulse counts shipped commits over
       # the last five full weeks.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
