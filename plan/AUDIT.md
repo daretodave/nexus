@@ -185,6 +185,23 @@
   `scripts` leg actually exercises it, or say in a commit why it
   stays out.
 
+### [loop] [HIGH] motion stalled in 2026-W44: 25 shipped against a 4-week baseline of 153.25
+- category: loop
+- impact: 8
+- ease: 5
+- evidence: node scripts/pulse.mjs --motion: shipped 25 / baseline 153.25 · 2026-W44 against 2026-W40..2026-W43 (8 so far in 2026-W45); floor 76.63 · stalled (25 is under 50% of the baseline).
+- next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
+- generator: motion · filed 2026-11-06
+
+### [H, 5.6] / @ desktop (fleet-to-tug) — console error: "Failed to load resource: the server responded with a stat..."
+- category: ui
+- impact: 7
+- ease: 8
+- evidence: console error "Failed to load resource: the server responded with a status of 404 (Not Found) (/favicon.ico)", and on 2 more screens; fleet-to-tug--desktop--fleet.png; .scratch/walk/2026-11-06T01-35-51-943Z/walk.json
+- next: packages/cli/src/App.jsx:147: find the cause of the console error there and fix it; any fx cost is made cheaper, never less visible.
+- gate: npm test
+- generator: ui-walk · filed 2026-11-06
+
 
 ## Done
 
