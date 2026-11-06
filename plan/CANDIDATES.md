@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-10-15
-> Pass count: 23
+> Last pass: 2026-11-06
+> Pass count: 24
 > Posture: bold
 > Last field research: 2026-11-06
 
@@ -447,18 +447,6 @@
 - conflicts: beacon must stay opt-in or it reads as phone-home
   telemetry in a kit whose brand is "you own everything".
 
-### [ ] [score 5.5] playbooks/outgrow.md — the split ceremony
-- proposed: 2026-07-03
-- source signals: judged premature — no second real migration to
-  validate the ceremony against yet.
-- rationale: the single-repo -> workspace split will eventually
-  need a numbered, safe ceremony; write it when the first real
-  split happens and can serve as its test case.
-- proposed scope: deferred; the workspace playbook's decision
-  matrix + polyrepo.md cover the ladder's endpoints until then.
-- estimated phases: 1
-- conflicts: none.
-
 ### [ ] [score 6.8] closeloop: thank the humans who file issues
 - proposed: 2026-07-02
 - source signals: a sibling adopter's `.claude/tools/closeloop.mjs`
@@ -472,32 +460,6 @@
 - estimated phases: 1
 - conflicts: email provider becomes an optional external
   service (runbook required).
-
-### [ ] [score 6.1] Critique-household pattern for auth-aware critique
-- proposed: 2026-07-02
-- source signals: a sibling adopter's planned `/visit` seals an
-  anonymous "critique household" so the observer never
-  consents to analytics (no GA4 pollution) — a pattern
-  auth-aware-critique.md doesn't cover.
-- rationale: adds the "observer must not pollute product
-  analytics/data" dimension to the five auth patterns.
-- proposed scope: new section in
-  `customization/auth-aware-critique.md` + env conventions.
-- estimated phases: 1
-- conflicts: none.
-
-### [ ] [score 5.9] Staged hardening for verify legs
-- proposed: 2026-07-02
-- source signals: a sibling adopter's `check.mjs` `*_IS_ERROR` flags —
-  new invariants start as warnings, flip to errors once the
-  corpus drains.
-- rationale: lets adopters (and this repo) add aggressive lint
-  legs without a big-bang cleanup; the flip commit is the
-  celebration.
-- proposed scope: warn-tier support in `scripts/verify.mjs` +
-  a paragraph in verify-gate.md.
-- estimated phases: 1
-- conflicts: none.
 
 ### [promoted 2026-08-23 → phase 20] [score 8.5] Cloud march ticks must not dispatch background/async agents
 - proposed: 2026-07-17 (digest); re-evidenced 2026-08-02
@@ -553,129 +515,6 @@
   exits clean with no commit" -> this root cause) and a note on
   `skills/iterate.md`'s audit-delegation step.
 - estimated phases: 1 (doc/prompt-only, no template API change)
-- conflicts: none.
-
-### [ ] [score 6.5] Mechanically verify the Cloud-Run trailer on cloud ticks
-- proposed: 2026-07-20 (digest); re-evidenced 2026-07-26 (digest),
-  2026-09-05 (digest), 2026-09-25 (iterate, dispatched to expand
-  — no finding scored ≥3.0 this tick)
-- source signals: of the 4 cloud commits shipped in the trailing
-  24h window (2026-07-19 14:31 to 2026-07-20 09:07 UTC — all
-  4 `march` runs green, no failures), 1 — `a74f7b6` ("critique:
-  pass 6 — 4 findings (2 high, 2 med)", from the 2026-07-19
-  20:18 UTC tick) — landed with no `Cloud-Run:` trailer at all,
-  breaking agents.md rule 2's carve-out. The workflow's own
-  ceiling check (`march.yml`'s "Daily commit ceiling check"
-  step) counts cloud volume by `git log --grep='Cloud-Run:'`,
-  so this commit silently doesn't count toward the 8/24h
-  ceiling either — the miss is invisible from both the rule
-  side and the counting side. `scripts/verify.mjs` runs
-  foreground on every tick but has no leg that inspects the
-  commit trailer, since it can't distinguish a cloud commit
-  from a local one at gate time. Second instance found
-  2026-07-26 (digest): `427eb91` ("critique: pass 8 — 2 findings
-  (0 high, 1 med, 1 low)", from the 2026-07-25 20:20 UTC tick)
-  repeats the identical gap — confirmed via
-  `gh run view 30173383094 --log`, whose prompt block quotes the
-  exact trailer text verbatim, yet the shipped commit has no
-  body at all. Both observed misses are `/critique` verb commits
-  specifically (`a74f7b6`, `427eb91`), never an `/iterate` or
-  `/expand` commit in the ~60 cloud ticks sampled by digest
-  passes to date — narrows the likely root cause from "any
-  cloud commit can drop the trailer" to "the critique skill's
-  own commit step doesn't append it," which changes where the
-  eventual fix should look first. Third instance, 2026-09-04:
-  `3f29301` ("critique: pass 14 — 3 findings (0 high, 1 med, 2
-  low)") repeats the gap a third time, still on `/critique` —
-  but this time `/triage` traced the actual mechanism (filed as
-  `plan/AUDIT.md` `[user-issue #53]`): the tick delegated
-  `skills/critique.md` step 3's dry-run walk to a general-purpose
-  sub-agent, which went further than asked and ran steps 6-7
-  itself (append findings, commit, push) using its own prompt —
-  one that never carried the parent tick's cloud-mode trailer
-  text. This sharpens "the critique skill's own commit step
-  doesn't append it" into something more specific: the commit
-  step is fine when the parent tick runs it directly; the gap is
-  delegation-shaped, only surfacing when a sub-agent commits on
-  the parent's behalf. Fourth instance, 2026-09-24 (filed as
-  `plan/AUDIT.md` `[user-issue #63]`): commit `0cdb345`
-  ("critique: pass 20 — 2 findings (0 high, 1 med, 1 low)")
-  repeats the identical delegation-shaped gap — the sub-agent
-  appended to `plan/CRITIQUE.md` and committed + pushed directly
-  despite `skills/critique.md` step 3 already scoping it to
-  steps 3-5 only. Reporter spot-checked the commit's content
-  against its cited evidence and confirmed it's legitimate, so
-  this is purely the same process gap recurring a fourth time,
-  not a content defect. `[user-issue #63]`'s own `next` field
-  proposes the same two angles as `[user-issue #53]` before it:
-  a stronger literal imperative in the delegate prompt, and/or
-  this candidate's mechanical workflow-side check.
-- rationale: the trailer is the sole mechanism the ceiling
-  trusts; a tick that forgets it both violates the standing
-  rule silently and erodes the ceiling's accuracy in the
-  direction that's hardest to notice (undercounting, not
-  overcounting). Three misses now observed, all on the same
-  verb, is an established pattern, not a one-off — and the third
-  instance finally explains why: delegation strips the trailer
-  context, not a missing line in the skill file.
-- proposed scope: a post-agent step in `march.yml` (and its
-  `templates/` mirror) that diffs `HEAD` against the pre-run
-  SHA when the ceiling didn't skip, and — if new commits landed
-  without the trailer on all of them — opens an unlabeled
-  issue naming the offending SHA (the loud-not-silent pattern
-  agents.md rule 6 already prescribes elsewhere). Gate-side
-  enforcement isn't possible (verify.mjs can't tell cloud from
-  local commits), so this has to live in the workflow, not the
-  gate. Complements, rather than duplicates, `[user-issue #53]`'s
-  own proposed fix (narrow `skills/critique.md` step 3 so a
-  delegate only performs the walk and never step 6/7 itself) —
-  that fix closes the specific delegation gap found here; this
-  candidate's mechanical check remains the general safety net
-  for any future way a cloud commit could drop the trailer.
-- estimated phases: 1 (workflow-only, no template API change)
-- conflicts: none.
-
-### [ ] [score 6.3] AUDIT's unwritten "favor the queue" tie-break is starving a cheap, real AUDIT-native row
-- proposed: 2026-07-24 (digest); re-evidenced 2026-09-05 (expand
-  pass 8)
-- source signals: `plan/AUDIT.md`'s `[A/E, 2.7]` row (README's
-  "Files added" checklist undersells `scripts/` — impact 3,
-  ease 9, one of the cheapest fixes in the file) first appeared
-  around cloud tick 2026-07-17 and has since been cited as tied
-  or narrowly outscored by a `plan/CRITIQUE.md` row in at least
-  ten separate tick log-lines through 2026-07-24, every single
-  time it was in contention. The tie-break that keeps beating it
-  ("favor the queue") is a real, consistently-applied
-  convention, but it exists only as repeated log narrative in
-  `plan/AUDIT.md` — it was never written into `skills/iterate.md`
-  §3 as an actual rule, so nobody can inspect or challenge it as
-  policy, and it has no aging counter-pressure. Signal A (fresh
-  instance), 2026-09-05: two more AUDIT-native rows are now
-  living examples of the same starvation, older than the
-  original evidence — `[C, 2.4]` (`triage.md`'s dead
-  `ship-data.md §6` citation) first appeared 2026-08-02 and
-  `[A, 2.4]` (`templates/claude/hooks/guard.mjs` drifted from
-  the kit's own hardening) first appeared ~2026-08-24; both have
-  been reproduced unchanged and left Pending across at least
-  seven intervening ticks (2026-08-25 through 2026-09-04) each
-  time a `plan/CRITIQUE.md` row was in contention, per
-  `plan/AUDIT.md`'s own tie-break log lines — 34 and 12 days
-  unshipped respectively, longer than the original `[A/E, 2.7]`
-  row ever waited before this candidate was first filed.
-- rationale: a one-line, ease-9 fix sitting seven-plus days
-  unshipped purely because of an unwritten scoring convention is
-  exactly the "starved queue" pattern `skills/digest.md` §3 step 4
-  names as a tuning trigger — not because the fix is hard, risky, or
-  actually low-value. That two independent rows have now each
-  waited over a week (one over a month) confirms this isn't a
-  one-off tie but a standing structural bias in favor of the
-  CRITIQUE queue.
-- proposed scope: write the "favor the queue on ties" convention
-  explicitly into `skills/iterate.md` §3 as an inspectable rule,
-  paired with a small aging nudge (e.g. `+0.1` per tick an AUDIT
-  row is passed over on a tie, capped) so a persistently-tied
-  cheap row eventually wins instead of losing indefinitely.
-- estimated phases: 1 (doc/rule-only, no template API change)
 - conflicts: none.
 
 ### [ ] [score 6.5] Auto mode: Claude Code's new default permission model isn't in the kit's playbooks
@@ -1283,6 +1122,51 @@
 - conflicts: none known.
 - generator: research · filed 2026-11-06
 
+### [ ] [score 7.5] playbooks/new-project.md has drifted into internally-contradictory and overclaiming copy across 4 pending dry-run findings
+- proposed: 2026-11-06 (expand)
+- kind: product
+- source signals: `plan/CRITIQUE.md`'s Pending section carries
+  four separate, still-open dry-run findings against this one
+  playbook, each from a different line range and a different
+  root cause: a [HIGH] contradiction between `prompts/adopt.md`'s
+  single-final-commit instruction and the playbook's five named
+  intermediate commit points (lines 201, 306, 542, 582, 667); a
+  [MED] Day-1 checklist box (864-867) that asks for a design
+  artifact with no concrete already-completed step behind it; a
+  [MED] step 9 (695-711) whose automated `/bootstrap` path can
+  wire a ticking cloud loop before a single `/next` chunk has
+  shipped, contradicting the cloud loop's own precondition; and a
+  [MED] Prerequisites line (51) claiming GitLab support nothing
+  else in the kit delivers. Four independent findings sharing one
+  file is exactly the repeated-friction shape signal B calls for
+  — this is also the second time this playbook has clustered this
+  way (the already-shipped phase-19 candidate above rewrote its
+  step-4 walkthrough from an earlier four-finding cluster).
+- rationale: `playbooks/new-project.md` is the first full
+  document a new adopter (or a delegated adopt-prompt agent)
+  reads end-to-end, so a contradiction or an overclaim here is
+  adopter-facing in the sharpest way — it is read once, during
+  the highest-friction moment of adoption, with no second
+  chance. Patching each finding alone, as `/iterate` would, risks
+  four small edits that still don't agree with each other; one
+  coordinated pass can reconcile the commit-instruction
+  contradiction with `prompts/adopt.md` at the same time it fixes
+  the other three, instead of four separate near-misses.
+- proposed scope: one chunk editing `playbooks/new-project.md`
+  (and `prompts/adopt.md` where the commit-instruction
+  reconciliation needs its other half): resolve the delegated-
+  commit contradiction per the CRITIQUE row's suggested fix, map
+  or drop the Day-1 design-artifact checkbox, sequence or caveat
+  step 9's automated path against the cloud loop's first-chunk
+  precondition, and narrow the Prerequisites GitLab claim to what
+  the kit actually supports. Each of the four CRITIQUE rows
+  already carries its own evidence and suggested fix; this spec's
+  job is sequencing them as one reviewed pass, not re-discovering
+  them.
+- estimated chunks: 1
+- conflicts: none known — prose-only playbook edits, no
+  `templates/` API surface.
+
 ## Promoted
 
 (moves to the build plan via /oversight)
@@ -1535,3 +1419,169 @@
 ## Rejected
 
 (kept for the record, with reasons)
+
+### [rejected 2026-11-06] [score 5.5] playbooks/outgrow.md — the split ceremony
+- reason: stale: below cap cut 2026-11-06
+- proposed: 2026-07-03
+- source signals: judged premature — no second real migration to
+  validate the ceremony against yet.
+- rationale: the single-repo -> workspace split will eventually
+  need a numbered, safe ceremony; write it when the first real
+  split happens and can serve as its test case.
+- proposed scope: deferred; the workspace playbook's decision
+  matrix + polyrepo.md cover the ladder's endpoints until then.
+- estimated phases: 1
+- conflicts: none.
+
+### [rejected 2026-11-06] [score 5.9] Staged hardening for verify legs
+- reason: stale: below cap cut 2026-11-06
+- proposed: 2026-07-02
+- source signals: a sibling adopter's `check.mjs` `*_IS_ERROR` flags —
+  new invariants start as warnings, flip to errors once the
+  corpus drains.
+- rationale: lets adopters (and this repo) add aggressive lint
+  legs without a big-bang cleanup; the flip commit is the
+  celebration.
+- proposed scope: warn-tier support in `scripts/verify.mjs` +
+  a paragraph in verify-gate.md.
+- estimated phases: 1
+- conflicts: none.
+
+### [rejected 2026-11-06] [score 6.1] Critique-household pattern for auth-aware critique
+- reason: stale: below cap cut 2026-11-06
+- proposed: 2026-07-02
+- source signals: a sibling adopter's planned `/visit` seals an
+  anonymous "critique household" so the observer never
+  consents to analytics (no GA4 pollution) — a pattern
+  auth-aware-critique.md doesn't cover.
+- rationale: adds the "observer must not pollute product
+  analytics/data" dimension to the five auth patterns.
+- proposed scope: new section in
+  `customization/auth-aware-critique.md` + env conventions.
+- estimated phases: 1
+- conflicts: none.
+
+### [rejected 2026-11-06] [score 6.3] AUDIT's unwritten "favor the queue" tie-break is starving a cheap, real AUDIT-native row
+- reason: stale: below cap cut 2026-11-06
+- proposed: 2026-07-24 (digest); re-evidenced 2026-09-05 (expand
+  pass 8)
+- source signals: `plan/AUDIT.md`'s `[A/E, 2.7]` row (README's
+  "Files added" checklist undersells `scripts/` — impact 3,
+  ease 9, one of the cheapest fixes in the file) first appeared
+  around cloud tick 2026-07-17 and has since been cited as tied
+  or narrowly outscored by a `plan/CRITIQUE.md` row in at least
+  ten separate tick log-lines through 2026-07-24, every single
+  time it was in contention. The tie-break that keeps beating it
+  ("favor the queue") is a real, consistently-applied
+  convention, but it exists only as repeated log narrative in
+  `plan/AUDIT.md` — it was never written into `skills/iterate.md`
+  §3 as an actual rule, so nobody can inspect or challenge it as
+  policy, and it has no aging counter-pressure. Signal A (fresh
+  instance), 2026-09-05: two more AUDIT-native rows are now
+  living examples of the same starvation, older than the
+  original evidence — `[C, 2.4]` (`triage.md`'s dead
+  `ship-data.md §6` citation) first appeared 2026-08-02 and
+  `[A, 2.4]` (`templates/claude/hooks/guard.mjs` drifted from
+  the kit's own hardening) first appeared ~2026-08-24; both have
+  been reproduced unchanged and left Pending across at least
+  seven intervening ticks (2026-08-25 through 2026-09-04) each
+  time a `plan/CRITIQUE.md` row was in contention, per
+  `plan/AUDIT.md`'s own tie-break log lines — 34 and 12 days
+  unshipped respectively, longer than the original `[A/E, 2.7]`
+  row ever waited before this candidate was first filed.
+- rationale: a one-line, ease-9 fix sitting seven-plus days
+  unshipped purely because of an unwritten scoring convention is
+  exactly the "starved queue" pattern `skills/digest.md` §3 step 4
+  names as a tuning trigger — not because the fix is hard, risky, or
+  actually low-value. That two independent rows have now each
+  waited over a week (one over a month) confirms this isn't a
+  one-off tie but a standing structural bias in favor of the
+  CRITIQUE queue.
+- proposed scope: write the "favor the queue on ties" convention
+  explicitly into `skills/iterate.md` §3 as an inspectable rule,
+  paired with a small aging nudge (e.g. `+0.1` per tick an AUDIT
+  row is passed over on a tie, capped) so a persistently-tied
+  cheap row eventually wins instead of losing indefinitely.
+- estimated phases: 1 (doc/rule-only, no template API change)
+- conflicts: none.
+
+### [rejected 2026-11-06] [score 6.5] Mechanically verify the Cloud-Run trailer on cloud ticks
+- reason: stale: below cap cut 2026-11-06
+- proposed: 2026-07-20 (digest); re-evidenced 2026-07-26 (digest),
+  2026-09-05 (digest), 2026-09-25 (iterate, dispatched to expand
+  — no finding scored ≥3.0 this tick)
+- source signals: of the 4 cloud commits shipped in the trailing
+  24h window (2026-07-19 14:31 to 2026-07-20 09:07 UTC — all
+  4 `march` runs green, no failures), 1 — `a74f7b6` ("critique:
+  pass 6 — 4 findings (2 high, 2 med)", from the 2026-07-19
+  20:18 UTC tick) — landed with no `Cloud-Run:` trailer at all,
+  breaking agents.md rule 2's carve-out. The workflow's own
+  ceiling check (`march.yml`'s "Daily commit ceiling check"
+  step) counts cloud volume by `git log --grep='Cloud-Run:'`,
+  so this commit silently doesn't count toward the 8/24h
+  ceiling either — the miss is invisible from both the rule
+  side and the counting side. `scripts/verify.mjs` runs
+  foreground on every tick but has no leg that inspects the
+  commit trailer, since it can't distinguish a cloud commit
+  from a local one at gate time. Second instance found
+  2026-07-26 (digest): `427eb91` ("critique: pass 8 — 2 findings
+  (0 high, 1 med, 1 low)", from the 2026-07-25 20:20 UTC tick)
+  repeats the identical gap — confirmed via
+  `gh run view 30173383094 --log`, whose prompt block quotes the
+  exact trailer text verbatim, yet the shipped commit has no
+  body at all. Both observed misses are `/critique` verb commits
+  specifically (`a74f7b6`, `427eb91`), never an `/iterate` or
+  `/expand` commit in the ~60 cloud ticks sampled by digest
+  passes to date — narrows the likely root cause from "any
+  cloud commit can drop the trailer" to "the critique skill's
+  own commit step doesn't append it," which changes where the
+  eventual fix should look first. Third instance, 2026-09-04:
+  `3f29301` ("critique: pass 14 — 3 findings (0 high, 1 med, 2
+  low)") repeats the gap a third time, still on `/critique` —
+  but this time `/triage` traced the actual mechanism (filed as
+  `plan/AUDIT.md` `[user-issue #53]`): the tick delegated
+  `skills/critique.md` step 3's dry-run walk to a general-purpose
+  sub-agent, which went further than asked and ran steps 6-7
+  itself (append findings, commit, push) using its own prompt —
+  one that never carried the parent tick's cloud-mode trailer
+  text. This sharpens "the critique skill's own commit step
+  doesn't append it" into something more specific: the commit
+  step is fine when the parent tick runs it directly; the gap is
+  delegation-shaped, only surfacing when a sub-agent commits on
+  the parent's behalf. Fourth instance, 2026-09-24 (filed as
+  `plan/AUDIT.md` `[user-issue #63]`): commit `0cdb345`
+  ("critique: pass 20 — 2 findings (0 high, 1 med, 1 low)")
+  repeats the identical delegation-shaped gap — the sub-agent
+  appended to `plan/CRITIQUE.md` and committed + pushed directly
+  despite `skills/critique.md` step 3 already scoping it to
+  steps 3-5 only. Reporter spot-checked the commit's content
+  against its cited evidence and confirmed it's legitimate, so
+  this is purely the same process gap recurring a fourth time,
+  not a content defect. `[user-issue #63]`'s own `next` field
+  proposes the same two angles as `[user-issue #53]` before it:
+  a stronger literal imperative in the delegate prompt, and/or
+  this candidate's mechanical workflow-side check.
+- rationale: the trailer is the sole mechanism the ceiling
+  trusts; a tick that forgets it both violates the standing
+  rule silently and erodes the ceiling's accuracy in the
+  direction that's hardest to notice (undercounting, not
+  overcounting). Three misses now observed, all on the same
+  verb, is an established pattern, not a one-off — and the third
+  instance finally explains why: delegation strips the trailer
+  context, not a missing line in the skill file.
+- proposed scope: a post-agent step in `march.yml` (and its
+  `templates/` mirror) that diffs `HEAD` against the pre-run
+  SHA when the ceiling didn't skip, and — if new commits landed
+  without the trailer on all of them — opens an unlabeled
+  issue naming the offending SHA (the loud-not-silent pattern
+  agents.md rule 6 already prescribes elsewhere). Gate-side
+  enforcement isn't possible (verify.mjs can't tell cloud from
+  local commits), so this has to live in the workflow, not the
+  gate. Complements, rather than duplicates, `[user-issue #53]`'s
+  own proposed fix (narrow `skills/critique.md` step 3 so a
+  delegate only performs the walk and never step 6/7 itself) —
+  that fix closes the specific delegation gap found here; this
+  candidate's mechanical check remains the general safety net
+  for any future way a cloud commit could drop the trailer.
+- estimated phases: 1 (workflow-only, no template API change)
+- conflicts: none.
