@@ -37,6 +37,28 @@
   the #67/#54 precedent if the gap doesn't repeat. No code
   change: the cron already fires off the hour (`17 * * * *`).
 
+### [user-issue #97] [HIGH] support.mjs's ghIssue() breaks on current gh CLI: authorAssociation field removed
+- category: external-issue
+- evidence: filed by a prior cloud tick (run 42309960903) while
+  triaging #96. `scripts/plan/support.mjs`'s `ghIssue()` (line
+  ~498) runs `gh issue view <N> --json
+  number,authorAssociation,labels`; on gh 2.103.3 that field no
+  longer exists ("Unknown JSON field: authorAssociation"), so
+  every call returns `null` and `support.mjs route` silently
+  falls back to `{ route: 'stock', why: 'gh unavailable: triage
+  routes as today' }` — not because gh is actually unavailable,
+  but because the field name is stale. Reproduced live this
+  tick: routing #97 itself through `support.mjs route 97 --kind
+  bug` printed exactly that fallback. This defeats spec 54's
+  trust-based fix/asap/needs-user routing on every tick,
+  silently — no error surfaces upstream.
+- next: swap `ghIssue()`'s `gh issue view --json
+  ...authorAssociation...` call for `gh api
+  repos/{owner}/{repo}/issues/<N> --jq '.author_association'`
+  (confirmed working: returns e.g. `CONTRIBUTOR`), and update
+  `scripts/plan/support.test.mjs`'s fixtures/mocks for the new
+  shape. A `chunks`/`scripts` leg candidate — small, mechanical.
+
 ### [B, 5.6] skills/next/build.md's builder-brief checklist never tells the lead to pass the Cloud-Run trailer to a delegated builder
 - category: completeness
 - impact: 7, ease: 8
