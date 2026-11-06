@@ -3,6 +3,7 @@
 > Last pass: 2026-10-15
 > Pass count: 23
 > Posture: bold
+> Last field research: 2026-11-06
 
 ## Pending
 
@@ -1169,6 +1170,8 @@
   beyond the env block)
 - conflicts: none — complements rather than overlaps the pending
   "[score 4.5] Crash-alarm dedupe" candidate above.
+- re-evidence:
+  - 2026-11-06 · field · +0 · write-ups on running an ai reviewer or ai-assisted fixer inside ci keep repeating one point: spend is driven by how many times a failed check gets retried or re-run, not by the first pass, so the ret…
 
 ### [ ] [score 7.0] heartbeat's wedged-run canceller breaks outright when the workflow it watches is disabled, instead of skipping like its two sibling steps
 - proposed: 2026-10-21 (digest)
@@ -1270,6 +1273,15 @@
   (the staleness fix already shipped) and the pending "[score
   7.0] heartbeat's wedged-run canceller" row above (different
   step, different failure shape).
+
+### [ ] [score 6.0] spec-driven development toolkits are splitting over whether a spec is a static doc or live infrastr…
+- proposed: 2026-11-06 (research)
+- source signals: field (2026-11-06): competing spec-driven development toolkits now differ mainly on whether the spec stays a one-time planning document or becomes an operational layer the agents keep reading and updating through the bu…
+- rationale: a kit whose plan files only get read once at the start, then ignored mid-build, now reads as the older generation of this category; the newer toolkits treat the spec state itself as what drives the loop end to end.
+- proposed scope: check that every plan file this kit relies on (lanes, needs, held lines) is read live by the loop at each step, not just consulted once when a chunk is picked, and tighten any step found reading it stale.
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-06
 
 ## Promoted
 
