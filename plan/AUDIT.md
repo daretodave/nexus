@@ -1,7 +1,7 @@
 # Kit audit
 
-> Last pass: 2026-11-05
-> Pass count: 125
+> Last pass: 2026-11-07
+> Pass count: 126
 > Bias: none
 
 ## Pending
@@ -23,28 +23,6 @@
   workflow-file push, so a cloud tick can't land it either,
   `agents.md` Operational secrets). Watch for further
   recurrence; close if the schedule recovers on its own.
-
-### [user-issue #97] [HIGH] support.mjs's ghIssue() breaks on current gh CLI: authorAssociation field removed
-- category: external-issue
-- evidence: filed by a prior cloud tick (run 42309960903) while
-  triaging #96. `scripts/plan/support.mjs`'s `ghIssue()` (line
-  ~498) runs `gh issue view <N> --json
-  number,authorAssociation,labels`; on gh 2.103.3 that field no
-  longer exists ("Unknown JSON field: authorAssociation"), so
-  every call returns `null` and `support.mjs route` silently
-  falls back to `{ route: 'stock', why: 'gh unavailable: triage
-  routes as today' }` — not because gh is actually unavailable,
-  but because the field name is stale. Reproduced live this
-  tick: routing #97 itself through `support.mjs route 97 --kind
-  bug` printed exactly that fallback. This defeats spec 54's
-  trust-based fix/asap/needs-user routing on every tick,
-  silently — no error surfaces upstream.
-- next: swap `ghIssue()`'s `gh issue view --json
-  ...authorAssociation...` call for `gh api
-  repos/{owner}/{repo}/issues/<N> --jq '.author_association'`
-  (confirmed working: returns e.g. `CONTRIBUTOR`), and update
-  `scripts/plan/support.test.mjs`'s fixtures/mocks for the new
-  shape. A `chunks`/`scripts` leg candidate — small, mechanical.
 
 ### [B, 5.6] skills/next/build.md's builder-brief checklist never tells the lead to pass the Cloud-Run trailer to a delegated builder
 - category: completeness
@@ -231,6 +209,31 @@
 
 
 ## Done
+
+### [x] [user-issue #97] [HIGH] support.mjs's ghIssue() breaks on current gh CLI: authorAssociation field removed — this commit (refs #97)
+- category: external-issue
+- evidence: filed by a prior cloud tick (run 42309960903) while
+  triaging #96. `scripts/plan/support.mjs`'s `ghIssue()` (line
+  ~498) ran `gh issue view <N> --json
+  number,authorAssociation,labels`; on gh 2.103.3 that field no
+  longer exists ("Unknown JSON field: authorAssociation"), so
+  every call returned `null` and `support.mjs route` silently
+  fell back to `{ route: 'stock', why: 'gh unavailable: triage
+  routes as today' }` — not because gh is actually unavailable,
+  but because the field name was stale. This defeated spec 54's
+  trust-based fix/asap/needs-user routing on every tick,
+  silently — no error surfaced upstream.
+- fix: `ghIssue()` now runs `gh api
+  repos/{owner}/{repo}/issues/<N> --jq '{association: … ,
+  labels: […]}'` in both dogfood twins
+  (`scripts/plan/support.mjs`, `templates/scripts/plan/
+  support.mjs`; confirmed byte-identical after). Added direct
+  test coverage for `ghIssue()` in
+  `templates/scripts/__tests__/support.test.mjs` (it had none
+  before, which is how this shipped unnoticed): one test
+  asserts the call shape is `gh api …`, never `gh issue view
+  --json authorAssociation`, so this exact regression can't
+  recur silently again.
 
 ### [x] [user-issue #93] [HIGH] heartbeat: no successful march tick in 13h (schedule throttling, not a code defect) — this commit (closes #93)
 - category: external-issue

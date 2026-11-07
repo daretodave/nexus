@@ -493,13 +493,14 @@ export async function loadPlan(root) {
   return { readme, specs, closed, archive: readSafe(path.join(dir, 'ARCHIVE.md')) };
 }
 
-/** gh read only: the issue's author association and label names, or null. */
+/** gh read only: the issue's author association and label names, or null. `gh issue view --json authorAssociation`
+ * dropped that field on current gh (2.103+); `gh api` reads it straight off the REST payload instead. */
 export function ghIssue(num, { run = spawnSync } = {}) {
-  const res = run('gh', ['issue', 'view', String(num), '--json', 'number,authorAssociation,labels'], { encoding: 'utf8', windowsHide: true });
+  const res = run('gh', ['api', `repos/{owner}/{repo}/issues/${num}`, '--jq', '{association: .author_association, labels: [.labels[].name]}'], { encoding: 'utf8', windowsHide: true });
   if (!res || res.status !== 0) return null;
   try {
     const j = JSON.parse(res.stdout);
-    return { association: j.authorAssociation ?? '', labels: (j.labels ?? []).map((l) => l.name ?? l) };
+    return { association: j.association ?? '', labels: j.labels ?? [] };
   } catch {
     return null;
   }

@@ -11,7 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { parseSpec } from '../plan-check.mjs';
-import { agedScore, asapCap, bearingsLevel, capacity, closingRefs, escalateDays, ghAllIssues, gitCommit, heldPackages, issueBorn, keepGoing, loopFiled, main, placed, pulseLine, refsIssue, route, slaDue, slaHours, supportLevel, supportPulse, tellPlan, trust, userBonus, userRows } from '../plan/support.mjs';
+import { agedScore, asapCap, bearingsLevel, capacity, closingRefs, escalateDays, ghAllIssues, ghIssue, gitCommit, heldPackages, issueBorn, keepGoing, loopFiled, main, placed, pulseLine, refsIssue, route, slaDue, slaHours, supportLevel, supportPulse, tellPlan, trust, userBonus, userRows } from '../plan/support.mjs';
 
 const readme = (asap) => ['## Lanes', '', '**Asap** (built before the table):', '', ...asap, '', '**Held** (waits):', '', '- (none)', '', '## Specs', ''].join('\n');
 const spec = (num, chunks) => parseSpec(`${num}-x.md`, ['## Acceptance', '- **A1** x', '## Chunks', 'Measure: 1 open · 0 closed · next A2', ...chunks].join('\n'));
@@ -87,6 +87,27 @@ describe('routing (A2)', () => {
   it('reads the support label as a bug, and leaves docs, lessons and questions to stock routing', () => {
     assert.equal(r('fix-small', 'OWNER', 'docs', ['support']), 'bug');
     for (const kind of ['docs', 'lesson', 'question']) assert.equal(r('fix-all', 'OWNER', kind), 'stock');
+  });
+});
+
+describe('ghIssue reads association + labels through gh api (regression: gh issue view --json authorAssociation was dropped by gh 2.103+)', () => {
+  it('calls gh api, not gh issue view, and parses association + label names', () => {
+    const calls = [];
+    const run = (cmd, args) => {
+      calls.push([cmd, args]);
+      return { status: 0, stdout: JSON.stringify({ association: 'OWNER', labels: ['bug', 'support'] }) };
+    };
+    assert.deepEqual(ghIssue(97, { run }), { association: 'OWNER', labels: ['bug', 'support'] });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0][0], 'gh');
+    assert.equal(calls[0][1][0], 'api');
+    assert.match(calls[0][1][1], /^repos\/\{owner\}\/\{repo\}\/issues\/97$/);
+    assert.ok(!calls[0][1].includes('authorAssociation'), 'must not depend on the removed authorAssociation field');
+  });
+
+  it('returns null when gh fails or prints unparseable output', () => {
+    assert.equal(ghIssue(1, { run: () => ({ status: 1, stdout: '' }) }), null);
+    assert.equal(ghIssue(1, { run: () => ({ status: 0, stdout: 'not json' }) }), null);
   });
 });
 
