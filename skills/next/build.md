@@ -54,6 +54,11 @@ context). It names only values checked in the code:
 5. **Return:** the commits (sha + subject), each A-ID with the
    file and test that meets it, the defaults it took, and any
    defect or idea it saw outside its scope.
+6. **Cloud trailer:** in a cloud tick (`CI` or `GITHUB_ACTIONS`
+   set), the brief states the exact `Cloud-Run: <run-url>` line
+   this run carries and tells the builder to append it (blank
+   line first) to every commit (agents.md rule 2,
+   `.github/CLOUD_LOOP.md`).
 
 Dispatch it with the Agent tool, and beat the ledger with
 its id (`--set builder=<agent id>`):
