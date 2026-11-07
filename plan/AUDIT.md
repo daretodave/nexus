@@ -6,7 +6,7 @@
 
 ## Pending
 
-### [user-issue #96] [HIGH] heartbeat: march realized cadence below 40% — recurs after #91's close (hourly cron already off :00)
+### [user-issue #96] [HIGH] [needs-user-call] heartbeat: march realized cadence below 40% — recurs after #91's close (hourly cron already off :00)
 - category: external-issue
 - evidence: opened 2026-11-06T19:23:23Z by the workflow token;
   body reports 4 of 30 promised hourly slots ran in 30h (13%).
@@ -16,11 +16,21 @@
   irregular multi-hour gaps between hourly-promised firings
   (e.g. 2026-11-04 and 2026-11-02 each show 6-11h gaps), so the
   throttling is real under the hourly preset, not a stale alarm.
+  This tick's `support.mjs sla` flagged #96 past `sla_hours`
+  with no Asap line naming it; `/plot asap` is the written
+  next step (`skills/march.md` Step 1.5), but its own Step 1
+  failure mode applies first (`skills/plot.md` §5: "needs an
+  owner's call before it can be shaped" — ask, or under a loop
+  park in `/oversight` and stop), since the fix is a
+  workflow-file push no cloud tick can land.
 - next: #91's close already named the only remaining lever — a
   slower cadence preset (fewer promised slots for GitHub to
-  drop) — as an owner call, not a loop fix
-  (`node scripts/cloud/cadence.mjs apply <preset>`; a
-  workflow-file push, so a cloud tick can't land it either,
+  drop) — as an owner call, not a loop fix (nexus runs its own
+  cadence in place from the template:
+  `node templates/scripts/cloud/cadence.mjs apply <preset>
+  --march .github/workflows/march.yml --heartbeat
+  .github/workflows/heartbeat.yml --write`, a local session
+  only — `.github/CLOUD_LOOP.md` "Cadence preset",
   `agents.md` Operational secrets). Watch for further
   recurrence; close if the schedule recovers on its own.
 
