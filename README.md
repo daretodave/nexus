@@ -310,7 +310,7 @@ The building blocks underneath, some optional:
 | `/plan-a-spec` | Write, refine or chunk one spec without shipping code. |
 | `/ship-data` | Add or repair one record in the GitHub-as-DB (optional — only for projects with structured data; see [`customization/data-layer.md`](./customization/data-layer.md)). |
 | `/ship-migration` | Ship one database migration — additive only, enforced by a linter; destructive changes escalate to `/oversight` (optional — only for `pure-db` / `hybrid-with-managed-postgres` projects). |
-| `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets. State-aware, idempotent, never destructive. Carries its own narrow `AskUserQuestion` exception for token collection and destructive-action confirmation. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
+| `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets through the two-ring vault (see [`customization/secrets.md`](./customization/secrets.md)). State-aware, idempotent, never destructive. Carries its own narrow `AskUserQuestion` exception for token collection and destructive-action confirmation. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
 
 Plus two **opt-in** demand-pull skills for projects that need
 them:
