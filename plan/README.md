@@ -27,6 +27,7 @@ line goes; each line is a lock that times out, so it carries
 
 - 60 · auto-promoted, veto until 2026-11-08 (#94) · max_age: 3d · fallback: release
 - 61 · auto-promoted, veto until 2026-11-08 (#95) · max_age: 3d · fallback: release
+- 62 · auto-promoted, veto until 2026-11-10 (#98) · max_age: 3d · fallback: release
 
 ## Specs
 
@@ -34,10 +35,11 @@ line goes; each line is a lock that times out, so it carries
 |---|---|---|---|---|
 | 60 | README above-the-fold conversion pass | [60-readme-above-the-fold.md](60-readme-above-the-fold.md) | planned | not chunked yet |
 | 61 | Versioned releases + plan/nexus.lock + upgrade story | [61-versioned-releases-upgrade-story.md](61-versioned-releases-upgrade-story.md) | planned | not chunked yet |
+| 62 | Handshake runbook profile for setup/ | [62-handshake-runbook-profile.md](62-handshake-runbook-profile.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
-plan moved to chunks on 2026-10-20). The next new spec is 62.
+plan moved to chunks on 2026-10-20). The next new spec is 63.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is

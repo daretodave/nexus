@@ -189,25 +189,6 @@
 - estimated phases: 1
 - conflicts: none — opens with "skip unless polyrepo/workspace".
 
-### [ ] [score 7.9] Handshake runbook profile for setup/
-- proposed: 2026-07-03
-- source signals: a sibling adopter's runbooks follow a proven handshake
-  the kit's setup/ paradigm doesn't capture: "human dashboard
-  steps (~N min) -> drop these exact keys into the env file ->
-  say 'X is in' -> what the agent wires after the drop".
-- rationale: turns every external service into a
-  fill-in-the-blanks credential handoff; keys arrive in files,
-  not chat. The "THE STEP THAT CAN BREAK <X>" destructive-step
-  callout convention rides along.
-- proposed scope: `templates/setup/NN_service.handshake.md`
-  (four fixed sections; fenced env-block naming exact keys +
-  exact target file + resume signal); "two runbook profiles"
-  chooser in external-services.md (agent can do >80% via CLI
-  once it has a token -> handshake); profile column in
-  00_files.md legend.
-- estimated phases: 1
-- conflicts: none — second layer of the two-ring secrets story.
-
 ### [promoted 2026-08-23 → phase 19] [score 9.0] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
 - proposed: 2026-07-06; re-evidenced 2026-07-10, 2026-07-13,
   2026-07-21, 2026-07-23 (x2), 2026-07-24, 2026-07-26
@@ -1170,6 +1151,26 @@
 ## Promoted
 
 (moves to the build plan via /oversight)
+
+### [promoted 2026-11-07 → spec 62] [score 7.9] Handshake runbook profile for setup/
+- proposed: 2026-07-03
+- source signals: a sibling adopter's runbooks follow a proven handshake
+  the kit's setup/ paradigm doesn't capture: "human dashboard
+  steps (~N min) -> drop these exact keys into the env file ->
+  say 'X is in' -> what the agent wires after the drop".
+- rationale: turns every external service into a
+  fill-in-the-blanks credential handoff; keys arrive in files,
+  not chat. The "THE STEP THAT CAN BREAK <X>" destructive-step
+  callout convention rides along.
+- proposed scope: `templates/setup/NN_service.handshake.md`
+  (four fixed sections; fenced env-block naming exact keys +
+  exact target file + resume signal); "two runbook profiles"
+  chooser in external-services.md (agent can do >80% via CLI
+  once it has a token -> handshake); profile column in
+  00_files.md legend.
+- estimated phases: 1
+- conflicts: none — second layer of the two-ring secrets story.
+- promoted: 2026-11-07, auto (motion-stall react, #92), veto #98
 
 ### [promoted 2026-11-05 → spec 60] [score 8.3] README above-the-fold conversion pass
 - proposed: 2026-07-03
