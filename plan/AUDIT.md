@@ -24,19 +24,6 @@
   `agents.md` Operational secrets). Watch for further
   recurrence; close if the schedule recovers on its own.
 
-### [user-issue #93] [HIGH] heartbeat: no successful march tick in 13h (schedule throttling, not a code defect)
-- category: external-issue
-- evidence: opened by the workflow token (`app/github-actions`)
-  at 2026-11-05T19:55:45Z. `gh run list --workflow march -L 15`
-  shows every recent run completed `success` — the gap was
-  between the 06:46 and 21:06 schedule firings (GitHub dropped
-  the intermediate hourly slots), not a failing tick or expired
-  auth. Same shape as #67 (closed non-reproducible,
-  `plan/AUDIT.md`'s own archive below).
-- next: watch for recurrence over the next few ticks; close per
-  the #67/#54 precedent if the gap doesn't repeat. No code
-  change: the cron already fires off the hour (`17 * * * *`).
-
 ### [user-issue #97] [HIGH] support.mjs's ghIssue() breaks on current gh CLI: authorAssociation field removed
 - category: external-issue
 - evidence: filed by a prior cloud tick (run 42309960903) while
@@ -244,6 +231,18 @@
 
 
 ## Done
+
+### [x] [user-issue #93] [HIGH] heartbeat: no successful march tick in 13h (schedule throttling, not a code defect) — this commit (closes #93)
+- category: external-issue
+- closed: own `next` said "close per the #67/#54 precedent if
+  the gap doesn't repeat." Checked `gh issue list --search
+  "heartbeat flatlined"` and `gh run list --workflow march.yml`
+  this tick (2026-11-07): no new flatline issue since #93 itself
+  (2026-11-05), and every march run since — about 15 scheduled
+  and manual firings across 2026-11-05 through today — completed
+  `success` with no gap. Confirmed non-reproducible one-off
+  (the dropped hourly slot GitHub itself causes sometimes),
+  closed per its own documented exit condition.
 
 ### [x] [user-issue #91] [HIGH] heartbeat: march realized cadence below 40% — the recommended lever was overtaken by the owner's own same-day change — this commit (closes #91)
 - category: external-issue
