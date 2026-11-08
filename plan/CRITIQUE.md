@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-10-24
-> Pass count: 30
+> Last pass: 2026-11-08
+> Pass count: 31
 
 ## Pending
 
@@ -157,6 +157,125 @@
   GitLab/other-host path, since today nothing names what
   "equivalent" would mean in practice.
 - source: dry-run
+
+### [ ] [HIGH] playbooks/new-project.md §4 "Prune adopt-by-need files" — the worked example breaks the test suite it leaves behind
+- category: missing-file
+- observation: an adopter who follows the "Prune" step's own
+  worked example literally (a `Surface: service` project with
+  no `/bootstrap`, removing `scripts/bootstrap.mjs` + its own
+  test) is left with `scripts/__tests__/cadence.test.mjs`
+  still importing `../bootstrap.mjs` for a cross-check
+  assertion — a file the same worked example never adds to its
+  `rm` list. The test suite breaks right after the "adopt
+  nexus" commit, before a single `/next` chunk ships.
+- evidence: `node scripts/adopt-dryrun.mjs` against a scratch
+  clone (reproduced twice) → `adopt-dryrun: FAIL (1)\n  prune
+  step: scripts/__tests__/cadence.test.mjs imports
+  ../bootstrap.mjs, which the example prune removed`.
+  `templates/scripts/__tests__/cadence.test.mjs:15` —
+  `import { CADENCES as BOOTSTRAP_CADENCES, DEFAULT_CADENCE as
+  BOOTSTRAP_DEFAULT } from '../bootstrap.mjs';`. The worked
+  example's `rm` list (`playbooks/new-project.md` §4) removes
+  `scripts/bootstrap.mjs` and
+  `scripts/__tests__/bootstrap.test.mjs` but never
+  `scripts/__tests__/cadence.test.mjs`.
+- suggested fix: either add
+  `scripts/__tests__/cadence.test.mjs` (or just its bootstrap
+  cross-check block) to the prune list whenever
+  `scripts/bootstrap.mjs` is removed, or make the
+  cross-check assertion conditional on `bootstrap.mjs`
+  existing so the test degrades gracefully instead of failing
+  to import.
+- source: dry-run
+
+### [ ] [MED] prompts/adopt.md "The prompt" → "Then:" bullet list — write-before-ask ordering contradicts its own rule
+- category: ordering
+- observation: the prompt instructs the agent to read its
+  sources "in order. Do not skip steps or invent scope," yet
+  its own "Then:" bullet list places "Copy templates from
+  ../nexus/templates/ into this repo" and "Replace
+  placeholders... with values you derive" (both filesystem
+  writes) before the "Ask the user ONLY for..." bullet, which
+  itself says "Ask them all before your first write." A
+  literal top-to-bottom executor hits the copy/replace bullets
+  first and could reasonably start writing before the batched
+  ask — exactly the sequencing the rule exists to prevent.
+- evidence: `prompts/adopt.md:61-87` — bullets run Copy →
+  Replace placeholders → Ask the user ONLY for... ("Ask them
+  all before your first write...").
+- suggested fix: reorder the bullets so "Ask the user ONLY
+  for..." appears immediately before "Copy templates," or add
+  an explicit forward-pointer at the Copy bullet ("see the Ask
+  step below — do that first").
+- source: dry-run
+
+### [ ] [LOW] playbooks/new-project.md §2 "Hard rules" — install-hooks mentioned before scripts/ exists
+- category: comprehension
+- observation: §2 tells the reader to run `node
+  scripts/install-hooks.mjs` "before the first push," but at
+  that point in the playbook `scripts/` hasn't been copied yet
+  (that's §4) — a reader working section-by-section at human
+  pace could try the command right away and hit
+  `MODULE_NOT_FOUND` before realizing it's forward-referenced.
+  (The line does carry a "(§4 copies the script)" parenthetical,
+  which softens but doesn't eliminate the stumble.)
+- evidence: `playbooks/new-project.md:200-204` — the
+  install-hooks run instruction appears inside §2, two
+  sections before §4's copy step.
+- suggested fix: move the actual run instruction to §4 (right
+  after the copy), leaving only a forward pointer ("see §4") in
+  §2's hard-rules list.
+- source: dry-run
+
+### [ ] [HIGH] /onboarding/welcome @ mobile (plain-folder) — hero headline buries the primary CTA below the fold
+- category: ui-comprehension
+- observation: on a phone-width viewport the "Using Claude
+  Code? Enjoy a GUI on us. For free." headline keeps its
+  forced line breaks at the same large font size, so each
+  short phrase wraps word-by-word into an 8+ line stack. The
+  entire first screen is consumed by half the headline; the
+  primary "Set up this repo" button and the loop diagram are
+  scrolled out of view, with only "Skip setup" visible up top.
+  A stranger has to know to scroll to find the real next
+  click.
+- evidence: `plain-folder--mobile--onboarding-welcome.png` in
+  walk-42516406663 (cloud run artifact); the same cutoff
+  appears identically in
+  `cloud-token--mobile--onboarding-welcome.png` and
+  `fleet-to-tug--mobile--onboarding-welcome.png` — scenario-
+  independent, same shared Welcome step.
+- suggested fix:
+  `packages/cli/src/screens/onboarding/Welcome.jsx` hard-codes
+  three `<br/>` breaks in the `<h1 className="t-display-l">`.
+  `packages/cli/src/styles/nexus.css` only shrinks `.ob
+  .t-display-l` (64px→54px) under `@media (max-height: 820px)`
+  — there's no narrow-width rule, so a tall phone viewport keeps
+  the full-size font. Add a narrow-width breakpoint that shrinks
+  `.ob .t-display-l` further and lets the headline wrap
+  naturally (drop or condition the hard `<br/>`s) so the CTA
+  stays on the first screen.
+- source: walk
+
+### [ ] [MED] / @ desktop (cloud-token) — Fleet session tiles show two unlabeled "Q" phase segments with no legend
+- category: ui-comprehension
+- observation: on the Fleet home screen (what a returning,
+  already-onboarded user lands on), each session tile shows a
+  phase track reading "Q · Working · Q" with no hover text or
+  legend. A stranger can't tell the two "Q" segments apart —
+  `phaseItems()` marks two different phases that happen to
+  share the same letter — and the bare label gives no clue
+  which is which.
+- evidence: `cloud-token--desktop--fleet.png` in
+  walk-42516406663 (cloud run artifact); the same unlabeled
+  "Q...Q" track appears on every tile in
+  `fleet-to-tug--desktop--fleet.png` too.
+- suggested fix: in `packages/cli/src/ui/package.jsx`, `MTrack`
+  renders each phase as `<span>{it.label}</span>` with no
+  `title`/`aria-label`. Add a `title` per segment (sourced from
+  `packages/cli/src/screens/fleet/model.js`'s `phaseItems`,
+  which already distinguishes the two `'q'` keys by position)
+  so hovering explains what each Q means.
+- source: walk
 
 ## Done
 
