@@ -35,23 +35,6 @@
   recurrence; close if the schedule recovers on its own.
 
 
-### [A, 3.6] plan/bearings.md's locked Stack table still says "Node ≥18", three ticks after the floor moved to 20+
-- category: doc-drift
-- impact: 4, ease: 9
-- evidence: `plan/bearings.md:31` — `| Scripts | Node ≥18, zero
-  dependencies, ESM `.mjs` | ... |` — in the "Stack (locked)"
-  table, which the file's own header calls "law."
-  `package.json:21` reads `"node": ">=20"`;
-  `.github/workflows/march.yml`/`night.yml` pin node-version
-  20/22/24. Three prior AUDIT Done rows (script headers,
-  package.json, playbooks) already reconciled every other
-  "Node ≥18" mention to 20+ — this table cell was never swept
-  because none of those fixes grepped `plan/bearings.md`.
-  Repo-wide grep confirms it's the only remaining stale
-  mention.
-- next: change `plan/bearings.md:31`'s "Node ≥18" to "Node
-  ≥20".
-
 ### [C, 2.4] identity/footguns.md:10 links to a README.md anchor that doesn't exist in its target
 - category: link + tree hygiene
 - impact: 3, ease: 8
@@ -144,6 +127,23 @@
 - generator: motion · filed 2026-11-06
 
 ## Done
+
+### [x] [A, 3.6] plan/bearings.md's locked Stack table still said "Node ≥18", three ticks after the floor moved to 20+ — this commit
+- category: doc-drift
+- impact: 4, ease: 9
+- evidence: `plan/bearings.md:31` — `| Scripts | Node ≥18, zero
+  dependencies, ESM `.mjs` | ... |` — in the "Stack (locked)"
+  table, which the file's own header calls "law."
+  `package.json:21` reads `"node": ">=20"`;
+  `.github/workflows/march.yml`/`night.yml` pin node-version
+  20/22/24. Three prior AUDIT Done rows (script headers,
+  package.json, playbooks) already reconciled every other
+  "Node ≥18" mention to 20+ — this table cell was never swept
+  because none of those fixes grepped `plan/bearings.md`.
+  Repo-wide grep confirms it's the only remaining stale
+  mention.
+- fix: changed `plan/bearings.md:31`'s "Node ≥18" to "Node
+  ≥20".
 
 ### [x] [B, 4.2] `templates/scripts/__tests__/design-render-run.test.mjs` runs in no gate at all — this commit (closes #101)
 - category: completeness
