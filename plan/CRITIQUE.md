@@ -5,35 +5,6 @@
 
 ## Pending
 
-### [ ] [HIGH] prompts/adopt.md:107-108 vs playbooks/new-project.md:201,306,542,582,667 — the delegated-agent prompt and the playbook it must follow give contradictory commit instructions
-- category: instruction-drift
-- observation: `prompts/adopt.md` tells the delegating agent to
-  "Follow the matching playbook end-to-end. Do not skip steps"
-  (adopt.md:55) and separately "At the end: produce a single
-  commit titled 'chore: adopt nexus methodology'"
-  (adopt.md:107-108). But `playbooks/new-project.md` — the
-  playbook it is told to follow exactly — gives five separate,
-  named commit instructions along the way: "Commit `bearings.md`
-  separately" (line 201), "Commit the roadmap and the specs"
-  (line 306), "Commit the templates as a single commit: `chore:
-  nexus templates copied`" (line 542), "then commit both specs"
-  (line 582), "Commit `package.json` + `scripts/deploy-check.mjs`
-  + `.env.example`" (line 667). A delegated agent literally
-  obeying "do not skip steps" produces ~5-6 commits with varied
-  messages, not the one commit titled "chore: adopt nexus
-  methodology" that `README.md:177` ("Review what landed") tells
-  the human to look for. Nothing resolves which instruction wins.
-- evidence: prompts/adopt.md:55,107-108; playbooks/new-project.md:201,306,542,582,667
-- suggested fix: either have `adopt.md` explicitly say "ignore
-  the playbook's intermediate commit instructions; squash
-  everything into the one final commit described here," or have
-  the final-commit instruction acknowledge the playbook's commit
-  points and state how they reconcile (e.g. the playbook's
-  intermediate commits are for the manual/human path only; the
-  delegated-agent path stages everything and commits once at the
-  end).
-- source: dry-run
-
 ### [ ] [MED] playbooks/new-project.md:864-867 — the Day-1 checklist's design-artifact box doesn't map back to a concrete already-completed step
 - category: ordering
 - observation: the "You're ready when" checklist at
@@ -188,6 +159,45 @@
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] prompts/adopt.md:107-108 vs playbooks/new-project.md:201,306,542,582,667 — the delegated-agent prompt and the playbook it must follow give contradictory commit instructions — this commit
+- category: instruction-drift
+- observation: `prompts/adopt.md` tells the delegating agent to
+  "Follow the matching playbook end-to-end. Do not skip steps"
+  (adopt.md:55) and separately "At the end: produce a single
+  commit titled 'chore: adopt nexus methodology'"
+  (adopt.md:107-108). But `playbooks/new-project.md` — the
+  playbook it is told to follow exactly — gives five separate,
+  named commit instructions along the way: "Commit `bearings.md`
+  separately" (line 201), "Commit the roadmap and the specs"
+  (line 306), "Commit the templates as a single commit: `chore:
+  nexus templates copied`" (line 542), "then commit both specs"
+  (line 582), "Commit `package.json` + `scripts/deploy-check.mjs`
+  + `.env.example`" (line 667). A delegated agent literally
+  obeying "do not skip steps" produces ~5-6 commits with varied
+  messages, not the one commit titled "chore: adopt nexus
+  methodology" that `README.md:177` ("Review what landed") tells
+  the human to look for. Nothing resolves which instruction wins.
+- evidence: prompts/adopt.md:55,107-108; playbooks/new-project.md:201,306,542,582,667
+- suggested fix: either have `adopt.md` explicitly say "ignore
+  the playbook's intermediate commit instructions; squash
+  everything into the one final commit described here," or have
+  the final-commit instruction acknowledge the playbook's commit
+  points and state how they reconcile (e.g. the playbook's
+  intermediate commits are for the manual/human path only; the
+  delegated-agent path stages everything and commits once at the
+  end).
+- fix: applied suggested-fix (a) — `prompts/adopt.md:55`'s
+  "Follow the matching playbook end-to-end. Do not skip steps"
+  now carries an explicit exception for the playbook's own
+  intermediate commit instructions ("those are for a human
+  working the playbook by hand"), and the final-commit bullet
+  (adopt.md:111-114) now says the one commit squashes everything
+  "the playbook's own intermediate commit instructions would
+  otherwise have split off." `prompts/pitch.md` carries no
+  matching "follow the playbook"/single-commit language, so it
+  needed no parallel edit.
+- source: dry-run
 
 ### [x] [MED] playbooks/new-project.md:376-382 — agents.md prune cross-references have no mechanical check, unlike the copy+sweep step — this commit
 - category: comprehension

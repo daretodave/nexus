@@ -52,7 +52,12 @@ Then:
     user before proceeding — see the ask list below. Getting
     this wrong reshapes file locations from the first chunk
     onward.
-  - Follow the matching playbook end-to-end. Do not skip steps.
+  - Follow the matching playbook end-to-end. Do not skip
+    steps — except its own intermediate commit instructions
+    (e.g. "commit bearings.md separately", "commit the
+    templates as a single commit"): those are for a human
+    working the playbook by hand. The delegated path below
+    stages everything and commits once, at the end.
   - Copy templates from ../nexus/templates/ into this repo.
   - Replace placeholders (<PROJECT>, <PROJECT_LOWER>,
     <PROJECT_TAGLINE>, <HOSTING_URL>, <HOSTING_PROVIDER>,
@@ -109,9 +114,11 @@ Then:
   - Wire the verify gate against this repo's actual test
     setup. Wire the deploy gate against the chosen provider.
   - At the end: produce a single commit titled
-    "chore: adopt nexus methodology" with a body listing every
-    file added/modified, every placeholder you resolved, and
-    every [needs-user-call] you logged, and the mode chosen.
+    "chore: adopt nexus methodology", squashing every change
+    the playbook's own intermediate commit instructions would
+    otherwise have split off, with a body listing every file
+    added/modified, every placeholder you resolved, and every
+    [needs-user-call] you logged, and the mode chosen.
     Push it: owner pushes main; contributor pushes a branch
     and opens the pull request (the pre-push hook refuses
     main).
