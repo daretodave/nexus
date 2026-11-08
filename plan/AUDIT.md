@@ -135,21 +135,6 @@
   needs a human token), syncing `nudge.yml`'s pair at the same
   time so the twin check stays green.
 
-### [B, 39.11] `templates/scripts/__tests__/design-render-run.test.mjs` runs in no gate at all
-- category: completeness
-- impact: 6, ease: 7
-- evidence: chunk 39.11's builder (2026-11-05, this run), while
-  tightening `templates/README.md`'s per-test gate-cost notes,
-  found every other `templates/scripts/__tests__/*.test.mjs` file
-  listed in `scripts/verify.mjs`'s `PURE_SUITES` or `GIT_SUITES`
-  (the `scripts` leg) except this one — it only runs if someone
-  invokes it by hand. Its sibling `design-render.test.mjs` (the
-  pure half) is wired; this Chrome-spawning `-run` half is not.
-- next: add it to `GIT_SUITES` (it already self-skips without a
-  local Chrome, matching `ui-walk-run.test.mjs`'s pattern) so the
-  `scripts` leg actually exercises it, or say in a commit why it
-  stays out.
-
 ### [loop] [HIGH] motion stalled in 2026-W44: 25 shipped against a 4-week baseline of 153.25
 - category: loop
 - impact: 8
@@ -159,6 +144,21 @@
 - generator: motion · filed 2026-11-06
 
 ## Done
+
+### [x] [B, 4.2] `templates/scripts/__tests__/design-render-run.test.mjs` runs in no gate at all — this commit (closes #101)
+- category: completeness
+- impact: 6, ease: 7
+- evidence: chunk 39.11's builder (2026-11-05, this run), while
+  tightening `templates/README.md`'s per-test gate-cost notes,
+  found every other `templates/scripts/__tests__/*.test.mjs` file
+  listed in `scripts/verify.mjs`'s `PURE_SUITES` or `GIT_SUITES`
+  (the `scripts` leg) except this one — it only runs if someone
+  invokes it by hand. Its sibling `design-render.test.mjs` (the
+  pure half) is wired; this Chrome-spawning `-run` half is not.
+- fix: added `templates/scripts/__tests__/design-render-run.test.mjs`
+  to `scripts/verify.mjs`'s `GIT_SUITES` (it already self-skips
+  without a local Chrome, matching `ui-walk-run.test.mjs`'s
+  pattern), so the `scripts` leg now exercises it.
 
 ### [x] [H, 5.6] / @ desktop (fleet-to-tug) — console error: "Failed to load resource: the server responded with a stat..." — this commit (closes #100)
 - category: ui
