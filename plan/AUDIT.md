@@ -158,17 +158,23 @@
 - next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
 - generator: motion · filed 2026-11-06
 
-### [H, 5.6] / @ desktop (fleet-to-tug) — console error: "Failed to load resource: the server responded with a stat..."
+## Done
+
+### [x] [H, 5.6] / @ desktop (fleet-to-tug) — console error: "Failed to load resource: the server responded with a stat..." — this commit (closes #100)
 - category: ui
 - impact: 7
 - ease: 8
 - evidence: console error "Failed to load resource: the server responded with a status of 404 (Not Found) (/favicon.ico)", and on 2 more screens; fleet-to-tug--desktop--fleet.png; .scratch/walk/2026-11-06T01-35-51-943Z/walk.json
-- next: packages/cli/src/App.jsx:147: find the cause of the console error there and fix it; any fx cost is made cheaper, never less visible.
-- gate: npm test
 - generator: ui-walk · filed 2026-11-06
-
-
-## Done
+- fix: `packages/cli/src/index.html` never declared a
+  `<link rel="icon">`, so every browser's automatic favicon
+  probe 404s on every screen. Added
+  `packages/cli/src/public/favicon.svg` (the app's own
+  fleet-grid glyph: ink-900 background, aurora-cyan stroke,
+  matching `icon-paths.js`'s `fleetRound`) and the `<link
+  rel="icon" type="image/svg+xml" href="/favicon.svg" />` tag.
+  A fresh walk (24 screens, desktop + mobile, built dist/)
+  reports 0 findings.
 
 ### [x] [B, 5.6] README.md's "What you get" section has zero prose entry point for the secrets vault — this commit (closes #99)
 - category: completeness
@@ -443,38 +449,6 @@
   contradicting both CI (`node-version: 20`/`22` in
   `march.yml`/`night.yml`) and the kit's own stated floor.
 - fix: changed all three comments to "Node >=20."
-
-### [x] [A, 3.6] playbooks/pre-spec.md restates the AskUserQuestion carve-out using only "/oversight," omitting "/bootstrap" — this commit (closes #74)
-- category: doc-drift
-- impact: 4, ease: 9
-- evidence: `playbooks/pre-spec.md:41` ("Nexus's standing rule
-  is 'skills decide; only `/oversight` asks.'") and `:48` ("the
-  no-AskUserQuestion-outside-`/oversight` rule kicks back in")
-  both state the rule with one carve-out. The actual rule,
-  correctly stated with both carve-outs, lives at
-  `README.md:650` ("allowed only in `/oversight` and
-  `/bootstrap`") and `concepts/asking-well.md:8-9` ("only
-  `/oversight` and `/bootstrap` ask"). Commit `a5bd02f` (prior
-  cycle) fixed README's Hard Rule #6 to acknowledge pre-spec.md's
-  own carve-out but never touched pre-spec.md's own two
-  mentions, which still undersold the rule to a reader who
-  starts here.
-- fix: reworded `pre-spec.md:41` to name both `/oversight` and
-  `/bootstrap`; simplified `:48`'s mention to point back at the
-  first statement instead of repeating a long hyphenated
-  compound (which also wrapped badly at this doc's line width).
-
-### [x] [A, 3.6] package.json's engines.node still said ">=18", contradicting the just-reconciled Node 20+ floor — this commit
-- category: doc-drift
-- impact: 4, ease: 9
-- evidence: commit f348e7e reconciled `playbooks/new-project.md`
-  and `playbooks/existing-project.md` to both say "Node 20+" (one
-  previously said ">=18"). `package.json:13`'s
-  `"engines": { "node": ">=18" }` was never touched in that fix
-  and still contradicted the reconciled floor — also inconsistent
-  with `.github/workflows/march.yml` and `night.yml`, which both
-  pin `node-version: 20`/`22`, never 18.
-- fix: changed `package.json`'s `engines.node` to `">=20"`.
 
 ### [x] [F, 4.5] four model-id mentions still cite the prior "Opus 4.8" / "claude-haiku-4-5" lineup against the current Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1 lineup — this commit
 - category: freshness
