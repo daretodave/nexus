@@ -7,7 +7,7 @@ keep Open in budget: search it before adding a line, don't
 read it before building. **Guarded** lines are automated.
 `/next`, `/bug` and any run that trips over something add or
 bump lines through a pending file (rules:
-[README.md](README.md#footguns-the-ladder)).
+[README.md](README.md)).
 
 One line each, at most 500 bytes, never wrapped (this file
 merges with git's `union` driver):
@@ -18,7 +18,7 @@ merges with git's `union` driver):
 - **fake-gh-path** · a Windows path (C:/...) put on PATH in Git Bash splits at its colon, so a fake gh never shadows the real one and a test files a real issue → prepend the POSIX form (/c/...) and run `command -v gh` before any test that stubs it · seen 1× · last 2026-10-21 · open
 - **npm-install-lockfile-drift** · `npm install` in `packages/cli` rewrites `package-lock.json`'s optional-dep `libc` fields on an npm version mismatch → diff `package-lock.json` before committing; revert npm-version-only drift · seen 1× · last 2026-10-24 · open
 - **nudge-twin-version-bump** · bumping an action version in `templates/.github/workflows/nudge.yml` breaks the `workflows` leg's byte-identity twin check against `.github/workflows/nudge.yml`, which a cloud tick's token can't push → bump both copies together from a local session, or leave nudge.yml's action pins alone until then · seen 1× · last 2026-11-05 · open
-- **md-anchor-rename** · renaming or relocating a heading can silently break another file's #anchor link because the gate's links leg only checks the target file exists, not the fragment → grep every heading's slug across the repo before renaming or moving it; keep heading text unchanged if anything external links to it · seen 2× · last 2026-11-09 · open
 ## Watch (seen once: searched before adding a line, not read before building)
 
 ## Guarded (automated: the line says by what)
+- **md-anchor-rename** · renaming or relocating a heading can silently break another file's #anchor link because the gate's links leg only checks the target file exists, not the fragment → grep every heading's slug across the repo before renaming or moving it; keep heading text unchanged if anything external links to it · seen 2× · last 2026-11-09 · guarded by scripts/verify.mjs's links leg (anchor check)

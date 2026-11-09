@@ -3,7 +3,7 @@
 Append-only, one file per year: `<year>.md` (settle starts the
 new year's file on its first decision). IDs keep counting
 across years and are never reused. Rules:
-[../README.md](../README.md#rules-for-new-lines).
+[../README.md](../README.md).
 
 One entry, at most 3 lines:
 
