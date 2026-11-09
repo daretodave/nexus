@@ -25,8 +25,6 @@ needs are done):
 line goes; each line is a lock that times out, so it carries
 `since:`, `until:` and `max_age:`):
 
-- 60 · auto-promoted, veto until 2026-11-08 (#94) · max_age: 3d · fallback: release
-- 61 · auto-promoted, veto until 2026-11-08 (#95) · max_age: 3d · fallback: release
 - 62 · auto-promoted, veto until 2026-11-10 (#98) · max_age: 3d · fallback: release
 
 ## Specs
