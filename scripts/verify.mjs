@@ -12,7 +12,9 @@
 //   node scripts/verify.mjs links      # one leg by name
 //
 // Legs:
-//   links         every relative markdown link resolves to a file
+//   links         every relative markdown link resolves to a file, and
+//                 any #fragment on a link into a .md file matches one
+//                 of that file's heading slugs
 //   tree          README's "What's in this kit" tree matches disk
 //   discover      every playbook/concept/customization/prompt doc
 //                 is linked from at least one other doc (no orphans)
@@ -215,6 +217,45 @@ function normalize(rel) {
   return rel.split(path.sep).join('/')
 }
 
+// GitHub-flavored-markdown heading slug, for the links leg's fragment
+// check below: strip markdown emphasis/code/strikethrough markup
+// (keeping the inner text), lowercase, drop anything that isn't a
+// letter/digit/hyphen/underscore/space, and turn spaces into hyphens.
+// Deliberately does NOT collapse repeated hyphens — GitHub's own
+// anchors don't either (e.g. "TL;DR — clone" -> "tldr--clone", a
+// double hyphen that several of this repo's own links rely on).
+function slugify(headingText) {
+  let s = headingText
+  s = s.replace(/`([^`]*)`/g, '$1')
+  s = s.replace(/\*\*([^*]*)\*\*/g, '$1')
+  s = s.replace(/\*([^*]*)\*/g, '$1')
+  s = s.replace(/__([^_]*)__/g, '$1')
+  s = s.replace(/_([^_]*)_/g, '$1')
+  s = s.replace(/~~([^~]*)~~/g, '$1')
+  s = s.toLowerCase()
+  s = s.replace(/[^\p{L}\p{N}\-_ ]/gu, '')
+  s = s.replace(/ /g, '-')
+  return s
+}
+
+// Every `#`..`######` heading in `text`, slugged in file order, with
+// repeats de-duplicated the way GitHub does it (second "foo" heading
+// becomes "foo-1", third "foo-2", ...).
+function headingSlugs(text) {
+  const seen = new Map()
+  const slugs = new Set()
+  for (const { line, fenced, marker } of annotatedLines(text)) {
+    if (fenced || marker) continue
+    const m = /^#{1,6}\s+(.+?)\s*#*\s*$/.exec(line)
+    if (!m) continue
+    let slug = slugify(m[1])
+    const count = seen.get(slug) || 0
+    seen.set(slug, count + 1)
+    slugs.add(count > 0 ? `${slug}-${count}` : slug)
+  }
+  return slugs
+}
+
 // --- leg: links ---------------------------------------------------------
 
 function legLinks(files) {
@@ -230,6 +271,13 @@ function legLinks(files) {
         let target = m[1]
         if (/^(https?:|mailto:|#)/.test(target)) continue
         if (target.includes('<')) continue // placeholder link
+        const hashIdx = target.indexOf('#')
+        let fragment = ''
+        if (hashIdx !== -1) {
+          fragment = target.slice(hashIdx + 1)
+          const qIdx = fragment.indexOf('?')
+          if (qIdx !== -1) fragment = fragment.slice(0, qIdx)
+        }
         target = target.replace(/[#?].*$/, '')
         if (target === '') continue
         const resolved = target.startsWith('/')
@@ -238,6 +286,13 @@ function legLinks(files) {
         checked++
         if (!fs.existsSync(resolved)) {
           failures.push(`${file}:${n}: broken link → ${m[1]}`)
+        } else if (fragment && /\.md$/i.test(target)) {
+          const slugs = headingSlugs(fs.readFileSync(resolved, 'utf-8'))
+          if (!slugs.has(fragment)) {
+            failures.push(
+              `${file}:${n}: broken anchor → ${m[1]} (no heading slug "${fragment}" in ${target})`
+            )
+          }
         }
       }
     }
