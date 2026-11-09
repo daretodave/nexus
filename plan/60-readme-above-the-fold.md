@@ -64,14 +64,6 @@ grown more pressing as the file has grown ~360 lines since.
 
 ## Acceptance
 
-- **A1** The opening blockquote's pitch is not restated
-  verbatim elsewhere in the file.
-- **A2** `Used v1? On v2?`, `When this TL;DR is the wrong
-  path` and `When this is the right tool` read as one
-  qualification section, placed before `Three doors in`.
-- **A3** The two `TL;DR —` sections and the mermaid diagram
-  no longer stand as separate sections from `Three doors in`;
-  their content lives inside it or directly after.
 - **A4** `Pick a playbook` presents its eight playbooks as
   one table (you have / do this / time), not eight prose
   blurbs.
@@ -87,23 +79,15 @@ grown more pressing as the file has grown ~360 lines since.
 (None.)
 
 ## Chunks
-Measure: 7 open · 0 closed · next A8
+Measure: 4 open · 3 closed · next A8
 
-- [ ] **60.1** One qualification gate, one three-door section · M · closes A1, A2, A3 · needs —
-  - Merge `Used v1? On v2?`, `When this TL;DR is the wrong
-    path` and `When this is the right tool` into a single
-    qualification section, placed before `Three doors in`.
-  - Fold both `TL;DR —` sections and the mermaid diagram into
-    (or directly after) `Three doors in`.
-  - The opening blockquote stays the one place the pitch is
-    stated; downstream sections reference it, never restate it.
-- [ ] **60.2** Proof strip above the fold · S · closes A5 · needs 60.1
+- [ ] **60.2** Proof strip above the fold · S · closes A5 · needs —
   - The `march.yml` cron badge and a one-line ouroboros claim
     sit near `Three doors in`, ahead of the qualify step.
 - [ ] **60.3** Router table for `Pick a playbook` · S · closes A4 · needs —
   - Replace the eight prose blurbs with one table (you have /
     do this / time); each row still links to its playbook file.
-- [ ] **60.4** Trim to budget, verify the tree leg · M · closes A6, A7 · needs 60.1, 60.2, 60.3
+- [ ] **60.4** Trim to budget, verify the tree leg · M · closes A6, A7 · needs 60.2, 60.3
   - Cut `README.md` to at most 500 lines once the
     restructuring lands; `## What's in this kit`,
     `## Provenance` and `## Hard rules carried across every

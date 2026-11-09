@@ -260,3 +260,4 @@ still pending at the move and live on as specs.
 - 2026-11-05 · 39.14 · A merged loop PR's nexus/<run id> branch is deleted · dce403dc..dce403dc
 - 2026-11-05 · 39.15 · Adoption into a remote-less repo now has an owner default · 4eae1dc4..4eae1dc4
 - 2026-11-05 · 39 · spec complete: a real pull-request-mode tick ran end to end in a scratch adopter repo from pick to release, bootstrap installs either loop mode from the manifest with `pr-resolve.yml` following `<DEFAULT_BRANCH>`, nexus's own repo releases a closed contributor PR's claims and deletes its branch, template script tests pass once copied into a fresh adopter, and adoption now works before a GitHub remote exists · d9c843bd..4eae1dc4
+- 2026-11-09 · 60.1 · README gates once, then merges three doors in one section · fa6db2fe..fa6db2fe
