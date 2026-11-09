@@ -14,6 +14,83 @@
 [![Methodology + templates](https://img.shields.io/badge/kind-methodology%20%2B%20templates-lightgrey)](#)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](./CONTRIBUTING.md)
 
+## Is this for you?
+
+**Use nexus when:**
+
+- You have a **definite product** in mind, captured in some
+  form of `spec.md`. The methodology assumes you know roughly
+  what you're building.
+- You're willing to invest **2–3 hours of setup** to get hours
+  to days of unattended autonomous build time.
+- You can let `main` deploy automatically — the loop assumes
+  push = deploy, and gates around that contract.
+- You're comfortable having an AI agent decide-and-ship
+  without per-commit review. (`/oversight` and the audit logs
+  are how you stay honest after the fact.)
+
+**Skip it — or use a playbook instead of the TL;DR fast path
+below — when:**
+
+- The product is exploratory, you're discovering as you
+  build, and every decision needs human input. Talk to the
+  agent conversationally instead.
+- The repo has security-critical paths where every commit
+  needs human review. The deploy gate catches regressions, but
+  it's not a security review.
+- You have no spec — even a one-pager — to anchor the build
+  plan. Write one first; it's worth a day.
+- Your repo is in active multi-developer flux. A playbook lets
+  you choose what merges; the TL;DR fast path doesn't.
+- You're skeptical of unattended adoption, or want to
+  understand the methodology before trusting it. Read a
+  playbook or the concept docs first, then come back if the
+  TL;DR still sounds right.
+
+The TL;DR doors ahead are for "I trust the methodology, save
+me the keystrokes." The playbooks are for everyone else.
+
+### Used v1? On v2?
+
+**Used v1?** A repo on the phase plan moves to specs and
+chunks with one command. Run it at the repo's root; it is a
+dry run, it reads a fresh fetch of your origin, and it never
+touches your checkout:
+
+```bash
+npx @usenexus/cli upgrade            # the report: files, archive lines, the first tick it predicts
+npx @usenexus/cli upgrade --write    # one commit on nexus/upgrade-v2, nothing pushed
+```
+
+A live loop's own steps come across as project lanes, its
+workflow is merged rather than replaced, and every new knob is
+written at the value that keeps today's behaviour.
+`--land owner` lands it between two ticks and watches the
+first; `--rollback` undoes it in one commit.
+
+**On v2?** The same command syncs the repo to the latest kit:
+untouched kit files replaced, your edits merged three ways,
+new content added at conservative values. Run it whenever the
+kit moves; the GUI says when it has, with a `nexus <version>
+is out` banner whose Sync button runs the dry run.
+
+**No checkout?** `npx @usenexus/cli upgrade --repo owner/name
+--pr` does it from a temporary clone and opens a pull request
+whose body is the report.
+
+The runbook, and the by-hand route:
+[`playbooks/upgrade.md`](./playbooks/upgrade.md). Any other
+agent, paste this at the repo's root (what it authorizes:
+[`prompts/upgrade.md`](./prompts/upgrade.md)):
+
+```
+Clone https://github.com/daretodave/nexus.git to ../nexus
+(or use ./.nexus if submoduled) if you haven't already, then
+read and follow ../nexus/prompts/upgrade.md exactly, in order.
+```
+
+---
+
 ## Three doors in
 
 Pick one. Each ends in the same place: your repo adopted, a
@@ -67,47 +144,107 @@ spec yet? [Start from the pitch](#tldr--i-have-a-pitch-no-spec-yet).
 - [`playbooks/existing-project.md`](./playbooks/existing-project.md):
   brownfield, a loop laid over code that already works.
 
+Not sure which one fits? Route yourself:
+
+```mermaid
+flowchart LR
+  spec{Have a spec.md?} -- yes --> green["playbooks/new-project.md"]
+  spec -- "no, but I have a pitch" --> pitch_check{Existing repo with code?}
+  spec -- nothing yet --> think[Come back when you have a pitch.]
+  pitch_check -- yes --> brown["playbooks/existing-project.md"]
+  pitch_check -- no --> presp["playbooks/pre-spec.md (interactive)"]
+  presp --> green
+  green --> brown_check{Existing repo with code?}
+  brown_check -- yes --> brown
+  brown_check -- no --> ship["/next by hand, the first time"]
+```
+
 Ten minutes to read each; [Pick a playbook](#pick-a-playbook)
 routes the rest (no spec yet, polyrepo, cloud loop).
 
-## Used v1? On v2?
+## TL;DR — clone + delegate the adoption
 
-**Used v1?** A repo on the phase plan moves to specs and
-chunks with one command. Run it at the repo's root; it is a
-dry run, it reads a fresh fetch of your origin, and it never
-touches your checkout:
+> Door 2 in detail. Use this if you already have a `spec.md`.
+> If you only have a verbal pitch, jump down to
+> [TL;DR — I have a pitch, no spec yet](#tldr--i-have-a-pitch-no-spec-yet).
+
+### 1. Clone
+
+Clone nexus next to your project (or your fork of it: swap the
+URL here and in the prompt below):
 
 ```bash
-npx @usenexus/cli upgrade            # the report: files, archive lines, the first tick it predicts
-npx @usenexus/cli upgrade --write    # one commit on nexus/upgrade-v2, nothing pushed
+# Sibling layout — recommended
+cd <parent-of-your-project>
+git clone https://github.com/daretodave/nexus.git nexus
+ls
+# my-project/   nexus/
 ```
 
-A live loop's own steps come across as project lanes, its
-workflow is merged rather than replaced, and every new knob is
-written at the value that keeps today's behaviour.
-`--land owner` lands it between two ticks and watches the
-first; `--rollback` undoes it in one commit.
+(If you'd rather submodule it into your repo:
+`git submodule add <url> .nexus` and treat `./.nexus` as the
+nexus root throughout.)
 
-**On v2?** The same command syncs the repo to the latest kit:
-untouched kit files replaced, your edits merged three ways,
-new content added at conservative values. Run it whenever the
-kit moves; the GUI says when it has, with a `nexus <version>
-is out` banner whose Sync button runs the dry run.
+### 2. Hand it to your agent
 
-**No checkout?** `npx @usenexus/cli upgrade --repo owner/name
---pr` does it from a temporary clone and opens a pull request
-whose body is the report.
+Paste the prompt from [door 2](#2-any-other-agent-give-it-this-prompt)
+at your project's root (where `git status` shows your repo).
+The full instruction set your agent follows lives in
+[`prompts/adopt.md`](./prompts/adopt.md); read it yourself
+first if you want to know exactly what you're authorizing.
+(See [`prompts/README.md`](./prompts/README.md) for what lives
+in that directory and why.)
 
-The runbook, and the by-hand route:
-[`playbooks/upgrade.md`](./playbooks/upgrade.md). Any other
-agent, paste this at the repo's root (what it authorizes:
-[`prompts/upgrade.md`](./prompts/upgrade.md)):
+### 3. Review what landed
+
+When the agent returns, expect:
+
+- A new commit titled `chore: adopt nexus methodology`.
+- Files added: `agents.md`, `CLAUDE.md`, `plan/`, `skills/`,
+  `.claude/`, `scripts/`, `.env.example`.
+- Existing source code: **untouched** (per the playbooks).
+- A list of `[needs-user-call]` rows in `plan/AUDIT.md` if the
+  agent had to defer any decisions to you.
+- `pnpm verify` (or stack-equivalent) and `pnpm deploy:check`
+  specified and ready to wire once the bootstrap lands — not
+  necessarily passing yet.
+
+Read the diff. Resolve the `[needs-user-call]` rows by editing
+the relevant files (or running `/oversight`). Populate `.env`
+with your tokens. **Then run `/next` for the first time** —
+by hand, level 0 of the intervention spectrum. Don't skip to
+`/loop /march`.
+
+---
+
+## TL;DR — I have a pitch, no spec yet
+
+> Use this if you have a working name and a one-paragraph
+> pitch, but no `spec.md` yet. This runs the pre-spec
+> interview, writes `spec.md`, and then hands off to the
+> adoption flow above. End-to-end in one paste.
+
+Paste this at your project's root (where `git init` has run
+but there's nothing else yet); swap the URL if you use a fork:
 
 ```
-Clone https://github.com/daretodave/nexus.git to ../nexus
-(or use ./.nexus if submoduled) if you haven't already, then
-read and follow ../nexus/prompts/upgrade.md exactly, in order.
+Clone https://github.com/daretodave/nexus.git to
+../nexus (or use ./.nexus if submoduled) if you haven't
+already, then read and follow ../nexus/prompts/pitch.md
+exactly, in order.
+
+Here's my pitch in my own words:
+
+  <ONE-PARAGRAPH PITCH — what the product is, who it's for,
+  what makes it interesting. Don't polish.>
 ```
+
+The full instruction set — pre-spec interview, then handoff
+to the adoption flow above — lives in
+[`prompts/pitch.md`](./prompts/pitch.md). Pitch quality
+matters: if you can't describe the product in one paragraph in
+plain language, come back when you can. The agent will not
+invent product direction for you.
 
 ---
 
@@ -173,105 +310,6 @@ hours or days, or put the same loop on GitHub Actions
 tick while your laptop is closed.
 
 <img width="1280" height="794" alt="WALK_AWAY" src="https://github.com/user-attachments/assets/9076088d-01ee-4720-aa10-b393b8dd4076" />
-
----
-
-## TL;DR — clone + delegate the adoption
-
-> Door 2 in detail. Use this if you already have a `spec.md`.
-> If you only have a verbal pitch, jump down to
-> [TL;DR — I have a pitch, no spec yet](#tldr--i-have-a-pitch-no-spec-yet).
-
-### 1. Clone
-
-Clone nexus next to your project (or your fork of it: swap the
-URL here and in the prompt below):
-
-```bash
-# Sibling layout — recommended
-cd <parent-of-your-project>
-git clone https://github.com/daretodave/nexus.git nexus
-ls
-# my-project/   nexus/
-```
-
-(If you'd rather submodule it into your repo:
-`git submodule add <url> .nexus` and treat `./.nexus` as the
-nexus root throughout.)
-
-### 2. Hand it to your agent
-
-Paste the prompt from [door 2](#2-any-other-agent-give-it-this-prompt)
-at your project's root (where `git status` shows your repo).
-The full instruction set your agent follows lives in
-[`prompts/adopt.md`](./prompts/adopt.md); read it yourself
-first if you want to know exactly what you're authorizing.
-(See [`prompts/README.md`](./prompts/README.md) for what lives
-in that directory and why.)
-
-### 3. Review what landed
-
-When the agent returns, expect:
-
-- A new commit titled `chore: adopt nexus methodology`.
-- Files added: `agents.md`, `CLAUDE.md`, `plan/`, `skills/`,
-  `.claude/`, `scripts/`, `.env.example`.
-- Existing source code: **untouched** (per the playbooks).
-- A list of `[needs-user-call]` rows in `plan/AUDIT.md` if the
-  agent had to defer any decisions to you.
-- `pnpm verify` (or stack-equivalent) and `pnpm deploy:check`
-  specified and ready to wire once the bootstrap lands — not
-  necessarily passing yet.
-
-Read the diff. Resolve the `[needs-user-call]` rows by editing
-the relevant files (or running `/oversight`). Populate `.env`
-with your tokens. **Then run `/next` for the first time** —
-by hand, level 0 of the intervention spectrum. Don't skip to
-`/loop /march`.
-
-### When this TL;DR is the wrong path
-
-- Your repo is in active multi-developer flux. Use the manual
-  playbook so you can choose what to merge.
-- You're skeptical of unattended adoption. Use the playbook —
-  read it, do it yourself, develop intuition.
-- You want to deeply understand the methodology before
-  applying it. Read the concept docs first; come back to the
-  TL;DR if it still sounds right.
-
-The TL;DR is for "I trust the methodology, save me the
-keystrokes." The playbooks are for everyone else.
-
----
-
-## TL;DR — I have a pitch, no spec yet
-
-> Use this if you have a working name and a one-paragraph
-> pitch, but no `spec.md` yet. This runs the pre-spec
-> interview, writes `spec.md`, and then hands off to the
-> adoption flow above. End-to-end in one paste.
-
-Paste this at your project's root (where `git init` has run
-but there's nothing else yet); swap the URL if you use a fork:
-
-```
-Clone https://github.com/daretodave/nexus.git to
-../nexus (or use ./.nexus if submoduled) if you haven't
-already, then read and follow ../nexus/prompts/pitch.md
-exactly, in order.
-
-Here's my pitch in my own words:
-
-  <ONE-PARAGRAPH PITCH — what the product is, who it's for,
-  what makes it interesting. Don't polish.>
-```
-
-The full instruction set — pre-spec interview, then handoff
-to the adoption flow above — lives in
-[`prompts/pitch.md`](./prompts/pitch.md). Pitch quality
-matters: if you can't describe the product in one paragraph in
-plain language, come back when you can. The agent will not
-invent product direction for you.
 
 ---
 
@@ -354,50 +392,9 @@ State files that carry intent across context loss:
 
 ---
 
-## When this is the right tool
-
-You want this when:
-
-- You have a **definite product** in mind, captured in some form
-  of `spec.md`. The methodology assumes you know roughly what
-  you're building.
-- You're willing to invest **2–3 hours of setup** to get hours
-  to days of unattended autonomous build time.
-- You can let `main` deploy automatically — the loop assumes
-  push = deploy, and gates around that contract.
-- You're comfortable having an AI agent decide-and-ship without
-  per-commit review. (`/oversight` and the audit logs are how
-  you stay honest after the fact.)
-
-You **don't** want this when:
-
-- The product is exploratory, you're discovering as you build,
-  and every decision needs human input. (Use the agent
-  conversationally instead.)
-- The repo has security-critical paths where every commit needs
-  human review. (The deploy gate catches regressions, but it's
-  not a security review.)
-- You have no spec — even a one-pager — to anchor the build
-  plan. (Write one first; it's worth a day.)
-
----
-
 ## Pick a playbook
 
-Door 3, routed:
-
-```mermaid
-flowchart LR
-  spec{Have a spec.md?} -- yes --> green["playbooks/new-project.md"]
-  spec -- "no, but I have a pitch" --> pitch_check{Existing repo with code?}
-  spec -- nothing yet --> think[Come back when you have a pitch.]
-  pitch_check -- yes --> brown["playbooks/existing-project.md"]
-  pitch_check -- no --> presp["playbooks/pre-spec.md (interactive)"]
-  presp --> green
-  green --> brown_check{Existing repo with code?}
-  brown_check -- yes --> brown
-  brown_check -- no --> ship["/next by hand, the first time"]
-```
+Door 3, in detail — the router above picked one of these:
 
 ### → [`playbooks/pre-spec.md`](./playbooks/pre-spec.md)
 
