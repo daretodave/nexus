@@ -89,4 +89,25 @@ grown more pressing as the file has grown ~360 lines since.
 ## Chunks
 Measure: 7 open · 0 closed · next A8
 
-Not chunked yet.
+- [ ] **60.1** One qualification gate, one three-door section · M · closes A1, A2, A3 · needs —
+  - Merge `Used v1? On v2?`, `When this TL;DR is the wrong
+    path` and `When this is the right tool` into a single
+    qualification section, placed before `Three doors in`.
+  - Fold both `TL;DR —` sections and the mermaid diagram into
+    (or directly after) `Three doors in`.
+  - The opening blockquote stays the one place the pitch is
+    stated; downstream sections reference it, never restate it.
+- [ ] **60.2** Proof strip above the fold · S · closes A5 · needs 60.1
+  - The `march.yml` cron badge and a one-line ouroboros claim
+    sit near `Three doors in`, ahead of the qualify step.
+- [ ] **60.3** Router table for `Pick a playbook` · S · closes A4 · needs —
+  - Replace the eight prose blurbs with one table (you have /
+    do this / time); each row still links to its playbook file.
+- [ ] **60.4** Trim to budget, verify the tree leg · M · closes A6, A7 · needs 60.1, 60.2, 60.3
+  - Cut `README.md` to at most 500 lines once the
+    restructuring lands; `## What's in this kit`,
+    `## Provenance` and `## Hard rules carried across every
+    project` stay as reference material, trimmed elsewhere.
+  - Confirm `scripts/verify.mjs`'s `tree` leg still parses
+    `## What's in this kit`; repoint it in this commit if that
+    section moved.
