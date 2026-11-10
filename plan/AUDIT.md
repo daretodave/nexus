@@ -128,12 +128,12 @@
 
 ## Done
 
-### [x] [user-issue #102] [MEDIUM] settle.mjs: closing a ladder spec's last chunk never writes its ARCHIVE "spec complete" line — plotted 63.1
+### [x] [user-issue #102] [MEDIUM] settle.mjs: closing a ladder spec's last chunk never writes its ARCHIVE "spec complete" line — closed 2026-11-10
 - category: external-issue
-- resolution: plotted as spec 63
-  ([63-settle-ladder-archive-line.md](63-settle-ladder-archive-line.md)),
-  chunk 63.1, Asap lane, ending (#102) — past `sla_hours` with
-  no Asap line naming it (`skills/march.md` Step 1.5).
+- resolution: plotted as spec 63 (past `sla_hours` with no
+  Asap line naming it, `skills/march.md` Step 1.5) and built
+  as chunk 63.1 the same tick (archive `bf7a38ca..bf7a38ca`,
+  spec 63 complete).
 
 ### [x] [A, 3.6] plan/bearings.md's locked Stack table still said "Node ≥18", three ticks after the floor moved to 20+ — this commit
 - category: doc-drift
