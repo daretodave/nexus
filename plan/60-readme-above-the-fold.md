@@ -67,8 +67,6 @@ grown more pressing as the file has grown ~360 lines since.
 - **A4** `Pick a playbook` presents its eight playbooks as
   one table (you have / do this / time), not eight prose
   blurbs.
-- **A5** A proof strip — the `march.yml` cron badge and a
-  one-line ouroboros claim — sits within the first screenful.
 - **A6** `README.md` is at most 500 lines.
 - **A7** `scripts/verify.mjs`'s `tree` leg still parses `##
   What's in this kit` after the restructure (fixed in the
@@ -79,15 +77,12 @@ grown more pressing as the file has grown ~360 lines since.
 (None.)
 
 ## Chunks
-Measure: 4 open · 3 closed · next A8
+Measure: 3 open · 4 closed · next A8
 
-- [ ] **60.2** Proof strip above the fold · S · closes A5 · needs —
-  - The `march.yml` cron badge and a one-line ouroboros claim
-    sit near `Three doors in`, ahead of the qualify step.
 - [ ] **60.3** Router table for `Pick a playbook` · S · closes A4 · needs —
   - Replace the eight prose blurbs with one table (you have /
     do this / time); each row still links to its playbook file.
-- [ ] **60.4** Trim to budget, verify the tree leg · M · closes A6, A7 · needs 60.2, 60.3
+- [ ] **60.4** Trim to budget, verify the tree leg · M · closes A6, A7 · needs 60.3
   - Cut `README.md` to at most 500 lines once the
     restructuring lands; `## What's in this kit`,
     `## Provenance` and `## Hard rules carried across every
