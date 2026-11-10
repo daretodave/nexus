@@ -6,31 +6,6 @@
 
 ## Pending
 
-### [user-issue #102] [MEDIUM] settle.mjs: closing a ladder spec's last chunk never writes its ARCHIVE "spec complete" line
-- category: external-issue
-- evidence: closing 99.1 (spec 99's only chunk) exercised
-  `scripts/plan/settle.mjs`'s ladder spec-removal branch
-  (`specFile === ladderFile`, around line 1134) for the first
-  time. That branch deletes the ladder spec file and its
-  roadmap/queue/README rows once its last chunk closes, and
-  pushes a `said` note, but never writes the
-  `- <date> · 99 · spec complete: … · <range>` line that
-  `scripts/plan-check.mjs`'s `checkHistory` (and the gate's
-  `chunks` leg) requires whenever a spec file disappears with
-  no matching "spec complete" or "spec vetoed" archive line.
-  The gate went red until the line was added by hand. The
-  non-ladder "truly empty" branch a few lines below already
-  asks the owner to do this by hand; the ladder branch should
-  do the same or better, write the line itself.
-- next: teach `settle.mjs`'s ladder-removal branch to write the
-  `· <ladder.spec> · spec complete: …` ARCHIVE.md line itself
-  (mirroring the non-ladder branch's leftover message if that's
-  not possible), in both `scripts/plan/settle.mjs` and its
-  `templates/scripts/plan/settle.mjs` twin, with a
-  `templates/scripts/__tests__/settle.test.mjs` (and this
-  repo's own pure suite) case that closes a ladder spec's last
-  chunk and asserts the archive line lands.
-
 ### [user-issue #96] [HIGH] [needs-user-call] heartbeat: march realized cadence below 40% — recurs after #91's close (hourly cron already off :00)
 - category: external-issue
 - evidence: opened 2026-11-06T19:23:23Z by the workflow token;
@@ -152,6 +127,13 @@
 - generator: motion · filed 2026-11-06
 
 ## Done
+
+### [x] [user-issue #102] [MEDIUM] settle.mjs: closing a ladder spec's last chunk never writes its ARCHIVE "spec complete" line — plotted 63.1
+- category: external-issue
+- resolution: plotted as spec 63
+  ([63-settle-ladder-archive-line.md](63-settle-ladder-archive-line.md)),
+  chunk 63.1, Asap lane, ending (#102) — past `sla_hours` with
+  no Asap line naming it (`skills/march.md` Step 1.5).
 
 ### [x] [A, 3.6] plan/bearings.md's locked Stack table still said "Node ≥18", three ticks after the floor moved to 20+ — this commit
 - category: doc-drift
