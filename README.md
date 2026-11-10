@@ -399,89 +399,17 @@ State files that carry intent across context loss:
 
 Door 3, in detail — the router above picked one of these:
 
-### → [`playbooks/pre-spec.md`](./playbooks/pre-spec.md)
-
-Have a pitch, no spec yet. A 30-minute interactive interview
-that produces `spec.md`, a `bearings.md` stub (the file that
-locks your stack, conventions, and standing decisions), and an
-optional visual-system commission prompt. The only nexus playbook
-where `AskUserQuestion` is allowed — see the carve-out at
-the top of the playbook. Output feeds straight into
-`new-project.md`.
-
-### → [`playbooks/new-project.md`](./playbooks/new-project.md)
-
-Greenfield. You have a `spec.md` and an empty (or near-empty)
-repo. This walks you through the substrate — bearings, a
-plan with two starter specs, design exports landing pad, the
-skill set — and ends with you running `/next` for the first
-time.
-
-### → [`playbooks/existing-project.md`](./playbooks/existing-project.md)
-
-Brownfield. The repo already has code, history, conventions,
-maybe even tests. You want to add the autonomous loop on top
-without breaking what works. This walks you through the
-non-destructive overlay — adding `skills/`, `plan/`, `.claude/`,
-and the gates without rewriting the existing app.
-
-### → [`playbooks/polyrepo.md`](./playbooks/polyrepo.md) *(variant)*
-
-Outgrown one repo? Once a project has multiple shippable units,
-a plan that should stay private while the product is public, or
-plan history that shouldn't share a log with product history,
-split `plan/` into its own repo with each product a sibling.
-Same skills, same state-file shapes — the tick's atomic act
-just spans two repos, pushed product-first.
-
-### → [`playbooks/workspace.md`](./playbooks/workspace.md) *(variant)*
-
-Outgrown polyrepo's two repos? Past `plan/` + one product, the
-same split generalizes to a workspace: an un-versioned local
-root — never its own git repo — holding `plan/` and every
-product as peers under one GitHub org.
-
-### → [`playbooks/ci-providers.md`](./playbooks/ci-providers.md)
-
-The deploy gate is the only piece that varies a lot per project.
-This is the matrix: Netlify, Vercel, Fly.io, Cloudflare Pages,
-GitHub Pages, Render, self-hosted, and "no deploy yet". For each,
-how `pnpm deploy:check` is wired and what state file it polls.
-
-### → [`playbooks/cloud-loop.md`](./playbooks/cloud-loop.md) *(opt-in)*
-
-Once your local loop is happy, optionally put the same loop on
-GitHub Actions so it ticks while your laptop is closed. A few
-files, the secrets, one validation run. One repo variable picks
-how ticks land: pushed to main (owner mode) or, by default, one
-chunk per pull request, built by an agent that holds no token.
-Defaults to `github-actions[bot]` author for zero-config setup;
-opt-in to your own GitHub identity if you want a uniform git
-log. **Free to operate** if your repo is public + you're on
-Claude Pro/Max. Already running your own Actions and a local
-workflow? [`playbooks/cloud-loop-existing-actions.md`](./playbooks/cloud-loop-existing-actions.md)
-adds the loop beside them, step by step.
-
-Don't reach for this until your verify gate is genuinely
-hermetic and the local loop has run cleanly for a few days —
-the cloud surfaces every flake.
-
-### → [`playbooks/hands-off.md`](./playbooks/hands-off.md)
-
-The walk-away runbook. "Unattended" and "hands-off" are
-different claims — this closes the seven silent-death modes
-between them: permission walls, silent stops, one bad chunk
-freezing the beast, drift where nobody's looking, expiring
-secrets, budget surprises, and two loops racing one branch.
-Ends in a pre-flight checklist and a 24-hour dry run.
-
-### → [`playbooks/recovery.md`](./playbooks/recovery.md)
-
-The incident runbook, written to be read during the incident.
-Safe-stop first, one triage tree, then a numbered procedure
-per scenario — red deploys, wedged git, churn loops, drift,
-outages, expired secrets, corrupted state. Recovery never
-force-pushes and never bypasses a gate.
+| you have | do this | time |
+| --- | --- | --- |
+| A pitch, no spec yet | [`playbooks/pre-spec.md`](./playbooks/pre-spec.md)<br>Interactive interview producing `spec.md`, a `bearings.md` stub (the file that locks your stack, conventions, and standing decisions), and an optional visual-system commission prompt. The only nexus playbook where `AskUserQuestion` is allowed — see the carve-out at the top of the playbook. Output feeds straight into `new-project.md`. | ~30 min |
+| A `spec.md` and an empty (or near-empty) repo — greenfield | [`playbooks/new-project.md`](./playbooks/new-project.md)<br>Walks you through the substrate — bearings, a plan with two starter specs, design exports landing pad, the skill set — and ends with you running `/next` for the first time. | ~30 min |
+| An existing repo with code, history, conventions, maybe tests — brownfield | [`playbooks/existing-project.md`](./playbooks/existing-project.md)<br>Non-destructive overlay — adds `skills/`, `plan/`, `.claude/`, and the gates without rewriting the existing app. | ~30 min |
+| Outgrown one repo: multiple shippable units, a plan that should stay private while the product is public, or plan history that shouldn't share a log with product history *(variant)* | [`playbooks/polyrepo.md`](./playbooks/polyrepo.md)<br>Splits `plan/` into its own repo with each product a sibling. Same skills, same state-file shapes — the tick's atomic act just spans two repos, pushed product-first. | ~30 min |
+| Outgrown polyrepo's two repos — past `plan/` + one product *(variant)* | [`playbooks/workspace.md`](./playbooks/workspace.md)<br>Generalizes the split to a workspace: an un-versioned local root — never its own git repo — holding `plan/` and every product as peers under one GitHub org. | ~30 min |
+| Need the deploy gate wired for your provider | [`playbooks/ci-providers.md`](./playbooks/ci-providers.md)<br>The matrix: Netlify, Vercel, Fly.io, Cloudflare Pages, GitHub Pages, Render, self-hosted, and "no deploy yet". For each, how `pnpm deploy:check` is wired and what state file it polls. | ~10 min |
+| Local loop is happy; want it ticking while your laptop is closed *(opt-in)* | [`playbooks/cloud-loop.md`](./playbooks/cloud-loop.md)<br>A few files, the secrets, one validation run. One repo variable picks how ticks land: pushed to main (owner mode) or, by default, one chunk per pull request, built by an agent that holds no token. Defaults to `github-actions[bot]` author for zero-config setup; opt-in to your own GitHub identity for a uniform git log. **Free to operate** if your repo is public + you're on Claude Pro/Max. Already running your own Actions and a local workflow? [`playbooks/cloud-loop-existing-actions.md`](./playbooks/cloud-loop-existing-actions.md) adds the loop beside them, step by step. Don't reach for this until your verify gate is genuinely hermetic and the local loop has run cleanly for a few days — the cloud surfaces every flake. | ~30 min |
+| Want to walk away for real — "unattended" and "hands-off" are different claims | [`playbooks/hands-off.md`](./playbooks/hands-off.md)<br>Closes the seven silent-death modes between them: permission walls, silent stops, one bad chunk freezing the beast, drift where nobody's looking, expiring secrets, budget surprises, and two loops racing one branch. Ends in a pre-flight checklist and a 24-hour dry run. | ~1 day (dry run) |
+| Something's broken, right now | [`playbooks/recovery.md`](./playbooks/recovery.md)<br>The incident runbook, written to be read during the incident. Safe-stop first, one triage tree, then a numbered procedure per scenario — red deploys, wedged git, churn loops, drift, outages, expired secrets, corrupted state. Recovery never force-pushes and never bypasses a gate. | varies |
 
 Prefer a numbered checklist over picking a playbook? Jump to
 [How to use this kit](#how-to-use-this-kit) below.
