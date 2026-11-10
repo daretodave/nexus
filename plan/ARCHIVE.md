@@ -269,3 +269,4 @@ still pending at the move and live on as specs.
 - 2026-11-10 · 60 · spec complete: the README now gates once, carries one proof strip and one three-door section, routes playbooks through a table instead of prose blurbs or mermaid, and holds to a 350-500 line budget with the tree leg still parsing `## What's in this kit` · fa6db2fe..63286fd8
 - 2026-11-10 · 63.1 · settle writes the ladder's own spec-complete archive line · bf7a38ca..bf7a38ca
 - 2026-11-10 · 63 · spec complete: settle's ladder-removal branch writes its own "· 99 · spec complete: …" ARCHIVE.md line, in both scripts/plan/settle.mjs and its templates twin, with a settle-run.test.mjs case covering it · bf7a38ca..bf7a38ca
+- 2026-11-10 · 61.1 · CHANGELOG.md now tracks why templates/ changed · c7019dcf..c7019dcf

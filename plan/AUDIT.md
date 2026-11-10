@@ -6,6 +6,22 @@
 
 ## Pending
 
+### [MEDIUM] settle.mjs's setLeft() never updates a spec row written in "N of M chunks" format
+- category: drift
+- evidence: `scripts/plan/settle.mjs`'s `setLeft()`
+  (`scripts/plan/settle.mjs:243`) only rewrites a roadmap row
+  that already ends `| N left |`; `plan/README.md`'s spec 61
+  row instead reads `| 0 of 3 chunks |`
+  (`node scripts/plan/progress.mjs`'s own format,
+  `scripts/plan/progress.mjs:110-113`). Closing chunk 61.1 this
+  tick left that cell reading `0 of 3 chunks` on main even
+  though `progress.mjs 61` now reports `1 of 3 chunks · 33%` —
+  the table and the live progress command disagree.
+- next: teach `setLeft()` (or a sibling in settle.mjs) to also
+  match `\| \d+ of \d+ chunks \|` and rewrite it from the same
+  closed-chunk count it already computes for the Measure line,
+  so either row format stays true after a close.
+
 ### [user-issue #103] [MEDIUM] support.mjs sla re-flags issues forever: plotted chunks never carry Refs #N for tell to close
 - category: external-issue
 - evidence: filed 2026-11-10 while running march Step 1.5

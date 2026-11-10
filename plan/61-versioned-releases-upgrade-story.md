@@ -57,8 +57,6 @@ vendor-drop case exists here for a sha256 walk to cover.
 
 ## Acceptance
 
-- **A1** `CHANGELOG.md` exists at the repo root, newest first,
-  entries keyed by template path.
 - **A2** Every commit in this spec's own history that touches
   `templates/**` carries a matching `CHANGELOG.md` entry.
 - **A3** `scripts/verify.mjs` gains a leg that fails a commit
@@ -69,22 +67,15 @@ vendor-drop case exists here for a sha256 walk to cover.
   or `conflicted`; `playbooks/upgrade.md` documents it.
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 3 open · 1 closed · next A5
 
-- [ ] **61.1** `CHANGELOG.md` seeded at the kit root · S ·
-  closes A1 · needs —
-  - Newest first, entries keyed by template path:
-    `- templates/skills/next.md: <what changed, one line>
-    (<date>, <commit or spec #>)`.
-  - Linked from the root `README.md` tree and `agents.md`'s
-    repo-shape table (every new doc discoverable, same commit).
 - [ ] **61.2** verify gate leg for `CHANGELOG.md` coverage · M
-  · closes A2, A3 · needs 61.1
+  · closes A2, A3 · needs —
   - A commit touching `templates/**` with no matching dated
     `CHANGELOG.md` entry for at least one touched path fails
     the gate (the gate-teaching rule, `agents.md` rule 3).
 - [ ] **61.3** Upgrade report cites `CHANGELOG.md` · S · closes
-  A4 · needs 61.1
+  A4 · needs —
   - `sync.mjs`'s report cites the `CHANGELOG.md` entries for
     each `merged`/`conflicted` file; `playbooks/upgrade.md`
     shows the citation in its worked example.
