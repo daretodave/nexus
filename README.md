@@ -19,78 +19,45 @@ This kit ships itself: nexus is adopted on its own repo, running the loop the ba
 
 ## Is this for you?
 
-**Use nexus when:**
-
-- You have a **definite product** in mind, captured in some
-  form of `spec.md`. The methodology assumes you know roughly
-  what you're building.
-- You're willing to invest **2–3 hours of setup** to get hours
-  to days of unattended autonomous build time.
-- You can let `main` deploy automatically — the loop assumes
-  push = deploy, and gates around that contract.
-- You're comfortable having an AI agent decide-and-ship
-  without per-commit review. (`/oversight` and the audit logs
-  are how you stay honest after the fact.)
+**Use nexus when:** you have a **definite product** in some
+form of `spec.md`; you're willing to invest **2–3 hours of
+setup** for hours-to-days of unattended build time; you can
+let `main` deploy automatically; and you're comfortable with
+an agent deciding-and-shipping without per-commit review
+(`/oversight` and the audit logs keep you honest after).
 
 **Skip it — or use a playbook instead of the TL;DR fast path
-below — when:**
-
-- The product is exploratory, you're discovering as you
-  build, and every decision needs human input. Talk to the
-  agent conversationally instead.
-- The repo has security-critical paths where every commit
-  needs human review. The deploy gate catches regressions, but
-  it's not a security review.
-- You have no spec — even a one-pager — to anchor the build
-  plan. Write one first; it's worth a day.
-- Your repo is in active multi-developer flux. A playbook lets
-  you choose what merges; the TL;DR fast path doesn't.
-- You're skeptical of unattended adoption, or want to
-  understand the methodology before trusting it. Read a
-  playbook or the concept docs first, then come back if the
-  TL;DR still sounds right.
+below — when:** the product is exploratory and needs human
+input per decision; the repo has security-critical paths
+needing per-commit review; you have no spec yet (write a
+one-pager first — see [pre-spec](#tldr--i-have-a-pitch-no-spec-yet)
+if you only have a pitch); the repo is in active
+multi-developer flux; or you're skeptical of unattended
+adoption and want to read the methodology first.
 
 The TL;DR doors ahead are for "I trust the methodology, save
 me the keystrokes." The playbooks are for everyone else.
 
 ### Used v1? On v2?
 
-**Used v1?** A repo on the phase plan moves to specs and
-chunks with one command. Run it at the repo's root; it is a
-dry run, it reads a fresh fetch of your origin, and it never
-touches your checkout:
+**Used v1?** One command moves a phase-plan repo to specs and
+chunks — a dry run at the repo's root, from a fresh fetch, that
+never touches your checkout (`--land owner` lands it between
+ticks, `--rollback` undoes it):
 
 ```bash
 npx @usenexus/cli upgrade            # the report: files, archive lines, the first tick it predicts
 npx @usenexus/cli upgrade --write    # one commit on nexus/upgrade-v2, nothing pushed
 ```
 
-A live loop's own steps come across as project lanes, its
-workflow is merged rather than replaced, and every new knob is
-written at the value that keeps today's behaviour.
-`--land owner` lands it between two ticks and watches the
-first; `--rollback` undoes it in one commit.
+**On v2?** The same command syncs to the latest kit (edits
+merged three ways; the GUI flags it with a `nexus <version> is
+out` banner). **No checkout?** `--repo owner/name --pr` runs it
+from a temporary clone and opens a pull request instead.
 
-**On v2?** The same command syncs the repo to the latest kit:
-untouched kit files replaced, your edits merged three ways,
-new content added at conservative values. Run it whenever the
-kit moves; the GUI says when it has, with a `nexus <version>
-is out` banner whose Sync button runs the dry run.
-
-**No checkout?** `npx @usenexus/cli upgrade --repo owner/name
---pr` does it from a temporary clone and opens a pull request
-whose body is the report.
-
-The runbook, and the by-hand route:
-[`playbooks/upgrade.md`](./playbooks/upgrade.md). Any other
-agent, paste this at the repo's root (what it authorizes:
-[`prompts/upgrade.md`](./prompts/upgrade.md)):
-
-```
-Clone https://github.com/daretodave/nexus.git to ../nexus
-(or use ./.nexus if submoduled) if you haven't already, then
-read and follow ../nexus/prompts/upgrade.md exactly, in order.
-```
+Runbook: [`playbooks/upgrade.md`](./playbooks/upgrade.md); any
+other agent follows
+[`prompts/upgrade.md`](./prompts/upgrade.md) the same way.
 
 ---
 
@@ -105,27 +72,21 @@ plan of chunks, and `/next` ready to build the first.
 npx @usenexus/cli
 ```
 
-Run it at your project's root. It starts a local server on
-`127.0.0.1`, opens your browser, and drives your own Claude
-Code login: no API key, no account. It adopts nexus if the
-repo is new, then opens a live cockpit per session
-([`packages/cli`](./packages/cli/README.md)). For scripts,
-`npx @usenexus/cli run "<prompt>"` answers one prompt headless
-and prints JSON.
-
-#### The GUI in motion
+Run it at your project's root — local server, your own Claude
+Code login (no API key), adopts nexus if new, a live cockpit
+per session ([`packages/cli`](./packages/cli/README.md));
+scripts use `npx @usenexus/cli run "<prompt>"`, JSON out.
 
 ![The nexus GUI in seven seconds: four star-named sessions breathe on the fleet; a click flies into vega's cockpit; vega asks how to break ties on points, the stage hushes and the question pulls into the conversation; the owner picks goal difference; the stage wakes, chunk 12.4 lands on main and drops into the shipped river, and vega claims 12.5](./assets/gifs/fleet-to-tug.gif)
 
-Prefer less motion? The [still frame](./assets/gifs/fleet-to-tug.png).
-Recorded from the GUI's own `fleet-to-tug` demo, a fictional
-project, and re-shot whenever the UI changes
+The GUI in motion — [still frame](./assets/gifs/fleet-to-tug.png)
+for less motion, recorded from the `fleet-to-tug` demo
 ([how](./packages/cli/README.md#recording-a-gif-of-a-demo)).
 
 ### 2. Any other agent? Give it this prompt.
 
-Paste it at your project's root, in Cursor, Codex, Claude Code
-without the GUI, or any agent that can read files and run git:
+Paste it at your project's root — Cursor, Codex, Claude Code
+without the GUI, any agent that reads files and runs git:
 
 ```
 Clone https://github.com/daretodave/nexus.git to
@@ -135,35 +96,18 @@ exactly, in order. Do not skip steps or invent scope beyond
 what it says.
 ```
 
-What it authorizes, in full: [`prompts/adopt.md`](./prompts/adopt.md).
-More detail, and what to expect back:
-[below](#tldr--clone--delegate-the-adoption). A pitch but no
-spec yet? [Start from the pitch](#tldr--i-have-a-pitch-no-spec-yet).
+Full authorization: [`prompts/adopt.md`](./prompts/adopt.md);
+detail [below](#tldr--clone--delegate-the-adoption). Pitch,
+no spec? [Start here](#tldr--i-have-a-pitch-no-spec-yet).
 
 ### 3. By hand? Follow a playbook.
 
-- [`playbooks/new-project.md`](./playbooks/new-project.md):
-  greenfield, a spec and an empty repo.
-- [`playbooks/existing-project.md`](./playbooks/existing-project.md):
-  brownfield, a loop laid over code that already works.
-
-Not sure which one fits? Route yourself:
-
-```mermaid
-flowchart LR
-  spec{Have a spec.md?} -- yes --> green["playbooks/new-project.md"]
-  spec -- "no, but I have a pitch" --> pitch_check{Existing repo with code?}
-  spec -- nothing yet --> think[Come back when you have a pitch.]
-  pitch_check -- yes --> brown["playbooks/existing-project.md"]
-  pitch_check -- no --> presp["playbooks/pre-spec.md (interactive)"]
-  presp --> green
-  green --> brown_check{Existing repo with code?}
-  brown_check -- yes --> brown
-  brown_check -- no --> ship["/next by hand, the first time"]
-```
-
-Ten minutes to read each; [Pick a playbook](#pick-a-playbook)
-routes the rest (no spec yet, polyrepo, cloud loop).
+[`playbooks/new-project.md`](./playbooks/new-project.md)
+(greenfield) or
+[`playbooks/existing-project.md`](./playbooks/existing-project.md)
+(brownfield). Not sure which, or starting from a pitch, or
+outgrown one repo? [Pick a playbook](#pick-a-playbook) below
+routes every case — ten minutes to read each.
 
 ## TL;DR — clone + delegate the adoption
 
@@ -184,48 +128,41 @@ ls
 # my-project/   nexus/
 ```
 
-(If you'd rather submodule it into your repo:
-`git submodule add <url> .nexus` and treat `./.nexus` as the
-nexus root throughout.)
+Submoduling instead? `git submodule add <url> .nexus` and
+treat `./.nexus` as the nexus root throughout.
 
 ### 2. Hand it to your agent
 
 Paste the prompt from [door 2](#2-any-other-agent-give-it-this-prompt)
 at your project's root (where `git status` shows your repo).
-The full instruction set your agent follows lives in
-[`prompts/adopt.md`](./prompts/adopt.md); read it yourself
-first if you want to know exactly what you're authorizing.
-(See [`prompts/README.md`](./prompts/README.md) for what lives
-in that directory and why.)
+Full instructions: [`prompts/adopt.md`](./prompts/adopt.md) —
+read it first to know what you're authorizing
+([`prompts/README.md`](./prompts/README.md): what else lives
+in that directory).
 
 ### 3. Review what landed
 
-When the agent returns, expect:
+When the agent returns, expect: a new commit titled `chore:
+adopt nexus methodology`; files added (`agents.md`,
+`CLAUDE.md`, `plan/`, `skills/`, `.claude/`, `scripts/`,
+`.env.example`), existing source code **untouched**; any
+`[needs-user-call]` rows in `plan/AUDIT.md` the agent deferred
+to you; and `pnpm verify` / `pnpm deploy:check` specified and
+ready to wire — not necessarily passing yet.
 
-- A new commit titled `chore: adopt nexus methodology`.
-- Files added: `agents.md`, `CLAUDE.md`, `plan/`, `skills/`,
-  `.claude/`, `scripts/`, `.env.example`.
-- Existing source code: **untouched** (per the playbooks).
-- A list of `[needs-user-call]` rows in `plan/AUDIT.md` if the
-  agent had to defer any decisions to you.
-- `pnpm verify` (or stack-equivalent) and `pnpm deploy:check`
-  specified and ready to wire once the bootstrap lands — not
-  necessarily passing yet.
-
-Read the diff. Resolve the `[needs-user-call]` rows by editing
-the relevant files (or running `/oversight`). Populate `.env`
-with your tokens. **Then run `/next` for the first time** —
-by hand, level 0 of the intervention spectrum. Don't skip to
-`/loop /march`.
+Read the diff, resolve `[needs-user-call]` rows (edit the
+files, or run `/oversight`), populate `.env`. **Then run
+`/next` for the first time** — by hand, level 0 of the
+intervention spectrum. Don't skip to `/loop /march`.
 
 ---
 
 ## TL;DR — I have a pitch, no spec yet
 
-> Use this if you have a working name and a one-paragraph
-> pitch, but no `spec.md` yet. This runs the pre-spec
-> interview, writes `spec.md`, and then hands off to the
-> adoption flow above. End-to-end in one paste.
+> No `spec.md` yet, just a working name and a one-paragraph
+> pitch? This runs the pre-spec interview, writes `spec.md`,
+> then hands off to the adoption flow above — end-to-end in
+> one paste.
 
 Paste this at your project's root (where `git init` has run
 but there's nothing else yet); swap the URL if you use a fork:
@@ -242,12 +179,9 @@ Here's my pitch in my own words:
   what makes it interesting. Don't polish.>
 ```
 
-The full instruction set — pre-spec interview, then handoff
-to the adoption flow above — lives in
-[`prompts/pitch.md`](./prompts/pitch.md). Pitch quality
-matters: if you can't describe the product in one paragraph in
-plain language, come back when you can. The agent will not
-invent product direction for you.
+Full instructions: [`prompts/pitch.md`](./prompts/pitch.md).
+Pitch quality matters — the agent will not invent product
+direction for you.
 
 ---
 
@@ -255,70 +189,32 @@ invent product direction for you.
 
 ![The plan shape: a spec ends in chunks, each chunk closes acceptance IDs, a finished chunk leaves the plan as one archive line](./assets/plan-shape.svg)
 
-**The plan.** Each spec under `plan/` says what to build and
-how you'll know it's done (acceptance IDs: `A1`, `A2`, never
-renumbered), and ends in chunks: S, M or L, one session at
-most. A finished chunk leaves the plan as one line in
-`plan/ARCHIVE.md`. The plan only shrinks; progress is what is
-left. See [`concepts/plan-shape.md`](./concepts/plan-shape.md).
+**The plan.** Each spec under `plan/` ends in chunks (S/M/L,
+one session each) that close acceptance IDs (`A1`, `A2`, never
+renumbered); a finished chunk leaves one line in
+`plan/ARCHIVE.md` — the plan only shrinks. See
+[`concepts/plan-shape.md`](./concepts/plan-shape.md).
 
 ![The loop: /next builds one chunk and stops; /heads-down asks every question up front, then builds many; /march runs one tick per interval](./assets/loop.svg)
 
-**The verbs.** `/next` builds one chunk fully and stops.
-`/heads-down` asks every question first, claims a list, then
-runs `/next` through it on defaults. `/march` is the timed
-dispatcher: `/loop 45m /march` on your laptop, or the cloud
-loop on GitHub Actions. Work gets into the plan through
-`/plot` (a task, with its place in line), `/bug` (reproduce,
-fix or plot) and `/messy` (a raw dump, refined into specs);
-`/oversight` is where you steer.
+**The verbs.** `/next` builds one chunk and stops;
+`/heads-down` claims a list and loops `/next` on defaults;
+`/march` is the timed dispatcher, by hand or on GitHub Actions.
+Full verb list: [What you get](#what-you-get), below.
 
 ![How work lands: owner mode pushes main; contributor mode opens a pull request on next/<id>; both end on origin/main](./assets/landing.svg)
 
-**Owner mode.** The checkout decides how a chunk lands. The
-owner's (an untracked `.owner` file) pushes main and settles
-plan changes; every other checkout opens one pull request per
-chunk on `next/<id>`, its plan changes in `plan/pending/`. See
+**Owner mode.** The checkout decides how a chunk lands: the
+owner (an untracked `.owner` file) pushes main directly; every
+other checkout opens a pull request on `next/<id>`. See
 [`playbooks/owner-mode.md`](./playbooks/owner-mode.md).
-
----
-
-## A single `/march` tick, at a glance
-
-```text
-$ /march
-
-  Triage:   0 unlabeled issues — humming on.
-  Critique: deferred (4 of 12 commits since last pass).
-  Expand:   not due (12 of 20 commits; deliveries first).
-  Dispatch: ready chunk → /next top, 08.3 (M · closes A4, A5).
-
-      1   Claim 08.3; read spec 08
-      2   Builder: 7 components + 3 helpers, in a worktree
-      3   Tests:  12 unit, 2 e2e
-      4   pnpm verify   ·  typecheck · test · validate · build · e2e   ✓
-      5   Close 08.3 + commit + push  (a3f1e2c)
-      6   pnpm deploy:check  ·  ready ✓  →  https://acme.dev
-
-  08.3 archived. Spec 08: 2 chunks left. Next tick picks 08.4.
-```
-
-(Triage/Critique/Expand/Dispatch are the slash commands in
-[What you get](#what-you-get), below.)
-
-Each tick: one decision, one chunk, one verify, one commit,
-one push, one deploy confirmation. Repeat under `/loop` for
-hours or days, or put the same loop on GitHub Actions
-([`playbooks/cloud-loop.md`](./playbooks/cloud-loop.md)) to
-tick while your laptop is closed.
-
-<img width="1280" height="794" alt="WALK_AWAY" src="https://github.com/user-attachments/assets/9076088d-01ee-4720-aa10-b393b8dd4076" />
 
 ---
 
 ## What you get
 
-The verbs you reach for:
+User-facing verbs, then the loop's own (dispatched by `/march`
+or run by hand):
 
 | Command | Job |
 |---|---|
@@ -329,11 +225,6 @@ The verbs you reach for:
 | `/messy` | Dump messy thoughts. Kept raw (untracked), clustered into themes, refined into specs. |
 | `/oversight` | **The general-purpose interactive command.** Pause, brief, ask targeted questions, adjust the plan, promote candidates into specs. |
 | `/jot` | **The user's quickfire.** Drop a free-text observation into `plan/CRITIQUE.md` and push, in seconds. The next `/iterate` tick scores it (with a `+0.5` user-source bump) and ships the fix. No questions back. |
-
-The loop's own verbs, dispatched by `/march` or run by hand:
-
-| Command | Job |
-|---|---|
 | `/march` | Outer dispatcher, the autonomous entry point: triage → critique → chunk → data → expand → iterate. |
 | `/iterate` | Audit the project, ship one improvement. The endgame once the plan is empty. |
 | `/critique` | External-observer pass — visit the live site as a stranger, file fresh-eyes findings. |
@@ -343,7 +234,8 @@ The loop's own verbs, dispatched by `/march` or run by hand:
 | `/tidy` | Clear claims nobody is working on; offer to close idle worktrees and delete merged branches. |
 | `/rebooting` | The reboot train (with `/reboot-ready`, `/reboot-resume`): park every running loop, then resume each from its ledger. |
 
-The building blocks underneath, some optional:
+The building blocks underneath — some optional, some
+opt-in/demand-pull for projects that need them:
 
 | Command | Job |
 |---|---|
@@ -351,47 +243,20 @@ The building blocks underneath, some optional:
 | `/plan-a-spec` | Write, refine or chunk one spec without shipping code. |
 | `/ship-data` | Add or repair one record in the GitHub-as-DB (optional — only for projects with structured data; see [`customization/data-layer.md`](./customization/data-layer.md)). |
 | `/ship-migration` | Ship one database migration — additive only, enforced by a linter; destructive changes escalate to `/oversight` (optional — only for `pure-db` / `hybrid-with-managed-postgres` projects). |
-| `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets through the two-ring vault (see [`customization/secrets.md`](./customization/secrets.md)). State-aware, idempotent, never destructive. Carries its own narrow `AskUserQuestion` exception for token collection and destructive-action confirmation. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
+| `/bootstrap` | **Opt-in executor.** Takes a project from tokens-in to a green deploy + ticking cloud loop by driving provider CLIs (`gh`, `vercel`, `supabase`) and propagating secrets through the two-ring vault (see [`customization/secrets.md`](./customization/secrets.md)). State-aware, idempotent, never destructive. See [`customization/bootstrap-automation.md`](./customization/bootstrap-automation.md). |
+| `/ship-asset` | Render and ship one brand asset (OG image, favicon, social card, SVG → PNG, wordmark variant), for `Surface: site` / `hybrid` (see [`customization/branding.md`](./customization/branding.md)). Demand-pull — drains findings filed by `/critique`, `/iterate` or `/oversight`. Omit if not adopting. |
+| `/moderate` | Drain the four moderation queues (`held`/`flagged`/`new-account`/`appeal`) one item per tick — approve/hide is loop-drainable, delete/ban always escalates to `/oversight`. UGC projects only (see [`customization/moderation-loop.md`](./customization/moderation-loop.md)); omit otherwise. |
+| `/design` | The Claude Design round trip: `prompt` writes the paste prompt from the plan, `addendum` only what changed since. Opt-in: only when the owner designs in Claude Design (see [`playbooks/design-handoff.md`](./playbooks/design-handoff.md)); omit otherwise. |
 
-Plus two **opt-in** demand-pull skills for projects that need
-them:
-
-| Opt-in command | Job |
-|---|---|
-| `/ship-asset` | Render and ship one brand asset (OG image, favicon, social card, SVG → PNG, wordmark variant), for `Surface: site` / `hybrid` (see [`customization/branding.md`](./customization/branding.md)). Demand-pull only — drains asset findings filed by `/critique`, `/iterate`, or an `/oversight` brand pass. Omit the file if not adopting. |
-| `/moderate` | Drain the four moderation queues (`held`/`flagged`/`new-account`/`appeal`) one item per tick — approve/hide is loop-drainable, delete/ban always escalates to `/oversight`. Adopt only for UGC projects (see [`customization/moderation-loop.md`](./customization/moderation-loop.md)); omit the file otherwise. |
-| `/design` | The Claude Design round trip: `prompt` writes the paste prompt from the plan (design system first, screens, states, roles), `addendum` only what changed since, numbered on. Opt-in: only when the owner designs in Claude Design (see [`playbooks/design-handoff.md`](./playbooks/design-handoff.md)); omit the file otherwise. |
-
-Plus specialist sub-agents the main agent delegates to: `scout`
-(open-web research), `reader` (live-site observer), `brander`
-(asset rendering — only present when `/ship-asset` is adopted),
-and one or two domain specialists you author for your project.
-
-Two awareness layers wrap every push:
-- **Verify gate** (pre-commit, hermetic): typecheck → unit →
-  build → e2e. The e2e leg is the load-bearing piece — see
-  [`customization/hermetic-e2e.md`](./customization/hermetic-e2e.md).
-- **Deploy gate** (post-push, CI/CD-aware): polls your hosting
-  provider until ready or error
-
-One enforcement layer (opt-in, for Claude Code runners) turns
-the hard rules from promises into walls: a permission
-allowlist so unattended ticks never stall on a prompt, guard
-hooks that mechanically block `--no-verify` / force-pushes /
-backgrounded gates, and a pager so a stopped loop pages your
-phone instead of waiting to be discovered. See
-[`customization/claude-code.md`](./customization/claude-code.md)
-and the walk-away runbook,
-[`playbooks/hands-off.md`](./playbooks/hands-off.md).
-
-State files that carry intent across context loss:
-- `plan/README.md` + the specs — what's left to build, as
-  chunks with acceptance IDs (the plan only shrinks; see
-  [`concepts/plan-shape.md`](./concepts/plan-shape.md));
-  `plan/pending/` holds plan changes waiting for the owner's
-  settle, and the claims branch says who builds which chunk
-- `plan/AUDIT.md` (+ `data/BACKLOG.md` + `plan/CRITIQUE.md`) —
-  queues the loop drains
+Plus specialist sub-agents (`scout`, `reader`, `brander` when
+adopted); a **verify gate** and **deploy gate** on every push
+(see [`customization/hermetic-e2e.md`](./customization/hermetic-e2e.md));
+an opt-in **enforcement layer** for Claude Code runners
+(permission allowlist, guard hooks, a pager; see
+[`customization/claude-code.md`](./customization/claude-code.md),
+[`playbooks/hands-off.md`](./playbooks/hands-off.md)); and
+state in `plan/README.md` + the specs, plus the queues
+`plan/AUDIT.md` / `plan/CRITIQUE.md`.
 
 ---
 
@@ -416,8 +281,6 @@ Prefer a numbered checklist over picking a playbook? Jump to
 
 ---
 
-<img width="1280" height="686" alt="LOOP_A" src="https://github.com/user-attachments/assets/d5ce336a-5c7b-424f-b752-5df4d37c03e6" />
-
 ## The intervention spectrum
 
 The loop scales from "I drive every step" to "I leave for the
@@ -432,15 +295,10 @@ for the full ladder; the short version:
 | **3 — Loop, unattended** | `/loop 30m /march`. Walk away. | Hours of autonomous work. Deploy gate + audit trail keep it honest. |
 | **4 — 80-hour beast** | Same. Come back days later. | Every chunk archived, the plan empty, `/iterate` carrying the load. The site iterates itself. |
 
-Levels 3–4 require:
-- A green deploy gate is reachable (auth token + hosting wired).
-- The plan has enough specs to chew through without running
-  out (or `/iterate` carries the load once the plan is
-  empty).
-- `/oversight` works (you'll need it eventually).
-
-Level 4 is where the methodology earns its name. It's also the
-hardest to reach — most projects get to level 3 and stay there.
+Levels 3–4 require a reachable deploy gate, enough specs to
+chew through (or `/iterate` once the plan is empty), and a
+working `/oversight`. Level 4 is where the methodology earns
+its name — and the hardest to reach; most projects stay at 3.
 
 ---
 
@@ -450,369 +308,57 @@ hardest to reach — most projects get to level 3 and stay there.
 nexus/
 ├── README.md                          # this file
 ├── intervention-spectrum.md           # the levels in detail
-├── agents.md                          # nexus's OWN rule book (the kit runs on itself)
-├── CLAUDE.md                          # pointer at agents.md (Claude Code only auto-loads CLAUDE.md from repo root)
+├── agents.md                          # + CLAUDE.md: nexus's OWN rule book (the kit runs on itself), pointer at it
 ├── CONTRIBUTING.md                    # how to contribute
 ├── prompts/                           # canonical paste-prompts — versioned, public API
 │   ├── README.md                      # what these are, how the short paste uses them
-│   ├── adopt.md                       # the full "Adopt nexus" agent prompt
-│   ├── pitch.md                       # the full pitch-to-adopted agent prompt
-│   └── upgrade.md                     # the upgrade agent prompt: dry run, report read back, a landing only on your say-so
+│   └── adopt.md                       # + pitch.md, upgrade.md: the full adopt/pitch/upgrade agent prompts
 ├── package.json                       # the kit's own verify gate wiring
 ├── nexus.secrets.json                 # nexus's own secrets by name, never a value (customization/secrets.md)
 ├── assets/                            # generated SVG diagrams (scripts/diagrams.mjs); hand edits fail the gate
-│   ├── gifs/fleet-to-tug.gif          # the GUI in motion, recorded from a demo scenario (npm run record in packages/cli)
-│   └── gifs/fleet-to-tug.png          # its still poster, for readers who ask for less motion
-├── scripts/
-│   ├── verify.mjs                     # the kit's own gate: links · tree · discover · placeholders · anatomy · emoji · dualshell · chunks · scripts · workflows · diagrams · gifs · secrets · upgrade (opt-in: scripts-git · adopt-dryrun · design)
-│   ├── diagrams.mjs                   # writes every assets/*.svg from one style table; --check is the gate's diagrams leg
-│   ├── __tests__/diagrams.test.mjs    # the generator's own suite (run by the diagrams leg)
-│   ├── gifs.mjs                       # every GIF the README shows: exists, 5-8 s, 3 MB at most, alt text, its poster (the gifs leg)
-│   ├── __tests__/gifs.test.mjs        # the checker's own suite (run by the gifs leg)
-│   ├── cadence-twins.mjs              # the Cadence, Quota gate and Chain steps agree across nexus, templates/ and the CLI kit, and no shipped cron fires at :00 (the cadence-twins leg)
-│   ├── __tests__/cadence-twins.test.mjs # the checker's own suite (run by the cadence-twins leg)
-│   ├── cloud/probe-latency.mjs        # owner-run: dispatch p50/p90 of a no-model probe.yml (added to re-measure), march's schedule lag, the hook probe line
-│   ├── __tests__/probe-latency.test.mjs # its suite, gh stubbed (run by the scripts leg)
-│   ├── cloud/patch-v1.mjs             # owner-run: a v1 repo's march.yml + night.yml get the quota gate and an off-:00 cron (dry run, --write)
-│   ├── __tests__/patch-v1.test.mjs    # its suite, git stubbed, the patched march.yml through workflow-lint (scripts leg)
-│   ├── __tests__/march-cli-gate.test.mjs # march.yml builds, gates and walks the CLI; heartbeat watches cli-ci (scripts leg)
-│   ├── pulse.mjs                      # offline instrument panel: queue/plan/candidate counts, --motion, no network
-│   ├── plan/settle.mjs                # npm run settle: the owner folds plan/pending/ into the plan (+ pending, settled, config, footguns)
-│   ├── plan/progress.mjs              # npm run progress: where a spec stands, ASCII (what /next status and /heads-down print; --json for the GUI)
-│   ├── plan/order.mjs                 # npm run order: the plan in /next's pick order (+ plan-check.mjs, the template's twin)
-│   ├── plan/triage-match.mjs          # /triage: which open spec an issue belongs to, and the open PR already covering it (twin)
-│   ├── plan/promote.mjs               # aged promotion: /expand's pick, the Held veto line, /march's veto sweep; re-evidence scoring, the Pending cap (twin)
-│   ├── plan/lanes.mjs                 # project lanes: what runs at march's pre/queue and iterate's dimensions hooks (twin)
-│   ├── plan/refill.mjs                # the stock refill lane: runs the generators plan/bearings.md lists (twin)
-│   ├── plan/motion.mjs                # the motion pulse and heartbeat.yml's motion-stall alarm (twin)
-│   ├── plan/unreleased.mjs            # /digest's unreleased CLI fixes: packages/cli commits on main since the last cli-v* tag
-│   ├── __tests__/unreleased.test.mjs  # its pure suite (scripts leg); __tests__/unreleased-run.test.mjs, a scratch repo (scripts-git)
-│   ├── release-reply.mjs              # publish.yml's reply job: a cli-v* tag closes the open issues its Refs #N fixed (nexus only)
-│   ├── __tests__/release-reply.test.mjs # its suite, git and gh stubbed, plus publish.yml's reply job (scripts leg)
-│   ├── plan/ui-rows.mjs               # /iterate's H rows: their shape, at most 3 Pending, and the magic guard on next
-│   ├── __tests__/iterate-ui.test.mjs  # its suite, plus H, signal F and the magic guard in the skills (scripts leg)
-│   ├── plan/critique-gui.mjs          # /critique's GUI pass: the onboarding walk or its skip line; walk rows checked
-│   ├── __tests__/critique-gui.test.mjs # its suite, plus the pass in the skill and its command (scripts leg)
-│   ├── plan/locks.mjs                 # lock timeouts: past max_age a lock takes its fallback or asks once (twin)
-│   ├── plan/loop-rows.mjs             # /iterate's I rows: one lever each, ease <= 6, one shipped per 7 days, YAML asked (twin)
-│   ├── __tests__/iterate-loop.test.mjs # nexus's own I rows clean, plus dimension I in the skills and bearings (scripts leg)
-│   ├── plan/state.mjs                 # the state diet: queue headers and size (the state-size leg); compact old Done rows (twin)
-│   ├── plan/support.mjs               # the Support level: triage's route to /bug, the asap_cap count, march's keep-going, the Step 1.5 SLA, aged user rows, a landed fix told and closed, the digest's Support line and needs-user escalation (twin)
-│   ├── plan/improve.mjs               # the improvement dial: Improve: sets every expansion knob's default, an override line wins for its knob; each knob's value and source (twin)
-│   ├── generators/issue-age.mjs       # an open issue past the SLA becomes one AUDIT HIGH row (twin)
-│   ├── generators/mirror-orphan.mjs   # a mirrored finding whose plan row is gone becomes one AUDIT row again (twin)
-│   ├── generators/stale-candidate.mjs # an aged candidate no promote rule reaches becomes one needs-user ask (twin)
-│   ├── generators/motion.mjs          # a stalled motion pulse becomes one AUDIT HIGH row about the loop (twin)
-│   ├── generators/research.mjs        # field research: the brief, then the tick's web findings become field candidates (twin)
-│   ├── generators/cli-ci-red.mjs      # a red cli-ci run on main becomes one AUDIT HIGH row per red streak (nexus only)
-│   ├── generators/cli-deps.mjs        # a packages/cli dependency a breaking release behind becomes one AUDIT row (nexus only)
-│   ├── generators/ui-walk.mjs         # the GUI walk's findings become /iterate H rows, at most 3 Pending (nexus only)
-│   ├── __tests__/generators-nexus.test.mjs # their suite, gh, npm and the walk stubbed (scripts leg)
-│   ├── claims.mjs                     # npm run claims: who builds which chunk (+ claims-codec.mjs, owner.mjs)
-│   ├── git/push-policy.mjs            # pre-push: main on origin/upstream is the owner's checkout's alone (owner mode)
-│   ├── announce.mjs                   # npm run announce: the notice board every loop on this machine reads
-│   ├── ledger.mjs                     # npm run ledger: each session's live ledger (star names; a crash resumes like a reboot)
-│   ├── worktree.mjs                   # npm run worktree: close a worktree without deleting through its links; list for /tidy
-│   ├── design/ingest.mjs              # /design ingest: a Claude Design export into design/handoff/<date>/ with a manifest (the template's twin)
-│   ├── design/render.mjs              # a handoff's boards as PNGs through the installed Chrome, with board-runtime.js (twins)
-│   ├── design/compare.mjs             # a board PNG against the app's: percent differing, a diff PNG; png.mjs reads both (twins)
-│   ├── design/port-map.mjs            # a handoff's port.json: every board ported, skipped with a reason, or pending; the opt-in design leg (twin)
-│   ├── design/port.workflow.js        # the port recipe as a Workflow script: foundation, pages, integrate, fidelity per theme, land (twin)
-│   ├── upgrade-plan.mjs               # the v1 to v2 plan converter (the template's twin; nexus's own plan is already v2)
-│   ├── upgrade-files.mjs              # the v2 kit file list, computed from import closures: the CLI's bundled kit and upgrade.md's copy list (the upgrade leg)
-│   ├── __tests__/upgrade-files.test.mjs # its suite (run by the upgrade leg)
-│   ├── upgrade-kit-text.mjs           # every header and paragraph the kit's march and iterate skills ever held, and every line its march.yml prompt held: how the upgrade tells a repo's own steps and prompt lines from kit text (the upgrade leg)
-│   ├── upgrade-kit-text.json          # its committed snapshot (--write folds a kit edit in; the CLI bundles it as kit-text.json)
-│   ├── __tests__/upgrade-kit-text.test.mjs # its suite (run by the upgrade leg)
-│   ├── secrets.mjs                    # npm run secrets: status, set, import, names, check, push, audit, request, run, scan; never a value (+ plan/secrets-manifest.mjs, secrets-vault.mjs, secrets-keychain.mjs, secrets-sinks.mjs, secrets-audit.mjs, secrets-run.mjs, secrets-scan.mjs; twins)
-│   ├── design/prompt.mjs              # /design prompt and /design addendum: the Claude Design paste prompt drafted from the plan (the template's twin)
-│   ├── adopt-dryrun.mjs               # opt-in: mechanizes new-project.md's plan starters + copy + placeholder-sweep + prune steps (Git Bash on Windows)
-│   ├── new-skill.mjs                  # skill scaffolder: emits skills/<name>.md + .claude/commands/<name>.md
-│   └── install-hooks.mjs              # opt-in: arms node scripts/verify.mjs (pre-commit) + the push policy (pre-push)
-├── playbooks/
-│   ├── pre-spec.md                    # pitch → spec.md (interactive)
-│   ├── new-project.md                 # greenfield setup
-│   ├── existing-project.md            # brownfield retrofit
-│   ├── windows-notes.md               # PowerShell twins + Windows hazards page
-│   ├── ci-providers.md                # deploy-gate variations
-│   ├── cloud-loop.md                  # opt-in GitHub Actions loop
-│   ├── cloud-loop-existing-actions.md # adding it beside your own Actions and local workflow (the GUI's checklist)
-│   ├── hands-off.md                   # the walk-away runbook — close the seven silent-death modes
-│   ├── recovery.md                    # the incident runbook — safe-stop, triage tree, procedures
-│   ├── upgrade.md                     # npx @usenexus/cli upgrade: v1 to specs + chunks, a v2 repo to the latest kit; the by-hand route and its generated copy list
-│   ├── owner-mode.md                  # how work lands: .owner pushes main + settles, else next/<id> PRs; rulesets
-│   ├── design-handoff.md              # the Claude Design round trip: prompt, addenda, link, ingest, port, skip list
-│   ├── polyrepo.md                    # variant: plan/ as its own repo + sibling product repos
-│   └── workspace.md                   # variant: un-versioned root + org-per-project, past two repos
-├── concepts/
-│   ├── architecture.md                # the whole system in one read
-│   ├── loop-shapes.md                 # the genus: dispatcher, night shift, heartbeat, concierge, pollinator, lanes, meta-loop
-│   ├── plan-shape.md                  # specs, chunks, acceptance IDs: the plan only shrinks
-│   ├── generators.md                  # the queue refills itself: the refill lane, the generator contract, domain patterns
-│   ├── skills-anatomy.md              # how to read/write a skill file
-│   ├── asking-well.md                 # the question-shape convention
-│   └── design-round-trip.md           # Claude Design in, the repo's handoff as source of truth; vs. the in-repo session
-├── customization/
-│   ├── verify-gate.md                 # composing the right pre-commit checks
-│   ├── hermetic-e2e.md                # the e2e leg — patterns, alt-port DB seeding, smoke walker
-│   ├── data-layer.md                  # gh-as-db / hybrid-with-managed-postgres / pure-db / saas-cms / none
-│   ├── sub-agents.md                  # designing your specialists
-│   ├── lanes.md                       # alpha/beta/gamma — three agents, one branch (attended fan-out)
-│   ├── project-lanes.md               # a project's own march/iterate steps in lanes files a kit re-sync never overwrites
-│   ├── claims.md                      # who builds which chunk: orphan claims branch, CAS, session-scoped, 24h TTL
-│   ├── sessions.md                    # many sessions on one machine: notice board, live ledger, worktrees, reboot train
-│   ├── claude-code.md                 # the Claude Code layer — permissions, guard hooks, pager, model routing
-│   ├── branding.md                    # opt-in /ship-asset + brander agent (Surface-gated)
-│   ├── visual-system.md               # design system layer (upstream of branding/assets)
-│   ├── moderation-loop.md             # mod queues + /oversight escalation (for UGC projects)
-│   ├── external-services.md           # the setup/ paradigm — pre-flight every dashboard
-│   ├── bootstrap-automation.md        # the executor that drives provider CLIs end-to-end (paired with external-services.md)
-│   ├── auth-aware-critique.md         # let /critique walk past a login wall (5 patterns; Auth: in bearings)
-│   ├── support.md                     # how hard the loop works an issue: NEXUS_SUPPORT and its variables, the digest's Support line
-│   ├── improvement-dial.md            # Improve: off|gentle|steady|bold sets every expansion knob's default; the table, the overrides
-│   ├── lessons-layer.md               # reflexes + domain-keyed lessons, hard caps, staged-hardening lint
-│   ├── secrets.md                     # nexus.secrets.json: secrets by name, never value; a chunk's secrets field
-│   ├── plot-report.md                 # /plot's nexus-plot block: the report as data, drawn as a card in the cockpit
-│   └── identity-layer.md              # identity/ + the footgun ladder (seen twice -> automate); the alternative
+│   └── gifs/fleet-to-tug.gif          # + its .png poster: the GUI in motion, recorded from a demo scenario
+├── scripts/                           # verify.mjs's legs, one dir per concern; __tests__/ siblings omitted
+│   ├── verify.mjs                     # the gate: links·tree·discover·placeholders·anatomy·emoji·dualshell·chunks·scripts·workflows·diagrams·gifs·secrets·upgrade
+│   ├── diagrams.mjs                   # + gifs.mjs, cadence-twins.mjs, pulse.mjs: assets, README GIFs, cron agreement, the offline panel
+│   ├── plan/                          # + generators/: plan machinery (settle, progress, order, triage-match, promote, lanes, refill, motion, support, improve, locks, state, ui-rows, critique-gui, loop-rows, unreleased) and queue refills (issue-age, mirror-orphan, stale-candidate, motion, research, cli-ci-red, cli-deps, ui-walk)
+│   ├── design/                        # + cloud/: the Claude Design round trip (ingest, render, compare, port-map, port.workflow.js, prompt) and cloud-loop machinery (probe-latency, patch-v1)
+│   ├── claims.mjs                     # + git/push-policy.mjs, owner.mjs: who builds what, the push policy, owner mode
+│   ├── secrets.mjs                    # secrets by name, never a value: status/set/import/check/push/audit/request/run/scan
+│   ├── announce.mjs                   # + ledger.mjs, worktree.mjs: the notice board, the live ledger, closing worktrees
+│   └── upgrade-plan.mjs               # + upgrade-files.mjs, upgrade-kit-text.mjs, new-skill.mjs, adopt-dryrun.mjs, release-reply.mjs, install-hooks.mjs: the upgrade leg, scaffolder, Windows dry-run, release reply, hook install
+├── playbooks/                          # the step-by-step guides; see Pick a playbook above
+│   ├── new-project.md                  # + existing-project.md, pre-spec.md, windows-notes.md: starting points + Windows twins
+│   ├── ci-providers.md                 # + cloud-loop.md, cloud-loop-existing-actions.md: deploy/ops wiring
+│   ├── hands-off.md                    # + recovery.md: the walk-away runbook, the incident runbook
+│   └── upgrade.md                      # + owner-mode.md, design-handoff.md, polyrepo.md, workspace.md: kit sync, how work lands, Design round trip, scale past one repo
+├── concepts/                           # the mental models behind the skills
+│   ├── architecture.md                 # the whole system in one read
+│   ├── plan-shape.md                   # + generators.md: chunks/acceptance IDs, the refill lane
+│   ├── loop-shapes.md                  # the genus: dispatcher, night shift, heartbeat, lanes, meta-loop
+│   └── skills-anatomy.md               # + asking-well.md, design-round-trip.md: writing a skill, asking well, Design handoff vs in-repo
+├── customization/                      # pick what applies; each doc is self-contained
+│   ├── verify-gate.md                  # + hermetic-e2e.md, data-layer.md: composing checks, the e2e leg, gh-as-db/hybrid/pure-db/saas-cms/none
+│   ├── sub-agents.md                   # + lanes.md, project-lanes.md, claims.md, sessions.md, claude-code.md: specialists, fan-out, who builds what, permission walls
+│   ├── branding.md                     # + visual-system.md, moderation-loop.md, auth-aware-critique.md: assets, design system, mod queues, login-walled critique
+│   └── support.md                      # + improvement-dial.md, lessons-layer.md, secrets.md, plot-report.md, identity-layer.md, external-services.md, bootstrap-automation.md: knobs, lessons, the vault, plot's report card, footgun ladder, setup/ runbooks, the executor
 ├── skills/                            # nexus's OWN skills — the loop that ships the kit
-│   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md)
-│   ├── heads-down.md                  # /heads-down — ask up front, then loop /next for hours
-│   ├── plot.md                        # /plot — a task into the plan with its place in line (+ bug.md: /bug)
-│   ├── messy.md                       # /messy — a raw dump into specs (the GUI's explode)
-│   ├── tidy.md                        # /tidy — clear dead claims, close idle worktrees (worktree.mjs)
-│   ├── design.md                      # /design — the Claude Design prompt, addenda and ingest (scripts/design/; + design/ingest.md, design/render.md, design/port.md)
-│   ├── rebooting.md                   # /rebooting, /reboot-ready, /reboot-resume — the reboot train
-│   ├── march.lanes.md                 # project lanes for march (+ iterate.lanes.md); empty in nexus but for the example
-│   ├── march.md                       # + ship-a-chunk (/next's build steps), iterate, critique,
-│   │                                  #   triage, expand, oversight, jot
-│   ├── digest.md                      # /digest — nightly briefing, never dispatched by march
-│   └── lessons-pr.md                  # /lessons-pr — turn a sibling's NEXUS_LESSONS.md into a PR
+│   ├── next.md                        # /next — one chunk, done fully (+ next/build.md, next/land.md, heads-down.md)
+│   ├── plot.md                        # /plot — a task into the plan with its place in line (+ bug.md, messy.md)
+│   ├── tidy.md                        # /tidy — clear claims, close worktrees (+ rebooting.md, design.md: reboot train, Design round trip)
+│   ├── march.md                       # + march.lanes.md, ship-a-chunk, iterate, critique, triage, expand, oversight, jot
+│   └── digest.md                      # + lessons-pr.md: the night shift, a sibling's lessons into a PR
 ├── plan/                              # nexus's OWN state files (specs + chunks, pending, archive, queues)
 ├── identity/                          # nexus's OWN identity layer: footguns.md (the ladder) + decisions/
 ├── .claude/                           # nexus's OWN commands + settings.json + guard and steer hooks
 ├── .github/                           # nexus's OWN cloud loop (march.yml + nudge.yml + pr-flow.yml + CLOUD_LOOP.md + ISSUE_TEMPLATE/) + publish.yml + cli-ci.yml + scripts-ci.yml
 ├── packages/
 │   └── cli/                           # @usenexus/cli — npx GUI for Claude Code (React+Vite; design/handoff/ is its UI source of truth; publish.yml ships it, cli-ci.yml tests it)
-└── templates/
+└── templates/                        # full layout: templates/README.md
     ├── README.md                      # how to apply the templates
-    ├── agents.md                      # rule-book template (target: repo root)
-    ├── design-prompt.md               # paste into a fresh agent to commission a visual system
     ├── plan/                          # → repo's plan/
-    │   ├── README.md                  # the roadmap: lanes + one row per spec
-    │   ├── 01-bootstrap.md            # starter spec (design, acceptance IDs, chunks)
-    │   ├── 02-canonical-sibling.md    # starter spec: the first feature surface
-    │   ├── ARCHIVE.md                 # one line per finished chunk
-    │   ├── pending/README.md          # plan changes waiting for the owner's settle
-    │   ├── nexus.lock                 # the kit version + plan shape this repo follows
-    │   ├── bearings.md
-    │   ├── AUDIT.md
-    │   ├── CRITIQUE.md
-    │   ├── CANDIDATES.md              # /expand's candidate specs, /oversight promotes
-    │   ├── reflexes.md                # ≤50-line always-read core (adopt-by-need)
-    │   ├── lessons.md                 # domain-keyed corpus, read by offset (adopt-by-need)
-    │   └── CURRENT-STATE.md           # brownfield retrofit only (adopt-by-need)
-    ├── identity/                      # → repo's identity/ (adopt-by-need): what outlives the plan
-    │   ├── README.md                  # the rules: principles, decisions, glossary, footgun ladder
-    │   ├── principles.md              # P# promises
-    │   ├── decisions/README.md        # D# format (settle writes decisions/<year>.md)
-    │   ├── glossary.md
-    │   └── footguns.md                # Open / Watch / Guarded; seen twice -> automate
-    ├── skills/                        # → repo's skills/
-    │   ├── next.md                     # one chunk, done fully: claim, delegated build, gate, pending close, land
-    │   ├── next/build.md               # /next's build detail: worktree, builder brief, Workflow shape
-    │   ├── next/land.md                # /next's close + land: settle, pending file, main vs PR
-    │   ├── heads-down.md               # ask up front, claim a list, loop /next on defaults, ASCII progress
-    │   ├── plot.md                     # a task into the plan with its slot (asap|anytime|auto|peek; and do)
-    │   ├── bug.md                      # reproduce; fix now via /plot … and do, or plot it
-    │   ├── messy.md                    # raw dump -> untracked plan/messy/, themes -> specs via a pending file
-    │   ├── tidy.md                     # clear dead claims; offer idle worktrees + merged branches
-    │   ├── rebooting.md                # reboot train: announce, ack, one resume line per loop
-    │   ├── reboot-ready.md             # reboot train: park this loop (children, work, claims, ledger)
-    │   ├── reboot-resume.md            # reboot train: pick a parked or fallen loop up from its ledger
-    │   ├── ship-a-chunk.md
-    │   ├── ship-data.md                # omit if no structured data layer
-    │   ├── ship-migration.md           # omit unless Structured data: pure-db / hybrid-with-managed-postgres
-    │   ├── ship-asset.md               # omit unless Surface: site / hybrid
-    │   ├── moderate.md                 # omit unless UGC (see customization/moderation-loop.md)
-    │   ├── design.md                   # omit unless you design in Claude Design: prompt, addendum, ingest
-    │   ├── design/ingest.md            # /design ingest in full: Artifact calls, manifest, port chunk, --into
-    │   ├── design/render.md            # the boards rendered in Chrome, the app compared against them
-    │   ├── design/port.md              # the port chunk as a Workflow (port.workflow.js); port.json and its check
-    │   ├── plan-a-spec.md
-    │   ├── iterate.md
-    │   ├── iterate.lanes.md            # project lanes: the project's own audit dimensions (never re-synced)
-    │   ├── critique.md
-    │   ├── triage.md
-    │   ├── expand.md
-    │   ├── march.md
-    │   ├── march.lanes.md              # project lanes: the project's own march steps, pre + queue hooks (never re-synced)
-    │   ├── oversight.md
-    │   ├── jot.md                      # user-input quickfire — append a row to plan/CRITIQUE.md
-    │   ├── digest.md                   # the night shift — morning briefing + breadth checks
-    │   └── bootstrap.md                # opt-in executor (see customization/bootstrap-automation.md)
-    ├── claude/                        # → repo's .claude/ (+ CLAUDE.md → repo root)
-    │   ├── CLAUDE.md                  # short pointer at agents.md
-    │   ├── settings.json              # permission allowlist + hook wiring
-    │   ├── hooks/guard.mjs            # mechanical hard rules (PreToolUse + Stop)
-    │   ├── hooks/steer.mjs            # the GUI's line to one session, at its next tool boundary
-    │   ├── commands/                  # one terse pointer per skill
-    │   └── agents/                    # generic sub-agent templates
-    ├── data/                          # → repo's data/ (if using gh-as-db or hybrid)
-    ├── setup/                         # → repo's setup/ (per-external-service runbooks)
-    │   ├── 00_files.md                # the manifest / index template
-    │   ├── NN_service.md              # per-service runbook template
-    │   └── bootstrap.example.json     # /bootstrap manifest (copy → bootstrap.local.json)
-    ├── .github/                       # → repo's .github/ (opt-in cloud loops)
-    │   ├── workflows/march.yml        # the dispatcher: owner job, or PR mode (pick/build/land/release)
-    │   ├── workflows/pr-flow.yml      # PR mode: a closed PR's claims are released
-    │   ├── workflows/pr-resolve.yml   # PR mode: main merged into conflicted PRs
-    │   ├── workflows/claims-board.yml # optional: one issue showing the live claims (NEXUS_CLAIMS_BOARD)
-    │   ├── workflows/nudge.yml        # the event tick: a collaborator's bug dispatches march now (off until NEXUS_SUPPORT)
-    │   ├── actions/setup/action.yml   # the project's toolchain, shared by every tick job
-    │   ├── workflows/night.yml        # the night shift: /digest + breadth checks
-    │   ├── workflows/heartbeat.yml    # the immune system: model-free watchdog
-    │   ├── workflows/nightly-smoke.yml # model-free SMOKE_SAMPLE=full walk (omit if night.yml owns breadth)
-    │   ├── ISSUE_TEMPLATE/             # bug_report, friction, idea, needs_user, config
-    │   └── CLOUD_LOOP.md              # operator's guide (lives in repo)
-    ├── scripts/
-    │   ├── deploy-check.mjs           # multi-provider deploy gate
-    │   ├── loop-issue.mjs             # GitHub issue mirror (findings + specs)
-    │   ├── notify.mjs                 # the pager — blocked is loud
-    │   ├── pulse.mjs                  # offline instrument panel: queue/plan/candidate counts; --motion: shipped vs baseline
-    │   ├── __tests__/pulse.test.mjs   # pulse in a scratch repo: open rows only, a Pending-less file whole, the project name
-    │   ├── bootstrap.mjs              # provider-CLI executor (opt-in)
-    │   ├── lint-migration.mjs         # additive-migration linter (pairs with ship-migration.md)
-    │   ├── refresh-critique-session.mjs # Pattern B session refresh (omit unless Auth: is set)
-    │   ├── check-secrets-liveness.mjs # GH_TOKEN + CRITIQUE_* liveness probe (omit unless Auth: is set)
-    │   ├── stack-lifecycle.mjs        # Pattern B port/health/state helpers (omit unless hermetic e2e is Pattern B)
-    │   ├── new-skill.mjs              # skill scaffolder: emits skills/<name>.md + claude/commands/<name>.md
-    │   ├── install-hooks.mjs          # adoption runs it: pnpm verify (pre-commit) + the push policy (pre-push)
-    │   ├── plan-check.mjs             # the plan-shape gate: Measure lines, chunk lines, A-ID coverage, archive
-    │   ├── owner.mjs                  # effective owner mode (.owner + .nexus/local.json)
-    │   ├── git/push-policy.mjs        # pre-push: refuses main on origin/upstream outside owner mode; claims ref passes unchecked
-    │   ├── plan/pending.mjs           # pending files: a branch's plan change, counted closed until it settles
-    │   ├── plan/settle.mjs            # the owner's settle: pending files -> plan edits, one commit on main
-    │   ├── plan/settled.mjs           # the plan as it reads once pending edits settle
-    │   ├── plan/config.mjs            # per-repo settle config (plan/settle.json)
-    │   ├── plan/footguns.mjs          # footgun list format + budget lint
-    │   ├── plan/progress.mjs          # ASCII progress: 24-char bar, closed struck, <--- [here], ETAs (S 1h, M 2.5h, L 5h); --json: the same as data
-    │   ├── plan/order.mjs             # the plan in /next's pick order, simulated (/plot's before/after; --mark)
-    │   ├── plan/triage-match.mjs      # /triage: an issue scored against the open specs, open PRs' pending files read (gh read only)
-    │   ├── plan/promote.mjs           # aged promotion behind a Held veto: pick, hold, sweep; reevidence, cap, cuts (gh read only)
-    │   ├── plan/lanes.mjs             # project lanes at a hook; check; a skills re-sync that keeps lanes files
-    │   ├── plan/refill.mjs            # the stock refill lane: each listed generator under its target, weekly cap and cadence
-    │   ├── plan/motion.mjs            # the motion pulse: shipped units vs the 4-week baseline; the heartbeat's stall issue; react
-    │   ├── plan/locks.mjs             # lock timeouts: Held lines, lane locks, owner-blocked rows; release, fallback or one ask
-    │   ├── plan/loop-rows.mjs         # /iterate dimension I: loop-config rows turn one lever, ease <= 6, one ships per 7 days, YAML asked
-    │   ├── plan/state.mjs             # the state diet: queue headers <= 20 lines, <= 256 KB; delete Done rows past 30 days
-    │   ├── plan/support.mjs           # Support level (NEXUS_SUPPORT over bearings): route a collaborator's bug to /bug, asap_cap, march keeps going, Step 1.5 plots a queued issue past sla_hours, user rows age +1/12h, tell closes a landed fix's issue, digest prints the Support line and escalates needs-user past escalate_days
-    │   ├── plan/improve.mjs           # the improvement dial (Improve: off|gentle|steady|bold, absent gentle): every expansion knob's value and source, dial or override; warns when a repo variable disagrees; --line for /digest
-    │   ├── generators/issue-age.mjs   # generator: an open issue past sla_hours -> one AUDIT HIGH row (gh read only)
-    │   ├── generators/mirror-orphan.mjs # generator: a loop mirror (loop:opened + source:*) no queue row names -> one AUDIT row (gh read only)
-    │   ├── generators/stale-candidate.mjs # generator: an aged candidate no promote rule reaches -> one needs-user ask
-    │   ├── generators/motion.mjs      # generator: a stalled motion pulse -> one AUDIT HIGH row a week
-    │   ├── generators/research.mjs    # generator: under the Research knob, the tick's web findings -> at most 3 field candidates, no names, no URLs
-    │   ├── plan/secrets-manifest.mjs  # nexus.secrets.json's shape + the .env.example import (plan-check reads it)
-    │   ├── secrets.mjs                # secrets by name: status, set (stdin), import (--store a real .env), names, check, push (owner mode), audit, request; never a value
-    │   ├── secrets-vault.mjs          # the vault: .env (local), .env.workspace (workspace root), the keychain; get/resolve for code only
-    │   ├── secrets-keychain.mjs       # the opt-in OS keychain: security, PowerShell's PasswordVault, secret-tool; values on stdin only
-    │   ├── secrets-sinks.mjs          # sinks (gh secret set, vercel env add, wrangler secret put; value on stdin) + the push record, .nexus/secrets-audit.jsonl
-    │   ├── secrets-audit.mjs          # set and rotate in that record, by name; the 90-day rotation nudge
-    │   ├── secrets-run.mjs            # secrets run: a command with the declared values in its env only, its output masked
-    │   ├── secrets-scan.mjs           # secrets scan: a diff that adds a vault value is refused, by file, line and name
-    │   ├── design/prompt.mjs          # the Claude Design prompt and addenda from the plan; design/prompts/NNN-<date>.md, numbered on
-    │   ├── claims-codec.mjs           # the claims rules, pure (any claimant imports them)
-    │   ├── claims.mjs                 # who builds what: orphan claims branch, compare-and-swap, --json
-    │   ├── claims-board.mjs           # the claims board: one issue, created or edited from the claims branch
-    │   ├── announce.mjs               # the notice board: owner lines outrank the command; REBOOT preempts
-    │   ├── ledger.mjs                 # each session's live ledger (.nexus/sessions/), star names, fallen = stale beat
-    │   ├── worktree.mjs               # close a worktree safely (links unlinked first); list for /tidy
-    │   ├── workflow-lint.mjs          # workflow rules: secrets on hosted runners, no secret in run-name or a job env, no issue text in a prompt
-    │   ├── cloud/tick.mjs             # PR-mode tick: pick + claim, fence, land the PR, release
-    │   ├── cloud/quota.mjs            # quota governor: seven_day read + cache, the gate (0.97 hard ceiling), the dispatch ceiling, the pause issue
-    │   ├── cloud/lost.mjs             # lost-to-background mark: a result parked on background work, no commit
-    │   ├── cloud/idle.mjs             # idle probe: a scheduled tick skips the model when nothing changed; the no-op reason
-    │   ├── cloud/chain.mjs            # self-chaining: a tick that shipped dispatches the next while work is ready, every guard holding
-    │   ├── cloud/cadence.mjs          # the cadence presets (calm, steady, eager, sprint, off): NEXUS_CADENCE into ceiling, chain max, idle backoff, heartbeat hours; apply writes the cron; realized counts delivered slots
-    │   ├── cloud/nudge-check.mjs      # nudge.yml's check: who starts a tick, the queue, NEXUS_EVENT_MAX; the one dispatch
-    │   ├── pr/resolve.mjs             # pr-resolve's resolver: merge main into conflicted PRs
-    │   ├── design/ingest.mjs          # /design ingest: an export folder -> design/handoff/<date>/ + manifest.json (sha256 per file) + README; check, rehash
-    │   ├── design/render.mjs          # a handoff's boards as PNGs at their size, night or dawn, via the installed Chrome (+ board-runtime.js)
-    │   ├── design/compare.mjs         # a board PNG against the app's: the percent that differs, a diff PNG (+ png.mjs)
-    │   ├── design/port-map.mjs        # port.json: every board ported, skipped with a reason, or pending a chunk; check, status
-    │   ├── design/port.workflow.js    # the port recipe as a Workflow script (run through the Workflow tool's scriptPath)
-    │   ├── upgrade-plan.mjs           # v1 to v2: shipped phases -> archive lines, pending -> spec stubs, blocked -> Held; dry run by default
-    │   ├── ui-walk.mjs                # the site's UI: routes in Chrome at two viewports -> walk.json + PNGs; playwright-core or zero-dep CDP; anonymous; UI: none walks nothing
-    │   ├── __tests__/loop-issue.test.mjs # unit tests, node:test, no devDeps
-    │   ├── __tests__/plan-check.test.mjs # unit tests for plan-check.mjs
-    │   ├── __tests__/pending.test.mjs # pending files, config, settled view
-    │   ├── __tests__/settle.test.mjs  # settle's pure functions
-    │   ├── __tests__/settle-run.test.mjs # settle end to end in a scratch repo (offline)
-    │   ├── __tests__/claims-codec.test.mjs # the claims rules
-    │   ├── __tests__/claims-board.test.mjs # the board's table and issue (fake gh)
-    │   ├── __tests__/push-policy.test.mjs # the push policy, pure
-    │   ├── __tests__/install-hooks-run.test.mjs # installed hooks unset GIT_DIR: a gate's scratch repo never writes the real one
-    │   ├── __tests__/progress.test.mjs # the progress view, pure
-    │   ├── __tests__/progress-run.test.mjs # progress main() from a spaced path, over git (offline)
-    │   ├── __tests__/announce.test.mjs # the notice board
-    │   ├── __tests__/steer.test.mjs   # the steer hook: one session only, once
-    │   ├── __tests__/ledger.test.mjs  # the live ledger
-    │   ├── __tests__/order.test.mjs   # the simulated pick order
-    │   ├── __tests__/triage-match.test.mjs  # an issue to its spec, ambiguous, none, already in PR #N
-    │   ├── __tests__/promote.test.mjs # the pick, the weekly cap, the veto and the release
-    │   ├── __tests__/lanes.test.mjs   # lane blocks, Lanes off, the Asap yield, the keeping re-sync
-    │   ├── __tests__/refill.test.mjs  # the refill lane and both generators: dry runs write nothing, a rerun files nothing
-    │   ├── __tests__/motion.test.mjs  # the motion pulse, one stall issue over a Sep-Oct decline, stall_action, the generator
-    │   ├── __tests__/locks.test.mjs   # lock timeouts: release keeps plan-check green; one ask over 30 ticks, re-pinged weekly
-    │   ├── __tests__/loop-rows.test.mjs # dimension I rows: one lever, the ease cap, the YAML ask and its lock, one ship per 7 days
-    │   ├── __tests__/state.test.mjs   # the state diet: an oversize fixture fails; compact dates rows and keeps the rest
-    │   ├── __tests__/support.test.mjs # the Support level, the routing table, the asap_cap count, continue at half the budget, user rows aged to 4.4, the SLA step and its cap, the digest line and escalation
-    │   ├── __tests__/improve.test.mjs # the dial table at every position, overrides for one knob only, absent reads gentle, a disagreeing variable warns, the upgrade's registry valued at every position
-    │   ├── __tests__/improve-readers.test.mjs # every knob reader through the dial: support, promote, motion, loop-rows, refill, lanes, ui-walk; the Cadence step and the nudge only when their variable is unset
-    │   ├── __tests__/research.test.mjs # field research: the knob and cadence, the 8-fetch budget, 3 a run, no names or URLs, +0 re-evidence, sources in the job summary only
-    │   ├── __tests__/workflow-lint.test.mjs # the workflow rules
-    │   ├── __tests__/tick.test.mjs    # the PR-mode tick
-    │   ├── __tests__/resolve.test.mjs # the resolver
-    │   ├── __tests__/tick-run.test.mjs # the PR-mode tick over git (offline)
-    │   ├── __tests__/quota.test.mjs   # the quota governor on real lockout shapes, gh stubbed
-    │   ├── __tests__/lost.test.mjs    # the lost-to-background mark (git stubbed); the guard denies background calls in CI
-    │   ├── __tests__/idle.test.mjs    # the idle probe's skip rules and the no-op reason, gh and git stubbed
-    │   ├── __tests__/chain.test.mjs   # the chain's guards, one test each, and the one dispatch, gh and git stubbed
-    │   ├── __tests__/cadence.test.mjs # the presets: the variable switches every field, overrides, apply on the template workflows
-    │   ├── __tests__/nudge-check.test.mjs # the nudge's filters, queue and event budget, gh stubbed
-    │   ├── __tests__/heartbeat-quota.test.mjs # heartbeat's cadence step in bash: no flatline while paused
-    │   ├── __tests__/heartbeat-red.test.mjs # heartbeat's red-gate step in bash: a failed CI run on main opens one issue
-    │   ├── __tests__/heartbeat-motion.test.mjs # heartbeat's motion step in bash: one stall issue, none while paused
-    │   ├── __tests__/heartbeat-realized.test.mjs # heartbeat's realized-cadence step in bash: throttled schedules open one issue
-    │   ├── __tests__/fixtures/realized-cadence-2026-09.json # September 2026 schedule-event run lists: two throttled, one delivered
-    │   ├── __tests__/upgrade-plan.test.mjs # the v1 to v2 converter, pure
-    │   ├── __tests__/upgrade-plan-run.test.mjs # the converter over git, dry run and --write (offline)
-    │   ├── __tests__/plot-run.test.mjs # a plot: settle, plan-check and order agree (offline)
-    │   ├── __tests__/secrets.test.mjs # the secrets manifest: shape, import, CLI (names only)
-    │   ├── __tests__/secrets-vault.test.mjs # the vault: both rings, the keychain (stubbed runner), the CLI never prints a value
-    │   ├── __tests__/secrets-sinks.test.mjs # the sinks through a recording runner (never gh, vercel or wrangler), push, the audit record by name
-    │   ├── __tests__/secrets-audit.test.mjs # set and rotate by name only, the rotation nudge, the secret request
-    │   ├── __tests__/secrets-run.test.mjs # secrets run and the diff scan: declared values only, masked output, hits by name
-    │   ├── __tests__/secrets-scan-run.test.mjs # secrets scan end to end in a scratch git repo (opt-in)
-    │   ├── __tests__/design-prompt.test.mjs # scope, the prompt's numbering, the addendum continuing it, the item-hash diff
-    │   ├── __tests__/design-ingest.test.mjs # the ingest over a fixture export: manifest, README, check, rehash
-    │   ├── __tests__/design-compare.test.mjs # the PNG round trip, the diff math on synthetic images
-    │   ├── __tests__/design-render.test.mjs # the board index, imports, theme twins, finding Chrome (+ -run: in Chrome)
-    │   ├── __tests__/ui-walk.test.mjs # the UI knobs, UI: none starts no browser, no credential reaches Chrome, the playwright path faked
-    │   ├── __tests__/ui-walk-run.test.mjs # a local fixture site walked by the cdp, playwright and screenshot drivers (opt-in; skips without Chrome)
-    │   ├── __tests__/design-port.test.mjs # the port map over fixture handoffs; the Workflow's meta, module parse and steps
-    │   ├── __tests__/bootstrap.test.mjs # bootstrap's cloud-loop plan, pure
-    │   ├── __tests__/worktree.test.mjs # worktree close and list in scratch repos (offline)
-    │   ├── __tests__/push-policy-hook.test.mjs # the pre-push hook end to end (offline)
-    │   └── __tests__/claims.test.mjs  # claims over git in scratch repos (offline)
-    ├── env/
-    │   ├── env.example                # NETLIFY_AUTH_TOKEN, GH_TOKEN, NOTIFY_*, etc.
-    │   └── nexus.secrets.json         # → repo root: secrets by name, never a value (customization/secrets.md)
-    └── workspace/                      # → workspace root, not any repo (adopt-by-need)
-        ├── CLAUDE.md
-        ├── AGENTS.md
-        ├── README.md
-        └── REPOS.md
+    ├── identity/                      # → repo's identity/ (adopt-by-need)
+    ├── skills/                        # + claude/: → repo's skills/, .claude/ (+ CLAUDE.md → repo root)
+    └── scripts/                       # + .github/, data/, setup/, env/, workspace/: scripts, opt-in cloud loops, structured data, runbooks, secrets, workspace root (adopt-by-need)
 ```
 
 The templates are the artifacts. Everything else explains how to
@@ -822,87 +368,58 @@ adapt them.
 
 ## How to use this kit
 
-> This is the manual-path equivalent of
-> [Pick a playbook](#pick-a-playbook) above — skip
-> it if you already delegated adoption to an agent.
+> The manual-path equivalent of [Pick a
+> playbook](#pick-a-playbook) above — skip it if you already
+> delegated adoption to an agent.
 
-1. **Read this README.** (You're here.)
-2. **Read [`concepts/architecture.md`](./concepts/architecture.md)**
-   for the one-page mental model.
-3. **Decide which playbook applies** — new project or existing.
-4. **Read your playbook end-to-end before starting.** It's ~10
-   minutes; you'll save hours.
-5. **Copy templates into your repo** per the playbook. Replace
-   all 8 placeholders (see
-   [`templates/README.md`](./templates/README.md#placeholders)).
-   Write your real specs into `plan/`.
-6. **Wire your CI/CD provider** per
-   [`playbooks/ci-providers.md`](./playbooks/ci-providers.md).
-7. **Customize** per the docs in `customization/` — pick which
-   skills apply, which sub-agents you need, what your verify
-   gate looks like.
-8. **First invocation: `/next`.** Don't start with
-   `/loop /march` — run one chunk manually, see the shape of
-   the work, then escalate.
+1. **Read this README**, then
+   [`concepts/architecture.md`](./concepts/architecture.md).
+2. **Pick your playbook** and read it end-to-end first — ~10
+   minutes, saves hours.
+3. **Copy templates into your repo**, replacing all 8
+   placeholders
+   ([`templates/README.md`](./templates/README.md#placeholders)).
+   Write real specs into `plan/`.
+4. **Wire CI/CD**
+   ([`playbooks/ci-providers.md`](./playbooks/ci-providers.md)),
+   then **customize** per `customization/`.
+5. **First invocation: `/next`**, by hand — don't start with
+   `/loop /march`.
 
 ---
 
 ## What this is *not*
 
-- **Not a code generator.** It's a methodology. The actual code
-  is written by the agent, chunk by chunk. Templates are docs +
-  prompts, not source.
-- **Not framework-specific.** The skills assume Node + git +
-  some test runner. Stack details (Next.js, Django, Rails) live
-  in the project's own `bearings.md`, not here.
-- **Not a replacement for product thinking.** The autonomous
-  loop ships what `spec.md` and `plan/` describe. Garbage in,
-  garbage out.
-- **Not a substitute for `/oversight`.** The loop drifts. You
-  must check in, run `/oversight`, course-correct. The whole
-  system is designed around that interaction; don't skip it.
+- **Not a code generator** — a methodology; the agent writes
+  the code, chunk by chunk, not these docs + prompts.
+- **Not framework-specific** — stack details live in the
+  project's own `bearings.md`, not here.
+- **Not a replacement for product thinking** — garbage spec
+  in, garbage build out.
+- **Not a substitute for `/oversight`** — the loop drifts; you
+  must check in and course-correct.
 
 ---
 
 ## nexus runs on nexus
 
 This repo eats its own dogfood — it is an adopted nexus
-project. The ouroboros, concretely:
+project, concretely:
 
-- **Its own verify gate.** `node scripts/verify.mjs` — fifteen
-  hermetic legs (every relative link resolves, the kit tree
-  matches disk, no orphaned doc, placeholder vocabulary
-  enforced, skill anatomy enforced, no emojis, dual-shell
-  parity checked, the plan shape true, the plan and claims
-  scripts' own suites green, the workflows linted, every
-  diagram under `assets/` what its generator draws, every
-  README GIF within budget beside its poster, no vault
-  value in the next commit, the upgrade's kit file list
-  closed, every queue file's header and size within the
-  state diet). On its
-  first ever run it caught five real defects in this repo.
-  The gate works.
-- **Its own plan.** `plan/README.md` and its specs carry the
-  kit's specs and chunks, in the same shape adopters use;
-  `plan/AUDIT.md` and the candidate queue are seeded with
-  real findings from deep survey passes — the loop's food.
-- **Its own skills.** `skills/` holds the kit's adapted verbs.
-  The best one is `/critique`: a **dry-run adoption** — a
-  fresh-eyes agent follows this README's TL;DR into a scratch
-  directory as a stranger and files every friction point.
-- **Its own cloud loops — plural.** The dispatcher
-  (`march.yml`) ticks four times a day on Sonnet; the night
-  shift (`night.yml`) writes a daily morning briefing to
-  `plan/DIGEST.md`; a model-free heartbeat (`heartbeat.yml`)
-  watches them both. Label any issue `loop:do` and the next
-  tick treats it as a command. The full genus:
-  [`concepts/loop-shapes.md`](./concepts/loop-shapes.md);
-  operator guide:
-  [`.github/CLOUD_LOOP.md`](./.github/CLOUD_LOOP.md).
+- **Its own verify gate** — `node scripts/verify.mjs`, fifteen
+  hermetic legs; its first run caught five real defects here.
+- **Its own plan and skills** — `plan/README.md` carries the
+  kit's own chunks; the best skill is `/critique`, a
+  fresh-eyes agent that walks this README's TL;DR as a
+  stranger and files every friction point.
+- **Its own cloud loops** — `march.yml` ticks four times a
+  day, `night.yml` writes a daily briefing, a model-free
+  `heartbeat.yml` watches both
+  ([`concepts/loop-shapes.md`](./concepts/loop-shapes.md),
+  [`.github/CLOUD_LOOP.md`](./.github/CLOUD_LOOP.md)).
 
-If you want to see the methodology run before adopting it,
-watch this repo's commit log and Issues tab — every spec has
-a mirror issue, every cloud commit carries its run URL.
+Watch the commit log and Issues tab to see it run — every spec
+has a mirror issue, every cloud commit its run URL.
 
 ---
 
