@@ -1130,17 +1130,21 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
           said.push(...t.changed.map((c) => `${p.close} tidied ${c}`));
           left.push(...stillNamed(t.readme, t.queue, p.close, cfg).map((where) => `${where} still names ${p.close}: take it out by hand`));
         }
+        const range = p.commits ?? commitRange(root, p.file, { branch: cfg.branch }) ?? 'plan only';
+        let archiveAdd = `- ${p.date} · ${p.close} · ${p.says} · ${range}\n`;
         if (listedChunks(done.text).length) {
           // Chunks left: nothing more.
         } else if (specFile === ladderFile) {
-          // The ladder's home holds nothing of its own to absorb: settle takes it and its rows out, and opens it
-          // again when the next trap is seen twice.
+          // The ladder's home holds nothing of its own to absorb: settle takes it and its rows out, writes the
+          // "spec complete" line plan-check's checkHistory requires for a spec file that disappears, and opens
+          // the ladder again when the next trap is seen twice.
           w(ladderFile, null);
           const rows = closeLadderRows({ readme: r('plan/README.md'), queue: queueOf(), root: r('README.md') }, cfg);
           for (const [file, text] of [['plan/README.md', rows.readme], [cfg.queue, rows.queue], ['README.md', rows.root]]) {
             if (file && text !== null && text !== r(file)) w(file, text);
           }
           said.push(`spec ${cfg.ladder.spec} lists no chunk now: settle removed it and its rows (the next trap seen twice opens it again)`);
+          archiveAdd += `- ${p.date} · ${cfg.ladder.spec} · spec complete: the footgun ladder closed, no open trap left to automate (reopens the next time one is seen twice) · ${range}\n`;
         } else if (/^## Acceptance\b/m.test(done.text)) {
           // Chunks closed out, but acceptance bullets remain uncovered: plan-check's own "no chunks" rule
           // carries it from here (needs more chunks, not an absorb) — nothing for settle to do.
@@ -1150,8 +1154,7 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
           // rule), so settle stops here instead of attempting the commit and dying on that refusal.
           left.push(`${specFile} lists no chunk now: absorb its lasting rules into identity/ (or bearings.md), delete the file, drop its plan/README.md row, and archive "· ${specNum(p.close)} · spec complete: …" by hand, then re-run settle`);
         }
-        const range = p.commits ?? commitRange(root, p.file, { branch: cfg.branch }) ?? 'plan only';
-        w('plan/ARCHIVE.md', `${archive.replace(/\n*$/, '\n')}- ${p.date} · ${p.close} · ${p.says} · ${range}\n`);
+        w('plan/ARCHIVE.md', `${archive.replace(/\n*$/, '\n')}${archiveAdd}`);
       }
     }
     if (p.notes.length) w(cfg.notes, addNotes(r(cfg.notes) ?? '', p.notes));

@@ -207,6 +207,46 @@ describe('the settle run', () => {
     assert.match(r.git('diff', '--cached', '--name-only'), /plan\/10-tiny\.md/);
   });
 
+  it('closing the ladder\'s last chunk deletes its spec and writes the "spec complete" archive line itself', () => {
+    const r = repo();
+    r.put('.owner', '');
+    const LADDER = [
+      '# 99 · Guard the traps: automate every footgun seen twice',
+      '',
+      '**Why:** a trap seen twice gets automated, never logged again. Settle opens this spec when an open footgun',
+      'reaches 2×, adds one chunk per footgun with its entry in the Asap lane, and removes the spec and its rows when',
+      'its last chunk closes. Write nothing else here.',
+      '',
+      '## Acceptance',
+      '',
+      '- **A1** `clock-edge` is guarded: a test, hook or lint fails on the trap, and its footgun line says `guarded by` it.',
+      '',
+      '## Chunks',
+      '',
+      'Measure: 1 open · 0 closed · next A2',
+      '',
+      '- [ ] **99.1** Automate footgun `clock-edge` (seen 2×): a test, hook or lint, then mark it guarded · S · closes A1 · needs —',
+      '',
+    ].join('\n');
+    r.put('plan/99-guard-the-traps.md', LADDER);
+    r.put('plan/README.md', r.read('plan/README.md')
+      .replace('- 07.4, then 07.5: near me.', '- 07.4, then 07.5: near me.\n- **99.1** · automate footgun `clock-edge` (seen 2×), spec 99\'s ladder chunk.')
+      .replace('| 07 | Search', '| 99 | Guard the traps: an open footgun seen twice becomes a test, a hook or a lint | [99-guard-the-traps.md](99-guard-the-traps.md) | planned (**Asap**: each chunk) | 1 left |\n| 07 | Search'));
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: open the ladder, by hand');
+    r.put('plan/pending/99.1.md', '---\nclose: 99.1\ndate: 2000-10-20\nsays: Automate footgun clock-edge\n---\n');
+    r.git('add', '-A');
+    r.git('commit', '-q', '-m', 'plan: close 99.1');
+    const res = r.run();
+    assert.equal(res.code, 0, res.out);
+    assert.equal(r.read('plan/99-guard-the-traps.md'), null);
+    assert.ok(!r.read('plan/README.md').includes('99-guard-the-traps.md'));
+    assert.ok(!r.read('plan/README.md').includes('**99.1**'));
+    assert.match(r.read('plan/ARCHIVE.md'), /^- 2000-10-20 · 99\.1 · Automate footgun clock-edge · \w{8}\.\.\w{7,40}$/m);
+    assert.match(r.read('plan/ARCHIVE.md'), /^- 2000-10-20 · 99 · spec complete: the footgun ladder closed, no open trap left to automate \(reopens the next time one is seen twice\) · \w{8}\.\.\w{7,40}$/m);
+    assert.equal(r.git('status', '--porcelain'), '');
+  });
+
   it('skips a file it cannot settle, saying why, and settles the rest', () => {
     const r = repo();
     r.put('.owner', '');
