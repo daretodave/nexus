@@ -264,3 +264,4 @@ still pending at the move and live on as specs.
 - 2026-11-09 · 99.1 · md-anchor-rename is guarded: verify.mjs checks heading anchors · a19c7b64..a19c7b64
 - 2026-11-09 · 99 · spec complete: the one open footgun seen twice (md-anchor-rename) got its automate chunk and closed; the ladder spec opens again the next time a trap repeats · a9e4d98..a19c7b64
 - 2026-11-10 · 60.2 · README shows a march-loop proof strip above the fold · c43b02ca..c43b02ca
+- 2026-11-10 · 60.3 · Pick a playbook is one you-have/do-this/time table · 777f0555..777f0555

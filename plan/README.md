@@ -32,7 +32,7 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 60 | README above-the-fold conversion pass | [60-readme-above-the-fold.md](60-readme-above-the-fold.md) | planned | 2 left |
+| 60 | README above-the-fold conversion pass | [60-readme-above-the-fold.md](60-readme-above-the-fold.md) | planned | 1 left |
 | 61 | Versioned releases + plan/nexus.lock + upgrade story | [61-versioned-releases-upgrade-story.md](61-versioned-releases-upgrade-story.md) | planned | not chunked yet |
 | 62 | Handshake runbook profile for setup/ | [62-handshake-runbook-profile.md](62-handshake-runbook-profile.md) | planned | not chunked yet |
 
