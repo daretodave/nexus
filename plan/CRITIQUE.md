@@ -308,6 +308,8 @@
   so the full step count is legible without widening every star.
 - source: walk
 
+## Done
+
 ### [x] [HIGH] prompts/adopt.md:107-108 vs playbooks/new-project.md:201,306,542,582,667 — the delegated-agent prompt and the playbook it must follow give contradictory commit instructions — this commit
 - category: instruction-drift
 - observation: `prompts/adopt.md` tells the delegating agent to
