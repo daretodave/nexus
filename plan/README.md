@@ -31,7 +31,7 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 61 | Versioned releases + plan/nexus.lock + upgrade story | [61-versioned-releases-upgrade-story.md](61-versioned-releases-upgrade-story.md) | planned | not chunked yet |
+| 61 | Versioned releases + plan/nexus.lock + upgrade story | [61-versioned-releases-upgrade-story.md](61-versioned-releases-upgrade-story.md) | planned | 0 of 3 chunks |
 | 62 | Handshake runbook profile for setup/ | [62-handshake-runbook-profile.md](62-handshake-runbook-profile.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33

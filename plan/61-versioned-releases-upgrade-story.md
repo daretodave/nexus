@@ -24,6 +24,14 @@ and *whether* their copy conflicts; it doesn't say *why* the
 kit changed it. Keyed-by-path release notes are the one piece
 of the original proposal with no shipped equivalent.
 
+The candidate's other sub-item, `scripts/kit-manifest.mjs` (a
+hermetic sha256 walk to tell stale-but-clean apart from
+customized), is dropped from scope: `sync.mjs` already makes
+that call per file via `git merge-file` against the kit's own
+history, and nexus distributes templates through git (a clone,
+or the CLI's bundled kit, itself built from git) — no non-git
+vendor-drop case exists here for a sha256 walk to cover.
+
 ## Design
 
 - **`CHANGELOG.md` at the kit root**, entries keyed by
@@ -45,15 +53,7 @@ of the original proposal with no shipped equivalent.
 
 ## Open questions
 
-- The candidate's other sub-item, `scripts/kit-manifest.mjs`
-  (a hermetic sha256 walk to tell stale-but-clean apart from
-  customized), may be redundant: `sync.mjs` already makes that
-  call per file via `git merge-file` against the kit's own
-  history, which a sha256 walk can't improve on for a repo
-  that already carries the kit's git history. Chunking should
-  confirm this before building a manifest walk nobody needs —
-  drop it from scope unless chunking turns up a case `sync.mjs`
-  can't cover (e.g. a non-git vendor drop).
+(None.)
 
 ## Acceptance
 
@@ -64,8 +64,27 @@ of the original proposal with no shipped equivalent.
 - **A3** `scripts/verify.mjs` gains a leg that fails a commit
   touching `templates/**` with no matching `CHANGELOG.md`
   entry.
+- **A4** `packages/cli/server/sync.mjs`'s upgrade report cites
+  the `CHANGELOG.md` entries for files it reports as `merged`
+  or `conflicted`; `playbooks/upgrade.md` documents it.
 
 ## Chunks
-Measure: 3 open · 0 closed · next A4
+Measure: 4 open · 0 closed · next A5
 
-Not chunked yet.
+- [ ] **61.1** `CHANGELOG.md` seeded at the kit root · S ·
+  closes A1 · needs —
+  - Newest first, entries keyed by template path:
+    `- templates/skills/next.md: <what changed, one line>
+    (<date>, <commit or spec #>)`.
+  - Linked from the root `README.md` tree and `agents.md`'s
+    repo-shape table (every new doc discoverable, same commit).
+- [ ] **61.2** verify gate leg for `CHANGELOG.md` coverage · M
+  · closes A2, A3 · needs 61.1
+  - A commit touching `templates/**` with no matching dated
+    `CHANGELOG.md` entry for at least one touched path fails
+    the gate (the gate-teaching rule, `agents.md` rule 3).
+- [ ] **61.3** Upgrade report cites `CHANGELOG.md` · S · closes
+  A4 · needs 61.1
+  - `sync.mjs`'s report cites the `CHANGELOG.md` entries for
+    each `merged`/`conflicted` file; `playbooks/upgrade.md`
+    shows the citation in its worked example.
