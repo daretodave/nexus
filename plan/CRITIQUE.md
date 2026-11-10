@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-08
-> Pass count: 31
+> Last pass: 2026-11-10
+> Pass count: 32
 
 ## Pending
 
@@ -277,7 +277,36 @@
   so hovering explains what each Q means.
 - source: walk
 
-## Done
+### [ ] [MED] /onboarding/welcome @ mobile (plain-folder) — the 8-star stepper clips mid-sequence on a phone viewport with no "n of N" cue
+- category: ui-comprehension
+- observation: on a phone-width viewport the top stepper (`Welcome,
+  Permissions, Detect, Shape, …`) shows only its first 4 of 8
+  stars before the row is cut off flush at the viewport's right
+  edge — no fade, arrow, or counter signals more steps exist. The
+  desktop view of the same screen shows the full 8-star row plus
+  a footer "1 of 8" counter; neither survives onto the mobile
+  layout, so a phone user has no way to tell the setup is twice
+  as long as what's visible.
+- evidence: `plain-folder--mobile--onboarding-welcome.png` vs
+  `plain-folder--desktop--onboarding-welcome.png` (this tick's
+  `npm --prefix packages/cli run walk`,
+  `.scratch/walk/critique-2026-11-10T17-55-24-790Z/`).
+  `packages/cli/src/ui/feedback.jsx:16`'s `Stepper` renders one
+  fixed-width `.stp` (`packages/cli/src/styles/nexus.css:610`,
+  `width: 92px`) per step with no wrap; `.stepper`
+  (`nexus.css:609`) is a bare `display: flex` with no
+  `overflow-x`/wrap rule, and `nexus.css:1297`'s section comment
+  ("Every step fits 1280 x 800 without scrolling") confirms the
+  component assumes a desktop viewport. 8 × 92px (~736px) doesn't
+  fit a ~390px phone width, so the row silently clips instead of
+  wrapping, scrolling, or showing a counter.
+- suggested fix: give `.stepper` a narrow-viewport treatment in
+  `packages/cli/src/styles/nexus.css` — either an `overflow-x:
+  auto` scroll strip with a visible fade/arrow, or collapse to
+  the same "n of N" text the footer already has
+  (`packages/cli/src/screens/onboarding/frame.jsx`'s footer logic)
+  so the full step count is legible without widening every star.
+- source: walk
 
 ### [x] [HIGH] prompts/adopt.md:107-108 vs playbooks/new-project.md:201,306,542,582,667 — the delegated-agent prompt and the playbook it must follow give contradictory commit instructions — this commit
 - category: instruction-drift
