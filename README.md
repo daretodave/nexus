@@ -310,6 +310,7 @@ nexus/
 ├── intervention-spectrum.md           # the levels in detail
 ├── agents.md                          # + CLAUDE.md: nexus's OWN rule book (the kit runs on itself), pointer at it
 ├── CONTRIBUTING.md                    # how to contribute
+├── CHANGELOG.md                       # templates/** history, keyed by path (surfaced at upgrade time)
 ├── prompts/                           # canonical paste-prompts — versioned, public API
 │   ├── README.md                      # what these are, how the short paste uses them
 │   └── adopt.md                       # + pitch.md, upgrade.md: the full adopt/pitch/upgrade agent prompts

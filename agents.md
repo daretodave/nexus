@@ -128,6 +128,7 @@ https://github.com/daretodave/nexus. The product spec is
 
 ```
 README.md            The spec + entry point.
+CHANGELOG.md         templates/** history, keyed by path.
 prompts/             Canonical paste-prompts — versioned, public API.
 concepts/            The mental model (architecture, skills, asking).
 playbooks/           Adoption + operations runbooks.
