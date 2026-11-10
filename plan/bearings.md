@@ -51,11 +51,13 @@ scenarios `/iterate` dimension H walks
    `concepts/architecture.md`, `playbooks/hands-off.md`,
    `customization/branding.md`.
 8. Mermaid `flowchart` is the accepted idiom for one thing
-   only: branching decision-routing (README's playbook picker,
-   `customization/data-layer.md`'s variant picker). Prose and
-   tables stay the default everywhere else — don't reach for
-   mermaid for anything that isn't a "which path do I take"
-   decision tree.
+   only: branching decision-routing (`customization/
+   data-layer.md`'s variant picker). Prose and tables stay the
+   default everywhere else — don't reach for mermaid for
+   anything that isn't a "which path do I take" decision tree.
+   README's own playbook picker was this idiom through spec 60;
+   a `Pick a playbook` table does the same job now and is the
+   better default for a routing table past three or four rows.
 
 ## Public contract (locked)
 

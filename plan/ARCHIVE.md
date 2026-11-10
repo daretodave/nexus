@@ -265,3 +265,5 @@ still pending at the move and live on as specs.
 - 2026-11-09 · 99 · spec complete: the one open footgun seen twice (md-anchor-rename) got its automate chunk and closed; the ladder spec opens again the next time a trap repeats · a9e4d98..a19c7b64
 - 2026-11-10 · 60.2 · README shows a march-loop proof strip above the fold · c43b02ca..c43b02ca
 - 2026-11-10 · 60.3 · Pick a playbook is one you-have/do-this/time table · 777f0555..777f0555
+- 2026-11-10 · 60.4 · README cut to budget; tree leg still parses it · 63286fd8..63286fd8
+- 2026-11-10 · 60 · spec complete: the README now gates once, carries one proof strip and one three-door section, routes playbooks through a table instead of prose blurbs or mermaid, and holds to a 350-500 line budget with the tree leg still parsing `## What's in this kit` · fa6db2fe..63286fd8
