@@ -14,6 +14,9 @@
 [![Methodology + templates](https://img.shields.io/badge/kind-methodology%20%2B%20templates-lightgrey)](#)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](./CONTRIBUTING.md)
 
+[![march](https://github.com/daretodave/nexus/actions/workflows/march.yml/badge.svg)](https://github.com/daretodave/nexus/actions/workflows/march.yml)
+This kit ships itself: nexus is adopted on its own repo, running the loop the badge above tracks — see [`nexus runs on nexus`](#nexus-runs-on-nexus) for the full case.
+
 ## Is this for you?
 
 **Use nexus when:**
