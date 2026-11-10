@@ -1,7 +1,7 @@
 # Kit audit
 
-> Last pass: 2026-11-08
-> Pass count: 127
+> Last pass: 2026-11-10
+> Pass count: 128
 > Bias: none
 
 ## Pending
@@ -34,6 +34,24 @@
   `agents.md` Operational secrets). Watch for further
   recurrence; close if the schedule recovers on its own.
 
+
+### [F, 3.6] `packages/cli/shared/models.mjs` and its test fixtures still carry "Fable 5.1" against the current "Fable 5.2" lineup
+- category: freshness
+- impact: 4, ease: 9
+- evidence: `packages/cli/shared/models.mjs:8` carries
+  `{ id: 'claude-fable-5-1', label: 'Fable 5.1' }`, read by the
+  server and GUI (cockpit badge, Fleet tiles, Settings) as the
+  model list's first row. `packages/cli/test/model.test.mjs`
+  (lines 28, 39, 47, 236, 238-239) and
+  `packages/cli/test/model-ui.test.mjs` (lines 18, 47, 99)
+  fixture the same stale id/label pair. The current lineup is
+  one rung past it (Fable 5.2, `claude-fable-5-2`) — the same
+  drift class the prior `[F, 4.5]` fix (Done, below) closed for
+  the Opus/Haiku ids.
+- next: bump `claude-fable-5-1` → `claude-fable-5-2` and
+  `Fable 5.1` → `Fable 5.2` in `models.mjs:8` and both test
+  fixtures, then `npm --prefix packages/cli test` green before
+  shipping.
 
 ### [C, 2.4] identity/footguns.md:10 links to a README.md anchor that doesn't exist in its target
 - category: link + tree hygiene
@@ -96,7 +114,7 @@
   `SYNTAX_SCOPED_SKILLS` (`scripts/verify.mjs`) to all of `skills/` +
   `templates/skills/` once they're clean.
 
-### [A, 39.11] nexus's own `.github/workflows/*.yml` still pin `actions/checkout@v4` / `actions/setup-node@v4`, now behind the just-bumped `templates/` copies
+### [A, 3.0] nexus's own `.github/workflows/*.yml` still pin `actions/checkout@v4` / `actions/setup-node@v4`, now behind the just-bumped `templates/` copies
 - category: doc-drift
 - impact: 5, ease: 6
 - evidence: chunk 39.11 (2026-11-05, this run) bumped every
@@ -118,13 +136,13 @@
   needs a human token), syncing `nudge.yml`'s pair at the same
   time so the twin check stays green.
 
-### [loop] [HIGH] motion stalled in 2026-W44: 25 shipped against a 4-week baseline of 153.25
+### [loop] [HIGH] motion stalled in 2026-W45: 12 shipped against a 4-week baseline of 158.25
 - category: loop
 - impact: 8
 - ease: 5
-- evidence: node scripts/pulse.mjs --motion: shipped 25 / baseline 153.25 · 2026-W44 against 2026-W40..2026-W43 (8 so far in 2026-W45); floor 76.63 · stalled (25 is under 50% of the baseline).
+- evidence: node scripts/pulse.mjs --motion: shipped 12 / baseline 158.25 · 2026-W45 against 2026-W41..2026-W44 (8 so far in 2026-W46); floor 79.13 · stalled (12 is under 50% of the baseline).
 - next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
-- generator: motion · filed 2026-11-06
+- generator: motion · filed 2026-11-10
 
 ## Done
 
