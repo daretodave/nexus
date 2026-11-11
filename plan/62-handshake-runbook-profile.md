@@ -115,4 +115,15 @@ today, not a replacement for the full one.
 ## Chunks
 Measure: 7 open · 0 closed · next A8
 
-Not chunked yet.
+- [ ] **62.1** Handshake runbook template, its four fixed
+  sections and a worked `DESTRUCTIVE:` example · M · closes
+  A1, A2, A3, A4, A7 · needs —
+  - Adds `templates/setup/NN_service.handshake.md`; the same
+    commit updates `templates/README.md`, the root
+    `README.md` tree, and `scripts/verify.mjs`'s
+    placeholder/tree legs (`agents.md` rule 7).
+- [ ] **62.2** Full-vs-handshake choosing rule in
+  `customization/external-services.md` · S · closes A5 ·
+  needs —
+- [ ] **62.3** `Profile` column in `templates/setup/00_files.md`'s
+  Index table · S · closes A6 · needs —
