@@ -20,7 +20,6 @@ invariant teaches the gate in the same commit; hard-wrap
 **Asap** (built before the table, in this order, once their
 needs are done):
 
-- 64.1 support.mjs sla: echo the issue number past close (#103)
 
 **Held** (waits on the owner's word; never picked until the
 line goes; each line is a lock that times out, so it carries
@@ -34,7 +33,6 @@ line goes; each line is a lock that times out, so it carries
 |---|---|---|---|---|
 | 61 | Versioned releases + plan/nexus.lock + upgrade story | [61-versioned-releases-upgrade-story.md](61-versioned-releases-upgrade-story.md) | planned | 0 of 3 chunks |
 | 62 | Handshake runbook profile for setup/ | [62-handshake-runbook-profile.md](62-handshake-runbook-profile.md) | planned | not chunked yet |
-| 64 | support.mjs sla: echo the issue number past close | [64-support-sla-issue-echo.md](64-support-sla-issue-echo.md) | planned | 0 of 1 chunks |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the

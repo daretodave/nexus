@@ -270,3 +270,5 @@ still pending at the move and live on as specs.
 - 2026-11-10 · 63.1 · settle writes the ladder's own spec-complete archive line · bf7a38ca..bf7a38ca
 - 2026-11-10 · 63 · spec complete: settle's ladder-removal branch writes its own "· 99 · spec complete: …" ARCHIVE.md line, in both scripts/plan/settle.mjs and its templates twin, with a settle-run.test.mjs case covering it · bf7a38ca..bf7a38ca
 - 2026-11-10 · 61.1 · CHANGELOG.md now tracks why templates/ changed · c7019dcf..c7019dcf
+- 2026-11-11 · 64.1 · Says echoes an issue-born chunk's #N (#103) · edf529da..edf529da
+- 2026-11-11 · 64 · spec complete: an issue-born chunk's pending close echoes its `#N` on the `says` field so `ARCHIVE.md`'s line still names the issue once the Asap lane line settle removes is gone, keeping `support.mjs sla`'s done check from re-flagging already-shipped work forever (`skills/next/land.md` and its `templates/` twin) · edf529da..edf529da
