@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-10
-> Pass count: 32
+> Last pass: 2026-11-11
+> Pass count: 33
 
 ## Pending
 
@@ -307,6 +307,42 @@
   (`packages/cli/src/screens/onboarding/frame.jsx`'s footer logic)
   so the full step count is legible without widening every star.
 - source: walk
+
+### [ ] [HIGH] prompts/adopt.md:62-64 — the delegated-adoption prompt's placeholder list omits `<PACKAGE_MANAGER>`, the 9th placeholder
+- category: instruction-drift
+- observation: a stranger following door 2 (the TL;DR
+  clone-and-delegate path) hands their agent
+  `prompts/adopt.md`. Its placeholder list reads "Replace
+  placeholders (`<PROJECT>`, `<PROJECT_LOWER>`,
+  `<PROJECT_TAGLINE>`, `<HOSTING_URL>`, `<HOSTING_PROVIDER>`,
+  `<REPO_SLUG>`, `<DEFAULT_BRANCH>`, `<PROJECT_PKG_PREFIX>`)" —
+  8 items — but `templates/README.md`'s placeholder table has 9,
+  including `<PACKAGE_MANAGER>`. An agent that follows
+  `prompts/adopt.md` literally ("exactly, in order") never
+  replaces `<PACKAGE_MANAGER>`, leaving literal placeholder text
+  in the adopted repo, which fails `node scripts/verify.mjs`'s
+  `placeholders` leg before the first commit can land.
+- evidence: `prompts/adopt.md:62-64` (8-item list) vs
+  `templates/README.md:257` (`<PACKAGE_MANAGER>` row) and
+  `playbooks/new-project.md:404`-area sweep command, which does
+  include it.
+- suggested fix: add `<PACKAGE_MANAGER>` to `prompts/adopt.md`'s
+  placeholder list so the two sources agree.
+- source: dry-run
+
+### [ ] [MED] README.md:379 — "all 8 placeholders" is stale; the table it links to has 9
+- category: placeholder
+- observation: README.md's "How to use this kit" step 3 tells a
+  stranger to replace "all 8 placeholders," then links to
+  `templates/README.md#placeholders`, which lists 9 rows (the
+  9th being `<PACKAGE_MANAGER>`). The mismatch reads as either a
+  typo or a sign the doc is out of sync, seeding doubt about
+  whether the sweep is complete.
+- evidence: `README.md:379` ("replacing all 8 placeholders") vs
+  `templates/README.md:249-257` (9-row table).
+- suggested fix: update README.md to "all 9 placeholders" (or
+  drop the number and say "every placeholder").
+- source: dry-run
 
 ## Done
 
