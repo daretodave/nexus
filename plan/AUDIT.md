@@ -160,6 +160,32 @@
 - next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
 - generator: motion · filed 2026-11-10
 
+### [MEDIUM] next/build.md §2's brief scope and ship-a-chunk.md's Step 6/8 disagree on what a `/next` builder closes
+- category: drift
+- evidence: `next/build.md` §2 "How" briefs a builder to run
+  "`skills/ship-a-chunk.md` steps read-spec through tests
+  (read, build, wire, test)" — Steps 3-4b only — and its own
+  Limits separately forbid the builder from ever touching
+  `plan/README.md`, a spec's chunk list, `ARCHIVE.md` or
+  `plan/pending/` (`skills/next.md` Step 4 instead has the
+  *lead* write `plan/pending/<id>.md` and land through settle,
+  `next/land.md` §1-3). But `ship-a-chunk.md`'s own Step 6
+  ("Close the chunk") and Step 8 ("Commit + land") directly
+  edit those same files in the chunk's own commit, with no note
+  anywhere that a `/next` builder's brief should stop short of
+  them. Chunk 61.3's builder (this cloud tick, 2026-11-11) was
+  briefed to run Step 6/8 verbatim (closing spec 61, deleting
+  its file, editing `plan/README.md` and `plan/ARCHIVE.md` in
+  its own commit) rather than through a pending file; the end
+  state was correct — nothing else touched `plan/` this tick,
+  so no race — but the lead only caught the skipped pending-file
+  path on review, after the commit already existed.
+- next: `next/build.md` §2 should name the exact step range a
+  `/next` builder's brief runs (3 through 4b) and say Steps 6
+  and 8 are the lead's own; or `ship-a-chunk.md` should flag
+  that Step 6/8 are for a standalone `/ship-a-chunk` run, never
+  folded into a `/next` builder's brief.
+
 ## Done
 
 ### [x] [user-issue #103] [MEDIUM] support.mjs sla re-flags issues forever: plotted chunks never carry Refs #N for tell to close — closed 2026-11-11
