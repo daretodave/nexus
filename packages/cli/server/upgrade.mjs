@@ -123,7 +123,7 @@ export async function kitSource({ bundled = UPGRADE_BUNDLED, nexus = NEXUS_ROOT 
     let text = null;
     try { text = JSON.parse(fs.readFileSync(path.join(bundled, 'kit-text.json'), 'utf8')); } catch { /* an older bundle: the current skills only */ }
     const m = JSON.parse(fs.readFileSync(manifest, 'utf8'));
-    return { root: bundled, files: m.files, sync: m.sync || [], build: m.build || null, text, from: 'bundled' };
+    return { root: bundled, files: m.files, sync: m.sync || [], build: m.build || null, text, changelog: read(bundled, 'CHANGELOG.md'), from: 'bundled' };
   }
   const list = path.join(nexus, 'scripts', 'upgrade-files.mjs');
   if (!fs.existsSync(list)) return null;
@@ -133,7 +133,8 @@ export async function kitSource({ bundled = UPGRADE_BUNDLED, nexus = NEXUS_ROOT 
   const files = upgradeFiles(nexus).files;
   const listed = new Set(files.map((f) => f.kit));
   const extra = syncFiles ? syncFiles(nexus).files.filter((f) => !listed.has(f.kit)) : [];
-  return { root: path.join(nexus, 'templates'), files, sync: extra, build: kitBuild(nexus), nexus, text, from: 'templates' };
+  // CHANGELOG.md lives at the kit root, not under templates/: it is not itself a template.
+  return { root: path.join(nexus, 'templates'), files, sync: extra, build: kitBuild(nexus), nexus, text, changelog: read(nexus, 'CHANGELOG.md'), from: 'templates' };
 }
 
 const kitPath = (kit, f) => path.join(kit.root, ...f.kit.replace(/^templates\//, '').split('/'));

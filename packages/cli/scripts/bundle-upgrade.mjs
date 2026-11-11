@@ -19,6 +19,8 @@ export const SEEDS = Object.freeze(['plan/README.md', 'plan/nexus.lock', '.githu
 
 /** The kit-text list's name under `out`. */
 export const KIT_TEXT = 'kit-text.json';
+/** CHANGELOG.md's name under `out` (copied from the nexus repo's root, not a templates/ path: it is not itself a template). */
+export const CHANGELOG = 'CHANGELOG.md';
 const KIT_TEXT_SCRIPT = ['scripts', 'upgrade-kit-text.mjs'];
 
 /**
@@ -49,5 +51,7 @@ export async function bundleUpgrade({ nexus, out }) {
   fs.writeFileSync(path.join(out, 'files.json'), `${JSON.stringify({ files, sync, seeds: SEEDS, build: kitBuild(nexus, { trail: true }) }, null, 2)}\n`);
   const { build } = await import(pathToFileURL(textScript).href);
   fs.writeFileSync(path.join(out, KIT_TEXT), `${JSON.stringify(await build(nexus), null, 2)}\n`);
+  const changelogSrc = path.join(nexus, CHANGELOG);
+  if (fs.existsSync(changelogSrc)) fs.copyFileSync(changelogSrc, path.join(out, CHANGELOG));
   return { files, sync, missing };
 }

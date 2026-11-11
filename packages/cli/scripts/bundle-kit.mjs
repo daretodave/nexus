@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { KIT_FILES } from '../server/cloud.mjs';
 import { BUNDLED as VAULT_DIR, vaultFiles } from '../server/vault-setup.mjs';
 import { PLAN_BUNDLED, planKitFiles } from '../server/plan.mjs';
-import { KIT_TEXT, SEEDS, bundleUpgrade, bundledPath } from './bundle-upgrade.mjs';
+import { CHANGELOG, KIT_TEXT, SEEDS, bundleUpgrade, bundledPath } from './bundle-upgrade.mjs';
 
 const pkg = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const src = path.resolve(pkg, '..', '..', 'templates');
@@ -61,11 +61,11 @@ if (missing.length) {
   console.error(`bundle-kit: the upgrade list's closure reaches files that are gone: ${missing.join(', ')}`);
   process.exit(1);
 }
-console.log(`bundle-kit: copied ${upgrade.length} upgrade files and ${synced.length} more a sync adds -> kit/upgrade/ (+ files.json, ${KIT_TEXT})`);
+console.log(`bundle-kit: copied ${upgrade.length} upgrade files and ${synced.length} more a sync adds -> kit/upgrade/ (+ files.json, ${KIT_TEXT}, ${CHANGELOG})`);
 
 // Every file a server route loads from kit/ must be there, or the build fails here rather than for a user.
 const want = [...Object.values(KIT_FILES).map(([b]) => b), ...planFiles.map((f) => `scripts/${f}`), ...vault.map((f) => `secrets/${f}`),
-  ...[...upgrade, ...synced].map((f) => `upgrade/${bundledPath(f.kit)}`), ...SEEDS.map((s) => `upgrade/${s}`), 'upgrade/files.json', `upgrade/${KIT_TEXT}`];
+  ...[...upgrade, ...synced].map((f) => `upgrade/${bundledPath(f.kit)}`), ...SEEDS.map((s) => `upgrade/${s}`), 'upgrade/files.json', `upgrade/${KIT_TEXT}`, `upgrade/${CHANGELOG}`];
 const lost = want.filter((f) => !fs.existsSync(path.join(pkg, 'kit', ...f.split('/'))));
 if (lost.length) {
   console.error(`bundle-kit: missing from kit/ after bundling: ${lost.join(', ')}`);

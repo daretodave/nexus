@@ -287,6 +287,26 @@ export function droppedLines({ ours, base, theirs, merged }) {
   return [...set(ours)].filter((l) => !kit.has(l) && !have.has(l));
 }
 
+/** CHANGELOG.md's entries, keyed by the templates/ path each top-level `- ` bullet names: path -> its entries'
+ * text (continuation lines joined, trimmed), newest first (the file's own order). */
+export function changelogByPath(text = '') {
+  const map = new Map();
+  let cur = null;
+  for (const raw of String(text).replace(/\r\n/g, '\n').split('\n')) {
+    const m = /^-\s+(\S[^:]*):\s*(.*)$/.exec(raw);
+    if (m) {
+      cur = [m[2].trim()];
+      const key = m[1].trim();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(cur);
+      continue;
+    }
+    if (cur && /^\s+\S/.test(raw)) cur.push(raw.trim());
+    else cur = null;
+  }
+  return new Map([...map].map(([k, entries]) => [k, entries.map((lines) => lines.join(' '))]));
+}
+
 /** The assisted merge's prompt: the three versions and git's conflicted merge, with the answer's exact shape. */
 export function assistPrompt({ path: rel, base, theirs, ours, conflicted }) {
   const block = (name, t) => `<<<${name}\n${LF(t).replace(/\n?$/, '\n')}${name}>>>`;
@@ -515,6 +535,8 @@ export async function sync({ dir, local = null, kit, ref, branch = 'main', today
     const fills = { project: projectName(dir), branch, pm: packageManagerOf(dir) };
     const files = [...kit.files, ...(kit.sync || [])];
     const kitRepoPaths = new Set(files.map((f) => f.repo));
+    const changelog = changelogByPath(kit.changelog || '');
+    const cite = (e) => { const hits = changelog.get(e.f.kit); return hits && hits.length ? `changelog: ${hits[0]}` : null; };
     const index = new Map();
     for (const rel of walk(dir)) {
       const n = path.posix.basename(rel);
@@ -720,14 +742,14 @@ export async function sync({ dir, local = null, kit, ref, branch = 'main', today
         continue;
       }
       if (e.outcome === 'stuck') {
-        row(e.gateRed ? 'assisted, not applied (gate red with it)' : 'conflict, left as ours', `${hunks(e)}; ${e.why}`);
+        row(e.gateRed ? 'assisted, not applied (gate red with it)' : 'conflict, left as ours', [`${hunks(e)}; ${e.why}`, cite(e)].filter(Boolean).join('; '));
         if (!e.gateRed) report.warnings.push(`${e.where}: ${hunks(e)} between the kit's change and the repo's own; left as the repo's (${e.why}): merge it by hand`);
         continue;
       }
       counts[e.outcome] += 1;
       if (e.outcome === 'replaced') row('replaced', 'untouched since the ref');
-      else if (e.outcome === 'merged') row('merged', 'three-way, clean');
-      else row('assisted', `${hunks(e)} merged by the helper`);
+      else if (e.outcome === 'merged') row('merged', ['three-way, clean', cite(e)].filter(Boolean).join('; '));
+      else row('assisted', [`${hunks(e)} merged by the helper`, cite(e)].filter(Boolean).join('; '));
       touched.add(e.where);
     }
     for (const x of fresh) report.files.push({ path: x.f.repo, status: 'new', note: `new since ${ref}` });

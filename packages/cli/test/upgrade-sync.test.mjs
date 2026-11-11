@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { detect, render, runUpgrade, upgrade } from '../server/upgrade.mjs';
-import { bumpLock, fillKit, kitAhead, kitAt, kitBuild, likeness, merge3, modelAssist, parseAssist, relocated, syncBranch, syncSubject } from '../server/sync.mjs';
+import { bumpLock, changelogByPath, fillKit, kitAhead, kitAt, kitBuild, likeness, merge3, modelAssist, parseAssist, relocated, syncBranch, syncSubject } from '../server/sync.mjs';
 
 const scratch = [];
 after(() => { for (const d of scratch) fs.rmSync(d, { recursive: true, force: true }); });
@@ -126,8 +126,28 @@ const green = () => [{ name: 'stub gate', ok: true, out: '' }];
 const byPath = (report) => Object.fromEntries(report.files.map((f) => [f.path, f]));
 const state = (dir) => ({ status: git(dir, 'status', '--porcelain'), head: git(dir, 'rev-parse', 'HEAD'), worktrees: git(dir, 'worktree', 'list', '--porcelain') });
 
+test('changelogByPath: keyed by the templates/ path each bullet names, continuation lines joined and trimmed', () => {
+  const text = [
+    '- templates/scripts/b.mjs: the mover now checks bounds',
+    '  twice (2026-10-20, abc1234).',
+    '- templates/skills/next.md: tightens the claim check',
+    '  (2026-10-18, def5678).',
+    '- templates/scripts/b.mjs: an older note on the same file',
+    '  (2026-10-01, 0001111).',
+  ].join('\n');
+  const m = changelogByPath(text);
+  assert.deepEqual(m.get('templates/scripts/b.mjs'), [
+    'the mover now checks bounds twice (2026-10-20, abc1234).',
+    'an older note on the same file (2026-10-01, 0001111).',
+  ]);
+  assert.deepEqual(m.get('templates/skills/next.md'), ['tightens the claim check (2026-10-18, def5678).']);
+  assert.ok(!m.has('templates/scripts/vend.mjs'));
+  assert.deepEqual([...changelogByPath('').keys()], []);
+});
+
 test('the dry sync: replaced, merged, assisted (a diff), new, kept; the local checkout untouched', async () => {
   const k = kitRepo();
+  k.kit.changelog = '- templates/scripts/b.mjs: the mover now checks bounds\n  twice (2026-10-20, abc1234).\n';
   const a = adopter();
   const before = state(a.local);
   const calls = [];
@@ -138,9 +158,11 @@ test('the dry sync: replaced, merged, assisted (a diff), new, kept; the local ch
   const f = byPath(report);
   assert.equal(f['scripts/a.mjs'].status, 'replaced');
   assert.equal(f['scripts/b.mjs'].status, 'merged');
+  assert.match(f['scripts/b.mjs'].note, /changelog: the mover now checks bounds twice \(2026-10-20, abc1234\)\./, 'a merged file cites its CHANGELOG.md entry');
   assert.equal(f['scripts/c.mjs'].status, 'assisted');
   assert.equal(f['lib/vend.mjs'].status, 'merged');
   assert.match(f['lib/vend.mjs'].note, /vendored at lib\/vend\.mjs/);
+  assert.ok(!/changelog:/.test(f['lib/vend.mjs'].note), 'no CHANGELOG.md entry for this path: no citation, not even a false one');
   assert.ok(!f['scripts/vend.mjs'], 'a vendored copy at another path is the repo\'s copy, never re-added');
   assert.equal(f['skills/fresh.md'].status, 'new');
   assert.match(f['skills/fresh.md'].note, /new since v2\.0\.0/);

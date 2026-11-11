@@ -219,6 +219,10 @@ on `nexus/upgrade-<version>`; `--land` and `--pr` carry it as
 above. A CLI older than the repo's kit refuses before any
 write. Run it again whenever the kit moves.
 
+A `merged` row, or a conflicted one, also cites the
+`CHANGELOG.md` entry for that path when the kit carries one
+— the *why* a diff alone can't show.
+
 The GUI tells you when it has. On a v2 repo whose lock's
 `ref:` is behind the kit the CLI carries, the repo view leads
 with `nexus <version> is out` and a **Sync** button: the
