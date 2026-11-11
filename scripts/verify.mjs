@@ -150,6 +150,13 @@
 //                 fails an oversize fixture. Done rows past 30 days
 //                 are counted in the note, never failed on (age
 //                 alone must not turn an unrelated commit red)
+//   changelog     a commit touching templates/** carries a
+//                 CHANGELOG.md entry naming at least one touched
+//                 path: the working tree vs HEAD, plus the
+//                 untracked files (what the next commit can hold;
+//                 scripts/changelog-check.mjs), so an adopter's
+//                 upgrade report always has a "why" to cite; plus
+//                 the checker's own node:test suite
 //   scripts-git   opt-in — the same scripts end to end in scratch git
 //                 repos in the temp folder (offline, but every case
 //                 spawns git, so tens of seconds), and heartbeat.yml's
@@ -1492,6 +1499,26 @@ async function legStateSize() {
   return { failures: [...failures, ...suite.failures], note: `${own.checked + kit.checked} queue files: headers <= 20 lines, <= ${kb} KB${due}; ${suite.note}` }
 }
 
+// --- leg: changelog ------------------------------------------------------------
+// The gate-teaching rule (agents.md rule 3): a commit touching
+// templates/** carries a "why" an adopter's upgrade report can cite.
+
+async function legChangelog() {
+  const { touchedTemplates, missingChangelog } = await import(pathToFileURL(path.join(ROOT, 'scripts/changelog-check.mjs')).href)
+  const touched = touchedTemplates({ root: ROOT })
+  const missing = missingChangelog(touched, read('CHANGELOG.md'))
+  const suite = runSuites(['scripts/__tests__/changelog-check.test.mjs'], 'changelog')
+  const failures = missing
+    ? [`CHANGELOG.md: no entry names any of the ${missing.length} templates/** path${missing.length === 1 ? '' : 's'} this commit touches (${missing.join(', ')}) — add \`- <path>: <what changed, one line> (<date>, <commit or spec #>).\``]
+    : []
+  return {
+    failures: [...failures, ...suite.failures],
+    note: touched.length
+      ? `${touched.length} templates/** path${touched.length === 1 ? '' : 's'} touched, CHANGELOG.md covers at least one; ${suite.note}`
+      : `no templates/** paths touched; ${suite.note}`,
+  }
+}
+
 // --- leg: adopt-dryrun ------------------------------------------------------
 // Opt-in — see the file header. Shells out to the standalone
 // script rather than duplicating its logic here.
@@ -1540,6 +1567,7 @@ const LEGS = {
   secrets: () => legSecrets(),
   upgrade: () => legUpgrade(),
   'state-size': () => legStateSize(),
+  changelog: () => legChangelog(),
   'scripts-git': () => runSuites(GIT_SUITES, 'end-to-end'),
   'adopt-dryrun': () => legAdoptDryrun(),
   design: () => legDesign(),
