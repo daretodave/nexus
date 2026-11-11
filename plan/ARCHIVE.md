@@ -272,3 +272,4 @@ still pending at the move and live on as specs.
 - 2026-11-10 · 61.1 · CHANGELOG.md now tracks why templates/ changed · c7019dcf..c7019dcf
 - 2026-11-11 · 64.1 · Says echoes an issue-born chunk's #N (#103) · edf529da..edf529da
 - 2026-11-11 · 64 · spec complete: an issue-born chunk's pending close echoes its `#N` on the `says` field so `ARCHIVE.md`'s line still names the issue once the Asap lane line settle removes is gone, keeping `support.mjs sla`'s done check from re-flagging already-shipped work forever (`skills/next/land.md` and its `templates/` twin) · edf529da..edf529da
+- 2026-11-11 · 61.2 · A templates/** commit with no CHANGELOG entry fails the gate · 68e2c64c..2b68b05e

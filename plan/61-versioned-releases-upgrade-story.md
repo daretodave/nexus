@@ -57,23 +57,13 @@ vendor-drop case exists here for a sha256 walk to cover.
 
 ## Acceptance
 
-- **A2** Every commit in this spec's own history that touches
-  `templates/**` carries a matching `CHANGELOG.md` entry.
-- **A3** `scripts/verify.mjs` gains a leg that fails a commit
-  touching `templates/**` with no matching `CHANGELOG.md`
-  entry.
 - **A4** `packages/cli/server/sync.mjs`'s upgrade report cites
   the `CHANGELOG.md` entries for files it reports as `merged`
   or `conflicted`; `playbooks/upgrade.md` documents it.
 
 ## Chunks
-Measure: 3 open · 1 closed · next A5
+Measure: 1 open · 3 closed · next A5
 
-- [ ] **61.2** verify gate leg for `CHANGELOG.md` coverage · M
-  · closes A2, A3 · needs —
-  - A commit touching `templates/**` with no matching dated
-    `CHANGELOG.md` entry for at least one touched path fails
-    the gate (the gate-teaching rule, `agents.md` rule 3).
 - [ ] **61.3** Upgrade report cites `CHANGELOG.md` · S · closes
   A4 · needs —
   - `sync.mjs`'s report cites the `CHANGELOG.md` entries for
