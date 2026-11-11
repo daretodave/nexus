@@ -22,31 +22,6 @@
   closed-chunk count it already computes for the Measure line,
   so either row format stays true after a close.
 
-### [user-issue #103] [MEDIUM] support.mjs sla re-flags issues forever: plotted chunks never carry Refs #N for tell to close
-- category: external-issue
-- evidence: filed 2026-11-10 while running march Step 1.5
-  (loop-filed). `support.mjs sla`'s "done" check only
-  recognizes a resolved issue when a pending close,
-  `ARCHIVE.md` line or Asap lane line names its number;
-  `/plot asap`'s chunk template (Step 1.5) never teaches the
-  eventual closing commit to carry `Refs #N` — that convention
-  (`support.mjs`'s `tellPlan`/`refsIssue`) is documented for
-  `/bug`'s and `/iterate`'s direct-fix flow only
-  (`skills/bug.md`, `skills/iterate.md`), not for a chunk
-  plotted via Step 1.5 and built by a later `/next top`. So
-  `support.mjs tell` never runs for it, the issue never closes
-  on its own, and `sla` re-flags the same resolved work every
-  later tick (reproduced on #102 — closed by hand this tick
-  instead of being re-plotted).
-- next: either teach `/plot asap`'s chunk template to carry
-  the issue number through to the chunk's closing commit as
-  `Refs #N` (`skills/next.md`'s builder/closer appends it when
-  the chunk's Asap lane line names an issue), or extend
-  `support.mjs sla`'s "done" check to also match the issue
-  number inside the chunk title/archive line's own
-  parenthetical, the way `support.mjs cap`'s issue-born check
-  already does (`scripts/plan/support.mjs:351`).
-
 ### [user-issue #96] [HIGH] [needs-user-call] heartbeat: march realized cadence below 40% — recurs after #91's close (hourly cron already off :00)
 - category: external-issue
 - evidence: opened 2026-11-06T19:23:23Z by the workflow token;
@@ -186,6 +161,18 @@
 - generator: motion · filed 2026-11-10
 
 ## Done
+
+### [x] [user-issue #103] [MEDIUM] support.mjs sla re-flags issues forever: plotted chunks never carry Refs #N for tell to close — closed 2026-11-11
+- category: external-issue
+- resolution: plotted as spec 64 (past `sla_hours` with no
+  Asap line naming it, `skills/march.md` Step 1.5) and built
+  as chunk 64.1 the same tick: `skills/next/land.md` §2 (and
+  its `templates/` twin) now teach the `says` field to end
+  ` (#N)` when the chunk closing is issue-born, so `ARCHIVE.md`'s
+  line still names the issue once settle removes the Asap lane
+  line, and `support.mjs sla`'s existing `names(archive, n)`
+  check keeps recognizing the work as done (archive
+  `edf529da..edf529da`, spec 64 complete).
 
 ### [x] [user-issue #102] [MEDIUM] settle.mjs: closing a ladder spec's last chunk never writes its ARCHIVE "spec complete" line — closed 2026-11-10
 - category: external-issue
