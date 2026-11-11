@@ -23,11 +23,18 @@ const tmp = (p) => fs.mkdtempSync(path.join(os.tmpdir(), `nexus-feed-${p}-`));
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const NO_DIST = path.join(os.tmpdir(), 'nexus-cli-no-dist');
 
+// A commit's -c identity is the test's own, but GIT_AUTHOR_*/GIT_COMMITTER_* env vars (a loop's own git identity,
+// agents.md "Operational secrets") outrank -c config, so they are dropped here or the fixture author drifts to the
+// environment's.
+const AUTHOR_ENV = ['GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL'];
+
 function commit(dir, file, text, msg) {
   fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
   fs.writeFileSync(path.join(dir, file), text);
   git(dir, 'add', '-A');
-  git(dir, '-c', 'user.name=Sam Owner', '-c', 'user.email=sam@example.com', 'commit', '-q', '-m', msg);
+  const env = { ...process.env };
+  for (const k of AUTHOR_ENV) delete env[k];
+  execFileSync('git', ['-c', 'user.name=Sam Owner', '-c', 'user.email=sam@example.com', 'commit', '-q', '-m', msg], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env });
   return git(dir, 'rev-parse', 'HEAD');
 }
 
