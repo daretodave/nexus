@@ -41,7 +41,7 @@ footguns: guard-test-noop
 ---
 ```
 
-- `says`: ≤ 10 words, what now works (the archive line).
+- `says`: ≤ 10 words, what now works (the archive line); an issue-born chunk (`issueBorn()` found its `#N` before close) ends it ` (#N)`.
 - `footguns:` sightings of traps this run hit that have a line.
 - `## Edit <path>` (old text found once) only for a need a
   later chunk carries or this chunk moots; `## Add` a follow-up.
