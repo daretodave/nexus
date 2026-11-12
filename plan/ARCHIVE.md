@@ -277,3 +277,5 @@ still pending at the move and live on as specs.
 - 2026-11-11 · 61 · spec complete: Versioned releases + plan/nexus.lock + upgrade story · deleted in (this commit)
 - 2026-11-12 · 62.1 · Handshake runbook template for key-handoff services · af814340..af814340
 - 2026-11-12 · 62.2 · external-services states the full-vs-handshake choosing rule · 540de9c3..540de9c3
+- 2026-11-12 · 62.3 · Profile column (full|handshake) lands in setup's service index · 41f0a300..41f0a300
+- 2026-11-12 · 62 · spec complete: `setup/` now offers a second, lighter handshake runbook profile (`templates/setup/NN_service.handshake.md`) alongside the full A-H profile, a choosing rule in `customization/external-services.md`, and a `Profile` column in `00_files.md`'s Index table · deleted in (this commit)

@@ -31,7 +31,6 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 62 | Handshake runbook profile for setup/ | [62-handshake-runbook-profile.md](62-handshake-runbook-profile.md) | planned | 0 of 3 chunks |
 | 65 | Workflow-push credential gap: test the fix, stop re-discovering it | [65-workflow-push-credential-gap.md](65-workflow-push-credential-gap.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
