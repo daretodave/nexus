@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-11-06
-> Pass count: 24
+> Last pass: 2026-11-12
+> Pass count: 25
 > Posture: bold
 > Last field research: 2026-11-06
 
@@ -352,38 +352,6 @@
 - conflicts: ship after prompts/ + releases; npm is a second
   publish surface to keep in lockstep.
 
-### [ ] [score 7.0] ADOPTERS.md wall + badge + opt-in hatch beacon
-- proposed: 2026-07-03
-- source signals: the only zero-cost growth loop available under
-  the $0-marginal constraint.
-- rationale: registry rows are trivially mergeable community
-  PRs; the differentiated part is the beacon — an adopter's
-  first green tick (opt-in, off by default, loudly so) files a
-  "hatched" issue with verifiable first-tick evidence, and
-  /triage is the spam gate.
-- proposed scope: ADOPTERS.md seeded with the provenance
-  projects + paste-ready badge snippet; README "projects that
-  ship themselves" strip; NEXUS_HATCH_OPTIN= (empty default) in
-  env.example; one fires-once step in ship-a-phase.md; a
-  hatched route in triage.md.
-- estimated phases: 1
-- conflicts: beacon must stay opt-in or it reads as phone-home
-  telemetry in a kit whose brand is "you own everything".
-
-### [ ] [score 6.8] closeloop: thank the humans who file issues
-- proposed: 2026-07-02
-- source signals: a sibling adopter's `.claude/tools/closeloop.mjs`
-  (Postmark batch thank-you emails to issue reporters,
-  dry-run default, tested).
-- rationale: the address loop closes with the fix; closing
-  with the *reporter* compounds trust. Generalize as an
-  opt-in template next to loop-issue.mjs.
-- proposed scope: `templates/scripts/closeloop.mjs` +
-  customization section in the triage/moderation story.
-- estimated phases: 1
-- conflicts: email provider becomes an optional external
-  service (runbook required).
-
 ### [promoted 2026-08-23 → phase 20] [score 8.5] Cloud march ticks must not dispatch background/async agents
 - proposed: 2026-07-17 (digest); re-evidenced 2026-08-02
   (expand pass 6)
@@ -438,236 +406,6 @@
   exits clean with no commit" -> this root cause) and a note on
   `skills/iterate.md`'s audit-delegation step.
 - estimated phases: 1 (doc/prompt-only, no template API change)
-- conflicts: none.
-
-### [ ] [score 6.5] Auto mode: Claude Code's new default permission model isn't in the kit's playbooks
-- proposed: 2026-09-09 (expand pass 9); re-evidenced 2026-09-19
-  (expand pass 13); re-evidenced 2026-10-01 (expand pass 17);
-  re-evidenced 2026-10-04 (expand pass 18); re-evidenced
-  2026-10-06 (expand pass 19); re-evidenced 2026-10-13 (expand
-  pass 21); re-evidenced 2026-10-14 (expand pass 22); re-evidenced
-  2026-10-15 (expand pass 23)
-- source signals: Claude Code's own "What's new" changelog
-  (Week 32, Aug 3-7 2026) — "auto mode becomes the default
-  permission mode for new sessions on Pro, Max, and Team
-  plans starting August 14" — a classifier now handles
-  permission prompts (approve safe actions, block risky ones)
-  instead of asking every time. Confirmed via a fresh doc
-  fetch this pass; no reference to "auto mode" exists anywhere
-  in this repo's history (`git log --all -i --grep`, zero
-  hits) or in `customization/claude-code.md` /
-  `playbooks/hands-off.md`, the two docs that own the kit's
-  entire permission story. Signal E (platform drift), 2026-09-19:
-  the CHANGELOG's `main` branch now runs through v2.1.278 (this
-  pass's fresh fetch — versions 2.1.270 through 2.1.278, none
-  read by pass 11's 2026-09-12 check), and auto mode kept
-  evolving across that span rather than settling: v2.1.278
-  "Modified auto mode defaults to use server-side classifier for
-  Claude API and Enterprise users on Bedrock, Vertex, Foundry,
-  and gateways" plus "Added status row showing whether auto mode
-  classifier runs on the server"; v2.1.271-2.1.274 each shipped
-  auto-mode-adjacent fixes (per-command `allowed_domains` for
-  Bash/PowerShell/Monitor in auto mode, an "Auto mode
-  disappearance in model picker" fix, "Improved auto mode denial
-  clarity", "Changed auto mode classifier default"). This
-  confirms auto mode is still an actively-changing surface eight
-  weeks after this candidate was first filed, not a one-time
-  platform shift the kit missed and can catch up on once — the
-  proposed scope's "investigate, don't assume" caveat is now more
-  load-bearing, since a doc written against today's classifier
-  behavior risks going stale again on the next release. Signal E,
-  2026-10-01 (expand pass 17): fetched the changelog fresh again —
-  `main` now runs through v2.1.287 (nine more versions since pass
-  13's v2.1.278 check), still actively touching this exact
-  surface rather than settling: "Fixed fast mode staying off in
-  remote sessions owned by an agent with no user account, even
-  when the organization allows it," "Changed automatic model
-  switches after a flagged message to keep your current effort
-  level instead of the new model's default," and — most directly
-  relevant to this candidate's own "investigate, don't assume"
-  scope item — "Changed whole-tool `Bash` allow rules and
-  allowing hooks to prompt for, not run, shell writes to files
-  Claude Code's file tools refuse outright (the Anthropic profile
-  store, the host credentials file)," a behavior change in
-  exactly the allow-rule/classifier interaction this candidate's
-  proposed scope says needs verifying before the doc is written.
-  Model lineup has also moved (Opus 5.5/Sonnet 5.5 are now the
-  named defaults in this same changelog, up from Opus 4.7/4.8) —
-  orthogonal to auto mode itself, but reinforces that any doc
-  this candidate produces should cite behavior, not version
-  numbers, per the kit's existing "ids age" hedge convention.
-  Signal E, 2026-10-04 (expand pass 18): fetched the changelog
-  fresh again (raw CHANGELOG.md, grepped directly) — `main` now
-  runs through v2.1.289 (two more versions since pass 17's
-  v2.1.287 check), still shipping auto-mode-specific fixes rather
-  than settling: v2.1.288 "Fixed auto mode denials pointing
-  Claude at a Bash permission rule when the blocked tool was not
-  Bash" and "Fixed auto mode on Bedrock and Mantle switching to
-  the local classifier for the rest of the session after a
-  request to an older model, such as a WebFetch summary or a
-  `sonnet` subagent." Both are narrow bug fixes to the
-  classifier's own denial-reporting and model-switch logic, not
-  structural changes — fourth straight pass confirming the
-  surface is still moving, which keeps this candidate's
-  "investigate, don't assume" scope note live rather than
-  resolved. Signal E, 2026-10-06 (expand pass 19): fetched the
-  changelog fresh again — `main` now runs through v2.1.292
-  (three more versions since pass 18's v2.1.289 check), still
-  landing auto-mode-specific fixes: v2.1.290 "Fixed auto mode
-  classifier approving non-read-only connector tools" and
-  "Fixed plan mode not restoring on session resume"; v2.1.292
-  "Fixed `permissionMode: auto` entering auto mode when
-  unavailable" and the matching subagent-side fix, plus "Fixed
-  PreToolUse hook approvals bypassing permission prompts for
-  network paths" — the last one bears directly on this
-  candidate's own "investigate... before writing the note"
-  caveat about how auto mode composes with the hook/allowlist
-  layer. Fifth straight pass confirming the surface is still
-  moving. Signal E, 2026-10-13 (expand pass 21): fetched the
-  changelog fresh again — `main` now runs through v2.1.296
-  (four more versions since pass 19's v2.1.292 check), with one
-  more auto-mode-specific entry: v2.1.293 "Reverted the auto
-  mode denial message change from 2.1.281" — the classifier's
-  own denial-message behavior changed, then changed back,
-  inside this single four-version window. Sixth straight pass
-  confirming the surface hasn't settled; still no structural
-  change that would resolve this candidate's "investigate,
-  don't assume" scope note either way. Signal E, 2026-10-14
-  (expand pass 22): fetched the changelog fresh again — `main`
-  now runs through v2.1.299 (three more versions since pass
-  21's v2.1.296 check), with three more auto-mode-specific
-  entries: a fix for SDK/headless sessions staying in auto mode
-  after the host switched to a model that doesn't support it, a
-  fix for tools from an MCP server named `constructor` or
-  `toString` wrongly asking for permission in auto mode and
-  bypass-permissions mode, and a narrowing of what a
-  `PermissionRequest` hook can approve in Cowork cloud sessions
-  (shell commands and subagents now wait or are denied rather
-  than being hook-approved) — the last one is a different
-  product surface (Cowork cloud sessions, not the GitHub
-  Actions-based cloud loop this kit documents) so it's noted but
-  not treated as directly applicable. Seventh straight pass
-  confirming the surface hasn't settled; still no structural
-  change either way. Signal E, 2026-10-15 (expand pass 23):
-  fetched the changelog fresh again — `main` now runs through
-  v2.1.300 (one more version since pass 22's v2.1.299 check),
-  with no new auto-mode-specific entries; the handful of new
-  items are Cowork-cloud-session-specific (same out-of-scope
-  surface noted last pass) and background-agent/subagent
-  bookkeeping fixes unrelated to the classifier itself. Eighth
-  straight pass confirming the surface hasn't settled, but this
-  check found nothing that changes the proposed scope's
-  "investigate, don't assume" note either way.
-- rationale: `playbooks/hands-off.md` Step 1's whole premise —
-  "burn down the prompt list... zero prompts across three
-  attended ticks is the bar" — was written for a world where
-  every local session defaults to asking. On Pro/Max/Team, new
-  sessions now default to auto mode instead: the classifier may
-  already be silently approving or blocking some of what Step
-  1's manual burn-down expects a human to see and adjudicate by
-  hand, which could shorten the burn-down (fewer real prompts to
-  work through) or hide it (a classifier-blocked action fails
-  differently than a prompt — no `allow` rule to add, just a
-  denial with no burn-down entry point). The cloud posture
-  (`bypassPermissions` on a disposable runner) is separately
-  reasoned and evidenced by a real incident, so it's out of
-  scope here — this candidate is about the local, attended path
-  auto mode now touches by default.
-- proposed scope: a short "auto mode" subsection in
-  `customization/claude-code.md`'s permission-mode discussion,
-  naming it as the new local default on Pro/Max/Team and
-  clarifying it complements (doesn't replace) the
-  settings.json allowlist + guard-hook layer; a note in
-  `playbooks/hands-off.md` Step 1 that a fresh session may
-  already be in auto mode, so the burn-down should first
-  confirm which mode is active before assuming every silence
-  means a fully pre-approved allowlist. Investigate, don't
-  assume: verify auto mode's actual interaction with
-  `.claude/settings.json`'s `allow`/`deny` rules and the guard
-  hook before writing the note, since the mechanism (a
-  classifier, not a rule match) may not compose with the
-  existing allowlist the way a first read suggests.
-- estimated phases: 1
-- conflicts: none — additive documentation, no template API
-  change; the guard-hook hard-rule enforcement (agents.md
-  rule 5) stays authoritative under any permission mode.
-
-### [ ] [score 5.8] `/skill-doctor` isn't in the kit's skill-maintenance story
-- proposed: 2026-09-10 (expand pass 10)
-- source signals: Claude Code v2.1.267 (2026-09-09, per the
-  official changelog) shipped `/skill-doctor` — "shows which
-  loaded skills go unused and what they cost in context, so
-  you can prune them." Confirmed via fresh search this pass;
-  zero hits for "skill-doctor" or "skill doctor" anywhere in
-  this repo's history or docs. `customization/claude-code.md`
-  §7 ("Native skills packaging") and the adopt-by-need
-  contract (`templates/README.md`'s prune table,
-  `plan/bearings.md`'s "keep skills lean ~100-200 lines"
-  decision) are exactly the load-bearing docs this command
-  speaks to, and none mention it.
-- rationale: nexus's whole model is skills adopted by need —
-  every template repo accumulates `skills/*.md` files an
-  agent's context pays for whether or not they're ever
-  invoked. A first-party command that measures that cost
-  directly is on-mission for a kit whose own bearings already
-  encode "keep skills lean" as a standing decision; today an
-  adopter (or this repo's own maintainers) would have no
-  first-party way to notice a skill has gone stale/unused
-  short of memory or grep.
-- proposed scope: a short subsection in
-  `customization/claude-code.md` (new §10 or folded into §7)
-  naming `/skill-doctor`, when to run it (after adopt-by-need
-  pruning, or periodically once a repo's skills/ has grown),
-  and how its output maps to the prune table; one line in
-  `playbooks/new-project.md`'s adopt-by-need prune step
-  pointing at it as a follow-up check. Investigate, don't
-  assume: confirm the command's actual output format before
-  writing the mapping, since a first read of a changelog blurb
-  may not match the real CLI surface.
-- estimated phases: 1
-- conflicts: none — additive documentation, no template API
-  change.
-
-### [ ] [score 6.0] Claude Code v2.1.269 fixes the attribution-reminder/CLAUDE.md conflict agents.md rule 2 depends on
-- proposed: 2026-09-12 (expand pass 11)
-- source signals: Claude Code changelog v2.1.269 (2026-09-11) —
-  "Fixed the attribution reminder overriding a CLAUDE.md or
-  memory rule against commit and pull request attribution;
-  lines set by managed settings still apply." Confirmed via a
-  fresh changelog fetch this pass (versions 2.1.268/2.1.269,
-  dated 2026-09-10/11, are the only entries newer than the
-  v2.1.267 changelog state expand pass 10 already read on
-  2026-09-09). `agents.md` rule 2 ("No `Co-Authored-By:`
-  trailers. No emojis.") and its ~25 mirrors across
-  skills/templates/playbooks depend entirely on the harness
-  respecting a project's own CLAUDE.md-level rule over its own
-  built-in attribution reminder — exactly the conflict this
-  version fixes. No repo commit has ever actually carried a
-  stray trailer (`git log --all --grep="Co-Authored-By"` finds
-  none), so this isn't closing an active incident; it's the
-  platform formalizing a guarantee the kit's core no-trailer
-  contract already assumed informally, on an Action pin
-  (`anthropics/claude-code-action@v1`) that floats to newer
-  CLI builds over time.
-- rationale: the "no Co-Authored-By" rule is one of two hard,
-  headline standing rules in agents.md (rule 2); before this
-  fix, an older Claude Code build could in principle have let
-  its own attribution reminder win over agents.md's
-  instruction, silently violating the rule on any tick with no
-  local signal it had happened. Worth a small, cheap doc note
-  now that the platform mechanically guarantees the ordering
-  the kit already relies on, plus a version-floor callout for
-  adopters pinning an older CLI.
-- proposed scope: one paragraph in
-  `customization/claude-code.md`'s hard-rules or failure-modes
-  section noting CLI >= v2.1.269 (2026-09-11) is required for
-  the "attribution reminder never overrides agents.md rule 2"
-  guarantee to hold mechanically (older builds relied on it
-  working by convention only, unconfirmed either way); a
-  one-line pointer from `.github/CLOUD_LOOP.md`'s
-  trailer-carve-out section since the cloud loop is the
-  everyday enforcement point.
-- estimated phases: 1 (doc-only, no template API change)
 - conflicts: none.
 
 ### [ ] [score 4.5] Crash-alarm dedupe matches by generic title only, masking distinct failure causes behind one long-open issue
@@ -1047,6 +785,7 @@
 
 ### [ ] [score 7.5] playbooks/new-project.md has drifted into internally-contradictory and overclaiming copy across 4 pending dry-run findings
 - proposed: 2026-11-06 (expand)
+- filed score: 7.5
 - kind: product
 - source signals: `plan/CRITIQUE.md`'s Pending section carries
   four separate, still-open dry-run findings against this one
@@ -1089,6 +828,78 @@
 - estimated chunks: 1
 - conflicts: none known — prose-only playbook edits, no
   `templates/` API surface.
+- re-evidence:
+  - 2026-11-12 · B · same source, +0 · three more independent CRITIQUE rows in the same playbook: prune-list test breakage (cadence.test.mjs imports bootstrap.mjs, never added to the rm list, HIGH missing-file), files-added checklist omits nexus.secrets.json (LOW), install-hooks run instruction precedes scripts/ existing (LOW)
+
+### [ ] [score 7.0] Onboarding's mobile viewport needs its own narrow-width layout pass, not desktop CSS stretched thin
+- proposed: 2026-11-12 (expand)
+- kind: product
+- source signals: signal F (product telemetry — the GUI as its
+  users meet it, surfaced via `plan/CRITIQUE.md`'s walk rows,
+  `walk-42516406663`) — two independent findings against the
+  same onboarding Welcome screen on a phone viewport: a [HIGH]
+  row where the hero headline's hard-coded `<br/>` breaks
+  (`packages/cli/src/screens/onboarding/Welcome.jsx`) consume the
+  entire first screen at full desktop font size, pushing the
+  primary "Set up this repo" CTA and loop diagram below the fold
+  with only "Skip setup" visible; and a [MED] row where the
+  8-star stepper (`packages/cli/src/ui/feedback.jsx`'s `Stepper`,
+  each `.stp` a fixed 92px in `nexus.css`) clips to its first 4
+  stars with no wrap, scroll cue, or "n of N" counter, unlike its
+  desktop rendering (which keeps the full row plus a footer "1 of
+  8"). Both trace to the same root: `nexus.css`'s onboarding rules
+  (`.ob .t-display-l`, `.stepper`) carry a `(max-height: 820px)`
+  breakpoint but no narrow-*width* one, so the component only
+  ever assumes the "1280 x 800 without scrolling" viewport the
+  file's own section comment names.
+- rationale: this is a stranger's literal first screen — burying
+  the CTA or hiding half the setup steps on the one viewport
+  (phone-width) the README's own GIFs never show is adopter-facing
+  in the sharpest way, and both fixes are confined to CSS/JSX the
+  rows already name a line for, not new plumbing.
+- proposed scope: add a narrow-viewport breakpoint to
+  `packages/cli/src/styles/nexus.css` for `.ob .t-display-l` (let
+  the headline wrap naturally, or drop/condition `Welcome.jsx`'s
+  hard-coded `<br/>`s) and for `.stepper` (an `overflow-x: auto`
+  scroll strip with a fade/arrow, or collapse to the footer's
+  existing "n of N" text) so both screens stay legible under
+  ~390px without widening every star.
+- estimated chunks: 1
+- conflicts: none known — CSS/JSX only, no template API surface.
+
+### [ ] [score 5.8] Widen (or exempt) the dualshell syntax lint past its five git-procedure skills
+- proposed: 2026-11-12 (expand)
+- kind: guard
+- source signals: signal A (`plan/AUDIT.md`'s `[E, 2.1]` row) —
+  chunk 52.3 scoped the new `dualshell` verify leg
+  (`scripts/verify.mjs`'s `SYNTAX_SCOPED_SKILLS`) to the five
+  git-procedure skills its own spec named (`skills/next/build.md`,
+  `skills/next/land.md`, `skills/next.md`, `skills/plot.md`,
+  `skills/tidy.md`, and their `templates/skills/` twins),
+  deliberately leaving the rest of `skills/` and
+  `templates/skills/` unchecked. A repo-wide grep for the same
+  bash-only shapes (`$(...)`, backtick substitution, bare
+  `VAR=value`, `&&`/`||` chaining, `<<` heredocs) finds real hits
+  in both the kit's own skills (`critique.md`, `heads-down.md`,
+  `iterate.md`, `ship-a-chunk.md`, `lessons-pr.md`, `march.md`,
+  `reboot-ready.md`) and their adopter-facing `templates/skills/`
+  twins, several with no PowerShell equivalent today.
+- rationale: `templates/skills/` is the product (agents.md rule
+  7) — a bash-only fence an adopter on PowerShell can't run is
+  exactly the class the dualshell leg exists to catch, and today
+  it's invisible outside five files. Cheap because the fix
+  locations are already enumerated file-and-line in the AUDIT row.
+- proposed scope: either rewrite each bash-only shape (`mktemp` →
+  a small node temp-file helper; `gh ... --jq` piping → a small
+  node script; the heredoc commit-message pattern → write the
+  message to a temp file and `git commit -F`) or tag fences with
+  no PowerShell equivalent worth building as `<!--
+  dualshell:posix-only -->`, then widen `SYNTAX_SCOPED_SKILLS` to
+  all of `skills/` + `templates/skills/` once they're clean.
+- estimated chunks: 1
+- conflicts: none known — skills/ prose + `scripts/verify.mjs`'s
+  existing dualshell leg, no new invariant beyond widening its own
+  scope.
 
 ## Promoted
 
@@ -1596,3 +1407,270 @@
   for any future way a cloud commit could drop the trailer.
 - estimated phases: 1 (workflow-only, no template API change)
 - conflicts: none.
+
+### [rejected 2026-11-12] [score 5.8] `/skill-doctor` isn't in the kit's skill-maintenance story
+- reason: stale: below cap cut 2026-11-12
+- proposed: 2026-09-10 (expand pass 10)
+- source signals: Claude Code v2.1.267 (2026-09-09, per the
+  official changelog) shipped `/skill-doctor` — "shows which
+  loaded skills go unused and what they cost in context, so
+  you can prune them." Confirmed via fresh search this pass;
+  zero hits for "skill-doctor" or "skill doctor" anywhere in
+  this repo's history or docs. `customization/claude-code.md`
+  §7 ("Native skills packaging") and the adopt-by-need
+  contract (`templates/README.md`'s prune table,
+  `plan/bearings.md`'s "keep skills lean ~100-200 lines"
+  decision) are exactly the load-bearing docs this command
+  speaks to, and none mention it.
+- rationale: nexus's whole model is skills adopted by need —
+  every template repo accumulates `skills/*.md` files an
+  agent's context pays for whether or not they're ever
+  invoked. A first-party command that measures that cost
+  directly is on-mission for a kit whose own bearings already
+  encode "keep skills lean" as a standing decision; today an
+  adopter (or this repo's own maintainers) would have no
+  first-party way to notice a skill has gone stale/unused
+  short of memory or grep.
+- proposed scope: a short subsection in
+  `customization/claude-code.md` (new §10 or folded into §7)
+  naming `/skill-doctor`, when to run it (after adopt-by-need
+  pruning, or periodically once a repo's skills/ has grown),
+  and how its output maps to the prune table; one line in
+  `playbooks/new-project.md`'s adopt-by-need prune step
+  pointing at it as a follow-up check. Investigate, don't
+  assume: confirm the command's actual output format before
+  writing the mapping, since a first read of a changelog blurb
+  may not match the real CLI surface.
+- estimated phases: 1
+- conflicts: none — additive documentation, no template API
+  change.
+
+### [rejected 2026-11-12] [score 6.0] Claude Code v2.1.269 fixes the attribution-reminder/CLAUDE.md conflict agents.md rule 2 depends on
+- reason: stale: below cap cut 2026-11-12
+- proposed: 2026-09-12 (expand pass 11)
+- source signals: Claude Code changelog v2.1.269 (2026-09-11) —
+  "Fixed the attribution reminder overriding a CLAUDE.md or
+  memory rule against commit and pull request attribution;
+  lines set by managed settings still apply." Confirmed via a
+  fresh changelog fetch this pass (versions 2.1.268/2.1.269,
+  dated 2026-09-10/11, are the only entries newer than the
+  v2.1.267 changelog state expand pass 10 already read on
+  2026-09-09). `agents.md` rule 2 ("No `Co-Authored-By:`
+  trailers. No emojis.") and its ~25 mirrors across
+  skills/templates/playbooks depend entirely on the harness
+  respecting a project's own CLAUDE.md-level rule over its own
+  built-in attribution reminder — exactly the conflict this
+  version fixes. No repo commit has ever actually carried a
+  stray trailer (`git log --all --grep="Co-Authored-By"` finds
+  none), so this isn't closing an active incident; it's the
+  platform formalizing a guarantee the kit's core no-trailer
+  contract already assumed informally, on an Action pin
+  (`anthropics/claude-code-action@v1`) that floats to newer
+  CLI builds over time.
+- rationale: the "no Co-Authored-By" rule is one of two hard,
+  headline standing rules in agents.md (rule 2); before this
+  fix, an older Claude Code build could in principle have let
+  its own attribution reminder win over agents.md's
+  instruction, silently violating the rule on any tick with no
+  local signal it had happened. Worth a small, cheap doc note
+  now that the platform mechanically guarantees the ordering
+  the kit already relies on, plus a version-floor callout for
+  adopters pinning an older CLI.
+- proposed scope: one paragraph in
+  `customization/claude-code.md`'s hard-rules or failure-modes
+  section noting CLI >= v2.1.269 (2026-09-11) is required for
+  the "attribution reminder never overrides agents.md rule 2"
+  guarantee to hold mechanically (older builds relied on it
+  working by convention only, unconfirmed either way); a
+  one-line pointer from `.github/CLOUD_LOOP.md`'s
+  trailer-carve-out section since the cloud loop is the
+  everyday enforcement point.
+- estimated phases: 1 (doc-only, no template API change)
+- conflicts: none.
+
+### [rejected 2026-11-12] [score 6.5] Auto mode: Claude Code's new default permission model isn't in the kit's playbooks
+- reason: stale: below cap cut 2026-11-12
+- proposed: 2026-09-09 (expand pass 9); re-evidenced 2026-09-19
+  (expand pass 13); re-evidenced 2026-10-01 (expand pass 17);
+  re-evidenced 2026-10-04 (expand pass 18); re-evidenced
+  2026-10-06 (expand pass 19); re-evidenced 2026-10-13 (expand
+  pass 21); re-evidenced 2026-10-14 (expand pass 22); re-evidenced
+  2026-10-15 (expand pass 23)
+- source signals: Claude Code's own "What's new" changelog
+  (Week 32, Aug 3-7 2026) — "auto mode becomes the default
+  permission mode for new sessions on Pro, Max, and Team
+  plans starting August 14" — a classifier now handles
+  permission prompts (approve safe actions, block risky ones)
+  instead of asking every time. Confirmed via a fresh doc
+  fetch this pass; no reference to "auto mode" exists anywhere
+  in this repo's history (`git log --all -i --grep`, zero
+  hits) or in `customization/claude-code.md` /
+  `playbooks/hands-off.md`, the two docs that own the kit's
+  entire permission story. Signal E (platform drift), 2026-09-19:
+  the CHANGELOG's `main` branch now runs through v2.1.278 (this
+  pass's fresh fetch — versions 2.1.270 through 2.1.278, none
+  read by pass 11's 2026-09-12 check), and auto mode kept
+  evolving across that span rather than settling: v2.1.278
+  "Modified auto mode defaults to use server-side classifier for
+  Claude API and Enterprise users on Bedrock, Vertex, Foundry,
+  and gateways" plus "Added status row showing whether auto mode
+  classifier runs on the server"; v2.1.271-2.1.274 each shipped
+  auto-mode-adjacent fixes (per-command `allowed_domains` for
+  Bash/PowerShell/Monitor in auto mode, an "Auto mode
+  disappearance in model picker" fix, "Improved auto mode denial
+  clarity", "Changed auto mode classifier default"). This
+  confirms auto mode is still an actively-changing surface eight
+  weeks after this candidate was first filed, not a one-time
+  platform shift the kit missed and can catch up on once — the
+  proposed scope's "investigate, don't assume" caveat is now more
+  load-bearing, since a doc written against today's classifier
+  behavior risks going stale again on the next release. Signal E,
+  2026-10-01 (expand pass 17): fetched the changelog fresh again —
+  `main` now runs through v2.1.287 (nine more versions since pass
+  13's v2.1.278 check), still actively touching this exact
+  surface rather than settling: "Fixed fast mode staying off in
+  remote sessions owned by an agent with no user account, even
+  when the organization allows it," "Changed automatic model
+  switches after a flagged message to keep your current effort
+  level instead of the new model's default," and — most directly
+  relevant to this candidate's own "investigate, don't assume"
+  scope item — "Changed whole-tool `Bash` allow rules and
+  allowing hooks to prompt for, not run, shell writes to files
+  Claude Code's file tools refuse outright (the Anthropic profile
+  store, the host credentials file)," a behavior change in
+  exactly the allow-rule/classifier interaction this candidate's
+  proposed scope says needs verifying before the doc is written.
+  Model lineup has also moved (Opus 5.5/Sonnet 5.5 are now the
+  named defaults in this same changelog, up from Opus 4.7/4.8) —
+  orthogonal to auto mode itself, but reinforces that any doc
+  this candidate produces should cite behavior, not version
+  numbers, per the kit's existing "ids age" hedge convention.
+  Signal E, 2026-10-04 (expand pass 18): fetched the changelog
+  fresh again (raw CHANGELOG.md, grepped directly) — `main` now
+  runs through v2.1.289 (two more versions since pass 17's
+  v2.1.287 check), still shipping auto-mode-specific fixes rather
+  than settling: v2.1.288 "Fixed auto mode denials pointing
+  Claude at a Bash permission rule when the blocked tool was not
+  Bash" and "Fixed auto mode on Bedrock and Mantle switching to
+  the local classifier for the rest of the session after a
+  request to an older model, such as a WebFetch summary or a
+  `sonnet` subagent." Both are narrow bug fixes to the
+  classifier's own denial-reporting and model-switch logic, not
+  structural changes — fourth straight pass confirming the
+  surface is still moving, which keeps this candidate's
+  "investigate, don't assume" scope note live rather than
+  resolved. Signal E, 2026-10-06 (expand pass 19): fetched the
+  changelog fresh again — `main` now runs through v2.1.292
+  (three more versions since pass 18's v2.1.289 check), still
+  landing auto-mode-specific fixes: v2.1.290 "Fixed auto mode
+  classifier approving non-read-only connector tools" and
+  "Fixed plan mode not restoring on session resume"; v2.1.292
+  "Fixed `permissionMode: auto` entering auto mode when
+  unavailable" and the matching subagent-side fix, plus "Fixed
+  PreToolUse hook approvals bypassing permission prompts for
+  network paths" — the last one bears directly on this
+  candidate's own "investigate... before writing the note"
+  caveat about how auto mode composes with the hook/allowlist
+  layer. Fifth straight pass confirming the surface is still
+  moving. Signal E, 2026-10-13 (expand pass 21): fetched the
+  changelog fresh again — `main` now runs through v2.1.296
+  (four more versions since pass 19's v2.1.292 check), with one
+  more auto-mode-specific entry: v2.1.293 "Reverted the auto
+  mode denial message change from 2.1.281" — the classifier's
+  own denial-message behavior changed, then changed back,
+  inside this single four-version window. Sixth straight pass
+  confirming the surface hasn't settled; still no structural
+  change that would resolve this candidate's "investigate,
+  don't assume" scope note either way. Signal E, 2026-10-14
+  (expand pass 22): fetched the changelog fresh again — `main`
+  now runs through v2.1.299 (three more versions since pass
+  21's v2.1.296 check), with three more auto-mode-specific
+  entries: a fix for SDK/headless sessions staying in auto mode
+  after the host switched to a model that doesn't support it, a
+  fix for tools from an MCP server named `constructor` or
+  `toString` wrongly asking for permission in auto mode and
+  bypass-permissions mode, and a narrowing of what a
+  `PermissionRequest` hook can approve in Cowork cloud sessions
+  (shell commands and subagents now wait or are denied rather
+  than being hook-approved) — the last one is a different
+  product surface (Cowork cloud sessions, not the GitHub
+  Actions-based cloud loop this kit documents) so it's noted but
+  not treated as directly applicable. Seventh straight pass
+  confirming the surface hasn't settled; still no structural
+  change either way. Signal E, 2026-10-15 (expand pass 23):
+  fetched the changelog fresh again — `main` now runs through
+  v2.1.300 (one more version since pass 22's v2.1.299 check),
+  with no new auto-mode-specific entries; the handful of new
+  items are Cowork-cloud-session-specific (same out-of-scope
+  surface noted last pass) and background-agent/subagent
+  bookkeeping fixes unrelated to the classifier itself. Eighth
+  straight pass confirming the surface hasn't settled, but this
+  check found nothing that changes the proposed scope's
+  "investigate, don't assume" note either way.
+- rationale: `playbooks/hands-off.md` Step 1's whole premise —
+  "burn down the prompt list... zero prompts across three
+  attended ticks is the bar" — was written for a world where
+  every local session defaults to asking. On Pro/Max/Team, new
+  sessions now default to auto mode instead: the classifier may
+  already be silently approving or blocking some of what Step
+  1's manual burn-down expects a human to see and adjudicate by
+  hand, which could shorten the burn-down (fewer real prompts to
+  work through) or hide it (a classifier-blocked action fails
+  differently than a prompt — no `allow` rule to add, just a
+  denial with no burn-down entry point). The cloud posture
+  (`bypassPermissions` on a disposable runner) is separately
+  reasoned and evidenced by a real incident, so it's out of
+  scope here — this candidate is about the local, attended path
+  auto mode now touches by default.
+- proposed scope: a short "auto mode" subsection in
+  `customization/claude-code.md`'s permission-mode discussion,
+  naming it as the new local default on Pro/Max/Team and
+  clarifying it complements (doesn't replace) the
+  settings.json allowlist + guard-hook layer; a note in
+  `playbooks/hands-off.md` Step 1 that a fresh session may
+  already be in auto mode, so the burn-down should first
+  confirm which mode is active before assuming every silence
+  means a fully pre-approved allowlist. Investigate, don't
+  assume: verify auto mode's actual interaction with
+  `.claude/settings.json`'s `allow`/`deny` rules and the guard
+  hook before writing the note, since the mechanism (a
+  classifier, not a rule match) may not compose with the
+  existing allowlist the way a first read suggests.
+- estimated phases: 1
+- conflicts: none — additive documentation, no template API
+  change; the guard-hook hard-rule enforcement (agents.md
+  rule 5) stays authoritative under any permission mode.
+
+### [rejected 2026-11-12] [score 6.8] closeloop: thank the humans who file issues
+- reason: stale: below cap cut 2026-11-12
+- proposed: 2026-07-02
+- source signals: a sibling adopter's `.claude/tools/closeloop.mjs`
+  (Postmark batch thank-you emails to issue reporters,
+  dry-run default, tested).
+- rationale: the address loop closes with the fix; closing
+  with the *reporter* compounds trust. Generalize as an
+  opt-in template next to loop-issue.mjs.
+- proposed scope: `templates/scripts/closeloop.mjs` +
+  customization section in the triage/moderation story.
+- estimated phases: 1
+- conflicts: email provider becomes an optional external
+  service (runbook required).
+
+### [rejected 2026-11-12] [score 7.0] ADOPTERS.md wall + badge + opt-in hatch beacon
+- reason: stale: below cap cut 2026-11-12
+- proposed: 2026-07-03
+- source signals: the only zero-cost growth loop available under
+  the $0-marginal constraint.
+- rationale: registry rows are trivially mergeable community
+  PRs; the differentiated part is the beacon — an adopter's
+  first green tick (opt-in, off by default, loudly so) files a
+  "hatched" issue with verifiable first-tick evidence, and
+  /triage is the spam gate.
+- proposed scope: ADOPTERS.md seeded with the provenance
+  projects + paste-ready badge snippet; README "projects that
+  ship themselves" strip; NEXUS_HATCH_OPTIN= (empty default) in
+  env.example; one fires-once step in ship-a-phase.md; a
+  hatched route in triage.md.
+- estimated phases: 1
+- conflicts: beacon must stay opt-in or it reads as phone-home
+  telemetry in a kit whose brand is "you own everything".
