@@ -78,7 +78,8 @@ templates/
 ├── setup/                             → repo's setup/ (one runbook per external
 │   │                                    service; index in 00_files.md)
 │   ├── 00_files.md                    (the manifest template)
-│   ├── NN_service.md                  (per-service runbook template)
+│   ├── NN_service.md                  (per-service runbook template, full A-H profile)
+│   ├── NN_service.handshake.md        (per-service runbook template, lighter handshake profile: account + key drop, no RBAC/webhooks/branding)
 │   └── bootstrap.example.json         (manifest for /bootstrap; copy to setup/bootstrap.local.json, gitignored)
 ├── .github/                           → repo's .github/ (opt-in; cloud loops)
 │   ├── workflows/march.yml            (the dispatcher: owner job, or PR mode's pick/build/land/release by NEXUS_LOOP_MODE)
