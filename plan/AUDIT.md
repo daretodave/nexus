@@ -1,7 +1,7 @@
 # Kit audit
 
-> Last pass: 2026-11-10
-> Pass count: 128
+> Last pass: 2026-11-12
+> Pass count: 129
 > Bias: none
 
 ## Pending
@@ -600,3 +600,25 @@ AUDIT row filed; full account in `plan/DIGEST.md`'s 2026-10-19
 entry. Audit only — shipped nothing, per `skills/digest.md`
 rule 2. The three durable rows and `[D/A, 2.7]` remain Pending,
 unchanged.
+
+Digest tick 2026-11-12: header was 2 days old (last full sweep
+2026-11-10), past the 48h threshold, so re-verified all 8
+Pending rows against current `main` rather than re-scoring from
+a blind sweep. All reproduced unchanged: `setLeft()`
+(`scripts/plan/settle.mjs:244`) still has no `N of M chunks`
+branch (spec 61's own example row is gone now that it archived,
+but the code path is untested either way); `models.mjs:8` and
+both CLI test fixtures still carry `claude-fable-5-1`/"Fable
+5.1"; `identity/README.md` still has no `## Footguns: the
+ladder` heading; the `dualshell` lint's scope gap and the root
+workflows' `@v4` pins are both untouched; `next/build.md` §2
+still doesn't name an explicit step range. `[user-issue #96]`
+confirmed still open via `gh issue view 96`. The `[loop, HIGH]`
+motion row's W46 count moved from 8 to 20 so far (`node
+scripts/pulse.mjs --motion`); the W45 stalled reading itself is
+unchanged (already final). A fresh repo-wide grep for stale
+model ids (`claude-opus-4-*`/`claude-haiku-4-*`/`claude-sonnet-4-*`/
+`Fable 5.1`) hit nothing beyond the already-filed `[F, 3.6]` row
+and historical changelog prose in `plan/CANDIDATES.md:495`. No
+new rows found this pass. Audit only — shipped nothing, per
+`skills/digest.md` rule 2.
