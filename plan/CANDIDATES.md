@@ -70,64 +70,6 @@
   documented public API)
 - conflicts: none.
 
-### [ ] [score 7.8] Workflow-scope-blocked lane: stop re-discovering the App-token-overrides-PAT gap per phase
-- proposed: 2026-08-31
-- source signals: three independent AUDIT rows share one root
-  cause — phase 20 (`[user-issue #35]`, 2026-08-23), the
-  phase-23 patch nexus's own march.yml/night.yml still needs
-  applied by hand (`[user-issue #40]`), and phase 32
-  (`[user-issue #49]`, 2026-08-30) all built and verified clean
-  in a cloud tick, then had `git push` rejected on
-  `.github/workflows/*.yml` with "refusing to allow a GitHub
-  App to create or update workflow ... without `workflows`
-  permission" — even though the checkout step and the `Run
-  /march` step both pass `secrets.ACTIONS_PAT`. Each occurrence
-  discovered the same fact fresh: the push that actually
-  authenticates is the Claude Code Action's own GitHub App
-  installation token (`gh auth status` mid-tick shows
-  `claude[bot]` via a `ghs_...` token, not the PAT), not
-  `ACTIONS_PAT` — isolated because non-workflow-file pushes in
-  the very same runs succeed. `[user-issue #35]`'s own `next`
-  field already names the two live hypotheses (Action overwrites
-  the checkout-configured git credential before the agent's turn
-  starts, or `ACTIONS_PAT` doesn't actually carry `workflows`
-  scope despite the re-mint) but no tick has been able to test
-  either, since every cloud tick reproduces the identical
-  credential wiring.
-- rationale: this has cost three built-and-discarded cloud
-  ticks (each ran the phase to completion, verified green, then
-  threw the diff away per agents.md rule 1) and will keep
-  costing one per future phase that touches
-  `.github/workflows/*.yml` — for nexus and for any adopter who
-  copies the cloud-loop template and later edits their own
-  `march.yml`/`heartbeat.yml`. A one-time fix (or a formalized
-  routing convention) is cheaper than the recurring waste.
-- proposed scope: a local/human session (normal repo-write
-  creds, not the Action's App token) tests whether an explicit
-  `git remote set-url origin
-  https://x-access-token:${ACTIONS_PAT}@github.com/<org>/<repo>.git`
-  (or `http.extraheader`) immediately before the push step
-  forces the PAT's credential over the Action's, resolving
-  hypothesis (a); separately confirms `ACTIONS_PAT`'s actual
-  scope grants in GitHub's token settings UI (hypothesis (b)).
-  If (a) fixes it: land the explicit remote-credential step in
-  `.github/workflows/march.yml` + `templates/.github/workflows/march.yml`
-  (and `heartbeat.yml` if it ever pushes). If neither
-  hypothesis yields a fix: formalize the fallback that's
-  already happening ad hoc — `.github/CLOUD_LOOP.md` gets a
-  "workflow-touching phases" note (build + verify still run in
-  the cloud tick, but the push is skipped in favor of a single
-  dedicated issue for `/oversight` to apply), and
-  `skills/ship-a-phase.md` checks the diff for
-  `.github/workflows/*.yml` before attempting the push so a
-  future tick fails fast instead of discovering the rejection
-  after a full build.
-- estimated phases: 1
-- conflicts: none — orthogonal to other pending candidates;
-  closes `[user-issue #35]`, `[user-issue #40]`, and
-  `[user-issue #49]` together if the fix lands, or gives all
-  three a documented standing resolution path if it doesn't.
-
 ### [promoted 2026-08-23 → phase 22] [score 8.8] Workspace-of-repos as a first-class adoption path
 - proposed: 2026-07-03
 - source signals: two sibling adopters independently converged
@@ -1151,6 +1093,74 @@
 ## Promoted
 
 (moves to the build plan via /oversight)
+
+### [promoted 2026-11-12 → spec 65] [score 7.8] Workflow-scope-blocked lane: stop re-discovering the App-token-overrides-PAT gap per phase
+- proposed: 2026-08-31
+- source signals: three independent AUDIT rows share one root
+  cause — phase 20 (`[user-issue #35]`, 2026-08-23), the
+  phase-23 patch nexus's own march.yml/night.yml still needs
+  applied by hand (`[user-issue #40]`), and phase 32
+  (`[user-issue #49]`, 2026-08-30) all built and verified clean
+  in a cloud tick, then had `git push` rejected on
+  `.github/workflows/*.yml` with "refusing to allow a GitHub
+  App to create or update workflow ... without `workflows`
+  permission" — even though the checkout step and the `Run
+  /march` step both pass `secrets.ACTIONS_PAT`. Each occurrence
+  discovered the same fact fresh: the push that actually
+  authenticates is the Claude Code Action's own GitHub App
+  installation token (`gh auth status` mid-tick shows
+  `claude[bot]` via a `ghs_...` token, not the PAT), not
+  `ACTIONS_PAT` — isolated because non-workflow-file pushes in
+  the very same runs succeed. `[user-issue #35]`'s own `next`
+  field already names the two live hypotheses (Action overwrites
+  the checkout-configured git credential before the agent's turn
+  starts, or `ACTIONS_PAT` doesn't actually carry `workflows`
+  scope despite the re-mint) but no tick has been able to test
+  either, since every cloud tick reproduces the identical
+  credential wiring.
+- rationale: this has cost three built-and-discarded cloud
+  ticks (each ran the phase to completion, verified green, then
+  threw the diff away per agents.md rule 1) and will keep
+  costing one per future phase that touches
+  `.github/workflows/*.yml` — for nexus and for any adopter who
+  copies the cloud-loop template and later edits their own
+  `march.yml`/`heartbeat.yml`. A one-time fix (or a formalized
+  routing convention) is cheaper than the recurring waste.
+- proposed scope: a local/human session (normal repo-write
+  creds, not the Action's App token) tests whether an explicit
+  `git remote set-url origin
+  https://x-access-token:${ACTIONS_PAT}@github.com/<org>/<repo>.git`
+  (or `http.extraheader`) immediately before the push step
+  forces the PAT's credential over the Action's, resolving
+  hypothesis (a); separately confirms `ACTIONS_PAT`'s actual
+  scope grants in GitHub's token settings UI (hypothesis (b)).
+  If (a) fixes it: land the explicit remote-credential step in
+  `.github/workflows/march.yml` + `templates/.github/workflows/march.yml`
+  (and `heartbeat.yml` if it ever pushes). If neither
+  hypothesis yields a fix: formalize the fallback that's
+  already happening ad hoc — `.github/CLOUD_LOOP.md` gets a
+  "workflow-touching phases" note (build + verify still run in
+  the cloud tick, but the push is skipped in favor of a single
+  dedicated issue for `/oversight` to apply), and
+  `skills/ship-a-phase.md` checks the diff for
+  `.github/workflows/*.yml` before attempting the push so a
+  future tick fails fast instead of discovering the rejection
+  after a full build.
+  Narrowed at promotion: the fallback half of this scope has
+  already shipped since this candidate was filed —
+  `skills/ship-a-chunk.md` §6 item 5 holds a workflow-touching
+  chunk for a local session before building, and
+  `.github/CLOUD_LOOP.md`'s troubleshooting section documents
+  the symptom. Spec 65 scopes to the half that's still open:
+  actually testing hypotheses (a) and (b), landing the fix (and
+  retiring the now-redundant hold) if one works, or recording
+  the negative result if neither does.
+- estimated phases: 1
+- conflicts: none — orthogonal to other pending candidates;
+  closes `[user-issue #35]`, `[user-issue #40]`, and
+  `[user-issue #49]` together if the fix lands, or gives all
+  three a documented standing resolution path if it doesn't.
+- promoted: 2026-11-12, auto (motion-stall react, #92), veto #104
 
 ### [promoted 2026-11-07 → spec 62] [score 7.9] Handshake runbook profile for setup/
 - proposed: 2026-07-03
