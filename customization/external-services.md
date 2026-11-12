@@ -140,6 +140,25 @@ Not every service uses every section. Drop the ones that
 don't apply (a hosting provider doesn't have RBAC; a CDN
 doesn't have webhooks). Don't pad.
 
+### Choosing a profile: full or handshake
+
+Not every service needs all eight sections. A second,
+lighter template exists for the services that don't:
+[`../templates/setup/NN_service.handshake.md`](../templates/setup/NN_service.handshake.md)
+— four fixed sections instead of eight, for a service that
+reduces to "create an account, hand over a few keys."
+
+The handshake profile fits a service whose dashboard work
+is only account creation plus key generation — no RBAC, no
+webhooks, no branding, no roles to configure. Anything with
+real dashboard surface beyond generating keys uses the full
+profile instead.
+
+The choice is a question, not a feeling: does this service
+need any of sections C through G (API / auth config,
+branding, security, roles / RBAC, webhooks)? No — the
+handshake profile. Yes — the full profile.
+
 ---
 
 ## How the loop reads this
