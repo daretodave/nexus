@@ -276,3 +276,4 @@ still pending at the move and live on as specs.
 - 2026-11-11 · 61.3 · Upgrade report cites CHANGELOG.md for merged/conflicted files · (this commit)
 - 2026-11-11 · 61 · spec complete: Versioned releases + plan/nexus.lock + upgrade story · deleted in (this commit)
 - 2026-11-12 · 62.1 · Handshake runbook template for key-handoff services · af814340..af814340
+- 2026-11-12 · 62.2 · external-services states the full-vs-handshake choosing rule · 540de9c3..540de9c3

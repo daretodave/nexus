@@ -88,8 +88,6 @@ today, not a replacement for the full one.
 
 ## Acceptance
 
-- **A5** `customization/external-services.md` states the
-  full-vs-handshake choosing rule from Design.
 - **A6** `templates/setup/00_files.md`'s Index table carries a
   `Profile` column; its one worked example row (or rows) read
   `full`.
@@ -99,10 +97,7 @@ today, not a replacement for the full one.
 (None.)
 
 ## Chunks
-Measure: 2 open · 5 closed · next A8
+Measure: 1 open · 6 closed · next A8
 
-- [ ] **62.2** Full-vs-handshake choosing rule in
-  `customization/external-services.md` · S · closes A5 ·
-  needs —
 - [ ] **62.3** `Profile` column in `templates/setup/00_files.md`'s
   Index table · S · closes A6 · needs —
