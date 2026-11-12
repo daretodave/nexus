@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-11
-> Pass count: 33
+> Last pass: 2026-11-12
+> Pass count: 34
 
 ## Pending
 
@@ -342,6 +342,27 @@
   `templates/README.md:249-257` (9-row table).
 - suggested fix: update README.md to "all 9 placeholders" (or
   drop the number and say "every placeholder").
+- source: dry-run
+
+### [ ] [MED] README.md:76-80 — the GUI teaser caption uses "fleet" and "cockpit" before either word is ever defined
+- category: voice
+- observation: the first vivid description of the product a
+  stranger reads is the "Three doors in" GIF caption: "four
+  star-named sessions breathe on the fleet; a click flies into
+  vega's cockpit; ...". "Fleet" and "cockpit" are real screen
+  names in the GUI (confirmed in this tick's walk screenshots:
+  the sidebar literally has "Fleet" and "Cockpit" nav items),
+  but nothing earlier in README.md defines either term — a
+  reader meeting the kit cold hits unexplained jargon at exactly
+  the point where they're deciding whether to trust Door 1.
+- evidence: `README.md:76` ("a live cockpit") and `README.md:80`
+  (the alt text: "four star-named sessions breathe on the
+  fleet; a click flies into vega's cockpit..."); `grep -n
+  "fleet\|cockpit" README.md` shows no prior definition.
+- suggested fix: gloss both words in one clause right before or
+  after the image (e.g. "Fleet: the session list. Cockpit: one
+  session's live view.") or move the evocative narration to
+  `packages/cli/README.md` and keep the root caption literal.
 - source: dry-run
 
 ## Done
