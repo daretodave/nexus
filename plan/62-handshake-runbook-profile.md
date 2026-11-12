@@ -88,40 +88,19 @@ today, not a replacement for the full one.
 
 ## Acceptance
 
-- **A1** `templates/setup/NN_service.handshake.md` exists
-  with the four fixed sections in Contracts, in order.
-- **A2** Section 2's dashboard-handoff steps each carry a
-  `(~N min)` tag and end in one fenced env block naming exact
-  keys and the exact target file.
-- **A3** Section 3 states the exact resume-signal phrase
-  convention; Section 4 describes what the agent does once
-  that signal arrives.
-- **A4** A destructive, irreversible dashboard step (when the
-  template's worked example needs one) uses the
-  `**DESTRUCTIVE:**` marker, never an emoji.
 - **A5** `customization/external-services.md` states the
   full-vs-handshake choosing rule from Design.
 - **A6** `templates/setup/00_files.md`'s Index table carries a
   `Profile` column; its one worked example row (or rows) read
   `full`.
-- **A7** `templates/README.md`, the root `README.md` tree, and
-  `scripts/verify.mjs` all name the new template file in the
-  same commit that adds it.
 
 ## Open questions
 
 (None.)
 
 ## Chunks
-Measure: 7 open · 0 closed · next A8
+Measure: 2 open · 5 closed · next A8
 
-- [ ] **62.1** Handshake runbook template, its four fixed
-  sections and a worked `DESTRUCTIVE:` example · M · closes
-  A1, A2, A3, A4, A7 · needs —
-  - Adds `templates/setup/NN_service.handshake.md`; the same
-    commit updates `templates/README.md`, the root
-    `README.md` tree, and `scripts/verify.mjs`'s
-    placeholder/tree legs (`agents.md` rule 7).
 - [ ] **62.2** Full-vs-handshake choosing rule in
   `customization/external-services.md` · S · closes A5 ·
   needs —
