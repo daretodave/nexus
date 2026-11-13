@@ -3,7 +3,7 @@
 > Last pass: 2026-11-12
 > Pass count: 25
 > Posture: bold
-> Last field research: 2026-11-06
+> Last field research: 2026-11-13
 
 ## Pending
 
@@ -782,6 +782,8 @@
 - estimated chunks: unknown until specced
 - conflicts: none known.
 - generator: research · filed 2026-11-06
+- re-evidence:
+  - 2026-11-13 · field · +0 · one popular open toolkit in this category runs spec, plan, tasks, then implement as sequential phases, each producing its own file that feeds the next, and plugs into dozens of different coding agent…
 
 ### [ ] [score 7.5] playbooks/new-project.md has drifted into internally-contradictory and overclaiming copy across 4 pending dry-run findings
 - proposed: 2026-11-06 (expand)
@@ -900,6 +902,24 @@
 - conflicts: none known — skills/ prose + `scripts/verify.mjs`'s
   existing dualshell leg, no new invariant beyond widening its own
   scope.
+
+### [ ] [score 6.0] autonomous build loops are now named for failure modes: self-approval, spec gaming, misrepresented…
+- proposed: 2026-11-13 (research)
+- source signals: field (2026-11-13): a survey of many autonomous coding loops names recurring anti-patterns: a loop approving its own work with no outside check, gaming the stated goal instead of the intended one, and a loop's own repor…
+- rationale: the kit's own loop both builds and gates its own work every tick; naming which of these failure modes its gate already blocks mechanically, versus which ones it only trusts the builder's self-report for, is worth a deliberate check rather than an assumption
+- proposed scope: audit the claim-build-gate-close cycle against each named failure mode and record, in a doc or the gate itself, which ones the verify gate catches mechanically versus which still rely on the builder's own honesty
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-13
+
+### [ ] [score 6.0] agent runtimes now expose native session fork, delete and resume calls where tooling used to hand-r…
+- proposed: 2026-11-13 (research)
+- source signals: field (2026-11-13): a widely used agent runtime added first-class calls to fork a running session, delete one, list or resume past sessions, and read current context-window usage by category - capabilities a loop that p…
+- rationale: the kit's own reboot train parks a running loop to a ledger file and resumes it later by reading that file back; if the underlying runtime now offers session fork and resume as a native call, the hand-rolled ledger contract could shrink, or the kit should at least note why it still prefers the file-based approach
+- proposed scope: compare the reboot-ready/reboot-resume ledger contract against whatever native session fork, resume or list primitives the loop's own runtime now exposes, and note whether moving part of the parking contract onto a native call is worth a candidate
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-13
 
 ## Promoted
 
