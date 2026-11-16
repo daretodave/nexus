@@ -90,7 +90,7 @@ export default function Welcome() {
       <div className="ob-grid">
         <div className="ob-copy">
           <span className="kicker"><span className="cstar is-lit" style={{ width: 8, height: 8 }} />nexus · running on this machine</span>
-          <h1 className="t-display-l">Using Claude Code?<br />Enjoy a GUI on us.<br /><span className="aurora-text">For free.</span></h1>
+          <h1 className="t-display-l">Using Claude Code?<br className="ob-br" /> Enjoy a GUI on us.<br className="ob-br" /> <span className="aurora-text">For free.</span></h1>
           <p className="t-body-l ob-lede">nexus turns this repo into a project that ships itself. Claude Code agents pick work off a plan, build it, check it and commit it, in loops that can run for hours. This is the window into that.</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 6 }}>
             <Next to={PATHS.onboarding(stepAfter('welcome'))} size="xl" iconSize={null}>Set up this repo</Next>

@@ -909,6 +909,9 @@ textarea.field { resize: none; }
   .sheet-head { grid-template-columns: 1fr; }
   .sheet-title { font-size: 36px; line-height: 44px; }
   .ob-main { padding: 20px; }
+  .ob-grid { grid-template-columns: 1fr; gap: 24px; }
+  .ob .t-display-l { font-size: 34px; line-height: 40px; }
+  .ob-br { display: none; }
 }
 
 /* --------------------------------------------------------------------------

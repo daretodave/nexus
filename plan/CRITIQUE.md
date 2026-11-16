@@ -197,35 +197,6 @@
   §2's hard-rules list.
 - source: dry-run
 
-### [ ] [HIGH] /onboarding/welcome @ mobile (plain-folder) — hero headline buries the primary CTA below the fold
-- category: ui-comprehension
-- observation: on a phone-width viewport the "Using Claude
-  Code? Enjoy a GUI on us. For free." headline keeps its
-  forced line breaks at the same large font size, so each
-  short phrase wraps word-by-word into an 8+ line stack. The
-  entire first screen is consumed by half the headline; the
-  primary "Set up this repo" button and the loop diagram are
-  scrolled out of view, with only "Skip setup" visible up top.
-  A stranger has to know to scroll to find the real next
-  click.
-- evidence: `plain-folder--mobile--onboarding-welcome.png` in
-  walk-42516406663 (cloud run artifact); the same cutoff
-  appears identically in
-  `cloud-token--mobile--onboarding-welcome.png` and
-  `fleet-to-tug--mobile--onboarding-welcome.png` — scenario-
-  independent, same shared Welcome step.
-- suggested fix:
-  `packages/cli/src/screens/onboarding/Welcome.jsx` hard-codes
-  three `<br/>` breaks in the `<h1 className="t-display-l">`.
-  `packages/cli/src/styles/nexus.css` only shrinks `.ob
-  .t-display-l` (64px→54px) under `@media (max-height: 820px)`
-  — there's no narrow-width rule, so a tall phone viewport keeps
-  the full-size font. Add a narrow-width breakpoint that shrinks
-  `.ob .t-display-l` further and lets the headline wrap
-  naturally (drop or condition the hard `<br/>`s) so the CTA
-  stays on the first screen.
-- source: walk
-
 ### [ ] [MED] / @ desktop (cloud-token) — Fleet session tiles show two unlabeled "Q" phase segments with no legend
 - category: ui-comprehension
 - observation: on the Fleet home screen (what a returning,
@@ -314,6 +285,45 @@
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] /onboarding/welcome @ mobile (plain-folder) — hero headline buries the primary CTA below the fold — this commit
+- category: ui-comprehension
+- observation: on a phone-width viewport the "Using Claude
+  Code? Enjoy a GUI on us. For free." headline keeps its
+  forced line breaks at the same large font size, so each
+  short phrase wraps word-by-word into an 8+ line stack. The
+  entire first screen is consumed by half the headline; the
+  primary "Set up this repo" button and the loop diagram are
+  scrolled out of view, with only "Skip setup" visible up top.
+  A stranger has to know to scroll to find the real next
+  click.
+- evidence: `plain-folder--mobile--onboarding-welcome.png` in
+  walk-42516406663 (cloud run artifact); the same cutoff
+  appears identically in
+  `cloud-token--mobile--onboarding-welcome.png` and
+  `fleet-to-tug--mobile--onboarding-welcome.png` — scenario-
+  independent, same shared Welcome step.
+- suggested fix:
+  `packages/cli/src/screens/onboarding/Welcome.jsx` hard-codes
+  three `<br/>` breaks in the `<h1 className="t-display-l">`.
+  `packages/cli/src/styles/nexus.css` only shrinks `.ob
+  .t-display-l` (64px→54px) under `@media (max-height: 820px)`
+  — there's no narrow-width rule, so a tall phone viewport keeps
+  the full-size font. Add a narrow-width breakpoint that shrinks
+  `.ob .t-display-l` further and lets the headline wrap
+  naturally (drop or condition the hard `<br/>`s) so the CTA
+  stays on the first screen.
+- fix: `nexus.css`'s existing `@media (max-width: 760px)` block
+  now stacks `.ob-grid` to one column, shrinks `.ob
+  .t-display-l` to 34px/40px, and hides a new `.ob-br` class;
+  `Welcome.jsx`'s three `<br/>`s carry that class (with an
+  explicit space each, trimmed as leading line-break whitespace
+  on desktop) so the headline wraps naturally on narrow
+  viewports. Verified with `npm run walk -- --scenarios
+  fleet-to-tug --viewports mobile,desktop`: the CTA now renders
+  on the first mobile screen and the desktop layout is
+  unchanged.
+- source: walk
 
 ### [x] [HIGH] prompts/adopt.md:62-64 — the delegated-adoption prompt's placeholder list omits `<PACKAGE_MANAGER>`, the 9th placeholder — this commit
 - category: instruction-drift
