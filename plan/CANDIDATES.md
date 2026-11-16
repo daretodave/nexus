@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-11-12
-> Pass count: 25
+> Last pass: 2026-11-16
+> Pass count: 26
 > Posture: bold
 > Last field research: 2026-11-13
 
@@ -258,54 +258,6 @@
 - estimated phases: 1
 - conflicts: depends on two-ring topology + custody map.
 
-### [ ] [score 7.2] Package-manager pluggability: the pnpm-only settings.json allowlist silently stalls npm/yarn/bun adopters
-- proposed: 2026-07-10
-- source signals: critique pass 3 (2026-07-10) —
-  `playbooks/new-project.md:35`'s "sed-replace if you use
-  npm/yarn/bun" caveat has no worked example and a naive
-  `s/pnpm/npm/g` breaks command syntax (`npm typecheck` needs
-  `run`); separately, and more seriously,
-  `templates/claude/settings.json`'s permission allowlist is
-  hardcoded to `Bash(pnpm verify:*)` / `Bash(pnpm test:*)` etc.
-  with no equivalent for other package managers.
-- rationale: an npm/yarn/bun adopter's verify-gate commands never
-  match the allowlist, so every unattended cloud tick silently
-  stalls on a permission prompt nobody is present to answer —
-  this directly defeats `README.md`'s "leave it for 80 hours"
-  pitch, the kit's core promise, for any adopter who isn't on
-  pnpm. Adopter-facing and severe out of proportion to how small
-  the fix is.
-- proposed scope: either (a) generate
-  `templates/claude/settings.json`'s allowlist entries from the
-  package-manager choice already captured during onboarding
-  (bootstrap.mjs already prompts/knows this), so npm/yarn/bun
-  land with matching `Bash(<pm> ...)` entries in the same commit
-  the placeholders resolve; or (b), if (a) is out of scope for one
-  phase, state plainly in `new-project.md` and `README.md` that
-  pnpm is a hard prerequisite until (a) ships, and give a real
-  worked sed example for the interim manual path. Either way,
-  fixes the allowlist/caveat mismatch `plan/CRITIQUE.md` flagged.
-- estimated phases: 1
-- conflicts: none — settings.json's allowlist shape is internal
-  to the template, not public API (agents.md rule 7 covers
-  paths + placeholder vocabulary, not allowlist contents).
-
-### [ ] [score 7.1] npx nexus-adopt: the mechanical half as an initializer
-- proposed: 2026-07-03
-- source signals: clone + copy + placeholder-replace is
-  mechanical work no agent needs judgment for.
-- rationale: a zero-dependency initializer does the mechanical
-  half (infer placeholders from git remote/branch/dirname,
-  shallow-clone at the latest tag, copy per the templates
-  contract, write plan/nexus.lock) then prints exactly one
-  paste line handing the judgment half to ANY agent.
-- proposed scope: packaging/npx/ (bin + small test); release.yml
-  publishing on tag push (one NPM_TOKEN secret); README
-  one-command variant above the paste.
-- estimated phases: 1
-- conflicts: ship after prompts/ + releases; npm is a second
-  publish surface to keep in lockstep.
-
 ### [promoted 2026-08-23 → phase 20] [score 8.5] Cloud march ticks must not dispatch background/async agents
 - proposed: 2026-07-17 (digest); re-evidenced 2026-08-02
   (expand pass 6)
@@ -428,42 +380,6 @@
   already shipped to `templates/` but still blocked applying to
   nexus's own workflows per `[user-issue #40]`) rather than
   overlapping it.
-
-### [ ] [score 4.2] AUDIT.md's H1 header date isn't mechanically bumped after a full sweep, so every tick hand-parses the log for real staleness
-- proposed: 2026-09-16 (digest)
-- source signals: `plan/AUDIT.md`'s H1 still reads "2026-09-12"
-  while its own log shows full A-G sweeps landing 2026-09-14 and
-  again 2026-09-16 (this morning, `b45b807`'s tick, ~8h before
-  this digest ran) — the field is stale by the literal 48h rule
-  in both `skills/digest.md` §3 step 5 and `skills/iterate.md`
-  §4 step 2, yet neither sweep bumped it. Every tick since at
-  least the 2026-09-04 digest has coped by hand-deriving the
-  true last-sweep date from the log's own "Cloud tick <date>:
-  ... ran a fresh A-G sweep" prose instead of trusting the H1
-  ("header still the 2026-09-14 full sweep" — 2026-09-15 digest;
-  "same gap flagged in the last digest, still not bumped" —
-  same entry). This tick nearly repeated the 2026-09-16 sweep a
-  second time from scratch — reading the literal header as
-  ground truth before the log narrative caught that a fresh
-  sweep had already shipped 8 hours earlier — costing a spawned
-  sub-agent before the duplicate was caught and stopped.
-- rationale: a staleness signal that every consumer has learned
-  to distrust and manually re-derive isn't doing its job; the
-  workaround is easy to skip under time pressure (as this tick
-  almost did), risking either wasted duplicate sweeps or, worse,
-  a rewrite that clobbers durable rows if the hand-parse is
-  wrong. Cheap to fix, and every future digest/iterate tick pays
-  the parsing tax until it is.
-- proposed scope: either (a) require the full-sweep step in
-  `skills/digest.md` §3.5 and `skills/iterate.md` §4.2 to
-  rewrite AUDIT.md's H1 to today's date in the same commit, or
-  (b) teach `scripts/pulse.mjs` to parse the log's own dated
-  "ran a fresh A-G sweep" lines for the true last-sweep date and
-  print an explicit staleness verdict instead of leaving callers
-  to eyeball the H1. (b) is more robust — it does not depend on
-  every future tick remembering the bump.
-- estimated phases: 1
-- conflicts: none.
 
 ### [ ] [score 6.2] `/doctor prompt-audit` isn't in the kit's prompt-maintenance story
 - proposed: 2026-09-28 (expand pass 16)
@@ -1696,3 +1612,90 @@
 - estimated phases: 1
 - conflicts: beacon must stay opt-in or it reads as phone-home
   telemetry in a kit whose brand is "you own everything".
+
+### [rejected 2026-11-16] [score 4.2] AUDIT.md's H1 header date isn't mechanically bumped after a full sweep, so every tick hand-parses the log for real staleness
+- reason: stale: below cap cut 2026-11-16
+- proposed: 2026-09-16 (digest)
+- source signals: `plan/AUDIT.md`'s H1 still reads "2026-09-12"
+  while its own log shows full A-G sweeps landing 2026-09-14 and
+  again 2026-09-16 (this morning, `b45b807`'s tick, ~8h before
+  this digest ran) — the field is stale by the literal 48h rule
+  in both `skills/digest.md` §3 step 5 and `skills/iterate.md`
+  §4 step 2, yet neither sweep bumped it. Every tick since at
+  least the 2026-09-04 digest has coped by hand-deriving the
+  true last-sweep date from the log's own "Cloud tick <date>:
+  ... ran a fresh A-G sweep" prose instead of trusting the H1
+  ("header still the 2026-09-14 full sweep" — 2026-09-15 digest;
+  "same gap flagged in the last digest, still not bumped" —
+  same entry). This tick nearly repeated the 2026-09-16 sweep a
+  second time from scratch — reading the literal header as
+  ground truth before the log narrative caught that a fresh
+  sweep had already shipped 8 hours earlier — costing a spawned
+  sub-agent before the duplicate was caught and stopped.
+- rationale: a staleness signal that every consumer has learned
+  to distrust and manually re-derive isn't doing its job; the
+  workaround is easy to skip under time pressure (as this tick
+  almost did), risking either wasted duplicate sweeps or, worse,
+  a rewrite that clobbers durable rows if the hand-parse is
+  wrong. Cheap to fix, and every future digest/iterate tick pays
+  the parsing tax until it is.
+- proposed scope: either (a) require the full-sweep step in
+  `skills/digest.md` §3.5 and `skills/iterate.md` §4.2 to
+  rewrite AUDIT.md's H1 to today's date in the same commit, or
+  (b) teach `scripts/pulse.mjs` to parse the log's own dated
+  "ran a fresh A-G sweep" lines for the true last-sweep date and
+  print an explicit staleness verdict instead of leaving callers
+  to eyeball the H1. (b) is more robust — it does not depend on
+  every future tick remembering the bump.
+- estimated phases: 1
+- conflicts: none.
+
+### [rejected 2026-11-16] [score 7.1] npx nexus-adopt: the mechanical half as an initializer
+- reason: stale: below cap cut 2026-11-16
+- proposed: 2026-07-03
+- source signals: clone + copy + placeholder-replace is
+  mechanical work no agent needs judgment for.
+- rationale: a zero-dependency initializer does the mechanical
+  half (infer placeholders from git remote/branch/dirname,
+  shallow-clone at the latest tag, copy per the templates
+  contract, write plan/nexus.lock) then prints exactly one
+  paste line handing the judgment half to ANY agent.
+- proposed scope: packaging/npx/ (bin + small test); release.yml
+  publishing on tag push (one NPM_TOKEN secret); README
+  one-command variant above the paste.
+- estimated phases: 1
+- conflicts: ship after prompts/ + releases; npm is a second
+  publish surface to keep in lockstep.
+
+### [rejected 2026-11-16] [score 7.2] Package-manager pluggability: the pnpm-only settings.json allowlist silently stalls npm/yarn/bun adopters
+- reason: stale: below cap cut 2026-11-16
+- proposed: 2026-07-10
+- source signals: critique pass 3 (2026-07-10) —
+  `playbooks/new-project.md:35`'s "sed-replace if you use
+  npm/yarn/bun" caveat has no worked example and a naive
+  `s/pnpm/npm/g` breaks command syntax (`npm typecheck` needs
+  `run`); separately, and more seriously,
+  `templates/claude/settings.json`'s permission allowlist is
+  hardcoded to `Bash(pnpm verify:*)` / `Bash(pnpm test:*)` etc.
+  with no equivalent for other package managers.
+- rationale: an npm/yarn/bun adopter's verify-gate commands never
+  match the allowlist, so every unattended cloud tick silently
+  stalls on a permission prompt nobody is present to answer —
+  this directly defeats `README.md`'s "leave it for 80 hours"
+  pitch, the kit's core promise, for any adopter who isn't on
+  pnpm. Adopter-facing and severe out of proportion to how small
+  the fix is.
+- proposed scope: either (a) generate
+  `templates/claude/settings.json`'s allowlist entries from the
+  package-manager choice already captured during onboarding
+  (bootstrap.mjs already prompts/knows this), so npm/yarn/bun
+  land with matching `Bash(<pm> ...)` entries in the same commit
+  the placeholders resolve; or (b), if (a) is out of scope for one
+  phase, state plainly in `new-project.md` and `README.md` that
+  pnpm is a hard prerequisite until (a) ships, and give a real
+  worked sed example for the interim manual path. Either way,
+  fixes the allowlist/caveat mismatch `plan/CRITIQUE.md` flagged.
+- estimated phases: 1
+- conflicts: none — settings.json's allowlist shape is internal
+  to the template, not public API (agents.md rule 7 covers
+  paths + placeholder vocabulary, not allowlist contents).
