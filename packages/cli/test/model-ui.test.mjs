@@ -15,7 +15,7 @@ globalThis.window ||= { location: { href: 'http://localhost/' }, history: { repl
 const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
 const VIEW = {
   models: [
-    { id: 'claude-fable-5-1', label: 'Fable 5.1', efforts: ['low', 'medium', 'high', 'xhigh', 'max'] },
+    { id: 'claude-fable-5-2', label: 'Fable 5.2', efforts: ['low', 'medium', 'high', 'xhigh', 'max'] },
     { id: 'claude-opus-5-5', label: 'Opus 5.5', efforts: ['low', 'medium', 'high', 'xhigh', 'max'] },
     { id: 'claude-sonnet-5-5', label: 'Sonnet 5.5', efforts: ['low', 'medium', 'high'] },
     { id: 'claude-haiku-5-5', label: 'Haiku 5.5', efforts: [] },
@@ -44,7 +44,7 @@ test('the badge reads the SDK\'s model and effort, and "model: starting…" befo
 test('the menu: the list with the default first, the model\'s own effort levels, none for Haiku, the pending switch said', async () => {
   const { ModelMenu, modelMenu, levelsIn } = await import('../src/screens/cockpit/ModelBadge.jsx');
   const m = modelMenu({ model: 'claude-opus-5-5[1m]', effort: 'high', view: VIEW });
-  assert.deepEqual(m.models.map((x) => x.label), ['Claude Code\'s default', 'Fable 5.1', 'Opus 5.5', 'Sonnet 5.5', 'Haiku 5.5']);
+  assert.deepEqual(m.models.map((x) => x.label), ['Claude Code\'s default', 'Fable 5.2', 'Opus 5.5', 'Sonnet 5.5', 'Haiku 5.5']);
   assert.equal(m.models.find((x) => x.active).label, 'Opus 5.5');
   assert.deepEqual(m.efforts.map((x) => x.id), ['', 'low', 'medium', 'high', 'xhigh', 'max']);
   assert.equal(m.efforts.find((x) => x.active).id, 'high');
@@ -96,7 +96,7 @@ test('a Fleet tile shows a hosted session\'s model small; a terminal one shows n
 test('Settings: Model for new sessions (the default labelled, the four), Effort limited to the model, the helpers named', async () => {
   const { ModelPrefs, modelChoices, effortChoices } = await import('../src/screens/cloud-settings/model-pref.jsx');
   assert.deepEqual(modelChoices(VIEW).map((c) => [c.value, c.label]), [
-    ['', 'Claude Code\'s default'], ['claude-fable-5-1', 'Fable 5.1'], ['claude-opus-5-5', 'Opus 5.5'], ['claude-sonnet-5-5', 'Sonnet 5.5'], ['claude-haiku-5-5', 'Haiku 5.5'],
+    ['', 'Claude Code\'s default'], ['claude-fable-5-2', 'Fable 5.2'], ['claude-opus-5-5', 'Opus 5.5'], ['claude-sonnet-5-5', 'Sonnet 5.5'], ['claude-haiku-5-5', 'Haiku 5.5'],
   ]);
   assert.match(modelChoices(VIEW)[0].sub, /Opus 5\.5 on the last session/);
   assert.doesNotMatch(modelChoices(null)[0].sub, /last session/);

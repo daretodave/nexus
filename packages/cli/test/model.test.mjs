@@ -25,7 +25,7 @@ const CATALOG = [
 
 test('one list: four models with labels, five efforts, the helpers on Haiku 5.5; any id is shown', () => {
   assert.deepEqual(MODELS.map((m) => [m.id, m.label]), [
-    ['claude-fable-5-1', 'Fable 5.1'], ['claude-opus-5-5', 'Opus 5.5'], ['claude-sonnet-5-5', 'Sonnet 5.5'], ['claude-haiku-5-5', 'Haiku 5.5'],
+    ['claude-fable-5-2', 'Fable 5.2'], ['claude-opus-5-5', 'Opus 5.5'], ['claude-sonnet-5-5', 'Sonnet 5.5'], ['claude-haiku-5-5', 'Haiku 5.5'],
   ]);
   assert.deepEqual(EFFORTS, ['low', 'medium', 'high', 'xhigh', 'max']);
   assert.equal(HELPER_MODEL, 'claude-haiku-5-5');
@@ -36,7 +36,7 @@ test('one list: four models with labels, five efforts, the helpers on Haiku 5.5;
   assert.equal(modelLabel('claude-mystery-9'), 'claude-mystery-9', 'an unknown id is shown as it is');
   assert.equal(baseModel(' claude-haiku-5-5[1m] '), 'claude-haiku-5-5');
   assert.equal(modelOf('nope'), null);
-  assert.ok(validModel('') && validModel('claude-fable-5-1') && !validModel('gpt') && !validModel(undefined));
+  assert.ok(validModel('') && validModel('claude-fable-5-2') && !validModel('gpt') && !validModel(undefined));
   assert.ok(validEffort('') && validEffort('max') && !validEffort('extreme'));
 });
 
@@ -44,7 +44,7 @@ test('effort levels per model: the SDK\'s supportedEffortLevels, none without ef
   assert.deepEqual(effortsFor('claude-sonnet-5-5', CATALOG), ['low', 'medium', 'high']);
   assert.deepEqual(effortsFor('claude-opus-5-5', CATALOG), EFFORTS, 'an alias row matches by its resolved model');
   assert.deepEqual(effortsFor('claude-haiku-5-5', CATALOG), [], 'no effort support: none offered');
-  assert.deepEqual(effortsFor('claude-fable-5-1', CATALOG), EFFORTS, 'a model the SDK did not list: all five');
+  assert.deepEqual(effortsFor('claude-fable-5-2', CATALOG), EFFORTS, 'a model the SDK did not list: all five');
   assert.deepEqual(effortsFor('', CATALOG), EFFORTS, 'Claude Code\'s default: all five');
   assert.deepEqual(effortsFor('claude-sonnet-5-5', null), EFFORTS, 'no catalog yet: all five');
 });
@@ -233,10 +233,10 @@ test('prefs, GET /api/models and POST /api/sessions/:id/model through the server
 
     // A session on the default names what it resolved to; Settings labels the default with it.
     await set({ model: '' });
-    hooks[0].onMessage({ type: 'system', subtype: 'init', model: 'claude-fable-5-1', session_id: 'x' });
+    hooks[0].onMessage({ type: 'system', subtype: 'init', model: 'claude-fable-5-2', session_id: 'x' });
     await tick();
-    assert.equal(app.sessions.get(app.home).model.model, 'claude-fable-5-1', 'the init is read onto the session');
-    assert.equal((await req(port, { pathname: '/api/models', headers: get })).data.lastModel, 'claude-fable-5-1');
+    assert.equal(app.sessions.get(app.home).model.model, 'claude-fable-5-2', 'the init is read onto the session');
+    assert.equal((await req(port, { pathname: '/api/models', headers: get })).data.lastModel, 'claude-fable-5-2');
 
     // The switch route: the session's provider gets the pick; the badge waits for the next init.
     const sw = (id, b) => req(port, { method: 'POST', pathname: `/api/sessions/${id}/model`, headers: post, body: JSON.stringify(b) });

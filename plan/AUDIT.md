@@ -51,24 +51,6 @@
   recurrence; close if the schedule recovers on its own.
 
 
-### [F, 3.6] `packages/cli/shared/models.mjs` and its test fixtures still carry "Fable 5.1" against the current "Fable 5.2" lineup
-- category: freshness
-- impact: 4, ease: 9
-- evidence: `packages/cli/shared/models.mjs:8` carries
-  `{ id: 'claude-fable-5-1', label: 'Fable 5.1' }`, read by the
-  server and GUI (cockpit badge, Fleet tiles, Settings) as the
-  model list's first row. `packages/cli/test/model.test.mjs`
-  (lines 28, 39, 47, 236, 238-239) and
-  `packages/cli/test/model-ui.test.mjs` (lines 18, 47, 99)
-  fixture the same stale id/label pair. The current lineup is
-  one rung past it (Fable 5.2, `claude-fable-5-2`) — the same
-  drift class the prior `[F, 4.5]` fix (Done, below) closed for
-  the Opus/Haiku ids.
-- next: bump `claude-fable-5-1` → `claude-fable-5-2` and
-  `Fable 5.1` → `Fable 5.2` in `models.mjs:8` and both test
-  fixtures, then `npm --prefix packages/cli test` green before
-  shipping.
-
 ### [C, 2.4] identity/footguns.md:10 links to a README.md anchor that doesn't exist in its target
 - category: link + tree hygiene
 - impact: 3, ease: 8
@@ -187,6 +169,24 @@
   folded into a `/next` builder's brief.
 
 ## Done
+
+### [x] [F, 3.6] `packages/cli/shared/models.mjs` and its test fixtures still carry "Fable 5.1" against the current "Fable 5.2" lineup — this commit
+- category: freshness
+- impact: 4, ease: 9
+- evidence: `packages/cli/shared/models.mjs:8` carried
+  `{ id: 'claude-fable-5-1', label: 'Fable 5.1' }`, read by the
+  server and GUI (cockpit badge, Fleet tiles, Settings) as the
+  model list's first row. `packages/cli/test/model.test.mjs`
+  (lines 28, 39, 47, 236, 238-239) and
+  `packages/cli/test/model-ui.test.mjs` (lines 18, 47, 99)
+  fixtured the same stale id/label pair.
+- fix: bumped `claude-fable-5-1` → `claude-fable-5-2` and
+  `Fable 5.1` → `Fable 5.2` in `models.mjs:8` and both test
+  fixtures. `npm --prefix packages/cli test`: the two touched
+  files' 14 tests pass; the suite's other 77 failures are a
+  pre-existing sandbox artifact (`safe.bareRepository=explicit`
+  in this session's `~/.gitconfig`, not the GitHub Actions
+  runner) reproduced identically on an unmodified checkout.
 
 ### [x] [user-issue #103] [MEDIUM] support.mjs sla re-flags issues forever: plotted chunks never carry Refs #N for tell to close — closed 2026-11-11
 - category: external-issue
