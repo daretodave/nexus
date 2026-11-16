@@ -228,20 +228,6 @@
   so the full step count is legible without widening every star.
 - source: walk
 
-### [ ] [MED] README.md:379 — "all 8 placeholders" is stale; the table it links to has 9
-- category: placeholder
-- observation: README.md's "How to use this kit" step 3 tells a
-  stranger to replace "all 8 placeholders," then links to
-  `templates/README.md#placeholders`, which lists 9 rows (the
-  9th being `<PACKAGE_MANAGER>`). The mismatch reads as either a
-  typo or a sign the doc is out of sync, seeding doubt about
-  whether the sweep is complete.
-- evidence: `README.md:379` ("replacing all 8 placeholders") vs
-  `templates/README.md:249-257` (9-row table).
-- suggested fix: update README.md to "all 9 placeholders" (or
-  drop the number and say "every placeholder").
-- source: dry-run
-
 ### [ ] [MED] README.md:76-80 — the GUI teaser caption uses "fleet" and "cockpit" before either word is ever defined
 - category: voice
 - observation: the first vivid description of the product a
@@ -290,6 +276,14 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] README.md:379 — "all 8 placeholders" is stale; the table it links to has 9 — this commit
+- category: placeholder
+- resolution: `README.md:380` now says "replacing all 9
+  placeholders" — `templates/README.md`'s `## Placeholders`
+  table (lines 250-258) lists exactly 9 rows, the 9th being
+  `<PACKAGE_MANAGER>`.
+- source: dry-run
 
 ### [x] [MED] prompts/adopt.md "The prompt" → "Then:" bullet list — write-before-ask ordering contradicts its own rule — this commit
 - category: ordering

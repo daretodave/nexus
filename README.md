@@ -377,7 +377,7 @@ adapt them.
    [`concepts/architecture.md`](./concepts/architecture.md).
 2. **Pick your playbook** and read it end-to-end first — ~10
    minutes, saves hours.
-3. **Copy templates into your repo**, replacing all 8
+3. **Copy templates into your repo**, replacing all 9
    placeholders
    ([`templates/README.md`](./templates/README.md#placeholders)).
    Write real specs into `plan/`.
