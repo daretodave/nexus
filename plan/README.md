@@ -26,6 +26,7 @@ line goes; each line is a lock that times out, so it carries
 `since:`, `until:` and `max_age:`):
 
 - 66 · auto-promoted, veto until 2026-11-19 (#107) · max_age: 3d · fallback: release
+- 67 · auto-promoted, veto until 2026-11-19 (#109) · max_age: 3d · fallback: release
 
 ## Specs
 
@@ -33,10 +34,11 @@ line goes; each line is a lock that times out, so it carries
 |---|---|---|---|---|
 | 65 | Workflow-push credential gap: test the fix, stop re-discovering it | [65-workflow-push-credential-gap.md](65-workflow-push-credential-gap.md) | planned | 0 of 1 chunks |
 | 66 | Key custody map + hermetic keys lint | [66-key-custody-map.md](66-key-custody-map.md) | planned | not chunked yet |
+| 67 | Package nexus as a Claude Code plugin | [67-claude-code-plugin.md](67-claude-code-plugin.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
-plan moved to chunks on 2026-10-20). The next new spec is 67.
+plan moved to chunks on 2026-10-20). The next new spec is 68.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is
