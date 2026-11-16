@@ -909,7 +909,6 @@ textarea.field { resize: none; }
   .sheet-head { grid-template-columns: 1fr; }
   .sheet-title { font-size: 36px; line-height: 44px; }
   .ob-main { padding: 20px; }
-  .ob-grid { grid-template-columns: 1fr; gap: 24px; }
   .ob .t-display-l { font-size: 34px; line-height: 40px; }
   .ob-br { display: none; }
 }
@@ -1323,6 +1322,14 @@ textarea.field { resize: none; }
 .loop-node .cap { color: var(--text-2); }
 .loop-core { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 14px; }
 @keyframes nx-loop { to { stroke-dashoffset: -280; } }
+/* Placed after the base .ob-grid/.loop-node .cap rules above: an earlier
+   same-specificity override inside the max-width:760px block at the top of
+   this file loses the cascade to those later base rules, so the mobile
+   stack never took effect without a second override down here. */
+@media (max-width: 760px) {
+  .ob-grid { grid-template-columns: 1fr; gap: 24px; }
+  .loop-node .cap { max-width: 92px; }
+}
 
 /* Welcome: prompt for another agent */
 .prompt-panel { display: flex; flex-direction: column; gap: 14px; padding: 20px 22px; animation: nx-settle-in var(--dur-pull) var(--ease-settle) both; }

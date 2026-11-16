@@ -284,7 +284,35 @@
   `packages/cli/README.md` and keep the root caption literal.
 - source: dry-run
 
-### [ ] [HIGH] /onboarding/welcome @ mobile (plain-folder) — the loop-diagram captions collide into unreadable overlapping text on a phone
+### [ ] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question
+- category: instruction-drift
+- observation: `prompts/pitch.md`'s Phase B tells the delegated
+  agent it may use `AskUserQuestion` only for adopt.md's "own
+  narrow four-item ask list (hosting provider/token, project
+  name/tagline, URL/API/CLI contract, topology confirmation)"
+  and states "Beyond those four items, AskUserQuestion is not
+  allowed." But `prompts/adopt.md`'s own ask list runs five
+  items, (a) through (e) — the fifth being "(e) the mode: owner
+  ... or contributor ...". An agent that trusts pitch.md's
+  summary instead of re-deriving the count from adopt.md's own
+  text could conclude the owner/contributor question is out of
+  bounds and silently decide it, even though adopt.md lists it
+  as one of the things to ask before the first write.
+- evidence: `prompts/pitch.md:54-58` ("four-item ask list...
+  Beyond those four items, AskUserQuestion is not allowed") vs
+  `prompts/adopt.md:69-80`, whose ask list runs (a) hosting
+  provider/token, (b) name+tagline, (c) URL/API/CLI contract,
+  (d) topology confirmation, (e) owner/contributor mode — five
+  items, not four.
+- suggested fix: update `prompts/pitch.md` to say "five-item ask
+  list" and add the owner/contributor mode confirmation to its
+  parenthetical, so the pitch-flow summary matches what adopt.md
+  actually asks.
+- source: dry-run
+
+## Done
+
+### [x] [HIGH] /onboarding/welcome @ mobile (plain-folder) — the loop-diagram captions collide into unreadable overlapping text on a phone — this commit
 - category: ui-comprehension
 - observation: on the mobile Welcome screen, the four loop-node
   captions ("commit", "and around again", "build", "Claude Code
@@ -314,35 +342,26 @@
   overflowing toward the center, so captions stop colliding at
   viewport widths around 390px. Layout/width only — no change to
   the particle animation or colors.
+- fix: the caption overlap's deeper cause was `.ob-grid`'s mobile
+  single-column override (inside the `@media (max-width: 760px)`
+  block near the file's top) losing the cascade to the later,
+  unconditional two-column `.ob-grid` rule in the "ONBOARDING
+  STEPS" section — same specificity, later source wins, so mobile
+  never actually stacked and `.loop-art` rendered in a squeezed
+  ~120px column. Added a second `@media (max-width: 760px)` block
+  right after both base rules (`.ob-grid`, `.loop-node .cap`) so
+  the override lands last in source and actually wins; it also
+  gives `.loop-node .cap` a 92px `max-width` so each caption wraps
+  within its own column instead of overflowing toward the center.
+  Mirrored the same edit into `packages/cli/design/handoff/nexus.css`
+  per its own "change both together" contract. Verified: `npm
+  --prefix packages/cli run walk` across all three scenarios ×
+  both viewports reports 0 findings; a manual full-page capture of
+  the mobile Welcome screen shows the stacked layout and
+  non-overlapping, wrapped captions. Left `.ob`'s own
+  `overflow: hidden` untouched — unclipping it surfaces the
+  already-tracked stepper-overflow finding below, out of scope here.
 - source: walk
-
-### [ ] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question
-- category: instruction-drift
-- observation: `prompts/pitch.md`'s Phase B tells the delegated
-  agent it may use `AskUserQuestion` only for adopt.md's "own
-  narrow four-item ask list (hosting provider/token, project
-  name/tagline, URL/API/CLI contract, topology confirmation)"
-  and states "Beyond those four items, AskUserQuestion is not
-  allowed." But `prompts/adopt.md`'s own ask list runs five
-  items, (a) through (e) — the fifth being "(e) the mode: owner
-  ... or contributor ...". An agent that trusts pitch.md's
-  summary instead of re-deriving the count from adopt.md's own
-  text could conclude the owner/contributor question is out of
-  bounds and silently decide it, even though adopt.md lists it
-  as one of the things to ask before the first write.
-- evidence: `prompts/pitch.md:54-58` ("four-item ask list...
-  Beyond those four items, AskUserQuestion is not allowed") vs
-  `prompts/adopt.md:69-80`, whose ask list runs (a) hosting
-  provider/token, (b) name+tagline, (c) URL/API/CLI contract,
-  (d) topology confirmation, (e) owner/contributor mode — five
-  items, not four.
-- suggested fix: update `prompts/pitch.md` to say "five-item ask
-  list" and add the owner/contributor mode confirmation to its
-  parenthetical, so the pitch-flow summary matches what adopt.md
-  actually asks.
-- source: dry-run
-
-## Done
 
 ### [x] [HIGH] /onboarding/welcome @ mobile (plain-folder) — hero headline buries the primary CTA below the fold — this commit
 - category: ui-comprehension
