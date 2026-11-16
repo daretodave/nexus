@@ -84,4 +84,15 @@ point of the chunk.)
 ## Chunks
 Measure: 4 open · 0 closed · next A5
 
-Not chunked yet.
+- [ ] **65.1** Test both credential hypotheses against a real
+  `.github/workflows/*.yml` diff, land the fix or record the
+  negative result · L · closes A1, A2, A3, A4 · needs —
+  - Local session only: testing A1 needs normal repo-write
+    creds (not the Action's own App token) pushing a real
+    workflow-file diff, and any A3 fix edits
+    `.github/workflows/*.yml` directly — both outside what a
+    cloud tick's token can push (`agents.md` "Operational
+    secrets").
+  - One sitting: A3/A4 branch on A1's result, so splitting the
+    test from the write-up would leave a chunk that can't
+    close on its own.
