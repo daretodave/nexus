@@ -158,27 +158,6 @@
   "equivalent" would mean in practice.
 - source: dry-run
 
-### [ ] [MED] prompts/adopt.md "The prompt" → "Then:" bullet list — write-before-ask ordering contradicts its own rule
-- category: ordering
-- observation: the prompt instructs the agent to read its
-  sources "in order. Do not skip steps or invent scope," yet
-  its own "Then:" bullet list places "Copy templates from
-  ../nexus/templates/ into this repo" and "Replace
-  placeholders... with values you derive" (both filesystem
-  writes) before the "Ask the user ONLY for..." bullet, which
-  itself says "Ask them all before your first write." A
-  literal top-to-bottom executor hits the copy/replace bullets
-  first and could reasonably start writing before the batched
-  ask — exactly the sequencing the rule exists to prevent.
-- evidence: `prompts/adopt.md:61-87` — bullets run Copy →
-  Replace placeholders → Ask the user ONLY for... ("Ask them
-  all before your first write...").
-- suggested fix: reorder the bullets so "Ask the user ONLY
-  for..." appears immediately before "Copy templates," or add
-  an explicit forward-pointer at the Copy bullet ("see the Ask
-  step below — do that first").
-- source: dry-run
-
 ### [ ] [LOW] playbooks/new-project.md §2 "Hard rules" — install-hooks mentioned before scripts/ exists
 - category: comprehension
 - observation: §2 tells the reader to run `node
@@ -311,6 +290,19 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] prompts/adopt.md "The prompt" → "Then:" bullet list — write-before-ask ordering contradicts its own rule — this commit
+- category: ordering
+- resolution: moved the "Ask the user ONLY for..." bullet to
+  right after the topology-check bullet, before "Follow the
+  matching playbook," "Copy templates" and "Replace
+  placeholders" — so the ask now precedes every write the
+  "Then:" list makes, matching the rule the bullet itself
+  states ("Ask them all before your first write"). Added one
+  closing clause to the ask bullet ("Do this now, before the
+  playbook or any copy/replace step below — they write") and
+  changed the topology bullet's forward-reference from "below"
+  to "next" to match the new position.
 
 ### [x] [HIGH] /onboarding/welcome @ mobile (plain-folder) — the loop-diagram captions collide into unreadable overlapping text on a phone — this commit
 - category: ui-comprehension

@@ -49,23 +49,9 @@ Then:
     directory next to this repo, or multiple sibling repos
     under one un-versioned root? Infer a default from that
     (single-repo if neither), but always confirm it with the
-    user before proceeding — see the ask list below. Getting
+    user before proceeding — see the ask list next. Getting
     this wrong reshapes file locations from the first chunk
     onward.
-  - Follow the matching playbook end-to-end. Do not skip
-    steps — except its own intermediate commit instructions
-    (e.g. "commit bearings.md separately", "commit the
-    templates as a single commit"): those are for a human
-    working the playbook by hand. The delegated path below
-    stages everything and commits once, at the end.
-  - Copy templates from ../nexus/templates/ into this repo.
-  - Replace placeholders (<PROJECT>, <PROJECT_LOWER>,
-    <PROJECT_TAGLINE>, <HOSTING_URL>, <HOSTING_PROVIDER>,
-    <REPO_SLUG>, <DEFAULT_BRANCH>, <PROJECT_PKG_PREFIX>,
-    <PACKAGE_MANAGER>) with values you derive from the
-    existing repo state. If a value is genuinely unknowable,
-    surface it in plan/AUDIT.md as a [needs-user-call] row and
-    continue with a defensible default.
   - Ask the user ONLY for: (a) the hosting provider name and
     auth token if not visibly configured, (b) the project's
     canonical name + tagline if no spec exists, (c) the
@@ -85,7 +71,22 @@ Then:
     Ask them all before your first write, in one batch
     shaped per ../nexus/concepts/asking-well.md (two batches
     if more than four apply, both before the first write).
-    For everything else, decide.
+    For everything else, decide. Do this now, before the
+    playbook or any copy/replace step below — they write.
+  - Follow the matching playbook end-to-end. Do not skip
+    steps — except its own intermediate commit instructions
+    (e.g. "commit bearings.md separately", "commit the
+    templates as a single commit"): those are for a human
+    working the playbook by hand. The delegated path below
+    stages everything and commits once, at the end.
+  - Copy templates from ../nexus/templates/ into this repo.
+  - Replace placeholders (<PROJECT>, <PROJECT_LOWER>,
+    <PROJECT_TAGLINE>, <HOSTING_URL>, <HOSTING_PROVIDER>,
+    <REPO_SLUG>, <DEFAULT_BRANCH>, <PROJECT_PKG_PREFIX>,
+    <PACKAGE_MANAGER>) with values you derive from the
+    existing repo state. If a value is genuinely unknowable,
+    surface it in plan/AUDIT.md as a [needs-user-call] row and
+    continue with a defensible default.
   - Set up the mode (../nexus/playbooks/owner-mode.md):
     either way, add `.owner` and `.nexus/` to `.gitignore` if
     missing; for owner, also create an empty, untracked
