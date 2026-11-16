@@ -278,28 +278,6 @@
   so the full step count is legible without widening every star.
 - source: walk
 
-### [ ] [HIGH] prompts/adopt.md:62-64 — the delegated-adoption prompt's placeholder list omits `<PACKAGE_MANAGER>`, the 9th placeholder
-- category: instruction-drift
-- observation: a stranger following door 2 (the TL;DR
-  clone-and-delegate path) hands their agent
-  `prompts/adopt.md`. Its placeholder list reads "Replace
-  placeholders (`<PROJECT>`, `<PROJECT_LOWER>`,
-  `<PROJECT_TAGLINE>`, `<HOSTING_URL>`, `<HOSTING_PROVIDER>`,
-  `<REPO_SLUG>`, `<DEFAULT_BRANCH>`, `<PROJECT_PKG_PREFIX>`)" —
-  8 items — but `templates/README.md`'s placeholder table has 9,
-  including `<PACKAGE_MANAGER>`. An agent that follows
-  `prompts/adopt.md` literally ("exactly, in order") never
-  replaces `<PACKAGE_MANAGER>`, leaving literal placeholder text
-  in the adopted repo, which fails `node scripts/verify.mjs`'s
-  `placeholders` leg before the first commit can land.
-- evidence: `prompts/adopt.md:62-64` (8-item list) vs
-  `templates/README.md:257` (`<PACKAGE_MANAGER>` row) and
-  `playbooks/new-project.md:404`-area sweep command, which does
-  include it.
-- suggested fix: add `<PACKAGE_MANAGER>` to `prompts/adopt.md`'s
-  placeholder list so the two sources agree.
-- source: dry-run
-
 ### [ ] [MED] README.md:379 — "all 8 placeholders" is stale; the table it links to has 9
 - category: placeholder
 - observation: README.md's "How to use this kit" step 3 tells a
@@ -336,6 +314,12 @@
 - source: dry-run
 
 ## Done
+
+### [x] [HIGH] prompts/adopt.md:62-64 — the delegated-adoption prompt's placeholder list omits `<PACKAGE_MANAGER>`, the 9th placeholder — this commit
+- category: instruction-drift
+- resolution: added `<PACKAGE_MANAGER>` to the placeholder list
+  in `prompts/adopt.md`, matching `templates/README.md:258`'s
+  9-item table.
 
 ### [x] [HIGH] playbooks/new-project.md §4 "Prune adopt-by-need files" — the worked example breaks the test suite it leaves behind — this commit
 - category: missing-file
