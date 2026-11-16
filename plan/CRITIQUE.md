@@ -158,36 +158,6 @@
   "equivalent" would mean in practice.
 - source: dry-run
 
-### [ ] [HIGH] playbooks/new-project.md §4 "Prune adopt-by-need files" — the worked example breaks the test suite it leaves behind
-- category: missing-file
-- observation: an adopter who follows the "Prune" step's own
-  worked example literally (a `Surface: service` project with
-  no `/bootstrap`, removing `scripts/bootstrap.mjs` + its own
-  test) is left with `scripts/__tests__/cadence.test.mjs`
-  still importing `../bootstrap.mjs` for a cross-check
-  assertion — a file the same worked example never adds to its
-  `rm` list. The test suite breaks right after the "adopt
-  nexus" commit, before a single `/next` chunk ships.
-- evidence: `node scripts/adopt-dryrun.mjs` against a scratch
-  clone (reproduced twice) → `adopt-dryrun: FAIL (1)\n  prune
-  step: scripts/__tests__/cadence.test.mjs imports
-  ../bootstrap.mjs, which the example prune removed`.
-  `templates/scripts/__tests__/cadence.test.mjs:15` —
-  `import { CADENCES as BOOTSTRAP_CADENCES, DEFAULT_CADENCE as
-  BOOTSTRAP_DEFAULT } from '../bootstrap.mjs';`. The worked
-  example's `rm` list (`playbooks/new-project.md` §4) removes
-  `scripts/bootstrap.mjs` and
-  `scripts/__tests__/bootstrap.test.mjs` but never
-  `scripts/__tests__/cadence.test.mjs`.
-- suggested fix: either add
-  `scripts/__tests__/cadence.test.mjs` (or just its bootstrap
-  cross-check block) to the prune list whenever
-  `scripts/bootstrap.mjs` is removed, or make the
-  cross-check assertion conditional on `bootstrap.mjs`
-  existing so the test degrades gracefully instead of failing
-  to import.
-- source: dry-run
-
 ### [ ] [MED] prompts/adopt.md "The prompt" → "Then:" bullet list — write-before-ask ordering contradicts its own rule
 - category: ordering
 - observation: the prompt instructs the agent to read its
@@ -367,6 +337,46 @@
 
 ## Done
 
+### [x] [HIGH] playbooks/new-project.md §4 "Prune adopt-by-need files" — the worked example breaks the test suite it leaves behind — this commit
+- category: missing-file
+- observation: an adopter who follows the "Prune" step's own
+  worked example literally (a `Surface: service` project with
+  no `/bootstrap`, removing `scripts/bootstrap.mjs` + its own
+  test) is left with `scripts/__tests__/cadence.test.mjs`
+  still importing `../bootstrap.mjs` for a cross-check
+  assertion — a file the same worked example never adds to its
+  `rm` list. The test suite breaks right after the "adopt
+  nexus" commit, before a single `/next` chunk ships.
+- evidence: `node scripts/adopt-dryrun.mjs` against a scratch
+  clone (reproduced twice) → `adopt-dryrun: FAIL (1)\n  prune
+  step: scripts/__tests__/cadence.test.mjs imports
+  ../bootstrap.mjs, which the example prune removed`.
+  `templates/scripts/__tests__/cadence.test.mjs:15` —
+  `import { CADENCES as BOOTSTRAP_CADENCES, DEFAULT_CADENCE as
+  BOOTSTRAP_DEFAULT } from '../bootstrap.mjs';`. The worked
+  example's `rm` list (`playbooks/new-project.md` §4) removes
+  `scripts/bootstrap.mjs` and
+  `scripts/__tests__/bootstrap.test.mjs` but never
+  `scripts/__tests__/cadence.test.mjs`.
+- suggested fix: either add
+  `scripts/__tests__/cadence.test.mjs` (or just its bootstrap
+  cross-check block) to the prune list whenever
+  `scripts/bootstrap.mjs` is removed, or make the
+  cross-check assertion conditional on `bootstrap.mjs`
+  existing so the test degrades gracefully instead of failing
+  to import.
+- fix: applied suggested-fix (b) — the static `../bootstrap.mjs`
+  import left the whole test file unloadable once the file was
+  pruned, so `templates/scripts/__tests__/cadence.test.mjs` now
+  checks `fs.existsSync` on `bootstrap.mjs` and only runs the
+  "bootstrap names the same five words" assertion (via a dynamic
+  `import()`) when the file is still there; pruned, the test
+  skips with a named reason instead of crashing the suite.
+  Confirmed against a scratch clone: `adopt-dryrun` failed
+  before the fix and passes after, with the pruned cadence
+  suite reporting 1 skipped, 0 failed.
+- source: dry-run
+
 ### [x] [HIGH] prompts/adopt.md:107-108 vs playbooks/new-project.md:201,306,542,582,667 — the delegated-agent prompt and the playbook it must follow give contradictory commit instructions — this commit
 - category: instruction-drift
 - observation: `prompts/adopt.md` tells the delegating agent to
@@ -479,100 +489,4 @@
   sentence telling the agent to strip any harness-injected
   attribution trailer before every commit, since this rule
   overrides that convention in this repo.
-- source: dry-run
-
-### [x] [MED] README.md:276-282 vs playbooks/pre-spec.md:29-35 — "Three paths to start" diagram routes existing-code repos into pre-spec.md, which then tells them not to use it — this commit
-- category: ordering
-- observation: the mermaid flowchart's only gate before routing
-  to pre-spec.md is "Have a spec.md?" — a "no, but I have a
-  pitch" answer goes straight to `presp` regardless of whether
-  the repo already has code. The "Existing repo with code?"
-  check (`brown_check`) only appears *after* `presp --> green`,
-  i.e. downstream of pre-spec.md, not before it. But
-  `playbooks/pre-spec.md` itself (lines 29-35, "When not to use
-  it") explicitly disqualifies this exact case: "The repo has
-  existing code and history. Use existing-project.md instead;
-  the pre-spec interview is for blank-slate work." A stranger
-  with an existing-code repo and a pitch-but-no-spec follows the
-  diagram into pre-spec.md, reads its own opening disqualifier,
-  and has to backtrack to figure out they actually wanted
-  existing-project.md (which itself handles writing a
-  retrospective spec in its own §2) — the diagram sent them to a
-  file that immediately tells them it isn't for them.
-- evidence: `README.md:276-282` (`spec -- "no, but I have a
-  pitch" --> presp[...]`; `brown_check` node only reachable via
-  `green`, after `presp`) vs `playbooks/pre-spec.md:29-35` ("The
-  repo has existing code and history. Use existing-project.md
-  instead... the pre-spec interview is for blank-slate work.")
-- suggested fix: either (a) add an existing-code check before
-  the pitch/no-spec branch in the diagram (route "no spec,
-  existing code" straight to `existing-project.md`, bypassing
-  pre-spec.md, and only send fresh/no-code repos with a pitch to
-  `presp`), or (b) soften pre-spec.md's disqualifier to
-  acknowledge the diagram's ordering explicitly (e.g. "if you
-  arrived here via the diagram and already have code, the
-  retrospective-spec step in existing-project.md §2 covers this
-  better — bail out now").
-- fix: applied suggested-fix (a) — the diagram now gates on
-  "Existing repo with code?" (`pitch_check`) immediately after
-  the "no, but I have a pitch" branch, before `presp`. "No
-  spec, existing code" now routes straight to
-  `playbooks/existing-project.md`, bypassing pre-spec.md
-  entirely; only "no spec, no code" still reaches it. The
-  original downstream `brown_check` stays in place for the
-  "have a spec.md" branch and now points at the same `brown`
-  node. `pre-spec.md`'s disqualifier text is unchanged — it's
-  no longer reachable from this case, so it stays accurate as a
-  safety net for anyone who lands there by other means.
-- source: dry-run
-
-### [x] [LOW] playbooks/new-project.md:471,746 — canonical-sibling phase number hedged as "phase 4 or 5" against the file's own fixed "4 substrate phases" rule — this commit
-- category: instruction-drift
-- observation: step 3 fixes "4 substrate phases at the front"
-  (bootstrap, data, content, URL contract) — making the first
-  page-family phase structurally phase 5 — and step 5's own intro
-  ("Phase 5 (the canonical sibling) gets a detailed brief"), step
-  11's "Common Pitfalls" (line 706), and the shipped
-  `templates/plan/steps/01_build_plan.md` (`### Phase 5 —
-  <CANONICAL SIBLING>`, line 75) all agree on phase 5
-  unconditionally. But line 471 ("rename it to match your phase
-  number (usually phase 4 or 5)") and the Day-1 checklist line
-  746 ("Canonical sibling brief (usually phase 4 or 5) is
-  detailed") introduced an unexplained "4 or" alternative that
-  contradicted the fixed substrate-phase count and the template's
-  own hardcoded "Phase 5" heading.
-- evidence: `templates/plan/steps/01_build_plan.md:75`
-  ("### Phase 5 — <CANONICAL SIBLING>") vs
-  `playbooks/new-project.md:471` ("...rename it to match your
-  phase number (usually phase 4 or 5)...").
-- fix: dropped the "4 or" hedge in both spots — both now read
-  "usually phase 5," matching the template and the rest of the
-  playbook.
-- source: dry-run
-
-### [x] [MED] playbooks/new-project.md:594 — step 9's "Manual" external-services path never shows the `setup/00_files.md` copy command — this commit
-- category: ordering
-- observation: step 9 offers two paths — "Manual. Walk each
-  `setup/NN_<service>.md` runbook yourself" and "Automated. Run
-  `/bootstrap`." Only the Automated branch got an inline copy
-  command (`mkdir -p setup && cp
-  ../nexus/templates/setup/bootstrap.example.json
-  setup/bootstrap.local.json`, lines 605-611). A stranger who
-  picks Manual had no instruction anywhere in this playbook for
-  how `setup/00_files.md` (the runbook index) or
-  `setup/NN_<service>.md` actually get copied in — step 4's bulk
-  copy never lands `templates/setup/`. The only place that copy
-  command exists is `customization/external-services.md:189-195`,
-  which step 9 never linked to; the adopter only reached it later
-  via the Day-1 checklist (line 737), after already being told
-  to "walk the runbook."
-- evidence: `grep -n "00_files\|NN_service\|setup/"
-  playbooks/new-project.md` returned zero `cp .../00_files.md` or
-  `cp .../NN_service.md` lines — the only matching `cp` was for
-  `bootstrap.example.json` (610-611). The real copy command lived
-  only at `customization/external-services.md:189-195`.
-- fix: added a pointer in step 9's "Manual" bullet to
-  `customization/external-services.md`'s "Per-service runbook
-  authoring" step 1, which has the `setup/00_files.md` copy
-  command this path needs first.
 - source: dry-run

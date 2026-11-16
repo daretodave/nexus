@@ -6,16 +6,19 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, it } from 'node:test';
 import {
   CADENCES, DEFAULT_CADENCE, OFF_MARKER, PRESETS, REALIZED_FLOOR, REALIZED_HOURS, applyPreset, cronOf, cronSlots,
   cronsOf, describe as line, main, parseCron, presetOf, realized, resolve, setCeiling, setCron, setHeartbeatHours,
 } from '../cloud/cadence.mjs';
-import { CADENCES as BOOTSTRAP_CADENCES, DEFAULT_CADENCE as BOOTSTRAP_DEFAULT } from '../bootstrap.mjs';
 
 const TEMPLATES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const tpl = (rel) => fs.readFileSync(path.join(TEMPLATES, rel), 'utf8').replace(/\r\n/g, '\n');
+const BOOTSTRAP_PATH = path.join(TEMPLATES, 'scripts', 'bootstrap.mjs');
+const noBootstrap = fs.existsSync(BOOTSTRAP_PATH)
+  ? false
+  : 'scripts/bootstrap.mjs not present (pruned per playbooks/new-project.md §4)';
 
 /** The Cadence step as the workflow runs it: its flags, the outputs it writes. */
 function step(vars) {
@@ -50,7 +53,8 @@ describe('the presets', () => {
     assert.equal(r.heartbeat, before.heartbeat);
   });
 
-  it('bootstrap names the same five words and the same default', () => {
+  it('bootstrap names the same five words and the same default', { skip: noBootstrap }, async () => {
+    const { CADENCES: BOOTSTRAP_CADENCES, DEFAULT_CADENCE: BOOTSTRAP_DEFAULT } = await import(pathToFileURL(BOOTSTRAP_PATH));
     assert.deepEqual(BOOTSTRAP_CADENCES, [...CADENCES]);
     assert.equal(BOOTSTRAP_DEFAULT, DEFAULT_CADENCE);
   });

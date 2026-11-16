@@ -9,6 +9,10 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/scripts/__tests__/cadence.test.mjs: the bootstrap
+  cross-check assertion now self-skips when `bootstrap.mjs` is
+  pruned, instead of a static import crashing the whole suite
+  (2026-11-16, this commit).
 - templates/.github/workflows/pr-flow.yml: pr-flow now deletes
   a merged loop PR's branch after merge (2026-11-05, 2da8d42).
 - templates/.github/actions/setup/action.yml: actions/checkout
