@@ -42,9 +42,12 @@ context). It names only values checked in the code:
 2. **What:** the chunk line verbatim, the A-IDs it closes with
    their acceptance text, the spec path, and the sections of
    the spec that decide it (Design, Contracts).
-3. **How:** `skills/ship-a-chunk.md` steps read-spec through
-   tests (read, build, wire, test). Contract first, tests first
-   for anything stateful.
+3. **How:** `skills/ship-a-chunk.md` Steps 3-5 only (read the
+   spec, build, wire) plus each slice's own tests. Steps 6 and
+   8 (close the chunk, commit + land) stay the lead's, through
+   the pending file (`skills/next/land.md` §1-3) — never folded
+   into the builder's brief. Contract first, tests first for
+   anything stateful.
 4. **Limits:** commit each slice when its tests pass (plain
    messages, no attribution trailers); run only the tests it
    touched, never the full gate; never edit `plan/README.md`,

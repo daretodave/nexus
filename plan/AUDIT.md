@@ -118,7 +118,9 @@
   needs a human token), syncing `nudge.yml`'s pair at the same
   time so the twin check stays green.
 
-### [MEDIUM] next/build.md §2's brief scope and ship-a-chunk.md's Step 6/8 disagree on what a `/next` builder closes
+## Done
+
+### [x] [MEDIUM] next/build.md §2's brief scope and ship-a-chunk.md's Step 6/8 disagree on what a `/next` builder closes — this commit (closes #110)
 - category: drift
 - evidence: `next/build.md` §2 "How" briefs a builder to run
   "`skills/ship-a-chunk.md` steps read-spec through tests
@@ -138,13 +140,9 @@
   state was correct — nothing else touched `plan/` this tick,
   so no race — but the lead only caught the skipped pending-file
   path on review, after the commit already existed.
-- next: `next/build.md` §2 should name the exact step range a
-  `/next` builder's brief runs (3 through 4b) and say Steps 6
-  and 8 are the lead's own; or `ship-a-chunk.md` should flag
-  that Step 6/8 are for a standalone `/ship-a-chunk` run, never
-  folded into a `/next` builder's brief.
-
-## Done
+- next: fixed — `next/build.md` §2 item 3 now names the exact
+  step range (3-5) and says Steps 6 and 8 stay the lead's,
+  through the pending file.
 
 ### [x] [MEDIUM] settle.mjs's setLeft() never updates a spec row written in "N of M chunks" format — this commit
 - category: drift
