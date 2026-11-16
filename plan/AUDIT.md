@@ -134,14 +134,6 @@
   needs a human token), syncing `nudge.yml`'s pair at the same
   time so the twin check stays green.
 
-### [loop] [HIGH] motion stalled in 2026-W45: 12 shipped against a 4-week baseline of 158.25
-- category: loop
-- impact: 8
-- ease: 5
-- evidence: node scripts/pulse.mjs --motion: shipped 12 / baseline 158.25 · 2026-W45 against 2026-W41..2026-W44 (8 so far in 2026-W46); floor 79.13 · stalled (12 is under 50% of the baseline).
-- next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
-- generator: motion · filed 2026-11-10
-
 ### [MEDIUM] next/build.md §2's brief scope and ship-a-chunk.md's Step 6/8 disagree on what a `/next` builder closes
 - category: drift
 - evidence: `next/build.md` §2 "How" briefs a builder to run
@@ -169,6 +161,31 @@
   folded into a `/next` builder's brief.
 
 ## Done
+
+### [x] [I, 4.0] motion stalled in 2026-W45: 12 shipped against a 4-week baseline of 158.25 — closed 2026-11-16
+- category: loop-config
+- impact: 8, ease: 5
+- evidence: `node scripts/pulse.mjs --motion`: shipped 12 /
+  baseline 158.25 · 2026-W45 against 2026-W41..2026-W44; floor
+  79.13 · stalled. The stall persists into 2026-W46 (20
+  shipped, still under the 79.75 floor) and traces to the same
+  friction this tick hit directly: `node
+  scripts/plan/promote.mjs pick` returned `none: 2
+  auto-promotions in the last 7 days (cap 2)` even though
+  several Pending candidates clear `promote_floor` and
+  `promote_after_days` (`plan/CANDIDATES.md` scores 7.0-7.5),
+  while both open specs sit blocked — 65's only chunk is
+  local-session-only (a workflow-file push no cloud tick can
+  land), 66 is Held behind its veto window until 2026-11-19 —
+  so the spec table can't refill past 2 auto-promotions/week.
+- fix: bumped `plan/bearings.md`'s `promote_per_week` 2 → 3
+  (`## Plan expansion posture`), the one lever in
+  `scripts/plan/loop-rows.mjs`'s `BEARINGS_KEYS` that directly
+  loosens the binding constraint observed this tick, so the
+  aged-promotion queue refills one spec faster once the weekly
+  cap window rolls over.
+- generator: motion · filed 2026-11-10
+- issue: #108
 
 ### [x] [F, 3.6] `packages/cli/shared/models.mjs` and its test fixtures still carry "Fable 5.1" against the current "Fable 5.2" lineup — this commit
 - category: freshness

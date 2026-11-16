@@ -120,7 +120,7 @@ the aged ones promote themselves behind a veto window
 - Promote: aged
 - promote_after_days: 14
 - promote_floor: 6.0
-- promote_per_week: 2
+- promote_per_week: 3
 - veto_days: 3
 
 Pending stays live (`skills/expand.md` §6a): an independent
