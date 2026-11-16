@@ -27,41 +27,6 @@
   already-completed action.
 - source: dry-run
 
-### [ ] [MED] playbooks/new-project.md:695-711 — step 9's automated `/bootstrap` path can wire a ticking cloud loop before a single `/next` chunk has shipped, contradicting the cloud loop's own precondition
-- category: instruction-drift
-- observation: `README.md:426-428` states, routing to the cloud
-  loop: "Don't reach for this until your verify gate is
-  genuinely hermetic and the local loop has run cleanly for a
-  few days — the cloud surfaces every flake." `playbooks/cloud-loop.md:40`
-  repeats the same precondition. But `playbooks/new-project.md`
-  step 9 ("(Optional) Run `/bootstrap`...") sits between step 8
-  (sub-agents) and step 10 (the *first* `/next` invocation) —
-  before the local loop has run even once. Step 9's "Automated"
-  path says running `/bootstrap` "ends with a green deploy + a
-  ticking cloud loop." The shipped manifest an adopter is told to
-  copy at this exact step, `templates/setup/bootstrap.example.json:38`,
-  defaults `"cloud_loop": {"enabled": true, ...}`.
-  `customization/bootstrap-automation.md:164`'s phase-of-life
-  table confirms a "Pre-everything" project (exactly where step 9
-  stands) runs the full chain ending in "cloud loop." Nothing in
-  step 9, `customization/bootstrap-automation.md`, or the
-  manifest's `_help` block warns that enabling the cloud loop
-  this early violates the precondition both README and
-  cloud-loop.md state as a hard "don't."
-- evidence: `README.md:426-428`; `playbooks/cloud-loop.md:40`;
-  `playbooks/new-project.md:695,708-711` (step 9 precedes step
-  10's `/next` smoke test); `templates/setup/bootstrap.example.json:38`
-  (`"enabled": true`); `customization/bootstrap-automation.md:164`.
-- suggested fix: either (a) default `bootstrap.example.json`'s
-  `cloud_loop.enabled` to `false` with an `_help` note to flip it
-  on only once the local loop has proven itself, or (b) add one
-  sentence to `new-project.md` step 9's "Automated" bullet and
-  the phase-of-life table noting the cloud-loop leg should be
-  deferred (or re-run later via `/bootstrap cloud-loop`) until
-  the verify gate is hermetic and the local loop has run cleanly
-  for a few days.
-- source: dry-run
-
 ### [ ] [MED] prompts/pitch.md:68-71 — Phase A's own "Standing rules" block never received the Co-Authored-By harness-strip carve-out added to agents.md, templates/agents.md, and prompts/adopt.md
 - category: instruction-drift
 - observation: a prior pass (this file's Done section, "HIGH
@@ -276,6 +241,18 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:695-711 — step 9's automated `/bootstrap` path can wire a ticking cloud loop before a single `/next` chunk has shipped, contradicting the cloud loop's own precondition — this commit
+- category: instruction-drift
+- resolution: `playbooks/new-project.md` step 9's "Automated"
+  bullet (option b of the suggested fix) now says to skip the
+  cloud-loop leg this early and run `/bootstrap cloud-loop` on
+  its own once the verify gate is hermetic and the local loop
+  has run cleanly for a few days, linking the same precondition
+  in `README.md`'s "Pick a playbook" table and `cloud-loop.md`.
+  `customization/bootstrap-automation.md`'s phase-of-life table
+  gets the matching note for its "Pre-everything" and "Remote,
+  nothing else" rows.
 
 ### [x] [MED] README.md:379 — "all 8 placeholders" is stale; the table it links to has 9 — this commit
 - category: placeholder

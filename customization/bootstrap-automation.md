@@ -170,6 +170,14 @@ state machine detects which row applies and acts accordingly.
 | Brownfield (existing app adopting nexus) | discovery → fill gaps without touching what works |
 | Token rotation | `/bootstrap rotate <svc>` |
 
+A "Pre-everything" or "Remote, nothing else" run that reaches
+the cloud-loop leg this early is ahead of the local loop: skip
+it (`/bootstrap` stops one row short) and run `/bootstrap
+cloud-loop` on its own once the verify gate is hermetic and the
+local loop has run cleanly for a few days
+([`../playbooks/new-project.md`](../playbooks/new-project.md)
+step 9, [`../playbooks/cloud-loop.md`](../playbooks/cloud-loop.md)).
+
 The discovery output tells the user where they are; the
 plan tells them what comes next; they say go.
 

@@ -735,7 +735,14 @@ have two paths to wire them:
   Takes tokens in, drives provider CLIs out, ends with a
   green deploy + a ticking cloud loop. Handoffs (DNS,
   OAuth approvals, App installs) pause for the user;
-  everything else is scripted.
+  everything else is scripted. This early, skip the cloud-loop
+  leg (`/bootstrap` stops one row short, or run `/bootstrap
+  cloud-loop` on its own later) until the verify gate is
+  genuinely hermetic and the local loop (step 10 on) has run
+  cleanly for a few days — the same precondition
+  [`../README.md`](../README.md#pick-a-playbook) and
+  [`cloud-loop.md`](cloud-loop.md) state for reaching the cloud
+  loop any other way.
 
 For the automated path, `./setup` doesn't exist yet — step
 4's bulk copy never lands `templates/setup/` — so create it

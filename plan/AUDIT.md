@@ -35,24 +35,6 @@
   recurrence; close if the schedule recovers on its own.
 
 
-### [C, 2.4] identity/footguns.md:10 links to a README.md anchor that doesn't exist in its target
-- category: link + tree hygiene
-- impact: 3, ease: 8
-- evidence: `identity/footguns.md:10` carries
-  `[README.md](README.md#footguns-the-ladder)`, resolving to
-  `identity/README.md` — which has one heading and no
-  `## Footguns: the ladder` section; the line was copied
-  verbatim from `templates/identity/footguns.md:10`, whose own
-  `templates/identity/README.md:49` does carry a matching
-  heading. nexus's self-hosted `identity/README.md`
-  deliberately condensed that content into a table row
-  instead, orphaning the anchor. The verify gate's `links` leg
-  doesn't catch this (`scripts/verify.mjs:231/233` strips any
-  `#anchor` suffix before checking file existence).
-- next: either restore a `## Footguns: the ladder` heading in
-  `identity/README.md`, or drop the `#footguns-the-ladder`
-  fragment from `identity/footguns.md:10`'s link.
-
 ### [E, 2.1] bash-only syntax ($(...), heredocs, && chaining) survives in skills/ and templates/skills/ outside 52.3's scope
 - category: adopter friction
 - impact: 3, ease: 7
@@ -119,6 +101,29 @@
   time so the twin check stays green.
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:695-711 — step 9's automated `/bootstrap` path can wire a ticking cloud loop before a single `/next` chunk has shipped, contradicting the cloud loop's own precondition — this commit
+- category: instruction-drift
+- fix: `playbooks/new-project.md` step 9's "Automated" bullet now
+  says to skip the cloud-loop leg this early (run `/bootstrap
+  cloud-loop` on its own later) until the verify gate is
+  hermetic and the local loop has run cleanly for a few days,
+  linking the same precondition in `README.md`'s "Pick a
+  playbook" table and `cloud-loop.md`.
+  `customization/bootstrap-automation.md`'s phase-of-life table
+  gets the matching note for its "Pre-everything" and "Remote,
+  nothing else" rows.
+- source: plan/CRITIQUE.md, moved to its own Done
+
+### [x] [C, 2.4] identity/footguns.md:10 links to a README.md anchor that doesn't exist in its target — already fixed, finding stale
+- category: link + tree hygiene
+- resolution: the `#footguns-the-ladder` fragment this row
+  described was already dropped in `4d7173d` ("plan: settle
+  99.1", 2026-11-09) — `identity/footguns.md:10` has read
+  `[README.md](README.md))` with no fragment since, matching
+  this row's own second suggested fix. The audit block carrying
+  this row was never refreshed after that commit; removing it
+  now as stale, no code change needed.
 
 ### [x] [MEDIUM] next/build.md §2's brief scope and ship-a-chunk.md's Step 6/8 disagree on what a `/next` builder closes — this commit (closes #110)
 - category: drift
