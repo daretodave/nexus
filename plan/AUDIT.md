@@ -6,22 +6,6 @@
 
 ## Pending
 
-### [MEDIUM] settle.mjs's setLeft() never updates a spec row written in "N of M chunks" format
-- category: drift
-- evidence: `scripts/plan/settle.mjs`'s `setLeft()`
-  (`scripts/plan/settle.mjs:243`) only rewrites a roadmap row
-  that already ends `| N left |`; `plan/README.md`'s spec 61
-  row instead reads `| 0 of 3 chunks |`
-  (`node scripts/plan/progress.mjs`'s own format,
-  `scripts/plan/progress.mjs:110-113`). Closing chunk 61.1 this
-  tick left that cell reading `0 of 3 chunks` on main even
-  though `progress.mjs 61` now reports `1 of 3 chunks · 33%` —
-  the table and the live progress command disagree.
-- next: teach `setLeft()` (or a sibling in settle.mjs) to also
-  match `\| \d+ of \d+ chunks \|` and rewrite it from the same
-  closed-chunk count it already computes for the Measure line,
-  so either row format stays true after a close.
-
 ### [user-issue #96] [HIGH] [needs-user-call] heartbeat: march realized cadence below 40% — recurs after #91's close (hourly cron already off :00)
 - category: external-issue
 - evidence: opened 2026-11-06T19:23:23Z by the workflow token;
@@ -161,6 +145,23 @@
   folded into a `/next` builder's brief.
 
 ## Done
+
+### [x] [MEDIUM] settle.mjs's setLeft() never updates a spec row written in "N of M chunks" format — this commit
+- category: drift
+- evidence: `scripts/plan/settle.mjs`'s `setLeft()`
+  (`scripts/plan/settle.mjs:243`) only rewrote a roadmap row
+  that already ended `| N left |`; a row in `| N of M chunks |`
+  shape (`node scripts/plan/progress.mjs`'s own `bar()` format)
+  never updated after a close, so a spec chunked in that shape
+  (plan/README.md's spec 65 row: `0 of 1 chunks`) could go
+  stale the moment its chunk closed.
+- next: done — `setLeft()` takes an optional `closed` count and
+  rewrites an `N of M chunks` row from it
+  (`closedChunks(archive, specNum(id)).length + 1`, the same
+  ARCHIVE.md-backed count `progress.mjs`'s own bar uses), while
+  an `N left` row's branch is untouched; a regression test
+  covers both shapes and their independence
+  (`templates/scripts/__tests__/settle.test.mjs`).
 
 ### [x] [I, 4.0] motion stalled in 2026-W45: 12 shipped against a 4-week baseline of 158.25 — closed 2026-11-16
 - category: loop-config

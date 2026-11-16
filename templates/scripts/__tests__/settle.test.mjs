@@ -127,6 +127,16 @@ describe('closing a chunk', () => {
     const r = setLeft(README, '07-search.md', 2);
     assert.match(r, /\| 2 left \|$/m);
   });
+
+  it('rewrites a row in "N of M chunks" shape too, given the closed count, and leaves an "N left" row to its own branch', () => {
+    const readme = README.replace('| in progress (07.3 to 07.5) | 3 left |', '| planned | 0 of 1 chunks |');
+    const r = setLeft(readme, '07-search.md', 0, 1);
+    assert.match(r, /\| 1 of 1 chunks \|$/m);
+    // No closed count given: an "of M chunks" row is left alone (only "N left" rows are its default shape).
+    assert.equal(setLeft(readme, '07-search.md', 0), readme);
+    // A closed count given to an "N left" row doesn't touch it: the two shapes are mutually exclusive.
+    assert.match(setLeft(README, '07-search.md', 2, 5), /\| 2 left \|$/m);
+  });
 });
 
 describe('tidying a closed chunk out of the roadmap', () => {

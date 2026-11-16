@@ -35,6 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULTS, fill, loadConfig } from './config.mjs';
 import { lintFootguns } from './footguns.mjs';
 import { PLACEHOLDER, parsePending, pendingFiles } from './pending.mjs';
+import { closedChunks } from './progress.mjs';
 import { isOwner } from '../owner.mjs';
 
 const CHUNK_LINE = (id) => new RegExp(`^- \\[ \\] \\*\\*${esc(id)}\\*\\*`);
@@ -240,11 +241,19 @@ export function recountMeasure(before, after) {
   return after.replace(re, `Measure: ${open} open · ${Math.max(total - open, 0)} closed · next A${m[3]}`);
 }
 
-/** The roadmap table row for a spec file gets "N left" (only a row that says "N left" already). */
-export function setLeft(readme, specFile, n) {
+/**
+ * The roadmap table row for a spec file gets "N left" (only a row that says "N left" already), or, given `closed`
+ * (the chunks closed so far, this one included), "N of M chunks" (only a row already in that shape).
+ */
+export function setLeft(readme, specFile, n, closed = null) {
   return readme
     .split('\n')
-    .map((l) => (l.startsWith('|') && l.includes(`](${specFile})`) ? l.replace(/\| \d+ left \|\s*$/, `| ${n} left |`) : l))
+    .map((l) => {
+      if (!(l.startsWith('|') && l.includes(`](${specFile})`))) return l;
+      if (/\| \d+ left \|\s*$/.test(l)) return l.replace(/\| \d+ left \|\s*$/, `| ${n} left |`);
+      if (closed !== null) return l.replace(/\| \d+ of \d+ chunks \|\s*$/, `| ${closed} of ${closed + n} chunks |`);
+      return l;
+    })
     .join('\n');
 }
 
@@ -1123,7 +1132,8 @@ export function main(argv, { cwd = process.cwd(), owner } = {}) {
         }
         const listed = allListed().filter((x) => x !== p.close);
         if (r('plan/README.md') !== null) {
-          w('plan/README.md', setLeft(r('plan/README.md'), path.basename(specFile), listedChunks(done.text).length));
+          const closedSoFar = closedChunks(archive, specNum(p.close)).length + 1;
+          w('plan/README.md', setLeft(r('plan/README.md'), path.basename(specFile), listedChunks(done.text).length, closedSoFar));
           const t = tidyAhead(r('plan/README.md'), queueOf(), p.close, listed, cfg);
           w('plan/README.md', t.readme);
           if (cfg.queue && t.queue !== null) w(cfg.queue, t.queue);

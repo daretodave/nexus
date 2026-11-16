@@ -9,6 +9,10 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/scripts/plan/settle.mjs: `setLeft()` now also
+  rewrites a roadmap row written in "N of M chunks" shape (not
+  just "N left") after a close, so a spec chunked in that format
+  keeps a true progress cell (2026-11-16, this commit).
 - templates/scripts/__tests__/cadence.test.mjs: the bootstrap
   cross-check assertion now self-skips when `bootstrap.mjs` is
   pruned, instead of a static import crashing the whole suite
