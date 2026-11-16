@@ -1,0 +1,106 @@
+# 66 — Key custody map + hermetic keys lint
+
+> One greppable, names-only answer to "which file holds this
+> token, where is it mirrored, when does it expire" for every
+> credential this repo (or an adopter's) depends on — so an
+> unattended window never dies on a question the kit already
+> had the answer to, just not written down in one place.
+
+## Why
+
+`agents.md`'s "Operational secrets" section already names
+`GH_TOKEN`, `CLAUDE_CODE_OAUTH_TOKEN` and `ACTIONS_PAT` in
+prose — what each is for, where it's minted, which scopes it
+carries — but nothing records *when* `ACTIONS_PAT` expires or
+flags it before it does. `customization/secrets.md`'s
+`nexus.secrets.json` manifest (adopter-facing, opt-in) comes
+close: `name`, `for`, `where`, `destinations`, `provider`,
+`chunk`, plus `secrets-audit.mjs`'s 90-day-since-last-set
+rotation nudge. But a nudge keyed off "last set" is a proxy
+for expiry, not the expiry date itself, and the manifest has
+no field for "this value is mirrored in these N places, and a
+rotation must reach all of them" beyond the push record
+`secrets-sinks.mjs` already keeps per destination. A cloud
+tick or a long unattended window that hits an expired
+fine-grained PAT mid-run (the exact failure class
+`ACTIONS_PAT` already lists three rediscoveries of in spec
+65's sibling problem) has no single file to check first.
+
+## Design
+
+- A per-credential table — Key, Holder file (or vault ring),
+  Minted by, Scopes, Mirrored to, Expires, Rotate via — read
+  from, not parallel to, the existing
+  `nexus.secrets.json` / `scripts/secrets-audit.mjs` system:
+  the chunking session resolves whether `Expires` and `Rotate
+  via` become new optional manifest fields (extending the
+  shape in `customization/secrets.md`) or a separate
+  `templates/setup/00_keys.md` index in the style of
+  `templates/setup/00_files.md`, keyed by the manifest's
+  existing `name`. Either way, a value never appears in the
+  table — only names, dates and file paths, matching the
+  manifest's existing "names, never values" rule.
+- A pure-string lint (an opt-in leg, `templates/scripts/
+  keys-audit.mjs` or folded into `scripts/secrets-audit.mjs`)
+  that reads the table and flags, offline: an orphan row (a
+  key no manifest entry or code reference names), a ghost
+  entry (a manifest name with no custody row), and an
+  ambiguous one (two rows claiming the same key). Gate failure
+  on any of the three, wired into `node scripts/verify.mjs`'s
+  `secrets` leg for the kit's own table and into the adopter
+  template's own verify composition.
+- `playbooks/hands-off.md`'s unattended-window pre-flight
+  refuses to start a window whose custody table lists an
+  `Expires` date before the window's own end time (an
+  unattended run should never discover a dead credential
+  mid-flight).
+- `/bootstrap rotate` (if it exists yet when this chunks;
+  else this scopes it) reads a row's `Mirrored to` as its
+  propagation list, so rotating a value pushes it everywhere
+  the table says it lives instead of leaving a stale copy in
+  a sink `secrets-sinks.mjs` already pushed to once.
+- The kit runs this on itself first: `agents.md`'s three
+  operational secrets get custody rows (including
+  `ACTIONS_PAT`'s actual expiry, confirmed from GitHub's token
+  settings UI — the same open fact spec 65's A2 already
+  needs), proving the shape before it ships to adopters.
+
+## Acceptance
+
+- **A1** A per-credential custody table exists, listing every
+  secret `agents.md`'s "Operational secrets" section and
+  `nexus.secrets.json` name today, with Key, Holder file,
+  Minted by, Scopes, Mirrored to, Expires and Rotate via —
+  values never appear in it.
+- **A2** The table's relationship to the existing
+  `nexus.secrets.json` manifest is resolved one way (new
+  manifest fields, or a separate keyed-by-name index) and
+  documented in `customization/secrets.md` or a new
+  `customization/` doc it links from.
+- **A3** A pure-string, offline lint flags orphan, ghost and
+  ambiguous rows as a hard gate failure, wired into `node
+  scripts/verify.mjs`'s `secrets` leg.
+- **A4** `playbooks/hands-off.md`'s pre-flight checks the
+  table's `Expires` column against the window's end time and
+  refuses to start past it.
+- **A5** The kit's own three operational secrets carry real
+  custody rows, `ACTIONS_PAT`'s expiry confirmed from GitHub's
+  UI rather than assumed.
+
+## Open questions
+
+- Whether `Expires` and `Rotate via` land as new
+  `nexus.secrets.json` fields or a sibling `00_keys.md` index
+  is deliberately left to the first chunking session — it
+  needs a read of `scripts/plan/secrets-manifest.mjs`'s shape
+  checker and `plan-check.mjs`'s manifest gate before either
+  answer is safe to commit to.
+- Whether `/bootstrap rotate` already exists is unconfirmed
+  as of this spec's promotion; if it doesn't yet, this spec
+  scopes a minimal version rather than inventing the whole
+  command.
+
+## Chunks
+Measure: 5 open · 0 closed · next A6
+
+Not chunked yet.

@@ -25,17 +25,18 @@ needs are done):
 line goes; each line is a lock that times out, so it carries
 `since:`, `until:` and `max_age:`):
 
-- (none)
+- 66 · auto-promoted, veto until 2026-11-19 (#107) · max_age: 3d · fallback: release
 
 ## Specs
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 65 | Workflow-push credential gap: test the fix, stop re-discovering it | [65-workflow-push-credential-gap.md](65-workflow-push-credential-gap.md) | planned | not chunked yet |
+| 66 | Key custody map + hermetic keys lint | [66-key-custody-map.md](66-key-custody-map.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
-plan moved to chunks on 2026-10-20). The next new spec is 66.
+plan moved to chunks on 2026-10-20). The next new spec is 67.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is

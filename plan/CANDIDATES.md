@@ -223,24 +223,6 @@
 - conflicts: none — tightens an existing playbook, no template
   API change.
 
-### [ ] [score 7.6] Key custody map + hermetic keys lint
-- proposed: 2026-07-03
-- source signals: unattended windows die on "which file holds
-  this token, where is it mirrored, when does it expire" —
-  questions no kit file answers today.
-- rationale: one greppable names-only registry row per
-  credential (Key | Holder file | Minted by | Scopes | Mirrored
-  to | Expires | Rotate via), updated in the same commit as the
-  mint; a pure-string lint makes orphan/ghost/ambiguous keys a
-  gate failure while staying offline.
-- proposed scope: `templates/setup/00_keys.md`;
-  `templates/scripts/keys-audit.mjs` (opt-in leg); hands-off.md
-  pre-flight refuses a window that outlives any Expires cell;
-  /bootstrap rotate consumes Mirrored-to as its propagation
-  list.
-- estimated phases: 1
-- conflicts: builds on the two-ring topology + handshake rows.
-
 ### [ ] [score 7.5] Package nexus as a Claude Code plugin
 - proposed: 2026-07-02 (design deepened 2026-07-03); re-evidenced
   2026-09-14 (expand pass 12)
@@ -1257,6 +1239,25 @@
   re-scope added Workflows read/write.)
 - estimated phases: 1
 - conflicts: rides the heartbeat fix landed this session.
+
+### [promoted 2026-11-16 → spec 66] [score 7.6] Key custody map + hermetic keys lint
+- proposed: 2026-07-03
+- source signals: unattended windows die on "which file holds
+  this token, where is it mirrored, when does it expire" —
+  questions no kit file answers today.
+- rationale: one greppable names-only registry row per
+  credential (Key | Holder file | Minted by | Scopes | Mirrored
+  to | Expires | Rotate via), updated in the same commit as the
+  mint; a pure-string lint makes orphan/ghost/ambiguous keys a
+  gate failure while staying offline.
+- proposed scope: `templates/setup/00_keys.md`;
+  `templates/scripts/keys-audit.mjs` (opt-in leg); hands-off.md
+  pre-flight refuses a window that outlives any Expires cell;
+  /bootstrap rotate consumes Mirrored-to as its propagation
+  list.
+- estimated phases: 1
+- conflicts: builds on the two-ring topology + handshake rows.
+- promoted: 2026-11-16, auto (motion-stall react, #92), veto #107
 
 ## Rejected
 
