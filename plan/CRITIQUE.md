@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-12
-> Pass count: 34
+> Last pass: 2026-11-16
+> Pass count: 35
 
 ## Pending
 
@@ -282,6 +282,64 @@
   after the image (e.g. "Fleet: the session list. Cockpit: one
   session's live view.") or move the evocative narration to
   `packages/cli/README.md` and keep the root caption literal.
+- source: dry-run
+
+### [ ] [HIGH] /onboarding/welcome @ mobile (plain-folder) — the loop-diagram captions collide into unreadable overlapping text on a phone
+- category: ui-comprehension
+- observation: on the mobile Welcome screen, the four loop-node
+  captions ("commit", "and around again", "build", "Claude Code
+  writes it", "check", "against its acceptance IDs") and the
+  "repo · main" center label render on top of each other in a
+  dense, illegible cluster to the lower-right of the circle.
+  Visible identically across all three scenarios (plain-folder,
+  cloud-token, fleet-to-tug) on mobile. This is the very first
+  screen a stranger sees on a phone, and the diagram meant to
+  explain nexus's core plan/build/check/commit loop is unreadable.
+- evidence: `plain-folder--mobile--onboarding-welcome.png` (same
+  overlap in `cloud-token--mobile--onboarding-welcome.png` and
+  `fleet-to-tug--mobile--onboarding-welcome.png`), this tick's
+  `npm --prefix packages/cli run walk`,
+  `.scratch/walk/critique-2026-11-16T22-28-44-439Z/`.
+  `packages/cli/src/screens/onboarding/Welcome.jsx`'s `LOOP`
+  array positions each `.loop-node` by percentage with no
+  width constraint on `.loop-node .cap`
+  (`packages/cli/src/styles/nexus.css:1322-1323`); the mobile
+  media query at `nexus.css:1457-1464` only shrinks `.loop-art`'s
+  container (`width: min(380px, 100%)`), never the caption text
+  boxes, so at phone widths the four caption blocks overlap each
+  other and the center label.
+- suggested fix: in `packages/cli/src/styles/nexus.css`, give
+  `.loop-node .cap` a bounded `max-width` (sized to the node
+  spacing) and let it wrap within its own column instead of
+  overflowing toward the center, so captions stop colliding at
+  viewport widths around 390px. Layout/width only — no change to
+  the particle animation or colors.
+- source: walk
+
+### [ ] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question
+- category: instruction-drift
+- observation: `prompts/pitch.md`'s Phase B tells the delegated
+  agent it may use `AskUserQuestion` only for adopt.md's "own
+  narrow four-item ask list (hosting provider/token, project
+  name/tagline, URL/API/CLI contract, topology confirmation)"
+  and states "Beyond those four items, AskUserQuestion is not
+  allowed." But `prompts/adopt.md`'s own ask list runs five
+  items, (a) through (e) — the fifth being "(e) the mode: owner
+  ... or contributor ...". An agent that trusts pitch.md's
+  summary instead of re-deriving the count from adopt.md's own
+  text could conclude the owner/contributor question is out of
+  bounds and silently decide it, even though adopt.md lists it
+  as one of the things to ask before the first write.
+- evidence: `prompts/pitch.md:54-58` ("four-item ask list...
+  Beyond those four items, AskUserQuestion is not allowed") vs
+  `prompts/adopt.md:69-80`, whose ask list runs (a) hosting
+  provider/token, (b) name+tagline, (c) URL/API/CLI contract,
+  (d) topology confirmation, (e) owner/contributor mode — five
+  items, not four.
+- suggested fix: update `prompts/pitch.md` to say "five-item ask
+  list" and add the owner/contributor mode confirmation to its
+  parenthetical, so the pitch-flow summary matches what adopt.md
+  actually asks.
 - source: dry-run
 
 ## Done
