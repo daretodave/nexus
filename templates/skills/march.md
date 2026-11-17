@@ -169,6 +169,7 @@ goes on to the `pre` lanes.
 
 ### Step 0.5 — Pre lanes
 
+<!-- dualshell:posix-only -->
 ```bash
 node scripts/plan/lanes.mjs march pre    # run | judge | skip <lane>, then `stock` or `N lanes at pre`
 ```
@@ -213,6 +214,7 @@ node scripts/plan/motion.mjs react      # promote #N | alert #N | off #N | none 
 
 Load `GH_TOKEN` from `.env` and count unlabeled open issues:
 
+<!-- dualshell:posix-only -->
 ```bash
 export GH_TOKEN=$(awk -F= '/^GH_TOKEN=/ {sub(/^GH_TOKEN=/, ""); print; exit}' .env)
 export GH_REPO=$(awk -F= '/^GH_REPO=/ {sub(/^GH_REPO=/, ""); print; exit}' .env)
@@ -358,6 +360,7 @@ not there). It runs each listed generator
 `plan/AUDIT.md` while its own rows are under their target and
 its weekly cap:
 
+<!-- dualshell:posix-only -->
 ```bash
 node scripts/plan/refill.mjs --write   # filed|clean|skip|broke <generator> per line, then `filed N` or `clean`
 ```

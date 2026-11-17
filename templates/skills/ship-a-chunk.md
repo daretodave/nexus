@@ -166,6 +166,7 @@ prefix `Phase <N> — ` (the helper's title contract, kept from
 kit v1; `<N>` is the spec number), so re-runs reuse the same
 number instead of spamming duplicates.
 
+<!-- dualshell:posix-only -->
 ```bash
 issue_body=$(mktemp)
 cat > "$issue_body" <<EOF
@@ -292,6 +293,7 @@ and this chunk was the spec's last, add a `Closes #<N>`
 trailer to the commit body. GitHub auto-closes the spec mirror
 when the commit pushes to <DEFAULT_BRANCH>.
 
+<!-- dualshell:posix-only -->
 ```bash
 git add <explicit files>
 git commit -m "$(cat <<'EOF'

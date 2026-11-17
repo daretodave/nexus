@@ -63,6 +63,7 @@ A-ID, a true Measure line), commit that alone
 
 ### Step 2 — Mirror the spec (best-effort)
 
+<!-- dualshell:posix-only -->
 ```bash
 issue_body=$(mktemp)
 # the helper titles it "Spec <NN> — <spec title>"
@@ -213,6 +214,7 @@ Everything else: decide, ship, document.
 
 ## 7. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 # Reads
 plan/nexus.lock                      # shape: chunks

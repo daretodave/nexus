@@ -248,6 +248,7 @@ Decisions:
 
 When in doubt about state, run these and read the output:
 
+<!-- dualshell:posix-only -->
 ```bash
 # Local state
 git remote -v

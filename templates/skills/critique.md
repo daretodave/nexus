@@ -235,6 +235,7 @@ header stays at 20 lines or fewer).
 
 ### Step 5 — Commit + land
 
+<!-- dualshell:posix-only -->
 ```bash
 git add plan/CRITIQUE.md
 git commit -m "$(cat <<'EOF'

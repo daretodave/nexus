@@ -269,6 +269,7 @@ For each answer:
 
 ### Step 6 — Commit + land
 
+<!-- dualshell:posix-only -->
 ```bash
 git add <modified files>
 git commit -m "$(cat <<'EOF'

@@ -9,6 +9,11 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/skills/*.md: every bash-only fence outside the
+  original five git-procedure skills now carries `<!--
+  dualshell:posix-only -->` (none had a PowerShell equivalent
+  worth building), closing the gap the `dualshell` syntax leg
+  left since 52.3 (2026-11-17, this commit).
 - templates/README.md: "replace all eight" fixed to "nine" in
   two spots — the placeholder table above it lists nine rows
   (2026-11-17, this commit).

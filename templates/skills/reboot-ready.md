@@ -106,6 +106,7 @@ line. Then stop: no further tool calls, no new iteration.
 
 ## 6. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 node scripts/claims.mjs list | renew <ids…>
 git stash create && git update-ref refs/reboot/<slug>/<star>-<name> <hash>

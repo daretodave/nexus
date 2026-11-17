@@ -221,6 +221,7 @@ Per nexus's standing rules:
 
 Bundled single-commit shape:
 
+<!-- dualshell:posix-only -->
 ```bash
 git commit -m "$(cat <<'EOF'
 docs,templates: land NEXUS_LESSONS from <project-name>

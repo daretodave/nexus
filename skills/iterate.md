@@ -244,6 +244,7 @@ whether an I row may ship today.
 
 ## 7. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 plan/AUDIT.md                        # queue + bias + durable rows
 plan/CRITIQUE.md                     # external queue

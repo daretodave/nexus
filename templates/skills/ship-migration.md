@@ -190,6 +190,7 @@ commit.
 
 ## 9. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 # Reads
 data/BACKLOG.md                        # pending migration briefs

@@ -34,10 +34,9 @@ run for everyone, and owner mode decides how work lands.
 ### Step 1 — Who and what
 
 1. `node scripts/claims.mjs whoami`: owner or contributor, and
-   this session's id (the loop runs in this session, so its
-   claims are this session's). `node scripts/ledger.mjs beat
-   --set kind=heads-down --set step=orient` names the session:
-   its star (`ledger: vega (…) live`) heads every banner.
+   this session's id. `node scripts/ledger.mjs beat --set
+   kind=heads-down --set step=orient` names the session: its
+   star (`ledger: vega (…) live`) heads every banner.
 2. `git fetch origin`, then resolve the list from the plan **on
    origin/<base>** (`git show origin/<base>:plan/README.md`, the
    specs likewise), never the primary checkout's copy, which
@@ -142,6 +141,7 @@ Then invoke the `loop` skill (no interval) with it:
 
 ## 6. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 node scripts/claims.mjs whoami | list | claim <ids…> [--package] | renew | release <ids…>
 git fetch origin && git show origin/main:plan/README.md

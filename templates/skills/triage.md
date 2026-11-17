@@ -56,6 +56,7 @@ GH_REPO=<REPO_SLUG>           # optional; defaults to <REPO_SLUG>
 `gh` auto-reads `GH_TOKEN`. Before any `gh` call, ensure env is
 loaded:
 
+<!-- dualshell:posix-only -->
 ```bash
 export GH_TOKEN=$(awk -F= '/^GH_TOKEN=/ {sub(/^GH_TOKEN=/, ""); print; exit}' .env)
 export GH_REPO=$(awk -F= '/^GH_REPO=/ {sub(/^GH_REPO=/, ""); print; exit}' .env)
@@ -241,6 +242,7 @@ when the plan settles." The owner's settle numbers it.
 
 ### Step 3 — Apply labels + comment + (close)
 
+<!-- dualshell:posix-only -->
 ```bash
 gh issue edit "$NUM" --repo "$GH_REPO" --add-label "triage:loop-queued,bug"
 
@@ -277,6 +279,7 @@ gh issue close "$NUM" --repo "$GH_REPO" --reason "not planned"
 
 ### Step 5 — Commit + land (if any backlog changes)
 
+<!-- dualshell:posix-only -->
 ```bash
 git add plan/AUDIT.md data/BACKLOG.md plan/pending/triage-*.md plan/[0-9]*-*.md
 git commit -m "$(cat <<'EOF'
@@ -404,6 +407,7 @@ warning and fall through. Triage is non-blocking by design.
 
 ## 10. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 # Auth
 export GH_TOKEN=$(awk -F= '/^GH_TOKEN=/ {sub(/^GH_TOKEN=/, ""); print; exit}' .env)

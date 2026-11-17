@@ -151,6 +151,7 @@ its own cadence.
 
 ## 6. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 plan/DIGEST.md                       # the deliverable (overwrite)
 plan/AUDIT.md                        # breadth failures land here

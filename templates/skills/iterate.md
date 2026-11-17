@@ -210,6 +210,7 @@ A re-sync of the kit's skills replaces this file and never
 touches the lanes file, so a dimension only this project
 audits lives there:
 
+<!-- dualshell:posix-only -->
 ```bash
 node scripts/plan/lanes.mjs iterate dimensions   # run | judge | skip <lane> · letter Y, then `stock` or `N lanes at dimensions`
 ```
@@ -311,6 +312,7 @@ Skip this step in two cases:
 
 Otherwise:
 
+<!-- dualshell:posix-only -->
 ```bash
 # 1. Build the body file from the finding row.
 issue_body=$(mktemp)
@@ -540,6 +542,7 @@ Return cleanly. Loop's next tick re-audits.
 
 ## 8. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 # Read
 plan/AUDIT.md                            # latest findings

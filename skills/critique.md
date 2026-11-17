@@ -168,6 +168,7 @@ runs none.
 
 ## 6. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 plan/CRITIQUE.md                     # output + rate-limit metadata
 README.md                            # the surface under test

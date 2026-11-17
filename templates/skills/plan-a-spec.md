@@ -142,6 +142,7 @@ outcome).
 
 ### Step 6 — Gate + commit
 
+<!-- dualshell:posix-only -->
 ```bash
 node scripts/plan-check.mjs --since HEAD
 git add plan/<NN>-<slug>.md plan/README.md

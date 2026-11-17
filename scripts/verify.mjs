@@ -927,19 +927,18 @@ function legDualshell(files) {
 // `base=$(git rev-parse ...)` followed by `git worktree add ... "$base"`
 // never runs as written in a PowerShell session.
 //
-// Scoped deliberately to the git-procedure skills the "Skills run in
+// Originally scoped to only the git-procedure skills the "Skills run in
 // PowerShell" design bullet names (plan/52-fresh-repo-onboarding.md) —
-// /plot, /next's build and land, and the worktree steps they share — not
-// every skill. Several other skills (critique, iterate, ship-a-chunk,
-// march, reboot-ready, lessons-pr) lean on the same bash-only shapes for
-// unrelated things (mktemp, `gh issue list`, a heredoc PR body); widening
-// this list to all of skills/ would force fixing those too, well past
-// what this chunk carries. See plan/AUDIT.md for that row.
-const SYNTAX_SCOPED_SKILLS = new Set([
-  'skills/next/build.md', 'skills/next/land.md', 'skills/next.md', 'skills/plot.md', 'skills/tidy.md',
-  'templates/skills/next/build.md', 'templates/skills/next/land.md', 'templates/skills/next.md',
-  'templates/skills/plot.md', 'templates/skills/tidy.md',
-])
+// /plot, /next's build and land, and the worktree steps they share.
+// Widened to every skills/ and templates/skills/ doc once the rest
+// (critique, iterate, ship-a-chunk, march, reboot-ready, lessons-pr, …)
+// had their bash-only shapes rewritten or marked
+// `<!-- dualshell:posix-only -->` (plan/AUDIT.md's "[E, 2.1]" row).
+const SYNTAX_SCOPED_RE = /^(templates\/)?skills\//
+
+function syntaxScoped(file) {
+  return SYNTAX_SCOPED_RE.test(normalize(file))
+}
 
 const SYNTAX_CHECKS = [
   [/\$\(/, 'a $(...) command substitution'],
@@ -980,7 +979,7 @@ function bashFenceLines(text) {
 
 function legDualshellSyntax(files) {
   const failures = []
-  const scoped = files.filter((f) => SYNTAX_SCOPED_SKILLS.has(normalize(f)))
+  const scoped = files.filter((f) => f.endsWith('.md') && syntaxScoped(f))
   let checked = 0
   for (const file of scoped) {
     for (const { n, line } of bashFenceLines(read(file))) {

@@ -141,6 +141,7 @@ the depth promotion are housekeeping; the tick goes on to the
 
 ### Step 0.5 — Pre lanes
 
+<!-- dualshell:posix-only -->
 ```bash
 node scripts/plan/lanes.mjs march pre    # run | judge | skip <lane>, then `stock` or `N lanes at pre`
 ```
@@ -173,6 +174,7 @@ heartbeat closes the issue when a week recovers.
 
 ### Step 1 — Triage gate (cheapest; concierge first)
 
+<!-- dualshell:posix-only -->
 ```bash
 # The concierge lane: loop:do outranks everything.
 urgent=$(gh issue list --repo daretodave/nexus --state open \

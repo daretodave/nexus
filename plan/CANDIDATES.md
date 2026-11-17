@@ -742,40 +742,6 @@
 - re-evidence:
   - 2026-11-17 · F 3f5fc6a · independent, +0.5 · pass 36's /inbox mobile walk finding (Oversight filter row clips with no scroll affordance, controls.jsx's ChoiceButtons) is a third instance of the same no-narrow-viewport-handling root cause this row already names (Welcome headline, Stepper), confirming the pattern recurs outside the two components already scoped
 
-### [ ] [score 5.8] Widen (or exempt) the dualshell syntax lint past its five git-procedure skills
-- proposed: 2026-11-12 (expand)
-- kind: guard
-- source signals: signal A (`plan/AUDIT.md`'s `[E, 2.1]` row) —
-  chunk 52.3 scoped the new `dualshell` verify leg
-  (`scripts/verify.mjs`'s `SYNTAX_SCOPED_SKILLS`) to the five
-  git-procedure skills its own spec named (`skills/next/build.md`,
-  `skills/next/land.md`, `skills/next.md`, `skills/plot.md`,
-  `skills/tidy.md`, and their `templates/skills/` twins),
-  deliberately leaving the rest of `skills/` and
-  `templates/skills/` unchecked. A repo-wide grep for the same
-  bash-only shapes (`$(...)`, backtick substitution, bare
-  `VAR=value`, `&&`/`||` chaining, `<<` heredocs) finds real hits
-  in both the kit's own skills (`critique.md`, `heads-down.md`,
-  `iterate.md`, `ship-a-chunk.md`, `lessons-pr.md`, `march.md`,
-  `reboot-ready.md`) and their adopter-facing `templates/skills/`
-  twins, several with no PowerShell equivalent today.
-- rationale: `templates/skills/` is the product (agents.md rule
-  7) — a bash-only fence an adopter on PowerShell can't run is
-  exactly the class the dualshell leg exists to catch, and today
-  it's invisible outside five files. Cheap because the fix
-  locations are already enumerated file-and-line in the AUDIT row.
-- proposed scope: either rewrite each bash-only shape (`mktemp` →
-  a small node temp-file helper; `gh ... --jq` piping → a small
-  node script; the heredoc commit-message pattern → write the
-  message to a temp file and `git commit -F`) or tag fences with
-  no PowerShell equivalent worth building as `<!--
-  dualshell:posix-only -->`, then widen `SYNTAX_SCOPED_SKILLS` to
-  all of `skills/` + `templates/skills/` once they're clean.
-- estimated chunks: 1
-- conflicts: none known — skills/ prose + `scripts/verify.mjs`'s
-  existing dualshell leg, no new invariant beyond widening its own
-  scope.
-
 ### [ ] [score 6.0] autonomous build loops are now named for failure modes: self-approval, spec gaming, misrepresented…
 - proposed: 2026-11-13 (research)
 - source signals: field (2026-11-13): a survey of many autonomous coding loops names recurring anti-patterns: a loop approving its own work with no outside check, gaming the stated goal instead of the intended one, and a loop's own repor…
@@ -1182,6 +1148,45 @@
 ## Rejected
 
 (kept for the record, with reasons)
+
+### [rejected 2026-11-17] [score 5.8] Widen (or exempt) the dualshell syntax lint past its five git-procedure skills
+- reason: built directly via `/iterate` (`plan/AUDIT.md`'s
+  `[E, 2.1]` row), this tick — every bash-only fence outside the
+  original five skills now carries `<!-- dualshell:posix-only
+  -->`, and `scripts/verify.mjs`'s `SYNTAX_SCOPED_SKILLS` widened
+  to all of `skills/` + `templates/skills/`; no spec needed.
+- proposed: 2026-11-12 (expand)
+- kind: guard
+- source signals: signal A (`plan/AUDIT.md`'s `[E, 2.1]` row) —
+  chunk 52.3 scoped the new `dualshell` verify leg
+  (`scripts/verify.mjs`'s `SYNTAX_SCOPED_SKILLS`) to the five
+  git-procedure skills its own spec named (`skills/next/build.md`,
+  `skills/next/land.md`, `skills/next.md`, `skills/plot.md`,
+  `skills/tidy.md`, and their `templates/skills/` twins),
+  deliberately leaving the rest of `skills/` and
+  `templates/skills/` unchecked. A repo-wide grep for the same
+  bash-only shapes (`$(...)`, backtick substitution, bare
+  `VAR=value`, `&&`/`||` chaining, `<<` heredocs) finds real hits
+  in both the kit's own skills (`critique.md`, `heads-down.md`,
+  `iterate.md`, `ship-a-chunk.md`, `lessons-pr.md`, `march.md`,
+  `reboot-ready.md`) and their adopter-facing `templates/skills/`
+  twins, several with no PowerShell equivalent today.
+- rationale: `templates/skills/` is the product (agents.md rule
+  7) — a bash-only fence an adopter on PowerShell can't run is
+  exactly the class the dualshell leg exists to catch, and today
+  it's invisible outside five files. Cheap because the fix
+  locations are already enumerated file-and-line in the AUDIT row.
+- proposed scope: either rewrite each bash-only shape (`mktemp` →
+  a small node temp-file helper; `gh ... --jq` piping → a small
+  node script; the heredoc commit-message pattern → write the
+  message to a temp file and `git commit -F`) or tag fences with
+  no PowerShell equivalent worth building as `<!--
+  dualshell:posix-only -->`, then widen `SYNTAX_SCOPED_SKILLS` to
+  all of `skills/` + `templates/skills/` once they're clean.
+- estimated chunks: 1
+- conflicts: none known — skills/ prose + `scripts/verify.mjs`'s
+  existing dualshell leg, no new invariant beyond widening its own
+  scope.
 
 ### [rejected 2026-11-06] [score 5.5] playbooks/outgrow.md — the split ceremony
 - reason: stale: below cap cut 2026-11-06

@@ -383,6 +383,7 @@ scripts/plan/promote.mjs cuts` lists them for `/digest`.
 
 ### Step 5 — Commit + land
 
+<!-- dualshell:posix-only -->
 ```bash
 git add plan/CANDIDATES.md   # + plan/README.md and plan/<NN>-*.md after an aged promotion
 git commit -m "$(cat <<'EOF'

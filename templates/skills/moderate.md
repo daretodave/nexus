@@ -157,6 +157,7 @@ Return cleanly.
 
 ## 8. Quick reference
 
+<!-- dualshell:posix-only -->
 ```bash
 # Reads
 data/mod/*.md | DB mod_status column   # the four queues
