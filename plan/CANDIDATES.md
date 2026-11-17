@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-11-16
-> Pass count: 26
+> Last pass: 2026-11-17
+> Pass count: 27
 > Posture: bold
 > Last field research: 2026-11-13
 
@@ -703,8 +703,9 @@
 - re-evidence:
   - 2026-11-12 · B · same source, +0 · three more independent CRITIQUE rows in the same playbook: prune-list test breakage (cadence.test.mjs imports bootstrap.mjs, never added to the rm list, HIGH missing-file), files-added checklist omits nexus.secrets.json (LOW), install-hooks run instruction precedes scripts/ existing (LOW)
 
-### [ ] [score 7.0] Onboarding's mobile viewport needs its own narrow-width layout pass, not desktop CSS stretched thin
+### [ ] [score 7.5] Onboarding's mobile viewport needs its own narrow-width layout pass, not desktop CSS stretched thin
 - proposed: 2026-11-12 (expand)
+- filed score: 7.0
 - kind: product
 - source signals: signal F (product telemetry — the GUI as its
   users meet it, surfaced via `plan/CRITIQUE.md`'s walk rows,
@@ -738,6 +739,8 @@
   ~390px without widening every star.
 - estimated chunks: 1
 - conflicts: none known — CSS/JSX only, no template API surface.
+- re-evidence:
+  - 2026-11-17 · F 3f5fc6a · independent, +0.5 · pass 36's /inbox mobile walk finding (Oversight filter row clips with no scroll affordance, controls.jsx's ChoiceButtons) is a third instance of the same no-narrow-viewport-handling root cause this row already names (Welcome headline, Stepper), confirming the pattern recurs outside the two components already scoped
 
 ### [ ] [score 5.8] Widen (or exempt) the dualshell syntax lint past its five git-procedure skills
 - proposed: 2026-11-12 (expand)
