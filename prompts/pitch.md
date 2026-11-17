@@ -67,7 +67,9 @@ End-state:
 
 Standing rules:
   - Commit and push as a single atomic act per logical chunk.
-  - No Co-Authored-By trailers, no emojis.
+  - No Co-Authored-By trailers, no emojis. If your harness
+    auto-appends one of these by default, strip it before every
+    commit — this rule overrides that convention here.
   - No --no-verify, no force-push.
 
 Estimated time: 60-90 minutes total, agent-paced for Phase B

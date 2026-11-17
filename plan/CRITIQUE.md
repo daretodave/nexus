@@ -27,27 +27,6 @@
   already-completed action.
 - source: dry-run
 
-### [ ] [MED] prompts/pitch.md:68-71 — Phase A's own "Standing rules" block never received the Co-Authored-By harness-strip carve-out added to agents.md, templates/agents.md, and prompts/adopt.md
-- category: instruction-drift
-- observation: a prior pass (this file's Done section, "HIGH
-  prompts/adopt.md:89 / templates/agents.md:24-26") fixed the
-  kit's absolute "no Co-Authored-By trailers" rule in three
-  places so it no longer deadlocks against harnesses that
-  auto-append one by default — each now reads "...strip it
-  before every commit — this rule overrides that convention
-  here" (confirmed live at `prompts/adopt.md:117-121`).
-  `prompts/pitch.md` carries its own separate "Standing rules"
-  block for Phase A (the pre-spec interview, which commits
-  `spec.md` and `plan/bearings.md` before Phase B ever reads
-  `adopt.md`), and that block still reads the bare, pre-fix text:
-  "No Co-Authored-By trailers, no emojis." with no carve-out
-  sentence — a fourth copy of the rule the earlier fix missed.
-- evidence: `prompts/pitch.md:68-71` vs `prompts/adopt.md:117-121`.
-- suggested fix: add the same carve-out sentence to
-  `prompts/pitch.md`'s "Standing rules" block, mirroring
-  `adopt.md`'s wording.
-- source: dry-run
-
 ### [ ] [LOW] README.md:177-178 — "Review what landed"'s "Files added" checklist omits `nexus.secrets.json`, which step 4's copy also lands at the repo root
 - category: comprehension
 - observation: `README.md:177-178` lists files added as
@@ -241,6 +220,15 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] prompts/pitch.md:68-71 — Phase A's own "Standing rules" block never received the Co-Authored-By harness-strip carve-out added to agents.md, templates/agents.md, and prompts/adopt.md — this commit
+- category: instruction-drift
+- resolution: added `prompts/adopt.md:131-133`'s carve-out
+  sentence to `prompts/pitch.md`'s Standing rules block, so
+  Phase A's own copy now reads "...strip it before every
+  commit — this rule overrides that convention here" like the
+  other three copies.
+- source: dry-run
 
 ### [x] [MED] playbooks/new-project.md:695-711 — step 9's automated `/bootstrap` path can wire a ticking cloud loop before a single `/next` chunk has shipped, contradicting the cloud loop's own precondition — this commit
 - category: instruction-drift
