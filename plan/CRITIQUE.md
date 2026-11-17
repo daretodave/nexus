@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-16
-> Pass count: 35
+> Last pass: 2026-11-17
+> Pass count: 36
 
 ## Pending
 
@@ -218,6 +218,72 @@
   parenthetical, so the pitch-flow summary matches what adopt.md
   actually asks.
 - source: dry-run
+
+### [ ] [HIGH] templates/README.md:373-384 — "Reference implementations" section points adopters at real projects README.md's Provenance section fully anonymizes
+- category: comprehension
+- observation: templates/README.md's "Reference
+  implementations" section tells adopters "If you're building
+  something close to one of these shapes, copy that project's
+  `skills/`, `plan/`, `.claude/` and adapt names — faster than
+  starting from these templates," pointing at "the real
+  projects in the root README's Provenance section." But
+  README.md's Provenance section (an editorial content hub, a
+  data-heavy site, a database service) never names, links, or
+  paths any of them — it's deliberately anonymized. A stranger
+  following this explicit instruction hits a dead end with no
+  way to locate what to copy.
+- evidence: `templates/README.md:373-384` vs `README.md:427-439`;
+  `grep -rn "data-heavy\|editorial content\|database service"`
+  across the repo finds only the anonymized prose, no pointer to
+  an actual repo.
+- suggested fix: either drop the "Reference implementations"
+  section (it's supplementary, not required for the TL;DR path)
+  or note explicitly that the references are private/internal
+  and not something an external adopter can actually reach.
+- source: dry-run
+
+### [ ] [MED] templates/README.md:261,273 — "replace all eight" undercounts the adjacent 9-row placeholder table
+- category: instruction-drift
+- observation: the placeholder table immediately above
+  (`templates/README.md:250-258`) lists nine placeholders
+  (`<PROJECT>` through `<PACKAGE_MANAGER>`), and
+  `playbooks/new-project.md:384` correctly says "replaces all
+  nine." But `templates/README.md` says "eight" twice — "replace
+  all eight in one pass" (line 261) and "copied separately from
+  the eight above" (line 273) — the same off-by-one the kit
+  already fixed once in `README.md:379` (this file's Done
+  section, "all 8 placeholders" is stale), now surviving in a
+  second file.
+- evidence: `templates/README.md:261`, `templates/README.md:273`
+  vs the 9-row table at `templates/README.md:250-258` and
+  `playbooks/new-project.md:384`.
+- suggested fix: change both "eight" occurrences in
+  `templates/README.md` to "nine".
+- source: dry-run
+
+### [ ] [MED] /inbox @ mobile (plain-folder) — the Oversight filter row clips its last option off-screen with no scroll affordance
+- category: ui-comprehension
+- observation: on a phone-width viewport, the Oversight filter
+  row ("All 0 / Waiting now 0 / Parked 0 / In the plan 0 / Cloud
+  runs 0") is cut off mid-word ("Cloud ru…") at the right edge,
+  with no visible scroll hint, so the last filter's label is
+  unreadable and its tap target is partially off-screen.
+- evidence: `plain-folder--mobile--inbox.png` (this tick's `npm
+  --prefix packages/cli run walk`,
+  `.scratch/walk/critique-2026-11-17T23-09-24-151Z/`).
+  `packages/cli/src/ui/controls.jsx`'s `ChoiceButtons` renders a
+  `.choice` row of buttons; `packages/cli/src/styles/nexus.css`'s
+  `.choice` and `.choice button` rules use `white-space: nowrap`
+  with no `overflow-x`, while the ancestor `.view` sets
+  `overflow: hidden`, so the overflowing row clips outright
+  instead of scrolling.
+- suggested fix: add `overflow-x: auto;
+  -webkit-overflow-scrolling: touch;` to `.choice` in
+  `packages/cli/src/styles/nexus.css` (or wrap it in a scrollable
+  container) so all five filters stay reachable by horizontal
+  swipe on narrow viewports. Layout only — no change to color,
+  particles, or motion.
+- source: walk
 
 ## Done
 
