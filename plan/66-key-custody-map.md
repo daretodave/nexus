@@ -65,28 +65,6 @@ fine-grained PAT mid-run (the exact failure class
   settings UI — the same open fact spec 65's A2 already
   needs), proving the shape before it ships to adopters.
 
-**Resolved by this chunking session** (the Open questions
-below): a separate index, not new manifest fields —
-`nexus.secrets.json`'s shape, `plan-check.mjs`'s manifest gate
-(`checkPlan`'s `secrets` check only matches a chunk's
-`secrets:` name against the manifest's name set; it never
-reads `Expires` or `Rotate via`) and every existing manifest
-reader stay byte-for-byte unchanged. The index is two files,
-one per audience: `templates/setup/00_keys.md` (adopters,
-in `00_files.md`'s table style, keyed by the manifest's
-`name`) and `identity/key-custody.md` (the kit's own —
-`identity/` is kit-internal, never copied, so this carries no
-template-API weight). `customization/secrets.md` gets a new
-"Key custody" section naming the split and linking both. The
-lint is `scripts/keys-audit.mjs` + `templates/scripts/
-keys-audit.mjs` (not opt-in — folded into the existing
-`secrets` leg of `node scripts/verify.mjs` for the kit's own
-table, and a new checklist line in `customization/secrets.md`
-for the adopter template's). `/bootstrap rotate` does not
-exist yet, and no Acceptance bullet below names it, so
-reading `Mirrored to` as a rotation's propagation list is
-deferred — a candidate for `/expand`, not this spec's chunks.
-
 ## Acceptance
 
 - **A1** A per-credential custody table exists, listing every
@@ -111,48 +89,18 @@ deferred — a candidate for `/expand`, not this spec's chunks.
 
 ## Open questions
 
-(None — both resolved by this chunking session; see
-Design's "Resolved by this chunking session" paragraph.)
+- Whether `Expires` and `Rotate via` land as new
+  `nexus.secrets.json` fields or a sibling `00_keys.md` index
+  is deliberately left to the first chunking session — it
+  needs a read of `scripts/plan/secrets-manifest.mjs`'s shape
+  checker and `plan-check.mjs`'s manifest gate before either
+  answer is safe to commit to.
+- Whether `/bootstrap rotate` already exists is unconfirmed
+  as of this spec's promotion; if it doesn't yet, this spec
+  scopes a minimal version rather than inventing the whole
+  command.
 
 ## Chunks
 Measure: 5 open · 0 closed · next A6
 
-- [ ] **66.1** Key custody index: `templates/setup/00_keys.md`
-  (adopters) + `identity/key-custody.md` (the kit's own) +
-  `customization/secrets.md`'s "Key custody" section · M ·
-  closes A1, A2 · needs —
-  - Columns: Key, Holder file, Minted by, Scopes, Mirrored to,
-    Expires, Rotate via — values never appear, matching the
-    manifest's own "names, never values" rule.
-  - `templates/README.md`'s tree gains the new file in the
-    same commit (`agents.md` rule 7: a new `templates/` path
-    is public API).
-  - `identity/key-custody.md` is seeded with placeholder rows
-    for the kit's own three operational secrets; 66.4 fills
-    them for real.
-- [ ] **66.2** `scripts/keys-audit.mjs` + `templates/scripts/
-  keys-audit.mjs`: pure-string lint flags orphan, ghost and
-  ambiguous custody rows against the manifest's names · M ·
-  closes A3 · needs 66.1
-  - Reads `nexus.secrets.json`'s names via `scripts/plan/
-    secrets-manifest.mjs`'s `readManifest`; wired into `node
-    scripts/verify.mjs`'s existing `secrets` leg (the kit's
-    own table) and a new checklist line in
-    `customization/secrets.md` (the adopter template script).
-- [ ] **66.3** `playbooks/hands-off.md`'s pre-flight checks
-  the custody table's `Expires` column against the
-  unattended window's end time, and refuses to start past it
-  · S · closes A4 · needs 66.1
-- [ ] **66.4** The kit's own three operational secrets carry
-  real custody rows in `identity/key-custody.md` · S ·
-  closes A5 · needs 66.1
-  - Owner-only fact: `ACTIONS_PAT`'s real expiry reads from
-    GitHub's token settings UI, not reachable from an
-    automated session — fill every other row and column, mark
-    `Expires: unconfirmed` for it, and file the ask the way
-    spec 65's A2 does (a `[needs-user-call]` row in
-    `plan/AUDIT.md`, or `node scripts/secrets.mjs request`).
-    `GH_TOKEN` (`gh auth login`'s own token) and
-    `CLAUDE_CODE_OAUTH_TOKEN` (the loop's sign-in, not a
-    project secret per `nexus.secrets.json`'s own `about`
-    line) carry no fixed expiry to confirm.
+Not chunked yet.

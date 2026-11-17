@@ -33,7 +33,7 @@ line goes; each line is a lock that times out, so it carries
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 65 | Workflow-push credential gap: test the fix, stop re-discovering it | [65-workflow-push-credential-gap.md](65-workflow-push-credential-gap.md) | planned | 0 of 1 chunks |
-| 66 | Key custody map + hermetic keys lint | [66-key-custody-map.md](66-key-custody-map.md) | planned | 0 of 4 chunks |
+| 66 | Key custody map + hermetic keys lint | [66-key-custody-map.md](66-key-custody-map.md) | planned | not chunked yet |
 | 67 | Package nexus as a Claude Code plugin | [67-claude-code-plugin.md](67-claude-code-plugin.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
