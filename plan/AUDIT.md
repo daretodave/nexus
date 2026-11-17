@@ -108,16 +108,15 @@
 - next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
 - generator: motion · filed 2026-11-17
 
-### [mirror #114] [MED] "prompts/pitch.md's Standing rules block missing the Co-Authored-By carve-out" — mirrored issue with no plan row
-- category: docs
-- impact: 6
-- ease: 5
-- evidence: issue #114 (loop:opened, source:audit, severity:med) opened 2026-11-17 by /iterate's mirror; no row in plan/AUDIT.md, plan/CANDIDATES.md or plan/CRITIQUE.md names it, so no pass would see it.
-- issue: #114
-- next: /iterate picks it like any row; if already fixed on main, close #114 citing the commit
-- generator: mirror-orphan · filed 2026-11-17
-
 ## Done
+
+### [x] [mirror #114] [MED] "prompts/pitch.md's Standing rules block missing the attribution-trailer carve-out" — closed 2026-11-17, already fixed by 4500253
+- category: docs
+- fix: none needed this tick — 4500253 (the prior tick) already
+  added the carve-out sentence to prompts/pitch.md's Standing
+  rules block, before #114's mirror-orphan row even landed in
+  this file. Closed #114 citing that commit.
+- source: generator: mirror-orphan · filed 2026-11-17
 
 ### [x] [MED] playbooks/new-project.md:695-711 — step 9's automated `/bootstrap` path can wire a ticking cloud loop before a single `/next` chunk has shipped, contradicting the cloud loop's own precondition — this commit
 - category: instruction-drift
