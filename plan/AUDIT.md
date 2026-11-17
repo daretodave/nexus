@@ -108,6 +108,28 @@
 - next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
 - generator: motion · filed 2026-11-17
 
+### [user-issue #115] [MED] night.yml is missing the touch .owner step march.yml has
+- category: external-issue
+- evidence: opened 2026-11-17, reported during a `/digest` cloud
+  tick. `.github/workflows/march.yml` has an explicit `touch
+  .owner` step (around line 231-236) so its checkout reports
+  owner mode and the tick can push main directly (`agents.md`
+  Standing rule 1). `.github/workflows/night.yml` runs on the
+  same `ACTIONS_PAT` checkout and is documented
+  (`skills/digest.md`) to land the same way, but has no
+  matching step — `npm run claims -- whoami` in that checkout
+  currently reports `contributor`. The pre-push hook isn't
+  armed in CI so tonight's push wasn't blocked, but it is a
+  latent gap: an armed hook, or any script branching on
+  `claims.mjs whoami` the way `skills/next/land.md` already
+  does, would get night.yml's push rejected.
+- next: a local `/oversight` session adds the same `touch
+  .owner` step to `night.yml`'s job, mirroring `march.yml` — a
+  `.github/workflows/` edit, so it needs a human token
+  (`agents.md` Operational secrets: the Claude Code Action's
+  own installation token overrides `ACTIONS_PAT` for
+  workflow-file pushes specifically).
+
 ## Done
 
 ### [x] [mirror #114] [MED] "prompts/pitch.md's Standing rules block missing the attribution-trailer carve-out" — closed 2026-11-17, already fixed by 4500253
