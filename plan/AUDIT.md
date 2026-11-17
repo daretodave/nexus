@@ -100,6 +100,14 @@
   needs a human token), syncing `nudge.yml`'s pair at the same
   time so the twin check stays green.
 
+### [loop] [HIGH] motion stalled in 2026-W46: 20 shipped against a 4-week baseline of 159.5
+- category: loop
+- impact: 8
+- ease: 5
+- evidence: node scripts/pulse.mjs --motion: shipped 20 / baseline 159.5 · 2026-W46 against 2026-W42..2026-W45 (6 so far in 2026-W47); floor 79.75 · stalled (20 is under 50% of the baseline).
+- next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
+- generator: motion · filed 2026-11-17
+
 ## Done
 
 ### [x] [MED] playbooks/new-project.md:695-711 — step 9's automated `/bootstrap` path can wire a ticking cloud loop before a single `/next` chunk has shipped, contradicting the cloud loop's own precondition — this commit
