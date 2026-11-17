@@ -9,6 +9,9 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/README.md: "replace all eight" fixed to "nine" in
+  two spots — the placeholder table above it lists nine rows
+  (2026-11-17, this commit).
 - templates/README.md: dropped the "Reference implementations"
   section — it pointed adopters at "the real projects" in the
   root README's Provenance section, which deliberately

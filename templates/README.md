@@ -258,7 +258,7 @@ After copying, search-and-replace across the new files:
 | `<PACKAGE_MANAGER>` | Package manager CLI | `pnpm` (or `npm`, `yarn`) |
 
 For the full bash and PowerShell one-liners that replace all
-eight in one pass, see
+nine in one pass, see
 [`playbooks/new-project.md`](../playbooks/new-project.md) §4 —
 copy-paste from there rather than hand-rolling a partial
 version here.
@@ -270,7 +270,7 @@ and `<SPEC_M>`: the numbers of the specs that touch a service
 
 ### Workspace placeholders (adopt-by-need)
 
-`workspace/` is copied separately from the eight above — see
+`workspace/` is copied separately from the nine above — see
 [`playbooks/workspace.md`](../playbooks/workspace.md) for the
 replace step.
 

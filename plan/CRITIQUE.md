@@ -219,25 +219,6 @@
   actually asks.
 - source: dry-run
 
-### [ ] [MED] templates/README.md:261,273 — "replace all eight" undercounts the adjacent 9-row placeholder table
-- category: instruction-drift
-- observation: the placeholder table immediately above
-  (`templates/README.md:250-258`) lists nine placeholders
-  (`<PROJECT>` through `<PACKAGE_MANAGER>`), and
-  `playbooks/new-project.md:384` correctly says "replaces all
-  nine." But `templates/README.md` says "eight" twice — "replace
-  all eight in one pass" (line 261) and "copied separately from
-  the eight above" (line 273) — the same off-by-one the kit
-  already fixed once in `README.md:379` (this file's Done
-  section, "all 8 placeholders" is stale), now surviving in a
-  second file.
-- evidence: `templates/README.md:261`, `templates/README.md:273`
-  vs the 9-row table at `templates/README.md:250-258` and
-  `playbooks/new-project.md:384`.
-- suggested fix: change both "eight" occurrences in
-  `templates/README.md` to "nine".
-- source: dry-run
-
 ### [ ] [MED] /inbox @ mobile (plain-folder) — the Oversight filter row clips its last option off-screen with no scroll affordance
 - category: ui-comprehension
 - observation: on a phone-width viewport, the Oversight filter
@@ -263,6 +244,14 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] templates/README.md:261,273 — "replace all eight" undercounts the adjacent 9-row placeholder table — this commit
+- category: instruction-drift
+- resolution: changed both "eight" occurrences in
+  `templates/README.md` (the one-liner intro and the
+  workspace-placeholders note) to "nine", matching the 9-row
+  table above and `playbooks/new-project.md:384`'s own count.
+- source: dry-run
 
 ### [x] [HIGH] templates/README.md:373-384 — "Reference implementations" section points adopters at real projects README.md's Provenance section fully anonymizes — this commit
 - category: comprehension
