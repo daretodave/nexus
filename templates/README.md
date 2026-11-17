@@ -369,16 +369,3 @@ skill. When the project needs taste calls (mood, accent,
 wordmark treatment), the user runs `/oversight` — that's
 already the user-in-the-loop exception (`/bootstrap` carries
 the only other one, for provisioning), and it's plenty.
-
-## Reference implementations
-
-The real projects in the root README's
-[Provenance](../README.md#provenance) section (an editorial
-content site on Next.js + MDX-in-repo + JSON-as-DB, and a
-data-heavy site with weekly automation) are reference
-implementations you can copy from instead of (or alongside)
-these templates.
-
-If you're building something close to one of these shapes, copy
-that project's `skills/`, `plan/`, `.claude/` and adapt names —
-faster than starting from these templates.

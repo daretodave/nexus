@@ -9,6 +9,11 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/README.md: dropped the "Reference implementations"
+  section — it pointed adopters at "the real projects" in the
+  root README's Provenance section, which deliberately
+  anonymizes every one of them, so the instruction was a dead
+  end (2026-11-17, this commit).
 - templates/scripts/plan/settle.mjs: `setLeft()` now also
   rewrites a roadmap row written in "N of M chunks" shape (not
   just "N left") after a close, so a spec chunked in that format

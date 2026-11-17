@@ -219,29 +219,6 @@
   actually asks.
 - source: dry-run
 
-### [ ] [HIGH] templates/README.md:373-384 — "Reference implementations" section points adopters at real projects README.md's Provenance section fully anonymizes
-- category: comprehension
-- observation: templates/README.md's "Reference
-  implementations" section tells adopters "If you're building
-  something close to one of these shapes, copy that project's
-  `skills/`, `plan/`, `.claude/` and adapt names — faster than
-  starting from these templates," pointing at "the real
-  projects in the root README's Provenance section." But
-  README.md's Provenance section (an editorial content hub, a
-  data-heavy site, a database service) never names, links, or
-  paths any of them — it's deliberately anonymized. A stranger
-  following this explicit instruction hits a dead end with no
-  way to locate what to copy.
-- evidence: `templates/README.md:373-384` vs `README.md:427-439`;
-  `grep -rn "data-heavy\|editorial content\|database service"`
-  across the repo finds only the anonymized prose, no pointer to
-  an actual repo.
-- suggested fix: either drop the "Reference implementations"
-  section (it's supplementary, not required for the TL;DR path)
-  or note explicitly that the references are private/internal
-  and not something an external adopter can actually reach.
-- source: dry-run
-
 ### [ ] [MED] templates/README.md:261,273 — "replace all eight" undercounts the adjacent 9-row placeholder table
 - category: instruction-drift
 - observation: the placeholder table immediately above
@@ -286,6 +263,17 @@
 - source: walk
 
 ## Done
+
+### [x] [HIGH] templates/README.md:373-384 — "Reference implementations" section points adopters at real projects README.md's Provenance section fully anonymizes — this commit
+- category: comprehension
+- resolution: dropped the "Reference implementations" section
+  outright (no other file links its anchor): it told adopters
+  to go copy `skills/`, `plan/`, `.claude/` from "the real
+  projects in the root README's Provenance section," but that
+  section deliberately anonymizes every project (no name, link,
+  or path), so the instruction was a dead end for any external
+  adopter.
+- source: dry-run
 
 ### [x] [MED] prompts/pitch.md:68-71 — Phase A's own "Standing rules" block never received the Co-Authored-By harness-strip carve-out added to agents.md, templates/agents.md, and prompts/adopt.md — this commit
 - category: instruction-drift
