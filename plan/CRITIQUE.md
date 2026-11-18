@@ -169,31 +169,19 @@
   `packages/cli/README.md` and keep the root caption literal.
 - source: dry-run
 
-### [ ] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question
+### [x] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question — this commit
 - category: instruction-drift
-- observation: `prompts/pitch.md`'s Phase B tells the delegated
-  agent it may use `AskUserQuestion` only for adopt.md's "own
-  narrow four-item ask list (hosting provider/token, project
-  name/tagline, URL/API/CLI contract, topology confirmation)"
-  and states "Beyond those four items, AskUserQuestion is not
-  allowed." But `prompts/adopt.md`'s own ask list runs five
-  items, (a) through (e) — the fifth being "(e) the mode: owner
-  ... or contributor ...". An agent that trusts pitch.md's
-  summary instead of re-deriving the count from adopt.md's own
-  text could conclude the owner/contributor question is out of
-  bounds and silently decide it, even though adopt.md lists it
-  as one of the things to ask before the first write.
-- evidence: `prompts/pitch.md:54-58` ("four-item ask list...
-  Beyond those four items, AskUserQuestion is not allowed") vs
-  `prompts/adopt.md:69-80`, whose ask list runs (a) hosting
-  provider/token, (b) name+tagline, (c) URL/API/CLI contract,
-  (d) topology confirmation, (e) owner/contributor mode — five
-  items, not four.
-- suggested fix: update `prompts/pitch.md` to say "five-item ask
-  list" and add the owner/contributor mode confirmation to its
-  parenthetical, so the pitch-flow summary matches what adopt.md
-  actually asks.
+- resolution: `prompts/pitch.md`'s Phase B named adopt.md's ask
+  list as four items (hosting provider/token, project
+  name/tagline, URL/API/CLI contract, topology confirmation),
+  omitting adopt.md's own fifth item, (e) the owner/contributor
+  mode confirmation — risking an agent concluding that question
+  was out of bounds and silently deciding it instead of asking
+  (agents.md rule 8). Changed "four-item" to "five-item", added
+  "owner/contributor mode" to the parenthetical, and "those four
+  items" to "those five items".
 - source: dry-run
+- issue: #118
 
 ### [ ] [MED] /inbox @ mobile (plain-folder) — the Oversight filter row clips its last option off-screen with no scroll affordance
 - category: ui-comprehension

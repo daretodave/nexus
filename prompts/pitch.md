@@ -51,12 +51,12 @@ Phase B — adoption
 
 Once Phase A's commits land, switch to the standard adoption
 prompt: read and follow ../nexus/prompts/adopt.md exactly,
-including its own narrow four-item ask list (hosting
+including its own narrow five-item ask list (hosting
 provider/token, project name/tagline, URL/API/CLI contract,
-topology confirmation) — that list is adopt.md's own
-carve-out, the same class as /oversight's. Beyond those four
-items, AskUserQuestion is not allowed. Decide and document;
-don't ask.
+topology confirmation, owner/contributor mode) — that list is
+adopt.md's own carve-out, the same class as /oversight's.
+Beyond those five items, AskUserQuestion is not allowed.
+Decide and document; don't ask.
 
 End-state:
   - chore: adopt nexus methodology commit landed and pushed
