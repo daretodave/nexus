@@ -5,26 +5,6 @@
 
 ## Pending
 
-### [ ] [LOW] README.md:177-178 — "Review what landed"'s "Files added" checklist omits `nexus.secrets.json`, which step 4's copy also lands at the repo root
-- category: comprehension
-- observation: `README.md:177-178` lists files added as
-  `agents.md`, `CLAUDE.md`, `plan/`, `skills/`, `.claude/`,
-  `scripts/`, `.env.example` — but `playbooks/new-project.md:325`'s
-  step-4 bulk-copy command also lands
-  `templates/env/nexus.secrets.json` as `nexus.secrets.json` at
-  the repo root (a file README's own "What's in this kit" tree
-  documents elsewhere). A stranger diffing the adoption commit
-  against this checklist sees an unlisted new root file. Same bug
-  class as the already-fixed "'Files added' checklist omits
-  CLAUDE.md" entry below — that fix added `CLAUDE.md` but not
-  `nexus.secrets.json`, copied by the same step-4 command even
-  then.
-- evidence: `README.md:177-178` vs `playbooks/new-project.md:325`
-  (`['templates/env/nexus.secrets.json','nexus.secrets.json']`).
-- suggested fix: add `nexus.secrets.json` to the "Files added"
-  list in `README.md:177-178`.
-- source: dry-run
-
 ### [x] [MED] prompts/adopt.md:89 — owner/contributor heuristic errors with no fallback on a repo with no git remote yet — routed to 39.15
 - category: instruction-drift
 - observation: adopt.md's ask-list item (e) computes its
@@ -109,6 +89,17 @@
 - source: dry-run
 
 ## Done
+
+### [x] [LOW] README.md:146-152 — "Review what landed"'s "Files added" checklist omits `nexus.secrets.json`, which step 4's copy also lands at the repo root — this commit
+- category: comprehension
+- resolution: `README.md:146-152`'s files-added list named
+  `agents.md`, `CLAUDE.md`, `plan/`, `skills/`, `.claude/`,
+  `scripts/`, `.env.example` but not `nexus.secrets.json`,
+  which `playbooks/new-project.md:340`'s step-4 bulk-copy
+  command also lands at the repo root. Added
+  `nexus.secrets.json` to the list.
+- source: dry-run
+- issue: #124
 
 ### [x] [MED] / @ desktop (cloud-token) — Fleet session tiles show two unlabeled "Q" phase segments with no legend — this commit
 - category: ui-comprehension
