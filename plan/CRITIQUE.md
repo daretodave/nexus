@@ -186,31 +186,6 @@
   particles, or motion.
 - source: walk
 
-### [ ] [MED] README.md:231 vs README.md:414-416 — `/critique`'s job description contradicts itself within the same file
-- category: instruction-drift
-- observation: the "What you get" table describes `/critique`
-  as "External-observer pass — visit the live site as a
-  stranger, file fresh-eyes findings" — the templated, product
-  version of the skill. The later "nexus runs on nexus" section
-  describes the same command name as "a fresh-eyes agent that
-  walks this README's TL;DR as a stranger and files every
-  friction point" — the kit's own, self-hosted version
-  (`agents.md`'s documented `templates/skills/` vs `skills/`
-  split). Nothing in either passage tells a first-time reader
-  that `/critique` means two different things depending on
-  which repo it runs in, so a stranger meeting the second
-  mention reads it as contradicting the first.
-- evidence: README.md:231 `| /critique | External-observer
-  pass — visit the live site as a stranger, file fresh-eyes
-  findings. |` vs README.md:414-416 "the best skill is
-  `/critique`, a fresh-eyes agent that walks this README's
-  TL;DR as a stranger and files every friction point."
-- suggested fix: in the "nexus runs on nexus" bullet
-  (README.md:414-416), note explicitly that this is the kit's
-  own self-hosted `/critique` (dry-run adoption), distinct from
-  the templated product skill described earlier in the table.
-- source: dry-run
-
 ### [ ] [MED] README.md:41-61 — "Used v1? On v2?" interrupts the first-time-adopter flow
 - category: ordering
 - observation: the upgrade-path section sits between "Is this
@@ -251,6 +226,16 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] README.md:231 vs README.md:414-416 — `/critique`'s job description contradicts itself within the same file — this commit
+- category: instruction-drift
+- resolution: the "nexus runs on nexus" bullet (README.md:414-
+  416) now says explicitly that this `/critique` is this repo's
+  own self-hosted dry-run, not the templated, product version
+  the "What you get" table (README.md:231) describes earlier —
+  so a stranger meeting the second mention reads it as a named
+  distinction instead of a contradiction.
+- source: dry-run
 
 ### [x] [MED] README.md:76-80 — the GUI teaser caption uses "fleet" and "cockpit" before either word is ever defined — this commit
 - category: voice

@@ -411,9 +411,11 @@ project, concretely:
 - **Its own verify gate** — `node scripts/verify.mjs`, fifteen
   hermetic legs; its first run caught five real defects here.
 - **Its own plan and skills** — `plan/README.md` carries the
-  kit's own chunks; the best skill is `/critique`, a
-  fresh-eyes agent that walks this README's TL;DR as a
-  stranger and files every friction point.
+  kit's own chunks; the best skill is `/critique` — not the
+  templated, product version a row above describes (visiting
+  an adopter's live site), but this repo's own self-hosted
+  dry-run: a fresh-eyes agent that walks this README's TL;DR
+  as a stranger and files every friction point.
 - **Its own cloud loops** — `march.yml` ticks four times a
   day, `night.yml` writes a daily briefing, a model-free
   `heartbeat.yml` watches both
