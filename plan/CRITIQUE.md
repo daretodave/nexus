@@ -78,30 +78,6 @@
   guidance.
 - source: dry-run
 
-### [ ] [MED] playbooks/new-project.md:51 — Prerequisites claims GitLab support that nothing else in the kit delivers
-- category: instruction-drift
-- observation: the line reads "A GitHub repo (or GitLab/
-  equivalent) — push to `main` triggers deploy." A repo-wide
-  case-insensitive search for "gitlab" turns up exactly this one
-  line and nothing else — no GitLab CI deploy-gate wiring in
-  `playbooks/ci-providers.md`'s provider matrix, no GitLab
-  equivalent for `owner-mode.md`'s rulesets/`gh api` calls, no
-  GitLab issue support in `/triage`'s `gh`-CLI-based tooling, and
-  the cloud loop (`playbooks/cloud-loop.md`) is GitHub Actions
-  only. An adopter who takes this parenthetical at face value and
-  picks GitLab hits undocumented territory almost immediately
-  after adoption, with no playbook acknowledging the gap.
-- evidence: `grep -rni "gitlab" .` (excluding `.git/`) across the
-  whole repo returns exactly one hit: `playbooks/new-project.md:51`.
-- suggested fix: either drop the "(or GitLab/equivalent)"
-  parenthetical (state the real requirement as "a git host that
-  can push-to-deploy main" without naming a specific unsupported
-  competitor), or add a one-line caveat pointing at
-  `ci-providers.md`'s "Self-hosted" section as the actual
-  GitLab/other-host path, since today nothing names what
-  "equivalent" would mean in practice.
-- source: dry-run
-
 ### [ ] [LOW] playbooks/new-project.md §2 "Hard rules" — install-hooks mentioned before scripts/ exists
 - category: comprehension
 - observation: §2 tells the reader to run `node
@@ -244,6 +220,16 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:51 — Prerequisites claims GitLab support that nothing else in the kit delivers — this commit
+- category: instruction-drift
+- resolution: dropped the "(or GitLab/equivalent)" parenthetical;
+  the line now states the real requirement (a GitHub repo) and a
+  one-line pointer to `ci-providers.md`'s "Self-hosted" section
+  for a non-GitHub deploy target, instead of implying GitLab
+  itself works out of the box.
+- source: dry-run
+- issue: #117
 
 ### [x] [MED] templates/README.md:261,273 — "replace all eight" undercounts the adjacent 9-row placeholder table — this commit
 - category: instruction-drift

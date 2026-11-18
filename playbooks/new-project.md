@@ -48,8 +48,12 @@
   doesn't) **and** add matching `Bash(<manager> <script>:*)`
   entries to `settings.json`'s `allow` list before your first
   unattended tick.
-- A GitHub repo (or GitLab/equivalent) — push to `main`
-  triggers deploy.
+- A GitHub repo — push to `main` triggers deploy. (The cloud
+  loop, `/triage`'s `gh`-CLI tooling and `owner-mode.md`'s
+  rulesets are all GitHub-specific; a self-hosted or non-GitHub
+  deploy target still works, but see
+  `playbooks/ci-providers.md`'s "Self-hosted" section for that
+  narrower path.)
 
 ---
 
