@@ -74,27 +74,6 @@
   §2's hard-rules list.
 - source: dry-run
 
-### [ ] [MED] / @ desktop (cloud-token) — Fleet session tiles show two unlabeled "Q" phase segments with no legend
-- category: ui-comprehension
-- observation: on the Fleet home screen (what a returning,
-  already-onboarded user lands on), each session tile shows a
-  phase track reading "Q · Working · Q" with no hover text or
-  legend. A stranger can't tell the two "Q" segments apart —
-  `phaseItems()` marks two different phases that happen to
-  share the same letter — and the bare label gives no clue
-  which is which.
-- evidence: `cloud-token--desktop--fleet.png` in
-  walk-42516406663 (cloud run artifact); the same unlabeled
-  "Q...Q" track appears on every tile in
-  `fleet-to-tug--desktop--fleet.png` too.
-- suggested fix: in `packages/cli/src/ui/package.jsx`, `MTrack`
-  renders each phase as `<span>{it.label}</span>` with no
-  `title`/`aria-label`. Add a `title` per segment (sourced from
-  `packages/cli/src/screens/fleet/model.js`'s `phaseItems`,
-  which already distinguishes the two `'q'` keys by position)
-  so hovering explains what each Q means.
-- source: walk
-
 ### [ ] [MED] /onboarding/welcome @ mobile (plain-folder) — the 8-star stepper clips mid-sequence on a phone viewport with no "n of N" cue
 - category: ui-comprehension
 - observation: on a phone-width viewport the top stepper (`Welcome,
@@ -161,6 +140,19 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] / @ desktop (cloud-token) — Fleet session tiles show two unlabeled "Q" phase segments with no legend — this commit
+- category: ui-comprehension
+- resolution: `phaseItems()`
+  (`packages/cli/src/screens/fleet/model.js`) now carries a
+  `title` per segment ("Questions" for the first `q`, "Review"
+  for the second, "Working"/"Package" for the rest), and
+  `MTrack` (`packages/cli/src/ui/package.jsx`) renders it as a
+  `title` attribute on both the label and the track mark, so
+  hovering either "Q" on a Fleet tile explains which phase it
+  is.
+- source: walk
+- issue: #122
 
 ### [x] [MED] README.md — "Used v1? On v2?" interrupts the first-time-adopter flow — this commit
 - category: ordering

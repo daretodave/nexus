@@ -26,17 +26,24 @@ const RUNNING = ['live', 'observing', 'resumed'];
 export function phaseItems(s) {
   const keys = s.mode === 'owner' ? ['q', 'w', 'q'] : ['q', 'w', 'q', 'p'];
   const labels = { q: 'Q', w: 'Working', p: 'P' };
+  // Both 'q' segments share the letter label (the tile is too narrow for the full word); the first is the
+  // start-of-chunk questions, the second the end-of-chunk review, so the tooltip tells them apart on hover.
+  const titles = { w: 'Working', p: 'Package' };
   // Only a phase the session reports is drawn as now; an idle session has none running, and a session that reports
   // none lights no segment rather than a made-up one.
   const reported = { questions: 0, working: 1, end: 2, package: 3 }[s.phase] ?? (s.state === 'asking' ? 0 : null);
   const at = s.idle && s.state !== 'asking' ? null : reported;
-  return keys.map((key, i) => ({
-    key,
-    label: labels[key],
-    state: at == null ? (reported != null && i < reported ? 'done' : undefined) : i < at ? 'done' : i === at ? (key === 'q' ? 'ask' : 'now') : undefined,
-    // The working segment fills to the reported progress; with none reported it fills nothing (no fake fraction).
-    p: at != null && i === at && key === 'w' ? (s.progress?.pct != null ? `${Math.round(s.progress.pct)}%` : '0%') : undefined,
-  }));
+  return keys.map((key, i) => {
+    const title = key === 'q' ? (i === 0 ? 'Questions' : 'Review') : titles[key];
+    return {
+      key,
+      label: labels[key],
+      title,
+      state: at == null ? (reported != null && i < reported ? 'done' : undefined) : i < at ? 'done' : i === at ? (key === 'q' ? 'ask' : 'now') : undefined,
+      // The working segment fills to the reported progress; with none reported it fills nothing (no fake fraction).
+      p: at != null && i === at && key === 'w' ? (s.progress?.pct != null ? `${Math.round(s.progress.pct)}%` : '0%') : undefined,
+    };
+  });
 }
 
 /** The ASCII bar: 17 cells for time, one cell per question while asking. */

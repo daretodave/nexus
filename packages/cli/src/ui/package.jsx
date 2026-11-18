@@ -35,13 +35,14 @@ export function Phases({ phases, end, style, label = 'Session phases' }) {
 }
 
 /**
- * .mtrack: the phase track in miniature. items: [{ key: 'q' | 'w' | 'p', label, state: 'done' | 'now' | 'ask', p: '48%' }].
+ * .mtrack: the phase track in miniature. items: [{ key: 'q' | 'w' | 'p', label, title, state: 'done' | 'now' | 'ask', p: '48%' }].
+ * `title` disambiguates the two same-letter 'q' segments (start questions vs. end-of-chunk review) on hover.
  */
 export function MTrack({ items }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div className="mtrack-labels">{items.map((it, i) => <span key={i} className={cx(it.key === 'w' && 'w', (it.state === 'now' || it.state === 'ask') && 'now')}>{it.label}</span>)}</div>
-      <div className="mtrack">{items.map((it, i) => <i key={i} className={cx(it.key === 'w' && 'w', it.state === 'done' && 'done', it.state === 'now' && 'now', it.state === 'ask' && 'ask') || undefined} style={it.state === 'now' && it.p ? { '--p': it.p } : undefined} />)}</div>
+      <div className="mtrack-labels">{items.map((it, i) => <span key={i} title={it.title} className={cx(it.key === 'w' && 'w', (it.state === 'now' || it.state === 'ask') && 'now')}>{it.label}</span>)}</div>
+      <div className="mtrack">{items.map((it, i) => <i key={i} title={it.title} className={cx(it.key === 'w' && 'w', it.state === 'done' && 'done', it.state === 'now' && 'now', it.state === 'ask' && 'ask') || undefined} style={it.state === 'now' && it.p ? { '--p': it.p } : undefined} />)}</div>
     </div>
   );
 }
