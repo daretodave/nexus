@@ -2,7 +2,7 @@
 // heads-down .tui frame. Calm: says what is safe before what broke.
 import { Icon } from './icons.jsx';
 import { cx, NavA } from './controls.jsx';
-import { STEPS } from './steps.js';
+import { STEPS, stepCount } from './steps.js';
 import '../styles/toast-host.css';
 
 /**
@@ -14,6 +14,7 @@ export function Stepper({ steps = STEPS, current, done = [], skipped = [], hrefF
   const lit = (i) => done.includes(steps[i].id) && (done.includes(steps[i + 1]?.id) || steps[i + 1]?.id === current);
   return (
     <nav className="stepper" aria-label={label}>
+      <span className="stp-count" aria-hidden="true">{stepCount(current, steps)}</span>
       <span className="stp-lines" aria-hidden="true">{steps.slice(0, -1).map((s, i) => <i key={s.id} className={lit(i) ? 'lit' : undefined} />)}</span>
       {steps.map((s) => {
         const state = s.id === current ? 'is-current' : skipped.includes(s.id) ? 'is-skipped' : done.includes(s.id) ? 'is-done' : '';

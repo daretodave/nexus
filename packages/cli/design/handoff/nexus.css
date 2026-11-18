@@ -618,6 +618,7 @@ textarea.field { resize: none; }
 .stp-lines { position: absolute; left: 46px; right: 46px; top: 5px; height: 2px; display: flex; }
 .stp-lines i { flex: 1; height: 1px; background: var(--line-2); }
 .stp-lines i.lit { background: linear-gradient(90deg, var(--aurora-cyan), var(--aurora)); box-shadow: 0 0 6px var(--glow); }
+.stp-count { display: none; font-family: var(--font-mono); font-size: 12px; line-height: 16px; color: var(--text-3); font-variant-ligatures: none; }
 
 .ring { --sz: 40px; position: relative; width: var(--sz); height: var(--sz); flex: none; display: grid; place-items: center; }
 .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
@@ -911,6 +912,9 @@ textarea.field { resize: none; }
   .ob-main { padding: 20px; }
   .ob .t-display-l { font-size: 34px; line-height: 40px; }
   .ob-br { display: none; }
+  .stepper { overflow: hidden; }
+  .stp-lines, .stp:not(.is-current) { display: none; }
+  .stp-count { display: block; }
 }
 
 /* --------------------------------------------------------------------------
