@@ -57,29 +57,16 @@
   needs a human token), syncing `nudge.yml`'s pair at the same
   time so the twin check stays green.
 
-### [user-issue #115] [MED] night.yml is missing the touch .owner step march.yml has
-- category: external-issue
-- evidence: opened 2026-11-17, reported during a `/digest` cloud
-  tick. `.github/workflows/march.yml` has an explicit `touch
-  .owner` step (around line 231-236) so its checkout reports
-  owner mode and the tick can push main directly (`agents.md`
-  Standing rule 1). `.github/workflows/night.yml` runs on the
-  same `ACTIONS_PAT` checkout and is documented
-  (`skills/digest.md`) to land the same way, but has no
-  matching step — `npm run claims -- whoami` in that checkout
-  currently reports `contributor`. The pre-push hook isn't
-  armed in CI so tonight's push wasn't blocked, but it is a
-  latent gap: an armed hook, or any script branching on
-  `claims.mjs whoami` the way `skills/next/land.md` already
-  does, would get night.yml's push rejected.
-- next: a local `/oversight` session adds the same `touch
-  .owner` step to `night.yml`'s job, mirroring `march.yml` — a
-  `.github/workflows/` edit, so it needs a human token
-  (`agents.md` Operational secrets: the Claude Code Action's
-  own installation token overrides `ACTIONS_PAT` for
-  workflow-file pushes specifically).
-
 ## Done
+
+### [x] [user-issue #115] [MED] night.yml is missing the touch .owner step march.yml has — closed 2026-11-18
+- category: external-issue
+- resolution: plotted as spec 68 (past `sla_hours` with no
+  Asap line naming it, `skills/march.md` Step 1.5); not built
+  the same tick — chunk 68.1 edits
+  `.github/workflows/night.yml` directly, which no cloud
+  tick's token can push (`agents.md` Operational secrets), so
+  it waits in the Asap lane for a local session.
 
 ### [x] [loop, 4.0] motion stalled in 2026-W46: 20 shipped against a 4-week baseline of 159.5 — closed 2026-11-18, diagnosis only
 - category: loop
