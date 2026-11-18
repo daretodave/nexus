@@ -57,14 +57,6 @@
   needs a human token), syncing `nudge.yml`'s pair at the same
   time so the twin check stays green.
 
-### [loop] [HIGH] motion stalled in 2026-W46: 20 shipped against a 4-week baseline of 159.5
-- category: loop
-- impact: 8
-- ease: 5
-- evidence: node scripts/pulse.mjs --motion: shipped 20 / baseline 159.5 · 2026-W46 against 2026-W42..2026-W45 (6 so far in 2026-W47); floor 79.75 · stalled (20 is under 50% of the baseline).
-- next: /iterate: find what keeps the loop from shipping (no ready chunk, a silted candidates queue, a lock with no fallback) and move it: build the top Pending row, ask /oversight to promote a candidate, or name the plan/bearings.md lever (Motion floor, stall_action, Promote) to retune.
-- generator: motion · filed 2026-11-17
-
 ### [user-issue #115] [MED] night.yml is missing the touch .owner step march.yml has
 - category: external-issue
 - evidence: opened 2026-11-17, reported during a `/digest` cloud
@@ -88,6 +80,39 @@
   workflow-file pushes specifically).
 
 ## Done
+
+### [x] [loop, 4.0] motion stalled in 2026-W46: 20 shipped against a 4-week baseline of 159.5 — closed 2026-11-18, diagnosis only
+- category: loop
+- impact: 8, ease: 5
+- evidence: `node scripts/pulse.mjs --motion`: shipped 20 /
+  baseline 159.5 · 2026-W46 against 2026-W42..2026-W45; floor
+  79.75 · stalled. `git log --since/--until` on W46 (2026-11-09
+  to 2026-11-15) shows 62 total commits but only 20 `feat`/`fix`/
+  `content` ones — the loop ran, it just spent most of the week
+  on housekeeping (`plan`, `docs`, `critique`, `expand`, `audit`
+  verbs never count toward motion). This tick hit the same
+  shape directly: triage clean, critique not due, no ready chunk
+  (spec 65's only chunk is local-session-only; specs 66 and 67
+  are Held behind their veto window), refill/field-research both
+  clean/not-due, expand not due (7 commits/1 day) — every lever
+  this row's `next` names is already accounted for: `node
+  scripts/plan/promote.mjs pick` returns `none: 3
+  auto-promotions in the last 7 days (cap 3)` even though
+  `plan/CANDIDATES.md`'s top row (`[score 6.6]`, proposed
+  2026-09-23, well past `promote_floor`/`promote_after_days`)
+  qualifies — confirming the "silted candidates queue" the
+  `next` field named.
+- fix: no lever change this tick. `promote_per_week` was already
+  bumped 2 → 3 for this exact pattern two days ago (commit
+  `7709737`, 2026-11-16), which is why specs 66/67 are now Held
+  rather than still Pending; their veto window clears
+  2026-11-19 (tomorrow), refilling the spec table. A further
+  bump would repeat that fix without new evidence it's
+  insufficient, and `node scripts/plan/loop-rows.mjs status`
+  reports `ship: wait until 2026-11-23` for any dimension-I-shaped
+  retune regardless. Closing as a diagnosis: the stall is the
+  queue's held specs clearing on schedule, not a new lever gap.
+- generator: motion · filed 2026-11-17
 
 ### [x] [E, 2.1] bash-only syntax ($(...), heredocs, && chaining) survives in skills/ and templates/skills/ outside 52.3's scope — this commit
 - category: adopter friction
