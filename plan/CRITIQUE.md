@@ -5,28 +5,6 @@
 
 ## Pending
 
-### [ ] [MED] playbooks/new-project.md:864-867 — the Day-1 checklist's design-artifact box doesn't map back to a concrete already-completed step
-- category: ordering
-- observation: the "You're ready when" checklist at
-  playbooks/new-project.md:864-867 requires "At least one design
-  artifact (visual system, design tokens, or a
-  `claude-design.prompt.md` for commissioning one) is either
-  committed or has a written brief." None of the playbook's 11
-  numbered steps walks through producing that artifact — the only
-  earlier touchpoint is step 2's "Visual / tonal defaults"
-  subsection (line 152), which just asks for dark-mode/type/
-  palette intent jotted into `bearings.md`. It is never stated
-  whether that jot satisfies the checklist box, so a stranger
-  ticking through the final checklist hits what reads as a new,
-  unaddressed requirement.
-- evidence: playbooks/new-project.md:152-156,864-867
-- suggested fix: add a one-line cross-reference in step 2 ("this
-  also satisfies the Day-1 checklist's design-artifact box — see
-  `customization/visual-system.md` if you want more than a text
-  brief") so the checklist item maps back to a concrete,
-  already-completed action.
-- source: dry-run
-
 ### [ ] [LOW] README.md:177-178 — "Review what landed"'s "Files added" checklist omits `nexus.secrets.json`, which step 4's copy also lands at the repo root
 - category: comprehension
 - observation: `README.md:177-178` lists files added as
@@ -226,6 +204,17 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:864-867 — the Day-1 checklist's design-artifact box doesn't map back to a concrete already-completed step — this commit
+- category: ordering
+- resolution: step 2's "Visual / tonal defaults" subsection now
+  ends with a cross-reference ("This also satisfies the Day-1
+  checklist's design-artifact box below — see
+  `customization/visual-system.md` if you want more than a text
+  brief"), so the checklist item at the end of the playbook maps
+  back to the concrete, already-completed step instead of reading
+  as a new requirement.
+- source: dry-run
 
 ### [x] [MED] README.md:231 vs README.md:414-416 — `/critique`'s job description contradicts itself within the same file — this commit
 - category: instruction-drift

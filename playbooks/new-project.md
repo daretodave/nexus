@@ -157,7 +157,10 @@ For a CLI: list every subcommand.
 
 If you have design exports, point at them. If not, write the
 defaults: dark mode default? type families? palette intent?
-Voice tone (knowledgeable peer / breezy / formal)?
+Voice tone (knowledgeable peer / breezy / formal)? This also
+satisfies the Day-1 checklist's design-artifact box below — see
+[`../customization/visual-system.md`](../customization/visual-system.md)
+if you want more than a text brief.
 
 ### Standing decisions
 
