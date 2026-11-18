@@ -38,29 +38,6 @@ adoption and want to read the methodology first.
 The TL;DR doors ahead are for "I trust the methodology, save
 me the keystrokes." The playbooks are for everyone else.
 
-### Used v1? On v2?
-
-**Used v1?** One command moves a phase-plan repo to specs and
-chunks — a dry run at the repo's root, from a fresh fetch, that
-never touches your checkout (`--land owner` lands it between
-ticks, `--rollback` undoes it):
-
-```bash
-npx @usenexus/cli upgrade            # the report: files, archive lines, the first tick it predicts
-npx @usenexus/cli upgrade --write    # one commit on nexus/upgrade-v2, nothing pushed
-```
-
-**On v2?** The same command syncs to the latest kit (edits
-merged three ways; the GUI flags it with a `nexus <version> is
-out` banner). **No checkout?** `--repo owner/name --pr` runs it
-from a temporary clone and opens a pull request instead.
-
-Runbook: [`playbooks/upgrade.md`](./playbooks/upgrade.md); any
-other agent follows
-[`prompts/upgrade.md`](./prompts/upgrade.md) the same way.
-
----
-
 ## Three doors in
 
 Pick one. Each ends in the same place: your repo adopted, a
@@ -109,6 +86,29 @@ no spec? [Start here](#tldr--i-have-a-pitch-no-spec-yet).
 (brownfield). Not sure which, or starting from a pitch, or
 outgrown one repo? [Pick a playbook](#pick-a-playbook) below
 routes every case — ten minutes to read each.
+
+### Used v1? On v2?
+
+**Used v1?** One command moves a phase-plan repo to specs and
+chunks — a dry run at the repo's root, from a fresh fetch, that
+never touches your checkout (`--land owner` lands it between
+ticks, `--rollback` undoes it):
+
+```bash
+npx @usenexus/cli upgrade            # the report: files, archive lines, the first tick it predicts
+npx @usenexus/cli upgrade --write    # one commit on nexus/upgrade-v2, nothing pushed
+```
+
+**On v2?** The same command syncs to the latest kit (edits
+merged three ways; the GUI flags it with a `nexus <version> is
+out` banner). **No checkout?** `--repo owner/name --pr` runs it
+from a temporary clone and opens a pull request instead.
+
+Runbook: [`playbooks/upgrade.md`](./playbooks/upgrade.md); any
+other agent follows
+[`prompts/upgrade.md`](./prompts/upgrade.md) the same way.
+
+---
 
 ## TL;DR — clone + delegate the adoption
 

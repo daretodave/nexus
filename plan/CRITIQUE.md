@@ -164,25 +164,6 @@
   particles, or motion.
 - source: walk
 
-### [ ] [MED] README.md:41-61 — "Used v1? On v2?" interrupts the first-time-adopter flow
-- category: ordering
-- observation: the upgrade-path section sits between "Is this
-  for you?" (relevant to every reader) and "Three doors in"
-  (the actual entry point for a first-time adopter). A
-  brand-new adopter — the majority case the TL;DR below is
-  written for — has no v1 to upgrade from, and must read
-  through CLI flags (`--land owner`, `--rollback`, `--repo
-  owner/name --pr`) and three-way-merge banner language that
-  applies to nobody reading the kit for the first time, before
-  reaching the section that actually applies to them.
-- evidence: README.md:41 `### Used v1? On v2?` placed directly
-  before README.md:64 `## Three doors in`.
-- suggested fix: move the "Used v1? On v2?" block below "Three
-  doors in" / "Pick a playbook" (or fold it into a
-  collapsible/details block) so new adopters aren't forced past
-  upgrade-only content to reach their starting door.
-- source: dry-run
-
 ### [ ] [LOW] README.md:480 — `/lessons-pr` is referenced with no prior definition anywhere in README.md
 - category: comprehension
 - observation: Hard Rule 6 name-drops `/lessons-pr` ("planning
@@ -204,6 +185,21 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] README.md — "Used v1? On v2?" interrupts the first-time-adopter flow — this commit
+- category: ordering
+- resolution: moved the "Used v1? On v2?" subsection out from
+  between "Is this for you?" and "Three doors in" (where every
+  first-time adopter had to read through upgrade-only CLI flags
+  and banner language before reaching their actual entry point)
+  to the end of "Three doors in", right before the TL;DR
+  sections — so a brand-new adopter reaches door 1/2/3 first,
+  and the v1/v2 upgrade path stays one scroll away for anyone
+  who needs it. The heading text (and its `#used-v1-on-v2`
+  anchor) is unchanged, so `prompts/README.md` and
+  `prompts/upgrade.md`'s existing links still resolve.
+- source: dry-run
+- issue: #120
 
 ### [x] [MED] playbooks/new-project.md:864-867 — the Day-1 checklist's design-artifact box doesn't map back to a concrete already-completed step — this commit
 - category: ordering
