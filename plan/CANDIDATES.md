@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-11-17
-> Pass count: 27
+> Last pass: 2026-11-18
+> Pass count: 28
 > Posture: bold
 > Last field research: 2026-11-13
 
@@ -703,45 +703,6 @@
 - re-evidence:
   - 2026-11-12 · B · same source, +0 · three more independent CRITIQUE rows in the same playbook: prune-list test breakage (cadence.test.mjs imports bootstrap.mjs, never added to the rm list, HIGH missing-file), files-added checklist omits nexus.secrets.json (LOW), install-hooks run instruction precedes scripts/ existing (LOW)
 
-### [ ] [score 7.5] Onboarding's mobile viewport needs its own narrow-width layout pass, not desktop CSS stretched thin
-- proposed: 2026-11-12 (expand)
-- filed score: 7.0
-- kind: product
-- source signals: signal F (product telemetry — the GUI as its
-  users meet it, surfaced via `plan/CRITIQUE.md`'s walk rows,
-  `walk-42516406663`) — two independent findings against the
-  same onboarding Welcome screen on a phone viewport: a [HIGH]
-  row where the hero headline's hard-coded `<br/>` breaks
-  (`packages/cli/src/screens/onboarding/Welcome.jsx`) consume the
-  entire first screen at full desktop font size, pushing the
-  primary "Set up this repo" CTA and loop diagram below the fold
-  with only "Skip setup" visible; and a [MED] row where the
-  8-star stepper (`packages/cli/src/ui/feedback.jsx`'s `Stepper`,
-  each `.stp` a fixed 92px in `nexus.css`) clips to its first 4
-  stars with no wrap, scroll cue, or "n of N" counter, unlike its
-  desktop rendering (which keeps the full row plus a footer "1 of
-  8"). Both trace to the same root: `nexus.css`'s onboarding rules
-  (`.ob .t-display-l`, `.stepper`) carry a `(max-height: 820px)`
-  breakpoint but no narrow-*width* one, so the component only
-  ever assumes the "1280 x 800 without scrolling" viewport the
-  file's own section comment names.
-- rationale: this is a stranger's literal first screen — burying
-  the CTA or hiding half the setup steps on the one viewport
-  (phone-width) the README's own GIFs never show is adopter-facing
-  in the sharpest way, and both fixes are confined to CSS/JSX the
-  rows already name a line for, not new plumbing.
-- proposed scope: add a narrow-viewport breakpoint to
-  `packages/cli/src/styles/nexus.css` for `.ob .t-display-l` (let
-  the headline wrap naturally, or drop/condition `Welcome.jsx`'s
-  hard-coded `<br/>`s) and for `.stepper` (an `overflow-x: auto`
-  scroll strip with a fade/arrow, or collapse to the footer's
-  existing "n of N" text) so both screens stay legible under
-  ~390px without widening every star.
-- estimated chunks: 1
-- conflicts: none known — CSS/JSX only, no template API surface.
-- re-evidence:
-  - 2026-11-17 · F 3f5fc6a · independent, +0.5 · pass 36's /inbox mobile walk finding (Oversight filter row clips with no scroll affordance, controls.jsx's ChoiceButtons) is a third instance of the same no-narrow-viewport-handling root cause this row already names (Welcome headline, Stepper), confirming the pattern recurs outside the two components already scoped
-
 ### [ ] [score 6.0] autonomous build loops are now named for failure modes: self-approval, spec gaming, misrepresented…
 - proposed: 2026-11-13 (research)
 - source signals: field (2026-11-13): a survey of many autonomous coding loops names recurring anti-patterns: a loop approving its own work with no outside check, gaming the stated goal instead of the intended one, and a loop's own repor…
@@ -1148,6 +1109,52 @@
 ## Rejected
 
 (kept for the record, with reasons)
+
+### [rejected 2026-11-18] [score 7.5] Onboarding's mobile viewport needs its own narrow-width layout pass, not desktop CSS stretched thin
+- reason: built directly, ad hoc, no spec needed — all three
+  named components now carry a narrow-viewport fix: the Welcome
+  headline (`a36935f`, `.ob-br { display: none; }` plus `.ob
+  .t-display-l` under `@media (max-width: 760px)`), the onboarding
+  Stepper (`da4d724`, `.stp-count`), and the Oversight filter row
+  this row's own 2026-11-17 re-evidence cited (`00b0a69`,
+  `.choice` `overflow-x: auto`). `nexus.css`'s `@media
+  (max-width: 760px)` block now covers every one of them.
+- proposed: 2026-11-12 (expand)
+- kind: product
+- source signals: signal F (product telemetry — the GUI as its
+  users meet it, surfaced via `plan/CRITIQUE.md`'s walk rows,
+  `walk-42516406663`) — two independent findings against the
+  same onboarding Welcome screen on a phone viewport: a [HIGH]
+  row where the hero headline's hard-coded `<br/>` breaks
+  (`packages/cli/src/screens/onboarding/Welcome.jsx`) consume the
+  entire first screen at full desktop font size, pushing the
+  primary "Set up this repo" CTA and loop diagram below the fold
+  with only "Skip setup" visible; and a [MED] row where the
+  8-star stepper (`packages/cli/src/ui/feedback.jsx`'s `Stepper`,
+  each `.stp` a fixed 92px in `nexus.css`) clips to its first 4
+  stars with no wrap, scroll cue, or "n of N" counter, unlike its
+  desktop rendering (which keeps the full row plus a footer "1 of
+  8"). Both trace to the same root: `nexus.css`'s onboarding rules
+  (`.ob .t-display-l`, `.stepper`) carry a `(max-height: 820px)`
+  breakpoint but no narrow-*width* one, so the component only
+  ever assumes the "1280 x 800 without scrolling" viewport the
+  file's own section comment names.
+- rationale: this is a stranger's literal first screen — burying
+  the CTA or hiding half the setup steps on the one viewport
+  (phone-width) the README's own GIFs never show is adopter-facing
+  in the sharpest way, and both fixes are confined to CSS/JSX the
+  rows already name a line for, not new plumbing.
+- proposed scope: add a narrow-viewport breakpoint to
+  `packages/cli/src/styles/nexus.css` for `.ob .t-display-l` (let
+  the headline wrap naturally, or drop/condition `Welcome.jsx`'s
+  hard-coded `<br/>`s) and for `.stepper` (an `overflow-x: auto`
+  scroll strip with a fade/arrow, or collapse to the footer's
+  existing "n of N" text) so both screens stay legible under
+  ~390px without widening every star.
+- estimated chunks: 1
+- conflicts: none known — CSS/JSX only, no template API surface.
+- re-evidence:
+  - 2026-11-17 · F 3f5fc6a · independent, +0.5 · pass 36's /inbox mobile walk finding (Oversight filter row clips with no scroll affordance, controls.jsx's ChoiceButtons) is a third instance of the same no-narrow-viewport-handling root cause this row already names (Welcome headline, Stepper), confirming the pattern recurs outside the two components already scoped
 
 ### [rejected 2026-11-17] [score 5.8] Widen (or exempt) the dualshell syntax lint past its five git-procedure skills
 - reason: built directly via `/iterate` (`plan/AUDIT.md`'s
