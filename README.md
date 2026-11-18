@@ -76,6 +76,7 @@ Run it at your project's root — local server, your own Claude
 Code login (no API key), adopts nexus if new, a live cockpit
 per session ([`packages/cli`](./packages/cli/README.md));
 scripts use `npx @usenexus/cli run "<prompt>"`, JSON out.
+Fleet is the session list; cockpit is one session's live view.
 
 ![The nexus GUI in seven seconds: four star-named sessions breathe on the fleet; a click flies into vega's cockpit; vega asks how to break ties on points, the stage hushes and the question pulls into the conversation; the owner picks goal difference; the stage wakes, chunk 12.4 lands on main and drops into the shipped river, and vega claims 12.5](./assets/gifs/fleet-to-tug.gif)
 

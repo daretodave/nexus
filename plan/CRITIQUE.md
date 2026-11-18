@@ -148,27 +148,6 @@
   so the full step count is legible without widening every star.
 - source: walk
 
-### [ ] [MED] README.md:76-80 — the GUI teaser caption uses "fleet" and "cockpit" before either word is ever defined
-- category: voice
-- observation: the first vivid description of the product a
-  stranger reads is the "Three doors in" GIF caption: "four
-  star-named sessions breathe on the fleet; a click flies into
-  vega's cockpit; ...". "Fleet" and "cockpit" are real screen
-  names in the GUI (confirmed in this tick's walk screenshots:
-  the sidebar literally has "Fleet" and "Cockpit" nav items),
-  but nothing earlier in README.md defines either term — a
-  reader meeting the kit cold hits unexplained jargon at exactly
-  the point where they're deciding whether to trust Door 1.
-- evidence: `README.md:76` ("a live cockpit") and `README.md:80`
-  (the alt text: "four star-named sessions breathe on the
-  fleet; a click flies into vega's cockpit..."); `grep -n
-  "fleet\|cockpit" README.md` shows no prior definition.
-- suggested fix: gloss both words in one clause right before or
-  after the image (e.g. "Fleet: the session list. Cockpit: one
-  session's live view.") or move the evocative narration to
-  `packages/cli/README.md` and keep the root caption literal.
-- source: dry-run
-
 ### [x] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question — this commit
 - category: instruction-drift
 - resolution: `prompts/pitch.md`'s Phase B named adopt.md's ask
@@ -208,6 +187,16 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] README.md:76-80 — the GUI teaser caption uses "fleet" and "cockpit" before either word is ever defined — this commit
+- category: voice
+- resolution: added a one-line gloss right after the "Three
+  doors in" prose and before the GIF — "Fleet is the session
+  list; cockpit is one session's live view." — so the caption's
+  "fleet"/"cockpit" jargon reads against a definition instead of
+  cold.
+- source: dry-run
+- issue: #119
 
 ### [x] [MED] playbooks/new-project.md:51 — Prerequisites claims GitLab support that nothing else in the kit delivers — this commit
 - category: instruction-drift
