@@ -68,7 +68,9 @@
 - source: dry-run
 - issue: #118
 
-### [ ] [LOW] README.md:480 — `/lessons-pr` is referenced with no prior definition anywhere in README.md
+## Done
+
+### [x] [LOW] README.md:480 — `/lessons-pr` is referenced with no prior definition anywhere in README.md — this commit
 - category: comprehension
 - observation: Hard Rule 6 name-drops `/lessons-pr` ("planning
   step only") as one of only two commands carrying a documented
@@ -82,13 +84,16 @@
 - evidence: README.md:480 "`/lessons-pr` (planning step only)
   keep their documented" — absent from both command tables at
   README.md:217-250.
-- suggested fix: add a one-line `/lessons-pr` row to the
-  building-blocks table ("fold a sibling project's lessons into
-  kit improvements") or link the mention at line 480 to its
-  existing doc.
+- resolution: not added to the building-blocks table —
+  `/lessons-pr` is nexus's own skill (the inbound-to-nexus
+  lessons channel, `customization/lessons-layer.md`), never
+  copied to `templates/skills/`, so a table row there would
+  misrepresent it as something adopters get. Instead, the
+  line-480 mention now explains itself inline: "`/lessons-pr`
+  (nexus's own skill, not a copied template: folds a sibling
+  adopter's lessons back into the kit)", closing the
+  comprehension gap without implying adopters have the file.
 - source: dry-run
-
-## Done
 
 ### [x] [LOW] README.md:146-152 — "Review what landed"'s "Files added" checklist omits `nexus.secrets.json`, which step 4's copy also lands at the repo root — this commit
 - category: comprehension

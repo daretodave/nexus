@@ -478,8 +478,9 @@ upfront:
    question that outlives the run goes to the `/oversight`
    queue. `/oversight` asks anything, any time; `/bootstrap`
    (token collection and destructive-action confirmation) and
-   `/lessons-pr` (planning step only) keep their documented
-   carve-outs.
+   `/lessons-pr` (nexus's own skill, not a copied template:
+   folds a sibling adopter's lessons back into the kit) keep
+   their documented carve-outs.
    `pre-spec.md`'s one-time interactive interview, before any
    skill exists yet (see
    [Pick a playbook](#pick-a-playbook)), is allowed
