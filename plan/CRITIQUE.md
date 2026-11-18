@@ -140,30 +140,6 @@
 - source: dry-run
 - issue: #118
 
-### [ ] [MED] /inbox @ mobile (plain-folder) — the Oversight filter row clips its last option off-screen with no scroll affordance
-- category: ui-comprehension
-- observation: on a phone-width viewport, the Oversight filter
-  row ("All 0 / Waiting now 0 / Parked 0 / In the plan 0 / Cloud
-  runs 0") is cut off mid-word ("Cloud ru…") at the right edge,
-  with no visible scroll hint, so the last filter's label is
-  unreadable and its tap target is partially off-screen.
-- evidence: `plain-folder--mobile--inbox.png` (this tick's `npm
-  --prefix packages/cli run walk`,
-  `.scratch/walk/critique-2026-11-17T23-09-24-151Z/`).
-  `packages/cli/src/ui/controls.jsx`'s `ChoiceButtons` renders a
-  `.choice` row of buttons; `packages/cli/src/styles/nexus.css`'s
-  `.choice` and `.choice button` rules use `white-space: nowrap`
-  with no `overflow-x`, while the ancestor `.view` sets
-  `overflow: hidden`, so the overflowing row clips outright
-  instead of scrolling.
-- suggested fix: add `overflow-x: auto;
-  -webkit-overflow-scrolling: touch;` to `.choice` in
-  `packages/cli/src/styles/nexus.css` (or wrap it in a scrollable
-  container) so all five filters stay reachable by horizontal
-  swipe on narrow viewports. Layout only — no change to color,
-  particles, or motion.
-- source: walk
-
 ### [ ] [LOW] README.md:480 — `/lessons-pr` is referenced with no prior definition anywhere in README.md
 - category: comprehension
 - observation: Hard Rule 6 name-drops `/lessons-pr` ("planning
@@ -552,3 +528,41 @@
   attribution trailer before every commit, since this rule
   overrides that convention in this repo.
 - source: dry-run
+
+### [x] [MED] /inbox @ mobile (plain-folder) — the Oversight filter row clips its last option off-screen with no scroll affordance — this commit
+- category: ui-comprehension
+- observation: on a phone-width viewport, the Oversight filter
+  row ("All 0 / Waiting now 0 / Parked 0 / In the plan 0 / Cloud
+  runs 0") is cut off mid-word ("Cloud ru…") at the right edge,
+  with no visible scroll hint, so the last filter's label is
+  unreadable and its tap target is partially off-screen.
+- evidence: `plain-folder--mobile--inbox.png` (this tick's `npm
+  --prefix packages/cli run walk`,
+  `.scratch/walk/critique-2026-11-17T23-09-24-151Z/`).
+  `packages/cli/src/ui/controls.jsx`'s `ChoiceButtons` renders a
+  `.choice` row of buttons; `packages/cli/src/styles/nexus.css`'s
+  `.choice` and `.choice button` rules use `white-space: nowrap`
+  with no `overflow-x`, while the ancestor `.view` sets
+  `overflow: hidden`, so the overflowing row clips outright
+  instead of scrolling.
+- suggested fix: add `overflow-x: auto;
+  -webkit-overflow-scrolling: touch;` to `.choice` in
+  `packages/cli/src/styles/nexus.css` (or wrap it in a scrollable
+  container) so all five filters stay reachable by horizontal
+  swipe on narrow viewports. Layout only — no change to color,
+  particles, or motion.
+- fix: gave the shared `.choice` rule in `packages/cli/src/
+  styles/nexus.css` its own `max-width: 100%; overflow-x: auto;
+  -webkit-overflow-scrolling: touch; scrollbar-width: thin;` (the
+  thin-scrollbar convention already used by `.pboard`, `.vt-col`
+  and `.vault-scroll`), so any choice row wider than its container
+  scrolls instead of clipping — the `.plotc-q .choice` override
+  (wrap instead of scroll, a different use case) is untouched.
+  Mirrored into `packages/cli/design/handoff/nexus.css` per its
+  "change both together" contract. Verified: a fresh `npm
+  --prefix packages/cli run walk -- --scenarios plain-folder
+  --routes /inbox --viewports mobile` build, and the compiled
+  `dist/assets/index-*.css` carries the new rule. Layout only — no
+  change to color, particles, or motion.
+- source: walk
+- issue: #121
