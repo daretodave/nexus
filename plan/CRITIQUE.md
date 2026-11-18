@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-17
-> Pass count: 36
+> Last pass: 2026-11-18
+> Pass count: 37
 
 ## Pending
 
@@ -185,6 +185,70 @@
   swipe on narrow viewports. Layout only — no change to color,
   particles, or motion.
 - source: walk
+
+### [ ] [MED] README.md:231 vs README.md:414-416 — `/critique`'s job description contradicts itself within the same file
+- category: instruction-drift
+- observation: the "What you get" table describes `/critique`
+  as "External-observer pass — visit the live site as a
+  stranger, file fresh-eyes findings" — the templated, product
+  version of the skill. The later "nexus runs on nexus" section
+  describes the same command name as "a fresh-eyes agent that
+  walks this README's TL;DR as a stranger and files every
+  friction point" — the kit's own, self-hosted version
+  (`agents.md`'s documented `templates/skills/` vs `skills/`
+  split). Nothing in either passage tells a first-time reader
+  that `/critique` means two different things depending on
+  which repo it runs in, so a stranger meeting the second
+  mention reads it as contradicting the first.
+- evidence: README.md:231 `| /critique | External-observer
+  pass — visit the live site as a stranger, file fresh-eyes
+  findings. |` vs README.md:414-416 "the best skill is
+  `/critique`, a fresh-eyes agent that walks this README's
+  TL;DR as a stranger and files every friction point."
+- suggested fix: in the "nexus runs on nexus" bullet
+  (README.md:414-416), note explicitly that this is the kit's
+  own self-hosted `/critique` (dry-run adoption), distinct from
+  the templated product skill described earlier in the table.
+- source: dry-run
+
+### [ ] [MED] README.md:41-61 — "Used v1? On v2?" interrupts the first-time-adopter flow
+- category: ordering
+- observation: the upgrade-path section sits between "Is this
+  for you?" (relevant to every reader) and "Three doors in"
+  (the actual entry point for a first-time adopter). A
+  brand-new adopter — the majority case the TL;DR below is
+  written for — has no v1 to upgrade from, and must read
+  through CLI flags (`--land owner`, `--rollback`, `--repo
+  owner/name --pr`) and three-way-merge banner language that
+  applies to nobody reading the kit for the first time, before
+  reaching the section that actually applies to them.
+- evidence: README.md:41 `### Used v1? On v2?` placed directly
+  before README.md:64 `## Three doors in`.
+- suggested fix: move the "Used v1? On v2?" block below "Three
+  doors in" / "Pick a playbook" (or fold it into a
+  collapsible/details block) so new adopters aren't forced past
+  upgrade-only content to reach their starting door.
+- source: dry-run
+
+### [ ] [LOW] README.md:480 — `/lessons-pr` is referenced with no prior definition anywhere in README.md
+- category: comprehension
+- observation: Hard Rule 6 name-drops `/lessons-pr` ("planning
+  step only") as one of only two commands carrying a documented
+  carve-out to the "ask before the first write" rule — the
+  other being `/bootstrap`, already defined in the
+  building-blocks table. `/lessons-pr` never appears in either
+  command table (README.md:217-236 or :241-250), so a stranger
+  meets the name for the first time inside a rule about an
+  exception to a rule, with nothing to click and no idea what
+  the command otherwise does.
+- evidence: README.md:480 "`/lessons-pr` (planning step only)
+  keep their documented" — absent from both command tables at
+  README.md:217-250.
+- suggested fix: add a one-line `/lessons-pr` row to the
+  building-blocks table ("fold a sibling project's lessons into
+  kit improvements") or link the mention at line 480 to its
+  existing doc.
+- source: dry-run
 
 ## Done
 
