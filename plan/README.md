@@ -28,6 +28,7 @@ line goes; each line is a lock that times out, so it carries
 
 - 66 · auto-promoted, veto until 2026-11-19 (#107) · max_age: 3d · fallback: release
 - 67 · auto-promoted, veto until 2026-11-19 (#109) · max_age: 3d · fallback: release
+- 69 · auto-promoted, veto until 2026-11-22 (#125) · max_age: 3d · fallback: release
 
 ## Specs
 
@@ -37,6 +38,7 @@ line goes; each line is a lock that times out, so it carries
 | 66 | Key custody map + hermetic keys lint | [66-key-custody-map.md](66-key-custody-map.md) | planned | not chunked yet |
 | 67 | Package nexus as a Claude Code plugin | [67-claude-code-plugin.md](67-claude-code-plugin.md) | planned | not chunked yet |
 | 68 | night.yml owner-mode parity: add the touch .owner step march.yml has | [68-night-owner-mode-parity.md](68-night-owner-mode-parity.md) | planned | 0 of 1 chunks |
+| 69 | plan/ carries the workspace: resurrection + a doctor | [69-workspace-resurrection.md](69-workspace-resurrection.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the

@@ -223,25 +223,6 @@
 - conflicts: none — tightens an existing playbook, no template
   API change.
 
-### [ ] [score 7.4] plan/ carries the workspace: resurrection files + doctor
-- proposed: 2026-07-03
-- source signals: the un-versioned root's obvious objection —
-  lose the machine, lose the topology. a sibling adopter's plan repo
-  already half-plays this role.
-- rationale: make plan/ the versioned carrier: canonical copies
-  of the root files, a names-only keys manifest, a clone map,
-  and a zero-dependency offline doctor. New-machine flow: clone
-  org/plan, copy root files up, clone per repos.md, re-run each
-  runbook's human beat, doctor until green.
-- proposed scope: `templates/workspace/plan-workspace/`
-  (keys.md names-only manifest, repos.md clone map, root/
-  canonical copies); `templates/workspace/workspace-doctor.mjs`
-  (root-not-a-repo, repos exist, keys present by name, no
-  secret path inside any repo tree); Resurrection section in
-  playbooks/workspace.md; pointer in recovery.md.
-- estimated phases: 1
-- conflicts: rides the workspace playbook candidate.
-
 ### [ ] [score 7.3] Workspace-aware /bootstrap + /oversight
 - proposed: 2026-07-03
 - source signals: a sibling adopter's cloudflare runbook fans one
@@ -1105,6 +1086,26 @@
 - conflicts: ship after prompts/ + releases/lock — the plugin
   commands consume both.
 - promoted: 2026-11-16, auto (motion-stall react, #92), veto #109
+
+### [promoted 2026-11-19 → spec 69] [score 7.4] plan/ carries the workspace: resurrection files + doctor
+- proposed: 2026-07-03
+- source signals: the un-versioned root's obvious objection —
+  lose the machine, lose the topology. a sibling adopter's plan repo
+  already half-plays this role.
+- rationale: make plan/ the versioned carrier: canonical copies
+  of the root files, a names-only keys manifest, a clone map,
+  and a zero-dependency offline doctor. New-machine flow: clone
+  org/plan, copy root files up, clone per repos.md, re-run each
+  runbook's human beat, doctor until green.
+- proposed scope: `templates/workspace/plan-workspace/`
+  (keys.md names-only manifest, repos.md clone map, root/
+  canonical copies); `templates/workspace/workspace-doctor.mjs`
+  (root-not-a-repo, repos exist, keys present by name, no
+  secret path inside any repo tree); Resurrection section in
+  playbooks/workspace.md; pointer in recovery.md.
+- estimated phases: 1
+- conflicts: rides the workspace playbook candidate.
+- promoted: 2026-11-19, auto (motion-stall react, #92), veto #125
 
 ## Rejected
 
