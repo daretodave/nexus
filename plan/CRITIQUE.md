@@ -36,24 +36,6 @@
   guidance.
 - source: dry-run
 
-### [ ] [LOW] playbooks/new-project.md §2 "Hard rules" — install-hooks mentioned before scripts/ exists
-- category: comprehension
-- observation: §2 tells the reader to run `node
-  scripts/install-hooks.mjs` "before the first push," but at
-  that point in the playbook `scripts/` hasn't been copied yet
-  (that's §4) — a reader working section-by-section at human
-  pace could try the command right away and hit
-  `MODULE_NOT_FOUND` before realizing it's forward-referenced.
-  (The line does carry a "(§4 copies the script)" parenthetical,
-  which softens but doesn't eliminate the stumble.)
-- evidence: `playbooks/new-project.md:200-204` — the
-  install-hooks run instruction appears inside §2, two
-  sections before §4's copy step.
-- suggested fix: move the actual run instruction to §4 (right
-  after the copy), leaving only a forward pointer ("see §4") in
-  §2's hard-rules list.
-- source: dry-run
-
 ### [x] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question — this commit
 - category: instruction-drift
 - resolution: `prompts/pitch.md`'s Phase B named adopt.md's ask
@@ -566,3 +548,17 @@
   particles, or motion.
 - source: walk
 - issue: #123
+
+### [x] [LOW] playbooks/new-project.md §2 "Hard rules" — install-hooks mentioned before scripts/ exists — this commit
+- category: comprehension
+- observation: §2 told the reader to run `node
+  scripts/install-hooks.mjs` "before the first push," but at
+  that point in the playbook `scripts/` hasn't been copied yet
+  (that's §4) — a reader working section-by-section at human
+  pace could try the command right away and hit
+  `MODULE_NOT_FOUND` before realizing it's forward-referenced.
+- resolution: moved the actual run instruction into §4, right
+  after the copy step (`scripts/` exists there), leaving only a
+  forward pointer ("see §4, once `scripts/` is copied in") in
+  §2's mode-choice paragraph.
+- source: dry-run

@@ -205,10 +205,8 @@ owner is the default when you own the repo). Either way,
 `.owner` and `.nexus/` go in `.gitignore` (step 3 writes it);
 the owner's checkout also gets an untracked `.owner`. With no
 `.owner`, every change lands as a pull request. Before the
-first push (§4 copies the script), run
-`node scripts/install-hooks.mjs`
-in either mode to arm the hooks
-([`owner-mode.md`](./owner-mode.md) Step 2).
+first push, arm the hooks in either mode — see §4, once
+`scripts/` is copied in.
 
 Add project-specific ones (e.g. "site name lowercase", "content
 stays in MDX").
@@ -371,6 +369,13 @@ no manifest"). That's fine: `grep -rl`'s trailing
 `-ErrorAction SilentlyContinue` below) silently skips a
 path that doesn't exist, so the sweep never needs
 `.env.example` to be there.)
+
+`scripts/` now exists, so arm the hooks before the first push
+(either mode, [`owner-mode.md`](./owner-mode.md) Step 2):
+
+```bash
+node scripts/install-hooks.mjs
+```
 
 ### Replace placeholders
 
