@@ -194,7 +194,12 @@ credential. Before every long window:
    `node scripts/check-secrets-liveness.mjs` (GH_TOKEN +
    `CRITIQUE_*`, the two classes that go stale silently
    between pushes), one `reader` pass if critique-auth
-   matters.
+   matters. Also run
+   `node scripts/keys-audit.mjs --until <YYYY-MM-DD>` with
+   the window's own end date: it exits 1 and refuses if
+   `identity/key-custody.md` (or your own
+   `setup/00_keys.md`) lists an `Expires` date before that
+   day — a dead credential found now, not mid-window.
 3. **Rotate anything that expires inside the window before
    you go** — `/bootstrap rotate <service>` does the
    propagation for bootstrap-managed services.
@@ -281,8 +286,9 @@ bias set). Then this playbook's additions:
 - [ ] The Held lane has no stale `blocked:` lines you could
       unblock now; the specs behind the next 3 ready chunks
       would survive your absence (read them).
-- [ ] Secrets inventory: no credential expires inside the
-      window (Step 5), or its degradation is written down.
+- [ ] Secrets inventory: `node scripts/keys-audit.mjs
+      --until <end-date>` exits 0 (Step 5), or any flagged
+      credential's degradation is written down.
 - [ ] Cloud dry run: `gh workflow run march` once,
       watch it end-to-end green, read the closing
       `/oversight audit` block in the log.

@@ -62,10 +62,12 @@ run any time, including inside `/oversight`.
 > with a lifetime (fine-grained PATs default to 90 days;
 > session cookies last days; some provider tokens rotate) gets
 > an explicit `expires: <YYYY-MM-DD>` note in its per-service
-> block below. The hands-off pre-flight
-> (`nexus/playbooks/hands-off.md` Step 5) refuses a window
-> that outlives any listed credential. "Probably fine" is not
-> a date.
+> block below, mirrored into `setup/00_keys.md`'s own
+> `Expires` column — the hands-off pre-flight
+> (`nexus/playbooks/hands-off.md` Step 5,
+> `node scripts/keys-audit.mjs --until <date>`) refuses a
+> window against that table, not this one. "Probably fine" is
+> not a date.
 
 ---
 
