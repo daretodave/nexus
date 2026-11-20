@@ -27,6 +27,7 @@ only asks for one once a chunk names a secret.
 | `scripts/secrets-audit.mjs` | Set and rotation in the same record, by name; the rotation nudge. Needs `scripts/secrets-sinks.mjs`. |
 | `scripts/secrets-run.mjs` | `secrets run`: a command with the declared values in its environment, its output masked. |
 | `scripts/secrets-scan.mjs` | `secrets scan`: a diff that adds a vault value is refused, by file, line and name. |
+| `scripts/keys-audit.mjs` | Pure-string lint: an orphan, ghost or ambiguous custody row (`setup/00_keys.md` by default) against the manifest's names. |
 | `.claude/hooks/guard.mjs` | The guard hook's vault rails: no read of a vault file, no echoed secret, no value on a command line. |
 | `scripts/plan/secrets-manifest.mjs` | The shape and the import, as pure functions. It sits in `scripts/plan/` because `plan-check.mjs` imports it: a copy of `scripts/plan/` plus `plan-check.mjs` still runs. |
 | `scripts/plan-check.mjs` | Checks the manifest's shape and every chunk's `secrets` field against it. |
@@ -778,6 +779,9 @@ names it. To add one:
 - [ ] `plan-check.mjs` is in your verify composition (it gates
       the manifest and the `secrets` fields), and so is
       `node scripts/secrets.mjs scan`.
+- [ ] `node scripts/keys-audit.mjs` is in your verify
+      composition (orphan, ghost and ambiguous custody rows
+      against the manifest, if you keep `setup/00_keys.md`).
 - [ ] `node .claude/hooks/guard.mjs self-test` is green and
       `settings.json` wires `pre-read` on Read|Grep.
 
