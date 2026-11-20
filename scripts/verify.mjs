@@ -197,7 +197,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 function trackedMarkdown() {
   const out = execSync('git ls-files "*.md"', { cwd: ROOT, encoding: 'utf-8' })
-  return out.trim().split(/\r?\n/).filter(Boolean)
+  // plugin/vendor/ is a frozen, byte-for-byte templates/ snapshot
+  // (scripts/build-plugin.mjs): its links are authored, and already
+  // checked, relative to templates/'s own location, not its nested
+  // path under plugin/; the generator's own --check is what proves
+  // the vendored copy matches the source.
+  return out.trim().split(/\r?\n/).filter(Boolean).filter((f) => !f.startsWith('plugin/vendor/'))
 }
 
 function read(rel) {
