@@ -12,6 +12,7 @@ import {
   readLockVersion,
   buildPluginManifest,
   buildMarketplace,
+  buildCommand,
   listTemplateFiles,
   render,
   write,
@@ -29,6 +30,16 @@ function scratchRepo() {
   fs.mkdirSync(path.join(templatesDir, 'nested'), { recursive: true })
   fs.writeFileSync(path.join(templatesDir, 'a.md'), '# a\n')
   fs.writeFileSync(path.join(templatesDir, 'nested', 'b.md'), '# b\n')
+  // The three wrapped prompts and the doctor script, so render()'s
+  // prompt/script vendoring has something to read.
+  const promptsDir = path.join(dir, 'prompts')
+  fs.mkdirSync(promptsDir, { recursive: true })
+  for (const name of ['adopt.md', 'upgrade.md', 'doctor.md']) {
+    fs.writeFileSync(path.join(promptsDir, name), `# ${name} fixture\n`)
+  }
+  const scriptsDir = path.join(dir, 'scripts')
+  fs.mkdirSync(scriptsDir, { recursive: true })
+  fs.writeFileSync(path.join(scriptsDir, 'plugin-doctor.mjs'), '// plugin-doctor.mjs fixture\n')
   return dir
 }
 
@@ -101,6 +112,43 @@ test('render is byte-identical across calls and vendors every templates/ file un
   }
 })
 
+test('render vendors the three wrapped prompts and the doctor script byte-for-byte', () => {
+  const dir = scratchRepo()
+  try {
+    const out = render(dir)
+    for (const name of ['adopt.md', 'upgrade.md', 'doctor.md']) {
+      assert.ok(out.has(`plugin/vendor/prompts/${name}`))
+      assert.equal(out.get(`plugin/vendor/prompts/${name}`).toString('utf-8'), `# ${name} fixture\n`)
+    }
+    assert.equal(out.get('plugin/vendor/scripts/plugin-doctor.mjs').toString('utf-8'), '// plugin-doctor.mjs fixture\n')
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('render generates the three commands: frontmatter description, the vendored-prompt pointer, $ARGUMENTS', () => {
+  const dir = scratchRepo()
+  try {
+    const out = render(dir)
+    for (const name of ['adopt', 'upgrade', 'doctor']) {
+      const text = out.get(`plugin/commands/${name}.md`).toString('utf-8')
+      assert.match(text, /^---\ndescription: .+\n---\n\n/)
+      assert.match(text, new RegExp('\\$\\{CLAUDE_PLUGIN_ROOT\\}/vendor/prompts/' + name + '\\.md'))
+      assert.doesNotMatch(text, /\.\.\/nexus\//, `${name}.md: no path into this repo`)
+      assert.match(text, /\nArgument: \$ARGUMENTS\n$/)
+    }
+    // doctor's command also redirects the one script path its
+    // prompt names, to the vendored copy.
+    assert.match(out.get('plugin/commands/doctor.md').toString('utf-8'), /\$\{CLAUDE_PLUGIN_ROOT\}\/vendor\/scripts\/plugin-doctor\.mjs/)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('buildCommand throws on an unknown command name', () => {
+  assert.throws(() => buildCommand('nope'), /no command spec/)
+})
+
 test('--check is clean on fresh output and names a tampered, missing or stray vendored file', () => {
   const dir = scratchRepo()
   try {
@@ -119,6 +167,35 @@ test('--check is clean on fresh output and names a tampered, missing or stray ve
     assert.match(problems.join('\n'), /plugin\/\.claude-plugin\/plugin\.json: differs/)
     assert.match(problems.join('\n'), /plugin\/vendor\/templates\/a\.md: missing/)
     assert.match(problems.join('\n'), /plugin\/vendor\/templates\/stray\.md: not generated/)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('check() flags a stray file anywhere under plugin/, not just vendor/templates/', () => {
+  const dir = scratchRepo()
+  try {
+    write(dir)
+    assert.deepEqual(check(dir), [])
+    fs.writeFileSync(path.join(dir, 'plugin', 'commands', 'hand-added.md'), 'hand-added\n')
+    fs.writeFileSync(path.join(dir, 'plugin', 'vendor', 'prompts', 'stray.md'), 'hand-added\n')
+    const problems = check(dir)
+    assert.equal(problems.length, 2, problems.join('\n'))
+    assert.match(problems.join('\n'), /plugin\/commands\/hand-added\.md: not generated/)
+    assert.match(problems.join('\n'), /plugin\/vendor\/prompts\/stray\.md: not generated/)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('write() clears the whole generated tree, so a command or vendored prompt removed upstream does not linger', () => {
+  const dir = scratchRepo()
+  try {
+    write(dir)
+    fs.writeFileSync(path.join(dir, 'plugin', 'commands', 'stale.md'), 'stale\n')
+    write(dir)
+    assert.ok(!fs.existsSync(path.join(dir, 'plugin', 'commands', 'stale.md')))
+    assert.deepEqual(check(dir), [])
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
   }
