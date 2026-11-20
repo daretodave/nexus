@@ -13,6 +13,7 @@
 | [`adopt.md`](./adopt.md) | The full agent prompt for "I already have a spec.md, delegate the adoption." Paired with README's [TL;DR — clone + delegate the adoption](../README.md#tldr--clone--delegate-the-adoption). |
 | [`pitch.md`](./pitch.md) | The full agent prompt for "I have a pitch, no spec yet." Paired with README's [TL;DR — I have a pitch, no spec yet](../README.md#tldr--i-have-a-pitch-no-spec-yet). |
 | [`upgrade.md`](./upgrade.md) | The full agent prompt for "upgrade this repo to the current kit": a v1 repo to specs and chunks, or a v2 repo to the latest. Paired with README's [Used v1? On v2?](../README.md#used-v1-on-v2). |
+| [`doctor.md`](./doctor.md) | The full agent prompt for a read-only drift check: this repo's `plan/nexus.lock` version against the version nexus (or an installed plugin) ships. Never writes. |
 
 ## Why a separate file
 
