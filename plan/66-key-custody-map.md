@@ -89,9 +89,6 @@ deferred — a candidate for `/expand`, not this spec's chunks.
 
 ## Acceptance
 
-- **A3** A pure-string, offline lint flags orphan, ghost and
-  ambiguous rows as a hard gate failure, wired into `node
-  scripts/verify.mjs`'s `secrets` leg.
 - **A4** `playbooks/hands-off.md`'s pre-flight checks the
   table's `Expires` column against the window's end time and
   refuses to start past it.
@@ -105,17 +102,8 @@ deferred — a candidate for `/expand`, not this spec's chunks.
 Design's "Resolved by this chunking session" paragraph.)
 
 ## Chunks
-Measure: 3 open · 2 closed · next A6
+Measure: 2 open · 3 closed · next A6
 
-- [ ] **66.2** `scripts/keys-audit.mjs` + `templates/scripts/
-  keys-audit.mjs`: pure-string lint flags orphan, ghost and
-  ambiguous custody rows against the manifest's names · M ·
-  closes A3 · needs —
-  - Reads `nexus.secrets.json`'s names via `scripts/plan/
-    secrets-manifest.mjs`'s `readManifest`; wired into `node
-    scripts/verify.mjs`'s existing `secrets` leg (the kit's
-    own table) and a new checklist line in
-    `customization/secrets.md` (the adopter template script).
 - [ ] **66.3** `playbooks/hands-off.md`'s pre-flight checks
   the custody table's `Expires` column against the
   unattended window's end time, and refuses to start past it
