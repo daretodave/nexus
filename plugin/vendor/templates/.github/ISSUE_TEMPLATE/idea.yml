@@ -1,0 +1,12 @@
+name: Idea
+description: Propose a new feature or improvement.
+title: "[idea] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: The idea
+      description: What should this do that it doesn't today? Why?
+    validations:
+      required: true

@@ -1,0 +1,14 @@
+{
+  "name": "nexus",
+  "owner": {
+    "name": "daretodave"
+  },
+  "description": "nexus's own marketplace entry — installs straight from this repo, no external hosting.",
+  "plugins": [
+    {
+      "name": "nexus",
+      "source": "./plugin",
+      "description": "Turn a repo into a project that ships itself."
+    }
+  ]
+}

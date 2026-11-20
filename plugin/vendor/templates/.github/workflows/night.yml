@@ -1,0 +1,300 @@
+name: night
+
+# The night shift (loop shape 2 - see nexus/concepts/loop-shapes.md):
+# one /digest tick a day. Writes plan/DIGEST.md - the morning
+# briefing - and runs the breadth checks (SMOKE_SAMPLE=full etc.)
+# that must never run on the per-commit path. Runs in its own
+# concurrency group (below) and lands by rebase.
+#
+# NEXUS_LOOP_MODE switches it as it does march.yml: `owner` runs
+# the `digest` job, which pushes <DEFAULT_BRANCH>; unset (or pr)
+# runs `write` with no token at all, then `land` fences the
+# commit to the night shift's own files and opens a pull request
+# from nexus/night-<run id>.
+
+on:
+  schedule:
+    - cron: '30 10 * * *'   # daily; GH cron is UTC - adjust to land your morning
+  workflow_dispatch:
+
+concurrency:
+  # Its own group, not march's: GitHub keeps one pending run per
+  # group and cancels it when the next queues, so a digest waiting
+  # behind a long tick was evicted by march's next cron. It writes
+  # only its own files and lands by rebase (skills/next/land.md).
+  group: night
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    if: vars.NEXUS_LOOP_MODE == 'owner'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60     # breadth legs are the long pole
+    permissions:
+      contents: write
+      issues: write         # crash-alarm issue (GITHUB_TOKEN)
+      actions: read         # gh run list - the pulse
+      id-token: write
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # The project's toolchain (.github/actions/setup/action.yml):
+      # the breadth legs need what the verify gate uses.
+      - name: Project toolchain
+        uses: ./.github/actions/setup
+
+      - name: Configure git author
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # The quota governor, as in march.yml: the newest cached
+      # seven_day reading, then the gate (a scheduled night run
+      # honours the soft cap too). /digest prints the reading.
+      - name: Quota cache restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}
+          restore-keys: nexus-quota-
+
+      - name: Quota gate
+        id: quota_gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REASON: ${{ github.event.inputs.reason }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
+        run: |
+          grep -qx '.nexus/' .git/info/exclude 2>/dev/null || echo '.nexus/' >> .git/info/exclude
+          node scripts/cloud/quota.mjs gate --event "$EVENT" --reason "$REASON" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Run /digest (night shift)
+        id: run_digest
+        if: steps.quota_gate.outputs.skip != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: 'true'
+          # Synthesis is where a stronger model earns its keep;
+          # upgrade the night model before the day one.
+          claude_args: >-
+            --model claude-sonnet-5
+            --permission-mode bypassPermissions
+          prompt: |
+            You are <PROJECT>'s night shift. Read agents.md, then execute
+            skills/digest.md end to end - it is the single source of truth.
+
+            Cloud notes: every gate runs FOREGROUND; your one commit MUST
+            end with the trailer
+
+              Cloud-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            (blank line before it). Breadth failures become plan/AUDIT.md
+            findings, not fixes. Tuning proposals become
+            plan/CANDIDATES.md candidates, never direct edits. One
+            commit (digest: <date>), push, exit.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # + whatever your breadth legs need (see march.yml's env)
+
+      - name: Quota read
+        id: quota
+        if: always() && (steps.run_digest.outcome == 'success' || steps.run_digest.outcome == 'failure')
+        env:
+          EXEC_FILE: ${{ steps.run_digest.outputs.execution_file }}
+        run: node scripts/cloud/quota.mjs read "$EXEC_FILE"
+
+      - name: Quota cache save
+        if: always() && steps.quota.outputs.quota != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Pause on the weekly quota
+        if: always() && steps.quota.outputs.status == 'rejected'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESETS: ${{ steps.quota.outputs.resets }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/cloud/quota.mjs pause --resets "$RESETS" --run-url "$RUN_URL"
+
+      - name: Open night-failed issue if action crashed
+        if: failure() && steps.quota.outputs.status != 'rejected'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          failed_step="unknown step (see run log)"
+          if [ "${{ steps.checkout.outcome }}" = "failure" ]; then failed_step="Checkout"; fi
+          if [ "${{ steps.run_digest.outcome }}" = "failure" ]; then failed_step="Run /digest (night shift)"; fi
+          existing=$(gh issue list --search 'in:title "Night digest crashed" state:open' --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create \
+              --title "Night digest crashed: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --body "Failed step: $failed_step. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+
+  # Pull-request mode: the digest is written with no token, then
+  # landed as a pull request by a job that never runs the agent.
+  write:
+    if: vars.NEXUS_LOOP_MODE != 'owner'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      commits: ${{ steps.bundle.outputs.commits }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Project toolchain
+        uses: ./.github/actions/setup
+
+      - name: The night's branch
+        env:
+          BRANCH: nexus/night-${{ github.run_id }}
+        run: |
+          git switch -c "$BRANCH"
+          cp scripts/cloud/quota.mjs "$RUNNER_TEMP/quota.mjs"
+
+      # The quota gate with no token: it reads the cache only (a
+      # lockout, or the soft cap on a scheduled run). march's jobs
+      # open and close the pause issue.
+      - name: Quota cache restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}
+          restore-keys: nexus-quota-
+
+      - name: Quota gate
+        id: quota_gate
+        env:
+          EVENT: ${{ github.event_name }}
+          QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.90' }}
+        run: node "$RUNNER_TEMP/quota.mjs" gate --event "$EVENT" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Claude runs /digest (no token)
+        if: steps.quota_gate.outputs.skip != 'true'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GIT_AUTHOR_NAME: nexus-cloud
+          GIT_AUTHOR_EMAIL: nexus-cloud@users.noreply.github.com
+          GIT_COMMITTER_NAME: nexus-cloud
+          GIT_COMMITTER_EMAIL: nexus-cloud@users.noreply.github.com
+        run: |
+          {
+            printf 'Run: %s\n\n' "$RUN_URL"
+            cat <<'PROMPT'
+          You are <PROJECT>'s night shift, in pull-request mode. Read agents.md,
+          then execute skills/digest.md end to end; it is the single source of
+          truth. You hold no token: gh and git push fail, so read the pulse
+          from the files and git history, and never push.
+
+          Every gate runs FOREGROUND, and so does every subagent dispatch
+          (run_in_background: false). Write only plan/DIGEST.md, plan/AUDIT.md
+          (breadth failures become findings, not fixes) and
+          plan/CANDIDATES.md (tuning proposals, never direct edits): the
+          land job refuses anything else. One commit (digest: <date>) on this
+          branch, ending with the trailer (blank line before it):
+
+            Cloud-Run: <the Run URL above>
+
+          Then exit.
+          PROMPT
+          } > "$RUNNER_TEMP/prompt.txt"
+          npx --yes @anthropic-ai/claude-code@2.1.285 -p "$(cat "$RUNNER_TEMP/prompt.txt")" \
+            --model claude-sonnet-5 \
+            --permission-mode bypassPermissions \
+            --strict-mcp-config \
+            --output-format stream-json --verbose > "$RUNNER_TEMP/claude.jsonl" || echo "claude exited non-zero; the bundle step takes what it committed"
+
+      - name: Quota read
+        id: quota
+        if: always()
+        run: node "$RUNNER_TEMP/quota.mjs" read "$RUNNER_TEMP/claude.jsonl" --cache .nexus/quota.json
+
+      - name: Quota cache save
+        if: always() && steps.quota.outputs.quota != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .nexus/quota.json
+          key: nexus-quota-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Bundle the night's commit
+        id: bundle
+        env:
+          BRANCH: nexus/night-${{ github.run_id }}
+          MAIN: ${{ github.event.repository.default_branch }}
+        run: |
+          n=$(git rev-list --count "origin/$MAIN..$BRANCH")
+          echo "commits=$n" >> "$GITHUB_OUTPUT"
+          if [ "$n" -gt 0 ]; then git bundle create "$RUNNER_TEMP/night.bundle" "origin/$MAIN..$BRANCH"; fi
+
+      - name: Hand the commit to the land job
+        if: steps.bundle.outputs.commits != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: night-${{ github.run_id }}
+          path: ${{ runner.temp }}/night.bundle
+          retention-days: 3
+
+  land:
+    needs: write
+    if: needs.write.outputs.commits != '' && needs.write.outputs.commits != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: night-${{ github.run_id }}
+          path: ${{ runner.temp }}/night
+
+      - name: Fetch the night's branch, then fence it
+        env:
+          BRANCH: nexus/night-${{ github.run_id }}
+          MAIN: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch -q "$RUNNER_TEMP/night/night.bundle" "$BRANCH:$BRANCH"
+          node scripts/cloud/tick.mjs fence "origin/$MAIN" "$BRANCH" --only plan/DIGEST.md,plan/AUDIT.md,plan/CANDIDATES.md
+
+      - name: The loop's app token
+        id: app
+        if: vars.NEXUS_APP_ID != ''
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.NEXUS_APP_ID }}
+          private-key: ${{ secrets.NEXUS_APP_PRIVATE_KEY }}
+
+      - name: Push and open the PR
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          BRANCH: nexus/night-${{ github.run_id }}
+          NEXUS_MAIN_BRANCH: ${{ github.event.repository.default_branch }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $auth"
+          node scripts/cloud/tick.mjs land "$BRANCH"

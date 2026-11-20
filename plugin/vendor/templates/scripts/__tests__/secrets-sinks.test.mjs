@@ -1,0 +1,530 @@
+// secrets-sinks.mjs and `secrets.mjs push`: a sink pipes a vault value to where it is needed (GitHub Actions, Vercel,
+// Cloudflare) through stdin, never argv, and every push lands in the audit record by name, never by value. Every command
+// goes through a recording runner: no test runs gh, vercel or wrangler, so no test can set a real secret anywhere. Every
+// value below is a fake, and each one is searched for in every byte the CLI prints and the audit holds.
+// node:test, no deps.
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { describe, it } from 'node:test';
+import { main } from '../secrets.mjs';
+import { AUDIT, SINKS, VERCEL_ENVIRONMENTS, actionsSecretNames, keyVaultName, pushSecret, pushSecretAsync, readAudit, recordAudit, sessionOf, sinkFor, withValueFile } from '../secrets-sinks.mjs';
+
+// A push made from a session records its id; these tests set it only where they mean to.
+delete process.env.NEXUS_SESSION;
+
+const FAKES = ['fake-gh-0001', 'fake "quoted" $(not run) 0002'];
+
+function recorder(reply = () => ({ status: 0 })) {
+  const calls = [];
+  return { calls, run: (cmd, args, opts = {}) => { calls.push({ cmd, args, ...opts }); return reply(cmd, args, opts); } };
+}
+/** A runner that must never be reached. */
+const never = () => { throw new Error('a sink ran where none should'); };
+
+function workspace() {
+  const ws = fs.mkdtempSync(path.join(os.tmpdir(), 'secrets sinks '));
+  const repo = path.join(ws, 'repo');
+  fs.mkdirSync(repo);
+  return { ws, repo, done: () => fs.rmSync(ws, { recursive: true, force: true }) };
+}
+
+describe('the GitHub Actions sink', () => {
+  it('runs gh secret set NAME with the value on stdin only, never in argv', () => {
+    for (const value of FAKES) {
+      const r = recorder();
+      const done = pushSecret({ name: 'A_TOKEN', value, destination: 'github-actions', run: r.run, cwd: '/w/repo' });
+      assert.deepEqual(done, { destination: 'github-actions', ok: true });
+      assert.equal(r.calls.length, 1);
+      assert.equal(r.calls[0].cmd, 'gh');
+      assert.deepEqual(r.calls[0].args, ['secret', 'set', 'A_TOKEN', '--app', 'actions']);
+      assert.equal(r.calls[0].input, value);
+      assert.equal(r.calls[0].cwd, '/w/repo');
+      assert.ok(!r.calls[0].args.join(' ').includes(value), 'the value reached argv');
+    }
+  });
+
+  it('targets another repo with --repo, and reports a failure by exit code, never by value', () => {
+    const r = recorder(() => ({ status: 1 }));
+    const done = pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'github-actions', run: r.run, repo: 'me/app' });
+    assert.deepEqual(r.calls[0].args, ['secret', 'set', 'A_TOKEN', '--app', 'actions', '--repo', 'me/app']);
+    assert.equal(done.ok, false);
+    assert.match(done.error, /gh exited 1/);
+    assert.ok(!done.error.includes(FAKES[0]));
+  });
+
+  it('knows every destination the manifest takes but local (the vault), and refuses a bad name or value before running', () => {
+    assert.deepEqual(Object.keys(SINKS), ['github-actions', 'vercel', 'cloudflare', 'cloudflare-pages', 'netlify', 'fly', 'supabase', 'firebase', 'aws-secrets-manager', 'aws-ssm', 'gcp-secret-manager', 'azure-key-vault']);
+    assert.equal(sinkFor('github-actions').command, 'gh');
+    assert.equal(sinkFor('vercel').command, 'vercel');
+    assert.equal(sinkFor('cloudflare').command, 'wrangler');
+    assert.equal(sinkFor('local'), null);
+    assert.equal(sinkFor('heroku'), null);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'heroku', run: never }), /no sink for heroku/);
+    assert.throws(() => pushSecret({ name: 'a-token', value: FAKES[0], destination: 'github-actions', run: never }), /not an env-var name/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value: '', destination: 'github-actions', run: never }), /an empty value/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value: 'two\nlines', destination: 'github-actions', run: never }), /one line/);
+  });
+});
+
+describe('the Vercel sink', () => {
+  it('runs vercel env add NAME <environment> --force --yes once per environment (all three by default), the value on stdin', () => {
+    for (const value of FAKES) {
+      const r = recorder();
+      const done = pushSecret({ name: 'A_TOKEN', value, destination: 'vercel', run: r.run, cwd: '/w/repo' });
+      assert.deepEqual(done, { destination: 'vercel', ok: true, detail: { environments: VERCEL_ENVIRONMENTS } });
+      assert.deepEqual(VERCEL_ENVIRONMENTS, ['production', 'preview', 'development']);
+      assert.deepEqual(r.calls.map((c) => c.cmd), ['vercel', 'vercel', 'vercel']);
+      assert.deepEqual(r.calls.map((c) => c.args), VERCEL_ENVIRONMENTS.map((e) => ['env', 'add', 'A_TOKEN', e, '--force', '--yes']));
+      for (const c of r.calls) {
+        assert.equal(c.input, value);
+        assert.equal(c.cwd, '/w/repo');
+        assert.ok(!c.args.join(' ').includes(value), 'the value reached argv');
+        assert.ok(!c.args.includes('--value') && !c.args.includes('--token'), 'a value flag reached argv');
+      }
+    }
+  });
+
+  it('narrows to the environments named, refuses an unknown one, and stops at the first failure naming what landed', () => {
+    const r = recorder();
+    const done = pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'vercel', run: r.run, environments: ['preview'] });
+    assert.deepEqual(r.calls.map((c) => c.args[3]), ['preview']);
+    assert.deepEqual(done.detail, { environments: ['preview'] });
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'vercel', run: never, environments: ['staging'] }), /staging: a Vercel environment is one of production, preview, development/);
+    const failing = recorder((cmd, args) => ({ status: args[3] === 'preview' ? 2 : 0 }));
+    const bad = pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'vercel', run: failing.run });
+    assert.equal(bad.ok, false);
+    assert.equal(failing.calls.length, 2, 'it stops at the first failure');
+    assert.match(bad.error, /vercel exited 2 \(preview\)/);
+    assert.deepEqual(bad.detail, { environments: ['production'] }, 'what landed before the failure');
+    assert.ok(!bad.error.includes(FAKES[0]));
+  });
+});
+
+describe('the Cloudflare sink', () => {
+  it('runs wrangler secret put NAME with the value on stdin, the worker from the checkout\'s wrangler config or --name', () => {
+    for (const value of FAKES) {
+      const r = recorder();
+      const done = pushSecret({ name: 'A_TOKEN', value, destination: 'cloudflare', run: r.run, cwd: '/w/repo' });
+      assert.deepEqual(done, { destination: 'cloudflare', ok: true });
+      assert.equal(r.calls.length, 1);
+      assert.equal(r.calls[0].cmd, 'wrangler');
+      assert.deepEqual(r.calls[0].args, ['secret', 'put', 'A_TOKEN']);
+      assert.equal(r.calls[0].input, value);
+      assert.equal(r.calls[0].cwd, '/w/repo');
+      assert.ok(!r.calls[0].args.join(' ').includes(value), 'the value reached argv');
+    }
+    const named = recorder();
+    const done = pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'cloudflare', run: named.run, worker: 'my-worker' });
+    assert.deepEqual(named.calls[0].args, ['secret', 'put', 'A_TOKEN', '--name', 'my-worker']);
+    assert.deepEqual(done.detail, { worker: 'my-worker' });
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'cloudflare', run: never, worker: '--env x' }), /not a worker name/);
+    const missing = pushSecret({ name: 'A_TOKEN', value: FAKES[0], destination: 'cloudflare', run: () => ({ status: 127, missing: true }) });
+    assert.deepEqual(missing, { destination: 'cloudflare', ok: false, error: 'wrangler is not installed' });
+  });
+});
+
+describe('every command-line sink: the value goes to stdin (or a 0600 temp file on Windows), never argv', () => {
+  const value = 'fake-sink-value-0042';
+  const OPTS = { 'azure-key-vault': { vault: 'my-vault' } };
+  const lineOf = (d) => (d === 'fly' ? `A_TOKEN=${value}\n` : d === 'supabase' ? `A_TOKEN='${value}'\n` : value);
+  const cli = Object.keys(SINKS).filter((d) => !SINKS[d].api);
+
+  it('off Windows: each tool gets the value on stdin, file readers through /dev/stdin, and nothing touches disk', () => {
+    for (const d of cli) {
+      const r = recorder();
+      const done = pushSecret({ name: 'A_TOKEN', value, destination: d, run: r.run, cwd: '/w/repo', platform: 'linux', ...OPTS[d] });
+      assert.equal(done.ok, true, d);
+      assert.ok(r.calls.length >= 1, d);
+      for (const c of r.calls) {
+        assert.equal(c.cmd, SINKS[d].command, d);
+        assert.ok(!c.args.join(' ').includes(value), `${d}: the value reached argv`);
+        assert.equal(c.input, lineOf(d), `${d}: the value goes on stdin`);
+        if (SINKS[d].input === 'file') assert.ok(c.args.some((a) => a.includes('/dev/stdin')), `${d}: reads /dev/stdin`);
+      }
+    }
+  });
+
+  it('on Windows: a file reader gets a 0600 temp file holding the value, gone once the tool exits, landed or not', () => {
+    for (const d of cli.filter((x) => SINKS[x].input === 'file')) {
+      for (const status of [0, 1]) {
+        const seen = [];
+        const run = (cmd, args, opts) => {
+          const at = args.map((a) => a.replace(/^file:\/\//, '')).find((a) => /nexus-sink-/.test(a));
+          seen.push({ at, text: fs.readFileSync(at, 'utf8'), input: opts.input, args });
+          return { status };
+        };
+        const done = pushSecret({ name: 'A_TOKEN', value, destination: d, run, platform: 'win32', ...OPTS[d] });
+        assert.equal(done.ok, status === 0, d);
+        assert.ok(seen.length >= 1, d);
+        for (const x of seen) {
+          assert.equal(x.text, lineOf(d), d);
+          assert.equal(x.input, '', `${d}: nothing on stdin when the file holds it`);
+          assert.ok(!x.args.join(' ').includes(value), `${d}: the value reached argv`);
+          assert.ok(!fs.existsSync(x.at), `${d}: the temp file outlived the push`);
+        }
+      }
+    }
+    assert.throws(() => withValueFile('x', () => { throw new Error('boom'); }, { platform: 'win32' }), /boom/);
+  });
+
+  it('runs the create when the update fails (a secret that does not exist yet), with the value on stdin both times', () => {
+    for (const [d, first, then] of [['gcp-secret-manager', 'versions', 'create'], ['aws-secrets-manager', 'put-secret-value', 'create-secret']]) {
+      const r = recorder((cmd, args) => ({ status: args.includes(first) ? 1 : 0 }));
+      const done = pushSecret({ name: 'A_TOKEN', value, destination: d, run: r.run, platform: 'linux', project: 'p-1', region: 'us-east-1' });
+      assert.equal(done.ok, true, d);
+      assert.deepEqual(r.calls.map((c) => c.args.find((a) => a === first || a === then)), [first, then]);
+      for (const c of r.calls) assert.equal(c.input, value);
+    }
+  });
+
+  it('names each place by its options, refuses a bad option, an Azure push without a vault, and an argv that would hold the value', () => {
+    const r = recorder();
+    pushSecret({ name: 'A_TOKEN', value, destination: 'azure-key-vault', run: r.run, platform: 'linux', vault: 'kv-1' });
+    assert.deepEqual(r.calls[0].args.slice(0, 7), ['keyvault', 'secret', 'set', '--vault-name', 'kv-1', '--name', 'A-TOKEN']);
+    assert.equal(keyVaultName('STRIPE_SECRET_KEY'), 'STRIPE-SECRET-KEY');
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'azure-key-vault', run: never }), /needs --vault/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'fly', run: never, app: '--all' }), /not a app name/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'cloudflare-pages', run: never, environments: ['staging'] }), /a Pages environment is one of production, preview/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value: 'it\u0027s a value', destination: 'supabase', run: never }), /a value with '/);
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'firebase', run: never, project: value }), /refused, the value would be on the command line/);
+    const pages = recorder();
+    const p = pushSecret({ name: 'A_TOKEN', value, destination: 'cloudflare-pages', run: pages.run, project: 'site', environments: ['production', 'preview'] });
+    assert.deepEqual(pages.calls.map((c) => c.args), [['pages', 'secret', 'put', 'A_TOKEN', '--project-name', 'site'], ['pages', 'secret', 'put', 'A_TOKEN', '--project-name', 'site', '--env', 'preview']]);
+    assert.deepEqual(p.detail, { environments: ['production', 'preview'], project: 'site' });
+    const fly = recorder();
+    pushSecret({ name: 'A_TOKEN', value, destination: 'fly', run: fly.run, app: 'my-app' });
+    assert.deepEqual(fly.calls[0].args, ['secrets', 'import', '--stage', '--app', 'my-app']);
+  });
+});
+
+describe('the Supabase sink refuses the names Supabase reserves', () => {
+  it('a SUPABASE_ name never runs the CLI', () => {
+    const rec = recorder();
+    assert.throws(() => pushSecret({ name: 'SUPABASE_URL', value: 'fake-supabase-0001', destination: 'supabase', run: rec.run }), /reserves the SUPABASE_ prefix/);
+    assert.equal(rec.calls.length, 0);
+  });
+});
+
+describe('the Netlify sink: the API, the value in the request body only', () => {
+  const value = 'fake-netlify-value-0077';
+  function fakeFetch(answers) {
+    const calls = [];
+    return { calls, fetch: async (url, init = {}) => { calls.push({ url, ...init }); const a = answers.shift() ?? { status: 500 }; return { status: a.status, json: async () => a.json ?? null }; } };
+  }
+
+  it('reads the site account, updates the variable (creating it when new), and never puts the value in a URL', async () => {
+    const f = fakeFetch([{ status: 200, json: { account_id: 'acct-1' } }, { status: 404 }, { status: 201 }]);
+    const done = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', secrets: { token: 'fake-netlify-token', site: 'site-1' }, fetch: f.fetch });
+    assert.deepEqual(done, { destination: 'netlify', ok: true, detail: { environments: ['production', 'deploy-preview', 'branch-deploy'] } });
+    assert.deepEqual(f.calls.map((c) => c.method), ['GET', 'PUT', 'POST']);
+    assert.match(f.calls[1].url, /\/accounts\/acct-1\/env\/A_TOKEN\?site_id=site-1$/);
+    for (const c of f.calls) {
+      assert.ok(!c.url.includes(value), 'the value reached a URL');
+      assert.equal(c.headers.Authorization, 'Bearer fake-netlify-token');
+    }
+    const body = JSON.parse(f.calls[2].body)[0];
+    assert.equal(body.is_secret, true);
+    assert.deepEqual(body.values.map((v) => [v.context, v.value]), [['production', value], ['deploy-preview', value], ['branch-deploy', value]]);
+  });
+
+  it('keeps the variable secret when dev is among the contexts (Netlify unmasks only the dev value)', async () => {
+    const f = fakeFetch([{ status: 200, json: { account_id: 'a' } }, { status: 200 }]);
+    const done = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', environments: ['production', 'dev'], secrets: { token: 't', site: 's' }, fetch: f.fetch });
+    assert.equal(done.ok, true);
+    const body = JSON.parse(f.calls[1].body);
+    assert.equal(body.is_secret, true);
+    assert.ok(!body.scopes.includes('post-processing'));
+  });
+
+  it('says what is missing (the token, the site) and fails by status, never by value', async () => {
+    const none = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', secrets: {}, fetch: () => { throw new Error('no call'); } });
+    assert.match(none.error, /needs NETLIFY_AUTH_TOKEN in the vault/);
+    const nosite = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', cwd: '/nowhere', secrets: { token: 't' }, fetch: () => { throw new Error('no call'); } });
+    assert.match(nosite.error, /needs a site/);
+    const f = fakeFetch([{ status: 200, json: { account_id: 'a' } }, { status: 403, json: { message: value } }]);
+    const bad = await pushSecretAsync({ name: 'A_TOKEN', value, destination: 'netlify', secrets: { token: 't', site: 's' }, fetch: f.fetch });
+    assert.equal(bad.ok, false);
+    assert.equal(bad.error, 'Netlify answered 403 (setting the variable)');
+    assert.throws(() => pushSecret({ name: 'A_TOKEN', value, destination: 'netlify', run: never }), /pushSecretAsync/);
+  });
+});
+
+describe('who pushed: the session or the GUI, in the audit line', () => {
+  it('reads NEXUS_SESSION only when it is shaped like an id', () => {
+    assert.equal(sessionOf({ NEXUS_SESSION: 'deneb-7' }), 'deneb-7');
+    assert.equal(sessionOf({ NEXUS_SESSION: 'not ok; rm' }), null);
+    assert.equal(sessionOf({}), null);
+  });
+
+  it('secrets push records a session id from NEXUS_SESSION, or the GUI via, never both, never a value', async () => {
+    const t = workspace();
+    try {
+      fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), JSON.stringify({ version: 1, secrets: [
+        { name: 'GH_TOKEN', for: 'The issue mirror.', where: null, destinations: ['local', 'github-actions'], provider: 'owner', chunk: null },
+      ] }));
+      fs.writeFileSync(path.join(t.repo, '.env'), 'GH_TOKEN=fake-gh-0001\n');
+      const io = { out: () => {}, err: () => {}, owner: () => true, run: recorder().run, vault: { git: () => ({ status: 0, stdout: '' }) } };
+      assert.equal(await main(['push', 'GH_TOKEN', '--root', t.repo], { ...io, env: { NEXUS_SESSION: 'deneb' } }), 0);
+      assert.equal(await main(['push', 'GH_TOKEN', '--root', t.repo], { ...io, env: { NEXUS_SESSION: 'deneb' }, via: 'gui' }), 0);
+      const [a, b] = readAudit(t.repo);
+      assert.equal(a.session, 'deneb');
+      assert.equal(b.via, 'gui');
+      assert.equal(b.session, undefined);
+      assert.ok(!fs.readFileSync(path.join(t.repo, AUDIT), 'utf8').includes('fake-gh-0001'));
+    } finally {
+      t.done();
+    }
+  });
+});
+
+describe('the audit record', () => {
+  it('appends one JSON line per event, by name and destination and time, and refuses a value', () => {
+    const t = workspace();
+    try {
+      assert.deepEqual(readAudit(t.repo), []);
+      recordAudit(t.repo, { action: 'push', name: 'A_TOKEN', destination: 'github-actions' }, { now: () => '2026-10-21T10:00:00.000Z' });
+      recordAudit(t.repo, { action: 'push', name: 'B_TOKEN', destination: 'github-actions' }, { now: () => '2026-10-21T11:00:00.000Z' });
+      const lines = fs.readFileSync(path.join(t.repo, AUDIT), 'utf8').trim().split('\n');
+      assert.equal(lines.length, 2);
+      assert.deepEqual(JSON.parse(lines[0]), { time: '2026-10-21T10:00:00.000Z', action: 'push', name: 'A_TOKEN', destination: 'github-actions' });
+      assert.deepEqual(readAudit(t.repo).map((e) => e.name), ['A_TOKEN', 'B_TOKEN']);
+      assert.throws(() => recordAudit(t.repo, { action: 'push', name: 'A_TOKEN', value: FAKES[0] }), /never a value/);
+      assert.throws(() => recordAudit(t.repo, { action: 'push', name: 'A_TOKEN', note: { x: 1 } }), /note: a string/);
+      assert.throws(() => recordAudit(t.repo, { name: 'A_TOKEN' }), /action/);
+      assert.ok(!fs.readFileSync(path.join(t.repo, AUDIT), 'utf8').includes(FAKES[0]));
+      fs.appendFileSync(path.join(t.repo, AUDIT), 'not json\n');
+      assert.equal(readAudit(t.repo).length, 2, 'a torn line is skipped');
+    } finally {
+      t.done();
+    }
+  });
+});
+
+describe('secrets push', () => {
+  function setup(t) {
+    fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), JSON.stringify({ version: 1, secrets: [
+      { name: 'GH_TOKEN', for: 'The issue mirror.', where: null, destinations: ['local', 'github-actions'], provider: 'owner', chunk: null },
+      { name: 'VERCEL_TOKEN', for: 'Deploys.', where: null, destinations: ['github-actions', 'vercel'], provider: 'owner', chunk: null },
+      { name: 'LOCAL_TOKEN', for: 'Local only.', where: null, destinations: ['local'], provider: 'owner', chunk: null },
+      { name: 'CF_TOKEN', for: 'The edge worker.', where: null, destinations: ['cloudflare'], provider: 'owner', chunk: null },
+      { name: 'MISSING_TOKEN', for: 'Not set.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+    ] }));
+    fs.writeFileSync(path.join(t.repo, '.env'), `GH_TOKEN=fake-gh-0001\nVERCEL_TOKEN="${FAKES[1].replace(/"/g, '\\"')}"\nLOCAL_TOKEN=fake-gh-0001\nCF_TOKEN=fake-gh-0001\n`);
+  }
+  async function push(t, argv, { owner = () => true, run = never } = {}) {
+    const lines = [];
+    const out = (s) => lines.push(s);
+    const code = await main([...argv, '--root', t.repo], { out, err: out, owner, run, vault: { git: () => ({ status: 0, stdout: '' }) } });
+    const text = lines.join('\n');
+    for (const f of FAKES) assert.ok(!text.includes(f), `a value reached the terminal: ${text}`);
+    return { code, text };
+  }
+  const audit = (t) => { const p = path.join(t.repo, AUDIT); return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : ''; };
+
+  it('pushes a declared name to its destinations through stdin and records each push', async () => {
+    const t = workspace();
+    try {
+      setup(t);
+      const r = recorder();
+      const { code, text } = await push(t, ['push', 'GH_TOKEN'], { run: r.run });
+      assert.equal(code, 0, text);
+      assert.match(text, /GH_TOKEN -> github-actions/);
+      assert.equal(r.calls.length, 1, 'local is the vault itself: nothing to push there');
+      assert.equal(r.calls[0].input, FAKES[0]);
+      assert.equal(path.resolve(r.calls[0].cwd), path.resolve(t.repo));
+      const rec = readAudit(t.repo);
+      assert.deepEqual(rec.map((e) => [e.action, e.name, e.destination]), [['push', 'GH_TOKEN', 'github-actions']]);
+      assert.ok(!FAKES.some((f) => audit(t).includes(f)));
+
+      const r2 = recorder();
+      assert.equal((await push(t, ['push', 'GH_TOKEN', '--to', 'github-actions', '--repo', 'me/app'], { run: r2.run })).code, 0);
+      assert.deepEqual(r2.calls[0].args.slice(-2), ['--repo', 'me/app']);
+    } finally {
+      t.done();
+    }
+  });
+
+  it('pushes to Vercel per environment and to Cloudflare, and records what landed with its environments or worker', async () => {
+    const t = workspace();
+    try {
+      setup(t);
+      const r = recorder();
+      const { code, text } = await push(t, ['push', 'VERCEL_TOKEN'], { run: r.run });
+      assert.equal(code, 0, text);
+      assert.match(text, /VERCEL_TOKEN -> github-actions/);
+      assert.match(text, /VERCEL_TOKEN -> vercel \(production, preview, development\)/);
+      assert.deepEqual(r.calls.map((c) => c.cmd), ['gh', 'vercel', 'vercel', 'vercel']);
+      for (const c of r.calls) assert.equal(c.input, FAKES[1]);
+      assert.deepEqual(readAudit(t.repo).map((e) => [e.destination, e.environments]), [
+        ['github-actions', undefined], ['vercel', ['production', 'preview', 'development']],
+      ]);
+
+      const narrow = recorder();
+      assert.equal((await push(t, ['push', 'VERCEL_TOKEN', '--to', 'vercel', '--env', 'production,preview'], { run: narrow.run })).code, 0);
+      assert.deepEqual(narrow.calls.map((c) => c.args[3]), ['production', 'preview']);
+
+      const cf = recorder();
+      const worker = await push(t, ['push', 'CF_TOKEN', '--worker', 'edge-api'], { run: cf.run });
+      assert.equal(worker.code, 0, worker.text);
+      assert.match(worker.text, /CF_TOKEN -> cloudflare \(worker edge-api\)/);
+      assert.deepEqual(cf.calls[0].args, ['secret', 'put', 'CF_TOKEN', '--name', 'edge-api']);
+      const { time, ...cfEvent } = readAudit(t.repo).at(-1);
+      assert.ok(time);
+      assert.deepEqual(cfEvent, { action: 'push', name: 'CF_TOKEN', destination: 'cloudflare', worker: 'edge-api' });
+
+      const before = readAudit(t.repo).length;
+      const half = recorder((cmd, args) => ({ status: args[3] === 'development' ? 3 : 0 }));
+      const partial = await push(t, ['push', 'VERCEL_TOKEN', '--to', 'vercel'], { run: half.run });
+      assert.equal(partial.code, 1);
+      assert.match(partial.text, /vercel exited 3 \(development\)/);
+      const last = readAudit(t.repo);
+      assert.equal(last.length, before + 1, 'the environments that landed are recorded');
+      assert.deepEqual(last.at(-1).environments, ['production', 'preview']);
+
+      const failing = recorder(() => ({ status: 4 }));
+      const bad = await push(t, ['push', 'GH_TOKEN'], { run: failing.run });
+      assert.equal(bad.code, 1);
+      assert.match(bad.text, /gh exited 4/);
+      assert.equal(readAudit(t.repo).length, before + 1, 'a failed push is not recorded as a push');
+      assert.ok(!FAKES.some((f) => audit(t).includes(f)));
+    } finally {
+      t.done();
+    }
+  });
+
+  it('refuses a contributor, an undeclared or missing name, a destination the manifest does not list, and bad usage', async () => {
+    const t = workspace();
+    try {
+      setup(t);
+      const contributor = await push(t, ['push', 'GH_TOKEN'], { owner: () => false });
+      assert.equal(contributor.code, 1);
+      assert.match(contributor.text, /owner mode/);
+      assert.match(contributor.text, /local-only/);
+      const undeclared = await push(t, ['push', 'OTHER_TOKEN']);
+      assert.equal(undeclared.code, 1);
+      assert.match(undeclared.text, /OTHER_TOKEN is not declared/);
+      const missing = await push(t, ['push', 'MISSING_TOKEN']);
+      assert.equal(missing.code, 1);
+      assert.match(missing.text, /MISSING_TOKEN is not in the vault: set it first/);
+      const elsewhere = await push(t, ['push', 'GH_TOKEN', '--to', 'cloudflare']);
+      assert.equal(elsewhere.code, 1);
+      assert.match(elsewhere.text, /GH_TOKEN does not go to cloudflare/);
+      const local = await push(t, ['push', 'LOCAL_TOKEN']);
+      assert.equal(local.code, 0);
+      assert.match(local.text, /LOCAL_TOKEN goes to local only: nothing to push/);
+      assert.equal((await push(t, ['push'])).code, 64);
+      assert.equal((await push(t, ['push', 'GH_TOKEN', '--to', 'local'])).code, 64);
+      assert.equal((await push(t, ['push', 'GH_TOKEN', '--to', 'heroku'])).code, 64);
+      assert.equal((await push(t, ['status', '--to', 'github-actions'])).code, 64);
+      assert.equal((await push(t, ['status', '--env', 'preview'])).code, 64);
+      assert.equal((await push(t, ['push', 'VERCEL_TOKEN', '--env', ''])).code, 64);
+      assert.equal((await push(t, ['push', 'CF_TOKEN', '--worker', ''])).code, 64);
+      const staging = await push(t, ['push', 'VERCEL_TOKEN', '--to', 'vercel', '--env', 'staging']);
+      assert.equal(staging.code, 1);
+      assert.match(staging.text, /staging: a Vercel environment/);
+      assert.equal(audit(t), '', 'nothing was pushed, so nothing was recorded');
+    } finally {
+      t.done();
+    }
+  });
+});
+
+describe('the Actions sink, read back (spec 49, A5)', () => {
+  const MAN = JSON.stringify({ version: 1, secrets: [
+    { name: 'ACTIONS_PAT', for: 'The cloud loop.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+    { name: 'GH_TOKEN', for: 'The issue mirror.', where: null, destinations: ['local', 'github-actions'], provider: 'owner', chunk: null },
+    { name: 'LOCAL_TOKEN', for: 'Local only.', where: null, destinations: ['local'], provider: 'owner', chunk: null },
+  ] });
+  const listing = (names) => recorder((cmd, args) => (cmd === 'gh' && args[0] === 'secret' && args[1] === 'list' ? { status: 0, stdout: JSON.stringify(names.map((name) => ({ name }))) } : { status: 0 }));
+
+  it('asks gh secret list for names only, and reads unknown when gh cannot tell', () => {
+    const r = listing(['ACTIONS_PAT', 'lower']);
+    const ok = actionsSecretNames({ run: r.run, cwd: '/w/repo' });
+    assert.equal(ok.known, true);
+    assert.deepEqual([...ok.names], ['ACTIONS_PAT'], 'names only, env-var shaped');
+    assert.deepEqual(r.calls.map((c) => [c.cmd, c.args, c.capture, c.input]), [['gh', ['secret', 'list', '--json', 'name,updatedAt'], true, undefined]], 'only names and dates, no value on stdin');
+    assert.deepEqual(actionsSecretNames({ run: () => ({ status: 127, missing: true }) }), { known: false, why: 'gh is not installed' });
+    assert.equal(actionsSecretNames({ run: () => ({ status: 4 }) }).why, 'gh exited 4', 'not signed in');
+    assert.equal(actionsSecretNames({ run: () => ({ status: 0, stdout: 'HTTP 403' }) }).known, false, 'no permission or no list');
+    assert.equal(actionsSecretNames({ run: () => ({ status: 0 }) }).known, false, 'a runner with no output');
+    assert.equal(actionsSecretNames({ run: () => { throw new Error('boom'); } }).known, false);
+  });
+
+  async function status(t, run, { json = false } = {}) {
+    const lines = [];
+    const out = (s) => lines.push(s);
+    const code = await main(['status', ...(json ? ['--json'] : []), '--root', t.repo], { out, err: out, owner: () => true, run, vault: { git: () => ({ status: 0, stdout: '' }) } });
+    return { code, text: lines.join('\n') };
+  }
+  function gitRepo(t, remote) {
+    if (spawnSync('git', ['init', '-q', t.repo]).status !== 0) return false;
+    if (remote) spawnSync('git', ['-C', t.repo, 'remote', 'add', 'origin', remote]);
+    fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), MAN);
+    return true;
+  }
+
+  it('status: a name gh lists reads set at github-actions; one it does not, not set; in the sink only, not missing', async () => {
+    const t = workspace();
+    try {
+      if (!gitRepo(t, 'https://github.com/me/app.git')) return;
+      const r = listing(['ACTIONS_PAT']);
+      const { code, text } = await status(t, r.run);
+      assert.equal(code, 0, text);
+      assert.match(text, /3 declared · 0 set · 2 missing · 1 in a sink only/);
+      assert.match(text, /ACTIONS_PAT\s+in github-actions only\s+-> github-actions \(set\)/);
+      assert.match(text, /GH_TOKEN\s+missing\s+-> local, github-actions \(not set\)/);
+      assert.match(text, /LOCAL_TOKEN\s+missing\s+-> local$/m);
+      assert.equal(r.calls.length, 1, 'gh is asked once per status');
+      const j = await status(t, listing(['ACTIONS_PAT']).run, { json: true });
+      assert.deepEqual(JSON.parse(j.text).secrets.map((s) => [s.name, s.remote ?? null]), [['ACTIONS_PAT', { 'github-actions': 'set' }], ['GH_TOKEN', { 'github-actions': 'not set' }], ['LOCAL_TOKEN', null]]);
+    } finally {
+      t.done();
+    }
+  });
+
+  it('status: gh unable to tell, or no GitHub remote, reads unknown, never missing at github-actions; a contributor never asks', async () => {
+    const t = workspace();
+    try {
+      if (!gitRepo(t, 'https://github.com/me/app.git')) return;
+      const { text } = await status(t, () => ({ status: 1 }));
+      assert.match(text, /ACTIONS_PAT\s+missing\s+-> github-actions \(unknown\)/);
+      assert.match(text, /github-actions: unknown \(gh exited 1\)/);
+      spawnSync('git', ['-C', t.repo, 'remote', 'remove', 'origin']);
+      const none = await status(t, never);
+      assert.match(none.text, /github-actions: unknown \(no GitHub remote\)/, 'gh is not run without a GitHub remote');
+      const lines = [];
+      assert.equal(await main(['status', '--root', t.repo], { out: (s) => lines.push(s), err: (s) => lines.push(s), owner: () => false, run: never, vault: { git: () => ({ status: 0, stdout: '' }) } }), 0);
+    } finally {
+      t.done();
+    }
+  });
+});
+
+describe('a name held by GitHub only: its age from gh (spec 49, A5 follow-up)', () => {
+  it('reads updatedAt as a date per name, and status prints the age for a name in a sink only', async () => {
+    const at = new Date(Date.now() - 3 * 86400000).toISOString();
+    const r = recorder((cmd, args) => (args[1] === 'list' ? { status: 0, stdout: JSON.stringify([{ name: 'ACTIONS_PAT', updatedAt: at }, { name: 'B_TOKEN', updatedAt: 'not a date' }]) } : { status: 0 }));
+    const got = actionsSecretNames({ run: r.run });
+    assert.deepEqual([...got.updated], [['ACTIONS_PAT', at]], 'a date only, a bad one dropped');
+    const t = workspace();
+    try {
+      if (spawnSync('git', ['init', '-q', t.repo]).status !== 0) return;
+      spawnSync('git', ['-C', t.repo, 'remote', 'add', 'origin', 'https://github.com/me/app.git']);
+      fs.writeFileSync(path.join(t.repo, 'nexus.secrets.json'), JSON.stringify({ version: 1, secrets: [
+        { name: 'ACTIONS_PAT', for: 'The cloud loop.', where: null, destinations: ['github-actions'], provider: 'owner', chunk: null },
+      ] }));
+      const lines = [];
+      const io = { out: (s) => lines.push(s), err: (s) => lines.push(s), owner: () => true, run: r.run, vault: { git: () => ({ status: 0, stdout: '' }) } };
+      assert.equal(await main(['status', '--root', t.repo], io), 0);
+      assert.match(lines.join('\n'), /ACTIONS_PAT\s+in github-actions only\s+-> github-actions \(set\)\s+set 3 d ago \(GitHub\)/);
+      lines.length = 0;
+      assert.equal(await main(['status', '--json', '--root', t.repo], io), 0);
+      assert.deepEqual(JSON.parse(lines.join('\n')).secrets[0].remoteAt, { 'github-actions': at });
+    } finally {
+      t.done();
+    }
+  });
+});

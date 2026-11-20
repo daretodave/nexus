@@ -1,0 +1,143 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push origin <DEFAULT_BRANCH>)",
+      "Bash(git pull --ff-only:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git ls-files:*)",
+      "Bash(<PACKAGE_MANAGER> verify:*)",
+      "Bash(<PACKAGE_MANAGER> deploy:check:*)",
+      "Bash(<PACKAGE_MANAGER> data:validate:*)",
+      "Bash(<PACKAGE_MANAGER> test:*)",
+      "Bash(<PACKAGE_MANAGER> typecheck:*)",
+      "Bash(<PACKAGE_MANAGER> build:*)",
+      "Bash(node scripts/loop-issue.mjs:*)",
+      "Bash(node scripts/pulse.mjs:*)",
+      "Bash(node scripts/deploy-check.mjs:*)",
+      "Bash(node scripts/notify.mjs:*)",
+      "Bash(node scripts/announce.mjs:*)",
+      "Bash(node scripts/ledger.mjs:*)",
+      "Bash(node scripts/worktree.mjs:*)",
+      "Bash(node scripts/design/prompt.mjs:*)",
+      "Bash(node scripts/design/ingest.mjs:*)",
+      "Bash(node scripts/claims.mjs:*)",
+      "Bash(node scripts/plan/settle.mjs:*)",
+      "Bash(node scripts/plan/progress.mjs:*)",
+      "Bash(node scripts/plan/order.mjs:*)",
+      "Bash(node scripts/plan/pending.mjs:*)",
+      "Bash(node scripts/plan/settled.mjs:*)",
+      "Bash(node scripts/plan/footguns.mjs:*)",
+      "Bash(node scripts/plan-check.mjs:*)",
+      "Bash(gh auth status:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh issue reopen:*)",
+      "Bash(gh label create:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(git fetch:*)",
+      "Bash(awk:*)",
+      "Bash(mktemp:*)",
+      "Bash(echo:*)",
+      "Bash(printenv:*)",
+      "Bash(env)",
+      "Bash(date:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(cp:*)",
+      "Bash(mkdir:*)",
+      "Bash(sed:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git commit -n:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git branch -D:*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.workspace)",
+      "Read(../.env.workspace)",
+      "Read(setup/bootstrap.local.json)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/steer.mjs"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-bash"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-read"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs pre-agent"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/steer.mjs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.mjs stop"
+          }
+        ]
+      }
+    ]
+  }
+}

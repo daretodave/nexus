@@ -1,0 +1,12 @@
+name: Needs a strategic call
+description: This isn't a quick fix — it needs a human decision (scope, direction, tradeoffs).
+title: "[needs-user] "
+labels: ["triage:needs-user"]
+body:
+  - type: textarea
+    id: decision
+    attributes:
+      label: What needs deciding
+      description: What's the call, and what are the tradeoffs?
+    validations:
+      required: true

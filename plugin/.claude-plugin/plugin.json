@@ -1,0 +1,8 @@
+{
+  "name": "nexus",
+  "version": "2.0.0",
+  "description": "Turn a repo into a project that ships itself.",
+  "author": {
+    "name": "daretodave and nexus contributors"
+  }
+}

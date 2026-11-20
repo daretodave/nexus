@@ -1,0 +1,284 @@
+name: heartbeat
+
+# The immune system (loop shape 3): no model; shell plus one
+# offline node script (the motion pulse); its only writes are
+# deduped alarm issues. It watches the other loops: cancels
+# wedged runs so the shared concurrency group unblocks (the
+# next cron firing resumes naturally), and turns "silently
+# dead since Tuesday" into a deduped issue. Watchers must be
+# dumber than the thing they watch. The motion pulse only
+# counts commits: a loop that runs and ships nothing is an
+# alarm too.
+
+on:
+  schedule:
+    - cron: '15 */6 * * *'  # every 6h, offset from march's firings
+  workflow_dispatch:
+
+permissions:
+  actions: write            # gh run cancel
+  contents: read            # the checkout the motion pulse counts
+  issues: write             # the alarm
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_REPO: ${{ github.repository }}
+      # The token sits on each step, never here: a job's env is
+      # handed to every step (scripts/workflow-lint.mjs).
+    steps:
+      # Full history: the motion pulse counts shipped commits over
+      # the last five full weeks.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The watch list is a repo variable (space-separated workflow
+      # names), so a repo with more cloud writers (pr-resolve, a
+      # deploy loop) watches them with no edit here. Add your CI
+      # gate's name to it and the red-on-main step below reports it.
+      - name: Cancel wedged runs (in_progress > 2h)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WATCH: ${{ vars.NEXUS_HEARTBEAT_WATCH || 'march night' }}
+        run: |
+          now=$(date -u +%s)
+          for wf in $WATCH; do
+            gh run list --workflow "$wf" --status in_progress \
+              --json databaseId,createdAt \
+              --jq '.[] | [.databaseId, .createdAt] | @tsv' |
+            while IFS=$'\t' read -r id created; do
+              started=$(date -u -d "$created" +%s)
+              age=$(( (now - started) / 60 ))
+              if [ "$age" -gt 120 ]; then
+                echo "Cancelling wedged $wf run $id (${age}m old)"
+                gh run cancel "$id"
+                gh issue list --search "in:title \"Heartbeat: cancelled wedged run\" state:open" --json number --jq 'length' | grep -q '^0$' &&
+                gh issue create \
+                  --title "Heartbeat: cancelled wedged run ($wf, $(date -u +%Y-%m-%dT%H:%MZ))" \
+                  --body "Run $id sat in_progress for ${age}m (honest ticks finish well inside 60m). Cancelled so the concurrency group unblocks; the next cron firing resumes. If the log stalls right after a green gate, that is the post-result exit hang - see playbooks/cloud-loop.md."
+              fi
+            done
+          done
+
+      # A watched CI gate (a push-triggered workflow such as cli-ci)
+      # whose newest completed push run on the default branch failed
+      # opens one deduped issue per workflow; /triage routes it into
+      # the loop's queue as a bug. Only push runs count, so the
+      # scheduled loops in the same list never trip it.
+      - name: Alarm if a watched gate is red on the default branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WATCH: ${{ vars.NEXUS_HEARTBEAT_WATCH || 'march night' }}
+        run: |
+          branch=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null || true)
+          branch=${branch:-main}
+          for wf in $WATCH; do
+            row=$(gh run list --workflow "$wf" --branch "$branch" --event push --status completed -L 1 \
+              --json conclusion,headSha,url --jq '.[0] // empty | [.conclusion, .headSha, .url] | @tsv' 2>/dev/null || true)
+            if [ -z "$row" ]; then
+              echo "$wf: no completed push run on $branch - nothing to check."
+              continue
+            fi
+            IFS=$'\t' read -r conclusion sha url <<< "$row"
+            echo "$wf: newest push run on $branch is $conclusion (${sha:0:7})"
+            case "$conclusion" in failure|timed_out|startup_failure) ;; *) continue ;; esac
+            existing=$(gh issue list --search "in:title \"Heartbeat: $wf is red on $branch\" state:open" --json number --jq 'length')
+            if [ "$existing" -eq 0 ]; then
+              gh issue create \
+                --title "Heartbeat: $wf is red on $branch ($(date -u +%Y-%m-%d))" \
+                --body "The newest $wf run on $branch (push, ${sha:0:7}) ended $conclusion: $url. A red gate on $branch sits under every change after it. Read the failing step (gh run view <id> --log-failed), fix it under that workflow's own gate, and close this issue once a green run lands; the next /triage routes it into the loop's queue. This issue is the one report while it stays open."
+            fi
+          done
+
+      # A disabled schedule produces no runs, so the cadence check
+      # below cannot see it: watch the state itself. GitHub sets
+      # disabled_inactivity after 60 days with no repo commits; a
+      # human's `gh workflow disable` sets disabled_manually. Both
+      # alarm alike, one open issue per workflow. Never re-enabled
+      # from here: watchers stay dumber than what they watch.
+      - name: Alarm if a scheduled workflow is not armed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --all: the default listing hides disabled workflows.
+          states=$(gh workflow list --all --limit 200 \
+            --json name,state --jq '.[] | [.name, .state] | @tsv')
+          for wf in march night heartbeat; do
+            state=$(printf '%s\n' "$states" | awk -F'\t' -v w="$wf" '$1 == w { print $2; exit }')
+            if [ -z "$state" ]; then
+              echo "$wf: not installed - nothing to watch."
+              continue
+            fi
+            echo "$wf: $state"
+            [ "$state" = "active" ] && continue
+            existing=$(gh issue list --search "in:title \"Heartbeat: $wf is not armed\" state:open" --json number --jq 'length')
+            if [ "$existing" -eq 0 ]; then
+              gh issue create \
+                --title "Heartbeat: $wf is not armed ($state, $(date -u +%Y-%m-%d))" \
+                --body "The $wf workflow is in state $state, so its schedule fires nothing and the cadence check skips it. Two causes: GitHub's 60-day inactivity rule (disabled_inactivity: no repo commits in 60 days) or a human's gh workflow disable (disabled_manually: a deliberate pause). Fix, once the pause is over: gh workflow enable $wf. This issue is the one report while it stays open; the heartbeat never re-enables anything itself."
+            fi
+          done
+
+      # The march flatline threshold follows the cadence (scripts/cloud/cadence.mjs):
+      # NEXUS_HEARTBEAT_HOURS when set, else the NEXUS_CADENCE preset's
+      # (calm 20, steady 14, eager and sprint 10; off has no schedule,
+      # so nothing to watch), else the march_hours literal below. Fails
+      # open: no output leaves the literal.
+      - name: Cadence
+        id: cadence
+        env:
+          CADENCE: ${{ vars.NEXUS_CADENCE }}
+          HEARTBEAT_HOURS: ${{ vars.NEXUS_HEARTBEAT_HOURS }}
+        run: node scripts/cloud/cadence.mjs resolve --cadence "$CADENCE" --dial "$(node scripts/plan/improve.mjs --cloud Cadence)" --heartbeat-hours "$HEARTBEAT_HOURS" || true
+
+      - name: Alarm if march or night has not succeeded a tick in time
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CADENCE_HOURS: ${{ steps.cadence.outputs.heartbeat_hours }}
+        run: |
+          states=$(gh workflow list --all --limit 200 \
+            --json name,state --jq '.[] | [.name, .state] | @tsv')
+
+          # A weekly quota lockout (scripts/cloud/quota.mjs) is its own
+          # report: while a "Loop paused: weekly quota" issue is open,
+          # ticks skip the model on purpose and no flatline is filed.
+          # Issue text is untrusted, so only a labelled pause issue, or
+          # one the workflow token opened, counts: an outsider's issue
+          # with that title never silences the alarm.
+          paused=$(gh issue list --state open --label loop:paused-quota --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "${paused:-0}" = "0" ]; then
+            paused=$(gh issue list --state open --author app/github-actions --search 'in:title "Loop paused: weekly quota"' --json number,author --jq '[.[] | select(.author.login == "app/github-actions")] | length' 2>/dev/null || echo 0)
+          fi
+
+          # check_cadence <workflow> <threshold_h>: one open issue
+          # when the newest successful run is threshold_h or older.
+          check_cadence() {
+            wf=$1; threshold=$2
+            state=$(printf '%s\n' "$states" | awk -F'\t' -v w="$wf" '$1 == w { print $2; exit }')
+            if [ -z "$state" ]; then
+              echo "$wf: not installed - nothing to measure."
+              return 0
+            fi
+            # A paused or auto-disabled workflow is the armed-ness
+            # step's report; a flatline alarm on top would reopen
+            # every tick the pause lasts.
+            if [ "$state" != "active" ]; then
+              echo "$wf: $state - cadence skipped (the armed-ness step reports it)."
+              return 0
+            fi
+            if [ "${paused:-0}" != "0" ]; then
+              echo "$wf: loop paused on the weekly quota (a Loop paused issue is open) - cadence skipped."
+              return 0
+            fi
+            # --status success, not completed: a failed run still
+            # counts as "completed", so a loop failing every tick
+            # (e.g. expired auth) would reset this timer forever.
+            last=$(gh run list --workflow "$wf" --status success -L 1 \
+              --json updatedAt --jq '.[0].updatedAt // empty')
+            if [ -z "$last" ]; then
+              echo "$wf: no successful runs yet - nothing to measure."
+              return 0
+            fi
+            now=$(date -u +%s); then_s=$(date -u -d "$last" +%s)
+            hours=$(( (now - then_s) / 3600 ))
+            echo "$wf: last successful tick ${hours}h ago (alarm at ${threshold}h)"
+            if [ "$hours" -ge "$threshold" ]; then
+              existing=$(gh issue list --search "in:title \"Heartbeat: $wf has flatlined\" state:open" --json number --jq 'length')
+              if [ "$existing" -eq 0 ]; then
+                gh issue create \
+                  --title "Heartbeat: $wf has flatlined ($(date -u +%Y-%m-%d))" \
+                  --body "No successful $wf tick in ${hours}h (alarm threshold ${threshold}h; check the $wf cron schedule). The workflow is active, so the schedule is armed: likely every tick is failing (check the newest run's log), the cron is not firing, or auth expired. Check: gh run list --workflow $wf -L 5."
+              fi
+            fi
+          }
+
+          # march: the cadence's hours (the Cadence step), else this
+          # literal; bootstrap writes the preset's value here.
+          march_hours=14
+          if [ -n "${CADENCE_HOURS:-}" ]; then march_hours=$CADENCE_HOURS; fi
+          if [ "$march_hours" = none ]; then
+            echo "march: NEXUS_CADENCE off (no schedule) - cadence skipped."
+          else
+            check_cadence march "$march_hours"
+          fi
+          check_cadence night 48   # daily cadence, one skipped day tolerated
+
+      # Realized cadence, not liveness: GitHub may throttle or drop
+      # scheduled runs, so a cron that promises 8 slots a day can
+      # deliver 2 and the flatline check above still sees a recent
+      # success. This counts the slots march.yml's cron promised in
+      # the last 72h against the schedule-event runs that started
+      # (scripts/cloud/cadence.mjs realized), and under 40% opens
+      # ONE issue. Schedule events only: chains, nudges and
+      # dispatches never mask a throttled schedule. The window starts
+      # no earlier than the commit that last changed the cron line,
+      # and under 24h of it is not measured.
+      - name: Alarm if march's realized cadence is below 40%
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh workflow list --all --limit 200 \
+            --json name,state --jq '.[] | select(.name == "march") | .state' 2>/dev/null || true)
+          if [ "$state" != "active" ]; then
+            echo "march: ${state:-not installed} - realized cadence skipped."
+            exit 0
+          fi
+          since=$(git log -1 --format=%cI -G'cron:' -- .github/workflows/march.yml 2>/dev/null || true)
+          from=$(date -u -d '72 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          runs="${RUNNER_TEMP:-.}/march-schedule-runs.json"
+          if ! gh run list --workflow march --event schedule --created ">=$from" -L 1000 \
+            --json createdAt,event > "$runs" 2>/dev/null; then
+            echo "march: could not list its scheduled runs - realized cadence skipped."
+            exit 0
+          fi
+          rc=0
+          line=$(node scripts/cloud/cadence.mjs realized --march .github/workflows/march.yml --runs "$runs" --since "$since") || rc=$?
+          echo "$line"
+          [ "$rc" = 3 ] || exit 0
+          # One open issue at a time, and only the workflow token's
+          # counts: an outsider's issue with this title never
+          # silences the alarm.
+          existing=$(gh issue list --state open --author app/github-actions \
+            --search 'in:title "Heartbeat: march realized cadence below 40%"' \
+            --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "${existing:-0}" = "0" ]; then
+            gh issue create \
+              --title "Heartbeat: march realized cadence below 40%" \
+              --body "${line#march realized cadence: }. GitHub delivered under 40% of the scheduled march runs its cron promised in the last 72h (schedule events only; chains, nudges and dispatches do not count). The workflow is armed, so the slots are being throttled or dropped, not failing: GitHub delays and drops scheduled runs under load, and minute :00 is the busiest slot. Move the cron's minute off the hour (scripts/cloud/cadence.mjs apply <preset>), or pick a slower preset the schedule actually delivers. Check: gh run list --workflow march --event schedule -L 20. This issue is the one report while it stays open; close it once the schedule recovers."
+          fi
+
+      # Motion, not liveness: ticks that succeed and ship nothing
+      # look healthy to the cadence check. The motion pulse
+      # (scripts/plan/motion.mjs, the lines pulse --motion prints)
+      # counts shipped units, feat/fix/content commits and chunk
+      # closes, in the last full ISO week against the 4-week
+      # baseline. Under plan/bearings.md's Motion floor it opens ONE
+      # "Heartbeat: motion stalled" issue (loop:opened, loop:stall);
+      # a week that recovers closes it. stall_action decides what
+      # follows: alert (notify.mjs and a digest line), promote (the
+      # next march tick runs /expand promote) or off.
+      - name: Alarm if motion has stalled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -f scripts/plan/motion.mjs ]; then
+            echo "motion: no scripts/plan/motion.mjs - nothing to measure."
+            exit 0
+          fi
+          # A weekly quota pause ships nothing on purpose.
+          paused=$(gh issue list --state open --label loop:paused-quota --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "${paused:-0}" != "0" ]; then
+            echo "motion: loop paused on the weekly quota - motion skipped."
+            exit 0
+          fi
+          runs="${RUNNER_TEMP:-.}/march-runs.json"
+          if gh run list --workflow march --status success -L 100 \
+            --json databaseId,conclusion,createdAt,url > "$runs" 2>/dev/null; then
+            node scripts/plan/motion.mjs alarm --runs "$runs"
+          else
+            node scripts/plan/motion.mjs alarm
+          fi

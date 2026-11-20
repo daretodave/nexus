@@ -1,0 +1,627 @@
+# Bearings — <PROJECT>
+
+> Standing context for every command invocation. Read this
+> alongside the relevant skill file (`skills/<name>.md`) and
+> the matching spec. If anything here changes, update in
+> the same commit.
+
+## What we're building
+
+`spec.md` at the repo root is the product spec — the canonical
+description of <PROJECT>. Read once at session start. The TL;DR:
+
+> <PROJECT_TAGLINE>
+
+<2–4 SENTENCE PRODUCT SUMMARY — audience, core feature, voice>
+
+**<BRANDING DECISION, e.g. "Site name is lowercase, always.">**
+
+**Live at:** <HOSTING_URL>
+
+## Surface
+
+**Surface:** `<site | service | library | cli | hybrid>`
+
+This single line is the hard gate for the opt-in branding
+capability (`/ship-asset` + the `brander` sub-agent — see
+`nexus/customization/branding.md`).
+
+| Value | Meaning |
+|---|---|
+| `site` | Renders pages for humans (web app, blog, docs site). Asset capability available. |
+| `service` | API, daemon, worker, scheduled job. No human UI. Asset capability disabled. |
+| `library` | Code consumed by other code. Asset capability disabled. |
+| `cli` | Terminal-only program. Asset capability disabled. |
+| `hybrid` | Library/service that *also* has a docs/marketing site. Asset capability available, scoped to the site portion. |
+
+If you adopt the optional branding skills, this gate is
+unconditional. There is no override flag — set the surface to
+match reality and the skills behave correctly. If the value is
+missing, branding skills exit with `[needs-user-call]` rather
+than guessing.
+
+## Auth (for Surface: site / hybrid)
+
+**Auth:** `<none | test-user | session-cookie | bearer-token | shared-secret | preview-env | magic-link>`
+
+Tells `reader` (and therefore `/critique`) how to establish a
+session before walking the page set. Without this, critique
+runs anonymous against an authenticated app and every finding
+becomes "the home page is a login form."
+
+| Value | Pattern | When to pick |
+|---|---|---|
+| `none` | No auth wall (or pure marketing-site critique) | Default for public sites |
+| `test-user` | Real login flow, test user creds in `.env` | True E2E fidelity matters more than operational simplicity |
+| `session-cookie` | Pre-baked session cookie in `.env`; no login flow runs | **Recommended default** — works in both Chrome tools and WebFetch (cloud-loop friendly) |
+| `bearer-token` | Same as session-cookie but `Authorization: Bearer <token>` | Apps with a token-based auth instead of cookies |
+| `shared-secret` | Dev-mode impersonation header (`X-Critique-Bot: <secret>`) | Apps you control end-to-end; safest separation |
+| `preview-env` | Reader walks a preview URL with relaxed auth | Projects with a real preview pipeline |
+| `magic-link` | Mailbox poll for the magic link | Passwordless-only apps |
+
+Same gate posture as `Surface:` — unconditional, no
+`--force`, no silent default. If the value is missing,
+`reader` exits with `[needs-user-call]`. If the auth handshake
+fails at runtime, the pass exits loudly rather than falling
+back to anonymous.
+
+See `nexus/customization/auth-aware-critique.md` for the full
+design — patterns, env vars per pattern, hardening, failure
+modes, and the recommended starting point. For
+`Surface: service | library | cli`, set `Auth: none` or omit
+the field entirely (no critique surface to walk).
+
+## UI walk (for Surface: site / hybrid)
+
+**UI:** `none`
+
+**UI routes:** `/`
+
+**UI cadence:** `critique`
+
+**UI magic:** `keep`
+
+Tells the loop whether, where and when to open the pages in a
+real browser: `scripts/ui-walk.mjs` walks each route at two
+viewports and writes `walk.json` (console and page errors,
+4xx and 5xx, overflow, unnamed controls, missing `alt`) plus
+one PNG per screen. In cloud it is the reader's Path A2.
+
+| Knob | Values | Default |
+|---|---|---|
+| `UI:` | `none` · `url <base>` · `dev "<cmd>" <port>` (later; walks nothing yet) | `none`: nothing browses |
+| `UI routes:` | paths under the base, comma-separated | `/` |
+| `UI cadence:` | `critique` (the reader walks) · `iterate` (dimension H walks) · `both` | `critique` |
+| `UI magic:` | `keep` (the magic guard) · `open` | `keep` |
+
+Set `UI:` to `url <HOSTING_URL>` once `Live at:` is a real
+deploy and you want the loop to look at it; leave `none`
+otherwise. The walk is anonymous, whatever `Auth:` says, and
+uploads no screenshots from cloud unless the repo variable
+`NEXUS_UI_ARTIFACTS` is `1` (a public repo's run artifacts
+are readable by any signed-in user). `UI magic: keep` means a
+`ui` finding never removes or dims the site's motion,
+particles or colour: it makes them cheaper. A v1 bearings
+without these lines reads as `UI: none`.
+
+## Stack (locked — do not re-litigate)
+
+These were decided at project bootstrap. Revisit only if a
+chunk genuinely cannot ship without changing one of these — and
+then stop and ask.
+
+| Layer | Choice | Why |
+|---|---|---|
+| Repo | <e.g. pnpm workspaces monorepo> | <reason> |
+| Framework | <e.g. Next.js 15 App Router> | <reason> |
+| Language | <e.g. TypeScript strict> | <reason> |
+| Styling | <e.g. Tailwind CSS> | <reason> |
+| Content | <e.g. MDX-in-repo, headless CMS, none> | <reason> |
+| Structured data | <slug from customization/data-layer.md: gh-as-db / hybrid-with-managed-postgres / pure-db / saas-cms / none> | <reason> |
+| Schemas | <e.g. Zod, generated to JSON Schema> | <reason> |
+| Test (unit) | <e.g. Vitest> | <reason> |
+| Test (e2e) | <e.g. Playwright> | <reason> |
+| Lint | <e.g. ESLint + Prettier> | <reason> |
+| Pkg mgr | <e.g. pnpm 9> | <reason> |
+| Hosting | <HOSTING_PROVIDER> with <plugin if any> | <reason> |
+
+<!-- optional: fill in if your project has external services
+     beyond hosting. See nexus/customization/external-services.md
+     for the convention. -->
+
+## External services (optional)
+
+For every external service the project depends on, write a
+`setup/NN_<service>.md` runbook *before* chunk 01.1 ships. The
+runbook covers every dashboard click for every spec that
+will ever touch the service. The loop reads
+`setup/00_files.md` every `/oversight` tick and surfaces
+drift before it becomes a stall.
+
+| # | Service | Runbook | Status | Last verified | Dashboard |
+|---|---|---|---|---|---|
+| 01 | GitHub | `setup/01_github.md` | <OK/PARTIAL/STUB> | <ISO date> | <URL> |
+| 02 | <HOSTING_PROVIDER> | `setup/02_<hosting>.md` | <status> | <date> | <URL> |
+| 03 | <DB_PROVIDER> | `setup/03_<db>.md` | <status> | <date> | <URL> |
+| 04 | <AUTH_PROVIDER> | `setup/04_<auth>.md` | <status> | <date> | <URL> |
+| 05 | <EMAIL_PROVIDER> | `setup/05_<email>.md` | <status> | <date> | <URL> |
+| 06 | <AI_PROVIDER> | `setup/06_<ai>.md` | <status> | <date> | <URL> |
+
+Drop rows that don't apply. Add rows as the plan
+grows. The minimum is GitHub + hosting; everything else is
+project-specific.
+
+See `nexus/customization/external-services.md` for the
+runbook shape and the loop's introspection contract.
+
+<!-- optional: fill in if your project has its own auth
+     beyond `/critique`'s reader-session. -->
+
+## Auth provider (optional)
+
+**Auth provider:** `<none | Auth0 | Clerk | Supabase Auth |
+next-auth | Lucia | Better Auth | Iron Session | custom>`
+
+Tells every auth-touching spec which integration to wire.
+Pin on day one to prevent re-litigation. If the provider
+needs dashboard configuration, every spec that touches it
+gets a section in `setup/NN_<auth>.md` per
+`nexus/customization/external-services.md`.
+
+<!-- optional: fill in if your project has user accounts. -->
+
+## Identity tiers (optional)
+
+What can anonymous users do? What can authenticated do?
+
+- **Anonymous:** `<can-read | can-read-and-write | cannot-access>`
+- **Authenticated:** `<base permissions, e.g. comment, vote,
+  flag>`
+- **Account age requirement for write:** `<none | 1h | 24h |
+  7d>`
+- **Email-verification requirement:** `<not required |
+  required for write | required for read>`
+- **Anonymous voting / commenting (if applicable):**
+  `<not allowed | rate-limited by IP | allowed with hidden
+  weight>`
+
+These are policy decisions and belong in bearings, not in
+skills. Every skill that gates by identity reads from here.
+
+<!-- optional: fill in if your project has user-generated
+     content (comments, votes, submissions, flags). -->
+
+## Anti-abuse posture (optional)
+
+- **Vote weighting:** `<flat | by-account-age | by-account-age-and-login-frequency>`
+- **Comment rate-limit:** `<N per user per hour, M per IP
+  per hour>`
+- **Submission rate-limit:** `<N per user per day>`
+- **IP-hash retention:** `<30d | 90d | 365d>`
+- **CAPTCHA threshold:** `<never | after N flagged actions
+  in window | always for new accounts>`
+- **Account-age gate before write:** `<none | 1h | 24h>`
+
+The loop respects these limits; every write-skill reads them.
+See `nexus/customization/moderation-loop.md` for how the
+mod queues that these limits produce get drained.
+
+<!-- optional: fill in if your project has UGC and a
+     moderation surface. -->
+
+## Moderation flow (optional)
+
+- **Mod flow:** `<ai-pre-filter | post-mod | pre-mod>`
+- **Mod queue location:** `<data/mod/*.md | DB columns on
+  the content table | setup/04_<auth>.md RBAC-gated>`
+- **AI pre-filter model:** `<openai:omni-moderation-latest
+  | claude:prompted-classifier | local-classifier | none>`
+- **`/oversight` escalation thresholds:**
+  - Flagged spike: `<N items in M hours>`
+  - New-account age: `<24h default>`
+  - Repeat-flag pattern: `<N flags on same user in M days>`
+- **Mod audit log:** `<plan/MOD_AUDIT.md | DB table>`
+- **Mod role membership:** `<role name + how granted>`
+
+The loop drains the queues and respects the thresholds.
+See `nexus/customization/moderation-loop.md`.
+
+<!-- optional: fill in if your project has AI-generated
+     content, AI-assisted moderation, AI-suggested ranking,
+     or any other AI-in-the-product surface beyond the build
+     loop itself. -->
+
+## AI usage map (optional)
+
+Which surfaces use AI, and how. Distinguishes the *product's*
+use of AI from the *build loop's* use (which is universal in
+nexus projects).
+
+| Surface | AI's role | Human gate | Model |
+|---|---|---|---|
+| <e.g. article summaries> | generated | post-edit by `/iterate` | <model> |
+| <e.g. comment moderation pre-filter> | filter (verdict in / out) | manual review on hold queue | <model> |
+| <e.g. tag suggestions> | suggest | author accepts/rejects | <model> |
+| <e.g. mod actions (remove, ban)> | none — human only | — | — |
+| <e.g. spec writing> | none — human only | — | — |
+
+Be explicit about what is *not* AI. The audit trail for
+content trustworthiness depends on this distinction. See
+`customization/data-layer.md` § Provenance for the
+record-level `source: ai-generated` rigor.
+
+## URL / API / CLI contract (locked)
+
+Every <surface> below is a permanent contract. Add new ones via
+new specs; don't change existing shapes.
+
+```
+<Enumerate every public surface the project exposes. For a web
+project: every URL. For an API: every endpoint with method +
+path. For a CLI: every subcommand.>
+```
+
+## Repository shape
+
+```
+<repo-root>/
+├── spec.md
+├── README.md
+├── agents.md
+├── package.json (or equivalent)
+├── ...
+├── .claude/
+│   ├── commands/<verb>.md
+│   └── agents/<name>.md
+├── skills/
+│   ├── ship-a-chunk.md
+│   ├── ...
+├── plan/
+│   ├── README.md
+│   ├── bearings.md                      # this file
+│   ├── AUDIT.md
+│   ├── CRITIQUE.md
+│   ├── ARCHIVE.md
+│   ├── nexus.lock
+│   └── <NN>-<slug>.md                   # one spec per initiative
+├── design/                              # design exports (user-emitted, async)
+├── data/                                # if using GitHub-as-DB; otherwise omit
+└── <your app paths>
+```
+
+## The `design/` folder
+
+The user emits design exports asynchronously. Format varies by
+tool (claude design produces flat `*.jsx`; Figma exports JSON;
+manual sketches PNGs). Authoritative reads:
+
+- `design/INDEX.md` — file → family map, if present.
+- `design/decisions.<ext>` — design's own brief; **wins over
+  bearings on conflict**.
+- `design/tokens.<ext>` — finalized design tokens, if present.
+
+**The loop does not wait for design.** Ship from sibling +
+bearings if absent; integrate when it lands.
+
+## Sub-agents
+
+Defined under `.claude/agents/`. Spawn aggressively — they
+parallelize and protect main-agent context.
+
+| Agent | When to spawn | Returns |
+|---|---|---|
+| `scout` | External fact, spec, URL, date, signal | Structured findings with citations |
+| `reader` | Fresh-eyes critique of the live site | JSON findings array |
+| <DOMAIN_SPECIALIST_1> | <when> | <output> |
+| <DOMAIN_SPECIALIST_2> | <when> | <output> |
+
+## Visual & tonal defaults
+
+<If design has landed, point at design/tokens.css and
+design/decisions.<ext> as authoritative. Otherwise list the
+working defaults.>
+
+- **Mode (dark / light / both):** <choice>
+- **Type families:** <serif, sans, mono>
+- **Palette / accent:** <key colors>
+- **Spacing scale:** <base + ramp>
+- **Voice:** <tone in 1–2 sentences>
+
+## Plan expansion posture
+
+The improvement dial sets how hard the loop pushes beyond the
+plan: `off` (build only what you planned), `gentle` (the loop
+as an upgraded repo ran it), `steady` (the default for a new
+adoption) or `bold` (the kit's own). It sets every expansion
+knob's default; each knob line below overrides its knob only,
+so a line that repeats the dial's value still pins it (delete
+one to hand that knob to the dial). Skills read the knobs
+through `node scripts/plan/improve.mjs`, never from this file.
+The table and the overrides: `nexus/customization/improvement-dial.md`.
+
+- Improve: steady
+
+`/expand` reads accumulated signals (audit findings, critique
+findings, GH issues, spec drift, design landings, data growth)
+and proposes new candidates (future specs). The posture controls how
+aggressive it is.
+
+- **Mode: bold** (default) — `/expand` runs at standard cadence
+  and files candidates to `plan/CANDIDATES.md`.
+  `/oversight` promotes them into specs.
+- **Mode: strict** — `/expand` is a no-op. The plan grows
+  only via manual `/plan-a-spec` or `/oversight`. Use this if
+  you want the project to stay exactly true to its original
+  spec.
+- **Mode: autonomous** — `/expand` writes new unchunked specs
+  directly to `plan/`. No `/oversight` review.
+  Most aggressive; document in Hard Rules below if you choose
+  this.
+
+Aged promotion (`skills/expand.md` Step 4b): a candidate nobody
+promotes still ages into the plan. Each `/expand` pass may
+promote one aged, strong candidate as an unchunked spec, held
+in the roadmap's Held lane for `veto_days` with a veto issue
+open; closing the issue vetoes it. `Promote: owner` (or posture
+strict) turns it off; a missing key reads `owner`.
+
+- Promote: aged
+- promote_after_days: 21
+- promote_floor: 6.0
+- promote_per_week: 1
+- veto_days: 3
+
+Two more shape what gets promoted and when.
+`promote_queue_depth` above 0 has `/march` promote the next
+aged candidate (the same rules, the same veto window) whenever
+fewer specs than that are open, so the next spec arrives while
+one is still in build; 0 promotes only inside `/expand`.
+`promote_prefer: product` ranks an eligible candidate tagged
+`- kind: product` (something a user sees or uses) above any
+`guard` (checks, gates, loop hygiene), and has `/expand` file
+at least one product candidate a pass; `none` ranks by score
+alone.
+
+- promote_queue_depth: 0
+- promote_prefer: none
+
+Pending stays live (`skills/expand.md` Steps 2 and 4c): a
+signal that re-evidences a waiting candidate raises its score
+(+0.5 each independent one, at most +2), and past
+`pending_cap` each pass moves at most 5 stale rows (60+ days
+old, lowest score first) to `## Rejected`, each with its reason.
+
+- pending_cap: 15
+
+The motion heartbeat (`heartbeat.yml`, `scripts/plan/motion.mjs`):
+runs that succeed and ship nothing still look alive, so the
+heartbeat also counts shipped units (feat/fix/content commits,
+chunk closes) in the last full week against the 4-week
+baseline. Under `Motion floor` (a percent of the baseline; 0%
+turns it off) it opens one `Heartbeat: motion stalled` issue.
+`stall_action` decides what follows: `alert` (notify.mjs and a
+digest line), `promote` (the next `/march` tick runs expand's
+aged promotion, one candidate behind its veto window; with
+`Promote: owner` it alerts instead) or `off`.
+
+- Motion floor: 50%
+- stall_action: alert
+
+Project lanes (`skills/march.lanes.md`,
+`skills/iterate.lanes.md`; `scripts/plan/lanes.mjs`) run
+unless named here:
+
+- Lanes off: none
+
+Locks time out (`nexus/concepts/plan-shape.md`,
+`scripts/plan/locks.mjs`): every Held line, lane lock and
+owner-blocked row carries `since:`, `until:` and `max_age:`.
+Past it, `/march` applies the lock's `fallback:`, or files one
+needs-user ask (an issue and `scripts/notify.mjs`), re-pinged
+weekly. The default `max_age` outside the Held lane (a lock
+may set its own):
+
+- Lock max age: 14d
+
+`/iterate` dimension I audits the loop itself (`skills/iterate.md`,
+`scripts/plan/loop-rows.mjs`): the motion pulse and the tick
+summaries become `loop-config` rows, each turning one repo
+variable or one line of this file, ease at most 6, at most one
+shipped per 7 days. A tuning that needs a YAML edit is filed as
+a `[needs-user-call]`, never made. `off` (or posture strict)
+turns it off; a missing line reads `off`:
+
+- loop: on
+
+Field research (`scripts/generators/research.mjs`,
+`nexus/concepts/generators.md`): under `Research: monthly`,
+`weekly` or `<n>d` (every n days; the improvement dial sets
+it, and a `Research:` line here overrides), `/march` searches the web for these topics, a
+few phrases split by `;`, at most 8 pages a run, and files at
+most 3 `field` candidates that describe a pattern, never a
+product, with no URL. No topics, no research.
+
+- Research topics: (none)
+
+## Support
+
+How hard the loop works an issue (`skills/triage.md` Step 2a,
+`scripts/plan/support.mjs`): `off | triage-only | fix-small |
+fix-all`. `triage-only` (the default) routes every issue into
+the queues and the tick returns. `fix-small` sends a
+collaborator's bug to `/bug`, which fixes it in the tick or
+plots it Asap, and the tick goes on to build; `fix-all` does
+the same for a collaborator's small enhancement. At most
+`asap_cap` issue-born Asap chunks are open at once; the rest
+are `plan/AUDIT.md` rows. In cloud the repo variable
+`NEXUS_SUPPORT` wins over this line. Under `fix-small` or
+`fix-all`, `/march` Step 1.5 plots Asap a queued issue open
+`sla_hours` or more whose work is not in the Asap lane
+(`support.mjs sla`); the `issue-age` generator reads the same
+`sla_hours`. At every level `/digest` prints a Support line
+(open user issues, mean time to first response and to close
+over 7 days) and tops "Needs you" with a `triage:needs-user`
+issue open more than `escalate_days`, notified through
+`scripts/notify.mjs` (`support.mjs digest`). The knobs and the
+repo variables: `nexus/customization/support.md`.
+
+- Support: triage-only
+- sla_hours: 24
+- escalate_days: 7
+- asap_cap: 3
+
+## Generators
+
+When no chunk is ready, `/march`'s stock `refill` lane runs
+each generator listed here before `/expand`
+(`scripts/plan/refill.mjs`; `nexus/concepts/generators.md`).
+A generator turns time or repo state into queue rows: one line
+each, `- <name> · <cadence> · target <n> · cap <n>/wk`, its
+script at `scripts/generators/<name>.mjs`. Cadence is `tick`,
+`daily`, `weekly` or `<n>d`; the queue fills until `target` of
+its rows are Pending, at most `cap` a week. None listed means
+refill is a no-op. The kit ships four:
+
+<!--
+- issue-age · daily · target 3 · cap 5/wk
+- mirror-orphan · daily · target 3 · cap 5/wk
+- stale-candidate · weekly · target 2 · cap 2/wk
+- motion · daily · target 1 · cap 1/wk
+-->
+
+- (none)
+
+## Decisions standing for the autonomous loop
+
+(These exist so the loop never asks the user. Add to this list
+any time you encounter a recurring class of ambiguity.)
+
+- **Pagination:** <e.g. none until N items>
+- **Sort default:** <e.g. newest first by publishedAt>
+- **Empty state copy template:** `"<template>"`
+- **Loading state:** <e.g. skeleton via <Skeleton>; no spinners>
+- **Error state:** <e.g. red mono with retry>
+- **Top-N count for any leaderboard / trending list:** <N>
+- **Comments / community / login:** <decision — usually "out of scope">
+- <PROJECT-SPECIFIC DECISIONS>
+
+## Commit verb vocabulary (locked)
+
+Every commit's first line is `<verb>: <subject>` (or
+`<verb>(<scope>): <subject>` — the parenthetical scope is
+stripped before matching). `.claude/hooks/guard.mjs`'s
+`commit-verb` rule blocks anything else at commit time.
+
+| Verb | Fires from |
+|---|---|
+| `critique` | `/critique` |
+| `digest` | `/digest` |
+| `expand` | `/expand` |
+| `jot` | `/jot` |
+| `oversight` | `/oversight` |
+| `triage` | `/triage` |
+| `plan` | plan-state-only changes (`/plan-a-spec`, new specs) |
+| `feat` | new capability |
+| `fix` | correcting a prior mistake |
+| `docs` | doc-only edit |
+| `chore` | tooling/config, no product change |
+| `data` | `/ship-data` |
+| `migration` | `/ship-migration` |
+| `asset` | `/ship-asset` |
+| `mod` | `/moderate` |
+| `bootstrap` | `/bootstrap` |
+| `<YOUR SHIP-SKILL VERB>` | a custom `/ship-<x>` skill you add yourself |
+
+The five adopt-by-need verbs (`data`/`migration`/`asset`/`mod`/
+`bootstrap`) ship pre-wired in `VERBS` inside
+`.claude/hooks/guard.mjs` even if you prune their skill files in
+step 4 of `playbooks/new-project.md` — an unused verb in the
+list is harmless, since pruning the skill removes the only way
+to trigger it. Add a row here (and the matching entry in
+`VERBS`, plus its `self-test` cases) the same commit you adopt a
+genuinely new, custom `/ship-<x>` skill or commit category.
+
+## Hard rules
+
+(Mirrors `agents.md` Standing Rules. Update there first; this
+echoes.)
+
+1. **Commit and push as a single atomic act.**
+2. **No `Co-Authored-By:` trailers, no emojis.**
+3. **No `--no-verify`, no force-push, no destructive resets.**
+4. **The verify gate is non-negotiable** — see "Verify gate"
+   below.
+5. **Tests alongside code.**
+6. **Small focused components in folders.**
+7. **Content stays in <CONTENT_LOCATION>. Data stays in
+   <DATA_LOCATION>.**
+8. **Never commit secrets.**
+9. <PROJECT-SPECIFIC RULES>
+
+## Verify gate (hermetic, mandatory) + deploy gate
+
+Every shipping skill runs **two** gates around a commit.
+
+### Pre-commit: `pnpm verify`
+
+```
+<your project's verify composition>
+```
+
+For a typical web stack:
+
+```
+pnpm typecheck      # tsc --noEmit
+pnpm test:run       # unit tests
+pnpm data:validate  # if using GitHub-as-DB
+pnpm build          # production build
+pnpm e2e            # hermetic e2e against the production build on a separate port
+```
+
+Each leg is a hard gate. **Hermetic e2e** is critical — it
+catches "tests pass but built site is broken." `lint` is an
+optional leg, wired into `verify` or left standalone, per
+stack. See `nexus/customization/verify-gate.md` for
+stack-specific compositions.
+
+### Post-push: `pnpm deploy:check`
+
+After `git push origin <DEFAULT_BRANCH>`:
+
+```
+pnpm deploy:check
+```
+
+Polls <HOSTING_PROVIDER> for the deploy at HEAD. Exits 0
+ready, 1 error, 2 timeout, 3 config/auth.
+
+Implementation: `scripts/deploy-check.mjs`. Provider-specific
+block enabled for <HOSTING_PROVIDER>.
+
+**No deploy host yet** (a library, package, or CLI with nothing
+to deploy)? Set `DEPLOY_PROVIDER=none`: `pnpm deploy:check`
+prints a skip note and exits 0 — no script edits needed. The
+push is the ship; re-wire `<HOSTING_PROVIDER>` the day a real
+deploy target exists. See `nexus/playbooks/ci-providers.md`
+"No deploy yet".
+
+**Red deploy = blocked tick.** Read log, patch root cause,
+push again. Up to 3 same-root-cause iterations; otherwise stop
+per the skill's failure modes.
+
+## Operational notes
+
+- **Auto-deploys**: every push to `<DEFAULT_BRANCH>` deploys.
+  Previews on PRs (provider-specific).
+- **A red `<DEFAULT_BRANCH>` = a red site.** Verify gate is
+  pre-flight; deploy gate is post-flight.
+- **Operational secrets** in `.env` (gitignored). See
+  `agents.md` "Operational secrets" section.
+
+## Useful commands
+
+```bash
+<your project's commands — pnpm dev, pnpm test, etc.>
+pnpm verify           # the full gate
+pnpm deploy:check     # post-push deploy gate
+```
