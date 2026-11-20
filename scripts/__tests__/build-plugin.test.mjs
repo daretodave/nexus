@@ -1,0 +1,153 @@
+// The plugin generator: plugin/.claude-plugin/plugin.json, a vendored
+// templates/ snapshot, and .claude-plugin/marketplace.json, from
+// plan/nexus.lock — deterministic, and --check names a hand edit.
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import {
+  readLockVersion,
+  buildPluginManifest,
+  buildMarketplace,
+  listTemplateFiles,
+  render,
+  write,
+  check,
+} from '../build-plugin.mjs'
+
+const SCRIPT = fileURLToPath(new URL('../build-plugin.mjs', import.meta.url))
+const ROOT = fileURLToPath(new URL('../..', import.meta.url))
+
+function scratchRepo() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-build-plugin-'))
+  fs.mkdirSync(path.join(dir, 'plan'), { recursive: true })
+  fs.writeFileSync(path.join(dir, 'plan', 'nexus.lock'), 'kit: nexus\nversion: 9.9.9\nref: v9.9.9\nshape: chunks\n')
+  const templatesDir = path.join(dir, 'templates')
+  fs.mkdirSync(path.join(templatesDir, 'nested'), { recursive: true })
+  fs.writeFileSync(path.join(templatesDir, 'a.md'), '# a\n')
+  fs.writeFileSync(path.join(templatesDir, 'nested', 'b.md'), '# b\n')
+  return dir
+}
+
+test('readLockVersion reads the repo\'s own plan/nexus.lock', () => {
+  assert.equal(readLockVersion(ROOT), '2.0.0')
+})
+
+test('readLockVersion reads a scratch lock file', () => {
+  const dir = scratchRepo()
+  try {
+    assert.equal(readLockVersion(dir), '9.9.9')
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('plugin.json: name is required, kebab-case, no claude-/anthropic- prefix, version is free-form', () => {
+  const manifest = buildPluginManifest('2.0.0')
+  assert.equal(manifest.name, 'nexus')
+  assert.match(manifest.name, /^[a-z][a-z0-9-]*$/)
+  assert.doesNotMatch(manifest.name, /^(claude-|anthropic-)/)
+  assert.equal(manifest.version, '2.0.0')
+  assert.equal(typeof manifest.description, 'string')
+  assert.ok(manifest.description.length > 0)
+  assert.equal(manifest.author.name, 'daretodave and nexus contributors')
+})
+
+test('marketplace.json shape: name, owner.name, plugins[] with name + source', () => {
+  const marketplace = buildMarketplace()
+  assert.equal(marketplace.name, 'nexus')
+  assert.equal(marketplace.owner.name, 'daretodave')
+  assert.equal(typeof marketplace.description, 'string')
+  assert.ok(Array.isArray(marketplace.plugins) && marketplace.plugins.length === 1)
+  const [entry] = marketplace.plugins
+  assert.equal(entry.name, 'nexus')
+  assert.equal(entry.source, './plugin')
+  assert.match(entry.source, /^\.\//)
+  assert.ok(!entry.source.includes('..'))
+  // version is set only in plugin.json, per the schema notes, to avoid
+  // a mismatch warning between the two.
+  assert.equal('version' in entry, false)
+  assert.equal(typeof entry.description, 'string')
+})
+
+test('listTemplateFiles: sorted, relative to templates/, no directory entries', () => {
+  const dir = scratchRepo()
+  try {
+    const files = listTemplateFiles(dir)
+    assert.deepEqual(files, ['a.md', 'nested/b.md'])
+    assert.deepEqual([...files].sort(), files)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('render is byte-identical across calls and vendors every templates/ file untouched', () => {
+  const dir = scratchRepo()
+  try {
+    const a = render(dir)
+    const b = render(dir)
+    assert.deepEqual([...a.keys()].sort(), [...b.keys()].sort())
+    for (const [rel, body] of a) assert.equal(Buffer.compare(body, b.get(rel)), 0, rel)
+    assert.ok(a.has('plugin/vendor/templates/a.md'))
+    assert.ok(a.has('plugin/vendor/templates/nested/b.md'))
+    assert.equal(a.get('plugin/vendor/templates/a.md').toString('utf-8'), '# a\n')
+    const manifest = JSON.parse(a.get('plugin/.claude-plugin/plugin.json').toString('utf-8'))
+    assert.equal(manifest.version, '9.9.9')
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('--check is clean on fresh output and names a tampered, missing or stray vendored file', () => {
+  const dir = scratchRepo()
+  try {
+    write(dir)
+    assert.deepEqual(check(dir), [])
+
+    const manifestPath = path.join(dir, 'plugin', '.claude-plugin', 'plugin.json')
+    fs.writeFileSync(manifestPath, fs.readFileSync(manifestPath, 'utf-8').replace('9.9.9', '9.9.8'))
+    const vendored = path.join(dir, 'plugin', 'vendor', 'templates', 'a.md')
+    fs.rmSync(vendored)
+    const stray = path.join(dir, 'plugin', 'vendor', 'templates', 'stray.md')
+    fs.writeFileSync(stray, 'hand-added\n')
+
+    const problems = check(dir)
+    assert.equal(problems.length, 3, problems.join('\n'))
+    assert.match(problems.join('\n'), /plugin\/\.claude-plugin\/plugin\.json: differs/)
+    assert.match(problems.join('\n'), /plugin\/vendor\/templates\/a\.md: missing/)
+    assert.match(problems.join('\n'), /plugin\/vendor\/templates\/stray\.md: not generated/)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('write() clears a vendored file removed from templates/ since the last build', () => {
+  const dir = scratchRepo()
+  try {
+    write(dir)
+    assert.ok(fs.existsSync(path.join(dir, 'plugin', 'vendor', 'templates', 'nested', 'b.md')))
+    fs.rmSync(path.join(dir, 'templates', 'nested', 'b.md'))
+    write(dir)
+    assert.ok(!fs.existsSync(path.join(dir, 'plugin', 'vendor', 'templates', 'nested', 'b.md')))
+    assert.deepEqual(check(dir), [])
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('the CLI writes, --check exits 0, then 1 on a hand edit naming the file', () => {
+  const dir = scratchRepo()
+  const run = (...args) => execFileSync(process.execPath, [SCRIPT, ...args, '--root', dir], { encoding: 'utf-8', stdio: 'pipe' })
+  try {
+    run()
+    assert.match(run('--check'), /match the generator/)
+    const manifestPath = path.join(dir, '.claude-plugin', 'marketplace.json')
+    fs.writeFileSync(manifestPath, fs.readFileSync(manifestPath, 'utf-8').replace('nexus', 'nexxus'))
+    assert.throws(() => run('--check'), (err) => err.status === 1 && /\.claude-plugin\/marketplace\.json: differs/.test(err.stderr))
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
