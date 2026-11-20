@@ -1137,6 +1137,7 @@ const PURE_SUITES = [
   'templates/scripts/__tests__/secrets-vault.test.mjs',
   'templates/scripts/__tests__/secrets-sinks.test.mjs',
   'templates/scripts/__tests__/secrets-audit.test.mjs',
+  'templates/scripts/__tests__/keys-audit.test.mjs',
   'templates/scripts/__tests__/secrets-run.test.mjs',
   'templates/scripts/__tests__/design-prompt.test.mjs',
   'templates/scripts/__tests__/design-ingest.test.mjs',
@@ -1190,7 +1191,7 @@ const DOGFOOD_TWINS = [
   'plan/progress.mjs', 'plan/order.mjs', 'plan/triage-match.mjs', 'plan/promote.mjs', 'plan/lanes.mjs', 'plan/refill.mjs', 'plan/motion.mjs', 'plan/locks.mjs', 'plan/loop-rows.mjs', 'plan/state.mjs', 'plan/support.mjs', 'plan/improve.mjs',
   'generators/issue-age.mjs', 'generators/mirror-orphan.mjs', 'generators/stale-candidate.mjs', 'generators/motion.mjs', 'generators/research.mjs', 'plan-check.mjs', 'announce.mjs', 'ledger.mjs', 'worktree.mjs',
   'upgrade-plan.mjs', 'plan/secrets-manifest.mjs', 'secrets.mjs', 'secrets-vault.mjs', 'secrets-keychain.mjs', 'secrets-sinks.mjs',
-  'secrets-audit.mjs',
+  'secrets-audit.mjs', 'keys-audit.mjs',
   'secrets-run.mjs', 'secrets-scan.mjs',
   'design/prompt.mjs',
   'design/ingest.mjs',
@@ -1436,13 +1437,17 @@ async function legSecrets() {
   const { describeHit, scanRepo, vaultValues } = await load('scripts/secrets-scan.mjs')
   const { localSettings, primaryRoot } = await load('scripts/owner.mjs')
   const { readManifest } = await load('scripts/plan/secrets-manifest.mjs')
+  const { auditKeysCustody } = await load('scripts/keys-audit.mjs')
   let vroot = ROOT
   try { vroot = primaryRoot(ROOT) } catch { /* not a checkout: the vault beside it */ }
   const manifest = readManifest(path.join(ROOT, 'nexus.secrets.json'))
   const values = vaultValues(openVault({ root: vroot, settings: localSettings(vroot) }), manifest ? [...manifest.names] : [])
-  if (!values.size) return { failures: [], note: 'no vault values here (.env, .env.workspace, keychain): nothing to scan for' }
+  // The custody table (identity/key-custody.md, the kit's own): no orphan, ghost or ambiguous row against the
+  // manifest's names (spec 66, A3).
+  const custody = auditKeysCustody(ROOT, 'identity/key-custody.md')
+  if (!values.size) return { failures: [...custody.failures], note: `no vault values here (.env, .env.workspace, keychain): nothing to scan for; ${custody.note}` }
   const { hits, scanned } = scanRepo({ root: ROOT, values })
-  return { failures: hits.map(describeHit), note: `${scanned} added lines (vs HEAD, and untracked) hold none of ${values.size} vault values` }
+  return { failures: [...hits.map(describeHit), ...custody.failures], note: `${scanned} added lines (vs HEAD, and untracked) hold none of ${values.size} vault values; ${custody.note}` }
 }
 
 // --- leg: upgrade -------------------------------------------------------------
