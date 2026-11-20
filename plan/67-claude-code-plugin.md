@@ -94,10 +94,6 @@ correctly once installed.
 
 ## Acceptance
 
-- **A3** The plugin ships exactly three commands — adopt,
-  upgrade, doctor — each wrapping canonical `prompts/` text;
-  the skill family (`skills/`, `templates/skills/`) is not
-  wrapped or duplicated by the plugin.
 - **A4** `node scripts/verify.mjs`'s new `plugin` leg
   regenerates `plugin/` in memory and byte-diffs it against the
   committed tree, hard-failing on drift.
@@ -121,17 +117,8 @@ compares `plan/nexus.lock`'s pinned version against a vendored
 snapshot — no existing script does this comparison today.)
 
 ## Chunks
-Measure: 4 open · 2 closed · next A7
+Measure: 3 open · 3 closed · next A7
 
-- [ ] **67.2** The three plugin commands — `adopt`, `upgrade`,
-  `doctor` — each a thin wrapper shelling out to canonical
-  `prompts/` text; `doctor` is new (`prompts/doctor.md`, a
-  read-only check comparing an adopted repo's
-  `plan/nexus.lock` version against the plugin's vendored
-  snapshot, its own small script per this spec's resolved
-  Open question) · M · closes A3 · needs —
-  - The skill family (`skills/`, `templates/skills/`) stays
-    unwrapped: a plugin command is one-shot, not a loop.
 - [ ] **67.3** `node scripts/verify.mjs`'s new `plugin` leg
   regenerates `plugin/` in memory from `build-plugin.mjs` and
   byte-diffs it against the committed tree, hard-failing on
@@ -142,9 +129,9 @@ Measure: 4 open · 2 closed · next A7
   pinned-old version bump, a deliberately drifted repo); CI
   runs `claude plugin eval .` from `plugin/`, pinned models, a
   cost ceiling, gated alongside `node scripts/verify.mjs` · L ·
-  closes A5 · needs 67.2
+  closes A5 · needs —
 - [ ] **67.5** `playbooks/plugin.md` (scope, what it
   deliberately doesn't ship, how `build-plugin.mjs` and the
   eval suite work and are read) and `templates/README.md`'s
   TL;DR gain a `/plugin install nexus` fast path alongside the
-  clone-and-copy path · S · closes A6 · needs 67.2
+  clone-and-copy path · S · closes A6 · needs —
