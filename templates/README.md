@@ -78,6 +78,7 @@ templates/
 ├── setup/                             → repo's setup/ (one runbook per external
 │   │                                    service; index in 00_files.md)
 │   ├── 00_files.md                    (the manifest template)
+│   ├── 00_keys.md                     (per-credential custody index: expiry + rotation, see customization/secrets.md)
 │   ├── NN_service.md                  (per-service runbook template, full A-H profile)
 │   ├── NN_service.handshake.md        (per-service runbook template, lighter handshake profile: account + key drop, no RBAC/webhooks/branding)
 │   └── bootstrap.example.json         (manifest for /bootstrap; copy to setup/bootstrap.local.json, gitignored)

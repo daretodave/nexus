@@ -9,6 +9,7 @@ rules for every file are the template's:
 |---|---|
 | [footguns.md](footguns.md) | Traps hit while building the kit; settle runs the ladder (a trap seen twice becomes automation). |
 | [decisions/](decisions/README.md) | Decisions settle numbers from pending files (`D?<slug>`), one file per year. |
+| [key-custody.md](key-custody.md) | Per-credential custody table for the kit's own three operational secrets (see `customization/secrets.md`'s "Key custody" section). |
 
 The kit's standing decisions predate this layer and stay in
 [`plan/bearings.md`](../plan/bearings.md); its promises are

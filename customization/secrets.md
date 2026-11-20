@@ -591,6 +591,29 @@ nexus runs this on itself: its `nexus.secrets.json` declares
 `GH_TOKEN` and `ACTIONS_PAT` (`agents.md`, "Operational
 secrets") and leaves the loop's sign-in out.
 
+## Key custody
+
+The manifest names a secret's `for`, `where` and
+`destinations`, but has no field for when it expires or
+where a rotation must reach beyond `destinations`. That's a
+separate index, not new manifest fields:
+`nexus.secrets.json`'s shape stays as it is.
+
+Two files, one per audience, both keyed by the manifest's
+`name`, with the same columns — Key, Holder file, Minted by,
+Scopes, Mirrored to, Expires, Rotate via:
+
+- [`templates/setup/00_keys.md`](../templates/setup/00_keys.md)
+  — the adopter-facing template, copied like every other
+  `templates/setup/` file.
+- [`identity/key-custody.md`](../identity/key-custody.md) —
+  this kit's own three operational secrets (`agents.md`,
+  "Operational secrets"); `identity/` is kit-internal, never
+  copied.
+
+A value never appears in either — only names, dates and file
+paths, the same rule as the manifest itself.
+
 ## Stack hand-off
 
 The GUI's Vault has **Set up a stack** (also onboarding's
