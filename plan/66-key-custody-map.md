@@ -89,16 +89,6 @@ deferred — a candidate for `/expand`, not this spec's chunks.
 
 ## Acceptance
 
-- **A1** A per-credential custody table exists, listing every
-  secret `agents.md`'s "Operational secrets" section and
-  `nexus.secrets.json` name today, with Key, Holder file,
-  Minted by, Scopes, Mirrored to, Expires and Rotate via —
-  values never appear in it.
-- **A2** The table's relationship to the existing
-  `nexus.secrets.json` manifest is resolved one way (new
-  manifest fields, or a separate keyed-by-name index) and
-  documented in `customization/secrets.md` or a new
-  `customization/` doc it links from.
 - **A3** A pure-string, offline lint flags orphan, ghost and
   ambiguous rows as a hard gate failure, wired into `node
   scripts/verify.mjs`'s `secrets` leg.
@@ -115,25 +105,12 @@ deferred — a candidate for `/expand`, not this spec's chunks.
 Design's "Resolved by this chunking session" paragraph.)
 
 ## Chunks
-Measure: 5 open · 0 closed · next A6
+Measure: 3 open · 2 closed · next A6
 
-- [ ] **66.1** Key custody index: `templates/setup/00_keys.md`
-  (adopters) + `identity/key-custody.md` (the kit's own) +
-  `customization/secrets.md`'s "Key custody" section · M ·
-  closes A1, A2 · needs —
-  - Columns: Key, Holder file, Minted by, Scopes, Mirrored to,
-    Expires, Rotate via — values never appear, matching the
-    manifest's own "names, never values" rule.
-  - `templates/README.md`'s tree gains the new file in the
-    same commit (`agents.md` rule 7: a new `templates/` path
-    is public API).
-  - `identity/key-custody.md` is seeded with placeholder rows
-    for the kit's own three operational secrets; 66.4 fills
-    them for real.
 - [ ] **66.2** `scripts/keys-audit.mjs` + `templates/scripts/
   keys-audit.mjs`: pure-string lint flags orphan, ghost and
   ambiguous custody rows against the manifest's names · M ·
-  closes A3 · needs 66.1
+  closes A3 · needs —
   - Reads `nexus.secrets.json`'s names via `scripts/plan/
     secrets-manifest.mjs`'s `readManifest`; wired into `node
     scripts/verify.mjs`'s existing `secrets` leg (the kit's
@@ -142,10 +119,10 @@ Measure: 5 open · 0 closed · next A6
 - [ ] **66.3** `playbooks/hands-off.md`'s pre-flight checks
   the custody table's `Expires` column against the
   unattended window's end time, and refuses to start past it
-  · S · closes A4 · needs 66.1
+  · S · closes A4 · needs —
 - [ ] **66.4** The kit's own three operational secrets carry
   real custody rows in `identity/key-custody.md` · S ·
-  closes A5 · needs 66.1
+  closes A5 · needs —
   - Owner-only fact: `ACTIONS_PAT`'s real expiry reads from
     GitHub's token settings UI, not reachable from an
     automated session — fill every other row and column, mark
