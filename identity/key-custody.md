@@ -22,5 +22,6 @@ adopter-facing twin of this file.
 
 `ACTIONS_PAT`'s real expiry is an owner-only fact (GitHub's
 token settings UI, not reachable from an automated
-session); a later chunk confirms it. `GH_TOKEN` and
-`CLAUDE_CODE_OAUTH_TOKEN` carry no fixed expiry to confirm.
+session); a `[needs-user-call]` row in `plan/AUDIT.md` tracks
+the ask. `GH_TOKEN` and `CLAUDE_CODE_OAUTH_TOKEN` carry no
+fixed expiry to confirm.

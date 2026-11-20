@@ -34,6 +34,21 @@
   `agents.md` Operational secrets). Watch for further
   recurrence; close if the schedule recovers on its own.
 
+### [needs-user-call] `ACTIONS_PAT`'s real expiry is unconfirmed in `identity/key-custody.md`
+- category: key-custody
+- evidence: chunk 66.4 seeded `identity/key-custody.md`'s
+  Index with real custody rows for `GH_TOKEN`, `ACTIONS_PAT`
+  and `CLAUDE_CODE_OAUTH_TOKEN` (spec 66, A5). `ACTIONS_PAT`'s
+  `Expires` column reads `unconfirmed`: the real date is an
+  owner-only fact (GitHub's token settings UI
+  https://github.com/settings/personal-access-tokens, not
+  reachable from an automated session).
+- next: an owner session reads `ACTIONS_PAT`'s real expiry
+  from that page and fills the `Expires` column in
+  `identity/key-custody.md`.
+- lock: actions-pat-expiry · since: 2026-11-20 · until: owner
+  confirms the real date · max_age: 30d
+
 
 ### [A, 3.0] nexus's own `.github/workflows/*.yml` still pin `actions/checkout@v4` / `actions/setup-node@v4`, now behind the just-bumped `templates/` copies
 - category: doc-drift
