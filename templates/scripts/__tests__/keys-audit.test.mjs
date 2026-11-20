@@ -7,13 +7,22 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, it } from 'node:test'
-import { auditKeysCustody, lintCustody, namesElsewhere, parseCustodyKeys } from '../keys-audit.mjs'
+import {
+  auditKeysCustody,
+  auditWindowExpiry,
+  expiringBefore,
+  lintCustody,
+  namesElsewhere,
+  parseCustodyExpiries,
+  parseCustodyKeys,
+} from '../keys-audit.mjs'
 
 function scratch() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'keys-audit '))
   return { root, done: () => fs.rmSync(root, { recursive: true, force: true }) }
 }
 
+// A row is either a bare key string (defaults to `Expires: n/a`) or a `{ key, expires }` object.
 const table = (rows) => [
   '# identity/key-custody.md — the kit\'s own keys',
   '',
@@ -21,7 +30,10 @@ const table = (rows) => [
   '',
   '| Key | Holder file | Minted by | Scopes | Mirrored to | Expires | Rotate via |',
   '|---|---|---|---|---|---|---|',
-  ...rows.map((k) => `| \`${k}\` | .env | someone | n/a | n/a | n/a | — |`),
+  ...rows.map((r) => {
+    const { key, expires } = typeof r === 'string' ? { key: r, expires: 'n/a' } : r
+    return `| \`${key}\` | .env | someone | n/a | n/a | ${expires} | — |`
+  }),
   '',
 ].join('\n')
 
@@ -159,6 +171,95 @@ describe('auditKeysCustody', () => {
     const s = scratch()
     try {
       const { failures, note } = auditKeysCustody(s.root)
+      assert.deepEqual(failures, [])
+      assert.equal(note, 'no custody table found')
+    } finally { s.done() }
+  })
+})
+
+describe('parseCustodyExpiries', () => {
+  it('reads the Expires column alongside the Key, in order', () => {
+    const text = table([
+      { key: 'GH_TOKEN', expires: '2026-01-01' },
+      { key: 'ACTIONS_PAT', expires: 'unconfirmed' },
+    ])
+    assert.deepEqual(parseCustodyExpiries(text), [
+      { key: 'GH_TOKEN', expires: '2026-01-01' },
+      { key: 'ACTIONS_PAT', expires: 'unconfirmed' },
+    ])
+  })
+
+  it('skips the header and divider rows, and stops at the next heading', () => {
+    const text = `${table(['GH_TOKEN'])}\n## Elsewhere\n\n| Key |\n|---|\n| \`NOT_THIS\` |\n`
+    assert.deepEqual(parseCustodyExpiries(text), [{ key: 'GH_TOKEN', expires: 'n/a' }])
+    assert.deepEqual(parseCustodyExpiries('# no index here\n'), [])
+  })
+})
+
+describe('expiringBefore', () => {
+  it('includes a row expiring before the window end, excludes one on or after it', () => {
+    const rows = [
+      { key: 'EARLY', expires: '2026-01-01' },
+      { key: 'ON_THE_DAY', expires: '2026-06-01' },
+      { key: 'LATE', expires: '2026-12-01' },
+    ]
+    assert.deepEqual(expiringBefore(rows, '2026-06-01'), [{ key: 'EARLY', expires: '2026-01-01' }])
+  })
+
+  it('never includes a row whose expires is not a clean YYYY-MM-DD date, regardless of until', () => {
+    const rows = [{ key: 'UNCONFIRMED', expires: 'unconfirmed' }, { key: 'NA', expires: 'n/a' }]
+    assert.deepEqual(expiringBefore(rows, '9999-12-31'), [])
+  })
+
+  it('throws on a non-YYYY-MM-DD until', () => {
+    assert.throws(() => expiringBefore([], 'not-a-date'), /ISO date/)
+    assert.throws(() => expiringBefore([], '2026/06/01'), /ISO date/)
+  })
+})
+
+describe('auditWindowExpiry', () => {
+  it('a clean table against the window: no failures', () => {
+    const s = scratch()
+    try {
+      fs.mkdirSync(path.join(s.root, 'identity'), { recursive: true })
+      fs.writeFileSync(path.join(s.root, 'identity/key-custody.md'), table([
+        { key: 'GH_TOKEN', expires: '2026-12-01' },
+        { key: 'ACTIONS_PAT', expires: 'unconfirmed' },
+      ]))
+      const { failures, note } = auditWindowExpiry(s.root, '2026-06-01', 'identity/key-custody.md')
+      assert.deepEqual(failures, [])
+      assert.match(note, /^identity\/key-custody\.md: 2 custody rows checked against a window ending 2026-06-01$/)
+    } finally { s.done() }
+  })
+
+  it('flags a row expiring before the window ends', () => {
+    const s = scratch()
+    try {
+      fs.mkdirSync(path.join(s.root, 'identity'), { recursive: true })
+      fs.writeFileSync(path.join(s.root, 'identity/key-custody.md'), table([
+        { key: 'GH_TOKEN', expires: '2026-05-01' },
+        { key: 'ACTIONS_PAT', expires: '2026-12-01' },
+      ]))
+      const { failures } = auditWindowExpiry(s.root, '2026-06-01', 'identity/key-custody.md')
+      assert.deepEqual(failures, ['identity/key-custody.md: `GH_TOKEN` expires 2026-05-01, before the window ends 2026-06-01'])
+    } finally { s.done() }
+  })
+
+  it('falls back to setup/00_keys.md when no explicit file and no identity/key-custody.md exist', () => {
+    const s = scratch()
+    try {
+      fs.mkdirSync(path.join(s.root, 'setup'), { recursive: true })
+      fs.writeFileSync(path.join(s.root, 'setup/00_keys.md'), table([{ key: 'GH_TOKEN', expires: '2026-12-01' }]))
+      const { failures, note } = auditWindowExpiry(s.root, '2026-06-01')
+      assert.deepEqual(failures, [])
+      assert.match(note, /^setup\/00_keys\.md:/)
+    } finally { s.done() }
+  })
+
+  it('reports no custody table found when neither file exists', () => {
+    const s = scratch()
+    try {
+      const { failures, note } = auditWindowExpiry(s.root, '2026-06-01')
       assert.deepEqual(failures, [])
       assert.equal(note, 'no custody table found')
     } finally { s.done() }
