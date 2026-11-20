@@ -281,3 +281,4 @@ still pending at the move and live on as specs.
 - 2026-11-12 · 62 · spec complete: `setup/` now offers a second, lighter handshake runbook profile (`templates/setup/NN_service.handshake.md`) alongside the full A-H profile, a choosing rule in `customization/external-services.md`, and a `Profile` column in `00_files.md`'s Index table · deleted in (this commit)
 - 2026-11-20 · 66.1 · Key custody index tracks expiry and rotation per secret · 4df8fbbe..4df8fbbe
 - 2026-11-20 · 66.2 · Custody table lints orphan, ghost and ambiguous rows · 77d5dd15..09d71ea2
+- 2026-11-20 · 66.3 · Hands-off pre-flight refuses a window past custody Expires · 5d8e5f89..2c9a0c37

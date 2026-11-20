@@ -89,9 +89,6 @@ deferred — a candidate for `/expand`, not this spec's chunks.
 
 ## Acceptance
 
-- **A4** `playbooks/hands-off.md`'s pre-flight checks the
-  table's `Expires` column against the window's end time and
-  refuses to start past it.
 - **A5** The kit's own three operational secrets carry real
   custody rows, `ACTIONS_PAT`'s expiry confirmed from GitHub's
   UI rather than assumed.
@@ -102,12 +99,8 @@ deferred — a candidate for `/expand`, not this spec's chunks.
 Design's "Resolved by this chunking session" paragraph.)
 
 ## Chunks
-Measure: 2 open · 3 closed · next A6
+Measure: 1 open · 4 closed · next A6
 
-- [ ] **66.3** `playbooks/hands-off.md`'s pre-flight checks
-  the custody table's `Expires` column against the
-  unattended window's end time, and refuses to start past it
-  · S · closes A4 · needs —
 - [ ] **66.4** The kit's own three operational secrets carry
   real custody rows in `identity/key-custody.md` · S ·
   closes A5 · needs —
