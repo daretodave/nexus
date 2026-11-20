@@ -282,3 +282,5 @@ still pending at the move and live on as specs.
 - 2026-11-20 · 66.1 · Key custody index tracks expiry and rotation per secret · 4df8fbbe..4df8fbbe
 - 2026-11-20 · 66.2 · Custody table lints orphan, ghost and ambiguous rows · 77d5dd15..09d71ea2
 - 2026-11-20 · 66.3 · Hands-off pre-flight refuses a window past custody Expires · 5d8e5f89..2c9a0c37
+- 2026-11-20 · 66.4 · Custody rows filled; ACTIONS_PAT expiry ask filed · 7f9acfd4..7f9acfd4
+- 2026-11-20 · 66 · spec complete: every credential the kit depends on now has a names-only custody row (`identity/key-custody.md`, `templates/setup/00_keys.md`) — holder file, minted by, scopes, mirrored to, expires, rotate via — read by a hermetic lint (`scripts/keys-audit.mjs`, folded into the gate's `secrets` leg) that flags orphan, ghost and ambiguous rows, and by `playbooks/hands-off.md`'s unattended-window pre-flight, which now refuses a window past a custody `Expires` date; the kit's own `ACTIONS_PAT` expiry stays `unconfirmed` (owner-only, GitHub's token UI) behind a `[needs-user-call]` row in `plan/AUDIT.md` · deleted in (this commit)
