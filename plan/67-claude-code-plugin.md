@@ -98,10 +98,6 @@ correctly once installed.
   and doctor against scratch fixtures and returns a scored,
   reproducible result; it is wired into CI alongside
   `node scripts/verify.mjs`.
-- **A6** `playbooks/plugin.md` documents the plugin's scope,
-  its generator, and how to run and read the eval suite;
-  `templates/README.md`'s TL;DR links the `/plugin install`
-  path.
 
 ## Open questions
 
@@ -114,7 +110,7 @@ compares `plan/nexus.lock`'s pinned version against a vendored
 snapshot — no existing script does this comparison today.)
 
 ## Chunks
-Measure: 2 open · 4 closed · next A7
+Measure: 1 open · 5 closed · next A7
 
 - [ ] **67.4** `plugin/evals/` exercises `adopt`, `upgrade` and
   `doctor` against scratch fixtures (a clean install, a
@@ -122,8 +118,3 @@ Measure: 2 open · 4 closed · next A7
   runs `claude plugin eval .` from `plugin/`, pinned models, a
   cost ceiling, gated alongside `node scripts/verify.mjs` · L ·
   closes A5 · needs —
-- [ ] **67.5** `playbooks/plugin.md` (scope, what it
-  deliberately doesn't ship, how `build-plugin.mjs` and the
-  eval suite work and are read) and `templates/README.md`'s
-  TL;DR gain a `/plugin install nexus` fast path alongside the
-  clone-and-copy path · S · closes A6 · needs —
