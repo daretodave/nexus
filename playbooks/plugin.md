@@ -122,23 +122,68 @@ change nobody re-ran — is a hard gate failure naming the exact
 file. There is no override: the fix is always "run `node
 scripts/build-plugin.mjs`, then commit what it wrote."
 
-## The eval suite — not yet built
+## The eval suite
 
-Chunk 67.4 of
-[`plan/67-claude-code-plugin.md`](../plan/67-claude-code-plugin.md)
-specifies a `claude plugin eval` suite under `plugin/evals/`
-that exercises `/adopt`, `/upgrade` and `/doctor` against
-scratch fixtures — a clean install, a pinned-old version bump,
-a deliberately drifted repo — and runs in CI alongside `node
-scripts/verify.mjs`. As of this writing that chunk is **not
-built**: there is no `plugin/evals/` directory yet, and the
-three commands above are proven only by the `plugin` leg's
-byte-diff (the generator produces what it should) and by
-hand-running them — not by a scored eval pass. When 67.4
-ships, this section should describe the suite's actual run
-command, its report shape, and how to read a failing eval;
-read that chunk's own build before trusting any eval-suite
-claim here that predates it.
+`plugin/evals/` is hand-authored (the one permanent exception to
+`plugin/`'s generated-tree discipline — `scripts/build-plugin.mjs`
+never clears or flags it) and holds three `claude plugin eval`
+cases, each a `prompt.md` + `graders/criteria.md` pair with one
+`type: llm` grader:
+
+| Case | Proves |
+|---|---|
+| `adopt-clean` | Against a repo with no `plan/nexus.lock` and no `templates/` yet, running `/adopt` lands `plan/nexus.lock` with a `version:` line, a `templates/`-derived tree, and no literal placeholder token (`<PROJECT>`, `<HOSTING_URL>`, etc.) left unresolved anywhere in the copied tree. |
+| `upgrade-pinned-old` | The case first builds its own fixture (a local git repo with a local bare repo as `origin`, a commit pinning `plan/nexus.lock` to `1.0.0`), then runs `/upgrade` through `prompts/upgrade.md`'s dry-run/report stage only (`npx @usenexus/cli upgrade --verify`) — naming the version gap and reading the report back, never reaching `--write`/`--pr`/`--land`. That landing gate needs an owner's answer no eval turn can give, so this case is scoped to the dry run on purpose. |
+| `doctor-drifted` | Writes a bare `plan/nexus.lock` pinned to `1.0.0` (no git, no adoption) and runs `/doctor`, checking it reports status `behind` with both version numbers, points at `upgrade`, and makes zero writes — `scripts/plugin-doctor.mjs`'s read-only contract, graded against its exact message template. |
+
+Run the suite locally from `plugin/`:
+
+```
+claude plugin eval . --trust-plugin --allow-tools Bash Write Edit \
+  --model claude-haiku-5-5 --judge-model claude-haiku-5-5 \
+  --runs 1 --max-cost-usd 2 --no-publish \
+  --json evals/results/last-run.json
+```
+
+`--trust-plugin` skips the first-run trust prompt (this is your own
+plugin); `--allow-tools` is the operator grant the two fixture-
+building cases need on top of their own `prompt.md` frontmatter. A
+local run needs a working `claude` login (or `ANTHROPIC_API_KEY`)
+and, on Linux, a sandbox backend (`bubblewrap` and `socat` — without
+them any case that requests `Bash` is refused rather than run
+unconfined). Each run writes a timestamped report under
+`plugin/evals/results/` (or wherever `--json`/`--output-dir` points
+it) — gitignored, never committed; `node scripts/build-plugin.mjs`'s
+`check()` never walks `plugin/evals/` at all, so a report left
+there never trips the gate either.
+
+CI (`.github/workflows/plugin-ci.yml`, path-scoped to `plugin/**`
+and the files that feed it) gates the same way `node
+scripts/verify.mjs` does: the `plugin` leg's byte-diff runs first,
+free, before anything spends money; only then does it install the
+`claude` CLI and run the eval with pinned models
+(`claude-haiku-5-5`), `--threshold 0.8` and `--max-cost-usd 2`,
+reading `CLAUDE_CODE_OAUTH_TOKEN` from a repo secret. A fork pull
+request never receives that secret, so the eval step (and the
+results-artifact upload) is skipped with a clear `::notice::` rather
+than failing the workflow; the byte-diff leg still gates it either
+way.
+
+To read a failing case: the CLI's own summary table names the
+case, its score and pass rate; `--json` (or the HTML report its run
+prints a path to) carries the full transcript and, per grader, the
+judge's verdict and reasoning. A red `adopt-clean` or
+`doctor-drifted` almost always means the agent's final state didn't
+match its `criteria.md` (a stray placeholder, a status word other
+than `behind`, an extra write after the setup step) — read the
+transcript before touching `prompts/adopt.md` or
+`scripts/plugin-doctor.mjs`, since the fix is usually the eval
+case's own prompt or grader, not the command it's exercising. A red
+`upgrade-pinned-old` is most often the dry run itself failing (no
+network reaching the npm registry, or `npx @usenexus/cli` not
+resolving) rather than a grading problem; the grader is written to
+accept "the agent said the dry run failed and reported why" as a
+pass, so a true failure there is worth a second look.
 
 ## See also
 
