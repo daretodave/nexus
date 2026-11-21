@@ -303,6 +303,84 @@ describe('mirror-orphan', () => {
     const { GENERIC_GENERATORS } = await import('../plan/improve.mjs');
     assert.ok(GENERIC_GENERATORS.includes('mirror-orphan · daily · target 3 · cap 5/wk'));
   });
+
+  describe('settled (the close pass)', () => {
+    const settleIssues = [
+      { number: 40, title: 'Ticked closes', createdAt: '2026-10-10T00:00:00Z', labels: L('loop:opened', 'severity:med', 'source:audit') },
+      { number: 41, title: 'Done closes', createdAt: '2026-10-11T00:00:00Z', labels: L('loop:opened', 'severity:med', 'source:audit') },
+      { number: 42, title: 'Mixed stays open', createdAt: '2026-10-12T00:00:00Z', labels: L('loop:opened', 'severity:med', 'source:audit') },
+      { number: 43, title: 'Promoted stays open', createdAt: '2026-10-13T00:00:00Z', labels: L('loop:opened', 'severity:med', 'source:audit') },
+    ];
+    const settleRepo = () => tmpRepo({
+      'plan/AUDIT.md': [
+        '# Audit', '',
+        '## Pending', '',
+        '### [ ] [mirror #42] open half, named again in plan/CRITIQUE.md', '- issue: #42', '',
+        '## Done', '',
+        '### [x] [mirror #40] ticked closes — already fixed by 4500253', '- issue: #40', '',
+        '### [mirror #41] sits under Done, so it closes with no [x]', '- issue: #41', '',
+      ].join('\n'),
+      'plan/CANDIDATES.md': [
+        '# Candidates', '',
+        '## Promoted', '',
+        '### [promoted] [mirror #43] promoted, not ticked, not Done', '- issue: #43', '',
+      ].join('\n'),
+      'plan/CRITIQUE.md': [
+        '# Critique', '',
+        '## Pending', '',
+        '### [x] [mirror #42] closed here, but AUDIT\'s row on #42 is still open', '- issue: #42', '',
+      ].join('\n'),
+    });
+    const run = (root, argv, extra = {}) => capture((log) => mirrorOrphan.main(argv, { root, log, issues: () => settleIssues, ...extra }));
+
+    it('closes a mirror named only by a ticked row, or only by a row under Done, citing the row title and any commit hash', () => {
+      const root = settleRepo();
+      const closes = [];
+      const r = run(root, ['--write', '--today', TODAY], { close: (n, comment) => closes.push([n, comment]) });
+      assert.equal(r.last, 'clean', r.out, 'a close never counts as a filed row');
+      assert.match(r.out, /^close #40 · settled by its plan\/AUDIT\.md row$/m);
+      assert.match(r.out, /^close #41 · settled by its plan\/AUDIT\.md row$/m);
+      assert.deepEqual(closes.map((c) => c[0]), [40, 41]);
+      assert.match(closes[0][1], /"\[x\] \[mirror #40\] ticked closes — already fixed by 4500253"/);
+      assert.match(closes[0][1], /citing 4500253/);
+      assert.match(closes[1][1], /"\[mirror #41\] sits under Done, so it closes with no \[x\]"/);
+      assert.doesNotMatch(closes[1][1], /citing/, 'no hex token in #41\'s row, so no hash is cited');
+      assert.ok(!r.out.includes('#42') && !r.out.includes('#43'), 'a mixed or Promoted-only mirror never closes');
+    });
+
+    it('a dry run reports "would close #N" for each settled mirror and calls no close', () => {
+      const root = settleRepo();
+      const closes = [];
+      const r = run(root, ['--today', TODAY], { close: (n) => closes.push(n) });
+      assert.match(r.out, /^would close #40 · settled by its plan\/AUDIT\.md row$/m);
+      assert.match(r.out, /^would close #41 · settled by its plan\/AUDIT\.md row$/m);
+      assert.deepEqual(closes, []);
+      assert.equal(snapshot(root)['plan/AUDIT.md'], fs.readFileSync(path.join(root, 'plan/AUDIT.md'), 'utf8'), 'a dry run writes nothing');
+    });
+
+    it('leaves open a mirror named by a mix of an open and a closed row, across two files', () => {
+      const root = settleRepo();
+      assert.deepEqual(mirrorOrphan.settled(settleIssues, {
+        'plan/AUDIT.md': fs.readFileSync(path.join(root, 'plan/AUDIT.md'), 'utf8'),
+        'plan/CANDIDATES.md': fs.readFileSync(path.join(root, 'plan/CANDIDATES.md'), 'utf8'),
+        'plan/CRITIQUE.md': fs.readFileSync(path.join(root, 'plan/CRITIQUE.md'), 'utf8'),
+      }).map((m) => m.number), [40, 41]);
+    });
+
+    it('a Promoted-section candidate row never counts as closed: its work is elsewhere', () => {
+      const text = ['# Candidates', '', '## Promoted', '', '### [promoted] [mirror #43] x', '- issue: #43', ''].join('\n');
+      assert.deepEqual(mirrorOrphan.rows(text).map((r) => r.closed), [false]);
+      assert.deepEqual(mirrorOrphan.settled(settleIssues.filter((i) => i.number === 43), { 'plan/CANDIDATES.md': text }), []);
+    });
+
+    it('rows() splits a file into ### blocks tagged with their ## section and [x]-ness', () => {
+      const text = ['# Audit', '', '## Pending', '', '### [ ] open', '- issue: #1', '', '## Done', '', '### [x] closed', '- issue: #2', ''].join('\n');
+      assert.deepEqual(mirrorOrphan.rows(text), [
+        { heading: '[ ] open', section: 'Pending', closed: false, text: '### [ ] open\n- issue: #1' },
+        { heading: '[x] closed', section: 'Done', closed: true, text: '### [x] closed\n- issue: #2' },
+      ]);
+    });
+  });
 });
 
 describe('stale-candidate', () => {
