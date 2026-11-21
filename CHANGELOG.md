@@ -9,6 +9,11 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/.github/workflows/nudge.yml: `actions/checkout@v4`
+  moves to `@v5`, the last template workflow still on the major
+  that ran on the retired Node 20 runtime; it waited on a local
+  session because its root twin has to move in the same commit
+  (2026-11-21, 68.1).
 - templates/skills/*.md: every bash-only fence outside the
   original five git-procedure skills now carries `<!--
   dualshell:posix-only -->` (none had a PowerShell equivalent

@@ -86,7 +86,7 @@ jobs:
     steps:
       - name: Checkout (full history for /march dispatch)
         id: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           # PAT (not GITHUB_TOKEN) so pushes land as the nexus
@@ -98,7 +98,7 @@ jobs:
       # install; the verify gate still runs bare:
       # node scripts/verify.mjs
       - name: Set up Node 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
 

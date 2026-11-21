@@ -287,3 +287,5 @@ still pending at the move and live on as specs.
 - 2026-11-20 · 67.1 · build-plugin.mjs generates plugin/ and the marketplace entry · 3372b15c..67331dac
 - 2026-11-20 · 67.2 · Plugin ships adopt, upgrade, doctor commands · 2df46dd2..f5319a81
 - 2026-11-21 · 67.3 · verify's plugin leg byte-diffs plugin/ against build-plugin.mjs · 298b5224..298b5224
+- 2026-11-21 · 68.1 · night.yml marks its checkout as the owner's (#115) · (this commit)
+- 2026-11-21 · 68 · spec complete: night.yml owner-mode parity: `.github/workflows/night.yml` carries march.yml's "Owner mode for this checkout" step (`touch .owner`, gated on the quota gate), so a digest tick reads as the owner's checkout · deleted in (this commit)

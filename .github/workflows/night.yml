@@ -30,17 +30,17 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           # PAT so the digest commit lands as the nexus author —
           # same identity mode as march.yml.
           token: ${{ secrets.ACTIONS_PAT }}
 
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
 
       # The quota governor, as in march.yml: the newest cached
       # seven_day reading, then the gate (a scheduled night run
@@ -60,6 +60,15 @@ jobs:
           REASON: ${{ github.event.inputs.reason }}
           QUOTA_MAX: ${{ vars.NEXUS_QUOTA_MAX || '0.80' }}
         run: node templates/scripts/cloud/quota.mjs gate --event "$EVENT" --reason "$REASON" --max "$QUOTA_MAX" || echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      # The runner's checkout is the owner's for this tick, as in
+      # march.yml: the untracked .owner (gitignored) makes
+      # scripts/claims.mjs read the checkout as the owner's and the
+      # push policy pass main (playbooks/owner-mode.md), so the
+      # digest lands the way skills/digest.md says it does.
+      - name: Owner mode for this checkout
+        if: steps.quota_gate.outputs.skip != 'true'
+        run: touch .owner
 
       # Author identity via env vars on the action step (see
       # march.yml for why `git config` doesn't survive the action).

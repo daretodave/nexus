@@ -49,30 +49,16 @@
 - lock: actions-pat-expiry · since: 2026-11-20 · until: owner
   confirms the real date · max_age: 30d
 
-
-### [A, 3.0] nexus's own `.github/workflows/*.yml` still pin `actions/checkout@v4` / `actions/setup-node@v4`, now behind the just-bumped `templates/` copies
-- category: doc-drift
-- impact: 5, ease: 6
-- evidence: chunk 39.11 (2026-11-05, this run) bumped every
-  `actions/checkout@v4` and `actions/setup-node@v4` under
-  `templates/.github/workflows/` and `templates/.github/actions/`
-  to `@v5` (GitHub deprecating the Node 20 runtime both majors
-  ran on). Root `.github/workflows/{cli-ci,heartbeat,march,night,
-  nudge,pr-flow,publish,scripts-ci}.yml` still pin `@v4` — left
-  untouched because a cloud tick's token can't push
-  `.github/workflows/*.yml` (`agents.md` "Operational secrets").
-  One pair is tighter than drift: `nudge.yml`'s `workflows` gate
-  leg (`scripts/verify.mjs`'s `nudgeCheck`) requires the root and
-  template copies byte-identical past a path substitution, so its
-  `checkout@v4` had to stay pinned in the template too (reverted
-  mid-chunk; `identity/footguns.md`'s `nudge-twin-version-bump`
-  line) — it can only move to `@v5` together with the root copy.
-- next: a local session bumps every root workflow's
-  `checkout`/`setup-node` to `@v5` (pushing `.github/workflows/`
-  needs a human token), syncing `nudge.yml`'s pair at the same
-  time so the twin check stays green.
-
 ## Done
+
+### [x] [A, 3.0] nexus's own `.github/workflows/*.yml` still pin `actions/checkout@v4` / `actions/setup-node@v4`, now behind the just-bumped `templates/` copies — closed 2026-11-21 (this commit)
+- category: doc-drift
+- fix: a local session moved all eight root workflows to
+  `actions/checkout@v5` and `actions/setup-node@v5`, and
+  `templates/.github/workflows/nudge.yml`'s checkout with its
+  root twin in the same commit, so the `workflows` leg's twin
+  check stays green. `night.yml` also moves from Node 20 to
+  Node 24, march's and cli-ci's runtime.
 
 ### [x] [user-issue #115] [MED] night.yml is missing the touch .owner step march.yml has — closed 2026-11-18
 - category: external-issue

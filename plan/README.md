@@ -20,7 +20,6 @@ invariant teaches the gate in the same commit; hard-wrap
 **Asap** (built before the table, in this order, once their
 needs are done):
 
-- 68.1 (#115)
 
 **Held** (waits on the owner's word; never picked until the
 line goes; each line is a lock that times out, so it carries
@@ -34,12 +33,11 @@ line goes; each line is a lock that times out, so it carries
 |---|---|---|---|---|
 | 65 | Workflow-push credential gap: test the fix, stop re-discovering it | [65-workflow-push-credential-gap.md](65-workflow-push-credential-gap.md) | planned | 0 of 1 chunks |
 | 67 | Package nexus as a Claude Code plugin | [67-claude-code-plugin.md](67-claude-code-plugin.md) | planned | 3 of 5 chunks |
-| 68 | night.yml owner-mode parity: add the touch .owner step march.yml has | [68-night-owner-mode-parity.md](68-night-owner-mode-parity.md) | planned | 0 of 1 chunks |
 | 69 | plan/ carries the workspace: resurrection + a doctor | [69-workspace-resurrection.md](69-workspace-resurrection.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
-plan moved to chunks on 2026-10-20). The next new spec is 69.
+plan moved to chunks on 2026-10-20). The next new spec is 70.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is
