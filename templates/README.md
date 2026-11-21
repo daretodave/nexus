@@ -255,7 +255,8 @@ templates/
     ├── CLAUDE.md                       (agent-facing root pointer)
     ├── AGENTS.md                       (same content, non-Claude-Code agents)
     ├── README.md                       (human-facing root orientation)
-    └── REPOS.md                        (sibling-repo clone manifest)
+    ├── REPOS.md                        (sibling-repo clone manifest)
+    └── KEYS.md                         (workspace ring's secrets, names only)
 ```
 
 ## Placeholders

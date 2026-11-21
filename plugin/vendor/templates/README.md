@@ -255,7 +255,8 @@ templates/
     ├── CLAUDE.md                       (agent-facing root pointer)
     ├── AGENTS.md                       (same content, non-Claude-Code agents)
     ├── README.md                       (human-facing root orientation)
-    └── REPOS.md                        (sibling-repo clone manifest)
+    ├── REPOS.md                        (sibling-repo clone manifest)
+    └── KEYS.md                         (workspace ring's secrets, names only)
 ```
 
 ## Placeholders
@@ -368,7 +369,7 @@ the corresponding capability:
 | `.github/workflows/pr-flow.yml` + `.github/workflows/pr-resolve.yml` + `scripts/cloud/tick.mjs` + `scripts/pr/resolve.mjs` | The cloud loop lands as pull requests (`NEXUS_LOOP_MODE` unset): ticks claim one chunk as `cloud-<run id>`, build with no token, land a PR; a closed PR's claims are released, a merged loop PR's own `nexus/<run id>` branch is deleted, and conflicted PRs get main merged in. Needs the claims module. See `.github/CLOUD_LOOP.md` "Owner mode or pull requests" and `nexus/playbooks/cloud-loop-existing-actions.md`. |
 | `.github/workflows/claims-board.yml` + `scripts/claims-board.mjs` | More than the loop's builders want to see who builds what: one issue shows the live claims, redrawn hourly and on each claims write. Off until the repo variable `NEXUS_CLAIMS_BOARD` is `claims-board.yml`. Needs the claims module. See `nexus/customization/claims.md` "The board (optional)". |
 | `.github/workflows/nightly-smoke.yml` | Hermetic e2e is adopted and `night.yml` doesn't already run `SMOKE_SAMPLE=full` as its breadth step — run one or the other, never both. See `nexus/customization/hermetic-e2e.md` + `nexus/concepts/loop-shapes.md`. |
-| `workspace/CLAUDE.md` + `workspace/AGENTS.md` + `workspace/README.md` + `workspace/REPOS.md` | You've outgrown polyrepo into a 3+-repo workspace (an un-versioned local root holding `plan/` and every product as siblings). Copy all four to the workspace root, not into any single repo. See `nexus/playbooks/workspace.md`. |
+| `workspace/CLAUDE.md` + `workspace/AGENTS.md` + `workspace/README.md` + `workspace/REPOS.md` + `workspace/KEYS.md` | You've outgrown polyrepo into a 3+-repo workspace (an un-versioned local root holding `plan/` and every product as siblings). Copy all five to the workspace root, not into any single repo. See `nexus/playbooks/workspace.md`. |
 | `scripts/ui-walk.mjs` (+ its two tests) | `Surface: site` or `hybrid` and you want the loop to look at the live site in a browser: set `UI: url <base>` in `plan/bearings.md` (default `none`: nothing browses). The reader's cloud Path A2 and `/iterate` dimension H, by `UI cadence:`; anonymous, screenshots uploaded from cloud only with `NEXUS_UI_ARTIFACTS=1`, `UI magic: keep` guarding motion and colour. Uses the project's `playwright-core` when present, else no dependency (Node 22+ for its DevTools driver). See `.github/CLOUD_LOOP.md` "The UI walk". |
 | `scripts/stack-lifecycle.mjs` | Hermetic e2e uses Pattern B (service with stateful dependencies). See `nexus/customization/hermetic-e2e.md`. |
 | `design-prompt.md` (copy to `<repo>/claude-design.prompt.md`) | The project has a deliberate visual identity worth a system layer (not just assets). See `nexus/customization/visual-system.md`. |
