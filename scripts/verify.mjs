@@ -102,6 +102,12 @@
 //                 memory; a hand edit, a missing or a stray SVG is
 //                 red, naming the file), plus the generator's own
 //                 node:test suite
+//   plugin        every file under plugin/ (and
+//                 .claude-plugin/marketplace.json) is byte-identical to
+//                 what scripts/build-plugin.mjs generates (regenerated
+//                 in memory; a hand edit, a missing or a stray file is
+//                 red, naming the file), plus the generator's own
+//                 node:test suite
 //   gifs          every GIF README.md shows exists, parses, runs 5
 //                 to 8 s, weighs at most 3 MB, has alt text and a
 //                 linked .png poster (scripts/gifs.mjs; bytes are
@@ -1420,6 +1426,17 @@ async function legDiagrams() {
   return { failures: [...check(), ...suite.failures], note: `${Object.keys(DIAGRAMS).length} SVGs match scripts/diagrams.mjs; ${suite.note}` }
 }
 
+// --- leg: plugin ---------------------------------------------------------------
+// plugin/ is generated (scripts/build-plugin.mjs, the same vendoring
+// discipline as assets/'s diagrams); a committed file that drifts
+// from its source is red.
+
+async function legPlugin() {
+  const { check, render } = await import(pathToFileURL(path.join(ROOT, 'scripts/build-plugin.mjs')).href)
+  const suite = runSuites(['scripts/__tests__/build-plugin.test.mjs'], 'generator')
+  return { failures: [...check(), ...suite.failures], note: `${render().size} plugin/ files match scripts/build-plugin.mjs; ${suite.note}` }
+}
+
 // --- leg: gifs ----------------------------------------------------------------
 // The README's GIFs are recorded from demo scenarios (packages/cli,
 // npm run record); each must fit the budget and carry its poster.
@@ -1572,6 +1589,7 @@ const LEGS = {
   workflows: () => legWorkflows(),
   'cadence-twins': () => legCadenceTwins(),
   diagrams: () => legDiagrams(),
+  plugin: () => legPlugin(),
   gifs: () => legGifs(),
   secrets: () => legSecrets(),
   upgrade: () => legUpgrade(),
