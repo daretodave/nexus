@@ -32,7 +32,7 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 69 | plan/ carries the workspace: resurrection + a doctor | [69-workspace-resurrection.md](69-workspace-resurrection.md) | planned | 2 of 4 chunks |
+| 69 | plan/ carries the workspace: resurrection + a doctor | [69-workspace-resurrection.md](69-workspace-resurrection.md) | planned | 3 of 4 chunks |
 | 70 | Workspace-aware /bootstrap and /oversight | [70-workspace-aware-bootstrap.md](70-workspace-aware-bootstrap.md) | planned | not chunked yet |
 | 71 | Cloud workflow hardening: the canceller skips a paused workflow, ticks wait out a transient limit | [71-cloud-workflow-hardening.md](71-cloud-workflow-hardening.md) | planned | not chunked yet |
 | 72 | The gate's tree check reads its directories from the tree diagrams | [72-tree-check-from-diagrams.md](72-tree-check-from-diagrams.md) | planned | not chunked yet |

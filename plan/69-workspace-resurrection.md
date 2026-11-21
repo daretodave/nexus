@@ -66,11 +66,6 @@ downstream fails.
 
 ## Acceptance
 
-- **A3** `playbooks/workspace.md` gains a Resurrection section
-  walking the new-machine flow end to end: clone the ledger
-  repo, copy the `templates/workspace/` files up (placeholders
-  swept), clone every `REPOS.md` repo, re-run each sibling's own
-  onboarding, run the doctor until green.
 - **A4** `playbooks/recovery.md` gains a lettered section
   (after `I`) pointing readers at the Resurrection section for
   the "lost the machine" case.
@@ -82,13 +77,8 @@ content-scan choice and the custody-table split, per the two
 new Design bullets above.)
 
 ## Chunks
-Measure: 2 open · 2 closed · next A5
+Measure: 1 open · 3 closed · next A5
 
-- [ ] **69.3** `playbooks/workspace.md`'s Resurrection section:
-  clone the ledger repo, copy `templates/workspace/` up
-  (placeholders swept), clone every `REPOS.md` repo, re-run each
-  sibling's onboarding, run the doctor until green · S · closes
-  A3 · needs —
 - [ ] **69.4** `playbooks/recovery.md` gains a lettered section
   (after `I`) pointing at the Resurrection section for "lost the
-  machine, still have GitHub" · S · closes A4 · needs 69.3
+  machine, still have GitHub" · S · closes A4 · needs —
