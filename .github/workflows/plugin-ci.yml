@@ -63,7 +63,7 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          claude plugin eval . --trust-plugin --no-publish \
+          claude plugin eval . --trust-plugin --no-publish --ablation none \
             --model claude-haiku-5-5 --judge-model claude-haiku-5-5 \
             --threshold 0.8 --max-cost-usd 2 \
             --allow-tools Bash Write Edit \
@@ -72,7 +72,7 @@ jobs:
         if: ${{ steps.token_check.outputs.has_token != 'true' }}
         run: echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not set (expected on a fork pull request, which never receives repo secrets) -- skipping claude plugin eval. The byte-diff leg (node scripts/verify.mjs plugin) above already ran and still gates this workflow."
       - uses: actions/upload-artifact@v4
-        if: ${{ steps.token_check.outputs.has_token == 'true' }}
+        if: ${{ always() && steps.token_check.outputs.has_token == 'true' }}
         with:
           name: plugin-eval-results
           path: plugin/results.json

@@ -139,15 +139,23 @@ cases, each a `prompt.md` + `graders/criteria.md` pair with one
 Run the suite locally from `plugin/`:
 
 ```
-claude plugin eval . --trust-plugin --allow-tools Bash Write Edit \
+claude plugin eval . --trust-plugin --ablation none \
+  --allow-tools Bash Write Edit \
   --model claude-haiku-5-5 --judge-model claude-haiku-5-5 \
   --runs 1 --max-cost-usd 2 --no-publish \
   --json evals/results/last-run.json
 ```
 
 `--trust-plugin` skips the first-run trust prompt (this is your own
-plugin); `--allow-tools` is the operator grant the two fixture-
-building cases need on top of their own `prompt.md` frontmatter. A
+plugin); `--ablation none` turns off the CLI's default no-plugin
+baseline arm — a plugin resolves from this path, so without it
+every case also runs once with no plugin loaded, where `/adopt`,
+`/upgrade` and `/doctor` don't exist to run at all, dragging every
+score down for a reason that has nothing to do with the plugin's
+real behavior (this suite exists only to test this one plugin, not
+to measure its lift over nothing). `--allow-tools` is the operator
+grant the two fixture-building cases need on top of their own
+`prompt.md` frontmatter. A
 local run needs a working `claude` login (or `ANTHROPIC_API_KEY`)
 and, on Linux, a sandbox backend (`bubblewrap` and `socat` — without
 them any case that requests `Bash` is refused rather than run
