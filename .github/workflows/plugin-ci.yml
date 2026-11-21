@@ -86,34 +86,33 @@ jobs:
           # Three real runs (see #126) proved bubblewrap+socat and the
           # two sysctls above aren't enough on their own -- the CLI's
           # own sandbox-arming path still refuses to start. This
-          # preflight line makes the OS-level signal visible for free,
-          # and allowNestedUserNamespaces (set in the job's own $HOME,
-          # never a project settings file) is the documented lever for
-          # the symptom family (code.claude.com/docs/en/sandboxing,
-          # "User namespaces on Linux and WSL2").
+          # preflight line makes the OS-level signal visible for free.
           echo "--- sandbox preflight: can an unprivileged user namespace start? ---"
           bwrap --unshare-user --uid 0 --gid 0 --bind / / echo "bwrap: ok" || echo "bwrap: FAILED ($?)"
           unshare --user --map-root-user id || echo "unshare: FAILED ($?)"
-          mkdir -p ~/.claude
-          # allowNestedUserNamespaces turns off a security boundary (code.claude.com/docs/en/sandboxing,
-          # "User namespaces on Linux and WSL2"): only acceptable here because this CI job's runner
-          # is itself the disposable, single-purpose isolation boundary -- there is nothing on it to
-          # protect beyond this one eval run. Scoped to ~/.claude/settings.json (this job's $HOME only),
-          # per the docs' own instruction to set it there rather than a project settings file.
-          cat > ~/.claude/settings.json <<'JSON'
-          {
-            "sandbox": {
-              "allowNestedUserNamespaces": true
-            }
-          }
-          JSON
+          # A fourth real run (44918519698) proved the preflight above
+          # now succeeds (bwrap and unshare both arm cleanly) while
+          # every eval case still failed with the exact same
+          # apply-seccomp/setgroups error -- because each case runs its
+          # agent in its own scratch $HOME (/tmp/claude-eval-*/home/),
+          # so a settings.json written to this step's real ~/.claude
+          # (tried that run) never reaches it. The eval harness still
+          # reads --settings given to the `claude plugin eval` process
+          # itself, so the lever goes on that command line instead of a
+          # settings file -- never a project-level settings file either
+          # way (code.claude.com/docs/en/sandboxing, "User namespaces on
+          # Linux and WSL2": allowNestedUserNamespaces turns off a
+          # security boundary, acceptable here only because this job's
+          # runner is itself the disposable, single-purpose isolation
+          # boundary).
       - name: claude plugin eval
         if: ${{ steps.token_check.outputs.has_token == 'true' }}
         working-directory: plugin
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          claude plugin eval . --trust-plugin --no-publish --ablation none \
+          claude --settings '{"sandbox":{"allowNestedUserNamespaces":true}}' \
+            plugin eval . --trust-plugin --no-publish --ablation none \
             --model claude-haiku-5-5 --judge-model claude-haiku-5-5 \
             --threshold 0.8 --max-cost-usd 2 \
             --allow-tools Bash Write Edit \
