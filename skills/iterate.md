@@ -196,7 +196,12 @@ whether an I row may ship today.
    local session. Never bump the CLI's version or tag
    `cli-v*`: the owner releases.
 7. **Commit + land:** `fix|docs|templates: <subject>`, body
-   cites the finding, `Closes #N` when the loop mirrored it.
+   cites the finding and, when the loop mirrored it, carries
+   `Closes #N` on a line of its own. Only that phrase closes
+   the mirror: "Mirrored as #N" left four fixed findings open
+   in one week. After the push, `gh issue view <N> --json
+   state`; still open, `gh issue close <N> --comment "Fixed
+   in <sha>"`.
    A `[user-issue #N]` row carries `Refs #N` instead, and once
    it lands `support.mjs tell <N> --commit <sha>` comments and
    closes the issue (`skills/triage.md` §4).
