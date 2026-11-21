@@ -48,6 +48,21 @@ downstream fails.
 - A new lettered section in `playbooks/recovery.md` (after `I`)
   pointing at that Resurrection section for "lost the machine,
   still have GitHub."
+- `KEYS.md` stays separate from spec 66's
+  `identity/key-custody.md`: that table is the kit's own
+  credentials (`GH_TOKEN`, `ACTIONS_PAT` — this repo's
+  secrets, minted by and scoped to nexus itself); `KEYS.md` is
+  the workspace ring's cross-repo secrets, named by which
+  sibling repos read each one. Different scope, no subsuming.
+- `workspace-doctor.mjs`'s leaked-value check is a real content
+  scan, not a filename heuristic: for each `KEYS.md` name, read
+  its `.env.workspace` value once (never logged) and search
+  every sibling repo's git-tracked files (`git ls-files`, read
+  from disk) for that literal string. Cheap because `REPOS.md`'s
+  repos are already cloned locally for this check to run at all
+  — no network fetch, no extra clone — and exact-string match
+  keeps the script dependency-free (no regex engine, no entropy
+  scoring).
 
 ## Acceptance
 
@@ -73,17 +88,25 @@ downstream fails.
 
 ## Open questions
 
-- Whether `workspace-doctor.mjs`'s "value found inside a
-  sibling repo's tree" check needs a real content scan (slower,
-  more certain) or a cheaper filename/pattern heuristic is left
-  to the first chunking session.
-- This spec's `KEYS.md` is the workspace ring's own names-only
-  list, narrower than spec 66's per-credential custody table
-  (every secret, kit-wide). The chunking session should confirm
-  they stay separate rather than one subsuming the other, since
-  both are still unbuilt.
+(None — both resolved at chunking time, 2026-11-21: the
+content-scan choice and the custody-table split, per the two
+new Design bullets above.)
 
 ## Chunks
 Measure: 4 open · 0 closed · next A5
 
-Not chunked yet.
+- [ ] **69.1** `templates/workspace/KEYS.md` — names-only
+  manifest of the workspace ring's secrets · S · closes A1 ·
+  needs —
+- [ ] **69.2** `templates/workspace/workspace-doctor.mjs` —
+  zero-dependency, offline, flags a self-hosted root, a missing
+  clone, a missing `.env.workspace` entry, and a leaked value ·
+  M · closes A2 · needs 69.1
+- [ ] **69.3** `playbooks/workspace.md`'s Resurrection section:
+  clone the ledger repo, copy `templates/workspace/` up
+  (placeholders swept), clone every `REPOS.md` repo, re-run each
+  sibling's onboarding, run the doctor until green · S · closes
+  A3 · needs 69.2
+- [ ] **69.4** `playbooks/recovery.md` gains a lettered section
+  (after `I`) pointing at the Resurrection section for "lost the
+  machine, still have GitHub" · S · closes A4 · needs 69.3
