@@ -124,26 +124,29 @@ is tracked or shipped.
 This snippet now has a copyable counterpart:
 [`templates/workspace/`](../templates/workspace/) ships
 `CLAUDE.md` + `AGENTS.md` (the pair above, with placeholders),
-a human-facing `README.md`, and `REPOS.md` — a clone manifest
-for rebuilding the workspace on a new machine. Copy the
-*content* into the root, not the files' git history — the root
-itself still never becomes a repo. `prompts/adopt.md` also asks
-a fresh adopter to confirm this topology before proceeding,
-rather than guessing silently.
+a human-facing `README.md`, `REPOS.md` — a clone manifest for
+rebuilding the workspace on a new machine — and `KEYS.md`, the
+same manifest for the workspace ring's secrets (names only;
+see `customization/secrets.md`). Copy the *content* into the
+root, not the files' git history — the root itself still never
+becomes a repo. `prompts/adopt.md` also asks a fresh adopter
+to confirm this topology before proceeding, rather than
+guessing silently.
 
 After copying, sweep `<WORKSPACE_ORG>` (and `<PROJECT>` per
-sibling repo) across the four files:
+sibling repo) across the five files:
 
 ```bash
 sed -i.bak -e 's/<WORKSPACE_ORG>/your-org/g' \
-  CLAUDE.md AGENTS.md README.md REPOS.md \
-  && rm -f CLAUDE.md.bak AGENTS.md.bak README.md.bak REPOS.md.bak
+  CLAUDE.md AGENTS.md README.md REPOS.md KEYS.md \
+  && rm -f CLAUDE.md.bak AGENTS.md.bak README.md.bak REPOS.md.bak \
+         KEYS.md.bak
 ```
 
 The PowerShell twin:
 
 ```powershell
-Get-ChildItem CLAUDE.md,AGENTS.md,README.md,REPOS.md | ForEach-Object {
+Get-ChildItem CLAUDE.md,AGENTS.md,README.md,REPOS.md,KEYS.md | ForEach-Object {
   (Get-Content $_ -Raw) -replace '<WORKSPACE_ORG>', 'your-org' |
     Set-Content $_ -NoNewline
 }

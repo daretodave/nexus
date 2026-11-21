@@ -9,6 +9,13 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/workspace/KEYS.md: new — a names-only manifest of
+  the workspace ring's secrets (`.env.workspace`): which key,
+  which sibling repos read it, and where it's minted. No value
+  ever appears in it, same rule as `nexus.secrets.json`; it's
+  the workspace's own cross-repo twin of `identity/
+  key-custody.md`, which stays the kit's own credentials, not
+  this (2026-11-21, 69.1).
 - templates/scripts/generators/mirror-orphan.mjs: a second pass,
   `settled()`, closes a mirror whose every plan row is already
   closed (`### [x]`, or under `## Done`), so a fix commit that
