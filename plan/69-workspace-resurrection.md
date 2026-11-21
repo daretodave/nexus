@@ -66,11 +66,6 @@ downstream fails.
 
 ## Acceptance
 
-- **A1** `templates/workspace/KEYS.md` exists: names-only,
-  listing every secret the workspace ring
-  (`customization/secrets.md`'s `.env.workspace`) is meant to
-  hold, which sibling repos read it, and where it's minted — no
-  value ever appears in it.
 - **A2** `templates/workspace/workspace-doctor.mjs` is
   zero-dependency and runs fully offline; it flags, as
   failures: the root being its own git repo, a `REPOS.md` repo
@@ -93,15 +88,12 @@ content-scan choice and the custody-table split, per the two
 new Design bullets above.)
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 3 open · 1 closed · next A5
 
-- [ ] **69.1** `templates/workspace/KEYS.md` — names-only
-  manifest of the workspace ring's secrets · S · closes A1 ·
-  needs —
 - [ ] **69.2** `templates/workspace/workspace-doctor.mjs` —
   zero-dependency, offline, flags a self-hosted root, a missing
   clone, a missing `.env.workspace` entry, and a leaked value ·
-  M · closes A2 · needs 69.1
+  M · closes A2 · needs —
 - [ ] **69.3** `playbooks/workspace.md`'s Resurrection section:
   clone the ledger repo, copy `templates/workspace/` up
   (placeholders swept), clone every `REPOS.md` repo, re-run each
