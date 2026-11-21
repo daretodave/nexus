@@ -79,6 +79,8 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # As in march.yml: without it the action pushes as its App.
+          github_token: ${{ secrets.ACTIONS_PAT }}
           show_full_output: 'true'
           claude_args: >-
             --model claude-sonnet-5
