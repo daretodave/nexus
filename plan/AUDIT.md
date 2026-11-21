@@ -34,6 +34,37 @@
   `agents.md` Operational secrets). Watch for further
   recurrence; close if the schedule recovers on its own.
 
+### [needs-user-call] re-mint `ACTIONS_PAT` with Contents and Workflows write, then pass it to the action as `github_token`
+- category: key-custody
+- evidence: chunk 65.1 (2026-11-21) probed the credential from
+  a throwaway branch. Run `44908116327`, plain shell on
+  `ACTIONS_PAT`: `gh api user` answers the owner's login and
+  reads work, but creating a ref through the API answers
+  "Resource not accessible by personal access token" (403) and
+  a plain-file `git push` to a fresh branch answers 403, so
+  the token holds no Contents write and its Workflows grant is
+  untestable. Run `44907831984`: with `github_token:
+  ${{ secrets.ACTIONS_PAT }}` on the action step the agent's
+  `GH_TOKEN`, `GITHUB_TOKEN` and origin URL all carry the PAT
+  (without it they carry the App's installation token), and
+  its push fails the same way. Every cloud push so far has
+  been the App's, which GitHub bars from workflow files.
+- next: the owner re-mints the token at
+  https://github.com/settings/personal-access-tokens with
+  Contents, Issues and Workflows read/write on this repo only,
+  sets it (`node scripts/secrets.mjs set ACTIONS_PAT`, then
+  `push ACTIONS_PAT --to github-actions`), and a local session
+  adds `github_token: ${{ secrets.ACTIONS_PAT }}` to the model
+  step in `.github/workflows/march.yml` and `night.yml`, then
+  dispatches one tick and watches it push. The token's owner is
+  an admin, so the default-branch ruleset's bypass covers it.
+  Until then workflow-file chunks wait for a local session
+  (`skills/ship-a-chunk.md` §6 item 5). Never add
+  `github_token` before the re-mint: with today's token every
+  push would fail.
+- lock: actions-pat-remint · since: 2026-11-21 · until: owner
+  re-mints the token · max_age: 30d
+
 ### [needs-user-call] `ACTIONS_PAT`'s real expiry is unconfirmed in `identity/key-custody.md`
 - category: key-custody
 - evidence: chunk 66.4 seeded `identity/key-custody.md`'s

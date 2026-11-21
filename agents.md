@@ -195,21 +195,24 @@ verbs — a kit ships docs, templates and the GUI.
   `GH_REPO=daretodave/nexus`.
 - **`CLAUDE_CODE_OAUTH_TOKEN`** — repo secret for the cloud
   loop only. Mint with `claude setup-token`.
-- **`ACTIONS_PAT`** — repo secret; fine-grained PAT (Contents +
-  Issues + Workflows on this repo; Workflows added 2026-08-23
-  so cloud ticks can push `.github/workflows/` edits
-  themselves — a deliberate trade, and nothing broader: this
-  token is what a prompt-injected tick would run with, so no
-  Secrets/Webhooks/etc). In practice, the scope grant alone
-  hasn't been enough: three confirmed cloud ticks (phase 20,
-  `#40`, `#49` in `plan/AUDIT.md`) still had their
-  `.github/workflows/*.yml` push rejected, because the Claude
-  Code Action's own GitHub App installation token overrides
-  the configured `ACTIONS_PAT` credential for workflow-file
-  pushes specifically. Apply workflow-file changes from a
-  local `/oversight` session until that's resolved. Cloud
-  commits author as `nexus`, not `github-actions[bot]` — see
-  `.github/CLOUD_LOOP.md` setup step 3.
+- **`ACTIONS_PAT`** — repo secret; a fine-grained PAT meant to
+  carry Contents + Issues + Workflows on this repo and nothing
+  broader (it is what a prompt-injected tick would run with,
+  so no Secrets/Webhooks/etc). Two measured facts (chunk 65.1,
+  2026-11-21, probe runs `44907831984` and `44908116327`): the
+  token as minted has no write access to Contents (a branch
+  create and a plain-file push both answer 403; reads work),
+  and the Claude Code Action swaps a step's `GH_TOKEN` and the
+  checkout's git credential for its own GitHub App installation
+  token unless its `github_token` input is set. So every cloud
+  push and `gh` write runs as the App, and GitHub refuses an
+  App any `.github/workflows/*.yml` change. Apply workflow-file
+  changes from a local session until the owner re-mints the
+  token with Contents and Workflows write and the model steps
+  pass it as `github_token` (the `[needs-user-call]` row in
+  `plan/AUDIT.md`). Cloud commits author as `nexus`, not
+  `github-actions[bot]` — see `.github/CLOUD_LOOP.md` setup
+  step 3.
 - **npm publishing has no secret.** `.github/workflows/publish.yml`
   publishes `packages/cli` as `@usenexus/cli` through npm Trusted
   Publishing (OIDC, provenance automatic) on a `cli-v*` tag.
