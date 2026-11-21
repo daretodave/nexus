@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-18
-> Pass count: 37
+> Last pass: 2026-11-21
+> Pass count: 38
 
 ## Pending
 
@@ -49,6 +49,106 @@
   items" to "those five items".
 - source: dry-run
 - issue: #118
+
+### [ ] [MED] README.md:150,155 — `[needs-user-call]` rows are never glossed before the TL;DR tells an adopter to resolve them
+- category: comprehension
+- observation: "Review what landed" tells the adopter to expect
+  any `[needs-user-call]` rows in `plan/AUDIT.md` the agent
+  deferred (line 150), then to "resolve `[needs-user-call]`
+  rows" (line 155) — the one step where getting it right
+  matters most, since the agent just committed unsupervised.
+  The tag is glossed in `agents.md:112` ("a question that
+  outlives the run goes to the `/oversight` queue") but
+  README.md never repeats or links that gloss, so a first-time
+  reader meets unexplained jargon at the step that reviews what
+  an agent just did without them.
+- evidence: README.md:150,155; agents.md:112 (the only existing
+  gloss, in a file the TL;DR never points the reader to first)
+- suggested fix: README.md:150 — gloss the tag inline the first
+  time it appears, e.g. "any `[needs-user-call]` rows (a flag
+  the agent couldn't resolve alone — see `agents.md`'s Standing
+  rules) in `plan/AUDIT.md`".
+- source: dry-run
+
+### [ ] [LOW] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
+- category: voice
+- observation: the line right under the badges ("This kit ships
+  itself: nexus is adopted on its own repo, running the loop the
+  badge above tracks") links `#nexus-runs-on-nexus`, a section
+  at line 407 the reader hasn't met yet — "the loop" is
+  unexplained this early — and substantially duplicates that
+  later section's own framing once the reader does get there.
+- evidence: README.md:18 vs README.md:407 (`## nexus runs on
+  nexus`)
+- suggested fix: README.md:18 — trim to a bare link ("see
+  `nexus runs on nexus` below") or move the line to sit just
+  above the `## nexus runs on nexus` section instead.
+- source: dry-run
+
+### [ ] [HIGH] /onboarding/welcome @ mobile (plain-folder) — the footer's local-only trust line is clipped off-screen with no scroll
+- category: ui-comprehension
+- observation: the same cutoff repeats identically on the
+  cloud-token and fleet-to-tug mobile captures of this screen.
+  On mobile the onboarding grid stacks the loop diagram below
+  the copy, pushing total height past one viewport.
+  `packages/cli/src/styles/nexus.css:779` sets `.ob { overflow:
+  hidden }` and `:1304` repeats `.ob { height: 100vh;
+  min-height: 0 }` (committed under a comment reading "every
+  step fits 1280 x 800 without scrolling") with no mobile-width
+  override enabling scroll. The footer — "Runs at … nothing
+  leaves this machine unless you turn on the cloud loop", the
+  step counter, and "Press ⏎ to begin" — renders past the
+  clipped bottom edge and is unreachable, not just below the
+  fold. It's the one line answering "is my data leaving this
+  machine," invisible to a phone-first adopter right where the
+  cloud-token scenario raises that question.
+- evidence: walk-44909096461,
+  {plain-folder,cloud-token,fleet-to-tug}--mobile--onboarding-welcome.png;
+  packages/cli/src/styles/nexus.css:779,1304
+- suggested fix: packages/cli/src/styles/nexus.css — add a
+  `max-width: 760px` override on `.ob` that allows vertical
+  scroll (or shrinks `.ob-grid`'s loop art) so the footer stays
+  reachable on mobile.
+- source: walk
+
+### [ ] [MED] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden
+- category: ui-comprehension
+- observation: desktop shows the full 8-step named stepper;
+  `packages/cli/src/styles/nexus.css:901-917`
+  (`@media (max-width: 760px)`) hides every step but the current
+  one (`.stp-lines, .stp:not(.is-current) { display: none }`),
+  leaving only the numeric counter. A mobile adopter can't see
+  what the remaining setup steps involve, only that there are 8
+  unnamed ones.
+- evidence: walk-44909096461,
+  plain-folder--mobile--onboarding-welcome.png vs
+  plain-folder--desktop--onboarding-welcome.png;
+  packages/cli/src/styles/nexus.css:901-917
+- suggested fix: packages/cli/src/ui/feedback.jsx (`Stepper`,
+  ~line 17) or the same media query — surface the next step's
+  label beside the counter on mobile instead of collapsing to a
+  number only.
+- source: walk
+
+### [ ] [MED] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint
+- category: ui-comprehension
+- observation: the same screen on cloud-token and fleet-to-tug
+  shows identical labels. Stepper labels "Detect," "Shape,"
+  "Plot," "Cloud loop" (`packages/cli/src/ui/steps.js:9-16`) are
+  nexus-specific vocabulary. `Stepper`
+  (`packages/cli/src/ui/feedback.jsx:22`) renders each as a
+  plain link with no `title` or description, so a stranger
+  reading the welcome screen has no way to learn what a
+  remaining step does before clicking into it.
+- evidence: walk-44909096461,
+  plain-folder--desktop--onboarding-welcome.png;
+  packages/cli/src/ui/steps.js:9-16;
+  packages/cli/src/ui/feedback.jsx:12-28
+- suggested fix: packages/cli/src/ui/feedback.jsx (`Stepper`,
+  ~line 22) — add a `title` per step, sourced from a short
+  `hint` string added to each `STEPS` entry in
+  `packages/cli/src/ui/steps.js`.
+- source: walk
 
 ## Done
 
