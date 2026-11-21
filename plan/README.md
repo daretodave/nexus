@@ -32,7 +32,6 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 67 | Package nexus as a Claude Code plugin | [67-claude-code-plugin.md](67-claude-code-plugin.md) | planned | 4 of 5 chunks |
 | 69 | plan/ carries the workspace: resurrection + a doctor | [69-workspace-resurrection.md](69-workspace-resurrection.md) | planned | not chunked yet |
 | 70 | Workspace-aware /bootstrap and /oversight | [70-workspace-aware-bootstrap.md](70-workspace-aware-bootstrap.md) | planned | not chunked yet |
 | 71 | Cloud workflow hardening: the canceller skips a paused workflow, ticks wait out a transient limit | [71-cloud-workflow-hardening.md](71-cloud-workflow-hardening.md) | planned | not chunked yet |

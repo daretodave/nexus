@@ -190,8 +190,9 @@ pass, so a true failure there is worth a second look.
 - [`../templates/README.md`](../templates/README.md) — the
   clone-and-copy path this plugin shortens; its "Fast path:
   /plugin install" section is the other half of this doc.
-- [`../plan/67-claude-code-plugin.md`](../plan/67-claude-code-plugin.md)
-  — why the plugin exists, and the eval suite's full design.
+- [`../plan/ARCHIVE.md`](../plan/ARCHIVE.md) — spec 67 shipped
+  this plugin in full; its own spec file is gone (the plan
+  only shrinks), and this doc carries what was lasting.
 - [`../concepts/architecture.md`](../concepts/architecture.md)
   — the skill/state-file split the plugin never wraps.
 - [`upgrade.md`](./upgrade.md) — the version-bump flow

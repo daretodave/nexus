@@ -49,3 +49,44 @@
     red-run and skipped-cloud states.
 
 - 39.4 in daretodave/nexus-scratch (private), 2026-10-21: march run 39696351110 (pick, build, land green; owner and release skipped as PR mode should) claimed 01.1 as cloud-39696351110, opened PR #1 with the fix and plan/pending/01.1.md only, and recorded pr:1 on the claim; the merge ran pr-flow (claims.json back to {}) and pr-resolve, both green; the owner's settle folded the close in. What broke went into spec 39 as 39.5 onward.
+
+Defaults taken under this cloud tick:
+
+- Build mode: chunk 67.4 is sized L (next.md's default build mode
+  is a Workflow — build, adversarial verify, fix) but this
+  environment's Workflow tool cannot run foreground
+  (`run_in_background: false`), which the cloud loop's rule 5
+  requires for every subagent dispatch. Used next.md Step 3's L
+  override instead: one builder subagent (Agent tool, foreground),
+  then the lead (this session) did the adversarial-verify pass
+  itself — read every file, re-ran `node scripts/__tests__/build-
+  plugin.test.mjs` and the full gate independently, found and fixed
+  one gate-red miss (below) — rather than a second Workflow phase.
+- `upgrade-pinned-old`'s eval case is scoped to the dry-run/report
+  stage only (`npx @usenexus/cli upgrade --verify`), never
+  `--write`/`--pr`/`--land`: that landing step needs an owner's
+  answer no eval turn can give.
+- Pinned models: `claude-haiku-5-5` for both `--model` and
+  `--judge-model`, in the eval suite's local run command and in
+  `plugin-ci.yml` — cheapest available, keeps the suite well under
+  its `--max-cost-usd 2` ceiling at the default 3 runs/case.
+- `claude plugin eval` could not be scored locally in either this
+  session's sandbox or the builder's: no model credential is
+  injected into a shelled `claude` CLI subprocess here (`Not logged
+  in`), only into this agent's own runtime. Structural checks passed
+  (plugin loads, all three cases parse with no schema/scaffold
+  error, each reaches its agent run before hitting the auth wall).
+  Real scoring happens on `plugin-ci.yml`'s first live run, where
+  `CLAUDE_CODE_OAUTH_TOKEN` is a configured repo secret — the lead
+  is watching that run after this lands (see the tick's oversight
+  audit for the result) and will push a follow-up fix if it is red
+  for a mechanical reason (a missing `socat` package on
+  `ubuntu-latest` is the one flagged risk; the eval's sandboxed Bash
+  tool needs both `bubblewrap` and `socat`, and this dev sandbox
+  needed `socat` installed by hand).
+- Found and fixed one gate miss the builder's commits left red:
+  `plugin/evals/adopt-clean/prompt.md` named a bracketed-token
+  example generically, in a form `node scripts/verify.mjs`'s
+  `placeholders` leg reads as an unknown real placeholder token (it
+  scans every doc repo-wide, not just `templates/`) — reworded; gate
+  is green.
