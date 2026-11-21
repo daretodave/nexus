@@ -7,69 +7,6 @@
 
 ## Pending
 
-### [ ] [score 6.6] Derive verify.mjs's tree reverse-check from the tree diagrams themselves, not a hand-maintained dir list
-- proposed: 2026-09-23 (iterate, dispatched to expand — no
-  finding scored ≥3.0 this tick)
-- source signals: the exact same bug class — README.md's and/or
-  templates/README.md's "What's in this kit" tree diagram
-  drifting out of sync with what's actually on disk — has been
-  found and fixed at least eight separate times since
-  2026-07-19: `PHASE_CANDIDATES.md`/`CURRENT-STATE.md` under
-  `templates/plan/` (2026-07-19, `plan/AUDIT.md:192-209`), root
-  `CLAUDE.md` (2026-07-29, `plan/AUDIT.md:537-544`),
-  `skills/digest.md` in the collapsed `skills/` enumeration
-  (2026-07-25, `plan/AUDIT.md:398,420`), a second
-  `templates/plan/` pair (2026-08-27ish, `plan/AUDIT.md:599,640`),
-  `templates/workspace/` (2026-09-01→02,
-  `plan/AUDIT.md:760-767,2119`), `templates/scripts/install-hooks.mjs`
-  (this week, `plan/AUDIT.md:1904`), `templates/.github/ISSUE_TEMPLATE/`
-  (this week, `plan/AUDIT.md:1825`), and root `CONTRIBUTING.md`
-  (today, `plan/AUDIT.md:1737`). A ninth, structural instance
-  shipped this week too (commit `e7b4172`): `scripts/verify.mjs`'s
-  own `REVERSE_CHECK_DIRS` array — the gate's reverse-check
-  allowlist — had itself silently missed four directories
-  (`templates/.github`, `templates/data`, `templates/setup`,
-  `templates/env`) that are expanded per-file in
-  `templates/README.md`'s tree, so the gate couldn't catch drift
-  inside them either. Root cause, confirmed by reading
-  `scripts/verify.mjs:176-219`: `REVERSE_CHECK_DIRS` is a second,
-  independently hand-maintained list of directories, separate from
-  the tree diagrams it's meant to police — every time a new
-  top-level dir gets expanded in a tree, a human or tick has to
-  remember to also add it here, which is precisely the same
-  maintenance-drift failure mode as the tree diagrams themselves.
-  Root-level files (like `CONTRIBUTING.md`, `CLAUDE.md`) aren't
-  covered by the reverse-check at all — only files under a listed
-  directory are walked, so a root-level omission is invisible to
-  the gate by construction, not just by a missing list entry.
-- rationale: this is the single most-repeated bug class in the
-  kit's entire audit history (nine confirmed occurrences, roughly
-  one every 1-2 weeks), always low-severity individually (a docs
-  cosmetic gap, never a broken command) but collectively the
-  single biggest recurring tax on `/iterate` ticks — each
-  occurrence costs a full finding-and-fix cycle for something a
-  slightly smarter gate leg would catch for free, permanently.
-  Adopter-facing (both `README.md` and `templates/README.md`,
-  the two docs every adopter reads first) and cheap: the fix is
-  confined to `scripts/verify.mjs`'s existing `legTree()`
-  function, no template API change.
-- proposed scope: replace the hardcoded `REVERSE_CHECK_DIRS`
-  array with a derived list — every top-level directory (and the
-  repo root itself, for direct files only, non-recursive) that
-  actually appears as an entry in either parsed tree diagram
-  becomes reverse-checked automatically, with a small, explicit
-  exclusion list (kit-internal-only dirs like `plan/`, `.git/`,
-  `node_modules/`, that intentionally never appear in an
-  adopter-facing product tree) instead of an opt-in allowlist.
-  Root-level files get the same non-recursive walk-and-compare
-  treatment `legTree()` already does for subdirectories. This
-  closes both the "new subdir needs a list entry" gap and the
-  root-level-file blind spot in one pass.
-- estimated phases: 1 (verify.mjs only, no template API change —
-  agents.md rule 7 doesn't apply since REVERSE_CHECK_DIRS isn't
-  documented public API)
-- conflicts: none.
-
 ### [promoted 2026-08-23 → phase 22] [score 8.8] Workspace-of-repos as a first-class adoption path
 - proposed: 2026-07-03
 - source signals: two sibling adopters independently converged
@@ -223,22 +160,6 @@
 - conflicts: none — tightens an existing playbook, no template
   API change.
 
-### [ ] [score 7.3] Workspace-aware /bootstrap + /oversight
-- proposed: 2026-07-03
-- source signals: a sibling adopter's cloudflare runbook fans one
-  workspace token out to repo Actions secrets by hand.
-- rationale: teach the executor the two rings — env resolution
-  walks up (process env -> repo .env -> parent .env.workspace,
-  with stop conditions), secret fan-out walks down (gh secret
-  set per Mirrored-to target); a missing key's failure message
-  points at the runbook that mints it.
-- proposed scope: edits only — bootstrap-automation.md (env
-  resolution order + fan-out), external-services.md (/oversight
-  checks each key in its Holder file, names only), polyrepo.md
-  (custody map rides the plan repo).
-- estimated phases: 1
-- conflicts: depends on two-ring topology + custody map.
-
 ### [promoted 2026-08-23 → phase 20] [score 8.5] Cloud march ticks must not dispatch background/async agents
 - proposed: 2026-07-17 (digest); re-evidenced 2026-08-02
   (expand pass 6)
@@ -362,60 +283,6 @@
   nexus's own workflows per `[user-issue #40]`) rather than
   overlapping it.
 
-### [ ] [score 6.2] `/doctor prompt-audit` isn't in the kit's prompt-maintenance story
-- proposed: 2026-09-28 (expand pass 16)
-- source signals: Claude Code v2.1.283's changelog — "Added
-  `/doctor prompt-audit` (also `/checkup prompt-audit`) to
-  audit your CLAUDE.md files, skills, agents and commands for
-  prompting patterns written for older models." Confirmed via
-  a fresh raw-text fetch of
-  `raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`
-  this pass (grepped directly, not a summarized read): the
-  immediately preceding entry (v2.1.282) shows the command
-  already existed and was actively developed that same window —
-  "Improved `prompt-audit` on Claude Code configuration: stale
-  paths, stale commands and contradicting instruction files now
-  lead the report, and thinking keywords that Claude Code
-  documents are kept" — so this is a maturing, not
-  brand-new-and-unstable, surface. Zero hits for "prompt-audit"
-  or "prompt audit" anywhere in this repo's history
-  (`git log --all -i --grep`) or docs. This is the direct
-  sibling of the already-pending `/skill-doctor` candidate
-  (score 5.8, expand pass 10) — same class of first-party
-  auditing command, but this one names its targets as exactly
-  the four artifact types nexus ships and calls public API:
-  CLAUDE.md files (`templates/claude/CLAUDE.md`), skills
-  (`skills/*.md` / `templates/skills/*.md`), agents
-  (`.claude/agents/`), and commands (`.claude/commands/` /
-  `templates/claude/commands/`).
-- rationale: nexus's product IS this exact artifact family —
-  `customization/claude-code.md` and `concepts/skills-anatomy.md`
-  already own the kit's prompting-quality story (voice, wrap,
-  anatomy conventions the verify gate partially checks). A
-  first-party command that flags "prompting patterns written
-  for older models" and "contradicting instruction files" is
-  on-mission for both this repo's own maintenance (skills/*.md
-  drift is the single most-audited defect class in
-  `plan/AUDIT.md`) and for adopters who inherit a growing
-  `skills/` directory. Cheap: doc-only, no template API change.
-- proposed scope: a short subsection in
-  `customization/claude-code.md` (near the existing
-  `/skill-doctor` candidate's proposed home) naming
-  `/doctor prompt-audit` / `/checkup prompt-audit`, what it
-  checks (stale paths, stale commands, contradicting
-  instructions, older-model prompting patterns), and when to
-  run it (after `/skill-doctor` pruning, or before a `/critique`
-  pass). Investigate, don't assume: confirm the command's actual
-  output format and whether it flags anything in this repo's own
-  `skills/*.md`/`CLAUDE.md` before writing the mapping — a first
-  read of a changelog blurb may not match the real CLI surface,
-  same caveat as the `/skill-doctor` candidate.
-- estimated phases: 1
-- conflicts: none — pairs naturally with the pending
-  `/skill-doctor` candidate (score 5.8); sequence together if
-  both promote, since they'd likely land in the same
-  `customization/claude-code.md` section.
-
 ### [ ] [score 3.5] pulse.mjs's candidate-pending count still includes the four `[promoted]`-tagged rows never relocated out of `## Pending`
 - proposed: 2026-09-29 (digest)
 - source signals: today's pulse read "29 pending, oldest 90d,"
@@ -469,100 +336,6 @@
   Either half closes the gap; doing both is more robust.
 - estimated phases: 1
 - conflicts: none.
-
-### [ ] [score 6.5] Arm `CLAUDE_CODE_RETRY_WATCHDOG` in the cloud workflows so transient 429/529s are waited out instead of crash-alarming
-- proposed: 2026-10-09 (expand pass 20)
-- source signals: Signal E (platform drift) — Claude Code's
-  changelog, fetched fresh this pass
-  (`raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`,
-  grepped directly): v2.1.295 (today's latest, three versions past
-  pass 19's v2.1.292 check) adds
-  `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS` to cap how long
-  `CLAUDE_CODE_RETRY_WATCHDOG` — described elsewhere in the same
-  changelog's history ("Changed `CLAUDE_CODE_MAX_RETRIES` to cap at
-  15; for unattended sessions, use `CLAUDE_CODE_RETRY_WATCHDOG`
-  instead") as the mechanism built specifically for unattended
-  sessions — waits out 429 and 529 errors before giving up. Neither
-  env var appears anywhere in this repo (`git log --all -i --grep`,
-  zero hits; grepped across `.github/workflows/`, zero hits)
-  despite `march.yml`, `night.yml`, and `heartbeat.yml` all running
-  unattended, with no human present to retry a failed tick by hand.
-  Signal A (`plan/AUDIT.md`) — this isn't hypothetical: the
-  already-pending "[score 4.5] Crash-alarm dedupe matches by
-  generic title only" candidate's own evidence shows two
-  independent 429 `rate_limit` crashes in a single 24h window
-  (2026-09-21, runs `35525362773` and `35540854118`), both of which
-  exited the tick entirely rather than waiting out the transient
-  limit.
-- rationale: today the only response to a transient 429/529 is the
-  whole GitHub Actions job failing — the crash-alarm then fires
-  (or, per the 4.5 candidate, gets masked by title-only dedupe).
-  `CLAUDE_CODE_RETRY_WATCHDOG` is Claude Code's own first-party
-  answer to exactly this shape of problem, and the new
-  `_MAX_WAIT_MS` cap removes the previous objection to arming it in
-  a job with a hard `timeout-minutes` ceiling — the wait is now
-  bounded and tunable against that ceiling instead of open-ended.
-  Distinct from, and complementary to, the 4.5 candidate: that one
-  makes a crash visible when it happens; this one prevents a whole
-  class of crashes (transient rate/overload errors) from happening
-  at all.
-- proposed scope: add `CLAUDE_CODE_RETRY_WATCHDOG` (exact value per
-  the real flag semantics — investigate, don't assume, the
-  changelog blurb doesn't confirm whether it's a boolean truthy or
-  a specific token) and a `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS`
-  set comfortably under each workflow's own `timeout-minutes` to
-  the `env:` block of `.github/workflows/march.yml`, `night.yml`,
-  and `heartbeat.yml`, plus their `templates/.github/workflows/`
-  mirrors (agents.md rule 7); a short note in
-  `.github/CLOUD_LOOP.md` and `playbooks/cloud-loop.md` naming the
-  two env vars and why the wait is capped below the job timeout,
-  not uncapped.
-- estimated phases: 1 (workflow + doc only, no template API change
-  beyond the env block)
-- conflicts: none — complements rather than overlaps the pending
-  "[score 4.5] Crash-alarm dedupe" candidate above.
-- re-evidence:
-  - 2026-11-06 · field · +0 · write-ups on running an ai reviewer or ai-assisted fixer inside ci keep repeating one point: spend is driven by how many times a failed check gets retried or re-run, not by the first pass, so the ret…
-
-### [ ] [score 7.0] heartbeat's wedged-run canceller breaks outright when the workflow it watches is disabled, instead of skipping like its two sibling steps
-- proposed: 2026-10-21 (digest)
-- source signals: two consecutive heartbeat runs failed today —
-  2026-10-21T04:43:57Z (run 39545645949) and 2026-10-21T11:46:50Z
-  (run 39594489838) — both on `could not find any workflows named
-  march`. `gh run list --workflow <name>` can't resolve a workflow
-  by its display name once it leaves the `active` state: `gh
-  workflow list --all` shows `march` as `disabled_manually` since
-  2026-10-20T23:20:24Z, the owner's deliberate pause during
-  today's marathon local `/heads-down` session (`a1f5f127`). The
-  "Cancel wedged runs" step (`.github/workflows/heartbeat.yml`'s
-  first step) loops `$WATCH` ("march night") and calls `gh run
-  list --workflow "$wf" --status in_progress` with no armed-state
-  guard, so it hard-fails under `bash -e` for as long as any
-  watched workflow stays non-`active`. Today's own spec-32 chunks
-  (`b6acc842`, committed 2026-10-21T14:51:43Z) taught the other
-  two steps ("Alarm if not armed", "Alarm if march or night has
-  not succeeded a tick in time") to read `gh workflow list --all`
-  first and skip a non-`active` workflow instead of erroring —
-  step 1 still lacks that exact guard, and its failure aborts the
-  whole job (so the two newer steps never even ran on either of
-  today's two failing ticks). The template twin
-  (`templates/.github/workflows/heartbeat.yml`) is byte-identical,
-  so every adopter who pauses a watched workflow hits the same
-  failure.
-- rationale: cheap (reuse the armed-state read the other two steps
-  already do) and adopter-facing (ships via the template); the
-  watchdog going dark exactly when the thing it watches is paused
-  is the worst time for it to fail silently-loud instead of
-  reporting cleanly.
-- proposed scope: `.github/workflows/heartbeat.yml` +
-  `templates/.github/workflows/heartbeat.yml`, step 1 only — read
-  `gh workflow list --all` once (ahead of all three steps, not
-  just the latter two) and skip `$wf` in the cancel loop when its
-  state isn't `active`. Touches `.github/workflows/*.yml`, so per
-  `agents.md` "Operational secrets" it lands from a local/human
-  session, not a cloud tick.
-- estimated chunks: 1
-- conflicts: none
 
 ### [ ] [score 4.8] heartbeat's cadence check counts a quota-gate-skipped tick as a successful run, so a stuck gate stays invisible
 - proposed: 2026-11-05 (digest)
@@ -624,83 +397,6 @@
   (the staleness fix already shipped) and the pending "[score
   7.0] heartbeat's wedged-run canceller" row above (different
   step, different failure shape).
-
-### [ ] [score 6.0] spec-driven development toolkits are splitting over whether a spec is a static doc or live infrastr…
-- proposed: 2026-11-06 (research)
-- source signals: field (2026-11-06): competing spec-driven development toolkits now differ mainly on whether the spec stays a one-time planning document or becomes an operational layer the agents keep reading and updating through the bu…
-- rationale: a kit whose plan files only get read once at the start, then ignored mid-build, now reads as the older generation of this category; the newer toolkits treat the spec state itself as what drives the loop end to end.
-- proposed scope: check that every plan file this kit relies on (lanes, needs, held lines) is read live by the loop at each step, not just consulted once when a chunk is picked, and tighten any step found reading it stale.
-- estimated chunks: unknown until specced
-- conflicts: none known.
-- generator: research · filed 2026-11-06
-- re-evidence:
-  - 2026-11-13 · field · +0 · one popular open toolkit in this category runs spec, plan, tasks, then implement as sequential phases, each producing its own file that feeds the next, and plugs into dozens of different coding agent…
-
-### [ ] [score 7.5] playbooks/new-project.md has drifted into internally-contradictory and overclaiming copy across 4 pending dry-run findings
-- proposed: 2026-11-06 (expand)
-- filed score: 7.5
-- kind: product
-- source signals: `plan/CRITIQUE.md`'s Pending section carries
-  four separate, still-open dry-run findings against this one
-  playbook, each from a different line range and a different
-  root cause: a [HIGH] contradiction between `prompts/adopt.md`'s
-  single-final-commit instruction and the playbook's five named
-  intermediate commit points (lines 201, 306, 542, 582, 667); a
-  [MED] Day-1 checklist box (864-867) that asks for a design
-  artifact with no concrete already-completed step behind it; a
-  [MED] step 9 (695-711) whose automated `/bootstrap` path can
-  wire a ticking cloud loop before a single `/next` chunk has
-  shipped, contradicting the cloud loop's own precondition; and a
-  [MED] Prerequisites line (51) claiming GitLab support nothing
-  else in the kit delivers. Four independent findings sharing one
-  file is exactly the repeated-friction shape signal B calls for
-  — this is also the second time this playbook has clustered this
-  way (the already-shipped phase-19 candidate above rewrote its
-  step-4 walkthrough from an earlier four-finding cluster).
-- rationale: `playbooks/new-project.md` is the first full
-  document a new adopter (or a delegated adopt-prompt agent)
-  reads end-to-end, so a contradiction or an overclaim here is
-  adopter-facing in the sharpest way — it is read once, during
-  the highest-friction moment of adoption, with no second
-  chance. Patching each finding alone, as `/iterate` would, risks
-  four small edits that still don't agree with each other; one
-  coordinated pass can reconcile the commit-instruction
-  contradiction with `prompts/adopt.md` at the same time it fixes
-  the other three, instead of four separate near-misses.
-- proposed scope: one chunk editing `playbooks/new-project.md`
-  (and `prompts/adopt.md` where the commit-instruction
-  reconciliation needs its other half): resolve the delegated-
-  commit contradiction per the CRITIQUE row's suggested fix, map
-  or drop the Day-1 design-artifact checkbox, sequence or caveat
-  step 9's automated path against the cloud loop's first-chunk
-  precondition, and narrow the Prerequisites GitLab claim to what
-  the kit actually supports. Each of the four CRITIQUE rows
-  already carries its own evidence and suggested fix; this spec's
-  job is sequencing them as one reviewed pass, not re-discovering
-  them.
-- estimated chunks: 1
-- conflicts: none known — prose-only playbook edits, no
-  `templates/` API surface.
-- re-evidence:
-  - 2026-11-12 · B · same source, +0 · three more independent CRITIQUE rows in the same playbook: prune-list test breakage (cadence.test.mjs imports bootstrap.mjs, never added to the rm list, HIGH missing-file), files-added checklist omits nexus.secrets.json (LOW), install-hooks run instruction precedes scripts/ existing (LOW)
-
-### [ ] [score 6.0] autonomous build loops are now named for failure modes: self-approval, spec gaming, misrepresented…
-- proposed: 2026-11-13 (research)
-- source signals: field (2026-11-13): a survey of many autonomous coding loops names recurring anti-patterns: a loop approving its own work with no outside check, gaming the stated goal instead of the intended one, and a loop's own repor…
-- rationale: the kit's own loop both builds and gates its own work every tick; naming which of these failure modes its gate already blocks mechanically, versus which ones it only trusts the builder's self-report for, is worth a deliberate check rather than an assumption
-- proposed scope: audit the claim-build-gate-close cycle against each named failure mode and record, in a doc or the gate itself, which ones the verify gate catches mechanically versus which still rely on the builder's own honesty
-- estimated chunks: unknown until specced
-- conflicts: none known.
-- generator: research · filed 2026-11-13
-
-### [ ] [score 6.0] agent runtimes now expose native session fork, delete and resume calls where tooling used to hand-r…
-- proposed: 2026-11-13 (research)
-- source signals: field (2026-11-13): a widely used agent runtime added first-class calls to fork a running session, delete one, list or resume past sessions, and read current context-window usage by category - capabilities a loop that p…
-- rationale: the kit's own reboot train parks a running loop to a ledger file and resumes it later by reading that file back; if the underlying runtime now offers session fork and resume as a native call, the hand-rolled ledger contract could shrink, or the kit should at least note why it still prefers the file-based approach
-- proposed scope: compare the reboot-ready/reboot-resume ledger contract against whatever native session fork, resume or list primitives the loop's own runtime now exposes, and note whether moving part of the parking contract onto a native call is worth a candidate
-- estimated chunks: unknown until specced
-- conflicts: none known.
-- generator: research · filed 2026-11-13
 
 ## Promoted
 
@@ -1107,9 +803,284 @@
 - conflicts: rides the workspace playbook candidate.
 - promoted: 2026-11-19, auto (motion-stall react, #92), veto #125
 
+### [promoted 2026-11-21 → spec 70] [score 7.3] Workspace-aware /bootstrap + /oversight
+- proposed: 2026-07-03
+- source signals: a sibling adopter's cloudflare runbook fans one
+  workspace token out to repo Actions secrets by hand.
+- rationale: teach the executor the two rings — env resolution
+  walks up (process env -> repo .env -> parent .env.workspace,
+  with stop conditions), secret fan-out walks down (gh secret
+  set per Mirrored-to target); a missing key's failure message
+  points at the runbook that mints it.
+- proposed scope: edits only — bootstrap-automation.md (env
+  resolution order + fan-out), external-services.md (/oversight
+  checks each key in its Holder file, names only), polyrepo.md
+  (custody map rides the plan repo).
+- estimated phases: 1
+- conflicts: depends on two-ring topology + custody map.
+- promoted: 2026-11-21, /oversight (the owner's pick)
+
+### [promoted 2026-11-21 → spec 71] [score 7.0] heartbeat's wedged-run canceller breaks outright when the workflow it watches is disabled, instead of skipping like its two sibling steps
+- proposed: 2026-10-21 (digest)
+- source signals: two consecutive heartbeat runs failed today —
+  2026-10-21T04:43:57Z (run 39545645949) and 2026-10-21T11:46:50Z
+  (run 39594489838) — both on `could not find any workflows named
+  march`. `gh run list --workflow <name>` can't resolve a workflow
+  by its display name once it leaves the `active` state: `gh
+  workflow list --all` shows `march` as `disabled_manually` since
+  2026-10-20T23:20:24Z, the owner's deliberate pause during
+  today's marathon local `/heads-down` session (`a1f5f127`). The
+  "Cancel wedged runs" step (`.github/workflows/heartbeat.yml`'s
+  first step) loops `$WATCH` ("march night") and calls `gh run
+  list --workflow "$wf" --status in_progress` with no armed-state
+  guard, so it hard-fails under `bash -e` for as long as any
+  watched workflow stays non-`active`. Today's own spec-32 chunks
+  (`b6acc842`, committed 2026-10-21T14:51:43Z) taught the other
+  two steps ("Alarm if not armed", "Alarm if march or night has
+  not succeeded a tick in time") to read `gh workflow list --all`
+  first and skip a non-`active` workflow instead of erroring —
+  step 1 still lacks that exact guard, and its failure aborts the
+  whole job (so the two newer steps never even ran on either of
+  today's two failing ticks). The template twin
+  (`templates/.github/workflows/heartbeat.yml`) is byte-identical,
+  so every adopter who pauses a watched workflow hits the same
+  failure.
+- rationale: cheap (reuse the armed-state read the other two steps
+  already do) and adopter-facing (ships via the template); the
+  watchdog going dark exactly when the thing it watches is paused
+  is the worst time for it to fail silently-loud instead of
+  reporting cleanly.
+- proposed scope: `.github/workflows/heartbeat.yml` +
+  `templates/.github/workflows/heartbeat.yml`, step 1 only — read
+  `gh workflow list --all` once (ahead of all three steps, not
+  just the latter two) and skip `$wf` in the cancel loop when its
+  state isn't `active`. Touches `.github/workflows/*.yml`, so per
+  `agents.md` "Operational secrets" it lands from a local/human
+  session, not a cloud tick.
+- estimated chunks: 1
+- conflicts: none
+- promoted: 2026-11-21, /oversight (the owner's pick)
+
+### [promoted 2026-11-21 → spec 71] [score 6.5] Arm `CLAUDE_CODE_RETRY_WATCHDOG` in the cloud workflows so transient 429/529s are waited out instead of crash-alarming
+- proposed: 2026-10-09 (expand pass 20)
+- source signals: Signal E (platform drift) — Claude Code's
+  changelog, fetched fresh this pass
+  (`raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`,
+  grepped directly): v2.1.295 (today's latest, three versions past
+  pass 19's v2.1.292 check) adds
+  `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS` to cap how long
+  `CLAUDE_CODE_RETRY_WATCHDOG` — described elsewhere in the same
+  changelog's history ("Changed `CLAUDE_CODE_MAX_RETRIES` to cap at
+  15; for unattended sessions, use `CLAUDE_CODE_RETRY_WATCHDOG`
+  instead") as the mechanism built specifically for unattended
+  sessions — waits out 429 and 529 errors before giving up. Neither
+  env var appears anywhere in this repo (`git log --all -i --grep`,
+  zero hits; grepped across `.github/workflows/`, zero hits)
+  despite `march.yml`, `night.yml`, and `heartbeat.yml` all running
+  unattended, with no human present to retry a failed tick by hand.
+  Signal A (`plan/AUDIT.md`) — this isn't hypothetical: the
+  already-pending "[score 4.5] Crash-alarm dedupe matches by
+  generic title only" candidate's own evidence shows two
+  independent 429 `rate_limit` crashes in a single 24h window
+  (2026-09-21, runs `35525362773` and `35540854118`), both of which
+  exited the tick entirely rather than waiting out the transient
+  limit.
+- rationale: today the only response to a transient 429/529 is the
+  whole GitHub Actions job failing — the crash-alarm then fires
+  (or, per the 4.5 candidate, gets masked by title-only dedupe).
+  `CLAUDE_CODE_RETRY_WATCHDOG` is Claude Code's own first-party
+  answer to exactly this shape of problem, and the new
+  `_MAX_WAIT_MS` cap removes the previous objection to arming it in
+  a job with a hard `timeout-minutes` ceiling — the wait is now
+  bounded and tunable against that ceiling instead of open-ended.
+  Distinct from, and complementary to, the 4.5 candidate: that one
+  makes a crash visible when it happens; this one prevents a whole
+  class of crashes (transient rate/overload errors) from happening
+  at all.
+- proposed scope: add `CLAUDE_CODE_RETRY_WATCHDOG` (exact value per
+  the real flag semantics — investigate, don't assume, the
+  changelog blurb doesn't confirm whether it's a boolean truthy or
+  a specific token) and a `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS`
+  set comfortably under each workflow's own `timeout-minutes` to
+  the `env:` block of `.github/workflows/march.yml`, `night.yml`,
+  and `heartbeat.yml`, plus their `templates/.github/workflows/`
+  mirrors (agents.md rule 7); a short note in
+  `.github/CLOUD_LOOP.md` and `playbooks/cloud-loop.md` naming the
+  two env vars and why the wait is capped below the job timeout,
+  not uncapped.
+- estimated phases: 1 (workflow + doc only, no template API change
+  beyond the env block)
+- conflicts: none — complements rather than overlaps the pending
+  "[score 4.5] Crash-alarm dedupe" candidate above.
+- re-evidence:
+  - 2026-11-06 · field · +0 · write-ups on running an ai reviewer or ai-assisted fixer inside ci keep repeating one point: spend is driven by how many times a failed check gets retried or re-run, not by the first pass, so the ret…
+- promoted: 2026-11-21, /oversight (the owner's pick)
+
+### [promoted 2026-11-21 → spec 72] [score 6.6] Derive verify.mjs's tree reverse-check from the tree diagrams themselves, not a hand-maintained dir list
+- proposed: 2026-09-23 (iterate, dispatched to expand — no
+  finding scored ≥3.0 this tick)
+- source signals: the exact same bug class — README.md's and/or
+  templates/README.md's "What's in this kit" tree diagram
+  drifting out of sync with what's actually on disk — has been
+  found and fixed at least eight separate times since
+  2026-07-19: `PHASE_CANDIDATES.md`/`CURRENT-STATE.md` under
+  `templates/plan/` (2026-07-19, `plan/AUDIT.md:192-209`), root
+  `CLAUDE.md` (2026-07-29, `plan/AUDIT.md:537-544`),
+  `skills/digest.md` in the collapsed `skills/` enumeration
+  (2026-07-25, `plan/AUDIT.md:398,420`), a second
+  `templates/plan/` pair (2026-08-27ish, `plan/AUDIT.md:599,640`),
+  `templates/workspace/` (2026-09-01→02,
+  `plan/AUDIT.md:760-767,2119`), `templates/scripts/install-hooks.mjs`
+  (this week, `plan/AUDIT.md:1904`), `templates/.github/ISSUE_TEMPLATE/`
+  (this week, `plan/AUDIT.md:1825`), and root `CONTRIBUTING.md`
+  (today, `plan/AUDIT.md:1737`). A ninth, structural instance
+  shipped this week too (commit `e7b4172`): `scripts/verify.mjs`'s
+  own `REVERSE_CHECK_DIRS` array — the gate's reverse-check
+  allowlist — had itself silently missed four directories
+  (`templates/.github`, `templates/data`, `templates/setup`,
+  `templates/env`) that are expanded per-file in
+  `templates/README.md`'s tree, so the gate couldn't catch drift
+  inside them either. Root cause, confirmed by reading
+  `scripts/verify.mjs:176-219`: `REVERSE_CHECK_DIRS` is a second,
+  independently hand-maintained list of directories, separate from
+  the tree diagrams it's meant to police — every time a new
+  top-level dir gets expanded in a tree, a human or tick has to
+  remember to also add it here, which is precisely the same
+  maintenance-drift failure mode as the tree diagrams themselves.
+  Root-level files (like `CONTRIBUTING.md`, `CLAUDE.md`) aren't
+  covered by the reverse-check at all — only files under a listed
+  directory are walked, so a root-level omission is invisible to
+  the gate by construction, not just by a missing list entry.
+- rationale: this is the single most-repeated bug class in the
+  kit's entire audit history (nine confirmed occurrences, roughly
+  one every 1-2 weeks), always low-severity individually (a docs
+  cosmetic gap, never a broken command) but collectively the
+  single biggest recurring tax on `/iterate` ticks — each
+  occurrence costs a full finding-and-fix cycle for something a
+  slightly smarter gate leg would catch for free, permanently.
+  Adopter-facing (both `README.md` and `templates/README.md`,
+  the two docs every adopter reads first) and cheap: the fix is
+  confined to `scripts/verify.mjs`'s existing `legTree()`
+  function, no template API change.
+- proposed scope: replace the hardcoded `REVERSE_CHECK_DIRS`
+  array with a derived list — every top-level directory (and the
+  repo root itself, for direct files only, non-recursive) that
+  actually appears as an entry in either parsed tree diagram
+  becomes reverse-checked automatically, with a small, explicit
+  exclusion list (kit-internal-only dirs like `plan/`, `.git/`,
+  `node_modules/`, that intentionally never appear in an
+  adopter-facing product tree) instead of an opt-in allowlist.
+  Root-level files get the same non-recursive walk-and-compare
+  treatment `legTree()` already does for subdirectories. This
+  closes both the "new subdir needs a list entry" gap and the
+  root-level-file blind spot in one pass.
+- estimated phases: 1 (verify.mjs only, no template API change —
+  agents.md rule 7 doesn't apply since REVERSE_CHECK_DIRS isn't
+  documented public API)
+- conflicts: none.
+- promoted: 2026-11-21, /oversight (the owner's pick)
+
+### [promoted 2026-11-21 → spec 73] [score 6.2] `/doctor prompt-audit` isn't in the kit's prompt-maintenance story
+- proposed: 2026-09-28 (expand pass 16)
+- source signals: Claude Code v2.1.283's changelog — "Added
+  `/doctor prompt-audit` (also `/checkup prompt-audit`) to
+  audit your CLAUDE.md files, skills, agents and commands for
+  prompting patterns written for older models." Confirmed via
+  a fresh raw-text fetch of
+  `raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md`
+  this pass (grepped directly, not a summarized read): the
+  immediately preceding entry (v2.1.282) shows the command
+  already existed and was actively developed that same window —
+  "Improved `prompt-audit` on Claude Code configuration: stale
+  paths, stale commands and contradicting instruction files now
+  lead the report, and thinking keywords that Claude Code
+  documents are kept" — so this is a maturing, not
+  brand-new-and-unstable, surface. Zero hits for "prompt-audit"
+  or "prompt audit" anywhere in this repo's history
+  (`git log --all -i --grep`) or docs. This is the direct
+  sibling of the already-pending `/skill-doctor` candidate
+  (score 5.8, expand pass 10) — same class of first-party
+  auditing command, but this one names its targets as exactly
+  the four artifact types nexus ships and calls public API:
+  CLAUDE.md files (`templates/claude/CLAUDE.md`), skills
+  (`skills/*.md` / `templates/skills/*.md`), agents
+  (`.claude/agents/`), and commands (`.claude/commands/` /
+  `templates/claude/commands/`).
+- rationale: nexus's product IS this exact artifact family —
+  `customization/claude-code.md` and `concepts/skills-anatomy.md`
+  already own the kit's prompting-quality story (voice, wrap,
+  anatomy conventions the verify gate partially checks). A
+  first-party command that flags "prompting patterns written
+  for older models" and "contradicting instruction files" is
+  on-mission for both this repo's own maintenance (skills/*.md
+  drift is the single most-audited defect class in
+  `plan/AUDIT.md`) and for adopters who inherit a growing
+  `skills/` directory. Cheap: doc-only, no template API change.
+- proposed scope: a short subsection in
+  `customization/claude-code.md` (near the existing
+  `/skill-doctor` candidate's proposed home) naming
+  `/doctor prompt-audit` / `/checkup prompt-audit`, what it
+  checks (stale paths, stale commands, contradicting
+  instructions, older-model prompting patterns), and when to
+  run it (after `/skill-doctor` pruning, or before a `/critique`
+  pass). Investigate, don't assume: confirm the command's actual
+  output format and whether it flags anything in this repo's own
+  `skills/*.md`/`CLAUDE.md` before writing the mapping — a first
+  read of a changelog blurb may not match the real CLI surface,
+  same caveat as the `/skill-doctor` candidate.
+- estimated phases: 1
+- conflicts: none — pairs naturally with the pending
+  `/skill-doctor` candidate (score 5.8); sequence together if
+  both promote, since they'd likely land in the same
+  `customization/claude-code.md` section.
+- promoted: 2026-11-21, /oversight (the owner's pick)
+
+### [promoted 2026-11-21 → spec 74] [score 6.0] spec-driven development toolkits are splitting over whether a spec is a static doc or live infrastr…
+- proposed: 2026-11-06 (research)
+- source signals: field (2026-11-06): competing spec-driven development toolkits now differ mainly on whether the spec stays a one-time planning document or becomes an operational layer the agents keep reading and updating through the bu…
+- rationale: a kit whose plan files only get read once at the start, then ignored mid-build, now reads as the older generation of this category; the newer toolkits treat the spec state itself as what drives the loop end to end.
+- proposed scope: check that every plan file this kit relies on (lanes, needs, held lines) is read live by the loop at each step, not just consulted once when a chunk is picked, and tighten any step found reading it stale.
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-06
+- re-evidence:
+  - 2026-11-13 · field · +0 · one popular open toolkit in this category runs spec, plan, tasks, then implement as sequential phases, each producing its own file that feeds the next, and plugs into dozens of different coding agent…
+- promoted: 2026-11-21, /oversight (the owner's pick)
+
+### [promoted 2026-11-21 → spec 75] [score 6.0] autonomous build loops are now named for failure modes: self-approval, spec gaming, misrepresented…
+- proposed: 2026-11-13 (research)
+- source signals: field (2026-11-13): a survey of many autonomous coding loops names recurring anti-patterns: a loop approving its own work with no outside check, gaming the stated goal instead of the intended one, and a loop's own repor…
+- rationale: the kit's own loop both builds and gates its own work every tick; naming which of these failure modes its gate already blocks mechanically, versus which ones it only trusts the builder's self-report for, is worth a deliberate check rather than an assumption
+- proposed scope: audit the claim-build-gate-close cycle against each named failure mode and record, in a doc or the gate itself, which ones the verify gate catches mechanically versus which still rely on the builder's own honesty
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-13
+- promoted: 2026-11-21, /oversight (the owner's pick)
+
+### [promoted 2026-11-21 → spec 76] [score 6.0] agent runtimes now expose native session fork, delete and resume calls where tooling used to hand-r…
+- proposed: 2026-11-13 (research)
+- source signals: field (2026-11-13): a widely used agent runtime added first-class calls to fork a running session, delete one, list or resume past sessions, and read current context-window usage by category - capabilities a loop that p…
+- rationale: the kit's own reboot train parks a running loop to a ledger file and resumes it later by reading that file back; if the underlying runtime now offers session fork and resume as a native call, the hand-rolled ledger contract could shrink, or the kit should at least note why it still prefers the file-based approach
+- proposed scope: compare the reboot-ready/reboot-resume ledger contract against whatever native session fork, resume or list primitives the loop's own runtime now exposes, and note whether moving part of the parking contract onto a native call is worth a candidate
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-13
+- promoted: 2026-11-21, /oversight (the owner's pick)
+
 ## Rejected
 
 (kept for the record, with reasons)
+
+### [rejected 2026-11-21] [score 7.5] playbooks/new-project.md has drifted into internally-contradictory and overclaiming copy across 4 pending dry-run findings
+- reason: built directly, one `/iterate` tick per finding, no
+  spec needed. All seven dry-run findings this row and its
+  re-evidence cite are ticked in `plan/CRITIQUE.md`, whose
+  Pending section read 0 when `/oversight` checked on
+  2026-11-21: the GitLab claim (`6633b57`), the Day-1
+  design-artifact box (`307b784`), the early cloud-loop leg
+  (`6f3f18b`), the prune-list test break (`78649fa`), the
+  files-added checklist (`1a1f2a1`), the install-hooks order
+  (`af66cee`) and the commit-points contradiction (`080cdb3`).
 
 ### [rejected 2026-11-18] [score 7.5] Onboarding's mobile viewport needs its own narrow-width layout pass, not desktop CSS stretched thin
 - reason: built directly, ad hoc, no spec needed — all three

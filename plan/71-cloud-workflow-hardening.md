@@ -1,0 +1,78 @@
+# 71 — Cloud workflow hardening: the canceller skips a paused workflow, ticks wait out a transient limit
+
+> Two ways the cloud loop fails loudly for no good reason. The
+> heartbeat's first step errors out whenever a workflow it
+> watches is paused, taking the rest of the watchdog with it.
+> And a tick that meets a transient 429 or 529 fails the whole
+> job instead of waiting. Both are workflow-file fixes, held
+> back until now because no cloud tick could push one.
+
+## Why
+
+`heartbeat.yml`'s "Cancel wedged runs" step loops `$WATCH`
+and calls `gh run list --workflow "$wf"` with no armed-state
+guard. `gh` cannot resolve a workflow by name once it leaves
+the `active` state, so the step fails under `bash -e` for as
+long as any watched workflow is disabled (two failed
+heartbeats on 2026-10-21, runs `39545645949` and
+`39594489838`, during a deliberate pause). The two later
+steps already read `gh workflow list --all` and skip a
+non-active workflow; the first never got the guard, and its
+failure means they never run. The template twin is
+byte-identical, so every adopter who pauses a workflow gets
+the same.
+
+Separately, Claude Code ships `CLAUDE_CODE_RETRY_WATCHDOG`
+for unattended sessions and
+`CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS` to cap its wait.
+Neither is set in any workflow here. Two 429 crashes inside
+24 hours (2026-09-21, runs `35525362773` and `35540854118`)
+each ended a tick that a bounded wait would have saved.
+
+Since 2026-11-21 a tick pushes as `ACTIONS_PAT` and can land
+`.github/workflows/` changes (`agents.md`, "Operational
+secrets"), so both build from the cloud.
+
+## Design
+
+- `heartbeat.yml`, root and template twin: read `gh workflow
+  list --all` once, ahead of all three steps, and skip `$wf`
+  in the cancel loop when its state is not `active`, the way
+  the two later steps do. A skipped workflow is one log line,
+  never a failure.
+- `march.yml` and `night.yml`, root and template twins: set
+  the retry watchdog in the model step's `env:` with a
+  `MAX_WAIT_MS` comfortably under the job's
+  `timeout-minutes`. Read the current Claude Code docs for
+  the flag's real value shape before writing it: the
+  changelog line does not say whether it is a boolean.
+- `.github/CLOUD_LOOP.md` and `playbooks/cloud-loop.md` name
+  the two variables and why the wait is capped below the job
+  timeout.
+- The gate's `workflows` and `cadence-twins` legs keep the
+  twins honest; a new required env line teaches the gate in
+  the same commit.
+
+## Acceptance
+
+- **A1** With a watched workflow disabled, the heartbeat's
+  cancel step logs a skip for it and exits 0, in the root
+  workflow and the template twin; the two later steps run.
+- **A2** `march.yml` and `night.yml` (root and template) set
+  the retry watchdog and a max wait under each job's
+  `timeout-minutes`, with the value shape confirmed against
+  the current docs.
+- **A3** `.github/CLOUD_LOOP.md` and `playbooks/cloud-loop.md`
+  document both variables and the cap.
+- **A4** `CHANGELOG.md` carries an entry for each template
+  path touched, and the gate is green.
+
+## Open questions
+
+- Whether the heartbeat itself needs the watchdog: it runs no
+  model, so probably not. The chunking session confirms.
+
+## Chunks
+Measure: 4 open · 0 closed · next A5
+
+Not chunked yet.

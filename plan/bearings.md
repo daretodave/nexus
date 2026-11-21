@@ -120,8 +120,8 @@ the aged ones promote themselves behind a veto window
 - Promote: aged
 - promote_after_days: 14
 - promote_floor: 6.0
-- promote_per_week: 3
-- veto_days: 3
+- promote_per_week: 5
+- veto_days: 2
 
 Pending stays live (`skills/expand.md` §6a): an independent
 re-evidence adds +0.5 (cap +2 over the filed score), and past
@@ -166,7 +166,7 @@ Field research (`scripts/generators/research.mjs`,
 most 8 pages a run, and files at most 3 `field` candidates that
 name a pattern, never a product, and carry no URL:
 
-- Research: weekly
+- Research: 3d
 - Research topics: autonomous coding agent loops; Claude Code and Agent SDK releases; spec-driven development kits; AI code review in CI
 
 ## Support

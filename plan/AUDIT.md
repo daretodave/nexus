@@ -6,81 +6,38 @@
 
 ## Pending
 
-### [user-issue #96] [HIGH] [needs-user-call] heartbeat: march realized cadence below 40% — recurs after #91's close (hourly cron already off :00)
-- category: external-issue
-- evidence: opened 2026-11-06T19:23:23Z by the workflow token;
-  body reports 4 of 30 promised hourly slots ran in 30h (13%).
-  Cron is already `17 * * * *` (off minute :00 — the fix #91
-  recommended and the owner applied in `79980b2`). `gh run list
-  --workflow march --event schedule -L 20` this tick still shows
-  irregular multi-hour gaps between hourly-promised firings
-  (e.g. 2026-11-04 and 2026-11-02 each show 6-11h gaps), so the
-  throttling is real under the hourly preset, not a stale alarm.
-  This tick's `support.mjs sla` flagged #96 past `sla_hours`
-  with no Asap line naming it; `/plot asap` is the written
-  next step (`skills/march.md` Step 1.5), but its own Step 1
-  failure mode applies first (`skills/plot.md` §5: "needs an
-  owner's call before it can be shaped" — ask, or under a loop
-  park in `/oversight` and stop), since the fix is a
-  workflow-file push no cloud tick can land.
-- next: #91's close already named the only remaining lever — a
-  slower cadence preset (fewer promised slots for GitHub to
-  drop) — as an owner call, not a loop fix (nexus runs its own
-  cadence in place from the template:
-  `node templates/scripts/cloud/cadence.mjs apply <preset>
-  --march .github/workflows/march.yml --heartbeat
-  .github/workflows/heartbeat.yml --write`, a local session
-  only — `.github/CLOUD_LOOP.md` "Cadence preset",
-  `agents.md` Operational secrets). Watch for further
-  recurrence; close if the schedule recovers on its own.
-
-### [needs-user-call] re-mint `ACTIONS_PAT` with Contents and Workflows write, then pass it to the action as `github_token`
-- category: key-custody
-- evidence: chunk 65.1 (2026-11-21) probed the credential from
-  a throwaway branch. Run `44908116327`, plain shell on
-  `ACTIONS_PAT`: `gh api user` answers the owner's login and
-  reads work, but creating a ref through the API answers
-  "Resource not accessible by personal access token" (403) and
-  a plain-file `git push` to a fresh branch answers 403, so
-  the token holds no Contents write and its Workflows grant is
-  untestable. Run `44907831984`: with `github_token:
-  ${{ secrets.ACTIONS_PAT }}` on the action step the agent's
-  `GH_TOKEN`, `GITHUB_TOKEN` and origin URL all carry the PAT
-  (without it they carry the App's installation token), and
-  its push fails the same way. Every cloud push so far has
-  been the App's, which GitHub bars from workflow files.
-- next: the owner re-mints the token at
-  https://github.com/settings/personal-access-tokens with
-  Contents, Issues and Workflows read/write on this repo only,
-  sets it (`node scripts/secrets.mjs set ACTIONS_PAT`, then
-  `push ACTIONS_PAT --to github-actions`), and a local session
-  adds `github_token: ${{ secrets.ACTIONS_PAT }}` to the model
-  step in `.github/workflows/march.yml` and `night.yml`, then
-  dispatches one tick and watches it push. The token's owner is
-  an admin, so the default-branch ruleset's bypass covers it.
-  Until then workflow-file chunks wait for a local session
-  (`skills/ship-a-chunk.md` §6 item 5). Never add
-  `github_token` before the re-mint: with today's token every
-  push would fail.
-- lock: actions-pat-remint · since: 2026-11-21 · until: owner
-  re-mints the token · max_age: 30d
-
-### [needs-user-call] `ACTIONS_PAT`'s real expiry is unconfirmed in `identity/key-custody.md`
-- category: key-custody
-- evidence: chunk 66.4 seeded `identity/key-custody.md`'s
-  Index with real custody rows for `GH_TOKEN`, `ACTIONS_PAT`
-  and `CLAUDE_CODE_OAUTH_TOKEN` (spec 66, A5). `ACTIONS_PAT`'s
-  `Expires` column reads `unconfirmed`: the real date is an
-  owner-only fact (GitHub's token settings UI
-  https://github.com/settings/personal-access-tokens, not
-  reachable from an automated session).
-- next: an owner session reads `ACTIONS_PAT`'s real expiry
-  from that page and fills the `Expires` column in
-  `identity/key-custody.md`.
-- lock: actions-pat-expiry · since: 2026-11-20 · until: owner
-  confirms the real date · max_age: 30d
-
 ## Done
+
+### [x] [needs-user-call] re-mint `ACTIONS_PAT` with Contents and Workflows write, then pass it to the action as `github_token` — closed 2026-11-21
+- category: key-custody
+- resolution: the owner added Contents: Read and write to the
+  token the same day (permissions edited in place, the value
+  unchanged). The control probe then passed all three writes
+  on `ACTIONS_PAT` (run `44908715342`: a ref create, a
+  plain-file push, a `.github/workflows/` push). `a17f5af`
+  set `github_token` on the model step in `march.yml` and
+  `night.yml`; tick `44909096461` logged "Using provided
+  GITHUB_TOKEN" and its commit `d6ea25d` reached main as a
+  push by the owner's account, through the default-branch
+  ruleset.
+
+### [x] [needs-user-call] `ACTIONS_PAT`'s real expiry is unconfirmed in `identity/key-custody.md` — closed 2026-11-21
+- category: key-custody
+- resolution: the owner read it from GitHub's token settings:
+  the token has no expiration date. `identity/key-custody.md`'s
+  Expires cell says so.
+
+### [x] [user-issue #96] [HIGH] [needs-user-call] heartbeat: march realized cadence below 40% — closed 2026-11-21
+- category: external-issue
+- resolution: `/oversight` put the numbers to the owner.
+  GitHub delivered 3 to 4 scheduled march runs a day under
+  every cron this repo has promised (4 a day in early October,
+  8 a day from 2026-10-25, 24 a day from 2026-11-05), so the
+  hourly cron could never clear the alarm. The owner chose the
+  sprint preset's own cron, every 3 hours (`17 */3 * * *`):
+  8 promised, about 42% delivered on that history, which sits
+  near the 40% line and may alarm again. Chained ticks, not
+  the cron, carry the throughput.
 
 ### [x] [A, 3.0] nexus's own `.github/workflows/*.yml` still pin `actions/checkout@v4` / `actions/setup-node@v4`, now behind the just-bumped `templates/` copies — closed 2026-11-21 (this commit)
 - category: doc-drift

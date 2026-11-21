@@ -20,12 +20,13 @@ invariant teaches the gate in the same commit; hard-wrap
 **Asap** (built before the table, in this order, once their
 needs are done):
 
+- 77.1
 
 **Held** (waits on the owner's word; never picked until the
 line goes; each line is a lock that times out, so it carries
 `since:`, `until:` and `max_age:`):
 
-- 69 · auto-promoted, veto until 2026-11-22 (#125) · max_age: 3d · fallback: release
+- (none)
 
 ## Specs
 
@@ -33,10 +34,18 @@ line goes; each line is a lock that times out, so it carries
 |---|---|---|---|---|
 | 67 | Package nexus as a Claude Code plugin | [67-claude-code-plugin.md](67-claude-code-plugin.md) | planned | 3 of 5 chunks |
 | 69 | plan/ carries the workspace: resurrection + a doctor | [69-workspace-resurrection.md](69-workspace-resurrection.md) | planned | not chunked yet |
+| 70 | Workspace-aware /bootstrap and /oversight | [70-workspace-aware-bootstrap.md](70-workspace-aware-bootstrap.md) | planned | not chunked yet |
+| 71 | Cloud workflow hardening: the canceller skips a paused workflow, ticks wait out a transient limit | [71-cloud-workflow-hardening.md](71-cloud-workflow-hardening.md) | planned | not chunked yet |
+| 72 | The gate's tree check reads its directories from the tree diagrams | [72-tree-check-from-diagrams.md](72-tree-check-from-diagrams.md) | planned | not chunked yet |
+| 73 | Prompt audit joins the kit's prompt-maintenance story | [73-prompt-audit-story.md](73-prompt-audit-story.md) | planned | not chunked yet |
+| 74 | Every step reads the plan live | [74-plan-read-live.md](74-plan-read-live.md) | planned | not chunked yet |
+| 75 | Which loop failure modes the gate catches, and which it takes on trust | [75-loop-failure-modes.md](75-loop-failure-modes.md) | planned | not chunked yet |
+| 76 | The reboot train against the runtime's own session calls | [76-native-session-primitives.md](76-native-session-primitives.md) | planned | not chunked yet |
+| 77 | A fixed finding's mirror issue closes itself | [77-mirror-close.md](77-mirror-close.md) | planned | 0 of 1 chunks |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
-plan moved to chunks on 2026-10-20). The next new spec is 70.
+plan moved to chunks on 2026-10-20). The next new spec is 78.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is
@@ -69,7 +78,7 @@ rows follow in table order.
 - `CANDIDATES.md`'s Pending section holds candidates
   awaiting `/oversight` promotion into specs. Read the file
   for the live count.
-- Workflow-file pushes: the cloud tick's token can't push
-  `.github/workflows/*.yml` (see `agents.md` "Operational
-  secrets"), so chunks that touch them ship from a local
-  session (each says so in a sub-bullet).
+- Workflow-file pushes: since 2026-11-21 a cloud tick lands
+  `.github/workflows/*.yml` changes itself (`agents.md`
+  "Operational secrets"); no chunk waits for a local session
+  on that account.
