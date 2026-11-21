@@ -196,6 +196,48 @@ resolving) rather than a grading problem; the grader is written to
 accept "the agent said the dry run failed and reported why" as a
 pass, so a true failure there is worth a second look.
 
+### CI's eval job: the sandbox doesn't start on `ubuntu-latest` (open, #126)
+
+As of 2026-11-21, `plugin-ci.yml`'s `claude plugin eval` step
+scores every case 0/9 on GitHub-hosted `ubuntu-latest`, never from
+a grading disagreement: each case's Bash grant can't arm its OS
+sandbox. Six real runs (chunk 67.4 and chunk 78.1,
+`plan/78-plugin-eval-sandbox-ci.md`) tried, in order: installing
+`bubblewrap`+`socat` (neither preinstalled), the AppArmor sysctl
+(`kernel.apparmor_restrict_unprivileged_userns=0`), the older
+`kernel.unprivileged_userns_clone=1` sysctl, a `~/.claude/settings.json`
+with `sandbox.allowNestedUserNamespaces: true`, the same setting on
+`claude`'s own `--settings` flag, and the same setting in
+`/etc/claude-code/managed-settings.json`. None fixed it, and the
+dead ends are informative:
+
+- A free preflight (`bwrap --unshare-user …`, `unshare --user
+  --map-root-user id`) proves the OS-level restriction genuinely
+  lifts after the two sysctls — unprivileged user-namespace
+  creation works fine at the shell level on this runner image.
+- Every eval case still hits the identical `apply-seccomp: write
+  /proc/self/setgroups ... Permission denied`, because each case
+  runs its own agent turn in an isolated child session with its own
+  scratch `$HOME` (`/tmp/claude-eval-*/home/`) — a settings file
+  (user, or the parent process's own `--settings`) never reaches
+  it. Even the one settings layer that isn't `$HOME`-scoped
+  (managed settings, a fixed `/etc/claude-code/` path every session
+  reads) didn't arm the sandbox — it changed the failure to "no
+  sandbox backend on this platform, or it is not installed" at 0
+  turns and 0 cost, a different dead end, not a fix.
+- Net: the eval harness's per-case sandbox arming lives somewhere
+  none of the CI job's own settings layers reach. `ubuntu-latest`'s
+  own outer confinement (distinct from anything Ubuntu's AppArmor
+  sysctl surface controls) remains the live hypothesis.
+
+Until this resolves: the `plugin` leg's byte-diff
+(`node scripts/verify.mjs plugin`) still gates every push and PR
+touching `plugin/**` — only the eval-scoring half is blocked. A
+local run (same section above) is unaffected: it runs as a normal
+user session, not inside this isolation, so a developer's own
+machine (or any sandbox backend that does arm there) still scores
+real results.
+
 ## See also
 
 - [`../templates/README.md`](../templates/README.md) — the
