@@ -20,7 +20,8 @@ from silently growing a third participant to sync.
   first — same content, different filename per which agent
   reads which convention.
 - Rebuilding this workspace on a new machine? `REPOS.md` lists
-  every sibling repo and its clone command.
+  every sibling repo and its clone command; `KEYS.md` lists
+  every secret the workspace ring holds, names only.
 - Anything else that lives only at this level — scratch notes,
   an editor multi-root workspace file, a personal secrets
   bridge — is personal and untracked by design; nothing here
