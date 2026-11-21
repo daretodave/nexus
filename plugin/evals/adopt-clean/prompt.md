@@ -42,5 +42,5 @@ picked above, everywhere they appear in the copied tree.
 
 When done, report: where `plan/nexus.lock` landed, what version line
 it carries, which placeholders you resolved and to what values, and
-confirm no `<ANGLE_BRACKET>`-style placeholder token remains
+confirm no bracketed placeholder token remains
 anywhere in the copied tree.
