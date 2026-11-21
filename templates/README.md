@@ -4,6 +4,20 @@ Copy these into your target repo per the playbook
 (`../playbooks/new-project.md` or
 `../playbooks/existing-project.md`).
 
+## Fast path: /plugin install
+
+Running Claude Code? `/plugin marketplace add
+daretodave/nexus` then `/plugin install nexus` installs the
+same `templates/` snapshot below — pinned to this repo's
+`plan/nexus.lock` version — plus `/adopt`, `/upgrade` and
+`/doctor` commands, with no separate clone. This is additive,
+not a replacement: not every adopter runs Claude Code or wants
+the plugin install surface, so the manual copy-and-replace
+flow this file documents below still works and is still the
+one canonical path for everyone else. Full scope, what the
+plugin deliberately doesn't ship, and how to read its eval
+suite: [`../playbooks/plugin.md`](../playbooks/plugin.md).
+
 ## Layout
 
 ```
