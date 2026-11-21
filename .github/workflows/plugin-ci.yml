@@ -66,7 +66,17 @@ jobs:
         # not preinstalled there -- every case failed in 5s with
         # "sandbox required but unavailable: socat not installed",
         # at near-zero cost (no case ever reached a real agent turn).
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap socat
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap socat
+          # bubblewrap's sandbox needs an unprivileged user namespace,
+          # which Ubuntu 24.04 (ubuntu-latest) refuses by default via
+          # AppArmor since 23.10. The second real run (44915855413)
+          # proved it: every case's Bash call failed with
+          # "apply-seccomp: write /proc/self/setgroups (nested userns
+          # is capability-restricted...)", so the agent fell back to
+          # reasoning about the task by hand instead of running it --
+          # every grader failed, 0 cost beyond a few cheap turns.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: claude plugin eval
         if: ${{ steps.token_check.outputs.has_token == 'true' }}
         working-directory: plugin
