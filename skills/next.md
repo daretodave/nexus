@@ -75,9 +75,6 @@ this order: an explicit argument; the **Asap** lane in order;
 **priority** rows (`priority 1` first) then the table order.
 Skip the **Held** lane, `plan only` specs, a spec naming
 another base, and every chunk someone else claims or holds.
-In a cloud tick, also skip a chunk that touches
-`.github/workflows/` (the tick's token can't push it; `agents.md`
-"Operational secrets"): a local session builds it.
 A chunk with `secrets` is the owner's (a contributor skips it).
 One whose secret is missing reads `needs secret` (`order.mjs`):
 file the ask (`secrets.mjs request <id> [--to D,D] [--service

@@ -195,22 +195,20 @@ verbs — a kit ships docs, templates and the GUI.
   `GH_REPO=daretodave/nexus`.
 - **`CLAUDE_CODE_OAUTH_TOKEN`** — repo secret for the cloud
   loop only. Mint with `claude setup-token`.
-- **`ACTIONS_PAT`** — repo secret; a fine-grained PAT meant to
-  carry Contents + Issues + Workflows on this repo and nothing
-  broader (it is what a prompt-injected tick would run with,
-  so no Secrets/Webhooks/etc). Two measured facts (chunk 65.1,
-  2026-11-21, probe runs `44907831984` and `44908116327`): the
-  token as minted has no write access to Contents (a branch
-  create and a plain-file push both answer 403; reads work),
-  and the Claude Code Action swaps a step's `GH_TOKEN` and the
-  checkout's git credential for its own GitHub App installation
-  token unless its `github_token` input is set. So every cloud
-  push and `gh` write runs as the App, and GitHub refuses an
-  App any `.github/workflows/*.yml` change. Apply workflow-file
-  changes from a local session until the owner re-mints the
-  token with Contents and Workflows write and the model steps
-  pass it as `github_token` (the `[needs-user-call]` row in
-  `plan/AUDIT.md`). Cloud commits author as `nexus`, not
+- **`ACTIONS_PAT`** — repo secret; a fine-grained PAT that
+  should carry Contents + Issues + Workflows on this repo and
+  nothing broader: it is what a prompt-injected tick runs
+  with, so no Secrets/Webhooks/etc. `march.yml` and
+  `night.yml` pass it to the Claude Code Action as
+  `github_token`; without that input the action runs git and
+  `gh` on its own GitHub App token, and GitHub refuses an App
+  any `.github/workflows/*.yml` change. Until 2026-11-21 that
+  is how every tick ran, and the token itself held no Contents
+  write (chunk 65.1 measured both). Since then a tick pushes
+  main and files issues as the owner, and can land a
+  workflow-file chunk. If a push answers 403, check the
+  token's permissions first (`.github/CLOUD_LOOP.md`, "When
+  something breaks"). Cloud commits author as `nexus`, not
   `github-actions[bot]` — see `.github/CLOUD_LOOP.md` setup
   step 3.
 - **npm publishing has no secret.** `.github/workflows/publish.yml`

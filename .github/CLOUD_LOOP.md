@@ -30,9 +30,9 @@
    token is what a prompt-injected tick runs with, so no
    Secrets/Webhooks/Variables. The grant alone changes
    nothing: the action runs on its own App token unless the
-   PAT is passed as `github_token`, and the PAT as minted
-   holds no Contents write — see "When something breaks"
-   below. This repo runs **user-author mode**: cloud commits
+   PAT is passed as `github_token`, which `march.yml` and
+   `night.yml` do — see "When something breaks" below. This
+   repo runs **user-author mode**: cloud commits
    author as `nexus` (the PAT account's noreply email), never
    `github-actions[bot]`. Identity rides `GIT_AUTHOR_*` /
    `GIT_COMMITTER_*` env vars on the action step — NOT
@@ -226,22 +226,20 @@ cloud volume from local work. Nothing else — no
   hang: the gate was backgrounded, which agents.md rule 3
   forbids. Full story in
   [`playbooks/cloud-loop.md`](../playbooks/cloud-loop.md).
-- **`git push` rejected on a `.github/workflows/*.yml` edit**
-  — measured, not guessed (chunk 65.1, 2026-11-21). The Claude
-  Code Action swaps the step's `GH_TOKEN` and the checkout's
-  git credential for its own GitHub App installation token
-  unless its `github_token` input is set, so a tick pushes as
-  the App, and GitHub refuses an App a workflow-file change.
-  Passing `ACTIONS_PAT` as `github_token` does put git and `gh`
-  on the PAT (probe run `44907831984`), but the PAT as minted
-  has no Contents write at all: a branch create and a
-  plain-file push both answer 403 (run `44908116327`). An
-  explicit credential in the push URL changes nothing, for the
-  same reason. Apply the change from a local session, which
-  pushes with normal repo-write credentials. The fix is the
-  owner's: re-mint `ACTIONS_PAT` with Contents and Workflows
-  write, then add `github_token: ${{ secrets.ACTIONS_PAT }}` to
-  the model steps in `march.yml` and `night.yml`.
+- **`git push` rejected** — two causes, both measured (chunk
+  65.1, 2026-11-21). "refusing to allow a GitHub App to create
+  or update workflow": the model step lost its `github_token:
+  ${{ secrets.ACTIONS_PAT }}` input, so the Claude Code Action
+  swapped in its own App installation token for git and `gh`,
+  and GitHub refuses an App a workflow-file change. A plain
+  403, "Permission denied": the token cannot write. Open it at
+  https://github.com/settings/personal-access-tokens and give
+  it Contents, Issues and Workflows read/write on this repo;
+  editing permissions keeps the value, so the secret stands.
+  This repo ran on the first cause from its first tick and had
+  the second all along: the token held Workflows and no
+  Contents (probe runs `44907831984`, `44908116327`; fixed and
+  re-probed in `44908715342`).
 - **Green run, no commit, and the log shows a background or
   async agent launch just before the end** — a subagent was
   dispatched without `run_in_background: false`. The job is

@@ -205,10 +205,10 @@ that state change, return cleanly:
 4. **Chunk scope stays genuinely ambiguous** after reading the
    spec + bearings + README. (Make the spec's Design more
    decisive first; hold only if even that fails.)
-5. **The chunk needs a workflow-file push from a cloud tick**
-   (the cloud token can't push `.github/workflows/`; see
-   `agents.md` "Operational secrets"). Hold it with
-   `blocked: needs a local session`.
+5. **A cloud tick's push of a `.github/workflows/` change is
+   refused.** It should not be (`agents.md` "Operational
+   secrets"): hold the chunk with `blocked: workflow push
+   refused` and open an issue naming the error line.
 
 Everything else: decide, ship, document.
 
