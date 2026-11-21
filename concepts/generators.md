@@ -86,7 +86,7 @@ node scripts/plan/refill.mjs --write   # what the refill lane runs
 | Generator | Files | When |
 |---|---|---|
 | `issue-age` | one AUDIT HIGH row, `[user-issue #N] [HIGH] "<title>" open past the <h>h SLA` | an open issue without `loop:opened` is `sla_hours` old (24 when unset) and no queue row names `#N` |
-| `mirror-orphan` | one AUDIT row, `[mirror #N] [<SEV>] "<title>" — mirrored issue with no plan row`, impact from the severity label (high 8, med 6, low 4), carrying `- issue: #N` | an open issue with `loop:opened` and a `source:*` label (the finding `/iterate` Step 2.5 mirrored) that no row in `plan/AUDIT.md`, `plan/CANDIDATES.md` or `plan/CRITIQUE.md` names `#N`: the tick ended before the row landed, or an audit rewrite dropped it |
+| `mirror-orphan` | one AUDIT row, `[mirror #N] [<SEV>] "<title>" — mirrored issue with no plan row`, impact from the severity label (high 8, med 6, low 4), carrying `- issue: #N` — or, under `--write`, a `gh issue close` with a comment | an open issue with `loop:opened` and a `source:*` label (the finding `/iterate` Step 2.5 mirrored) that no row in `plan/AUDIT.md`, `plan/CANDIDATES.md` or `plan/CRITIQUE.md` names `#N` files the row above; one where every naming row across those three files is already closed (`### [x]`, or under `## Done`) closes the mirror instead |
 | `stale-candidate` | one `[needs-user-call] promote <title>?` row, the ask `/expand` writes | a Pending candidate scoring `promote_floor`+ is `promote_after_days` old and no promote rule reaches it: `Promote: owner`, or a contributor's checkout |
 | `motion` | one `[loop] [HIGH] motion stalled in <week>` row about the loop itself | `node scripts/pulse.mjs --motion` reads `stalled`: the last full week shipped under `Motion floor` against the 4-week baseline; one row a week at most |
 
@@ -98,6 +98,19 @@ spec mirror, a veto issue and a lock ask carry `loop:opened`
 without a `source:*` label, and are never orphans. Its row
 goes back into the queue like any finding; one already fixed
 on main is closed citing the commit.
+
+A second pass runs the other way: a mirror named by at least
+one row in those same three files, where every naming row is
+closed (`### [x]`, or sitting under a `## Done` heading — a
+`[promoted]` or `[rejected]` candidate row is neither, so it
+reads open; its work is elsewhere), settles. Under `--write`
+each settled mirror closes with one `gh issue close` comment
+citing the row's title and, when the row names a commit (a
+`[0-9a-f]{7,40}` word), that hash too; named in more than one
+file, the first found (AUDIT, CANDIDATES, CRITIQUE) wins the
+comment. A dry run prints `would close #N` and closes
+nothing; a mirror named by no row, or by a mix of open and
+closed rows, stays open.
 
 Where aged promotion does reach a candidate (`Promote: aged`
 in an owner checkout), `stale-candidate` files nothing: the

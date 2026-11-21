@@ -9,6 +9,16 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/scripts/generators/mirror-orphan.mjs: a second pass,
+  `settled()`, closes a mirror whose every plan row is already
+  closed (`### [x]`, or under `## Done`), so a fix commit that
+  says "Mirrored as #N" instead of `Closes #N` no longer leaves
+  the issue open for good — four such mirrors sat open up to
+  five days in November. Under `--write` it closes with a
+  comment citing the row's title and any commit hash it names;
+  a dry run prints `would close #N` and closes nothing
+  (`templates/scripts/__tests__/refill.test.mjs`'s `settled (the
+  close pass)` block) (2026-11-21, this commit).
 - templates/scripts/plan/motion.mjs: the motion baseline is the
   median of the 4 weeks before the judged one, no longer their
   mean. One burst week (a person's build sprint beside the
