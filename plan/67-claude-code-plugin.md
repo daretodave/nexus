@@ -94,9 +94,6 @@ correctly once installed.
 
 ## Acceptance
 
-- **A4** `node scripts/verify.mjs`'s new `plugin` leg
-  regenerates `plugin/` in memory and byte-diffs it against the
-  committed tree, hard-failing on drift.
 - **A5** A `claude plugin eval` suite exercises adopt, upgrade
   and doctor against scratch fixtures and returns a scored,
   reproducible result; it is wired into CI alongside
@@ -117,13 +114,8 @@ compares `plan/nexus.lock`'s pinned version against a vendored
 snapshot — no existing script does this comparison today.)
 
 ## Chunks
-Measure: 3 open · 3 closed · next A7
+Measure: 2 open · 4 closed · next A7
 
-- [ ] **67.3** `node scripts/verify.mjs`'s new `plugin` leg
-  regenerates `plugin/` in memory from `build-plugin.mjs` and
-  byte-diffs it against the committed tree, hard-failing on
-  drift (the `assets/` diagram-gate pattern) · S · closes A4 ·
-  needs —
 - [ ] **67.4** `plugin/evals/` exercises `adopt`, `upgrade` and
   `doctor` against scratch fixtures (a clean install, a
   pinned-old version bump, a deliberately drifted repo); CI
