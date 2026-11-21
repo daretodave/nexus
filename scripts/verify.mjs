@@ -1191,6 +1191,7 @@ const GIT_SUITES = [
   'templates/scripts/__tests__/ui-walk-run.test.mjs',
   'templates/scripts/__tests__/design-render-run.test.mjs',
   'scripts/__tests__/unreleased-run.test.mjs',
+  'templates/workspace/__tests__/workspace-doctor.test.mjs',
 ]
 
 // nexus runs these scripts on its own plan (npm run settle, npm run

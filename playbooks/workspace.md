@@ -125,13 +125,15 @@ This snippet now has a copyable counterpart:
 [`templates/workspace/`](../templates/workspace/) ships
 `CLAUDE.md` + `AGENTS.md` (the pair above, with placeholders),
 a human-facing `README.md`, `REPOS.md` — a clone manifest for
-rebuilding the workspace on a new machine — and `KEYS.md`, the
+rebuilding the workspace on a new machine — `KEYS.md`, the
 same manifest for the workspace ring's secrets (names only;
-see `customization/secrets.md`). Copy the *content* into the
-root, not the files' git history — the root itself still never
-becomes a repo. `prompts/adopt.md` also asks a fresh adopter
-to confirm this topology before proceeding, rather than
-guessing silently.
+see `customization/secrets.md`) — and `workspace-doctor.mjs`,
+an offline doctor that checks a rebuilt root against both
+manifests (zero-dependency; no placeholders of its own, so it
+copies over unswept). Copy the *content* into the root, not
+the files' git history — the root itself still never becomes a
+repo. `prompts/adopt.md` also asks a fresh adopter to confirm
+this topology before proceeding, rather than guessing silently.
 
 After copying, sweep `<WORKSPACE_ORG>` (and `<PROJECT>` per
 sibling repo) across the five files:
