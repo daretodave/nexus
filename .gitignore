@@ -30,3 +30,6 @@ node_modules/
 
 # raw /messy dumps stay on this machine; only the refined specs reach git
 plan/messy/
+
+# the eval suite's own run output (timestamped JSON/HTML reports) — never committed
+plugin/evals/**/results/

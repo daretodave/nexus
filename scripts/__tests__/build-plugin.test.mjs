@@ -244,6 +244,37 @@ test('write() clears a vendored file removed from templates/ since the last buil
   }
 })
 
+test('write() never clears plugin/evals/ — a hand-authored eval case survives a rebuild', () => {
+  const dir = scratchRepo()
+  try {
+    write(dir)
+    const evalFile = path.join(dir, 'plugin', 'evals', 'adopt-clean', 'prompt.md')
+    fs.mkdirSync(path.dirname(evalFile), { recursive: true })
+    fs.writeFileSync(evalFile, '---\nmax_turns: 10\n---\n\nhand-authored eval case\n')
+    write(dir)
+    assert.ok(fs.existsSync(evalFile), 'plugin/evals/ must survive write()')
+    assert.equal(fs.readFileSync(evalFile, 'utf-8'), '---\nmax_turns: 10\n---\n\nhand-authored eval case\n')
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('check() never flags anything under plugin/evals/, including its own results/ output', () => {
+  const dir = scratchRepo()
+  try {
+    write(dir)
+    const evalFile = path.join(dir, 'plugin', 'evals', 'adopt-clean', 'prompt.md')
+    fs.mkdirSync(path.dirname(evalFile), { recursive: true })
+    fs.writeFileSync(evalFile, '---\nmax_turns: 10\n---\n\nhand-authored eval case\n')
+    const resultsFile = path.join(dir, 'plugin', 'evals', 'results', '2026-01-01T00-00-00Z', 'report.html')
+    fs.mkdirSync(path.dirname(resultsFile), { recursive: true })
+    fs.writeFileSync(resultsFile, '<html></html>')
+    assert.deepEqual(check(dir), [])
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('the CLI writes, --check exits 0, then 1 on a hand edit naming the file', () => {
   const dir = scratchRepo()
   const run = (...args) => execFileSync(process.execPath, [SCRIPT, ...args, '--root', dir], { encoding: 'utf-8', stdio: 'pipe' })
