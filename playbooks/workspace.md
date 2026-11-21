@@ -178,6 +178,58 @@ Get-ChildItem CLAUDE.md,AGENTS.md,README.md,REPOS.md,KEYS.md | ForEach-Object {
 
 ---
 
+## Resurrection
+
+> Losing the machine shouldn't mean losing the workspace —
+> every repo's own history already survived it. The doctor
+> below is how you know a rebuilt root is actually whole
+> again, not merely present.
+
+Rebuilding the root on a new machine, in order:
+
+1. **Clone the ledger repo first.**
+
+   ```bash
+   git clone https://github.com/<WORKSPACE_ORG>/plan.git
+   ```
+
+   `plan/` carries the canonical `REPOS.md` and `KEYS.md`
+   (both files say so themselves) plus the rest of the kit's
+   state — every later step reads from this clone.
+
+2. **Copy `templates/workspace/` up and sweep it.** The "Org-
+   per-project GitHub layout" section above already has the
+   copy step and both sweep snippets (bash and PowerShell) for
+   all five files — `CLAUDE.md`, `AGENTS.md`, `README.md`,
+   `REPOS.md`, `KEYS.md`. Run them unchanged against the new
+   root.
+
+3. **Clone every repo `REPOS.md` lists.** Use the swept copy
+   now at root (or `plan/REPOS.md`, the canonical copy, if the
+   two have drifted) and run each row's `Clone` command.
+
+4. **Re-run each sibling's own onboarding.** This playbook
+   doesn't invent a second setup path — once a repo is cloned,
+   follow whatever it documents for itself (usually its own
+   `playbooks/new-project.md` or
+   `playbooks/existing-project.md`).
+
+5. **Run the doctor until it's green.** `workspace-doctor.mjs`
+   landed at root in step 2; run it from there:
+
+   ```bash
+   node workspace-doctor.mjs
+   ```
+
+   It either prints `workspace-doctor: green — every check
+   passes.` or one line per failure (a repo not cloned, a key
+   missing from `.env.workspace`, and so on — the script's own
+   top comment documents all four checks). Fix what it names
+   and re-run until green; that's the signal the rebuilt root
+   is actually whole again, not just checked out.
+
+---
+
 ## See also
 
 - [`polyrepo.md`](./polyrepo.md) — the two-repo split this
