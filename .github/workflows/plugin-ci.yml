@@ -83,6 +83,30 @@ jobs:
           # other classic unprivileged-userns gate (older than the
           # AppArmor one above, and independently enforced).
           sudo sysctl -w kernel.unprivileged_userns_clone=1 || true
+          # Three real runs (see #126) proved bubblewrap+socat and the
+          # two sysctls above aren't enough on their own -- the CLI's
+          # own sandbox-arming path still refuses to start. This
+          # preflight line makes the OS-level signal visible for free,
+          # and allowNestedUserNamespaces (set in the job's own $HOME,
+          # never a project settings file) is the documented lever for
+          # the symptom family (code.claude.com/docs/en/sandboxing,
+          # "User namespaces on Linux and WSL2").
+          echo "--- sandbox preflight: can an unprivileged user namespace start? ---"
+          bwrap --unshare-user --uid 0 --gid 0 --bind / / echo "bwrap: ok" || echo "bwrap: FAILED ($?)"
+          unshare --user --map-root-user id || echo "unshare: FAILED ($?)"
+          mkdir -p ~/.claude
+          # allowNestedUserNamespaces turns off a security boundary (code.claude.com/docs/en/sandboxing,
+          # "User namespaces on Linux and WSL2"): only acceptable here because this CI job's runner
+          # is itself the disposable, single-purpose isolation boundary -- there is nothing on it to
+          # protect beyond this one eval run. Scoped to ~/.claude/settings.json (this job's $HOME only),
+          # per the docs' own instruction to set it there rather than a project settings file.
+          cat > ~/.claude/settings.json <<'JSON'
+          {
+            "sandbox": {
+              "allowNestedUserNamespaces": true
+            }
+          }
+          JSON
       - name: claude plugin eval
         if: ${{ steps.token_check.outputs.has_token == 'true' }}
         working-directory: plugin
