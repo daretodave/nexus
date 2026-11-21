@@ -17,6 +17,7 @@ import {
   lines,
   main,
   measure,
+  median,
   mondayOf,
   report,
   ships,
@@ -141,11 +142,24 @@ describe('report', () => {
   it('judges the last full week against the 4 before it, and prints the contract lines', () => {
     const r = report({ units, date: '2026-09-09' });
     assert.equal(r.week, '2026-W36');
-    assert.deepEqual([r.shipped, r.series, r.baseline, r.floor, r.verdict], [1, [7, 9, 1, 0], 4.25, 2.13, 'stalled']);
+    assert.deepEqual([r.shipped, r.series, r.baseline, r.floor, r.verdict], [1, [7, 9, 1, 0], 4, 2, 'stalled']);
     const [a, b] = lines(r);
-    assert.match(a, /^shipped 1 \/ baseline 4\.25 · 2026-W36 against 2026-W32\.\.2026-W35 \(1 so far in 2026-W37\)$/);
-    assert.match(b, /^floor 2\.13 · stalled /);
+    assert.match(a, /^shipped 1 \/ baseline 4 · 2026-W36 against 2026-W32\.\.2026-W35 \(1 so far in 2026-W37\)$/);
+    assert.match(b, /^floor 2 · stalled /);
     assert.equal(lines(r).length, 2, 'no idle line without --runs');
+  });
+
+  it('takes the median of the 4 weeks, so one burst week does not turn every ordinary week after it into a stall', () => {
+    assert.deepEqual([median([3, 598, 25, 12]), median([7, 9, 1, 0]), median([5]), median([])], [18.5, 4, 5, 0]);
+    // A person's build week (598 units) beside a loop that ships 12 to 25: the mean reads 159.5, a floor of 79.75.
+    const r = report({ units: unitsOf(seriesLog([3, 598, 25, 12, 20])), date: addDays(FIRST_MONDAY, 7 * 5 + 1) });
+    assert.deepEqual([r.shipped, r.series, r.baseline, r.floor, r.verdict], [20, [3, 598, 25, 12], 18.5, 9.25, 'ok']);
+  });
+
+  it('never reads a week that shipped nothing as ok, even when the median of the weeks before it is 0', () => {
+    const r = report({ units: unitsOf(seriesLog([9, 0, 0, 0, 0])), date: addDays(FIRST_MONDAY, 7 * 5 + 1) });
+    assert.deepEqual([r.shipped, r.series, r.baseline, r.verdict], [0, [9, 0, 0, 0], 0, 'stalled']);
+    assert.match(r.why, /nothing shipped, after 1 of the 4 weeks before it did/);
   });
 
   it('reads ok in a healthy week and while nothing ever shipped', () => {
@@ -194,7 +208,7 @@ describe('report', () => {
       'runs.json': JSON.stringify([{ databaseId: 7, conclusion: 'success', createdAt: '2026-09-08T00:00:00Z' }]),
     });
     const r = measure(root, { date: '2026-09-09', runsFile: 'runs.json', log: fakeLog(seriesLog(), 'Cloud-Run: https://x/actions/runs/7\n') });
-    assert.deepEqual([r.shipped, r.pct, r.floor, r.verdict], [2, 25, 1.06, 'ok']);
+    assert.deepEqual([r.shipped, r.pct, r.floor, r.verdict], [2, 25, 1, 'ok']);
     assert.deepEqual(r.idle, { idle: 0, total: 1, pct: 0 });
   });
 });
@@ -203,16 +217,18 @@ describe('the heartbeat alarm', () => {
   const alarmAt = (root, gh, date, log = seriesLog()) =>
     main(['alarm', '--today', date], { root, run: gh.run, log: quiet().log, measureFn: (r, o) => measure(r, { ...o, log: fakeLog(log) }) });
 
-  it("opens exactly one issue over an adopter's Sep-Oct decline, a heartbeat run every day", () => {
+  it("holds one issue open through an adopter's Sep-Oct decline, but for the one week a near-dead loop ships what its last weeks did", () => {
     const root = tmpRoot({ 'plan/bearings.md': bearings(['Motion floor: 50%', 'stall_action: alert']) });
     const gh = fakeGh();
     for (let date = '2026-09-01'; date <= '2026-10-25'; date = addDays(date, 1)) assert.equal(alarmAt(root, gh, date), 0);
-    assert.equal(gh.state.created.length, 1);
+    // W37 shipped 1 against 9, 1, 0, 1: the median is 1, so that week reads ok and the issue closes; W38 shipped
+    // nothing and it opens again. The cost of a baseline one burst week cannot move.
+    assert.equal(gh.state.created.length, 2);
     const args = gh.state.created[0];
     assert.equal(args[args.indexOf('--title') + 1], STALL_TITLE);
     assert.ok(args.join(' ').includes('--label loop:opened --label loop:stall'));
-    assert.match(args[args.indexOf('--body') + 1], /shipped 0 \/ baseline 7\.5/);
-    assert.deepEqual(gh.state.closed, []);
+    assert.match(args[args.indexOf('--body') + 1], /shipped 0 \/ baseline 8 /);
+    assert.deepEqual(gh.state.closed, ['100']);
   });
 
   it('closes the issue when a week recovers, and never reopens it while it stays healthy', () => {
@@ -299,11 +315,11 @@ describe('the motion generator', () => {
     assert.equal(fs.readFileSync(path.join(root, 'plan/AUDIT.md'), 'utf8'), before);
     assert.equal(run(root, ['--write'], '2026-09-09').last, 'filed 1');
     const audit = fs.readFileSync(path.join(root, 'plan/AUDIT.md'), 'utf8');
-    assert.match(audit, /### \[loop\] \[HIGH\] motion stalled in 2026-W36: 1 shipped against a 4-week baseline of 4\.25/);
+    assert.match(audit, /### \[loop\] \[HIGH\] motion stalled in 2026-W36: 1 shipped against a 4-week baseline of 4\n/);
     assert.match(audit, /- generator: motion · filed 2026-09-09/);
     assert.ok(audit.indexOf('motion stalled') < audit.indexOf('## Done'), 'under Pending');
     assert.equal(run(root, ['--write'], '2026-09-10').last, 'clean', 'same week, already filed');
-    assert.equal(run(root, ['--write'], '2026-09-16').last, 'filed 1', 'a new stalled week');
+    assert.equal(run(root, ['--write'], '2026-09-23').last, 'filed 1', 'a new stalled week (W37 itself reads ok: 1 shipped against a median of 1)');
   });
 
   it('files nothing when motion is ok or the limit is 0', () => {

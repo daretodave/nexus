@@ -5,11 +5,14 @@
 // verb (audit, digest, expand, critique, triage, plan, jot, docs, ci, …) is housekeeping and never counts. Units are
 // counted per ISO week (Monday to Sunday, UTC).
 //
-// The judged week is the last full ISO week, against the trailing baseline: the mean of the 4 full weeks before it.
-// The floor is `Motion floor` (plan/bearings.md, a percent of that baseline; 50% when absent, 0% turns the alarm
-// off). The judged week is `stalled` when it shipped under the floor, or shipped nothing for five weeks running after
-// shipping before; the week in progress clears a stall as soon as it reaches the floor (at least one unit). A repo
-// that never shipped reads `ok`. Judging a full week keeps a quiet Monday from alarming.
+// The judged week is the last full ISO week, against the trailing baseline: the median of the 4 full weeks before it
+// (the mean of the two middle counts). A median, not a mean: one burst week (a person's build sprint beside the loop,
+// hundreds of commits) drags a mean so high that every ordinary week after it reads as a stall for a month; the
+// median stays where the ordinary weeks are. The floor is `Motion floor` (plan/bearings.md, a percent of that
+// baseline; 50% when absent, 0% turns the alarm off). The judged week is `stalled` when it shipped under the floor,
+// or shipped nothing at all after shipping before (whatever the baseline reads); the week in progress clears a stall
+// as soon as it reaches the floor (at least one unit). A repo that never shipped reads `ok`. Judging a full week
+// keeps a quiet Monday from alarming.
 //
 // The idle-tick ratio stays offline too: with --runs <file> (the JSON of `gh run list --workflow march --json
 // databaseId,conclusion,createdAt,url`), the successful runs of the last 7 days whose run id no `Cloud-Run:` trailer
@@ -19,7 +22,7 @@
 //   node scripts/plan/motion.mjs alarm [--runs <file>] [--today YYYY-MM-DD]             (heartbeat.yml)
 //   node scripts/plan/motion.mjs react                                                  (/march Step 0.5)
 //
-// `report` prints three lines: `shipped <n> / baseline <mean> · …`, `floor <n> · ok|stalled (…)` and, with --runs,
+// `report` prints three lines: `shipped <n> / baseline <median> · …`, `floor <n> · ok|stalled (…)` and, with --runs,
 // `idle ticks <pct>% (…)`. `alarm` prints the same, then acts under `stall_action` (plan/bearings.md: alert, the
 // default | promote | off): below the floor it opens the ONE `Heartbeat: motion stalled` issue (labels loop:opened and
 // loop:stall; deduped while one is open) and, under alert, calls scripts/notify.mjs when the repo has it; a week that
@@ -51,6 +54,14 @@ const toMs = (date) => Date.parse(`${date}T00:00:00Z`);
 const fromMs = (ms) => new Date(ms).toISOString().slice(0, 10);
 export const addDays = (date, n) => fromMs(toMs(date) + n * DAY);
 const round = (n) => Math.round(n * 100) / 100;
+
+/** The median of a list of counts: the middle one, or the mean of the two middle ones; 0 for an empty list. */
+export function median(series) {
+  const s = [...series].sort((a, b) => a - b);
+  if (!s.length) return 0;
+  const mid = s.length >> 1;
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
 
 /** The Monday (UTC) that opens the ISO week holding `date`. */
 export function mondayOf(date) {
@@ -125,7 +136,7 @@ export function report({ units = [], date = today(), pct = FLOOR_PCT, runs = nul
   const shipped = count(judged);
   const sofar = units.filter((d) => d >= current && d <= date).length;
   const series = weeks.map(count);
-  const baseline = round(series.reduce((a, b) => a + b, 0) / BASELINE_WEEKS);
+  const baseline = round(median(series));
   const floor = round((pct / 100) * baseline);
   const history = units.some((d) => d < current);
   let verdict = 'ok';
@@ -136,9 +147,11 @@ export function report({ units = [], date = today(), pct = FLOOR_PCT, runs = nul
   else if (shipped < floor) {
     verdict = 'stalled';
     why = `${shipped} is under ${pct}% of the baseline`;
-  } else if (shipped === 0 && baseline === 0) {
+  } else if (shipped === 0) {
+    // A week that shipped nothing never reads ok, even when the median of the weeks before it is 0.
     verdict = 'stalled';
-    why = `nothing shipped in ${BASELINE_WEEKS + 1} full weeks`;
+    const live = series.filter((n) => n > 0).length;
+    why = live ? `nothing shipped, after ${live} of the ${BASELINE_WEEKS} weeks before it did` : `nothing shipped in ${BASELINE_WEEKS + 1} full weeks`;
   } else why = `${pct}% of the baseline`;
   let idle = null;
   if (runs) {

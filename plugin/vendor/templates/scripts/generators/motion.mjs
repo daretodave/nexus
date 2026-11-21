@@ -4,7 +4,7 @@
 // pulse (`node scripts/pulse.mjs --motion`, scripts/plan/motion.mjs): when the last full ISO week shipped under the
 // `Motion floor`, and no queue row already names that week, it files
 //
-//   ### [loop] [HIGH] motion stalled in <week>: <n> shipped against a 4-week baseline of <mean>
+//   ### [loop] [HIGH] motion stalled in <week>: <n> shipped against a 4-week baseline of <median>
 //
 // so the next /iterate looks at why the loop runs and ships nothing (no ready chunk, a silted Pending, a lock with no
 // way out) instead of polishing. One row a week at most; an ok pulse files nothing.

@@ -9,6 +9,17 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/scripts/plan/motion.mjs: the motion baseline is the
+  median of the 4 weeks before the judged one, no longer their
+  mean. One burst week (a person's build sprint beside the
+  loop: 598 shipped units against the loop's usual 12 to 25)
+  held a mean at 159.5 and read every ordinary week after it as
+  a stall for a month, which under `stall_action: promote` also
+  forced promotions. A week that shipped nothing still never
+  reads ok. The trade: a loop already near dead (1 unit a week)
+  reads ok for a week that matches its last ones
+  (`templates/scripts/__tests__/motion.test.mjs` pins both)
+  (2026-11-21, this commit).
 - templates/.github/workflows/nudge.yml: `actions/checkout@v4`
   moves to `@v5`, the last template workflow still on the major
   that ran on the retired Node 20 runtime; it waited on a local
