@@ -1,0 +1,65 @@
+name: plugin-ci
+
+# plugin/'s claude plugin eval suite (plugin/evals/) exercises the
+# three plugin commands -- adopt, upgrade, doctor -- against scratch
+# fixtures, scored and gated alongside node scripts/verify.mjs's
+# plugin leg (the generator's own byte-diff): the byte-diff runs
+# first, before the eval spends any money, and both must be green.
+# See playbooks/plugin.md for how to read a report locally.
+
+on:
+  push:
+    branches: [main]
+    paths: ['plugin/**', 'scripts/build-plugin.mjs', 'prompts/adopt.md', 'prompts/upgrade.md', 'prompts/doctor.md', 'scripts/plugin-doctor.mjs', '.github/workflows/plugin-ci.yml']
+  pull_request:
+    paths: ['plugin/**', 'scripts/build-plugin.mjs', 'prompts/adopt.md', 'prompts/upgrade.md', 'prompts/doctor.md', 'scripts/plugin-doctor.mjs', '.github/workflows/plugin-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: plugin-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    # Model calls (the eval suite itself) are slower than the other
+    # CI jobs in this repo; the byte-diff leg alone is seconds.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - run: node scripts/verify.mjs plugin
+      - name: install the claude CLI
+        if: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        # The documented, recommended native install for macOS/Linux/WSL
+        # (https://code.claude.com/docs/en/setup#install-claude-code) --
+        # same installer this repo's own dev sandbox uses. Verified
+        # working end to end (fresh $HOME, `claude --version` after) at
+        # chunk 67.4 build time, 2026-11-21.
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: claude plugin eval
+        if: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        working-directory: plugin
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          claude plugin eval . --trust-plugin --no-publish \
+            --model claude-haiku-5-5 --judge-model claude-haiku-5-5 \
+            --threshold 0.8 --max-cost-usd 2 \
+            --allow-tools Bash Write Edit \
+            --json results.json
+      - name: no CLAUDE_CODE_OAUTH_TOKEN -- eval skipped
+        if: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN == '' }}
+        run: echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not set (expected on a fork pull request, which never receives repo secrets) -- skipping claude plugin eval. The byte-diff leg (node scripts/verify.mjs plugin) above already ran and still gates this workflow."
+      - uses: actions/upload-artifact@v4
+        if: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        with:
+          name: plugin-eval-results
+          path: plugin/results.json
