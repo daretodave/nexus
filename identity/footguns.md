@@ -22,3 +22,4 @@ merges with git's `union` driver):
 
 ## Guarded (automated: the line says by what)
 - **md-anchor-rename** · renaming or relocating a heading can silently break another file's #anchor link because the gate's links leg only checks the target file exists, not the fragment → grep every heading's slug across the repo before renaming or moving it; keep heading text unchanged if anything external links to it · seen 2× · last 2026-11-09 · guarded by scripts/verify.mjs's links leg (anchor check)
+- **byte-diff-crlf** · a gate leg that byte-compares a generated or vendored file against its source goes red on a Windows `core.autocrlf` checkout, where the two can sit on disk as CRLF and LF with one LF blob behind both → compare text line-ending-blind (binary byte for byte), or pin both sides `eol=lf` in `.gitattributes` · seen 1× · last 2026-11-21 · guarded by scripts/__tests__/build-plugin.test.mjs (the CRLF and LF test)

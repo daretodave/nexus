@@ -174,6 +174,16 @@ export function write(root = ROOT) {
   return [...out.keys()].sort()
 }
 
+// A text buffer with every CRLF read as LF; a binary one (it holds a
+// NUL byte) untouched. A Windows checkout under core.autocrlf holds
+// some working files as CRLF and some as LF, per file, while the
+// index holds LF for all of them: a source and its vendored copy can
+// differ on disk by line endings alone, and that is no drift.
+export function eolBlind(buf) {
+  if (buf.includes(0) || !buf.includes(13)) return buf
+  return Buffer.from(buf.toString('latin1').replace(/\r\n/g, '\n'), 'latin1')
+}
+
 // Problems, one line each, naming the file; empty means in sync.
 export function check(root = ROOT) {
   const problems = []
@@ -182,7 +192,7 @@ export function check(root = ROOT) {
     const abs = path.join(root, rel)
     if (!fs.existsSync(abs)) { problems.push(`${rel}: missing (run node scripts/build-plugin.mjs)`); continue }
     const disk = fs.readFileSync(abs)
-    if (Buffer.compare(disk, body) === 0) continue
+    if (Buffer.compare(eolBlind(disk), eolBlind(body)) === 0) continue
     problems.push(`${rel}: differs from the generator (edit scripts/build-plugin.mjs or templates/, then run it)`)
   }
   // Anything on disk under plugin/ that render() didn't produce is

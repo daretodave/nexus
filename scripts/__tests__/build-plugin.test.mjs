@@ -201,6 +201,35 @@ test('write() clears the whole generated tree, so a command or vendored prompt r
   }
 })
 
+test('check() reads CRLF and LF as the same text (a Windows checkout mixes them), and still names a real edit or a binary change', () => {
+  const dir = scratchRepo()
+  try {
+    fs.writeFileSync(path.join(dir, 'templates', 'bin.dat'), Buffer.from([1, 0, 13, 10, 2]))
+    write(dir)
+    // The vendored copy checked out as CRLF, its source as LF.
+    const vendored = path.join(dir, 'plugin', 'vendor', 'templates', 'a.md')
+    fs.writeFileSync(vendored, '# a\r\n')
+    assert.deepEqual(check(dir), [])
+    // The other way round: the source as CRLF, the copy as LF.
+    fs.writeFileSync(vendored, '# a\n')
+    fs.writeFileSync(path.join(dir, 'templates', 'a.md'), '# a\r\n')
+    assert.deepEqual(check(dir), [])
+    // A generated file (the manifest) checked out as CRLF.
+    const manifest = path.join(dir, 'plugin', '.claude-plugin', 'plugin.json')
+    fs.writeFileSync(manifest, fs.readFileSync(manifest, 'utf-8').replace(/\n/g, '\r\n'))
+    assert.deepEqual(check(dir), [])
+    // A real edit is still named.
+    fs.writeFileSync(vendored, '# a, edited\r\n')
+    assert.deepEqual(check(dir), ['plugin/vendor/templates/a.md: differs from the generator (edit scripts/build-plugin.mjs or templates/, then run it)'])
+    fs.writeFileSync(vendored, '# a\n')
+    // A binary file is compared byte for byte: its CR LF pair is data.
+    fs.writeFileSync(path.join(dir, 'plugin', 'vendor', 'templates', 'bin.dat'), Buffer.from([1, 0, 10, 2]))
+    assert.deepEqual(check(dir), ['plugin/vendor/templates/bin.dat: differs from the generator (edit scripts/build-plugin.mjs or templates/, then run it)'])
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('write() clears a vendored file removed from templates/ since the last build', () => {
   const dir = scratchRepo()
   try {
