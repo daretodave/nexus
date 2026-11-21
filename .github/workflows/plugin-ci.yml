@@ -57,6 +57,16 @@ jobs:
         run: |
           curl -fsSL https://claude.ai/install.sh | bash
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: install the eval sandbox backend
+        if: ${{ steps.token_check.outputs.has_token == 'true' }}
+        # Each case grants Bash, which the CLI refuses to run
+        # unconfined: it needs bubblewrap and socat on Linux
+        # (https://code.claude.com/docs/en/sandboxing). The first
+        # real run on ubuntu-latest (44915648905) proved socat is
+        # not preinstalled there -- every case failed in 5s with
+        # "sandbox required but unavailable: socat not installed",
+        # at near-zero cost (no case ever reached a real agent turn).
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap socat
       - name: claude plugin eval
         if: ${{ steps.token_check.outputs.has_token == 'true' }}
         working-directory: plugin

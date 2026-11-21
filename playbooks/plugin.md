@@ -169,9 +169,12 @@ CI (`.github/workflows/plugin-ci.yml`, path-scoped to `plugin/**`
 and the files that feed it) gates the same way `node
 scripts/verify.mjs` does: the `plugin` leg's byte-diff runs first,
 free, before anything spends money; only then does it install the
-`claude` CLI and run the eval with pinned models
-(`claude-haiku-5-5`), `--threshold 0.8` and `--max-cost-usd 2`,
-reading `CLAUDE_CODE_OAUTH_TOKEN` from a repo secret. A fork pull
+`claude` CLI, `apt-get install bubblewrap socat` (the sandbox
+backend every case's `Bash` grant needs — `ubuntu-latest` ships
+neither by default), and run the eval with pinned models
+(`claude-haiku-5-5`), `--ablation none`, `--threshold 0.8` and
+`--max-cost-usd 2`, reading `CLAUDE_CODE_OAUTH_TOKEN` from a repo
+secret. A fork pull
 request never receives that secret, so the eval step (and the
 results-artifact upload) is skipped with a clear `::notice::` rather
 than failing the workflow; the byte-diff leg still gates it either
