@@ -56,6 +56,7 @@ Auth errors, token rejected (exit 3)?      → F
 march stops on "state files corrupted"?    → G
 Cloud tick crashed / run never ended?      → H
 Loop stopped and none of the above?        → I
+Lost the machine, repos safe on GitHub?    → J
 ```
 
 ---
@@ -328,6 +329,24 @@ story isn't obvious:
    patch the skill's failure modes, note it in
    `NEXUS_LESSONS.md`, and send it upstream with
    `/lessons-pr` so the next project inherits the lesson.
+
+---
+
+## J. Lost the machine, still have GitHub
+
+**Symptoms.** The workspace machine itself is gone — stolen,
+dead disk, wiped — not a loop or deploy failure. Every repo's
+own git history and its GitHub remote survived; there's nothing
+to diagnose, you just need a new root.
+
+**Recover.** Don't improvise a rebuild — go straight to
+[`workspace.md`](./workspace.md)'s
+[Resurrection](./workspace.md#resurrection) section, the actual
+procedure (clone the ledger repo first, copy the templates,
+clone every sibling `REPOS.md` lists, re-run each one's own
+onboarding). It ends with `workspace-doctor.mjs` running green:
+that's the signal the rebuilt root is whole again, not merely
+present.
 
 ---
 
