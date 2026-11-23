@@ -101,6 +101,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # + whatever your breadth legs need (see march.yml's env)
+          #
+          # Unattended retries on 429/529, capped well under this
+          # job's 60-minute timeout so a stuck wait still yields.
+          CLAUDE_CODE_RETRY_WATCHDOG: '1'
+          CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS: '1800000'
 
       - name: Quota read
         id: quota

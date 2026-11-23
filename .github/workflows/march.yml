@@ -424,6 +424,10 @@ jobs:
           GIT_AUTHOR_EMAIL:    '7341502+daretodave@users.noreply.github.com'
           GIT_COMMITTER_NAME:  'nexus'
           GIT_COMMITTER_EMAIL: '7341502+daretodave@users.noreply.github.com'
+          # Unattended retries on 429/529, capped well under this
+          # job's 60-minute timeout so a stuck wait still yields.
+          CLAUDE_CODE_RETRY_WATCHDOG: '1'
+          CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS: '1800000'
 
       # The walk's screenshots leave as a run artifact, never as a
       # commit; a tick that did not walk uploads nothing.

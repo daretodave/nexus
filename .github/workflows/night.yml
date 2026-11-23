@@ -103,6 +103,10 @@ jobs:
           GIT_AUTHOR_EMAIL:    '7341502+daretodave@users.noreply.github.com'
           GIT_COMMITTER_NAME:  'nexus'
           GIT_COMMITTER_EMAIL: '7341502+daretodave@users.noreply.github.com'
+          # Unattended retries on 429/529, capped at half this job's
+          # 30-minute timeout, leaving room for the rest of the digest.
+          CLAUDE_CODE_RETRY_WATCHDOG: '1'
+          CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS: '900000'
 
       - name: Quota read
         id: quota
