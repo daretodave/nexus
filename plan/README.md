@@ -32,7 +32,7 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 71 | Cloud workflow hardening: the canceller skips a paused workflow, ticks wait out a transient limit | [71-cloud-workflow-hardening.md](71-cloud-workflow-hardening.md) | planned | not chunked yet |
+| 71 | Cloud workflow hardening: the canceller skips a paused workflow, ticks wait out a transient limit | [71-cloud-workflow-hardening.md](71-cloud-workflow-hardening.md) | planned | 3 chunks, 0 done |
 | 72 | The gate's tree check reads its directories from the tree diagrams | [72-tree-check-from-diagrams.md](72-tree-check-from-diagrams.md) | planned | not chunked yet |
 | 73 | Prompt audit joins the kit's prompt-maintenance story | [73-prompt-audit-story.md](73-prompt-audit-story.md) | planned | not chunked yet |
 | 74 | Every step reads the plan live | [74-plan-read-live.md](74-plan-read-live.md) | planned | not chunked yet |

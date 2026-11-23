@@ -67,12 +67,40 @@ secrets"), so both build from the cloud.
 - **A4** `CHANGELOG.md` carries an entry for each template
   path touched, and the gate is green.
 
-## Open questions
-
-- Whether the heartbeat itself needs the watchdog: it runs no
-  model, so probably not. The chunking session confirms.
-
 ## Chunks
 Measure: 4 open · 0 closed · next A5
 
-Not chunked yet.
+- [ ] **71.1** `heartbeat.yml`'s cancel step skips a
+  non-active workflow instead of failing · S · closes A1 ·
+  needs — · partial A4
+  - Root and template twin. Read `gh workflow list --all`
+    once, ahead of the three steps, and have the cancel loop
+    (today: no state guard at all) skip `$wf` when its state
+    isn't `active`, echoing one log line — matching the guard
+    the two later steps (`Alarm if a watched gate is red`,
+    `Alarm if a scheduled workflow is not armed`) already use.
+- [ ] **71.2** `march.yml` and `night.yml` cap the retry
+  watchdog's wait under each job's timeout · M · closes A2 ·
+  needs — · partial A4
+  - Root and template twin, on the `anthropics/
+    claude-code-action@v1` step's `env:` (new on that step;
+    today it carries no `env:` block, only `with:`). Read the
+    current Claude Code docs for `CLAUDE_CODE_RETRY_WATCHDOG`
+    and `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS`'s real value
+    shape before writing either — the changelog line alone
+    doesn't say whether the first is a boolean or a mode
+    string. `march.yml`'s job is `timeout-minutes: 60`,
+    `night.yml`'s `timeout-minutes: 30`; the max wait sits
+    comfortably under each.
+  - Resolves the spec's open question: `heartbeat.yml` runs no
+    `claude-code-action` step (confirmed by reading the file —
+    it's shell plus one offline node script, no model), so it
+    never gets the watchdog; only this chunk's two files do.
+- [ ] **71.3** `.github/CLOUD_LOOP.md` and
+  `playbooks/cloud-loop.md` document both variables and the
+  cap · S · closes A3, A4 · needs 71.2
+  - Names the two env vars, the value 71.2 actually picked for
+    each workflow, and why the max wait sits under the job's
+    `timeout-minutes`. Last chunk to land: A4's CHANGELOG
+    entries (one per template path touched across 71.1-71.3)
+    and a green gate are true once all three are in.
