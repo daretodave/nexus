@@ -46,7 +46,14 @@ jobs:
           WATCH: ${{ vars.NEXUS_HEARTBEAT_WATCH || 'march night cli-ci' }}
         run: |
           now=$(date -u +%s)
+          states=$(gh workflow list --all --limit 200 \
+            --json name,state --jq '.[] | [.name, .state] | @tsv')
           for wf in $WATCH; do
+            state=$(printf '%s\n' "$states" | awk -F'\t' -v w="$wf" '$1 == w { print $2; exit }')
+            if [ -n "$state" ] && [ "$state" != "active" ]; then
+              echo "$wf: $state - skipping (not active)."
+              continue
+            fi
             gh run list --workflow "$wf" --status in_progress \
               --json databaseId,createdAt \
               --jq '.[] | [.databaseId, .createdAt] | @tsv' |
