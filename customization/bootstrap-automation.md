@@ -505,6 +505,38 @@ targets (e.g. `github-actions` and a hosting provider) is
 two separate `push` calls, not one call with two
 destinations.
 
+**Missing key message.** `node scripts/secrets.mjs run -- <cmd>`
+refuses to start `<cmd>` when a declared name has no
+value in any ring, naming three things (A2 of chunk 70.2):
+the ring(s) it checked, the custody row's holder file, and
+the runbook that mints it. The ring is always known, straight
+off the vault's own config; the holder file and runbook come
+from the custody row only when one exists for that exact name
+(`identity/key-custody.md`, else an adopted repo's
+`setup/00_keys.md` twin) — with no custody file, or no row for
+the name, the message names the ring only and drops the rest,
+never guessing a file or runbook it can't point to. With no
+custody row for `B_TOKEN`:
+
+```
+secrets run: not set in the vault: B_TOKEN (ring: local, workspace) (node scripts/secrets.mjs set NAME); <cmd> did not run
+```
+
+With a custody row for `B_TOKEN` whose "Holder file" column
+reads `.env (local ring)` and whose "Minted by" column reads
+`gh auth login locally`:
+
+```
+secrets run: not set in the vault: B_TOKEN (ring: local, workspace · holder file: .env (local ring) · minted by: gh auth login locally) (node scripts/secrets.mjs set NAME); <cmd> did not run
+```
+
+`scripts/keys-audit.mjs`'s `missingKeyDetail` builds the
+`(ring: ... · holder file: ... · minted by: ...)` clause and
+`scripts/secrets.mjs`'s `run` prints it verbatim inside the
+line above: this doc and that code can never say two
+different things (bearings decision 2) — change the wording
+in one, change it in the other, in the same commit.
+
 ---
 
 ## Relationship to `/oversight`

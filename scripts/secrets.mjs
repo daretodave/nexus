@@ -48,6 +48,7 @@ import { MANIFEST, NAME, emptyManifest, importEnvExample, mergeImport, readManif
 import { CONTRIBUTOR_RINGS, RINGS, forgetLocalKeys, openVault, parseEnv, readLocalKeys, recordLocalKeys, sinkRefusal } from './secrets-vault.mjs';
 import { SINKS, actionsSecretNames, pushSecretAsync, recordAudit, sessionOf, sinkFor, spawnRunner } from './secrets-sinks.mjs';
 import { runWithSecrets } from './secrets-run.mjs';
+import { missingKeyDetail } from './keys-audit.mjs';
 import { describeHit, scanRepo, vaultValues } from './secrets-scan.mjs';
 import { ROTATE_DAYS, ageDays, lastSet, nudgeLine, readAudit, recordRemoves, recordSets, rotationNudges } from './secrets-audit.mjs';
 import { loadPlanDir } from './plan-check.mjs';
@@ -170,7 +171,7 @@ export async function main(argv, { out = (s) => process.stdout.write(`${s}\n`), 
     return 1;
   }
   try {
-    if (cmd === 'run') return await runCommand(open(), current, { command, only, err });
+    if (cmd === 'run') return await runCommand(open(), current, { command, only, err, root });
     if (cmd === 'scan') return scan(open(), current, { root, staged, out });
     if (cmd === 'status') return status(open(), current, { out, json, owner: ownerHere(), localKeys: readLocalKeys(vroot), log: readAudit(vroot), run, root });
     if (cmd === 'audit') return audit(open(), readAudit(vroot), { out, json });
@@ -329,14 +330,21 @@ function durableAsk(root, marker) {
   return walk(path.join(root, 'plan'));
 }
 
-/** `run`: the declared names (or the --only ones), every one set, into the command's environment. */
-async function runCommand(vault, current, { command, only, err }) {
+/** `run`: the declared names (or the --only ones), every one set, into the command's environment. A missing name's
+ * refusal names its ring, holder file and runbook (A2): missingKeyDetail (scripts/keys-audit.mjs) reads the
+ * checked-but-empty ring(s) off the vault's own config, and the custody table (when one exists and has a row for
+ * that name) for the rest. */
+async function runCommand(vault, current, { command, only, err, root }) {
   const declared = current ? [...current.names] : [];
   const picked = only === null ? declared : only.split(',').map((n) => n.trim()).filter(Boolean);
   const undeclared = picked.filter((n) => !declared.includes(n));
   if (undeclared.length) { err(`secrets run: not declared in ${MANIFEST}: ${undeclared.join(', ')} (run hands over declared names only)`); return 1; }
   const { values, missing } = vault.resolve(picked);
-  if (missing.length) { err(`secrets run: not set in the vault: ${missing.join(', ')} (node scripts/secrets.mjs set NAME); ${command[0]} did not run`); return 1; }
+  if (missing.length) {
+    const detail = missing.map((n) => `${n} (${missingKeyDetail(root, n, vault.config)})`).join(', ');
+    err(`secrets run: not set in the vault: ${detail} (node scripts/secrets.mjs set NAME); ${command[0]} did not run`);
+    return 1;
+  }
   if (!picked.length) err(`secrets run: no secrets declared in ${MANIFEST}; running ${command[0]} with none`);
   return runWithSecrets(command, values);
 }

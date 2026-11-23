@@ -17,6 +17,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readManifest } from './plan/secrets-manifest.mjs'
+import { RINGS } from './secrets-vault.mjs'
 
 const SKIP = new Set(['node_modules', '.git'])
 const INDEX_ROW = /^\|\s*`([A-Z][A-Z0-9_]*)`\s*\|/
@@ -112,13 +113,20 @@ export function lintCustody(file, keys, names, foundElsewhere) {
   return problems
 }
 
+/** The custody file to use: `customFile` (relative to `root`) when given, else `identity/key-custody.md` if it
+ * exists, else `setup/00_keys.md` if that exists, else null (nothing to check). Shared file-resolution for
+ * auditKeysCustody, auditWindowExpiry and custodyRowFor. */
+function pickCustodyFile(root, customFile) {
+  const has = (f) => fs.existsSync(path.join(root, f))
+  return customFile ?? (has('identity/key-custody.md') ? 'identity/key-custody.md' : has('setup/00_keys.md') ? 'setup/00_keys.md' : null)
+}
+
 /** Audits one custody table against `nexus.secrets.json`'s names. `customFile` picks the table (relative to
  * `root`); given none, `identity/key-custody.md` wins if it exists, else `setup/00_keys.md`, else there is nothing
  * to check. Returns `{ failures, note }`, verify.mjs's leg shape. */
 export function auditKeysCustody(root, customFile) {
-  const has = (f) => fs.existsSync(path.join(root, f))
-  const file = customFile ?? (has('identity/key-custody.md') ? 'identity/key-custody.md' : has('setup/00_keys.md') ? 'setup/00_keys.md' : null)
-  if (!file || !has(file)) return { failures: [], note: 'no custody table found' }
+  const file = pickCustodyFile(root, customFile)
+  if (!file || !fs.existsSync(path.join(root, file))) return { failures: [], note: 'no custody table found' }
   const keys = parseCustodyKeys(fs.readFileSync(path.join(root, file), 'utf-8'))
   const manifest = readManifest(path.join(root, 'nexus.secrets.json'))
   const names = manifest ? manifest.names : new Set()
@@ -133,13 +141,47 @@ export function auditKeysCustody(root, customFile) {
  * failure is a different, manual check from auditKeysCustody's orphan/ghost/ambiguous lint, so this is not wired
  * into verify.mjs's gate. */
 export function auditWindowExpiry(root, until, customFile) {
-  const has = (f) => fs.existsSync(path.join(root, f))
-  const file = customFile ?? (has('identity/key-custody.md') ? 'identity/key-custody.md' : has('setup/00_keys.md') ? 'setup/00_keys.md' : null)
-  if (!file || !has(file)) return { failures: [], note: 'no custody table found' }
+  const file = pickCustodyFile(root, customFile)
+  if (!file || !fs.existsSync(path.join(root, file))) return { failures: [], note: 'no custody table found' }
   const rows = parseCustodyExpiries(fs.readFileSync(path.join(root, file), 'utf-8'))
   const expiring = expiringBefore(rows, until)
   const failures = expiring.map((r) => `${file}: \`${r.key}\` expires ${r.expires}, before the window ends ${until}`)
   return { failures, note: `${file}: ${rows.length} custody rows checked against a window ending ${until}` }
+}
+
+/** One custody row's "Holder file" and "Minted by" text for `name` (the exact row that names it, trimmed; the
+ * table's columns, once a row is split on `|` and counting the empty string before the leading `|` as column 0: 1
+ * Key, 2 Holder file, 3 Minted by, 4 Scopes, 5 Mirrored to, 6 Expires, 7 Rotate via). Same file-resolution fallback as
+ * auditKeysCustody — `customFile`, else identity/key-custody.md, else setup/00_keys.md. Returns `{ file, holderFile,
+ * mintedBy }`, or null when there is no custody file, or it has no row for that exact name: never guessed. */
+export function custodyRowFor(root, name, customFile) {
+  const file = pickCustodyFile(root, customFile)
+  if (!file || !fs.existsSync(path.join(root, file))) return null
+  const text = fs.readFileSync(path.join(root, file), 'utf-8')
+  for (const line of indexRows(text)) {
+    const m = INDEX_ROW.exec(line)
+    if (m[1] !== name) continue
+    const cols = line.split('|')
+    return { file, holderFile: (cols[2] ?? '').trim(), mintedBy: (cols[3] ?? '').trim() }
+  }
+  return null
+}
+
+/** The ring(s) a vault with this config actually reads, in order (secrets-vault.mjs's own RINGS, with `keychain`
+ * dropped unless `vaultConfig.keychain` turns it on) — always known, even with no custody table at all. */
+function ringsChecked(vaultConfig) {
+  return RINGS.filter((r) => r !== 'keychain' || vaultConfig.keychain)
+}
+
+/** A missing name's three facts for `secrets.mjs run`'s refusal (A2: ring, holder file, runbook): the ring(s) the
+ * vault checked, and — only when a custody table has a row for this exact name — that row's holder file and the
+ * runbook that mints it ("Minted by"). No custody file, or no row for the name: ring only, degrading gracefully
+ * rather than guessing a file or runbook the kit can't actually point to. The exact wording this returns is
+ * documented verbatim in customization/bootstrap-automation.md; change one, change the other in the same commit. */
+export function missingKeyDetail(root, name, vaultConfig, customFile) {
+  const checked = `ring: ${ringsChecked(vaultConfig).join(', ')}`
+  const row = custodyRowFor(root, name, customFile)
+  return row ? `${checked} · holder file: ${row.holderFile} · minted by: ${row.mintedBy}` : checked
 }
 
 function report(failures, note) {
