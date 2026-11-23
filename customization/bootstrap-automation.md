@@ -448,6 +448,65 @@ prose. Neither blocks the other.
 
 ---
 
+## Secret resolution: the two rings
+
+A workspace running several repos keeps shared secrets
+in one outer ring and each repo's own in an inner one.
+`scripts/secrets-vault.mjs`'s `get()` is what both
+`/bootstrap` and a running agent actually call to resolve
+a name; this section states the order and the fan-out
+exactly as that function reads. The general vault model —
+what a ring is, the workspace root, when a secret belongs
+in which ring — is [`./secrets.md`](./secrets.md)'s
+["Two rings"](./secrets.md#two-rings) section; this is
+the walk, not the model.
+
+**Resolution order.** `local` → `keychain` (opt-in) →
+`workspace`:
+
+1. **`local`** — the checkout's own `.env`, at its root.
+2. **`keychain`** — the OS keychain, only when
+   `.nexus/local.json` turns it on
+   (`{ "secrets": { "keychain": true } }`); skipped
+   entirely otherwise.
+3. **`workspace`** — `.env.workspace` at the workspace
+   root.
+
+**Stop conditions.** First hit wins: a name found in
+`local` is never looked up in `keychain` or `workspace`,
+and so on down the order. The walk never leaves the
+workspace root — `vaultConfig`'s `workspaceDir`, which
+defaults to the checkout's parent folder and can be
+overridden by `{ "secrets": { "workspace": "<path>" } }`
+in `.nexus/local.json`. There is no third ring above
+`workspaceDir` to fall back to. A repo checked out on its
+own, outside any workspace, still has a `workspaceDir`
+(its own parent folder) but no `.env.workspace` there to
+find anything in; resolution against that ring returns
+nothing, with no error — the repo's own `.env` is the
+only ring that can actually answer.
+
+**Fan-out.** A workspace-ring secret that a repo's own
+tooling needs locally — GitHub Actions, a hosting
+provider's env vars — is pushed down to each place that
+needs a copy, one call per place:
+
+```
+node scripts/secrets.mjs push <NAME> --to <destination>
+```
+
+Run it once per "Mirrored to" target listed in the key's
+custody row — this repo's own table is
+[`identity/key-custody.md`](../identity/key-custody.md);
+an adopted repo's is its
+`templates/setup/00_keys.md` twin. `push` takes exactly
+one `--to` destination per call: a key mirrored to two
+targets (e.g. `github-actions` and a hosting provider) is
+two separate `push` calls, not one call with two
+destinations.
+
+---
+
 ## Relationship to `/oversight`
 
 `/oversight` already reads `setup/00_files.md` and surfaces
@@ -899,3 +958,9 @@ user` is set.
 - [`../playbooks/cloud-loop.md`](../playbooks/cloud-loop.md)
   — the manual cloud-loop walkthrough that
   `/bootstrap cloud-loop` automates.
+- [`./secrets.md`](./secrets.md) — the two-ring vault
+  model this layer's resolution order and fan-out read
+  from.
+- [`../identity/key-custody.md`](../identity/key-custody.md)
+  — this repo's custody table, naming each key's
+  "Mirrored to" fan-out targets.
