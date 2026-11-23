@@ -309,3 +309,4 @@ still pending at the move and live on as specs.
 - 2026-11-23 · 70.4 · polyrepo's custody map rides the plan repo · e5454308..e5454308
 - 2026-11-23 · 70 · spec complete: nexus's own `/bootstrap` and `/oversight` read both secret rings — `bootstrap-automation.md`'s resolution order + fan-out, the missing-key message naming ring/holder/runbook, `/oversight`'s names-only custody-row check, and `polyrepo.md`'s shared custody map riding the plan repo · deleted in (this commit)
 - 2026-11-23 · 71.1 · Heartbeat's cancel step skips a disabled watched workflow · e39ead48..a5e99ed1
+- 2026-11-23 · 71.2 · March and night ticks cap waits on 429/529 errors · 0c56d22e..2427d471
