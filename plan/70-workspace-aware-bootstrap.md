@@ -48,9 +48,6 @@ the runbook that mints it.
 
 ## Acceptance
 
-- **A1** `customization/bootstrap-automation.md` documents the
-  resolution order, its stop conditions and the fan-out
-  command per "Mirrored to" target.
 - **A2** A missing key's failure message, as documented and as
   printed, names its ring, its holder file and the runbook
   that mints it.
@@ -70,20 +67,8 @@ the runbook that mints it.
   the script before deciding.
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 3 open · 1 closed · next A5
 
-- [ ] **70.1** `bootstrap-automation.md` documents the
-  two-ring resolution order and the fan-out command · S ·
-  closes A1 · needs —
-  - Order as `secrets-vault.mjs`'s `get` actually reads:
-    local `.env`, then the keychain (opt-in), then the
-    parent's `.env.workspace`; the stop condition is first
-    hit wins, the walk never leaves the workspace root
-    (`vaultConfig`'s `workspaceDir`), and a repo outside a
-    workspace resolves against its own `.env` only.
-  - The fan-out command is `node scripts/secrets.mjs push
-    <NAME> --to <destination>`, once per "Mirrored to"
-    target in the key's custody row.
 - [ ] **70.2** A missing key's message names its ring,
   holder file and setup runbook · M · closes A2 · needs —
   - Today `secrets.mjs run` prints only `not set in the
