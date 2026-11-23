@@ -47,7 +47,10 @@ misconfiguration (§6).
    rows (`plan/pending/secrets-<id>.md`, then `plan/notes.md`)
    and `node scripts/secrets.mjs status`. The owner sets each
    with `node scripts/secrets.mjs set <NAME>` in their own
-   terminal, never pasted here; then delete the row.
+   terminal, never pasted here; then delete the row. The
+   names-only presence check against the custody table is
+   `customization/external-services.md`'s "/oversight
+   checks the custody row".
 
 9. `node scripts/plan/promote.mjs sweep` — auto-promotions
    still in their veto window (dry: it writes nothing).

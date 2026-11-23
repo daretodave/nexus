@@ -181,6 +181,28 @@ Every `/oversight` tick should:
 This makes external-service drift visible to the loop
 without dashboard access.
 
+### /oversight checks the custody row
+
+A companion check to the index read above: walk each
+key's custody row — `identity/key-custody.md` here,
+`templates/setup/00_keys.md` for an adopter — for its
+holder file and the runbook that mints it. Then run
+`node scripts/secrets.mjs status` to confirm each name
+present, missing, or optional-and-not-set — names only,
+never a value.
+
+A name the custody table lists that the manifest
+doesn't declare is a documented gap, not a script
+change — nexus's own example is
+`CLAUDE_CODE_OAUTH_TOKEN`, whose row notes it isn't
+in the manifest, it's set directly. Call the gap out
+in the briefing.
+
+A missing declared key still becomes a
+`[needs-user-call] secret request` row — see
+[`./secrets.md`](./secrets.md#a-chunk-waiting-on-a-secret)
+for that flow; this check only confirms presence.
+
 ### `/march` references it indirectly
 
 `/march` doesn't read the index directly. But the next
