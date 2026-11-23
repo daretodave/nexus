@@ -9,6 +9,20 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/.github/workflows/night.yml: the `claude-code-action@v1`
+  step's `env:` gains `CLAUDE_CODE_RETRY_WATCHDOG: '1'` and
+  `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS: '1800000'`, so an
+  unattended digest tick waits out a transient 429/529 instead
+  of failing the run, bounded well under the job's 60-minute
+  `timeout-minutes` so a stuck wait still yields (2026-11-23,
+  71.2).
+- templates/.github/workflows/march.yml: the `claude-code-action@v1`
+  step's `env:` gains `CLAUDE_CODE_RETRY_WATCHDOG: '1'` and
+  `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS: '1800000'`, so an
+  unattended march tick waits out a transient 429/529 instead
+  of failing the run, bounded well under the job's 300-minute
+  `timeout-minutes` so a stuck wait still yields (2026-11-23,
+  71.2).
 - templates/.github/workflows/heartbeat.yml: the "Cancel wedged
   runs" step reads `gh workflow list --all` once and skips a
   watched workflow that isn't `active` (one log line, no
