@@ -10,8 +10,10 @@ import { describe, it } from 'node:test'
 import {
   auditKeysCustody,
   auditWindowExpiry,
+  custodyRowFor,
   expiringBefore,
   lintCustody,
+  missingKeyDetail,
   namesElsewhere,
   parseCustodyExpiries,
   parseCustodyKeys,
@@ -262,6 +264,71 @@ describe('auditWindowExpiry', () => {
       const { failures, note } = auditWindowExpiry(s.root, '2026-06-01')
       assert.deepEqual(failures, [])
       assert.equal(note, 'no custody table found')
+    } finally { s.done() }
+  })
+})
+
+describe('custodyRowFor', () => {
+  it("returns the row's holder file and minted-by text for the key it names", () => {
+    const s = scratch()
+    try {
+      write(s.root, 'identity/key-custody.md', ['GH_TOKEN'], ['GH_TOKEN'])
+      assert.deepEqual(custodyRowFor(s.root, 'GH_TOKEN', 'identity/key-custody.md'), { file: 'identity/key-custody.md', holderFile: '.env', mintedBy: 'someone' })
+    } finally { s.done() }
+  })
+
+  it('returns null when the custody file exists but has no row for that exact name', () => {
+    const s = scratch()
+    try {
+      write(s.root, 'identity/key-custody.md', ['GH_TOKEN'], ['GH_TOKEN'])
+      assert.equal(custodyRowFor(s.root, 'MISSING_KEY', 'identity/key-custody.md'), null)
+    } finally { s.done() }
+  })
+
+  it('returns null when no custody file exists at all, rather than guessing', () => {
+    const s = scratch()
+    try {
+      assert.equal(custodyRowFor(s.root, 'GH_TOKEN'), null)
+    } finally { s.done() }
+  })
+
+  it('falls back to setup/00_keys.md when no explicit file and no identity/key-custody.md exist', () => {
+    const s = scratch()
+    try {
+      write(s.root, 'setup/00_keys.md', ['GH_TOKEN'], ['GH_TOKEN'])
+      assert.deepEqual(custodyRowFor(s.root, 'GH_TOKEN'), { file: 'setup/00_keys.md', holderFile: '.env', mintedBy: 'someone' })
+    } finally { s.done() }
+  })
+})
+
+describe('missingKeyDetail', () => {
+  it('names the ring(s) checked when no custody file exists at all', () => {
+    const s = scratch()
+    try {
+      assert.equal(missingKeyDetail(s.root, 'GH_TOKEN', { keychain: false }), 'ring: local, workspace')
+    } finally { s.done() }
+  })
+
+  it('includes the keychain ring only when the vault config turns it on', () => {
+    const s = scratch()
+    try {
+      assert.equal(missingKeyDetail(s.root, 'GH_TOKEN', { keychain: true }), 'ring: local, keychain, workspace')
+    } finally { s.done() }
+  })
+
+  it('adds the holder file and the runbook that mints it when a custody row names the key', () => {
+    const s = scratch()
+    try {
+      write(s.root, 'identity/key-custody.md', ['GH_TOKEN'], ['GH_TOKEN'])
+      assert.equal(missingKeyDetail(s.root, 'GH_TOKEN', { keychain: false }), 'ring: local, workspace · holder file: .env · minted by: someone')
+    } finally { s.done() }
+  })
+
+  it('drops the holder file and runbook, naming the ring only, when the custody file has no row for the name', () => {
+    const s = scratch()
+    try {
+      write(s.root, 'identity/key-custody.md', ['GH_TOKEN'], ['GH_TOKEN'])
+      assert.equal(missingKeyDetail(s.root, 'OTHER_KEY', { keychain: false }), 'ring: local, workspace')
     } finally { s.done() }
   })
 })

@@ -115,14 +115,37 @@ describe('secrets run', () => {
     } finally { c.done(); }
   });
 
-  it('refuses to start the command when a declared name is missing, naming it', () => {
+  it('refuses to start the command when a declared name is missing, naming it and the ring(s) checked (no custody file here: no holder file or runbook to name)', () => {
     const c = checkout({ env: `A_TOKEN=${A}\n` });
     const marker = path.join(c.ws, 'ran');
     try {
       const r = cli(c.repo, 'run', '--root', c.repo, '--', ...node(`require('fs').writeFileSync(${JSON.stringify(marker).replace(/"/g, "'")}, 'x')`));
       assert.equal(r.status, 1);
-      assert.match(r.stderr, /not set in the vault: B_TOKEN/);
+      assert.match(r.stderr, /not set in the vault: B_TOKEN \(ring: local, workspace\)/);
+      assert.ok(!r.stderr.includes('holder file'));
+      assert.ok(!r.stderr.includes('minted by'));
       assert.ok(!fs.existsSync(marker));
+      noValue(r);
+    } finally { c.done(); }
+  });
+
+  it('names the missing name\'s holder file and the runbook that mints it, when a custody table has a row for it', () => {
+    const c = checkout({ env: `A_TOKEN=${A}\n` });
+    fs.mkdirSync(path.join(c.repo, 'identity'), { recursive: true });
+    fs.writeFileSync(path.join(c.repo, 'identity', 'key-custody.md'), [
+      '# identity/key-custody.md',
+      '',
+      '## Index',
+      '',
+      '| Key | Holder file | Minted by | Scopes | Mirrored to | Expires | Rotate via |',
+      '|---|---|---|---|---|---|---|',
+      '| `B_TOKEN` | .env (local ring) | gh auth login locally | n/a | n/a | n/a | — |',
+      '',
+    ].join('\n'));
+    try {
+      const r = cli(c.repo, 'run', '--root', c.repo, '--', ...node('1'));
+      assert.equal(r.status, 1);
+      assert.match(r.stderr, /not set in the vault: B_TOKEN \(ring: local, workspace · holder file: \.env \(local ring\) · minted by: gh auth login locally\)/);
       noValue(r);
     } finally { c.done(); }
   });
