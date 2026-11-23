@@ -48,9 +48,6 @@ the runbook that mints it.
 
 ## Acceptance
 
-- **A2** A missing key's failure message, as documented and as
-  printed, names its ring, its holder file and the runbook
-  that mints it.
 - **A3** `customization/external-services.md` describes
   `/oversight`'s names-only presence check against the
   custody table, and `skills/oversight.md` §3 item 8 points
@@ -67,16 +64,8 @@ the runbook that mints it.
   the script before deciding.
 
 ## Chunks
-Measure: 3 open · 1 closed · next A5
+Measure: 2 open · 2 closed · next A5
 
-- [ ] **70.2** A missing key's message names its ring,
-  holder file and setup runbook · M · closes A2 · needs —
-  - Today `secrets.mjs run` prints only `not set in the
-    vault: <NAME>` (no ring, no file, no runbook); `request`
-    already names a destination. Extend the message (or the
-    shared helper both read) to carry the three facts, then
-    document the exact wording in `bootstrap-automation.md`
-    so doc and script can never drift (bearings decision 2).
 - [ ] **70.3** `/oversight`'s names-only presence check
   against the custody row · S · closes A3 · needs —
   - Decision (read `scripts/secrets.mjs status` before
