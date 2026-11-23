@@ -48,10 +48,6 @@ the runbook that mints it.
 
 ## Acceptance
 
-- **A3** `customization/external-services.md` describes
-  `/oversight`'s names-only presence check against the
-  custody table, and `skills/oversight.md` §3 item 8 points
-  at it.
 - **A4** `playbooks/polyrepo.md` places the custody map in the
   plan repo and links the two-ring section of
   `customization/secrets.md`.
@@ -64,22 +60,7 @@ the runbook that mints it.
   the script before deciding.
 
 ## Chunks
-Measure: 2 open · 2 closed · next A5
+Measure: 1 open · 3 closed · next A5
 
-- [ ] **70.3** `/oversight`'s names-only presence check
-  against the custody row · S · closes A3 · needs —
-  - Decision (read `scripts/secrets.mjs status` before
-    writing): it already prints each declared name's
-    rings/destination without a value, which is the check —
-    document it as reading each key's custody row (
-    `identity/key-custody.md` here, `templates/setup/
-    00_keys.md` for an adopter) for the holder file and
-    runbook, then running `status` for present/missing. No
-    new `--custody` flag: a name the manifest doesn't declare
-    (the custody table already flags this, e.g.
-    `CLAUDE_CODE_OAUTH_TOKEN`) is a documented gap, not a
-    script change.
-  - `skills/oversight.md` §3 item 8 gets one line pointing at
-    `customization/external-services.md`'s new section.
 - [ ] **70.4** `polyrepo.md` places the custody map and links
   the two-ring section · S · closes A4 · needs —

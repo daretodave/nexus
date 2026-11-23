@@ -305,3 +305,4 @@ still pending at the move and live on as specs.
 - 2026-11-22 · 69 · spec complete: plan/ carries the workspace ring's resurrection story — `templates/workspace/KEYS.md` names its secrets, `workspace-doctor.mjs` checks a rebuilt root (self-repo, missing clone, missing/leaked key), `workspace.md`'s Resurrection section walks the rebuild, and `recovery.md`'s `J` points incidents there; the custody-table split between `KEYS.md` and `identity/key-custody.md` is documented in `KEYS.md`'s own Orientation section · deleted in (this commit)
 - 2026-11-23 · 70.1 · bootstrap-automation.md documents the two-ring resolution order + fan-out · 0db8e049..0db8e049
 - 2026-11-23 · 70.2 · Missing-key message names ring, holder file, runbook · f0282a01..bc3974eb
+- 2026-11-23 · 70.3 · /oversight's custody-table presence check now documented · ea65207a..ea65207a
