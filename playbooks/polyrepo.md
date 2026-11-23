@@ -127,6 +127,30 @@ sits.
 
 ---
 
+## Where the custody map lives
+
+A `workspace`-ring secret
+(["Two rings"](../customization/secrets.md#two-rings)) is by
+definition shared across every product repo in the workspace,
+but each product repo keeps its own `nexus.secrets.json` and
+hence its own `setup/00_keys.md`. Duplicating a shared
+secret's full custody row in every product repo would drift
+out of sync the first time it's rotated — one row updated,
+the rest stale.
+
+The custody map for `workspace`-ring secrets rides the plan
+repo instead: `plan/setup/00_keys.md`, alongside the rest of
+the ledger already listed above under "State files stay
+identical" (`plan/README.md`, the specs, `plan/ARCHIVE.md`,
+and the rest). Each product repo's own `setup/00_keys.md`
+keeps full rows only for its own `local`-ring secrets. For a
+`workspace`-ring secret it carries a short pointer row
+instead of a duplicated full row — each repo's row points up
+at the plan repo's copy. A rotation then touches one row, not
+one per product repo.
+
+---
+
 ## Documented limitation: the cloud loop
 
 The Actions cloud loop (`playbooks/cloud-loop.md`) must run
