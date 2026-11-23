@@ -9,6 +9,14 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/.github/workflows/heartbeat.yml: the "Cancel wedged
+  runs" step reads `gh workflow list --all` once and skips a
+  watched workflow that isn't `active` (one log line, no
+  failure), matching the guard the "Alarm if a scheduled
+  workflow is not armed" step already used — previously any
+  disabled watched workflow failed this step under `bash -e`
+  and silently stopped the whole job, so the later alarm steps
+  never ran (2026-11-23, 71.1).
 - templates/workspace/KEYS.md: new — a names-only manifest of
   the workspace ring's secrets (`.env.workspace`): which key,
   which sibling repos read it, and where it's minted. No value
