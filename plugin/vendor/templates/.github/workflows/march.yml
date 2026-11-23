@@ -374,6 +374,10 @@ jobs:
           # GIT_AUTHOR_EMAIL:    '<id>+<username>@users.noreply.github.com'
           # GIT_COMMITTER_NAME:  '<username>'
           # GIT_COMMITTER_EMAIL: '<id>+<username>@users.noreply.github.com'
+          # Unattended retries on 429/529, capped well under this
+          # job's 300-minute timeout so a stuck wait still yields.
+          CLAUDE_CODE_RETRY_WATCHDOG: '1'
+          CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS: '1800000'
 
       # The UI walk's screenshots leave as a run artifact only when the
       # repo variable NEXUS_UI_ARTIFACTS is '1': a public repo's run
