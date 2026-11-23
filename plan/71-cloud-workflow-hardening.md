@@ -55,9 +55,6 @@ secrets"), so both build from the cloud.
 
 ## Acceptance
 
-- **A1** With a watched workflow disabled, the heartbeat's
-  cancel step logs a skip for it and exits 0, in the root
-  workflow and the template twin; the two later steps run.
 - **A2** `march.yml` and `night.yml` (root and template) set
   the retry watchdog and a max wait under each job's
   `timeout-minutes`, with the value shape confirmed against
@@ -68,17 +65,8 @@ secrets"), so both build from the cloud.
   path touched, and the gate is green.
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 3 open · 1 closed · next A5
 
-- [ ] **71.1** `heartbeat.yml`'s cancel step skips a
-  non-active workflow instead of failing · S · closes A1 ·
-  needs — · partial A4
-  - Root and template twin. Read `gh workflow list --all`
-    once, ahead of the three steps, and have the cancel loop
-    (today: no state guard at all) skip `$wf` when its state
-    isn't `active`, echoing one log line — matching the guard
-    the two later steps (`Alarm if a watched gate is red`,
-    `Alarm if a scheduled workflow is not armed`) already use.
 - [ ] **71.2** `march.yml` and `night.yml` cap the retry
   watchdog's wait under each job's timeout · M · closes A2 ·
   needs — · partial A4
