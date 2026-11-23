@@ -8,6 +8,26 @@
 
 ## Done
 
+### [x] [user-issue #127] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-23, same owner call as #96
+- category: external-issue
+- resolution: recurrence confirmed (`gh run list --workflow
+  march --event schedule` plus `templates/scripts/cloud/cadence.mjs
+  realized` this tick: 6 of 16 promised slots in 47h, 38%), but
+  no new lever exists. #96's close (2026-11-21, owner) already
+  chose the sprint preset's cron, every 3 hours at `:17`,
+  knowing GitHub delivers 3 to 4 scheduled runs a day here
+  regardless of what the cron promises, and that a fresh
+  report near the 40% line was expected ("close enough to the
+  40% line that the heartbeat may open a fresh report").
+  `march.yml`'s own cron comment documents the same tradeoff:
+  chained ticks carry the throughput, not the cron. Re-opening
+  `/oversight` for a question the owner answered two days ago
+  with full knowledge of this exact recurrence would be noise
+  (the #91 precedent). Closed with a comment pointing at #96;
+  a fresh issue fires on its own if the realized cadence stays
+  under 40% under some future schedule change, judged on its
+  own evidence.
+
 ### [x] [needs-user-call] re-mint `ACTIONS_PAT` with Contents and Workflows write, then pass it to the action as `github_token` — closed 2026-11-21
 - category: key-custody
 - resolution: the owner added Contents: Read and write to the
