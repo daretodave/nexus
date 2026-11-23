@@ -306,3 +306,5 @@ still pending at the move and live on as specs.
 - 2026-11-23 · 70.1 · bootstrap-automation.md documents the two-ring resolution order + fan-out · 0db8e049..0db8e049
 - 2026-11-23 · 70.2 · Missing-key message names ring, holder file, runbook · f0282a01..bc3974eb
 - 2026-11-23 · 70.3 · /oversight's custody-table presence check now documented · ea65207a..ea65207a
+- 2026-11-23 · 70.4 · polyrepo's custody map rides the plan repo · e5454308..e5454308
+- 2026-11-23 · 70 · spec complete: nexus's own `/bootstrap` and `/oversight` read both secret rings — `bootstrap-automation.md`'s resolution order + fan-out, the missing-key message naming ring/holder/runbook, `/oversight`'s names-only custody-row check, and `polyrepo.md`'s shared custody map riding the plan repo · deleted in (this commit)
