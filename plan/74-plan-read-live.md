@@ -101,8 +101,6 @@ and stop-on-mismatch at Step 4 itself (A3).
 
 ## Acceptance
 
-- **A1** The audit table exists, one row per plan read, with
-  its verdict.
 - **A2** Every read the audit marks stale is re-read at the
   point of use, with a test where the code is a script.
 - **A3** A mid-build change to the picked chunk (held,
@@ -116,20 +114,15 @@ and stop-on-mismatch at Step 4 itself (A3).
   live, the spec closes on A1 and A4 alone, and says so.
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 3 open · 1 closed · next A5
 
-- [ ] **74.1** Audit every plan-state read across `/next`'s
-  pick, claim, close and land steps, `/march`'s dispatch,
-  `order.mjs`, `settle.mjs` and `claims.mjs`: one table row per
-  read site (what it reads, when, live or stale), landed in
-  this spec's close · S · closes A1 · needs —
 - [ ] **74.2** Fix every read 74.1 marks stale so it re-reads
   at the point of use instead of reusing an earlier read, a
-  test where the fix is a script · L · closes A2 · needs 74.1
+  test where the fix is a script · L · closes A2 · needs —
 - [ ] **74.3** Before `/next`'s close, re-read the picked
   chunk's live status (held, claimed elsewhere, already
   closed) and stop the run with a named reason on a mismatch,
-  never overwrite · S · closes A3 · needs 74.1
+  never overwrite · S · closes A3 · needs —
 - [ ] **74.4** `concepts/plan-shape.md` gains a short "read
   live" rule naming the pattern · S · closes A4 · needs 74.2,
   74.3
