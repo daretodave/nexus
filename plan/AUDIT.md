@@ -8,6 +8,36 @@
 
 ## Done
 
+### [x] [user-issue #128] [HIGH] heartbeat: march has flatlined (2026-11-23) — closed 2026-11-24, schedule throttling not a code defect
+- category: external-issue
+- resolution: `gh run list --workflow march -L 30` this tick
+  shows a genuine ~13.6h gap with no scheduled run between
+  2026-11-23T12:32:52Z and this tick's 2026-11-24T02:12:13Z,
+  but every run in the window that did fire (schedule or
+  dispatch) completed `success` — no failing run, no auth
+  error, just GitHub not firing the `17 */3 * * *` cron for a
+  stretch, the same root cause `templates/scripts/cloud/cadence.mjs
+  realized` measures for the sibling #129 report this tick (38%
+  over 72h). Same shape as #93's 2026-11-07 close ("schedule
+  throttling, not a code defect"): the watchdog's own job is
+  firing this tick, so the gap already recovered. No new code
+  lever; closed with a comment pointing at #93.
+
+### [x] [user-issue #129] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-24, same owner call as #127/#96/#91
+- category: external-issue
+- resolution: recurrence confirmed (`templates/scripts/cloud/cadence.mjs
+  realized` against `gh run list --workflow march --event
+  schedule -L 30` this tick: 9 of 24 promised slots in 72h,
+  38%), but no new lever exists beyond what #96 (2026-11-21)
+  and #127 (2026-11-23) already settled: the owner chose the
+  sprint preset's cron, every 3 hours at `:17`, off the busy
+  top of the hour, with full knowledge GitHub would keep
+  delivering under 40% of the promised slots and that chained
+  ticks, not the cron, carry the throughput. Re-opening
+  `/oversight` for a question the owner answered twice already
+  would be noise (the #91 precedent). Closed with a comment
+  pointing at #127.
+
 ### [x] [user-issue #127] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-23, same owner call as #96
 - category: external-issue
 - resolution: recurrence confirmed (`gh run list --workflow
