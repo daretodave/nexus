@@ -3,7 +3,7 @@
 > Last pass: 2026-11-18
 > Pass count: 28
 > Posture: bold
-> Last field research: 2026-11-13
+> Last field research: 2026-11-24
 
 ## Pending
 
@@ -397,6 +397,24 @@
   (the staleness fix already shipped) and the pending "[score
   7.0] heartbeat's wedged-run canceller" row above (different
   step, different failure shape).
+
+### [ ] [score 6.0] early reasoning drift hides until recovery is no longer possible
+- proposed: 2026-11-24 (research)
+- source signals: field (2026-11-24): a large study of coding-agent runs found failures are mostly early reasoning mistakes, not final syntax errors, and they stay invisible until it is too late to recover; the paper argues for checkpoin…
+- rationale: a loop that only validates once, at the very end of a build, cannot tell where in the run a builder's reasoning first went wrong; an earlier checkpoint would catch a drifting build while undoing it is still cheap.
+- proposed scope: whether the chunk-build loop should check a builder's intermediate state partway through a chunk, not only run one gate after the diff is already written
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-24
+
+### [ ] [score 6.0] capping retries against a failing check before escalating
+- proposed: 2026-11-24 (research)
+- source signals: field (2026-11-24): guidance for agents with write access and no guardrails recommends a small retry cap, around three attempts, against a failing check before stopping and handing the failure to a person instead of loo…
+- rationale: a builder that keeps retrying the same gate with no cap can burn a tick's whole budget on one failing chunk, or worse, loop toward a desperate edit; a stated cap with a clear escalation path (a blocked note, a needs-user row) bounds that.
+- proposed scope: whether the chunk-build skill's builder dispatch states a retry limit against the gate before it escalates, rather than leaving the number open-ended
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-24
 
 ## Promoted
 
