@@ -2,7 +2,8 @@
 // done for the chunks that need it; held, plan-only and other-base specs, held chunks, chunks others claim and needs
 // nothing will close are listed apart; a pending close counts as closed; the render marks just-plotted chunks; a bad
 // --limit prints usage; a chunk whose secret the vault lacks parks (the owner), and one naming any secret is the
-// owner's alone (a contributor skips it).
+// owner's alone (a contributor skips it); statusOf reads a chunk id's live status (ready, held, a needs reason,
+// claimed <who>, or closed) off a freshly simulated order.
 // node:test, no deps, no git (the usage test runs the script, which stops before git).
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -10,7 +11,7 @@ import os from 'node:os';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parseSpec } from '../plan-check.mjs';
-import { lanes, parseLimit, render, rows, secretsMissing, simulate } from '../plan/order.mjs';
+import { lanes, parseLimit, render, rows, secretsMissing, simulate, statusOf } from '../plan/order.mjs';
 
 const readme = (asap = '- (none)', held = '- (none)', extra = '') => [
   '## Lanes', '', '**Asap** (built before the table):', '', asap, '', '**Held** (waits):', '', held, '', '## Specs', '',
@@ -90,6 +91,33 @@ describe('the simulated order', () => {
     const out = render(simulate({ readme: readme(), specs: specs() }), { mark: new Set(['07.1', '07.3']), limit: 3 });
     assert.match(out, /3 {2}07\.1 .*<-- just plotted/);
     assert.match(out, /… 2 more \(07\.3 at 5: just plotted\)/);
+  });
+});
+
+describe('statusOf: a chunk id\'s live status from a fresh simulate()', () => {
+  it('reports a chunk in next as ready', () => {
+    const sim = simulate({ readme: readme(), specs: specs() });
+    assert.equal(statusOf(sim, '09.1'), 'ready');
+  });
+
+  it("reports a chunk whose spec is in the Held lane as held", () => {
+    const sim = simulate({ readme: readme('- (none)', '- 09'), specs: specs() });
+    assert.equal(statusOf(sim, '09.1'), 'held');
+  });
+
+  it('reports a chunk blocked on an unmet needs with the reason text', () => {
+    const sim = simulate({ readme: readme('- (none)', '- 09'), specs: specs() });
+    assert.equal(statusOf(sim, '07.3'), 'needs 09.2');
+  });
+
+  it('reports a live foreign claim as claimed <who>, ahead of ready/blocked', () => {
+    const sim = simulate({ readme: readme(), specs: specs(), claims: { '09.1': { who: 'sam', mine: false } } });
+    assert.equal(statusOf(sim, '09.1'), 'claimed sam');
+  });
+
+  it('reports an id listed in no spec as closed', () => {
+    const sim = simulate({ readme: readme(), specs: specs() });
+    assert.equal(statusOf(sim, '99.9'), 'closed');
   });
 });
 
