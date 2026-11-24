@@ -56,4 +56,19 @@ say when to reach for it, after checking what it does.
 ## Chunks
 Measure: 3 open · 0 closed · next A4
 
-Not chunked yet.
+- [ ] **73.1** Run the audit on this repo, fix or file what it
+  flags · S · closes A1 · needs —
+  - Local session only: the full checkup (`/doctor
+    prompt-audit`, also `/checkup prompt-audit`) is a slash
+    command a human types into an interactive session; a
+    nested `claude -p` call from this cloud tick's shell has
+    no login (confirmed this tick — `Not logged in · Please
+    run /login`), and `claude doctor` the CLI subcommand is
+    only an installation-health check, not the prompt audit.
+    No cloud-tick credential closes that gap.
+- [ ] **73.2** Document what the audit checks, when to run it,
+  and how it differs from the gate; link it from the skills
+  anatomy doc · S · closes A2, A3 · needs 73.1
+  - The subsection's content (the invocation, the report's
+    shape) comes from 73.1's real run, not a guess from the
+    changelog line (spec Design, first bullet).
