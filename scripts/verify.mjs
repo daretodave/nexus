@@ -340,7 +340,7 @@ function stripTreeComment(raw) {
 
 // prefix: '' for a root that IS disk root (nexus/); a real subdirectory
 // name (e.g. 'templates') for a root that maps under ROOT.
-function parseTreeBlock(text, rootLabel, prefix) {
+export function parseTreeBlock(text, rootLabel, prefix) {
   const lines = text.split(/\r?\n/)
   let inTree = false
   let sawRoot = false
@@ -377,7 +377,7 @@ function parseTreeBlock(text, rootLabel, prefix) {
 // at a nested dir that's itself a collapsed entry (e.g. `claude/commands/`
 // inside an expanded `claude/`) instead of reverse-checking its contents
 // too — a collapsed line is satisfied as-is, at any depth.
-function walkFiles(dirAbs, rootAbs, entries, isExpanded) {
+export function walkFiles(dirAbs, rootAbs, entries, isExpanded) {
   let out = []
   for (const entry of fs.readdirSync(dirAbs, { withFileTypes: true })) {
     const abs = path.join(dirAbs, entry.name)
@@ -448,7 +448,31 @@ export function missingRootFiles(tracked, prefix, entries, selfFile) {
     .filter((rel) => !entries.includes(rel))
 }
 
-function legTree() {
+// isExpanded: a dir's entry is enumerated (diagram lists its children)
+// rather than collapsed to one line — "does some other entry start with
+// this one plus a slash." Exported for scripts/__tests__.
+export function isExpanded(rel, allEntries) {
+  return [...allEntries].some((e) => e !== rel && e.startsWith(`${rel}/`))
+}
+
+// Every top-level dir either diagram expands (not collapsed to one line)
+// becomes a reverse-check candidate automatically — no hand-kept list to
+// fall out of step with the diagrams — minus the explicit exclusions
+// above. Exported for scripts/__tests__: the pure core of the "newly
+// expanded dir picked up with no edit to the gate" and "excluded dir
+// passes" cases (72.3).
+export function deriveReverseCheckDirs(topLevelEntries, allEntries) {
+  let candidates = [...topLevelEntries].filter((d) => isExpanded(d, allEntries)).filter((d) => !EXCLUDE_DIRS.includes(d))
+  // Prefer the most specific candidate: when both a dir and one of its
+  // own children qualify (e.g. `templates` from README.md's abbreviated
+  // view, and `templates/claude` from templates/README.md's exhaustive
+  // one), drop the ancestor so a miss is reported against the narrowest
+  // dir and files aren't walked twice.
+  candidates = candidates.filter((d) => !candidates.some((other) => other !== d && other.startsWith(`${d}/`)))
+  return candidates.sort()
+}
+
+export function legTree() {
   const failures = []
   const trees = [
     { file: 'README.md', prefix: '', ...parseTreeBlock(read('README.md'), 'nexus/', '') },
@@ -473,24 +497,13 @@ function legTree() {
     }
   }
 
-  // Every top-level dir either diagram expands (not collapsed to one
-  // line) becomes a reverse-check candidate automatically — no hand-kept
-  // list to fall out of step with the diagrams — minus the explicit
-  // exclusions above.
-  const isExpanded = (rel) => [...allEntries].some((e) => e !== rel && e.startsWith(`${rel}/`))
-  let candidates = [...topLevelEntries].filter(isExpanded).filter((d) => !EXCLUDE_DIRS.includes(d))
-  // Prefer the most specific candidate: when both a dir and one of its
-  // own children qualify (e.g. `templates` from README.md's abbreviated
-  // view, and `templates/claude` from templates/README.md's exhaustive
-  // one), drop the ancestor so a miss is reported against the narrowest
-  // dir and files aren't walked twice.
-  candidates = candidates.filter((d) => !candidates.some((other) => other !== d && other.startsWith(`${d}/`)))
+  const candidates = deriveReverseCheckDirs(topLevelEntries, allEntries)
 
   let reverseChecked = 0
-  for (const dirRel of candidates.sort()) {
+  for (const dirRel of candidates) {
     const dirAbs = path.join(ROOT, dirRel)
     if (!fs.existsSync(dirAbs)) continue
-    for (const abs of walkFiles(dirAbs, ROOT, allEntries, isExpanded)) {
+    for (const abs of walkFiles(dirAbs, ROOT, allEntries, (rel) => isExpanded(rel, allEntries))) {
       const rel = normalize(path.relative(ROOT, abs))
       reverseChecked++
       if (!allEntries.has(rel)) {
