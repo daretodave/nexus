@@ -128,11 +128,14 @@ goes back once, then the lead finishes it.
 1. The verify gate (`node scripts/verify.mjs`)
    in the worktree, **foreground**, by the lead. Red → the
    builder's brief gets the log; ≤ 3 rounds on one root cause.
-2. Write `plan/pending/<id>.md` (`next/land.md` §2): `close`,
+2. `git fetch origin`; re-read the chunk's live status (`node
+   scripts/plan/order.mjs status <id> --ref origin/<base>`).
+   Not `ready` → stop loud with that reason, never overwrite.
+3. Write `plan/pending/<id>.md` (`next/land.md` §2): `close`,
    `date`, `says` (≤ 10 words, what now works), `footguns:`,
    and only when needed `## Edit`, `## Decisions`,
    `## Footguns`. Never edit a shared plan file yourself.
-3. Gate again; commit `plan: close <id>` alone.
+4. Gate again; commit `plan: close <id>` alone.
 
 ### Step 5 — Land per owner mode
 
