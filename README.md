@@ -311,7 +311,8 @@ its name — and the hardest to reach; most projects stay at 3.
 nexus/
 ├── README.md                          # this file
 ├── intervention-spectrum.md           # the levels in detail
-├── agents.md                          # + CLAUDE.md: nexus's OWN rule book (the kit runs on itself), pointer at it
+├── agents.md                          # nexus's OWN rule book (the kit runs on itself); standing rules are non-negotiable
+├── CLAUDE.md                          # pointer at agents.md for Claude Code specifically — not a rule book itself
 ├── CONTRIBUTING.md                    # how to contribute
 ├── CHANGELOG.md                       # templates/** history, keyed by path (surfaced at upgrade time)
 ├── prompts/                           # canonical paste-prompts — versioned, public API
