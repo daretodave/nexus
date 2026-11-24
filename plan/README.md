@@ -33,7 +33,6 @@ line goes; each line is a lock that times out, so it carries
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 73 | Prompt audit joins the kit's prompt-maintenance story | [73-prompt-audit-story.md](73-prompt-audit-story.md) | planned | 0 of 2 chunks |
-| 74 | Every step reads the plan live | [74-plan-read-live.md](74-plan-read-live.md) | planned | 3 of 4 chunks |
 | 75 | Which loop failure modes the gate catches, and which it takes on trust | [75-loop-failure-modes.md](75-loop-failure-modes.md) | planned | not chunked yet |
 | 76 | The reboot train against the runtime's own session calls | [76-native-session-primitives.md](76-native-session-primitives.md) | planned | not chunked yet |
 

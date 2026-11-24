@@ -319,3 +319,5 @@ still pending at the move and live on as specs.
 - 2026-11-24 · 74.1 · Spec 74 now has an audit table of plan-state reads · ec08a9a0..ec08a9a0
 - 2026-11-24 · 74.2 · order.mjs's statusOf/status CLI gives a chunk's live status, tested · 5edc3e63..7052448c
 - 2026-11-24 · 74.3 · /next's close re-checks the chunk's live status first · 2440e2f5..2440e2f5
+- 2026-11-24 · 74.4 · plan-shape.md names the read-live rule · c4b17f7b..c4b17f7b
+- 2026-11-24 · 74 · spec complete: audited every place `/next`, `/march`'s dispatch and the plan scripts read plan state and classified each read live or stale; found one stale read (`/next`'s close acting on an earlier pick), fixed by 74.2's `order.mjs status` CLI and 74.3's re-read before the pending close; `concepts/plan-shape.md`'s "Reading plan state live" section is the lasting rule · deleted in (this commit)
