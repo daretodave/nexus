@@ -56,4 +56,18 @@ chunk another session has since claimed, held or closed.
 ## Chunks
 Measure: 4 open · 0 closed · next A5
 
-Not chunked yet.
+- [ ] **74.1** Audit every plan-state read across `/next`'s
+  pick, claim, close and land steps, `/march`'s dispatch,
+  `order.mjs`, `settle.mjs` and `claims.mjs`: one table row per
+  read site (what it reads, when, live or stale), landed in
+  this spec's close · S · closes A1 · needs —
+- [ ] **74.2** Fix every read 74.1 marks stale so it re-reads
+  at the point of use instead of reusing an earlier read, a
+  test where the fix is a script · L · closes A2 · needs 74.1
+- [ ] **74.3** Before `/next`'s close, re-read the picked
+  chunk's live status (held, claimed elsewhere, already
+  closed) and stop the run with a named reason on a mismatch,
+  never overwrite · S · closes A3 · needs 74.1
+- [ ] **74.4** `concepts/plan-shape.md` gains a short "read
+  live" rule naming the pattern · S · closes A4 · needs 74.2,
+  74.3
