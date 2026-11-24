@@ -413,6 +413,41 @@ const EXCLUDE_DIRS = [
   'packages',      // packages/cli is its own package (own CI gate), not kit content adopters copy
 ]
 
+// Same convention as EXCLUDE_DIRS above, but for the root-file reverse-
+// check below: files tracked at a tree's own root that are VCS/boilerplate,
+// never adopter-facing content, so a tree diagram not naming them is by
+// design rather than drift. Matched by basename, since both roots (repo
+// root and templates/) could in principle carry one.
+const EXCLUDE_ROOT_FILES = [
+  '.gitattributes', // VCS config, never adopter-facing content
+  '.gitignore',     // VCS config, never adopter-facing content
+  'LICENSE',        // legal boilerplate, never adopter-facing content
+]
+
+// Tracked files directly at `prefix`'s root (no subdirectory traversal):
+// '' for a root that IS disk root; 'templates' for a root that maps under
+// ROOT. git ls-files lists tracked files only — never directories — so
+// filtering by path depth already yields "files directly at this root,"
+// with no extra fs.statSync call needed.
+export function rootFiles(tracked, prefix) {
+  const depth = prefix ? prefix.split('/').length : 0
+  return tracked.filter((f) => f && (!prefix || f.startsWith(`${prefix}/`)) && f.split('/').length === depth + 1)
+}
+
+// Exported for scripts/__tests__: tracked root files that aren't named as
+// their own entry in this tree's parsed entries, minus the exclusions
+// above and the tree-bearing file itself (`selfFile`) — a tree doc isn't
+// required to list itself (README.md's root tree does, templates/README.md's
+// doesn't; both are fine, so self-reference is never required rather than
+// sometimes-enforced). The pure core of the A3 check legTree runs against
+// both trees.
+export function missingRootFiles(tracked, prefix, entries, selfFile) {
+  return rootFiles(tracked, prefix)
+    .filter((rel) => rel !== selfFile)
+    .filter((rel) => !EXCLUDE_ROOT_FILES.includes(path.basename(rel)))
+    .filter((rel) => !entries.includes(rel))
+}
+
 function legTree() {
   const failures = []
   const trees = [
@@ -463,9 +498,22 @@ function legTree() {
       }
     }
   }
+  // Each tree's own root, non-recursively: a tracked file directly at
+  // that root that neither tree names is drift walkFiles above can't
+  // see, since it only walks directories a diagram already expands.
+  const tracked = execSync('git ls-files', { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 }).split(/\r?\n/).filter(Boolean)
+  let rootChecked = 0
+  for (const t of trees) {
+    if (!t.sawRoot) continue
+    rootChecked += rootFiles(tracked, t.prefix).length
+    for (const rel of missingRootFiles(tracked, t.prefix, t.entries, t.file)) {
+      failures.push(`${rel}: tracked at the ${t.prefix || 'repo'} root but missing from ${t.file}'s tree diagram`)
+    }
+  }
+
   const shape = repoShapeCheck()
   failures.push(...shape.failures)
-  return { failures, note: `${checked} tree entries, ${reverseChecked} files reverse-checked, ${shape.dirs} top-level dirs in agents.md's repo shape` }
+  return { failures, note: `${checked} tree entries, ${reverseChecked} files reverse-checked, ${rootChecked} root files checked, ${shape.dirs} top-level dirs in agents.md's repo shape` }
 }
 
 // agents.md's repo shape names every tracked top-level directory,
@@ -1665,4 +1713,8 @@ async function main() {
   process.exit(red ? 1 : 0)
 }
 
-main()
+// Guarded like scripts/plan/ui-rows.mjs's own main: importing this module
+// (e.g. scripts/__tests__/tree-leg.test.mjs importing rootFiles/missingRootFiles)
+// must not run the gate or call process.exit as a side effect — only running
+// it directly as a script should.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()
