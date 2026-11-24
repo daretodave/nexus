@@ -259,6 +259,23 @@ that is already there (two rewrites of one paragraph still
 collide), and a new chunk can't `needs` one still in another
 open pull request. This too was learned from a mature adopter.
 
+## Reading plan state live
+
+A skill step or script that depends on plan state — a lane,
+a chunk's `needs`, a Held line, the claims ref, a pending
+close — reads it at the point it decides or acts, never reuses
+a value read earlier in the same run. Another session can
+pick, hold, claim or close a chunk while this one is mid-build,
+so a decision made on an earlier read is a guess about the
+present, not a fact.
+
+A fresh script invocation is live by construction: a new
+process reads the plan files from disk each time it runs, so
+it needs no special handling. What to watch is skill prose: a
+step that reuses an earlier Step's read across a build or a
+wait is the case that goes stale. The pattern is named "read
+live" so a new skill can cite it instead of reinventing it.
+
 ## The gate
 
 `scripts/plan-check.mjs` (a template; adopters add it to their
