@@ -32,7 +32,6 @@ line goes; each line is a lock that times out, so it carries
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
-| 72 | The gate's tree check reads its directories from the tree diagrams | [72-tree-check-from-diagrams.md](72-tree-check-from-diagrams.md) | planned | 3 chunks, 0 done |
 | 73 | Prompt audit joins the kit's prompt-maintenance story | [73-prompt-audit-story.md](73-prompt-audit-story.md) | planned | not chunked yet |
 | 74 | Every step reads the plan live | [74-plan-read-live.md](74-plan-read-live.md) | planned | not chunked yet |
 | 75 | Which loop failure modes the gate catches, and which it takes on trust | [75-loop-failure-modes.md](75-loop-failure-modes.md) | planned | not chunked yet |
