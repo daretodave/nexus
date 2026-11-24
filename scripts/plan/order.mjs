@@ -18,11 +18,16 @@
 // never what it is. `--no-vault` skips the vault check (the contributor rule stays).
 //
 //   node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--no-vault] [--json]
+//   node scripts/plan/order.mjs status <id> [--ref origin/main] [--no-vault]
 //
 // --mark flags chunks as "just plotted" (/plot's after picture; a pending `## Add`'s `07.?slug` reads as the number it
 // settles as); --ref reads the plan at a ref instead of the files; --limit (a whole number from 1, 12 when left out)
 // caps the next-up list the text view prints. Anything else after --limit (a word, 0, a negative, a fraction,
 // nothing) prints usage and exits 64, never an empty list.
+//
+// `status <id>` loads the plan fresh and prints that id's live status (see `statusOf`) as a single line: 'ready',
+// 'held', 'needs 07.1', 'claimed sam', or 'closed' for an id listed nowhere (already landed, or never existed). A
+// caller (a skill, later) shells out to this at the point it acts, rather than trusting a status read earlier.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -145,6 +150,20 @@ export function simulate({ readme, specs, closed = new Set(), claims = {}, base 
   return { inFlight, next, blocked, unchunked };
 }
 
+/** `id`'s live status right now, from a freshly simulated `sim` (`simulate()`'s return): 'ready' (in `next`),
+ * 'claimed <who>' (another session's live claim, in `inFlight`), the blocked reason (`blocked`'s `why` —
+ * 'held', 'needs 07.1', etc.), or 'closed' (not listed anywhere: no spec names it, or a pending close already
+ * closes it) — the same "done" rule `/next`'s Step 1 uses. A caller that re-runs `load()`/`simulate()` and this
+ * function at the point it acts never decides on a value read earlier in the same tick.
+ */
+export function statusOf({ inFlight, next, blocked }, id) {
+  const foreign = inFlight.find((c) => c.id === id);
+  if (foreign) return `claimed ${foreign.who}`;
+  if (next.some((c) => c.id === id)) return 'ready';
+  const b = blocked.find((c) => c.id === id);
+  return b ? b.why : 'closed';
+}
+
 export const USAGE = 'usage: node scripts/plan/order.mjs [--ref origin/main] [--mark 34.1,34.2] [--limit 12] [--no-vault] [--json]';
 
 /** The vault's answer as missing(names): the names no ring holds and the environment doesn't set. Names only. */
@@ -245,6 +264,12 @@ async function main(argv) {
     return i >= 0 ? argv[i + 1] : undefined;
   };
   const ref = val('--ref');
+  if (argv[0] === 'status') {
+    const cwd = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+    const plan = await load(path.resolve(cwd), ref, { vault: !argv.includes('--no-vault') });
+    console.log(statusOf(simulate(plan), argv[1]));
+    return 0;
+  }
   const marked = (val('--mark') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   const limit = parseLimit(argv.includes('--limit') ? (val('--limit') ?? null) : undefined);
   if (limit === null) {
