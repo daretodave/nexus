@@ -371,57 +371,91 @@ function parseTreeBlock(text, rootLabel, prefix) {
   return { entries, sawRoot }
 }
 
-function walkFiles(dirAbs) {
+// isExpanded/entries: the same "does some other entry start with this
+// one plus a slash" test legTree uses to decide a dir is enumerated
+// rather than collapsed to one line. Passed through so the walk can stop
+// at a nested dir that's itself a collapsed entry (e.g. `claude/commands/`
+// inside an expanded `claude/`) instead of reverse-checking its contents
+// too — a collapsed line is satisfied as-is, at any depth.
+function walkFiles(dirAbs, rootAbs, entries, isExpanded) {
   let out = []
   for (const entry of fs.readdirSync(dirAbs, { withFileTypes: true })) {
     const abs = path.join(dirAbs, entry.name)
-    out = entry.isDirectory() ? out.concat(walkFiles(abs)) : out.concat([abs])
+    if (entry.isDirectory()) {
+      const rel = normalize(path.relative(rootAbs, abs))
+      if (entries.has(rel) && !isExpanded(rel)) continue // collapsed by design — satisfied as one line
+      out = out.concat(walkFiles(abs, rootAbs, entries, isExpanded))
+    } else {
+      out.push(abs)
+    }
   }
   return out
 }
 
-// The dirs adopters bulk-copy whole. When a tree diagram enumerates a
-// dir's children (vs. leaving it as one collapsed entry, e.g.
-// `claude/commands/` — "one terse pointer per skill" — deliberately
-// isn't expanded), a real file missing from every diagram's entry set
-// is exactly the failure mode that shipped __tests__/loop-issue.test.mjs
-// silently: catch it here instead.
-const REVERSE_CHECK_DIRS = [
-  'templates/scripts', 'templates/skills',
-  'templates/claude/commands', 'templates/claude/agents',
-  'templates/plan', 'templates/workspace',
-  'templates/.github', 'templates/data',
-  'templates/setup', 'templates/env', 'templates/identity',
+// README.md's own "What's in this kit" tree is a map of the kit, not an
+// exhaustive index: it bundles sibling files into a trailing `+ a, b: ...`
+// comment instead of giving each its own line (see e.g. its `scripts/`
+// or `skills/` rows), so a file-by-file reverse-check against it reads
+// every bundled sibling as "missing." templates/README.md's tree carries
+// no such shorthand — it's the one layout adopters bulk-copy verbatim —
+// so only its top-level dirs are safe to derive and reverse-check
+// automatically. This list is what running the gate against the derived
+// candidates actually surfaced; each entry is why it can't be reverse-
+// checked, not a directory nobody got round to expanding.
+const EXCLUDE_DIRS = [
+  'scripts',       // README.md bundles siblings via "+ file, file: ..."; not exhaustive
+  'skills',        // same bundling convention
+  'playbooks',     // same bundling convention
+  'concepts',      // same bundling convention
+  'customization', // same bundling convention
+  'prompts',       // same bundling convention
+  'assets',        // generated diagrams/gifs named selectively, not enumerated file-by-file
+  'packages',      // packages/cli is its own package (own CI gate), not kit content adopters copy
 ]
 
 function legTree() {
   const failures = []
   const trees = [
-    { file: 'README.md', ...parseTreeBlock(read('README.md'), 'nexus/', '') },
-    { file: 'templates/README.md', ...parseTreeBlock(read('templates/README.md'), 'templates/', 'templates') },
+    { file: 'README.md', prefix: '', ...parseTreeBlock(read('README.md'), 'nexus/', '') },
+    { file: 'templates/README.md', prefix: 'templates', ...parseTreeBlock(read('templates/README.md'), 'templates/', 'templates') },
   ]
   const allEntries = new Set()
+  const topLevelEntries = new Set()
   let checked = 0
   for (const t of trees) {
     if (!t.sawRoot) {
       failures.push(`${t.file}: could not find its fenced tree block`)
       continue
     }
+    const topLevelPattern = t.prefix ? new RegExp(`^${t.prefix}/[^/]+$`) : /^[^/]+$/
     for (const rel of t.entries) {
       checked++
       allEntries.add(rel)
+      if (topLevelPattern.test(rel)) topLevelEntries.add(rel)
       if (!fs.existsSync(path.join(ROOT, rel))) {
         failures.push(`${t.file} tree: ${rel} does not exist on disk`)
       }
     }
   }
+
+  // Every top-level dir either diagram expands (not collapsed to one
+  // line) becomes a reverse-check candidate automatically — no hand-kept
+  // list to fall out of step with the diagrams — minus the explicit
+  // exclusions above.
+  const isExpanded = (rel) => [...allEntries].some((e) => e !== rel && e.startsWith(`${rel}/`))
+  let candidates = [...topLevelEntries].filter(isExpanded).filter((d) => !EXCLUDE_DIRS.includes(d))
+  // Prefer the most specific candidate: when both a dir and one of its
+  // own children qualify (e.g. `templates` from README.md's abbreviated
+  // view, and `templates/claude` from templates/README.md's exhaustive
+  // one), drop the ancestor so a miss is reported against the narrowest
+  // dir and files aren't walked twice.
+  candidates = candidates.filter((d) => !candidates.some((other) => other !== d && other.startsWith(`${d}/`)))
+
   let reverseChecked = 0
-  for (const dirRel of REVERSE_CHECK_DIRS) {
-    const isExpanded = [...allEntries].some((e) => e !== dirRel && e.startsWith(`${dirRel}/`))
-    if (!isExpanded) continue // collapsed to one entry in every diagram by design — nothing to reverse-check
+  for (const dirRel of candidates.sort()) {
     const dirAbs = path.join(ROOT, dirRel)
     if (!fs.existsSync(dirAbs)) continue
-    for (const abs of walkFiles(dirAbs)) {
+    for (const abs of walkFiles(dirAbs, ROOT, allEntries, isExpanded)) {
       const rel = normalize(path.relative(ROOT, abs))
       reverseChecked++
       if (!allEntries.has(rel)) {
