@@ -101,8 +101,6 @@ and stop-on-mismatch at Step 4 itself (A3).
 
 ## Acceptance
 
-- **A2** Every read the audit marks stale is re-read at the
-  point of use, with a test where the code is a script.
 - **A3** A mid-build change to the picked chunk (held,
   claimed elsewhere, closed) is detected before the close
   and stops the run with a named reason.
@@ -114,15 +112,12 @@ and stop-on-mismatch at Step 4 itself (A3).
   live, the spec closes on A1 and A4 alone, and says so.
 
 ## Chunks
-Measure: 3 open · 1 closed · next A5
+Measure: 2 open · 2 closed · next A5
 
-- [ ] **74.2** Fix every read 74.1 marks stale so it re-reads
-  at the point of use instead of reusing an earlier read, a
-  test where the fix is a script · L · closes A2 · needs —
 - [ ] **74.3** Before `/next`'s close, re-read the picked
   chunk's live status (held, claimed elsewhere, already
   closed) and stop the run with a named reason on a mismatch,
   never overwrite · S · closes A3 · needs —
 - [ ] **74.4** `concepts/plan-shape.md` gains a short "read
-  live" rule naming the pattern · S · closes A4 · needs 74.2,
+  live" rule naming the pattern · S · closes A4 · needs 
   74.3

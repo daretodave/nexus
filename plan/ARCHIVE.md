@@ -317,3 +317,4 @@ still pending at the move and live on as specs.
 - 2026-11-24 · 72.3 · tree leg's helpers export; tests cover the three new cases · 53e5b963..53e5b963
 - 2026-11-24 · 72 · spec complete: the gate's tree leg derives its reverse-check directory list from the README/templates tree diagrams instead of a hand-kept list — `legTree` builds candidates from parsed tree entries (`deriveReverseCheckDirs`, `isExpanded`), a short `EXCLUDE_DIRS` list (each with its reason) replaces the old allowlist, and a non-recursive root walk catches a tracked root file missing from either tree; `scripts/__tests__/tree-leg.test.mjs` covers all three cases pure, no disk or git · deleted in (this commit)
 - 2026-11-24 · 74.1 · Spec 74 now has an audit table of plan-state reads · ec08a9a0..ec08a9a0
+- 2026-11-24 · 74.2 · order.mjs's statusOf/status CLI gives a chunk's live status, tested · 5edc3e63..7052448c
