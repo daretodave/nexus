@@ -313,3 +313,4 @@ still pending at the move and live on as specs.
 - 2026-11-24 · 71.3 · Both retry-watchdog vars and their timeout headroom are now documented · bb83d7d9..bb83d7d9
 - 2026-11-24 · 71 · spec complete: two cloud-workflow failure modes fixed — `heartbeat.yml`'s cancel loop skips a non-active watched workflow instead of failing under it, and `march.yml`/`night.yml` set `CLAUDE_CODE_RETRY_WATCHDOG` with a `MAX_WAIT_MS` comfortably under each job's `timeout-minutes` so a transient 429/529 waits out the cap instead of failing the run; `.github/CLOUD_LOOP.md` and `playbooks/cloud-loop.md` name both variables and the cap · deleted in (this commit)
 - 2026-11-24 · 72.1 · legTree derives reverse-check dirs from tree diagrams · 7a487540..7a487540
+- 2026-11-24 · 72.2 · tree leg fails a tracked root file missing from its tree diagram · a282baca..0680cbc5

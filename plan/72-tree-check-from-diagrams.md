@@ -45,35 +45,15 @@ something the gate should have caught.
 
 ## Acceptance
 
-- **A3** A tracked root-level file missing from the root tree
-  fails the `tree` leg.
 - **A4** The leg's tests cover the three cases above, and the
   gate is green on the repo as it stands (any drift the wider
   check finds is fixed in the same chunk).
 
 ## Chunks
-Measure: 2 open · 2 closed · next A5
+Measure: 1 open · 3 closed · next A5
 
-- [ ] **72.2** The `tree` leg walks each tree's own root,
-  non-recursively, and fails a tracked root file missing from
-  that root's tree · M · closes A3 · needs —
-  - This chunking session counted the repo's tracked
-    root-level files against README.md's root tree: four
-    aren't named as their own entry — `.gitattributes`,
-    `.gitignore`, `CLAUDE.md` and `LICENSE` (`CLAUDE.md` is
-    only mentioned inside `agents.md`'s tree-line comment,
-    which the parser doesn't read as a listing). Four is the
-    spec's "a handful" case, so this chunk fixes the trees
-    first instead of splitting: add a `CLAUDE.md` line to
-    README.md's root tree (real, adopter-relevant content —
-    exactly the gap the spec's Why section names), and
-    exclude `.gitattributes`, `.gitignore` and `LICENSE` the
-    same way as a directory exclusion (VCS/boilerplate, never
-    adopter-facing content). `templates/README.md`'s own root
-    already names every one of its root files, so the same
-    walk applied there finds no drift to fix.
 - [ ] **72.3** Tests beside the `tree` leg cover the three new
-  cases · S · closes A4 · needs 72.2
+  cases · S · closes A4 · needs —
   - `legTree`, `parseTreeBlock` and the new derivation/root-walk
     helpers export from `scripts/verify.mjs` for a new
     `scripts/__tests__/tree-leg.test.mjs` (the package's
