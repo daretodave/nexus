@@ -410,6 +410,26 @@ gh secret delete NETLIFY_AUTH_TOKEN  # if you added it for cloud only
 The local loop is unchanged. Nothing else needs to be
 reverted.
 
+## The retry watchdog
+
+`march.yml` and `night.yml` both set two env vars on the
+model step, so a transient 429/529 waits out a cap instead
+of failing the run:
+
+- `CLAUDE_CODE_RETRY_WATCHDOG: '1'` — arms the watchdog (no
+  other value is documented).
+- `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS` — the cap, in
+  milliseconds, written as a string.
+
+The template ships `'1800000'` (30 min) in both files,
+comfortably under `march.yml`'s 300-minute
+`timeout-minutes` and `night.yml`'s 60-minute one. Keep any
+cap you tune well under the job's own `timeout-minutes`: a
+stuck wait should still yield control back to the job
+instead of the job timing out mid-wait with no clean exit.
+nexus's own root workflows run shorter jobs and cap tighter
+to match — see `.github/CLOUD_LOOP.md`.
+
 ## Failure mode: the post-result exit hang
 
 The one failure that wedges the loop instead of just blocking a

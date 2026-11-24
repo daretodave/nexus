@@ -156,6 +156,17 @@ the failure mode of the thing it watches.
   `gh variable set NEXUS_CLI_GATE --body 0` (a failed install
   or build also turns it off for that tick); the kit's own
   gate stays zero-dependency either way.
+- **Retry watchdog:** the model step's `env:` sets
+  `CLAUDE_CODE_RETRY_WATCHDOG` (`'1'`) and
+  `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS`, so a transient
+  429/529 waits out the cap instead of failing the run.
+  `march.yml` caps it at `'1800000'` (30 min) under its
+  60-minute `timeout-minutes`; `night.yml` caps it at
+  `'900000'` (15 min) under its 30-minute `timeout-minutes`,
+  leaving room for the rest of the digest. Either cap sits
+  comfortably under the job's own timeout: a stuck wait
+  still yields control back to the job instead of the job
+  timing out mid-wait with no clean exit.
 - **Model:** `claude-sonnet-5` (set in the workflow; ids age —
   verify against current ids before changing).
 - **Pause / resume:** `gh workflow disable march` /
