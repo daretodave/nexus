@@ -45,10 +45,6 @@ something the gate should have caught.
 
 ## Acceptance
 
-- **A1** `REVERSE_CHECK_DIRS` is gone; the reverse-checked
-  directories come from the two parsed tree diagrams.
-- **A2** Exclusions are an explicit list in `verify.mjs`, each
-  with a one-line reason.
 - **A3** A tracked root-level file missing from the root tree
   fails the `tree` leg.
 - **A4** The leg's tests cover the three cases above, and the
@@ -56,24 +52,11 @@ something the gate should have caught.
   check finds is fixed in the same chunk).
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 2 open · 2 closed · next A5
 
-- [ ] **72.1** `legTree()` derives its reverse-checked
-  directories from the two parsed tree diagrams instead of
-  the hand-kept `REVERSE_CHECK_DIRS` array · M · closes A1,
-  A2 · needs —
-  - Every top-level directory either tree expands (an entry
-    whose children also appear, not a collapsed one-liner
-    like `skills/ …`) becomes reverse-checked automatically;
-    `REVERSE_CHECK_DIRS` is deleted. A short, explicit
-    exclusion list (`plan/`, `.git/`, `node_modules/`, and
-    whatever else this chunk's own gate run surfaces)
-    replaces it, each entry carrying a one-line reason
-    comment — directories that never belong in an
-    adopter-facing tree on purpose.
 - [ ] **72.2** The `tree` leg walks each tree's own root,
   non-recursively, and fails a tracked root file missing from
-  that root's tree · M · closes A3 · needs 72.1
+  that root's tree · M · closes A3 · needs —
   - This chunking session counted the repo's tracked
     root-level files against README.md's root tree: four
     aren't named as their own entry — `.gitattributes`,
