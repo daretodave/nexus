@@ -325,3 +325,4 @@ still pending at the move and live on as specs.
 - 2026-11-25 · 75.2 · guard.mjs blocks a mirror commit missing its Closes trailer · 33b28930..ae648ef5
 - 2026-11-25 · 75.3 · Three remaining trust cells filed as scoped candidates · 9ca0d846..9ca0d846
 - 2026-11-25 · 75 · spec complete: tabled every step of the loop's own cycle against the three known failure modes (self-approval, spec gaming, misreported outcomes), mechanized the cheapest open gap (the mirror-not-closed guard rule), and filed the remaining mechanizable gaps as candidates; `concepts/loop-honesty.md` is the lasting artifact, already linked from `concepts/architecture.md` and the README tree · deleted in (this commit)
+- 2026-11-25 · 76.1 · Reboot skills say why claims/worktrees never move to a native call · 93355977..74fb1252

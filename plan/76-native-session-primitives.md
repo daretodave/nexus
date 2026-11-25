@@ -42,13 +42,9 @@ and say it.
 
 ## Acceptance
 
-- **A1** The comparison is written and discoverable: each
-  ledger field, what restores it natively, and when.
 - **A2** `/reboot-resume` uses a native resume where one
   exists and the conditions hold, and the ledger otherwise;
   both paths are described in the skill.
-- **A3** The reboot skills say why claims and worktrees stay
-  in the ledger.
 - **A4** Template twins and `CHANGELOG.md` updated for every
   `templates/` path touched.
 
@@ -59,36 +55,11 @@ and say it.
   only, and the comparison says so.
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 2 open · 2 closed · next A5
 
-- [ ] **76.1** Research the runtime's native session calls and
-  write the comparison; the reboot skills say why claims and
-  worktrees stay in the ledger · M · closes A1, A3 · needs —
-  - Read the current docs for the runtime this kit targets:
-    resume by id, list sessions, fork, delete, and
-    context-window usage by category. Build the comparison as
-    a new `concepts/reboot-train.md`: one row per ledger field
-    (`scripts/ledger.mjs`'s `loop`, `kind`, `chunk`, `step`,
-    `next_step`, `notes`, `work`, `children`, `workflow`,
-    `claimed`, `done`, `left`), what a native call restores,
-    and under which conditions (same machine, same client,
-    after a crash).
-  - Add the new doc to the README concepts tree and link it
-    from `concepts/architecture.md`'s own list of mental-model
-    docs.
-  - Each reboot skill (`skills/rebooting.md`,
-    `skills/reboot-ready.md`, `skills/reboot-resume.md`) gets
-    one line pointing at the comparison for why claims and
-    worktrees stay in the ledger rather than moving to a
-    native call (a pattern named, never a product — spec
-    Design).
-  - Template twins (`templates/skills/reboot-ready.md`,
-    `templates/skills/reboot-resume.md`,
-    `templates/skills/rebooting.md`) and `CHANGELOG.md` for
-    every line this chunk touches there.
 - [ ] **76.2** `/reboot-resume` tries a native resume first
   where 76.1 found the conditions hold, the ledger otherwise;
-  the skill names both paths · S · closes A2, A4 · needs 76.1
+  the skill names both paths · S · closes A2, A4 · needs —
   - `skills/reboot-resume.md` Step 2 ("The Claude session")
     already names this as a stub ("try it first"); make it
     concrete from 76.1's comparison: the condition that gates
