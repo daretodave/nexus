@@ -548,6 +548,59 @@
   2026-11-18 rejected row (that row's own fixes produced two of
   these three new findings, not a re-evidence of it).
 
+### [ ] [score 5.5] `spec-close` fired at the chunk commit, not the spec's last chunk — issue #133 stuck open though spec 76 shipped hours ago
+- proposed: 2026-11-25 (digest)
+- kind: guard
+- source signals: `gh issue view 133` shows the spec-76 mirror
+  still `OPEN`, carrying one comment ("Spec 76 shipped in
+  f7c64b3. … _The autonomous loop closes this issue via the
+  commit's `Closes #N` trailer; no manual close is
+  required._") posted 2026-11-25T08:49:10Z — 10 seconds after
+  `f7c64b3` landed. But `f7c64b3` is `plan: chunk spec 76`
+  (08:49:00Z; body: "No build this tick: chunking is the whole
+  unit of work"), not a build commit, and its body carries
+  `Mirror: #133`, never a `Closes` trailer. Spec 76's real
+  chunks landed after: 76.1 at 09:00-09:02, 76.2 at 09:13
+  (`git log f7c64b3..8262de2`); neither commit range carries a
+  `Closes #133`/`Fixes #133`/`Resolves #133` trailer (only
+  `Closes A1`/`Closes A3`, the plan Acceptance IDs). The
+  comment body matches `buildMirrorShippedCommentBody()`
+  (`templates/scripts/loop-issue.mjs`), i.e. `spec-close` was
+  invoked with `--commit f7c64b3` right after chunking, not
+  after 76.2 (`skills/ship-a-chunk.md` Step 8: `spec-close` +
+  the `Closes #<mirror>` trailer belong on "the spec's last
+  chunk"). Nothing enforces that ordering — `spec-close` posts
+  unconditionally on whatever commit it's handed.
+- rationale: the comment already told the public timeline the
+  spec shipped, and promised the issue would self-close, hours
+  before the work existed; the trailer that was supposed to
+  make that true never got written because the chunking
+  commit, not 76.2, was the one in hand. The issue is now
+  wrong forever (reopening and re-closing it right would need
+  the `spec-close` re-run with 76.2's sha, which nothing
+  prompts). Same trust-cell shape as the already-fixed
+  `mirror-not-closed` guard (chunk 75.2), but that guard only
+  matches the "Mirrored as #N" commit-message pattern — it
+  never sees a `loop-issue.mjs spec-close` call made out of
+  band, with the wrong sha, days before the real close.
+- proposed scope: `cmdMirrorClose()` in
+  `templates/scripts/loop-issue.mjs` (+ its `plugin/vendor`
+  twin, `agents.md` rule 7) reads the spec's own `plan/<NN>-
+  *.md` Measure line before posting and refuses (best-effort:
+  warn, skip the comment, exit 0) when it still reads open
+  chunks for that spec id — the same "check against data
+  that's already written down" shape as the `claimed
+  file-and-test` and `Pick order` rows above. `skills/ship-a-
+  chunk.md` Step 8 gains one line naming the failure this
+  guards against, citing #133 as the precedent. A human call
+  on whether to also auto-reopen-and-recomment a mirror caught
+  mid-build this way, or just block the premature close and
+  let the last chunk's own `spec-close` call carry it;
+  #133 itself needs a manual `gh issue close` either way — this
+  candidate only stops the next one.
+- estimated chunks: 1
+- conflicts: none.
+
 ## Promoted
 
 (moves to the build plan via /oversight)
