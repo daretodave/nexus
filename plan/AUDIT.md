@@ -6,18 +6,6 @@
 
 ## Pending
 
-### [ ] [MED, 5.4] README.md:150,155 — `[needs-user-call]` rows are never glossed before the TL;DR tells an adopter to resolve them
-- category: comprehension
-- impact: 6, ease: 9
-- evidence: "Review what landed" tells the adopter to expect
-  `[needs-user-call]` rows (line 150) then "resolve
-  `[needs-user-call]` rows" (line 155), with no gloss in
-  README.md itself; `agents.md:112` is the only existing gloss,
-  in a file the TL;DR never points the reader to first.
-- next: README.md:150 — gloss the tag inline the first time it
-  appears.
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [MED, 4.2] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint
 - category: ui-comprehension
 - impact: 6, ease: 7
@@ -53,6 +41,20 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 5.4] README.md:150,155 — `[needs-user-call]` rows are never glossed before the TL;DR tells an adopter to resolve them — this commit
+- category: comprehension
+- impact: 6, ease: 9
+- evidence: "Review what landed" tells the adopter to expect
+  `[needs-user-call]` rows (line 150) then "resolve
+  `[needs-user-call]` rows" (line 155), with no gloss in
+  README.md itself; `agents.md:112` is the only existing gloss,
+  in a file the TL;DR never points the reader to first.
+- fix: README.md:150 now glosses the tag inline the first time
+  it appears: "any `[needs-user-call]` rows (a question the
+  agent couldn't decide alone and left for you) in
+  `plan/AUDIT.md`".
+- source: plan/CRITIQUE.md (Pending)
 
 ### [x] [cli-ci #45687001768] [HIGH] cli-ci red on main since 3962535 (1 red run) — this commit (issue: #135)
 - category: cli-ci

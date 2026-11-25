@@ -19,26 +19,6 @@
 - source: dry-run
 - issue: #118
 
-### [ ] [MED] README.md:150,155 — `[needs-user-call]` rows are never glossed before the TL;DR tells an adopter to resolve them
-- category: comprehension
-- observation: "Review what landed" tells the adopter to expect
-  any `[needs-user-call]` rows in `plan/AUDIT.md` the agent
-  deferred (line 150), then to "resolve `[needs-user-call]`
-  rows" (line 155) — the one step where getting it right
-  matters most, since the agent just committed unsupervised.
-  The tag is glossed in `agents.md:112` ("a question that
-  outlives the run goes to the `/oversight` queue") but
-  README.md never repeats or links that gloss, so a first-time
-  reader meets unexplained jargon at the step that reviews what
-  an agent just did without them.
-- evidence: README.md:150,155; agents.md:112 (the only existing
-  gloss, in a file the TL;DR never points the reader to first)
-- suggested fix: README.md:150 — gloss the tag inline the first
-  time it appears, e.g. "any `[needs-user-call]` rows (a flag
-  the agent couldn't resolve alone — see `agents.md`'s Standing
-  rules) in `plan/AUDIT.md`".
-- source: dry-run
-
 ### [ ] [LOW] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
 - category: voice
 - observation: the line right under the badges ("This kit ships
@@ -205,6 +185,25 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] README.md:150,155 — `[needs-user-call]` rows are never glossed before the TL;DR tells an adopter to resolve them — this commit
+- category: comprehension
+- observation: "Review what landed" tells the adopter to expect
+  any `[needs-user-call]` rows in `plan/AUDIT.md` the agent
+  deferred (line 150), then to "resolve `[needs-user-call]`
+  rows" (line 155) — the one step where getting it right
+  matters most, since the agent just committed unsupervised.
+  The tag is glossed in `agents.md:112` ("a question that
+  outlives the run goes to the `/oversight` queue") but
+  README.md never repeats or links that gloss, so a first-time
+  reader meets unexplained jargon at the step that reviews what
+  an agent just did without them.
+- evidence: README.md:150,155; agents.md:112 (the only existing
+  gloss, in a file the TL;DR never points the reader to first)
+- fix: README.md:150 glosses the tag inline the first time it
+  appears: "any `[needs-user-call]` rows (a question the agent
+  couldn't decide alone and left for you) in `plan/AUDIT.md`".
+- source: dry-run
 
 ### [x] [HIGH] /onboarding/welcome @ mobile (plain-folder) — the footer's local-only trust line is clipped off-screen with no scroll — this commit
 - category: ui-comprehension
