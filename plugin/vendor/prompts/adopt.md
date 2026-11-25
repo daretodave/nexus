@@ -78,7 +78,10 @@ Then:
     (e.g. "commit bearings.md separately", "commit the
     templates as a single commit"): those are for a human
     working the playbook by hand. The delegated path below
-    stages everything and commits once, at the end.
+    stages everything and commits once, at the end. Its final
+    smoke-test/ratchet steps (running `/next`, watching the
+    agent work) are the same kind of exception: skip running
+    them yourself — see "Then stop" below.
   - Copy templates from ../nexus/templates/ into this repo.
   - Replace placeholders (<PROJECT>, <PROJECT_LOWER>,
     <PROJECT_TAGLINE>, <HOSTING_URL>, <HOSTING_PROVIDER>,

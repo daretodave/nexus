@@ -5,20 +5,6 @@
 
 ## Pending
 
-### [x] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question — this commit
-- category: instruction-drift
-- resolution: `prompts/pitch.md`'s Phase B named adopt.md's ask
-  list as four items (hosting provider/token, project
-  name/tagline, URL/API/CLI contract, topology confirmation),
-  omitting adopt.md's own fifth item, (e) the owner/contributor
-  mode confirmation — risking an agent concluding that question
-  was out of bounds and silently deciding it instead of asking
-  (agents.md rule 8). Changed "four-item" to "five-item", added
-  "owner/contributor mode" to the parenthetical, and "those four
-  items" to "those five items".
-- source: dry-run
-- issue: #118
-
 ### [ ] [LOW] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
 - category: voice
 - observation: the line right under the badges ("This kit ships
@@ -32,33 +18,6 @@
 - suggested fix: README.md:18 — trim to a bare link ("see
   `nexus runs on nexus` below") or move the line to sit just
   above the `## nexus runs on nexus` section instead.
-- source: dry-run
-
-### [ ] [HIGH] prompts/adopt.md:76-81,126-127 vs playbooks/new-project.md:803-940 — adopt.md's named exceptions to "follow the playbook end-to-end" don't cover the one it actually takes
-- category: instruction-drift
-- observation: `prompts/adopt.md:76-81` tells the delegated
-  agent to follow the matching playbook end-to-end, "do not
-  skip steps", naming one carve-out: the playbook's own
-  intermediate commit instructions, "for a human working the
-  playbook by hand." `playbooks/new-project.md` step 10 (lines
-  803-813, the smoke test) and step 11 (line 837) both instruct
-  running `/next`. But `prompts/adopt.md:126-127` then says
-  "stop. Do not invoke /next yourself; let the user do that as
-  the first conscious step" — a second carve-out that is never
-  named alongside the first, so an agent reading line 76-81
-  literally has no signal that steps 10-11 are also exceptions
-  until it collides with the contradiction three sections
-  later. `README.md:70-75`'s own paste prompt doubles down on
-  literalism ("follow adopt.md exactly, in order... do not skip
-  steps") right before the gap.
-- evidence: prompts/adopt.md:76-81 vs prompts/adopt.md:126-127
-  vs playbooks/new-project.md:803-813,837-940
-- suggested fix: in prompts/adopt.md:76-81, name the smoke-test
-  /ratchet steps (10-11) as a second exception the same way the
-  commit-split carve-out is named, e.g. "...except its own
-  intermediate commit instructions... and its final
-  smoke-test/ratchet steps (10-11), which the user runs
-  themselves after reviewing the diff."
 - source: dry-run
 
 ### [ ] [MED] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json
@@ -146,6 +105,33 @@
 - source: walk
 
 ## Done
+
+### [x] [HIGH] prompts/adopt.md:76-81,126-127 vs playbooks/new-project.md:803-940 — adopt.md's named exceptions to "follow the playbook end-to-end" don't cover the one it actually takes — this commit
+- category: instruction-drift
+- resolution: `prompts/adopt.md:76-81` named only its own
+  intermediate commit instructions as an exception to "do not
+  skip steps"; `playbooks/new-project.md` steps 10-11 (smoke
+  test, ratchet) and `prompts/adopt.md:126-127`'s own "stop, do
+  not invoke /next yourself" are a second exception never named
+  alongside the first. Added a sentence to prompts/adopt.md:76-81
+  naming the playbook's final smoke-test/ratchet steps as the
+  same kind of exception, pointing at "Then stop" below it.
+- source: dry-run
+- issue: #136
+
+### [x] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question — this commit
+- category: instruction-drift
+- resolution: `prompts/pitch.md`'s Phase B named adopt.md's ask
+  list as four items (hosting provider/token, project
+  name/tagline, URL/API/CLI contract, topology confirmation),
+  omitting adopt.md's own fifth item, (e) the owner/contributor
+  mode confirmation — risking an agent concluding that question
+  was out of bounds and silently deciding it instead of asking
+  (agents.md rule 8). Changed "four-item" to "five-item", added
+  "owner/contributor mode" to the parenthetical, and "those four
+  items" to "those five items".
+- source: dry-run
+- issue: #118
 
 ### [x] [MED] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden — this commit
 - category: ui-comprehension

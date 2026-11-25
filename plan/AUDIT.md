@@ -1,10 +1,50 @@
 # Kit audit
 
 > Last pass: 2026-11-25
-> Pass count: 135
+> Pass count: 136
 > Bias: none
 
 ## Pending
+
+### [ ] [MED, 4.8] templates/README.md:316-320 vs playbooks/new-project.md §4 — the playbook's placeholder table omits `<DEPLOY_URL>`, so a stray-token sweep flags it as a missed replace
+- category: placeholder
+- impact: 6, ease: 8
+- evidence: templates/README.md explains `<DEPLOY_URL>` is
+  deliberately excluded from the 9-placeholder sweep (a CLI
+  arg filled in at run time, not adoption time);
+  playbooks/new-project.md §4 lists only the 9 swept
+  placeholders and never mentions it, though it is still
+  literally present in templates/skills/ship-a-chunk.md and
+  templates/skills/iterate.md after the sweep.
+- next: playbooks/new-project.md §4 — add one line near the
+  placeholder table noting `<DEPLOY_URL>` is deliberately
+  excluded, pointing at templates/README.md's explanation.
+- source: plan/CRITIQUE.md (Pending)
+
+### [ ] [MED, 4.2] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json
+- category: ordering
+- impact: 6, ease: 7
+- evidence: step 6 admits "No `package.json` exists yet at
+  this point in the walk — step 7 creates one" and only
+  previews the JSON shape step 7 will create, with no write or
+  run of its own — every other numbered step produces a
+  concrete artifact.
+- next: fold step 6 into step 7 ("Wire the verify + deploy
+  gates"), or move the `package.json` creation into step 6.
+- source: plan/CRITIQUE.md (Pending)
+
+### [ ] [MED, 4.2] /board @ desktop (fleet-to-tug) — chunk-size badges and claims status words have no legend
+- category: ui-comprehension
+- impact: 6, ease: 7
+- evidence: `SizeTag` (packages/cli/src/ui/plan.jsx:9-11) sets
+  only an `aria-label` for the S/M/L badge, nothing for a
+  sighted user; the "Claims by person" panel shows "terminal"
+  for a local CLI session beside "Working" with no legend for
+  either.
+- next: packages/cli/src/ui/plan.jsx — add a `title` to
+  `SizeTag`; packages/cli/src/screens/board/parts.jsx — add a
+  tooltip explaining "terminal".
+- source: plan/CRITIQUE.md (Pending)
 
 ### [ ] [LOW, 2.4] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
 - category: voice
@@ -16,7 +56,32 @@
   line to sit just above the `## nexus runs on nexus` section.
 - source: plan/CRITIQUE.md (Pending)
 
+### [ ] [LOW, 2.4] README.md:41-90 — "Three doors in" heading promises three but a 4th sibling heading follows
+- category: voice
+- impact: 3, ease: 8
+- evidence: `## Three doors in` is followed by three numbered
+  H3s, then a 4th sibling H3 under the same H2 ("Used v1? On
+  v2?") — a different kind of entry point, not a fourth door.
+- next: promote "Used v1? On v2?" to its own `##` section, or
+  add a short transition sentence before it.
+- source: plan/CRITIQUE.md (Pending)
+
 ## Done
+
+### [x] [HIGH, 7.2] prompts/adopt.md:76-81,126-127 vs playbooks/new-project.md:803-940 — adopt.md's named exceptions to "follow the playbook end-to-end" don't cover the one it actually takes — this commit
+- category: instruction-drift
+- impact: 9, ease: 8
+- evidence: prompts/adopt.md:76-81 named only its own
+  intermediate commit instructions as an exception to "do not
+  skip steps"; playbooks/new-project.md steps 10-11 (smoke
+  test, ratchet) and adopt.md:126-127's own "stop, do not
+  invoke /next yourself" are a second exception never named
+  alongside the first.
+- fix: prompts/adopt.md:76-81 now names the playbook's final
+  smoke-test/ratchet steps as the same kind of exception,
+  pointing at "Then stop" below it.
+- source: plan/CRITIQUE.md (Pending)
+- issue: #136
 
 ### [x] [MED, 3.0] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden — this commit
 - category: ui-comprehension
