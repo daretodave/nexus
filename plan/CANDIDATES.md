@@ -416,6 +416,110 @@
 - conflicts: none known.
 - generator: research · filed 2026-11-24
 
+### [ ] [score 6.0] Pick's stated order and skip rules go unverified against what order.mjs would compute
+- proposed: 2026-11-25 (spec 75.3, loop-honesty audit)
+- source signals: concepts/loop-honesty.md's Pick row names
+  two trust cells of the same shape. Self-approval: "the
+  next chunk is the first listed whose `needs` are all
+  done," picked in Asap → priority → table order; nothing
+  outside confirms the order was actually followed. Spec
+  gaming: the lead applies its own skip rules (Held lane,
+  `plan only`, claimed-by-another) to itself; "nothing
+  catches a lead that quietly favors the easy chunk." Both
+  read as hard to mechanize only because nothing calls the
+  mechanism that already computes the answer:
+  `scripts/plan/order.mjs`'s `simulate()`/`render()` plays
+  the identical Asap → priority → table walk forward,
+  skipping Held/`plan only`/claimed, to produce a next-up
+  list — skills/next.md Step 1 already shells out to it, but
+  only for the `needs secret` case, never to check the pick
+  itself. `/next peek` even states "why it beat the rest" in
+  prose with nothing checking that prose against the order
+  order.mjs would print.
+- rationale: the check this needs already exists in the repo
+  and already runs in this exact step for an unrelated
+  reason; wiring it to the pick closes two trust cells at
+  once for the cost of one script call — the same shape as
+  75.2's mirror-not-closed fix, an existing mechanism not yet
+  pointed at where it mattered.
+- proposed scope: a `check` mode on
+  `scripts/plan/order.mjs` (or a flag on `render`) that
+  recomputes the next-up list and, given a no-argument pick,
+  exits non-zero when the claimed id isn't first on it,
+  naming what was; skills/next.md Step 1 runs it right
+  before `claims.mjs claim` when the pick came from free
+  text, not an explicit argument (an explicit argument is
+  already its own override per Step 1's own ordering rule).
+- estimated chunks: 1
+- conflicts: none.
+
+### [ ] [score 7.0] claims.mjs claim() accepts a chunk whose needs aren't done, caught only at gate time
+- proposed: 2026-11-25 (spec 75.3, loop-honesty audit)
+- source signals: concepts/loop-honesty.md names two trust
+  cells pointing at one fact. Pick/Misreported outcomes:
+  "the stated id / A-IDs aren't cross-checked against the
+  spec until gate time." Claim/Spec gaming: "`claims.mjs
+  claim()` checks ownership conflicts only, never whether
+  `needs` are actually satisfied." Both are true because
+  `scripts/plan/order.mjs`'s `statusOf()` already classifies
+  a chunk `ready` / `held` / `needs <id>` / `claimed <who>`,
+  and skills/next.md Step 4.1.2 already calls `node
+  scripts/plan/order.mjs status <id>` — but only after the
+  chunk is fully built and gated once. A lead that claims a
+  chunk on a stale or wrong read of `needs` burns a whole
+  build before that check ever fires.
+- rationale: no new logic is needed, only an earlier call to
+  logic that already exists and is already trusted
+  (`next/land.md` cites it as the live-status source of
+  truth). Moving the check to claim time turns a wasted
+  build into a refused claim, the cheapest possible place to
+  catch it.
+- proposed scope: `scripts/claims.mjs`'s `claim()` (or
+  `claims-codec.mjs`'s `idsProblem()`) calls
+  `scripts/plan/order.mjs`'s `statusOf()` for each id and
+  refuses any id that doesn't read back `ready`, down the
+  same "Refused: pick again" path skills/next.md Step 1
+  already documents for ownership conflicts; the Step 1 line
+  notes the refusal now also covers unmet `needs`, not
+  ownership alone.
+- estimated chunks: 1
+- conflicts: sequence after the order.mjs-check candidate
+  above if both land close together — same file, adjacent
+  call sites.
+
+### [ ] [score 5.5] A close's claimed file-and-test per A-ID is never written anywhere the gate can check it
+- proposed: 2026-11-25 (spec 75.3, loop-honesty audit)
+- source signals: concepts/loop-honesty.md's Build row: the
+  builder's "Return" summary — "each A-ID with the file and
+  test that meets it" — is taken at its word, checked only
+  by the same lead's own diff re-read; that summary is prose
+  in a chat reply, never committed anywhere a script could
+  later check it. The Close row's `says:` cell is the one
+  piece of the same claim that is committed, and it is
+  checked for presence only: `scripts/plan/pending.mjs:76`,
+  `if (meta.close && !meta.says) throw ...` — non-empty is
+  the whole rule. Neither cell can be checked today because
+  there is nothing durable to check.
+- rationale: a full truth check needs a second reader (the
+  doc's own stated limit), but a narrower, mechanical check
+  is real once the claim is written down: whether a named
+  file actually exists and was touched by the close's own
+  commit range. 75.2's mirror-not-closed rule is the same
+  shape — matching a textual claim against the diff, not
+  judging intent.
+- proposed scope: an optional `tests:` field on
+  `plan/pending/<id>.md` (`A<n>: <file>#<test name>`, one
+  per closed A-ID), parsed by `scripts/plan/pending.mjs`
+  alongside `says:`; the `chunks` leg
+  (`scripts/plan-check.mjs`) fails loud when a listed file
+  doesn't exist, doesn't contain the named test, or wasn't
+  touched in the close's `commits:` range. `next/land.md` §2
+  gains the one-line instruction to fill it from the
+  builder's own Return summary, so the claim finally has
+  somewhere to live.
+- estimated chunks: 1
+- conflicts: none.
+
 ## Promoted
 
 (moves to the build plan via /oversight)
