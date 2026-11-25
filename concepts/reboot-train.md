@@ -120,5 +120,5 @@ can say, truthfully, why claims and worktrees stay in a file.
   [`../skills/reboot-ready.md`](../skills/reboot-ready.md),
   [`../skills/reboot-resume.md`](../skills/reboot-resume.md) —
   the reboot train this comparison backs.
-- [`../plan/76-native-session-primitives.md`](../plan/76-native-session-primitives.md)
-  — the spec that asked for this comparison.
+- [`../plan/ARCHIVE.md`](../plan/ARCHIVE.md) — spec 76's line,
+  the spec that asked for this comparison.
