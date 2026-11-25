@@ -9,6 +9,18 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/skills/rebooting.md: the Purpose section gains one
+  sentence — claims and worktrees stay in the ledger rather than
+  a native session call, pointing at nexus's own
+  `nexus/concepts/reboot-train.md` for the comparison
+  (2026-11-25, 76.1).
+- templates/skills/reboot-ready.md: the Purpose section gains the
+  same one-sentence pointer at `nexus/concepts/reboot-train.md`
+  for why claims and worktrees never move to a native call
+  (2026-11-25, 76.1).
+- templates/skills/reboot-resume.md: the Purpose section gains the
+  same one-sentence pointer at `nexus/concepts/reboot-train.md`,
+  kept short against this file's own line budget (2026-11-25, 76.1).
 - templates/claude/hooks/guard.mjs: a new `mirror-not-closed` rule
   blocks a `git commit` whose message says "Mirrored as #N" for an
   issue it never closes — only `Closes #N` (`Fixes #N` / `Resolves

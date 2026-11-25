@@ -11,9 +11,11 @@ The owner ran `/rebooting <slug>` and is about to restart. A
 fresh session will pick this loop up with `/reboot-resume
 <slug> <star>`, trusting only the ledger
 (`.nexus/sessions/<id>.json` at the primary root,
-`scripts/ledger.mjs`). Speed matters, but nothing is thrown
-away: leaving work where it is, on disk and recorded, always
-beats tidying it up.
+`scripts/ledger.mjs`). Claims and worktrees live there, not a
+native session call: see nexus's own
+`nexus/concepts/reboot-train.md` for the comparison. Speed
+matters, but nothing is thrown away: leaving work where it is,
+on disk and recorded, always beats tidying it up.
 
 ## 2. Invocation
 

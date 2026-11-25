@@ -10,9 +10,11 @@
 After the reboot train (`/rebooting`, `/reboot-ready`), or
 after a crash (a `live` ledger whose beat went stale reads
 `fallen`), the work of a loop sits on disk and in its ledger
-(`.nexus/sessions/<id>.json`, `scripts/ledger.mjs`). This skill
-resumes it. The GUI's "Resume" button on a fallen session runs
-the same steps.
+(`.nexus/sessions/<id>.json`, `scripts/ledger.mjs` — not a
+native session call: see nexus's own
+`nexus/concepts/reboot-train.md` for why claims and worktrees
+stay there). This skill resumes it. The GUI's "Resume" button
+on a fallen session runs the same steps.
 
 ## 2. Invocation
 
