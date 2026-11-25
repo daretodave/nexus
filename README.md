@@ -341,6 +341,7 @@ nexus/
 │   ├── architecture.md                 # the whole system in one read
 │   ├── plan-shape.md                   # + generators.md: chunks/acceptance IDs, the refill lane
 │   ├── loop-shapes.md                  # the genus: dispatcher, night shift, heartbeat, lanes, meta-loop
+│   ├── loop-honesty.md                 # pick/claim/build/gate/close/land/report × what's mechanical, what's trust
 │   └── skills-anatomy.md               # + asking-well.md, design-round-trip.md: writing a skill, asking well, Design handoff vs in-repo
 ├── customization/                      # pick what applies; each doc is self-contained
 │   ├── verify-gate.md                  # + hermetic-e2e.md, data-layer.md: composing checks, the e2e leg, gh-as-db/hybrid/pure-db/saas-cms/none

@@ -473,6 +473,9 @@ an un-versioned local root — never its own git repo — holding
 - [`loop-shapes.md`](./loop-shapes.md) — this doc describes
   one tick; that one describes the genus of loops a project
   can grow (night shift, heartbeat, concierge, and beyond).
+- [`loop-honesty.md`](./loop-honesty.md) — which step of that
+  tick a machine checks, and which still rests on the loop's
+  own word.
 - [`skills-anatomy.md`](./skills-anatomy.md) — how to read or
   write a skill file in detail.
 - [`../playbooks/new-project.md`](../playbooks/new-project.md)
