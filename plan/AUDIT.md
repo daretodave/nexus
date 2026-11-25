@@ -1,12 +1,83 @@
 # Kit audit
 
-> Last pass: 2026-11-23
-> Pass count: 134
+> Last pass: 2026-11-25
+> Pass count: 135
 > Bias: none
 
 ## Pending
 
+### [ ] [MED, 5.4] README.md:150,155 — `[needs-user-call]` rows are never glossed before the TL;DR tells an adopter to resolve them
+- category: comprehension
+- impact: 6, ease: 9
+- evidence: "Review what landed" tells the adopter to expect
+  `[needs-user-call]` rows (line 150) then "resolve
+  `[needs-user-call]` rows" (line 155), with no gloss in
+  README.md itself; `agents.md:112` is the only existing gloss,
+  in a file the TL;DR never points the reader to first.
+- next: README.md:150 — gloss the tag inline the first time it
+  appears.
+- source: plan/CRITIQUE.md (Pending)
+
+### [ ] [MED, 4.2] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint
+- category: ui-comprehension
+- impact: 6, ease: 7
+- evidence: `Stepper` (`packages/cli/src/ui/feedback.jsx:22`)
+  renders labels ("Detect," "Shape," "Plot," "Cloud loop";
+  `packages/cli/src/ui/steps.js:9-16`) as plain links with no
+  `title`/hint, so a stranger can't learn what a remaining step
+  does before clicking in.
+- next: `packages/cli/src/ui/feedback.jsx` (`Stepper`, ~line
+  22) — add a `title` per step, sourced from a short `hint`
+  string added to each `STEPS` entry.
+- source: plan/CRITIQUE.md (Pending)
+
+### [ ] [MED, 3.0] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden
+- category: ui-comprehension
+- impact: 6, ease: 5
+- evidence: `nexus.css:901-917` hides every step but the
+  current one on mobile, leaving only the numeric counter; a
+  mobile adopter can't see what the remaining steps involve.
+- next: `packages/cli/src/ui/feedback.jsx` (`Stepper`, ~line
+  17) or the same media query — surface the next step's label
+  beside the counter on mobile.
+- source: plan/CRITIQUE.md (Pending)
+
+### [ ] [LOW, 2.4] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
+- category: voice
+- impact: 3, ease: 8
+- evidence: README.md:18 links `#nexus-runs-on-nexus`
+  (README.md:407), unexplained this early, and duplicates that
+  section's own framing once the reader gets there.
+- next: README.md:18 — trim to a bare forward link, or move the
+  line to sit just above the `## nexus runs on nexus` section.
+- source: plan/CRITIQUE.md (Pending)
+
 ## Done
+
+### [x] [H, 8.1] /onboarding/welcome @ mobile (plain-folder) — the footer's local-only trust line is clipped off-screen with no scroll — this commit (source: plan/CRITIQUE.md, moved to its own Done)
+- category: ui-comprehension
+- impact: 9, ease: 9
+- evidence: `nexus.css:779` sets `.ob { overflow: hidden }`
+  and `:1304` repeats `.ob { height: 100vh; min-height: 0 }`
+  with no mobile-width override enabling scroll; the onboarding
+  grid stacks the loop diagram below the copy on mobile,
+  pushing total height past one viewport, so the footer's
+  data-locality line, step counter and "Press ⏎ to begin" are
+  unreachable, not just below the fold.
+- fix: added `.ob { height: auto; min-height: 100vh; overflow-y:
+  auto; }` inside the existing `@media (max-width: 760px)` block
+  that already carries the `.ob-grid` mobile-stack override (it
+  has to land there, after the unconditional "ONBOARDING STEPS"
+  rules, to win the cascade — the same pattern the block's own
+  comment documents for `.ob-grid`). Desktop's `.ob { height:
+  100vh; overflow: hidden }` is untouched. Mirrored into
+  `packages/cli/design/handoff/nexus.css`. Verified: mobile
+  `scrollHeight` (1067px) now exceeds `clientHeight` (844px) and
+  the footer's bounding rect sits inside the viewport after
+  scrolling to the bottom; `npm --prefix packages/cli run walk`
+  across 3 scenarios × 2 viewports on `/onboarding/welcome`
+  reports 0 findings; desktop screenshot unchanged.
+- source: plan/CRITIQUE.md, moved to its own Done
 
 ### [x] [user-issue #132] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-25, same owner call as #131/#130/#129/#127/#96/#91
 - category: external-issue
@@ -489,117 +560,3 @@
   fresh issue fires on its own if the realized cadence stays
   under 40% under the new hourly schedule, judged on its own
   evidence instead of this one's stale recommendation.
-
-### [x] [user-issue #40] [MED] apply phase 23's crash-alarm patch to nexus's own march.yml + night.yml by hand — closed 2026-10-21
-- category: external-issue
-- resolution: fixed in `8d21e16` — nexus's own `march.yml` and
-  `night.yml` file the crash alarm with the run's `GITHUB_TOKEN`
-  (not `ACTIONS_PAT`) and name the failed step, matching the
-  template since `8dc2080`; `night.yml` gained `issues: write`.
-  Applied from a local session, since cloud tokens can't push
-  workflow files. Caught by this digest's refresh: the row sat
-  in Pending four days past its close (the AUDIT.md header
-  itself was already a day stale at the 2026-10-22 snapshot).
-
-### [x] [user-issue #35] [MED] cloud push token still lacks workflows scope despite the 2026-08-23 re-mint — closed 2026-10-21
-- category: external-issue
-- resolution: phase 20 shipped as chunk 20.1 from a local
-  session (archive `45b742c7..a1f5f127`, spec 20 complete). The
-  underlying constraint still holds and stays documented in
-  `agents.md` (Operational secrets): cloud ticks can't push
-  `.github/workflows/*.yml` edits, so workflow-file changes land
-  from a local session.
-
-### [x] [user-issue #49] [MED] phase 32 blocked — same cloud push token workflows-scope gap as #35/#40 — closed 2026-10-21
-- category: external-issue
-- resolution: phase 32 shipped as spec 32 (32.1 and 32.2,
-  `b6acc842..fe136587`) from a local session: heartbeat alarms
-  once per unarmed scheduled workflow and checks cadence per
-  workflow. Same documented constraint as #35 for workflow-file
-  pushes.
-
-### [x] [user-issue #88] [MED] fleet worktree creation can collide with a stale worktree registration ("already used by worktree") — cli 0.5.3
-- category: external-issue
-- impact: 6, ease: 3
-- evidence: reporter's screenshot shows `git worktree add` failing
-  with `fatal: 'nexus/polaris-1' is already used by worktree at
-  'C:/Users/notrb/Workspace/.claude/mood-read/polaris-1'` while
-  starting a session in a different project. Traced the GUI's
-  worktree-creation path: `planPlace()`
-  (`packages/cli/server/fleet.mjs:118-139`) picks the next free
-  `n` by checking only that the candidate folder doesn't exist
-  (`fs.existsSync`) and that `refs/heads/nexus/<name>-<n>` isn't
-  already a branch in *this* repo — it never cross-checks the
-  candidate branch name against `git worktree list`'s
-  administrative entries. `formPlace()`
-  (`packages/cli/server/fleet.mjs:148-176`) only runs `git
-  worktree prune` when the *candidate's own* folder is missing,
-  not when some other, unrelated administrative worktree entry
-  still claims the same branch name. Git's own "already used by
-  worktree" error fires from that stale administrative record,
-  independent of whether the branch ref itself still exists —
-  exactly the footgun `skills/reboot-resume.md:60-66` already
-  documents and routes around for reboot/resume (`git worktree
-  prune` before re-adding), but that workaround only runs on the
-  resume path, not on ordinary new-session creation. A branch
-  getting deleted (or its worktree folder moved/renamed, as the
-  screenshot's `mood-read` vs. current-project mismatch suggests)
-  without a `git worktree remove`/`prune` in between would leave
-  exactly this kind of orphaned registration behind. Hypothesis,
-  not yet reproduced locally — no access to the reporter's
-  machine or a second project sharing a `.git`.
-- next: have `formPlace` (or `planPlace`, before returning a
-  candidate) run `git worktree prune` unconditionally before the
-  existence/ref checks, not only in the "candidate folder
-  missing" branch — cheap and idempotent, and it would absorb
-  this exact class without needing the deeper "why did the old
-  registration survive" root cause. Confirm with a repro: `git
-  worktree add` a folder, delete the folder without `remove`, and
-  try `planPlace`/`formPlace` again for the same name.
-- fix: cli 0.5.3. Reproduced the real path: a GUI session's ledger `worktree`
-  is rewritten to a chunk worktree by `ledger.mjs beat --set worktree=`
-  (skills/next/build.md); once that chunk lands and its folder goes, a
-  pick-up re-adds the session branch there, and git refuses because the
-  branch is still checked out at the session's live home. `formPlace`
-  (`packages/cli/server/fleet.mjs`) now prunes unconditionally and, when
-  the branch is already checked out in a folder that exists
-  (`branchHome`), works there (`moved`) instead; the server points the
-  session and its ledger at it. Test: `test/repair.test.mjs` (#88).
-
-### [x] [user-issue #86] [MED] oversight's "needs attention" badge doesn't decrement after all questions are answered and sent — cli 0.5.3
-- category: external-issue
-- impact: 6, ease: 4
-- evidence: reporter answered all 7 pending oversight questions
-  and sent them, but the GUI's notification count never went
-  down. Traced the badge logic: `packages/cli/src/App.jsx:129-131`
-  computes it from `useInbox()`'s `GET /api/inbox` poll (every
-  5s, `packages/cli/src/data/hooks.js:142`), which merges live
-  asks/permissions with `planQuestions()` →
-  `repoMod.durableQuestions(repo)`
-  (`packages/cli/server/repo.mjs:208-253`) — a fresh regex scan
-  of `plan/**/*.md` on every call, with no "answered" state of
-  its own. A row only drops out once `settledItem()`
-  (`repo.mjs:228-233`) sees it struck, `[x]`, or replaced with
-  "Settled/Decided/Answered/Resolved/Done/None" text in the
-  markdown. But the GUI's "Send" action
-  (`server.continueAnswers` → `POST /api/oversight/answer`) only
-  delivers the kept answers as one chat message to a target
-  session — it never itself edits the plan file. So "answered
-  and sent" in the UI means "delivered to a session's inbox,"
-  not "resolved in the plan": if that session is idle, busy, or
-  just hasn't acted on the message yet, the `[needs-user-call]`/
-  Open-questions rows stay unstruck and the badge keeps counting
-  them on every 5s poll, even though the user did everything the
-  UI asked of them.
-- next: close the state gap between "sent" and "resolved" —
-  either have the badge (or the answered item itself) show a
-  distinct "sent, awaiting session" state instead of counting it
-  as still-open, or have `continueAnswers` optimistically mark
-  the row settled in the GUI's local view until the plan file
-  catches up. Needs a GUI-side fix in `packages/cli`; no spec
-  currently owns oversight's inbox/badge plumbing.
-- fix: cli 0.5.3. Still live past the first CLI: the screen counted kept
-  answers as done, the App badge did not. `GET /api/inbox` now marks a
-  plan question `settled` (`kept` or `sent`) when `.nexus/answers.json`
-  holds an answer for its current words (`inboxItems` `kept`), and the
-  badge and Heads-down skip it. Test: `test/fleet-home.test.mjs` (#86).

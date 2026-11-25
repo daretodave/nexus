@@ -1331,6 +1331,7 @@ textarea.field { resize: none; }
    this file loses the cascade to those later base rules, so the mobile
    stack never took effect without a second override down here. */
 @media (max-width: 760px) {
+  .ob { height: auto; min-height: 100vh; overflow-y: auto; }
   .ob-grid { grid-template-columns: 1fr; gap: 24px; }
   .loop-node .cap { max-width: 92px; }
 }

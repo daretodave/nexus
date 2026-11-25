@@ -5,37 +5,6 @@
 
 ## Pending
 
-### [x] [MED] prompts/adopt.md:89 — owner/contributor heuristic errors with no fallback on a repo with no git remote yet — routed to 39.15
-- category: instruction-drift
-- observation: adopt.md's ask-list item (e) computes its
-  recommended default for the owner/contributor question via
-  `gh repo view --json viewerPermission` (ADMIN → recommend
-  owner). But `playbooks/new-project.md`'s Prerequisites only
-  requires a repo initialized with `git init` and a GitHub repo
-  existing somewhere — nothing in new-project.md or adopt.md
-  ever instructs creating the GitHub repo or wiring a remote
-  first. A literal walk from a freshly `git init`'d repo with no
-  remote hits this gap immediately: the heuristic command errors
-  before producing a recommendation, which also breaks
-  `concepts/asking-well.md` rule 2 ("if you genuinely don't have
-  a recommendation, you don't have a question yet"). Door 2's
-  prompt explicitly tells the agent "Do not skip steps or invent
-  scope beyond what it says," so a strict-literal agent has no
-  instructed path to resolve this.
-- evidence: in a scratch repo (`git init` only, no remote),
-  running the exact command adopt.md names —
-  `gh repo view --json viewerPermission` — fails with
-  "no git remotes found", exit 1.
-- suggested fix: either add a "create/confirm the GitHub remote"
-  sub-step to new-project.md's Prerequisites (or step 1) with the
-  `gh repo create` / `git remote add origin` commands, or have
-  adopt.md's ask-list fall back explicitly ("no remote yet →
-  recommend owner by default, since a solo greenfield repo has no
-  other contributor to be a contributor against") so the
-  heuristic degrades gracefully instead of erroring with no
-  guidance.
-- source: dry-run
-
 ### [x] [MED] prompts/pitch.md:54-58 — Phase B's "four-item ask list" undercounts adopt.md's actual five-item list, dropping the owner/contributor question — this commit
 - category: instruction-drift
 - resolution: `prompts/pitch.md`'s Phase B named adopt.md's ask
@@ -85,32 +54,6 @@
   above the `## nexus runs on nexus` section instead.
 - source: dry-run
 
-### [ ] [HIGH] /onboarding/welcome @ mobile (plain-folder) — the footer's local-only trust line is clipped off-screen with no scroll
-- category: ui-comprehension
-- observation: the same cutoff repeats identically on the
-  cloud-token and fleet-to-tug mobile captures of this screen.
-  On mobile the onboarding grid stacks the loop diagram below
-  the copy, pushing total height past one viewport.
-  `packages/cli/src/styles/nexus.css:779` sets `.ob { overflow:
-  hidden }` and `:1304` repeats `.ob { height: 100vh;
-  min-height: 0 }` (committed under a comment reading "every
-  step fits 1280 x 800 without scrolling") with no mobile-width
-  override enabling scroll. The footer — "Runs at … nothing
-  leaves this machine unless you turn on the cloud loop", the
-  step counter, and "Press ⏎ to begin" — renders past the
-  clipped bottom edge and is unreachable, not just below the
-  fold. It's the one line answering "is my data leaving this
-  machine," invisible to a phone-first adopter right where the
-  cloud-token scenario raises that question.
-- evidence: walk-44909096461,
-  {plain-folder,cloud-token,fleet-to-tug}--mobile--onboarding-welcome.png;
-  packages/cli/src/styles/nexus.css:779,1304
-- suggested fix: packages/cli/src/styles/nexus.css — add a
-  `max-width: 760px` override on `.ob` that allows vertical
-  scroll (or shrinks `.ob-grid`'s loop art) so the footer stays
-  reachable on mobile.
-- source: walk
-
 ### [ ] [MED] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden
 - category: ui-comprehension
 - observation: desktop shows the full 8-step named stepper;
@@ -151,6 +94,45 @@
 - source: walk
 
 ## Done
+
+### [x] [HIGH] /onboarding/welcome @ mobile (plain-folder) — the footer's local-only trust line is clipped off-screen with no scroll — this commit
+- category: ui-comprehension
+- observation: the same cutoff repeats identically on the
+  cloud-token and fleet-to-tug mobile captures of this screen.
+  On mobile the onboarding grid stacks the loop diagram below
+  the copy, pushing total height past one viewport.
+  `packages/cli/src/styles/nexus.css:779` sets `.ob { overflow:
+  hidden }` and `:1304` repeats `.ob { height: 100vh;
+  min-height: 0 }` (committed under a comment reading "every
+  step fits 1280 x 800 without scrolling") with no mobile-width
+  override enabling scroll. The footer — "Runs at … nothing
+  leaves this machine unless you turn on the cloud loop", the
+  step counter, and "Press ⏎ to begin" — renders past the
+  clipped bottom edge and is unreachable, not just below the
+  fold.
+- evidence: walk-44909096461,
+  {plain-folder,cloud-token,fleet-to-tug}--mobile--onboarding-welcome.png;
+  packages/cli/src/styles/nexus.css:779,1304
+- fix: added a `.ob` override inside the existing `@media
+  (max-width: 760px)` block that already carries the `.ob-grid`
+  mobile-stack override (`nexus.css`, right after the comment
+  explaining why a second override has to land after the
+  unconditional "ONBOARDING STEPS" rules to win the cascade):
+  `height: auto; min-height: 100vh; overflow-y: auto;`. The base
+  `.ob { height: 100vh; overflow: hidden }` stays untouched for
+  desktop, where every step still fits without scrolling; on
+  mobile the frame now grows to its stacked content and scrolls,
+  so the footer is reachable. Mirrored into
+  `packages/cli/design/handoff/nexus.css` (the "change both
+  together" contract). Verified: a scripted mobile walk
+  (390×844) shows `scrollHeight` (1067px) exceeding `clientHeight`
+  (844px) where it used to be clamped equal, and the footer's
+  bounding rect sits inside the viewport after scrolling to the
+  bottom; `npm --prefix packages/cli run walk` across all three
+  scenarios × both viewports (desktop + mobile) on
+  `/onboarding/welcome` reports 0 findings, desktop screenshot
+  unchanged.
+- source: walk
 
 ### [x] [LOW] README.md:480 — `/lessons-pr` is referenced with no prior definition anywhere in README.md — this commit
 - category: comprehension
@@ -491,81 +473,6 @@
   otherwise have split off." `prompts/pitch.md` carries no
   matching "follow the playbook"/single-commit language, so it
   needed no parallel edit.
-- source: dry-run
-
-### [x] [MED] playbooks/new-project.md:376-382 — agents.md prune cross-references have no mechanical check, unlike the copy+sweep step — this commit
-- category: comprehension
-- observation: step 4's "Prune adopt-by-need files" explicitly
-  requires manually stripping the matching row from the
-  just-copied root `agents.md` (Skills table + Invocation block
-  + `brander` row) for each adopt-by-need skill removed —
-  "Leaving them means the kit's own cold-start entry point still
-  advertises a command that isn't on disk." Unlike the
-  copy+placeholder-sweep step (verified by
-  `node scripts/adopt-dryrun.mjs`), nothing mechanizes this
-  check. Following the playbook's own example `rm` block
-  literally (pruning `ship-data`/`ship-migration`/`ship-asset`/
-  `moderate`/`digest`/`bootstrap` in a scratch repo) leaves
-  `agents.md` referencing all six removed skills/commands —
-  exactly the "misleading" state the doc warns against, and
-  nothing in the adoption flow catches it.
-- evidence: after running the playbook's own prune `rm` command
-  in a scratch repo, `grep -n
-  "ship-data\|ship-migration\|ship-asset\|moderate\|digest\|bootstrap\|brander"
-  agents.md` still returned 10 live rows pointing at files that
-  no longer exist on disk.
-- suggested fix: extend `scripts/adopt-dryrun.mjs` (or add a
-  small lint) to flag `agents.md` rows naming a `skills/*.md` /
-  `.claude/commands/*.md` file that doesn't exist in the scratch
-  tree after pruning.
-- fix: extended `scripts/adopt-dryrun.mjs` to run the Prune
-  step's own worked `rm` example after the copy+sweep, then
-  check the scratch `agents.md` for any Skills-table row,
-  Invocation-block line, or `brander` Sub-agents row still
-  pointing at a file the prune removed. That surfaced the
-  example itself as incomplete (it only removed files, never
-  the `agents.md` rows the surrounding prose also requires), so
-  extended the example's `bash`/`powershell` blocks in
-  `playbooks/new-project.md` to strip those rows too — the
-  mechanized check and the doc's own worked example now agree.
-- source: dry-run
-
-### [x] [HIGH] prompts/adopt.md:89 / templates/agents.md:24-26 — kit's "no Co-Authored-By" rule is unconditional and actively blocks commits under a common Claude Code attribution convention — this commit
-- category: instruction-drift
-- observation: `agents.md` standing rule 2 and the paste-prompt
-  in `prompts/adopt.md` ("No Co-Authored-By trailers, no
-  emojis. ... Nothing else, ever") are absolute, with zero
-  carve-out for environments where the agent's own harness
-  injects an attribution convention. This isn't hypothetical:
-  cloud/team Claude Code setups commonly carry a system
-  instruction to append a `Co-Authored-By:` trailer to every
-  commit. A dry-run reproduction of the resulting deadlock: a
-  `git commit` with that trailer, in a scratch repo with
-  `.claude/hooks/guard.mjs` active (copied per the template),
-  was hard-blocked by the guard hook.
-- evidence: exact command and output —
-  ```
-  git commit -m "feat: probe attribution conflict
-
-  Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-  ```
-  →
-  ```
-  PreToolUse:Bash hook error: [node .claude/hooks/guard.mjs pre-bash]: guard: commit bodies are plain (agents.md standing rule 2) — no Co-Authored-By trailers, no emojis. The only sanctioned trailer is Cloud-Run: (cloud ticks only). Rewrite the message.
-  ```
-  (rule source: `agents.md:18`, `templates/agents.md:24-26`,
-  `prompts/adopt.md:87-89`)
-- suggested fix: add one line to `agents.md` rule 2 /
-  `prompts/adopt.md`'s standing-rules block telling the
-  adopting agent to strip any harness-injected attribution
-  trailer before every commit, since some Claude Code
-  environments add one by default.
-- fix: applied the suggested fix in all three cited locations —
-  `agents.md` rule 2, `templates/agents.md`'s matching rule, and
-  `prompts/adopt.md`'s standing-rules block each now carry a
-  sentence telling the agent to strip any harness-injected
-  attribution trailer before every commit, since this rule
-  overrides that convention in this repo.
 - source: dry-run
 
 ### [x] [MED] /inbox @ mobile (plain-folder) — the Oversight filter row clips its last option off-screen with no scroll affordance — this commit

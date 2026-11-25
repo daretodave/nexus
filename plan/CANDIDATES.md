@@ -48,26 +48,6 @@
 - conflicts: pairs with the README conversion pass below —
   promote together or sequence prompts/ first.
 
-### [x] [score 8.5] Two-ring secrets topology (.env vs .env.workspace) (absorbed into spec 42, 2026-10-21)
-- proposed: 2026-07-03
-- source signals: both mature adoptions run the same secrets
-  layering the kit says nothing about — per-repo `.env` for the
-  loop's own gate tokens, workspace-root `.env.workspace` for
-  cross-repo operational secrets, `.secrets/` for key FILES.
-- rationale: the safety property is structural, not procedural —
-  the workspace root is outside every repo, so `git add -A`
-  physically cannot leak Ring 2. Answers the scariest adopter
-  question ("where do secrets go?") with architecture.
-- proposed scope: `customization/workspace-secrets.md` (two
-  rings + key-file pointer rule + placement tiebreaker: consumed
-  by, or granting power over, more than one repo -> Ring 2);
-  `templates/env/env.workspace.example` (names never values;
-  per-key grammar: minted-by runbook, mirrored-to, expires);
-  header pointer in `templates/env/env.example`; see-also links
-  in polyrepo.md + external-services.md.
-- estimated phases: 1
-- conflicts: none — opens with "skip unless polyrepo/workspace".
-
 ### [promoted 2026-08-23 → phase 19] [score 9.0] Rewrite playbooks/new-project.md's step-4 copy-and-placeholder walkthrough as one verified sequence
 - proposed: 2026-07-06; re-evidenced 2026-07-10, 2026-07-13,
   2026-07-21, 2026-07-23 (x2), 2026-07-24, 2026-07-26
