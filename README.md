@@ -342,7 +342,8 @@ nexus/
 │   ├── plan-shape.md                   # + generators.md: chunks/acceptance IDs, the refill lane
 │   ├── loop-shapes.md                  # the genus: dispatcher, night shift, heartbeat, lanes, meta-loop
 │   ├── loop-honesty.md                 # pick/claim/build/gate/close/land/report × what's mechanical, what's trust
-│   └── skills-anatomy.md               # + asking-well.md, design-round-trip.md: writing a skill, asking well, Design handoff vs in-repo
+│   ├── skills-anatomy.md               # + asking-well.md, design-round-trip.md: writing a skill, asking well, Design handoff vs in-repo
+│   └── reboot-train.md                 # native session calls (resume, list, fork) vs the reboot train's own ledger, field by field
 ├── customization/                      # pick what applies; each doc is self-contained
 │   ├── verify-gate.md                  # + hermetic-e2e.md, data-layer.md: composing checks, the e2e leg, gh-as-db/hybrid/pure-db/saas-cms/none
 │   ├── sub-agents.md                   # + lanes.md, project-lanes.md, claims.md, sessions.md, claude-code.md: specialists, fan-out, who builds what, permission walls

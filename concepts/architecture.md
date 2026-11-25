@@ -478,6 +478,9 @@ an un-versioned local root — never its own git repo — holding
   own word.
 - [`skills-anatomy.md`](./skills-anatomy.md) — how to read or
   write a skill file in detail.
+- [`reboot-train.md`](./reboot-train.md) — what a runtime's
+  own session calls restore after a restart, against what the
+  reboot train's ledger restores, field by field.
 - [`../playbooks/new-project.md`](../playbooks/new-project.md)
   — concrete adoption steps for a fresh repo.
 - [`../playbooks/hands-off.md`](../playbooks/hands-off.md) —
