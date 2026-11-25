@@ -12,7 +12,9 @@ The owner is about to restart the machine (or every Claude
 session). Each loop parks itself with `/reboot-ready`, writing
 its state into its live ledger (`.nexus/sessions/<id>.json`,
 `scripts/ledger.mjs`), and after the restart each one is picked
-up with `/reboot-resume`. This skill is the conductor: it
+up with `/reboot-resume`. Claims and worktrees stay in those
+ledgers, not a native session call: `concepts/reboot-train.md`
+says why. This skill is the conductor: it
 announces, checks, and prints the resume lines. The train's own
 file is `.nexus/reboot/<slug>.md` at the primary checkout's root
 (the first `worktree` in `git worktree list --porcelain`):
