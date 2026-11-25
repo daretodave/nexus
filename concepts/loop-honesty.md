@@ -81,5 +81,5 @@ the rest as candidates is chunk 75.3's.
   passes through; Layer 3 is where the gate sits.
 - [`plan-shape.md`](./plan-shape.md) — the chunk shape the
   `chunks` leg holds to.
-- [`../plan/75-loop-failure-modes.md`](../plan/75-loop-failure-modes.md)
-  — the spec this table closes.
+- [`../plan/ARCHIVE.md`](../plan/ARCHIVE.md) — spec 75's line,
+  the spec this table closed.
