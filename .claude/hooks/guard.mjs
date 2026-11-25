@@ -66,12 +66,17 @@ const VERBS = [
 // invocation. Two shapes: a plain quoted string, or the
 // heredoc-body pattern this repo's skills use for multi-line
 // messages (`-m "$(cat <<'EOF' ... EOF)"`) — for that shape the
-// heredoc's own first line is the subject. Returns null when
-// neither matches (fails open — backstop, not primary enforcement).
+// backreference to the opener's own delimiter word captures the
+// full body (subject line through the trailers), stopping at the
+// line that is just the delimiter, not only the body's first
+// line. (Known gap: a `<<-` heredoc's closing delimiter may itself
+// be indented in real bash; this regex requires it at column 0.)
+// Returns null when neither shape matches (fails open — backstop,
+// not primary enforcement).
 function extractCommitMessage(cmd) {
   if (!/\bgit\b[^|;&\n]*\bcommit\b/.test(cmd)) return null
   const heredoc = cmd.match(
-    /(?:-m|--message)\s+"\$\(cat\s*<<-?\s*['"]?(\w+)['"]?\s*\n([^\n]*)/,
+    /(?:-m|--message)\s+"\$\(cat\s*<<-?\s*['"]?(\w+)['"]?\s*\n([\s\S]*?)\n\1\b/,
   )
   if (heredoc) return heredoc[2]
   const m =
@@ -179,6 +184,27 @@ const RULES = [
       `Use "<verb>: <subject>" with verb in: ${VERBS.join(', ')}. ` +
       'New verb → add it to bearings.md and VERBS in this file, ' +
       'same commit.',
+  },
+  {
+    // The 2026-11-21 gap (plan/75-loop-failure-modes.md): a fix commit
+    // named the mirror ("Mirrored as #N") without the one phrase GitHub
+    // auto-closes on, and the issue sat open, unnoticed, for a week.
+    name: 'mirror-not-closed',
+    test: (cmd) => {
+      const msg = extractCommitMessage(cmd)
+      if (msg === null) return false
+      const mirrored = [...msg.matchAll(/\bmirrored as #(\d+)/gi)].map((m) => m[1])
+      if (!mirrored.length) return false
+      const closed = new Set([...msg.matchAll(/\b(?:closes|fixes|resolves)\s+#(\d+)/gi)].map((m) => m[1]))
+      return mirrored.some((n) => !closed.has(n))
+    },
+    message:
+      'guard: this commit says "Mirrored as #N" for an issue it never ' +
+      'closes. Only `Closes #N` (or `Fixes #N` / `Resolves #N`) is a ' +
+      'phrase GitHub auto-closes on (skills/iterate.md Step 7) — ' +
+      '"Mirrored as #N" alone left four fixed findings open for a week ' +
+      'in November 2026. Add a `Closes #N` line for that same issue ' +
+      'number (or close it separately).',
   },
 ]
 
@@ -998,6 +1024,22 @@ async function selfTest() {
     // own first line, not the "$(cat <<'EOF'" wrapper
     ['git commit -m "$(cat <<\'EOF\'\nfeat: ship phase 28\n\nbody line\nEOF\n)"', null],
     ['git commit -m "$(cat <<\'EOF\'\nnonsense: bad verb\n\nbody line\nEOF\n)"', 'commit-verb'],
+    // mirror-not-closed: the 2026-11-21 gap — "Mirrored as #N" names
+    // the mirror but never closes it; only Closes/Fixes/Resolves #N
+    // does, and only for that same issue number
+    ['git commit -m "fix: tighten regex\n\nMirrored as #42"', 'mirror-not-closed'],
+    ['git commit -m "fix: tighten regex\n\nCloses #42"', null],
+    ['git commit -m "fix: tighten regex\n\nMirrored as #42\nCloses #42"', null],
+    ['git commit -m "fix: tighten regex\n\nMirrored as #42\nCloses #7"', 'mirror-not-closed'],
+    ['git commit -m "fix: tighten regex\n\nNo mirror involved here."', null],
+    // mirror-not-closed through the heredoc shape — the real shape
+    // this repo's skills commit with (Bash-tool instructions'
+    // `-m "$(cat <<'EOF' ... EOF)"`): the trailer is in the body,
+    // past the heredoc's first line, so this only blocks once
+    // extractCommitMessage returns the FULL body, not just that
+    // first line
+    ['git commit -m "$(cat <<\'EOF\'\nfix: tighten regex\n\nMirrored as #42\nEOF\n)"', 'mirror-not-closed'],
+    ['git commit -m "$(cat <<\'EOF\'\nfix: tighten regex\n\nMirrored as #42\nCloses #42\nEOF\n)"', null],
     // bare-worktree-remove: the command blocked, a quoted mention passes
     ['git worktree remove ../wt/07.1', 'bare-worktree-remove'],
     ['git -C /r worktree remove --force ../wt/x', 'bare-worktree-remove'],
