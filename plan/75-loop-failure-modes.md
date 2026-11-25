@@ -44,11 +44,6 @@ commits that said "Mirrored as #N" where the skill asked for
 
 ## Acceptance
 
-- **A1** `concepts/loop-honesty.md` exists, discoverable, with
-  the table filled for every step of the cycle.
-- **A2** Every "mechanical" cell names a check that exists in
-  the repo; every "trust" cell names the sentence it rests
-  on.
 - **A3** One trust cell is mechanized in this spec, with a
   test or a gate leg.
 - **A4** Each remaining trust cell worth closing is a row in
@@ -61,22 +56,13 @@ commits that said "Mirrored as #N" where the skill asked for
   likely hardest and the least likely pick.
 
 ## Chunks
-Measure: 4 open · 0 closed · next A5
+Measure: 2 open · 2 closed · next A5
 
-- [ ] **75.1** Write `concepts/loop-honesty.md`: the table
-  (pick, claim, build, gate, close, land, report × the three
-  failure modes), every mechanical cell naming a check that
-  exists in the repo, every trust cell naming the skill
-  sentence it rests on; linked from
-  `concepts/architecture.md` and the README tree; states
-  plainly that a one-model loop cannot fully check itself and
-  names the outside checks (`/critique`, `/oversight`, a pull
-  request review) · M · closes A1, A2 · needs —
 - [ ] **75.2** From the table's trust cells, pick the one
   cheapest to mechanize that has already cost something (the
   "Mirrored as #N" vs `Closes #N` gap from 2026-11-21 is one
   candidate) and mechanize it with a gate leg or a test · S ·
-  closes A3 · needs 75.1
+  closes A3 · needs —
 - [ ] **75.3** File each remaining trust cell worth closing as
   a row in `plan/CANDIDATES.md`, with its evidence · S ·
-  closes A4 · needs 75.1, 75.2
+  closes A4 · needs 75.2
