@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-11-18
-> Pass count: 28
+> Last pass: 2026-11-25
+> Pass count: 29
 > Posture: bold
 > Last field research: 2026-11-24
 
@@ -519,6 +519,54 @@
   somewhere to live.
 - estimated chunks: 1
 - conflicts: none.
+
+### [ ] [score 6.0] Onboarding Welcome's mobile screen keeps shedding one ui-comprehension finding per patch instead of closing the class
+- proposed: 2026-11-25 (expand)
+- kind: product
+- source signals: signal F (product telemetry, via
+  `plan/CRITIQUE.md` pass 38's walk rows, `walk-44909096461`) —
+  three pending findings against the same mobile Welcome
+  screen at once: a [HIGH] row where `.ob { overflow: hidden }`
+  (`packages/cli/src/styles/nexus.css:779,1304`) clips the
+  footer's local-only trust line off-screen with no scroll; a
+  [MED] row where the mobile stepper collapses to a bare "1 of
+  8" with every step name hidden
+  (`nexus.css:901-917`); and a [MED] row where the desktop
+  stepper's step names (`packages/cli/src/ui/steps.js:9-16`)
+  carry no `title`/hover hint. This is the same screen a
+  rejected 2026-11-18 candidate already named once (Welcome
+  headline + Stepper + Oversight filter row, all "fixed ad
+  hoc, no spec needed") — and the mobile stepper's own fix from
+  that round (`da4d724`'s `.stp-count` collapse) is what
+  directly produced this pass's "every step name hidden"
+  finding, the second time a patch on this screen has traded
+  one visibility gap for another instead of closing it.
+- rationale: three independent comprehension gaps on one
+  screen, discovered in one walk pass, after two prior rounds
+  of one-off CSS patches on the identical screen (one build
+  cycle already closed, one new regression it caused) — the
+  pattern read as the same shape agents.md calls out for
+  playbooks/new-project.md's step-4 block: ad hoc fixes keep
+  the symptom count flat while moving which symptom shows.
+  Adopter-facing (the first screen a stranger meets on a
+  phone), cheap to scope (CSS/JSX only, no template API
+  surface).
+- proposed scope: one structural pass over
+  `packages/cli/src/screens/onboarding/Welcome.jsx` and the
+  `.ob`/`.stepper` rules in `packages/cli/src/styles/nexus.css`
+  (mirrored into `packages/cli/design/handoff/nexus.css` per
+  its own contract): let the footer's trust line stay reachable
+  on mobile (a bounded scroll region instead of `overflow:
+  hidden`, or a shorter `.ob-grid`) and give the mobile stepper
+  a step name alongside its position instead of a bare count;
+  add a `title`/hint per step (`packages/cli/src/ui/steps.js`)
+  for both viewports so the desktop jargon finding closes in
+  the same commit. Closes all three current CRITIQUE rows
+  together.
+- estimated chunks: 1
+- conflicts: none known — CSS/JSX only; distinct from the
+  2026-11-18 rejected row (that row's own fixes produced two of
+  these three new findings, not a re-evidence of it).
 
 ## Promoted
 
