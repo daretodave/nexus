@@ -33,7 +33,7 @@ line goes; each line is a lock that times out, so it carries
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 73 | Prompt audit joins the kit's prompt-maintenance story | [73-prompt-audit-story.md](73-prompt-audit-story.md) | planned | 0 of 2 chunks |
-| 76 | The reboot train against the runtime's own session calls | [76-native-session-primitives.md](76-native-session-primitives.md) | planned | not chunked yet |
+| 76 | The reboot train against the runtime's own session calls | [76-native-session-primitives.md](76-native-session-primitives.md) | planned | 0 of 2 chunks |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
