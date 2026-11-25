@@ -322,3 +322,4 @@ still pending at the move and live on as specs.
 - 2026-11-24 · 74.4 · plan-shape.md names the read-live rule · c4b17f7b..c4b17f7b
 - 2026-11-24 · 74 · spec complete: audited every place `/next`, `/march`'s dispatch and the plan scripts read plan state and classified each read live or stale; found one stale read (`/next`'s close acting on an earlier pick), fixed by 74.2's `order.mjs status` CLI and 74.3's re-read before the pending close; `concepts/plan-shape.md`'s "Reading plan state live" section is the lasting rule · deleted in (this commit)
 - 2026-11-25 · 75.1 · concepts/loop-honesty.md tables what the loop checks vs trusts · 4366a78d..4366a78d
+- 2026-11-25 · 75.2 · guard.mjs blocks a mirror commit missing its Closes trailer · 33b28930..ae648ef5

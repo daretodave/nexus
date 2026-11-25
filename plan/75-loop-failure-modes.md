@@ -44,8 +44,6 @@ commits that said "Mirrored as #N" where the skill asked for
 
 ## Acceptance
 
-- **A3** One trust cell is mechanized in this spec, with a
-  test or a gate leg.
 - **A4** Each remaining trust cell worth closing is a row in
   `plan/CANDIDATES.md`.
 
@@ -56,13 +54,8 @@ commits that said "Mirrored as #N" where the skill asked for
   likely hardest and the least likely pick.
 
 ## Chunks
-Measure: 2 open · 2 closed · next A5
+Measure: 1 open · 3 closed · next A5
 
-- [ ] **75.2** From the table's trust cells, pick the one
-  cheapest to mechanize that has already cost something (the
-  "Mirrored as #N" vs `Closes #N` gap from 2026-11-21 is one
-  candidate) and mechanize it with a gate leg or a test · S ·
-  closes A3 · needs —
 - [ ] **75.3** File each remaining trust cell worth closing as
   a row in `plan/CANDIDATES.md`, with its evidence · S ·
-  closes A4 · needs 75.2
+  closes A4 · needs —
