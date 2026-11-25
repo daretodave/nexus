@@ -52,6 +52,15 @@
   line to sit just above the `## nexus runs on nexus` section.
 - source: plan/CRITIQUE.md (Pending)
 
+### [cli-ci #45687001768] [HIGH] cli-ci red on main since 3962535 (1 red run)
+- category: cli-ci
+- impact: 9
+- ease: 6
+- evidence: cli-ci run 45687001768 (https://github.com/daretodave/nexus/actions/runs/45687001768) concluded failure at 3962535 "fix(cli): onboarding Welcome mobile footer scrolls instead of clipping"; failed jobs: test; red since run 45687001768 on 2026-11-25.
+- next: reproduce at main with `npm --prefix packages/cli test` and `npm --prefix packages/cli run build`, fix it in packages/cli; the run's log names the failing step.
+- gate: npm --prefix packages/cli test
+- generator: cli-ci-red · filed 2026-11-25
+
 ## Done
 
 ### [x] [H, 8.1] /onboarding/welcome @ mobile (plain-folder) — the footer's local-only trust line is clipped off-screen with no scroll — this commit (source: plan/CRITIQUE.md, moved to its own Done)
