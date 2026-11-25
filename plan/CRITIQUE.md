@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-21
-> Pass count: 38
+> Last pass: 2026-11-25
+> Pass count: 39
 
 ## Pending
 
@@ -91,6 +91,117 @@
   ~line 22) — add a `title` per step, sourced from a short
   `hint` string added to each `STEPS` entry in
   `packages/cli/src/ui/steps.js`.
+- source: walk
+
+### [ ] [HIGH] prompts/adopt.md:76-81,126-127 vs playbooks/new-project.md:803-940 — adopt.md's named exceptions to "follow the playbook end-to-end" don't cover the one it actually takes
+- category: instruction-drift
+- observation: `prompts/adopt.md:76-81` tells the delegated
+  agent to follow the matching playbook end-to-end, "do not
+  skip steps", naming one carve-out: the playbook's own
+  intermediate commit instructions, "for a human working the
+  playbook by hand." `playbooks/new-project.md` step 10 (lines
+  803-813, the smoke test) and step 11 (line 837) both instruct
+  running `/next`. But `prompts/adopt.md:126-127` then says
+  "stop. Do not invoke /next yourself; let the user do that as
+  the first conscious step" — a second carve-out that is never
+  named alongside the first, so an agent reading line 76-81
+  literally has no signal that steps 10-11 are also exceptions
+  until it collides with the contradiction three sections
+  later. `README.md:70-75`'s own paste prompt doubles down on
+  literalism ("follow adopt.md exactly, in order... do not skip
+  steps") right before the gap.
+- evidence: prompts/adopt.md:76-81 vs prompts/adopt.md:126-127
+  vs playbooks/new-project.md:803-813,837-940
+- suggested fix: in prompts/adopt.md:76-81, name the smoke-test
+  /ratchet steps (10-11) as a second exception the same way the
+  commit-split carve-out is named, e.g. "...except its own
+  intermediate commit instructions... and its final
+  smoke-test/ratchet steps (10-11), which the user runs
+  themselves after reviewing the diff."
+- source: dry-run
+
+### [ ] [MED] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json
+- category: ordering
+- observation: every other numbered step in the playbook
+  produces a concrete artifact or runs a command. Step 6 opens
+  by admitting "No `package.json` exists yet at this point in
+  the walk — step 7 creates one" (line 628) and then only
+  previews the JSON shape step 7 will create — no file written,
+  nothing run. A stranger following the numbered checklist
+  expects each step to do something, and may try running the
+  verify command right after step 6 and be confused there is no
+  `package.json` yet.
+- evidence: playbooks/new-project.md:628 ("No `package.json`
+  exists yet at this point in the walk — step 7 creates one")
+  inside a step titled "Wire the verify gate" with no write of
+  its own.
+- suggested fix: fold step 6 into step 7 as one step ("Wire the
+  verify + deploy gates"), or move the `package.json` creation
+  (`pnpm init -y`) into step 6 so it actually wires something,
+  deferring only the deploy-specific script to step 7.
+- source: dry-run
+
+### [ ] [MED] templates/README.md:316-320 vs playbooks/new-project.md §4 — the playbook's placeholder table omits `<DEPLOY_URL>`, so a stray-token sweep flags it as a missed replace
+- category: placeholder
+- observation: `templates/README.md` explains `<DEPLOY_URL>` is
+  deliberately excluded from the 9-placeholder sed sweep (it's
+  a CLI arg filled in at command-run time, not adoption time).
+  But `playbooks/new-project.md` §4 — the file an adopter's
+  agent actually works through step by step — lists only the 9
+  swept placeholders in its table and never mentions
+  `<DEPLOY_URL>` at all. `<DEPLOY_URL>` is still literally
+  present after the sweep in `templates/skills/ship-a-chunk.md`
+  and `templates/skills/iterate.md`; anyone grepping the copied
+  tree for stray `<...>` tokens as a sanity check has no way,
+  from the playbook alone, to know this one is expected.
+- evidence: `grep -rln '<DEPLOY_URL>' templates/skills/` →
+  ship-a-chunk.md, iterate.md; templates/README.md:316-320 is
+  the only explanation; playbooks/new-project.md has zero
+  occurrences of "DEPLOY_URL".
+- suggested fix: add one line to playbooks/new-project.md §4
+  near the placeholder table noting `<DEPLOY_URL>` is
+  deliberately excluded from the sweep, pointing at
+  templates/README.md's explanation.
+- source: dry-run
+
+### [ ] [LOW] README.md:41-90 — "Three doors in" heading promises three but a 4th sibling heading follows
+- category: voice
+- observation: `## Three doors in` (line 41) is followed by
+  three numbered H3s (`### 1. Using Claude Code?`, `### 2. Any
+  other agent?`, `### 3. By hand?`), then a 4th H3 still nested
+  under the same H2: `### Used v1? On v2?` (line 90) — a
+  different kind of entry point (upgrading, not adopting). A
+  stranger counting "three doors, pick one" hits a 4th sibling
+  heading and has to stop to work out whether it's a door too.
+- evidence: `grep -n "^#" README.md` → 41:## Three doors in,
+  46:### 1..., 64:### 2..., 81:### 3..., 90:### Used v1? On v2?
+  — four H3s under one H2 titled "Three doors in."
+- suggested fix: promote "Used v1? On v2?" to its own `##`
+  section, or add a short transition sentence before it ("A
+  fourth case: already adopted a previous version?").
+- source: dry-run
+
+### [ ] [MED] /board @ desktop (fleet-to-tug) — chunk-size badges and claims status words have no legend
+- category: ui-comprehension
+- observation: every chunk row shows a bare one-letter badge
+  ("S", "M", "L") with no key anywhere on the page explaining it
+  denotes an estimated chunk size. In the "Claims by person"
+  panel, three agents show "Working" while one shows "terminal"
+  instead — a meaningful distinction (cloud session vs. local
+  CLI session) rendered as plain unexplained text, no tooltip or
+  legend for a sighted user. `SizeTag`
+  (`packages/cli/src/ui/plan.jsx:9-11`) only sets an
+  `aria-label`, which reaches screen readers but gives sighted
+  users nothing beyond the bare letter.
+- evidence: fleet-to-tug--desktop--board.png; walk-45687108014;
+  packages/cli/src/ui/plan.jsx:9-11 (`SizeTag`);
+  packages/cli/src/screens/board/parts.jsx (claims status text)
+- suggested fix: add a `title` attribute to `SizeTag` in
+  packages/cli/src/ui/plan.jsx (e.g. "Estimated size:
+  Small/Medium/Large") and a similar tooltip on the status word
+  rendered for claims rows in packages/cli/src/screens/board/parts.jsx
+  explaining "terminal" means a local CLI session, not a cloud
+  run.
 - source: walk
 
 ## Done
