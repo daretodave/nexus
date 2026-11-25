@@ -6,17 +6,6 @@
 
 ## Pending
 
-### [ ] [MED, 3.0] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden
-- category: ui-comprehension
-- impact: 6, ease: 5
-- evidence: `nexus.css:901-917` hides every step but the
-  current one on mobile, leaving only the numeric counter; a
-  mobile adopter can't see what the remaining steps involve.
-- next: `packages/cli/src/ui/feedback.jsx` (`Stepper`, ~line
-  17) or the same media query — surface the next step's label
-  beside the counter on mobile.
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [LOW, 2.4] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
 - category: voice
 - impact: 3, ease: 8
@@ -28,6 +17,23 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 3.0] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden — this commit
+- category: ui-comprehension
+- impact: 6, ease: 5
+- evidence: `nexus.css:901-917`
+  (`.stp-lines, .stp:not(.is-current) { display: none }`) hides
+  every step but the current one on mobile, leaving only the
+  numeric counter — a mobile adopter can't see what step comes
+  next, and the hover hint the prior tick added to each step's
+  `title` doesn't help without hover.
+- fix: `Stepper` (`packages/cli/src/ui/feedback.jsx`) now reads
+  `stepAfter(current, steps)` and renders a `.stp-next` span
+  ("Next: <label>") beside `.stp-count`; `nexus.css` (and its
+  `design/handoff/` mirror) hide `.stp-next` by default and show
+  it inline inside the existing `max-width: 760px` block,
+  alongside `.stp-count`'s own display flip.
+- source: plan/CRITIQUE.md (Pending)
 
 ### [x] [MED, 4.2] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint — this commit
 - category: ui-comprehension

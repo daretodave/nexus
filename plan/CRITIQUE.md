@@ -34,25 +34,6 @@
   above the `## nexus runs on nexus` section instead.
 - source: dry-run
 
-### [ ] [MED] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden
-- category: ui-comprehension
-- observation: desktop shows the full 8-step named stepper;
-  `packages/cli/src/styles/nexus.css:901-917`
-  (`@media (max-width: 760px)`) hides every step but the current
-  one (`.stp-lines, .stp:not(.is-current) { display: none }`),
-  leaving only the numeric counter. A mobile adopter can't see
-  what the remaining setup steps involve, only that there are 8
-  unnamed ones.
-- evidence: walk-44909096461,
-  plain-folder--mobile--onboarding-welcome.png vs
-  plain-folder--desktop--onboarding-welcome.png;
-  packages/cli/src/styles/nexus.css:901-917
-- suggested fix: packages/cli/src/ui/feedback.jsx (`Stepper`,
-  ~line 17) or the same media query — surface the next step's
-  label beside the counter on mobile instead of collapsing to a
-  number only.
-- source: walk
-
 ### [ ] [HIGH] prompts/adopt.md:76-81,126-127 vs playbooks/new-project.md:803-940 — adopt.md's named exceptions to "follow the playbook end-to-end" don't cover the one it actually takes
 - category: instruction-drift
 - observation: `prompts/adopt.md:76-81` tells the delegated
@@ -165,6 +146,26 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden — this commit
+- category: ui-comprehension
+- observation: desktop shows the full 8-step named stepper;
+  `packages/cli/src/styles/nexus.css:901-917`
+  (`@media (max-width: 760px)`) hides every step but the current
+  one (`.stp-lines, .stp:not(.is-current) { display: none }`),
+  leaving only the numeric counter. A mobile adopter can't see
+  what the remaining setup steps involve, only that there are 8
+  unnamed ones.
+- evidence: walk-44909096461,
+  plain-folder--mobile--onboarding-welcome.png vs
+  plain-folder--desktop--onboarding-welcome.png;
+  packages/cli/src/styles/nexus.css:901-917
+- fix: `Stepper` (`packages/cli/src/ui/feedback.jsx`) now reads
+  `stepAfter(current, steps)` and renders a `.stp-next` span
+  ("Next: <label>") beside `.stp-count`; `nexus.css` (and its
+  `design/handoff/` mirror) show it inline only inside the
+  existing `max-width: 760px` block.
+- source: walk
 
 ### [x] [MED] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint — this commit
 - category: ui-comprehension
