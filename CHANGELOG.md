@@ -9,6 +9,13 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/skills/reboot-resume.md: Step 2's "The Claude
+  session" point names the actual native path
+  (`SendMessage` to a name `ListAgents` still lists) and says
+  plainly that no condition makes it strictly better than the
+  ledger for this skill's job — restoring worktree, claims and
+  plan state — so the ledger stays the only path relied on
+  (2026-11-25, 76.2).
 - templates/skills/rebooting.md: the Purpose section gains one
   sentence — claims and worktrees stay in the ledger rather than
   a native session call, pointing at nexus's own

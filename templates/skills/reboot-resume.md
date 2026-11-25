@@ -46,10 +46,14 @@ checks that are already true, and go to Step 3.
 
 ### Step 2 — Take the work back
 
-1. **The Claude session:** where the harness can resume one by
-   id (the GUI's SDK `resume`), try it first; it carries the
-   whole context. Otherwise this fresh session works from the
-   ledger alone (this skill's path).
+1. **The Claude session:** the only native path is
+   `SendMessage` to a name `ListAgents` still lists; a fallen
+   or crashed session is off the list, nothing to resume by
+   id. Per `nexus/concepts/reboot-train.md`, no condition makes
+   that call strictly better here — it never carries worktree,
+   claims or plan state — so the ledger stays the only path
+   this skill relies on, never a substitute for the claims,
+   worktree and children steps below.
 2. **Claims:** `node scripts/claims.mjs list`. The ledger's
    claims sit under the old session: the owner takes them over
    with `node scripts/claims.mjs claim <ids…> --force` (plus
