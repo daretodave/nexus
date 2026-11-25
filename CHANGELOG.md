@@ -9,6 +9,13 @@
 > it touched. Surfaced at upgrade time — see
 > `playbooks/upgrade.md`.
 
+- templates/claude/hooks/guard.mjs: a new `mirror-not-closed` rule
+  blocks a `git commit` whose message says "Mirrored as #N" for an
+  issue it never closes — only `Closes #N` (`Fixes #N` / `Resolves
+  #N`) for that same number is a phrase GitHub auto-closes on
+  (`templates/skills/iterate.md` Step 5's `- Closes #<N>` trailer
+  convention). Mechanizes the gap named in `concepts/loop-honesty.md`
+  (2026-11-25, 75.2).
 - templates/.github/workflows/night.yml: the `claude-code-action@v1`
   step's `env:` gains `CLAUDE_CODE_RETRY_WATCHDOG: '1'` and
   `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS: '1800000'`, so an
