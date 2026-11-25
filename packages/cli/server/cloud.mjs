@@ -345,16 +345,21 @@ export function runClean(cmd, args, { cwd, timeout = GIT_TIMEOUT_MS, env = proce
       resolve({ ok: false, code: -1, out: '', err: String(e.message || e), timedOut: false });
       return;
     }
-    let out = '';
-    let err = '';
+    // Buffers, concatenated and decoded once at close: a chunk boundary mid-character (git show on a file with
+    // multi-byte UTF-8, like a box-drawing comment) must never corrupt it the way decoding each chunk alone would.
+    const outChunks = [];
+    const errChunks = [];
+    const errDecoder = new TextDecoder('utf-8');
     let timedOut = false;
-    child.stdout.on('data', (d) => { out += d; });
-    child.stderr.on('data', (d) => { err += d; if (onErr) { try { onErr(String(d)); } catch { /* a listener's throw never stops the program */ } } });
+    child.stdout.on('data', (d) => { outChunks.push(d); });
+    child.stderr.on('data', (d) => { errChunks.push(d); if (onErr) { try { onErr(errDecoder.decode(d, { stream: true })); } catch { /* a listener's throw never stops the program */ } } });
     const timer = setTimeout(() => { timedOut = true; killTree(child); }, timeout);
-    child.on('error', (e) => { err += String(e.message || e); });
+    child.on('error', (e) => { errChunks.push(Buffer.from(String(e.message || e))); });
     child.on('close', (code) => {
       clearTimeout(timer);
-      resolve({ ok: code === 0 && !timedOut, code: code ?? -1, out, err: err.trim(), timedOut });
+      const out = Buffer.concat(outChunks).toString('utf8');
+      const err = Buffer.concat(errChunks).toString('utf8').trim();
+      resolve({ ok: code === 0 && !timedOut, code: code ?? -1, out, err, timedOut });
     });
   });
 }

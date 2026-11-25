@@ -52,16 +52,34 @@
   line to sit just above the `## nexus runs on nexus` section.
 - source: plan/CRITIQUE.md (Pending)
 
-### [cli-ci #45687001768] [HIGH] cli-ci red on main since 3962535 (1 red run)
-- category: cli-ci
-- impact: 9
-- ease: 6
-- evidence: cli-ci run 45687001768 (https://github.com/daretodave/nexus/actions/runs/45687001768) concluded failure at 3962535 "fix(cli): onboarding Welcome mobile footer scrolls instead of clipping"; failed jobs: test; red since run 45687001768 on 2026-11-25.
-- next: reproduce at main with `npm --prefix packages/cli test` and `npm --prefix packages/cli run build`, fix it in packages/cli; the run's log names the failing step.
-- gate: npm --prefix packages/cli test
-- generator: cli-ci-red · filed 2026-11-25
-
 ## Done
+
+### [x] [cli-ci #45687001768] [HIGH] cli-ci red on main since 3962535 (1 red run) — this commit (issue: #135)
+- category: cli-ci
+- impact: 9, ease: 6
+- evidence: cli-ci run 45687001768 concluded failure at 3962535;
+  the real failing test (`npm --prefix packages/cli test`) was
+  `owner: presets that share a cron still change the cadence...`
+  (`cloud.test.mjs`), unrelated to that commit's actual diff —
+  `one line: the ceiling` asserted `4 !== 2` diff lines.
+- resolution: `runClean` (`packages/cli/server/cloud.mjs`)
+  accumulated a spawned process's stdout/stderr with `out += d`
+  on each `data` Buffer chunk; Node decodes a Buffer to a string
+  per `+=`, so a multi-byte UTF-8 character split across a chunk
+  boundary decodes to U+FFFD independently on each half. `git
+  show`'s output for `templates/.github/workflows/march.yml`
+  (box-drawing `═` comment dividers) hit this on the box-drawing
+  line, turning a 1-line cadence-preset diff into a spurious
+  2-line one. Fixed: collect raw Buffer chunks and decode once
+  at close (`Buffer.concat(...).toString('utf8')`); `onErr`'s
+  streaming callback uses a stateful `TextDecoder({ stream:
+  true })` so a split character carries over between chunks
+  there too. Verified: `cloud.test.mjs` 27/27 green (a
+  sandbox-only `safe.bareRepository` restriction, not this
+  repo's code, blocks unrelated bare-repo fixtures elsewhere in
+  the suite in this environment; same failures, same count
+  minus this one, before and after the fix).
+- generator: cli-ci-red · filed 2026-11-25
 
 ### [x] [H, 8.1] /onboarding/welcome @ mobile (plain-folder) — the footer's local-only trust line is clipped off-screen with no scroll — this commit (source: plan/CRITIQUE.md, moved to its own Done)
 - category: ui-comprehension
