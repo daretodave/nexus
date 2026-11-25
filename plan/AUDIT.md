@@ -6,19 +6,6 @@
 
 ## Pending
 
-### [ ] [MED, 4.2] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint
-- category: ui-comprehension
-- impact: 6, ease: 7
-- evidence: `Stepper` (`packages/cli/src/ui/feedback.jsx:22`)
-  renders labels ("Detect," "Shape," "Plot," "Cloud loop";
-  `packages/cli/src/ui/steps.js:9-16`) as plain links with no
-  `title`/hint, so a stranger can't learn what a remaining step
-  does before clicking in.
-- next: `packages/cli/src/ui/feedback.jsx` (`Stepper`, ~line
-  22) — add a `title` per step, sourced from a short `hint`
-  string added to each `STEPS` entry.
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [MED, 3.0] /onboarding/welcome @ mobile (plain-folder) — the stepper collapses to a bare "1 of 8" with every step name hidden
 - category: ui-comprehension
 - impact: 6, ease: 5
@@ -41,6 +28,20 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 4.2] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint — this commit
+- category: ui-comprehension
+- impact: 6, ease: 7
+- evidence: `Stepper` (`packages/cli/src/ui/feedback.jsx:22`)
+  renders labels ("Detect," "Shape," "Plot," "Cloud loop";
+  `packages/cli/src/ui/steps.js:9-16`) as plain links with no
+  `title`/hint, so a stranger can't learn what a remaining step
+  does before clicking in.
+- fix: each `STEPS` entry (`packages/cli/src/ui/steps.js`) now
+  carries a short `hint` string; `Stepper` passes it through as
+  the `NavA`'s `title` (`packages/cli/src/ui/feedback.jsx:22`),
+  so hovering a step surfaces what it does.
+- source: plan/CRITIQUE.md (Pending)
 
 ### [x] [MED, 5.4] README.md:150,155 — `[needs-user-call]` rows are never glossed before the TL;DR tells an adopter to resolve them — this commit
 - category: comprehension

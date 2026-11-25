@@ -19,7 +19,7 @@ export function Stepper({ steps = STEPS, current, done = [], skipped = [], hrefF
       {steps.map((s) => {
         const state = s.id === current ? 'is-current' : skipped.includes(s.id) ? 'is-skipped' : done.includes(s.id) ? 'is-done' : '';
         return (
-          <NavA key={s.id} className={cx('stp', state)} href={hrefFor ? hrefFor(s.id) : `#${s.id}`} aria-current={s.id === current ? 'step' : undefined}>
+          <NavA key={s.id} className={cx('stp', state)} href={hrefFor ? hrefFor(s.id) : `#${s.id}`} aria-current={s.id === current ? 'step' : undefined} title={s.hint}>
             <span className="stp-star" /><span className="stp-label">{skipped.includes(s.id) ? 'Skipped' : s.label}</span>
           </NavA>
         );

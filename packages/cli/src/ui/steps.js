@@ -7,14 +7,14 @@
  * Continue link reads this list.
  */
 export const STEPS = [
-  { id: 'welcome', label: 'Welcome' },
-  { id: 'permissions', label: 'Permissions' },
-  { id: 'detect', label: 'Detect' },
-  { id: 'shape', label: 'Shape' },
-  { id: 'secrets', label: 'Secrets' },
-  { id: 'plot', label: 'Plot' },
-  { id: 'cloud', label: 'Cloud loop' },
-  { id: 'launch', label: 'Launch' },
+  { id: 'welcome', label: 'Welcome', hint: 'What nexus is and how this setup runs' },
+  { id: 'permissions', label: 'Permissions', hint: 'Grant the agent the access it needs before it starts' },
+  { id: 'detect', label: 'Detect', hint: 'Read the repo to see what is already here' },
+  { id: 'shape', label: 'Shape', hint: 'Confirm the project type the kit will adopt into' },
+  { id: 'secrets', label: 'Secrets', hint: 'Wire the tokens and keys the loop will need' },
+  { id: 'plot', label: 'Plot', hint: 'Place the first piece of work on the plan' },
+  { id: 'cloud', label: 'Cloud loop', hint: 'Turn on the autonomous loop that ships from here' },
+  { id: 'launch', label: 'Launch', hint: 'Hand off and watch the first run' },
 ];
 
 /** A step's place, 1-based: "step 3 · shape the project". */

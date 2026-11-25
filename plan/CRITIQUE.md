@@ -53,26 +53,6 @@
   number only.
 - source: walk
 
-### [ ] [MED] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint
-- category: ui-comprehension
-- observation: the same screen on cloud-token and fleet-to-tug
-  shows identical labels. Stepper labels "Detect," "Shape,"
-  "Plot," "Cloud loop" (`packages/cli/src/ui/steps.js:9-16`) are
-  nexus-specific vocabulary. `Stepper`
-  (`packages/cli/src/ui/feedback.jsx:22`) renders each as a
-  plain link with no `title` or description, so a stranger
-  reading the welcome screen has no way to learn what a
-  remaining step does before clicking into it.
-- evidence: walk-44909096461,
-  plain-folder--desktop--onboarding-welcome.png;
-  packages/cli/src/ui/steps.js:9-16;
-  packages/cli/src/ui/feedback.jsx:12-28
-- suggested fix: packages/cli/src/ui/feedback.jsx (`Stepper`,
-  ~line 22) — add a `title` per step, sourced from a short
-  `hint` string added to each `STEPS` entry in
-  `packages/cli/src/ui/steps.js`.
-- source: walk
-
 ### [ ] [HIGH] prompts/adopt.md:76-81,126-127 vs playbooks/new-project.md:803-940 — adopt.md's named exceptions to "follow the playbook end-to-end" don't cover the one it actually takes
 - category: instruction-drift
 - observation: `prompts/adopt.md:76-81` tells the delegated
@@ -185,6 +165,25 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] /onboarding/welcome @ desktop (plain-folder) — stepper step names are unexplained jargon with no hover hint — this commit
+- category: ui-comprehension
+- observation: the same screen on cloud-token and fleet-to-tug
+  shows identical labels. Stepper labels "Detect," "Shape,"
+  "Plot," "Cloud loop" (`packages/cli/src/ui/steps.js:9-16`) are
+  nexus-specific vocabulary. `Stepper`
+  (`packages/cli/src/ui/feedback.jsx:22`) renders each as a
+  plain link with no `title` or description, so a stranger
+  reading the welcome screen has no way to learn what a
+  remaining step does before clicking into it.
+- evidence: walk-44909096461,
+  plain-folder--desktop--onboarding-welcome.png;
+  packages/cli/src/ui/steps.js:9-16;
+  packages/cli/src/ui/feedback.jsx:12-28
+- fix: each `STEPS` entry (`packages/cli/src/ui/steps.js`) now
+  carries a short `hint` string; `Stepper` passes it through as
+  the `NavA`'s `title` (`packages/cli/src/ui/feedback.jsx:22`).
+- source: walk
 
 ### [x] [MED] README.md:150,155 — `[needs-user-call]` rows are never glossed before the TL;DR tells an adopter to resolve them — this commit
 - category: comprehension
