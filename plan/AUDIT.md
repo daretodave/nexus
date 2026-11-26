@@ -6,16 +6,6 @@
 
 ## Pending
 
-### [ ] [LOW, 2.4] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
-- category: voice
-- impact: 3, ease: 8
-- evidence: README.md:18 links `#nexus-runs-on-nexus`
-  (README.md:407), unexplained this early, and duplicates that
-  section's own framing once the reader gets there.
-- next: README.md:18 — trim to a bare forward link, or move the
-  line to sit just above the `## nexus runs on nexus` section.
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [LOW, 2.4] README.md:41-90 — "Three doors in" heading promises three but a 4th sibling heading follows
 - category: voice
 - impact: 3, ease: 8
@@ -39,6 +29,15 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [LOW, 2.4] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet — this commit
+- category: voice
+- impact: 3, ease: 8
+- fix: trimmed README.md:18 to a bare forward pointer ("This kit
+  ships itself — see `nexus runs on nexus` below for the full
+  case."), dropping the "running the loop the badge above
+  tracks" framing that duplicated the later section.
+- source: plan/CRITIQUE.md (Pending)
 
 ### [x] [MED, 4.2] /board @ desktop (fleet-to-tug) — chunk-size badges and claims status words have no legend — this commit (closes #142)
 - category: ui-comprehension

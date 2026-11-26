@@ -5,21 +5,6 @@
 
 ## Pending
 
-### [ ] [LOW] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
-- category: voice
-- observation: the line right under the badges ("This kit ships
-  itself: nexus is adopted on its own repo, running the loop the
-  badge above tracks") links `#nexus-runs-on-nexus`, a section
-  at line 407 the reader hasn't met yet — "the loop" is
-  unexplained this early — and substantially duplicates that
-  later section's own framing once the reader does get there.
-- evidence: README.md:18 vs README.md:407 (`## nexus runs on
-  nexus`)
-- suggested fix: README.md:18 — trim to a bare link ("see
-  `nexus runs on nexus` below") or move the line to sit just
-  above the `## nexus runs on nexus` section instead.
-- source: dry-run
-
 ### [ ] [LOW] README.md:41-90 — "Three doors in" heading promises three but a 4th sibling heading follows
 - category: voice
 - observation: `## Three doors in` (line 41) is followed by
@@ -36,29 +21,6 @@
   section, or add a short transition sentence before it ("A
   fourth case: already adopted a previous version?").
 - source: dry-run
-
-### [ ] [MED] /board @ desktop (fleet-to-tug) — chunk-size badges and claims status words have no legend
-- category: ui-comprehension
-- observation: every chunk row shows a bare one-letter badge
-  ("S", "M", "L") with no key anywhere on the page explaining it
-  denotes an estimated chunk size. In the "Claims by person"
-  panel, three agents show "Working" while one shows "terminal"
-  instead — a meaningful distinction (cloud session vs. local
-  CLI session) rendered as plain unexplained text, no tooltip or
-  legend for a sighted user. `SizeTag`
-  (`packages/cli/src/ui/plan.jsx:9-11`) only sets an
-  `aria-label`, which reaches screen readers but gives sighted
-  users nothing beyond the bare letter.
-- evidence: fleet-to-tug--desktop--board.png; walk-45687108014;
-  packages/cli/src/ui/plan.jsx:9-11 (`SizeTag`);
-  packages/cli/src/screens/board/parts.jsx (claims status text)
-- suggested fix: add a `title` attribute to `SizeTag` in
-  packages/cli/src/ui/plan.jsx (e.g. "Estimated size:
-  Small/Medium/Large") and a similar tooltip on the status word
-  rendered for claims rows in packages/cli/src/screens/board/parts.jsx
-  explaining "terminal" means a local CLI session, not a cloud
-  run.
-- source: walk
 
 ### [ ] [LOW] README.md:3-8 — the opening pitch uses "chunks" and the verb list before either is defined
 - category: comprehension
@@ -96,6 +58,24 @@
 - source: walk
 
 ## Done
+
+### [x] [LOW] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet — this commit
+- category: voice
+- resolution: trimmed README.md:18 to a bare forward pointer
+  ("This kit ships itself — see `nexus runs on nexus` below for
+  the full case."), dropping the "running the loop the badge
+  above tracks" framing that duplicated the later section.
+- source: dry-run
+
+### [x] [MED] /board @ desktop (fleet-to-tug) — chunk-size badges and claims status words have no legend — closed 2026-11-26, same fix as AUDIT.md's matching row (closes #142)
+- category: ui-comprehension
+- resolution: `SizeTag` (packages/cli/src/ui/plan.jsx) now
+  carries a `title` tooltip alongside its `aria-label`;
+  `sessionWordHint` (packages/cli/src/screens/board/model.js)
+  glosses the claims rail's phase word, rendered as a `title` on
+  `CrSess`'s state span. Shipped in `1245523`; this row was left
+  Pending by that tick and is moved to Done now to match.
+- source: walk
 
 ### [x] [MED] playbooks/new-project.md:194 — "Before that question" points forward to a question not yet introduced — this commit
 - category: ordering
