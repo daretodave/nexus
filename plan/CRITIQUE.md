@@ -76,22 +76,6 @@
   e.g. "(chunks and verbs explained in What you get, below)."
 - source: dry-run
 
-### [ ] [MED] playbooks/new-project.md:194 — "Before that question" points forward to a question not yet introduced
-- category: ordering
-- observation: the paragraph opening "Before that question,
-  confirm the remote exists" has no antecedent yet — the
-  question it means (owner vs. contributor mode) is only
-  stated in the next paragraph, "Choose the mode now, owner or
-  contributor…". A reader hits the reference before its target
-  and has to read ahead, then loop back.
-- evidence: playbooks/new-project.md:194 ("Before that
-  question, confirm the remote exists") vs playbooks/new-project.md:201
-  ("Choose the mode now, owner or contributor")
-- suggested fix: swap the two paragraphs so the mode question
-  is stated first and the remote-check prerequisite follows it,
-  in playbooks/new-project.md §2.
-- source: dry-run
-
 ### [ ] [LOW] /onboarding/welcome @ mobile (plain-folder) — the stepper's current-step star floats disconnected from its own "Next" label
 - category: ui-comprehension
 - observation: on mobile the full step rail collapses to the
@@ -112,6 +96,14 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:194 — "Before that question" points forward to a question not yet introduced — this commit
+- category: ordering
+- resolution: swapped the two §2 paragraphs so "Choose the mode
+  now, owner or contributor" states the question first, with
+  the remote-existence prerequisite ("Before that question,
+  confirm the remote exists…") now following it.
+- source: dry-run
 
 ### [x] [MED] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json — this commit
 - category: ordering

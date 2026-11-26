@@ -191,14 +191,6 @@ are universal:
 6. Ask before the first write, or not at all; loops take
    defaults and log them.
 
-Before that question, confirm the remote exists: `git remote
-get-url origin`. None yet (a fresh `git init`, nothing pushed):
-`gh repo create <name> --private --source=. --remote=origin
---push`, or `git remote add origin <url>` and push once for an
-existing GitHub repo — the adopt prompt's owner/contributor
-recommendation runs `gh repo view` next and needs a remote to
-read.
-
 Choose the mode now, owner or contributor, before the first
 write (the adopt prompt asks it with its other questions;
 owner is the default when you own the repo). Either way,
@@ -207,6 +199,14 @@ the owner's checkout also gets an untracked `.owner`. With no
 `.owner`, every change lands as a pull request. Before the
 first push, arm the hooks in either mode — see §4, once
 `scripts/` is copied in.
+
+Before that question, confirm the remote exists: `git remote
+get-url origin`. None yet (a fresh `git init`, nothing pushed):
+`gh repo create <name> --private --source=. --remote=origin
+--push`, or `git remote add origin <url>` and push once for an
+existing GitHub repo — the adopt prompt's owner/contributor
+recommendation runs `gh repo view` next and needs a remote to
+read.
 
 Add project-specific ones (e.g. "site name lowercase", "content
 stays in MDX").

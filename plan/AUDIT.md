@@ -1,7 +1,7 @@
 # Kit audit
 
-> Last pass: 2026-11-25
-> Pass count: 136
+> Last pass: 2026-11-26
+> Pass count: 137
 > Bias: none
 
 ## Pending
@@ -39,7 +39,30 @@
   add a short transition sentence before it.
 - source: plan/CRITIQUE.md (Pending)
 
+### [ ] [LOW, 2.4] README.md:3-8 — the opening pitch uses "chunks" and the verb list before either is defined
+- category: comprehension
+- impact: 3, ease: 8
+- evidence: the first paragraph says nexus "breaks it into
+  chunks and gives your agent the verbs to build them one at a
+  time: pick, build, gate, commit, push" — chunks aren't
+  explained until README.md:194-198 and the verbs aren't
+  tabulated until README.md:217-238, both well past this point.
+- next: README.md:3-8 — add a short forward pointer ("chunks
+  and verbs explained in What you get, below").
+- source: plan/CRITIQUE.md (Pending)
+
 ## Done
+
+### [x] [MED, 4.8] playbooks/new-project.md:194 — "Before that question" points forward to a question not yet introduced — this commit
+- category: ordering
+- impact: 6, ease: 8
+- fix: swapped the two §2 paragraphs so "Choose the mode now,
+  owner or contributor" states the question first, with the
+  remote-existence prerequisite ("Before that question, confirm
+  the remote exists…") now following it — "that question" has
+  an antecedent the reader already met.
+- source: plan/CRITIQUE.md (Pending)
+- issue: #141
 
 ### [x] [MED, 4.2] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json — this commit
 - category: ordering
