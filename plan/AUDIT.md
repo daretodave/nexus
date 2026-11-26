@@ -53,6 +53,22 @@
 
 ## Done
 
+### [x] [user-issue #139] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-26, same owner call as #137/#132/#131/#130/#129/#127/#96/#91
+- category: external-issue
+- resolution: recurrence confirmed (`templates/scripts/cloud/cadence.mjs
+  realized` against `gh run list --workflow march --event
+  schedule -L 1000` this tick: 7 of 24 promised slots in 72h,
+  29%), but no new lever exists beyond what #96 (2026-11-21),
+  #127 (2026-11-23), #129 (2026-11-24), #130 (2026-11-24), #131
+  (2026-11-24), #132 (2026-11-25) and #137 (2026-11-26) already
+  settled: the owner's cron, every 3 hours at `:17`, off the
+  busy top of the hour, keeps delivering under 40% of the
+  promised slots on purpose because chained ticks, not the
+  cron, carry the throughput. Re-opening `/oversight` for a
+  question the owner answered seven times already would be
+  noise (the #91 precedent). Closed with a comment pointing at
+  #137.
+
 ### [x] [MED, 4.8] templates/README.md:316-320 vs playbooks/new-project.md §4 — the playbook's placeholder table omits `<DEPLOY_URL>`, so a stray-token sweep flags it as a missed replace — this commit
 - category: placeholder
 - impact: 6, ease: 8
