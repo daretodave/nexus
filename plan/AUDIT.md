@@ -68,6 +68,21 @@
 
 ## Done
 
+### [x] [user-issue #137] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-26, same owner call as #132/#131/#130/#129/#127/#96/#91
+- category: external-issue
+- resolution: recurrence confirmed (`templates/scripts/cloud/cadence.mjs
+  realized` against `gh run list --workflow march --event
+  schedule -L 1000` this tick: 7 of 24 promised slots in 72h,
+  29%), but no new lever exists beyond what #96 (2026-11-21),
+  #127 (2026-11-23), #129 (2026-11-24), #130 (2026-11-24), #131
+  (2026-11-24) and #132 (2026-11-25) already settled: the
+  owner's cron, every 3 hours at `:17`, off the busy top of the
+  hour, keeps delivering under 40% of the promised slots on
+  purpose because chained ticks, not the cron, carry the
+  throughput. Re-opening `/oversight` for a question the owner
+  answered six times already would be noise (the #91
+  precedent). Closed with a comment pointing at #132.
+
 ### [x] [HIGH, 7.2] prompts/adopt.md:76-81,126-127 vs playbooks/new-project.md:803-940 — adopt.md's named exceptions to "follow the playbook end-to-end" don't cover the one it actually takes — this commit
 - category: instruction-drift
 - impact: 9, ease: 8
