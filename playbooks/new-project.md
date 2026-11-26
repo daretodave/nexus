@@ -393,6 +393,11 @@ Now do a global search-and-replace across the copied files:
 | `<PROJECT_PKG_PREFIX>` | workspace package prefix, e.g. `@acme` (empty if not a monorepo) |
 | `<PACKAGE_MANAGER>` | your package manager, e.g. `pnpm` / `npm` / `yarn` |
 
+`<DEPLOY_URL>` is deliberately not in this table: it's a CLI
+argument inside example commands, not a file placeholder —
+see `templates/README.md`'s "Per-capability placeholders"
+section for why.
+
 A one-liner that replaces all nine, bash/zsh/WSL/macOS.
 Uses `-i.bak` (suffix attached, no space) rather than bare
 `-i` — stock macOS `sed` is BSD sed, which requires a backup

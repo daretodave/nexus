@@ -6,21 +6,6 @@
 
 ## Pending
 
-### [ ] [MED, 4.8] templates/README.md:316-320 vs playbooks/new-project.md §4 — the playbook's placeholder table omits `<DEPLOY_URL>`, so a stray-token sweep flags it as a missed replace
-- category: placeholder
-- impact: 6, ease: 8
-- evidence: templates/README.md explains `<DEPLOY_URL>` is
-  deliberately excluded from the 9-placeholder sweep (a CLI
-  arg filled in at run time, not adoption time);
-  playbooks/new-project.md §4 lists only the 9 swept
-  placeholders and never mentions it, though it is still
-  literally present in templates/skills/ship-a-chunk.md and
-  templates/skills/iterate.md after the sweep.
-- next: playbooks/new-project.md §4 — add one line near the
-  placeholder table noting `<DEPLOY_URL>` is deliberately
-  excluded, pointing at templates/README.md's explanation.
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [MED, 4.2] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json
 - category: ordering
 - impact: 6, ease: 7
@@ -67,6 +52,16 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 4.8] templates/README.md:316-320 vs playbooks/new-project.md §4 — the playbook's placeholder table omits `<DEPLOY_URL>`, so a stray-token sweep flags it as a missed replace — this commit
+- category: placeholder
+- impact: 6, ease: 8
+- fix: `playbooks/new-project.md` §4 — one line added right
+  after the 9-placeholder table noting `<DEPLOY_URL>` is
+  deliberately excluded, pointing at templates/README.md's
+  explanation.
+- source: plan/CRITIQUE.md (Pending)
+- issue: #138
 
 ### [x] [user-issue #137] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-26, same owner call as #132/#131/#130/#129/#127/#96/#91
 - category: external-issue

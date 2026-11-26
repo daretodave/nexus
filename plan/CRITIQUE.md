@@ -41,29 +41,6 @@
   deferring only the deploy-specific script to step 7.
 - source: dry-run
 
-### [ ] [MED] templates/README.md:316-320 vs playbooks/new-project.md §4 — the playbook's placeholder table omits `<DEPLOY_URL>`, so a stray-token sweep flags it as a missed replace
-- category: placeholder
-- observation: `templates/README.md` explains `<DEPLOY_URL>` is
-  deliberately excluded from the 9-placeholder sed sweep (it's
-  a CLI arg filled in at command-run time, not adoption time).
-  But `playbooks/new-project.md` §4 — the file an adopter's
-  agent actually works through step by step — lists only the 9
-  swept placeholders in its table and never mentions
-  `<DEPLOY_URL>` at all. `<DEPLOY_URL>` is still literally
-  present after the sweep in `templates/skills/ship-a-chunk.md`
-  and `templates/skills/iterate.md`; anyone grepping the copied
-  tree for stray `<...>` tokens as a sanity check has no way,
-  from the playbook alone, to know this one is expected.
-- evidence: `grep -rln '<DEPLOY_URL>' templates/skills/` →
-  ship-a-chunk.md, iterate.md; templates/README.md:316-320 is
-  the only explanation; playbooks/new-project.md has zero
-  occurrences of "DEPLOY_URL".
-- suggested fix: add one line to playbooks/new-project.md §4
-  near the placeholder table noting `<DEPLOY_URL>` is
-  deliberately excluded from the sweep, pointing at
-  templates/README.md's explanation.
-- source: dry-run
-
 ### [ ] [LOW] README.md:41-90 — "Three doors in" heading promises three but a 4th sibling heading follows
 - category: voice
 - observation: `## Three doors in` (line 41) is followed by
@@ -105,6 +82,15 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] templates/README.md:316-320 vs playbooks/new-project.md §4 — the playbook's placeholder table omits `<DEPLOY_URL>`, so a stray-token sweep flags it as a missed replace — this commit
+- category: placeholder
+- resolution: `playbooks/new-project.md` §4 now has one line
+  right after the 9-placeholder table noting `<DEPLOY_URL>` is
+  deliberately excluded from the sweep, pointing at
+  `templates/README.md`'s explanation.
+- source: dry-run
+- issue: #138
 
 ### [x] [HIGH] prompts/adopt.md:76-81,126-127 vs playbooks/new-project.md:803-940 — adopt.md's named exceptions to "follow the playbook end-to-end" don't cover the one it actually takes — this commit
 - category: instruction-drift
