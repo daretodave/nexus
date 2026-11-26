@@ -630,9 +630,14 @@ it's green, then commit both specs.
 The verify gate is `pnpm verify` (or your equivalent). It runs
 **before every commit** and gates the push.
 
-No `package.json` exists yet at this point in the walk — step 7
-creates one (alongside the deploy gate). This section describes
-the **target shape** step 7 wires in:
+No `package.json` exists yet at this point in the walk — create
+one now:
+
+```bash
+pnpm init -y
+```
+
+Then wire in the **target shape** step 7 builds on:
 
 ```json
 {
@@ -648,7 +653,7 @@ the **target shape** step 7 wires in:
 
 It will fail at first — that's fine; the rest of the bootstrap spec is
 what makes it green. But the script itself is in place and
-runnable as soon as step 7 lands, well before the bootstrap ships.
+runnable right away, well before the bootstrap ships.
 
 If your project doesn't ship a build (e.g., a CLI), drop
 `pnpm build`. If no e2e yet, drop `pnpm e2e` until a substrate
@@ -666,15 +671,9 @@ The deploy gate is `pnpm deploy:check`. It runs **after every
 push** and polls your hosting provider until ready or error.
 
 `./scripts/deploy-check.mjs` is already present — step 4's
-bulk copy landed it with the rest of `scripts/`. If
-`package.json` doesn't exist yet, create it first:
-
-```bash
-pnpm init -y
-```
-
-Then wire the deploy gate into it, alongside the verify gate
-from step 6:
+bulk copy landed it with the rest of `scripts/`. Wire the
+deploy gate into the `package.json` step 6 created, alongside
+the verify gate:
 
 ```json
 {

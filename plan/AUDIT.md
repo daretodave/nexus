@@ -6,18 +6,6 @@
 
 ## Pending
 
-### [ ] [MED, 4.2] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json
-- category: ordering
-- impact: 6, ease: 7
-- evidence: step 6 admits "No `package.json` exists yet at
-  this point in the walk — step 7 creates one" and only
-  previews the JSON shape step 7 will create, with no write or
-  run of its own — every other numbered step produces a
-  concrete artifact.
-- next: fold step 6 into step 7 ("Wire the verify + deploy
-  gates"), or move the `package.json` creation into step 6.
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [MED, 4.2] /board @ desktop (fleet-to-tug) — chunk-size badges and claims status words have no legend
 - category: ui-comprehension
 - impact: 6, ease: 7
@@ -52,6 +40,17 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 4.2] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json — this commit
+- category: ordering
+- impact: 6, ease: 7
+- fix: moved the `pnpm init -y` package.json creation from
+  step 7 into step 6, so step 6 now writes a concrete artifact
+  (`package.json` with the verify scripts wired in); step 7
+  wires the deploy gate into the file step 6 created instead
+  of conditionally creating it again.
+- source: plan/CRITIQUE.md (Pending)
+- issue: #140
 
 ### [x] [user-issue #139] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-26, same owner call as #137/#132/#131/#130/#129/#127/#96/#91
 - category: external-issue

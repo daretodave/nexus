@@ -20,27 +20,6 @@
   above the `## nexus runs on nexus` section instead.
 - source: dry-run
 
-### [ ] [MED] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json
-- category: ordering
-- observation: every other numbered step in the playbook
-  produces a concrete artifact or runs a command. Step 6 opens
-  by admitting "No `package.json` exists yet at this point in
-  the walk — step 7 creates one" (line 628) and then only
-  previews the JSON shape step 7 will create — no file written,
-  nothing run. A stranger following the numbered checklist
-  expects each step to do something, and may try running the
-  verify command right after step 6 and be confused there is no
-  `package.json` yet.
-- evidence: playbooks/new-project.md:628 ("No `package.json`
-  exists yet at this point in the walk — step 7 creates one")
-  inside a step titled "Wire the verify gate" with no write of
-  its own.
-- suggested fix: fold step 6 into step 7 as one step ("Wire the
-  verify + deploy gates"), or move the `package.json` creation
-  (`pnpm init -y`) into step 6 so it actually wires something,
-  deferring only the deploy-specific script to step 7.
-- source: dry-run
-
 ### [ ] [LOW] README.md:41-90 — "Three doors in" heading promises three but a 4th sibling heading follows
 - category: voice
 - observation: `## Three doors in` (line 41) is followed by
@@ -133,6 +112,15 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] playbooks/new-project.md:623-656 — step 6 "Wire the verify gate" writes nothing, only previews step 7's package.json — this commit
+- category: ordering
+- resolution: moved the `pnpm init -y` package.json creation
+  from step 7 into step 6, so step 6 now writes a concrete
+  artifact; step 7 wires the deploy gate into the file step 6
+  created instead of conditionally creating it again.
+- source: dry-run
+- issue: #140
 
 ### [x] [MED] templates/README.md:316-320 vs playbooks/new-project.md §4 — the playbook's placeholder table omits `<DEPLOY_URL>`, so a stray-token sweep flags it as a missed replace — this commit
 - category: placeholder
