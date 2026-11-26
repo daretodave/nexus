@@ -6,8 +6,11 @@ import { CHUNK_WORD, Grip } from './work.jsx';
 import { SessionGlyph, sessClass } from './session.jsx';
 import { cx, NavA } from './controls.jsx';
 
+const SIZE_HINT = { S: 'about an hour', M: 'a few hours', L: 'one session at most' };
+
 export function SizeTag({ size }) {
-  return <span className="size-tag" aria-label={`size ${size}`}>{size}</span>;
+  const hint = SIZE_HINT[size];
+  return <span className="size-tag" aria-label={`size ${size}${hint ? `: ${hint}` : ''}`} title={hint}>{size}</span>;
 }
 
 /** .plotted-tag: "just plotted · plan PR #151"; fades after 40s. */
@@ -145,11 +148,11 @@ export function CrPerson({ initial, av, name, d, children }) {
   );
 }
 
-/** .cr-sess: a session's claims (its colour on the left edge); `title` for held/cloud groups. */
-export function CrSess({ session, title, state, children }) {
+/** .cr-sess: a session's claims (its colour on the left edge); `title` for held/cloud groups; `stateHint` glosses `state` on hover. */
+export function CrSess({ session, title, state, stateHint, children }) {
   return (
     <div className={cx('cr-sess', session && sessClass(session))}>
-      <div className="cr-sh">{session ? <SessionGlyph session={session} /> : null}<span>{session ? session.name : title}</span><span className="c-3" style={{ fontWeight: 400 }}>{state}</span></div>
+      <div className="cr-sh">{session ? <SessionGlyph session={session} /> : null}<span>{session ? session.name : title}</span><span className="c-3" style={{ fontWeight: 400 }} title={stateHint || undefined}>{state}</span></div>
       {children}
     </div>
   );

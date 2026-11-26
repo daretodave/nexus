@@ -323,7 +323,8 @@ export function railPeople(rows, ctx, chunkById, specById, now) {
       const star = v.kind === 'sess' ? v.who : '';
       const name = v.kind === 'held' ? 'held' : v.kind === 'cloud' ? `run #${v.run}` : sessName(s || sessionOf(ctx.sessions, v.session), r, v);
       const d = v.kind === 'held' ? '' : s ? sessionWord(s) : v.kind === 'cloud' && r.at ? hhmm(r.at) : '';
-      p.sessions.set(skey, { key: skey, name, star, d, named: v.kind === 'held' || v.kind === 'cloud' || name !== idName(s || sessionOf(ctx.sessions, v.session), v), claims: [] });
+      const dHint = s ? sessionWordHint(d) : '';
+      p.sessions.set(skey, { key: skey, name, star, d, dHint, named: v.kind === 'held' || v.kind === 'cloud' || name !== idName(s || sessionOf(ctx.sessions, v.session), v), claims: [] });
     }
     const ps = p.sessions.get(skey);
     // A claim made before its session had a star reads the bare id; a later one of the same session names the star.
@@ -411,6 +412,16 @@ export function sessionWord(s) {
   if (s.kind === 'terminal') return 'terminal';
   const p = s.phase || s.state || '';
   return p ? p[0].toUpperCase() + p.slice(1) : '';
+}
+
+/** The legend for `sessionWord`'s result: a hover title explaining the word, blank for an unrecognized one. */
+export function sessionWordHint(word) {
+  return {
+    Working: 'actively building a chunk',
+    Questions: 'waiting on an answer before continuing',
+    'fell over': 'stopped unexpectedly; claims may need release',
+    terminal: 'a CLI session outside this GUI',
+  }[word] || '';
 }
 
 // ---- the grip: reorder within a spec (spec 40 A12) ------------------------------

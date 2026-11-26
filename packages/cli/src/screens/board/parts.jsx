@@ -247,7 +247,7 @@ export function ClaimsRail({ people, owner, onRelease, onReassign, busy, note, e
       {people.map((pp) => (
         <CrPerson key={pp.name} initial={pp.initial} av={pp.av} name={pp.name} d={pp.d}>
           {pp.sessions.map((x) => (
-            <CrSess key={x.key} session={x.star ? { name: x.star, kind: 'local' } : null} title={x.name} state={x.d}>
+            <CrSess key={x.key} session={x.star ? { name: x.star, kind: 'local' } : null} title={x.name} state={x.d} stateHint={x.dHint}>
               {(x.lines || x.claims.map((c) => ({ kind: 'claim', c }))).map((ln) => {
                 if (ln.kind === 'claim') return row(pp, ln.c);
                 // A row of the run with Reassign's picker on it keeps the run open.

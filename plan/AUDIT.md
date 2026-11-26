@@ -6,19 +6,6 @@
 
 ## Pending
 
-### [ ] [MED, 4.2] /board @ desktop (fleet-to-tug) — chunk-size badges and claims status words have no legend
-- category: ui-comprehension
-- impact: 6, ease: 7
-- evidence: `SizeTag` (packages/cli/src/ui/plan.jsx:9-11) sets
-  only an `aria-label` for the S/M/L badge, nothing for a
-  sighted user; the "Claims by person" panel shows "terminal"
-  for a local CLI session beside "Working" with no legend for
-  either.
-- next: packages/cli/src/ui/plan.jsx — add a `title` to
-  `SizeTag`; packages/cli/src/screens/board/parts.jsx — add a
-  tooltip explaining "terminal".
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [LOW, 2.4] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet
 - category: voice
 - impact: 3, ease: 8
@@ -52,6 +39,25 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 4.2] /board @ desktop (fleet-to-tug) — chunk-size badges and claims status words have no legend — this commit (closes #142)
+- category: ui-comprehension
+- impact: 6, ease: 7
+- fix: `SizeTag` (packages/cli/src/ui/plan.jsx) now carries a
+  `title` tooltip ("about an hour" / "a few hours" / "one
+  session at most") alongside its existing `aria-label`.
+  `sessionWord`'s sibling `sessionWordHint` (packages/cli/src/
+  screens/board/model.js) glosses the claims rail's phase word
+  ("Working", "Questions", "fell over", "terminal"), threaded
+  through `railPeople` as `dHint` and rendered as a `title` on
+  `CrSess`'s state span (packages/cli/src/ui/plan.jsx).
+  Verified: `npm --prefix packages/cli test` — the three
+  touched files' 44 tests pass; the suite's other 77 failures
+  are the same pre-existing sandbox artifact
+  (`safe.bareRepository=explicit`) AUDIT.md's F-row (Fable 5.2)
+  already documents, reproduced identically on an unmodified
+  checkout.
+- source: plan/CRITIQUE.md (Pending)
 
 ### [x] [MED, 4.8] playbooks/new-project.md:194 — "Before that question" points forward to a question not yet introduced — this commit
 - category: ordering
