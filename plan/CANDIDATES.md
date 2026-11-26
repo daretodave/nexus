@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-11-25
-> Pass count: 29
+> Last pass: 2026-11-26
+> Pass count: 30
 > Posture: bold
 > Last field research: 2026-11-24
 
@@ -500,8 +500,9 @@
 - estimated chunks: 1
 - conflicts: none.
 
-### [ ] [score 6.0] Onboarding Welcome's mobile screen keeps shedding one ui-comprehension finding per patch instead of closing the class
+### [ ] [score 6.5] Onboarding Welcome's mobile screen keeps shedding one ui-comprehension finding per patch instead of closing the class
 - proposed: 2026-11-25 (expand)
+- filed score: 6.0
 - kind: product
 - source signals: signal F (product telemetry, via
   `plan/CRITIQUE.md` pass 38's walk rows, `walk-44909096461`) —
@@ -547,6 +548,8 @@
 - conflicts: none known — CSS/JSX only; distinct from the
   2026-11-18 rejected row (that row's own fixes produced two of
   these three new findings, not a re-evidence of it).
+- re-evidence:
+  - 2026-11-26 · F a01871a · independent, +0.5 · three more ad-hoc single-screen patches landed since filing (a01871a stepper next-step label, ec03e70 desktop hover hint, 3962535 footer scroll fix that itself red-ran cli-ci on 45687001768) — each closed one of the row's three cited findings separately rather than the one structural pass proposed, the exact churn pattern repeating
 
 ### [ ] [score 5.5] `spec-close` fired at the chunk commit, not the spec's last chunk — issue #133 stuck open though spec 76 shipped hours ago
 - proposed: 2026-11-25 (digest)
