@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-25
-> Pass count: 39
+> Last pass: 2026-11-26
+> Pass count: 40
 
 ## Pending
 
@@ -79,6 +79,57 @@
   rendered for claims rows in packages/cli/src/screens/board/parts.jsx
   explaining "terminal" means a local CLI session, not a cloud
   run.
+- source: walk
+
+### [ ] [LOW] README.md:3-8 — the opening pitch uses "chunks" and the verb list before either is defined
+- category: comprehension
+- observation: the very first paragraph (read before anything
+  else) says nexus "breaks it into chunks and gives your agent
+  the verbs to build them one at a time: pick, build, gate,
+  commit, push" — but chunks aren't explained until "How it
+  works" and the verbs aren't tabulated until "What you get,"
+  both well over 150 lines later. A stranger has to hold five
+  opaque terms in suspension through "Is this for you?" and
+  "Three doors in" before either is grounded.
+- evidence: README.md:3-8 vs definitions at README.md:194-198
+  ("The plan"/chunks) and README.md:217-238 (verbs table)
+- suggested fix: README.md:3-8 — add a short forward pointer,
+  e.g. "(chunks and verbs explained in What you get, below)."
+- source: dry-run
+
+### [ ] [MED] playbooks/new-project.md:194 — "Before that question" points forward to a question not yet introduced
+- category: ordering
+- observation: the paragraph opening "Before that question,
+  confirm the remote exists" has no antecedent yet — the
+  question it means (owner vs. contributor mode) is only
+  stated in the next paragraph, "Choose the mode now, owner or
+  contributor…". A reader hits the reference before its target
+  and has to read ahead, then loop back.
+- evidence: playbooks/new-project.md:194 ("Before that
+  question, confirm the remote exists") vs playbooks/new-project.md:201
+  ("Choose the mode now, owner or contributor")
+- suggested fix: swap the two paragraphs so the mode question
+  is stated first and the remote-check prerequisite follows it,
+  in playbooks/new-project.md §2.
+- source: dry-run
+
+### [ ] [LOW] /onboarding/welcome @ mobile (plain-folder) — the stepper's current-step star floats disconnected from its own "Next" label
+- category: ui-comprehension
+- observation: on mobile the full step rail collapses to the
+  "1 of 8 · Next: Permissions" text plus a single current-step
+  star ("Welcome") — but the star sits off to the side with no
+  connecting line or visual tie to the text beside it, reading
+  as an orphaned element on the first screen a new user meets.
+  Reproduces identically across all three scenarios.
+- evidence: plain-folder--mobile--onboarding-welcome.png (same
+  in cloud-token--mobile--onboarding-welcome.png and
+  fleet-to-tug--mobile--onboarding-welcome.png); walk-45750701422;
+  `Stepper` in packages/cli/src/ui/feedback.jsx:12-31; mobile
+  rule at packages/cli/src/styles/nexus.css:916
+- suggested fix: in the mobile breakpoint
+  (packages/cli/src/styles/nexus.css:916), either connect the
+  current-step star to the `.stp-count`/`.stp-next` text with a
+  line, or hide the lone star on mobile and keep only the text.
 - source: walk
 
 ## Done
