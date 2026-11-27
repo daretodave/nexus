@@ -1,7 +1,7 @@
 # Critique — external-observer findings
 
-> Last pass: 2026-11-26
-> Pass count: 40
+> Last pass: 2026-11-27
+> Pass count: 41
 
 ## Pending
 
@@ -55,6 +55,113 @@
   (packages/cli/src/styles/nexus.css:916), either connect the
   current-step star to the `.stp-count`/`.stp-next` text with a
   line, or hide the lone star on mobile and keep only the text.
+- source: walk
+
+### [ ] [MED] README.md:88,273,386-387 — three different reading-time estimates for the same playbooks
+- category: comprehension
+- observation: the doors-in intro says the playbooks it just
+  named (including `new-project.md`, `existing-project.md`)
+  take "ten minutes to read each." A few hundred lines later
+  the TL;DR tells the reader to budget "~10 minutes" to read
+  "your playbook" end-to-end. Between those two claims, the
+  comparison table lists the same playbooks at "~30 min" each.
+  A reader choosing a playbook meets three different numbers
+  for the one claim within a single read-through.
+- evidence: README.md:88 "routes every case — ten minutes to
+  read each."; README.md:273 "| ...new-project.md... | ~30 min
+  |" (same pattern at lines 272, 274, 276, 277, 279);
+  README.md:386-387 "Pick your playbook and read it end-to-end
+  first — ~10 minutes, saves hours."
+- suggested fix: drop the "ten minutes to read each" line at
+  README.md:88 (the table a few screens later already gives a
+  per-playbook number), and point 386-387's "~10 minutes" at
+  the table instead of restating a smaller number.
+- source: dry-run
+
+### [ ] [MED] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory
+- category: instruction-drift
+- observation: playbooks/new-project.md §4 states adoption is
+  "one sequence, three sub-steps, run in order: copy, then
+  sweep... then prune," warning that running them out of order
+  "is the one reliable way to leave stale tokens or dead files
+  behind." README's own condensed checklist — offered for
+  readers who skip delegation — lists only "Copy templates into
+  your repo, replacing all 9 placeholders," with no mention of
+  pruning, so a reader following just that summary ends up in
+  the exact stale-file state the playbook calls out.
+- evidence: README.md:388-390 "3. **Copy templates into your
+  repo**, replacing all 9 placeholders..." (no prune step) vs
+  playbooks/new-project.md:325-329 "One sequence, three
+  sub-steps, run in order: copy, then sweep placeholders...
+  then prune what your project doesn't need... sweep before
+  prune, prune after sweep, never the reverse."
+- suggested fix: README.md's checklist step 3 — add "then prune
+  what you don't need" alongside the placeholder-sweep mention,
+  pointing at `playbooks/new-project.md` §4.
+- source: dry-run
+
+### [ ] [LOW] README.md:146-149 vs playbooks/new-project.md:633-637 — the "what landed" checklist omits package.json, which step 6 creates from scratch
+- category: instruction-drift
+- observation: README's step-3 checklist tells the adopter what
+  new files to expect after delegating adoption on a greenfield
+  repo, but doesn't list `package.json` — even though
+  `playbooks/new-project.md` step 6 (`pnpm init -y`) must create
+  it from nothing on a repo that has none yet, and the very next
+  sentence of README's own checklist says to expect `pnpm
+  verify` / `pnpm deploy:check` "specified and ready to wire,"
+  which depends on that file existing. A stranger diffing the
+  adoption commit against this list has no cue to look for it.
+- evidence: README.md:146-149 "files added (`agents.md`,
+  `CLAUDE.md`, `plan/`, `skills/`, `.claude/`, `scripts/`,
+  `.env.example`, `nexus.secrets.json`)" — `package.json` absent
+  — vs playbooks/new-project.md:633-637 "No `package.json`
+  exists yet at this point in the walk — create one now: `pnpm
+  init -y`."
+- suggested fix: README.md:146-149 — add `package.json` to the
+  files-added list, noting it's created only when the repo has
+  none yet.
+- source: dry-run
+
+### [ ] [HIGH] /board @ mobile (plain-folder) — the two-column board grid doesn't collapse on narrow screens, hiding the empty-state guidance
+- category: ui-comprehension
+- observation: `.pboard` lays the main column and the
+  "Claims by person" `<aside>` out as a fixed grid
+  (`minmax(0, 1fr) 318px`) with no narrower-viewport override
+  anywhere in the stylesheet. On a ~390px mobile viewport the
+  fixed 318px aside plus its gap leaves the `1fr` main column —
+  carrying the "Nothing ready… Plot more work" empty-state copy
+  and its action — squeezed to a sliver. A first-time mobile
+  user looking at an empty plan sees only the claims panel
+  ("Nobody holds a claim…") with no visible explanation of why
+  the board is empty or how to add work.
+- evidence: plain-folder--mobile--board.png; walk-46069640161;
+  `.pboard { ... grid-template-columns: minmax(0, 1fr) 318px;
+  ... }` at packages/cli/src/styles/nexus.css:1567, no
+  `@media` override for `.pboard` anywhere in the file.
+- suggested fix: packages/cli/src/styles/nexus.css — add a
+  mobile breakpoint that stacks `.pboard` to a single column,
+  main content (and its empty-state CTA) first, claims panel
+  second.
+- source: walk
+
+### [ ] [MED] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen
+- category: ui-comprehension
+- observation: `Board.jsx` renders two buttons that both
+  navigate to the same `plotTo` destination: the toolbar button
+  reads "+ Plot something" in plain English, while the
+  empty-state's action button a few inches below reads only
+  "/plot" — CLI slash-command syntax. A stranger unfamiliar with
+  nexus's slash-command vocabulary may not recognize "/plot" as
+  a clickable button performing the same action as the clearer
+  button already visible on the same screen.
+- evidence: plain-folder--desktop--board.png; walk-46069640161;
+  `<Link ... to={plotTo}>/plot</Link>` at
+  packages/cli/src/screens/Board.jsx:408 and :435 vs `<Link
+  ... to={plotTo}><Icon name="plus" .../>Plot something</Link>`
+  at packages/cli/src/screens/Board.jsx:451.
+- suggested fix: packages/cli/src/screens/Board.jsx:408,435 —
+  relabel the empty-state CTA to match the toolbar's "Plot
+  something" wording.
 - source: walk
 
 ## Done
