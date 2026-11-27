@@ -101,27 +101,16 @@
   none yet.
 - source: dry-run
 
-### [ ] [MED] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen
-- category: ui-comprehension
-- observation: `Board.jsx` renders two buttons that both
-  navigate to the same `plotTo` destination: the toolbar button
-  reads "+ Plot something" in plain English, while the
-  empty-state's action button a few inches below reads only
-  "/plot" — CLI slash-command syntax. A stranger unfamiliar with
-  nexus's slash-command vocabulary may not recognize "/plot" as
-  a clickable button performing the same action as the clearer
-  button already visible on the same screen.
-- evidence: plain-folder--desktop--board.png; walk-46069640161;
-  `<Link ... to={plotTo}>/plot</Link>` at
-  packages/cli/src/screens/Board.jsx:408 and :435 vs `<Link
-  ... to={plotTo}><Icon name="plus" .../>Plot something</Link>`
-  at packages/cli/src/screens/Board.jsx:451.
-- suggested fix: packages/cli/src/screens/Board.jsx:408,435 —
-  relabel the empty-state CTA to match the toolbar's "Plot
-  something" wording.
-- source: walk
-
 ## Done
+
+### [x] [MED] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen — this commit (closes #148)
+- category: ui-comprehension
+- resolution: `Board.jsx`'s two empty-state CTAs
+  (packages/cli/src/screens/Board.jsx:408,435) now render the
+  same `Icon name="plus"` + "Plot something" wording as the
+  toolbar button (:451). A fresh walk on `/board` desktop
+  reports 0 findings.
+- source: walk
 
 ### [x] [MED] README.md:88,273,386-387 — three different reading-time estimates for the same playbooks — this commit
 - category: comprehension

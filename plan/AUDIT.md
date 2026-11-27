@@ -1,25 +1,10 @@
 # Kit audit
 
 > Last pass: 2026-11-27
-> Pass count: 138
+> Pass count: 139
 > Bias: none
 
 ## Pending
-
-### [ ] [MED, 5.4] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen
-- category: ui-comprehension
-- impact: 6, ease: 9
-- evidence: `Board.jsx` renders two buttons that both navigate
-  to `plotTo`: the toolbar button reads "+ Plot something" in
-  plain English, the empty-state's action button a few inches
-  below reads only "/plot" (packages/cli/src/screens/Board.jsx:408,435
-  vs :451) — a stranger may not recognize the slash-command
-  button as the same action as the clearer one on the same
-  screen.
-- next: packages/cli/src/screens/Board.jsx:408,435 — relabel
-  the empty-state CTA to match the toolbar's "Plot something"
-  wording.
-- source: plan/CRITIQUE.md (Pending)
 
 ### [ ] [MED, 4.8] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory
 - category: instruction-drift
@@ -60,6 +45,23 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 5.4] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen — this commit (closes #148)
+- category: ui-comprehension
+- impact: 6, ease: 9
+- fix: `Board.jsx`'s two empty-state CTAs (the "All chunks" and
+  "By spec" views, packages/cli/src/screens/Board.jsx:408,435)
+  now render the same `Icon name="plus"` + "Plot something"
+  wording as the toolbar button (:451), instead of bare
+  "/plot" CLI syntax. Verified: a fresh walk on `/board` desktop
+  (plain-folder) reports 0 findings; `npm --prefix packages/cli
+  test` — board-grip/board-rail/plan/plan-answers (the touched
+  area) 35/35 pass; the suite's other 38 failures are the same
+  pre-existing sandbox artifact (`safe.bareRepository=explicit`)
+  this file's F-row already documents, reproduced identically on
+  an unmodified checkout.
+- source: plan/CRITIQUE.md (Pending)
+- issue: #148
 
 ### [x] [MED, 5.4] README.md:88,273,386-387 — three different reading-time estimates for the same playbooks — this commit
 - category: comprehension

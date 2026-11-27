@@ -405,7 +405,7 @@ export default function Board() {
   } else if (v === 'all') {
     const nothing = !items.length;
     main = nothing && !anyF && !closedList.length ? (
-      <Empty sky="flat" title="Nothing ready" body="Every planned chunk is claimed or done. Plot more work, or let the loop rest." action={<Link className="btn btn-s" to={plotTo}>/plot</Link>} />
+      <Empty sky="flat" title="Nothing ready" body="Every planned chunk is claimed or done. Plot more work, or let the loop rest." action={<Link className="btn btn-s" to={plotTo}><Icon name="plus" size={14} />Plot something</Link>} />
     ) : (
       <div className="pb-list" role="list" aria-label="All chunks">
         {nothing && anyF ? <PbSec title="Nothing matches" d="no chunk passes these filters; clear one to see more" /> : null}
@@ -432,7 +432,7 @@ export default function Board() {
         ))}
       </div>
     ) : (
-      <Empty sky="flat" title="Nothing ready" body="Every planned chunk is claimed or done. Plot more work, or let the loop rest." action={<Link className="btn btn-s" to={plotTo}>/plot</Link>} />
+      <Empty sky="flat" title="Nothing ready" body="Every planned chunk is claimed or done. Plot more work, or let the loop rest." action={<Link className="btn btn-s" to={plotTo}><Icon name="plus" size={14} />Plot something</Link>} />
     );
   }
 
