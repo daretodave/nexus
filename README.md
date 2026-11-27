@@ -388,7 +388,9 @@ adapt them.
    hours.
 3. **Copy templates into your repo**, replacing all 9
    placeholders
-   ([`templates/README.md`](./templates/README.md#placeholders)).
+   ([`templates/README.md`](./templates/README.md#placeholders)),
+   then **prune what you don't need**
+   ([`playbooks/new-project.md` §4](./playbooks/new-project.md#4-copy-the-rest-of-the-templates)).
    Write real specs into `plan/`.
 4. **Wire CI/CD**
    ([`playbooks/ci-providers.md`](./playbooks/ci-providers.md)),

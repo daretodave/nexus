@@ -57,28 +57,6 @@
   line, or hide the lone star on mobile and keep only the text.
 - source: walk
 
-### [ ] [MED] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory
-- category: instruction-drift
-- observation: playbooks/new-project.md §4 states adoption is
-  "one sequence, three sub-steps, run in order: copy, then
-  sweep... then prune," warning that running them out of order
-  "is the one reliable way to leave stale tokens or dead files
-  behind." README's own condensed checklist — offered for
-  readers who skip delegation — lists only "Copy templates into
-  your repo, replacing all 9 placeholders," with no mention of
-  pruning, so a reader following just that summary ends up in
-  the exact stale-file state the playbook calls out.
-- evidence: README.md:388-390 "3. **Copy templates into your
-  repo**, replacing all 9 placeholders..." (no prune step) vs
-  playbooks/new-project.md:325-329 "One sequence, three
-  sub-steps, run in order: copy, then sweep placeholders...
-  then prune what your project doesn't need... sweep before
-  prune, prune after sweep, never the reverse."
-- suggested fix: README.md's checklist step 3 — add "then prune
-  what you don't need" alongside the placeholder-sweep mention,
-  pointing at `playbooks/new-project.md` §4.
-- source: dry-run
-
 ### [ ] [LOW] README.md:146-149 vs playbooks/new-project.md:633-637 — the "what landed" checklist omits package.json, which step 6 creates from scratch
 - category: instruction-drift
 - observation: README's step-3 checklist tells the adopter what
@@ -102,6 +80,14 @@
 - source: dry-run
 
 ## Done
+
+### [x] [MED] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory — this commit
+- category: instruction-drift
+- resolution: README.md's checklist step 3 now reads "then
+  prune what you don't need", linking
+  `playbooks/new-project.md` §4 alongside the existing
+  placeholder-sweep link.
+- source: dry-run
 
 ### [x] [MED] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen — this commit (closes #148)
 - category: ui-comprehension

@@ -6,22 +6,6 @@
 
 ## Pending
 
-### [ ] [MED, 4.8] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory
-- category: instruction-drift
-- impact: 6, ease: 8
-- evidence: playbooks/new-project.md §4 states adoption is "one
-  sequence, three sub-steps, run in order: copy, then sweep...
-  then prune," warning that skipping the order "is the one
-  reliable way to leave stale tokens or dead files behind."
-  README's own condensed checklist lists only "Copy templates
-  into your repo, replacing all 9 placeholders," with no prune
-  mention, so a reader following just that summary ends up in
-  the exact stale-file state the playbook warns against.
-- next: README.md's checklist step 3 — add "then prune what you
-  don't need" alongside the placeholder-sweep mention, pointing
-  at playbooks/new-project.md §4.
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [LOW, 2.4] README.md:41-90 — "Three doors in" heading promises three but a 4th sibling heading follows
 - category: voice
 - impact: 3, ease: 8
@@ -45,6 +29,22 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 4.8] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory — this commit
+- category: instruction-drift
+- impact: 6, ease: 8
+- evidence: playbooks/new-project.md §4 states adoption is "one
+  sequence, three sub-steps, run in order: copy, then sweep...
+  then prune," warning that skipping the order "is the one
+  reliable way to leave stale tokens or dead files behind."
+  README's own condensed checklist lists only "Copy templates
+  into your repo, replacing all 9 placeholders," with no prune
+  mention, so a reader following just that summary ends up in
+  the exact stale-file state the playbook warns against.
+- next: README.md's checklist step 3 — add "then prune what you
+  don't need" alongside the placeholder-sweep mention, pointing
+  at playbooks/new-project.md §4.
+- source: plan/CRITIQUE.md (Pending)
 
 ### [x] [MED, 5.4] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen — this commit (closes #148)
 - category: ui-comprehension
