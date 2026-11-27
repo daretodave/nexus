@@ -85,7 +85,7 @@ no spec? [Start here](#tldr--i-have-a-pitch-no-spec-yet).
 [`playbooks/existing-project.md`](./playbooks/existing-project.md)
 (brownfield). Not sure which, or starting from a pitch, or
 outgrown one repo? [Pick a playbook](#pick-a-playbook) below
-routes every case — ten minutes to read each.
+routes every case.
 
 ### Used v1? On v2?
 
@@ -383,8 +383,9 @@ adapt them.
 
 1. **Read this README**, then
    [`concepts/architecture.md`](./concepts/architecture.md).
-2. **Pick your playbook** and read it end-to-end first — ~10
-   minutes, saves hours.
+2. **Pick your playbook** and read it end-to-end first — see
+   its time in the [table above](#pick-a-playbook), saves
+   hours.
 3. **Copy templates into your repo**, replacing all 9
    placeholders
    ([`templates/README.md`](./templates/README.md#placeholders)).

@@ -57,27 +57,6 @@
   line, or hide the lone star on mobile and keep only the text.
 - source: walk
 
-### [ ] [MED] README.md:88,273,386-387 — three different reading-time estimates for the same playbooks
-- category: comprehension
-- observation: the doors-in intro says the playbooks it just
-  named (including `new-project.md`, `existing-project.md`)
-  take "ten minutes to read each." A few hundred lines later
-  the TL;DR tells the reader to budget "~10 minutes" to read
-  "your playbook" end-to-end. Between those two claims, the
-  comparison table lists the same playbooks at "~30 min" each.
-  A reader choosing a playbook meets three different numbers
-  for the one claim within a single read-through.
-- evidence: README.md:88 "routes every case — ten minutes to
-  read each."; README.md:273 "| ...new-project.md... | ~30 min
-  |" (same pattern at lines 272, 274, 276, 277, 279);
-  README.md:386-387 "Pick your playbook and read it end-to-end
-  first — ~10 minutes, saves hours."
-- suggested fix: drop the "ten minutes to read each" line at
-  README.md:88 (the table a few screens later already gives a
-  per-playbook number), and point 386-387's "~10 minutes" at
-  the table instead of restating a smaller number.
-- source: dry-run
-
 ### [ ] [MED] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory
 - category: instruction-drift
 - observation: playbooks/new-project.md §4 states adoption is
@@ -143,6 +122,14 @@
 - source: walk
 
 ## Done
+
+### [x] [MED] README.md:88,273,386-387 — three different reading-time estimates for the same playbooks — this commit
+- category: comprehension
+- resolution: dropped the "ten minutes to read each" line at
+  README.md:88 (the table already gives a per-playbook
+  number); README.md:386-387's TL;DR step now points at the
+  table instead of restating its own "~10 minutes".
+- source: dry-run
 
 ### [x] [HIGH] /board @ mobile (plain-folder) — the two-column board grid doesn't collapse on narrow screens, hiding the empty-state guidance — this commit (closes #146)
 - category: ui-comprehension

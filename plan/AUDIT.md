@@ -6,21 +6,6 @@
 
 ## Pending
 
-### [ ] [MED, 5.4] README.md:88,273,386-387 — three different reading-time estimates for the same playbooks
-- category: comprehension
-- impact: 6, ease: 9
-- evidence: the doors-in intro says the playbooks it just named
-  take "ten minutes to read each" (line 88); the comparison
-  table lists the same playbooks at "~30 min" each (lines
-  272-279); the TL;DR says "~10 minutes" to read "your
-  playbook" end-to-end (386-387) — three different numbers for
-  one claim within a single read-through.
-- next: drop the "ten minutes to read each" line at line 88
-  (the table already gives a per-playbook number), and point
-  386-387's "~10 minutes" at the table instead of restating a
-  smaller number.
-- source: plan/CRITIQUE.md (Pending)
-
 ### [ ] [MED, 5.4] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen
 - category: ui-comprehension
 - impact: 6, ease: 9
@@ -75,6 +60,17 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [MED, 5.4] README.md:88,273,386-387 — three different reading-time estimates for the same playbooks — this commit
+- category: comprehension
+- impact: 6, ease: 9
+- fix: dropped the "ten minutes to read each" line at README.md:88
+  (the "Pick a playbook" table already gives a per-playbook
+  number); README.md:386-387's TL;DR step now points at that
+  table ("see its time in the table above") instead of
+  restating its own "~10 minutes".
+- source: plan/CRITIQUE.md (Pending)
+- issue: #147
 
 ### [x] [H, 7.2] /board @ mobile (plain-folder) — the two-column board grid doesn't collapse on narrow screens, hiding the empty-state guidance — this commit (closes #146)
 - category: ui-comprehension
