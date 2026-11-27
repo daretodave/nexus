@@ -3,7 +3,7 @@
 > Last pass: 2026-11-26
 > Pass count: 30
 > Posture: bold
-> Last field research: 2026-11-24
+> Last field research: 2026-11-27
 
 ## Pending
 
@@ -603,6 +603,15 @@
   candidate only stops the next one.
 - estimated chunks: 1
 - conflicts: none.
+
+### [ ] [score 6.0] Short loops with an explicit stop condition and a trustworthy check outperform long autonomous ones
+- proposed: 2026-11-27 (research)
+- source signals: field (2026-11-27): Practitioner guides on running coding agents in a loop converge on the same shape: bound the loop to a small, reversible unit of work with a clear definition of done and a check the loop itself trust…
+- rationale: A second, independent line of field guidance for the same shape this kit already uses (one chunk per tick, a hard gate before every commit) — worth a candidate so the tick-length and single-chunk bound are stated as a deliberate design choice, not just the current default, and checked against drift over very long ticks.
+- proposed scope: whether march's own per-tick scope (one chunk, budget-bounded, gate before commit) should be named explicitly as the drift-bound, and whether a stall or runaway tick needs its own named stop condition beyond the existing budget check
+- estimated chunks: unknown until specced
+- conflicts: none known.
+- generator: research · filed 2026-11-27
 
 ## Promoted
 
