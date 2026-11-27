@@ -917,6 +917,7 @@ textarea.field { resize: none; }
   .stp-lines, .stp:not(.is-current) { display: none; }
   .stp-count { display: block; }
   .stp-next { display: inline; }
+  .pboard { grid-template-columns: 1fr; }
 }
 
 /* --------------------------------------------------------------------------

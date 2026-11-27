@@ -122,28 +122,6 @@
   none yet.
 - source: dry-run
 
-### [ ] [HIGH] /board @ mobile (plain-folder) — the two-column board grid doesn't collapse on narrow screens, hiding the empty-state guidance
-- category: ui-comprehension
-- observation: `.pboard` lays the main column and the
-  "Claims by person" `<aside>` out as a fixed grid
-  (`minmax(0, 1fr) 318px`) with no narrower-viewport override
-  anywhere in the stylesheet. On a ~390px mobile viewport the
-  fixed 318px aside plus its gap leaves the `1fr` main column —
-  carrying the "Nothing ready… Plot more work" empty-state copy
-  and its action — squeezed to a sliver. A first-time mobile
-  user looking at an empty plan sees only the claims panel
-  ("Nobody holds a claim…") with no visible explanation of why
-  the board is empty or how to add work.
-- evidence: plain-folder--mobile--board.png; walk-46069640161;
-  `.pboard { ... grid-template-columns: minmax(0, 1fr) 318px;
-  ... }` at packages/cli/src/styles/nexus.css:1567, no
-  `@media` override for `.pboard` anywhere in the file.
-- suggested fix: packages/cli/src/styles/nexus.css — add a
-  mobile breakpoint that stacks `.pboard` to a single column,
-  main content (and its empty-state CTA) first, claims panel
-  second.
-- source: walk
-
 ### [ ] [MED] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen
 - category: ui-comprehension
 - observation: `Board.jsx` renders two buttons that both
@@ -165,6 +143,17 @@
 - source: walk
 
 ## Done
+
+### [x] [HIGH] /board @ mobile (plain-folder) — the two-column board grid doesn't collapse on narrow screens, hiding the empty-state guidance — this commit (closes #146)
+- category: ui-comprehension
+- resolution: added `.pboard { grid-template-columns: 1fr; }`
+  inside the existing `@media (max-width: 760px)` block
+  (packages/cli/src/styles/nexus.css, mirrored into
+  packages/cli/design/handoff/nexus.css); `Board.jsx` already
+  renders the main column before the claims `<aside>` in DOM
+  order, so stacking needed no reorder. A fresh walk on
+  `/board` mobile reports 0 findings.
+- source: walk
 
 ### [x] [LOW] README.md:18 — the "nexus runs on nexus" teaser forward-references and duplicates a section the reader hasn't reached yet — this commit
 - category: voice

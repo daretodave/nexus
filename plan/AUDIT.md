@@ -1,10 +1,56 @@
 # Kit audit
 
-> Last pass: 2026-11-26
-> Pass count: 137
+> Last pass: 2026-11-27
+> Pass count: 138
 > Bias: none
 
 ## Pending
+
+### [ ] [MED, 5.4] README.md:88,273,386-387 — three different reading-time estimates for the same playbooks
+- category: comprehension
+- impact: 6, ease: 9
+- evidence: the doors-in intro says the playbooks it just named
+  take "ten minutes to read each" (line 88); the comparison
+  table lists the same playbooks at "~30 min" each (lines
+  272-279); the TL;DR says "~10 minutes" to read "your
+  playbook" end-to-end (386-387) — three different numbers for
+  one claim within a single read-through.
+- next: drop the "ten minutes to read each" line at line 88
+  (the table already gives a per-playbook number), and point
+  386-387's "~10 minutes" at the table instead of restating a
+  smaller number.
+- source: plan/CRITIQUE.md (Pending)
+
+### [ ] [MED, 5.4] /board @ desktop (plain-folder) — the same "add work" action is labeled two different ways on one screen
+- category: ui-comprehension
+- impact: 6, ease: 9
+- evidence: `Board.jsx` renders two buttons that both navigate
+  to `plotTo`: the toolbar button reads "+ Plot something" in
+  plain English, the empty-state's action button a few inches
+  below reads only "/plot" (packages/cli/src/screens/Board.jsx:408,435
+  vs :451) — a stranger may not recognize the slash-command
+  button as the same action as the clearer one on the same
+  screen.
+- next: packages/cli/src/screens/Board.jsx:408,435 — relabel
+  the empty-state CTA to match the toolbar's "Plot something"
+  wording.
+- source: plan/CRITIQUE.md (Pending)
+
+### [ ] [MED, 4.8] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory
+- category: instruction-drift
+- impact: 6, ease: 8
+- evidence: playbooks/new-project.md §4 states adoption is "one
+  sequence, three sub-steps, run in order: copy, then sweep...
+  then prune," warning that skipping the order "is the one
+  reliable way to leave stale tokens or dead files behind."
+  README's own condensed checklist lists only "Copy templates
+  into your repo, replacing all 9 placeholders," with no prune
+  mention, so a reader following just that summary ends up in
+  the exact stale-file state the playbook warns against.
+- next: README.md's checklist step 3 — add "then prune what you
+  don't need" alongside the placeholder-sweep mention, pointing
+  at playbooks/new-project.md §4.
+- source: plan/CRITIQUE.md (Pending)
 
 ### [ ] [LOW, 2.4] README.md:41-90 — "Three doors in" heading promises three but a 4th sibling heading follows
 - category: voice
@@ -29,6 +75,38 @@
 - source: plan/CRITIQUE.md (Pending)
 
 ## Done
+
+### [x] [H, 7.2] /board @ mobile (plain-folder) — the two-column board grid doesn't collapse on narrow screens, hiding the empty-state guidance — this commit (closes #146)
+- category: ui-comprehension
+- impact: 9, ease: 8
+- evidence: `.pboard` (packages/cli/src/styles/nexus.css:1567)
+  lays the main column and the "Claims by person" `<aside>` out
+  as a fixed grid (`minmax(0, 1fr) 318px`) with no
+  narrower-viewport override anywhere in the stylesheet. On a
+  ~390px mobile viewport the fixed 318px aside plus its gap
+  squeezed the `1fr` main column — carrying the "Nothing
+  ready… Plot more work" empty-state guidance — to a sliver.
+  walk-46069640161.
+- fix: added `.pboard { grid-template-columns: 1fr; }` inside
+  the existing `@media (max-width: 760px)` block
+  (packages/cli/src/styles/nexus.css, mirrored into
+  packages/cli/design/handoff/nexus.css per its "change both
+  together" contract). `Board.jsx` already renders `.pb-main`
+  (the chunk list + empty-state CTA) before the claims
+  `<aside>` in DOM order, so stacking to one column needs no
+  reorder. Verified: `npm --prefix packages/cli run walk --
+  --scenarios plain-folder --routes /board --viewports mobile`
+  reports 0 findings (a fresh screenshot shows the full-width
+  stacked layout); `npm --prefix packages/cli test` on the
+  touched area (board-grip, board-rail, plan, plan-answers:
+  35 tests) passes; the full suite's other 77 failures are the
+  same pre-existing sandbox artifact (safe.bareRepository=
+  explicit) this file's F-row already documents, reproduced
+  identically on an unmodified checkout, plus one transient
+  failure (token-term's "nexus.css byte-identical to HEAD"
+  check, which only ever fails while this very edit is
+  uncommitted and resolves once it lands in HEAD).
+- source: plan/CRITIQUE.md (Pending)
 
 ### [x] [user-issue #145] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-27, same owner call as #144/#143/#139/#137/#132/#131/#130/#129/#127/#96/#91
 - category: external-issue
