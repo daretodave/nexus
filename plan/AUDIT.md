@@ -30,6 +30,20 @@
 
 ## Done
 
+### [x] [user-issue #144] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-27, same owner call as #143/#139/#137/#132/#131/#130/#129/#127/#96/#91
+- category: external-issue
+- resolution: recurrence confirmed (`templates/scripts/cloud/cadence.mjs
+  realized` against `gh run list --workflow march --event
+  schedule -L 1000` this tick: 8 of 24 promised slots in 72h,
+  33%), the same reading #143 (2026-11-27) made hours earlier.
+  No new lever exists beyond what #96 (2026-11-21), #127
+  (2026-11-23), #129/#130/#131 (2026-11-24), #132 (2026-11-25),
+  #137/#139 (2026-11-26) and #143 (2026-11-27) already settled:
+  the owner's cron, every 3 hours at `:17`, off the busy top of
+  the hour, keeps delivering under 40% of the promised slots on
+  purpose because chained ticks, not the cron, carry the
+  throughput. Closed with a comment pointing at #143.
+
 ### [x] [user-issue #143] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-27, same owner call as #139/#137/#132/#131/#130/#129/#127/#96/#91
 - category: external-issue
 - resolution: recurrence confirmed (`templates/scripts/cloud/cadence.mjs
