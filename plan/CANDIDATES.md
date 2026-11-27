@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-11-26
-> Pass count: 30
+> Last pass: 2026-11-27
+> Pass count: 31
 > Posture: bold
 > Last field research: 2026-11-27
 
@@ -612,6 +612,63 @@
 - estimated chunks: unknown until specced
 - conflicts: none known.
 - generator: research · filed 2026-11-27
+
+### [ ] [score 6.8] Heartbeat's realized-cadence alarm re-fires for a cron tradeoff the owner already explicitly accepted, now 10 times
+- proposed: 2026-11-27 (expand)
+- kind: guard
+- source signals: signal C (triage pattern), ten-deep: `plan/AUDIT.md`'s
+  Done log carries `[user-issue #91]` (2026-11-05), `#96`
+  (2026-11-21), `#127` (2026-11-23), `#129`/`#130`/`#131`
+  (2026-11-24), `#132` (2026-11-25), `#137`/`#139` (2026-11-26) and
+  `#143` (2026-11-27) — all titled "heartbeat: march realized
+  cadence below 40%", all closed with the identical diagnosis:
+  realized delivery genuinely sits under 40% (29-38% each time),
+  but no new lever exists because the owner's own cron
+  (`17 */3 * * *`, chosen 2026-11-21 with #96's close) was picked
+  with full knowledge "chained ticks, not the cron, carry the
+  throughput" — the alarm just measures raw cron-schedule-event
+  delivery, which the design deliberately doesn't rely on. Every
+  closure since #96 has re-stated the same precedent rather than
+  changing anything, because `.github/workflows/heartbeat.yml`'s
+  "Alarm if march's realized cadence is below 40%" step
+  (`templates/scripts/cloud/cadence.mjs realized`) dedupes only on
+  an *open* issue of that exact title — once triage closes one,
+  the next 72h window under the floor (near-guaranteed at this
+  cron's own delivery rate) opens a fresh one. `templates/.github/
+  workflows/heartbeat.yml` ships the identical check to every
+  adopter's cloud loop, so any adopter who picks a cron GitHub
+  throttles past 40% inherits the same permanent false-positive
+  loop, not just nexus.
+- rationale: ten identical round-trips (file, triage, cite the
+  same precedent, close) is the strongest possible evidence the
+  alarm is checking the wrong thing, not that the loop is
+  unhealthy — agents.md rule 6 ("blocked is loud") only earns its
+  keep when a loud alarm is still informative; this one has
+  degraded to a scheduled no-op that costs one triage dispatch and
+  commit every time it fires. Adopter-facing (the identical
+  template ships to every cloud-loop adopter) and cheap to scope
+  (one measurement swap or one suppression marker, not a redesign).
+- proposed scope: either change what `check_cadence`/`cadence.mjs
+  realized` measures — actual tick throughput (chained dispatches
+  included, matching the design's own stated invariant) instead of
+  raw cron-schedule-event delivery — or add a standing
+  "acknowledged tradeoff" suppression (a `since:`/`until:`/
+  `max_age:` lock, the same locks-time-out shape `concepts/
+  plan-shape.md` already defines) that `.github/workflows/
+  heartbeat.yml`'s realized-cadence step reads before filing, so
+  closing #96's successor once more doesn't just restart the same
+  72h countdown. Touches `.github/workflows/heartbeat.yml` +
+  `templates/.github/workflows/heartbeat.yml` (agents.md rule 7)
+  and possibly `templates/scripts/cloud/cadence.mjs`.
+- estimated chunks: 1
+- conflicts: none — complements, doesn't overlap, the pending
+  "[score 4.8] heartbeat's cadence check counts a quota-gate-
+  skipped tick as a successful run" candidate (that one targets a
+  false *success* reading; this one targets a true-but-already-
+  answered alarm that keeps re-opening) and the pending "[score
+  4.5] Crash-alarm dedupe matches by generic title only" candidate
+  (that one is about masking *distinct* causes; this is one cause,
+  correctly matched, re-firing on an unchanged answer).
 
 ## Promoted
 
