@@ -1,7 +1,7 @@
 # Candidates
 
-> Last pass: 2026-11-27
-> Pass count: 31
+> Last pass: 2026-11-28
+> Pass count: 32
 > Posture: bold
 > Last field research: 2026-11-27
 
@@ -613,8 +613,13 @@
 - conflicts: none known.
 - generator: research · filed 2026-11-27
 
-### [ ] [score 6.8] Heartbeat's realized-cadence alarm re-fires for a cron tradeoff the owner already explicitly accepted, now 10 times
+## Promoted
+
+(moves to the build plan via /oversight)
+
+### [promoted 2026-11-28 → spec 79] [score 8.3] Heartbeat's realized-cadence alarm re-fires for a cron tradeoff the owner already explicitly accepted, now 10 times
 - proposed: 2026-11-27 (expand)
+- filed score: 6.8
 - kind: guard
 - source signals: signal C (triage pattern), ten-deep: `plan/AUDIT.md`'s
   Done log carries `[user-issue #91]` (2026-11-05), `#96`
@@ -669,10 +674,11 @@
   4.5] Crash-alarm dedupe matches by generic title only" candidate
   (that one is about masking *distinct* causes; this is one cause,
   correctly matched, re-firing on an unchanged answer).
-
-## Promoted
-
-(moves to the build plan via /oversight)
+- re-evidence:
+  - 2026-11-28 · C #144 · independent, +0.5 · 12th identical closure (#144, 2026-11-27T12:15), same owner precedent restated, no lever changed
+  - 2026-11-28 · C #145 · independent, +0.5 · 13th identical closure (#145, 2026-11-27T21:19), same owner precedent restated, no lever changed
+  - 2026-11-28 · C #149 · independent, +0.5 · 14th identical closure (#149, 2026-11-28T07:53), same owner precedent restated, no lever changed
+- promoted: 2026-11-28, auto (expand pass 32), veto #151
 
 ### [promoted 2026-11-12 → spec 65] [score 7.8] Workflow-scope-blocked lane: stop re-discovering the App-token-overrides-PAT gap per phase
 - proposed: 2026-08-31

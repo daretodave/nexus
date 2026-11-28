@@ -26,17 +26,18 @@ needs are done):
 line goes; each line is a lock that times out, so it carries
 `since:`, `until:` and `max_age:`):
 
-- (none)
+- 79 · auto-promoted, veto until 2026-11-30 (#151) · max_age: 2d · fallback: release
 
 ## Specs
 
 | # | Initiative | Spec | Status | Progress |
 |---|---|---|---|---|
 | 73 | Prompt audit joins the kit's prompt-maintenance story | [73-prompt-audit-story.md](73-prompt-audit-story.md) | planned | 0 of 2 chunks |
+| 79 | The realized-cadence alarm stops re-opening on an answer the owner already gave | [79-cadence-alarm-acknowledged-tradeoff.md](79-cadence-alarm-acknowledged-tradeoff.md) | planned | not chunked yet |
 
 Spec numbers continue from the v1 phase numbers (phases 1–33
 are archived; 20 and 32 were the two left blocked when the
-plan moved to chunks on 2026-10-20). The next new spec is 79.
+plan moved to chunks on 2026-10-20). The next new spec is 80.
 New specs arrive through `/plot`, `/messy`, or `/oversight`
 promoting a [`CANDIDATES.md`](CANDIDATES.md)
 entry. A row whose Status reads `planned · priority N` is
