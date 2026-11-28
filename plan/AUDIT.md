@@ -30,6 +30,23 @@
 
 ## Done
 
+### [x] [user-issue #149] [HIGH] heartbeat: march realized cadence below 40% — closed 2026-11-28, same owner call as #145/#144/#143/#139/#137/#132/#131/#130/#129/#127/#96/#91
+- category: external-issue
+- resolution: recurrence confirmed (`templates/scripts/cloud/cadence.mjs
+  realized` against `gh run list --workflow march --event
+  schedule -L 1000` this tick: 8 of 24 promised slots in 72h,
+  33%), the same reading #145 (2026-11-27) made the day before.
+  No new lever exists beyond what #96 (2026-11-21), #127
+  (2026-11-23), #129/#130/#131 (2026-11-24), #132 (2026-11-25),
+  #137/#139 (2026-11-26) and #143/#144/#145 (2026-11-27) already
+  settled: the owner's cron, every 3 hours at `:17`, off the
+  busy top of the hour, keeps delivering under 40% of the
+  promised slots on purpose because chained ticks, not the
+  cron, carry the throughput. Re-opening `/oversight` for a
+  question the owner answered many times already would be
+  noise (the #91 precedent). Closed with a comment pointing at
+  #145.
+
 ### [x] [LOW, 3.6] README.md:146-149 vs playbooks/new-project.md:633-637 — the "what landed" checklist omits package.json, which step 6 creates from scratch — this commit
 - category: instruction-drift
 - impact: 4, ease: 9
