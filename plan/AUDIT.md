@@ -30,6 +30,23 @@
 
 ## Done
 
+### [x] [LOW, 3.6] README.md:146-149 vs playbooks/new-project.md:633-637 — the "what landed" checklist omits package.json, which step 6 creates from scratch — this commit
+- category: instruction-drift
+- impact: 4, ease: 9
+- evidence: README.md:146-149's files-added checklist listed
+  `agents.md`, `CLAUDE.md`, `plan/`, `skills/`, `.claude/`,
+  `scripts/`, `.env.example`, `nexus.secrets.json`, but never
+  `package.json` — even though `playbooks/new-project.md`
+  step 6 says "No `package.json` exists yet at this point in
+  the walk — create one now: `pnpm init -y`" on a greenfield
+  repo, and the checklist's own next sentence depends on that
+  file existing ("`pnpm verify` / `pnpm deploy:check`
+  specified and ready to wire").
+- fix: README.md:146-149 now adds "plus `package.json` if your
+  repo had none yet" to the files-added list.
+- source: plan/CRITIQUE.md (Pending)
+- issue: #150
+
 ### [x] [MED, 4.8] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory — this commit
 - category: instruction-drift
 - impact: 6, ease: 8

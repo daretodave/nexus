@@ -146,12 +146,12 @@ in that directory).
 When the agent returns, expect: a new commit titled `chore:
 adopt nexus methodology`; files added (`agents.md`,
 `CLAUDE.md`, `plan/`, `skills/`, `.claude/`, `scripts/`,
-`.env.example`, `nexus.secrets.json`), existing source code
-**untouched**; any `[needs-user-call]` rows (a question the
-agent couldn't decide alone and left for you) in
-`plan/AUDIT.md` the agent deferred to you; and `pnpm verify` /
-`pnpm deploy:check` specified and ready to wire — not
-necessarily passing yet.
+`.env.example`, `nexus.secrets.json`, plus `package.json` if
+your repo had none yet), existing source code **untouched**;
+any `[needs-user-call]` rows (a question the agent couldn't
+decide alone and left for you) in `plan/AUDIT.md` the agent
+deferred to you; and `pnpm verify` / `pnpm deploy:check`
+specified and ready to wire — not necessarily passing yet.
 
 Read the diff, resolve `[needs-user-call]` rows (edit the
 files, or run `/oversight`), populate `.env`. **Then run

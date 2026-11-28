@@ -57,29 +57,15 @@
   line, or hide the lone star on mobile and keep only the text.
 - source: walk
 
-### [ ] [LOW] README.md:146-149 vs playbooks/new-project.md:633-637 — the "what landed" checklist omits package.json, which step 6 creates from scratch
-- category: instruction-drift
-- observation: README's step-3 checklist tells the adopter what
-  new files to expect after delegating adoption on a greenfield
-  repo, but doesn't list `package.json` — even though
-  `playbooks/new-project.md` step 6 (`pnpm init -y`) must create
-  it from nothing on a repo that has none yet, and the very next
-  sentence of README's own checklist says to expect `pnpm
-  verify` / `pnpm deploy:check` "specified and ready to wire,"
-  which depends on that file existing. A stranger diffing the
-  adoption commit against this list has no cue to look for it.
-- evidence: README.md:146-149 "files added (`agents.md`,
-  `CLAUDE.md`, `plan/`, `skills/`, `.claude/`, `scripts/`,
-  `.env.example`, `nexus.secrets.json`)" — `package.json` absent
-  — vs playbooks/new-project.md:633-637 "No `package.json`
-  exists yet at this point in the walk — create one now: `pnpm
-  init -y`."
-- suggested fix: README.md:146-149 — add `package.json` to the
-  files-added list, noting it's created only when the repo has
-  none yet.
-- source: dry-run
-
 ## Done
+
+### [x] [LOW] README.md:146-149 vs playbooks/new-project.md:633-637 — the "what landed" checklist omits package.json, which step 6 creates from scratch — this commit
+- category: instruction-drift
+- resolution: README.md:146-149's files-added list now adds
+  "plus `package.json` if your repo had none yet", matching
+  `playbooks/new-project.md` step 6's `pnpm init -y`.
+- source: dry-run
+- issue: #150
 
 ### [x] [MED] README.md:388-390 vs playbooks/new-project.md:325-329 — the TL;DR's manual-path checklist drops the prune sub-step the playbook calls mandatory — this commit
 - category: instruction-drift
